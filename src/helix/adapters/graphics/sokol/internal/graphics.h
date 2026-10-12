@@ -11,7 +11,7 @@ int hy_update(uint32_t buffer,const void *data,int bytes);
 int hy_begin(int width,int height,int x,int y,int w,int h);
 int hy_draw(uint32_t pipeline,uint32_t buffer,uint32_t texture,int vertices,int first_vertex);
 void hy_end(void);int hy_destroy(int kind,uint32_t handle);
-void hy_capture(const char *path);
+void hy_capture(const char *path);const char *hy_graphics_audit(void);double hy_peak_rss(void);int hy_vertex_reserved(void);
 #ifdef __cplusplus
 }
 #endif

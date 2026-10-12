@@ -11,7 +11,7 @@ interface IGraphics {
  public function updateBuffer(handle:Int,data:Bytes,usedBytes:Int):Void;
  public function beginFrame(width:Int,height:Int,x:Int,y:Int,w:Int,h:Int):Void;
  /** Draw a triangle-aligned range from the current frame’s uploaded vertices. */
- public function draw(pipeline:Int,buffer:Int,texture:Int,vertices:Int,firstVertex:Int=0):Void;
+ public function draw(pipeline:Int,buffer:Int,texture:Int,vertices:Int,firstVertex:Int):Void;
  public function endFrame():Void;
  public function destroy(kind:String,handle:Int):Void;
  public function shutdown():Void;

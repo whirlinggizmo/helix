@@ -36,7 +36,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
  function resize():Void {canvas.width=Std.int(Math.max(1,Browser.window.innerWidth*pixelRatio()));canvas.height=Std.int(Math.max(1,Browser.window.innerHeight*pixelRatio()));}
  public function run(init:Void->Void,frame:Float->Void,cleanup:Void->Void):Void {
   init();var previous=now();var loop:Float->Void=null;
-  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;resources.poll();audioResources.poll();services.pollInput();frame(current-previous);lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
+  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;lastFrameInterval=(current-previous)*1000;resources.poll();audioResources.poll();services.pollInput();frame(current-previous);lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
   Browser.window.requestAnimationFrame(loop);Browser.window.addEventListener("pagehide",_->{if(!closed){closed=true;audioResources.shutdown();resources.shutdown();cleanup();services.shutdownInput();}});
  }
  public function now():Float return Browser.window.performance.now()/1000;
@@ -45,9 +45,12 @@ class DomHostAdapter implements IHost implements IDiagnostics {
  public function option(name:String,fallback:String):String {var v=params.get(name);return v==null?fallback:v;}
  public function publish(value:Dynamic):Void {js.Syntax.code("window.result={0}",value);}
  public function expose(inspect:Void->Dynamic):Void {js.Syntax.code("window.inspect={0};window.graphicsContract={1};window.hostInfo={2}",inspect,graphics,info);}
- public function capture():Void {}
+ public function capture(name:String=""):Void {if(name!="")Browser.window.dispatchEvent(new js.html.CustomEvent("helix-capture",{detail:name}));}
  public function quit():Void stopped=true;
- var lastFrameCpu=0.;
+ var lastFrameCpu=0.;var lastFrameInterval=0.;
  public function frameCpu():Float return lastFrameCpu;
+ public function frameInterval():Float return lastFrameInterval;
+ public function frameAudit():Dynamic return null;
+ public function memoryPhase(begin:Bool):Dynamic {var m:Dynamic=js.Syntax.code("performance.memory");return m==null?null:{usedBytes:m.usedJSHeapSize,totalBytes:m.totalJSHeapSize,limitBytes:m.jsHeapSizeLimit};}
  public function info():Dynamic return services.info();
 }

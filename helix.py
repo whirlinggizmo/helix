@@ -31,7 +31,7 @@ def main():
     pilot=sub.add_parser('autopilot');pilot.add_argument('target',choices=['web','native','all'],default='all',nargs='?');pilot.add_argument('--script',default='autopilot/playthrough.json');display_options(pilot)
     serve=sub.add_parser('serve');serve.add_argument('--port',type=int,default=8050);serve.add_argument('--bind',default='127.0.0.1')
     sub.add_parser('sizes');sub.add_parser('report')
-    mixed=sub.add_parser('mixed');mixed.add_argument('action',choices=['build','check','measure','report']);mixed.add_argument('--shdc');display_options(mixed)
+    mixed=sub.add_parser('mixed');mixed.add_argument('action',choices=['build','check','measure','profile','allocations','report']);mixed.add_argument('--shdc');mixed.add_argument('--target',choices=['all','browser','native'],default='all');display_options(mixed)
     record=sub.add_parser('record');record.add_argument('--workload',choices=['asteroids','mixed-submission'],default='asteroids');record.add_argument('--label',required=True)
     a=p.parse_args();OUT.mkdir(parents=True,exist_ok=True)
     if a.command=='build':run([sys.executable,ROOT/'tools/build.py',a.target]+(['--shdc',a.shdc] if a.shdc else []))
@@ -55,6 +55,7 @@ def main():
             value=getattr(a,name)
             if value:options+=['--'+name,value]
         if a.awake:options+=['--awake']
+        options+=['--target',a.target]
         tool('mixed.py',a.action,*options)
     elif a.command=='record':tool('record.py','--workload',a.workload,'--label',a.label)
     elif a.command=='services':tool('services.py','--browser',a.browser,*(['--native'] if a.native else []))

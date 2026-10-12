@@ -31,7 +31,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
   instance.audioResources=new AudioResources(instance.assets,instance.audio);instance.initCallback();
  }
  static function onFrame(dt:cpp.Float32):Void {
-  var cpuStart=instance.now();
+  var cpuStart=instance.now();instance.lastFrameInterval=instance.previousCallback==0?0:(cpuStart-instance.previousCallback)*1000;instance.previousCallback=cpuStart;
   instance.resources.poll();instance.audioResources.poll();instance.services.pollInput();instance.focused=InputBridge.focused()!=0;instance.frameCallback(dt);
   var path=Sys.getEnv("HELIX_LIVE");if(path!=null&&instance.inspectCallback!=null){var value=instance.inspectCallback();value.host=instance.info();sys.io.File.saveContent(path,haxe.Json.stringify(value));}
   instance.lastFrameCpu=(instance.now()-cpuStart)*1000;
@@ -42,9 +42,16 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
  public function option(name:String,fallback:String):String {var value=Sys.getEnv("HELIX_"+name.toUpperCase());return value==null?fallback:value;}
  public function publish(value:Dynamic):Void {var json=haxe.Json.stringify(value);Sys.println(json);var path=Sys.getEnv("HELIX_RESULT");if(path!=null)sys.io.File.saveContent(path,json+"\n");}
  public function expose(inspect:Void->Dynamic):Void inspectCallback=inspect;
- public function capture():Void {var path=Sys.getEnv("HELIX_CAPTURE");if(path!=null)GraphicsBridge.capture(path);}
+ public function capture(name:String=""):Void {var path=Sys.getEnv("HELIX_CAPTURE");if(path!=null){if(name!="")path=haxe.io.Path.withoutExtension(path)+"-"+name+".ppm";GraphicsBridge.capture(path);}}
  public function quit():Void HostBridge.quit();
- var lastFrameCpu=0.;
+ var lastFrameCpu=0.;var lastFrameInterval=0.;var previousCallback=0.;
  public function frameCpu():Float return lastFrameCpu;
+ public function frameInterval():Float return lastFrameInterval;
+ public function frameAudit():Dynamic return haxe.Json.parse(Std.string(GraphicsBridge.audit()));
+ public function memoryPhase(begin:Bool):Dynamic {
+  if(begin){cpp.vm.Gc.run(true);cpp.vm.Gc.enable(false);return memory();}
+  var before=memory();cpp.vm.Gc.enable(true);cpp.vm.Gc.run(true);return {beforeCollect:before,afterCollect:memory()};
+ }
+ function memory():Dynamic return {peakRssBytes:GraphicsBridge.peakRss(),vertexReservedBytes:GraphicsBridge.vertexReserved(),usedBytes:cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_CURRENT),reservedBytes:cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_RESERVED),liveEstimateBytes:cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_USAGE)};
  public function info():Dynamic return services.info();
 }

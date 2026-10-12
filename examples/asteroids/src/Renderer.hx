@@ -80,7 +80,7 @@ class Renderer {
   if(hash)geometryHash=haxe.crypto.Sha256.make(data.sub(0,uploadBytes)).toHex();
   var scale=Math.min(width/(Game.W*1.),height/(Game.H*1.)),w=Std.int(Game.W*scale),h=Std.int(Game.H*scale);
   gpu.beginFrame(width,height,Std.int((width-w)/2),Std.int((height-h)/2),w,h);
-  gpu.updateBuffer(buffer,data,uploadBytes);if(vertices>0)gpu.draw(pipeline,buffer,texture,vertices);gpu.endFrame();
+  gpu.updateBuffer(buffer,data,uploadBytes);if(vertices>0)gpu.draw(pipeline,buffer,texture,vertices,0);gpu.endFrame();
  }
  public function cleanup():Void {gpu.destroy("pipeline",pipeline);gpu.destroy("buffer",buffer);gpu.destroy("texture",texture);gpu.shutdown();}
 }

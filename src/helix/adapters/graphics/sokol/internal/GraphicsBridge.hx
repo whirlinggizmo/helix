@@ -13,5 +13,8 @@ extern class GraphicsBridge extends SokolNativeBuild {
  @:native("hy_draw") static function draw(pipeline:Int,buffer:Int,texture:Int,vertices:Int,firstVertex:Int):Int;
  @:native("hy_end") static function end():Void;
  @:native("hy_destroy") static function destroy(kind:Int,handle:Int):Int;
+ @:native("hy_peak_rss") static function peakRss():Float;
+ @:native("hy_vertex_reserved") static function vertexReserved():Int;
+ @:native("hy_graphics_audit") static function audit():cpp.ConstCharStar;
  @:native("hy_capture") static function capture(path:cpp.ConstCharStar):Void;
 }

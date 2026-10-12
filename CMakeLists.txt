@@ -24,3 +24,8 @@ target_compile_features(native-audio-probe PRIVATE c_std_11)
 target_compile_definitions(native-audio-probe PRIVATE _POSIX_C_SOURCE=200809L)
 target_include_directories(native-audio-probe PRIVATE src/helix/adapters/graphics/sokol/internal src/helix/adapters/host/sokol/internal src/helix/adapters/audio/libsndfile/internal src/helix/adapters/audio/sokol/internal src/helix/adapters/input/sokol/internal src/helix/adapters/input/evdev/internal vendor ${ALSA_INCLUDE_DIRS})
 target_link_libraries(native-audio-probe PRIVATE ${ALSA_LIBRARIES} m pthread)
+
+# Test-only GL call interposer; excluded from native/browser delivery and all timing.
+add_library(native-graphics-call-audit SHARED tests/native/graphics_calls.c)
+target_compile_features(native-graphics-call-audit PRIVATE c_std_11)
+target_link_libraries(native-graphics-call-audit PRIVATE dl)
