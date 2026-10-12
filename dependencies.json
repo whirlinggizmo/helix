@@ -1,6 +1,6 @@
 {
   "haxe": "4.3.7",
-  "hxcpp": "81df26e79b95fcbfde21b2ee233d2ba059e61002",
+  "hxcpp": "4.3.2",
   "sokol": {
     "revision": "401f21f8b7039258c35fef75c11d9a8a0e616771",
     "source": "vendor",

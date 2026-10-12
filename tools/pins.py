@@ -1,11 +1,19 @@
-"""Fail early when the active hxcpp differs from the pinned revision."""
-import json,subprocess
+"""Use an experiment-local haxelib holding the pinned hxcpp release, as libwgf's CI does."""
+import json,os,subprocess,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+HAXELIB=ROOT/'build/haxelib'
+def active(version):
+    try:path=Path(subprocess.check_output(['haxelib','path','hxcpp'],text=True,stderr=subprocess.DEVNULL).splitlines()[0].strip()).resolve()
+    except (subprocess.CalledProcessError,IndexError):return None
+    if not path.is_relative_to(HAXELIB.resolve()) or not (path/'haxelib.json').is_file():return None
+    return path if json.loads((path/'haxelib.json').read_text())['version']==version else None
 def check_hxcpp():
-    pinned=json.loads((ROOT/'dependencies.json').read_text())['hxcpp']
-    try:path=subprocess.check_output(['haxelib','path','hxcpp'],text=True).splitlines()[0].strip()
-    except (OSError,subprocess.CalledProcessError,IndexError):raise RuntimeError('hxcpp is not installed; native builds require hxcpp '+pinned)
-    try:active=subprocess.check_output(['git','-C',path,'rev-parse','HEAD'],text=True,stderr=subprocess.DEVNULL).strip()
-    except (OSError,subprocess.CalledProcessError):raise RuntimeError(f'hxcpp at {path} is not a git checkout; native builds require hxcpp {pinned} (https://github.com/robknopf/hxcpp)')
-    if active!=pinned:raise RuntimeError(f'hxcpp at {path} is {active}; native builds require {pinned} (https://github.com/robknopf/hxcpp)')
+    # Haxe runs `haxelib run hxcpp` without a version, so only the resolved current release is reliable.
+    version=json.loads((ROOT/'dependencies.json').read_text())['hxcpp'];HAXELIB.mkdir(parents=True,exist_ok=True);os.environ['HAXELIB_PATH']=str(HAXELIB)
+    if active(version):return
+    for attempt in range(3):
+        if subprocess.run(['haxelib','--always','install','hxcpp',version]).returncode==0:break
+        time.sleep(10*(attempt+1))
+    subprocess.run(['haxelib','--always','set','hxcpp',version],check=True)
+    if not active(version):raise RuntimeError(f'Could not install hxcpp {version} into {HAXELIB}')
