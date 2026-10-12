@@ -1,0 +1,8 @@
+-cp src
+-cp examples/asteroids/src
+-cp examples/asteroids/launch/browser-webgl2
+-cp build/generated/asteroids
+-main Main
+-js build/web/asteroids/app.js
+-dce full
+-D analyzer-optimize

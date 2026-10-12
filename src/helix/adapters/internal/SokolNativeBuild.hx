@@ -1,0 +1,4 @@
+package helix.adapters.internal;
+/** Internal Linux Sokol archive/link integration shared by the subsystem externs. */
+@:buildXml('<files id="haxe"><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/graphics/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/host/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/input/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audio/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audio/libsndfile/internal"/></files><target id="haxe"><lib name="${HELIX_LIBRARY}"/><lib name="${HELIX_CODEC_LIBRARY}"/><lib name="-lX11"/><lib name="-lXi"/><lib name="-lXcursor"/><lib name="-lGL"/><lib name="-lasound"/><lib name="-ldl"/><lib name="-lpthread"/></target>')
+extern class SokolNativeBuild {}
