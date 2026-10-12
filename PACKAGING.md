@@ -20,6 +20,7 @@ From the study root:
 python3 experiments/05-hybrid-asteroids/hybrid.py build all --shdc /path/to/sokol-shdc
 python3 experiments/05-hybrid-asteroids/hybrid.py test --native --shdc /path/to/sokol-shdc
 python3 experiments/05-hybrid-asteroids/hybrid.py services --browser /path/to/chromium --native
+python3 experiments/05-hybrid-asteroids/hybrid.py audio-check --browser /path/to/chromium
 python3 experiments/05-hybrid-asteroids/hybrid.py serve
 python3 experiments/05-hybrid-asteroids/hybrid.py check --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
 python3 experiments/05-hybrid-asteroids/hybrid.py measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
@@ -28,7 +29,7 @@ python3 experiments/05-hybrid-asteroids/hybrid.py report
 python3 experiments/05-hybrid-asteroids/hybrid.py features --clang /path/to/clang --wgrender /path/to/wgrender-c --libwgf /path/to/libwgf
 ```
 
-`measure` runs correctness, three CPU trials per target and autopilot sequentially, restores any authorized display override, then generates sizes/findings. It requires both targets. Run `test --native --audio-device`, `services --browser ... --native` and the optional Clang reference `features` inventory beforehand for report inputs: report validates native/audio/cache source identities. Keep timing separate from builds/service tests. `features` reads reference public headers through structured Clang JSON AST, records identities, and does not edit references or establish behavioral equivalence. See FEATURE_PARITY.md. `check` can run browser only. `sizes`/`report` use existing builds/results and do not rebuild. Build before measuring source changes. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs. X11 checks are platform-specific test adapters.
+`audio-check` requires `serve` in another terminal and verifies the served build plus sustained thrust/gain/release behavior. Run it after a game rebuild before generating the report. `measure` runs correctness, three CPU trials per target and autopilot sequentially, restores any authorized display override, then generates sizes/findings. It requires both targets. Run `test --native --audio-device`, `services --browser ... --native` and the optional Clang reference `features` inventory beforehand for report inputs: report validates native/audio/cache source identities. Keep timing separate from builds/service tests. `features` reads reference public headers through structured Clang JSON AST, records identities, and does not edit references or establish behavioral equivalence. See FEATURE_PARITY.md. `check` can run browser only. `sizes`/`report` use existing builds/results and do not rebuild. Build before measuring source changes. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs. X11 checks are platform-specific test adapters.
 
 An optional Haxe entry point delegates to the same Python CLI:
 
