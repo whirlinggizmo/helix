@@ -1,0 +1,8 @@
+-cp framework
+-cp src
+-cp web
+-cp build/generated
+-main App
+-js build/web/app.js
+-dce full
+-D analyzer-optimize

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "seed": 12345,
+  "commands": [
+    {"op": "assert", "probe": "state", "equals": "title"},
+    {"op": "press", "key": "ENTER"},
+    {"op": "wait", "probe": "state", "equals": "playing", "timeout": 120},
+    {"op": "hold", "keys": ["UP", "SPACE"], "ticks": 120},
+    {"op": "assert", "probe": "shots", "atLeast": 6},
+    {"op": "assert", "probe": "lives", "atLeast": 1}
+  ]
+}

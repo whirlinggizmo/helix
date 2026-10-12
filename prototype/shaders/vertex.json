@@ -1,0 +1,8 @@
+{
+  "program": "sprite",
+  "attributes": [
+    {"role": "position", "name": "position", "type": "vec2"},
+    {"role": "uv", "name": "uv", "type": "vec2"},
+    {"role": "color", "name": "color", "type": "vec4"}
+  ]
+}

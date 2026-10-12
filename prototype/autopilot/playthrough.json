@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seed": 12345,
+  "commands": [
+    {"op": "assert", "probe": "state", "equals": "title"},
+    {"op": "press", "key": "ENTER"},
+    {"op": "wait", "probe": "state", "equals": "playing", "timeout": 120},
+    {"op": "hold", "keys": ["UP", "SPACE"], "ticks": 120},
+    {"op": "assert", "probe": "shots", "atLeast": 6},
+    {"op": "wait", "probe": "state", "equals": "gameover", "timeout": 12000},
+    {"op": "assert", "probe": "lives", "equals": 0},
+    {"op": "press", "key": "TAB"},
+    {"op": "press", "key": "ENTER"},
+    {"op": "wait", "probe": "state", "equals": "title", "timeout": 120},
+    {"op": "press", "key": "ENTER"},
+    {"op": "wait", "probe": "state", "equals": "playing", "timeout": 120},
+    {"op": "assert", "probe": "lives", "equals": 3},
+    {"op": "assert", "probe": "score", "equals": 0}
+  ]
+}

@@ -1,0 +1,99 @@
+# Experiment 05 — Hybrid Asteroids
+
+One Haxe game and renderer, direct browser WebGL2 and native hxcpp/Sokol. The build selects adapters with classpaths; framework and game contain **zero target conditionals**. Separate graphics, input, audio, fetch and storage contracts sit beneath shared asset/cache and audio resource/playback policy. No Lime/OpenFL, browser Wasm or copied libwgf implementation. SDL3 remains an alternative for native graphics/window/input/gamepads/audio; it has not been implemented or benchmarked.
+
+The playable slice has a drifting title field, focusable/clickable menus, flight/fire, splitting rocks, waves, score/lives/life icons, session best, extra lives, delayed waves/respawn, thrust/explosion particles, bitmap text, eight original sound assets, looping thrust, game over, restart and return to title. It has keyboard/pointer and normalized controller input. The shared game remains an independent approximation of libwgf's Asteroids, with different font/art/audio, quantized physics and collision/wrap details; it does not recreate its ECS/prefab/general UI framework.
+
+Contracts and limits: [INTERFACE.md](INTERFACE.md). Implementation choices: [DECISIONS.md](DECISIONS.md). Current measurements and recommendation: [FINDINGS.md](FINDINGS.md). Reference capabilities, gaps and proposed stress workloads: [FEATURE_PARITY.md](FEATURE_PARITY.md). QoL tools, autopilot schema and haxelib direction: [PACKAGING.md](PACKAGING.md). [BRIEF.md](BRIEF.md) and [START_PROMPT.md](START_PROMPT.md) preserve the initial scope and authorized extension.
+
+## Prerequisites and versions
+
+Executed on Linux: Haxe **4.3.7**, hxcpp revision **08197b1c4aed5e3320ed859d8cf09c08b6a48bc6** (package metadata4.3.0), Python **3.12.3**, PyYAML **6.0.1**, Node **26.1.0**, CMake **3.28.3**, GCC/G++ **13.3.0**, ALSA **1.2.11**, Terser **5.44.1**, Playwright **1.64.0**, pngjs **7.0.0**. Current native builds require no SDL. Historical SDL2 **2.30.0** results are preserved under `results/stages/03-sdl-cohort/`. Exact browser/hardware/artifact identities are retained with results.
+
+- Sokol headers: revision **401f21f8b7039258c35fef75c11d9a8a0e616771**, already vendored with license in `../02-haxe-sokol-hal/prototype/vendor/`. CMake reads those files without editing them; this experiment needs that directory from the study checkout. Do not substitute arbitrary current Sokol headers.
+- Sokol audio: same revision, vendored here with license in `prototype/vendor/`; SHA256 `e527091b2bc0c4ccbeb3f145489c0dbdbe74869247e30942c1e22bd580e2c4c7`. Dependency pins and header checks are in `prototype/dependencies.json`.
+- Native Ogg decoder: system **libsndfile 1.2.2**, built with Vorbis and Opus support. The official 1.2.2 SDK header and LGPL 2.1 license are vendored in `prototype/vendor/sndfile/`; build checks their SHA256 pins in dependencies.json. Only a small codec bridge is compiled here; the library and its transitive codecs are dynamically supplied, with actual dependencies listed in sizes.json. A fresh Linux machine needs the runtime library (commonly `libsndfile1`) with these codecs; no system sndfile development header is needed. Native redistribution/package integration, including its license/dependency notices, remains unfinished. Browser has no libsndfile/Wasm decoder dependency. [Supported formats](https://libsndfile.github.io/libsndfile/formats.html) and [API](https://libsndfile.github.io/libsndfile/api.html).
+- Offline audio generation: **FFmpeg 6.1.1-3ubuntu5** on this host, available on PATH with `libvorbis` and `libopus` encoders. Builds generate the original WAV sources under ignored `build/audio-source/`, then deploy quality 3 Vorbis `.ogg` files. A 64 kbps stereo 48 kHz Opus fixture is generated for tests, not game delivery. Tool version/parameters are retained with measurements; the same pinned host toolchain produced repeatable hashes. Other encoder versions can produce different bytes/sizes.
+- Shader compiler: `sokol-tools-bin` revision **11d0cf678105d614d675e6d9bd2aaf3eeff12f8c**. Supply its host executable with `--shdc` or `SOKOL_SHDC`. Actual executable and generated-shader hashes are in `results/sizes.json`. No compiler download or global installation is performed by build.py.
+- Native: Linux/X11, GL4.1-capable desktop, hxcpp and C compiler; ALSA development headers, X11/Xi/Xcursor and GL libraries. Gamepads use Linux evdev device access and a fixed mapping. The native adapter is currently linked/configured for Linux only; Windows/macOS/mobile and modern graphics backends have not run.
+- Browser: WebGL2. Browser build tooling uses Python/Haxe/Node and argument lists; no shell-script orchestration. Emscripten is unnecessary for this experiment.
+- Checks: actual browser binary and, for native input/resize/display checks, a desktop display plus `xdotool` and optional `xset`. `ldd` is used only for Linux native dependency accounting.
+
+## Build and play
+
+Commands from the repository root (`python` or `py -3` may replace `python3`):
+
+```console
+python3 -m pip install -r experiments/05-hybrid-asteroids/prototype/requirements-build.txt
+npm install --prefix experiments/05-hybrid-asteroids/prototype/build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
+python3 experiments/05-hybrid-asteroids/hybrid.py build web --shdc /path/to/sokol-shdc
+python3 experiments/05-hybrid-asteroids/hybrid.py build native --shdc /path/to/sokol-shdc
+python3 experiments/05-hybrid-asteroids/hybrid.py serve
+```
+
+Open `http://127.0.0.1:8050/`. Native executable: `experiments/05-hybrid-asteroids/prototype/build/native/App`. **Enter** activates the selected menu item; **Tab/Up/Down** selects game-over buttons; pointer clicks activate buttons. **Left/Right or A/D** rotate, **Up/W** thrust, **Space** fires; **Escape** quits on native. Standard controller: South/Start activates menus, South/right trigger thrusts, East/right bumper fires, left stick/D-pad rotates and D-pad Up/Down selects menus. The first connected mapped controller is used. Physical controllers have not been tested.
+
+Resizing letterboxes a **960×720** logical playfield; browser pointer coordinates account for CSS sizing and device pixel ratio. Focus loss clears input and pauses live simulation/stops thrust. Browser audio unlocks on a real key/pointer gesture and suspends when hidden/unfocused; another gesture resumes it. Shared asset policy ensures eight encoded Vorbis files into persistent storage, then the selected audio adapter decodes them to mono float32 at 44100 Hz. Browser uses Web Audio; native uses libsndfile beneath Sokol delivery. Play waits for assets, and missing files fail visibly in browser. A missing native audio device leaves rendering playable and is reported in diagnostics.
+
+Browser encoded cache: IndexedDB `hybrid-asteroids-cache-v1`; native cache: executable sibling `cache/`, overridable with `HY_CACHE`. Native defaults to sibling `assets/`; optional `HY_ASSET_HOST` supplies a full HTTP(S) asset base ending in `/`. The cache keys include base URL/path but have no version/revalidation policy yet: clear the browser database or native cache after changing an asset in place. Native HTTPS has compiled but only local HTTP fixtures were executed. An unwritable/full cache fails ensure explicitly.
+
+`IFetch` and `IStorage` are thin replaceable Haxe contracts. `AssetService.ensure()` exposes callback completion, cancellation and phase/byte progress; browser Fetch streams response chunks and native `haxe.Http` runs in workers. Both return whole bytes bounded to 8 MiB; storage whole-file reads/writes share that cap. Two transfers/workers run per adapter. Host callback queues use nominal cooperative 2 ms slices, which cannot preempt a slow individual operation. Native cancellation suppresses late callbacks but does not abort a blocking worker; native socket timeouts differ from browser deadlines. Large/direct-to-storage/resumable downloads remain a separate gate.
+
+`AudioResources` separates reusable `AudioClip`/`AudioStream` from an individual `AudioPlayback`. Resource release retains active/paused playbacks until stop or natural completion. WAV/Vorbis/Opus decoded clips and stored streams ran on both targets; mono/stereo Ogg clip input normalizes to mono 44100 Hz. Streams resolve usable storage first (browser Blob URL/native file), then remote media playback in browser; remote playback does not store. Ensure first when storage is required. Native stored WAV/Vorbis/Opus progressively feed an 8192-sample mono queue per playback; native remote streams remain deferred. The host fills this queue, so long frame stalls can underrun it. Browser remote playback passed but start before final network byte remains untested. The game uses decoded clips; service fixtures exercise streams separately. See INTERFACE.md for lifetime, cancellation, limits and codec semantics.
+
+`hybrid.py build all` builds both. `prototype/web.hxml`/`native.hxml` own compiler settings; the Python front door calls the underlying tools. An optional Haxe entry point is `haxe --cwd experiments/05-hybrid-asteroids --run Run --help`; `HYBRID_PYTHON` selects its Python executable. Native hxcpp/compiler caches and generated assets/shaders stay under ignored `prototype/build/`. No global Haxe registrations or libwgf files are changed. On this host, matching Node dependencies were copied from Experiment03's existing ignored tools cache rather than downloaded; a fresh machine can use the pinned npm command above.
+
+Shaders are authored once in `prototype/shaders/sprite.glsl`. Build.py invokes sokol-shdc for GLSL300es/410, generates the browser Haxe shader strings, and compiles the Sokol descriptor into the native HAL. It requests `--format bare_yaml` and parses the structured reflection with PyYAML's SafeLoader, rejecting duplicate mapping keys. Shader source filenames come from metadata; neither GLSL nor generated C is scanned for bindings. See [the upstream output-format documentation](https://github.com/floooh/sokol-tools/blob/master/docs/sokol-shdc.md).
+
+Reflection supplies attribute types/names/locations and texture/sampler slots, including the combined GLSL uniform name. `prototype/shaders/vertex.json` separately declares CPU vertex packing order and semantic roles: shaders do not specify byte offsets in the application's buffer. The build validates these together, checks agreement across dialects, and generates `GeneratedLayout.hx`, `vertex_layout.h` and an inspectable `shader-contract.json`. Shared Haxe writes vertices with generated inline offsets; both adapters consume generated locations/stride/bindings. Native static assertions also check slots against the compiler's C constants. Browser caches the generated sampler uniform at pipeline creation.
+
+This is build-time shader reflection, with no shader runtime reflection or YAML shipped to the browser. Autopilot separately uses ordinary Haxe `Reflect` to validate structured JSON fields. The compiler revision and parser dependency are pinned; the upstream YAML has no schema-version field, so explicit validation rejects unknown resource sections, unsupported formats, duplicate slots and mismatched layouts. A compiler upgrade requires fixture checks and schema review. This first implementation uses GL on native; compiled shader variants alone do not prove another backend runs.
+
+## Reproduce checks and measurements
+
+```console
+python3 experiments/05-hybrid-asteroids/hybrid.py test --native --audio-device --shdc /path/to/sokol-shdc
+python3 experiments/05-hybrid-asteroids/hybrid.py services --browser /path/to/chromium --native
+python3 experiments/05-hybrid-asteroids/hybrid.py measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
+```
+
+Build first. `measure` owns sequential correctness/CPU/autopilot cohorts, then size accounting and report generation; it requires both targets. `hybrid.py check --browser /path/to/chromium` runs browser-only correctness. Underlying `run.py checks|cpu|autopilot|all` is also available. `--awake` saves/restores X11 saver/DPMS/monitor state in `finally`; use it only with permission to change those settings. This session already supplied that permission, and exact restoration was verified. Direct autopilot does not change display settings.
+
+Native unit checks use Sokol's dummy audio backend and pipe-fed evdev records; `--audio-device` additionally checks silent callbacks on a real Sokol/ALSA device. Native game/service checks use the real device. Browser controller checks inject a standard Gamepad API fixture. These establish callback/mixer/lifecycle behavior, without proving physical controllers or audible quality. CPU trials disable sound delivery while retaining asset loading/device initialization. Native captures are before presentation; browser readback/audit runs separately from CPU trials. Tools select the native input window by process ID and guarantee cleanup.
+
+`services` builds one Haxe test harness for browser JS and optional native hxcpp. It starts isolated local HTTP fixtures and fresh storage, then repeats with the same storage to verify persistence. Network counts prove each ensured WAV/Vorbis/Opus fixture downloads once across both runs, clip loading and stored-stream playback. Tests cover status, progress, limits, timeout/cancel/shutdown, two concurrent transfers, read/write/remove, source leases, independent playbacks, pause/resume, loops and natural cleanup. Codec checks include signal/duration, stereo 48 kHz Opus normalization, empty/malformed input and exactly-once decode cancellation. Browser also exercises remote playback without persistence; native checks its explicit remote-stream failure. This suite is separate from game CPU sampling and makes no sustained large-download or audible-quality claim. Keep service tests/builds separate from timing runs.
+
+Run packaged autopilot or regenerate existing measurements:
+
+```console
+python3 experiments/05-hybrid-asteroids/hybrid.py autopilot all --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority
+python3 experiments/05-hybrid-asteroids/hybrid.py autopilot web --browser /path/to/chromium --script autopilot/smoke.json
+python3 experiments/05-hybrid-asteroids/hybrid.py sizes
+python3 experiments/05-hybrid-asteroids/hybrid.py report
+python3 experiments/05-hybrid-asteroids/hybrid.py features --clang /path/to/clang --wgrender /path/to/wgrender-c --libwgf /path/to/libwgf
+```
+
+`playthrough.json` drives title/start/thrust/fire/game over/title/restart through the same input and menu code. It completed 4584 simulated ticks on both real renderers, with identical command outcomes, state and pixels. Fast autopilot is correctness tooling, not a performance benchmark. The bounded JSON schema and probes are documented in PACKAGING.md.
+
+Individual commands:
+
+```console
+node experiments/05-hybrid-asteroids/prototype/tools/browser.cjs --action checks --browser /path/to/chromium
+node experiments/05-hybrid-asteroids/prototype/tools/browser.cjs --action cpu --browser /path/to/chromium
+python3 experiments/05-hybrid-asteroids/prototype/tools/native.py --action checks --display :1 --xauthority /path/to/Xauthority
+python3 experiments/05-hybrid-asteroids/prototype/tools/native.py --action cpu --display :1 --xauthority /path/to/Xauthority
+```
+
+Browser options: `?tick=600` renders one frozen seeded replay snapshot; `?replay=1&audio=0&frames=600&autoclose=1` measures 60 warmup +600 moving frames then stops; `?autopilot=autopilot/playthrough.json&fast=1&audio=0` runs a script. Native equivalents are `HY_TICK`, `HY_REPLAY`, `HY_AUDIO`, `HY_FRAMES`, `HY_AUTOCLOSE`, `HY_SEED`, `HY_AUTOPILOT`, `HY_FAST`; `HY_CAPTURE` writes a diagnostic PPM and `HY_RESULT` writes JSON. `HY_LIVE` is an input-check-only per-frame JSON hook; it must remain unset for CPU runs. All diagnostics and autopilot code remain compiled in the measured delivery.
+
+## Executed outcome and next step
+
+Browser and Linux native builds ran. **35 shared assertions, nine shader metadata checks and 55 native service/mixer assertions passed**, plus an independent framework consumer under interpreter/JS and real ALSA callback checks. The async service suite passed two browser runs of **[95, 95] checks** and two native runs of **[91, 91] checks** (progress callback counts vary). WAV, Vorbis and Opus clips/stored streams pass; browser remote streams also pass. Each target downloaded each ensured codec fixture exactly once across fresh/persisted runs. Empty/malformed input, stereo Opus downmix/rate normalization and decode cancellation pass. Browser checks include pointer/keyboard, short taps, high-DPI hit testing, focus pause/resume, controller disconnect and missing-asset failure. Native checks include actual X11 pointer/keyboard/resize and service/audio tests. Five replay points match state, prepared vertex bytes and RGB pixels exactly, as does the 4584-tick autopilot capture.
+
+Current code+HTML is **22.17 KiB gzip / 19.13 KiB Brotli**, with **0 B Wasm**. The eight Vorbis sounds add **34.54 KiB gzip / 34.03 KiB Brotli**. Normal play totals **56.71 KiB gzip / 53.15 KiB Brotli**, down from 196.92/169.54 KiB in the preserved WAV cohort. Code+HTML increased 593 gzip bytes; the overall gzip reduction is 71.2%, with lossy audio rather than bit-identical output. Optional scripts/manifest remain separate. Native is **4,717,264 B unstripped**, excluding assets and dynamic libsndfile/codec/system libraries. Full Haxe DCE removes unused stream creation from the game; those APIs run in separate fixtures, so this is not the cost of shipping every framework capability.
+
+Three sequential CPU trials per target, run without overlapping service tests, gave median trial means of **0.319 ms browser / 0.196 ms native**, with p95 **0.500/0.269 ms**. Cadence stayed near 60 Hz; worst trial >25 ms interval rates were **0.000% browser / 0.167% native**. These clocks exclude service polling/presentation and disable sound delivery; they do not measure downloads/stream servicing or establish a codec performance effect. Exact display settings were restored. Detailed clocks/startup/trials/components are in generated FINDINGS.md. Libwgf's contextual numbers have different feature/workload/measurement boundaries and do not establish a matched speedup or whole-game saving.
+
+[FEATURE_PARITY.md](FEATURE_PARITY.md) now compares the reference capabilities against our executed scope and proposes the workloads needed to challenge the interfaces/web performance. A structured Clang AST snapshot inventories **522 wgrender-c  / 834 libwgf public functions**, with commits, input hashes and working-tree state in results/reference-features.json. There is **no full semantic 1:1 mapping or matched test coverage** yet. Reference capability descriptions are source/document evidence, not reference tests newly run here.
+
+Proceed with the separated Haxe framework and adapters. Ogg closes the compressed-sound gate. Next graphics probes: mixed state-changing submissions, UI/clipping and render-target/post passes, followed by a loading lit Racer scene with representative textures/models and the agreed optional physics module; Wits' skinning/scene breadth follows. A modern native backend and matched SDL3 comparison remain native gates. Desktop performance takes priority over executable size. A haxelib remains plausible, with dependency/licensing integration, installed-package consumption and API stabilization unfinished. Browser WebGPU, further targets, context recovery, physical controllers/audible quality, cache manifests/revalidation/eviction, large downloads, HTTPS/redirect/deadline normalization, native network audio, further audio controls, general UI/ECS and sustained GC/memory remain unproven. All changes stay inside this experiment.
