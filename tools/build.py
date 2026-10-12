@@ -9,6 +9,7 @@ import subprocess
 import sys
 from shader_metadata import generate
 from assets import generate as generate_assets
+from pins import check_hxcpp
 
 ROOT=Path(__file__).resolve().parents[1]
 STUDY=ROOT.parents[2]
@@ -64,6 +65,7 @@ def main():
         shutil.copytree(assets,out/'assets')
     if args.target in ['native','all']:
         if sys.platform!='linux':raise RuntimeError('Only Linux native linking is implemented; browser build remains portable.')
+        check_hxcpp()
         archive=build/'native-hal'
         run(['cmake','-S',ROOT,'-B',archive,'-DCMAKE_BUILD_TYPE=Release'])
         run(['cmake','--build',archive,'--config','Release'])

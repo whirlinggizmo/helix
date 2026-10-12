@@ -5,7 +5,8 @@ import haxe.io.Bytes;
 
 /** Thin resource/submission contract. No scene policy belongs in an adapter. */
 interface IGraphics {
- public function createTexture(width:Int,height:Int,rgba:Bytes):Int;
+ public function createTexture(width:Int,height:Int,rgba:Bytes,linear:Bool=false):Int;
+ public function setClearColor(color:Int):Void;
  public function createBuffer(capacityBytes:Int):Int;
  public function createPipeline(alpha:Bool):Int;
  public function updateBuffer(handle:Int,data:Bytes,usedBytes:Int):Void;

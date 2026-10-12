@@ -9,6 +9,8 @@ import js.html.webgl.WebGL2RenderingContext;
 class WebGL2GraphicsAdapter implements IGraphics {
  public var gl(default,null):WebGL2RenderingContext;
  var next=1;var buffers:Map<Int,Dynamic>=[];var textures:Map<Int,Dynamic>=[];var pipelines:Map<Int,Dynamic>=[];
+ var clearColor=0;var customClear=false;
+ public function setClearColor(color:Int):Void {clearColor=color;customClear=true;}
  var active=false;var cacheState:Bool;var shareShader:Bool;var shared:Dynamic;
  var currentProgram:Dynamic;var currentBuffer=0;var currentTexture=0;var currentAlpha:Null<Bool>;
  public function new(canvas:CanvasElement,preserve:Bool,cacheState:Bool=false,shareShader:Bool=false){
@@ -16,11 +18,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
   gl=cast canvas.getContext("webgl2",{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:preserve});
   if(gl==null)throw "WebGL2 is required";
  }
- public function createTexture(width:Int,height:Int,rgba:Bytes):Int {
+ public function createTexture(width:Int,height:Int,rgba:Bytes,linear:Bool=false):Int {
   if(width<=0||height<=0||rgba.length!=width*height*4)throw "Invalid texture";
   currentTexture=0;var tex=gl.createTexture();gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D,tex);gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT,1);
   gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D,0,WebGL2RenderingContext.RGBA,width,height,0,WebGL2RenderingContext.RGBA,WebGL2RenderingContext.UNSIGNED_BYTE,new js.lib.Uint8Array(rgba.getData()));
-  gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_MIN_FILTER,WebGL2RenderingContext.NEAREST);gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_MAG_FILTER,WebGL2RenderingContext.NEAREST);
+  gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_MIN_FILTER,linear?WebGL2RenderingContext.LINEAR:WebGL2RenderingContext.NEAREST);gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_MAG_FILTER,linear?WebGL2RenderingContext.LINEAR:WebGL2RenderingContext.NEAREST);
   gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_WRAP_S,WebGL2RenderingContext.CLAMP_TO_EDGE);gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D,WebGL2RenderingContext.TEXTURE_WRAP_T,WebGL2RenderingContext.CLAMP_TO_EDGE);
   var id=next++;textures[id]=tex;return id;
  }
@@ -50,7 +52,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
  public function beginFrame(width:Int,height:Int,x:Int,y:Int,w:Int,h:Int):Void {
   if(active||width<=0||height<=0||w<=0||h<=0)throw "Invalid pass";
   active=true;currentProgram=null;currentBuffer=0;currentTexture=0;currentAlpha=null;gl.disable(WebGL2RenderingContext.SCISSOR_TEST);gl.disable(WebGL2RenderingContext.DEPTH_TEST);gl.disable(WebGL2RenderingContext.CULL_FACE);
-  gl.clearColor(.015,.025,.045,1);gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);gl.viewport(x,y,w,h);
+  if(customClear)gl.clearColor((clearColor>>>24)/255,((clearColor>>>16)&255)/255,((clearColor>>>8)&255)/255,(clearColor&255)/255);else gl.clearColor(.015,.025,.045,1);gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);gl.viewport(x,y,w,h);
  }
  public function draw(pipeline:Int,buffer:Int,texture:Int,vertices:Int,firstVertex:Int):Void {
   var p=pipelines[pipeline],b=buffers[buffer],t=textures[texture];

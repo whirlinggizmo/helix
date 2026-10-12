@@ -8,7 +8,8 @@ Reusable contracts live in `src/helix/`. Shared game/rendering code calls them i
 
 | Operation | Contract |
 | --- | --- |
-| createTexture(width,height,rgba) | Copy tightly packed RGBA8 bytes synchronously; nearest/clamp sampler; return opaque integer handle |
+| createTexture(width,height,rgba,linear=false) | Copy tightly packed RGBA8 bytes synchronously; clamp sampler, nearest unless `linear`; return opaque integer handle |
+| setClearColor(rgba) | Packed 0xRRGGBBAA used by subsequent `beginFrame` clears; default remains the original dark blue |
 | createBuffer(capacityBytes) | Transient vertex storage; capacity is fixed, multiple of 32 |
 | createPipeline(alpha) | One generated textured-color shader; fixed vertex layout; optional straight-alpha blending |
 | updateBuffer(handle,data,usedBytes) | Synchronously consume caller-owned prefix; once per buffer per frame, starting at offset zero |

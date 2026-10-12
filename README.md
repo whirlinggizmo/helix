@@ -8,7 +8,7 @@ Contracts and limits: [INTERFACE.md](docs/INTERFACE.md). Implementation choices:
 
 ## Prerequisites and versions
 
-Executed on Linux: Haxe **4.3.7**, hxcpp revision **08197b1c4aed5e3320ed859d8cf09c08b6a48bc6** (package metadata4.3.0), Python **3.12.3**, PyYAML **6.0.1**, Node **26.1.0**, CMake **3.28.3**, GCC/G++ **13.3.0**, ALSA **1.2.11**, Terser **5.44.1**, Playwright **1.64.0**, pngjs **7.0.0**. Current native builds require no SDL. Historical SDL2 **2.30.0** results are preserved under `results/archive/pre-helix/stages/03-sdl-cohort/`. Exact browser/hardware/artifact identities are retained with results.
+Executed on Linux: Haxe **4.3.7**, hxcpp revision **81df26e79b95fcbfde21b2ee233d2ba059e61002** from [robknopf/hxcpp](https://github.com/robknopf/hxcpp) (package metadata 4.3.0; native builds check this revision and fail early otherwise), Python **3.12.3**, PyYAML **6.0.1**, Node **26.1.0**, CMake **3.28.3**, GCC/G++ **13.3.0**, ALSA **1.2.11**, Terser **5.44.1**, Playwright **1.64.0**, pngjs **7.0.0**. That fork revision fixes two zlib bugs: a duplicate link of zlib objects introduced in the fork, and an upstream defect (since GitHub release v4.3.106) where `haxe.zip.Uncompress.run` throws `OutsideBounds` once output exceeds 64 KB. Results recorded before 2026-10-12 12:40 used revision 08197b1c4aed5e3320ed859d8cf09c08b6a48bc6. Current native builds require no SDL. Historical SDL2 **2.30.0** results are preserved under `results/archive/pre-helix/stages/03-sdl-cohort/`. Exact browser/hardware/artifact identities are retained with results.
 
 - Sokol headers: revision **401f21f8b7039258c35fef75c11d9a8a0e616771**, vendored with license in this experiment’s `vendor/`. Builds validate the local header hashes; no neighboring experiment is required.
 - Sokol audio: same revision, vendored here with license in `vendor/`; SHA256 `e527091b2bc0c4ccbeb3f145489c0dbdbe74869247e30942c1e22bd580e2c4c7`. Dependency pins and header checks are in `dependencies.json`.
@@ -98,6 +98,35 @@ Three sequential game CPU trials per target produced median trial means of **0.2
 [FEATURE_PARITY.md](docs/FEATURE_PARITY.md) now compares the reference capabilities against our executed scope and proposes the workloads needed to challenge the interfaces/web performance. A structured Clang AST snapshot inventories **522 wgrender-c  / 834 libwgf public functions**, with commits, input hashes and working-tree state in results/references/reference-features.json. There is **no full semantic 1:1 mapping or matched test coverage** yet. Reference capability descriptions are source/document evidence, not reference tests newly run here.
 
 Proceed with the separated Haxe framework and adapters. Ogg closes the compressed-sound gate. The first mixed state-changing probe runs; its scoped P1 image/call/repetition/allocation gate is complete; proceed to UI/clipping and render-target/post passes, followed by a loading lit Racer scene with representative textures/models and the agreed optional physics module; Wits' skinning/scene breadth follows. A modern native backend and matched SDL3 comparison remain native gates. Desktop performance takes priority over executable size. A haxelib remains plausible, with dependency/licensing integration, installed-package consumption and API stabilization unfinished. Browser WebGPU, further targets, context recovery, physical controllers/audible quality, cache manifests/revalidation/eviction, large downloads, HTTPS/redirect/deadline normalization, native network audio, further audio controls, general UI/ECS and sustained GC/memory remain unproven. All changes stay inside this experiment.
+
+## Shared-workload comparison with libwgf Asteroids
+
+`examples/asteroids-parity` runs libwgf's own Asteroids game source (six Haxe files), scene file and Ogg sounds, byte-identical to libwgf commit `f87f0febf8a375f77a68d0b53f629914f58206c4`, on HeliX. A 285-line example-local `wgf` compatibility layer and 114 lines of bridge, font, renderer and launchers map the libwgf Haxe binding API onto HeliX services; no libwgf engine code is imported. The reference engine is compiled from a `git archive` of the pinned commit into experiment-owned `build/parity/` outputs, and the build verifies every workload/reviewed-engine hash in `reference.json`. Libwgf's dynamic font is replaced by an atlas baked from the same JetBrains Mono/fontstash sources at device DPI (1× and 2×, the glyphs this game draws).
+
+```console
+python3 experiments/05-hybrid-asteroids/helix.py parity build --shdc /path/to/sokol-shdc --baseline --native-baseline --reference /path/to/libwgf
+python3 experiments/05-hybrid-asteroids/helix.py parity check --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
+python3 experiments/05-hybrid-asteroids/helix.py parity measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
+python3 experiments/05-hybrid-asteroids/tools/parity-results.py summary
+python3 experiments/05-hybrid-asteroids/helix.py record --workload asteroids-parity --label "..."
+python3 experiments/05-hybrid-asteroids/helix.py serve --example asteroids-parity
+```
+
+`--baseline` needs `EMSDK` and builds the libwgf browser/Wasm baseline plus a probe build; `--native-baseline` builds libwgf native normal/audit/profile executables. Both are needed once per pinned reference. The reference checkout must be clean at the pinned commit. Checks replay `reference.autopilot` on both engines in accelerated mode, then compare every recorded frame from the common start input (game state, score, lives, wave, best, rock/bullet counts, ship/rock/bullet poses to 0.01, audio command order/settings) and require **exactly equal RGB** final images. Native compares gameplay and images; audio is compared in the browser.
+
+Executed 2026-10-12 17:47 UTC on Linux (Chromium 153 / ANGLE Vulkan, RTX 4080 Laptop GPU; native Sokol GL core), hxcpp 81df26e7:
+
+| Case | Result |
+| --- | --- |
+| Browser frames 220/300/700/2400/2500 at 800×600, seed 1; 2500 at seeds 2 and 7; 700 at 2× DPR and at 1200×700 | **Pass**: all 191–2471 compared frames agree, max pose error 0.0034, 40–158 audio commands equal in order, images identical |
+| Native frames 220/300/700/2400/2500 | **Pass**: same gameplay agreement and identical images |
+| Browser frame 10 (loading/title) | **Fail**: 1952 pixels differ (mean abs RGB 0.58); gameplay fields agree. Open |
+
+Delivery, identical per-file gzip -9 over every deployed file: **HeliX 104.4 KiB** (code+HTML 29.9, font atlas 27.9, shared sounds/scene 46.4, scenario 0.2) versus **libwgf 296.3 KiB** (JS+HTML+Wasm 249.5, of which Wasm 215.0; shared sounds/scene 46.8). Libwgf additionally ships `sounds.json` (652 B) and `CREDITS.md` (312 B, counted as code). Brotli 11: 99.4 versus 255.0 KiB. Unstripped native executables: HeliX 5.04 MiB, libwgf 3.48 MiB.
+
+Browser callback CPU (CDP animation-frame duration, normal vsync, sound on, three order-alternated trials of 600 frames): HeliX mean 0.224–0.239 ms, p95 0.407–0.438 ms; libwgf mean 0.213–0.269 ms, p95 0.376–0.449 ms. The ranges overlap; **no speed difference is established.** Native one-trial diagnostics use different callback boundaries (HeliX includes service polling; libwgf's `getFrameCost` excludes its core poll): HeliX mean 0.280 / p95 0.498 ms, libwgf mean 0.231 / p95 0.407 ms. Do not read these as a ratio.
+
+This establishes that the same game source produces identical gameplay, audio commands and images on both engines at the tested checkpoints, and a ~2.8× smaller browser delivery for HeliX. It does not establish interchangeability for other libwgf scenes: the HeliX scene loader implements the subset this file uses, and the retained actor/parent model is local to the example. Evidence: [results/runs/20261012T174722564335Z-asteroids-parity](results/runs/20261012T174722564335Z-asteroids-parity).
 
 ## HeliX layout and evidence
 

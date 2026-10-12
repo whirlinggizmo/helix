@@ -20,7 +20,8 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true');a=p.parse_args()
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if a.native:
-  env=dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_LIBRARY=(build/'native-hal/libhelix.a').as_posix(),HELIX_CODEC_LIBRARY=json.loads((build/'native-hal/codec-link.json').read_text())['library'],HXCPP_CONFIG=(build/'hxcpp_config.xml').as_posix())
+  from pins import check_hxcpp
+  check_hxcpp();env=dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_LIBRARY=(build/'native-hal/libhelix.a').as_posix(),HELIX_CODEC_LIBRARY=json.loads((build/'native-hal/codec-link.json').read_text())['library'],HXCPP_CONFIG=(build/'hxcpp_config.xml').as_posix())
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build/'services-native','-dce','full','-D','analyzer-optimize','-D','HXCPP_M64','-D','HXCPP_COMPILE_THREADS=4'],env)
  counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(build/'audio-source/fire.wav').read_bytes();vorbis=(build/'assets/sounds/fire.ogg').read_bytes();opus=(build/'audio-source/fire.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
