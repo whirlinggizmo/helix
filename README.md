@@ -13,13 +13,13 @@ src/helix/                 the framework: contracts, policy, render2d, input, au
   adapters/<service>/<provider>/           Haxe adapters; internal/ holds their C glue and externs
   profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
-examples/asteroids/         larger examples: whole games, with their own launchers, autopilot scripts and checks
-examples/blocks/
+examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
+examples/blocks/src/
 tests/                    unit (Haxe interpreter), services (both targets), native, consumer, shader checks
 tools/                    example/build/check/format/doc tools (Python, some Node)
 docs/                     CONVENTIONS, INTERFACE, DECISIONS, API_FINDINGS, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
-helix.py / Run.hx          front door for Asteroids, the tests and the services checks
+helix.py / Run.hx          front door for the tests and the services checks
 build/                    ignored: generated code, builds, caches, check output
 ```
 
@@ -29,6 +29,7 @@ Executed on Linux:
 - **Haxe 4.3.7.**
 - **hxcpp 4.3.2.** Installed on the first native build into the repository's own `build/haxelib`, so the global haxelib is untouched. `tools/pins.py` stops a native build that would resolve another version.
 - **Python 3.12** with PyYAML (`python3 -m pip install -r requirements-build.txt`).
+- **FFmpeg** with the libvorbis and libopus encoders, for the test fixtures and Asteroids' sounds.
 - **Node 26**, with Terser, Playwright and pngjs for release builds and browser checks:
   ```console
   npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
@@ -77,19 +78,15 @@ Still to come: milestones 2–6, covering gfx and 3D, pick and ui-menu. `ecs-sce
 
 ## Larger examples: Asteroids and Blocks
 
-Both are whole games. They are examples like the rest, and each brings its own regression checks.
+Both are whole games, built and developed like every other example, on HeliX's own 2D API, `Ticker` and shared launchers. Each has autopilot scripts that must end in the same game on both targets.
 
-- **Asteroids** (`examples/asteroids`): menus, flight, splitting rocks, waves, Ogg sound, keyboard/pointer/gamepad. Its checks compare browser and native images and replay an autopilot script on both.
-  ```console
-  python3 helix.py build all --shdc /path/to/sokol-shdc
-  python3 helix.py serve                          # http://127.0.0.1:8050/
-  python3 helix.py check --browser /path/to/chromium --display :1 --xauthority ~/.Xauthority
-  ```
-- **Blocks** (`examples/blocks`): falling blocks on HeliX's own 2D API, with keyboard, gamepad and touch. Its autopilot must end in the same game on both targets.
-  ```console
-  python3 tools/blocks.py dev --shdc /path/to/sokol-shdc
-  python3 tools/blocks.py autopilot --browser /path/to/chromium --display :1 --xauthority ~/.Xauthority
-  ```
+- **Asteroids** (`examples/asteroids`): menus, flight, splitting rocks, waves, Ogg sound, keyboard/pointer/gamepad, letterboxed with a camera viewport area.
+- **Blocks** (`examples/blocks`): falling blocks, with keyboard, gamepad and touch.
+
+```console
+python3 tools/example.py asteroids dev
+python3 tools/example.py blocks autopilot --browser /path/to/chromium --shdc /path/to/sokol-shdc
+```
 
 ## Checks
 
@@ -102,8 +99,9 @@ python3 helix.py test --native --shdc /path/to/sokol-shdc
 python3 helix.py services --browser /path/to/chromium --native
 ```
 
-- **Unit tests** run under the Haxe interpreter: input, Blocks, the Asteroids simulation, host and identity.
+- **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, Blocks and the Asteroids simulation.
 - **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures.
+- **Autopilot** (`tools/example.py <name> autopilot`) replays an example's scripts in a headless browser and natively, and requires the same final game.
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
 ## Documents

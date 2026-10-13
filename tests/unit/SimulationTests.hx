@@ -4,8 +4,6 @@ import helix.input.Key;
 import helix.input.PadButton;
 import helix.input.PadAxis;
 import helix.debug.Autopilot;
-import helix.audio.Wav;
-import helix.assets.AssetPath;
 
 class SimulationTests {
 	static var checks = 0;
@@ -131,29 +129,23 @@ class SimulationTests {
 		var menu = new Menu();
 		state.pointerEvent(500, 416 * 700 / 720., true);
 		c.read(state);
-		menu.update(g, c, state, 1000, 700);
+		var camera = new helix.render2d.Camera2D();
+		Field.view(camera, 1000, 700);
+		menu.update(g, c, state, camera);
 		g.step(c);
 		check(g.state == "playing", "Letterboxed pointer menu activation");
-		var wav = sys.io.File.getBytes("build/audio-source/fire.wav"),
-			pcm = Wav.decode(wav);
-		check(pcm.length == (wav.length - 44) * 2, "WAV decoding produces float32 PCM");
-		var invalid = wav.sub(0, wav.length);
-		invalid.setInt32(24, 22050);
-		rejects(() -> Wav.decode(invalid), "Unsupported rate rejected");
-		rejects(() -> Wav.decode(wav.sub(0, wav.length - 1)), "Truncated WAV rejected");
-		check(AssetPath.valid("sounds/fire.wav") && !AssetPath.valid("../secret") && !AssetPath.valid("/tmp/file") && !AssetPath.valid("https://host/file"),
-			"Assets use bounded packaged paths");
 		for (name in ["smoke", "playthrough"]) {
 			var pilot = new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/" + name + ".json"));
 			g = new Game(pilot.getSeed());
 			menu = new Menu();
+			Field.view(camera, 800, 600);
 			c = new Controls();
 			for (_ in 0...15000) {
 				var source = pilot.advance(g.probe);
 				if (pilot.isDone())
 					break;
 				c.read(source);
-				menu.update(g, c, source, 800, 600);
+				menu.update(g, c, source, camera);
 				g.step(c);
 				source.consume();
 			}

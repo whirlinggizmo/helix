@@ -1,4 +1,5 @@
 import helix.input.IInput;
+import helix.render2d.Camera2D;
 
 /** Small shared game menu. Hit testing and focus are not adapter responsibilities. */
 class Menu {
@@ -9,7 +10,7 @@ class Menu {
 
 	public function new() {}
 
-	public function update(game:Game, controls:Controls, input:IInput, width:Int, height:Int):Void {
+	public function update(game:Game, controls:Controls, input:IInput, camera:Camera2D):Void {
 		if (previous != game.state) {
 			selected = 0;
 			previous = game.state;
@@ -20,9 +21,8 @@ class Menu {
 		var count = game.state == "gameover" ? 2 : 1;
 		if (controls.next)
 			selected = (selected + 1) % count;
-		var scale = Math.min(width / (Game.W * 1.), height / (Game.H * 1.)),
-			x = (input.getPointerX() - (width - Game.W * scale) / 2) / scale,
-			y = (input.getPointerY() - (height - Game.H * scale) / 2) / scale;
+		var x = camera.screenToWorldX(input.getPointerX()),
+			y = camera.screenToWorldY(input.getPointerY());
 		for (i in 0...count)
 			if (x >= 330 && x < 630 && y >= 390 + i * 64 && y < 442 + i * 64) {
 				hovered = i;

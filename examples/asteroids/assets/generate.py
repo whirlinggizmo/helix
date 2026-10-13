@@ -1,7 +1,5 @@
-"""Generate eight original PCM sound assets."""
+"""Asteroids' eight original sounds, synthesized and encoded as Ogg/Vorbis; tools/example.py serves them with the example."""
 import array
-import hashlib
-import json
 import math
 from pathlib import Path
 import random
@@ -35,11 +33,12 @@ def thrust_loop(rate,frames):
             .15*math.sin(2*math.pi*266*i/rate) for i in range(frames)]
 
 def generate():
-    out=ROOT/'build/assets/sounds';source=ROOT/'build/audio-source';source.mkdir(parents=True,exist_ok=True)
-    if out.exists():shutil.rmtree(out)
-    out.mkdir(parents=True,exist_ok=True)
+    """Writes the sounds as Ogg/Vorbis under build/generated/asteroids/assets/sounds, and returns that assets folder."""
+    out=ROOT/'build/generated/asteroids/assets';sounds=out/'sounds';source=ROOT/'build/generated/asteroids/wav'
+    if all((sounds/(name+'.ogg')).is_file() for name in NAMES):return out
+    sounds.mkdir(parents=True,exist_ok=True);source.mkdir(parents=True,exist_ok=True)
     encoder=shutil.which('ffmpeg')
-    if not encoder:raise RuntimeError('Install FFmpeg with libvorbis and libopus encoders; audio asset generation is offline tooling.')
+    if not encoder:raise RuntimeError('Install FFmpeg with the libvorbis encoder to make the Asteroids sounds')
     lengths=[.28,.12,.42,.27,.16,.42,.65,2.0]
     for kind,name in enumerate(NAMES):
         rate=44100;n=round(rate*lengths[kind]);data=array.array('h');rng=random.Random(730+kind)
@@ -56,13 +55,5 @@ def generate():
         if sys.byteorder!='little':data.byteswap()
         with wave.open(str(source/(name+'.wav')),'wb') as wav:
             wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(data.tobytes())
-        subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source/(name+'.wav')),'-map_metadata','-1','-c:a','libvorbis','-q:a','3','-fflags','+bitexact',str(out/(name+'.ogg'))],check=True)
-    # Opus fixture deliberately uses stereo/48 kHz to exercise channel/rate handling.
-    subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source/'fire.wav'),'-map_metadata','-1','-ar','48000','-ac','2','-c:a','libopus','-b:a','64000','-fflags','+bitexact',str(source/'fire.opus')],check=True)
-    shutil.copytree(ROOT/'examples/asteroids/autopilot',ROOT/'build/assets/autopilot',dirs_exist_ok=True)
-    manifest={name:{'codec':'Ogg/Vorbis','bytes':(out/(name+'.ogg')).stat().st_size,'sha256':hashlib.sha256((out/(name+'.ogg')).read_bytes()).hexdigest()} for name in NAMES}
-    (ROOT/'build/assets/manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    (ROOT/'build/audio-encoder.json').write_text(json.dumps({'version':subprocess.check_output([encoder,'-version'],text=True).splitlines()[0],'vorbisQuality':3,'opusFixtureBitrate':64000,'deterministicFlags':['-bitexact','-map_metadata -1','-fflags +bitexact']},indent=2)+'\n')
-    return ROOT/'build/assets'
-
-if __name__=='__main__':print(generate())
+        subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source/(name+'.wav')),'-map_metadata','-1','-c:a','libvorbis','-q:a','3','-fflags','+bitexact',str(sounds/(name+'.ogg'))],check=True)
+    return out

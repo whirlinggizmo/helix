@@ -1,0 +1,32 @@
+"""The test fixtures: a short tone as WAV, Ogg/Vorbis and Ogg/Opus, in build/fixtures (the unit and services tests read them).
+
+The WAV is 16-bit mono 44,100 Hz, 0.12 s; the Opus copy is stereo 48 kHz, to exercise channel and rate handling. FFmpeg encodes them, bit-exact."""
+import array
+import math
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import wave
+
+ROOT=Path(__file__).resolve().parents[1]
+OUT=ROOT/'build/fixtures'
+
+def generate():
+    """Writes tone.wav, tone.ogg and tone.opus when any is missing, and returns their folder."""
+    if all((OUT/f'tone.{kind}').is_file() for kind in ('wav','ogg','opus')):return OUT
+    encoder=shutil.which('ffmpeg')
+    if not encoder:raise RuntimeError('Install FFmpeg with the libvorbis and libopus encoders to make the test fixtures')
+    OUT.mkdir(parents=True,exist_ok=True)
+    rate=44100;n=round(rate*.12);data=array.array('h')
+    for i in range(n):
+        t=i/rate;data.append(round(math.sin(2*math.pi*(1000*t-2400*t*t))*(1-i/n)**2*.35*32767))
+    if sys.byteorder!='little':data.byteswap()
+    with wave.open(str(OUT/'tone.wav'),'wb') as wav:
+        wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(data.tobytes())
+    common=[encoder,'-v','error','-y','-bitexact','-i',str(OUT/'tone.wav'),'-map_metadata','-1']
+    subprocess.run(common+['-c:a','libvorbis','-q:a','3','-fflags','+bitexact',str(OUT/'tone.ogg')],check=True)
+    subprocess.run(common+['-ar','48000','-ac','2','-c:a','libopus','-b:a','64000','-fflags','+bitexact',str(OUT/'tone.opus')],check=True)
+    return OUT
+
+if __name__=='__main__':print(generate())

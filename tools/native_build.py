@@ -30,9 +30,6 @@ def tool(name):
         command=flags+['-UNDEBUG','-DHELIX_SERVICES_TEST','-DSOKOL_DUMMY_BACKEND',ROOT/'tests/native/native_services.c']+services+['-lm','-lpthread']
     elif name=='native-audio-probe':
         command=flags+['-DNDEBUG',ROOT/'tests/native/native_audio_probe.c',ADAPTERS/'audio/sokol/internal/audio.c','-lasound','-lm','-lpthread']
-    elif name=='native-graphics-call-audit':
-        # Test-only GL call interposer; excluded from native/browser delivery and all timing.
-        command=flags+['-DNDEBUG','-shared','-fPIC',ROOT/'tests/native/graphics_calls.c','-ldl'];name='libnative-graphics-call-audit.so'
     else:raise ValueError(name)
     output=TOOLS/name
     subprocess.run(list(map(str,command))+['-o',str(output)],cwd=ROOT,check=True)

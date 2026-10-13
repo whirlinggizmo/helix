@@ -1,4 +1,4 @@
-// Plays a Blocks autopilot in a headless browser against a served build and prints what the game published.
+// Plays an example's autopilot in a headless browser against its served build and prints what the example published (tools/example.py).
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
 const [browserPath,url]=process.argv.slice(2);

@@ -1,6 +1,11 @@
-"""Catalog examples (examples/<name>/App.hx): develop one under hotreload-hx, or build it for web or native.
+"""Examples: develop one under hotreload-hx, or build it for web or native.
 
-Every example shares the launchers and page in examples/shared and the files in examples/assets."""
+An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
+and page in examples/shared and the files in examples/assets. A larger example adds its autopilot/ scripts (served as assets/autopilot) and the
+files its assets/generate.py makes.
+
+autopilot builds both targets and replays each of the example's autopilot scripts on both: in a headless browser, and natively on a private
+display (tools/private_display.py), with sound off. Both must publish the same final game."""
 import argparse
 import json
 import os
@@ -33,10 +38,14 @@ def shader(shdc):
     run([shdc,'-i',SHADER,'-o',GENERATED/'sprite','-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
     generate(GENERATED/'sprite_reflection.yaml',SHADER.parent/'vertex.json',GENERATED,ROOT)
 
+def source(name):
+    """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
+    return f'examples/{name}/src' if (ROOT/f'examples/{name}/src/App.hx').is_file() else f'examples/{name}'
+
 def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
     launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
-    lines=['-cp src',f'-cp examples/{name}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/sprite2d','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
+    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/sprite2d','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}','-D HXCPP_M64','-D HXCPP_COMPILE_THREADS=4']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n')
     return path.relative_to(ROOT)
@@ -46,11 +55,21 @@ def prepare(name,shdc):
     shader(shdc);fontbake.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
     (web/'index.html').write_text((SHARED/'index.html').read_text().replace('{{name}}',name))
-    if (web/'assets').is_symlink() or (web/'assets').exists():
-        if (web/'assets').is_symlink():(web/'assets').unlink()
-        else:shutil.rmtree(web/'assets')
-    shutil.copytree(ROOT/'examples/assets',web/'assets')
+    if (web/'assets').is_symlink():(web/'assets').unlink()
+    assets(name,web/'assets')
     licenses(web)
+
+def assets(name,out):
+    """The shared files, then the example's own: its autopilot scripts and what its assets/generate.py makes."""
+    if out.exists():shutil.rmtree(out)
+    shutil.copytree(ROOT/'examples/assets',out)
+    pilots=ROOT/f'examples/{name}/autopilot'
+    if pilots.is_dir():shutil.copytree(pilots,out/'autopilot')
+    recipe=ROOT/f'examples/{name}/assets/generate.py'
+    if recipe.is_file():
+        import importlib.util
+        spec=importlib.util.spec_from_file_location(f'{name}_assets',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        shutil.copytree(module.generate(),out,dirs_exist_ok=True)
 
 def licenses(out):
     """HeliX's license, the third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
@@ -61,12 +80,63 @@ def licenses(out):
     for name,source in [('HeliX-MIT.txt','LICENSE'),('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
         shutil.copyfile(ROOT/source,target/name)
 
+def build(name,target,shdc):
+    """Builds the example for target ('web' or 'native') into build/<target>/<name>."""
+    prepare(name,shdc)
+    if target=='web':
+        run(['haxe',hxml(name,'web')])
+        terser=ROOT/'build/tools/node_modules/terser/bin/terser';js=ROOT/f'build/web/{name}/app.js'
+        if terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
+    else:
+        from pins import check_hxcpp,check_sokol
+        from native_build import env as native_env
+        check_hxcpp();check_sokol(ROOT);env=native_env(GENERATED)
+        run(['haxe',hxml(name,'native')],env)
+        out=ROOT/f'build/native/{name}/assets'
+        assets(name,out)
+        licenses(out.parent)
+
+def autopilot(name,shdc,browser):
+    """Replays every examples/<name>/autopilot script on both targets; returns the scripts whose final games differ or that failed."""
+    import functools,http.server,threading
+    from private_display import private_display
+    scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
+    if not scripts:sys.exit(f'examples/{name}/autopilot has no scripts')
+    for target in ('web','native'):build(name,target,shdc)
+    out=ROOT/f'build/results/{name}';out.mkdir(parents=True,exist_ok=True)
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self,*args):pass
+    handler=functools.partial(Quiet,directory=str(ROOT/f'build/web/{name}'))
+    server=http.server.ThreadingHTTPServer(('127.0.0.1',0),handler);threading.Thread(target=server.serve_forever,daemon=True).start()
+    failed=[]
+    try:
+        with private_display() as env:
+            for script in scripts:
+                options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
+                query='&'.join(f'{k}={v}' for k,v in options.items())
+                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True))
+                result=out/f'native-{script}';result.unlink(missing_ok=True)
+                child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
+                process=subprocess.run([str(ROOT/f'build/native/{name}/Main')],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True,timeout=300)
+                if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
+                native=json.loads(result.read_text());same=web['result']['game']==native['game'] and not web['errors']
+                (out/f'autopilot-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n')
+                print(f'{script}: same final game on both targets: {same}',flush=True)
+                if not same:failed.append(script)
+    finally:server.shutdown()
+    return failed
+
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
-    p.add_argument('--shdc');p.add_argument('--port',type=int,default=8060);a=p.parse_args()
-    if not (ROOT/f'examples/{a.name}/App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx')
-    prepare(a.name,a.shdc)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
+    p.add_argument('--shdc');p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
+    if not (ROOT/source(a.name)/'App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx or examples/{a.name}/src/App.hx')
+    if a.action=='autopilot':
+        if not a.browser:p.error('autopilot needs --browser')
+        failed=autopilot(a.name,a.shdc,a.browser)
+        if failed:sys.exit('Autopilot outcomes differ: '+', '.join(failed)+f'; see build/results/{a.name}')
+        return
     if a.action=='dev':
+        prepare(a.name,a.shdc)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
         # The dev server watches Haxe source; shader source is regenerated here, and the new GeneratedShader.hx reloads like any Haxe edit.
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),hxml(a.name,'web')],cwd=ROOT)
@@ -85,18 +155,6 @@ def main():
             try:urllib.request.urlopen(f'http://127.0.0.1:{a.port}/__hotreload_stop',timeout=5).read();server.wait(timeout=10)
             except Exception:server.terminate()
         return
-    if a.target=='web':
-        run(['haxe',hxml(a.name,'web')])
-        terser=ROOT/'build/tools/node_modules/terser/bin/terser';js=ROOT/f'build/web/{a.name}/app.js'
-        if terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
-    else:
-        from pins import check_hxcpp,check_sokol
-        from native_build import env as native_env
-        check_hxcpp();check_sokol(ROOT);env=native_env(GENERATED)
-        run(['haxe',hxml(a.name,'native')],env)
-        out=ROOT/f'build/native/{a.name}/assets'
-        if out.exists():shutil.rmtree(out)
-        shutil.copytree(ROOT/'examples/assets',out)
-        licenses(out.parent)
+    build(a.name,a.target,a.shdc)
 
 if __name__=='__main__':main()

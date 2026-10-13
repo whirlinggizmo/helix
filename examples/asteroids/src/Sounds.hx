@@ -15,7 +15,7 @@ class Sounds {
 		"thrust-v4"
 	];
 
-	public var loaded(default, null) = 0;
+	var loaded = 0;
 
 	var clips:Array<AudioClip> = [for (_ in 0...8) null];
 	var audio:AudioResources;

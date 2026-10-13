@@ -4,39 +4,36 @@ The useful package boundary is the Haxe framework API and utilities, with separa
 
 ## What exists and was tested
 
-`src/helix/` contains contracts, input accumulation, path validation, asset cache policy, cooperative callback queues, audio resource/playback lifetimes, PCM/WAV utilities and JSON autopilot. It imports no Asteroids, adapters or generated shader types. `examples/asteroids/src/` contains game/menu/renderer/atlas/sound policy. Adapters implement the same contracts; tiny target launchers select explicitly named profiles from `src/helix/profiles/` and inject `IHost`. Framework/game contain zero target conditionals. Canonical WAV validation/decoding is Haxe; Ogg/Vorbis and Opus decoding stays under IAudio: browser Web Audio or native libsndfile through a small C bridge. Sokol C supplies graphics/events/PCM delivery, while browser audio/fetch/storage stay in browser APIs. Native package consumption must supply libsndfile/codec dependencies and preserve the recorded LGPL SDK/library notices; the decoder is not shipped in browser Wasm.
+`src/helix/` contains contracts, input accumulation, path validation, asset cache policy, cooperative callback queues, audio resource/playback lifetimes, PCM/WAV utilities and JSON autopilot. It imports no Asteroids, adapters or generated shader types. Examples, Asteroids and Blocks among them, are applications on top of it: `examples/asteroids/src/` holds game, menu, drawing (through `Batch2D`) and sound policy. Adapters implement the same contracts; the shared launchers in `examples/shared/launch/` select explicitly named profiles from `src/helix/profiles/` and inject `IHost`. Framework/game contain zero target conditionals. Canonical WAV validation/decoding is Haxe; Ogg/Vorbis and Opus decoding stays under IAudio: browser Web Audio or native libsndfile through a small C bridge. Sokol C supplies graphics/events/PCM delivery, while browser audio/fetch/storage stay in browser APIs. Native package consumption must supply libsndfile/codec dependencies and preserve the recorded LGPL SDK/library notices; the decoder is not shipped in browser Wasm.
 
-`tests/consumer/PackageSmoke.hx` is a separate consumer compiled and executed with only the framework and test classpaths under the Haxe interpreter and JS/Node. It checks reusable input and autopilot behavior and type-checks the service contracts. Asteroids itself ran against both real adapters. This proves a source boundary; it does not prove installation of a packaged backend into another game. No `haxelib.json`, global dev registration, package archive or publication has been created.
+`tests/consumer/PackageSmoke.hx` is a separate consumer compiled and executed with only the framework and test classpaths under the Haxe interpreter and JS/Node. It checks reusable input and autopilot behavior and type-checks the service contracts. The examples run against both real adapters. This proves a source boundary; it does not prove installation of a packaged backend into another game. No `haxelib.json`, global dev registration, package archive or publication has been created.
 
 The first graphics contract deliberately retains one fixed vertex layout and generated shader. `GeneratedLayout`/`GeneratedShader` belong to the application build, so the current adapters need that build output. Generalizing shader injection and testing an installed-package consumer comes before a reusable backend package. Avoid expanding the API into a new general GPU framework merely to make packaging look complete.
 
 ## Build front door
 
-Use HXML for Haxe compiler settings and Python for external-tool orchestration. The checked-in `examples/asteroids/web.hxml`/`examples/asteroids/native.hxml` describe classpaths, target, DCE and analyzer settings. Python coordinates sokol-shdc, structured metadata generation, original asset generation, hxcpp (which compiles the native adapters' C with each app, against that app's generated shader), Terser and measurements. It passes argument lists, with no shell-script dependency. The [Haxe HXML documentation](https://haxe.org/manual/compiler-usage-hxml.html) describes the compiler's own configuration format.
+Use HXML for Haxe compiler settings and Python for external-tool orchestration. `tools/example.py` writes each example's HXML (classpaths, target, DCE and analyzer settings) and coordinates sokol-shdc, structured shader metadata, font baking, an example's own asset recipe, hxcpp (which compiles the native adapters' C with each app, against the generated 2D shader) and Terser. It passes argument lists, with no shell-script dependency. The [Haxe HXML documentation](https://haxe.org/manual/compiler-usage-hxml.html) describes the compiler's own configuration format.
 
 From the repository root:
 
 ```console
-python3 helix.py build all --shdc /path/to/sokol-shdc
+python3 tools/example.py asteroids dev                          # hot reload in the browser
+python3 tools/example.py asteroids build native --shdc /path/to/sokol-shdc
+python3 tools/example.py asteroids autopilot --browser /path/to/chromium
 python3 helix.py test --native --shdc /path/to/sokol-shdc
 python3 helix.py services --browser /path/to/chromium --native
-python3 helix.py audio-check --browser /path/to/chromium
-python3 helix.py serve
-python3 helix.py check --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
-python3 helix.py measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
-python3 helix.py sizes
 ```
 
-`audio-check` requires `serve` in another terminal and verifies the served build plus sustained thrust/gain/release behavior. Run it after a game rebuild. `measure` runs correctness, three CPU trials per target and autopilot sequentially, restores any authorized display override, then records sizes, all under `build/results/asteroids/`. It requires both targets. Keep timing separate from builds/service tests. `check` can run browser only. `sizes` uses existing builds and does not rebuild. Build before measuring source changes. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs. X11 checks are platform-specific test adapters.
+`helix.py test` makes the test fixtures (`tools/fixtures.py`), then runs the shader tool tests, the package smoke test, every unit test and, with `--native`, the C service tests. `services` runs the asset, storage, fetch and audio services against local HTTP fixtures. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs.
 
 An optional Haxe entry point delegates to the same Python CLI:
 
 ```console
 haxe --run Run --help
-haxe --run Run build web --shdc /path/to/sokol-shdc
+haxe --run Run test --shdc /path/to/sokol-shdc
 ```
 
-`Run.hx --help` was executed successfully. `HELIX_PYTHON` selects a Python executable; defaults are `python` on Windows and `python3` elsewhere. The launcher is outside the game/library classpaths. A future package could expose a `haxelib run` entry point through its metadata, as described in the official package guide; that integration has not been built or tested. Rewriting the orchestration in Haxe now would replace working tooling without changing runtime delivery size.
+`HELIX_PYTHON` selects a Python executable; defaults are `python` on Windows and `python3` elsewhere. The launcher is outside the game/library classpaths. A future package could expose a `haxelib run` entry point through its metadata, as described in the official package guide; that integration has not been built or tested.
 
 ## Autopilot
 
@@ -57,18 +54,11 @@ The schema is version 1, with a deterministic seed and up to 128 commands:
 }
 ```
 
-`press` lasts one simulation tick. `hold` specifies a tick count. `wait` has exactly one `equals` or numeric `atLeast` condition and a timeout; optional `keys` remain held while waiting. `assert` checks immediately without advancing time. Durations/timeouts are limited to 36000 ticks per command; unknown fields, commands, key names, duplicates and invalid bounds fail. Asteroids explicitly exposes state, score, best, lives, wave, shots, deaths and hits. Another game can supply different probes while reusing the command runner.
+`press` lasts one simulation tick. `hold` specifies a tick count. `wait` has exactly one `equals` or numeric `atLeast` condition and a timeout; optional `keys` remain held while waiting. `assert` checks immediately without advancing time. Durations/timeouts are limited to 36000 ticks per command; unknown fields, commands, key names, duplicates and invalid bounds fail. Each game exposes its own probes (Asteroids: state, score, best, lives, wave, shots, deaths and hits) while reusing the command runner.
 
-After building:
+`python3 tools/example.py <name> autopilot --browser /path/to/chromium` builds both targets and replays every script in `examples/<name>/autopilot/` in a headless browser and natively on a private display, with sound off and fast mode on. Both must publish the same final game; reports go to `build/results/<name>/`. Fast mode advances up to 120 fixed ticks per frame where the example supports it; its wall time is a correctness convenience, not a performance result.
 
-```console
-python3 helix.py autopilot all --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority
-python3 helix.py autopilot web --browser /path/to/chromium --script autopilot/smoke.json
-```
-
-The full `playthrough.json` passed on browser WebGL2 and native Sokol in 4584 simulated ticks, with identical command outcomes, final state and RGB pixels. It covers title, start, thrust/fire, game over, return to title and restart. The interpreter also exercises the same script. Fast mode advances up to 120 fixed ticks per frame; its wall time is a correctness convenience, not a performance result. These automated runs disable sound delivery; separate interactive/service checks exercise audio.
-
-Manual browser use: `?autopilot=autopilot/playthrough.json&fast=1&audio=0`. Native: `HELIX_AUTOPILOT=autopilot/playthrough.json`, `HELIX_FAST=1`, `HELIX_AUDIO=0`. `helix.py serve` makes the packaged scripts available. Direct `autopilot` never changes display settings and rejects `--awake`; `measure --awake` owns the entire override/restore lifecycle.
+Manual browser use: `?autopilot=autopilot/playthrough.json&fast=1&audio=0`. Native: `HELIX_AUTOPILOT=autopilot/playthrough.json`, `HELIX_FAST=1`, `HELIX_AUDIO=0`.
 
 ## Recommendation
 

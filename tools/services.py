@@ -14,17 +14,20 @@ import threading
 import time
 import uuid
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'build/results/asteroids'
+OUT=ROOT/'build/results/services'
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true');a=p.parse_args()
+ from fixtures import generate as fixtures_generate
+ fixtures=fixtures_generate()
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if a.native:
   from pins import check_hxcpp
   from native_build import env as native_env
-  check_hxcpp();env=native_env(build/'generated/asteroids')
+  from example import shader
+  check_hxcpp();shader(None);env=native_env(build/'generated/sprite2d')
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build/'services-native','-dce','full','-D','analyzer-optimize','-D','HXCPP_M64','-D','HXCPP_COMPILE_THREADS=4'],env)
- counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(build/'audio-source/fire.wav').read_bytes();vorbis=(build/'assets/sounds/fire.ogg').read_bytes();opus=(build/'audio-source/fire.opus').read_bytes();token=uuid.uuid4().hex
+ counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
   protocol_version='HTTP/1.1'
   def log_message(self,*args):pass

@@ -1,4 +1,5 @@
 import helix.app.BaseApp;
+import helix.app.Ticker;
 import helix.host.IHost;
 import helix.input.IInput;
 import helix.debug.Autopilot;
@@ -14,11 +15,11 @@ class App extends BaseApp {
 	var batch:Batch2D;
 	var renderer:Renderer;
 	var pilot:Autopilot;
-	var accumulator = 0.;
+	var ticker:Ticker;
 	var ticks = 0;
 	var stopped = false;
 
-	function new(host:IHost) {
+	public function new(host:IHost) {
 		super();
 		this.host = host;
 	}
@@ -26,7 +27,10 @@ class App extends BaseApp {
 	override public function init():Void {
 		var seed = Std.parseInt(host.diagnostics.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
+		host.window.setTitle("HeliX Blocks");
 		batch = new Batch2D(host.graphics);
+		ticker = new Ticker(host.input);
+		ticker.setMaxSteps(6);
 		renderer = new Renderer(batch);
 		host.diagnostics.expose(inspect);
 		var script = host.diagnostics.getOption("autopilot", "");
@@ -79,13 +83,7 @@ class App extends BaseApp {
 		camera.fit(0, 0, layout.worldWidth, layout.worldHeight);
 		if (!host.isFocused() && game.state == "playing")
 			game.state = "paused";
-		accumulator += Math.min(dt, .1);
-		var steps = 0;
-		while (accumulator >= 1 / 60 && steps < 6) {
-			step();
-			accumulator -= 1 / 60;
-			steps++;
-		}
+		ticker.advance(host.getFrameElapsed(), () -> if (!stopped) step());
 		renderer.render(game, layout, camera, ticks);
 	}
 
@@ -93,7 +91,4 @@ class App extends BaseApp {
 		batch.destroy();
 		host.graphics.shutdown();
 	}
-
-	public static function start(host:IHost):Void
-		host.run(new App(host));
 }

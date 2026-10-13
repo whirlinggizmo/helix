@@ -22,8 +22,8 @@ class ShaderMetadataTests(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(dir=ROOT / 'build')
         cls.directory = Path(cls.temp.name)
-        cls.schema = ROOT / 'examples/asteroids/shaders/vertex.json'
-        cls.metadata = cls.compile((ROOT / 'examples/asteroids/shaders/sprite.glsl').read_text(), 'baseline')
+        cls.schema = ROOT / 'src/helix/render2d/shaders/vertex.json'
+        cls.metadata = cls.compile((ROOT / 'src/helix/render2d/shaders/sprite2d.glsl').read_text(), 'baseline')
         cls.document = yaml.safe_load(cls.metadata.read_text())
 
     @classmethod
@@ -52,7 +52,7 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertNotIn('STALE', (self.metadata.parent / 'GeneratedShader.hx').read_text())
 
     def test_real_relocated_and_renamed_bindings(self):
-        source = (ROOT / 'examples/asteroids/shaders/sprite.glsl').read_text()
+        source = (ROOT / 'src/helix/render2d/shaders/sprite2d.glsl').read_text()
         source = source.replace('location=0', 'location=5').replace('location=1', 'location=3').replace('location=2', 'location=1')
         source = source.replace('binding=0) uniform texture', 'binding=4) uniform texture')
         source = source.replace('binding=0) uniform sampler', 'binding=2) uniform sampler')
@@ -98,8 +98,4 @@ class ShaderMetadataTests(unittest.TestCase):
 if __name__ == '__main__':
     (ROOT / 'build').mkdir(exist_ok=True)
     result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ShaderMetadataTests))
-    evidence = {'checks': result.testsRun, 'passed': result.wasSuccessful(),
-                'realCompilerFixture': 'Renamed position/texture/sampler; attribute slots 5/3/1, view4, sampler2',
-                'parser': 'PyYAML ' + yaml.__version__ + ' SafeLoader with duplicate-key rejection'}
-    (ROOT / 'build/results/asteroids/shader-metadata-tests.json').write_text(json.dumps(evidence, indent=2) + '\n')
     sys.exit(0 if result.wasSuccessful() else 1)

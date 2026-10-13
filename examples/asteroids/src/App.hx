@@ -1,78 +1,61 @@
+import helix.app.BaseApp;
+import helix.app.Ticker;
+import helix.debug.Autopilot;
 import helix.host.IHost;
 import helix.input.IInput;
-import helix.assets.IAssets.AssetResult;
-import helix.debug.Autopilot;
-import helix.app.BaseApp;
+import helix.render2d.Batch2D;
+import helix.render2d.Camera2D;
 
+/** Asteroids: menus, flight, splitting rocks and waves at a fixed 60 Hz, letterboxed. Options: seed, audio (0 for silence), autopilot (a
+	script under assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done). */
 class App extends BaseApp {
 	var host:IHost;
+	var batch:Batch2D;
+	var camera = new Camera2D();
 	var renderer:Renderer;
+	var ticker:Ticker;
 	var game:Game;
 	var input = new Controls();
 	var menu = new Menu();
 	var sounds:Sounds;
 	var pilot:Autopilot;
-	var started:Float;
-	var readyMs = 0.;
-	var firstFrameMs = 0.;
-	var frames = 0;
-	var replay = false;
-	var freeze = -1;
-	var measured = 600;
-	var accumulator = 0.;
-	var inputTick = 0;
-	var previous = 0.;
-	var cpu:Array<Float> = [];
-	var intervals:Array<Float> = [];
 	var audioEnabled:Bool;
-	var sim:Array<Float> = [];
-	var render:Array<Float> = [];
-	var maxSteps = 0;
-	var clampedFrames = 0;
+	var fast:Bool;
 	var stopped = false;
 	var ready = false;
 	var soundReady = false;
 	var pilotReady = true;
-	var fast = false;
 
-	function new(host:IHost) {
+	public function new(host:IHost) {
 		super();
 		this.host = host;
-		started = host.getTime();
 		audioEnabled = host.diagnostics.getOption("audio", "1") == "1";
-		replay = host.diagnostics.getOption("replay", "0") == "1";
-		freeze = number("tick", -1, -1, 10000);
-		measured = number("frames", 600, 60, 3600);
 		fast = host.diagnostics.getOption("fast", "0") == "1";
 	}
 
-	function number(name:String, fallback:Int, min:Int, max:Int):Int {
-		var value = Std.parseInt(host.diagnostics.getOption(name, Std.string(fallback)));
-		if (value == null || value < min || value > max)
-			throw 'Invalid ' + name;
-		return value;
-	}
-
 	override public function init():Void {
-		game = new Game(number("seed", 12345, 1, 2147483647));
-		renderer = new Renderer(host.graphics);
+		host.window.setTitle("HeliX Asteroids");
+		var seed = Std.parseInt(host.diagnostics.getOption("seed", "12345"));
+		game = new Game(seed == null ? 12345 : seed);
+		batch = new Batch2D(host.graphics);
+		renderer = new Renderer(batch);
+		ticker = new Ticker(host.input);
+		ticker.setMaxSteps(6);
 		host.diagnostics.expose(inspect);
 		var script = host.diagnostics.getOption("autopilot", "");
 		pilotReady = script == "";
 		if (!pilotReady)
-			host.assets.load(script, result -> {
-				switch (result) {
-					case Cancelled: throw new haxe.Exception("Autopilot load cancelled");
-					case Failed(message): throw new haxe.Exception('Autopilot load failed: ' + message);
-					case Loaded(bytes):
-						pilot = new Autopilot(bytes.toString());
-						pilotReady = true;
-						prepare();
-				}
+			host.assets.load(script, result -> switch result {
+				case Loaded(bytes):
+					pilot = new Autopilot(bytes.toString());
+					pilotReady = true;
+					prepare();
+				case Failed(message): throw 'Autopilot load failed: ' + message;
+				case Cancelled:
 			});
 		sounds = new Sounds(host.audioResources, error -> {
 			if (error != null)
-				throw new haxe.Exception('Sound load failed: ' + error);
+				throw 'Sound load failed: ' + error;
 			soundReady = true;
 			prepare();
 		});
@@ -83,58 +66,34 @@ class App extends BaseApp {
 			return;
 		if (pilot != null)
 			game = new Game(pilot.getSeed());
-		if (freeze >= 0) {
-			for (i in 0...freeze) {
-				input.replay(i);
-				game.step(input);
-			}
-			inputTick = freeze;
-		}
 		ready = true;
-		readyMs = (host.getTime() - started) * 1000;
 	}
 
 	function inspect():Dynamic
 		return {
 			ready: ready,
-			loadedSounds: sounds == null ? 0 : sounds.loaded,
 			game: game.snapshot(),
 			menu: {selected: menu.selected, hovered: menu.hovered},
 			autopilot: pilot == null ? null : pilot.getSnapshot(),
-			frames: frames,
-			inputTick: inputTick,
-			vertices: renderer.vertices,
-			draws: renderer.draws,
-			uploadBytes: renderer.uploadBytes,
-			geometryHash: renderer.geometryHash,
+			vertices: batch.getVertexCount(),
+			draws: batch.getDrawCount(),
 			width: host.getFramebufferWidth(),
 			height: host.getFramebufferHeight(),
-			pixelRatio: host.getPixelRatio(),
 			focused: host.isFocused()
 		};
 
-	static function stats(values:Array<Float>):Dynamic {
-		var sorted = values.copy();
-		sorted.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
-		var sum = 0.;
-		for (value in values)
-			sum += value;
-		return {meanMs: sum / values.length, p95Ms: sorted[Std.int(Math.ceil(values.length * .95)) - 1], maxMs: sorted[sorted.length - 1]};
-	}
-
+	/** One tick; false once the autopilot is done or the game quit. */
 	function step():Bool {
+		if (stopped)
+			return false;
 		var source:IInput = host.input;
 		if (pilot != null) {
 			source = pilot.advance(game.probe);
 			if (pilot.isDone())
 				return false;
 		}
-		if (replay && pilot == null)
-			input.replay(inputTick);
-		else {
-			input.read(source);
-			menu.update(game, input, source, host.getFramebufferWidth(), host.getFramebufferHeight());
-		}
+		input.read(source);
+		menu.update(game, input, source, camera);
 		if (input.quit && host.canQuit()) {
 			host.quit();
 			stopped = true;
@@ -143,86 +102,28 @@ class App extends BaseApp {
 		game.step(input);
 		source.consume();
 		sounds.play(game, audioEnabled, host.isFocused());
-		inputTick++;
 		return true;
-	}
-
-	function publish():Void {
-		var info = inspect();
-		info.startupMs = readyMs;
-		info.firstSubmissionMs = firstFrameMs;
-		info.host = host.diagnostics.getInfo();
-		if (freeze < 0 && pilot == null && cpu.length > 0) {
-			var sum = 0., late = 0;
-			for (value in intervals) {
-				sum += value;
-				if (value > 25)
-					late++;
-			}
-			info.phases = {cpu: stats(cpu), simulation: stats(sim), render: stats(render)};
-			info.fps = 1000 * intervals.length / sum;
-			info.latePercent = late * 100. / intervals.length;
-			info.measuredFrames = cpu.length;
-			info.warmupFrames = 60;
-			info.maxSteps = maxSteps;
-			info.clampedFrames = clampedFrames;
-		}
-		host.diagnostics.capture();
-		host.diagnostics.publish(info);
 	}
 
 	override public function frame(dt:Float):Void {
 		if (stopped || host.getFramebufferWidth() <= 0 || host.getFramebufferHeight() <= 0)
 			return;
-		if (!ready) {
-			renderer.render(game, input, host.getFramebufferWidth(), host.getFramebufferHeight(), false, menu, false);
-			if (firstFrameMs == 0)
-				firstFrameMs = (host.getTime() - started) * 1000;
-			return;
-		}
-		var began = host.getTime(), steps = 0;
-		if (freeze < 0) {
+		Field.view(camera, host.getFramebufferWidth(), host.getFramebufferHeight());
+		if (ready) {
 			if (pilot != null && fast) {
-				for (_ in 0...120) {
+				for (_ in 0...120)
 					if (!step())
 						break;
-					steps++;
-				}
-			} else if (replay) {
-				if (step())
-					steps++;
-			} else if (host.isFocused()) {
-				if (dt > .1)
-					clampedFrames++;
-				accumulator += Math.min(dt, .1);
-				while (accumulator >= 1 / 60 && steps < 6) {
-					if (!step())
-						break;
-					steps++;
-					accumulator -= 1 / 60;
-				}
-			} else {
-				accumulator = 0;
+			} else if (host.isFocused())
+				ticker.advance(host.getFrameElapsed(), () -> step());
+			else
 				sounds.play(game, false, false);
-			}
 		}
-		maxSteps = Std.int(Math.max(maxSteps, steps));
-		var simEnd = host.getTime();
-		renderer.render(game, input, host.getFramebufferWidth(), host.getFramebufferHeight(), freeze >= 0, menu);
-		var ended = host.getTime();
-		frames++;
-		if (frames == 1 && firstFrameMs == 0)
-			firstFrameMs = (ended - started) * 1000;
-		if (frames > 60 && frames <= measured + 60 && freeze < 0 && pilot == null) {
-			cpu.push((ended - began) * 1000);
-			sim.push((simEnd - began) * 1000);
-			render.push((ended - simEnd) * 1000);
-			intervals.push((began - previous) * 1000);
-		}
-		previous = began;
-		if (freeze >= 0 || pilot != null && pilot.isDone() || pilot == null && frames == measured + 60) {
-			publish();
-			if (freeze >= 0 || pilot != null || host.diagnostics.getOption("autoclose", "0") == "1") {
+		renderer.render(game, camera, menu, ready);
+		if (pilot != null && pilot.isDone()) {
+			host.diagnostics.publish(inspect());
+			pilot = null;
+			if (host.diagnostics.getOption("autoclose", "0") == "1") {
 				stopped = true;
 				host.quit();
 			}
@@ -232,11 +133,7 @@ class App extends BaseApp {
 	override public function cleanup():Void {
 		sounds.cleanup();
 		host.audio.shutdown();
-		renderer.cleanup();
-	}
-
-	public static function start(host:IHost):Void {
-		var app = new App(host);
-		host.run(app);
+		batch.destroy();
+		host.graphics.shutdown();
 	}
 }
