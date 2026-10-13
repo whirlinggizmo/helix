@@ -4,6 +4,8 @@ package helix.audio;
 class AudioPlayback {
 	var id:Int;
 	var finished = false;
+	var paused = false;
+	var stopped = false;
 	var resource:AudioResource;
 	var source:Int;
 
@@ -24,8 +26,10 @@ class AudioPlayback {
 		this.id = id;
 		this.resource = resource;
 		source = resource.getId();
-		if (id == 0)
+		if (id == 0) {
+			stopped = true;
 			end();
+		}
 	}
 
 	function end():Void {
@@ -35,18 +39,36 @@ class AudioPlayback {
 		}
 	}
 
-	/** Stops it and releases its resource reference; does nothing once finished. */
-	public function stop():Void {
-		if (!finished) {
-			resource.getBackend().stop(id);
-			end();
-		}
+	/** Playing or Paused while it lasts; then Stopped (stop(), or it never started) or Complete (it played to its end). */
+	public function getState():PlayState
+		return finished ? (stopped ? Stopped : Complete) : paused ? Paused : Playing;
+
+	/** Stops it and releases its resource reference. False once it has finished. */
+	public function stop():Bool {
+		if (finished)
+			return false;
+		resource.getBackend().stop(id);
+		stopped = true;
+		end();
+		return true;
 	}
 
-	/** Pauses it, or resumes it when paused is false; does nothing once finished. */
-	public function pause(paused = true):Void {
-		if (!finished)
-			resource.getBackend().pause(id, paused);
+	/** Pauses it where it is. False unless it's playing. */
+	public function pause():Bool {
+		if (finished || paused)
+			return false;
+		resource.getBackend().pause(id, true);
+		paused = true;
+		return true;
+	}
+
+	/** Plays on from where it was paused. False unless it's paused. */
+	public function resume():Bool {
+		if (finished || !paused)
+			return false;
+		resource.getBackend().pause(id, false);
+		paused = false;
+		return true;
 	}
 
 	/** Sets its volume, 0 to 1; does nothing once finished. Throws for a volume outside 0 to 1. */

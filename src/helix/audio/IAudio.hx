@@ -29,7 +29,9 @@ interface IAudio {
 	/** Opens source for progressive playback and completes on the host thread with a stream id; a Stored lease stays the caller's and must outlive the stream. Failed for a closed adapter or a source the adapter cannot open (natively a remote URL, a non-canonical WAV or an unsupported Ogg; in the browser a load error or no metadata within 15 seconds). */
 	function createStream(source:AudioLocation, complete:StreamResult->Void):IRequest;
 
-	/** Starts clip or stream resource at volume 0 to 1 and returns a playback id, or 0 when audio cannot play now (browser audio still locked, no free voice). Throws for an unknown resource or a volume outside 0 to 1. */
+	/** Starts clip or stream resource at volume 0 to 1 and returns a playback id, or 0 when it can't play (no free voice, a closed backend). In a
+		browser whose audio is still locked (no key press or click yet) the playback waits, and starts when audio unlocks. Throws for an unknown resource
+		or a volume outside 0 to 1. */
 	function play(resource:Int, loop:Bool = false, volume:Float = 1):Int;
 
 	/** Stops playback and frees what it holds; does nothing for an unknown or ended playback. */

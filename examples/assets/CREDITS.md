@@ -2,7 +2,12 @@
 
 The files under `examples/assets/` that HeliX didn't make, with each one's source and license. Every build copies this folder as it is, so a credit here goes with the files.
 
-No third-party assets yet. An example that adds one lists it here: the file, the work, its author, where it came from, and its license.
+| File | Work | Author | Source | License |
+| --- | --- | --- | --- | --- |
+| `music/a_hero_is_born.mp3` | "A Hero Is Born", its first 90 s | HoliznaCC0 | [Free Music Archive](https://freemusicarchive.org/music/holiznacc0/retro-gamer-soundtrack/a-hero-is-born/) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `sounds/click_004.ogg` | UI Audio | Kenney | [kenney.nl](https://kenney.nl) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+
+CC0 asks for no credit; they're credited anyway.
 
 ## Whirling Gizmo's own
 

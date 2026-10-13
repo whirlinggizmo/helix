@@ -194,9 +194,25 @@ class WebAudioAdapter implements IAudio {
 	public function play(resource:Int, loop:Bool = false, volume:Float = 1):Int {
 		if ((!clips.exists(resource) && !streams.exists(resource)) || !Math.isFinite(volume) || volume < 0 || volume > 1)
 			throw "Invalid audio playback";
-		if (!live || context == null || context.state != "running")
+		if (!live)
 			return 0;
-		var id = nextPlayback++, gain:Dynamic = context.createGain();
+		var id = nextPlayback++;
+		// Before the page's first key press or click the browser keeps audio locked: the playback waits, and poll starts it once audio runs.
+		if (context == null || context.state != "running")
+			playbacks[id] = {
+				kind: "waiting",
+				resource: resource,
+				loop: loop,
+				volume: volume,
+				paused: false
+			};
+		else
+			start(id, resource, loop, volume);
+		return id;
+	}
+
+	function start(id:Int, resource:Int, loop:Bool, volume:Float):Void {
+		var gain:Dynamic = context.createGain();
 		gain.gain.value = volume;
 		gain.connect(context.destination);
 		if (streams.exists(resource)) {
@@ -249,7 +265,6 @@ class WebAudioAdapter implements IAudio {
 			clipSource(id, v);
 		}
 		played++;
-		return id;
 	}
 
 	function finishStream(id:Int, v:Dynamic):Void {
@@ -269,7 +284,9 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null)
 			return;
-		if (v.kind == "stream")
+		if (v.kind == "waiting")
+			playbacks.remove(id);
+		else if (v.kind == "stream")
 			finishStream(id, v);
 		else {
 			playbacks.remove(id);
@@ -286,6 +303,10 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null || v.paused == paused)
 			return;
+		if (v.kind == "waiting") {
+			v.paused = paused;
+			return;
+		}
 		if (v.kind == "stream") {
 			v.paused = paused;
 			if (paused)
@@ -316,7 +337,9 @@ class WebAudioAdapter implements IAudio {
 		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
 			throw "Invalid volume";
 		var v = playbacks[id];
-		if (v != null)
+		if (v != null && v.kind == "waiting")
+			v.volume = volume;
+		else if (v != null)
 			v.gain.gain.value = volume;
 	}
 
@@ -345,8 +368,17 @@ class WebAudioAdapter implements IAudio {
 		streams.remove(id);
 	}
 
-	public function poll():Void
+	public function poll():Void {
 		queue.poll();
+		// Playbacks that waited for audio to unlock start now, paused if they were paused while they waited.
+		if (live && context != null && context.state == "running")
+			for (id in [for (p in playbacks.keys()) if (playbacks[p].kind == "waiting") p]) {
+				var v = playbacks[id];
+				start(id, v.resource, v.loop, v.volume);
+				if (v.paused)
+					pause(id, true);
+			}
+	}
 
 	public function shutdown():Void {
 		live = false;

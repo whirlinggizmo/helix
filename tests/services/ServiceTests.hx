@@ -232,7 +232,7 @@ class ServiceTests {
 				}
 				wait(.1, () -> {
 					check(!playback.isFinished(), "Paused playback remains alive");
-					playback.pause(false);
+					playback.resume();
 					wait(.05, () -> {
 						playback.stop();
 						check(!clip.isDisposed() && !secondPlayback.isFinished(), "Stopping one playback retains shared resource");
@@ -261,7 +261,7 @@ class ServiceTests {
 					case _: fail(result);
 				}
 				wait(.1, () -> {
-					playback.pause(false);
+					playback.resume();
 					wait(.1, () -> {
 						playback.stop();
 						check(stream.isDisposed(), "Stopped stream releases source lease");
@@ -335,7 +335,7 @@ class ServiceTests {
 					}
 					wait(.05, () -> {
 						check(!playback.isFinished() && !clip.isDisposed(), "Paused Ogg clip retains resource");
-						playback.pause(false);
+						playback.resume();
 						wait(.05, () -> {
 							playback.stop();
 							check(clip.isDisposed(), "Ogg clip final release");
@@ -355,7 +355,7 @@ class ServiceTests {
 					}
 					wait(.05, () -> {
 						check(!stream.isDisposed(), "Paused Ogg source lease");
-						playback.pause(false);
+						playback.resume();
 						wait(.2, () -> {
 							check(!playback.isFinished(), "Ogg stream loops beyond one duration");
 							playback.stop();
