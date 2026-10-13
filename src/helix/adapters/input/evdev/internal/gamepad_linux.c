@@ -16,6 +16,8 @@
 #define WORDS(count) (((count) + WORD_BITS - 1) / WORD_BITS)
 typedef struct {
     int device, dropped;
+    int xpad;       /* the xpad driver: X and Y report BTN_NORTH's and BTN_WEST's codes, swapped from the kernel's gamepad spec */
+    int right_on_z; /* no RX/RY: the right stick is on Z/RZ (generic HID pads) */
     dev_t node;
     char name[128];
     unsigned long keys[WORDS(KEY_CNT)], axes[WORDS(ABS_CNT)];
@@ -47,6 +49,17 @@ static int open_already(dev_t node) {
     for (int i = 0; i < HY_GAMEPADS; i++) if (pads[i].device >= 0 && pads[i].node == node) return 1;
     return 0;
 }
+/* Whether the event device's driver is driver (sysfs: /sys/class/input/<event>/device/device/driver). */
+static int driver_is(const char *event_name, const char *driver) {
+    char link[320], target[256];
+    snprintf(link, sizeof link, "/sys/class/input/%s/device/device/driver", event_name);
+    const ssize_t n = readlink(link, target, sizeof target - 1);
+    if (n <= 0) return 0;
+    target[n] = 0;
+    const char *base = strrchr(target, '/');
+    return strcmp(base ? base + 1 : target, driver) == 0;
+}
+
 /* Fill free slots with pads not yet open: a device with south and east buttons and an X/Y stick. */
 static void discover(void) {
 #ifdef HY_SERVICES_TEST
@@ -73,6 +86,8 @@ static void discover(void) {
         if (!is_pad) { close(candidate); continue; }
         pad_t *pad = &pads[slot];
         pad->device = candidate; pad->node = info.st_rdev; memcpy(pad->axes, absolute, sizeof pad->axes);
+        pad->xpad = driver_is(entry->d_name, "xpad");
+        pad->right_on_z = !bit(absolute, ABS_RX) && bit(absolute, ABS_Z) && bit(absolute, ABS_RZ);
         if (ioctl(candidate, EVIOCGNAME(sizeof pad->name), pad->name) < 0) snprintf(pad->name, sizeof pad->name, "gamepad");
         pad->name[sizeof pad->name - 1] = 0;
         if (!snapshot(pad)) reset(pad);
@@ -118,12 +133,17 @@ static int hat(const pad_t *pad, int code, int negative) {
     return bit(pad->axes, code) && (negative ? pad->ranges[code].value < 0 : pad->ranges[code].value > 0);
 }
 int hy_gamepad_button(int pad, int button) {
-    /* W3C standard order. xpad and most drivers report Xbox X as BTN_X and Y as BTN_Y, so West and North follow those names. */
-    static const unsigned codes[17] = {BTN_SOUTH, BTN_EAST, BTN_X, BTN_Y, BTN_TL, BTN_TR, 0, 0, BTN_SELECT, BTN_START,
+    /* W3C standard order, by the kernel's gamepad spec (BTN_WEST the left face button, BTN_NORTH the top); the xpad driver
+       reports Xbox X and Y with the two codes swapped. */
+    static const unsigned codes[17] = {BTN_SOUTH, BTN_EAST, BTN_WEST, BTN_NORTH, BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT, BTN_START,
         BTN_THUMBL, BTN_THUMBR, BTN_DPAD_UP, BTN_DPAD_DOWN, BTN_DPAD_LEFT, BTN_DPAD_RIGHT, BTN_MODE};
     const pad_t *p = get(pad);
     if (!p || button < 0 || button >= 17 || !codes[button]) return 0;
-    if (bit(p->keys, codes[button])) return 1;
+    unsigned code = codes[button];
+    if (p->xpad && (button == 2 || button == 3)) code = button == 2 ? BTN_NORTH : BTN_WEST;
+    if (bit(p->keys, code)) return 1;
+    /* The triggers are buttons too, as the W3C layout's 6 and 7: pressed past half way on a pad with analog triggers. */
+    if (button == 6 || button == 7) return hy_gamepad_axis(pad, button == 6 ? 4 : 5) > 0.5f;
     if (button == 12 || button == 13) return hat(p, ABS_HAT0Y, button == 12);
     if (button == 14 || button == 15) return hat(p, ABS_HAT0X, button == 14);
     return 0;
@@ -139,19 +159,24 @@ static float normalized(const pad_t *pad, int code, int signed_range) {
 float hy_gamepad_axis(int pad, int axis) {
     const pad_t *p = get(pad);
     if (!p || axis < 0 || axis > 5) return 0;
-    /* A right stick and analog triggers only where the layout is unambiguous: with RX/RY present, Z/RZ are the triggers;
-       ABS_BRAKE/ABS_GAS are triggers wherever they appear. Generic Z/RZ stick layouts give no right stick or triggers. */
+    /* The right stick on RX/RY, or on Z/RZ where a generic HID pad has no RX/RY (right_on_z). Analog triggers on ABS_BRAKE/ABS_GAS,
+       else on Z/RZ; a pad with only digital triggers reads 0 here, and its triggers as buttons 6 and 7. */
     const int dual = bit(p->axes, ABS_RX) && bit(p->axes, ABS_RY);
     switch (axis) {
         case 0: return normalized(p, ABS_X, 1);
         case 1: return normalized(p, ABS_Y, 1);
-        case 2: return dual ? normalized(p, ABS_RX, 1) : 0;
-        case 3: return dual ? normalized(p, ABS_RY, 1) : 0;
-        case 4: return bit(p->axes, ABS_BRAKE) ? normalized(p, ABS_BRAKE, 0) : dual && bit(p->axes, ABS_Z) ? normalized(p, ABS_Z, 0) : 0;
-        default: return bit(p->axes, ABS_GAS) ? normalized(p, ABS_GAS, 0) : dual && bit(p->axes, ABS_RZ) ? normalized(p, ABS_RZ, 0) : 0;
+        case 2: return dual ? normalized(p, ABS_RX, 1) : p->right_on_z ? normalized(p, ABS_Z, 1) : 0;
+        case 3: return dual ? normalized(p, ABS_RY, 1) : p->right_on_z ? normalized(p, ABS_RZ, 1) : 0;
+        case 4:
+            if (bit(p->axes, ABS_BRAKE)) return normalized(p, ABS_BRAKE, 0);
+            return !p->right_on_z && bit(p->axes, ABS_Z) ? normalized(p, ABS_Z, 0) : 0;
+        default:
+            if (bit(p->axes, ABS_GAS)) return normalized(p, ABS_GAS, 0);
+            return !p->right_on_z && bit(p->axes, ABS_RZ) ? normalized(p, ABS_RZ, 0) : 0;
     }
 }
 #ifdef HY_SERVICES_TEST
+void hy_gamepad_test_driver(int pad, int xpad, int right_on_z) { pads[pad].xpad = xpad; pads[pad].right_on_z = right_on_z; }
 void hy_gamepad_test_connect(int pad, int fd) { reset(&pads[pad]); pads[pad].device = fd; pads[pad].node = (dev_t)(pad + 1); snprintf(pads[pad].name, sizeof pads[pad].name, "test pad %d", pad); }
 void hy_gamepad_test_range(int pad, int code, int minimum, int maximum, int value) {
     if (code < 0 || code >= ABS_CNT) return;

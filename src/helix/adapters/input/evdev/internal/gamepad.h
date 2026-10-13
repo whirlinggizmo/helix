@@ -12,6 +12,7 @@ float hy_gamepad_axis(int pad, int axis);
 #ifdef HY_SERVICES_TEST
 /* Owned nonblocking fd carrying Linux input_event records, not a physical pad. */
 void hy_gamepad_test_connect(int pad, int fd);
+void hy_gamepad_test_driver(int pad, int xpad, int right_on_z);
 void hy_gamepad_test_range(int pad, int code, int minimum, int maximum, int value);
 void hy_audio_test_render(float *out, int frames, int channels);
 void hy_audio_test_setup(int rate);

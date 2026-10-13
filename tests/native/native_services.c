@@ -38,19 +38,23 @@ int main(void) {
     hy_input_push(HY_EVENT_FOCUS,0,0,0,0); CHECK(!hy_focused()); hy_input_push(HY_EVENT_FOCUS,0,1,0,0); CHECK(hy_focused()); while (hy_input_next()) {}
 
     int pipefd[2]; CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0);
-    hy_gamepad_test_connect(1,pipefd[0]);
+    hy_gamepad_test_connect(1,pipefd[0]); hy_gamepad_test_driver(1,1,0); /* xpad: X and Y report BTN_NORTH's and BTN_WEST's codes */
     hy_gamepad_test_range(1,ABS_X,-32768,32767,0); hy_gamepad_test_range(1,ABS_Y,-32768,32767,0);
     hy_gamepad_test_range(1,ABS_RX,-32768,32767,0); hy_gamepad_test_range(1,ABS_RY,-32768,32767,0);
     hy_gamepad_test_range(1,ABS_Z,0,255,0); hy_gamepad_test_range(1,ABS_RZ,0,255,0); hy_gamepad_test_range(1,ABS_HAT0X,-1,1,0); hy_gamepad_test_range(1,ABS_HAT0Y,-1,1,0);
     event(pipefd[1],EV_KEY,BTN_EAST,1); event(pipefd[1],EV_KEY,BTN_Y,1); event(pipefd[1],EV_ABS,ABS_X,-26000); event(pipefd[1],EV_ABS,ABS_RY,26000); event(pipefd[1],EV_ABS,ABS_RZ,200);
     hy_input_poll(); CHECK(!hy_pad_connected(0) && hy_pad_connected(1) && hy_pad_name(1)[0]);
     CHECK(hy_pad_button(1,1) && hy_pad_button(1,3) && !hy_pad_button(1,2) && hy_pad_axis(1,0)<-.7 && hy_pad_axis(1,3)>.7 && hy_pad_axis(1,5)>.7 && hy_pad_axis(1,4)==0);
+    hy_gamepad_test_driver(1,0,0); CHECK(hy_pad_button(1,2) && !hy_pad_button(1,3)); hy_gamepad_test_driver(1,1,0); /* by the kernel's spec, BTN_Y (BTN_WEST) is West */
     event(pipefd[1],EV_ABS,ABS_HAT0X,-1); event(pipefd[1],EV_ABS,ABS_HAT0Y,1); hy_input_poll(); CHECK(hy_pad_button(1,14) && hy_pad_button(1,13) && !hy_pad_button(1,12));
     hy_input_push(HY_EVENT_FOCUS,0,0,0,0); CHECK(!hy_pad_button(1,1) && hy_pad_axis(1,0)==0); hy_input_push(HY_EVENT_FOCUS,0,1,0,0); while (hy_input_next()) {}
     event(pipefd[1],EV_ABS,ABS_X,40000); event(pipefd[1],EV_KEY,BTN_EAST,0); hy_input_poll(); CHECK(hy_pad_axis(1,0)==1 && !hy_pad_button(1,1));
     close(pipefd[1]); hy_input_poll(); CHECK(!hy_pad_connected(1) && !hy_pad_button(1,1) && hy_pad_axis(1,5)==0);
     CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0); hy_gamepad_test_connect(0,pipefd[0]);
-    hy_gamepad_test_range(0,ABS_RZ,-32768,32767,10000); CHECK(hy_pad_axis(0,5)==0 && hy_pad_axis(0,2)==0); /* A generic Z/RZ right stick is neither a trigger nor a guess. */
+    hy_gamepad_test_range(0,ABS_RZ,0,255,200); CHECK(hy_pad_axis(0,5)>.7 && hy_pad_button(0,7) && hy_pad_axis(0,2)==0); /* RZ is the right trigger, a button past half way */
+    hy_gamepad_test_range(0,ABS_Z,-32768,32767,-32768); hy_gamepad_test_range(0,ABS_RZ,-32768,32767,10000); hy_gamepad_test_driver(0,0,1);
+    CHECK(hy_pad_axis(0,2)==-1 && hy_pad_axis(0,3)>.3 && hy_pad_axis(0,3)<.31 && hy_pad_axis(0,5)==0); hy_gamepad_test_driver(0,0,0); /* a generic HID pad's right stick on Z/RZ */
+    event(pipefd[1],EV_KEY,BTN_TL2,1); hy_input_poll(); CHECK(hy_pad_button(0,6)); event(pipefd[1],EV_KEY,BTN_TL2,0); hy_input_poll(); CHECK(!hy_pad_button(0,6)); /* digital trigger */
     hy_gamepad_test_range(0,ABS_GAS,0,1023,800); CHECK(hy_pad_axis(0,5)>.7);
     hy_gamepad_test_range(0,ABS_X,0,0,0); CHECK(hy_pad_axis(0,0)==0);
     event(pipefd[1],EV_SYN,SYN_DROPPED,0); event(pipefd[1],EV_KEY,BTN_SOUTH,1); hy_input_poll(); CHECK(!hy_pad_button(0,0));
