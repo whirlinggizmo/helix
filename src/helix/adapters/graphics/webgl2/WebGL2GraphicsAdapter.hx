@@ -19,10 +19,14 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var buffers:Map<Int, Dynamic> = [];
 	var textures:Map<Int, Dynamic> = [];
 	var pipelines:Map<Int, Dynamic> = [];
-	// The programs, by shader: sprite2d, then color3d (shared by Color3D and Lines3D). Made on first use.
-	var programs:Array<Dynamic> = [null, null];
+	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
+	var programs:Array<Dynamic> = [null, null, null];
 	var active = false;
 	var uniformData = new js.lib.Float32Array(16);
+	var fragmentData = new js.lib.Float32Array(Std.int(Lit3DLayout.fragmentUniformBytes / 4));
+
+	// Attribute slots any program uses: each draw enables its own and leaves the rest off, every divisor 0 but an instance attribute's.
+	static inline var SLOTS = 10;
 
 	/** Takes canvas's WebGL2 context, without alpha, antialiasing or stencil, with a depth buffer; preserve keeps the drawing buffer between
 		frames. Throws without WebGL2. */
@@ -73,7 +77,31 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, buffer);
 		gl.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, capacityBytes, WebGL2RenderingContext.DYNAMIC_DRAW);
 		var id = next++;
-		buffers[id] = {buffer: buffer, capacity: capacityBytes, used: 0};
+		buffers[id] = {
+			buffer: buffer,
+			capacity: capacityBytes,
+			used: 0,
+			index: false,
+			isStatic: false
+		};
+		return id;
+	}
+
+	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
+		if (bytes <= 0 || bytes % 4 != 0 || bytes > data.length)
+			throw "Invalid static buffer";
+		var target = index ? WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER : WebGL2RenderingContext.ARRAY_BUFFER;
+		var buffer = gl.createBuffer();
+		gl.bindBuffer(target, buffer);
+		gl.bufferData(target, new js.lib.Uint8Array(data.getData(), 0, bytes), WebGL2RenderingContext.STATIC_DRAW);
+		var id = next++;
+		buffers[id] = {
+			buffer: buffer,
+			capacity: bytes,
+			used: bytes,
+			index: index,
+			isStatic: true
+		};
 		return id;
 	}
 
@@ -86,24 +114,53 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	/** The framework shader's sources and attribute bindings: 0 sprite2d, 1 color3d. */
-	static function sources(index:Int):{vertex:String, fragment:String, attributes:Array<{slot:Int, name:String}>}
-		return index == 0 ? {
-			vertex: GeneratedShader.sprite2dVertex(),
-			fragment: GeneratedShader.sprite2dFragment(),
-			attributes: [
-				{slot: Sprite2DLayout.positionSlot, name: Sprite2DLayout.positionName},
-				{slot: Sprite2DLayout.uvSlot, name: Sprite2DLayout.uvName},
-				{slot: Sprite2DLayout.colorSlot, name: Sprite2DLayout.colorName}
-			]
-		} : {
-			vertex: GeneratedShader.color3dVertex(),
-			fragment: GeneratedShader.color3dFragment(),
-			attributes: [
-				{slot: Color3DLayout.positionSlot, name: Color3DLayout.positionName},
-				{slot: Color3DLayout.colorSlot, name: Color3DLayout.colorName}
-			]
+	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d. */
+	static function sources(index:Int):Dynamic {
+		if (index == 0)
+			return {
+				vertex: GeneratedShader.sprite2dVertex(),
+				fragment: GeneratedShader.sprite2dFragment(),
+				attributes: [
+					{slot: Sprite2DLayout.positionSlot, name: Sprite2DLayout.positionName},
+					{slot: Sprite2DLayout.uvSlot, name: Sprite2DLayout.uvName},
+					{slot: Sprite2DLayout.colorSlot, name: Sprite2DLayout.colorName}
+				],
+				texture: Sprite2DLayout.textureUniform,
+				vertexUniform: null,
+				fragmentUniform: null
 			};
+		if (index == 1)
+			return {
+				vertex: GeneratedShader.color3dVertex(),
+				fragment: GeneratedShader.color3dFragment(),
+				attributes: [
+					{slot: Color3DLayout.positionSlot, name: Color3DLayout.positionName},
+					{slot: Color3DLayout.colorSlot, name: Color3DLayout.colorName}
+				],
+				texture: null,
+				vertexUniform: Color3DLayout.vertexUniformName,
+				fragmentUniform: null
+			};
+		return {
+			vertex: GeneratedShader.lit3dVertex(),
+			fragment: GeneratedShader.lit3dFragment(),
+			attributes: [
+				{slot: Lit3DLayout.positionSlot, name: Lit3DLayout.positionName},
+				{slot: Lit3DLayout.normalSlot, name: Lit3DLayout.normalName},
+				{slot: Lit3DLayout.uvSlot, name: Lit3DLayout.uvName},
+				{slot: Lit3DLayout.model0Slot, name: Lit3DLayout.model0Name},
+				{slot: Lit3DLayout.model1Slot, name: Lit3DLayout.model1Name},
+				{slot: Lit3DLayout.model2Slot, name: Lit3DLayout.model2Name},
+				{slot: Lit3DLayout.normal0Slot, name: Lit3DLayout.normal0Name},
+				{slot: Lit3DLayout.normal1Slot, name: Lit3DLayout.normal1Name},
+				{slot: Lit3DLayout.normal2Slot, name: Lit3DLayout.normal2Name},
+				{slot: Lit3DLayout.tintSlot, name: Lit3DLayout.tintName}
+			],
+			texture: Lit3DLayout.textureUniform,
+			vertexUniform: Lit3DLayout.vertexUniformName,
+			fragmentUniform: Lit3DLayout.fragmentUniformName
+		};
+	}
 
 	function link(index:Int):Dynamic {
 		var source = sources(index),
@@ -112,19 +169,27 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			p = gl.createProgram();
 		gl.attachShader(p, v);
 		gl.attachShader(p, f);
-		for (attribute in source.attributes)
+		var attributes:Array<{slot:Int, name:String}> = source.attributes;
+		for (attribute in attributes)
 			gl.bindAttribLocation(p, attribute.slot, attribute.name);
 		gl.linkProgram(p);
 		gl.deleteShader(v);
 		gl.deleteShader(f);
 		if (!gl.getProgramParameter(p, WebGL2RenderingContext.LINK_STATUS))
 			throw gl.getProgramInfoLog(p);
-		var uniform = gl.getUniformLocation(p, index == 0 ? Sprite2DLayout.textureUniform : Color3DLayout.uniformName);
-		if (uniform == null)
-			throw "Missing generated uniform";
+		function location(name:String):Dynamic {
+			if (name == null)
+				return null;
+			var found = gl.getUniformLocation(p, name);
+			if (found == null)
+				throw 'Missing generated uniform $name';
+			return found;
+		}
 		return {
 			program: p,
-			uniform: uniform,
+			texture: location(source.texture),
+			vertexUniform: location(source.vertexUniform),
+			fragmentUniform: location(source.fragmentUniform),
 			vertex: source.vertex,
 			fragment: source.fragment
 		};
@@ -137,7 +202,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	}
 
 	public function createPipeline(kind:PipelineKind, alpha:Bool):Int {
-		var index = kind == Sprite2D ? 0 : 1;
+		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : 1;
 		program(index);
 		var id = next++;
 		pipelines[id] = {kind: kind, shader: index, alpha: alpha};
@@ -146,7 +211,13 @@ class WebGL2GraphicsAdapter implements IGraphics {
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		var b = buffers[handle];
-		if (!active || b == null || usedBytes < 0 || usedBytes % 4 != 0 || usedBytes > b.capacity || usedBytes > data.length)
+		if (!active
+			|| b == null
+			|| b.isStatic
+			|| usedBytes < 0
+			|| usedBytes % 4 != 0
+			|| usedBytes > b.capacity
+			|| usedBytes > data.length)
 			throw "Invalid upload";
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
 		gl.bufferSubData(WebGL2RenderingContext.ARRAY_BUFFER, 0, new js.lib.Uint8Array(data.getData(), 0, usedBytes));
@@ -172,14 +243,29 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.viewport(x, y, w, h);
 	}
 
-	function attribute(slot:Int, components:Int, stride:Int, offset:Int):Void {
+	function attribute(slot:Int, components:Int, stride:Int, offset:Int, divisor = 0):Void {
 		gl.enableVertexAttribArray(slot);
 		gl.vertexAttribPointer(slot, components, WebGL2RenderingContext.FLOAT, false, stride, offset);
+		gl.vertexAttribDivisor(slot, divisor);
 	}
+
+	function resetAttributes():Void
+		for (slot in 0...SLOTS) {
+			gl.disableVertexAttribArray(slot);
+			gl.vertexAttribDivisor(slot, 0);
+		}
+
+	function blend(alpha:Bool):Void
+		if (alpha) {
+			gl.enable(WebGL2RenderingContext.BLEND);
+			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA, WebGL2RenderingContext.ONE,
+				WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+		} else
+			gl.disable(WebGL2RenderingContext.BLEND);
 
 	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
 		var p = pipelines[pipeline], b = buffers[buffer];
-		if (!active || p == null || b == null)
+		if (!active || p == null || b == null || b.index || p.kind == Lit3D)
 			throw "Invalid draw";
 		var kind:PipelineKind = p.kind,
 			sprite = kind == Sprite2D,
@@ -191,15 +277,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| firstVertex < 0
 			|| firstVertex % group != 0
 			|| firstVertex > b.used / stride - vertices
-			|| (sprite ? t == null || uniforms != null : uniforms == null || uniforms.length != Color3DLayout.uniformBytes))
+			|| (sprite ? t == null || uniforms != null : uniforms == null || uniforms.length != Color3DLayout.vertexUniformBytes))
 			throw "Invalid draw";
 		var shader = programs[p.shader];
 		gl.useProgram(shader.program);
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
-		for (slot in 0...3)
-			gl.disableVertexAttribArray(slot);
+		resetAttributes();
+		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		if (sprite) {
-			gl.uniform1i(shader.uniform, Sprite2DLayout.textureUnit);
+			gl.uniform1i(shader.texture, Sprite2DLayout.textureUnit);
 			attribute(Sprite2DLayout.positionSlot, Sprite2DLayout.positionComponents, stride, Sprite2DLayout.positionOffset);
 			attribute(Sprite2DLayout.uvSlot, Sprite2DLayout.uvComponents, stride, Sprite2DLayout.uvOffset);
 			attribute(Sprite2DLayout.colorSlot, Sprite2DLayout.colorComponents, stride, Sprite2DLayout.colorOffset);
@@ -210,20 +296,83 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		} else {
 			for (i in 0...16)
 				uniformData[i] = uniforms.getFloat(i * 4);
-			gl.uniform4fv(shader.uniform, uniformData);
+			gl.uniform4fv(shader.vertexUniform, uniformData);
 			attribute(Color3DLayout.positionSlot, Color3DLayout.positionComponents, stride, Color3DLayout.positionOffset);
 			attribute(Color3DLayout.colorSlot, Color3DLayout.colorComponents, stride, Color3DLayout.colorOffset);
 			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 			gl.depthFunc(WebGL2RenderingContext.LEQUAL);
 			gl.depthMask(true);
 		}
-		if (p.alpha) {
-			gl.enable(WebGL2RenderingContext.BLEND);
-			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA, WebGL2RenderingContext.ONE,
-				WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
-		} else
-			gl.disable(WebGL2RenderingContext.BLEND);
+		blend(p.alpha);
 		gl.drawArrays(kind == Lines3D ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES, firstVertex, vertices);
+	}
+
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
+			vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+		var p = pipelines[pipeline],
+			v = buffers[vertices],
+			ix = buffers[indices],
+			n = buffers[instances],
+			t = textures[texture];
+		if (!active
+			|| p == null
+			|| p.kind != Lit3D
+			|| v == null
+			|| v.index
+			|| !v.isStatic
+			|| ix == null
+			|| !ix.index
+			|| n == null
+			|| n.isStatic
+			|| t == null
+			|| indexCount <= 0
+			|| indexCount % 3 != 0
+			|| indexCount * 4 > ix.used
+			|| firstInstance < 0
+			|| instanceCount <= 0
+			|| (firstInstance + instanceCount) * Lit3DLayout.instanceStride > n.used
+				|| vertexUniforms == null
+				|| vertexUniforms.length != Lit3DLayout.vertexUniformBytes
+				|| fragmentUniforms == null
+				|| fragmentUniforms.length != Lit3DLayout.fragmentUniformBytes)
+			throw "Invalid mesh draw";
+		var shader = programs[2];
+		gl.useProgram(shader.program);
+		for (i in 0...16)
+			uniformData[i] = vertexUniforms.getFloat(i * 4);
+		gl.uniform4fv(shader.vertexUniform, uniformData);
+		for (i in 0...fragmentData.length)
+			fragmentData[i] = fragmentUniforms.getFloat(i * 4);
+		gl.uniform4fv(shader.fragmentUniform, fragmentData);
+		gl.uniform1i(shader.texture, Lit3DLayout.textureUnit);
+		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.textureUnit);
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+		resetAttributes();
+		var stride = Lit3DLayout.stride,
+			record = Lit3DLayout.instanceStride,
+			base = firstInstance * record;
+		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
+		attribute(Lit3DLayout.positionSlot, Lit3DLayout.positionComponents, stride, Lit3DLayout.positionOffset);
+		attribute(Lit3DLayout.normalSlot, Lit3DLayout.normalComponents, stride, Lit3DLayout.normalOffset);
+		attribute(Lit3DLayout.uvSlot, Lit3DLayout.uvComponents, stride, Lit3DLayout.uvOffset);
+		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
+		// No base instance in WebGL2: the instance attributes start at the draw's first record instead.
+		attribute(Lit3DLayout.model0Slot, 4, record, base + Lit3DLayout.model0Offset, 1);
+		attribute(Lit3DLayout.model1Slot, 4, record, base + Lit3DLayout.model1Offset, 1);
+		attribute(Lit3DLayout.model2Slot, 4, record, base + Lit3DLayout.model2Offset, 1);
+		attribute(Lit3DLayout.normal0Slot, 4, record, base + Lit3DLayout.normal0Offset, 1);
+		attribute(Lit3DLayout.normal1Slot, 4, record, base + Lit3DLayout.normal1Offset, 1);
+		attribute(Lit3DLayout.normal2Slot, 4, record, base + Lit3DLayout.normal2Offset, 1);
+		attribute(Lit3DLayout.tintSlot, 4, record, base + Lit3DLayout.tintOffset, 1);
+		gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
+		gl.enable(WebGL2RenderingContext.DEPTH_TEST);
+		gl.depthFunc(WebGL2RenderingContext.LEQUAL);
+		gl.depthMask(true);
+		gl.enable(WebGL2RenderingContext.CULL_FACE);
+		gl.cullFace(WebGL2RenderingContext.BACK);
+		gl.frontFace(WebGL2RenderingContext.CCW);
+		blend(p.alpha);
+		gl.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, indexCount, WebGL2RenderingContext.UNSIGNED_INT, 0, instanceCount);
 	}
 
 	public function endFrame():Void {

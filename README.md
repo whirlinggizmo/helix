@@ -74,8 +74,9 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `asset-force-fetch` | ensure with a source and past the cache |
 | `quit` | quitting mid-load: shutdown runs after the frame |
 | `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
+| `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |
 
-Still to come: the rest of milestone 2 (meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: the rest of milestone 2 (materials with normal maps, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

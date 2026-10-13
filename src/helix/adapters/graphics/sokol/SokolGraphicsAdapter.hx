@@ -39,6 +39,19 @@ class SokolGraphicsAdapter implements IGraphics {
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsBridge.buffer(capacityBytes));
 
+	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
+		if (bytes <= 0 || bytes > data.length)
+			throw "Invalid static buffer";
+		return valid(GraphicsBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
+	}
+
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
+			vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, texture, pointer(vertexUniforms),
+			vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
+			throw "Invalid native mesh draw";
+	}
+
 	public function createPipeline(kind:PipelineKind, alpha:Bool):Int
 		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0));
 

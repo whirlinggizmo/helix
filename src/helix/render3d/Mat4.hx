@@ -77,6 +77,31 @@ class Mat4 {
 		return true;
 	}
 
+	/** Scale, then rotation (the unit quaternion qx, qy, qz, qw), then translation: a placement's matrix. */
+	public function setTransform(px:Float, py:Float, pz:Float, qx:Float, qy:Float, qz:Float, qw:Float, sx:Float, sy:Float, sz:Float):Void {
+		m[0] = (1 - 2 * (qy * qy + qz * qz)) * sx;
+		m[1] = 2 * (qx * qy + qz * qw) * sx;
+		m[2] = 2 * (qx * qz - qy * qw) * sx;
+		m[3] = 0;
+		m[4] = 2 * (qx * qy - qz * qw) * sy;
+		m[5] = (1 - 2 * (qx * qx + qz * qz)) * sy;
+		m[6] = 2 * (qy * qz + qx * qw) * sy;
+		m[7] = 0;
+		m[8] = 2 * (qx * qz + qy * qw) * sz;
+		m[9] = 2 * (qy * qz - qx * qw) * sz;
+		m[10] = (1 - 2 * (qx * qx + qy * qy)) * sz;
+		m[11] = 0;
+		m[12] = px;
+		m[13] = py;
+		m[14] = pz;
+		m[15] = 1;
+	}
+
+	/** Copies other into this matrix. */
+	public function setFrom(other:Mat4):Void
+		for (i in 0...16)
+			m[i] = other.m[i];
+
 	/** a * b: b applied first, then a. Either may be this matrix. */
 	public function setProduct(a:Mat4, b:Mat4):Void {
 		var r = scratch;

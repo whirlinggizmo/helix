@@ -13,10 +13,10 @@
 #include "sokol_log.h"
 #include "shaders.h"
 
-static sg_shader shaders[2];
+static sg_shader shaders[3];
 static sg_sampler sampler,linear_sampler,mip_sampler;static uint32_t linear_textures[256],mip_textures[256];
-/* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D). */
-static int pipeline_kinds[256];
+/* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D, 3 Lit3D). Per buffer slot: whether it is an index buffer. */
+static int pipeline_kinds[256],index_buffers[256];
 static int active,used[256],audit_enabled,frame_width,frame_height;
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
@@ -28,16 +28,17 @@ void helix_setup(void){
  else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}
  shaders[0]=sg_make_shader(HELIX_SPRITE2D_SHADER_DESC(sg_query_backend()));
  shaders[1]=sg_make_shader(HELIX_COLOR3D_SHADER_DESC(sg_query_backend()));
+ shaders[2]=sg_make_shader(HELIX_LIT3D_SHADER_DESC(sg_query_backend()));
  sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_NEAREST,.mag_filter=SG_FILTER_NEAREST,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  linear_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  /* Trilinear, for a linear texture with mipmaps: drawn smaller than itself without shimmering. */
  mip_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.mipmap_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  memset(linear_textures,0,sizeof linear_textures);memset(mip_textures,0,sizeof mip_textures);
- for(int i=0;i<2;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
+ for(int i=0;i<3;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
  sg_destroy_sampler(sampler);sg_destroy_sampler(linear_sampler);sg_destroy_sampler(mip_sampler);
- for(int i=0;i<2;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
+ for(int i=0;i<3;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
 /* levels mip levels, each half the last (at least 1), packed one after another in data. */
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int linear){
@@ -58,15 +59,24 @@ uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int lin
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
- if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;}return buffer.id;
+ if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;}return buffer.id;
+}
+/* An immutable vertex buffer, or an index buffer of uint32 indices, holding the bytes of data (neither write flag: immutable). */
+uint32_t helix_static_buffer(const void *data,int bytes,int index){
+ if(!data||bytes<=0||bytes%4)return 0;
+ sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.data={data,(size_t)bytes},.usage={.vertex_buffer=!index,.index_buffer=index!=0}});
+ if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=256){sg_destroy_buffer(buffer);return 0;}
+ int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;vertex_reserved[slot]=0;return buffer.id;
 }
 uint32_t helix_pipeline(int kind,int alpha){
- if(kind<0||kind>2)return 0;
+ if(kind<0||kind>3)return 0;
  const int three=kind!=0;
- sg_pipeline pipeline=sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[three],
-  .layout=three?helix_color3d_layout():helix_sprite2d_layout(),
-  .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
-  .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},.cull_mode=SG_CULLMODE_NONE,
+ /* Lit models are indexed, their back faces culled (counter-clockwise is the front, as GL's). */
+ sg_pipeline pipeline=sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[kind==3?2:three],
+  .layout=kind==3?helix_lit3d_layout():three?helix_color3d_layout():helix_sprite2d_layout(),
+  .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,.index_type=kind==3?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,
+  .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},
+  .cull_mode=kind==3?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=SG_FACEWINDING_CCW,
   .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
  pipeline_kinds[pipeline.id&0xffff]=kind;return pipeline.id;
@@ -79,7 +89,8 @@ int helix_update(uint32_t id,const void *data,int bytes){
 }
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
- active=1;frame_width=width;frame_height=height;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;memset(used,0,sizeof used);
+ active=1;frame_width=width;frame_height=height;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;
+ for(int i=0;i<256;i++)if(vertex_reserved[i])used[i]=0; /* stream buffers start each frame empty; a static one keeps its size */
  const sg_color clear={(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};
  sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=clear},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
  return 1;
@@ -88,22 +99,42 @@ int helix_viewport(int x,int y,int w,int h){
  if(!active||w<=0||h<=0)return 0;
  sg_apply_viewport(x,y,w,h,false);return 1;
 }
+static sg_sampler sampler_of(uint32_t t){return (t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler;}
 int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,const void *uniforms,int uniform_bytes){
  int slot=b&0xffff,pslot=p&0xffff;
- if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID)return 0;
+ if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
  const int kind=pipeline_kinds[pslot],stride=kind?HELIX_COLOR3D_STRIDE:HELIX_SPRITE2D_STRIDE,group=kind==2?2:3;
+ if(kind==3)return 0; /* lit models draw with helix_draw_mesh */
  if(vertices<=0||vertices%group||first_vertex<0||first_vertex%group||vertices>used[slot]/stride||first_vertex>used[slot]/stride-vertices)return 0;
  if(kind==0){
   if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
   sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_SAMPLER_SLOT]=(t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_SAMPLER_SLOT]=sampler_of(t)});
  }else{
-  if(!uniforms||uniform_bytes!=HELIX_COLOR3D_UNIFORM_BYTES)return 0;
+  if(!uniforms||uniform_bytes!=HELIX_COLOR3D_VERTEX_UNIFORM_BYTES)return 0;
   sg_apply_pipeline((sg_pipeline){p});
   sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b}});
-  sg_apply_uniforms(HELIX_COLOR3D_UNIFORM_SLOT,&(sg_range){uniforms,(size_t)uniform_bytes});
+  sg_apply_uniforms(HELIX_COLOR3D_VERTEX_UNIFORM_SLOT,&(sg_range){uniforms,(size_t)uniform_bytes});
  }
  sg_draw(first_vertex,vertices,1);return 1;
+}
+/* A lit pipeline's indexed, instanced draw: index_count indices of `indices` into `vertices`, instance_count instances from first_instance of
+   `instances`' upload this frame, the base texture, and both stages' uniforms. */
+int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,uint32_t t,
+                    const void *vs,int vs_bytes,const void *fs,int fs_bytes){
+ const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
+ if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]!=3)return 0;
+ if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
+ if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot]||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
+ if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
+    (long)(first_instance+instance_count)*HELIX_LIT3D_INSTANCE_STRIDE>used[nslot])return 0;
+ if(!vs||vs_bytes!=HELIX_LIT3D_VERTEX_UNIFORM_BYTES||!fs||fs_bytes!=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES)return 0;
+ sg_apply_pipeline((sg_pipeline){p});
+ sg_apply_bindings(&(sg_bindings){.vertex_buffers={{vertices},{instances}},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices},
+  .views[HELIX_LIT3D_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_SAMPLER_SLOT]=sampler_of(t)});
+ sg_apply_uniforms(HELIX_LIT3D_VERTEX_UNIFORM_SLOT,&(sg_range){vs,(size_t)vs_bytes});
+ sg_apply_uniforms(HELIX_LIT3D_FRAGMENT_UNIFORM_SLOT,&(sg_range){fs,(size_t)fs_bytes});
+ sg_draw(0,index_count,instance_count);return 1;
 }
 void helix_end(void){if(!active)abort();sg_end_pass();sg_commit();active=0;}
 int helix_destroy(int kind,uint32_t id){

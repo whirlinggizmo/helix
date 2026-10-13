@@ -3,21 +3,119 @@
     {
       "program": "sprite2d",
       "attributes": [
-        {"role": "position", "name": "position", "type": "vec2"},
-        {"role": "uv", "name": "uv", "type": "vec2"},
-        {"role": "color", "name": "color", "type": "vec4"}
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec2"
+        },
+        {
+          "role": "uv",
+          "name": "uv",
+          "type": "vec2"
+        },
+        {
+          "role": "color",
+          "name": "color",
+          "type": "vec4"
+        }
       ],
       "texture": true,
-      "uniformBytes": 0
+      "uniforms": []
     },
     {
       "program": "color3d",
       "attributes": [
-        {"role": "position", "name": "position", "type": "vec3"},
-        {"role": "color", "name": "color", "type": "vec4"}
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "color",
+          "name": "color",
+          "type": "vec4"
+        }
       ],
       "texture": false,
-      "uniformBytes": 64
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 64
+        }
+      ]
+    },
+    {
+      "program": "lit3d",
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "normal",
+          "name": "normal",
+          "type": "vec3"
+        },
+        {
+          "role": "uv",
+          "name": "uv",
+          "type": "vec2"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal0",
+          "name": "i_normal0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal1",
+          "name": "i_normal1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal2",
+          "name": "i_normal2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "tint",
+          "name": "i_tint",
+          "type": "vec4",
+          "instance": true
+        }
+      ],
+      "texture": true,
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 64
+        },
+        {
+          "stage": "fragment",
+          "bytes": 256
+        }
+      ]
     }
   ]
 }

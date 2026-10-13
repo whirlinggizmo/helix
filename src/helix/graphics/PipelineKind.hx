@@ -10,4 +10,9 @@ enum abstract PipelineKind(Int) {
 
 	/** Color3D's vertices and uniforms drawn as lines, two vertices each. Depth-tested and written. */
 	var Lines3D = 2;
+
+	/** Lit, textured models: Lit3DLayout's vertices from a static buffer, indexed by a static index buffer, each instance's record (its model and
+		normal matrices' rows, its tint) from a stream buffer; lit by the fragment uniforms' lights. Depth-tested and written, back faces culled
+		(counter-clockwise is the front). Drawn by IGraphics.drawMesh. */
+	var Lit3D = 3;
 }

@@ -53,14 +53,17 @@ class ShaderMetadataTests(unittest.TestCase):
         # A misleading old source file must never be chosen by a filename glob.
         (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
-        sprite, color = contracts
+        sprite, color, lit = contracts
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
-        self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms']['uniformBytes']), (28, [0, 12], 64))
-        self.assertIsNone(color['texture']); self.assertIsNone(sprite['uniforms'])
+        self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
+        self.assertIsNone(color['texture']); self.assertEqual(sprite['uniforms'], [])
+        self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (32, 112, ['vertex', 'fragment']))
+        self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         self.assertNotIn('STALE', (self.baseline / 'GeneratedShader.hx').read_text())
         header = (self.baseline / 'shaders.h').read_text()
         self.assertIn('helix_sprite2d_layout', header); self.assertIn('helix_color3d_layout', header)
-        self.assertIn('uniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text())
+        self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text())
+        self.assertIn('SG_VERTEXSTEP_PER_INSTANCE', header)
 
     def test_real_relocated_and_renamed_bindings(self):
         source = (SHADERS / 'sprite2d.glsl').read_text()
@@ -101,7 +104,7 @@ class ShaderMetadataTests(unittest.TestCase):
         with self.assertRaisesRegex(MetadataError, 'uniform blocks'): load_contract(path, self.specs['sprite2d'])
 
     def test_uniform_size_mismatch_rejected(self):
-        spec = copy.deepcopy(self.specs['color3d']); spec['uniformBytes'] = 128
+        spec = copy.deepcopy(self.specs['color3d']); spec['uniforms'][0]['bytes'] = 128
         with self.assertRaisesRegex(MetadataError, 'uniform block'): load_contract(self.baseline / 'color3d_reflection.yaml', spec)
 
     def test_missing_texture_rejected(self):

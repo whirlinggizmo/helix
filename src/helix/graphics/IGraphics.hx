@@ -10,8 +10,13 @@ interface IGraphics {
 		of 0 or less, no levels, or a level whose byte count isn't its width*height*4. */
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int;
 
-	/** Allocates a vertex buffer of capacityBytes, a positive multiple of 4, and returns its handle. Throws for another size. */
+	/** Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle.
+		Throws for another size. */
 	public function createBuffer(capacityBytes:Int):Int;
+
+	/** Makes an immutable buffer of the first bytes of data (a positive multiple of 4) and returns its handle: vertices, or with index true
+		uint32 indices (little-endian). Throws for a bad size. */
+	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int;
 
 	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle. */
 	public function createPipeline(kind:PipelineKind, alpha:Bool):Int;
@@ -31,6 +36,13 @@ interface IGraphics {
 		the pipeline's vertex layout. texture is a handle from createTexture for a Sprite2D pipeline, ignored by the others; uniforms are a Color3D or
 		Lines3D pipeline's (the view-projection matrix, column-major, 64 bytes), null for a Sprite2D one. Throws for anything invalid, before drawing. */
 	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
+
+	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
+		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline: texture is its
+		base color texture, vertexUniforms the view-projection matrix (64 bytes) and fragmentUniforms the lights and material
+		(Lit3DLayout.fragmentUniformBytes). Throws for anything invalid, before drawing. */
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
+		vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
 
 	/** Closes the frame opened by beginFrame; sokol also commits it for presentation. Throws when no frame is open. */
 	public function endFrame():Void;

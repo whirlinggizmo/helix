@@ -1,7 +1,8 @@
 """Parse sokol-shdc bare_yaml with PyYAML; generate the framework shaders' fixed ABI.
 
-shaders.json lists each program: its packed vertex attributes (order and roles), whether it samples one
-texture, and the bytes of its one vertex-stage uniform block (0 for none). Shader reflection describes inputs
+shaders.json lists each program: its packed vertex attributes (order and roles; "instance": true puts one in the
+second buffer, stepped once an instance), whether it samples one texture, and its uniform blocks (at most one a
+stage, each its bytes). Shader reflection describes inputs
 and bindings, not CPU packing, so the manifest supplies that and the reflection must agree with it.
 Unsupported shapes fail closed. No generated C/GLSL text is inspected to discover bindings or filenames.
 Every program's headers are compiled into one C file, so its stages, uniform blocks and samplers need names of
@@ -81,14 +82,16 @@ def normalize(program, spec):
         require(ident not in by_name and index not in slots, 'Duplicate attribute name or slot')
         require(attr['base_type'] == 'Float', 'Only float vertex attributes are supported')
         by_name[ident] = attr; slots.add(index)
-    packed = []; offset = 0
+    packed = []; offsets = [0, 0]
     for attribute in spec['attributes']:
         attr = by_name.get(attribute['name'])
         require(attr is not None and attr['type'] == attribute['type'], f'Vertex schema mismatch: {attribute["role"]}')
         components = COMPONENTS[attribute['type']]
-        packed.append(dict(attribute, slot=attr['slot'], components=components, offset=offset))
-        offset += components * 4
-    contract = {'program': program['name'], 'stride': offset, 'attributes': packed, 'texture': None, 'uniforms': None}
+        buffer = 1 if attribute.get('instance') else 0
+        packed.append({'role': attribute['role'], 'name': attribute['name'], 'type': attribute['type'], 'buffer': buffer, 'slot': attr['slot'],
+                       'components': components, 'offset': offsets[buffer]})
+        offsets[buffer] += components * 4
+    contract = {'program': program['name'], 'stride': offsets[0], 'instanceStride': offsets[1], 'attributes': packed, 'texture': None, 'uniforms': []}
     count = 1 if spec['texture'] else 0
     for key in ['views', 'samplers', 'texture_sampler_pairs']:
         require(isinstance(program.get(key, []), list) and len(program.get(key, [])) == count, f'Expected {count} {key} binding(s)')
@@ -111,31 +114,39 @@ def normalize(program, spec):
         contract['texture'] = {'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
                                'samplerName': sampler['name'], 'textureUnit': pair['slot'], 'textureUniform': pair['glsl_name']}
     blocks = program.get('uniform_blocks', [])
-    require(isinstance(blocks, list) and len(blocks) == (1 if spec['uniformBytes'] else 0), 'Unexpected uniform blocks')
-    if blocks:
-        block = blocks[0]
+    require(isinstance(blocks, list) and len(blocks) == len(spec['uniforms']), 'Unexpected uniform blocks')
+    for want in spec['uniforms']:
+        found = [b for b in blocks if isinstance(b, dict) and b.get('stage') == want['stage']]
+        require(len(found) == 1, f'Expected one {want["stage"]} uniform block')
+        block = found[0]
         fields(block, ['slot', 'stage', 'size', 'struct_name', 'inst_name', 'glsl_uniforms'])
-        require(block['stage'] == 'vertex' and block['size'] == spec['uniformBytes'], 'Unexpected uniform block size or stage')
+        require(block['size'] == want['bytes'], f'Unexpected uniform block size: {block["size"]}, not {want["bytes"]}')
         name(block['struct_name']); slot(block['slot'], 8)
         require(isinstance(block['glsl_uniforms'], list) and len(block['glsl_uniforms']) == 1, 'Expected one flattened uniform array')
         flat = block['glsl_uniforms'][0]
         fields(flat, ['type', 'array_count', 'offset', 'glsl_name'])
         require(flat['type'] == 'vec4' and flat['offset'] == 0 and flat['array_count'] * 16 == block['size'], 'Unexpected uniform packing')
-        contract['uniforms'] = {'uniformSlot': block['slot'], 'uniformBytes': block['size'], 'uniformBlock': block['struct_name'],
-                                'uniformName': name(flat['glsl_name'])}
+        contract['uniforms'].append({'stage': want['stage'], 'slot': block['slot'], 'bytes': block['size'], 'block': block['struct_name'],
+                                     'name': name(flat['glsl_name'])})
     return contract
 
 
 def load_spec(spec):
-    fields(spec, ['program', 'attributes', 'texture', 'uniformBytes']); name(spec['program'])
+    fields(spec, ['program', 'attributes', 'texture', 'uniforms']); name(spec['program'])
     require(isinstance(spec['attributes'], list) and spec['attributes'], 'Expected packed attributes')
     for attribute in spec['attributes']:
-        fields(attribute, ['role', 'name', 'type']); name(attribute['role']); name(attribute['name'])
+        fields(attribute, ['role', 'name', 'type'], ['instance']); name(attribute['role']); name(attribute['name'])
         require(attribute['type'] in COMPONENTS, 'Unsupported CPU vertex packing')
+        require(attribute.get('instance', False) in (True, False), 'instance is true or false')
     require(len({a['name'] for a in spec['attributes']}) == len(spec['attributes']) and
             len({a['role'] for a in spec['attributes']}) == len(spec['attributes']), 'Duplicate vertex schema names or roles')
     require(isinstance(spec['texture'], bool), 'texture is true or false')
-    require(type(spec['uniformBytes']) is int and spec['uniformBytes'] >= 0 and spec['uniformBytes'] % 16 == 0, 'uniformBytes is a multiple of 16')
+    require(isinstance(spec['uniforms'], list), 'uniforms is a list')
+    for block in spec['uniforms']:
+        fields(block, ['stage', 'bytes'])
+        require(block['stage'] in ('vertex', 'fragment') and type(block['bytes']) is int and block['bytes'] > 0 and block['bytes'] % 16 == 0,
+                'A uniform block is a stage and a positive multiple of 16 bytes')
+    require(len({b['stage'] for b in spec['uniforms']}) == len(spec['uniforms']), 'One uniform block a stage')
 
 
 def load_contract(metadata, spec):
@@ -182,8 +193,9 @@ def generate(manifest_path, output, working_dir):
             require(path.is_relative_to(output.resolve()), 'Shader source must be inside the generated directory')
             hx_shader.append(f' public static function {program}{stage.capitalize()}():String return {json.dumps(path.read_text())};')
         hx = [f'// Generated from structured shader reflection and shaders.json: the {program} program.', f'class {type_name} {{',
-              f' public static inline var stride={contract["stride"]};']
-        c += [f'#include "{program}.glsl.h"', f'#define HELIX_{upper}_SHADER_DESC {program}_shader_desc', f'#define HELIX_{upper}_STRIDE {contract["stride"]}']
+              f' public static inline var stride={contract["stride"]};', f' public static inline var instanceStride={contract["instanceStride"]};']
+        c += [f'#include "{program}.glsl.h"', f'#define HELIX_{upper}_SHADER_DESC {program}_shader_desc', f'#define HELIX_{upper}_STRIDE {contract["stride"]}',
+              f'#define HELIX_{upper}_INSTANCE_STRIDE {contract["instanceStride"]}']
         for key, value in (contract['texture'] or {}).items():
             if not key.endswith('Name'):hx.append(f' public static inline var {key}={json.dumps(value)};')
         if contract['texture']:
@@ -191,20 +203,22 @@ def generate(manifest_path, output, working_dir):
             c += [f'#define HELIX_{upper}_VIEW_SLOT {t["view"]}', f'#define HELIX_{upper}_SAMPLER_SLOT {t["sampler"]}',
                   f'_Static_assert(VIEW_{t["viewName"]} == HELIX_{upper}_VIEW_SLOT, "Shader view mismatch");',
                   f'_Static_assert(SMP_{t["samplerName"]} == HELIX_{upper}_SAMPLER_SLOT, "Shader sampler mismatch");']
-        if contract['uniforms']:
-            u = contract['uniforms']
-            hx += [f' public static inline var uniformBytes={u["uniformBytes"]};', f' public static inline var uniformName={json.dumps(u["uniformName"])};']
-            c += [f'#define HELIX_{upper}_UNIFORM_SLOT {u["uniformSlot"]}', f'#define HELIX_{upper}_UNIFORM_BYTES {u["uniformBytes"]}',
-                  f'_Static_assert(UB_{u["uniformBlock"]} == HELIX_{upper}_UNIFORM_SLOT, "Uniform block mismatch");']
+        for u in contract['uniforms']:
+            stage = u['stage']; STAGE = stage.upper()
+            hx += [f' public static inline var {stage}UniformBytes={u["bytes"]};', f' public static inline var {stage}UniformName={json.dumps(u["name"])};']
+            c += [f'#define HELIX_{upper}_{STAGE}_UNIFORM_SLOT {u["slot"]}', f'#define HELIX_{upper}_{STAGE}_UNIFORM_BYTES {u["bytes"]}',
+                  f'_Static_assert(UB_{u["block"]} == HELIX_{upper}_{STAGE}_UNIFORM_SLOT, "Uniform block mismatch");']
         c += [f'static sg_vertex_layout_state helix_{program}_layout(void) {{', ' sg_vertex_layout_state layout = {0};',
               f' layout.buffers[0].stride = HELIX_{upper}_STRIDE;']
+        if contract['instanceStride']:
+            c += [f' layout.buffers[1].stride = HELIX_{upper}_INSTANCE_STRIDE;', ' layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE;']
         for attr in contract['attributes']:
             role = attr['role']
             for suffix, value in [('Slot', attr['slot']), ('Offset', attr['offset']), ('Components', attr['components']), ('Name', attr['name'])]:
                 hx.append(f' public static inline var {role}{suffix}={json.dumps(value)};')
             c += [f' _Static_assert(ATTR_{program}_{attr["name"]} == {attr["slot"]}, "Shader attribute mismatch");',
                   f' layout.attrs[{attr["slot"]}].format = SG_VERTEXFORMAT_FLOAT{attr["components"]};',
-                  f' layout.attrs[{attr["slot"]}].offset = {attr["offset"]};']
+                  f' layout.attrs[{attr["slot"]}].offset = {attr["offset"]};', f' layout.attrs[{attr["slot"]}].buffer_index = {attr["buffer"]};']
         hx.append('}'); c += [' return layout;', '}']
         (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n')
         contracts.append(contract)

@@ -57,6 +57,18 @@ class Camera3D {
 	public function getEyeZ():Float
 		return eyeZ;
 
+	/** The target's X. */
+	public function getTargetX():Float
+		return targetX;
+
+	/** The target's Y. */
+	public function getTargetY():Float
+		return targetY;
+
+	/** The target's Z. */
+	public function getTargetZ():Float
+		return targetZ;
+
 	/** The vertical field of view in radians. */
 	public function getFovY():Float
 		return fovY;
