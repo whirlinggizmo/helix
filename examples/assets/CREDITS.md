@@ -14,3 +14,4 @@ CC0 asks for no credit; they're credited anyway.
 - `sprites/logo/wg-logo-white-alpha.png`: the Whirling Gizmo logo.
 - `textures/tiles.png`: a generated 16-pixel tile sheet (terrain, props, a coin at 42, 22), MIT.
 - `textures/tiles_normal.png`: a generated normal map of bevelled tiles, tangent space (green up), MIT.
+- `models/toy_car.glb`: a generated glTF toy car (a checkered body, a see-through cabin, four wheels, emissive headlights with a spot light each), MIT.

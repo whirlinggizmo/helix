@@ -68,6 +68,30 @@ class Textures implements IReloadable {
 		return request;
 	}
 
+	/** Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but
+		with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread. */
+	public function decode(encoded:Bytes, linear:Bool, complete:TextureLoadResult->Void):IRequest {
+		var child:IRequest = null, request:Request = null;
+		request = new Request(() -> {
+			if (child != null)
+				child.cancel();
+			complete(Cancelled);
+		});
+		if (!live) {
+			request.finish();
+			complete(Failed("Closed texture service"));
+			return request;
+		}
+		child = images.decode(encoded, decoded -> switch decoded {
+			case Decoded(width, height, rgba):
+				if (request.finish()) complete(Ready(Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear)));
+			case Failed(message):
+				if (request.finish()) complete(Failed(message));
+			case Cancelled:
+		});
+		return request;
+	}
+
 	/** Frees a texture this service loaded, and stops reloading it. */
 	public function release(texture:Texture2D):Void {
 		for (entry in loaded.copy())

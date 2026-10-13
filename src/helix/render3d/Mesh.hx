@@ -129,6 +129,33 @@ class Mesh {
 		gpu = null;
 	}
 
+	/** A mesh from arrays: positions (x, y, z each), normals (one a position, unit length; null to work them out from the triangles), texture
+		coordinates (u, v each; null for zeros), tangents (x, y, z, w each, w the bitangent's sign; null to work them out) and indices (whole
+		triangles; null for each three positions a triangle, in order). Throws for arrays that don't agree. */
+	public static function fromArrays(positions:Array<Float>, normals:Null<Array<Float>>, uvs:Null<Array<Float>>, tangents:Null<Array<Float>>,
+			indices:Null<Array<Int>>):Mesh {
+		var count = Std.int(positions.length / 3);
+		if (count == 0 || positions.length != count * 3 || normals != null && normals.length != count * 3 || uvs != null && uvs.length != count * 2
+			|| tangents != null && tangents.length != count * 4)
+			throw "Mesh arrays disagree";
+		var b = new MeshBuilder();
+		for (i in 0...count)
+			b.vertex(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], normals == null ? 0 : normals[i * 3],
+				normals == null ? 0 : normals[i * 3 + 1], normals == null ? 0 : normals[i * 3 + 2], uvs == null ? 0 : uvs[i * 2],
+				uvs == null ? 0 : uvs[i * 2 + 1]);
+		var order = indices == null ? [for (i in 0...count) i] : indices;
+		if (order.length % 3 != 0)
+			throw "Mesh indices aren't whole triangles";
+		// The file's winding is the truth here: triangles go in as given, not turned to their normals.
+		for (i in order)
+			if (i < 0 || i >= count)
+				throw "Mesh index out of range";
+		b.raw(order);
+		if (normals == null)
+			b.smoothNormals();
+		return b.build(tangents);
+	}
+
 	/** Flat in x and z, facing +y, width along x and length along z, subdivisions (0..256) more cells each way; texture coordinates span it
 		once. */
 	public static function plane(width:Float, length:Float, subdivisions = 0):Mesh {
@@ -346,6 +373,45 @@ private class MeshBuilder {
 		}
 	}
 
+	/** Triangles as given, winding and all. */
+	public function raw(order:Array<Int>):Void
+		for (i in order)
+			indices.push(i);
+
+	/** Each vertex's normal: the area-weighted sum of its triangles' normals, made unit length. */
+	public function smoothNormals():Void {
+		for (i in 0...normals.length)
+			normals[i] = 0;
+		var k = 0;
+		while (k + 2 < indices.length) {
+			var a = indices[k], b = indices[k + 1], c = indices[k + 2];
+			k += 3;
+			var ux = positions[b * 3] - positions[a * 3],
+				uy = positions[b * 3 + 1] - positions[a * 3 + 1],
+				uz = positions[b * 3 + 2] - positions[a * 3 + 2];
+			var vx = positions[c * 3] - positions[a * 3],
+				vy = positions[c * 3 + 1] - positions[a * 3 + 1],
+				vz = positions[c * 3 + 2] - positions[a * 3 + 2];
+			var nx = uy * vz - uz * vy,
+				ny = uz * vx - ux * vz,
+				nz = ux * vy - uy * vx;
+			for (v in [a, b, c]) {
+				normals[v * 3] += nx;
+				normals[v * 3 + 1] += ny;
+				normals[v * 3 + 2] += nz;
+			}
+		}
+		for (v in 0...getVertexCount()) {
+			var x = normals[v * 3],
+				y = normals[v * 3 + 1],
+				z = normals[v * 3 + 2],
+				l = Math.sqrt(x * x + y * y + z * z);
+			normals[v * 3] = l > 0 ? x / l : 0;
+			normals[v * 3 + 1] = l > 0 ? y / l : 1;
+			normals[v * 3 + 2] = l > 0 ? z / l : 0;
+		}
+	}
+
 	/** Two triangles: a, b, c and a, c, d. */
 	public function quad(a:Int, b:Int, c:Int, d:Int):Void {
 		triangle(a, b, c);
@@ -430,11 +496,12 @@ private class MeshBuilder {
 		return tangents;
 	}
 
-	/** The mesh of everything added, its tangents worked out from the triangles' positions and texture coordinates. */
-	public function build():Mesh {
+	/** The mesh of everything added, with given tangents or, without, its tangents worked out from the triangles' positions and texture
+		coordinates. */
+	public function build(?given:Array<Float>):Mesh {
 		var count = getVertexCount(),
 			data = Bytes.alloc(count * Lit3DLayout.stride),
-			tangents = tangentsOf();
+			tangents = given != null ? given : tangentsOf();
 		for (i in 0...count) {
 			var at = i * Lit3DLayout.stride;
 			data.setFloat(at + Lit3DLayout.positionOffset, positions[i * 3]);

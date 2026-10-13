@@ -22,6 +22,7 @@ class Material {
 	var normalScale = 1.;
 	var emissive = 0x000000ff;
 	var emissiveStrength = 1.;
+	var blendAlways = false;
 
 	/** White, not metallic, roughness 0.5, lit, untextured, giving off no light. */
 	public function new() {}
@@ -111,7 +112,11 @@ class Material {
 		return true;
 	}
 
-	/** Whether it is see-through: its base color's alpha is below 255. */
+	/** Whether it is see-through: drawn blended, back to front after the opaque, when set so or when its base color's alpha is below 255. */
 	public function isBlended():Bool
-		return baseColor & 255 < 255;
+		return blendAlways || baseColor & 255 < 255;
+
+	/** Draws it blended even at full alpha, as glTF's alphaMode BLEND says (its texture's alpha then shows through). */
+	public function setBlended(value:Bool):Void
+		blendAlways = value;
 }

@@ -130,6 +130,26 @@ class Render3DTests {
 		check(spot.setCone(.1, .2) && !spot.setCone(.3, .2) && !spot.setCone(.1, Math.PI / 2) && spot.getOuterCone() == .2,
 			"A spot's cones: inner <= outer < pi/2");
 		check(!spot.setIntensity(-1) && !spot.setRange(-1) && spot.getKind() == Spot, "A light refuses negative intensity and range");
+		// A glTF file read whole: the toy car (examples/assets/models/toy_car.glb).
+		var file = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.readGlb(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
+		var car = file.instantiate("car");
+		var wheel = car.find("wheel_rl"),
+			beam = car.find("headlight_l_beam"),
+			cabin = car.find("cabin");
+		check(wheel != null && wheel.getKind() == Model && wheel.getMesh().getIndexCount() > 0, "A model file's parts are found by name");
+		check(beam != null
+			&& beam.getKind() == LightNode
+			&& beam.getLight().getKind() == Spot
+			&& near(beam.getLight().getOuterCone(), .5),
+			"KHR_lights_punctual becomes lights");
+		check(cabin.getMaterial().isBlended() && file.getWarnings().length == 0, "alphaMode BLEND, and nothing the file uses is unread");
+		check(@:privateAccess file.images().length == 1, "One embedded image, the paint's");
+		var again = file.instantiate();
+		check(again.find("wheel_rl").getMesh() == wheel.getMesh() && again.find("headlight_l_beam").getLight() != beam.getLight(),
+			"Copies share meshes and materials, not lights");
+		check(!Node.group().setMatrix([1, 0, 0, 0])
+			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).getVertices().getFloat(Lit3DLayout.normalOffset + 8), 1),
+			"Missing normals are worked out (a triangle in x, y faces +z)");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

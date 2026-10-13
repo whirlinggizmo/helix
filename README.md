@@ -2,7 +2,7 @@
 
 HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
-Status: milestone 1 (the platform, 2D and services) is complete; milestone 2 (3D basics) has begun with `hello3d`. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
+Status: milestones 1 (the platform, 2D and services) and 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) are complete. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
 
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
@@ -77,8 +77,9 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
 | `lights` | directional, point and spot lights on a stage, beside an immediate grid |
+| `model` | a glTF (GLB) model loaded into nodes: parts found by name, its own lights |
 
-Still to come: the rest of milestone 2 (model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

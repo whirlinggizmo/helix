@@ -6,6 +6,7 @@ package helix.render3d;
 	matrix is worked out when a stage draws it, only after it or a node above it changed. */
 class Node {
 	var kind:NodeKind;
+	var name = "";
 	var parent:Null<Node>;
 	var children:Array<Node> = [];
 	var visible = true;
@@ -54,6 +55,27 @@ class Node {
 	/** Its kind. */
 	public function getKind():NodeKind
 		return kind;
+
+	/** Its name: a model file's node name, or what the game gave it; "" for none. */
+	public function getName():String
+		return name;
+
+	/** Names it. */
+	public function setName(value:String):Void
+		name = value;
+
+	/** The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a
+		lamp), once, and keeping the node. Never a path. */
+	public function find(name:String):Null<Node> {
+		for (child in children) {
+			if (child.name == name)
+				return child;
+			var found = child.find(name);
+			if (found != null)
+				return found;
+		}
+		return null;
+	}
 
 	/** A model's mesh; null for another kind. */
 	public function getMesh():Null<Mesh>
@@ -166,6 +188,68 @@ class Node {
 		qz = cx * cy * sz - sx * sy * cz;
 		qw = cx * cy * cz + sx * sy * sz;
 		localDirty = true;
+	}
+
+	/** Turns it by the unit quaternion x, y, z, w, relative to its parent (normalized here; the identity for a zero one). */
+	public function setQuaternion(x:Float, y:Float, z:Float, w:Float):Void {
+		var length = Math.sqrt(x * x + y * y + z * z + w * w);
+		if (length == 0) {
+			qx = qy = qz = 0;
+			qw = 1;
+		} else {
+			qx = x / length;
+			qy = y / length;
+			qz = z / length;
+			qw = w / length;
+		}
+		localDirty = true;
+	}
+
+	/** Places, turns and scales it by a matrix (16 floats, column-major) relative to its parent, taken apart into translation, rotation and
+		scale; a shear is lost. False, changing nothing, for one of the wrong length or with a zero scale. */
+	public function setMatrix(m:Array<Float>):Bool {
+		if (m.length != 16)
+			return false;
+		var ax = Math.sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2]),
+			ay = Math.sqrt(m[4] * m[4] + m[5] * m[5] + m[6] * m[6]),
+			az = Math.sqrt(m[8] * m[8] + m[9] * m[9] + m[10] * m[10]);
+		if (ax == 0 || ay == 0 || az == 0)
+			return false;
+		// A mirroring matrix: one axis negated.
+		var det = m[0] * (m[5] * m[10] - m[9] * m[6]) - m[4] * (m[1] * m[10] - m[9] * m[2]) + m[8] * (m[1] * m[6] - m[5] * m[2]);
+		if (det < 0)
+			ax = -ax;
+		px = m[12];
+		py = m[13];
+		pz = m[14];
+		sx = ax;
+		sy = ay;
+		sz = az;
+		// The rotation's columns are the axes over their scales: its quaternion (Shepperd's method).
+		var xx = m[0] / ax,
+			xy = m[1] / ax,
+			xz = m[2] / ax,
+			yx = m[4] / ay,
+			yy = m[5] / ay,
+			yz = m[6] / ay,
+			zx = m[8] / az,
+			zy = m[9] / az,
+			zz = m[10] / az;
+		var trace = xx + yy + zz;
+		if (trace > 0) {
+			var s = Math.sqrt(trace + 1) * 2;
+			setQuaternion((yz - zy) / s, (zx - xz) / s, (xy - yx) / s, s / 4);
+		} else if (xx > yy && xx > zz) {
+			var s = Math.sqrt(1 + xx - yy - zz) * 2;
+			setQuaternion(s / 4, (yx + xy) / s, (zx + xz) / s, (yz - zy) / s);
+		} else if (yy > zz) {
+			var s = Math.sqrt(1 + yy - xx - zz) * 2;
+			setQuaternion((yx + xy) / s, s / 4, (zy + yz) / s, (zx - xz) / s);
+		} else {
+			var s = Math.sqrt(1 + zz - xx - yy) * 2;
+			setQuaternion((zx + xz) / s, (zy + yz) / s, s / 4, (xy - yx) / s);
+		}
+		return true;
 	}
 
 	/** Scales it along its own x, y and z. */
