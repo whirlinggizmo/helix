@@ -1,6 +1,6 @@
 package helix.render3d;
 
-/** A perspective 3D view: an eye looking at a target, right-handed with +y up by default, seen in a viewport that is the whole framebuffer or an
+/** A 3D view, perspective or orthographic (setOrthographic): an eye looking at a target, right-handed with +y up by default, seen in a viewport that is the whole framebuffer or an
 	area of it (setViewportArea), as Camera2D's. Distances are world units; angles radians. */
 class Camera3D {
 	var eyeX = 0.;
@@ -15,6 +15,8 @@ class Camera3D {
 	var fovY = Math.PI / 4;
 	var near = .1;
 	var far = 1000.;
+	// The orthographic view's height in world units; 0 for perspective.
+	var orthographicHeight = 0.;
 	var framebufferWidth = 1;
 	var framebufferHeight = 1;
 	var viewportX = 0;
@@ -81,6 +83,23 @@ class Camera3D {
 		this.fovY = fovY;
 		this.near = near;
 		this.far = far;
+		orthographicHeight = 0;
+		return true;
+	}
+
+	/** Whether the projection is orthographic. */
+	public function isOrthographic():Bool
+		return orthographicHeight > 0;
+
+	/** An orthographic projection, with no perspective: height world units seen top to bottom (the width by the viewport's shape), near and far
+		the clip planes' distances from the eye (near may be 0 or less). setPerspective goes back. False, changing nothing, unless height > 0 and
+		near < far. */
+	public function setOrthographic(height:Float, near:Float, far:Float):Bool {
+		if (!(height > 0 && far > near))
+			return false;
+		orthographicHeight = height;
+		this.near = near;
+		this.far = far;
 		return true;
 	}
 
@@ -130,7 +149,10 @@ class Camera3D {
 
 	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call. */
 	public function getViewProjection():Mat4 {
-		projection.setPerspective(fovY, viewportWidth / viewportHeight, near, far);
+		if (orthographicHeight > 0)
+			projection.setOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
+		else
+			projection.setPerspective(fovY, viewportWidth / viewportHeight, near, far);
 		viewProjection.setProduct(projection, view);
 		return viewProjection;
 	}

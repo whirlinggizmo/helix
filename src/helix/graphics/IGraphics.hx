@@ -2,8 +2,9 @@ package helix.graphics;
 
 import haxe.io.Bytes;
 
-/** Thin resource/submission contract. No scene policy belongs in an adapter. A frame is beginFrame, then any number of viewports, uploads and
-	draws, then endFrame; whoever draws (an app, Batch2D, Batch3D) brings its own buffers and pipelines. */
+/** Thin resource/submission contract. No scene policy belongs in an adapter. A frame is any number of passes into render targets
+	(beginTargetPass to endTargetPass), then the screen's pass (beginFrame to endFrame), each with any number of viewports, uploads and draws;
+	whoever draws (an app, Batch2D, Batch3D) brings its own buffers and pipelines. */
 interface IGraphics {
 	/** Uploads an image, rows top first, and returns its handle. levels is the image then, optionally, its mipmaps, each half the size of the last
 		(at least 1; Mipmaps.build makes them for RGBA8), each format.levelBytes of its size. How it is sampled is each draw's (Sampling). Throws for a
@@ -24,12 +25,23 @@ interface IGraphics {
 	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle. */
 	public function createPipeline(kind:PipelineKind, alpha:Bool):Int;
 
-	/** Replaces a buffer's contents for this frame with the first usedBytes of data; call it between beginFrame and endFrame, at most once per buffer
-		per frame (sokol refuses it outside a frame). Throws for an unknown handle or a size out of range. */
+	/** Replaces a stream buffer's contents with the first usedBytes of data, for the draws after it; inside a pass, any number of times a frame
+		(a buffer drawn into a target and then the screen is uploaded twice). Throws outside a pass, for an unknown handle or a size out of range. */
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void;
 
-	/** Starts a frame on a width x height framebuffer: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all
-		of it. Throws when a frame is already open or for a size of 0 or less. */
+	/** Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first
+		like any other, that a target pass draws into, with a depth buffer of its own. destroyTexture frees it. Throws for a size of 0 or less. */
+	public function createRenderTarget(width:Int, height:Int):Int;
+
+	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets
+		the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
+	public function beginTargetPass(target:Int, clearColor:Int):Void;
+
+	/** Ends the pass beginTargetPass started; its target can be sampled from then on. Throws when no target pass is open. */
+	public function endTargetPass():Void;
+
+	/** Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all
+		of it. Throws inside a pass or for a size of 0 or less. */
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void;
 
 	/** Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less. */
@@ -49,7 +61,7 @@ interface IGraphics {
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
 		baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
 
-	/** Closes the frame opened by beginFrame; sokol also commits it for presentation. Throws when no frame is open. */
+	/** Ends the screen's pass and with it the frame; sokol also commits it for presentation. Throws when no screen pass is open. */
 	public function endFrame():Void;
 
 	/** Frees a handle from createTexture. Whoever created a handle destroys it, once. Throws for an unknown handle. */

@@ -18,7 +18,16 @@ static sg_shader shaders[3];
 static sg_sampler samplers[32];
 /* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D, 3 Lit3D). Per buffer slot: whether it is an index buffer. */
 static int pipeline_kinds[256],index_buffers[256];
-static int active,used[256],audit_enabled,frame_width,frame_height;
+/* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
+   target), so a target is stored top row first, as every texture is. */
+static int active,flipped,used[256],audit_enabled,frame_width,frame_height;
+/* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
+   before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
+#define MAX_RENAMES 8
+static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
+/* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A Lit3D pipeline's flipped twin (its
+   front faces clockwise), by pipeline slot. */
+static struct{sg_view color,depth;sg_image depth_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
@@ -61,8 +70,11 @@ uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int for
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
- if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;}return buffer.id;
+ if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;
+  renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return buffer.id;
 }
+/* The sokol buffer a stream buffer's draws read now: itself, or the extra its latest write went to. */
+static sg_buffer current_buffer(uint32_t id){int slot=id&0xffff;return slot<256&&renamed[slot]?extras[slot][renamed[slot]-1]:(sg_buffer){id};}
 /* An immutable vertex buffer, or an index buffer of uint32 indices, holding the bytes of data (neither write flag: immutable). */
 uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(!data||bytes<=0||bytes%4)return 0;
@@ -70,36 +82,83 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=256){sg_destroy_buffer(buffer);return 0;}
  int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;vertex_reserved[slot]=0;return buffer.id;
 }
-uint32_t helix_pipeline(int kind,int alpha){
- if(kind<0||kind>3)return 0;
+static sg_pipeline make_pipeline(int kind,int alpha,sg_face_winding winding){
  const int three=kind!=0;
- /* Lit models are indexed, their back faces culled (counter-clockwise is the front, as GL's). */
- sg_pipeline pipeline=sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[kind==3?2:three],
+ /* Lit models are indexed, their back faces culled (counter-clockwise is the front, as GL's, unless winding turns it). */
+ return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[kind==3?2:three],
   .layout=kind==3?helix_lit3d_layout():three?helix_color3d_layout():helix_sprite2d_layout(),
   .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,.index_type=kind==3?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,
   .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},
-  .cull_mode=kind==3?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=SG_FACEWINDING_CCW,
+  .cull_mode=kind==3?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=winding,
   .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
+}
+uint32_t helix_pipeline(int kind,int alpha){
+ if(kind<0||kind>3)return 0;
+ sg_pipeline pipeline=make_pipeline(kind,alpha,SG_FACEWINDING_CCW);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
+ /* A culling pipeline's twin for flipped passes. */
+ flipped_pipelines[pipeline.id&0xffff]=kind==3?make_pipeline(kind,alpha,SG_FACEWINDING_CW):(sg_pipeline){0};
  pipeline_kinds[pipeline.id&0xffff]=kind;return pipeline.id;
 }
 int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
- if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer))return 0;
+ if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!vertex_reserved[slot])return 0;
+ if(bound[slot]){
+  /* Bound since its last write: the write goes to the next extra, made the first time it's needed. */
+  if(renamed[slot]==MAX_RENAMES)return 0;
+  sg_buffer *extra=&extras[slot][renamed[slot]];
+  if(!extra->id){
+   *extra=sg_make_buffer(&(sg_buffer_desc){.size=sg_query_buffer_size(buffer),.usage={.vertex_buffer=true,.write_transient=true}});
+   if(sg_query_buffer_state(*extra)!=SG_RESOURCESTATE_VALID)return 0;
+   vertex_reserved[slot]+=(int)sg_query_buffer_size(buffer)*sg_query_buffer_info(*extra).num_slots;
+  }
+  renamed[slot]++;bound[slot]=0;
+ }
  frame_uploaded_bytes+=bytes;
- if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=buffer});used[slot]=bytes;return 1;
+ if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
 }
+/* A render target: a color image (8 bits a channel) sampled through the returned texture view, with a depth image for its passes. */
+uint32_t helix_target(int w,int h){
+ if(w<=0||h<=0||w>16384||h>16384)return 0;
+ /* The screen's formats (sokol's environment defaults), so the same pipelines draw into both. */
+ const sg_environment_defaults defaults=sg_query_desc().environment.defaults;
+ sg_image color=sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=defaults.color_format,.sample_count=1});
+ sg_image depth=sg_make_image(&(sg_image_desc){.usage.depth_stencil_attachment=true,.width=w,.height=h,.pixel_format=defaults.depth_format,.sample_count=1});
+ if(sg_query_image_state(color)!=SG_RESOURCESTATE_VALID||sg_query_image_state(depth)!=SG_RESOURCESTATE_VALID){sg_destroy_image(color);sg_destroy_image(depth);return 0;}
+ sg_view texture=sg_make_view(&(sg_view_desc){.texture.image=color});
+ int slot=texture.id&0xffff;
+ if(slot>=256){sg_destroy_view(texture);sg_destroy_image(color);sg_destroy_image(depth);return 0;}
+ targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=color});
+ targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth});
+ targets[slot].depth_image=depth;targets[slot].width=w;targets[slot].height=h;
+ return texture.id;
+}
+static sg_color color_of(uint32_t color){return (sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
+/* A pass into target, cleared to color, before the screen's: drawn flipped where the backend's origin is the bottom left (GL). */
+int helix_begin_target(uint32_t target,uint32_t color){
+ int slot=target&0xffff;
+ if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
+ active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
+ sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
+  .attachments={.colors[0]=targets[slot].color,.depth_stencil=targets[slot].depth}});
+ return 1;
+}
+int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
- active=1;frame_width=width;frame_height=height;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;
- for(int i=0;i<256;i++)if(vertex_reserved[i])used[i]=0; /* stream buffers start each frame empty; a static one keeps its size */
- const sg_color clear={(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};
- sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=clear},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
+ active=1;flipped=0;frame_width=width;frame_height=height;
+ sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
  return 1;
 }
 int helix_viewport(int x,int y,int w,int h){
  if(!active||w<=0||h<=0)return 0;
- sg_apply_viewport(x,y,w,h,false);return 1;
+ /* From the bottom left, as asked; a flipped pass's rows are upside down. */
+ sg_apply_viewport(x,flipped?frame_height-y-h:y,w,h,false);return 1;
+}
+/* A 3D kind's view-projection, its y row negated in a flipped pass. */
+static const void *view_projection(const void *uniforms,float *copy){
+ if(!flipped)return uniforms;
+ memcpy(copy,uniforms,64);copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];return copy;
 }
 /* The sampler for a Sampling value: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap. */
 static sg_sampler sampler_of(int sampling){
@@ -120,14 +179,19 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int fi
  if(vertices<=0||vertices%group||first_vertex<0||first_vertex%group||vertices>used[slot]/stride||first_vertex>used[slot]/stride-vertices)return 0;
  if(kind==0){
   if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
+  /* Its clip space's y scale: -1 in a flipped pass. */
+  const float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};
   sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(sampling)});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]=current_buffer(b),.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(sampling)});
+  sg_apply_uniforms(HELIX_SPRITE2D_VERTEX_UNIFORM_SLOT,&SG_RANGE(clip));
  }else{
   if(!uniforms||uniform_bytes!=HELIX_COLOR3D_VERTEX_UNIFORM_BYTES)return 0;
+  float copy[16];
   sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b}});
-  sg_apply_uniforms(HELIX_COLOR3D_VERTEX_UNIFORM_SLOT,&(sg_range){uniforms,(size_t)uniform_bytes});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]=current_buffer(b)});
+  sg_apply_uniforms(HELIX_COLOR3D_VERTEX_UNIFORM_SLOT,&(sg_range){view_projection(uniforms,copy),(size_t)uniform_bytes});
  }
+ bound[slot]=1;
  sg_draw(first_vertex,vertices,1);return 1;
 }
 /* A lit pipeline's indexed, instanced draw: index_count indices of `indices` into `vertices`, instance_count instances from first_instance of
@@ -142,19 +206,38 @@ int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_coun
  if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
     (long)(first_instance+instance_count)*HELIX_LIT3D_INSTANCE_STRIDE>used[nslot])return 0;
  if(!vs||vs_bytes!=HELIX_LIT3D_VERTEX_UNIFORM_BYTES||!fs||fs_bytes!=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES)return 0;
- sg_apply_pipeline((sg_pipeline){p});
- sg_apply_bindings(&(sg_bindings){.vertex_buffers={{vertices},{instances}},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices},
+ float copy[16];
+ /* Flipped, the front faces wind the other way: the pipeline's twin. */
+ sg_apply_pipeline(flipped?flipped_pipelines[pslot]:(sg_pipeline){p});
+ sg_apply_bindings(&(sg_bindings){.vertex_buffers={{vertices},current_buffer(instances)},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices},
   .views[HELIX_LIT3D_BASE_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_BASE_SAMPLER_SLOT]=sampler_of(t_sampling),
   .views[HELIX_LIT3D_NORMAL_VIEW_SLOT]={normal},.samplers[HELIX_LIT3D_NORMAL_SAMPLER_SLOT]=sampler_of(normal_sampling)});
- sg_apply_uniforms(HELIX_LIT3D_VERTEX_UNIFORM_SLOT,&(sg_range){vs,(size_t)vs_bytes});
+ sg_apply_uniforms(HELIX_LIT3D_VERTEX_UNIFORM_SLOT,&(sg_range){view_projection(vs,copy),(size_t)vs_bytes});
+ bound[nslot]=1;
  sg_apply_uniforms(HELIX_LIT3D_FRAGMENT_UNIFORM_SLOT,&(sg_range){fs,(size_t)fs_bytes});
  sg_draw(0,index_count,instance_count);return 1;
 }
-void helix_end(void){if(!active)abort();sg_end_pass();sg_commit();active=0;}
+void helix_end(void){
+ if(active!=1)abort();sg_end_pass();sg_commit();active=0;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;
+ /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
+ for(int i=0;i<256;i++)if(vertex_reserved[i]){used[i]=0;renamed[i]=bound[i]=0;}
+}
 int helix_destroy(int kind,uint32_t id){
- if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){sg_destroy_buffer((sg_buffer){id});if((id&0xffff)<256)vertex_reserved[id&0xffff]=0;return 1;}
- if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){sg_image image=sg_query_view_image((sg_view){id});sg_destroy_view((sg_view){id});sg_destroy_image(image);return 1;}
- if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){sg_destroy_pipeline((sg_pipeline){id});return 1;}return 0;
+ int slot=id&0xffff;
+ if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){
+  sg_destroy_buffer((sg_buffer){id});
+  if(slot<256){vertex_reserved[slot]=0;for(int i=0;i<MAX_RENAMES;i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);memset(extras[slot],0,sizeof extras[slot]);}
+  return 1;
+ }
+ if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){
+  sg_image image=sg_query_view_image((sg_view){id});sg_destroy_view((sg_view){id});sg_destroy_image(image);
+  if(slot<256&&targets[slot].color.id){sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);memset(&targets[slot],0,sizeof targets[slot]);}
+  return 1;
+ }
+ if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){
+  sg_destroy_pipeline((sg_pipeline){id});if(slot<256&&flipped_pipelines[slot].id){sg_destroy_pipeline(flipped_pipelines[slot]);flipped_pipelines[slot].id=0;}return 1;
+ }
+ return 0;
 }
 void helix_capture(const char *path){
  int w=sapp_width(),h=sapp_height();size_t row=(size_t)w*3;unsigned char *pixels=malloc(row*h);FILE *f=fopen(path,"wb");if(!pixels||!f)abort();

@@ -1,10 +1,14 @@
 @vs sprite2d_vs
+// The adapter's: clip space's x and y scales (y is -1 in a pass drawn flipped, into a render target on GL).
+layout(binding=0) uniform sprite2d_params {
+    vec4 clip;
+};
 layout(location=0) in vec2 position;
 layout(location=1) in vec2 uv;
 layout(location=2) in vec4 color;
 out vec2 texcoord;
 out vec4 tint;
-void main(){gl_Position=vec4(position,0.0,1.0);texcoord=uv;tint=color;}
+void main(){gl_Position=vec4(position*clip.xy,0.0,1.0);texcoord=uv;tint=color;}
 @end
 @fs sprite2d_fs
 layout(binding=0) uniform texture2D atlas;

@@ -39,6 +39,13 @@ class CountingGraphics implements IGraphics {
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
 		uploaded = data.sub(0, usedBytes);
 
+	public function createRenderTarget(width:Int, height:Int):Int
+		return next++;
+
+	public function beginTargetPass(target:Int, clearColor:Int):Void {}
+
+	public function endTargetPass():Void {}
+
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		draws = [];
 		viewports = [];

@@ -65,6 +65,17 @@ class SokolGraphicsAdapter implements IGraphics {
 			throw "Invalid native upload";
 	}
 
+	public function createRenderTarget(width:Int, height:Int):Int
+		return valid(GraphicsBridge.target(width, height));
+
+	public function beginTargetPass(target:Int, clearColor:Int):Void
+		if (GraphicsBridge.beginTarget(target, clearColor) != 1)
+			throw "Invalid native target pass";
+
+	public function endTargetPass():Void
+		if (GraphicsBridge.endTarget() != 1)
+			throw "No native target pass open";
+
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		if (GraphicsBridge.begin(width, height, clearColor) != 1)
 			throw "Invalid native pass";

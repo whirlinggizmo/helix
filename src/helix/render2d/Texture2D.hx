@@ -92,6 +92,11 @@ class Texture2D {
 	public static function fromLevels(gpu:IGraphics, width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat, sampling:Sampling):Texture2D
 		return new Texture2D(gpu.createTexture(width, height, levels, format), width, height, format, levels.length, sampling);
 
+	/** A render target width x height: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth)
+		or nearest (sharp: a low-resolution view shown larger). The caller destroys it. */
+	public static function renderTarget(gpu:IGraphics, width:Int, height:Int, linear = true):Texture2D
+		return new Texture2D(gpu.createRenderTarget(width, height), width, height, Rgba8, 1, new Sampling(linear));
+
 	/** A new image in place of this one (a hot reload): the same object and sampling, a new GPU texture of levels. */
 	@:allow(helix.render2d.Textures)
 	function replace(gpu:IGraphics, width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat):Void {

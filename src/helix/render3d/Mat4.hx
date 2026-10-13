@@ -36,6 +36,21 @@ class Mat4 {
 		return true;
 	}
 
+	/** An orthographic projection: height world units of vertical view (width by aspect, width / height) centered on the view's axis, near and
+		far the clip planes' distances, GL clip depth (-1 near to 1 far). False, changing nothing, unless height > 0, aspect > 0 and near < far. */
+	public function setOrthographic(height:Float, aspect:Float, near:Float, far:Float):Bool {
+		if (!(height > 0 && aspect > 0 && far > near))
+			return false;
+		for (i in 0...16)
+			m[i] = 0;
+		m[0] = 2 / (height * aspect);
+		m[5] = 2 / height;
+		m[10] = 2 / (near - far);
+		m[14] = (far + near) / (near - far);
+		m[15] = 1;
+		return true;
+	}
+
 	/** A view from eye looking at target, up giving the roll: right-handed, the eye looking down its -z. False, changing nothing, when the eye is at
 		the target or up is parallel to the view. */
 	public function setLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Bool {

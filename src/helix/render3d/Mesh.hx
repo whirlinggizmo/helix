@@ -240,7 +240,8 @@ class Mesh {
 			nr = clamp(rings, 3, 512),
 			ns = clamp(segments, 3, 512);
 		for (i in 0...nr + 1) {
-			var u = i / nr * Math.PI * 2, cu = Math.cos(u), su = Math.sin(u);
+			// su = -sin, so u runs left to right seen from outside, as the sphere's.
+			var u = i / nr * Math.PI * 2, cu = Math.cos(u), su = -Math.sin(u);
 			for (j in 0...ns + 1) {
 				var v = j / ns * Math.PI * 2,
 					cv = Math.cos(v),
@@ -266,8 +267,8 @@ class Mesh {
 				ring = Math.sin(a);
 			for (s in 0...segments + 1) {
 				var t = s / segments * Math.PI * 2,
-					nx = ring * Math.cos(t),
-					nz = ring * Math.sin(t);
+					nx = ring * Math.cos(t), // z = -sin, so u runs left to right seen from outside: a texture reads the right way round.
+					nz = -ring * Math.sin(t);
 				b.vertex(nx * radius, y * radius + lift, nz * radius, nx, y, nz, s / segments, v0 + (v1 - v0) * r / rings);
 			}
 		}
@@ -295,7 +296,8 @@ class Mesh {
 		for (s in 0...segments + 1) {
 			var t = s / segments * Math.PI * 2,
 				c = Math.cos(t),
-				sn = Math.sin(t);
+				sn = -Math.sin(t);
+			// sn = -sin, so u runs left to right seen from outside, as the sphere's.
 			b.vertex(c * top, y1, sn * top, c / length, slope / length, sn / length, s / segments, v0);
 			b.vertex(c * bottom, y0, sn * bottom, c / length, slope / length, sn / length, s / segments, v1);
 		}

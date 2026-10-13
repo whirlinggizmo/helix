@@ -28,6 +28,17 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
 	var programs:Array<Dynamic> = [null, null, null];
 	var active = false;
+	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
+	var flipped = false;
+	var inTarget = false;
+	var passHeight = 0;
+	// Render targets, by texture handle: their framebuffer, depth buffer and size.
+	var targets:Map<Int, {
+		framebuffer:Dynamic,
+		depth:Dynamic,
+		width:Int,
+		height:Int
+	}> = [];
 	var uniformData = new js.lib.Float32Array(16);
 	var fragmentData = new js.lib.Float32Array(Std.int(Lit3DLayout.fragmentUniformBytes / 4));
 
@@ -177,7 +188,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				],
 				texture: Sprite2DLayout.atlasUniform,
 				normalTexture: null,
-				vertexUniform: null,
+				vertexUniform: Sprite2DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
 		if (index == 1)
@@ -279,10 +290,67 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		b.used = usedBytes;
 	}
 
+	public function createRenderTarget(width:Int, height:Int):Int {
+		if (width <= 0 || height <= 0)
+			throw "Invalid render target";
+		var tex = gl.createTexture();
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
+		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA8, width, height, 0, WebGL2RenderingContext.RGBA,
+			WebGL2RenderingContext.UNSIGNED_BYTE, null);
+		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
+		var depth = gl.createRenderbuffer();
+		gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depth);
+		gl.renderbufferStorage(WebGL2RenderingContext.RENDERBUFFER, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		var framebuffer = gl.createFramebuffer();
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
+		gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, tex, 0);
+		gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
+		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+		if (!complete) {
+			gl.deleteFramebuffer(framebuffer);
+			gl.deleteRenderbuffer(depth);
+			gl.deleteTexture(tex);
+			throw "Render target incomplete";
+		}
+		var id = next++;
+		textures[id] = tex;
+		targets[id] = {
+			framebuffer: framebuffer,
+			depth: depth,
+			width: width,
+			height: height
+		};
+		return id;
+	}
+
+	public function beginTargetPass(target:Int, clearColor:Int):Void {
+		var t = targets[target];
+		if (active || t == null)
+			throw "Invalid target pass";
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.framebuffer);
+		inTarget = flipped = true;
+		open(t.width, t.height, clearColor);
+	}
+
+	public function endTargetPass():Void {
+		if (!inTarget)
+			throw "No target pass";
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+		active = inTarget = flipped = false;
+	}
+
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		if (active || width <= 0 || height <= 0)
 			throw "Invalid pass";
+		inTarget = flipped = false;
+		open(width, height, clearColor);
+	}
+
+	// Opens a pass on the bound framebuffer, width x height, cleared.
+	function open(width:Int, height:Int, clearColor:Int):Void {
 		active = true;
+		passHeight = height;
 		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		gl.depthMask(true);
@@ -295,7 +363,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {
 		if (!active || w <= 0 || h <= 0)
 			throw "Invalid viewport";
-		gl.viewport(x, y, w, h);
+		// From the bottom left, as asked; a flipped pass's rows are upside down.
+		gl.viewport(x, flipped ? passHeight - y - h : y, w, h);
 	}
 
 	function attribute(slot:Int, components:Int, stride:Int, offset:Int, divisor = 0):Void {
@@ -341,6 +410,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		if (sprite) {
 			gl.uniform1i(shader.texture, Sprite2DLayout.atlasUnit);
+			// Clip space's y scale: -1 in a flipped pass.
+			gl.uniform4f(shader.vertexUniform, 1, flipped ? -1 : 1, 0, 0);
 			attribute(Sprite2DLayout.positionSlot, Sprite2DLayout.positionComponents, stride, Sprite2DLayout.positionOffset);
 			attribute(Sprite2DLayout.uvSlot, Sprite2DLayout.uvComponents, stride, Sprite2DLayout.uvOffset);
 			attribute(Sprite2DLayout.colorSlot, Sprite2DLayout.colorComponents, stride, Sprite2DLayout.colorOffset);
@@ -352,6 +423,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		} else {
 			for (i in 0...16)
 				uniformData[i] = uniforms.getFloat(i * 4);
+			flipRows();
 			gl.uniform4fv(shader.vertexUniform, uniformData);
 			attribute(Color3DLayout.positionSlot, Color3DLayout.positionComponents, stride, Color3DLayout.positionOffset);
 			attribute(Color3DLayout.colorSlot, Color3DLayout.colorComponents, stride, Color3DLayout.colorOffset);
@@ -398,6 +470,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.useProgram(shader.program);
 		for (i in 0...16)
 			uniformData[i] = vertexUniforms.getFloat(i * 4);
+		flipRows();
 		gl.uniform4fv(shader.vertexUniform, uniformData);
 		for (i in 0...fragmentData.length)
 			fragmentData[i] = fragmentUniforms.getFloat(i * 4);
@@ -434,16 +507,23 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.depthMask(true);
 		gl.enable(WebGL2RenderingContext.CULL_FACE);
 		gl.cullFace(WebGL2RenderingContext.BACK);
-		gl.frontFace(WebGL2RenderingContext.CCW);
+		// Flipped, the front faces wind the other way.
+		gl.frontFace(flipped ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);
 		blend(p.alpha);
 		gl.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, indexCount, WebGL2RenderingContext.UNSIGNED_INT, 0, instanceCount);
 	}
 
 	public function endFrame():Void {
-		if (!active)
-			throw "No pass";
+		if (!active || inTarget)
+			throw "No screen pass";
 		active = false;
 	}
+
+	// In a flipped pass, the view-projection in uniformData has its y row negated.
+	function flipRows():Void
+		if (flipped)
+			for (i in [1, 5, 9, 13])
+				uniformData[i] = -uniformData[i];
 
 	public function destroyBuffer(handle:Int):Void {
 		var b = buffers[handle];
@@ -459,6 +539,12 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid texture";
 		gl.deleteTexture(t);
 		textures.remove(handle);
+		var target = targets[handle];
+		if (target != null) {
+			gl.deleteFramebuffer(target.framebuffer);
+			gl.deleteRenderbuffer(target.depth);
+			targets.remove(handle);
+		}
 	}
 
 	public function destroyPipeline(handle:Int):Void {

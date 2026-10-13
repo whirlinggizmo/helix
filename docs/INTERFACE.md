@@ -13,8 +13,10 @@ Reusable contracts live in `src/helix/`. Shared game/rendering code calls them i
 | createBuffer(capacityBytes) | Stream vertex storage, filled each frame; capacity is fixed, a positive multiple of 4 |
 | createStaticBuffer(data,bytes,index) | Immutable vertices, or uint32 indices with `index`, copied once |
 | createPipeline(kind,alpha) | A framework shader and vertex layout by `PipelineKind`: `Sprite2D` (textured, no depth), `Color3D` (triangles, depth-tested and written), `Lines3D` (Color3D's vertices as lines), `Lit3D` (lit, textured, indexed and instanced models, back faces culled); optional straight-alpha blending |
-| updateBuffer(handle,data,usedBytes) | Synchronously consume caller-owned prefix; inside a frame, once per buffer per frame, starting at offset zero |
-| beginFrame(width,height,clearColor) | Clear the whole framebuffer to 0xRRGGBBAA and the depth to the farthest; the viewport is all of it; no MSAA |
+| updateBuffer(handle,data,usedBytes) | Synchronously consume caller-owned prefix, starting at offset zero, for the draws after it; inside a pass, any number of times a frame |
+| createRenderTarget(width,height) | A texture handle that target passes draw into (with its own depth), sampled like any texture, stored top row first |
+| beginTargetPass(target,clearColor) / endTargetPass() | A pass into a render target, before the screen's; cleared, viewport all of it; on GL drawn flipped inside the adapter |
+| beginFrame(width,height,clearColor) | The screen's pass, after the target passes: clear the whole framebuffer to 0xRRGGBBAA and the depth to the farthest; the viewport is all of it; no MSAA |
 | setViewport(x,y,w,h) | Lower-left-origin viewport in framebuffer pixels for the draws after it |
 | draw(pipeline,buffer,texture,sampling,vertices,firstVertex,uniforms=null) | Nonindexed triangles (or lines for `Lines3D`) from a validated range of this frame's upload; `texture` and its `Sampling` (filter, wrap u and v) for `Sprite2D`, `uniforms` (the 64-byte column-major view-projection) for the 3D kinds |
 | drawMesh(pipeline,vertices,indices,indexCount,instances,firstInstance,instanceCount,baseTexture,baseSampling,normalTexture,normalSampling,vertexUniforms,fragmentUniforms) | A `Lit3D` draw: static vertex and index buffers, a run of instance records from a stream buffer starting at `firstInstance` (the binding is offset, as WebGL2 has no base instance), a base color texture and a normal map, each with its sampling, both stages' uniforms |

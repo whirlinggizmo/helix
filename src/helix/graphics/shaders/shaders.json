@@ -19,7 +19,12 @@
           "type": "vec4"
         }
       ],
-      "uniforms": [],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 16
+        }
+      ],
       "textures": [
         {
           "role": "atlas",
