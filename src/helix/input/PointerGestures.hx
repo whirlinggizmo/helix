@@ -18,10 +18,10 @@ class PointerGestures {
 	var started = 0.;
 	var samples:Array<Float> = [];
 
-	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. */
+	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. Throws for a slop under 0 or tapSeconds of 0 or less, as the setters refuse. */
 	public function new(slop = 12., tapSeconds = .3) {
-		this.slop = slop;
-		this.tapSeconds = tapSeconds;
+		if (!setSlop(slop) || !setTapSeconds(tapSeconds))
+			throw 'Invalid gesture limits: slop $slop, tapSeconds $tapSeconds';
 	}
 
 	/** How far a press may move and still be a tap, in pixels. */

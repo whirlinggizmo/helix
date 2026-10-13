@@ -67,6 +67,21 @@ class InputTests {
 			&& input.getPadAxis(PadAxis.LeftX) == .1, "Dead zone");
 		input.axisEvent(PadAxis.LeftX, 1);
 		check(Math.abs(input.getPad(0).getAxis(PadAxis.LeftX) - 1) < 1e-9, "Full reach past the dead zone");
+		// Pads count presses and have release edges, as keys do; the mouse has release edges.
+		var pad = input.getPad(0);
+		pad.buttonEvent(PadButton.East, true);
+		pad.buttonEvent(PadButton.East, false);
+		pad.buttonEvent(PadButton.East, true);
+		check(pad.isPressed(PadButton.East) && pad.isReleased(PadButton.East) && pad.isFrameReleased(PadButton.East), "Pad edges");
+		input.consume();
+		check(pad.isPressed(PadButton.East) && !pad.isReleased(PadButton.East), "Second pad press waits for the next tick");
+		input.consume();
+		check(!pad.isPressed(PadButton.East), "Each pad press seen once");
+		input.endFrame();
+		check(!pad.isFrameReleased(PadButton.East), "Pad frame edges end with the frame");
+		input.mouseEvent(MouseButton.Middle, true);
+		input.mouseEvent(MouseButton.Middle, false);
+		check(input.isMouseReleased(MouseButton.Middle) && input.isMouseFrameReleased(MouseButton.Middle), "Mouse release edges");
 		// Ticker: fixed steps, a pause, bounded catch-up, and input consumed per tick.
 		var ticker = new Ticker(input, 10), ticks = 0;
 		input.keyEvent(Key.A, true);

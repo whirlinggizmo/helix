@@ -7,7 +7,7 @@ import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 
 /** 2D shapes, text and input: a marker follows the mouse, typing shows what was typed (Backspace takes the last character back),
-	and Escape quits where quitting means anything. The frame rate is drawn at the top. (libwgf's app-hello) */
+	and Escape quits where quitting means anything. The frame rate is drawn at the top. */
 class App extends BaseApp {
 	var host:IHost;
 	var batch:Batch2D;

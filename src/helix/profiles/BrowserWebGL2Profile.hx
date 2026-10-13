@@ -26,7 +26,7 @@ class BrowserWebGL2Profile extends DomHostAdapter {
 				pollInput: input.poll,
 				endInputFrame: input.endFrame,
 				focusInput: active -> {
-					input.active = active;
+					input.setActive(active);
 					if (!active)
 						input.clear();
 				},
@@ -34,7 +34,7 @@ class BrowserWebGL2Profile extends DomHostAdapter {
 				suspendAudio: audio.suspend,
 				shutdownInput: () -> {},
 				info: () -> {
-					var gl = graphics.gl,
+					var gl = graphics.getContext(),
 						ext = gl.getExtension("WEBGL_debug_renderer_info"),
 						value = audio.info();
 					value.backend = "raw-webgl2";

@@ -52,7 +52,7 @@ function audit(){
    await page.waitForFunction(()=>window.hostInfo().audioLoops===0);
    const after=await page.evaluate(()=>window.inspect());assert.notDeepEqual(before.game.ship,after.game.ship);assert(after.game.shots>=3);
    await page.setViewportSize({width:1000,height:700});await page.waitForFunction(()=>window.inspect().width===1000&&window.inspect().height===700);
-   await page.keyboard.press('ArrowLeft');const audio=await page.evaluate(()=>window.graphicsContract.gl.getError());assert.equal(audio,0);
+   await page.keyboard.press('ArrowLeft');const audio=await page.evaluate(()=>window.graphicsContract.getContext().getError());assert.equal(audio,0);
    const audioInfo=await page.evaluate(()=>window.hostInfo());assert(audioInfo.audioPlayed>=3,'Browser audio was not played after user gesture');
    // Contract errors must be caught before a GPU submission.
    const invalid=await page.evaluate(()=>{let rejected=0;for(const f of [()=>window.graphicsContract.createBuffer(7),()=>window.graphicsContract.createTexture(2,2,{length:3}),()=>window.graphicsContract.draw(999,998,997,3)])try{f();}catch(e){rejected++;}return rejected;});assert.equal(invalid,3);

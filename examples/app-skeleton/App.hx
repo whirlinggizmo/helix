@@ -3,7 +3,7 @@ import helix.host.IHost;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 
-/** A window cleared each frame, and nothing drawn. No keys. (libwgf's app-skeleton) */
+/** A window cleared each frame, and nothing drawn. No keys. */
 class App extends BaseApp {
 	var host:IHost;
 	var batch:Batch2D;

@@ -50,6 +50,12 @@ interface IInput {
 	/** The mouse button went down this frame: a frame edge. */
 	public function isMouseFramePressed(button:MouseButton):Bool;
 
+	/** The button came up: a counted tick edge, as a key's. */
+	public function isMouseReleased(button:MouseButton):Bool;
+
+	/** The button came up this frame: a frame edge. */
+	public function isMouseFrameReleased(button:MouseButton):Bool;
+
 	/** Wheel notches this frame; up and right are positive. */
 	public function getWheelX():Float;
 

@@ -1,8 +1,8 @@
 """Lay out HeliX's Haxe source with haxe-formatter (docs/CONVENTIONS.md), or --check that it is laid out.
 
 The formatter is pinned in dependencies.json and installed into the experiment's own haxelib (build/haxelib), as hxcpp is.
-hxformat.json holds only what differs from the pinned version's defaults: the files left alone (libwgf's own Asteroids
-source, archived run sources, build output)."""
+hxformat.json holds only what differs from the pinned version's defaults: the files left alone (the parity example's game,
+kept as it came; archived run sources; build output)."""
 import argparse
 import json
 import os

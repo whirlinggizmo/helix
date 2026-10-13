@@ -51,18 +51,24 @@ class Camera2D {
 		viewportHeight = height < 1 ? 1 : height;
 	}
 
-	/** Show a world rectangle whole and centered; the longer screen side shows extra world. */
-	public function fit(left:Float, top:Float, width:Float, height:Float):Void {
+	/** Show a world rectangle whole and centered; the longer screen side shows extra world. False for a width or height of 0 or less. */
+	public function fit(left:Float, top:Float, width:Float, height:Float):Bool {
+		if (!(width > 0 && height > 0))
+			return false;
 		zoom = Math.min(viewportWidth / width, viewportHeight / height);
 		x = left + width / 2;
 		y = top + height / 2;
+		return true;
 	}
 
-	/** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). */
-	public function pixels(scale:Float):Void {
+	/** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). False for a scale of 0 or less. */
+	public function pixels(scale:Float):Bool {
+		if (!(scale > 0))
+			return false;
 		zoom = scale;
 		x = viewportWidth / 2 / scale;
 		y = viewportHeight / 2 / scale;
+		return true;
 	}
 
 	/** The world X under framebuffer pixel X px, from the viewport's left edge. */

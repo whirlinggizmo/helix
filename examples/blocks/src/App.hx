@@ -90,7 +90,7 @@ class App extends BaseApp {
 	}
 
 	override public function cleanup():Void {
-		batch.cleanup();
+		batch.destroy();
 		host.graphics.shutdown();
 	}
 

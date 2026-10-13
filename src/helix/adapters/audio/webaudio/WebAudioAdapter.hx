@@ -24,11 +24,10 @@ class WebAudioAdapter implements IAudio {
 	var requests:Array<IRequest> = [];
 	var live = true;
 
-	/** Playbacks started (diagnostics). */
-	public var played(default, null) = 0;
+	/** Playbacks started and ended by stop, for info()'s diagnostics. */
+	var played = 0;
 
-	/** Playbacks ended by stop (diagnostics). */
-	public var stopped(default, null) = 0;
+	var stopped = 0;
 
 	/** Creates no AudioContext until a decode or unlock needs one. */
 	public function new() {}

@@ -13,10 +13,11 @@ class Ticker {
 	var input:IInput;
 	var accumulator = 0.;
 
-	/** Ticks at rate a second, consuming input's tick edges after each; a rate of 0 or less keeps 60. */
+	/** Ticks at rate a second, consuming input's tick edges after each. Throws for a rate of 0 or less. */
 	public function new(input:IInput, rate = 60.) {
 		this.input = input;
-		setRate(rate);
+		if (!setRate(rate))
+			throw 'Ticker rate must be over 0, not $rate';
 	}
 
 	/** Ticks a second. */

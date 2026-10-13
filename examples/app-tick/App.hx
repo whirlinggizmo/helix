@@ -10,7 +10,7 @@ import helix.render2d.Text2D;
 /** Fixed-rate simulation (ticks) against drawing (frames). A deliberately slow 10 Hz tick moves two squares at the same speed: the top one is drawn
 	where the latest tick left it, so it steps; the bottom one between its last two ticks, by the tick fraction, so it moves smoothly at any frame rate.
 	Space pauses the ticks (the time scale) while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
-	seen by exactly one tick. Escape quits where quitting means anything. (libwgf's app-tick) */
+	seen by exactly one tick. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var WIDTH = 800;
 	static inline var HEIGHT = 450;

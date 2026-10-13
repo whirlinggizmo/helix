@@ -1,12 +1,12 @@
 # HeliX conventions
 
-Rules for HeliX's public API, its examples, and the agents working on them. Naming follows libwgf's `docs/CONVENTIONS.md`, in Haxe's camelCase, so code and agents move between the two without translating.
+Rules for HeliX's public API, its examples, and the agents working on them. Names are predictable from what they do, so code and agents can find an API before reading it.
 
 ## No backward compatibility
 
 HeliX has no users to protect. When an API changes, every caller changes with it in the same commit: examples, tests and tools. Nothing keeps an old name, an old signature or an old behavior alive beside the new one: no aliases, deprecated wrappers, compatibility flags or shims.
 
-The one exception is by design: `examples/asteroids-parity`'s `wgf` package, which presents libwgf's API to libwgf's own unchanged game. It is a compatibility layer for libwgf's API, and it follows HeliX's current API underneath.
+The one exception is by design: `examples/asteroids-parity`'s `wgf` package, a compatibility layer that runs the parity comparison's game unchanged. It presents that game's API, and it follows HeliX's current API underneath.
 
 ## Names
 

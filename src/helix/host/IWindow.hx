@@ -1,7 +1,7 @@
 package helix.host;
 
 /** The window the app draws in: title, size, place, fullscreen, visibility and the monitors, in logical pixels.
-	Names follow libwgf's conventions: every set has a get (is for a bool); can says whether to offer an action at all;
+	Names follow docs/CONVENTIONS.md: every set has a get (is for a bool); can says whether to offer an action at all;
 	request asks for what the platform may refuse or grant later, returning whether it asked, never whether it was granted.
 	A setter that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows. */
 interface IWindow {

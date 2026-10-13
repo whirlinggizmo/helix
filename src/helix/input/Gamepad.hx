@@ -7,8 +7,10 @@ class Gamepad {
 	var name = "";
 	var deadzone = .15;
 	var held = [for (_ in 0...PadButton.COUNT) false];
-	var pushes = [for (_ in 0...PadButton.COUNT) false];
+	var pushes = [for (_ in 0...PadButton.COUNT) 0];
+	var lifts = [for (_ in 0...PadButton.COUNT) 0];
 	var framePushes = [for (_ in 0...PadButton.COUNT) false];
+	var frameLifts = [for (_ in 0...PadButton.COUNT) false];
 	var axes = [for (_ in 0...PadAxis.COUNT) 0.];
 
 	/** An empty slot. */
@@ -38,13 +40,21 @@ class Gamepad {
 	public function isDown(button:PadButton):Bool
 		return held[button];
 
-	/** The button went down: a tick edge until consume(), not counted, so two presses between ticks reach one. */
+	/** The button went down: a counted tick edge, as a key's, so two presses between ticks reach two ticks. */
 	public function isPressed(button:PadButton):Bool
-		return pushes[button];
+		return pushes[button] > 0;
+
+	/** The button came up: a counted tick edge. */
+	public function isReleased(button:PadButton):Bool
+		return lifts[button] > 0;
 
 	/** The button went down this frame: a frame edge. */
 	public function isFramePressed(button:PadButton):Bool
 		return framePushes[button];
+
+	/** The button came up this frame: a frame edge. */
+	public function isFrameReleased(button:PadButton):Bool
+		return frameLifts[button];
 
 	/** The axis as the pad reports it, without the dead zone: sticks -1..1, triggers 0..1. */
 	public function getRawAxis(axis:PadAxis):Float
@@ -79,8 +89,12 @@ class Gamepad {
 	/** A button's state from the adapter; going down sets both press edges. */
 	public function buttonEvent(button:PadButton, value:Bool):Void {
 		if (value && !held[button]) {
-			pushes[button] = true;
+			pushes[button]++;
 			framePushes[button] = true;
+		}
+		if (!value && held[button]) {
+			lifts[button]++;
+			frameLifts[button] = true;
 		}
 		held[button] = value;
 	}
@@ -91,11 +105,17 @@ class Gamepad {
 
 	/** Clears the tick edges; the input's consume() calls it after each tick. */
 	public function consume():Void
-		for (i in 0...pushes.length)
-			pushes[i] = false;
+		for (i in 0...pushes.length) {
+			if (pushes[i] > 0)
+				pushes[i]--;
+			if (lifts[i] > 0)
+				lifts[i]--;
+		}
 
 	/** Clears the frame edges; the input's endFrame() calls it after each frame. */
 	public function endFrame():Void
-		for (i in 0...framePushes.length)
+		for (i in 0...framePushes.length) {
 			framePushes[i] = false;
+			frameLifts[i] = false;
+		}
 }

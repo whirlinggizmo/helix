@@ -7,8 +7,11 @@ import js.html.webgl.WebGL2RenderingContext;
 
 /** IGraphics on a canvas's WebGL2 context: raw browser API calls only; geometry and batching stay in Batch2D. */
 class WebGL2GraphicsAdapter implements IGraphics {
+	var gl:WebGL2RenderingContext;
+
 	/** The canvas's WebGL2 context. */
-	public var gl(default, null):WebGL2RenderingContext;
+	public function getContext():WebGL2RenderingContext
+		return gl;
 
 	var next = 1;
 	var buffers:Map<Int, Dynamic> = [];

@@ -215,7 +215,7 @@ class Batch2D {
 	}
 
 	/** Frees the buffer, pipeline and font made by new; the batch is unusable after. */
-	public function cleanup():Void {
+	public function destroy():Void {
 		gpu.destroy("pipeline", pipeline);
 		gpu.destroy("buffer", buffer);
 		font.destroy(gpu);

@@ -12,7 +12,9 @@ class InputState implements IInput {
 	var frameLifts:Array<Bool> = [for (_ in 0...Key.COUNT) false];
 	var mouseHeld = [false, false, false];
 	var mousePushes = [0, 0, 0];
+	var mouseLifts = [0, 0, 0];
 	var mouseFramePushes = [false, false, false];
+	var mouseFrameLifts = [false, false, false];
 	var pads:Array<Gamepad> = [for (_ in 0...4) new Gamepad()];
 	var pointerX = -1.;
 	var pointerY = -1.;
@@ -92,6 +94,12 @@ class InputState implements IInput {
 	public function isMouseFramePressed(button:MouseButton):Bool
 		return mouseFramePushes[button];
 
+	public function isMouseReleased(button:MouseButton):Bool
+		return mouseLifts[button] > 0;
+
+	public function isMouseFrameReleased(button:MouseButton):Bool
+		return mouseFrameLifts[button];
+
 	public function isPadDown(button:PadButton):Bool {
 		for (pad in pads)
 			if (pad.isConnected() && pad.isDown(button))
@@ -156,6 +164,10 @@ class InputState implements IInput {
 		if (value && !mouseHeld[button]) {
 			mousePushes[button]++;
 			mouseFramePushes[button] = true;
+		}
+		if (!value && mouseHeld[button]) {
+			mouseLifts[button]++;
+			mouseFrameLifts[button] = true;
 		}
 		mouseHeld[button] = value;
 	}
@@ -251,6 +263,7 @@ class InputState implements IInput {
 		for (i in 0...3) {
 			mousePushes[i] = 0;
 			mouseFramePushes[i] = false;
+			mouseFrameLifts[i] = false;
 		}
 		pointerPushes = 0;
 		pointerFramePressed = false;
@@ -265,9 +278,12 @@ class InputState implements IInput {
 		}
 		for (pad in pads)
 			pad.consume();
-		for (i in 0...3)
+		for (i in 0...3) {
 			if (mousePushes[i] > 0)
 				mousePushes[i]--;
+			if (mouseLifts[i] > 0)
+				mouseLifts[i]--;
+		}
 		if (pointerPushes > 0)
 			pointerPushes--;
 		if (pointerLifts > 0)
@@ -282,8 +298,10 @@ class InputState implements IInput {
 		}
 		pointerFramePressed = false;
 		pointerFrameReleased = false;
-		for (i in 0...3)
+		for (i in 0...3) {
 			mouseFramePushes[i] = false;
+			mouseFrameLifts[i] = false;
+		}
 		for (pad in pads)
 			pad.endFrame();
 		text = "";
