@@ -4,27 +4,27 @@
   "formatter": "1.18.0",
   "dox": "1.6.0",
   "sokol": {
-    "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
-    "fork": "https://github.com/robknopf/sokol (the Whirling Gizmo fork)",
+    "revision": "c237609b19a5f95b9ca3c06473cf056ba5d9524e",
+    "fork": "https://github.com/whirlinggizmo/sokol (the Whirling Gizmo fork)",
     "upstream": "https://github.com/floooh/sokol 5e94d129",
     "source": "vendor",
     "headers": {
       "sokol_app.h": "b7ddb3218026eae84cec65e6a1efd37a16cfb00c30c7036f0688f52d65067ea9",
-      "sokol_gfx.h": "56ef192f8121697d5500d34a8aa1948affa18d8029e261d8c7cc2ea45df7b13c",
+      "sokol_gfx.h": "478679b767f811cb9208e334225f23c8adc65556f2e1b757a68a8f9c79b94e47",
       "sokol_glue.h": "6207d08f7ea5da43154f980c7fe314429eafb75922c6b41108ce2936f8240753",
       "sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
     },
     "audio": {
       "source": "vendor/sokol_audio.h",
-      "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
-      "sha256": "5f92d0e319ef9ea88a3256ef7af9d8b401eb8a8547b6ccee1985288f0f07e1dc"
+      "revision": "c237609b19a5f95b9ca3c06473cf056ba5d9524e",
+      "sha256": "cc0fed4dc682e3b731a77c5e65b5839b99ee50b7fe52875b8b3a23a58f2ba3d1"
     },
     "appUtils": {
       "source": "vendor/sokol_utils/sokol_app_utils.h",
-      "repository": "https://github.com/robknopf/sokol_utils (the Whirling Gizmo fork of squk/sokol_utils; zlib, LICENSE beside it)",
-      "revision": "d997b351fc24e0e50644b4afdd24e7ca3d055fa5",
-      "checkedAgainstSokol": "1b0a77acc819a47575919af3e64c737d13e18d51",
-      "sha256": "246317ac8145c483b7ff3b61f3d38207bb210e2dc08916ba16cf2272176a4627"
+      "repository": "https://github.com/whirlinggizmo/sokol_utils (the Whirling Gizmo fork of squk/sokol_utils; zlib, LICENSE beside it)",
+      "revision": "8e85d19eecc194e7459ef40b873d625f80d42a49",
+      "checkedAgainstSokol": "c237609b19a5f95b9ca3c06473cf056ba5d9524e",
+      "sha256": "ac6d800d609a3332b95fa98309e9ae72ccf569bec869c6e54c773b3c8aa39dea"
     }
   },
   "sokolToolsBin": "11d0cf678105d614d675e6d9bd2aaf3eeff12f8c",

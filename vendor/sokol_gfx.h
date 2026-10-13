@@ -8,7 +8,7 @@
     Project URL: https://github.com/floooh/sokol
 
     Altered source: this is the Whirling Gizmo fork's version
-    (https://github.com/robknopf/sokol), not the original. Changed from
+    (https://github.com/whirlinggizmo/sokol), not the original. Changed from
     floooh/sokol: a release build on emscripten does not call
     glCheckFramebufferStatus when a pass begins. In WebGL the call waits for
     the GPU process, which stalls each frame with an offscreen pass.

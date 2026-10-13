@@ -41,8 +41,8 @@ Executed on Linux:
   - The libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - No CMake: hxcpp compiles the adapters' C with each app.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**
-  - the Sokol headers, from the Whirling Gizmo fork [robknopf/sokol](https://github.com/robknopf/sokol) at `1b0a77a` (upstream to `5e94d12`)
-  - [robknopf/sokol_utils](https://github.com/robknopf/sokol_utils) at `d997b35` (window position, size, displays, style and visibility)
+  - the Sokol headers, from the Whirling Gizmo fork [whirlinggizmo/sokol](https://github.com/whirlinggizmo/sokol) at `c237609` (upstream to `5e94d12`)
+  - [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) at `8e85d19` (window position, size, displays, style and visibility)
   - stb_image and stb_truetype
   - JetBrains Mono, baked into the built-in distance-field font by `tools/fontbake`
 
