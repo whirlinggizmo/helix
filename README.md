@@ -82,6 +82,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group |
 | `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
+| `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |
 
 Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
