@@ -27,7 +27,7 @@ def tool(name):
     flags=['cc','-std=c11','-O3','-D_POSIX_C_SOURCE=200809L']+[f'-I{d}' for d in INCLUDES]
     services=[ADAPTERS/'input/sokol/internal/input.c',ADAPTERS/'input/evdev/internal/gamepad_linux.c',ADAPTERS/'audio/sokol/internal/audio.c']
     if name=='native-services-test':
-        command=flags+['-UNDEBUG','-DHY_SERVICES_TEST','-DSOKOL_DUMMY_BACKEND',ROOT/'tests/native/native_services.c']+services+['-lm','-lpthread']
+        command=flags+['-UNDEBUG','-DHELIX_SERVICES_TEST','-DSOKOL_DUMMY_BACKEND',ROOT/'tests/native/native_services.c']+services+['-lm','-lpthread']
     elif name=='native-audio-probe':
         command=flags+['-DNDEBUG',ROOT/'tests/native/native_audio_probe.c',ADAPTERS/'audio/sokol/internal/audio.c','-lasound','-lm','-lpthread']
     elif name=='native-graphics-call-audit':

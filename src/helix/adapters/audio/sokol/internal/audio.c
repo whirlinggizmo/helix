@@ -62,14 +62,14 @@ static void audio_callback(float *out, int frames, int channels) {
     for (int i = 0; i < frames * channels; i++) out[i] = fmaxf(-1, fminf(1, out[i]));
 }
 
-void hy_audio_setup(void) {
+void helix_audio_setup(void) {
     if (initialized) return;
     saudio_setup(&(saudio_desc){ .sample_rate = 44100, .num_channels = 1,
         .buffer_frames = 512, .stream_cb = audio_callback, .logger.func = slog_func });
     initialized = 1;
 }
-int hy_audio_available(void) { return initialized && saudio_isvalid(); }
-int hy_audio_clip(const void *data, int bytes) {
+int helix_audio_available(void) { return initialized && saudio_isvalid(); }
+int helix_audio_clip(const void *data, int bytes) {
     if (!data || bytes <= 0 || bytes % 4) return 0;
     float *copy = malloc((size_t)bytes);
     if (!copy) return 0;
@@ -82,23 +82,23 @@ int hy_audio_clip(const void *data, int bytes) {
     if (!id) free(copy);
     return id;
 }
-int hy_audio_play(int clip_id, int loop, float volume) {
+int helix_audio_play(int clip_id, int loop, float volume) {
     if (!isfinite(volume) || volume < 0 || volume > 1) return -1;
     pthread_mutex_lock(&audio_lock);
     if (!find_clip(clip_id)) { pthread_mutex_unlock(&audio_lock); return -1; }
     int id = 0;
-    if (hy_audio_available()) for (int i = 0; i < 16; i++) if (!voices[i].id) {
+    if (helix_audio_available()) for (int i = 0; i < 16; i++) if (!voices[i].id) {
         id = next_voice++; voices[i] = (voice_t){.id=id, .clip_id=clip_id, .loop=loop!=0, .volume=volume}; played++; break;
     }
     pthread_mutex_unlock(&audio_lock);
     return id;
 }
-void hy_audio_stop(int id) {
+void helix_audio_stop(int id) {
     pthread_mutex_lock(&audio_lock);
     for (int i = 0; i < 16; i++) if (id && voices[i].id == id) { free(voices[i].ring); memset(&voices[i], 0, sizeof voices[i]); stopped++; }
     pthread_mutex_unlock(&audio_lock);
 }
-int hy_audio_destroy_clip(int id) {
+int helix_audio_destroy_clip(int id) {
     pthread_mutex_lock(&audio_lock);
     clip_t *clip = find_clip(id);
     if (!clip) { pthread_mutex_unlock(&audio_lock); return 0; }
@@ -107,47 +107,47 @@ int hy_audio_destroy_clip(int id) {
     pthread_mutex_unlock(&audio_lock);
     return 1;
 }
-int hy_audio_played(void) { return played; }
-int hy_audio_stopped(void) { return stopped; }
-int hy_audio_callbacks(void) {
+int helix_audio_played(void) { return played; }
+int helix_audio_stopped(void) { return stopped; }
+int helix_audio_callbacks(void) {
     pthread_mutex_lock(&audio_lock); const int count=callbacks; pthread_mutex_unlock(&audio_lock); return count;
 }
-int hy_audio_sample_rate(void) { return initialized ? saudio_sample_rate() : 0; }
-int hy_audio_channels(void) { return initialized ? saudio_channels() : 0; }
-int hy_audio_loops(void) {
+int helix_audio_sample_rate(void) { return initialized ? saudio_sample_rate() : 0; }
+int helix_audio_channels(void) { return initialized ? saudio_channels() : 0; }
+int helix_audio_loops(void) {
     pthread_mutex_lock(&audio_lock);
     int count = 0;
     for (int i = 0; i < 16; i++) if (voices[i].id && voices[i].loop) count++;
     pthread_mutex_unlock(&audio_lock);
     return count;
 }
-void hy_audio_shutdown(void) {
+void helix_audio_shutdown(void) {
     /* Join Sokol's callback thread before freeing mixer-owned samples. */
     if (initialized) { saudio_shutdown(); initialized = 0; }
     for (int i = 0; i < 32; i++) { free(clips[i].samples); memset(&clips[i], 0, sizeof clips[i]); }
     for(int i=0;i<16;i++)free(voices[i].ring);
     memset(voices, 0, sizeof voices);
 }
-#ifdef HY_SERVICES_TEST
+#ifdef HELIX_SERVICES_TEST
 /* Only the deterministic dummy-backend test target exports this callback hook. */
-void hy_audio_test_render(float *out, int frames, int channels) { audio_callback(out, frames, channels); }
-void hy_audio_test_setup(int rate) {
+void helix_audio_test_render(float *out, int frames, int channels) { audio_callback(out, frames, channels); }
+void helix_audio_test_setup(int rate) {
     saudio_setup(&(saudio_desc){.sample_rate=rate, .num_channels=1, .buffer_frames=512,
         .stream_cb=audio_callback, .logger.func=slog_func}); initialized=1;
 }
 #endif
 
-int hy_audio_is_playing(int id) {pthread_mutex_lock(&audio_lock);int found=0;for(int i=0;i<16;i++)if(id&&voices[i].id==id)found=1;pthread_mutex_unlock(&audio_lock);return found;}
-void hy_audio_pause(int id,int paused) {pthread_mutex_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].paused=paused!=0;pthread_mutex_unlock(&audio_lock);}
-void hy_audio_volume(int id,float volume) {if(!isfinite(volume)||volume<0||volume>1)return;pthread_mutex_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].volume=volume;pthread_mutex_unlock(&audio_lock);}
-int hy_audio_stream(float volume) {
+int helix_audio_is_playing(int id) {pthread_mutex_lock(&audio_lock);int found=0;for(int i=0;i<16;i++)if(id&&voices[i].id==id)found=1;pthread_mutex_unlock(&audio_lock);return found;}
+void helix_audio_pause(int id,int paused) {pthread_mutex_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].paused=paused!=0;pthread_mutex_unlock(&audio_lock);}
+void helix_audio_volume(int id,float volume) {if(!isfinite(volume)||volume<0||volume>1)return;pthread_mutex_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].volume=volume;pthread_mutex_unlock(&audio_lock);}
+int helix_audio_stream(float volume) {
  if(!isfinite(volume)||volume<0||volume>1)return 0;
  pthread_mutex_lock(&audio_lock);int id=0;
- if(hy_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(8192,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.ring=ring};played++;}break;}
+ if(helix_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(8192,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.ring=ring};played++;}break;}
  pthread_mutex_unlock(&audio_lock);return id;
 }
-int hy_audio_stream_queued(int id) {pthread_mutex_lock(&audio_lock);int count=-1;for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring)count=voices[i].count;pthread_mutex_unlock(&audio_lock);return count;}
-int hy_audio_stream_push(int id,const void *data,int bytes,int eof) {
+int helix_audio_stream_queued(int id) {pthread_mutex_lock(&audio_lock);int count=-1;for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring)count=voices[i].count;pthread_mutex_unlock(&audio_lock);return count;}
+int helix_audio_stream_push(int id,const void *data,int bytes,int eof) {
  if(bytes<0||bytes%4||(!data&&bytes))return -1;const float *samples=data;
  for(int i=0;i<bytes/4;i++)if(!isfinite(samples[i])||samples[i]<-1||samples[i]>1)return -1;
  pthread_mutex_lock(&audio_lock);int accepted=-1;

@@ -16,17 +16,17 @@
 
 static sg_shader shader;
 static sg_sampler sampler,linear_sampler,mip_sampler;static uint32_t linear_textures[256],mip_textures[256];static sg_color clear_color={.015f,.025f,.045f,1};
-void hy_clear_color(uint32_t color){clear_color=(sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
+void helix_clear_color(uint32_t color){clear_color=(sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
 static int active,used[256],audit_enabled;
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
-void hy_setup(void){
+void helix_setup(void){
  sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func});
  audit_enabled=getenv("HELIX_AUDIT")&&strcmp(getenv("HELIX_AUDIT"),"1")==0;
  if(!audit_enabled)sg_disable_stats();
  else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}
- shader=sg_make_shader(HY_SHADER_DESC(sg_query_backend()));
+ shader=sg_make_shader(HELIX_SHADER_DESC(sg_query_backend()));
  sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_NEAREST,.mag_filter=SG_FILTER_NEAREST,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  linear_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  /* Trilinear, for a linear texture with mipmaps: drawn smaller than itself without shimmering. */
@@ -35,11 +35,11 @@ void hy_setup(void){
  if(sg_query_shader_state(shader)!=SG_RESOURCESTATE_VALID)abort();
 
 }
-void hy_shutdown(void){
+void helix_shutdown(void){
  sg_destroy_sampler(sampler);sg_destroy_sampler(linear_sampler);sg_destroy_sampler(mip_sampler);sg_destroy_shader(shader);sg_shutdown();
 }
 /* levels mip levels, each half the last (at least 1), packed one after another in data. */
-uint32_t hy_texture(int w,int h,const void *data,int bytes,int levels,int linear){
+uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int linear){
  if(w<=0||h<=0||w>4096||h>4096||!data||levels<1||levels>SG_MAX_MIPMAPS)return 0;
  sg_image_desc desc={.width=w,.height=h,.num_mipmaps=levels,.pixel_format=SG_PIXELFORMAT_RGBA8};
  size_t offset=0;int lw=w,lh=h;
@@ -54,50 +54,50 @@ uint32_t hy_texture(int w,int h,const void *data,int bytes,int levels,int linear
  uint32_t view=sg_make_view(&(sg_view_desc){.texture.image=image}).id;
  if((view&0xffff)<256){linear_textures[view&0xffff]=linear?view:0;mip_textures[view&0xffff]=linear&&levels>1?view:0;}return view;
 }
-uint32_t hy_buffer(int capacity){
- if(capacity<=0||capacity%HY_VERTEX_STRIDE)return 0;
+uint32_t helix_buffer(int capacity){
+ if(capacity<=0||capacity%HELIX_VERTEX_STRIDE)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
  if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;}return buffer.id;
 }
-uint32_t hy_pipeline(int alpha){
+uint32_t helix_pipeline(int alpha){
  return sg_make_pipeline(&(sg_pipeline_desc){.shader=shader,
-  .layout=hy_vertex_layout(),
+  .layout=helix_vertex_layout(),
   .depth.compare=SG_COMPAREFUNC_ALWAYS,.cull_mode=SG_CULLMODE_NONE,
   .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}}).id;
 }
-int hy_update(uint32_t id,const void *data,int bytes){
+int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
- if(!active||!data||bytes<0||bytes%HY_VERTEX_STRIDE||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer))return 0;
+ if(!active||!data||bytes<0||bytes%HELIX_VERTEX_STRIDE||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer))return 0;
  frame_uploaded_bytes+=bytes;
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=buffer});used[slot]=bytes;return 1;
 }
-int hy_begin(int width,int height,int x,int y,int w,int h){
+int helix_begin(int width,int height,int x,int y,int w,int h){
  if(active||width<=0||height<=0||w<=0||h<=0)return 0;
  active=1;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;memset(used,0,sizeof used);
  sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=clear_color}});
  sg_apply_viewport(x,y,w,h,false);return 1;
 }
-int hy_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex){
+int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex){
  int slot=b&0xffff;
- if(!active||vertices<=0||vertices%3||slot>=256||first_vertex<0||first_vertex%3||vertices>used[slot]/HY_VERTEX_STRIDE||first_vertex>used[slot]/HY_VERTEX_STRIDE-vertices||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
- sg_apply_pipeline((sg_pipeline){p});sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HY_VIEW_SLOT]={t},.samplers[HY_SAMPLER_SLOT]=(t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler});sg_draw(first_vertex,vertices,1);return 1;
+ if(!active||vertices<=0||vertices%3||slot>=256||first_vertex<0||first_vertex%3||vertices>used[slot]/HELIX_VERTEX_STRIDE||first_vertex>used[slot]/HELIX_VERTEX_STRIDE-vertices||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
+ sg_apply_pipeline((sg_pipeline){p});sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_VIEW_SLOT]={t},.samplers[HELIX_SAMPLER_SLOT]=(t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler});sg_draw(first_vertex,vertices,1);return 1;
 }
-void hy_end(void){if(!active)abort();sg_end_pass();sg_commit();active=0;}
-int hy_destroy(int kind,uint32_t id){
+void helix_end(void){if(!active)abort();sg_end_pass();sg_commit();active=0;}
+int helix_destroy(int kind,uint32_t id){
  if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){sg_destroy_buffer((sg_buffer){id});if((id&0xffff)<256)vertex_reserved[id&0xffff]=0;return 1;}
  if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){sg_image image=sg_query_view_image((sg_view){id});sg_destroy_view((sg_view){id});sg_destroy_image(image);return 1;}
  if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){sg_destroy_pipeline((sg_pipeline){id});return 1;}return 0;
 }
-void hy_capture(const char *path){
+void helix_capture(const char *path){
  int w=sapp_width(),h=sapp_height();size_t row=(size_t)w*3;unsigned char *pixels=malloc(row*h);FILE *f=fopen(path,"wb");if(!pixels||!f)abort();
  glPixelStorei(GL_PACK_ALIGNMENT,1);glReadPixels(0,0,w,h,GL_RGB,GL_UNSIGNED_BYTE,pixels);if(glGetError())abort();
  fprintf(f,"P6\n%d %d\n255\n",w,h);for(int y=h-1;y>=0;y--)if(fwrite(pixels+row*y,1,row,f)!=row)abort();fclose(f);free(pixels);
 }
-const char *hy_renderer(void){return (const char*)glGetString(GL_RENDERER);}
+const char *helix_renderer(void){return (const char*)glGetString(GL_RENDERER);}
 
 /* Sokol's public counters count actual GL backend state calls after its cache.
    sg draw/write counters are actual API entries, separately labelled. Stats stay off in timing. */
-const char *hy_graphics_audit(void){
+const char *helix_graphics_audit(void){
  static char json[1024];
  if(!audit_enabled)return "null";
  sg_frame_stats f=sg_query_stats().prev_frame;
@@ -107,5 +107,5 @@ const char *hy_graphics_audit(void){
  return json;
 }
 
-double hy_peak_rss(void){struct rusage usage;if(getrusage(RUSAGE_SELF,&usage)!=0)return -1;return (double)usage.ru_maxrss*1024.0;}
-int hy_vertex_reserved(void){int bytes=0;for(int i=0;i<256;i++)bytes+=vertex_reserved[i];return bytes;}
+double helix_peak_rss(void){struct rusage usage;if(getrusage(RUSAGE_SELF,&usage)!=0)return -1;return (double)usage.ru_maxrss*1024.0;}
+int helix_vertex_reserved(void){int bytes=0;for(int i=0;i<256;i++)bytes+=vertex_reserved[i];return bytes;}

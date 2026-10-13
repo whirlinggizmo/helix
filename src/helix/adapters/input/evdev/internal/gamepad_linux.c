@@ -23,7 +23,7 @@ typedef struct {
     unsigned long keys[WORDS(KEY_CNT)], axes[WORDS(ABS_CNT)];
     struct input_absinfo ranges[ABS_CNT];
 } pad_t;
-static pad_t pads[HY_GAMEPADS];
+static pad_t pads[HELIX_GAMEPADS];
 static double next_scan;
 static int bit(const unsigned long *bits, unsigned code) { return (int)((bits[code / WORD_BITS] >> (code % WORD_BITS)) & 1); }
 static void set_bit(unsigned long *bits, unsigned code, int value) {
@@ -43,10 +43,10 @@ static int snapshot(pad_t *pad) {
     }
     return 1;
 }
-void hy_gamepad_setup(void) { for (int i = 0; i < HY_GAMEPADS; i++) { pads[i].device = -1; reset(&pads[i]); } next_scan = 0; }
-void hy_gamepad_shutdown(void) { for (int i = 0; i < HY_GAMEPADS; i++) reset(&pads[i]); }
+void helix_gamepad_setup(void) { for (int i = 0; i < HELIX_GAMEPADS; i++) { pads[i].device = -1; reset(&pads[i]); } next_scan = 0; }
+void helix_gamepad_shutdown(void) { for (int i = 0; i < HELIX_GAMEPADS; i++) reset(&pads[i]); }
 static int open_already(dev_t node) {
-    for (int i = 0; i < HY_GAMEPADS; i++) if (pads[i].device >= 0 && pads[i].node == node) return 1;
+    for (int i = 0; i < HELIX_GAMEPADS; i++) if (pads[i].device >= 0 && pads[i].node == node) return 1;
     return 0;
 }
 /* Whether the event device's driver is driver (sysfs: /sys/class/input/<event>/device/device/driver). */
@@ -62,7 +62,7 @@ static int driver_is(const char *event_name, const char *driver) {
 
 /* Fill free slots with pads not yet open: a device with south and east buttons and an X/Y stick. */
 static void discover(void) {
-#ifdef HY_SERVICES_TEST
+#ifdef HELIX_SERVICES_TEST
     return; /* Tests feed pads through pipes; a real pad on the machine must not take a slot. */
 #endif
     DIR *directory = opendir("/dev/input");
@@ -70,7 +70,7 @@ static void discover(void) {
     struct dirent *entry;
     while ((entry = readdir(directory))) {
         int slot = -1;
-        for (int i = 0; i < HY_GAMEPADS && slot < 0; i++) if (pads[i].device < 0) slot = i;
+        for (int i = 0; i < HELIX_GAMEPADS && slot < 0; i++) if (pads[i].device < 0) slot = i;
         if (slot < 0) break;
         if (strncmp(entry->d_name, "event", 5)) continue;
         char path[sizeof entry->d_name + 16];
@@ -117,22 +117,22 @@ static void read_pad(pad_t *pad) {
         }
     }
 }
-void hy_gamepad_poll(void) {
+void helix_gamepad_poll(void) {
     int open_count = 0;
-    for (int i = 0; i < HY_GAMEPADS; i++) if (pads[i].device >= 0) open_count++;
-    if (open_count < HY_GAMEPADS) {
+    for (int i = 0; i < HELIX_GAMEPADS; i++) if (pads[i].device >= 0) open_count++;
+    if (open_count < HELIX_GAMEPADS) {
         const double time = now();
         if (time >= next_scan) { next_scan = time + 2; discover(); }
     }
-    for (int i = 0; i < HY_GAMEPADS; i++) if (pads[i].device >= 0) read_pad(&pads[i]);
+    for (int i = 0; i < HELIX_GAMEPADS; i++) if (pads[i].device >= 0) read_pad(&pads[i]);
 }
-static pad_t *get(int pad) { return pad >= 0 && pad < HY_GAMEPADS && pads[pad].device >= 0 ? &pads[pad] : NULL; }
-int hy_gamepad_connected(int pad) { return get(pad) != NULL; }
-const char *hy_gamepad_name(int pad) { pad_t *p = get(pad); return p ? p->name : ""; }
+static pad_t *get(int pad) { return pad >= 0 && pad < HELIX_GAMEPADS && pads[pad].device >= 0 ? &pads[pad] : NULL; }
+int helix_gamepad_connected(int pad) { return get(pad) != NULL; }
+const char *helix_gamepad_name(int pad) { pad_t *p = get(pad); return p ? p->name : ""; }
 static int hat(const pad_t *pad, int code, int negative) {
     return bit(pad->axes, code) && (negative ? pad->ranges[code].value < 0 : pad->ranges[code].value > 0);
 }
-int hy_gamepad_button(int pad, int button) {
+int helix_gamepad_button(int pad, int button) {
     /* W3C standard order, by the kernel's gamepad spec (BTN_WEST the left face button, BTN_NORTH the top); the xpad driver
        reports Xbox X and Y with the two codes swapped. */
     static const unsigned codes[17] = {BTN_SOUTH, BTN_EAST, BTN_WEST, BTN_NORTH, BTN_TL, BTN_TR, BTN_TL2, BTN_TR2, BTN_SELECT, BTN_START,
@@ -143,7 +143,7 @@ int hy_gamepad_button(int pad, int button) {
     if (p->xpad && (button == 2 || button == 3)) code = button == 2 ? BTN_NORTH : BTN_WEST;
     if (bit(p->keys, code)) return 1;
     /* The triggers are buttons too, as the W3C layout's 6 and 7: pressed past half way on a pad with analog triggers. */
-    if (button == 6 || button == 7) return hy_gamepad_axis(pad, button == 6 ? 4 : 5) > 0.5f;
+    if (button == 6 || button == 7) return helix_gamepad_axis(pad, button == 6 ? 4 : 5) > 0.5f;
     if (button == 12 || button == 13) return hat(p, ABS_HAT0Y, button == 12);
     if (button == 14 || button == 15) return hat(p, ABS_HAT0X, button == 14);
     return 0;
@@ -156,7 +156,7 @@ static float normalized(const pad_t *pad, int code, int signed_range) {
     if (value < 0) value = 0; if (value > 1) value = 1;
     return (float)(signed_range ? value * 2 - 1 : value);
 }
-float hy_gamepad_axis(int pad, int axis) {
+float helix_gamepad_axis(int pad, int axis) {
     const pad_t *p = get(pad);
     if (!p || axis < 0 || axis > 5) return 0;
     /* The right stick on RX/RY, or on Z/RZ where a generic HID pad has no RX/RY (right_on_z). Analog triggers on ABS_BRAKE/ABS_GAS,
@@ -175,10 +175,10 @@ float hy_gamepad_axis(int pad, int axis) {
             return !p->right_on_z && bit(p->axes, ABS_RZ) ? normalized(p, ABS_RZ, 0) : 0;
     }
 }
-#ifdef HY_SERVICES_TEST
-void hy_gamepad_test_driver(int pad, int xpad, int right_on_z) { pads[pad].xpad = xpad; pads[pad].right_on_z = right_on_z; }
-void hy_gamepad_test_connect(int pad, int fd) { reset(&pads[pad]); pads[pad].device = fd; pads[pad].node = (dev_t)(pad + 1); snprintf(pads[pad].name, sizeof pads[pad].name, "test pad %d", pad); }
-void hy_gamepad_test_range(int pad, int code, int minimum, int maximum, int value) {
+#ifdef HELIX_SERVICES_TEST
+void helix_gamepad_test_driver(int pad, int xpad, int right_on_z) { pads[pad].xpad = xpad; pads[pad].right_on_z = right_on_z; }
+void helix_gamepad_test_connect(int pad, int fd) { reset(&pads[pad]); pads[pad].device = fd; pads[pad].node = (dev_t)(pad + 1); snprintf(pads[pad].name, sizeof pads[pad].name, "test pad %d", pad); }
+void helix_gamepad_test_range(int pad, int code, int minimum, int maximum, int value) {
     if (code < 0 || code >= ABS_CNT) return;
     set_bit(pads[pad].axes, code, 1); pads[pad].ranges[code] = (struct input_absinfo){.minimum=minimum, .maximum=maximum, .value=value};
 }

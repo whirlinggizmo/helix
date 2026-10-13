@@ -4,12 +4,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void hy_run(void (*init)(void),void (*frame)(float),void (*cleanup)(void));
-void hy_quit(void);int hy_width(void);int hy_height(void);float hy_pixel_ratio(void);
-void hy_window_set_title(const char*title);int hy_window_width(void);int hy_window_height(void);void hy_window_set_size(int w,int h);
-int hy_window_can_move(void);int hy_window_x(void);int hy_window_y(void);void hy_window_set_position(int x,int y);
-int hy_window_fullscreen(void);void hy_window_set_fullscreen(int on);int hy_window_visible(void);void hy_window_set_visible(int on);
-int hy_display_count(void);int hy_display_current(void);void hy_display_set(int i);int hy_display_x(int i);int hy_display_y(int i);int hy_display_width(int i);int hy_display_height(int i);const char*hy_display_name(int i);
+void helix_run(void (*init)(void),void (*frame)(float),void (*cleanup)(void));
+void helix_quit(void);int helix_width(void);int helix_height(void);float helix_pixel_ratio(void);
+void helix_window_set_title(const char*title);int helix_window_width(void);int helix_window_height(void);void helix_window_set_size(int w,int h);
+int helix_window_can_move(void);int helix_window_x(void);int helix_window_y(void);void helix_window_set_position(int x,int y);
+int helix_window_fullscreen(void);void helix_window_set_fullscreen(int on);int helix_window_visible(void);void helix_window_set_visible(int on);
+int helix_display_count(void);int helix_display_current(void);void helix_display_set(int i);int helix_display_x(int i);int helix_display_y(int i);int helix_display_width(int i);int helix_display_height(int i);const char*helix_display_name(int i);
 #ifdef __cplusplus
 }
 #endif

@@ -50,19 +50,19 @@ static int register_decoder(decoder_t *d) {
     pthread_mutex_unlock(&codec_lock);
     if(!id){sf_close(d->file);free(d->memory);free(d);}return id;
 }
-int hy_codec_memory(const void *data,int bytes) {
+int helix_codec_memory(const void *data,int bytes) {
     if(!data || bytes<4 || bytes>8*1024*1024 || memcmp(data,"OggS",4))return 0;
     decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
     d->memory=malloc((size_t)bytes);if(!d->memory){free(d);return 0;}
     memcpy(d->memory,data,(size_t)bytes);d->length=bytes;
     d->file=sf_open_virtual(&memory_io,SFM_READ,&d->info,d);return register_decoder(d);
 }
-int hy_codec_file(const char *path) {
+int helix_codec_file(const char *path) {
     if(!path)return 0;decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
     d->file=sf_open(path,SFM_READ,&d->info);return register_decoder(d);
 }
 static decoder_t *get_decoder(int id) { return id>0&&id<=32?decoders[id-1]:NULL; }
-double hy_codec_frames(int id) {
+double helix_codec_frames(int id) {
     pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
     double n=d?(double)d->total:0;
     pthread_mutex_unlock(&codec_lock);return n;
@@ -78,7 +78,7 @@ static int next_sample(decoder_t *d,float *sample) {
     if(!isfinite(value))return -1;
     *sample=fmaxf(-1,fminf(1,value));return 1;
 }
-int hy_codec_read(int id,void *destination,int frames) {
+int helix_codec_read(int id,void *destination,int frames) {
     if(!destination || frames<=0 || frames>2048)return -1;
     pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);int n=0,error=0;float *out=destination;
     if(!d){pthread_mutex_unlock(&codec_lock);return -1;}
@@ -95,15 +95,15 @@ int hy_codec_read(int id,void *destination,int frames) {
     }
     pthread_mutex_unlock(&codec_lock);return error?-1:n;
 }
-int hy_codec_rewind(int id) {
+int helix_codec_rewind(int id) {
     pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
     int ok=d && sf_seek(d->file,0,SEEK_SET)==0;
     if(ok){d->at=d->count=d->have_a=d->have_b=0;d->phase=0;d->produced=0;}
     pthread_mutex_unlock(&codec_lock);return ok;
 }
-void hy_codec_close(int id) {
+void helix_codec_close(int id) {
     pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
     if(d){decoders[id-1]=NULL;sf_close(d->file);free(d->memory);free(d);}
     pthread_mutex_unlock(&codec_lock);
 }
-const char *hy_codec_version(void) { return sf_version_string(); }
+const char *helix_codec_version(void) { return sf_version_string(); }

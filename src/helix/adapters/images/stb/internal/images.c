@@ -15,14 +15,14 @@
 typedef struct {
     int width, height;
     unsigned char *pixels;
-} hy_image;
+} helix_image;
 
-void *hy_image_decode(const void *data, int size)
+void *helix_image_decode(const void *data, int size)
 {
     int width, height, channels;
     unsigned char *pixels = stbi_load_from_memory((const stbi_uc *)data, size, &width, &height, &channels, 4);
     if (!pixels) return NULL;
-    hy_image *image = malloc(sizeof *image);
+    helix_image *image = malloc(sizeof *image);
     if (!image) { stbi_image_free(pixels); return NULL; }
     image->width = width;
     image->height = height;
@@ -30,17 +30,17 @@ void *hy_image_decode(const void *data, int size)
     return image;
 }
 
-int hy_image_width(const void *image) { return ((const hy_image *)image)->width; }
-int hy_image_height(const void *image) { return ((const hy_image *)image)->height; }
-void hy_image_copy(const void *image, void *dest)
+int helix_image_width(const void *image) { return ((const helix_image *)image)->width; }
+int helix_image_height(const void *image) { return ((const helix_image *)image)->height; }
+void helix_image_copy(const void *image, void *dest)
 {
-    const hy_image *i = image;
+    const helix_image *i = image;
     memcpy(dest, i->pixels, (size_t)i->width * (size_t)i->height * 4);
 }
-void hy_image_free(void *image)
+void helix_image_free(void *image)
 {
     if (!image) return;
-    stbi_image_free(((hy_image *)image)->pixels);
+    stbi_image_free(((helix_image *)image)->pixels);
     free(image);
 }
-const char *hy_image_error(void) { const char *reason = stbi_failure_reason(); return reason ? reason : "unknown"; }
+const char *helix_image_error(void) { const char *reason = stbi_failure_reason(); return reason ? reason : "unknown"; }

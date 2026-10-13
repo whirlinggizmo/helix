@@ -4,15 +4,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void hy_setup(void);void hy_shutdown(void);const char *hy_renderer(void);
-uint32_t hy_texture(int w,int h,const void *data,int bytes,int levels,int linear);
-void hy_clear_color(uint32_t color);
-uint32_t hy_buffer(int capacity);uint32_t hy_pipeline(int alpha);
-int hy_update(uint32_t buffer,const void *data,int bytes);
-int hy_begin(int width,int height,int x,int y,int w,int h);
-int hy_draw(uint32_t pipeline,uint32_t buffer,uint32_t texture,int vertices,int first_vertex);
-void hy_end(void);int hy_destroy(int kind,uint32_t handle);
-void hy_capture(const char *path);const char *hy_graphics_audit(void);double hy_peak_rss(void);int hy_vertex_reserved(void);
+void helix_setup(void);void helix_shutdown(void);const char *helix_renderer(void);
+uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int linear);
+void helix_clear_color(uint32_t color);
+uint32_t helix_buffer(int capacity);uint32_t helix_pipeline(int alpha);
+int helix_update(uint32_t buffer,const void *data,int bytes);
+int helix_begin(int width,int height,int x,int y,int w,int h);
+int helix_draw(uint32_t pipeline,uint32_t buffer,uint32_t texture,int vertices,int first_vertex);
+void helix_end(void);int helix_destroy(int kind,uint32_t handle);
+void helix_capture(const char *path);const char *helix_graphics_audit(void);double helix_peak_rss(void);int helix_vertex_reserved(void);
 #ifdef __cplusplus
 }
 #endif

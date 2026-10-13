@@ -138,13 +138,13 @@ def generate(metadata, schema_path, output, working_dir):
     for key in ['stride', 'view', 'sampler', 'textureUnit', 'uniform']:
         hx.append(f' public static inline var {key}={json.dumps(contract[key])};')
     c = ['/* Generated from structured shader reflection and vertex.json. */', '#pragma once',
-         f'#define HY_SHADER_DESC {contract["program"]}_shader_desc',
-         f'#define HY_VERTEX_STRIDE {contract["stride"]}', f'#define HY_VIEW_SLOT {contract["view"]}',
-         f'#define HY_SAMPLER_SLOT {contract["sampler"]}',
-         f'_Static_assert(VIEW_{contract["viewName"]} == HY_VIEW_SLOT, "Shader view mismatch");',
-         f'_Static_assert(SMP_{contract["samplerName"]} == HY_SAMPLER_SLOT, "Shader sampler mismatch");',
-         'static sg_vertex_layout_state hy_vertex_layout(void) {', ' sg_vertex_layout_state layout = {0};',
-         ' layout.buffers[0].stride = HY_VERTEX_STRIDE;']
+         f'#define HELIX_SHADER_DESC {contract["program"]}_shader_desc',
+         f'#define HELIX_VERTEX_STRIDE {contract["stride"]}', f'#define HELIX_VIEW_SLOT {contract["view"]}',
+         f'#define HELIX_SAMPLER_SLOT {contract["sampler"]}',
+         f'_Static_assert(VIEW_{contract["viewName"]} == HELIX_VIEW_SLOT, "Shader view mismatch");',
+         f'_Static_assert(SMP_{contract["samplerName"]} == HELIX_SAMPLER_SLOT, "Shader sampler mismatch");',
+         'static sg_vertex_layout_state helix_vertex_layout(void) {', ' sg_vertex_layout_state layout = {0};',
+         ' layout.buffers[0].stride = HELIX_VERTEX_STRIDE;']
     for attr in contract['attributes']:
         role = attr['role']
         for suffix, value in [('Slot', attr['slot']), ('Offset', attr['offset']), ('Components', attr['components']), ('Name', attr['name'])]:
