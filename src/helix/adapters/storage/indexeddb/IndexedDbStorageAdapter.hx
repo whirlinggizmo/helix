@@ -16,6 +16,7 @@ class IndexedDbStorageAdapter implements IStorage {
 	var live = true;
 	var requests:Array<IRequest> = [];
 
+	/** Opens the IndexedDB database name, creating it if needed; operations wait until it opens and fail if it cannot. */
 	public function new(name:String) {
 		try {
 			var open = js.Browser.window.indexedDB.open(name, 1);

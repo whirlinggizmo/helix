@@ -11,15 +11,19 @@ class Autopilot {
 	var seed:Int;
 	var outcomes:Array<Dynamic> = [];
 
+	/** Whether every command has finished. */
 	public function isDone():Bool
 		return done;
 
+	/** Ticks the commands have run so far. */
 	public function getTicks():Int
 		return ticks;
 
+	/** The script's seed, 1 to 2147483647, for the app's random numbers. */
 	public function getSeed():Int
 		return seed;
 
+	/** One record a finished command: its index, op, the tick it finished on and the probe's value. */
 	public function getOutcomes():Array<Dynamic>
 		return outcomes;
 
@@ -28,6 +32,7 @@ class Autopilot {
 	var elapsed = 0;
 	var input = new InputState();
 
+	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert; at most 128) and throws on anything invalid or unknown. */
 	public function new(json:String) {
 		var document:Dynamic = haxe.Json.parse(json);
 		fields(document, ["version", "seed", "commands"]);
@@ -114,6 +119,7 @@ class Autopilot {
 			input.keyEvent(key, desired.indexOf(key) >= 0);
 	}
 
+	/** Once a tick: runs commands until one needs this tick, asking probe for named values, and returns the input to play it with. Throws when a wait times out or an assert fails. */
 	public function advance(probe:String->Dynamic):IInput {
 		input.consume();
 		while (!done) {
@@ -166,6 +172,7 @@ class Autopilot {
 		return input;
 	}
 
+	/** Progress as a record: completed, ticks, the current command index and the outcomes. */
 	public function getSnapshot():Dynamic
 		return {
 			completed: done,

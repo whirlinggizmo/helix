@@ -22,6 +22,7 @@ class FileStorageAdapter implements IStorage {
 	var live = true;
 	var serial = 0;
 
+	/** Stores files under the root directory, a key as a relative path; readonly refuses write and remove (packaged assets). A source lease is the file's path, with nothing to release. */
 	public function new(root:String, readonly = false) {
 		this.root = root;
 		this.readonly = readonly;

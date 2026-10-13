@@ -10,16 +10,19 @@ class Font2D {
 	var glyphHeight:Int;
 	var advance:Int;
 
+	/** The texture holding every glyph. */
 	public function getTexture():Texture2D
 		return texture;
 
-	/** Glyph size and advance, in font pixels. */
+	/** Glyph width, in font pixels. */
 	public function getGlyphWidth():Int
 		return glyphWidth;
 
+	/** Glyph height, in font pixels. */
 	public function getGlyphHeight():Int
 		return glyphHeight;
 
+	/** Distance from one character's left edge to the next, in font pixels. */
 	public function getAdvance():Int
 		return advance;
 
@@ -168,6 +171,7 @@ class Font2D {
 			old.destroy(entry.gpu);
 		}
 
+	/** Frees the font's texture on gpu, the adapter that baked it. */
 	public function destroy(gpu:IGraphics):Void {
 		texture.destroy(gpu);
 		live = live.filter(e -> e.font != this);

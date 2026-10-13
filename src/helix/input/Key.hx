@@ -123,6 +123,7 @@ enum abstract Key(Int) to Int {
 	/** One past the largest value, for arrays indexed by key. */
 	public static inline var COUNT = 349;
 
+	/** Every key, in order of value. */
 	public static final all:Array<Key> = [
 		Space,
 		Apostrophe,
@@ -241,6 +242,7 @@ enum abstract Key(Int) to Int {
 		Super,
 		Menu
 	];
+
 	static final names:Array<String> = [
 		"SPACE",
 		"APOSTROPHE",
@@ -360,6 +362,7 @@ enum abstract Key(Int) to Int {
 		"MENU"
 	];
 
+	/** The key a name spells, ignoring case ("A", "space", "KeypadEnter"); throws for an unknown name. */
 	public static function named(name:String):Key {
 		var i = names.indexOf(name.toUpperCase());
 		if (i < 0)

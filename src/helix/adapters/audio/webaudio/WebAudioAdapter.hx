@@ -11,6 +11,7 @@ import helix.core.WorkQueue;
 import helix.audio.Pcm;
 import haxe.io.Bytes;
 
+/** Browser IAudio (adapter level) over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph. Plays nothing until unlock runs in a user gesture. */
 class WebAudioAdapter implements IAudio {
 	var context:Dynamic;
 	var nextClip = 1;
@@ -23,9 +24,13 @@ class WebAudioAdapter implements IAudio {
 	var requests:Array<IRequest> = [];
 	var live = true;
 
+	/** Playbacks started (diagnostics). */
 	public var played(default, null) = 0;
+
+	/** Playbacks ended by stop (diagnostics). */
 	public var stopped(default, null) = 0;
 
+	/** Creates no AudioContext until a decode or unlock needs one. */
 	public function new() {}
 
 	public function decodeClip(encoded:Bytes, complete:ClipDecodeResult->Void):IRequest {
@@ -94,12 +99,14 @@ class WebAudioAdapter implements IAudio {
 		return request;
 	}
 
+	/** Creates the AudioContext if needed and resumes it; call it in a user gesture, the only time browsers allow audio to start. */
 	public function unlock():Void {
 		if (context == null)
 			context = js.Syntax.code("new (window.AudioContext || window.webkitAudioContext)()");
 		context.resume();
 	}
 
+	/** Suspends a running AudioContext, as when the page is hidden; unlock resumes it. */
 	public function suspend():Void {
 		if (context != null && context.state == "running")
 			context.suspend();
@@ -359,6 +366,7 @@ class WebAudioAdapter implements IAudio {
 		}
 	}
 
+	/** Diagnostics: whether audio is running, playbacks started and stopped, and looping playbacks. */
 	public function info():Dynamic {
 		var loops = 0;
 		for (v in playbacks)

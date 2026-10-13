@@ -10,6 +10,7 @@ import helix.adapters.storage.filesystem.FileStorageAdapter;
 
 /** Linux native composition; host and graphics share the existing Sokol context. */
 class NativeSokolGLProfile extends SokolHostAdapter {
+	/** A native host: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program, cached in HELIX_CACHE or cache/ beside it. */
 	public function new() {
 		super(() -> {
 			var root = haxe.io.Path.directory(Sys.programPath()),

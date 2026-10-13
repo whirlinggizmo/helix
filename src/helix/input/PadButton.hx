@@ -17,7 +17,11 @@ enum abstract PadButton(Int) to Int {
 	var Left = 14;
 	var Right = 15;
 	var Guide = 16;
+
+	/** One past the largest value, for arrays indexed by button. */
 	public static inline var COUNT = 17;
+
+	/** Every button; 6 and 7 aren't buttons here. */
 	public static final all:Array<PadButton> = [
 		South,
 		East,

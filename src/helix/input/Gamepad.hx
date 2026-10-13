@@ -11,11 +11,14 @@ class Gamepad {
 	var framePushes = [for (_ in 0...PadButton.COUNT) false];
 	var axes = [for (_ in 0...PadAxis.COUNT) 0.];
 
+	/** An empty slot. */
 	public function new() {}
 
+	/** Whether a pad is in this slot; natively, only while the window has the focus. */
 	public function isConnected():Bool
 		return connected;
 
+	/** The pad's name as the platform reports it; empty when the slot is empty. */
 	public function getName():String
 		return name;
 
@@ -31,18 +34,23 @@ class Gamepad {
 		return true;
 	}
 
+	/** Whether the button is held now. */
 	public function isDown(button:PadButton):Bool
 		return held[button];
 
+	/** The button went down: a tick edge until consume(), not counted, so two presses between ticks reach one. */
 	public function isPressed(button:PadButton):Bool
 		return pushes[button];
 
+	/** The button went down this frame: a frame edge. */
 	public function isFramePressed(button:PadButton):Bool
 		return framePushes[button];
 
+	/** The axis as the pad reports it, without the dead zone: sticks -1..1, triggers 0..1. */
 	public function getRawAxis(axis:PadAxis):Float
 		return axes[axis];
 
+	/** A stick axis past the radial dead zone, rescaled to reach 1, -1..1; a trigger as reported, 0..1. */
 	public function getAxis(axis:PadAxis):Float {
 		if (axis == PadAxis.LeftTrigger || axis == PadAxis.RightTrigger)
 			return axes[axis];
@@ -56,6 +64,7 @@ class Gamepad {
 		return axes[axis] * scale;
 	}
 
+	/** Fills the slot with a named pad (true) or empties it (false), for adapters; emptying lets go of every button and centres every axis. */
 	public function connect(value:Bool, name:String):Void {
 		if (connected && !value)
 			for (button in PadButton.all)
@@ -67,6 +76,7 @@ class Gamepad {
 				axes[i] = 0;
 	}
 
+	/** A button's state from the adapter; going down sets both press edges. */
 	public function buttonEvent(button:PadButton, value:Bool):Void {
 		if (value && !held[button]) {
 			pushes[button] = true;
@@ -75,13 +85,16 @@ class Gamepad {
 		held[button] = value;
 	}
 
+	/** An axis's value from the adapter, clamped to -1..1 for a stick and 0..1 for a trigger. */
 	public function axisEvent(axis:PadAxis, value:Float):Void
 		axes[axis] = Math.max(axis == PadAxis.LeftTrigger || axis == PadAxis.RightTrigger ? 0 : -1, Math.min(1, value));
 
+	/** Clears the tick edges; the input's consume() calls it after each tick. */
 	public function consume():Void
 		for (i in 0...pushes.length)
 			pushes[i] = false;
 
+	/** Clears the frame edges; the input's endFrame() calls it after each frame. */
 	public function endFrame():Void
 		for (i in 0...framePushes.length)
 			framePushes[i] = false;

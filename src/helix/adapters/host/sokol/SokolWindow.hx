@@ -7,6 +7,7 @@ import helix.host.IWindow;
 class SokolWindow implements IWindow {
 	var title = "HeliX Haxe";
 
+	/** The program's one sokol_app window. */
 	public function new() {}
 
 	public function getTitle():String

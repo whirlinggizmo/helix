@@ -7,6 +7,7 @@ import helix.assets.IAssets;
 import helix.audio.IAudio;
 import helix.assets.IReloadable;
 
+/** How an audio load ended: the resource, which the caller owns and releases, a failure message, or cancellation. */
 enum AudioLoadResult<T> {
 	Ready(resource:T);
 	Failed(message:String);
@@ -26,11 +27,13 @@ class AudioResources implements IReloadable {
 	/** Backend clips a reload replaced, destroyed once nothing started from them still plays. */
 	var retired:Array<Int> = [];
 
+	/** Loads through assets and plays on backend; poll polls backend, and neither is shut down by this service. */
 	public function new(assets:IAssets, backend:IAudio) {
 		this.assets = assets;
 		this.backend = backend;
 	}
 
+	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released. */
 	public function loadClip(path:String, complete:AudioLoadResult<AudioClip>->Void):IRequest {
 		var child:IRequest = null, request:Request = null;
 		function finish(result:AudioLoadResult<AudioClip>) {
@@ -81,6 +84,7 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
+	/** Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively. */
 	public function loadStream(path:String, complete:AudioLoadResult<AudioStream>->Void):IRequest {
 		var child:IRequest = null, request:Request = null;
 		function finish(result:AudioLoadResult<AudioStream>) {
@@ -138,6 +142,7 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
+	/** Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. When the backend cannot play now (browser audio still locked, no free voice), returns an already finished playback. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1. */
 	public function play(resource:AudioResource, loop = false, volume = 1.):AudioPlayback {
 		if (!live || resource.getBackend() != backend)
 			throw "Invalid audio resource service";
@@ -171,6 +176,7 @@ class AudioResources implements IReloadable {
 		});
 	}
 
+	/** Polls the backend, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread. */
 	public function poll():Void {
 		backend.poll();
 		for (id in retired.copy())
@@ -187,6 +193,7 @@ class AudioResources implements IReloadable {
 		queue.poll();
 	}
 
+	/** Cancels pending loads (each completes Cancelled), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays. */
 	public function shutdown():Void {
 		live = false;
 		for (request in requests.copy())

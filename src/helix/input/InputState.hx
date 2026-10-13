@@ -26,6 +26,7 @@ class InputState implements IInput {
 	var wheelY = 0.;
 	var touches:Array<Touch> = [];
 
+	/** Nothing held, the pointer off the window, and four empty pad slots. */
 	public function new() {}
 
 	public function isDown(key:Key):Bool
@@ -112,6 +113,7 @@ class InputState implements IInput {
 		return 0;
 	}
 
+	/** A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. */
 	public function keyEvent(key:Key, value:Bool):Void {
 		if (value && !held[key]) {
 			pushes[key]++;
@@ -124,6 +126,7 @@ class InputState implements IInput {
 		held[key] = value;
 	}
 
+	/** A key's state and edges applied as given, not derived from a change: for replay. */
 	public function capture(key:Key, value:Bool, push:Bool, lift:Bool):Void {
 		held[key] = value;
 		if (push)
@@ -141,12 +144,14 @@ class InputState implements IInput {
 		pads[0].buttonEvent(button, value);
 	}
 
+	/** Pad 0's axis, connecting it: for replay and tests. */
 	public function axisEvent(axis:PadAxis, value:Float):Void {
 		if (!pads[0].isConnected())
 			pads[0].connect(true, "replay");
 		pads[0].axisEvent(axis, value);
 	}
 
+	/** A mouse button down (true) or up (false); only a change of state counts an edge. */
 	public function mouseEvent(button:MouseButton, value:Bool):Void {
 		if (value && !mouseHeld[button]) {
 			mousePushes[button]++;
@@ -155,6 +160,7 @@ class InputState implements IInput {
 		mouseHeld[button] = value;
 	}
 
+	/** The primary pointer at x, y in framebuffer pixels (-1, -1 off the window), down or up; only a change of down counts an edge. */
 	public function pointerEvent(x:Float, y:Float, value:Bool):Void {
 		pointerX = x;
 		pointerY = y;
@@ -169,6 +175,7 @@ class InputState implements IInput {
 		pointerDown = value;
 	}
 
+	/** The primary pointer's position, state and edges applied as given, not derived from a change: for replay. */
 	public function capturePointer(x:Float, y:Float, value:Bool, push:Bool, lift:Bool):Void {
 		pointerX = x;
 		pointerY = y;
@@ -181,9 +188,11 @@ class InputState implements IInput {
 		pointerFrameReleased = pointerFrameReleased || lift;
 	}
 
+	/** Typed characters, appended to this frame's text. */
 	public function textEvent(value:String):Void
 		text += value;
 
+	/** Wheel notches, added to this frame's; up and right are positive. */
 	public function wheelEvent(x:Float, y:Float):Void {
 		wheelX += x;
 		wheelY += y;
@@ -217,6 +226,7 @@ class InputState implements IInput {
 		}
 	}
 
+	/** Lets go of everything held, as when focus is lost: the releases are edges, and presses not yet consumed are dropped. */
 	public function clear():Void {
 		for (key in Key.all)
 			keyEvent(key, false);

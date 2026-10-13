@@ -23,6 +23,7 @@ class AssetService implements IAssets {
 	public function getReloads():Array<{path:String, ok:Bool, message:String}>
 		return reloads;
 
+	/** Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three. */
 	public function new(fetcher:IFetch, cache:IStorage, packaged:IStorage, base:Null<String>) {
 		this.fetcher = fetcher;
 		this.cache = cache;
@@ -234,6 +235,7 @@ class AssetService implements IAssets {
 			});
 	}
 
+	/** Polls the fetcher, cache and packaged store, then runs queued work and completions within the work budget. Call once per frame on the host thread. */
 	public function poll():Void {
 		fetcher.poll();
 		cache.poll();
@@ -241,6 +243,7 @@ class AssetService implements IAssets {
 		queue.poll();
 	}
 
+	/** Cancels every pending request (each completes Cancelled), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail. */
 	public function shutdown():Void {
 		live = false;
 		for (request in requests.copy())

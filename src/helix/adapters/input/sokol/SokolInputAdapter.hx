@@ -9,11 +9,13 @@ import helix.input.PadAxis;
 
 /** Sokol's queued events applied in order, so a press and release in one frame keep both edges; then the evdev pads. */
 class SokolInputAdapter extends InputState {
+	/** Sets up the native input bridge. */
 	public function new() {
 		super();
 		InputBridge.inputSetup();
 	}
 
+	/** Call once a frame: applies Sokol's queued events, then reads the pads (none while the window lacks the focus). */
 	public function poll():Void {
 		InputBridge.inputPoll();
 		while (InputBridge.next() != 0) {
@@ -65,6 +67,7 @@ class SokolInputAdapter extends InputState {
 		}
 	}
 
+	/** Releases the native input bridge. */
 	public function shutdown():Void
 		InputBridge.inputShutdown();
 }

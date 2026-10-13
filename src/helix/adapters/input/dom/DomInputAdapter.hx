@@ -8,7 +8,9 @@ import helix.input.PadAxis;
 import js.Browser;
 import js.html.CanvasElement;
 
+/** Browser input: keys and typed text from the window; pointer, mouse buttons, fingers and wheel from the canvas, in its framebuffer pixels; gamepads read at poll(). */
 class DomInputAdapter extends InputState {
+	/** While false, key presses are ignored and poll() lets go of everything; the host sets it as the page gains and loses focus. */
 	public var active = true;
 
 	var canvas:CanvasElement;
@@ -19,6 +21,7 @@ class DomInputAdapter extends InputState {
 	var pointerFinger = -1;
 	var gesture = false;
 
+	/** Listens on the window and the canvas. */
 	public function new(canvas:CanvasElement) {
 		super();
 		this.canvas = canvas;
@@ -141,6 +144,7 @@ class DomInputAdapter extends InputState {
 		}
 	}
 
+	/** Call once a frame: reads the gamepads into the first four slots, or lets go of everything while not active. */
 	public function poll():Void {
 		if (!active) {
 			clear();

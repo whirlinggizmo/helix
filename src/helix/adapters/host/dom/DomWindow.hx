@@ -9,6 +9,7 @@ import js.html.CanvasElement;
 class DomWindow implements IWindow {
 	var canvas:CanvasElement;
 
+	/** The page's window, with canvas as what goes fullscreen or hides. */
 	public function new(canvas:CanvasElement)
 		this.canvas = canvas;
 

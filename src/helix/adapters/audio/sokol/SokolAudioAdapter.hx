@@ -16,9 +16,13 @@ import haxe.io.Bytes;
 import sys.thread.Deque;
 import sys.thread.Thread;
 
+/** An opened stream's file: its path, its PCM16 data length in bytes (WAV), and whether it is Ogg. */
 private typedef StreamFile = {var path:String; var bytes:Int; var ogg:Bool;}
+
+/** A stream playback's producer: its open file or codec, the WAV bytes left to read, and whether it loops. */
 private typedef StreamPlayback = {var file:Null<sys.io.FileInput>; var codec:Int; var stream:StreamFile; var remaining:Int; var loop:Bool;}
 
+/** Native IAudio (adapter level) over sokol_audio (mono at 44100 Hz, 16 voices, 32 clips) and libsndfile for Ogg. Decodes on worker threads, two at once; streams stored files only, refilling each playback from poll for up to 2 ms. */
 class SokolAudioAdapter implements IAudio {
 	var streams:Map<Int, StreamFile> = [];
 	var streaming:Map<Int, StreamPlayback> = [];
@@ -30,6 +34,7 @@ class SokolAudioAdapter implements IAudio {
 	var decodeJobs:Array<Void->Void> = [];
 	var decoding = 0;
 
+	/** Opens the audio device; when it is unavailable, play returns 0. */
 	public function new() {
 		AudioBridge.audioSetup();
 	}
@@ -331,6 +336,7 @@ class SokolAudioAdapter implements IAudio {
 		AudioBridge.audioShutdown();
 	}
 
+	/** Diagnostics: device availability, playbacks started and stopped, looping playbacks, mixer callbacks, sample rate and channels. */
 	public function info():Dynamic {
 		var loops = AudioBridge.audioLoops();
 		for (value in streaming)

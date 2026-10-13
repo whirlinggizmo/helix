@@ -1,6 +1,6 @@
 package helix.input;
 
-/** Taps, drags and flicks from IInput's pointer, in screen pixels; touch and mouse alike. Update once per tick, before the input is consumed. */
+/** Taps, drags and flicks from IInput's pointer, in framebuffer pixels; touch and mouse alike. Update once per tick, before the input is consumed. */
 class PointerGestures {
 	var slop:Float;
 	var tapSeconds:Float;
@@ -18,6 +18,7 @@ class PointerGestures {
 	var started = 0.;
 	var samples:Array<Float> = [];
 
+	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. */
 	public function new(slop = 12., tapSeconds = .3) {
 		this.slop = slop;
 		this.tapSeconds = tapSeconds;
@@ -47,12 +48,15 @@ class PointerGestures {
 		return true;
 	}
 
+	/** Whether the pointer is down, as of the last update. */
 	public function isDown():Bool
 		return down;
 
+	/** The pointer went down at the last update. */
 	public function isPressed():Bool
 		return pressed;
 
+	/** The pointer came up at the last update. */
 	public function isReleased():Bool
 		return released;
 
@@ -60,18 +64,23 @@ class PointerGestures {
 	public function isDragging():Bool
 		return dragging;
 
+	/** The press that ended at the last update was a tap: it stayed within the slop and the tap time. */
 	public function isTapped():Bool
 		return tapped;
 
+	/** The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after release. */
 	public function getX():Float
 		return x;
 
+	/** The pointer's y in framebuffer pixels, held as getX is. */
 	public function getY():Float
 		return y;
 
+	/** Where the current or last press began, x in framebuffer pixels. */
 	public function getStartX():Float
 		return startX;
 
+	/** Where the current or last press began, y in framebuffer pixels. */
 	public function getStartY():Float
 		return startY;
 
@@ -79,9 +88,11 @@ class PointerGestures {
 	public function getFlickX():Float
 		return flickX;
 
+	/** Vertical velocity as getFlickX, down positive. */
 	public function getFlickY():Float
 		return flickY;
 
+	/** Reads the pointer once per tick, before the input is consumed; now is the time in seconds. */
 	public function update(input:IInput, now:Float):Void {
 		pressed = false;
 		released = false;

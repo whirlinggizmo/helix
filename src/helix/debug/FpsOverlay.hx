@@ -8,9 +8,11 @@ class FpsOverlay {
 	var rate = 0.;
 	var milliseconds = 0.;
 
+	/** Frames a second over the last half second. */
 	public function getRate():Float
 		return rate;
 
+	/** The frame's average cost in milliseconds over the last half second. */
 	public function getMilliseconds():Float
 		return milliseconds;
 
@@ -18,6 +20,7 @@ class FpsOverlay {
 	var time = 0.;
 	var cost = 0.;
 
+	/** An overlay showing 0 until half a second of frames has been seen. */
 	public function new() {}
 
 	/** dt: the frame's interval; cpu: what the frame cost, in milliseconds (IDiagnostics.getFrameCpu). */
@@ -34,6 +37,7 @@ class FpsOverlay {
 		}
 	}
 
+	/** Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xRRGGBBAA. */
 	public function draw(batch:Batch2D, x:Float, y:Float, size = 16., color = 0x7fe07fff):Void
 		Text2D.draw(batch, Std.int(rate + .5) + ' FPS  ' + (Math.round(milliseconds * 10) / 10) + ' MS', x, y, size, color);
 }

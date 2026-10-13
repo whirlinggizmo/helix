@@ -8,6 +8,10 @@ enum abstract PadAxis(Int) to Int {
 	var RightY = 3;
 	var LeftTrigger = 4;
 	var RightTrigger = 5;
+
+	/** One past the largest value, for arrays indexed by axis. */
 	public static inline var COUNT = 6;
+
+	/** Every axis. */
 	public static final all:Array<PadAxis> = [LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger];
 }

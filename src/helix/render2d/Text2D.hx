@@ -1,5 +1,6 @@
 package helix.render2d;
 
+/** Which point of the text x names: its left edge, center or right edge. */
 enum abstract Align2D(Int) {
 	var Left;
 	var Center;
@@ -14,6 +15,7 @@ class Text2D {
 		return text.length == 0 ? 0 : ((text.length - 1) * font.getAdvance() + font.getGlyphWidth()) * unit;
 	}
 
+	/** Draws text into batch with its built-in font, tinted color (0xRRGGBBAA); characters without a glyph leave a space. */
 	public static function draw(batch:Batch2D, text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left):Void {
 		var font = batch.getFont(),
 			unit = size / font.getGlyphHeight(),

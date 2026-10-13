@@ -15,6 +15,7 @@ import helix.app.IApp;
 import js.Browser;
 import js.html.CanvasElement;
 
+/** The browser host: the page's canvas, a requestAnimationFrame loop, and options from the URL query. Its own IDiagnostics. */
 class DomHostAdapter implements IHost implements IDiagnostics {
 	public var graphics(default, null):IGraphics;
 	public var input(default, null):IInput;
@@ -36,6 +37,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	var services:HostServices;
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
+	/** Builds the services with compose, given the element with id "canvas" and whether to preserve the drawing buffer (the tick option is given). */
 	public function new(compose:(CanvasElement, Bool) -> HostServices) {
 		diagnostics = this;
 		canvas = cast Browser.document.getElementById("canvas");

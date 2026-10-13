@@ -4,7 +4,9 @@ import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.IGraphics;
 import haxe.io.Bytes;
 
+/** IGraphics on sokol_gfx for native hxcpp builds; a call the bridge refuses throws. */
 class SokolGraphicsAdapter implements IGraphics {
+	/** Sets up sokol_gfx; the window and its GL context must already exist. */
 	public function new() {
 		GraphicsBridge.setup();
 	}

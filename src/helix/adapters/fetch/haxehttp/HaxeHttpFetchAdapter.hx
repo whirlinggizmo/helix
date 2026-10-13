@@ -8,12 +8,14 @@ import haxe.io.Bytes;
 import sys.thread.Thread;
 import sys.thread.Deque;
 
+/** Collects a response body on the worker thread, publishing the count received and throwing past the byte limit. */
 private class FetchOutput extends haxe.io.Output {
 	var buffer = new haxe.io.BytesBuffer();
 	var limit:Int;
 	var notify:Int->Void;
 	var received = 0;
 
+	/** Collects up to limit bytes, calling notify with the total received after each write. */
 	public function new(limit:Int, notify:Int->Void) {
 		this.limit = limit;
 		this.notify = notify;
@@ -34,10 +36,12 @@ private class FetchOutput extends haxe.io.Output {
 		return len;
 	}
 
+	/** The body collected so far. */
 	public function bytes():Bytes
 		return buffer.getBytes();
 }
 
+/** Native IFetch (adapter level) over haxe.Http on worker threads, http and https URLs only (Failed for others). timeoutSeconds is the connection timeout, noCache is ignored, and cancel settles the request without stopping the transfer. */
 class HaxeHttpFetchAdapter implements IFetch {
 	var done = new Deque<Void->Void>();
 	var queue = new WorkQueue();
@@ -47,6 +51,7 @@ class HaxeHttpFetchAdapter implements IFetch {
 	var live = true;
 	var progressReaders:Array<Void->Void> = [];
 
+	/** Creates the adapter; fetches start from poll. */
 	public function new() {}
 
 	public function fetch(spec:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void):IRequest {

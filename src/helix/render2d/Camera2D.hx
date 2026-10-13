@@ -8,15 +8,18 @@ class Camera2D {
 	var viewportWidth = 1;
 	var viewportHeight = 1;
 
+	/** A camera at world 0, 0, zoom 1, on a 1 x 1 viewport. */
 	public function new() {}
 
-	/** The world point at the viewport's center. */
+	/** The world X at the viewport's center. */
 	public function getX():Float
 		return x;
 
+	/** The world Y at the viewport's center. */
 	public function getY():Float
 		return y;
 
+	/** Puts the world point x, y at the viewport's center. */
 	public function setPosition(x:Float, y:Float):Void {
 		this.x = x;
 		this.y = y;
@@ -34,9 +37,11 @@ class Camera2D {
 		return true;
 	}
 
+	/** The viewport width in framebuffer pixels. */
 	public function getViewportWidth():Int
 		return viewportWidth;
 
+	/** The viewport height in framebuffer pixels. */
 	public function getViewportHeight():Int
 		return viewportHeight;
 
@@ -60,21 +65,27 @@ class Camera2D {
 		y = viewportHeight / 2 / scale;
 	}
 
+	/** The world X under framebuffer pixel X px, from the viewport's left edge. */
 	public function screenToWorldX(px:Float):Float
 		return x + (px - viewportWidth / 2) / zoom;
 
+	/** The world Y under framebuffer pixel Y py, from the viewport's top edge. */
 	public function screenToWorldY(py:Float):Float
 		return y + (py - viewportHeight / 2) / zoom;
 
+	/** The framebuffer pixel X, from the viewport's left edge, of world X wx. */
 	public function worldToScreenX(wx:Float):Float
 		return (wx - x) * zoom + viewportWidth / 2;
 
+	/** The framebuffer pixel Y, from the viewport's top edge, of world Y wy. */
 	public function worldToScreenY(wy:Float):Float
 		return (wy - y) * zoom + viewportHeight / 2;
 
+	/** Clip-space X (-1 left to 1 right) of world X wx. */
 	public inline function clipX(wx:Float):Float
 		return (wx - x) * zoom * 2 / viewportWidth;
 
+	/** Clip-space Y (1 top to -1 bottom) of world Y wy; the flip makes world Y grow downward. */
 	public inline function clipY(wy:Float):Float
 		return -(wy - y) * zoom * 2 / viewportHeight;
 }

@@ -6,6 +6,7 @@ import helix.assets.Request;
 import helix.core.WorkQueue;
 import haxe.io.Bytes;
 
+/** Browser IFetch (adapter level) over fetch(), reading the body as it arrives: timeoutSeconds covers the whole transfer, cancel aborts it, and the progress total is null for a compressed body. */
 class FetchApiAdapter implements IFetch {
 	var queue = new WorkQueue();
 	var jobs:Array<Void->Void> = [];
@@ -13,6 +14,7 @@ class FetchApiAdapter implements IFetch {
 	var active = 0;
 	var live = true;
 
+	/** Creates the adapter; fetches start from poll. */
 	public function new() {}
 
 	public function fetch(spec:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void):IRequest {

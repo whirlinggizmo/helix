@@ -9,6 +9,7 @@ import helix.adapters.storage.indexeddb.IndexedDbStorageAdapter;
 
 /** This sample profile chooses providers. Reusable host code owns their lifecycle. */
 class BrowserWebGL2Profile extends DomHostAdapter {
+	/** A browser host on the page's canvas: assets fetched from assetBase and cached in IndexedDB under cacheName; cacheGraphics and shareShader pick WebGL2 variants. */
 	public function new(cacheName:String = "helix-cache-v1", assetBase:String = "assets/", cacheGraphics:Bool = false, shareShader:Bool = false) {
 		super((canvas, preserve) -> {
 			var graphics = new WebGL2GraphicsAdapter(canvas, preserve, cacheGraphics, shareShader),

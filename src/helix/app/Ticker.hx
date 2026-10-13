@@ -13,6 +13,7 @@ class Ticker {
 	var input:IInput;
 	var accumulator = 0.;
 
+	/** Ticks at rate a second, consuming input's tick edges after each; a rate of 0 or less keeps 60. */
 	public function new(input:IInput, rate = 60.) {
 		this.input = input;
 		setRate(rate);
@@ -47,6 +48,7 @@ class Ticker {
 		return true;
 	}
 
+	/** How far the frame is from the last tick to the next, from 0 to under 1. */
 	public function getFraction():Float
 		return fraction;
 

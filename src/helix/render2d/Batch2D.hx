@@ -9,10 +9,11 @@ class Batch2D {
 	var draws = 0;
 	var font:Font2D;
 
-	/** Vertices and draws of the frame drawn last. */
+	/** Vertices of the frame drawn last. */
 	public function getVertexCount():Int
 		return vertices;
 
+	/** Draws of the frame drawn last: one per run of a texture. */
 	public function getDrawCount():Int
 		return draws;
 
@@ -34,6 +35,7 @@ class Batch2D {
 	var b = 1.;
 	var a = 1.;
 
+	/** A batch of up to capacity vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. */
 	public function new(gpu:IGraphics, capacity = 32768) {
 		this.gpu = gpu;
 		this.capacity = capacity;
@@ -44,6 +46,7 @@ class Batch2D {
 		texture = font.getTexture();
 	}
 
+	/** Starts collecting a frame seen through camera, cleared to clearColor (0xRRGGBBAA); later calls only fill the batch until end. */
 	public function begin(camera:Camera2D, clearColor:Int):Void {
 		this.camera = camera;
 		gpu.setClearColor(clearColor);
@@ -54,6 +57,7 @@ class Batch2D {
 		texture = font.getTexture();
 	}
 
+	/** Draws the frame: one upload of every vertex, then one draw per run of a texture, over the camera's whole viewport. */
 	public function end():Void {
 		closeRun();
 		gpu.beginFrame(camera.getViewportWidth(), camera.getViewportHeight(), 0, 0, camera.getViewportWidth(), camera.getViewportHeight());
@@ -112,6 +116,7 @@ class Batch2D {
 		if (texture.getWhiteU() < 0)
 			useTexture(font.getTexture());
 
+	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. Throws when the frame's vertices pass capacity, as every shape does. */
 	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int):Void {
 		color(tint);
 		vertex(x, y, u0, v0);
@@ -122,12 +127,14 @@ class Batch2D {
 		vertex(x, y + h, u0, v1);
 	}
 
+	/** A filled rectangle in world units, top-left at x, y. */
 	public function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
 		solid();
 		var u = texture.getWhiteU(), v = texture.getWhiteV();
 		quad(x, y, w, h, u, v, u, v, tint);
 	}
 
+	/** A filled triangle through three world points. */
 	public function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void {
 		solid();
 		var u = texture.getWhiteU(), v = texture.getWhiteV();
@@ -137,6 +144,7 @@ class Batch2D {
 		vertex(x2, y2, u, v);
 	}
 
+	/** A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0. */
 	public function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void {
 		var dx = x1 - x0, dy = y1 - y0, length = Math.sqrt(dx * dx + dy * dy);
 		if (length == 0)
@@ -154,6 +162,7 @@ class Batch2D {
 		rect(x + w - width, y + width, width, h - 2 * width, tint);
 	}
 
+	/** A filled rectangle with corners of radius world units, the radius clamped to half the shorter side. */
 	public function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void {
 		radius = Math.min(radius, Math.min(w, h) / 2);
 		rect(x + radius, y, w - 2 * radius, h, tint);
@@ -174,6 +183,7 @@ class Batch2D {
 	function segments(radius:Float):Int
 		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * camera.getZoom() / 2.5)));
 
+	/** A filled circle in world units, centered on x, y, with segments for its size on screen. */
 	public function circle(x:Float, y:Float, radius:Float, tint:Int):Void {
 		var n = segments(radius);
 		for (i in 0...n) {
@@ -204,6 +214,7 @@ class Batch2D {
 		line(x2, y2, x0, y0, width, tint);
 	}
 
+	/** Frees the buffer, pipeline and font made by new; the batch is unusable after. */
 	public function cleanup():Void {
 		gpu.destroy("pipeline", pipeline);
 		gpu.destroy("buffer", buffer);

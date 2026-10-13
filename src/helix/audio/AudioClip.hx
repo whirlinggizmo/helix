@@ -8,6 +8,7 @@ class AudioClip extends AudioResource {
 	public function getPath():Null<String>
 		return path;
 
+	/** Owns backend clip id, loaded from path when given; AudioResources.loadClip creates it. */
 	public function new(id:Int, backend:IAudio, ?path:String) {
 		super(id, backend, null);
 		this.path = path;

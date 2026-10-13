@@ -16,6 +16,7 @@ import helix.assets.AssetService;
 import helix.audio.AudioResources;
 import helix.app.IApp;
 
+/** The native host: one sokol_app window and its frame loop, and options from HELIX_* environment variables. Its own IDiagnostics. */
 class SokolHostAdapter implements IHost implements IDiagnostics {
 	public var graphics(default, null):IGraphics;
 	public var input(default, null):IInput;
@@ -38,6 +39,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 	var app:IApp;
 	var inspectCallback:Void->Dynamic;
 
+	/** Keeps compose to build the services when run opens the window; only one host per program. */
 	public function new(compose:Void->HostServices) {
 		this.compose = compose;
 		instance = this;

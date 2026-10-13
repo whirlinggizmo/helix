@@ -5,8 +5,9 @@ import haxe.io.Bytes;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
-/** Raw browser API calls only; geometry and batching stay in shared Renderer. */
+/** IGraphics on a canvas's WebGL2 context: raw browser API calls only; geometry and batching stay in Batch2D. */
 class WebGL2GraphicsAdapter implements IGraphics {
+	/** The canvas's WebGL2 context. */
 	public var gl(default, null):WebGL2RenderingContext;
 
 	var next = 1;
@@ -30,6 +31,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var currentTexture = 0;
 	var currentAlpha:Null<Bool>;
 
+	/** Takes canvas's WebGL2 context, without alpha, antialiasing, depth or stencil; preserve keeps the drawing buffer between frames, cacheState skips rebinding state a draw shares with the one before, shareShader gives every pipeline one program. Throws without WebGL2. */
 	public function new(canvas:CanvasElement, preserve:Bool, cacheState:Bool = false, shareShader:Bool = false) {
 		this.cacheState = cacheState;
 		this.shareShader = shareShader;
