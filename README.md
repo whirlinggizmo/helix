@@ -9,7 +9,7 @@ Status: milestone 1 (the platform, 2D and services) is complete; milestone 2 (3D
 ## Layout
 
 ```text
-src/helix/                 the framework: contracts, policy, render2d, render3d, input, audio, assets
+src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
   adapters/<service>/<provider>/           Haxe adapters; internal/ holds their C glue and externs
   profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
@@ -75,7 +75,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `quit` | quitting mid-load: shutdown runs after the frame |
 | `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
 
-Still to come: the rest of milestone 2 (next a deterministic `helix.math.Trig`, the same bits on both targets for simulations that must replay alike; then meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: the rest of milestone 2 (meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 
@@ -100,7 +100,7 @@ python3 helix.py test --native --shdc /path/to/sokol-shdc
 python3 helix.py services --browser /path/to/chromium --native
 ```
 
-- **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, Blocks and the Asteroids simulation.
+- **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, 3D math, trigonometry, Blocks and the Asteroids simulation. `helix.math.Trig` must also give the same bits in JS and, with `--native`, in hxcpp.
 - **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures.
 - **Autopilot** (`tools/example.py <name> autopilot`) replays an example's scripts in a headless browser and natively, and requires the same final game.
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.

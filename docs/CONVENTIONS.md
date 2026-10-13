@@ -29,9 +29,10 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 
 One unit per kind of value across the API, so nothing has to be converted at a call:
 
-- **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. (3D's handedness is decided with 3D.)
+- **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. 3D is right-handed with +y up.
 - **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.getBudgetMs`) or, where the name can't, in its doc comment (the diagnostics' frame costs are milliseconds).
 - **Colors are `0xRRGGBBAA`** integers.
+- **A simulation that must play alike on every target** (an autopilot's replay, lockstep, physics) takes its trigonometry from `helix.math.Trig`, never `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `acos`, `exp` or `log`, which differ in the last bit between the browser and native. Arithmetic, `sqrt`, `floor` and `pow` agree. Drawing may use `Math`.
 - **Positions and sizes name their space** in the doc comment: framebuffer pixels (the host, the pointer), logical pixels (the window), or world units (a camera's).
 
 ## Layout and documentation

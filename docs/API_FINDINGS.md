@@ -16,11 +16,11 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `frame(dt)` was Sokol's smoothed frame duration natively and the raw, unclamped interval in a browser. Both hosts now measure it the same way (`FrameClock`): held between 1e-6 and 0.1 s, 1/60 on the first frame. `Ticker` takes the unheld `IHost.getFrameElapsed()`, so a slow frame is caught up in ticks, up to `getMaxSteps`.
 - `Batch2D.end()` took the camera's viewport as the whole framebuffer, at 0,0. `Camera2D.setViewportArea` narrows it, and screen positions are the framebuffer's.
 - `IGraphics.destroy(kind:String, ...)` took the kind as a string: now `destroyTexture`, `destroyBuffer` and `destroyPipeline`.
+- `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `exp` and `log` differ by 1 ulp between V8 and glibc for 1–18% of inputs (3.3% for `sin`, 18% for `atan2`), so a simulation calling them plays differently on each target. `helix.math.Trig` gives the same bits everywhere (`helix.py test` holds the interpreter, JS and hxcpp to one hash), and native builds that use it compile with `-ffp-contract=off`.
 
 ## Open
 
 **Behaviour that differs between the targets**
-- `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `exp` and `log` differ by 1 ulp between V8 and glibc for 1–18% of inputs (measured 2026-10-13: 3.3% for `sin`, 18% for `atan2`); `pow` and arithmetic agree. A simulation that must replay alike on both targets can't call them. Scheduled: `helix.math.Trig` (milestone 2, next), built from arithmetic alone, with `-ffp-contract=off` for native builds so no target fuses multiply-adds.
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
 - `IAudio.destroyStream`: Web Audio stops the stream's playbacks; Sokol's doesn't, and a playing stream keeps reading its file. `AudioResources` hides it by keeping resources alive while played.
