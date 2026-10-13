@@ -17,11 +17,11 @@ import js.html.CanvasElement;
 class DomHostAdapter implements IHost implements IDiagnostics {
  public var graphics(default,null):IGraphics;public var input(default,null):IInput;public var audio(default,null):IAudio;public var diagnostics(default,null):IDiagnostics;public var assets(default,null):IAssets;
  public var fetch(default,null):IFetch;public var storage(default,null):IStorage;public var audioResources(default,null):AudioResources;
- public var focused(default,null)=true;public var canQuit(default,null)=false;
+ public var focused(default,null)=true;public var canQuit(default,null)=false;public var window(default,null):helix.host.IWindow;
  var resources:AssetService;var canvas:CanvasElement;var stopped=false;var closed=false;var services:HostServices;
  var params=new js.html.URLSearchParams(Browser.window.location.search);
  public function new(compose:(CanvasElement,Bool)->HostServices){
-  diagnostics=this;canvas=cast Browser.document.getElementById("canvas");resize();services=compose(canvas,option("tick","-1")!="-1");
+  diagnostics=this;canvas=cast Browser.document.getElementById("canvas");window=new DomWindow(canvas);resize();services=compose(canvas,option("tick","-1")!="-1");
   graphics=services.graphics;input=services.input;audio=services.audio;fetch=services.fetch;storage=services.storage;
   resources=new AssetService(fetch,storage,services.packaged,services.base);assets=resources;audioResources=new AudioResources(assets,audio);
   #if hotreload watchAssets(services.base); #end
@@ -38,7 +38,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
  function resize():Void {canvas.width=Std.int(Math.max(1,Browser.window.innerWidth*pixelRatio()));canvas.height=Std.int(Math.max(1,Browser.window.innerHeight*pixelRatio()));}
  public function run(app:IApp):Void {
   app.init();var previous=now();var loop:Float->Void=null;
-  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;lastFrameInterval=(current-previous)*1000;resources.poll();audioResources.poll();services.pollInput();app.frame(current-previous);lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
+  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;lastFrameInterval=(current-previous)*1000;resources.poll();audioResources.poll();services.pollInput();app.frame(current-previous);services.endInputFrame();lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
   Browser.window.requestAnimationFrame(loop);Browser.window.addEventListener("pagehide",_->{if(!closed){closed=true;audioResources.shutdown();resources.shutdown();app.cleanup();services.shutdownInput();}});
  }
  public function now():Float return Browser.window.performance.now()/1000;

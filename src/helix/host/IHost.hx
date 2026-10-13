@@ -18,6 +18,7 @@ interface IHost {
  public var storage(default,null):IStorage;
  public var assets(default,null):IAssets;
  public var diagnostics(default,null):IDiagnostics;
+ public var window(default,null):IWindow;
  public var focused(default,null):Bool;
  public var canQuit(default,null):Bool;
  public function run(app:IApp):Void;

@@ -3,19 +3,35 @@ import helix.adapters.input.sokol.internal.InputBridge;
 
 import helix.input.InputState;
 import helix.input.Key;
+import helix.input.MouseButton;
 import helix.input.PadButton;
 import helix.input.PadAxis;
+/** Sokol's queued events applied in order, so a press and release in one frame keep both edges; then the evdev pads. */
 class SokolInputAdapter extends InputState {
- static final codes=[13,27,9,32,37,39,38,40,65,68,87,83,90,88,67,80,16];
  public function new(){super();InputBridge.inputSetup();}
  public function poll():Void {
   InputBridge.inputPoll();
-  for(key in Key.all)capture(key,InputBridge.key(codes[key])!=0,InputBridge.keyPressed(codes[key])!=0,InputBridge.keyReleased(codes[key])!=0);
-  capturePointer(InputBridge.pointerX(),InputBridge.pointerY(),InputBridge.pointerDown()!=0,InputBridge.pointerPressed()!=0,InputBridge.pointerReleased()!=0);
-  for(button in PadButton.all)padEvent(button,InputBridge.padButton(button)!=0);
-  for(axis in [PadAxis.LeftX,PadAxis.LeftY,PadAxis.RightTrigger])axisEvent(axis,InputBridge.padAxis(axis));
-  if(InputBridge.focused()==0)clear();
+  while(InputBridge.next()!=0){
+   var code=InputBridge.eventCode(),value=InputBridge.eventValue()!=0,x:Float=InputBridge.eventX(),y:Float=InputBridge.eventY();
+   switch(InputBridge.eventType()){
+    case 1:var key=Key.fromCode(code);if(key!=null)keyEvent(key,value);
+    case 2:textEvent(String.fromCharCode(code));
+    case 3:if(code>=0&&code<3)mouseEvent(cast code,value);if(code==MouseButton.Left)pointerEvent(x,y,value);else pointerEvent(x,y,pointerDown);
+    case 4:pointerEvent(x,y,pointerDown);
+    case 5:wheelEvent(x,y);
+    case 6:touchEvent(code,x,y,value);
+    case 7:if(!value)clear();
+    default:
+   }
+  }
+  var focused=InputBridge.focused()!=0;
+  for(i in 0...pads.length){
+   var pad=pads[i],connected=focused&&InputBridge.padConnected(i)!=0;
+   if(!connected){if(pad.connected)pad.connect(false,"");continue;}
+   var name:String=InputBridge.padName(i);if(!pad.connected||pad.name!=name)pad.connect(true,name);
+   for(button in PadButton.all)pad.buttonEvent(button,InputBridge.padButton(i,button)!=0);
+   for(axis in PadAxis.all)pad.axisEvent(axis,InputBridge.padAxis(i,axis));
+  }
  }
- override public function consume():Void {super.consume();InputBridge.inputConsume();}
  public function shutdown():Void InputBridge.inputShutdown();
 }

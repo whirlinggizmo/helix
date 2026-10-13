@@ -28,30 +28,33 @@ static void *render_thread(void *unused) {
 }
 int main(void) {
     hy_input_setup();
-    hy_input_key(13,1); hy_input_key(13,0); CHECK(!hy_key(13) && hy_key_pressed(13) && hy_key_released(13));
-    hy_input_consume(); CHECK(!hy_key_pressed(13) && !hy_key_released(13));
-    hy_input_key(32,1); hy_input_consume(); hy_input_key(32,1); CHECK(hy_key(32) && !hy_key_pressed(32));
-    hy_input_focus(0); CHECK(!hy_key(32) && hy_key_released(32)); hy_input_focus(1);
-    hy_input_pointer(20,30,1); hy_input_pointer(20,30,0); CHECK(!hy_pointer_down() && hy_pointer_pressed() && hy_pointer_released());
-    hy_input_consume(); CHECK(!hy_pointer_pressed());
+    /* Events queue in order and drain once; focus changes are tracked as they are queued. */
+    hy_input_push(HY_EVENT_KEY,257,1,0,0); hy_input_push(HY_EVENT_KEY,257,0,0,0); hy_input_push(HY_EVENT_MOUSE_BUTTON,0,1,20,30);
+    CHECK(hy_input_next() && hy_event_type()==HY_EVENT_KEY && hy_event_code()==257 && hy_event_value()==1);
+    CHECK(hy_input_next() && hy_event_value()==0); CHECK(hy_input_next() && hy_event_type()==HY_EVENT_MOUSE_BUTTON && hy_event_x()==20 && hy_event_y()==30);
+    CHECK(!hy_input_next());
+    for (int i=0; i<1100; i++) hy_input_push(HY_EVENT_MOUSE_MOVE,0,0,(float)i,0);
+    int drained=0; while (hy_input_next()) drained++; CHECK(drained==1024); /* A full queue drops the newest. */
+    hy_input_push(HY_EVENT_FOCUS,0,0,0,0); CHECK(!hy_focused()); hy_input_push(HY_EVENT_FOCUS,0,1,0,0); CHECK(hy_focused()); while (hy_input_next()) {}
 
     int pipefd[2]; CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0);
-    hy_gamepad_test_connect(pipefd[0]);
-    hy_gamepad_test_range(ABS_X,-32768,32767,0); hy_gamepad_test_range(ABS_Y,-32768,32767,0);
-    hy_gamepad_test_range(ABS_RX,-32768,32767,0); hy_gamepad_test_range(ABS_RY,-32768,32767,0);
-    hy_gamepad_test_range(ABS_RZ,0,255,0); hy_gamepad_test_range(ABS_HAT0X,-1,1,0); hy_gamepad_test_range(ABS_HAT0Y,-1,1,0);
-    event(pipefd[1],EV_KEY,BTN_EAST,1); event(pipefd[1],EV_ABS,ABS_X,-26000); event(pipefd[1],EV_ABS,ABS_RZ,200);
-    hy_input_poll(); CHECK(hy_pad_available()); CHECK(hy_pad_button(1) && hy_pad_axis(0)<-.7 && hy_pad_axis(2)>.7);
-    event(pipefd[1],EV_ABS,ABS_HAT0X,-1); event(pipefd[1],EV_ABS,ABS_HAT0Y,1); hy_input_poll(); CHECK(hy_pad_button(6) && hy_pad_button(5) && !hy_pad_button(4));
-    hy_input_focus(0); CHECK(!hy_pad_button(1) && hy_pad_axis(0)==0); hy_input_focus(1);
-    event(pipefd[1],EV_ABS,ABS_X,40000); event(pipefd[1],EV_KEY,BTN_EAST,0); hy_input_poll(); CHECK(hy_pad_axis(0)==1 && !hy_pad_button(1));
-    close(pipefd[1]); hy_input_poll(); CHECK(!hy_pad_available() && !hy_pad_button(1) && hy_pad_axis(2)==0);
-    CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0); hy_gamepad_test_connect(pipefd[0]);
-    hy_gamepad_test_range(ABS_RZ,-32768,32767,10000); CHECK(hy_pad_axis(2)==0); /* Ambiguous generic right stick is not a trigger. */
-    hy_gamepad_test_range(ABS_GAS,0,1023,800); CHECK(hy_pad_axis(2)>.7);
-    hy_gamepad_test_range(ABS_X,0,0,0); CHECK(hy_pad_axis(0)==0);
-    event(pipefd[1],EV_SYN,SYN_DROPPED,0); event(pipefd[1],EV_KEY,BTN_SOUTH,1); hy_input_poll(); CHECK(!hy_pad_button(0));
-    event(pipefd[1],EV_SYN,SYN_REPORT,0); hy_input_poll(); CHECK(!hy_pad_available()); /* Pipe cannot resync by ioctl; disconnect safely. */
+    hy_gamepad_test_connect(1,pipefd[0]);
+    hy_gamepad_test_range(1,ABS_X,-32768,32767,0); hy_gamepad_test_range(1,ABS_Y,-32768,32767,0);
+    hy_gamepad_test_range(1,ABS_RX,-32768,32767,0); hy_gamepad_test_range(1,ABS_RY,-32768,32767,0);
+    hy_gamepad_test_range(1,ABS_Z,0,255,0); hy_gamepad_test_range(1,ABS_RZ,0,255,0); hy_gamepad_test_range(1,ABS_HAT0X,-1,1,0); hy_gamepad_test_range(1,ABS_HAT0Y,-1,1,0);
+    event(pipefd[1],EV_KEY,BTN_EAST,1); event(pipefd[1],EV_KEY,BTN_Y,1); event(pipefd[1],EV_ABS,ABS_X,-26000); event(pipefd[1],EV_ABS,ABS_RY,26000); event(pipefd[1],EV_ABS,ABS_RZ,200);
+    hy_input_poll(); CHECK(!hy_pad_connected(0) && hy_pad_connected(1) && hy_pad_name(1)[0]);
+    CHECK(hy_pad_button(1,1) && hy_pad_button(1,3) && !hy_pad_button(1,2) && hy_pad_axis(1,0)<-.7 && hy_pad_axis(1,3)>.7 && hy_pad_axis(1,5)>.7 && hy_pad_axis(1,4)==0);
+    event(pipefd[1],EV_ABS,ABS_HAT0X,-1); event(pipefd[1],EV_ABS,ABS_HAT0Y,1); hy_input_poll(); CHECK(hy_pad_button(1,14) && hy_pad_button(1,13) && !hy_pad_button(1,12));
+    hy_input_push(HY_EVENT_FOCUS,0,0,0,0); CHECK(!hy_pad_button(1,1) && hy_pad_axis(1,0)==0); hy_input_push(HY_EVENT_FOCUS,0,1,0,0); while (hy_input_next()) {}
+    event(pipefd[1],EV_ABS,ABS_X,40000); event(pipefd[1],EV_KEY,BTN_EAST,0); hy_input_poll(); CHECK(hy_pad_axis(1,0)==1 && !hy_pad_button(1,1));
+    close(pipefd[1]); hy_input_poll(); CHECK(!hy_pad_connected(1) && !hy_pad_button(1,1) && hy_pad_axis(1,5)==0);
+    CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0); hy_gamepad_test_connect(0,pipefd[0]);
+    hy_gamepad_test_range(0,ABS_RZ,-32768,32767,10000); CHECK(hy_pad_axis(0,5)==0 && hy_pad_axis(0,2)==0); /* A generic Z/RZ right stick is neither a trigger nor a guess. */
+    hy_gamepad_test_range(0,ABS_GAS,0,1023,800); CHECK(hy_pad_axis(0,5)>.7);
+    hy_gamepad_test_range(0,ABS_X,0,0,0); CHECK(hy_pad_axis(0,0)==0);
+    event(pipefd[1],EV_SYN,SYN_DROPPED,0); event(pipefd[1],EV_KEY,BTN_SOUTH,1); hy_input_poll(); CHECK(!hy_pad_button(0,0));
+    event(pipefd[1],EV_SYN,SYN_REPORT,0); hy_input_poll(); CHECK(!hy_pad_connected(0)); /* Pipe cannot resync by ioctl; disconnect safely. */
     close(pipefd[1]); hy_input_shutdown();
 
     hy_audio_setup(); CHECK(hy_audio_available());

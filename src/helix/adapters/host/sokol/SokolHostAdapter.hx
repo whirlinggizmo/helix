@@ -17,7 +17,7 @@ import helix.app.IApp;
 class SokolHostAdapter implements IHost implements IDiagnostics {
  public var graphics(default,null):IGraphics;public var input(default,null):IInput;public var audio(default,null):IAudio;public var diagnostics(default,null):IDiagnostics;public var assets(default,null):IAssets;
  public var fetch(default,null):IFetch;public var storage(default,null):IStorage;public var audioResources(default,null):AudioResources;
- public var focused(default,null)=true;public var canQuit(default,null)=true;
+ public var focused(default,null)=true;public var canQuit(default,null)=true;public var window(default,null):helix.host.IWindow=new SokolWindow();
  static var instance:SokolHostAdapter;var resources:AssetService;var services:HostServices;var compose:Void->HostServices;
  var app:IApp;var inspectCallback:Void->Dynamic;
  public function new(compose:Void->HostServices){this.compose=compose;instance=this;diagnostics=this;}
@@ -33,7 +33,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
  }
  static function onFrame(dt:cpp.Float32):Void {
   var cpuStart=instance.now();instance.lastFrameInterval=instance.previousCallback==0?0:(cpuStart-instance.previousCallback)*1000;instance.previousCallback=cpuStart;
-  instance.resources.poll();instance.audioResources.poll();instance.services.pollInput();instance.focused=InputBridge.focused()!=0;instance.app.frame(dt);
+  instance.resources.poll();instance.audioResources.poll();instance.services.pollInput();instance.focused=InputBridge.focused()!=0;instance.app.frame(dt);instance.services.endInputFrame();
   var path=Sys.getEnv("HELIX_LIVE");if(path!=null&&instance.inspectCallback!=null){var value=instance.inspectCallback();value.host=instance.info();sys.io.File.saveContent(path,haxe.Json.stringify(value));}
   instance.lastFrameCpu=(instance.now()-cpuStart)*1000;
  }

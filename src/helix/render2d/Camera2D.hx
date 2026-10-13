@@ -8,6 +8,8 @@ class Camera2D {
  public function viewport(width:Int,height:Int):Void {viewportWidth=width<1?1:width;viewportHeight=height<1?1:height;}
  /** Show a world rectangle whole and centered; the longer screen side shows extra world. */
  public function fit(left:Float,top:Float,width:Float,height:Float):Void {zoom=Math.min(viewportWidth/width,viewportHeight/height);x=left+width/2;y=top+height/2;}
+ /** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). */
+ public function pixels(scale:Float):Void {zoom=scale;x=viewportWidth/2/scale;y=viewportHeight/2/scale;}
  public function screenToWorldX(px:Float):Float return x+(px-viewportWidth/2)/zoom;
  public function screenToWorldY(py:Float):Float return y+(py-viewportHeight/2)/zoom;
  public function worldToScreenX(wx:Float):Float return (wx-x)*zoom+viewportWidth/2;

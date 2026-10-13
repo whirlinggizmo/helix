@@ -47,5 +47,18 @@ class Batch2D {
   for(corner in 0...4){var cx=corner==0||corner==3?x+radius:x+w-radius,cy=corner<2?y+radius:y+h-radius,start=Math.PI+corner*Math.PI/2;
    for(i in 0...6){var p=start+i*Math.PI/12,q=p+Math.PI/12;triangle(cx,cy,cx+Math.cos(p)*radius,cy+Math.sin(p)*radius,cx+Math.cos(q)*radius,cy+Math.sin(q)*radius,tint);}}
  }
+ /** Enough segments for the circle's size on screen: about one per 2.5 pixels of circumference, 12 at least. */
+ function segments(radius:Float):Int return Std.int(Math.max(12,Math.min(256,Math.PI*2*radius*camera.zoom/2.5)));
+ public function circle(x:Float,y:Float,radius:Float,tint:Int):Void {
+  var n=segments(radius);for(i in 0...n){var p=i*Math.PI*2/n,q=(i+1)*Math.PI*2/n;triangle(x,y,x+Math.cos(p)*radius,y+Math.sin(p)*radius,x+Math.cos(q)*radius,y+Math.sin(q)*radius,tint);}
+ }
+ /** Circle outline drawn inside its radius. */
+ public function circleLines(x:Float,y:Float,radius:Float,width:Float,tint:Int):Void {
+  var n=segments(radius),inner=Math.max(0,radius-width);
+  for(i in 0...n){var p=i*Math.PI*2/n,q=(i+1)*Math.PI*2/n,cp=Math.cos(p),sp=Math.sin(p),cq=Math.cos(q),sq=Math.sin(q);
+   triangle(x+cp*inner,y+sp*inner,x+cp*radius,y+sp*radius,x+cq*radius,y+sq*radius,tint);triangle(x+cp*inner,y+sp*inner,x+cq*radius,y+sq*radius,x+cq*inner,y+sq*inner,tint);}
+ }
+ /** Triangle outline drawn along its edges. */
+ public function triangleLines(x0:Float,y0:Float,x1:Float,y1:Float,x2:Float,y2:Float,width:Float,tint:Int):Void {line(x0,y0,x1,y1,width,tint);line(x1,y1,x2,y2,width,tint);line(x2,y2,x0,y0,width,tint);}
  public function cleanup():Void {gpu.destroy("pipeline",pipeline);gpu.destroy("buffer",buffer);font.texture.destroy(gpu);}
 }

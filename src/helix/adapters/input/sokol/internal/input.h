@@ -4,11 +4,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void hy_input_setup(void);void hy_input_shutdown(void);void hy_input_poll(void);void hy_input_consume(void);
-void hy_input_key(int code,int down);void hy_input_pointer(float x,float y,int down);void hy_input_focus(int focused);
-int hy_key(int code);int hy_key_pressed(int code);int hy_key_released(int code);int hy_focused(void);
-float hy_pointer_x(void);float hy_pointer_y(void);int hy_pointer_down(void);int hy_pointer_pressed(void);int hy_pointer_released(void);
-int hy_pad_available(void);int hy_pad_button(int button);float hy_pad_axis(int axis);
+/* Sokol's events, queued as they arrive and drained once a frame by the Haxe adapter, which applies them to its InputState. */
+enum {HY_EVENT_KEY=1,HY_EVENT_CHAR,HY_EVENT_MOUSE_BUTTON,HY_EVENT_MOUSE_MOVE,HY_EVENT_WHEEL,HY_EVENT_TOUCH,HY_EVENT_FOCUS};
+void hy_input_setup(void);void hy_input_shutdown(void);void hy_input_poll(void);
+void hy_input_push(int type,int code,int value,float x,float y);
+int hy_input_next(void);int hy_event_type(void);int hy_event_code(void);int hy_event_value(void);float hy_event_x(void);float hy_event_y(void);
+int hy_focused(void);
+int hy_pad_connected(int pad);const char*hy_pad_name(int pad);int hy_pad_button(int pad,int button);float hy_pad_axis(int pad,int axis);
 #ifdef __cplusplus
 }
 #endif

@@ -11,7 +11,7 @@ class BrowserWebGL2Profile extends DomHostAdapter {
   super((canvas,preserve)->{
    var graphics=new WebGL2GraphicsAdapter(canvas,preserve,cacheGraphics,shareShader),input=new DomInputAdapter(canvas),audio=new WebAudioAdapter();
    return {graphics:graphics,input:input,audio:audio,fetch:new FetchApiAdapter(),storage:new IndexedDbStorageAdapter(cacheName),packaged:new IndexedDbStorageAdapter(cacheName+"-packaged"),base:assetBase,
-    pollInput:input.poll,focusInput:active->{input.active=active;if(!active)input.clear();},unlockAudio:audio.unlock,suspendAudio:audio.suspend,shutdownInput:()->{},
+    pollInput:input.poll,endInputFrame:input.endFrame,focusInput:active->{input.active=active;if(!active)input.clear();},unlockAudio:audio.unlock,suspendAudio:audio.suspend,shutdownInput:()->{},
     info:()->{var gl=graphics.gl,ext=gl.getExtension("WEBGL_debug_renderer_info"),value=audio.info();value.backend="raw-webgl2";value.cacheGraphics=cacheGraphics;value.shareShader=shareShader;value.renderer=gl.getParameter(ext==null?js.html.webgl.WebGL2RenderingContext.RENDERER:untyped ext.UNMASKED_RENDERER_WEBGL);return value;}};
   });
  }

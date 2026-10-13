@@ -14,6 +14,8 @@ typedef HostServices = {
  var packaged:IStorage;
  var base:Null<String>;
  var pollInput:Void->Void;
+ /** After the app's frame: frame edges, text, the wheel and lifted touches end. */
+ var endInputFrame:Void->Void;
  var focusInput:Bool->Void;
  var unlockAudio:Void->Void;
  var suspendAudio:Void->Void;
