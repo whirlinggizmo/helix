@@ -10,11 +10,14 @@ import helix.adapters.storage.filesystem.FileStorageAdapter;
 
 /** Linux native composition; host and graphics share the existing Sokol context. */
 class NativeSokolGLProfile extends SokolHostAdapter {
-	/** A native host: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program, cached in HELIX_CACHE or cache/ beside it. */
-	public function new() {
+	/** A native host for identity: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program; downloads cached in HELIX_CACHE,
+		else the user's cache directory for identity (Identity.getCacheDirectory), else cache/ beside the program. */
+	public function new(identity:helix.host.Identity) {
 		super(() -> {
 			var root = haxe.io.Path.directory(Sys.programPath()),
 				cache = Sys.getEnv("HELIX_CACHE");
+			if (cache == null)
+				cache = identity.getCacheDirectory();
 			if (cache == null)
 				cache = haxe.io.Path.join([root, "cache"]);
 			var input = new SokolInputAdapter(),

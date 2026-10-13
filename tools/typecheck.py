@@ -20,7 +20,7 @@ def targets():
     parity=['-cp','src','-cp','examples/asteroids-parity/src','-cp','examples/asteroids-parity/game','-cp',GENERATED['asteroids']]
     found.append(('asteroids-parity web',parity+['-cp','examples/asteroids-parity/launch/browser-webgl2','-main','Launch','-js','build/typecheck.js']))
     found.append(('asteroids-parity native',parity+['-cp','examples/asteroids-parity/launch/native-sokol-gl','-main','Launch','-cpp','build/typecheck-cpp']))
-    for main,cp in (('SimulationTests',['examples/asteroids/src']),('BlocksTests',['examples/blocks/src']),('InputTests',[])):
+    for main,cp in (('SimulationTests',['examples/asteroids/src']),('BlocksTests',['examples/blocks/src']),('InputTests',[]),('HostTests',[])):
         found.append((f'unit {main}',['-cp','src','-cp','tests/unit']+sum((['-cp',c] for c in cp),[])+['-main',main,'--interp']))
     found.append(('package smoke',['-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp']))
     found.append(('services web',['-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js','build/typecheck.js']))

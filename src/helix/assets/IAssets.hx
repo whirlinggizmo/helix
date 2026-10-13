@@ -40,7 +40,7 @@ interface IAssets {
 	/** Loads path's bytes as ensure does, without progress or a way to cancel. */
 	function load(path:String, complete:AssetResult->Void):Void;
 
-	/** Loads path's bytes from the cache, or else downloads them (a base URL is set) or reads them from the packaged store, and caches them before completing. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299, or a storage or transport error. progress, if given, reports each phase until the request settles. */
+	/** Loads path's bytes from the cache, or else downloads them (a host is set) and caches them, or reads them from the packaged files in place. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299, or a storage or transport error. progress, if given, reports each phase until the request settles. */
 	function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
 
 	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null when
