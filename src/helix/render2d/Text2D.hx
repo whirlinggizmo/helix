@@ -9,13 +9,16 @@ enum abstract Align2D(Int) {
 
 /** One line of text in world units: size is the font's height, ascent to descent; x is the left edge, center or right edge by align; y is the top. */
 class Text2D {
-	/** How far text moves the pen at size: its width, by its glyphs' advances. Characters without a glyph count as nothing. */
+	/** How far text moves the pen at size: its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as
+		nothing. */
 	public static function measure(font:Font2D, text:String, size:Float):Float {
 		var unit = size / font.getSize(), width = 0.;
 		for (i in 0...text.length) {
-			var glyph = font.getGlyph(text.charCodeAt(i));
+			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
 			if (glyph != null)
 				width += glyph.advance * unit;
+			if (i + 1 < text.length)
+				width += font.getKerning(code, text.charCodeAt(i + 1)) * unit;
 		}
 		return width;
 	}
@@ -33,13 +36,15 @@ class Text2D {
 			field = font.isDistanceField();
 		batch.useTexture(font.getTexture());
 		for (i in 0...text.length) {
-			var glyph = font.getGlyph(text.charCodeAt(i));
-			if (glyph == null)
-				continue;
-			if (glyph.width > 0)
-				batch.quad(x + glyph.x * unit, baseline + glyph.y * unit, glyph.width * unit, glyph.height * unit, glyph.u0, glyph.v0, glyph.u1, glyph.v1,
-					color, field);
-			x += glyph.advance * unit;
+			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
+			if (glyph != null) {
+				if (glyph.width > 0)
+					batch.quad(x + glyph.x * unit, baseline + glyph.y * unit, glyph.width * unit, glyph.height * unit, glyph.u0, glyph.v0, glyph.u1, glyph.v1,
+						color, field);
+				x += glyph.advance * unit;
+			}
+			if (i + 1 < text.length)
+				x += font.getKerning(code, text.charCodeAt(i + 1)) * unit;
 		}
 	}
 }

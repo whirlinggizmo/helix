@@ -8,6 +8,7 @@ import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
 import helix.render2d.Polygon2D;
 import helix.render2d.Stage2D;
+import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 
 /** Graphics that only counts: handles, and the draws and viewports of a frame. */
@@ -234,6 +235,32 @@ class Render2DTests {
 		check(textures.getCandidates("a/b.ktx").join(",") == "a/b.astc.ktx,a/b.png", "name.ktx: this GPU's variants, then name.png");
 		check(textures.getCandidates("a/b.bc7.ktx").join(",") == "a/b.bc7.ktx" && textures.getCandidates("a/b.png").join(",") == "a/b.png",
 			"Other paths are themselves");
+		// TrueType: the example fonts' characters, outlines and kerning; a baked atlas whose glyphs fit it, with its white texel.
+		var komika = new helix.render2d.TrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
+		var a = komika.getGlyphIndex("A".code),
+			v = komika.getGlyphIndex("V".code);
+		check(a > 0 && v > 0 && komika.getGlyphIndex(0x4E00) == 0, "Characters map to glyphs; one the font lacks to 0");
+		check(komika.getOutline(a).length > 0
+			&& komika.getOutline(komika.getGlyphIndex(" ".code)).length == 0, "A letter has an outline, a space none");
+		var h = komika.getGlyphIndex("H".code);
+		check(komika.getKerning(a, v) < 0 && komika.getKerning(h, h) == 0, "GPOS kerning closes AV and leaves HH");
+		var baked = helix.render2d.FontBaker.bake(komika, [for (c in 32...127) c], 32, 6, 512);
+		var fits = true;
+		for (g in baked.glyphs)
+			fits = fits && g.x + g.width <= baked.width && g.y + g.height < baked.height;
+		check(fits
+			&& baked.field.get(baked.width * baked.height - 1) == 255, "Glyphs fit the atlas above its free row; the white texel is set");
+		check(Math.abs(baked.ascent - baked.descent - 32) < 1e-9, "The baked height is ascent to descent");
+		var font = helix.render2d.Font2D.fromTrueType(gpu, sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
+		check(font.getGlyph(0xE9) != null && font.getGlyph(0x7F) == null && font.getKerning("A".code, "V".code) < 0,
+			"A loaded font has Latin-1 and kerning in font pixels");
+		check(Text2D.measure(font, "AV", 32) < Text2D.measure(font, "A", 32) + Text2D.measure(font, "V", 32), "Kerning narrows a measured pair");
+		var cff = false;
+		try
+			new helix.render2d.TrueType(Bytes.ofString("OTTO and twelve"))
+		catch (e:Dynamic)
+			cff = true;
+		check(cff, "A file that isn't TrueType is refused");
 		batch.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

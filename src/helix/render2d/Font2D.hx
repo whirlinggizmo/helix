@@ -16,7 +16,8 @@ typedef Glyph2D = {
 	var advance:Float;
 }
 
-/** A font for Text2D: printable ASCII, space to tilde, as glyphs in one texture. builtIn() is JetBrains Mono as a distance field, sharp at any size;
+/** A font for Text2D: its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any
+	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning;
 	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which Text2D scales to the size asked for. */
 class Font2D {
 	var texture:Texture2D;
@@ -25,6 +26,10 @@ class Font2D {
 	var ascent:Float;
 	var descent:Float;
 	var distanceField:Bool;
+	// A TrueType font's own: the file, kept for kerning pairs as they're asked for, and the scale from its units to font pixels.
+	var trueType:Null<TrueType>;
+	var unitScale = 0.;
+	var kerning = new Map<Int, Float>();
 
 	function new(texture:Texture2D, glyphs:Array<Null<Glyph2D>>, size:Float, ascent:Float, descent:Float, distanceField:Bool) {
 		this.texture = texture;
@@ -57,7 +62,78 @@ class Font2D {
 
 	/** A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size). */
 	public function getGlyph(code:Int):Null<Glyph2D>
-		return code >= 32 && code <= 126 ? glyphs[code - 32] : null;
+		return code >= 32 && code - 32 < glyphs.length ? glyphs[code - 32] : null;
+
+	/** How far the pen moves besides the advance between characters left and right, in font pixels: usually negative, closing a pair such as
+		"AV". 0 for a font without kerning. */
+	public function getKerning(left:Int, right:Int):Float {
+		if (trueType == null)
+			return 0;
+		var key = left << 16 | right & 0xFFFF, known = kerning.get(key);
+		if (known == null) {
+			known = trueType.getKerning(trueType.getGlyphIndex(left), trueType.getGlyphIndex(right)) * unitScale;
+			kerning.set(key, known);
+		}
+		return known;
+	}
+
+	/** The characters fromTrueType bakes: printable ASCII and Latin-1. */
+	static function bakedCodes():Array<Int>
+		return [for (c in 32...256) if (c < 127 || c >= 160) c];
+
+	/** A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance
+		field with padding pixels around each glyph (FontBaker), sharp from small text to about four times pixelHeight. Throws, saying why, for a
+		file it can't read. The caller destroys it. */
+	public static function fromTrueType(gpu:IGraphics, data:Bytes, pixelHeight = 32., padding = 6):Font2D {
+		var font = new Font2D(null, [], 0, 0, 0, true);
+		font.bakeTrueType(gpu, data, pixelHeight, padding);
+		return font;
+	}
+
+	/** The file changed: baked again in place, at the size it was baked at. */
+	@:allow(helix.render2d.Fonts)
+	function replaceTrueType(gpu:IGraphics, data:Bytes):Void {
+		var old = texture;
+		bakeTrueType(gpu, data, size, 6);
+		old.destroy(gpu);
+	}
+
+	function bakeTrueType(gpu:IGraphics, data:Bytes, pixelHeight:Float, padding:Int):Void {
+		var file = new TrueType(data);
+		var baked = FontBaker.bake(file, bakedCodes(), pixelHeight, padding, 512);
+		var width = baked.width,
+			height = baked.height,
+			rgba = Bytes.alloc(width * height * 4);
+		for (i in 0...width * height) {
+			rgba.set(i * 4, 255);
+			rgba.set(i * 4 + 1, 255);
+			rgba.set(i * 4 + 2, 255);
+			rgba.set(i * 4 + 3, baked.field.get(i));
+		}
+		texture = Texture2D.fromRgba(gpu, width, height, rgba, true, width - 1, height - 1, true);
+		glyphs = [];
+		for (g in baked.glyphs) {
+			while (glyphs.length < g.code - 32)
+				glyphs.push(null);
+			glyphs.push({
+				u0: g.x / width,
+				v0: g.y / height,
+				u1: (g.x + g.width) / width,
+				v1: (g.y + g.height) / height,
+				x: g.xOffset,
+				y: g.yOffset,
+				width: g.width,
+				height: g.height,
+				advance: g.advance
+			});
+		}
+		size = baked.ascent - baked.descent;
+		ascent = baked.ascent;
+		descent = baked.descent;
+		trueType = file;
+		unitScale = baked.scale;
+		kerning = new Map();
+	}
 
 	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/fontbake.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). */
 	public static function builtIn(gpu:IGraphics):Font2D {

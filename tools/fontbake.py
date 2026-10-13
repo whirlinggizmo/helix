@@ -2,7 +2,8 @@
 
 build/generated/fonts/GeneratedFont.hx holds the atlas, zlib-compressed and base64-encoded, and each glyph's place and
 metrics; Font2D.builtIn() decodes it. Regenerated when the font, the baker or this script is newer than the output, as the
-shaders are. The baker (tools/fontbake/bake.c, stb_truetype) is a build tool: it isn't in any program."""
+shaders are. The baker is HeliX's own (helix.render2d.TrueType and FontBaker, which bake loaded fonts at run time too), run
+under the Haxe interpreter by tools/fontbake/FontBake.hx."""
 import base64
 import json
 from pathlib import Path
@@ -12,7 +13,7 @@ import zlib
 
 ROOT=Path(__file__).resolve().parents[1]
 FONT=ROOT/'vendor/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf'
-BAKER=ROOT/'tools/fontbake/bake.c'
+BAKER=[ROOT/'tools/fontbake/FontBake.hx',ROOT/'src/helix/render2d/TrueType.hx',ROOT/'src/helix/render2d/FontBaker.hx']
 OUT=ROOT/'build/generated/fonts'
 # Pixel height and distance-field padding: 32 and 6 keep edges clean from small text to about 4x up, in a 512x256 atlas.
 HEIGHT,PADDING,WIDTH=32,6,512
@@ -20,17 +21,12 @@ HEIGHT,PADDING,WIDTH=32,6,512
 def generate(force=False):
     """Write GeneratedFont.hx when it's missing or older than what makes it."""
     output=OUT/'GeneratedFont.hx'
-    if not force and output.is_file() and output.stat().st_mtime>=max(p.stat().st_mtime for p in (FONT,BAKER,Path(__file__))):return output
-    OUT.mkdir(parents=True,exist_ok=True);tools=ROOT/'build/native-tools';tools.mkdir(parents=True,exist_ok=True)
-    baker=tools/'fontbake'
-    subprocess.run(['cc','-std=c11','-O2',f'-I{ROOT/"vendor/stb"}',str(BAKER),'-o',str(baker),'-lm'],check=True)
+    if not force and output.is_file() and output.stat().st_mtime>=max(p.stat().st_mtime for p in (FONT,*BAKER,Path(__file__))):return output
+    OUT.mkdir(parents=True,exist_ok=True)
     atlas,metrics=OUT/'atlas.r8',OUT/'metrics.json'
-    subprocess.run([str(baker),str(FONT),str(HEIGHT),str(PADDING),str(WIDTH),str(atlas),str(metrics)],check=True)
-    m=json.loads(metrics.read_text());raw=bytearray(atlas.read_bytes())
-    # A fully inside texel in a corner no glyph uses: Batch2D draws untextured shapes with it.
-    used=max(g[1]+g[3] for g in m['glyphs'])
-    if used>=m['height']:sys.exit('the atlas has no free row for the white texel')
-    raw[(m['height']-1)*m['width']+m['width']-1]=255
+    # The baker leaves the atlas's last row free and its last texel fully inside: Batch2D draws untextured shapes with it.
+    subprocess.run(['haxe','-cp','src','-cp','tools/fontbake','--run','FontBake',str(FONT),str(HEIGHT),str(PADDING),str(WIDTH),str(atlas),str(metrics)],cwd=ROOT,check=True)
+    m=json.loads(metrics.read_text());raw=atlas.read_bytes()
     data=base64.b64encode(zlib.compress(bytes(raw),9)).decode()
     glyphs=','.join(f'{g[0]},{g[1]},{g[2]},{g[3]},{g[4]},{g[5]}' for g in m['glyphs'])
     advances=','.join(f'{g[6]:.4f}' for g in m['glyphs'])

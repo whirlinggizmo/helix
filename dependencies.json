@@ -55,13 +55,6 @@
     "vorbisQuality": 3,
     "opusFixtureBitrate": 64000
   },
-  "stbTruetype": {
-    "version": "1.26",
-    "source": "https://github.com/nothings/stb (master, identical to the v1.26 header)",
-    "file": "vendor/stb/stb_truetype.h",
-    "sha256": "ecd30b05e0dd4fea3a13c26810dd9e1992dc379049482c393d5a19e6b5090aab",
-    "license": "public domain or MIT, at the end of the header"
-  },
   "jetbrainsMono": {
     "font": "JetBrains Mono Regular",
     "source": "https://github.com/JetBrains/JetBrainsMono",

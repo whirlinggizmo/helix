@@ -5,6 +5,8 @@ The files under `examples/assets/` that HeliX didn't make, with each one's sourc
 | File | Work | Author | Source | License |
 | --- | --- | --- | --- | --- |
 | `music/a_hero_is_born.mp3` | "A Hero Is Born", its first 90 s | HoliznaCC0 | [Free Music Archive](https://freemusicarchive.org/music/holiznacc0/retro-gamer-soundtrack/a-hero-is-born/) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `fonts/JetBrainsMono/JetBrainsMono-Regular.ttf` | JetBrains Mono | JetBrains | [jetbrains.com/mono](https://www.jetbrains.com/lp/mono/) | [SIL OFL 1.1](fonts/JetBrainsMono/OFL.txt) |
+| `fonts/Komika/KOMIKAH_.ttf` | Komika Hand | Apostrophic Laboratories | the font's [readme](fonts/Komika/readme.txt) | freeware, redistributed unmodified ([readme](fonts/Komika/readme.txt)) |
 | `sounds/click_004.ogg` | UI Audio | Kenney | [kenney.nl](https://kenney.nl) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 
 CC0 asks for no credit; they're credited anyway.
