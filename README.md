@@ -75,7 +75,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `quit` | quitting mid-load: shutdown runs after the frame |
 | `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
 
-Still to come: the rest of milestone 2 (meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: the rest of milestone 2 (next a deterministic `helix.math.Trig`, the same bits on both targets for simulations that must replay alike; then meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

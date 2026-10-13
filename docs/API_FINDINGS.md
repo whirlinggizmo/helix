@@ -20,6 +20,7 @@ Found while documenting every public member (2026-10-13), by reading each implem
 ## Open
 
 **Behaviour that differs between the targets**
+- `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `exp` and `log` differ by 1 ulp between V8 and glibc for 1–18% of inputs (measured 2026-10-13: 3.3% for `sin`, 18% for `atan2`); `pow` and arithmetic agree. A simulation that must replay alike on both targets can't call them. Scheduled: `helix.math.Trig` (milestone 2, next), built from arithmetic alone, with `-ffp-contract=off` for native builds so no target fuses multiply-adds.
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
 - `IAudio.destroyStream`: Web Audio stops the stream's playbacks; Sokol's doesn't, and a playing stream keeps reading its file. `AudioResources` hides it by keeping resources alive while played.
