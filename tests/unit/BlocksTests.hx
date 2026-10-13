@@ -159,6 +159,14 @@ class BlocksTests {
 			&& Math.abs(camera.screenToWorldY(camera.worldToScreenY(20)) - 20) < 1e-9,
 			"Screen and world round trip");
 		check(Math.abs(camera.clipX(6)) < 1e-9 && Math.abs(camera.clipY(13)) < 1e-9, "World center is clip center");
+		check(!camera.setViewportArea(300, 0, 200, 800) && camera.getViewportWidth() == 400, "An area past the framebuffer is refused");
+		check(camera.setViewportArea(100, 200, 200, 400) && camera.fit(0, 0, 12, 26), "An area inside the framebuffer is taken");
+		check(Math.abs(camera.worldToScreenX(6) - 200) < 1e-9
+			&& Math.abs(camera.worldToScreenY(13) - 400) < 1e-9
+			&& Math.abs(camera.screenToWorldX(100) - (6 - 100 / camera.getZoom())) < 1e-9,
+			"Screen positions are the framebuffer's");
+		camera.setViewport(400, 800);
+		check(camera.getViewportX() == 0 && camera.getViewportHeight() == 800, "setViewport takes the whole framebuffer again");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

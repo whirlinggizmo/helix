@@ -62,7 +62,7 @@ class App extends BaseApp {
 			ticker.setTimeScale(ticker.getTimeScale() > 0 ? 0 : 1);
 		if (host.canQuit() && input.isFramePressed(Key.Escape))
 			host.quit();
-		ticker.advance(dt, tick);
+		ticker.advance(host.getFrameElapsed(), tick);
 		var t = ticker.getFraction();
 		fps.update(dt, host.diagnostics.getFrameCpu());
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());

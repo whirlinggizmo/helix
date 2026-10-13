@@ -108,7 +108,8 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 			audioResources.poll();
 			textures.poll();
 			services.pollInput();
-			app.frame(current - previous);
+			clock.frame(current);
+			app.frame(clock.getDelta());
 			services.endInputFrame();
 			lastFrameCpu = (getTime() - cpuStart) * 1000;
 			previous = current;
@@ -177,6 +178,11 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 
 	public function quit():Void
 		quitting = true;
+
+	var clock = new helix.host.FrameClock();
+
+	public function getFrameElapsed():Float
+		return clock.getElapsed();
 
 	var lastFrameCpu = 0.;
 	var lastFrameInterval = 0.;

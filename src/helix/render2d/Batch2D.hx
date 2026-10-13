@@ -57,10 +57,13 @@ class Batch2D {
 		texture = font.getTexture();
 	}
 
-	/** Draws the frame: one upload of every vertex, then one draw per run of a texture, over the camera's whole viewport. */
+	/** Draws the frame: clears the camera's whole framebuffer, then one upload of every vertex and one draw per run of a texture, in the camera's
+		viewport. */
 	public function end():Void {
 		closeRun();
-		gpu.beginFrame(camera.getViewportWidth(), camera.getViewportHeight(), 0, 0, camera.getViewportWidth(), camera.getViewportHeight());
+		var height = camera.getFramebufferHeight();
+		gpu.beginFrame(camera.getFramebufferWidth(), height, camera.getViewportX(), height - camera.getViewportY() - camera.getViewportHeight(),
+			camera.getViewportWidth(), camera.getViewportHeight());
 		gpu.updateBuffer(buffer, data, vertices * GeneratedLayout.stride);
 		var i = 0;
 		while (i < runs.length) {
@@ -243,8 +246,8 @@ class Batch2D {
 
 	/** Frees the buffer, pipeline and font made by new; the batch is unusable after. */
 	public function destroy():Void {
-		gpu.destroy("pipeline", pipeline);
-		gpu.destroy("buffer", buffer);
+		gpu.destroyPipeline(pipeline);
+		gpu.destroyBuffer(buffer);
 		font.destroy(gpu);
 	}
 }

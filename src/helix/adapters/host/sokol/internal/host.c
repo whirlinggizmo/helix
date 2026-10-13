@@ -10,7 +10,7 @@
 #include "sokol_app_utils.h"
 
 static void (*init_cb)(void),(*cleanup_cb)(void);
-static void (*frame_cb)(float);
+static void (*frame_cb)(void);
 int helix_width(void){return sapp_width();}int helix_height(void){return sapp_height();}
 float helix_pixel_ratio(void){return sapp_dpi_scale();}
 void helix_quit(void){sapp_request_quit();}
@@ -35,7 +35,7 @@ int helix_display_y(int i){int x=0,y=0;sapp_display_position(i,&x,&y);return y;}
 int helix_display_width(int i){return sapp_display_width(i);}
 int helix_display_height(int i){return sapp_display_height(i);}
 const char*helix_display_name(int i){const char*n=sapp_display_name(i);return n?n:"";}
-static void frame(void){frame_cb((float)sapp_frame_duration());}
+static void frame(void){frame_cb();}
 /* Sokol's key codes are Key's values; right-hand modifiers become left-hand ones there. Mouse x/y are framebuffer pixels. */
 static void event(const sapp_event *e){
  switch(e->type){
@@ -57,7 +57,7 @@ static void event(const sapp_event *e){
  }
 }
 
-void helix_run(void (*init)(void),void (*tick)(float),void (*cleanup)(void)){
+void helix_run(void (*init)(void),void (*tick)(void),void (*cleanup)(void)){
  init_cb=init;frame_cb=tick;cleanup_cb=cleanup;
  sapp_run(&(sapp_desc){.init_cb=init_cb,.frame_cb=frame,.cleanup_cb=cleanup_cb,.event_cb=event,
   .width=800,.height=600,.sample_count=1,.swap_interval=1,.high_dpi=false,.window_title="HeliX Haxe",.logger.func=slog_func});

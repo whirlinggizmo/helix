@@ -1,3 +1,4 @@
+import helix.host.FrameClock;
 import helix.host.Identity;
 
 class HostTests {
@@ -26,6 +27,14 @@ class HostTests {
 		check(threw, "An identity that cleans to nothing throws");
 		var cache = identity.getCacheDirectory();
 		check(cache != null && StringTools.endsWith(cache, "HeliX/blocks"), "A cache directory under the user's");
+		var clock = new FrameClock();
+		clock.frame(10);
+		check(Math.abs(clock.getDelta() - 1 / 60) < 1e-12 && clock.getElapsed() == 0, "The first frame: 1/60 and nothing elapsed");
+		clock.frame(10.25);
+		check(clock.getDelta() == FrameClock.MAX
+			&& Math.abs(clock.getElapsed() - .25) < 1e-12, "A stall: the delta held, the elapsed time whole");
+		clock.frame(10.25);
+		check(clock.getDelta() == FrameClock.MIN && clock.getElapsed() == 0, "No time passed: the least delta");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

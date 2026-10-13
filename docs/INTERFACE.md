@@ -16,7 +16,7 @@ Reusable contracts live in `src/helix/`. Shared game/rendering code calls them i
 | beginFrame(width,height,x,y,w,h) | Clear complete framebuffer, then select lower-left-origin viewport; no depth/MSAA |
 | draw(pipeline,buffer,texture,vertices,firstVertex=0) | TRIANGLES, nonindexed; bind those resources and issue one draw; use a validated range within uploaded bytes |
 | endFrame() | End pass and submit; platform host owns presentation |
-| destroy(kind,handle) | Release caller-owned resource; shutdown only after resources are destroyed |
+| destroyTexture/Buffer/Pipeline(handle) | Release caller-owned resource; shutdown only after resources are destroyed |
 
 Vertex records are little-endian eight float32 values: clip-space position xy, UV xy, straight color rgba (32 B). UVs refer to the top-to-bottom caller-provided image rows; neither backend silently flips pixels. Blend is SRC_ALPHA / ONE_MINUS_SRC_ALPHA for RGB and ONE / ONE_MINUS_SRC_ALPHA for alpha. The first game uses one alpha pipeline, one atlas, one reused expanded triangle buffer and one draw. This tests shared ownership, not state-changing throughput. Unsupported format/layout/pass features cannot silently map to another behavior.
 

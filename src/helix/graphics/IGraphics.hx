@@ -30,8 +30,14 @@ interface IGraphics {
 	/** Closes the frame opened by beginFrame; sokol also commits it for presentation. Throws when no frame is open. */
 	public function endFrame():Void;
 
-	/** Frees a handle from createTexture, createBuffer or createPipeline; kind is "texture", "buffer" or "pipeline". Whoever created a handle destroys it, once. Throws for an unknown kind or handle. */
-	public function destroy(kind:String, handle:Int):Void;
+	/** Frees a handle from createTexture. Whoever created a handle destroys it, once. Throws for an unknown handle. */
+	public function destroyTexture(handle:Int):Void;
+
+	/** Frees a handle from createBuffer. Whoever created a handle destroys it, once. Throws for an unknown handle. */
+	public function destroyBuffer(handle:Int):Void;
+
+	/** Frees a handle from createPipeline. Whoever created a handle destroys it, once. Throws for an unknown handle. */
+	public function destroyPipeline(handle:Int):Void;
 
 	/** Releases the adapter itself, after its handles are destroyed. */
 	public function shutdown():Void;

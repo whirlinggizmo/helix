@@ -222,38 +222,37 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		active = false;
 	}
 
-	public function destroy(kind:String, handle:Int):Void {
-		switch (kind) {
-			case "buffer":
-				var b = buffers[handle];
-				if (b == null)
-					throw "Invalid buffer";
-				gl.deleteBuffer(b.buffer);
-				buffers.remove(handle);
-				currentBuffer = 0;
-			case "texture":
-				var t = textures[handle];
-				if (t == null)
-					throw "Invalid texture";
-				gl.deleteTexture(t);
-				textures.remove(handle);
-				currentTexture = 0;
-			case "pipeline":
-				var p = pipelines[handle];
-				if (p == null)
-					throw "Invalid pipeline";
-				p.shader.references--;
-				if (p.shader.references == 0) {
-					gl.deleteProgram(p.shader.program);
-					if (shared == p.shader)
-						shared = null;
-				}
-				pipelines.remove(handle);
-				currentProgram = null;
-				currentAlpha = null;
-			default:
-				throw "Invalid resource kind";
+	public function destroyBuffer(handle:Int):Void {
+		var b = buffers[handle];
+		if (b == null)
+			throw "Invalid buffer";
+		gl.deleteBuffer(b.buffer);
+		buffers.remove(handle);
+		currentBuffer = 0;
+	}
+
+	public function destroyTexture(handle:Int):Void {
+		var t = textures[handle];
+		if (t == null)
+			throw "Invalid texture";
+		gl.deleteTexture(t);
+		textures.remove(handle);
+		currentTexture = 0;
+	}
+
+	public function destroyPipeline(handle:Int):Void {
+		var p = pipelines[handle];
+		if (p == null)
+			throw "Invalid pipeline";
+		p.shader.references--;
+		if (p.shader.references == 0) {
+			gl.deleteProgram(p.shader.program);
+			if (shared == p.shader)
+				shared = null;
 		}
+		pipelines.remove(handle);
+		currentProgram = null;
+		currentAlpha = null;
 	}
 
 	public function shutdown():Void {#if hotreload live.remove(this); #end

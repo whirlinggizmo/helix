@@ -1,10 +1,15 @@
 package helix.render2d;
 
-/** A 2D view: the world point at the viewport's center and how many pixels a world unit covers. Y grows downward. */
+/** A 2D view: the world point at the viewport's center and how many pixels a world unit covers. Y grows downward. The viewport is the whole
+	framebuffer, or an area of it (setViewportArea). */
 class Camera2D {
 	var x = 0.;
 	var y = 0.;
 	var zoom = 1.;
+	var framebufferWidth = 1;
+	var framebufferHeight = 1;
+	var viewportX = 0;
+	var viewportY = 0;
 	var viewportWidth = 1;
 	var viewportHeight = 1;
 
@@ -37,6 +42,22 @@ class Camera2D {
 		return true;
 	}
 
+	/** The framebuffer width in pixels, from setViewport. */
+	public function getFramebufferWidth():Int
+		return framebufferWidth;
+
+	/** The framebuffer height in pixels, from setViewport. */
+	public function getFramebufferHeight():Int
+		return framebufferHeight;
+
+	/** The viewport's left edge in framebuffer pixels from the framebuffer's left. */
+	public function getViewportX():Int
+		return viewportX;
+
+	/** The viewport's top edge in framebuffer pixels from the framebuffer's top. */
+	public function getViewportY():Int
+		return viewportY;
+
 	/** The viewport width in framebuffer pixels. */
 	public function getViewportWidth():Int
 		return viewportWidth;
@@ -45,10 +66,24 @@ class Camera2D {
 	public function getViewportHeight():Int
 		return viewportHeight;
 
-	/** The framebuffer area it draws to; a size under 1 clamps to 1. */
+	/** The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. */
 	public function setViewport(width:Int, height:Int):Void {
-		viewportWidth = width < 1 ? 1 : width;
-		viewportHeight = height < 1 ? 1 : height;
+		framebufferWidth = viewportWidth = width < 1 ? 1 : width;
+		framebufferHeight = viewportHeight = height < 1 ? 1 : height;
+		viewportX = viewportY = 0;
+	}
+
+	/** Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the
+		framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an
+		area not inside the framebuffer. */
+	public function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool {
+		if (width < 1 || height < 1 || x < 0 || y < 0 || x + width > framebufferWidth || y + height > framebufferHeight)
+			return false;
+		viewportX = x;
+		viewportY = y;
+		viewportWidth = width;
+		viewportHeight = height;
+		return true;
 	}
 
 	/** Show a world rectangle whole and centered; the longer screen side shows extra world. False for a width or height of 0 or less. */
@@ -71,21 +106,21 @@ class Camera2D {
 		return true;
 	}
 
-	/** The world X under framebuffer pixel X px, from the viewport's left edge. */
+	/** The world X under framebuffer pixel X px, from the framebuffer's left edge. */
 	public function screenToWorldX(px:Float):Float
-		return x + (px - viewportWidth / 2) / zoom;
+		return x + (px - viewportX - viewportWidth / 2) / zoom;
 
-	/** The world Y under framebuffer pixel Y py, from the viewport's top edge. */
+	/** The world Y under framebuffer pixel Y py, from the framebuffer's top edge. */
 	public function screenToWorldY(py:Float):Float
-		return y + (py - viewportHeight / 2) / zoom;
+		return y + (py - viewportY - viewportHeight / 2) / zoom;
 
-	/** The framebuffer pixel X, from the viewport's left edge, of world X wx. */
+	/** The framebuffer pixel X, from the framebuffer's left edge, of world X wx. */
 	public function worldToScreenX(wx:Float):Float
-		return (wx - x) * zoom + viewportWidth / 2;
+		return (wx - x) * zoom + viewportX + viewportWidth / 2;
 
-	/** The framebuffer pixel Y, from the viewport's top edge, of world Y wy. */
+	/** The framebuffer pixel Y, from the framebuffer's top edge, of world Y wy. */
 	public function worldToScreenY(wy:Float):Float
-		return (wy - y) * zoom + viewportHeight / 2;
+		return (wy - y) * zoom + viewportY + viewportHeight / 2;
 
 	/** Clip-space X (-1 left to 1 right) of world X wx. */
 	public inline function clipX(wx:Float):Float

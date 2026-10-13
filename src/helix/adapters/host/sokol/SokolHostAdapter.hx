@@ -67,8 +67,9 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.app.init();
 	}
 
-	static function onFrame(dt:cpp.Float32):Void {
+	static function onFrame():Void {
 		var cpuStart = instance.getTime();
+		instance.clock.frame(cpuStart);
 		instance.lastFrameInterval = instance.previousCallback == 0 ? 0 : (cpuStart - instance.previousCallback) * 1000;
 		instance.previousCallback = cpuStart;
 		instance.resources.poll();
@@ -76,7 +77,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.textures.poll();
 		instance.services.pollInput();
 		instance.focused = InputBridge.focused() != 0;
-		instance.app.frame(dt);
+		instance.app.frame(instance.clock.getDelta());
 		instance.services.endInputFrame();
 		var path = Sys.getEnv("HELIX_LIVE");
 		if (path != null && instance.inspectCallback != null) {
@@ -141,6 +142,11 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 
 	public function quit():Void
 		HostBridge.quit();
+
+	var clock = new helix.host.FrameClock();
+
+	public function getFrameElapsed():Float
+		return clock.getElapsed();
 
 	var lastFrameCpu = 0.;
 	var lastFrameInterval = 0.;

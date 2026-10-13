@@ -5,7 +5,7 @@ interface IApp {
 	/** Once, before the first frame, with the host's services ready. */
 	public function init():Void;
 
-	/** Once a display refresh; dt is the seconds since the last frame (natively sokol's smoothed frame duration, in a browser the raw interval). */
+	/** Once a display refresh; dt is the measured seconds since the last frame, held between 1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes IHost.getFrameElapsed instead (helix.host.FrameClock). */
 	public function frame(dt:Float):Void;
 
 	/** Once, when the window closes (on the web, at the page's pagehide). */

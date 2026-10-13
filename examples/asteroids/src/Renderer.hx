@@ -205,9 +205,9 @@ class Renderer {
 	}
 
 	public function cleanup():Void {
-		gpu.destroy("pipeline", pipeline);
-		gpu.destroy("buffer", buffer);
-		gpu.destroy("texture", texture);
+		gpu.destroyPipeline(pipeline);
+		gpu.destroyBuffer(buffer);
+		gpu.destroyTexture(texture);
 		gpu.shutdown();
 	}
 }

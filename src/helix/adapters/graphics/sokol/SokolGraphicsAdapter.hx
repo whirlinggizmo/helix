@@ -62,16 +62,17 @@ class SokolGraphicsAdapter implements IGraphics {
 	public function endFrame():Void
 		GraphicsBridge.end();
 
-	public function destroy(kind:String, handle:Int):Void {
-		var n = switch (kind) {
-			case "buffer": 0;
-			case "texture": 1;
-			case "pipeline": 2;
-			default: -1;
-		};
-		if (GraphicsBridge.destroy(n, handle) != 1)
-			throw "Invalid native resource";
-	}
+	public function destroyBuffer(handle:Int):Void
+		if (GraphicsBridge.destroy(0, handle) != 1)
+			throw "Invalid buffer";
+
+	public function destroyTexture(handle:Int):Void
+		if (GraphicsBridge.destroy(1, handle) != 1)
+			throw "Invalid texture";
+
+	public function destroyPipeline(handle:Int):Void
+		if (GraphicsBridge.destroy(2, handle) != 1)
+			throw "Invalid pipeline";
 
 	public function shutdown():Void
 		GraphicsBridge.shutdown();

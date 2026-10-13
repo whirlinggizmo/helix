@@ -56,10 +56,10 @@ class Texture2D {
 		handle = gpu.createTexture(width, height, linear ? helix.graphics.Mipmaps.build(width, height, rgba) : [rgba], linear);
 		this.width = width;
 		this.height = height;
-		gpu.destroy("texture", old);
+		gpu.destroyTexture(old);
 	}
 
 	/** Frees the GPU texture on gpu, the adapter that made it. */
 	public function destroy(gpu:IGraphics):Void
-		gpu.destroy("texture", handle);
+		gpu.destroyTexture(handle);
 }

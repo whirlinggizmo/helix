@@ -65,9 +65,9 @@ class Ticker {
 		return true;
 	}
 
-	/** Runs tick for each step due after dt seconds; returns how many ran. */
-	public function advance(dt:Float, tick:Void->Void):Int {
-		accumulator += Math.max(0, Math.min(dt, .25)) * timeScale;
+	/** Runs tick for each step due after elapsed seconds (IHost.getFrameElapsed), at most getMaxSteps of them; returns how many ran. */
+	public function advance(elapsed:Float, tick:Void->Void):Int {
+		accumulator += Math.max(0, elapsed) * timeScale;
 		var steps = 0;
 		while (accumulator >= delta && steps < maxSteps) {
 			tick();

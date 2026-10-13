@@ -54,6 +54,10 @@ interface IHost {
 	/** Seconds on a monotonic clock. */
 	public function getTime():Float;
 
+	/** The seconds since the last frame, unheld (frame's dt is held at 0.1), and 0 on the first: what a fixed-rate simulation (Ticker.advance) is fed,
+		so a slow frame is caught up in ticks instead of lost. */
+	public function getFrameElapsed():Float;
+
 	/** The drawable area in framebuffer pixels (IWindow's sizes are logical pixels). */
 	public function getFramebufferWidth():Int;
 

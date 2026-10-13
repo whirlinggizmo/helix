@@ -11,10 +11,15 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `Batch2D.cleanup()` named unlike every other `destroy()`.
 - `DomHostAdapter.quit()` only stopped the frame loop, and `cleanup()` and the services' shutdowns waited for `pagehide`. Now a quit closes after the frame, as natively (the quit example).
 
+## Fixed before milestone 2
+
+- `frame(dt)` was Sokol's smoothed frame duration natively and the raw, unclamped interval in a browser. Both hosts now measure it the same way (`FrameClock`): held between 1e-6 and 0.1 s, 1/60 on the first frame. `Ticker` takes the unheld `IHost.getFrameElapsed()`, so a slow frame is caught up in ticks, up to `getMaxSteps`.
+- `Batch2D.end()` took the camera's viewport as the whole framebuffer, at 0,0. `Camera2D.setViewportArea` narrows it, and screen positions are the framebuffer's.
+- `IGraphics.destroy(kind:String, ...)` took the kind as a string: now `destroyTexture`, `destroyBuffer` and `destroyPipeline`.
+
 ## Open
 
 **Behaviour that differs between the targets**
-- `frame(dt)`: native passes Sokol's smoothed frame duration, the browser the raw requestAnimationFrame interval, unclamped. `Ticker` clamps; an app using dt directly doesn't get that.
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
 - `IAudio.destroyStream`: Web Audio stops the stream's playbacks; Sokol's doesn't, and a playing stream keeps reading its file. `AudioResources` hides it by keeping resources alive while played.
@@ -27,8 +32,6 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `WebAudioAdapter.unlock()` creates the AudioContext without the 44,100 Hz rate `decodeClip` asks for, so which runs first decides the rate.
 - `DomInputAdapter` gates only keydown on `active`: pointer, mouse and wheel still record while inactive.
 - `InputState.clear()` keeps typed text and wheel notches.
-- `Batch2D.end()` takes the camera's viewport as the whole framebuffer, at 0,0.
-- `IGraphics.destroy(kind:String, ...)`: the kind is a string; an enum would be checked.
 
 **Smaller**
 - `AudioResources` doesn't own the services it's given: `poll` polls only the backend, `shutdown` shuts down neither.
