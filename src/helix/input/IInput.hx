@@ -1,7 +1,8 @@
 package helix.input;
 
 /** Keyboard, pointer, mouse buttons, wheel, typed text, touches and gamepads.
-    Tick edges (pressed, released) survive polling and render frames until consume() after a simulation tick, so each is seen by exactly one tick.
+    Tick edges (pressed, released) are counted and survive polling and render frames; consume() after a simulation tick takes one of each,
+    so every press is seen by exactly one tick, and two presses between ticks reach two ticks.
     Frame edges (framePressed, frameReleased), typed text, the wheel and lifted touches last one frame. */
 interface IInput {
  public function down(key:Key):Bool;
@@ -13,8 +14,8 @@ interface IInput {
  public var pointerX(default,null):Float;
  public var pointerY(default,null):Float;
  public var pointerDown(default,null):Bool;
- public var pointerPressed(default,null):Bool;
- public var pointerReleased(default,null):Bool;
+ public var pointerPressed(get,never):Bool;
+ public var pointerReleased(get,never):Bool;
  public var pointerFramePressed(default,null):Bool;
  public var pointerFrameReleased(default,null):Bool;
  public function mouseDown(button:MouseButton):Bool;
