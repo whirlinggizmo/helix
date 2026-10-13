@@ -8,8 +8,8 @@ class Menu {
   if(game.state=="playing")return;
   var count=game.state=="gameover"?2:1;
   if(controls.next)selected=(selected+1)%count;
-  var scale=Math.min(width/(Game.W*1.),height/(Game.H*1.)),x=(input.pointerX-(width-Game.W*scale)/2)/scale,y=(input.pointerY-(height-Game.H*scale)/2)/scale;
-  for(i in 0...count)if(x>=330&&x<630&&y>=390+i*64&&y<442+i*64){hovered=i;if(input.pointerPressed){selected=i;controls.start=true;}}
+  var scale=Math.min(width/(Game.W*1.),height/(Game.H*1.)),x=(input.getPointerX()-(width-Game.W*scale)/2)/scale,y=(input.getPointerY()-(height-Game.H*scale)/2)/scale;
+  for(i in 0...count)if(x>=330&&x<630&&y>=390+i*64&&y<442+i*64){hovered=i;if(input.isPointerPressed()){selected=i;controls.start=true;}}
   if(controls.start&&game.state=="gameover"&&selected==1){controls.start=false;controls.title=true;}
  }
 }

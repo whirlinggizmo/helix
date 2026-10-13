@@ -4,10 +4,12 @@ import helix.render2d.Text2D;
 
 /** The frame rate and the frame's cost, averaged over half a second, drawn in a corner in screen units (a Camera2D at zoom 1). */
 class FpsOverlay {
- public var rate(default,null)=0.;public var milliseconds(default,null)=0.;
+ var rate=0.;var milliseconds=0.;
+ public function getRate():Float return rate;
+ public function getMilliseconds():Float return milliseconds;
  var frames=0;var time=0.;var cost=0.;
  public function new(){}
- /** dt: the frame's interval; cpu: what the frame cost, in milliseconds (IDiagnostics.frameCpu). */
+ /** dt: the frame's interval; cpu: what the frame cost, in milliseconds (IDiagnostics.getFrameCpu). */
  public function update(dt:Float,cpu:Float):Void {
   frames++;time+=dt;cost+=cpu;
   if(time>=.5){rate=frames/time;milliseconds=cost/frames;frames=0;time=0;cost=0;}

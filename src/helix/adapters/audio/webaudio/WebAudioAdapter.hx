@@ -18,7 +18,7 @@ class WebAudioAdapter implements IAudio {
   function finish(result:ClipDecodeResult){if(request.finish()){requests.remove(request);queue.add(()->complete(result));}}
   request=new Request(()->{requests.remove(request);queue.add(()->complete(Cancelled));});requests.push(request);
   queue.add(()->{
-   if(request.settled)return;
+   if(request.isSettled())return;
    if(!live||encoded.length>8*1024*1024){finish(Failed("Closed decoder or encoded audio exceeds byte limit"));return;}
    try {
     if(encoded.length>=4&&encoded.getString(0,4)=="RIFF"){finish(Decoded(helix.audio.Wav.decode(encoded)));return;}
@@ -27,7 +27,7 @@ class WebAudioAdapter implements IAudio {
     // decodeAudioData consumes/detaches its input. Cache bytes remain caller-owned.
     var data:js.lib.ArrayBuffer=encoded.getData().slice(0,encoded.length);
     context.decodeAudioData(data).then(buffer->{
-     if(request.settled)return null;
+     if(request.isSettled())return null;
      try {
       var frames=Std.int(Math.ceil(buffer.length*44100/buffer.sampleRate));
       if(buffer.sampleRate<=0||buffer.numberOfChannels<1||buffer.numberOfChannels>2||frames<=0||frames>2*1024*1024)throw "Unsupported decoded rate/channels or PCM byte limit";

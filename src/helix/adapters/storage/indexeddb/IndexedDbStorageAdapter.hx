@@ -17,7 +17,7 @@ class IndexedDbStorageAdapter implements IStorage {
   function finish(result:T){if(request.finish()){requests.remove(request);queue.add(()->complete(result));}else if(discard!=null)discard(result);}
   request=new Request(()->{requests.remove(request);queue.add(()->complete(cancelled));});requests.push(request);
   var begin:Void->Void=null;begin=()->{
-   if(request.settled)return;if(!ready){queue.add(begin);return;}
+   if(request.isSettled())return;if(!ready){queue.add(begin);return;}
    if(!live||!AssetPath.valid(key)){finish(failed("Invalid storage path or closed service"));return;}
    if(error!=null){finish(failed(error));return;}
    try {var tx:Dynamic=db.transaction(["files"],mode),task:Dynamic=operation(tx.objectStore("files")),value:Dynamic=null;

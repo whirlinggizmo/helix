@@ -4,15 +4,19 @@ import haxe.io.Bytes;
 
 /** A monospaced bitmap font: one cell per printable ASCII character, space to tilde. */
 class Font2D {
- public var texture(default,null):Texture2D;
+ var texture:Texture2D;
+ var glyphWidth:Int;var glyphHeight:Int;var advance:Int;
+ public function getTexture():Texture2D return texture;
  /** Glyph size and advance, in font pixels. */
- public var glyphWidth(default,null):Int;public var glyphHeight(default,null):Int;public var advance(default,null):Int;
+ public function getGlyphWidth():Int return glyphWidth;
+ public function getGlyphHeight():Int return glyphHeight;
+ public function getAdvance():Int return advance;
  var cell:Int;var columns:Int;
- function new(texture:Texture2D,glyphWidth:Int,glyphHeight:Int,advance:Int,cell:Int){this.texture=texture;this.glyphWidth=glyphWidth;this.glyphHeight=glyphHeight;this.advance=advance;this.cell=cell;columns=Std.int(texture.width/cell);}
+ function new(texture:Texture2D,glyphWidth:Int,glyphHeight:Int,advance:Int,cell:Int){this.texture=texture;this.glyphWidth=glyphWidth;this.glyphHeight=glyphHeight;this.advance=advance;this.cell=cell;columns=Std.int(texture.getWidth()/cell);}
  /** Texture coordinates of a character's glyph, or null when it has none. */
- public function glyph(code:Int):Null<Array<Float>> {
+ public function getGlyph(code:Int):Null<Array<Float>> {
   var n=code-32;if(n<=0||n>=95)return null;
-  var x=n%columns*cell,y=Std.int(n/columns)*cell,w=texture.width,h=texture.height;
+  var x=n%columns*cell,y=Std.int(n/columns)*cell,w=texture.getWidth(),h=texture.getHeight();
   return [(x+.01)/w,(y+.01)/h,(x+glyphWidth+.01)/w,(y+glyphHeight+.01)/h];
  }
  /** The glyphs, as rows of five pixels. A function, not a static: a browser hot reload keeps statics' old values, and an edit here should show. */

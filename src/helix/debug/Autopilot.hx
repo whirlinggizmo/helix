@@ -4,8 +4,11 @@ import helix.input.Key;
 import helix.input.InputState;
 /** Bounded JSON commands produce normal input. Probes are supplied by the app. */
 class Autopilot {
- public var done(default,null)=false;public var ticks(default,null)=0;public var seed(default,null):Int;
- public var outcomes(default,null):Array<Dynamic>=[];
+ var done=false;var ticks=0;var seed:Int;var outcomes:Array<Dynamic>=[];
+ public function isDone():Bool return done;
+ public function getTicks():Int return ticks;
+ public function getSeed():Int return seed;
+ public function getOutcomes():Array<Dynamic> return outcomes;
  var commands:Array<Dynamic>;var index=0;var elapsed=0;var input=new InputState();
  public function new(json:String){
   var document:Dynamic=haxe.Json.parse(json);
@@ -55,5 +58,5 @@ class Autopilot {
   }
   return input;
  }
- public function snapshot():Dynamic return {completed:done,ticks:ticks,command:index,outcomes:outcomes};
+ public function getSnapshot():Dynamic return {completed:done,ticks:ticks,command:index,outcomes:outcomes};
 }

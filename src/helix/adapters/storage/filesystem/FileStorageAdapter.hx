@@ -16,7 +16,7 @@ class FileStorageAdapter implements IStorage {
  function path(key:String):String {if(!AssetPath.valid(key))throw "Invalid storage path";return Path.join([root,key]);}
  function job<T>(work:Void->T,complete:T->Void,cancelled:T):IRequest {
   var request:Request=null;request=new Request(()->{requests.remove(request);queue.add(()->complete(cancelled));});requests.push(request);
-  jobs.push(()->{if(request.settled)return;if(!live){request.cancel();return;}active++;Thread.create(()->{var result=work();done.add(()->{active--;if(request.finish()){requests.remove(request);complete(result);}});});});return request;
+  jobs.push(()->{if(request.isSettled())return;if(!live){request.cancel();return;}active++;Thread.create(()->{var result=work();done.add(()->{active--;if(request.finish()){requests.remove(request);complete(result);}});});});return request;
  }
  public function read(key:String,complete:StorageResult->Void):IRequest return job(()->try {var file=path(key);if(!sys.FileSystem.exists(file))Missing;else if(sys.FileSystem.stat(file).size>8*1024*1024)Failed("Stored file exceeds byte limit");else Stored(sys.io.File.getBytes(file));}catch(error:Dynamic)Failed(Std.string(error)),complete,Cancelled);
  public function write(key:String,bytes:Bytes,complete:StorageWriteResult->Void):IRequest {

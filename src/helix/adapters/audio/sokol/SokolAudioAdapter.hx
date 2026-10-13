@@ -25,7 +25,7 @@ class SokolAudioAdapter implements IAudio {
   function finish(result:ClipDecodeResult){if(request.finish()){requests.remove(request);queue.add(()->complete(result));}}
   request=new Request(()->{requests.remove(request);queue.add(()->complete(Cancelled));});requests.push(request);
   decodeJobs.push(()->{
-   if(request.settled)return;
+   if(request.isSettled())return;
    if(!live||encoded.length<4||encoded.length>8*1024*1024){finish(Failed("Closed decoder or invalid encoded audio byte length"));return;}
    decoding++;Thread.create(()->{
     var result:ClipDecodeResult,codec=0;
@@ -61,7 +61,7 @@ class SokolAudioAdapter implements IAudio {
       if(magic=="OggS"){var codec=CodecBridge.codecFile(path);if(codec==0)throw "Unsupported Ogg stream; expected mono/stereo Vorbis or Opus";CodecBridge.codecClose(codec);stream={path:path,bytes:0,ogg:true};}
       else stream={path:path,bytes:WavStream.header(file.read(44),sys.FileSystem.stat(path).size),ogg:false};
      }catch(e:Dynamic){error=Std.string(e);}if(file!=null)file.close();
-     done.add(()->{if(request.settled)return;if(error!=null)finish(Failed(error));else {var id=-(nextStream++);streams[id]=stream;finish(Created(id));}});
+     done.add(()->{if(request.isSettled())return;if(error!=null)finish(Failed(error));else {var id=-(nextStream++);streams[id]=stream;finish(Created(id));}});
     });
   }return request;
  }

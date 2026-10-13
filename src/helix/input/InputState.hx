@@ -1,35 +1,41 @@
 package helix.input;
 
 /** Shared edge accumulator used by real adapters, replay and tooling.
-    Tick edges (pressed, released) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick,
+    Tick edges (isPressed, isReleased) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick,
     and two presses between ticks reach two ticks;
-    frame edges (framePressed, frameReleased), typed text, the wheel and lifted touches last one frame, until the host's endFrame(). */
+    frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame, until the host's endFrame(). */
 class InputState implements IInput {
  var held:Array<Bool>=[for(_ in 0...Key.COUNT) false];var pushes:Array<Int>=[for(_ in 0...Key.COUNT) 0];var lifts:Array<Int>=[for(_ in 0...Key.COUNT) 0];
  var framePushes:Array<Bool>=[for(_ in 0...Key.COUNT) false];var frameLifts:Array<Bool>=[for(_ in 0...Key.COUNT) false];
  var mouseHeld=[false,false,false];var mousePushes=[0,0,0];var mouseFramePushes=[false,false,false];
- public var pads(default,null):Array<Gamepad>=[for(_ in 0...4) new Gamepad()];
- public var pointerX(default,null)=-1.;public var pointerY(default,null)=-1.;
- public var pointerDown(default,null)=false;public var pointerPressed(get,never):Bool;public var pointerReleased(get,never):Bool;
- var pointerPushes=0;var pointerLifts=0;
- function get_pointerPressed():Bool return pointerPushes>0;
- function get_pointerReleased():Bool return pointerLifts>0;
- public var pointerFramePressed(default,null)=false;public var pointerFrameReleased(default,null)=false;
- public var text(default,null)="";
- public var wheelX(default,null)=0.;public var wheelY(default,null)=0.;
- public var touches(default,null):Array<Touch>=[];
+ var pads:Array<Gamepad>=[for(_ in 0...4) new Gamepad()];
+ var pointerX=-1.;var pointerY=-1.;var pointerDown=false;var pointerPushes=0;var pointerLifts=0;
+ var pointerFramePressed=false;var pointerFrameReleased=false;var text="";var wheelX=0.;var wheelY=0.;var touches:Array<Touch>=[];
  public function new(){}
- public function down(key:Key):Bool return held[key];
- public function pressed(key:Key):Bool return pushes[key]>0;
- public function released(key:Key):Bool return lifts[key]>0;
- public function framePressed(key:Key):Bool return framePushes[key];
- public function frameReleased(key:Key):Bool return frameLifts[key];
- public function mouseDown(button:MouseButton):Bool return mouseHeld[button];
- public function mousePressed(button:MouseButton):Bool return mousePushes[button]>0;
- public function mouseFramePressed(button:MouseButton):Bool return mouseFramePushes[button];
- public function padDown(button:PadButton):Bool {for(pad in pads)if(pad.connected&&pad.down(button))return true;return false;}
- public function padPressed(button:PadButton):Bool {for(pad in pads)if(pad.connected&&pad.pressed(button))return true;return false;}
- public function axis(axis:PadAxis):Float {for(pad in pads)if(pad.connected)return pad.rawAxis(axis);return 0;}
+ public function isDown(key:Key):Bool return held[key];
+ public function isPressed(key:Key):Bool return pushes[key]>0;
+ public function isReleased(key:Key):Bool return lifts[key]>0;
+ public function isFramePressed(key:Key):Bool return framePushes[key];
+ public function isFrameReleased(key:Key):Bool return frameLifts[key];
+ public function getPointerX():Float return pointerX;
+ public function getPointerY():Float return pointerY;
+ public function isPointerDown():Bool return pointerDown;
+ public function isPointerPressed():Bool return pointerPushes>0;
+ public function isPointerReleased():Bool return pointerLifts>0;
+ public function isPointerFramePressed():Bool return pointerFramePressed;
+ public function isPointerFrameReleased():Bool return pointerFrameReleased;
+ public function getWheelX():Float return wheelX;
+ public function getWheelY():Float return wheelY;
+ public function getText():String return text;
+ public function getTouches():Array<Touch> return touches;
+ public function getPadCount():Int return pads.length;
+ public function getPad(index:Int):Null<Gamepad> return index>=0&&index<pads.length?pads[index]:null;
+ public function isMouseDown(button:MouseButton):Bool return mouseHeld[button];
+ public function isMousePressed(button:MouseButton):Bool return mousePushes[button]>0;
+ public function isMouseFramePressed(button:MouseButton):Bool return mouseFramePushes[button];
+ public function isPadDown(button:PadButton):Bool {for(pad in pads)if(pad.isConnected()&&pad.isDown(button))return true;return false;}
+ public function isPadPressed(button:PadButton):Bool {for(pad in pads)if(pad.isConnected()&&pad.isPressed(button))return true;return false;}
+ public function getPadAxis(axis:PadAxis):Float {for(pad in pads)if(pad.isConnected())return pad.getRawAxis(axis);return 0;}
  public function keyEvent(key:Key,value:Bool):Void {
   if(value&&!held[key]){pushes[key]++;framePushes[key]=true;}if(!value&&held[key]){lifts[key]++;frameLifts[key]=true;}held[key]=value;
  }
@@ -37,8 +43,8 @@ class InputState implements IInput {
   held[key]=value;if(push)pushes[key]++;if(lift)lifts[key]++;framePushes[key]=framePushes[key]||push;frameLifts[key]=frameLifts[key]||lift;
  }
  /** Pad 0's button or axis, connecting it: for replay and tests. */
- public function padEvent(button:PadButton,value:Bool):Void {if(!pads[0].connected)pads[0].connect(true,"replay");pads[0].buttonEvent(button,value);}
- public function axisEvent(axis:PadAxis,value:Float):Void {if(!pads[0].connected)pads[0].connect(true,"replay");pads[0].axisEvent(axis,value);}
+ public function padEvent(button:PadButton,value:Bool):Void {if(!pads[0].isConnected())pads[0].connect(true,"replay");pads[0].buttonEvent(button,value);}
+ public function axisEvent(axis:PadAxis,value:Float):Void {if(!pads[0].isConnected())pads[0].connect(true,"replay");pads[0].axisEvent(axis,value);}
  public function mouseEvent(button:MouseButton,value:Bool):Void {if(value&&!mouseHeld[button]){mousePushes[button]++;mouseFramePushes[button]=true;}mouseHeld[button]=value;}
  public function pointerEvent(x:Float,y:Float,value:Bool):Void {
   pointerX=x;pointerY=y;if(value&&!pointerDown){pointerPushes++;pointerFramePressed=true;}if(!value&&pointerDown){pointerLifts++;pointerFrameReleased=true;}pointerDown=value;

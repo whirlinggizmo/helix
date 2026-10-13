@@ -19,7 +19,7 @@ class Sounds {
   if(enabled&&focused)for(kind in game.sounds)audio.play(clips[kind],false,kind==1 ? 0.5 : 0.75);
   var thrust=enabled&&focused&&game.state=="playing"&&game.thrusting&&game.respawnDelay==0;
   if(thrust){
-   if(loop==null||loop.finished){thrustVolume=0;loop=audio.play(clips[7],true,0);}
+   if(loop==null||loop.isFinished()){thrustVolume=0;loop=audio.play(clips[7],true,0);}
    thrustVolume=Math.min(.65,thrustVolume+.13);loop.setVolume(thrustVolume);
   }else if(loop!=null){
    thrustVolume=enabled&&focused?thrustVolume*.35:0;

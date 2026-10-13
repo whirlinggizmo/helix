@@ -1,20 +1,23 @@
 package helix.input;
 
 /** One gamepad slot. Edges work as the keyboard's: tick edges until consume(), frame edges until the frame ends.
-    Sticks read past a radial dead zone, rescaled so they still reach 1; rawAxis reads them as the pad reports. */
+    Sticks read past a radial dead zone, rescaled so they still reach 1; getRawAxis reads them as the pad reports. */
 class Gamepad {
- public var connected(default,null)=false;
- public var name(default,null)="";
- /** Fraction of a stick's reach that reads as centred. */
- public var deadzone=.15;
+ var connected=false;var name="";var deadzone=.15;
  var held=[for(_ in 0...PadButton.COUNT) false];var pushes=[for(_ in 0...PadButton.COUNT) false];var framePushes=[for(_ in 0...PadButton.COUNT) false];
  var axes=[for(_ in 0...PadAxis.COUNT) 0.];
  public function new(){}
- public function down(button:PadButton):Bool return held[button];
- public function pressed(button:PadButton):Bool return pushes[button];
- public function framePressed(button:PadButton):Bool return framePushes[button];
- public function rawAxis(axis:PadAxis):Float return axes[axis];
- public function axis(axis:PadAxis):Float {
+ public function isConnected():Bool return connected;
+ public function getName():String return name;
+ /** Fraction of a stick's reach that reads as centred. */
+ public function getDeadzone():Float return deadzone;
+ /** False for a value outside 0 (none) to just under 1. */
+ public function setDeadzone(value:Float):Bool {if(!(value>=0&&value<1))return false;deadzone=value;return true;}
+ public function isDown(button:PadButton):Bool return held[button];
+ public function isPressed(button:PadButton):Bool return pushes[button];
+ public function isFramePressed(button:PadButton):Bool return framePushes[button];
+ public function getRawAxis(axis:PadAxis):Float return axes[axis];
+ public function getAxis(axis:PadAxis):Float {
   if(axis==PadAxis.LeftTrigger||axis==PadAxis.RightTrigger)return axes[axis];
   var left=axis==PadAxis.LeftX||axis==PadAxis.LeftY,x=axes[left?PadAxis.LeftX:PadAxis.RightX],y=axes[left?PadAxis.LeftY:PadAxis.RightY];
   var length=Math.sqrt(x*x+y*y);if(length<=deadzone)return 0;

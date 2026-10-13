@@ -7,12 +7,12 @@ class Controls {
  public var left=false;public var right=false;public var thrust=false;public var fire=false;
  public function new(){}
  public function read(input:IInput):Void {
-  start=input.pressed(Key.Enter)||input.padPressed(PadButton.South)||input.padPressed(PadButton.Start);
-  title=false;quit=input.pressed(Key.Escape);next=input.pressed(Key.Tab)||input.pressed(Key.Up)||input.pressed(Key.Down)||input.padPressed(PadButton.Up)||input.padPressed(PadButton.Down);
-  left=input.down(Key.Left)||input.pressed(Key.Left)||input.down(Key.A)||input.padDown(PadButton.Left)||input.axis(PadAxis.LeftX)<-.4;
-  right=input.down(Key.Right)||input.pressed(Key.Right)||input.down(Key.D)||input.padDown(PadButton.Right)||input.axis(PadAxis.LeftX)>.4;
-  thrust=input.down(Key.Up)||input.pressed(Key.Up)||input.down(Key.W)||input.padDown(PadButton.South)||input.axis(PadAxis.RightTrigger)>.3;
-  fire=input.down(Key.Space)||input.pressed(Key.Space)||input.padDown(PadButton.East)||input.padDown(PadButton.RightBumper);
+  start=input.isPressed(Key.Enter)||input.isPadPressed(PadButton.South)||input.isPadPressed(PadButton.Start);
+  title=false;quit=input.isPressed(Key.Escape);next=input.isPressed(Key.Tab)||input.isPressed(Key.Up)||input.isPressed(Key.Down)||input.isPadPressed(PadButton.Up)||input.isPadPressed(PadButton.Down);
+  left=input.isDown(Key.Left)||input.isPressed(Key.Left)||input.isDown(Key.A)||input.isPadDown(PadButton.Left)||input.getPadAxis(PadAxis.LeftX)<-.4;
+  right=input.isDown(Key.Right)||input.isPressed(Key.Right)||input.isDown(Key.D)||input.isPadDown(PadButton.Right)||input.getPadAxis(PadAxis.LeftX)>.4;
+  thrust=input.isDown(Key.Up)||input.isPressed(Key.Up)||input.isDown(Key.W)||input.isPadDown(PadButton.South)||input.getPadAxis(PadAxis.RightTrigger)>.3;
+  fire=input.isDown(Key.Space)||input.isPressed(Key.Space)||input.isPadDown(PadButton.East)||input.isPadDown(PadButton.RightBumper);
  }
  public function replay(tick:Int):Void {start=tick==0||tick==900;title=false;quit=false;next=false;fire=true;thrust=tick%240<120;left=tick%360<110;right=tick%360>=240;}
 }

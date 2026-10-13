@@ -19,12 +19,17 @@ interface IHost {
  public var assets(default,null):IAssets;
  public var diagnostics(default,null):IDiagnostics;
  public var window(default,null):IWindow;
- public var focused(default,null):Bool;
- public var canQuit(default,null):Bool;
+ /** Whether the window (the page, on the web) has the keyboard. */
+ public function isFocused():Bool;
+ /** Whether quit() means anything: not in a browser page. */
+ public function canQuit():Bool;
  public function run(app:IApp):Void;
- public function now():Float;
- public function width():Int;
- public function height():Int;
- public function pixelRatio():Float;
+ /** Seconds on a monotonic clock. */
+ public function getTime():Float;
+ /** The drawable area in framebuffer pixels (IWindow's sizes are logical pixels). */
+ public function getFramebufferWidth():Int;
+ public function getFramebufferHeight():Int;
+ /** Framebuffer pixels per logical pixel. */
+ public function getPixelRatio():Float;
  public function quit():Void;
 }

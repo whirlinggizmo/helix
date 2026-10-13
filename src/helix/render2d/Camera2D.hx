@@ -2,10 +2,20 @@ package helix.render2d;
 
 /** A 2D view: the world point at the viewport's center and how many pixels a world unit covers. Y grows downward. */
 class Camera2D {
- public var x=0.;public var y=0.;public var zoom=1.;
- public var viewportWidth(default,null)=1;public var viewportHeight(default,null)=1;
+ var x=0.;var y=0.;var zoom=1.;var viewportWidth=1;var viewportHeight=1;
  public function new(){}
- public function viewport(width:Int,height:Int):Void {viewportWidth=width<1?1:width;viewportHeight=height<1?1:height;}
+ /** The world point at the viewport's center. */
+ public function getX():Float return x;
+ public function getY():Float return y;
+ public function setPosition(x:Float,y:Float):Void {this.x=x;this.y=y;}
+ /** Framebuffer pixels per world unit. */
+ public function getZoom():Float return zoom;
+ /** False for a zoom of 0 or less. */
+ public function setZoom(value:Float):Bool {if(!(value>0))return false;zoom=value;return true;}
+ public function getViewportWidth():Int return viewportWidth;
+ public function getViewportHeight():Int return viewportHeight;
+ /** The framebuffer area it draws to; a size under 1 clamps to 1. */
+ public function setViewport(width:Int,height:Int):Void {viewportWidth=width<1?1:width;viewportHeight=height<1?1:height;}
  /** Show a world rectangle whole and centered; the longer screen side shows extra world. */
  public function fit(left:Float,top:Float,width:Float,height:Float):Void {zoom=Math.min(viewportWidth/width,viewportHeight/height);x=left+width/2;y=top+height/2;}
  /** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). */

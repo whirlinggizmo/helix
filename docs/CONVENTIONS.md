@@ -26,6 +26,14 @@ The one exception is by design: `examples/asteroids-parity`'s `wgf` package, whi
 - **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.
 
+## Layout and documentation
+
+Code is written to be read, by people and agents, not packed.
+
+- **Formatted by the tool, not by hand.** Haxe source is laid out by haxe-formatter (`formatter` on lib.haxe.org) with the experiment's `hxformat.json`: one statement per line, indented blocks. Formatting is checked with the other checks, so dense one-line classes and functions don't come back.
+- **Every public type and member has a doc comment** (`/** ... */`) saying what it is or does, in the units it uses, with its ranges and every refusal ("False for ..."). Private code gets a comment where the reason isn't plain from the code.
+- **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what a developer or an agent reads is what the code says.
+
 ## Examples
 
 - An example shows a feature through the framework's API. Work that a game would otherwise repeat (hit tests, timers, layout) belongs in the framework; an example that has to do it by hand says so in its comment.

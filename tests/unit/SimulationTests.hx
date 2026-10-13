@@ -26,18 +26,18 @@ class SimulationTests {
   g.score=9980;g.lives=2;g.addScore(20);check(g.lives==3&&g.sounds.indexOf(5)>=0,"Extra life every 10000 points");
   g.rocks=[new Body(g.ship.x,g.ship.y,0,0,3)];g.ship.vx=g.ship.vy=0;g.invulnerable=0;g.step(c);check(g.respawnDelay==120&&g.lives==2,"Two-second respawn delay");
   for(_ in 0...120)g.step(c);check(g.respawnDelay==0&&g.invulnerable>0,"Respawn grants invulnerability");
-  var state=new InputState();state.keyEvent(Key.Enter,true);state.keyEvent(Key.Enter,false);check(!state.down(Key.Enter)&&state.pressed(Key.Enter)&&state.released(Key.Enter),"Short tap retains both edges");
-  c.read(state);check(c.start,"Controls see short tap");state.consume();check(!state.pressed(Key.Enter)&&!state.released(Key.Enter),"Consume once");
-  state.keyEvent(Key.Space,true);state.consume();state.keyEvent(Key.Space,true);check(state.down(Key.Space)&&!state.pressed(Key.Space),"Key repeat is not a new edge");state.clear();check(!state.down(Key.Space)&&state.released(Key.Space),"Focus clear releases held key");
-  state.padEvent(PadButton.East,true);state.axisEvent(PadAxis.LeftX,-.8);state.axisEvent(PadAxis.RightTrigger,.7);c.read(state);check(c.fire&&c.left&&c.thrust,"Standard controller actions");state.clear();check(state.axis(PadAxis.LeftX)==0&&!state.padDown(PadButton.East),"Controller disconnect clears state");
+  var state=new InputState();state.keyEvent(Key.Enter,true);state.keyEvent(Key.Enter,false);check(!state.isDown(Key.Enter)&&state.isPressed(Key.Enter)&&state.isReleased(Key.Enter),"Short tap retains both edges");
+  c.read(state);check(c.start,"Controls see short tap");state.consume();check(!state.isPressed(Key.Enter)&&!state.isReleased(Key.Enter),"Consume once");
+  state.keyEvent(Key.Space,true);state.consume();state.keyEvent(Key.Space,true);check(state.isDown(Key.Space)&&!state.isPressed(Key.Space),"Key repeat is not a new edge");state.clear();check(!state.isDown(Key.Space)&&state.isReleased(Key.Space),"Focus clear releases held key");
+  state.padEvent(PadButton.East,true);state.axisEvent(PadAxis.LeftX,-.8);state.axisEvent(PadAxis.RightTrigger,.7);c.read(state);check(c.fire&&c.left&&c.thrust,"Standard controller actions");state.clear();check(state.getPadAxis(PadAxis.LeftX)==0&&!state.isPadDown(PadButton.East),"Controller disconnect clears state");
   g=new Game();c=new Controls();state=new InputState();var menu=new Menu();state.pointerEvent(500,416*700/720.,true);c.read(state);menu.update(g,c,state,1000,700);g.step(c);check(g.state=="playing","Letterboxed pointer menu activation");
   var wav=sys.io.File.getBytes("build/audio-source/fire.wav"),pcm=Wav.decode(wav);check(pcm.length==(wav.length-44)*2,"WAV decoding produces float32 PCM");
   var invalid=wav.sub(0,wav.length);invalid.setInt32(24,22050);rejects(()->Wav.decode(invalid),"Unsupported rate rejected");rejects(()->Wav.decode(wav.sub(0,wav.length-1)),"Truncated WAV rejected");
   check(AssetPath.valid("sounds/fire.wav")&&!AssetPath.valid("../secret")&&!AssetPath.valid("/tmp/file")&&!AssetPath.valid("https://host/file"),"Assets use bounded packaged paths");
   for(name in ["smoke","playthrough"]){
-   var pilot=new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/"+name+".json"));g=new Game(pilot.seed);menu=new Menu();c=new Controls();
-   for(_ in 0...15000){var source=pilot.advance(g.probe);if(pilot.done)break;c.read(source);menu.update(g,c,source,800,600);g.step(c);source.consume();}
-   check(pilot.done,"Autopilot "+name+" completes");if(name=="playthrough")check(g.state=="playing"&&g.lives==3&&g.score==0,"Autopilot covers gameover/title/restart");
+   var pilot=new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/"+name+".json"));g=new Game(pilot.getSeed());menu=new Menu();c=new Controls();
+   for(_ in 0...15000){var source=pilot.advance(g.probe);if(pilot.isDone())break;c.read(source);menu.update(g,c,source,800,600);g.step(c);source.consume();}
+   check(pilot.isDone(),"Autopilot "+name+" completes");if(name=="playthrough")check(g.state=="playing"&&g.lives==3&&g.score==0,"Autopilot covers gameover/title/restart");
   }
   rejects(()->new Autopilot('{"version":1,"seed":1,"commands":[{"op":"hold","keys":[],"ticks":-1}]}'),"Invalid script duration rejected");
   var timeout=new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"never","timeout":1}]}');timeout.advance(g.probe);rejects(()->timeout.advance(g.probe),"Unmet wait fails with bounded timeout");

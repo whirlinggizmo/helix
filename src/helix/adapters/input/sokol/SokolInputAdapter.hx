@@ -27,8 +27,8 @@ class SokolInputAdapter extends InputState {
   var focused=InputBridge.focused()!=0;
   for(i in 0...pads.length){
    var pad=pads[i],connected=focused&&InputBridge.padConnected(i)!=0;
-   if(!connected){if(pad.connected)pad.connect(false,"");continue;}
-   var name:String=InputBridge.padName(i);if(!pad.connected||pad.name!=name)pad.connect(true,name);
+   if(!connected){if(pad.isConnected())pad.connect(false,"");continue;}
+   var name:String=InputBridge.padName(i);if(!pad.isConnected()||pad.getName()!=name)pad.connect(true,name);
    for(button in PadButton.all)pad.buttonEvent(button,InputBridge.padButton(i,button)!=0);
    for(axis in PadAxis.all)pad.axisEvent(axis,InputBridge.padAxis(i,axis));
   }

@@ -23,9 +23,9 @@ class HaxeHttpFetchAdapter implements IFetch {
   request=new Request(()->{requests.remove(request);queue.add(()->complete(Cancelled));});requests.push(request);
   var url=spec.url,limit=spec.maxBytes==null?8*1024*1024:spec.maxBytes,timeout=spec.timeoutSeconds==null?15.:spec.timeoutSeconds;
   jobs.push(()->{
-   if(request.settled)return;
+   if(request.isSettled())return;
    if(!live||limit<=0||!Math.isFinite(timeout)||timeout<=0||!(StringTools.startsWith(url,"http://")||StringTools.startsWith(url,"https://"))){finish(Failed("Invalid fetch request or closed service"));return;}
-   readProgress=()->{lock.acquire();var count=received,length=total;lock.release();if(count!=last&&progress!=null&&!request.settled){last=count;progress({received:count,total:length});}};progressReaders.push(readProgress);
+   readProgress=()->{lock.acquire();var count=received,length=total;lock.release();if(count!=last&&progress!=null&&!request.isSettled()){last=count;progress({received:count,total:length});}};progressReaders.push(readProgress);
    active++;Thread.create(()->{
     var result:FetchResult;
     try {

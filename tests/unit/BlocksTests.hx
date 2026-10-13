@@ -31,11 +31,11 @@ class BlocksTests {
   check(haxe.Json.stringify(x.snapshot())==haxe.Json.stringify(y.snapshot()),"Seeded play repeats exactly");
   // Gestures, from InputState's pointer as touch delivers it.
   var input=new InputState(),gestures=new PointerGestures(10);
-  input.pointerEvent(100,100,true);gestures.update(input,0);input.consume();input.pointerEvent(102,101,false);gestures.update(input,.1);check(gestures.tapped&&!gestures.dragging,"Short still press taps");
-  input.consume();input.pointerEvent(100,100,true);gestures.update(input,1);input.consume();input.pointerEvent(100,100,false);gestures.update(input,1.5);check(!gestures.tapped,"Long press is no tap");
+  input.pointerEvent(100,100,true);gestures.update(input,0);input.consume();input.pointerEvent(102,101,false);gestures.update(input,.1);check(gestures.isTapped()&&!gestures.isDragging(),"Short still press taps");
+  input.consume();input.pointerEvent(100,100,true);gestures.update(input,1);input.consume();input.pointerEvent(100,100,false);gestures.update(input,1.5);check(!gestures.isTapped(),"Long press is no tap");
   input.consume();input.pointerEvent(100,100,true);gestures.update(input,2);for(i in 1...5){input.consume();input.pointerEvent(100,100+i*40,true);gestures.update(input,2+i/60);}
-  input.consume();input.pointerEvent(100,300,false);gestures.update(input,2+5/60);check(gestures.dragging&&!gestures.tapped&&gestures.flickY>1000,"Fast drag flicks down");
-  var camera=new Camera2D();camera.viewport(400,800);camera.fit(0,0,12,26);check(Math.abs(camera.zoom-800/26)<1e-9,"Fit uses the tighter axis");
+  input.consume();input.pointerEvent(100,300,false);gestures.update(input,2+5/60);check(gestures.isDragging()&&!gestures.isTapped()&&gestures.getFlickY()>1000,"Fast drag flicks down");
+  var camera=new Camera2D();camera.setViewport(400,800);camera.fit(0,0,12,26);check(Math.abs(camera.getZoom()-800/26)<1e-9,"Fit uses the tighter axis");
   check(Math.abs(camera.screenToWorldX(camera.worldToScreenX(3.5))-3.5)<1e-9&&Math.abs(camera.screenToWorldY(camera.worldToScreenY(20))-20)<1e-9,"Screen and world round trip");
   check(Math.abs(camera.clipX(6))<1e-9&&Math.abs(camera.clipY(13))<1e-9,"World center is clip center");
   Sys.println(haxe.Json.stringify({passed:true,checks:checks}));

@@ -52,12 +52,12 @@ class DomInputAdapter extends InputState {
   var list:Dynamic=Browser.navigator.getGamepads(),slot=0;
   for(i in 0...list.length){
    var pad:Dynamic=list[i];if(pad==null||!pad.connected||slot>=4)continue;var state=pads[slot++];
-   if(!state.connected||state.name!=pad.id)state.connect(true,pad.id);
+   if(!state.isConnected()||state.getName()!=pad.id)state.connect(true,pad.id);
    for(button in PadButton.all){var b:Int=button;state.buttonEvent(button,pad.buttons.length>b&&pad.buttons[b].pressed);}
    for(axis in [PadAxis.LeftX,PadAxis.LeftY,PadAxis.RightX,PadAxis.RightY]){var a:Int=axis;state.axisEvent(axis,pad.axes.length>a?pad.axes[a]:0);}
    state.axisEvent(PadAxis.LeftTrigger,pad.buttons.length>6?pad.buttons[6].value:0);state.axisEvent(PadAxis.RightTrigger,pad.buttons.length>7?pad.buttons[7].value:0);
   }
-  while(slot<4){if(pads[slot].connected)pads[slot].connect(false,"");slot++;}
+  while(slot<4){if(pads[slot].isConnected())pads[slot].connect(false,"");slot++;}
  }
  /** KeyboardEvent.code to Key, by place on the keyboard. */
  static final codes:Map<String,Key>={

@@ -18,20 +18,20 @@ class App extends BaseApp {
  public function new(host:IHost){super();this.host=host;}
  override public function init():Void {host.window.setTitle("HeliX tick");host.window.setSize(WIDTH,HEIGHT);batch=new Batch2D(host.graphics);ticker=new Ticker(host.input,10);}
  function tick():Void {
-  previousX=x;x+=SPEED*ticker.delta;
+  previousX=x;x+=SPEED*ticker.getDelta();
   if(x>RIGHT){x=LEFT;previousX=x;} // not smoothed across the wrap
-  ticks++;if(host.input.pressed(Key.Enter))tickPresses++;
+  ticks++;if(host.input.isPressed(Key.Enter))tickPresses++;
  }
  override public function frame(dt:Float):Void {
   var input=host.input;
-  if(input.framePressed(Key.Enter))framePresses++;
-  if(input.framePressed(Key.Space))ticker.timeScale=ticker.timeScale>0?0:1;
-  if(host.canQuit&&input.framePressed(Key.Escape))host.quit();
-  ticker.advance(dt,tick);var t=ticker.fraction;
-  fps.update(dt,host.diagnostics.frameCpu());
-  camera.viewport(host.width(),host.height());camera.pixels(host.pixelRatio());batch.begin(camera,0x181a22ff);
+  if(input.isFramePressed(Key.Enter))framePresses++;
+  if(input.isFramePressed(Key.Space))ticker.setTimeScale(ticker.getTimeScale()>0?0:1);
+  if(host.canQuit()&&input.isFramePressed(Key.Escape))host.quit();
+  ticker.advance(dt,tick);var t=ticker.getFraction();
+  fps.update(dt,host.diagnostics.getFrameCpu());
+  camera.setViewport(host.getFramebufferWidth(),host.getFramebufferHeight());camera.pixels(host.getPixelRatio());batch.begin(camera,0x181a22ff);
   Text2D.draw(batch,"HeliX tick: a 10 Hz simulation, drawn every frame",20,20,20,0xf5f5f5ff);
-  Text2D.draw(batch,'frame delta ${fixed(dt,4)} s   tick fraction ${fixed(t,2)}   ticks $ticks   '+(ticker.timeScale>0?"running (Space pauses)":"paused (Space resumes)"),20,50,16,0xc8c8c8ff);
+  Text2D.draw(batch,'frame delta ${fixed(dt,4)} s   tick fraction ${fixed(t,2)}   ticks $ticks   '+(ticker.getTimeScale()>0?"running (Space pauses)":"paused (Space resumes)"),20,50,16,0xc8c8c8ff);
   Text2D.draw(batch,'Enter presses: tick $tickPresses, frame $framePresses',20,74,16,0xc8c8c8ff);
   Text2D.draw(batch,"where the latest tick left it",20,130,16,0x828282ff);
   batch.rect(x,155,SQUARE,SQUARE,0xffa100ff);
