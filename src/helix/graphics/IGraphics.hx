@@ -5,10 +5,13 @@ import haxe.io.Bytes;
 /** Thin resource/submission contract. No scene policy belongs in an adapter. A frame is beginFrame, then any number of viewports, uploads and
 	draws, then endFrame; whoever draws (an app, Batch2D, Batch3D) brings its own buffers and pipelines. */
 interface IGraphics {
-	/** Uploads an RGBA8 image, rows top first, 4 bytes per pixel, and returns its handle. levels is the image then, optionally, its mipmaps, each half
-		the size of the last (at least 1; Mipmaps.build makes them). linear picks bilinear filtering over nearest, trilinear with mipmaps. Throws for a size
-		of 0 or less, no levels, or a level whose byte count isn't its width*height*4. */
-	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int;
+	/** Uploads an image, rows top first, and returns its handle. levels is the image then, optionally, its mipmaps, each half the size of the last
+		(at least 1; Mipmaps.build makes them for RGBA8), each format.levelBytes of its size. How it is sampled is each draw's (Sampling). Throws for a
+		size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample. */
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int;
+
+	/** Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them. */
+	public function canSample(format:TextureFormat):Bool;
 
 	/** Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle.
 		Throws for another size. */
@@ -33,16 +36,18 @@ interface IGraphics {
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void;
 
 	/** Draws vertices from firstVertex of buffer's upload this frame through pipeline: whole triangles (three vertices each) or lines (two each), in
-		the pipeline's vertex layout. texture is a handle from createTexture for a Sprite2D pipeline, ignored by the others; uniforms are a Color3D or
-		Lines3D pipeline's (the view-projection matrix, column-major, 64 bytes), null for a Sprite2D one. Throws for anything invalid, before drawing. */
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
+		the pipeline's vertex layout. texture is a handle from createTexture for a Sprite2D pipeline, sampled as sampling says, both ignored by the
+		others; uniforms are a Color3D or Lines3D pipeline's (the view-projection matrix, column-major, 64 bytes), null for a Sprite2D one. Throws for
+		anything invalid, before drawing. */
+	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
 
 	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
 		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline: baseTexture is its
-		base color texture (sRGB), normalTexture its normal map (linear, tangent space), vertexUniforms the view-projection matrix (64 bytes) and
-		fragmentUniforms the lights and material (Lit3DLayout.fragmentUniformBytes). Throws for anything invalid, before drawing. */
+		base color texture (sRGB) sampled as baseSampling says, normalTexture its normal map (linear, tangent space) sampled as normalSampling says,
+		vertexUniforms the view-projection matrix (64 bytes) and fragmentUniforms the lights and material (Lit3DLayout.fragmentUniformBytes). Throws
+		for anything invalid, before drawing. */
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-		normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
+		baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
 
 	/** Closes the frame opened by beginFrame; sokol also commits it for presentation. Throws when no frame is open. */
 	public function endFrame():Void;

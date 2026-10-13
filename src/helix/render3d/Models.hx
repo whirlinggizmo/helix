@@ -52,9 +52,10 @@ class Models {
 					return;
 				}
 				for (image in images)
-					children.push(textures.decode(file.gltfFile().viewBytes(image.view), image.linear, decoded -> {
+					children.push(textures.decode(file.gltfFile().viewBytes(image.view), image.sampling.isLinear(), decoded -> {
 						switch decoded {
 							case Ready(texture):
+								texture.setSampling(image.sampling);
 								image.set(texture);
 							case Failed(message):
 								@:privateAccess file.warn('an image failed to decode: $message');

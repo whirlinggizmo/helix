@@ -1,6 +1,8 @@
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
+import helix.graphics.Sampling;
+import helix.graphics.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
@@ -12,14 +14,17 @@ import helix.render2d.Texture2D;
 class CountingGraphics implements IGraphics {
 	var next = 1;
 
-	public var draws:Array<{vertices:Int, first:Int}> = [];
+	public var draws:Array<{vertices:Int, first:Int, sampling:Sampling}> = [];
 	public var viewports:Array<Array<Int>> = [];
 	public var uploaded:Null<Bytes>;
 
 	public function new() {}
 
-	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int
 		return next++;
+
+	public function canSample(format:TextureFormat):Bool
+		return format == Rgba8 || format == Astc4x4;
 
 	public function createBuffer(capacityBytes:Int):Int
 		return next++;
@@ -41,11 +46,11 @@ class CountingGraphics implements IGraphics {
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void
 		viewports.push([x, y, w, h]);
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
-		draws.push({vertices: vertices, first: firstVertex});
+	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
+		draws.push({vertices: vertices, first: firstVertex, sampling: sampling});
 
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-		normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {}
+		baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {}
 
 	public function endFrame():Void {}
 
@@ -77,7 +82,8 @@ class Render2DTests {
 		while (i < triangles.length) {
 			sum += Math.abs(Polygon2D.doubleArea([
 				for (k in 0...3)
-					for (c in 0...2) points[triangles[i + k] * 2 + c]
+					for (c in 0...2)
+						points[triangles[i + k] * 2 + c]
 			])) / 2;
 			i += 3;
 		}
@@ -179,6 +185,55 @@ class Render2DTests {
 		batch.rect(0, 0, 1, 1, -1);
 		batch.end();
 		check(Math.abs(gpu.uploaded.getFloat(0) - camera.clipX(10)) < 1e-6, "setTransform places what follows");
+		// Sampling: its bits round-trip, and a change of a texture's sampling splits the batch's run, each part sampled as it was then.
+		var sampling = new Sampling(true, Repeat, Mirror);
+		check(sampling.isLinear()
+			&& sampling.getWrapU() == Repeat
+			&& sampling.getWrapV() == Mirror
+			&& (sampling : Int) < Sampling.COUNT,
+			"Sampling keeps its filter and wraps");
+		check(!sampling.withLinear(false).isLinear() && sampling.withWrap(Clamp, Clamp).getWrapV() == Clamp, "with* change one part");
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		texture.setSampling(Sampling.LINEAR);
+		batch.image(texture, 0, 0, 4, 4);
+		texture.setSampling(Sampling.NEAREST);
+		batch.image(texture, 4, 0, 4, 4);
+		batch.image(texture, 8, 0, 4, 4);
+		batch.end();
+		check(gpu.draws.length == 2 && gpu.draws[0].sampling.isLinear() && !gpu.draws[1].sampling.isLinear() && gpu.draws[1].vertices == 12,
+			"A texture drawn smooth then sharp is two runs, sampled as each was drawn");
+
+		// KTX 1: a 5 x 3 ASTC 4x4 file with its mipmaps (2 x 1, 1 x 1): one block a level.
+		var file = new haxe.io.BytesBuffer();
+		for (b in [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A])
+			file.addByte(b);
+		for (v in [0x04030201, 0, 1, 0, 0x93B0, 0x1908, 5, 3, 0, 0, 1, 3, 4])
+			file.addInt32(v);
+		file.addInt32(0); // key/value data: 4 bytes of nothing
+		var levelSizes = [2 * 1 * 16, 16, 16];
+		for (size in levelSizes) {
+			file.addInt32(size);
+			for (i in 0...size)
+				file.addByte(i);
+		}
+		var ktx = helix.render2d.Ktx.read(file.getBytes());
+		check(ktx.format == Astc4x4 && ktx.width == 5 && ktx.height == 3 && ktx.levels.length == 3 && ktx.levels[0].length == 32,
+			"A KTX file's format, size and levels are read");
+		var bad = false;
+		try
+			helix.render2d.Ktx.read(Bytes.alloc(64))
+		catch (e:Dynamic)
+			bad = true;
+		check(bad, "A file that isn't KTX is refused");
+		check((Astc4x4 : TextureFormat).levelBytes(5, 3) == 32 && (Rgba8 : TextureFormat).levelBytes(5, 3) == 60,
+			"Level sizes: blocks of 4x4, or 4 bytes a texel");
+
+		// "name.ktx" tries the variants this GPU samples (here ASTC only), then the PNG; a variant named outright is tried alone.
+		var textures = new helix.render2d.Textures(null, null, gpu);
+		check(textures.getCandidates("a/b.ktx").join(",") == "a/b.astc.ktx,a/b.png", "name.ktx: this GPU's variants, then name.png");
+		check(textures.getCandidates("a/b.bc7.ktx").join(",") == "a/b.bc7.ktx" && textures.getCandidates("a/b.png").join(",") == "a/b.png",
+			"Other paths are themselves");
 		batch.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

@@ -2,6 +2,7 @@ package helix.render3d;
 
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
+import helix.graphics.Sampling;
 import haxe.io.Bytes;
 
 /** Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame
@@ -77,11 +78,11 @@ class Batch3D {
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);
 		if (triangleVertices > 0) {
-			gpu.draw(trianglePipeline, triangleBuffer, 0, triangleVertices, 0, uniforms);
+			gpu.draw(trianglePipeline, triangleBuffer, 0, Sampling.NEAREST, triangleVertices, 0, uniforms);
 			draws++;
 		}
 		if (lineVertices > 0) {
-			gpu.draw(linePipeline, lineBuffer, 0, lineVertices, 0, uniforms);
+			gpu.draw(linePipeline, lineBuffer, 0, Sampling.NEAREST, lineVertices, 0, uniforms);
 			draws++;
 		}
 	}

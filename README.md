@@ -80,6 +80,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `model` | a glTF (GLB) model loaded into nodes: parts found by name, its own lights |
 | `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
 | `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group |
+| `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
 
 Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 

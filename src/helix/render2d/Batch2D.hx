@@ -2,6 +2,7 @@ package helix.render2d;
 
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
+import helix.graphics.Sampling;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
@@ -34,6 +35,8 @@ class Batch2D {
 	var runStart = 0;
 	var runs:Array<Int> = [];
 	var runCameras:Array<Camera2D> = [];
+	var runSamplings:Array<Sampling> = [];
+	var sampling:Sampling = Sampling.NEAREST;
 	var ta = 1.;
 	var tb = 0.;
 	var tc = 0.;
@@ -64,7 +67,9 @@ class Batch2D {
 		runStart = 0;
 		runs = [];
 		runCameras = [];
+		runSamplings = [];
 		texture = font.getTexture();
+		sampling = texture.getSampling();
 		resetTransform();
 	}
 
@@ -106,17 +111,18 @@ class Batch2D {
 				gpu.setViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
 					c.getViewportHeight());
 			}
-			gpu.draw(pipeline, buffer, runs[i], runs[i + 2], runs[i + 1]);
+			gpu.draw(pipeline, buffer, runs[i], runSamplings[Std.int(i / 3)], runs[i + 2], runs[i + 1]);
 			draws++;
 			i += 3;
 		}
 	}
 
-	/** Later quads sample this texture. */
+	/** Later quads sample this texture, as its sampling is now (Texture2D.setSampling). */
 	public function useTexture(value:Texture2D):Void
-		if (value != texture) {
+		if (value != texture || value.getSampling() != sampling) {
 			closeRun();
 			texture = value;
+			sampling = value.getSampling();
 		}
 
 	function closeRun():Void {
@@ -125,6 +131,7 @@ class Batch2D {
 			runs.push(runStart);
 			runs.push(vertices - runStart);
 			runCameras.push(camera);
+			runSamplings.push(sampling);
 		}
 		runStart = vertices;
 	}
@@ -194,6 +201,21 @@ class Batch2D {
 		vertex(ax, ay, u0, v0);
 		vertex(cx, cy, u1, v1);
 		vertex(dx, dy, u0, v1);
+	}
+
+	/** texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x
+		sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is
+		now. */
+	public function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
+			sourceHeight = 0.):Void {
+		useTexture(texture);
+		var tw = texture.getWidth(), th = texture.getHeight();
+		if (!(sourceWidth > 0 && sourceHeight > 0)) {
+			sourceX = sourceY = 0;
+			sourceWidth = tw;
+			sourceHeight = th;
+		}
+		quad(x, y, width, height, sourceX / tw, sourceY / th, (sourceX + sourceWidth) / tw, (sourceY + sourceHeight) / th, tint);
 	}
 
 	/** A filled rectangle in world units, top-left at x, y. */

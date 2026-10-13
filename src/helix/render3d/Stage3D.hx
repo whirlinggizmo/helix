@@ -353,10 +353,14 @@ class Stage3D {
 		u.setFloat(68, linear((emissive >>> 16) & 255) * strength);
 		u.setFloat(72, linear((emissive >>> 8) & 255) * strength);
 		u.setFloat(76, normal == null ? 0 : material.getNormalScale());
-		var texture = material.getTexture();
+		var base = material.getTexture();
+		if (base == null)
+			base = white;
+		if (normal == null)
+			normal = flat;
 		gpu.drawMesh(item.blended ? blendedPipeline : opaquePipeline, item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu),
-			item.mesh.getIndexCount(), instanceBuffer, first, runCount, (texture == null ? white : texture).getHandle(),
-			(normal == null ? flat : normal).getHandle(), vertexUniforms, u);
+			item.mesh.getIndexCount(), instanceBuffer, first, runCount, base.getHandle(), base.getSampling(), normal.getHandle(), normal.getSampling(),
+			vertexUniforms, u);
 		draws++;
 	}
 

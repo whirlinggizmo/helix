@@ -2,6 +2,8 @@ package helix.adapters.graphics.webgl2;
 
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
+import helix.graphics.Sampling;
+import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
@@ -18,6 +20,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var next = 1;
 	var buffers:Map<Int, Dynamic> = [];
 	var textures:Map<Int, Dynamic> = [];
+	// One sampler object for each Sampling value used, made when first used.
+	var samplers:Array<Dynamic> = [];
+	// Whether each TextureFormat is sampled, once asked.
+	var formats:Array<Null<Bool>> = [];
 	var pipelines:Map<Int, Dynamic> = [];
 	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
 	var programs:Array<Dynamic> = [null, null, null];
@@ -43,31 +49,75 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		#if hotreload live.push(this); #end
 	}
 
-	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int {
-		if (width <= 0 || height <= 0 || levels.length == 0)
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
+		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
 			throw "Invalid texture";
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
 		var lw = width, lh = height;
 		for (i in 0...levels.length) {
-			if (levels[i].length != lw * lh * 4)
+			if (levels[i].length != format.levelBytes(lw, lh)) {
+				gl.deleteTexture(tex);
 				throw "Invalid texture";
-			gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, i, WebGL2RenderingContext.RGBA, lw, lh, 0, WebGL2RenderingContext.RGBA,
-				WebGL2RenderingContext.UNSIGNED_BYTE, new js.lib.Uint8Array(levels[i].getData()));
+			}
+			var data = new js.lib.Uint8Array(levels[i].getData(), 0, levels[i].length);
+			if (format == Rgba8)
+				gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, i, WebGL2RenderingContext.RGBA, lw, lh, 0, WebGL2RenderingContext.RGBA,
+					WebGL2RenderingContext.UNSIGNED_BYTE, data);
+			else
+				gl.compressedTexImage2D(WebGL2RenderingContext.TEXTURE_2D, i, glFormat(format), lw, lh, 0, data);
 			lw = lw > 1 ? Std.int(lw / 2) : 1;
 			lh = lh > 1 ? Std.int(lh / 2) : 1;
 		}
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
-		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER,
-			linear ? (levels.length > 1 ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.LINEAR) : WebGL2RenderingContext.NEAREST);
-		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAG_FILTER,
-			linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
-		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_S, WebGL2RenderingContext.CLAMP_TO_EDGE);
-		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_T, WebGL2RenderingContext.CLAMP_TO_EDGE);
 		var id = next++;
 		textures[id] = tex;
 		return id;
+	}
+
+	// The GL internal format of a compressed one, from its extension.
+	static function glFormat(format:TextureFormat):Int
+		return switch format {
+			case Bc7: 0x8E8C; // COMPRESSED_RGBA_BPTC_UNORM_EXT
+			case Astc4x4: 0x93B0; // COMPRESSED_RGBA_ASTC_4x4_KHR
+			case Etc2Rgba8: 0x9278; // COMPRESSED_RGBA8_ETC2_EAC
+			case Rgba8: WebGL2RenderingContext.RGBA8;
+		}
+
+	public function canSample(format:TextureFormat):Bool {
+		var known = formats[format];
+		if (known == null) {
+			// Asking for an extension also turns it on.
+			known = switch format {
+				case Rgba8: true;
+				case Bc7: gl.getExtension("EXT_texture_compression_bptc") != null;
+				case Astc4x4: gl.getExtension("WEBGL_compressed_texture_astc") != null;
+				case Etc2Rgba8: gl.getExtension("WEBGL_compressed_texture_etc") != null;
+			}
+			formats[format] = known;
+		}
+		return known;
+	}
+
+	// The sampler object for sampling: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap.
+	function sampler(sampling:Sampling):Dynamic {
+		var index:Int = sampling;
+		if (samplers[index] == null) {
+			var wraps = [
+				WebGL2RenderingContext.CLAMP_TO_EDGE,
+				WebGL2RenderingContext.REPEAT,
+				WebGL2RenderingContext.MIRRORED_REPEAT
+			];
+			var linear = sampling.isLinear(), made = gl.createSampler();
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MIN_FILTER,
+				linear ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST);
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MAG_FILTER, linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_S, wraps[(sampling.getWrapU() : Int) % 3]);
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_T, wraps[(sampling.getWrapV() : Int) % 3]);
+			samplers[index] = made;
+		}
+		return samplers[index];
 	}
 
 	public function createBuffer(capacityBytes:Int):Int {
@@ -268,7 +318,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		} else
 			gl.disable(WebGL2RenderingContext.BLEND);
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
+	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
 		var p = pipelines[pipeline], b = buffers[buffer];
 		if (!active || p == null || b == null || b.index || p.kind == Lit3D)
 			throw "Invalid draw";
@@ -296,6 +346,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			attribute(Sprite2DLayout.colorSlot, Sprite2DLayout.colorComponents, stride, Sprite2DLayout.colorOffset);
 			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Sprite2DLayout.atlasUnit);
 			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+			gl.bindSampler(Sprite2DLayout.atlasUnit, sampler(sampling));
 			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 			gl.depthMask(false);
 		} else {
@@ -313,7 +364,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	}
 
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-			normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+			baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
 		var p = pipelines[pipeline],
 			v = buffers[vertices],
 			ix = buffers[indices],
@@ -354,9 +405,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.uniform1i(shader.texture, Lit3DLayout.baseUnit);
 		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.baseUnit);
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+		gl.bindSampler(Lit3DLayout.baseUnit, sampler(baseSampling));
 		gl.uniform1i(shader.normalTexture, Lit3DLayout.normalUnit);
 		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.normalUnit);
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, nt);
+		gl.bindSampler(Lit3DLayout.normalUnit, sampler(normalSampling));
 		resetAttributes();
 		var stride = Lit3DLayout.stride,
 			record = Lit3DLayout.instanceStride,
@@ -420,6 +473,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				gl.deleteProgram(programs[i].program);
 				programs[i] = null;
 			}
+		for (made in samplers)
+			if (made != null)
+				gl.deleteSampler(made);
+		samplers = [];
 		#if hotreload live.remove(this); #end
 	}
 

@@ -1,5 +1,6 @@
 package helix.render3d;
 
+import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
 import helix.render3d.Gltf.field;
 import helix.render3d.Light.LightKind;
@@ -11,7 +12,7 @@ import helix.render3d.Light.LightKind;
 	Read: triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing);
 	metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with
 	KHR_materials_emissive_strength) and alphaMode BLEND; nodes' names, translation, rotation and scale or matrix, and children; the default
-	scene's roots; KHR_lights_punctual's directional, point and spot lights. Not read yet (warned once a file): skins and animations (a skinned
+	scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights. Not read yet (warned once a file): skins and animations (a skinned
 	mesh draws in its bind pose), morph targets, metallic-roughness, occlusion and emissive textures, alphaMode MASK, double-sided materials,
 	texture transforms, a second texture coordinate set, and files other than GLB. */
 class ModelFile {
@@ -130,9 +131,14 @@ class ModelFile {
 		return material;
 	}
 
-	/** The images materials use: for each, the buffer view holding its file, whether it filters linearly, and how to set it once decoded. */
+	// glTF's wrap modes (WebGL's numbers) as a Sampling's; repeat when unset.
+	static function wrap(mode:Null<Int>):Wrap
+		return mode == 33071 ? Clamp : mode == 33648 ? Mirror : Repeat;
+
+	/** The images materials use: for each, the buffer view holding its file, how its texture samples (its sampler's filter, linear unless
+		its magnification filter is nearest, and wrap), and how to set it once decoded. */
 	@:allow(helix.render3d.Models)
-	function images():Array<{view:Int, linear:Bool, set:Texture2D->Void}> {
+	function images():Array<{view:Int, sampling:Sampling, set:Texture2D->Void}> {
 		var out = [], textures = gltf.list("textures"), images = gltf.list("images"), samplers = gltf.list("samplers");
 		function image(info:Dynamic, set:Texture2D->Void):Void {
 			if (info == null)
@@ -145,9 +151,14 @@ class ModelFile {
 				warn("images outside the GLB's buffer are skipped");
 				return;
 			}
-			var sampler:Null<Int> = field(t, "sampler"),
-				mag:Null<Int> = sampler == null ? null : field(samplers[sampler], "magFilter");
-			out.push({view: field(images[source], "bufferView"), linear: mag != 9728, set: set});
+			var index:Null<Int> = field(t, "sampler"),
+				sampler:Dynamic = index == null ? null : samplers[index];
+			var mag:Null<Int> = field(sampler, "magFilter");
+			out.push({
+				view: field(images[source], "bufferView"),
+				sampling: new Sampling(mag != 9728, wrap(field(sampler, "wrapS")), wrap(field(sampler, "wrapT"))),
+				set: set
+			});
 		}
 		var list = gltf.list("materials");
 		for (i in 0...list.length) {

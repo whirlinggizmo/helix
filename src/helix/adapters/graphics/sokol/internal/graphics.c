@@ -14,7 +14,8 @@
 #include "shaders.h"
 
 static sg_shader shaders[3];
-static sg_sampler sampler,linear_sampler,mip_sampler;static uint32_t linear_textures[256],mip_textures[256];
+/* One sampler for each Sampling value used (helix.graphics.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
+static sg_sampler samplers[32];
 /* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D, 3 Lit3D). Per buffer slot: whether it is an index buffer. */
 static int pipeline_kinds[256],index_buffers[256];
 static int active,used[256],audit_enabled,frame_width,frame_height;
@@ -29,32 +30,33 @@ void helix_setup(void){
  shaders[0]=sg_make_shader(HELIX_SPRITE2D_SHADER_DESC(sg_query_backend()));
  shaders[1]=sg_make_shader(HELIX_COLOR3D_SHADER_DESC(sg_query_backend()));
  shaders[2]=sg_make_shader(HELIX_LIT3D_SHADER_DESC(sg_query_backend()));
- sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_NEAREST,.mag_filter=SG_FILTER_NEAREST,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
- linear_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
- /* Trilinear, for a linear texture with mipmaps: drawn smaller than itself without shimmering. */
- mip_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.mipmap_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
- memset(linear_textures,0,sizeof linear_textures);memset(mip_textures,0,sizeof mip_textures);
+ memset(samplers,0,sizeof samplers);
  for(int i=0;i<3;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
- sg_destroy_sampler(sampler);sg_destroy_sampler(linear_sampler);sg_destroy_sampler(mip_sampler);
+ for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  for(int i=0;i<3;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
-/* levels mip levels, each half the last (at least 1), packed one after another in data. */
-uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int linear){
- if(w<=0||h<=0||w>4096||h>4096||!data||levels<1||levels>SG_MAX_MIPMAPS)return 0;
- sg_image_desc desc={.width=w,.height=h,.num_mipmaps=levels,.pixel_format=SG_PIXELFORMAT_RGBA8};
+/* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8. */
+static sg_pixel_format format_of(int format){
+ switch(format){case 0:return SG_PIXELFORMAT_RGBA8;case 1:return SG_PIXELFORMAT_BC7_RGBA;case 2:return SG_PIXELFORMAT_ASTC_4x4_RGBA;
+  case 3:return SG_PIXELFORMAT_ETC2_RGBA8;default:return SG_PIXELFORMAT_NONE;}
+}
+int helix_can_sample(int format){sg_pixel_format f=format_of(format);return f!=SG_PIXELFORMAT_NONE&&sg_query_pixelformat(f).sample;}
+/* levels mip levels of format, each half the last (at least 1), packed one after another in data. */
+uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format){
+ if(w<=0||h<=0||w>16384||h>16384||!data||levels<1||levels>SG_MAX_MIPMAPS||!helix_can_sample(format))return 0;
+ sg_image_desc desc={.width=w,.height=h,.num_mipmaps=levels,.pixel_format=format_of(format)};
  size_t offset=0;int lw=w,lh=h;
  for(int i=0;i<levels;i++){
-  const size_t size=(size_t)lw*(size_t)lh*4;
+  const size_t size=format==0?(size_t)lw*(size_t)lh*4:(size_t)((lw+3)/4)*(size_t)((lh+3)/4)*16;
   desc.data.mip_levels[i]=(sg_range){(const char *)data+offset,size};offset+=size;
   lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;
  }
  if(offset!=(size_t)bytes)return 0;
  sg_image image=sg_make_image(&desc);
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
- uint32_t view=sg_make_view(&(sg_view_desc){.texture.image=image}).id;
- if((view&0xffff)<256){linear_textures[view&0xffff]=linear?view:0;mip_textures[view&0xffff]=linear&&levels>1?view:0;}return view;
+ return sg_make_view(&(sg_view_desc){.texture.image=image}).id;
 }
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
@@ -99,8 +101,18 @@ int helix_viewport(int x,int y,int w,int h){
  if(!active||w<=0||h<=0)return 0;
  sg_apply_viewport(x,y,w,h,false);return 1;
 }
-static sg_sampler sampler_of(uint32_t t){return (t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler;}
-int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,const void *uniforms,int uniform_bytes){
+/* The sampler for a Sampling value: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap. */
+static sg_sampler sampler_of(int sampling){
+ static const sg_wrap wraps[3]={SG_WRAP_CLAMP_TO_EDGE,SG_WRAP_REPEAT,SG_WRAP_MIRRORED_REPEAT};
+ sampling&=31;
+ if(!samplers[sampling].id){
+  const sg_filter filter=sampling&1?SG_FILTER_LINEAR:SG_FILTER_NEAREST;
+  samplers[sampling]=sg_make_sampler(&(sg_sampler_desc){.min_filter=filter,.mag_filter=filter,.mipmap_filter=filter,
+   .wrap_u=wraps[(sampling>>1&3)%3],.wrap_v=wraps[(sampling>>3&3)%3]});
+ }
+ return samplers[sampling];
+}
+int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int first_vertex,const void *uniforms,int uniform_bytes){
  int slot=b&0xffff,pslot=p&0xffff;
  if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
  const int kind=pipeline_kinds[pslot],stride=kind?HELIX_COLOR3D_STRIDE:HELIX_SPRITE2D_STRIDE,group=kind==2?2:3;
@@ -109,7 +121,7 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,co
  if(kind==0){
   if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
   sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(t)});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(sampling)});
  }else{
   if(!uniforms||uniform_bytes!=HELIX_COLOR3D_VERTEX_UNIFORM_BYTES)return 0;
   sg_apply_pipeline((sg_pipeline){p});
@@ -121,7 +133,7 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,co
 /* A lit pipeline's indexed, instanced draw: index_count indices of `indices` into `vertices`, instance_count instances from first_instance of
    `instances`' upload this frame, the base color and normal textures, and both stages' uniforms. */
 int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,uint32_t t,
-                    uint32_t normal,const void *vs,int vs_bytes,const void *fs,int fs_bytes){
+                    int t_sampling,uint32_t normal,int normal_sampling,const void *vs,int vs_bytes,const void *fs,int fs_bytes){
  const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
  if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]!=3)return 0;
  if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
@@ -132,8 +144,8 @@ int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_coun
  if(!vs||vs_bytes!=HELIX_LIT3D_VERTEX_UNIFORM_BYTES||!fs||fs_bytes!=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES)return 0;
  sg_apply_pipeline((sg_pipeline){p});
  sg_apply_bindings(&(sg_bindings){.vertex_buffers={{vertices},{instances}},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices},
-  .views[HELIX_LIT3D_BASE_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_BASE_SAMPLER_SLOT]=sampler_of(t),
-  .views[HELIX_LIT3D_NORMAL_VIEW_SLOT]={normal},.samplers[HELIX_LIT3D_NORMAL_SAMPLER_SLOT]=sampler_of(normal)});
+  .views[HELIX_LIT3D_BASE_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_BASE_SAMPLER_SLOT]=sampler_of(t_sampling),
+  .views[HELIX_LIT3D_NORMAL_VIEW_SLOT]={normal},.samplers[HELIX_LIT3D_NORMAL_SAMPLER_SLOT]=sampler_of(normal_sampling)});
  sg_apply_uniforms(HELIX_LIT3D_VERTEX_UNIFORM_SLOT,&(sg_range){vs,(size_t)vs_bytes});
  sg_apply_uniforms(HELIX_LIT3D_FRAGMENT_UNIFORM_SLOT,&(sg_range){fs,(size_t)fs_bytes});
  sg_draw(0,index_count,instance_count);return 1;

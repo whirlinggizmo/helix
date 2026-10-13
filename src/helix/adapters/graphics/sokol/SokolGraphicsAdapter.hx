@@ -3,6 +3,8 @@ package helix.adapters.graphics.sokol;
 import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
+import helix.graphics.Sampling;
+import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 
 /** IGraphics on sokol_gfx for native hxcpp builds; a call the bridge refuses throws. */
@@ -21,8 +23,8 @@ class SokolGraphicsAdapter implements IGraphics {
 		return handle;
 	}
 
-	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int {
-		if (levels.length == 0)
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
+		if (levels.length == 0 || !canSample(format))
 			throw "Invalid texture";
 		// One buffer, the levels one after another: the bridge points each mip level into it.
 		var total = 0;
@@ -33,8 +35,11 @@ class SokolGraphicsAdapter implements IGraphics {
 			packed.blit(at, level, 0, level.length);
 			at += level.length;
 		}
-		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, linear ? 1 : 0));
+		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
 	}
+
+	public function canSample(format:TextureFormat):Bool
+		return GraphicsBridge.canSample(format) == 1;
 
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsBridge.buffer(capacityBytes));
@@ -46,9 +51,9 @@ class SokolGraphicsAdapter implements IGraphics {
 	}
 
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-			normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
-		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, baseTexture, normalTexture,
-			pointer(vertexUniforms), vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
+			baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, baseTexture, baseSampling,
+			normalTexture, normalSampling, pointer(vertexUniforms), vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
 			throw "Invalid native mesh draw";
 	}
 
@@ -70,9 +75,9 @@ class SokolGraphicsAdapter implements IGraphics {
 			throw "Invalid native viewport";
 	}
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
-		var ok = uniforms == null ? GraphicsBridge.draw(pipeline, buffer, texture, vertices, firstVertex, null,
-			0) : GraphicsBridge.draw(pipeline, buffer, texture, vertices, firstVertex, pointer(uniforms), uniforms.length);
+	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
+		var ok = uniforms == null ? GraphicsBridge.draw(pipeline, buffer, texture, sampling, vertices, firstVertex, null,
+			0) : GraphicsBridge.draw(pipeline, buffer, texture, sampling, vertices, firstVertex, pointer(uniforms), uniforms.length);
 		if (ok != 1)
 			throw "Invalid native draw";
 	}
