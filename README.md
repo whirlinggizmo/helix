@@ -4,6 +4,8 @@ HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → J
 
 Status: milestone 1 (the platform, 2D and services) is complete. Every example below runs in the browser and natively on Linux/X11. 3D comes next. Windows, macOS and mobile have not run.
 
+> **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
+
 ## Layout
 
 ```text
