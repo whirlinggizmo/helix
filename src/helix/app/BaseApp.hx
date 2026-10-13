@@ -1,8 +1,12 @@
 package helix.app;
+
 /** Empty defaults: an app overrides only the callbacks it uses. One that can't extend this implements IApp directly. */
 class BaseApp implements IApp {
- public function new(){}
- public function init():Void {}
- public function frame(dt:Float):Void {}
- public function cleanup():Void {}
+	public function new() {}
+
+	public function init():Void {}
+
+	public function frame(dt:Float):Void {}
+
+	public function cleanup():Void {}
 }

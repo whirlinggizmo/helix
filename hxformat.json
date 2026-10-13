@@ -1,0 +1,10 @@
+{
+	"excludes": [
+		"\\.haxelib",
+		"\\.git",
+		"node_modules",
+		"examples/asteroids-parity/game/",
+		"results/",
+		"build/"
+	]
+}

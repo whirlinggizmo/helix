@@ -1,6 +1,8 @@
 {
   "haxe": "4.3.7",
   "hxcpp": "4.3.2",
+  "formatter": "1.18.0",
+  "dox": "1.6.0",
   "sokol": {
     "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
     "fork": "https://github.com/robknopf/sokol (the Whirling Gizmo fork; libwgf and wgrender use it too)",
