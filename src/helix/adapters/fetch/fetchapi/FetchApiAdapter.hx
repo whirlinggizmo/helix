@@ -18,7 +18,7 @@ class FetchApiAdapter implements IFetch {
    if(!live||limit<=0||!Math.isFinite(timeout)||timeout<=0){finish(Failed("Invalid fetch request or closed service"));return;}
    started=true;active++;
    timer=js.Browser.window.setTimeout(()->{controller.abort();finish(Failed("Fetch timeout"));},Std.int(timeout*1000));
-   js.Browser.window.fetch(spec.url,{signal:controller.signal}).then(response->{
+   js.Browser.window.fetch(spec.url,{signal:controller.signal,cache:spec.noCache==true?js.html.RequestCache.NO_STORE:js.html.RequestCache.DEFAULT}).then(response->{
     var headers:Map<String,String>=[];response.headers.forEach((value,name,_)->headers[name.toLowerCase()]=value);
     var length=Std.parseInt(headers["content-length"]),total=headers.exists("content-encoding")?null:length;
     var reader:Dynamic=(cast response:Dynamic).body==null?null:(cast response:Dynamic).body.getReader(),buffer=new haxe.io.BytesBuffer(),received=0;

@@ -24,6 +24,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
   diagnostics=this;canvas=cast Browser.document.getElementById("canvas");resize();services=compose(canvas,option("tick","-1")!="-1");
   graphics=services.graphics;input=services.input;audio=services.audio;fetch=services.fetch;storage=services.storage;
   resources=new AssetService(fetch,storage,services.packaged,services.base);assets=resources;audioResources=new AudioResources(assets,audio);
+  #if hotreload watchAssets(services.base); #end
   Browser.window.addEventListener("resize",_->resize());
   Browser.window.addEventListener("keydown",_->services.unlockAudio());canvas.addEventListener("pointerdown",_->services.unlockAudio());
   Browser.window.addEventListener("blur",_->{focused=false;services.focusInput(false);services.suspendAudio();});
@@ -53,5 +54,14 @@ class DomHostAdapter implements IHost implements IDiagnostics {
  public function frameInterval():Float return lastFrameInterval;
  public function frameAudit():Dynamic return null;
  public function memoryPhase(begin:Bool):Dynamic {var m:Dynamic=js.Syntax.code("performance.memory");return m==null?null:{usedBytes:m.usedJSHeapSize,totalBytes:m.totalJSHeapSize,limitBytes:m.jsHeapSizeLimit};}
- public function info():Dynamic return services.info();
+ public function info():Dynamic {var value:Dynamic=services.info();value.assetReloads=resources.reloads;return value;}
+ #if hotreload
+ // Development only: hotreload-hx's dev server says which served files changed; those under the asset base load again in place.
+ var reloader:hotreload.Reloader;
+ function watchAssets(base:Null<String>):Void {
+  if(base==null)return;var prefix=new js.html.URL(base,Browser.location.href).pathname;
+  reloader=new hotreload.Reloader();reloader.assetsChanged=urls->assetsChanged(prefix,urls);
+ }
+ function assetsChanged(prefix:String,urls:Array<String>):Void for(url in urls)if(StringTools.startsWith(url,prefix))resources.changed(url.substr(prefix.length));
+ #end
 }

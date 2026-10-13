@@ -6,7 +6,9 @@ import helix.assets.IFetch;
 /** Asset identity/cache policy stays shared. No target conditionals. */
 class AssetService implements IAssets {
  var fetcher:IFetch;var cache:IStorage;var packaged:IStorage;var base:Null<String>;var queue=new WorkQueue();
- var live=true;var requests:Array<IRequest>=[];
+ var live=true;var requests:Array<IRequest>=[];var subscribers:Map<String,Array<IReloadable>>=[];
+ /** Development diagnostics: each reload's path and outcome, newest last. */
+ public var reloads(default,null):Array<{path:String,ok:Bool,message:String}>=[];
  public function new(fetcher:IFetch,cache:IStorage,packaged:IStorage,base:Null<String>){this.fetcher=fetcher;this.cache=cache;this.packaged=packaged;this.base=base;}
  function key(path:String):String return haxe.crypto.Sha256.encode((base==null?"packaged":base)+"\n"+path);
  public function load(path:String,complete:AssetResult->Void):Void ensure(path,complete);
@@ -41,6 +43,18 @@ class AssetService implements IAssets {
    case Missing:if(base!=null)finish(Located(Remote(base+path)));else child=packaged.source(path,result->switch result {case Local(value):finish(Located(Stored(value)));case Missing:finish(Failed("Missing streamed asset: "+path));case Failed(message):finish(Failed(message));case Cancelled:finish(Cancelled);});
   }}
   queue.add(()->{if(request.settled)return;if(!live||!AssetPath.valid(path)){finish(Failed("Invalid asset path or closed service"));return;}child=cache.source(key(path),local);});return request;
+ }
+ public function subscribe(path:String,target:IReloadable):Void {var list=subscribers[path];if(list==null)subscribers[path]=list=[];if(list.indexOf(target)<0)list.push(target);}
+ public function unsubscribe(path:String,target:IReloadable):Void {var list=subscribers[path];if(list!=null){list.remove(target);if(list.length==0)subscribers.remove(path);}}
+ /** A file changed: load it again past every cache, keep the new copy, and tell the path's subscribers. A failure keeps what they have. */
+ public function changed(path:String):Void {
+  if(!live||!AssetPath.valid(path)||!subscribers.exists(path))return;
+  function done(ok:Bool,message:String){reloads.push({path:path,ok:ok,message:message});if(reloads.length>64)reloads.shift();}
+  function deliver(bytes:haxe.io.Bytes)cache.write(key(path),bytes,result->switch result {
+   case Written:var list=subscribers[path];if(list!=null)for(target in list.copy())try target.reloaded(path,bytes) catch(error:Dynamic){done(false,Std.string(error));return;}done(true,"");
+   case Failed(message):done(false,message);case Cancelled:});
+  if(base!=null)fetcher.fetch({url:base+path,noCache:true},result->switch result {case Response(value):if(value.status>=200&&value.status<300)deliver(value.bytes);else done(false,'Asset HTTP '+value.status);case Failed(message):done(false,message);case Cancelled:});
+  else packaged.read(path,result->switch result {case Stored(bytes):deliver(bytes);case Missing:done(false,"Missing asset");case Failed(message):done(false,message);case Cancelled:});
  }
  public function poll():Void {fetcher.poll();cache.poll();packaged.poll();queue.poll();}
  public function shutdown():Void {live=false;for(request in requests.copy())request.cancel();fetcher.shutdown();cache.shutdown();packaged.shutdown();queue.poll();}
