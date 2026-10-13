@@ -1,0 +1,20 @@
+{"version":1,"seed":7,"commands":[
+ {"op":"wait","probe":"state","equals":"title","timeout":30},
+ {"op":"press","key":"Enter"},
+ {"op":"wait","probe":"state","equals":"playing","timeout":5},
+ {"op":"hold","keys":["Left"],"ticks":20},
+ {"op":"press","key":"Up"},
+ {"op":"press","key":"Space"},
+ {"op":"wait","probe":"pieces","atLeast":1,"timeout":30},
+ {"op":"wait","probe":"piece","atLeast":0,"timeout":30},
+ {"op":"hold","keys":["Right"],"ticks":20},
+ {"op":"press","key":"Z"},
+ {"op":"press","key":"Space"},
+ {"op":"wait","probe":"pieces","atLeast":2,"timeout":30},
+ {"op":"wait","probe":"piece","atLeast":0,"timeout":30},
+ {"op":"press","key":"C"},
+ {"op":"assert","probe":"held","atLeast":0},
+ {"op":"hold","keys":["Down"],"ticks":90},
+ {"op":"wait","probe":"pieces","atLeast":3,"timeout":120},
+ {"op":"assert","probe":"state","equals":"playing"}
+]}

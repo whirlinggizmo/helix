@@ -14,7 +14,7 @@ float hy_pixel_ratio(void){return sapp_dpi_scale();}
 void hy_quit(void){sapp_request_quit();}
 static void frame(void){frame_cb((float)sapp_frame_duration());}
 static int key_code(sapp_keycode k){
- if(k==SAPP_KEYCODE_ENTER)return 13;if(k==SAPP_KEYCODE_ESCAPE)return 27;if(k==SAPP_KEYCODE_TAB)return 9;if(k==SAPP_KEYCODE_LEFT)return 37;if(k==SAPP_KEYCODE_UP)return 38;if(k==SAPP_KEYCODE_RIGHT)return 39;if(k==SAPP_KEYCODE_DOWN)return 40;return (int)k;
+ if(k==SAPP_KEYCODE_ENTER)return 13;if(k==SAPP_KEYCODE_ESCAPE)return 27;if(k==SAPP_KEYCODE_TAB)return 9;if(k==SAPP_KEYCODE_LEFT)return 37;if(k==SAPP_KEYCODE_UP)return 38;if(k==SAPP_KEYCODE_RIGHT)return 39;if(k==SAPP_KEYCODE_DOWN)return 40;if(k==SAPP_KEYCODE_LEFT_SHIFT||k==SAPP_KEYCODE_RIGHT_SHIFT)return 16;return (int)k;
 }
 static void event(const sapp_event *e){
  int k=key_code(e->key_code);

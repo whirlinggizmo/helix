@@ -2,7 +2,7 @@ package helix.input;
 
 /** Shared edge accumulator used by real adapters, replay and tooling. */
 class InputState implements IInput {
- var held:Array<Bool>=[for(_ in 0...12) false];var pushes:Array<Bool>=[for(_ in 0...12) false];var lifts:Array<Bool>=[for(_ in 0...12) false];
+ var held:Array<Bool>=[for(_ in Key.all) false];var pushes:Array<Bool>=[for(_ in Key.all) false];var lifts:Array<Bool>=[for(_ in Key.all) false];
  var padHeld:Array<Bool>=[for(_ in 0...8) false];var padPushes:Array<Bool>=[for(_ in 0...8) false];
  var axes:Array<Float>=[0.,0.,0.];
  public var pointerX(default,null)=-1.;public var pointerY(default,null)=-1.;
@@ -27,10 +27,10 @@ class InputState implements IInput {
  public function clear():Void {
   for(key in Key.all)keyEvent(key,false);for(button in PadButton.all)padEvent(button,false);for(i in 0...3)axes[i]=0;
   pointerEvent(-1,-1,false);
-  for(i in 0...12)pushes[i]=false;for(i in 0...8)padPushes[i]=false;pointerPressed=false;
+  for(i in 0...pushes.length)pushes[i]=false;for(i in 0...8)padPushes[i]=false;pointerPressed=false;
  }
  public function consume():Void {
-  for(i in 0...12){pushes[i]=false;lifts[i]=false;}for(i in 0...8)padPushes[i]=false;
+  for(i in 0...pushes.length){pushes[i]=false;lifts[i]=false;}for(i in 0...8)padPushes[i]=false;
   pointerPressed=false;pointerReleased=false;
  }
 }

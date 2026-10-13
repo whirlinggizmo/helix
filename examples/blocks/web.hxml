@@ -1,0 +1,8 @@
+-cp src
+-cp examples/blocks/src
+-cp examples/blocks/launch/browser-webgl2
+-cp build/generated/blocks
+-main Main
+-js build/web/blocks/app.js
+-dce full
+-D analyzer-optimize

@@ -6,7 +6,7 @@ import helix.input.Key;
 import helix.input.PadButton;
 import helix.input.PadAxis;
 class SokolInputAdapter extends InputState {
- static final codes=[13,27,9,32,37,39,38,40,65,68,87,83];
+ static final codes=[13,27,9,32,37,39,38,40,65,68,87,83,90,88,67,80,16];
  public function new(){super();InputBridge.inputSetup();}
  public function poll():Void {
   InputBridge.inputPoll();

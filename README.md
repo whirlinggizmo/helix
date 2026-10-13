@@ -149,10 +149,12 @@ Executed 2026-10-13 01:32 UTC with hotreload-hx `e8868c2`, Chromium 153, `-dce f
 | Game code (`Game.snapshot`) | Yes | 660 ms (the first reload) |
 | Graphics adapter (WebGL2 clear color) | Yes | 410 ms |
 | The frame callback's own body (`App.frame`) | Yes | 311 ms |
-| Generated shader source | Yes, through an `@:afterHotReload` hook that rebuilds the program | 328 ms |
+| Generated shader source (`GeneratedShader.hx`, edited directly; see the note below) | Yes, through an `@:afterHotReload` hook that rebuilds the program | 328 ms |
 | A sound file (`sounds/fire.ogg` replaced by another clip's bytes): a framework audio clip | Reloaded in place: fetched, decoded and swapped into the loaded clip | 224 ms |
 | The parity example's font atlas (`font.alpha.zlib`, every glyph made opaque): a game-owned texture | Yes: text drew as solid blocks (white pixels 1,489 to 8,099) | 337 ms |
 | The parity example's `scenario.json`: game-owned data | Reloaded in place | 168 ms |
+
+The probe edited the generated `GeneratedShader.hx`, not the `.glsl` it comes from: nothing in the Asteroids dev loop runs `sokol-shdc` on save, so editing a shader's real source shows nothing until a build. Blocks' dev loop (below) closes that gap and was checked with a `.glsl` edit.
 
 Code reload builds took 49–59 ms through the compilation server (461 ms for the first). An asset edit rebuilds nothing: the dev server notices the saved file (checked 10 times a second, then settled), tells the page its URL, and the page loads it again in place. These latencies were measured while the machine's CPU was capped (see the parity section) and are indicative only. The game ran without input, so the check shows play continuing rather than a rich game state surviving.
 
@@ -165,6 +167,35 @@ What getting there took:
 **Assets reload in place.** hotreload-hx's dev server watches what it serves and tells the page which files changed (hotreload-hx `e8868c2`: `/__hotreload_assets`, a reloader's `assetsChanged`). In `-D hotreload` builds the browser host maps those URLs to asset paths and calls `AssetService.changed(path)`. That fetches the file once past the HTTP cache and the stored copy, stores the new copy, and calls each subscriber (`IAssets.subscribe(path, target:IReloadable)`) through the object, so a code reload's new methods are what run. `AudioResources` subscribes for each clip it loads: a reload decodes the new bytes and gives each clip from that path a new backend clip under the same `AudioClip`, so the game's handle stays valid; the old backend clip is destroyed once no playback started from it still plays. A game subscribes for its own files: the parity example rebuilds its font texture and re-reads its scenario. Limits: a looping voice keeps the old sound until the game stops it; with audio off, the probe checks the clip was decoded and swapped, not what is heard; a failed reload keeps the old version and is recorded in the host's `assetReloads` diagnostics.
 
 Evidence: [results/runs/20261013T013254388755Z-hotreload](results/runs/20261013T013254388755Z-hotreload) (code and assets); [results/runs/20261013T010818036738Z-hotreload](results/runs/20261013T010818036738Z-hotreload) (code only, hotreload-hx `277c381`).
+
+## Blocks: a 2D game on HeliX's own API
+
+`examples/blocks` is a falling-blocks game written straight against HeliX, not through a compatibility layer: the first game that shows what a game needs from the framework. It plays with keyboard and gamepad, and with touch (drag to move by whole cells, tap to turn, flick down to drop, flick up to hold); portrait screens put the panels above the field, landscape beside it. No sound yet.
+
+What it added to the framework, named for a later 3D layer beside it:
+- `helix.render2d`: `Batch2D` (world-unit shapes, textured quads and text through a camera; one upload, one draw per texture run), `Camera2D` (fit a world rectangle, screen-world conversion), `Texture2D`, `Font2D` (the 5x7 pixel font as a framework asset) and `Text2D`. They generalize what Asteroids' renderer does privately; Asteroids is unchanged, so its parity evidence stands. The 2D shader is `src/helix/render2d/shaders/sprite2d.glsl`.
+- `helix.input.PointerGestures`: taps, drags and flicks from the existing single pointer, the same for touch and mouse. The browser input adapter now follows only the first finger.
+- Keys Z, X, C, P and Shift, on both targets (appended, so existing key numbers are unchanged).
+
+```console
+python3 experiments/05-hybrid-asteroids/tools/blocks.py dev --shdc /path/to/sokol-shdc      # the edit loop, http://localhost:8060/
+python3 experiments/05-hybrid-asteroids/tools/blocks.py test
+python3 experiments/05-hybrid-asteroids/tools/blocks.py build web
+python3 experiments/05-hybrid-asteroids/tools/blocks.py build native
+python3 experiments/05-hybrid-asteroids/tools/blocks.py autopilot --browser /path/to/chromium --display :1 --xauthority ~/.Xauthority
+```
+
+`dev` runs hotreload-hx's dev server on the example and regenerates the shader when `sprite2d.glsl` or its `vertex.json` changes; the new `GeneratedShader.hx` then reloads like any Haxe edit. `build web` writes the same `build/web/blocks/app.js` the dev server serves, so a release build while the loop runs is replaced at the next save.
+
+**Development happened in the loop.** One page, a phone viewport (412x915 CSS pixels at 2.625x) with touch, stayed open while the game was written and edited; changes were judged in the running game, and native, tests and autopilot ran once, as a checkpoint. Executed 2026-10-13:
+- A layout edit to `Renderer.hx` rebuilt in 470 ms and showed in the running page; the game went on (840 ticks, not reloaded).
+- Editing `sprite2d.glsl` mid-game (a red tint) regenerated it, rebuilt in 535 ms, and the page reloaded 63 classes in 5 ms with the game continuing (8,152 ticks); reverting it reloaded the same way.
+- Touch, through Chromium's touch events: a 3.2-cell drag moved the piece 3 columns, a tap turned it, a flick down hard-dropped it, a flick up held it, and a second flick up was refused (once per piece).
+- What broke the loop: my tool exited when it couldn't find `sokol-shdc`, and its cleanup stopped the dev server (it now reports and keeps going). Restarting the dev server within about a minute of a page's connections failed to bind (`EADDRINUSE`, sockets in `TIME-WAIT`), raised past hotreload-hx's own "can't serve on port" message: a hotreload-hx issue, not yet fixed. The open page survived the outage and reloaded from the restarted server.
+
+Checkpoint, 2026-10-13: 53 simulation, gesture and camera checks (`tests/unit/BlocksTests.hx`, Haxe interpreter); Asteroids' 35 simulation checks and the package smoke test still pass after the input changes. A keyboard autopilot (`examples/blocks/autopilot/smoke.json`: start, move, turn both ways, hard drop, hold, soft drop) ended in the same game, board included, in the browser and in the native build (3 pieces, score 99). Sizes: `app.js` 70,071 bytes, 20,526 gzip (`-dce full`, terser); native `Main` 4,489,376 bytes. The game is 267 lines of Haxe; the framework additions 170. The CPU cap noted above applies to these timings.
+
+Limits: the native archive embeds one generated shader, compiled from `build/generated/asteroids`; Blocks' shader has the same program and layout, so it links, but a game with its own shader would need the archive built per game. Native has no touch input. Not checked: a real phone, landscape touch, and gamepad.
 
 ## HeliX layout and evidence
 

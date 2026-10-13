@@ -12,14 +12,15 @@ class DomInputAdapter extends InputState {
  public function new(canvas:CanvasElement){super();this.canvas=canvas;
   Browser.window.addEventListener("keydown",e->{if(!active)return;var event:js.html.KeyboardEvent=cast e,k=code(event.code);if(k!=null){keyEvent(k,true);event.preventDefault();}});
   Browser.window.addEventListener("keyup",e->{var event:js.html.KeyboardEvent=cast e,k=code(event.code);if(k!=null)keyEvent(k,false);});
-  canvas.addEventListener("pointerdown",e->{var event:js.html.PointerEvent=cast e;if(event.button==0){pointer(event,true);canvas.setPointerCapture(event.pointerId);event.preventDefault();}});
-  canvas.addEventListener("pointermove",e->pointer(cast e,pointerDown));
-  canvas.addEventListener("pointerup",e->pointer(cast e,false));canvas.addEventListener("pointercancel",_->pointerEvent(-1,-1,false));
+  canvas.addEventListener("pointerdown",e->{var event:js.html.PointerEvent=cast e;if(event.button==0&&event.isPrimary){pointer(event,true);canvas.setPointerCapture(event.pointerId);event.preventDefault();}});
+  canvas.addEventListener("pointermove",e->{var event:js.html.PointerEvent=cast e;if(event.isPrimary)pointer(event,pointerDown);});
+  canvas.addEventListener("pointerup",e->{var event:js.html.PointerEvent=cast e;if(event.isPrimary)pointer(event,false);});canvas.addEventListener("pointercancel",_->pointerEvent(-1,-1,false));
  }
  static function code(value:String):Null<Key> return switch(value){
   case "Enter":Key.Enter;case "Escape":Key.Escape;case "Tab":Key.Tab;case "Space":Key.Space;
   case "ArrowLeft":Key.Left;case "ArrowRight":Key.Right;case "ArrowUp":Key.Up;case "ArrowDown":Key.Down;
-  case "KeyA":Key.A;case "KeyD":Key.D;case "KeyW":Key.W;case "KeyS":Key.S;default:null;
+  case "KeyA":Key.A;case "KeyD":Key.D;case "KeyW":Key.W;case "KeyS":Key.S;
+  case "KeyZ":Key.Z;case "KeyX":Key.X;case "KeyC":Key.C;case "KeyP":Key.P;case "ShiftLeft"|"ShiftRight":Key.Shift;default:null;
  };
  function pointer(event:js.html.PointerEvent,value:Bool):Void {var box=canvas.getBoundingClientRect();pointerEvent((event.clientX-box.left)*canvas.width/box.width,(event.clientY-box.top)*canvas.height/box.height,value);}
  public function poll():Void {
