@@ -56,8 +56,9 @@ class ShaderMetadataTests(unittest.TestCase):
         sprite, color, lit = contracts
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
-        self.assertIsNone(color['texture']); self.assertEqual(sprite['uniforms'], [])
-        self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (32, 112, ['vertex', 'fragment']))
+        self.assertEqual(color['textures'], []); self.assertEqual(sprite['uniforms'], [])
+        self.assertEqual([t['role'] for t in lit['textures']], ['base', 'normal'])
+        self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         self.assertNotIn('STALE', (self.baseline / 'GeneratedShader.hx').read_text())
         header = (self.baseline / 'shaders.h').read_text()
@@ -73,11 +74,11 @@ class ShaderMetadataTests(unittest.TestCase):
         source = source.replace('position', 'vertexPosition').replace('atlasSampler', 'pixelSampler').replace('atlas', 'pixels')
         folder = self.directory / 'relocated'; folder.mkdir()
         self.compile(source, folder, 'sprite2d')
-        spec = copy.deepcopy(self.specs['sprite2d']); spec['attributes'][0]['name'] = 'vertexPosition'
+        spec = copy.deepcopy(self.specs['sprite2d']); spec['attributes'][0]['name'] = 'vertexPosition'; spec['textures'][0]['name'] = 'pixels'
         contract, = generate(self.manifest_of(folder, [spec]), folder, ROOT)
         self.assertEqual([a['slot'] for a in contract['attributes']], [5, 3, 1])
-        texture = contract['texture']
-        self.assertEqual((texture['view'], texture['sampler'], texture['textureUniform']), (4, 2, 'pixels_pixelSampler'))
+        texture, = contract['textures']
+        self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
         self.assertIn('layout.attrs[5]', (folder / 'shaders.h').read_text())
         self.assertIn('positionName="vertexPosition"', (folder / 'Sprite2DLayout.hx').read_text())
 
@@ -108,7 +109,7 @@ class ShaderMetadataTests(unittest.TestCase):
         with self.assertRaisesRegex(MetadataError, 'uniform block'): load_contract(self.baseline / 'color3d_reflection.yaml', spec)
 
     def test_missing_texture_rejected(self):
-        spec = copy.deepcopy(self.specs['color3d']); spec['texture'] = True
+        spec = copy.deepcopy(self.specs['color3d']); spec['textures'] = [{'role': 'base', 'name': 'missing'}]
         with self.assertRaises(MetadataError): load_contract(self.baseline / 'color3d_reflection.yaml', spec)
 
     def test_inconsistent_resource_pair_rejected(self):

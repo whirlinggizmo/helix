@@ -109,7 +109,7 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,co
  if(kind==0){
   if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
   sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_SAMPLER_SLOT]=sampler_of(t)});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(t)});
  }else{
   if(!uniforms||uniform_bytes!=HELIX_COLOR3D_VERTEX_UNIFORM_BYTES)return 0;
   sg_apply_pipeline((sg_pipeline){p});
@@ -119,19 +119,21 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,co
  sg_draw(first_vertex,vertices,1);return 1;
 }
 /* A lit pipeline's indexed, instanced draw: index_count indices of `indices` into `vertices`, instance_count instances from first_instance of
-   `instances`' upload this frame, the base texture, and both stages' uniforms. */
+   `instances`' upload this frame, the base color and normal textures, and both stages' uniforms. */
 int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,uint32_t t,
-                    const void *vs,int vs_bytes,const void *fs,int fs_bytes){
+                    uint32_t normal,const void *vs,int vs_bytes,const void *fs,int fs_bytes){
  const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
  if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]!=3)return 0;
  if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
- if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot]||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
+ if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot]||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID||
+    sg_query_view_state((sg_view){normal})!=SG_RESOURCESTATE_VALID)return 0;
  if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
     (long)(first_instance+instance_count)*HELIX_LIT3D_INSTANCE_STRIDE>used[nslot])return 0;
  if(!vs||vs_bytes!=HELIX_LIT3D_VERTEX_UNIFORM_BYTES||!fs||fs_bytes!=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES)return 0;
  sg_apply_pipeline((sg_pipeline){p});
  sg_apply_bindings(&(sg_bindings){.vertex_buffers={{vertices},{instances}},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices},
-  .views[HELIX_LIT3D_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_SAMPLER_SLOT]=sampler_of(t)});
+  .views[HELIX_LIT3D_BASE_VIEW_SLOT]={t},.samplers[HELIX_LIT3D_BASE_SAMPLER_SLOT]=sampler_of(t),
+  .views[HELIX_LIT3D_NORMAL_VIEW_SLOT]={normal},.samplers[HELIX_LIT3D_NORMAL_SAMPLER_SLOT]=sampler_of(normal)});
  sg_apply_uniforms(HELIX_LIT3D_VERTEX_UNIFORM_SLOT,&(sg_range){vs,(size_t)vs_bytes});
  sg_apply_uniforms(HELIX_LIT3D_FRAGMENT_UNIFORM_SLOT,&(sg_range){fs,(size_t)fs_bytes});
  sg_draw(0,index_count,instance_count);return 1;

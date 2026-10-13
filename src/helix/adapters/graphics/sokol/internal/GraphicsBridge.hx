@@ -17,7 +17,7 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, uniforms:cpp.RawPointer<cpp.UInt8>,
 		uniformBytes:Int):Int;
 	@:native("helix_draw_mesh") static function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int,
-		instanceCount:Int, texture:Int, vs:cpp.RawPointer<cpp.UInt8>, vsBytes:Int, fs:cpp.RawPointer<cpp.UInt8>, fsBytes:Int):Int;
+		instanceCount:Int, texture:Int, normal:Int, vs:cpp.RawPointer<cpp.UInt8>, vsBytes:Int, fs:cpp.RawPointer<cpp.UInt8>, fsBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_destroy") static function destroy(kind:Int, handle:Int):Int;
 	@:native("helix_peak_rss") static function peakRss():Float;

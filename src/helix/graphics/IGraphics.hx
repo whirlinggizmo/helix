@@ -38,11 +38,11 @@ interface IGraphics {
 	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
 
 	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
-		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline: texture is its
-		base color texture, vertexUniforms the view-projection matrix (64 bytes) and fragmentUniforms the lights and material
-		(Lit3DLayout.fragmentUniformBytes). Throws for anything invalid, before drawing. */
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
-		vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
+		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline: baseTexture is its
+		base color texture (sRGB), normalTexture its normal map (linear, tangent space), vertexUniforms the view-projection matrix (64 bytes) and
+		fragmentUniforms the lights and material (Lit3DLayout.fragmentUniformBytes). Throws for anything invalid, before drawing. */
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
+		normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
 
 	/** Closes the frame opened by beginFrame; sokol also commits it for presentation. Throws when no frame is open. */
 	public function endFrame():Void;

@@ -45,10 +45,10 @@ class SokolGraphicsAdapter implements IGraphics {
 		return valid(GraphicsBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
 	}
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
-			vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
-		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, texture, pointer(vertexUniforms),
-			vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
+			normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, baseTexture, normalTexture,
+			pointer(vertexUniforms), vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
 			throw "Invalid native mesh draw";
 	}
 

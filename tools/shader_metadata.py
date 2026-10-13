@@ -1,8 +1,8 @@
 """Parse sokol-shdc bare_yaml with PyYAML; generate the framework shaders' fixed ABI.
 
 shaders.json lists each program: its packed vertex attributes (order and roles; "instance": true puts one in the
-second buffer, stepped once an instance), whether it samples one texture, and its uniform blocks (at most one a
-stage, each its bytes). Shader reflection describes inputs
+second buffer, stepped once an instance), the textures it samples (each a role and its texture's name in the
+GLSL, each with a sampler of its own), and its uniform blocks (at most one a stage, each its bytes). Shader reflection describes inputs
 and bindings, not CPU packing, so the manifest supplies that and the reflection must agree with it.
 Unsupported shapes fail closed. No generated C/GLSL text is inspected to discover bindings or filenames.
 Every program's headers are compiled into one C file, so its stages, uniform blocks and samplers need names of
@@ -91,28 +91,34 @@ def normalize(program, spec):
         packed.append({'role': attribute['role'], 'name': attribute['name'], 'type': attribute['type'], 'buffer': buffer, 'slot': attr['slot'],
                        'components': components, 'offset': offsets[buffer]})
         offsets[buffer] += components * 4
-    contract = {'program': program['name'], 'stride': offsets[0], 'instanceStride': offsets[1], 'attributes': packed, 'texture': None, 'uniforms': []}
-    count = 1 if spec['texture'] else 0
+    contract = {'program': program['name'], 'stride': offsets[0], 'instanceStride': offsets[1], 'attributes': packed, 'textures': [], 'uniforms': []}
+    wanted = spec['textures']
     for key in ['views', 'samplers', 'texture_sampler_pairs']:
-        require(isinstance(program.get(key, []), list) and len(program.get(key, [])) == count, f'Expected {count} {key} binding(s)')
-    if count:
-        view = program['views'][0]; fields(view, ['texture']); texture = view['texture']
+        require(isinstance(program.get(key, []), list) and len(program.get(key, [])) == len(wanted), f'Expected {len(wanted)} {key} binding(s)')
+    contract['textures'] = []
+    for want in wanted:
+        views = [v for v in program.get('views', []) if isinstance(v, dict) and isinstance(v.get('texture'), dict) and v['texture'].get('name') == want['name']]
+        require(len(views) == 1, f'Expected the texture {want["name"]}')
+        fields(views[0], ['texture']); texture = views[0]['texture']
         fields(texture, ['slot', 'stage', 'name', 'multisampled', 'type', 'sample_type'])
         require(texture['stage'] == 'fragment' and texture['multisampled'] is False and
                 texture['type'] == '2d' and texture['sample_type'] == 'float', 'Unsupported texture')
-        name(texture['name']); slot(texture['slot'], 32)
-        sampler = program['samplers'][0]
+        slot(texture['slot'], 32)
+        pairs = [p for p in program['texture_sampler_pairs'] if isinstance(p, dict) and p.get('view_name') == want['name']]
+        require(len(pairs) == 1, f'Expected one sampler for {want["name"]}')
+        pair = pairs[0]
+        fields(pair, ['slot', 'stage', 'name', 'view_name', 'sampler_name', 'view_slot', 'sampler_slot', 'glsl_name'])
+        samplers = [p for p in program['samplers'] if isinstance(p, dict) and p.get('name') == pair['sampler_name']]
+        require(len(samplers) == 1, f'Expected the sampler {pair["sampler_name"]}')
+        sampler = samplers[0]
         fields(sampler, ['slot', 'stage', 'name', 'sampler_type'])
         require(sampler['stage'] == 'fragment' and sampler['sampler_type'] == 'filtering', 'Unsupported sampler')
         name(sampler['name']); slot(sampler['slot'], 16)
-        pair = program['texture_sampler_pairs'][0]
-        fields(pair, ['slot', 'stage', 'name', 'view_name', 'sampler_name', 'view_slot', 'sampler_slot', 'glsl_name'])
-        require(pair['stage'] == 'fragment' and pair['view_name'] == texture['name'] and
-                pair['sampler_name'] == sampler['name'] and pair['view_slot'] == texture['slot'] and
-                pair['sampler_slot'] == sampler['slot'], 'Inconsistent texture/sampler pair')
+        require(pair['stage'] == 'fragment' and pair['view_slot'] == texture['slot'] and pair['sampler_slot'] == sampler['slot'],
+                'Inconsistent texture/sampler pair')
         name(pair['name']); name(pair['glsl_name']); slot(pair['slot'], 16)
-        contract['texture'] = {'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
-                               'samplerName': sampler['name'], 'textureUnit': pair['slot'], 'textureUniform': pair['glsl_name']}
+        contract['textures'].append({'role': want['role'], 'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
+                                     'samplerName': sampler['name'], 'unit': pair['slot'], 'uniform': pair['glsl_name']})
     blocks = program.get('uniform_blocks', [])
     require(isinstance(blocks, list) and len(blocks) == len(spec['uniforms']), 'Unexpected uniform blocks')
     for want in spec['uniforms']:
@@ -132,7 +138,7 @@ def normalize(program, spec):
 
 
 def load_spec(spec):
-    fields(spec, ['program', 'attributes', 'texture', 'uniforms']); name(spec['program'])
+    fields(spec, ['program', 'attributes', 'textures', 'uniforms']); name(spec['program'])
     require(isinstance(spec['attributes'], list) and spec['attributes'], 'Expected packed attributes')
     for attribute in spec['attributes']:
         fields(attribute, ['role', 'name', 'type'], ['instance']); name(attribute['role']); name(attribute['name'])
@@ -140,7 +146,10 @@ def load_spec(spec):
         require(attribute.get('instance', False) in (True, False), 'instance is true or false')
     require(len({a['name'] for a in spec['attributes']}) == len(spec['attributes']) and
             len({a['role'] for a in spec['attributes']}) == len(spec['attributes']), 'Duplicate vertex schema names or roles')
-    require(isinstance(spec['texture'], bool), 'texture is true or false')
+    require(isinstance(spec['textures'], list), 'textures is a list')
+    for texture in spec['textures']:
+        fields(texture, ['role', 'name']); name(texture['role']); name(texture['name'])
+    require(len({t['role'] for t in spec['textures']}) == len(spec['textures']), 'Duplicate texture roles')
     require(isinstance(spec['uniforms'], list), 'uniforms is a list')
     for block in spec['uniforms']:
         fields(block, ['stage', 'bytes'])
@@ -196,13 +205,12 @@ def generate(manifest_path, output, working_dir):
               f' public static inline var stride={contract["stride"]};', f' public static inline var instanceStride={contract["instanceStride"]};']
         c += [f'#include "{program}.glsl.h"', f'#define HELIX_{upper}_SHADER_DESC {program}_shader_desc', f'#define HELIX_{upper}_STRIDE {contract["stride"]}',
               f'#define HELIX_{upper}_INSTANCE_STRIDE {contract["instanceStride"]}']
-        for key, value in (contract['texture'] or {}).items():
-            if not key.endswith('Name'):hx.append(f' public static inline var {key}={json.dumps(value)};')
-        if contract['texture']:
-            t = contract['texture']
-            c += [f'#define HELIX_{upper}_VIEW_SLOT {t["view"]}', f'#define HELIX_{upper}_SAMPLER_SLOT {t["sampler"]}',
-                  f'_Static_assert(VIEW_{t["viewName"]} == HELIX_{upper}_VIEW_SLOT, "Shader view mismatch");',
-                  f'_Static_assert(SMP_{t["samplerName"]} == HELIX_{upper}_SAMPLER_SLOT, "Shader sampler mismatch");']
+        for t in contract['textures']:
+            role = t['role']; ROLE = role.upper()
+            hx += [f' public static inline var {role}Unit={t["unit"]};', f' public static inline var {role}Uniform={json.dumps(t["uniform"])};']
+            c += [f'#define HELIX_{upper}_{ROLE}_VIEW_SLOT {t["view"]}', f'#define HELIX_{upper}_{ROLE}_SAMPLER_SLOT {t["sampler"]}',
+                  f'_Static_assert(VIEW_{t["viewName"]} == HELIX_{upper}_{ROLE}_VIEW_SLOT, "Shader view mismatch");',
+                  f'_Static_assert(SMP_{t["samplerName"]} == HELIX_{upper}_{ROLE}_SAMPLER_SLOT, "Shader sampler mismatch");']
         for u in contract['uniforms']:
             stage = u['stage']; STAGE = stage.upper()
             hx += [f' public static inline var {stage}UniformBytes={u["bytes"]};', f' public static inline var {stage}UniformName={json.dumps(u["name"])};']

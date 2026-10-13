@@ -3,8 +3,9 @@
  * placement (the model matrix's rows), its normals' matrix (the inverse transpose's rows) and its tint come from the instance buffer, so
  * placements alike in everything else are one draw.
  *
- * Color space: the framebuffer holds sRGB values. The base color texture is decoded from sRGB; factors, tints and light radiance are linear;
- * lighting happens in linear space.
+ * Color space: the framebuffer holds sRGB values. The base color texture is decoded from sRGB; the normal map is linear (tangent space,
+ * green up, as glTF's); factors, tints, emissive and light radiance are linear; lighting happens in linear space. i_normal0.w is the
+ * tangents' handedness: -1 where the placement mirrors them.
  *
  * lit3d_vs_params: view_projection
  * lit3d_fs_params:
@@ -12,6 +13,7 @@
  *   ambient            rgb, linear, times intensity
  *   base_color         linear rgba, the material's
  *   pbr                x metallic, y roughness, z 1 = lit (0 = unlit), w the number of lights (0..4)
+ *   emissive           rgb linear light the surface gives off, w the normal map's strength
  *   light_position[i]  xyz position, w range (0: unlimited)
  *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point)
  *   light_radiance[i]  rgb color times intensity, linear */
@@ -22,14 +24,16 @@ layout(binding=0) uniform lit3d_vs_params {
 layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;
 layout(location=2) in vec2 uv;
-layout(location=3) in vec4 i_model0;
-layout(location=4) in vec4 i_model1;
-layout(location=5) in vec4 i_model2;
-layout(location=6) in vec4 i_normal0;
-layout(location=7) in vec4 i_normal1;
-layout(location=8) in vec4 i_normal2;
-layout(location=9) in vec4 i_tint;
+layout(location=3) in vec4 tangent;
+layout(location=4) in vec4 i_model0;
+layout(location=5) in vec4 i_model1;
+layout(location=6) in vec4 i_model2;
+layout(location=7) in vec4 i_normal0;
+layout(location=8) in vec4 i_normal1;
+layout(location=9) in vec4 i_normal2;
+layout(location=10) in vec4 i_tint;
 out vec3 v_normal;
+out vec4 v_tangent;
 out vec2 v_uv;
 out vec4 v_tint;
 out vec3 v_world;
@@ -38,6 +42,7 @@ void main() {
     vec3 world = vec3(dot(i_model0, p), dot(i_model1, p), dot(i_model2, p));
     gl_Position = view_projection * vec4(world, 1.0);
     v_normal = vec3(dot(i_normal0.xyz, normal), dot(i_normal1.xyz, normal), dot(i_normal2.xyz, normal));
+    v_tangent = vec4(dot(i_model0.xyz, tangent.xyz), dot(i_model1.xyz, tangent.xyz), dot(i_model2.xyz, tangent.xyz), tangent.w * i_normal0.w);
     v_uv = uv;
     v_tint = i_tint;
     v_world = world;
@@ -51,13 +56,17 @@ layout(binding=1) uniform lit3d_fs_params {
     vec4 ambient;
     vec4 base_color;
     vec4 pbr;
+    vec4 emissive;
     vec4 light_position[4];
     vec4 light_direction[4];
     vec4 light_radiance[4];
 };
 layout(binding=0) uniform texture2D lit3d_base_texture;
 layout(binding=0) uniform sampler lit3d_base_sampler;
+layout(binding=1) uniform texture2D lit3d_normal_texture;
+layout(binding=1) uniform sampler lit3d_normal_sampler;
 in vec3 v_normal;
+in vec4 v_tangent;
 in vec2 v_uv;
 in vec4 v_tint;
 in vec3 v_world;
@@ -104,10 +113,20 @@ void main() {
     vec4 texel = texture(sampler2D(lit3d_base_texture, lit3d_base_sampler), v_uv);
     vec4 base = vec4(srgb_to_linear(texel.rgb), texel.a) * base_color * v_tint;
     if (pbr.z < 0.5) {
-        frag_color = vec4(linear_to_srgb(tonemap_neutral(base.rgb)), base.a);
+        frag_color = vec4(linear_to_srgb(tonemap_neutral(base.rgb + emissive.rgb)), base.a);
         return;
     }
-    vec3 n = normalize(v_normal) * (gl_FrontFacing ? 1.0 : -1.0);
+    // The shading frame: the normal map's direction through the tangent, the bitangent and the normal.
+    vec3 n = normalize(v_normal);
+    vec3 t = v_tangent.xyz - n * dot(n, v_tangent.xyz);
+    if (dot(t, t) > 1e-8 && emissive.w > 0.0) {
+        t = normalize(t);
+        vec3 b = cross(n, t) * v_tangent.w;
+        vec3 tn = texture(sampler2D(lit3d_normal_texture, lit3d_normal_sampler), v_uv).xyz * 2.0 - 1.0;
+        tn.xy *= emissive.w;
+        n = normalize(mat3(t, b, n) * tn);
+    }
+    n *= gl_FrontFacing ? 1.0 : -1.0;
     float metallic = clamp(pbr.x, 0.0, 1.0);
     float roughness = clamp(pbr.y, 0.03, 1.0);
     float alpha = roughness * roughness;
@@ -150,6 +169,7 @@ void main() {
         vec3 specular = fresnel * distribution * visibility;
         color += light_radiance[i].rgb * falloff * n_dot_l * (diffuse + specular);
     }
+    color += emissive.rgb;
     frag_color = vec4(linear_to_srgb(tonemap_neutral(color)), base.a);
 }
 @end

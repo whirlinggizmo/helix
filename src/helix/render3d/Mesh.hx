@@ -3,8 +3,8 @@ package helix.render3d;
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 
-/** Triangles for lit models: each vertex a position, a normal and texture coordinates (Lit3DLayout's packing), indexed, with the box around
-	them. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
+/** Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DLayout's packing; the tangent's w its
+	bitangent's sign, glTF's convention), indexed, with the box around them. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
 	counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes. */
 class Mesh {
 	static var nextId = 1;
@@ -352,10 +352,89 @@ private class MeshBuilder {
 		triangle(a, c, d);
 	}
 
-	/** The mesh of everything added. */
+	/** Tangents for normal mapping (the earlier frameworks' way): from each triangle's positions and texture coordinates, averaged at each
+		vertex and made perpendicular to its normal, following increasing u; w is the bitangent's sign, the bitangent cross(normal, tangent) * w
+		pointing toward decreasing v (the texture's up). A vertex with no usable mapping gets any tangent perpendicular to its normal. */
+	function tangentsOf():Array<Float> {
+		var count = getVertexCount(),
+			tangents = [for (_ in 0...count * 4) 0.],
+			bitangents = [for (_ in 0...count * 3) 0.];
+		var k = 0;
+		while (k + 2 < indices.length) {
+			var i0 = indices[k], i1 = indices[k + 1], i2 = indices[k + 2];
+			k += 3;
+			var e1x = positions[i1 * 3] - positions[i0 * 3],
+				e1y = positions[i1 * 3 + 1] - positions[i0 * 3 + 1],
+				e1z = positions[i1 * 3 + 2] - positions[i0 * 3 + 2];
+			var e2x = positions[i2 * 3] - positions[i0 * 3],
+				e2y = positions[i2 * 3 + 1] - positions[i0 * 3 + 1],
+				e2z = positions[i2 * 3 + 2] - positions[i0 * 3 + 2];
+			var du1 = uvs[i1 * 2] - uvs[i0 * 2],
+				dv1 = uvs[i1 * 2 + 1] - uvs[i0 * 2 + 1],
+				du2 = uvs[i2 * 2] - uvs[i0 * 2],
+				dv2 = uvs[i2 * 2 + 1] - uvs[i0 * 2 + 1];
+			var det = du1 * dv2 - du2 * dv1;
+			if (Math.abs(det) < 1e-12)
+				continue;
+			det = 1 / det;
+			var sx = (e1x * dv2 - e2x * dv1) * det,
+				sy = (e1y * dv2 - e2y * dv1) * det,
+				sz = (e1z * dv2 - e2z * dv1) * det;
+			var tx = (e2x * du1 - e1x * du2) * det,
+				ty = (e2y * du1 - e1y * du2) * det,
+				tz = (e2z * du1 - e1z * du2) * det;
+			for (v in [i0, i1, i2]) {
+				tangents[v * 4] += sx;
+				tangents[v * 4 + 1] += sy;
+				tangents[v * 4 + 2] += sz;
+				bitangents[v * 3] += tx;
+				bitangents[v * 3 + 1] += ty;
+				bitangents[v * 3 + 2] += tz;
+			}
+		}
+		for (i in 0...count) {
+			var nx = normals[i * 3],
+				ny = normals[i * 3 + 1],
+				nz = normals[i * 3 + 2];
+			var tx = tangents[i * 4],
+				ty = tangents[i * 4 + 1],
+				tz = tangents[i * 4 + 2];
+			var d = nx * tx + ny * ty + nz * tz;
+			tx -= nx * d;
+			ty -= ny * d;
+			tz -= nz * d;
+			var w = 1.;
+			if (tx * tx + ty * ty + tz * tz < 1e-12) {
+				// No texture mapping here: any direction perpendicular to the normal.
+				tx = Math.abs(nx) < .9 ? 1 : 0;
+				ty = Math.abs(nx) < .9 ? 0 : 1;
+				tz = 0;
+				d = nx * tx + ny * ty;
+				tx -= nx * d;
+				ty -= ny * d;
+				tz -= nz * d;
+			} else {
+				// cross(n, t) against the bitangent: the map's up (green) points toward decreasing v.
+				var cx = ny * tz - nz * ty,
+					cy = nz * tx - nx * tz,
+					cz = nx * ty - ny * tx;
+				if (cx * bitangents[i * 3] + cy * bitangents[i * 3 + 1] + cz * bitangents[i * 3 + 2] > 0)
+					w = -1;
+			}
+			var l = Math.sqrt(tx * tx + ty * ty + tz * tz);
+			tangents[i * 4] = tx / l;
+			tangents[i * 4 + 1] = ty / l;
+			tangents[i * 4 + 2] = tz / l;
+			tangents[i * 4 + 3] = w;
+		}
+		return tangents;
+	}
+
+	/** The mesh of everything added, its tangents worked out from the triangles' positions and texture coordinates. */
 	public function build():Mesh {
 		var count = getVertexCount(),
-			data = Bytes.alloc(count * Lit3DLayout.stride);
+			data = Bytes.alloc(count * Lit3DLayout.stride),
+			tangents = tangentsOf();
 		for (i in 0...count) {
 			var at = i * Lit3DLayout.stride;
 			data.setFloat(at + Lit3DLayout.positionOffset, positions[i * 3]);
@@ -366,6 +445,8 @@ private class MeshBuilder {
 			data.setFloat(at + Lit3DLayout.normalOffset + 8, normals[i * 3 + 2]);
 			data.setFloat(at + Lit3DLayout.uvOffset, uvs[i * 2]);
 			data.setFloat(at + Lit3DLayout.uvOffset + 4, uvs[i * 2 + 1]);
+			for (k in 0...4)
+				data.setFloat(at + Lit3DLayout.tangentOffset + k * 4, tangents[i * 4 + k]);
 		}
 		var index = Bytes.alloc(indices.length * 4);
 		for (i in 0...indices.length)

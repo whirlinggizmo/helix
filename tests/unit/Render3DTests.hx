@@ -80,6 +80,25 @@ class Render3DTests {
 			}
 			check(facing, "Generated triangles face out, counter-clockwise");
 		}
+		// Tangents: unit length, perpendicular to the normal, along increasing u (a sphere's u runs around it, eastward from +x toward +z).
+		var ball = Mesh.sphere(1, 8, 16),
+			bv = ball.getVertices(),
+			tangentsOk = true;
+		for (i in 0...ball.getVertexCount()) {
+			var at = i * Lit3DLayout.stride,
+				n = at + Lit3DLayout.normalOffset,
+				t = at + Lit3DLayout.tangentOffset;
+			var tx = bv.getFloat(t),
+				ty = bv.getFloat(t + 4),
+				tz = bv.getFloat(t + 8),
+				w = bv.getFloat(t + 12);
+			var length = Math.sqrt(tx * tx + ty * ty + tz * tz);
+			var dot = tx * bv.getFloat(n) + ty * bv.getFloat(n + 4) + tz * bv.getFloat(n + 8);
+			tangentsOk = tangentsOk && Math.abs(length - 1) < 1e-5 && Math.abs(dot) < 1e-5 && (w == 1 || w == -1);
+		}
+		check(tangentsOk, "Tangents are unit length, perpendicular to their normals, with a sign");
+		var equator = (4 * 17 + 0) * Lit3DLayout.stride + Lit3DLayout.tangentOffset; // ring 4 of 8 (the equator), segment 0: at +x
+		check(Math.abs(bv.getFloat(equator + 8) - 1) < 1e-5, "At the equator's +x, the tangent follows u toward +z");
 		var box = Mesh.cube(1, 2, 3);
 		check(near(box.getMinX(), -.5) && near(box.getMaxY(), 1) && near(box.getMaxZ(), 1.5) && box.getIndexCount() == 36, "A cube's box and triangles");
 		// Vertices are float32: 0.6 comes back as 0.6000000238.

@@ -19,8 +19,13 @@
           "type": "vec4"
         }
       ],
-      "texture": true,
-      "uniforms": []
+      "uniforms": [],
+      "textures": [
+        {
+          "role": "atlas",
+          "name": "atlas"
+        }
+      ]
     },
     {
       "program": "color3d",
@@ -36,13 +41,13 @@
           "type": "vec4"
         }
       ],
-      "texture": false,
       "uniforms": [
         {
           "stage": "vertex",
           "bytes": 64
         }
-      ]
+      ],
+      "textures": []
     },
     {
       "program": "lit3d",
@@ -61,6 +66,11 @@
           "role": "uv",
           "name": "uv",
           "type": "vec2"
+        },
+        {
+          "role": "tangent",
+          "name": "tangent",
+          "type": "vec4"
         },
         {
           "role": "model0",
@@ -105,7 +115,6 @@
           "instance": true
         }
       ],
-      "texture": true,
       "uniforms": [
         {
           "stage": "vertex",
@@ -113,7 +122,17 @@
         },
         {
           "stage": "fragment",
-          "bytes": 256
+          "bytes": 272
+        }
+      ],
+      "textures": [
+        {
+          "role": "base",
+          "name": "lit3d_base_texture"
+        },
+        {
+          "role": "normal",
+          "name": "lit3d_normal_texture"
         }
       ]
     }

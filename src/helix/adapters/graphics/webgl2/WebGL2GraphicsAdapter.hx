@@ -26,7 +26,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var fragmentData = new js.lib.Float32Array(Std.int(Lit3DLayout.fragmentUniformBytes / 4));
 
 	// Attribute slots any program uses: each draw enables its own and leaves the rest off, every divisor 0 but an instance attribute's.
-	static inline var SLOTS = 10;
+	static inline var SLOTS = 11;
 
 	/** Takes canvas's WebGL2 context, without alpha, antialiasing or stencil, with a depth buffer; preserve keeps the drawing buffer between
 		frames. Throws without WebGL2. */
@@ -125,7 +125,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Sprite2DLayout.uvSlot, name: Sprite2DLayout.uvName},
 					{slot: Sprite2DLayout.colorSlot, name: Sprite2DLayout.colorName}
 				],
-				texture: Sprite2DLayout.textureUniform,
+				texture: Sprite2DLayout.atlasUniform,
+				normalTexture: null,
 				vertexUniform: null,
 				fragmentUniform: null
 			};
@@ -138,6 +139,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Color3DLayout.colorSlot, name: Color3DLayout.colorName}
 				],
 				texture: null,
+				normalTexture: null,
 				vertexUniform: Color3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -148,6 +150,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				{slot: Lit3DLayout.positionSlot, name: Lit3DLayout.positionName},
 				{slot: Lit3DLayout.normalSlot, name: Lit3DLayout.normalName},
 				{slot: Lit3DLayout.uvSlot, name: Lit3DLayout.uvName},
+				{slot: Lit3DLayout.tangentSlot, name: Lit3DLayout.tangentName},
 				{slot: Lit3DLayout.model0Slot, name: Lit3DLayout.model0Name},
 				{slot: Lit3DLayout.model1Slot, name: Lit3DLayout.model1Name},
 				{slot: Lit3DLayout.model2Slot, name: Lit3DLayout.model2Name},
@@ -156,7 +159,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				{slot: Lit3DLayout.normal2Slot, name: Lit3DLayout.normal2Name},
 				{slot: Lit3DLayout.tintSlot, name: Lit3DLayout.tintName}
 			],
-			texture: Lit3DLayout.textureUniform,
+			texture: Lit3DLayout.baseUniform,
+			normalTexture: Lit3DLayout.normalUniform,
 			vertexUniform: Lit3DLayout.vertexUniformName,
 			fragmentUniform: Lit3DLayout.fragmentUniformName
 		};
@@ -188,6 +192,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return {
 			program: p,
 			texture: location(source.texture),
+			normalTexture: location(source.normalTexture),
 			vertexUniform: location(source.vertexUniform),
 			fragmentUniform: location(source.fragmentUniform),
 			vertex: source.vertex,
@@ -285,11 +290,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		resetAttributes();
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		if (sprite) {
-			gl.uniform1i(shader.texture, Sprite2DLayout.textureUnit);
+			gl.uniform1i(shader.texture, Sprite2DLayout.atlasUnit);
 			attribute(Sprite2DLayout.positionSlot, Sprite2DLayout.positionComponents, stride, Sprite2DLayout.positionOffset);
 			attribute(Sprite2DLayout.uvSlot, Sprite2DLayout.uvComponents, stride, Sprite2DLayout.uvOffset);
 			attribute(Sprite2DLayout.colorSlot, Sprite2DLayout.colorComponents, stride, Sprite2DLayout.colorOffset);
-			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Sprite2DLayout.textureUnit);
+			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Sprite2DLayout.atlasUnit);
 			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
 			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 			gl.depthMask(false);
@@ -307,16 +312,18 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.drawArrays(kind == Lines3D ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES, firstVertex, vertices);
 	}
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, texture:Int,
-			vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
+			normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
 		var p = pipelines[pipeline],
 			v = buffers[vertices],
 			ix = buffers[indices],
 			n = buffers[instances],
-			t = textures[texture];
+			t = textures[baseTexture],
+			nt = textures[normalTexture];
 		if (!active
 			|| p == null
 			|| p.kind != Lit3D
+			|| nt == null
 			|| v == null
 			|| v.index
 			|| !v.isStatic
@@ -344,9 +351,12 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		for (i in 0...fragmentData.length)
 			fragmentData[i] = fragmentUniforms.getFloat(i * 4);
 		gl.uniform4fv(shader.fragmentUniform, fragmentData);
-		gl.uniform1i(shader.texture, Lit3DLayout.textureUnit);
-		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.textureUnit);
+		gl.uniform1i(shader.texture, Lit3DLayout.baseUnit);
+		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.baseUnit);
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+		gl.uniform1i(shader.normalTexture, Lit3DLayout.normalUnit);
+		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.normalUnit);
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, nt);
 		resetAttributes();
 		var stride = Lit3DLayout.stride,
 			record = Lit3DLayout.instanceStride,
@@ -355,6 +365,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		attribute(Lit3DLayout.positionSlot, Lit3DLayout.positionComponents, stride, Lit3DLayout.positionOffset);
 		attribute(Lit3DLayout.normalSlot, Lit3DLayout.normalComponents, stride, Lit3DLayout.normalOffset);
 		attribute(Lit3DLayout.uvSlot, Lit3DLayout.uvComponents, stride, Lit3DLayout.uvOffset);
+		attribute(Lit3DLayout.tangentSlot, Lit3DLayout.tangentComponents, stride, Lit3DLayout.tangentOffset);
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
 		// No base instance in WebGL2: the instance attributes start at the draw's first record instead.
 		attribute(Lit3DLayout.model0Slot, 4, record, base + Lit3DLayout.model0Offset, 1);

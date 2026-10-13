@@ -34,6 +34,8 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `DomInputAdapter` gates only keydown on `active`: pointer, mouse and wheel still record while inactive.
 - `InputState.clear()` keeps typed text and wheel notches.
 
+- `Stage3D` culls back faces assuming counter-clockwise fronts, so a mirrored model (a negative scale, an odd number of them) loses its faces. The record carries the mirror sign already; a mirrored pipeline (front faces culled) is the fix, as the earlier frameworks had.
+
 **Smaller**
 - `AudioResources` doesn't own the services it's given: `poll` polls only the backend, `shutdown` shuts down neither.
 - `FileStorageAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.

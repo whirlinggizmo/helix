@@ -23,6 +23,7 @@ class Stage3D {
 	var opaquePipeline:Int;
 	var blendedPipeline:Int;
 	var white:Texture2D;
+	var flat:Texture2D;
 	var capacity = 1024;
 	var instanceBuffer:Int;
 	var records:Bytes;
@@ -52,6 +53,13 @@ class Stage3D {
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
 		white = Texture2D.fromRgba(gpu, 1, 1, pixel);
+		// A normal map's "straight out": the default, which the shader skips anyway when a material has none.
+		var normal = Bytes.alloc(4);
+		normal.set(0, 128);
+		normal.set(1, 128);
+		normal.set(2, 255);
+		normal.set(3, 255);
+		flat = Texture2D.fromRgba(gpu, 1, 1, normal, true);
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
 	}
@@ -233,9 +241,12 @@ class Stage3D {
 		for (row in 0...3)
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+		// The w of the normals' first row: the tangents' handedness, -1 where the placement mirrors them.
+		var mirrored = r[0] * (r[5] * r[10] - r[9] * r[6]) - r[4] * (r[1] * r[10] - r[9] * r[2]) + r[8] * (r[1] * r[6] - r[5] * r[2]) < 0;
 		for (row in 0...3)
 			for (col in 0...4)
-				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4, col < 3 ? r[row * 4 + col] : 0);
+				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
+					col < 3 ? r[row * 4 + col] : row == 0 && mirrored ? -1 : row == 0 ? 1 : 0);
 		var tint = item.node.getTint();
 		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
 		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
@@ -282,9 +293,9 @@ class Stage3D {
 		u.setFloat(24, linear((ambientColor >>> 8) & 255) * ambientIntensity);
 		u.setFloat(28, 0);
 		for (i in 0...MAX_LIGHTS) {
-			var position = 64 + i * 16,
-				direction = 128 + i * 16,
-				radiance = 192 + i * 16;
+			var position = 80 + i * 16,
+				direction = 144 + i * 16,
+				radiance = 208 + i * 16;
 			if (i >= lights.length) {
 				for (k in 0...4) {
 					u.setFloat(position + k * 4, 0);
@@ -330,9 +341,17 @@ class Stage3D {
 		u.setFloat(52, material.getRoughness());
 		u.setFloat(56, material.isLit() ? 1 : 0);
 		u.setFloat(60, lights.length);
+		var emissive = material.getEmissive(),
+			strength = material.getEmissiveStrength(),
+			normal = material.getNormalTexture();
+		u.setFloat(64, linear(emissive >>> 24) * strength);
+		u.setFloat(68, linear((emissive >>> 16) & 255) * strength);
+		u.setFloat(72, linear((emissive >>> 8) & 255) * strength);
+		u.setFloat(76, normal == null ? 0 : material.getNormalScale());
 		var texture = material.getTexture();
 		gpu.drawMesh(item.blended ? blendedPipeline : opaquePipeline, item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu),
-			item.mesh.getIndexCount(), instanceBuffer, first, runCount, (texture == null ? white : texture).getHandle(), vertexUniforms, u);
+			item.mesh.getIndexCount(), instanceBuffer, first, runCount, (texture == null ? white : texture).getHandle(),
+			(normal == null ? flat : normal).getHandle(), vertexUniforms, u);
 		draws++;
 	}
 
@@ -342,6 +361,7 @@ class Stage3D {
 		gpu.destroyPipeline(blendedPipeline);
 		gpu.destroyBuffer(instanceBuffer);
 		white.destroy(gpu);
+		flat.destroy(gpu);
 	}
 }
 
