@@ -6,7 +6,7 @@ class Run {
 			python = Sys.systemName() == "Windows" ? "python" : "python3";
 		var runner = haxe.io.Path.join([Sys.getCwd(), "helix.py"]);
 		if (!sys.FileSystem.exists(runner))
-			throw "Run with --cwd pointing at experiments/05-hybrid-asteroids";
+			throw "Run with --cwd pointing at the helix checkout";
 		Sys.exit(Sys.command(python, [runner].concat(Sys.args())));
 	}
 }

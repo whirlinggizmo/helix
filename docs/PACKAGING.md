@@ -14,28 +14,26 @@ The first graphics contract deliberately retains one fixed vertex layout and gen
 
 Use HXML for Haxe compiler settings and Python for external-tool orchestration. The checked-in `examples/asteroids/web.hxml`/`examples/asteroids/native.hxml` describe classpaths, target, DCE and analyzer settings. Python coordinates sokol-shdc, structured metadata generation, original asset generation, hxcpp (which compiles the native adapters' C with each app, against that app's generated shader), Terser and measurements. It passes argument lists, with no shell-script dependency. The [Haxe HXML documentation](https://haxe.org/manual/compiler-usage-hxml.html) describes the compiler's own configuration format.
 
-From the study root:
+From the repository root:
 
 ```console
-python3 experiments/05-hybrid-asteroids/helix.py build all --shdc /path/to/sokol-shdc
-python3 experiments/05-hybrid-asteroids/helix.py test --native --shdc /path/to/sokol-shdc
-python3 experiments/05-hybrid-asteroids/helix.py services --browser /path/to/chromium --native
-python3 experiments/05-hybrid-asteroids/helix.py audio-check --browser /path/to/chromium
-python3 experiments/05-hybrid-asteroids/helix.py serve
-python3 experiments/05-hybrid-asteroids/helix.py check --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
-python3 experiments/05-hybrid-asteroids/helix.py measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
-python3 experiments/05-hybrid-asteroids/helix.py sizes
-python3 experiments/05-hybrid-asteroids/helix.py report
-python3 experiments/05-hybrid-asteroids/helix.py features --clang /path/to/clang --wgrender /path/to/wgrender-c --libwgf /path/to/libwgf
+python3 helix.py build all --shdc /path/to/sokol-shdc
+python3 helix.py test --native --shdc /path/to/sokol-shdc
+python3 helix.py services --browser /path/to/chromium --native
+python3 helix.py audio-check --browser /path/to/chromium
+python3 helix.py serve
+python3 helix.py check --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
+python3 helix.py measure --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority --awake
+python3 helix.py sizes
 ```
 
-`audio-check` requires `serve` in another terminal and verifies the served build plus sustained thrust/gain/release behavior. Run it after a game rebuild before generating the report. `measure` runs correctness, three CPU trials per target and autopilot sequentially, restores any authorized display override, then generates sizes/findings. It requires both targets. Run `test --native --audio-device`, `services --browser ... --native` and the optional Clang reference `features` inventory beforehand for report inputs: report validates native/audio/cache source identities. Keep timing separate from builds/service tests. `features` reads reference public headers through structured Clang JSON AST, records identities, and does not edit references or establish behavioral equivalence. See FEATURE_PARITY.md. `check` can run browser only. `sizes`/`report` use existing builds/results and do not rebuild. Build before measuring source changes. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs. X11 checks are platform-specific test adapters.
+`audio-check` requires `serve` in another terminal and verifies the served build plus sustained thrust/gain/release behavior. Run it after a game rebuild. `measure` runs correctness, three CPU trials per target and autopilot sequentially, restores any authorized display override, then records sizes, all under `build/results/asteroids/`. It requires both targets. Keep timing separate from builds/service tests. `check` can run browser only. `sizes` uses existing builds and does not rebuild. Build before measuring source changes. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs. X11 checks are platform-specific test adapters.
 
 An optional Haxe entry point delegates to the same Python CLI:
 
 ```console
-haxe --cwd experiments/05-hybrid-asteroids --run Run --help
-haxe --cwd experiments/05-hybrid-asteroids --run Run build web --shdc /path/to/sokol-shdc
+haxe --run Run --help
+haxe --run Run build web --shdc /path/to/sokol-shdc
 ```
 
 `Run.hx --help` was executed successfully. `HELIX_PYTHON` selects a Python executable; defaults are `python` on Windows and `python3` elsewhere. The launcher is outside the game/library classpaths. A future package could expose a `haxelib run` entry point through its metadata, as described in the official package guide; that integration has not been built or tested. Rewriting the orchestration in Haxe now would replace working tooling without changing runtime delivery size.
@@ -64,8 +62,8 @@ The schema is version 1, with a deterministic seed and up to 128 commands:
 After building:
 
 ```console
-python3 experiments/05-hybrid-asteroids/helix.py autopilot all --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority
-python3 experiments/05-hybrid-asteroids/helix.py autopilot web --browser /path/to/chromium --script autopilot/smoke.json
+python3 helix.py autopilot all --browser /path/to/chromium --display :1 --xauthority /path/to/Xauthority
+python3 helix.py autopilot web --browser /path/to/chromium --script autopilot/smoke.json
 ```
 
 The full `playthrough.json` passed on browser WebGL2 and native Sokol in 4584 simulated ticks, with identical command outcomes, final state and RGB pixels. It covers title, start, thrust/fire, game over, return to title and restart. The interpreter also exercises the same script. Fast mode advances up to 120 fixed ticks per frame; its wall time is a correctness convenience, not a performance result. These automated runs disable sound delivery; separate interactive/service checks exercise audio.
@@ -77,13 +75,3 @@ Manual browser use: `?autopilot=autopilot/playthrough.json&fast=1&audio=0`. Nati
 Proceed toward a Haxe library with platform adapters. Keep application code outside it and choose adapters in build configuration. Keep the Python front door now, with the optional Haxe launcher for convenience. Neither tool contributes runtime bytes to the delivered game.
 
 Before making a distributable haxelib: choose license/version policy; stabilize lifecycle and handle contracts; define shader generation and native build integration for consumers; decide how Sokol/SDL versions are supplied; and build an independent application against an installed local package. Modern native adapters, further OS targets and context/device recovery still require execution. The measured source separation is a promising foundation, not a completed production package.
-
-The distinct mixed-submission workload now consumes the same graphics/host interfaces and both adapters from source. It reuses the fixed generated shader/layout; it does not prove shader injection or an installed haxelib package. Its reproduction and identified evidence are in [MIXED_SUBMISSIONS.md](MIXED_SUBMISSIONS.md). Native host and graphics share one Sokol context through separate C translation units in their respective `src/helix/adapters/<service>/sokol/internal/` directories. Audio/codecs/gamepads likewise own their C sources, headers and extern bindings. Shared Linux archive/link metadata lives in `adapters/internal/SokolNativeBuild.hx`; independently installed native service packages and additional OS link integration remain untested.
-
-
-## P1 tooling and shipped scope
-
-`helix.py mixed build/check/measure/profile/allocations/report` drives the separate range/material workload. Its normal browser/native artifacts contain no allocation telemetry or GL interposer. `benchmarks/mixed-submission/native-profile.hxml` selects an independent native test launcher with `HXCPP_TELEMETRY` and `HXCPP_STACK_TRACE`; `tests/native/graphics_calls.c` builds a Linux-only check library loaded by the native audit. Profiling, call auditing and CPU timing run in separate processes. These tools do not add Wasm or bytes to Asteroids. See [MIXED_SUBMISSIONS.md](MIXED_SUBMISSIONS.md) for portable command orchestration, actual executed evidence and remaining shader/package limitations.
-
-
-The latest P1 result is conditional for native GL: sorted cases meet the recorded callback budget, but the 4096-draw/64-texture alternating case exceeds 16.667 ms callback p95 in two trials. Browser shared-state/program cases fit on this device. The typed-command correction removes allocation scaling, but does not establish a native timing speedup. Transparent order cannot be freely sorted; sustained unsorted pressure and an executed modern native backend remain decision gates. See [the P1 findings](MIXED_SUBMISSIONS.md) for ranges and exact boundaries.

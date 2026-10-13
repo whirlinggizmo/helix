@@ -36,7 +36,7 @@ interface IHost {
 	/** Assets by path, from the network, the cache or the build. */
 	public var assets(default, null):IAssets;
 
-	/** Experiment options, probes and captures. */
+	/** Run options, probes and captures, for checks and tools. */
 	public var diagnostics(default, null):IDiagnostics;
 
 	/** The window the app draws in (the page, on the web). */

@@ -32,7 +32,7 @@ Handles are context-local, positive and typed by the API operation; they must no
 
 `run(app:IApp)` calls `app.init()` once, `app.frame(dt)` each frame with elapsed seconds, and `app.cleanup()` when the host closes, always through the object, so after a hot reload the app's new methods are what run. `BaseApp` implements `IApp` with empty methods for an app to override. The game uses fixed 60 Hz updates with bounded catch-up, resets accumulated time while unfocused and stops thrust playback. `canQuit` is true on native and false in browser; browser `quit()` stops the loop without closing a tab. Browser audio additionally suspends on blur/visibility loss and resumes after a real gesture. Sokol suspended/resumed events update native focus, but OS suspend/resume has not been exercised. Browser page-hide cleanup and device/context recovery still need broader lifecycle testing.
 
-`IDiagnostics` owns experiment options, inspect/publish/capture hooks and backend information. It is separate from input/audio and window behavior, though the current host implements it. Probe/state JSON and capture tooling remain in measured builds. These hooks are not a storage/network API.
+`IDiagnostics` owns run options, inspect/publish/capture hooks and backend information. It is separate from input/audio and window behavior, though the current host implements it. Probe/state JSON and capture tooling remain in measured builds. These hooks are not a storage/network API.
 
 ## Input
 

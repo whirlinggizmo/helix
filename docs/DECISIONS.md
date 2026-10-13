@@ -1,6 +1,6 @@
 # Decisions
 
-Decisions are chronological. Entries 21 onward supersede the earlier SDL2 and minimal-loader choices; preserved SDL2 measurements are historical, not the current implementation.
+Decisions are chronological. HeliX began as experiment 05 of a framework architecture study (whirlinggizmo's wgf-architecture-experiments), which compared it with libwgf; the entries before it moved into this repository were made there, so they name that study, its parity comparison and its results, which stayed with the study. Entries 21 onward supersede the earlier SDL2 and minimal-loader choices; preserved SDL2 measurements are historical, not the current implementation.
 
 1. Separate experiment05; no edits to prior experiments, shared documents or libwgf. Read the comparison plan and new brief/start prompt before implementation. Use only the prior experiment's pinned third-party Sokol headers as a read-only build dependency.
 2. Shared Haxe owns game simulation and all rendering decisions. Compile-time classpaths supply `Platform`/`GraphicsBackend` with matching interfaces. There are no target conditionals in the shared sources. Native bindings, C resource calls and browser extern calls are confined to adapters.

@@ -18,6 +18,15 @@ def run(args,env=None):
     print('Running:',json.dumps(list(map(str,args))),flush=True)
     subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
+def shader(shdc):
+    """Generate Asteroids' shader into build/generated/asteroids."""
+    generated=ROOT/'build/generated/asteroids';generated.mkdir(parents=True,exist_ok=True)
+    shdc=shdc or shutil.which('sokol-shdc')
+    if not shdc:raise RuntimeError('Pass --shdc /path/to/pinned/sokol-shdc (sokol-tools-bin 11d0cf678105d614d675e6d9bd2aaf3eeff12f8c)')
+    run([shdc,'-i','examples/asteroids/shaders/sprite.glsl','-o',generated/'sprite.glsl.h','-l','glsl410:glsl300es','--no-log-cmdline'])
+    run([shdc,'-i','examples/asteroids/shaders/sprite.glsl','-o',generated/'sprite','-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
+    generate(generated/'sprite_reflection.yaml',ROOT/'examples/asteroids/shaders/vertex.json',generated,ROOT)
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('target',choices=['web','native','all','test'])
@@ -47,10 +56,7 @@ def main():
         (evidence/'simulation-tests.json').write_text(json.dumps(value,indent=2)+'\n')
         return
     shdc=args.shdc or shutil.which('sokol-shdc')
-    if not shdc:raise RuntimeError('Pass --shdc /path/to/pinned/sokol-shdc (sokol-tools-bin 11d0cf678105d614d675e6d9bd2aaf3eeff12f8c)')
-    run([shdc,'-i','examples/asteroids/shaders/sprite.glsl','-o',generated/'sprite.glsl.h','-l','glsl410:glsl300es','--no-log-cmdline'])
-    run([shdc,'-i','examples/asteroids/shaders/sprite.glsl','-o',generated/'sprite','-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
-    generate(generated/'sprite_reflection.yaml',ROOT/'examples/asteroids/shaders/vertex.json',generated,ROOT)
+    shader(shdc)
     assets=generate_assets()
     if args.target in ['web','all']:
         out=build/'web/asteroids';out.mkdir(parents=True,exist_ok=True)
@@ -64,7 +70,7 @@ def main():
     if args.target in ['native','all']:
         if sys.platform!='linux':raise RuntimeError('Only Linux native linking is implemented; browser build remains portable.')
         check_hxcpp()
-        # hxcpp compiles the adapters' C with the app; its cache stays in the experiment rather than a global one.
+        # hxcpp compiles the adapters' C with the app; its cache stays in the repository rather than a global one.
         from native_build import env as native_env
         env=native_env(generated)
         run(['haxe','examples/asteroids/native.hxml'],env)

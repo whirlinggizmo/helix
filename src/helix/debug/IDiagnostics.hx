@@ -1,8 +1,8 @@
 package helix.debug;
 
-/** Experiment options/probes/capture. Not the window, audio or input contract. */
+/** Run options, probes and captures, for checks and tools. Not the window, audio or input contract. */
 interface IDiagnostics {
-	/** An experiment option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals. */
+	/** A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals. */
 	public function getOption(name:String, fallback:String):String;
 
 	/** Reports a result to the harness: window.result in a browser; natively a JSON line on stdout, also written to the file HELIX_RESULT names. */

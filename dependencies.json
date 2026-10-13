@@ -5,7 +5,7 @@
   "dox": "1.6.0",
   "sokol": {
     "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
-    "fork": "https://github.com/robknopf/sokol (the Whirling Gizmo fork; libwgf and wgrender use it too)",
+    "fork": "https://github.com/robknopf/sokol (the Whirling Gizmo fork)",
     "upstream": "https://github.com/floooh/sokol 5e94d129",
     "source": "vendor",
     "headers": {
@@ -64,7 +64,7 @@
   },
   "jetbrainsMono": {
     "font": "JetBrains Mono Regular",
-    "source": "https://github.com/JetBrains/JetBrainsMono, as wgrender-c vendors it",
+    "source": "https://github.com/JetBrains/JetBrainsMono",
     "files": {
       "vendor/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf": "a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f",
       "vendor/fonts/JetBrainsMono/OFL.txt": "a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697"

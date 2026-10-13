@@ -64,7 +64,7 @@ def main():
      with lock:active-=1
  server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start();base=f'http://127.0.0.1:{server.server_port}'
  try:
-  result=json.loads(subprocess.check_output(['node',str(ROOT/'tools/service-browser.cjs'),a.browser,base+'/?db=hybrid-services-'+token],cwd=ROOT,text=True))
+  result=json.loads(subprocess.check_output(['node',str(ROOT/'tools/service-browser.cjs'),a.browser,base+'/?db=helix-services-'+token],cwd=ROOT,text=True))
   assert result['runs'][0]['persisted'] is False and result['runs'][1]['persisted'] is True
   assert counts['/assets/fixture.wav']==1,dict(counts)
   assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)

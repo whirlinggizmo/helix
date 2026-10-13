@@ -6,8 +6,6 @@ Rules for HeliX's public API, its examples, and the agents working on them. Name
 
 HeliX has no users to protect. When an API changes, every caller changes with it in the same commit: examples, tests and tools. Nothing keeps an old name, an old signature or an old behavior alive beside the new one: no aliases, deprecated wrappers, compatibility flags or shims.
 
-The one exception is by design: `examples/asteroids-parity`'s `wgf` package, a compatibility layer that runs the parity comparison's game unchanged. It presents that game's API, and it follows HeliX's current API underneath.
-
 ## Names
 
 | Kind | Form | Example |
@@ -40,7 +38,7 @@ One unit per kind of value across the API, so nothing has to be converted at a c
 
 Code is written to be read, by people and agents, not packed.
 
-- **Formatted by the tool, not by hand.** Haxe source is laid out by haxe-formatter (`formatter` on lib.haxe.org) with the experiment's `hxformat.json`: one statement per line, indented blocks. Formatting is checked with the other checks, so dense one-line classes and functions don't come back.
+- **Formatted by the tool, not by hand.** Haxe source is laid out by haxe-formatter (`formatter` on lib.haxe.org) with the repository's `hxformat.json`: one statement per line, indented blocks. Formatting is checked with the other checks, so dense one-line classes and functions don't come back.
 - **Every public type and member has a doc comment** (`/** ... */`) saying what it is or does, in the units it uses, with its ranges and every refusal ("False for ..."). Private code gets a comment where the reason isn't plain from the code.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what a developer or an agent reads is what the code says.
 
@@ -51,7 +49,7 @@ python3 tools/typecheck.py         # every entry point, both targets, in seconds
 python3 tools/apidoc.py            # the API reference, build/api/index.html
 ```
 
-The formatter and dox are pinned in `dependencies.json` and installed into the experiment's own haxelib (`build/haxelib`), as hxcpp is.
+The formatter and dox are pinned in `dependencies.json` and installed into the repository's own haxelib (`build/haxelib`), as hxcpp is.
 
 ## Examples
 

@@ -2,7 +2,7 @@ package helix.audio;
 
 import haxe.io.Bytes;
 
-/** Minimal, bounded RIFF decoder for this experiment's mono PCM16/44100 assets. */
+/** Minimal, bounded RIFF decoder for mono PCM16/44100 assets. */
 class Wav {
 	/** Decodes a whole mono PCM16 44100 Hz WAV of at most 4 seconds into mono 32-bit float PCM, -1 to 1. Throws for a bad header or chunk, another format, or missing or trailing data. */
 	public static function decode(bytes:Bytes):Bytes {

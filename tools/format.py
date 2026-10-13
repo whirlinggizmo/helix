@@ -1,8 +1,7 @@
 """Lay out HeliX's Haxe source with haxe-formatter (docs/CONVENTIONS.md), or --check that it is laid out.
 
-The formatter is pinned in dependencies.json and installed into the experiment's own haxelib (build/haxelib), as hxcpp is.
-hxformat.json holds only what differs from the pinned version's defaults: the files left alone (the parity example's game,
-kept as it came; archived run sources; build output)."""
+The formatter is pinned in dependencies.json and installed into the repository's own haxelib (build/haxelib), as hxcpp is.
+hxformat.json holds only what differs from the pinned version's defaults: the files left alone (build output)."""
 import argparse
 import json
 import os
@@ -12,10 +11,10 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 HAXELIB=ROOT/'build/haxelib'
-SOURCES=['src','examples','tests','benchmarks','Run.hx']
+SOURCES=['src','examples','tests','Run.hx']
 
 def formatter():
-    """The pinned formatter in the experiment's haxelib, installed on first use."""
+    """The pinned formatter in the repository's haxelib, installed on first use."""
     version=json.loads((ROOT/'dependencies.json').read_text())['formatter']
     env=dict(os.environ,HAXELIB_PATH=str(HAXELIB));HAXELIB.mkdir(parents=True,exist_ok=True)
     if not (HAXELIB/'formatter'/version.replace('.',',')).is_dir():

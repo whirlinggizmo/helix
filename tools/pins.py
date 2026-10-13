@@ -1,4 +1,4 @@
-"""Use an experiment-local haxelib holding the pinned hxcpp release, as libwgf's CI does."""
+"""Use a repository-local haxelib (build/haxelib) holding the pinned hxcpp release."""
 import json,os,subprocess,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]

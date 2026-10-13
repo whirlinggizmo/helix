@@ -53,12 +53,12 @@ def prepare(name,shdc):
     licenses(web)
 
 def licenses(out):
-    """The third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
+    """HeliX's license, the third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
     target=out/'licenses'
     if target.exists():shutil.rmtree(target)
     target.mkdir(parents=True)
     shutil.copyfile(ROOT/'THIRD_PARTY_NOTICES.md',target/'THIRD_PARTY_NOTICES.md')
-    for name,source in [('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
+    for name,source in [('HeliX-MIT.txt','LICENSE'),('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
         shutil.copyfile(ROOT/source,target/name)
 
 def main():

@@ -1,4 +1,4 @@
-"""Generate eight original PCM sound assets; no libwgf assets or code copied."""
+"""Generate eight original PCM sound assets."""
 import array
 import hashlib
 import json
