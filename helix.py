@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parent
-UNIT={'InputTests':[],'HostTests':[],'AssetTests':[],'Render3DTests':['build/generated/shaders'],'TrigTests':[],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
+UNIT={'InputTests':[],'HostTests':[],'AssetTests':[],'Render2DTests':['build/generated/shaders','build/generated/fonts'],'Render3DTests':['build/generated/shaders'],'TrigTests':[],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 

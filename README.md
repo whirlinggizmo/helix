@@ -2,7 +2,7 @@
 
 HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
-Status: milestones 1 (the platform, 2D and services) and 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) are complete. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
+Status: milestones 1 (the platform, 2D and services) and 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) are complete; milestone 3 (2D gfx) is under way. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
 
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
@@ -78,6 +78,8 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
 | `lights` | directional, point and spot lights on a stage, beside an immediate grid |
 | `model` | a glTF (GLB) model loaded into nodes: parts found by name, its own lights |
+| `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
+| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group |
 
 Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 

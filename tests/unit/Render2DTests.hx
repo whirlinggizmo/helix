@@ -1,0 +1,185 @@
+import haxe.io.Bytes;
+import helix.graphics.IGraphics;
+import helix.graphics.PipelineKind;
+import helix.render2d.Batch2D;
+import helix.render2d.Camera2D;
+import helix.render2d.Node2D;
+import helix.render2d.Polygon2D;
+import helix.render2d.Stage2D;
+import helix.render2d.Texture2D;
+
+/** Graphics that only counts: handles, and the draws and viewports of a frame. */
+class CountingGraphics implements IGraphics {
+	var next = 1;
+
+	public var draws:Array<{vertices:Int, first:Int}> = [];
+	public var viewports:Array<Array<Int>> = [];
+	public var uploaded:Null<Bytes>;
+
+	public function new() {}
+
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int
+		return next++;
+
+	public function createBuffer(capacityBytes:Int):Int
+		return next++;
+
+	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
+		return next++;
+
+	public function createPipeline(kind:PipelineKind, alpha:Bool):Int
+		return next++;
+
+	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
+		uploaded = data.sub(0, usedBytes);
+
+	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
+		draws = [];
+		viewports = [];
+	}
+
+	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void
+		viewports.push([x, y, w, h]);
+
+	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
+		draws.push({vertices: vertices, first: firstVertex});
+
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
+		normalTexture:Int, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {}
+
+	public function endFrame():Void {}
+
+	public function destroyTexture(handle:Int):Void {}
+
+	public function destroyBuffer(handle:Int):Void {}
+
+	public function destroyPipeline(handle:Int):Void {}
+
+	public function shutdown():Void {}
+}
+
+/** Polygon2D, Node2D's transforms, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
+class Render2DTests {
+	static var checks = 0;
+
+	static function check(value:Bool, message:String):Void {
+		if (!value)
+			throw message;
+		checks++;
+	}
+
+	static function near(a:Float, b:Float):Bool
+		return Math.abs(a - b) < 1e-9;
+
+	// The area the triangles cover, summed.
+	static function covered(points:Array<Float>, triangles:Array<Int>):Float {
+		var sum = 0., i = 0;
+		while (i < triangles.length) {
+			sum += Math.abs(Polygon2D.doubleArea([
+				for (k in 0...3)
+					for (c in 0...2) points[triangles[i + k] * 2 + c]
+			])) / 2;
+			i += 3;
+		}
+		return sum;
+	}
+
+	static function main():Void {
+		// Polygons: a square either way round, and a concave arrow, covered exactly by n - 2 triangles.
+		var square = [0., 0, 10, 0, 10, 10, 0, 10];
+		var reversed = [0., 10, 10, 10, 10, 0, 0, 0];
+		var arrow = [0., 0, 10, 5, 0, 10, 3, 5];
+		for (points in [square, reversed, arrow]) {
+			var triangles = Polygon2D.triangulate(points);
+			check(triangles.length == (points.length / 2 - 2) * 3, "A simple polygon of n points is n - 2 triangles");
+			check(near(covered(points, triangles), Math.abs(Polygon2D.doubleArea(points)) / 2), "The triangles cover the polygon exactly");
+		}
+		check(Polygon2D.doubleArea(square) > 0, "Clockwise on screen (y down) is a positive area");
+		check(Node2D.polygon([0, 0, 1, 1]) == null
+			&& Node2D.polygon([0, 0, 1, 1, 2]) == null, "A polygon needs 3 points, x and y in pairs");
+
+		// Transforms: a child of a turned, scaled, placed parent; toLocal undoes toWorld.
+		var stage = new Stage2D(),
+			parent = Node2D.group(),
+			child = Node2D.circle(1);
+		parent.setPosition(100, 50);
+		parent.setRotation(Math.PI / 2);
+		parent.setScale(2, 2);
+		child.setPosition(10, 0);
+		parent.add(child);
+		stage.add(parent);
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			camera = new Camera2D();
+		camera.setViewport(400, 300);
+		camera.pixels(1);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		// Turned a quarter clockwise on screen (y down), +x points down: 10 along x, doubled, is 20 below the parent.
+		check(near(child.toWorldX(0, 0), 100) && near(child.toWorldY(0, 0), 70), "A child is placed by its parent's turn, scale and position");
+		check(near(child.toLocalX(child.toWorldX(3, -4), child.toWorldY(3, -4)), 3)
+			&& near(child.toLocalY(child.toWorldX(3, -4), child.toWorldY(3, -4)), -4),
+			"toLocal undoes toWorld");
+		parent.setPosition(0, 0);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(near(child.toWorldY(0, 0), 20), "Moving the parent moves the child at the next draw");
+		check(!child.add(parent) && !parent.add(parent), "No node becomes its own ancestor");
+
+		// A mirrored sprite covers the same box; a sprite with no texture draws nothing.
+		var texture = Texture2D.fromRgba(gpu, 4, 2, Bytes.alloc(32));
+		var sprite = Node2D.sprite(texture);
+		check(sprite.getWidth() == 4 && sprite.getHeight() == 2, "A sprite with no size is its texture's size in texels");
+		sprite.setSource(1, 0, 2, 2);
+		check(sprite.getWidth() == 2 && sprite.getSourceWidth() == 2, "A region gives it the region's size");
+		check(!Node2D.circle(1).setSource(0, 0, 1, 1) && !Node2D.circle(1).setTexture(texture), "Sprite calls refuse other kinds");
+
+		// Culling: of three circles, the one far outside the view isn't drawn; hidden nodes and their children aren't either.
+		var culled = new Stage2D();
+		for (x in [10., 390, 5000]) {
+			var c = Node2D.circle(5);
+			c.setPosition(x, 150);
+			culled.add(c);
+		}
+		var hidden = Node2D.group();
+		hidden.add(Node2D.circle(5));
+		hidden.setVisible(false);
+		culled.add(hidden);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		culled.draw(batch, camera);
+		batch.end();
+		check(culled.getDrawnCount() == 2, "Only nodes in view, and shown, are drawn");
+
+		// Two cameras in one batch: a run each, each in its own viewport.
+		var left = new Camera2D(), right = new Camera2D();
+		left.setViewport(400, 300);
+		left.setViewportArea(0, 0, 200, 300);
+		left.pixels(1);
+		right.setViewport(400, 300);
+		right.setViewportArea(200, 0, 200, 300);
+		right.pixels(1);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(left);
+		batch.rect(0, 0, 10, 10, -1);
+		stage.draw(batch, right);
+		batch.end();
+		check(gpu.draws.length == 2 && gpu.viewports.length == 2 && gpu.viewports[0][0] == 0 && gpu.viewports[1][0] == 200,
+			"A camera change splits the batch, each part in its camera's viewport");
+		check(gpu.draws[0].vertices == 6 && gpu.draws[1].first == 6, "The parts follow each other in the one upload");
+
+		// The transform places vertices: a rect at the origin, moved 10 right, starts at clip x of world 10.
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		batch.setTransform(1, 0, 0, 1, 10, 0);
+		batch.rect(0, 0, 1, 1, -1);
+		batch.end();
+		check(Math.abs(gpu.uploaded.getFloat(0) - camera.clipX(10)) < 1e-6, "setTransform places what follows");
+		batch.destroy();
+		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+}

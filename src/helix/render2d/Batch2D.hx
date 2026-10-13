@@ -5,7 +5,8 @@ import helix.graphics.PipelineKind;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
-	run of a texture, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. */
+	run of a texture and camera, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places
+	what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. */
 class Batch2D {
 	var vertices = 0;
 	var draws = 0;
@@ -32,6 +33,13 @@ class Batch2D {
 	var texture:Texture2D;
 	var runStart = 0;
 	var runs:Array<Int> = [];
+	var runCameras:Array<Camera2D> = [];
+	var ta = 1.;
+	var tb = 0.;
+	var tc = 0.;
+	var td = 1.;
+	var tx = 0.;
+	var ty = 0.;
 	var r = 1.;
 	var g = 1.;
 	var b = 1.;
@@ -48,24 +56,56 @@ class Batch2D {
 		texture = font.getTexture();
 	}
 
-	/** Starts collecting a batch seen through camera; later calls only fill it until end. */
+	/** Starts collecting a batch seen through camera, with no transform; later calls only fill it until end. */
 	public function begin(camera:Camera2D):Void {
 		this.camera = camera;
 		vertices = 0;
 		draws = 0;
 		runStart = 0;
 		runs = [];
+		runCameras = [];
 		texture = font.getTexture();
+		resetTransform();
 	}
 
-	/** Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture, in the camera's viewport. Once a frame. */
+	/** The camera the batch is seen through. */
+	public function getCamera():Camera2D
+		return camera;
+
+	/** What follows is seen through camera, in its viewport: a world and a HUD in one batch. */
+	public function setCamera(value:Camera2D):Void
+		if (value != camera) {
+			closeRun();
+			camera = value;
+		}
+
+	/** Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units. */
+	public function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void {
+		ta = a;
+		tb = b;
+		tc = c;
+		td = d;
+		this.tx = tx;
+		this.ty = ty;
+	}
+
+	/** What follows is drawn where it is given, in world units. */
+	public function resetTransform():Void
+		setTransform(1, 0, 0, 1, 0, 0);
+
+	/** Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture and camera, each in its camera's viewport.
+		Once a frame. */
 	public function end():Void {
 		closeRun();
-		gpu.setViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(), camera.getViewportWidth(),
-			camera.getViewportHeight());
 		gpu.updateBuffer(buffer, data, vertices * Sprite2DLayout.stride);
-		var i = 0;
+		var i = 0, viewport:Camera2D = null;
 		while (i < runs.length) {
+			var c = runCameras[Std.int(i / 3)];
+			if (c != viewport) {
+				viewport = c;
+				gpu.setViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
+					c.getViewportHeight());
+			}
 			gpu.draw(pipeline, buffer, runs[i], runs[i + 2], runs[i + 1]);
 			draws++;
 			i += 3;
@@ -84,6 +124,7 @@ class Batch2D {
 			runs.push(texture.getHandle());
 			runs.push(runStart);
 			runs.push(vertices - runStart);
+			runCameras.push(camera);
 		}
 		runStart = vertices;
 	}
@@ -102,8 +143,8 @@ class Batch2D {
 			position = p + Sprite2DLayout.positionOffset,
 			uv = p + Sprite2DLayout.uvOffset,
 			c = p + Sprite2DLayout.colorOffset;
-		data.setFloat(position, camera.clipX(x));
-		data.setFloat(position + 4, camera.clipY(y));
+		data.setFloat(position, camera.clipX(ta * x + tc * y + tx));
+		data.setFloat(position + 4, camera.clipY(tb * x + td * y + ty));
 		data.setFloat(uv, u);
 		data.setFloat(uv + 4, v);
 		data.setFloat(c, r);
@@ -209,7 +250,7 @@ class Batch2D {
 
 	/** Enough segments for the circle's size on screen: about one per 2.5 pixels of circumference, 12 at least. */
 	function segments(radius:Float):Int
-		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * camera.getZoom() / 2.5)));
+		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * camera.getZoom() / 2.5)));
 
 	/** A filled circle in world units, centered on x, y, with segments for its size on screen. */
 	public function circle(x:Float, y:Float, radius:Float, tint:Int):Void {
@@ -240,6 +281,68 @@ class Batch2D {
 		line(x0, y0, x1, y1, width, tint);
 		line(x1, y1, x2, y2, width, tint);
 		line(x2, y2, x0, y0, width, tint);
+	}
+
+	/** A filled polygon through points (x and y in turn, at least 3), convex or not, as triangles of their indices (Polygon2D.triangulate's, three
+		a triangle; worked out here when null: keep them for a polygon drawn every frame). */
+	public function polygon(points:Array<Float>, tint:Int, ?triangles:Array<Int>):Void {
+		if (triangles == null)
+			triangles = Polygon2D.triangulate(points);
+		var i = 0;
+		while (i + 2 < triangles.length) {
+			var a = triangles[i] * 2,
+				b = triangles[i + 1] * 2,
+				c = triangles[i + 2] * 2;
+			triangle(points[a], points[a + 1], points[b], points[b + 1], points[c], points[c + 1], tint);
+			i += 3;
+		}
+	}
+
+	/** A polygon's outline, closed, width world units wide centered on its edges, its corners mitered (a miter longer than twice the width is cut
+		to that). Nothing for fewer than 2 points. */
+	public function polygonLines(points:Array<Float>, width:Float, tint:Int):Void {
+		var n = points.length >> 1;
+		if (n < 2)
+			return;
+		// Each corner's offset, half the width out along its miter: inner and outer points.
+		var ox = [], oy = [];
+		for (i in 0...n) {
+			var p = (i + n - 1) % n, q = (i + 1) % n;
+			var ax = points[i * 2] - points[p * 2],
+				ay = points[i * 2 + 1] - points[p * 2 + 1],
+				bx = points[q * 2] - points[i * 2],
+				by = points[q * 2 + 1] - points[i * 2 + 1];
+			var al = Math.sqrt(ax * ax + ay * ay),
+				bl = Math.sqrt(bx * bx + by * by);
+			if (al == 0)
+				al = 1;
+			if (bl == 0)
+				bl = 1;
+			// The edges' normals, averaged, then stretched so the strip keeps its width.
+			var nx = -ay / al - by / bl,
+				ny = ax / al + bx / bl,
+				nl = Math.sqrt(nx * nx + ny * ny);
+			if (nl < 1e-9) {
+				nx = -ay / al;
+				ny = ax / al;
+				nl = 1;
+			}
+			nx /= nl;
+			ny /= nl;
+			var dot = nx * -ay / al + ny * ax / al,
+				scale = width / 2 / Math.max(dot, .25);
+			ox.push(nx * scale);
+			oy.push(ny * scale);
+		}
+		for (i in 0...n) {
+			var j = (i + 1) % n,
+				x0 = points[i * 2],
+				y0 = points[i * 2 + 1],
+				x1 = points[j * 2],
+				y1 = points[j * 2 + 1];
+			triangle(x0 + ox[i], y0 + oy[i], x0 - ox[i], y0 - oy[i], x1 - ox[j], y1 - oy[j], tint);
+			triangle(x0 + ox[i], y0 + oy[i], x1 - ox[j], y1 - oy[j], x1 + ox[j], y1 + oy[j], tint);
+		}
 	}
 
 	/** Frees the buffer, pipeline and font made by new; the batch is unusable after. */
