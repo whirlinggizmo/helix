@@ -21,7 +21,8 @@ def main():
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if a.native:
   from pins import check_hxcpp
-  check_hxcpp();env=dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_LIBRARY=(build/'native-hal/libhelix.a').as_posix(),HELIX_CODEC_LIBRARY=json.loads((build/'native-hal/codec-link.json').read_text())['library'],HXCPP_CONFIG=(build/'hxcpp_config.xml').as_posix())
+  from native_build import env as native_env
+  check_hxcpp();env=native_env(build/'generated/asteroids')
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build/'services-native','-dce','full','-D','analyzer-optimize','-D','HXCPP_M64','-D','HXCPP_COMPILE_THREADS=4'],env)
  counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(build/'audio-source/fire.wav').read_bytes();vorbis=(build/'assets/sounds/fire.ogg').read_bytes();opus=(build/'audio-source/fire.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
@@ -80,7 +81,8 @@ def main():
    assert counts['/assets/fixture.wav']==1,dict(counts)
    assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
    assert peak<=2,peak
-   library=ctypes.CDLL(json.loads((build/'native-hal/codec-link.json').read_text())['library']);library.sf_version_string.restype=ctypes.c_char_p
+   from native_build import codec_library
+   library=ctypes.CDLL(codec_library());library.sf_version_string.restype=ctypes.c_char_p
    report['native']={'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
   report['sources']={str(file.relative_to(ROOT)):hashlib.sha256(file.read_bytes()).hexdigest() for group in ['src','tests'] for file in sorted((ROOT/group).rglob('*.hx'))}
   report['sources']['src/helix/adapters/audio/sokol/internal/audio.c']=hashlib.sha256((ROOT/'src/helix/adapters/audio/sokol/internal/audio.c').read_bytes()).hexdigest()

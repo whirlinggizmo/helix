@@ -27,10 +27,8 @@ def main():
     for name,identity in pins['sndfileSDK']['files'].items():
         if hashlib.sha256((ROOT/name).read_bytes()).hexdigest()!=identity:
             raise RuntimeError('Pinned libsndfile SDK file changed: '+name)
-    for name,identity in pins['sokol']['headers'].items():
-        if hashlib.sha256((ROOT/'vendor'/name).read_bytes()).hexdigest()!=identity:raise RuntimeError('Pinned Sokol header changed: '+name)
-    audio=pins['sokol']['audio']
-    if hashlib.sha256((ROOT/audio['source']).read_bytes()).hexdigest()!=audio['sha256']:raise RuntimeError('Pinned Sokol audio header changed')
+    from pins import check_sokol
+    check_sokol(ROOT)
     build=ROOT/'build';(build/'results/asteroids').mkdir(parents=True,exist_ok=True);generated=build/'generated/asteroids';generated.mkdir(parents=True,exist_ok=True)
     if args.target=='test':
         generate_assets()
@@ -66,13 +64,9 @@ def main():
     if args.target in ['native','all']:
         if sys.platform!='linux':raise RuntimeError('Only Linux native linking is implemented; browser build remains portable.')
         check_hxcpp()
-        archive=build/'native-hal'
-        run(['cmake','-S',ROOT,'-B',archive,'-DCMAKE_BUILD_TYPE=Release'])
-        run(['cmake','--build',archive,'--config','Release'])
-        env=dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_LIBRARY=(archive/'libhelix.a').as_posix(),HELIX_CODEC_LIBRARY=json.loads((archive/'codec-link.json').read_text())['library'])
-        # Keep hxcpp's cache in the experiment rather than mutating global caches.
-        config=build/'hxcpp_config.xml';config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(build/'hxcpp-cache').as_posix()+'"/></xml>\n')
-        env['HXCPP_CONFIG']=str(config)
+        # hxcpp compiles the adapters' C with the app; its cache stays in the experiment rather than a global one.
+        from native_build import env as native_env
+        env=native_env(generated)
         run(['haxe','examples/asteroids/native.hxml'],env)
     if args.target in ['native','all']:
         if (build/'native/asteroids/assets').exists():shutil.rmtree(build/'native/asteroids/assets')

@@ -2,18 +2,27 @@
   "haxe": "4.3.7",
   "hxcpp": "4.3.2",
   "sokol": {
-    "revision": "401f21f8b7039258c35fef75c11d9a8a0e616771",
+    "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
+    "fork": "https://github.com/robknopf/sokol (the Whirling Gizmo fork; libwgf and wgrender use it too)",
+    "upstream": "https://github.com/floooh/sokol 5e94d129",
     "source": "vendor",
     "headers": {
-      "sokol_app.h": "3ff700f0777905f038c07f7377fdb47a24beb3a9e8da1e8ed80b1ac33d182afe",
-      "sokol_gfx.h": "e23802d543747b1d24b4ab76e52634fb8b0a4a30afdb9f1437f63814f6bc77d7",
+      "sokol_app.h": "b7ddb3218026eae84cec65e6a1efd37a16cfb00c30c7036f0688f52d65067ea9",
+      "sokol_gfx.h": "56ef192f8121697d5500d34a8aa1948affa18d8029e261d8c7cc2ea45df7b13c",
       "sokol_glue.h": "6207d08f7ea5da43154f980c7fe314429eafb75922c6b41108ce2936f8240753",
       "sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
     },
     "audio": {
       "source": "vendor/sokol_audio.h",
-      "revision": "401f21f8b7039258c35fef75c11d9a8a0e616771",
-      "sha256": "e527091b2bc0c4ccbeb3f145489c0dbdbe74869247e30942c1e22bd580e2c4c7"
+      "revision": "1b0a77acc819a47575919af3e64c737d13e18d51",
+      "sha256": "5f92d0e319ef9ea88a3256ef7af9d8b401eb8a8547b6ccee1985288f0f07e1dc"
+    },
+    "appUtils": {
+      "source": "vendor/sokol_utils/sokol_app_utils.h",
+      "repository": "https://github.com/robknopf/sokol_utils (the Whirling Gizmo fork of squk/sokol_utils; zlib, LICENSE beside it)",
+      "revision": "dbdbc9427f84a4d8d2f1c6a5cfb09259e23c9169",
+      "checkedAgainstSokol": "1b0a77acc819a47575919af3e64c737d13e18d51",
+      "sha256": "046aa222565df9ba4a4e024754f0b7799877b0f3c4dad7e9abdb3d17fa1b8037"
     }
   },
   "sokolToolsBin": "11d0cf678105d614d675e6d9bd2aaf3eeff12f8c",

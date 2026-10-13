@@ -17,3 +17,13 @@ def check_hxcpp():
         time.sleep(10*(attempt+1))
     subprocess.run(['haxelib','--always','set','hxcpp',version],check=True)
     if not active(version):raise RuntimeError(f'Could not install hxcpp {version} into {HAXELIB}')
+
+def check_sokol(root):
+    """The vendored Sokol headers and sokol_app_utils.h match their pins in dependencies.json."""
+    import hashlib,json
+    sokol=json.loads((root/'dependencies.json').read_text())['sokol']
+    for name,identity in sokol['headers'].items():
+        if hashlib.sha256((root/'vendor'/name).read_bytes()).hexdigest()!=identity:raise RuntimeError('Pinned Sokol header changed: '+name)
+    for part in ('audio','appUtils'):
+        pin=sokol[part]
+        if hashlib.sha256((root/pin['source']).read_bytes()).hexdigest()!=pin['sha256']:raise RuntimeError('Pinned Sokol header changed: '+pin['source'])

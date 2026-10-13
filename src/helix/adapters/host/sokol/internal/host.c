@@ -6,6 +6,8 @@
 #define SOKOL_GLCORE
 #include "sokol_app.h"
 #include "sokol_log.h"
+#define SOKOL_APP_UTILS_IMPL
+#include "sokol_app_utils.h"
 
 static void (*init_cb)(void),(*cleanup_cb)(void);
 static void (*frame_cb)(float);

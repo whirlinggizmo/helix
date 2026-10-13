@@ -71,10 +71,8 @@ def main():
         if terser.is_file():run(['node',terser,WEB/'app.js','--compress','--mangle','--output',WEB/'app.js'])
     else:
         from pins import check_hxcpp
-        check_hxcpp();archive=ROOT/'build/native-hal'
-        run(['cmake','-S',ROOT,'-B',archive,'-DCMAKE_BUILD_TYPE=Release']);run(['cmake','--build',archive,'--config','Release'])
-        env=dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_LIBRARY=(archive/'libhelix.a').as_posix(),HELIX_CODEC_LIBRARY=json.loads((archive/'codec-link.json').read_text())['library'])
-        config=ROOT/'build/hxcpp_config.xml';config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n');env['HXCPP_CONFIG']=str(config)
+        from native_build import env as native_env
+        check_hxcpp();env=native_env(GENERATED)
         run(['haxe','examples/blocks/native.hxml'],env)
         if (ROOT/'build/native/blocks/assets').exists():shutil.rmtree(ROOT/'build/native/blocks/assets')
         shutil.copytree(WEB/'assets',ROOT/'build/native/blocks/assets')

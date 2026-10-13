@@ -12,7 +12,7 @@ The first graphics contract deliberately retains one fixed vertex layout and gen
 
 ## Build front door
 
-Use HXML for Haxe compiler settings and Python for external-tool orchestration. The checked-in `examples/asteroids/web.hxml`/`examples/asteroids/native.hxml` describe classpaths, target, DCE and analyzer settings. Python coordinates sokol-shdc, structured metadata generation, original asset generation, CMake, hxcpp, Terser and measurements. It passes argument lists, with no shell-script dependency. The [Haxe HXML documentation](https://haxe.org/manual/compiler-usage-hxml.html) describes the compiler's own configuration format.
+Use HXML for Haxe compiler settings and Python for external-tool orchestration. The checked-in `examples/asteroids/web.hxml`/`examples/asteroids/native.hxml` describe classpaths, target, DCE and analyzer settings. Python coordinates sokol-shdc, structured metadata generation, original asset generation, hxcpp (which compiles the native adapters' C with each app, against that app's generated shader), Terser and measurements. It passes argument lists, with no shell-script dependency. The [Haxe HXML documentation](https://haxe.org/manual/compiler-usage-hxml.html) describes the compiler's own configuration format.
 
 From the study root:
 

@@ -46,14 +46,13 @@ def main():
         if a.audio_device and not a.native:p.error('--audio-device requires --native')
         run([sys.executable,ROOT/'tools/build.py','test']+(['--shdc',a.shdc] if a.shdc else []))
         if a.native:
-            run(['cmake','-S',ROOT,'-B',ROOT/'build/native-hal','-DCMAKE_BUILD_TYPE=Release']);run(['cmake','--build',ROOT/'build/native-hal','--target','native-services-test'])
-            result=subprocess.check_output([str(ROOT/'build/native-hal/native-services-test')],text=True)
+            sys.path.insert(0,str(ROOT/'tools'));from native_build import tool as native_tool
+            result=subprocess.check_output([str(native_tool('native-services-test'))],text=True)
             sources={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ['src/helix/adapters/audio/sokol/internal/audio.c','src/helix/adapters/input/sokol/internal/input.c','src/helix/adapters/input/evdev/internal/gamepad_linux.c','src/helix/adapters/input/evdev/internal/gamepad.h','vendor/sokol_audio.h']}
             value=json.loads(result);value['sources']=sources
             (OUT/'native-services.log').write_text(result);(OUT/'native-services.json').write_text(json.dumps(value,indent=2)+'\n');print(result,end='')
             if a.audio_device:
-                run(['cmake','--build',ROOT/'build/native-hal','--target','native-audio-probe'])
-                result=subprocess.check_output([str(ROOT/'build/native-hal/native-audio-probe')],text=True)
+                result=subprocess.check_output([str(native_tool('native-audio-probe'))],text=True)
                 value=json.loads(result);value['sources']=sources
                 (OUT/'native-audio-device.json').write_text(json.dumps(value,indent=2)+'\n');print(result,end='')
     elif a.command=='mixed':
