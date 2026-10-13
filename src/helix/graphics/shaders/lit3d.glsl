@@ -15,8 +15,9 @@
  *   pbr                x metallic, y roughness, z 1 = lit (0 = unlit), w the number of lights (0..4)
  *   emissive           rgb linear light the surface gives off, w the normal map's strength
  *   light_position[i]  xyz position, w range (0: unlimited)
- *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point)
- *   light_radiance[i]  rgb color times intensity, linear */
+ *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point, 2 spot)
+ *   light_radiance[i]  rgb color times intensity, linear
+ *   light_spot[i]      x cos(inner cone), y cos(outer cone): a spot's full light inside the inner, none past the outer */
 @vs lit3d_vs
 layout(binding=0) uniform lit3d_vs_params {
     mat4 view_projection;
@@ -60,6 +61,7 @@ layout(binding=1) uniform lit3d_fs_params {
     vec4 light_position[4];
     vec4 light_direction[4];
     vec4 light_radiance[4];
+    vec4 light_spot[4];
 };
 layout(binding=0) uniform texture2D lit3d_base_texture;
 layout(binding=0) uniform sampler lit3d_base_sampler;
@@ -97,6 +99,13 @@ vec3 tonemap_neutral(vec3 color) {
     color *= new_peak / peak;
     float g = 1.0 - 1.0 / (desaturation * (peak - new_peak) + 1.0);
     return mix(color, vec3(new_peak), g);
+}
+
+float spot_factor(float cos_angle, float cos_inner, float cos_outer) {
+    if (cos_inner - cos_outer <= 1e-6) {
+        return cos_angle >= cos_outer ? 1.0 : 0.0;
+    }
+    return smoothstep(cos_outer, cos_inner, cos_angle);
 }
 
 float attenuation(float d, float range) {
@@ -150,6 +159,9 @@ void main() {
             float d = length(to_frag);
             light_dir = d > 1e-6 ? to_frag / d : vec3(0.0, -1.0, 0.0);
             falloff = attenuation(d, light_position[i].w);
+            if (light_direction[i].w > 1.5) {
+                falloff *= spot_factor(dot(light_dir, normalize(light_direction[i].xyz)), light_spot[i].x, light_spot[i].y);
+            }
         }
         vec3 l = -light_dir;
         float n_dot_l = dot(n, l);

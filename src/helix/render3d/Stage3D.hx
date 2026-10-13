@@ -19,7 +19,7 @@ class Stage3D {
 	var gpu:IGraphics;
 	var root = Node.group();
 	var ambientColor = 0xffffffff;
-	var ambientIntensity = .25;
+	var ambientIntensity = 0.;
 	var opaquePipeline:Int;
 	var blendedPipeline:Int;
 	var white:Texture2D;
@@ -45,7 +45,7 @@ class Stage3D {
 	var stack:Array<Node> = [];
 	var stackChanged:Array<Bool> = [];
 
-	/** An empty stage drawing on gpu, with a white ambient light of intensity 0.25. */
+	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
 		opaquePipeline = gpu.createPipeline(Lit3D, false);
@@ -301,6 +301,7 @@ class Stage3D {
 					u.setFloat(position + k * 4, 0);
 					u.setFloat(direction + k * 4, 0);
 					u.setFloat(radiance + k * 4, 0);
+					u.setFloat(272 + i * 16 + k * 4, 0);
 				}
 				continue;
 			}
@@ -318,7 +319,11 @@ class Stage3D {
 			u.setFloat(direction, dl > 0 ? dx / dl : 0);
 			u.setFloat(direction + 4, dl > 0 ? dy / dl : -1);
 			u.setFloat(direction + 8, dl > 0 ? dz / dl : 0);
-			u.setFloat(direction + 12, light.getKind() == Point ? 1 : 0);
+			u.setFloat(direction + 12, light.getKind() == Spot ? 2 : light.getKind() == Point ? 1 : 0);
+			u.setFloat(272 + i * 16, Math.cos(light.getInnerCone()));
+			u.setFloat(276 + i * 16, Math.cos(light.getOuterCone()));
+			u.setFloat(280 + i * 16, 0);
+			u.setFloat(284 + i * 16, 0);
 			var color = light.getColor(), intensity = light.getIntensity();
 			u.setFloat(radiance, linear(color >>> 24) * intensity);
 			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);

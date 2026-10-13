@@ -76,8 +76,9 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
 | `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
+| `lights` | directional, point and spot lights on a stage, beside an immediate grid |
 
-Still to come: the rest of milestone 2 (lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: the rest of milestone 2 (model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

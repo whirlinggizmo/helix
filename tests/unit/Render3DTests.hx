@@ -1,4 +1,5 @@
 import helix.render3d.Camera3D;
+import helix.render3d.Light;
 import helix.render3d.Mat4;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
@@ -125,6 +126,10 @@ class Render3DTests {
 		@:privateAccess looker.update(null, false);
 		check(near(-looker.getWorldMatrix().get(8), 1) && near(looker.getWorldMatrix().get(5), 1), "lookAt points -z at the target, y up");
 		check(!parent.add(parent) && !child.add(parent), "A node can't hold itself or its ancestor");
+		var spot = new Light(Spot);
+		check(spot.setCone(.1, .2) && !spot.setCone(.3, .2) && !spot.setCone(.1, Math.PI / 2) && spot.getOuterCone() == .2,
+			"A spot's cones: inner <= outer < pi/2");
+		check(!spot.setIntensity(-1) && !spot.setRange(-1) && spot.getKind() == Spot, "A light refuses negative intensity and range");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

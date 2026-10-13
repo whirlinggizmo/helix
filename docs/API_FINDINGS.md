@@ -36,6 +36,8 @@ Found while documenting every public member (2026-10-13), by reading each implem
 
 - `Stage3D` culls back faces assuming counter-clockwise fronts, so a mirrored model (a negative scale, an odd number of them) loses its faces. The record carries the mirror sign already; a mirrored pipeline (front faces culled) is the fix, as the earlier frameworks had.
 
+- A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
+
 **Smaller**
 - `AudioResources` doesn't own the services it's given: `poll` polls only the backend, `shutdown` shuts down neither.
 - `FileStorageAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
