@@ -38,8 +38,8 @@ class IndexedDbStorageAdapter implements IStorage {
 		}
 	}
 
-	function job<T>(key:String, mode:String, operation:Dynamic->Dynamic, decode:Dynamic->(T->Void)->Void, complete:T->Void, failed:String->T, cancelled:T,
-			?discard:T->Void):IRequest {
+	function job<T>(key:Null<String>, mode:String, operation:Dynamic->Dynamic, decode:Dynamic->(T->Void)->Void, complete:T->Void, failed:String->T,
+			cancelled:T, ?discard:T->Void):IRequest {
 		var request:Request = null;
 		function finish(result:T) {
 			if (request.finish()) {
@@ -61,7 +61,8 @@ class IndexedDbStorageAdapter implements IStorage {
 				queue.add(begin);
 				return;
 			}
-			if (!live || !AssetPath.valid(key)) {
+			// A null key is the whole store (clear).
+			if (!live || key != null && !AssetPath.valid(key)) {
 				finish(failed("Invalid storage path or closed service"));
 				return;
 			}
@@ -113,6 +114,9 @@ class IndexedDbStorageAdapter implements IStorage {
 
 	public function remove(key:String, complete:StorageWriteResult->Void):IRequest
 		return job(key, "readwrite", store -> store.delete(key), (_, finish) -> finish(Written), complete, message -> Failed(message), Cancelled);
+
+	public function clear(complete:StorageWriteResult->Void):IRequest
+		return job(null, "readwrite", store -> store.clear(), (_, finish) -> finish(Written), complete, message -> Failed(message), Cancelled);
 
 	public function source(key:String, complete:StorageSourceResult->Void):IRequest
 		return job(key, "readonly", store -> store.get(key), (value, finish:StorageSourceResult->Void) -> {

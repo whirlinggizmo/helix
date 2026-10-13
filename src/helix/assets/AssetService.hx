@@ -37,7 +37,9 @@ class AssetService implements IAssets {
 	public function load(path:String, complete:AssetResult->Void):Void
 		ensure(path, complete);
 
-	public function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void):IRequest {
+	public function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest {
+		var source = options != null && options.source != null ? options.source : path,
+			force = options != null && options.forceFetch == true;
 		var child:IRequest = null, request:Request = null;
 		function finish(result:AssetResult) {
 			if (request.finish()) {
@@ -82,6 +84,33 @@ class AssetService implements IAssets {
 				return;
 			}
 			report("locating", 0, null);
+			function fetch():Void
+				if (base != null)
+					child = fetcher.fetch({url: source.indexOf("://") > 0 ? source : base + source, noCache: force}, result -> {
+						if (request.isSettled())
+							return;
+						switch result {
+							case Response(value): if (value.status >= 200 && value.status < 300) obtained(value.bytes); else finish(Failed('Asset HTTP '
+									+ value.status + ': ' + path));
+							case Failed(message): finish(Failed(message));
+							case Cancelled: finish(Cancelled);
+						}
+					}, value -> report("downloading", value.received, value.total));
+				else
+					child = packaged.read(source, result -> {
+						if (request.isSettled())
+							return;
+						switch result {
+							case Stored(bytes): obtained(bytes);
+							case Missing: finish(Failed("Missing asset: " + source));
+							case Failed(message): finish(Failed(message));
+							case Cancelled: finish(Cancelled);
+						}
+					});
+			if (force) {
+				fetch();
+				return;
+			}
 			child = cache.read(key(path), result -> {
 				if (request.isSettled())
 					return;
@@ -91,32 +120,33 @@ class AssetService implements IAssets {
 						finish(Loaded(bytes));
 					case Failed(message): finish(Failed(message));
 					case Cancelled: finish(Cancelled);
-					case Missing:
-						if (base != null) child = fetcher.fetch({url: base + path}, result -> {
-							if (request.isSettled())
-								return;
-							switch result {
-								case Response(value): if (value.status >= 200 && value.status < 300) obtained(value.bytes); else finish(Failed('Asset HTTP '
-										+ value.status + ': ' + path));
-								case Failed(message): finish(Failed(message));
-								case Cancelled: finish(Cancelled);
-							}
-						},
-							value -> report("downloading", value.received, value.total)); else child = packaged.read(path, result -> {
-							if (request.isSettled())
-								return;
-							switch result {
-								case Stored(bytes): obtained(bytes);
-								case Missing: finish(Failed("Missing asset: " + path));
-								case Failed(message): finish(Failed(message));
-								case Cancelled: finish(Cancelled);
-							}
-						});
+					case Missing: fetch();
 				}
 			});
 		});
 		return request;
 	}
+
+	public function getHost():Null<String>
+		return base;
+
+	public function setHost(host:Null<String>):Bool {
+		if (host == "")
+			return false;
+		base = host == null || StringTools.endsWith(host, "/") ? host : host + "/";
+		return true;
+	}
+
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):IRequest {
+		var root = StringTools.endsWith(host, "/") ? host : host + "/";
+		return fetcher.fetch({url: root + probePath, timeoutSeconds: timeoutSeconds, noCache: true}, result -> complete(switch result {
+			case Response(value): value.status >= 200 && value.status < 300;
+			case _: false;
+		}));
+	}
+
+	public function clearCache(complete:StorageWriteResult->Void):IRequest
+		return cache.clear(complete);
 
 	public function streamSource(path:String, complete:AssetSourceResult->Void):IRequest {
 		var child:IRequest = null, request:Request = null;

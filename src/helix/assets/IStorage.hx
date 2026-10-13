@@ -42,6 +42,9 @@ interface IStorage {
 	/** Leases the file under key for streaming without reading it; the caller releases a Local lease, and one that arrives after cancellation is released for it. Failed for an invalid key, a closed store, or an I/O error. */
 	function source(path:String, complete:StorageSourceResult->Void):IRequest;
 
+	/** Removes every stored file; Failed for read-only storage. complete runs once, on the host thread. */
+	function clear(complete:StorageWriteResult->Void):IRequest;
+
 	/** Starts queued operations and runs completions on the host thread. Call once per frame. */
 	function poll():Void;
 

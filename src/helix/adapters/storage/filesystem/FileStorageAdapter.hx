@@ -117,6 +117,27 @@ class FileStorageAdapter implements IStorage {
 		} catch (error:Dynamic)
 			StorageWriteResult.Failed(Std.string(error)), complete, StorageWriteResult.Cancelled);
 
+	public function clear(complete:StorageWriteResult->Void):IRequest
+		return job(() -> try {
+			if (readonly)
+				throw "Read-only storage";
+			if (sys.FileSystem.exists(root))
+				removeContents(root);
+			Written;
+		} catch (error:Dynamic)
+			StorageWriteResult.Failed(Std.string(error)), complete, StorageWriteResult.Cancelled);
+
+	/** Deletes what dir holds, leaving dir itself. */
+	static function removeContents(dir:String):Void
+		for (entry in sys.FileSystem.readDirectory(dir)) {
+			var path = Path.join([dir, entry]);
+			if (sys.FileSystem.isDirectory(path)) {
+				removeContents(path);
+				sys.FileSystem.deleteDirectory(path);
+			} else
+				sys.FileSystem.deleteFile(path);
+		}
+
 	public function source(key:String, complete:StorageSourceResult->Void):IRequest
 		return job(() -> try {
 			var file = path(key);
