@@ -16,13 +16,13 @@ import haxe.io.Bytes;
 import sys.thread.Deque;
 import sys.thread.Thread;
 
-/** An opened stream's file: its path, its PCM16 data length in bytes (WAV), and whether it is Ogg. */
-private typedef StreamFile = {var path:String; var bytes:Int; var ogg:Bool;}
+/** An opened stream's file: its path, its PCM16 data length in bytes (WAV), and whether libsndfile decodes it (Ogg, MP3). */
+private typedef StreamFile = {var path:String; var bytes:Int; var codec:Bool;}
 
 /** A stream playback's producer: its open file or codec, the WAV bytes left to read, and whether it loops. */
 private typedef StreamPlayback = {var file:Null<sys.io.FileInput>; var codec:Int; var stream:StreamFile; var remaining:Int; var loop:Bool;}
 
-/** Native IAudio (adapter level) over sokol_audio (mono at 44100 Hz, 16 voices, 32 clips) and libsndfile for Ogg. Decodes on worker threads, two at once; streams stored files only, refilling each playback from poll for up to 2 ms. */
+/** Native IAudio (adapter level) over sokol_audio (mono at 44100 Hz, 16 voices, 32 clips) and libsndfile for Ogg Vorbis, Opus and MP3. Decodes on worker threads, two at once; streams stored files only, refilling each playback from poll for up to 2 ms. */
 class SokolAudioAdapter implements IAudio {
 	var streams:Map<Int, StreamFile> = [];
 	var streaming:Map<Int, StreamPlayback> = [];
@@ -68,7 +68,7 @@ class SokolAudioAdapter implements IAudio {
 					else {
 						codec = CodecBridge.codecMemory(cpp.Pointer.arrayElem(encoded.getData(), 0).raw, encoded.length);
 						if (codec == 0)
-							throw "Ogg decode failed; expected mono/stereo Vorbis or Opus";
+							throw "Audio decode failed; expected mono/stereo Vorbis, Opus or MP3";
 						var frames = CodecBridge.codecFrames(codec);
 						if (frames <= 0 || frames > 2 * 1024 * 1024)
 							throw "Decoded PCM exceeds byte limit";
@@ -76,18 +76,18 @@ class SokolAudioAdapter implements IAudio {
 						while (true) {
 							var n = CodecBridge.codecRead(codec, cpp.Pointer.arrayElem(chunk.getData(), 0).raw, 2048);
 							if (n < 0)
-								throw "Ogg decode failed";
+								throw "Audio decode failed";
 							if (n == 0)
 								break;
 							if (count + n > 2 * 1024 * 1024)
 								throw "Decoded PCM exceeds byte limit";
 							if ((count + n) * 4 > samples.length)
-								throw "Ogg sample count changed during decode";
+								throw "Audio sample count changed during decode";
 							samples.blit(count * 4, chunk, 0, n * 4);
 							count += n;
 						}
 						if (count == 0)
-							throw "Empty decoded Ogg";
+							throw "Empty decoded audio";
 						result = Decoded(samples.sub(0, count * 4));
 					}
 				} catch (error:Dynamic) {
@@ -141,14 +141,15 @@ class SokolAudioAdapter implements IAudio {
 						file = sys.io.File.read(path, true);
 						var magic = file.read(4).toString();
 						file.seek(0, sys.io.FileSeek.SeekBegin);
-						if (magic == "OggS") {
+						// WAV streams through WavStream; anything else (Ogg Vorbis or Opus, MP3) through libsndfile.
+						if (magic != "RIFF") {
 							var codec = CodecBridge.codecFile(path);
 							if (codec == 0)
-								throw "Unsupported Ogg stream; expected mono/stereo Vorbis or Opus";
+								throw "Unsupported audio stream; expected mono/stereo Vorbis, Opus, MP3 or WAV";
 							CodecBridge.codecClose(codec);
-							stream = {path: path, bytes: 0, ogg: true};
+							stream = {path: path, bytes: 0, codec: true};
 						} else
-							stream = {path: path, bytes: WavStream.header(file.read(44), sys.FileSystem.stat(path).size), ogg: false};
+							stream = {path: path, bytes: WavStream.header(file.read(44), sys.FileSystem.stat(path).size), codec: false};
 					} catch (e:Dynamic) {
 						error = Std.string(e);
 					}
@@ -183,10 +184,10 @@ class SokolAudioAdapter implements IAudio {
 		if (stream == null)
 			throw "Invalid audio stream";
 		var file:sys.io.FileInput = null, codec = 0, path:String = stream.path;
-		if (stream.ogg) {
+		if (stream.codec) {
 			codec = CodecBridge.codecFile(path);
 			if (codec == 0)
-				throw "Ogg stream open failed";
+				throw "Audio stream open failed";
 		} else {
 			file = sys.io.File.read(path, true);
 			file.seek(44, sys.io.FileSeek.SeekBegin);
@@ -238,11 +239,11 @@ class SokolAudioAdapter implements IAudio {
 				var pcm = Bytes.alloc(frames * 4),
 					count = CodecBridge.codecRead(value.codec, cpp.Pointer.arrayElem(pcm.getData(), 0).raw, frames);
 				if (count < 0)
-					throw "Ogg stream decode failed";
+					throw "Audio stream decode failed";
 				if (count == 0) {
 					if (value.loop) {
 						if (CodecBridge.codecRewind(value.codec) != 1)
-							throw "Ogg stream rewind failed";
+							throw "Audio stream rewind failed";
 						continue;
 					}
 					AudioBridge.audioStreamPush(id, null, 0, 1);

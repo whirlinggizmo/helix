@@ -57,8 +57,11 @@ class WebAudioAdapter implements IAudio {
 					finish(Decoded(helix.audio.Wav.decode(encoded)));
 					return;
 				}
-				if (encoded.length < 4 || encoded.getString(0, 4) != "OggS")
-					throw "Unsupported encoded audio; expected WAV or Ogg";
+				// Ogg's capture pattern, or an MP3: its ID3 tag or an MPEG frame's sync bits.
+				var mp3 = encoded.length >= 4
+					&& (encoded.getString(0, 3) == "ID3" || encoded.get(0) == 0xFF && encoded.get(1) & 0xE0 == 0xE0);
+				if (encoded.length < 4 || encoded.getString(0, 4) != "OggS" && !mp3)
+					throw "Unsupported encoded audio; expected WAV, Ogg or MP3";
 				if (context == null)
 					context = js.Syntax.code("new (window.AudioContext || window.webkitAudioContext)({sampleRate:44100})");
 				// decodeAudioData consumes/detaches its input. Cache bytes remain caller-owned.

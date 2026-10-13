@@ -101,10 +101,13 @@ class AssetService implements IAssets {
 						if (request.isSettled())
 							return;
 						switch result {
-							// The packaged files are already on this machine: read in place, not copied into the cache.
+							// The packaged files are already on this machine: read in place, not copied into the cache, unless they're
+							// another path's bytes (options.source), which have to be found under the path asked for.
 							case Stored(bytes):
-								report("ready", bytes.length, bytes.length);
-								finish(Loaded(bytes));
+								if (source != path) obtained(bytes); else {
+									report("ready", bytes.length, bytes.length);
+									finish(Loaded(bytes));
+								}
 							case Missing: finish(Failed("Missing asset: " + source));
 							case Failed(message): finish(Failed(message));
 							case Cancelled: finish(Cancelled);
