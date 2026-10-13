@@ -32,7 +32,7 @@ def main():
     fontbake.generate()
     if OUT.exists():shutil.rmtree(OUT)
     describe('js',NATIVE_ONLY);describe('cpp',BROWSER_ONLY)
-    # No source links yet: the repository isn't public.
+    # No source links yet: dox could link each type to its source on GitHub.
     subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml'),'-o',str(OUT),'-in','^helix','--title','HeliX API',
         '-D','description','HeliX: a Haxe game framework over thin per-platform adapters.'],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html')
