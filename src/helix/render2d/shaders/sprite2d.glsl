@@ -12,6 +12,21 @@ layout(binding=0) uniform sampler atlasSampler;
 in vec2 texcoord;
 in vec4 tint;
 out vec4 fragColor;
-void main(){fragColor=texture(sampler2D(atlas,atlasSampler),texcoord)*tint;}
+void main(){
+    vec4 texel=texture(sampler2D(atlas,atlasSampler),texcoord);
+    if(tint.a>1.5){
+        // Distance-field text (Batch2D.quad's distanceField): alpha 0.5 is the outline; the edge is smoothed over about a pixel at any scale.
+        // Four samples across the pixel's footprint, averaged, keep thin strokes from dropping out when the field is drawn smaller than it was baked.
+        float w=max(fwidth(texel.a)*0.75,1e-4);
+        vec2 dx=dFdx(texcoord)*0.25,dy=dFdy(texcoord)*0.25;
+        float coverage=smoothstep(0.5-w,0.5+w,texture(sampler2D(atlas,atlasSampler),texcoord+dx+dy).a)
+            +smoothstep(0.5-w,0.5+w,texture(sampler2D(atlas,atlasSampler),texcoord+dx-dy).a)
+            +smoothstep(0.5-w,0.5+w,texture(sampler2D(atlas,atlasSampler),texcoord-dx+dy).a)
+            +smoothstep(0.5-w,0.5+w,texture(sampler2D(atlas,atlasSampler),texcoord-dx-dy).a);
+        fragColor=vec4(tint.rgb,coverage*0.25*(tint.a-2.0));
+    }else{
+        fragColor=texel*tint;
+    }
+}
 @end
 @program sprite vs fs

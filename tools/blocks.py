@@ -9,6 +9,7 @@ import sys
 import time
 import urllib.request
 from shader_metadata import generate
+import fontbake
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/blocks'
@@ -31,8 +32,8 @@ def shader(shdc):
     generate(GENERATED/'sprite_reflection.yaml',SHADER.parent/'vertex.json',GENERATED,ROOT)
 
 def prepare(shdc):
-    """The generated shader and the served folder's page."""
-    shader(shdc)
+    """The generated shader and font, and the served folder's page."""
+    shader(shdc);fontbake.generate()
     (WEB/'assets').mkdir(parents=True,exist_ok=True)
     shutil.copyfile(ROOT/'examples/blocks/web/index.html',WEB/'index.html')
     pilots=ROOT/'examples/blocks/autopilot'

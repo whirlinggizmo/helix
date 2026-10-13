@@ -54,5 +54,21 @@
     "measuredVersion": "6.1.1-3ubuntu5",
     "vorbisQuality": 3,
     "opusFixtureBitrate": 64000
+  },
+  "stbTruetype": {
+    "version": "1.26",
+    "source": "https://github.com/nothings/stb (master, identical to the v1.26 header)",
+    "file": "vendor/stb/stb_truetype.h",
+    "sha256": "ecd30b05e0dd4fea3a13c26810dd9e1992dc379049482c393d5a19e6b5090aab",
+    "license": "public domain or MIT, at the end of the header"
+  },
+  "jetbrainsMono": {
+    "font": "JetBrains Mono Regular",
+    "source": "https://github.com/JetBrains/JetBrainsMono, as wgrender-c vendors it",
+    "files": {
+      "vendor/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf": "a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f",
+      "vendor/fonts/JetBrainsMono/OFL.txt": "a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697"
+    },
+    "license": "SIL Open Font License 1.1"
   }
 }

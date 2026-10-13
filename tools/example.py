@@ -11,6 +11,7 @@ import sys
 import time
 import urllib.request
 from shader_metadata import generate
+import fontbake
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/sprite2d'
@@ -35,20 +36,30 @@ def shader(shdc):
 def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
     launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
-    lines=['-cp src',f'-cp examples/{name}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/sprite2d','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
+    lines=['-cp src',f'-cp examples/{name}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/sprite2d','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}','-D HXCPP_M64','-D HXCPP_COMPILE_THREADS=4']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n')
     return path.relative_to(ROOT)
 
 def prepare(name,shdc):
-    """The generated shader, and the served folder: the page and the shared files."""
-    shader(shdc)
+    """The generated shader and font, and the served folder: the page and the shared files."""
+    shader(shdc);fontbake.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
     (web/'index.html').write_text((SHARED/'index.html').read_text().replace('{{name}}',name))
     if (web/'assets').is_symlink() or (web/'assets').exists():
         if (web/'assets').is_symlink():(web/'assets').unlink()
         else:shutil.rmtree(web/'assets')
     shutil.copytree(ROOT/'examples/assets',web/'assets')
+    licenses(web)
+
+def licenses(out):
+    """The third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
+    target=out/'licenses'
+    if target.exists():shutil.rmtree(target)
+    target.mkdir(parents=True)
+    shutil.copyfile(ROOT/'THIRD_PARTY_NOTICES.md',target/'THIRD_PARTY_NOTICES.md')
+    for name,source in [('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
+        shutil.copyfile(ROOT/source,target/name)
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
@@ -86,5 +97,6 @@ def main():
         out=ROOT/f'build/native/{a.name}/assets'
         if out.exists():shutil.rmtree(out)
         shutil.copytree(ROOT/'examples/assets',out)
+        licenses(out.parent)
 
 if __name__=='__main__':main()

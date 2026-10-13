@@ -42,7 +42,7 @@ class Batch2D {
 		data = Bytes.alloc(capacity * GeneratedLayout.stride);
 		buffer = gpu.createBuffer(capacity * GeneratedLayout.stride);
 		pipeline = gpu.createPipeline(true);
-		font = Font2D.pixel(gpu);
+		font = Font2D.builtIn(gpu);
 		texture = font.getTexture();
 	}
 
@@ -116,9 +116,13 @@ class Batch2D {
 		if (texture.getWhiteU() < 0)
 			useTexture(font.getTexture());
 
-	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. Throws when the frame's vertices pass capacity, as every shape does. */
-	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int):Void {
+	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is
+		a distance from an outline (Font2D.isDistanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
+	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
+		// The 2D shader reads an alpha over 1 as "the texture's alpha is a distance field", tinted by the alpha less 2.
+		if (distanceField)
+			a += 2;
 		vertex(x, y, u0, v0);
 		vertex(x + w, y, u1, v0);
 		vertex(x + w, y + h, u1, v1);

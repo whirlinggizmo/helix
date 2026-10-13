@@ -3,57 +3,110 @@ package helix.render2d;
 import helix.graphics.IGraphics;
 import haxe.io.Bytes;
 
-/** A monospaced bitmap font: one cell per printable ASCII character, space to tilde. */
+/** Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels. */
+typedef Glyph2D = {
+	var u0:Float;
+	var v0:Float;
+	var u1:Float;
+	var v1:Float;
+	var x:Float;
+	var y:Float;
+	var width:Float;
+	var height:Float;
+	var advance:Float;
+}
+
+/** A font for Text2D: printable ASCII, space to tilde, as glyphs in one texture. builtIn() is JetBrains Mono as a distance field, sharp at any size;
+	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which Text2D scales to the size asked for. */
 class Font2D {
 	var texture:Texture2D;
-	var glyphWidth:Int;
-	var glyphHeight:Int;
-	var advance:Int;
+	var glyphs:Array<Null<Glyph2D>>;
+	var size:Float;
+	var ascent:Float;
+	var descent:Float;
+	var distanceField:Bool;
 
-	/** The texture holding every glyph. */
+	function new(texture:Texture2D, glyphs:Array<Null<Glyph2D>>, size:Float, ascent:Float, descent:Float, distanceField:Bool) {
+		this.texture = texture;
+		this.glyphs = glyphs;
+		this.size = size;
+		this.ascent = ascent;
+		this.descent = descent;
+		this.distanceField = distanceField;
+	}
+
+	/** The texture holding every glyph, with a white texel for untextured shapes. */
 	public function getTexture():Texture2D
 		return texture;
 
-	/** Glyph width, in font pixels. */
-	public function getGlyphWidth():Int
-		return glyphWidth;
+	/** The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this. */
+	public function getSize():Float
+		return size;
 
-	/** Glyph height, in font pixels. */
-	public function getGlyphHeight():Int
-		return glyphHeight;
+	/** How far the tallest glyphs reach above the baseline, in font pixels. */
+	public function getAscent():Float
+		return ascent;
 
-	/** Distance from one character's left edge to the next, in font pixels. */
-	public function getAdvance():Int
-		return advance;
+	/** How far glyphs reach below the baseline, in font pixels; 0 or negative. */
+	public function getDescent():Float
+		return descent;
 
-	var cell:Int;
-	var columns:Int;
+	/** Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage. */
+	public function isDistanceField():Bool
+		return distanceField;
 
-	function new(texture:Texture2D, glyphWidth:Int, glyphHeight:Int, advance:Int, cell:Int) {
-		this.texture = texture;
-		this.glyphWidth = glyphWidth;
-		this.glyphHeight = glyphHeight;
-		this.advance = advance;
-		this.cell = cell;
-		columns = Std.int(texture.getWidth() / cell);
+	/** A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size). */
+	public function getGlyph(code:Int):Null<Glyph2D>
+		return code >= 32 && code <= 126 ? glyphs[code - 32] : null;
+
+	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/fontbake.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). */
+	public static function builtIn(gpu:IGraphics):Font2D {
+		var field = haxe.zip.InflateImpl.run(new haxe.io.BytesInput(haxe.crypto.Base64.decode(GeneratedFont.atlas)));
+		var width = GeneratedFont.width, height = GeneratedFont.height;
+		var rgba = Bytes.alloc(width * height * 4);
+		for (i in 0...width * height) {
+			rgba.set(i * 4, 255);
+			rgba.set(i * 4 + 1, 255);
+			rgba.set(i * 4 + 2, 255);
+			rgba.set(i * 4 + 3, field.get(i));
+		}
+		var texture = Texture2D.fromRgba(gpu, width, height, rgba, true, GeneratedFont.whiteX, GeneratedFont.whiteY);
+		var glyphs:Array<Null<Glyph2D>> = [];
+		for (n in 0...95) {
+			var g = GeneratedFont.glyphs, i = n * 6;
+			glyphs.push({
+				u0: g[i] / width,
+				v0: g[i + 1] / height,
+				u1: (g[i] + g[i + 2]) / width,
+				v1: (g[i + 1] + g[i + 3]) / height,
+				x: g[i + 4],
+				y: g[i + 5],
+				width: g[i + 2],
+				height: g[i + 3],
+				advance: GeneratedFont.advances[n]
+			});
+		}
+		return new Font2D(texture, glyphs, GeneratedFont.ascent - GeneratedFont.descent, GeneratedFont.ascent, GeneratedFont.descent, true);
 	}
 
-	/** Texture coordinates of a character's glyph, or null when it has none. */
-	public function getGlyph(code:Int):Null<Array<Float>> {
-		var n = code - 32;
-		if (n <= 0 || n >= 95)
-			return null;
-		var x = n % columns * cell,
-			y = Std.int(n / columns) * cell,
-			w = texture.getWidth(),
-			h = texture.getHeight();
+	/** The 5x7 pixel font's glyphs: cells of 8 in a 128x64 texture, each 5 wide and 7 tall, sitting on the baseline, advancing 6. */
+	static function pixelGlyphs():Array<Null<Glyph2D>>
 		return [
-			(x + .01) / w,
-			(y + .01) / h,
-			(x + glyphWidth + .01) / w,
-			(y + glyphHeight + .01) / h
+			for (n in 0...95) {
+				var x = n % 16 * 8, y = Std.int(n / 16) * 8;
+				{
+					u0: (x + .01) / 128,
+					v0: (y + .01) / 64,
+					u1: (x + 5 + .01) / 128,
+					v1: (y + 7 + .01) / 64,
+					x: 0.,
+					y: -7.,
+					width: n == 0 ? 0. : 5.,
+					height: n == 0 ? 0. : 7.,
+					advance: 6.
+				};
+			}
 		];
-	}
 
 	/** The glyphs, as rows of five pixels. A function, not a static: a browser hot reload keeps statics' old values, and an edit here should show. */
 	static function rows():Map<String, String>
@@ -154,9 +207,9 @@ class Font2D {
 			"z" => "00000/00000/11111/00010/00100/01000/11111"
 		];
 
-	/** The built-in 5x7 pixel font. Its texture also carries a white texel for shapes. */
+	/** The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes. */
 	public static function pixel(gpu:IGraphics):Font2D {
-		var font = new Font2D(bake(gpu), 5, 7, 6, 8);
+		var font = new Font2D(bake(gpu), pixelGlyphs(), 7, 7, 0, false);
 		live.push({font: font, gpu: gpu});
 		return font;
 	}
@@ -171,7 +224,7 @@ class Font2D {
 			old.destroy(entry.gpu);
 		}
 
-	/** Frees the font's texture on gpu, the adapter that baked it. */
+	/** Frees the font's texture on gpu, the adapter that made it. */
 	public function destroy(gpu:IGraphics):Void {
 		texture.destroy(gpu);
 		live = live.filter(e -> e.font != this);

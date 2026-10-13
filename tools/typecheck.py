@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
-GENERATED={'asteroids':'build/generated/asteroids','blocks':'build/generated/blocks','sprite2d':'build/generated/sprite2d'}
+GENERATED={'asteroids':'build/generated/asteroids','blocks':'build/generated/blocks','sprite2d':'build/generated/sprite2d','fonts':'build/generated/fonts'}
 
 def targets():
     """(label, haxe arguments) for each entry point and target."""
@@ -16,7 +16,7 @@ def targets():
     for target in ('web','native'):found.append((f'mixed-submission {target}',[f'benchmarks/mixed-submission/{target}.hxml']))
     for example in sorted(p.parent.name for p in (ROOT/'examples').glob('*/App.hx')):
         for target,launch in (('web','browser-webgl2'),('native','native-sokol-gl')):
-            found.append((f'{example} {target}',['-cp','src','-cp',f'examples/{example}','-cp',f'examples/shared/launch/{launch}','-cp',GENERATED['sprite2d'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])))
+            found.append((f'{example} {target}',['-cp','src','-cp',f'examples/{example}','-cp',f'examples/shared/launch/{launch}','-cp',GENERATED['sprite2d'],'-cp',GENERATED['fonts'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])))
     parity=['-cp','src','-cp','examples/asteroids-parity/src','-cp','examples/asteroids-parity/game','-cp',GENERATED['asteroids']]
     found.append(('asteroids-parity web',parity+['-cp','examples/asteroids-parity/launch/browser-webgl2','-main','Launch','-js','build/typecheck.js']))
     found.append(('asteroids-parity native',parity+['-cp','examples/asteroids-parity/launch/native-sokol-gl','-main','Launch','-cpp','build/typecheck-cpp']))
@@ -28,6 +28,8 @@ def targets():
     return found
 
 def main():
+    import fontbake
+    fontbake.generate()
     failures=0
     for label,args in targets():
         result=subprocess.run(['haxe',*args,'--no-output'],cwd=ROOT,capture_output=True,text=True)
