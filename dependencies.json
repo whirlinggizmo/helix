@@ -20,9 +20,9 @@
     "appUtils": {
       "source": "vendor/sokol_utils/sokol_app_utils.h",
       "repository": "https://github.com/robknopf/sokol_utils (the Whirling Gizmo fork of squk/sokol_utils; zlib, LICENSE beside it)",
-      "revision": "dbdbc9427f84a4d8d2f1c6a5cfb09259e23c9169",
+      "revision": "d997b351fc24e0e50644b4afdd24e7ca3d055fa5",
       "checkedAgainstSokol": "1b0a77acc819a47575919af3e64c737d13e18d51",
-      "sha256": "046aa222565df9ba4a4e024754f0b7799877b0f3c4dad7e9abdb3d17fa1b8037"
+      "sha256": "246317ac8145c483b7ff3b61f3d38207bb210e2dc08916ba16cf2272176a4627"
     }
   },
   "sokolToolsBin": "11d0cf678105d614d675e6d9bd2aaf3eeff12f8c",

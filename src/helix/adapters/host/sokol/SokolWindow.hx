@@ -3,24 +3,29 @@ import helix.adapters.host.sokol.internal.HostBridge;
 import helix.host.IWindow;
 /** The desktop window through sokol_app and sokol_app_utils (X11, Win32, macOS). Moves are refused where the compositor places windows (XWayland). */
 class SokolWindow implements IWindow {
+ var title="HeliX Haxe";
  public function new(){}
- public function setTitle(title:String):Void HostBridge.setTitle(title);
- public function width():Int return HostBridge.windowWidth();
- public function height():Int return HostBridge.windowHeight();
+ public function getTitle():String return title;
+ public function setTitle(value:String):Void {title=value;HostBridge.setTitle(value);}
+ public function getWidth():Int return HostBridge.windowWidth();
+ public function getHeight():Int return HostBridge.windowHeight();
  public function setSize(width:Int,height:Int):Bool {if(width<1||height<1)return false;HostBridge.setSize(width,height);return true;}
- public function x():Int return HostBridge.canMove()!=0?HostBridge.windowX():0;
- public function y():Int return HostBridge.canMove()!=0?HostBridge.windowY():0;
- public function setPosition(x:Int,y:Int):Bool {if(HostBridge.canMove()==0)return false;HostBridge.setPosition(x,y);return true;}
+ public function canMove():Bool return HostBridge.canMove()!=0;
+ public function getX():Int return canMove()?HostBridge.windowX():0;
+ public function getY():Int return canMove()?HostBridge.windowY():0;
+ public function setPosition(x:Int,y:Int):Bool {if(!canMove())return false;HostBridge.setPosition(x,y);return true;}
  public function canFullscreen():Bool return true;
- public function fullscreen():Bool return HostBridge.fullscreen()!=0;
- public function setFullscreen(enabled:Bool):Void HostBridge.setFullscreen(enabled?1:0);
- public function visible():Bool return HostBridge.visible()!=0;
+ public function isFullscreen():Bool return HostBridge.fullscreen()!=0;
+ public function requestFullscreen(enabled:Bool):Bool {HostBridge.requestFullscreen(enabled?1:0);return true;}
+ public function isVisible():Bool return HostBridge.visible()!=0;
  public function setVisible(visible:Bool):Bool {HostBridge.setVisible(visible?1:0);return true;}
- public function monitorCount():Int return HostBridge.displayCount();
- public function monitor():Int return HostBridge.displayCurrent();
- public function setMonitor(index:Int):Bool {if(index<0||index>=monitorCount()||HostBridge.canMove()==0)return false;HostBridge.setDisplay(index);return true;}
- public function monitorInfo(index:Int):MonitorInfo {
-  if(index<0||index>=monitorCount())return {name:"",x:0,y:0,width:0,height:0};
-  return {name:(HostBridge.displayName(index):String),x:HostBridge.displayX(index),y:HostBridge.displayY(index),width:HostBridge.displayWidth(index),height:HostBridge.displayHeight(index)};
- }
+ public function getMonitorCount():Int return HostBridge.displayCount();
+ public function getMonitor():Int return HostBridge.displayCurrent();
+ public function setMonitor(index:Int):Bool {if(index<0||index>=getMonitorCount()||!canMove())return false;HostBridge.setDisplay(index);return true;}
+ function valid(index:Int):Bool return index>=0&&index<getMonitorCount();
+ public function getMonitorName(index:Int):String return valid(index)?(HostBridge.displayName(index):String):"";
+ public function getMonitorX(index:Int):Int return valid(index)?HostBridge.displayX(index):0;
+ public function getMonitorY(index:Int):Int return valid(index)?HostBridge.displayY(index):0;
+ public function getMonitorWidth(index:Int):Int return valid(index)?HostBridge.displayWidth(index):0;
+ public function getMonitorHeight(index:Int):Int return valid(index)?HostBridge.displayHeight(index):0;
 }
