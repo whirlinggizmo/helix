@@ -13,30 +13,31 @@ import helix.assets.IFetch;
 import helix.assets.IStorage;
 import helix.assets.AssetService;
 import helix.audio.AudioResources;
+import helix.app.IApp;
 class SokolHostAdapter implements IHost implements IDiagnostics {
  public var graphics(default,null):IGraphics;public var input(default,null):IInput;public var audio(default,null):IAudio;public var diagnostics(default,null):IDiagnostics;public var assets(default,null):IAssets;
  public var fetch(default,null):IFetch;public var storage(default,null):IStorage;public var audioResources(default,null):AudioResources;
  public var focused(default,null)=true;public var canQuit(default,null)=true;
  static var instance:SokolHostAdapter;var resources:AssetService;var services:HostServices;var compose:Void->HostServices;
- var initCallback:Void->Void;var frameCallback:Float->Void;var cleanupCallback:Void->Void;var inspectCallback:Void->Dynamic;
+ var app:IApp;var inspectCallback:Void->Dynamic;
  public function new(compose:Void->HostServices){this.compose=compose;instance=this;diagnostics=this;}
- public function run(init:Void->Void,frame:Float->Void,cleanup:Void->Void):Void {
-  initCallback=init;frameCallback=frame;cleanupCallback=cleanup;
+ public function run(app:IApp):Void {
+  this.app=app;
   HostBridge.run(cpp.Callable.fromStaticFunction(onInit),cpp.Callable.fromStaticFunction(onFrame),cpp.Callable.fromStaticFunction(onCleanup));
  }
  static function onInit():Void {
   instance.services=instance.compose();var s=instance.services;
   instance.fetch=s.fetch;instance.storage=s.storage;instance.input=s.input;instance.audio=s.audio;instance.graphics=s.graphics;
   instance.resources=new AssetService(s.fetch,s.storage,s.packaged,s.base);instance.assets=instance.resources;
-  instance.audioResources=new AudioResources(instance.assets,instance.audio);instance.initCallback();
+  instance.audioResources=new AudioResources(instance.assets,instance.audio);instance.app.init();
  }
  static function onFrame(dt:cpp.Float32):Void {
   var cpuStart=instance.now();instance.lastFrameInterval=instance.previousCallback==0?0:(cpuStart-instance.previousCallback)*1000;instance.previousCallback=cpuStart;
-  instance.resources.poll();instance.audioResources.poll();instance.services.pollInput();instance.focused=InputBridge.focused()!=0;instance.frameCallback(dt);
+  instance.resources.poll();instance.audioResources.poll();instance.services.pollInput();instance.focused=InputBridge.focused()!=0;instance.app.frame(dt);
   var path=Sys.getEnv("HELIX_LIVE");if(path!=null&&instance.inspectCallback!=null){var value=instance.inspectCallback();value.host=instance.info();sys.io.File.saveContent(path,haxe.Json.stringify(value));}
   instance.lastFrameCpu=(instance.now()-cpuStart)*1000;
  }
- static function onCleanup():Void {instance.audioResources.shutdown();instance.resources.shutdown();instance.cleanupCallback();instance.services.shutdownInput();}
+ static function onCleanup():Void {instance.audioResources.shutdown();instance.resources.shutdown();instance.app.cleanup();instance.services.shutdownInput();}
  public function now():Float return haxe.Timer.stamp();
  public function width():Int return HostBridge.width();public function height():Int return HostBridge.height();public function pixelRatio():Float return HostBridge.pixelRatio();
  public function option(name:String,fallback:String):String {var value=Sys.getEnv("HELIX_"+name.toUpperCase());return value==null?fallback:value;}

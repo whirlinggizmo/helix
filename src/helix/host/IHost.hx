@@ -7,6 +7,7 @@ import helix.assets.IStorage;
 import helix.input.IInput;
 import helix.debug.IDiagnostics;
 import helix.graphics.IGraphics;
+import helix.app.IApp;
 /** Composition and window lifecycle. Services have independent contracts. */
 interface IHost {
  public var graphics(default,null):IGraphics;
@@ -19,7 +20,7 @@ interface IHost {
  public var diagnostics(default,null):IDiagnostics;
  public var focused(default,null):Bool;
  public var canQuit(default,null):Bool;
- public function run(init:Void->Void,frame:Float->Void,cleanup:Void->Void):Void;
+ public function run(app:IApp):Void;
  public function now():Float;
  public function width():Int;
  public function height():Int;

@@ -156,6 +156,6 @@ def generate(metadata, schema_path, output, working_dir):
     (output / 'GeneratedLayout.hx').write_text('\n'.join(hx) + '\n')
     (output / 'vertex_layout.h').write_text('\n'.join(c) + '\n')
     (output / 'GeneratedShader.hx').write_text('class GeneratedShader {\n' + ''.join(
-        f' public static final {stage}:String={json.dumps(source)};\n' for stage, source in sources.items()) + '}\n')
+        f' public static function {stage}():String return {json.dumps(source)};\n' for stage, source in sources.items()) + '}\n')
     (output / 'shader-contract.json').write_text(json.dumps(contract, indent=2) + '\n')
     return contract

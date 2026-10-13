@@ -17,6 +17,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
   this.cacheState=cacheState;this.shareShader=shareShader;
   gl=cast canvas.getContext("webgl2",{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:preserve});
   if(gl==null)throw "WebGL2 is required";
+  #if hotreload live.push(this); #end
  }
  public function createTexture(width:Int,height:Int,rgba:Bytes,linear:Bool=false):Int {
   if(width<=0||height<=0||rgba.length!=width*height*4)throw "Invalid texture";
@@ -33,13 +34,13 @@ class WebGL2GraphicsAdapter implements IGraphics {
  }
  function shader(type:Int,source:String):Dynamic {var s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,WebGL2RenderingContext.COMPILE_STATUS))throw gl.getShaderInfoLog(s);return s;}
  function program():Dynamic {
-  var v=shader(WebGL2RenderingContext.VERTEX_SHADER,GeneratedShader.vertex),f=shader(WebGL2RenderingContext.FRAGMENT_SHADER,GeneratedShader.fragment),p=gl.createProgram();
+  var v=shader(WebGL2RenderingContext.VERTEX_SHADER,GeneratedShader.vertex()),f=shader(WebGL2RenderingContext.FRAGMENT_SHADER,GeneratedShader.fragment()),p=gl.createProgram();
   gl.attachShader(p,v);gl.attachShader(p,f);
   gl.bindAttribLocation(p,GeneratedLayout.positionSlot,GeneratedLayout.positionName);gl.bindAttribLocation(p,GeneratedLayout.uvSlot,GeneratedLayout.uvName);gl.bindAttribLocation(p,GeneratedLayout.colorSlot,GeneratedLayout.colorName);
   gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);
   if(!gl.getProgramParameter(p,WebGL2RenderingContext.LINK_STATUS))throw gl.getProgramInfoLog(p);
   var uniform=gl.getUniformLocation(p,GeneratedLayout.uniform);if(uniform==null)throw "Missing generated texture uniform";
-  return {program:p,uniform:uniform,references:0};
+  return {program:p,uniform:uniform,references:0,vertex:GeneratedShader.vertex(),fragment:GeneratedShader.fragment()};
  }
  public function createPipeline(alpha:Bool):Int {
   var shader=shareShader&&shared!=null?shared:program();if(shareShader)shared=shader;shader.references++;
@@ -82,5 +83,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
    default:throw "Invalid resource kind";
   }
  }
- public function shutdown():Void {}
+ public function shutdown():Void {#if hotreload live.remove(this); #end}
+ #if hotreload
+ // Development only (hotreload-hx): a reload brings new generated shader source; programs are rebuilt in place so pipeline handles stay valid.
+ static var live:Array<WebGL2GraphicsAdapter>=[];
+ @:afterHotReload static function reloadShaders():Void for(adapter in live)adapter.rebuildPrograms();
+ function rebuildPrograms():Void {
+  var seen=[];for(p in pipelines){var s:Dynamic=p.shader;if(seen.indexOf(s)>=0||s.vertex==GeneratedShader.vertex()&&s.fragment==GeneratedShader.fragment())continue;seen.push(s);
+   var fresh=program();gl.deleteProgram(s.program);s.program=fresh.program;s.uniform=fresh.uniform;s.vertex=fresh.vertex;s.fragment=fresh.fragment;}
+  currentProgram=null;
+ }
+ #end
 }

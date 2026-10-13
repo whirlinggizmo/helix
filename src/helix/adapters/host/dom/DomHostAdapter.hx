@@ -10,6 +10,7 @@ import helix.assets.IFetch;
 import helix.assets.IStorage;
 import helix.assets.AssetService;
 import helix.audio.AudioResources;
+import helix.app.IApp;
 import js.Browser;
 import js.html.CanvasElement;
 
@@ -34,10 +35,10 @@ class DomHostAdapter implements IHost implements IDiagnostics {
  }
  function failure(error:Dynamic):Void {stopped=true;var message=Std.string(error);Browser.document.getElementById("status").textContent=message;Browser.console.error(message);}
  function resize():Void {canvas.width=Std.int(Math.max(1,Browser.window.innerWidth*pixelRatio()));canvas.height=Std.int(Math.max(1,Browser.window.innerHeight*pixelRatio()));}
- public function run(init:Void->Void,frame:Float->Void,cleanup:Void->Void):Void {
-  init();var previous=now();var loop:Float->Void=null;
-  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;lastFrameInterval=(current-previous)*1000;resources.poll();audioResources.poll();services.pollInput();frame(current-previous);lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
-  Browser.window.requestAnimationFrame(loop);Browser.window.addEventListener("pagehide",_->{if(!closed){closed=true;audioResources.shutdown();resources.shutdown();cleanup();services.shutdownInput();}});
+ public function run(app:IApp):Void {
+  app.init();var previous=now();var loop:Float->Void=null;
+  loop=_-> {if(stopped)return;var current=now(),cpuStart=current;lastFrameInterval=(current-previous)*1000;resources.poll();audioResources.poll();services.pollInput();app.frame(current-previous);lastFrameCpu=(now()-cpuStart)*1000;previous=current;if(!stopped)Browser.window.requestAnimationFrame(loop);};
+  Browser.window.requestAnimationFrame(loop);Browser.window.addEventListener("pagehide",_->{if(!closed){closed=true;audioResources.shutdown();resources.shutdown();app.cleanup();services.shutdownInput();}});
  }
  public function now():Float return Browser.window.performance.now()/1000;
  public function width():Int return canvas.width;public function height():Int return canvas.height;

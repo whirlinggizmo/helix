@@ -37,8 +37,9 @@ def main():
     serve=sub.add_parser('serve',help='Serve a built web example with gzip delivery');serve.add_argument('--port',type=int,default=8050);serve.add_argument('--bind',default='127.0.0.1');serve.add_argument('--example',choices=['asteroids','asteroids-parity','libwgf-asteroids-parity'],default='asteroids')
     sub.add_parser('sizes',help='Record emitted JS/Wasm/native sizes');sub.add_parser('report',help='Regenerate the Asteroids results report')
     mixed=sub.add_parser('mixed',help='Mixed-submission graphics probe');mixed.add_argument('action',choices=['build','check','measure','profile','allocations','report']);mixed.add_argument('--shdc');mixed.add_argument('--target',choices=['all','browser','native'],default='all');display_options(mixed)
+    hot=sub.add_parser('hotreload',help='Probe hotreload-hx on Asteroids in a browser: edits made to a sandbox copy mid-game');hot.add_argument('--browser',required=True);hot.add_argument('--dce',choices=['full','std','no'],default='full')
     parity=sub.add_parser('parity',help='Shared-workload Asteroids comparison against pinned libwgf');parity_options(parity)
-    record=sub.add_parser('record',help='Archive the latest results under a label');record.add_argument('--workload',choices=['asteroids','mixed-submission','asteroids-parity'],default='asteroids');record.add_argument('--label',required=True)
+    record=sub.add_parser('record',help='Archive the latest results under a label');record.add_argument('--workload',choices=['asteroids','mixed-submission','asteroids-parity','hotreload'],default='asteroids');record.add_argument('--label',required=True)
     a=p.parse_args();OUT.mkdir(parents=True,exist_ok=True)
     if a.command=='build':run([sys.executable,ROOT/'tools/build.py',a.target]+(['--shdc',a.shdc] if a.shdc else []))
     elif a.command=='test':
@@ -72,6 +73,7 @@ def main():
         for name in ['baseline','native_baseline','awake']:
             if getattr(a,name):options+=['--'+name.replace('_','-')]
         tool('parity.py',*options)
+    elif a.command=='hotreload':tool('hotreload-probe.py','--browser',a.browser,'--dce',a.dce)
     elif a.command=='record':tool('record.py','--workload',a.workload,'--label',a.label)
     elif a.command=='services':tool('services.py','--browser',a.browser,*(['--native'] if a.native else []))
     elif a.command=='audio-check':run(['node',ROOT/'tools/thrust-check.cjs','--browser',a.browser,'--url',a.url])

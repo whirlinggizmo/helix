@@ -2,14 +2,15 @@ import helix.host.IHost;
 import helix.input.IInput;
 import helix.assets.IAssets.AssetResult;
 import helix.debug.Autopilot;
-class App {
+import helix.app.BaseApp;
+class App extends BaseApp {
  var host:IHost;var renderer:Renderer;var game:Game;var input=new Controls();var menu=new Menu();var sounds:Sounds;var pilot:Autopilot;
  var started:Float;var readyMs=0.;var firstFrameMs=0.;var frames=0;var replay=false;var freeze=-1;var measured=600;
  var accumulator=0.;var inputTick=0;var previous=0.;var cpu:Array<Float>=[];var intervals:Array<Float>=[];var audioEnabled:Bool;
  var sim:Array<Float>=[];var render:Array<Float>=[];var maxSteps=0;var clampedFrames=0;var stopped=false;var ready=false;var soundReady=false;var pilotReady=true;var fast=false;
- function new(host:IHost){this.host=host;started=host.now();audioEnabled=host.diagnostics.option("audio","1")=="1";replay=host.diagnostics.option("replay","0")=="1";freeze=number("tick",-1,-1,10000);measured=number("frames",600,60,3600);fast=host.diagnostics.option("fast","0")=="1";}
+ function new(host:IHost){super();this.host=host;started=host.now();audioEnabled=host.diagnostics.option("audio","1")=="1";replay=host.diagnostics.option("replay","0")=="1";freeze=number("tick",-1,-1,10000);measured=number("frames",600,60,3600);fast=host.diagnostics.option("fast","0")=="1";}
  function number(name:String,fallback:Int,min:Int,max:Int):Int {var value=Std.parseInt(host.diagnostics.option(name,Std.string(fallback)));if(value==null||value<min||value>max)throw 'Invalid '+name;return value;}
- function init():Void {
+ override public function init():Void {
   game=new Game(number("seed",12345,1,2147483647));renderer=new Renderer(host.graphics);host.diagnostics.expose(inspect);
   var script=host.diagnostics.option("autopilot","");pilotReady=script=="";
   if(!pilotReady)host.assets.load(script,result->{switch(result){case Cancelled:throw new haxe.Exception("Autopilot load cancelled");
@@ -36,7 +37,7 @@ class App {
   if(freeze<0&&pilot==null&&cpu.length>0){var sum=0.,late=0;for(value in intervals){sum+=value;if(value>25)late++;}info.phases={cpu:stats(cpu),simulation:stats(sim),render:stats(render)};info.fps=1000*intervals.length/sum;info.latePercent=late*100./intervals.length;info.measuredFrames=cpu.length;info.warmupFrames=60;info.maxSteps=maxSteps;info.clampedFrames=clampedFrames;}
   host.diagnostics.capture();host.diagnostics.publish(info);
  }
- function frame(dt:Float):Void {
+ override public function frame(dt:Float):Void {
   if(stopped||host.width()<=0||host.height()<=0)return;
   if(!ready){renderer.render(game,input,host.width(),host.height(),false,menu,false);if(firstFrameMs==0)firstFrameMs=(host.now()-started)*1000;return;}
   var began=host.now(),steps=0;
@@ -51,6 +52,6 @@ class App {
   if(frames>60&&frames<=measured+60&&freeze<0&&pilot==null){cpu.push((ended-began)*1000);sim.push((simEnd-began)*1000);render.push((ended-simEnd)*1000);intervals.push((began-previous)*1000);}previous=began;
   if(freeze>=0||pilot!=null&&pilot.done||pilot==null&&frames==measured+60){publish();if(freeze>=0||pilot!=null||host.diagnostics.option("autoclose","0")=="1"){stopped=true;host.quit();}}
  }
- function cleanup():Void {sounds.cleanup();host.audio.shutdown();renderer.cleanup();}
- public static function start(host:IHost):Void {var app=new App(host);host.run(app.init,app.frame,app.cleanup);}
+ override public function cleanup():Void {sounds.cleanup();host.audio.shutdown();renderer.cleanup();}
+ public static function start(host:IHost):Void {var app=new App(host);host.run(app);}
 }
