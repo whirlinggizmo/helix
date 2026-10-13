@@ -9,11 +9,11 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `Ticker`'s constructor and `PointerGestures`' ignored their own setters' refusals (a rate of 0 kept 60 silently).
 - Gamepad edges weren't counted as keys' are, and pads and the mouse had no release edges.
 - `Batch2D.cleanup()` named unlike every other `destroy()`.
+- `DomHostAdapter.quit()` only stopped the frame loop, and `cleanup()` and the services' shutdowns waited for `pagehide`. Now a quit closes after the frame, as natively (the quit example).
 
 ## Open
 
 **Behaviour that differs between the targets**
-- `DomHostAdapter.quit()` only stops the frame loop; `cleanup()` and the services' shutdowns wait for `pagehide`. Natively, quit runs cleanup.
 - `frame(dt)`: native passes Sokol's smoothed frame duration, the browser the raw requestAnimationFrame interval, unclamped. `Ticker` clamps; an app using dt directly doesn't get that.
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.

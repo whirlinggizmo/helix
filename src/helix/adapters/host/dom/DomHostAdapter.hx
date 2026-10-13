@@ -95,6 +95,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	}
 
 	public function run(app:IApp):Void {
+		this.app = app;
 		app.init();
 		var previous = getTime();
 		var loop:Float->Void = null;
@@ -111,21 +112,31 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 			services.endInputFrame();
 			lastFrameCpu = (getTime() - cpuStart) * 1000;
 			previous = current;
-			if (!stopped)
+			// A quit during the frame closes after it, as natively.
+			if (quitting)
+				close();
+			else if (!stopped)
 				Browser.window.requestAnimationFrame(loop);
 		};
 		Browser.window.requestAnimationFrame(loop);
-		Browser.window.addEventListener("pagehide", _ -> {
-			if (!closed) {
-				closed = true;
-				audioResources.shutdown();
-				textures.shutdown();
-				services.images.shutdown();
-				resources.shutdown();
-				app.cleanup();
-				services.shutdownInput();
-			}
-		});
+		Browser.window.addEventListener("pagehide", _ -> close());
+	}
+
+	var app:IApp;
+	var quitting = false;
+
+	/** Stops the frame loop and shuts down, once: the services, then the app's cleanup. The canvas keeps its last frame. */
+	function close():Void {
+		stopped = true;
+		if (closed || app == null)
+			return;
+		closed = true;
+		audioResources.shutdown();
+		textures.shutdown();
+		services.images.shutdown();
+		resources.shutdown();
+		app.cleanup();
+		services.shutdownInput();
 	}
 
 	public function isFocused():Bool
@@ -165,7 +176,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	}
 
 	public function quit():Void
-		stopped = true;
+		quitting = true;
 
 	var lastFrameCpu = 0.;
 	var lastFrameInterval = 0.;

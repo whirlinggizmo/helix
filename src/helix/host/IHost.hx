@@ -45,7 +45,7 @@ interface IHost {
 	/** Whether the window (the page, on the web) has the keyboard. */
 	public function isFocused():Bool;
 
-	/** Whether quit() means anything: not in a browser page. */
+	/** Whether quitting closes anything, so whether to offer a quit key: not in a browser page, where quit() stops the program but the page stays. */
 	public function canQuit():Bool;
 
 	/** Calls the app's init, then its frame once a display refresh, then its cleanup when the window or page closes. Natively it returns only after the window closes. */
@@ -63,6 +63,7 @@ interface IHost {
 	/** Framebuffer pixels per logical pixel. */
 	public function getPixelRatio():Float;
 
-	/** Closes the window after this frame; the app's cleanup runs. In a browser page it only stops calling frame (canQuit). */
+	/** Ends the program after this frame: the services shut down and the app's cleanup runs. Natively the window closes; in a browser page the
+		frame loop stops and the canvas keeps its last frame. */
 	public function quit():Void;
 }
