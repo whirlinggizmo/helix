@@ -3,6 +3,10 @@ from contextlib import contextmanager
 import json
 import re
 import subprocess
+import time
+
+# Measured 2026-10-13: 8 of 8 frame-300 captures identical after 3 s, about half off by one level without.
+SETTLE_SECONDS=3
 
 @contextmanager
 def awake(enabled, env, out):
@@ -15,7 +19,12 @@ def awake(enabled, env, out):
     state={'before':before,'authorization':'Existing user permission: disable blanking and restore prior settings','restored':False}
     def save():(out/'display-control.json').write_text(json.dumps(state,indent=2)+'\n')
     try:
-        xset('dpms','force','on');xset('-dpms');xset('s','off');state['awake']=xset('q');save()
+        xset('dpms','force','on');xset('-dpms');xset('s','off')
+        # GL started while a woken display is still settling can filter differently: NVIDIA
+        # rendered a minified glyph one level apart in about half such runs, identical input.
+        # A fixed wait: with DPMS off (as here), xset no longer reports the monitor's state.
+        time.sleep(SETTLE_SECONDS);state['settleSeconds']=SETTLE_SECONDS
+        state['awake']=xset('q');save()
         yield
         state['completed']=True
     finally:
