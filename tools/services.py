@@ -25,7 +25,7 @@ def main():
   from pins import check_hxcpp
   from native_build import env as native_env
   from example import shader
-  check_hxcpp();shader(None);env=native_env(build/'generated/sprite2d')
+  check_hxcpp();shader(None);env=native_env(build/'generated/shaders')
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build/'services-native','-dce','full','-D','analyzer-optimize','-D','HXCPP_M64','-D','HXCPP_COMPILE_THREADS=4'],env)
  counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):

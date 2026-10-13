@@ -4,27 +4,31 @@ Reusable contracts live in `src/helix/`. Shared game/rendering code calls them i
 
 ## Graphics
 
-`IGraphics` is a deliberately bounded subset of the established Sokol HAL.
+`IGraphics` is a deliberately bounded subset of the established Sokol HAL. The app owns the frame: `beginFrame`, then batches (`Batch2D`, `Batch3D`) or its own draws, then `endFrame`, so offscreen passes can come later without nesting.
 
 | Operation | Contract |
 | --- | --- |
-| createTexture(width,height,rgba,linear=false) | Copy tightly packed RGBA8 bytes synchronously; clamp sampler, nearest unless `linear`; return opaque integer handle |
-| setClearColor(rgba) | Packed 0xRRGGBBAA used by subsequent `beginFrame` clears; default remains the original dark blue |
-| createBuffer(capacityBytes) | Transient vertex storage; capacity is fixed, multiple of 32 |
-| createPipeline(alpha) | One generated textured-color shader; fixed vertex layout; optional straight-alpha blending |
-| updateBuffer(handle,data,usedBytes) | Synchronously consume caller-owned prefix; once per buffer per frame, starting at offset zero |
-| beginFrame(width,height,x,y,w,h) | Clear complete framebuffer, then select lower-left-origin viewport; no depth/MSAA |
-| draw(pipeline,buffer,texture,vertices,firstVertex=0) | TRIANGLES, nonindexed; bind those resources and issue one draw; use a validated range within uploaded bytes |
+| createTexture(width,height,levels,linear=false) | Copy tightly packed RGBA8 bytes and optional mipmaps synchronously; clamp sampler, nearest unless `linear`; return opaque integer handle |
+| createBuffer(capacityBytes) | Transient vertex storage; capacity is fixed, a positive multiple of 4 |
+| createPipeline(kind,alpha) | A framework shader and vertex layout by `PipelineKind`: `Sprite2D` (textured, no depth), `Color3D` (triangles, depth-tested and written), `Lines3D` (Color3D's vertices as lines); optional straight-alpha blending |
+| updateBuffer(handle,data,usedBytes) | Synchronously consume caller-owned prefix; inside a frame, once per buffer per frame, starting at offset zero |
+| beginFrame(width,height,clearColor) | Clear the whole framebuffer to 0xRRGGBBAA and the depth to the farthest; the viewport is all of it; no MSAA |
+| setViewport(x,y,w,h) | Lower-left-origin viewport in framebuffer pixels for the draws after it |
+| draw(pipeline,buffer,texture,vertices,firstVertex,uniforms=null) | Nonindexed triangles (or lines for `Lines3D`) from a validated range of this frame's upload; `texture` for `Sprite2D`, `uniforms` (the 64-byte column-major view-projection) for the 3D kinds |
 | endFrame() | End pass and submit; platform host owns presentation |
 | destroyTexture/Buffer/Pipeline(handle) | Release caller-owned resource; shutdown only after resources are destroyed |
 
-Vertex records are little-endian eight float32 values: clip-space position xy, UV xy, straight color rgba (32 B). UVs refer to the top-to-bottom caller-provided image rows; neither backend silently flips pixels. Blend is SRC_ALPHA / ONE_MINUS_SRC_ALPHA for RGB and ONE / ONE_MINUS_SRC_ALPHA for alpha. The first game uses one alpha pipeline, one atlas, one reused expanded triangle buffer and one draw. This tests shared ownership, not state-changing throughput. Unsupported format/layout/pass features cannot silently map to another behavior.
+`Sprite2D` vertices are little-endian float32: clip-space position xy, UV xy, straight color rgba (32 B). `Color3D` vertices are world position xyz and straight color rgba (28 B). UVs refer to the top-to-bottom caller-provided image rows; neither backend silently flips pixels. Blend is SRC_ALPHA / ONE_MINUS_SRC_ALPHA for RGB and ONE / ONE_MINUS_SRC_ALPHA for alpha. Unsupported format/layout/pass features cannot silently map to another behavior.
 
-One authored annotated GLSL file is compiled by pinned sokol-shdc to browser GLSL and a native Sokol shader descriptor. Its `bare_yaml` reflection is parsed with PyYAML, not extracted from generated C/GLSL. Attribute types/names/slots, texture/sampler slots and the combined GLSL uniform name come from that metadata. CPU packing order and semantic roles are defined once in `examples/asteroids/shaders/vertex.json`; the build validates the reflected types and generates offsets/stride for shared Haxe and native C. Shader reflection cannot infer the application's buffer packing. Native generated static assertions also verify the descriptor's binding constants. Haxe uses inline constants; there is no runtime reflection. The browser's shader source is generated as functions (`GeneratedShader.vertex()`), not static strings, so a hot reload brings new source.
+The framework's shaders live in `src/helix/graphics/shaders/`, one annotated GLSL file per program, listed in `shaders.json` with each program's packed attribute order and roles, whether it samples one texture, and the bytes of its one vertex-stage uniform block. Pinned sokol-shdc compiles each to browser GLSL and a native Sokol shader descriptor. Its `bare_yaml` reflection is parsed with PyYAML, not extracted from generated C/GLSL, and must agree with the manifest; the build generates offsets, strides and slots for Haxe (`Sprite2DLayout`, `Color3DLayout`) and C (`shaders.h`, with static assertions against the descriptors). Haxe uses inline constants; there is no runtime reflection. The browser's shader source is generated as functions (`GeneratedShader.color3dVertex()`), not static strings, so a hot reload brings new source. Every program's names (stages, uniform blocks) carry its prefix, since all their headers compile into one C file.
 
-This remains one fixed 32 B vertex ABI and one texture/sampler pair. Unsupported resources/formats, duplicate keys/slots and dialect disagreement fail the build. The upstream metadata has no schema version; the pinned compiler, strict validation and real compiler fixture tests form the upgrade boundary. No handwritten target shader twins. The first native backend is GL; changing shaders/backend to Metal, Vulkan or WebGPU requires a new executed gate.
+Unsupported resources/formats, duplicate keys/slots and dialect disagreement fail the build. The upstream metadata has no schema version; the pinned compiler, strict validation and real compiler fixture tests form the upgrade boundary. No handwritten target shader twins. The first native backend is GL; changing shaders/backend to Metal, Vulkan or WebGPU requires a new executed gate.
 
-Handles are context-local, positive and typed by the API operation; they must not be retained after destruction. Adapters reject invalid dimensions, capacities, prefix lengths, handles and draw ranges. Application data is trusted in-process memory, not an untrusted command stream. `destroy` accepts `texture`, `buffer`, or `pipeline`; a texture owns its Sokol image/view underneath. The native adapter owns the shared sampler/shader until shutdown.
+Handles are context-local, positive and typed by the API operation; they must not be retained after destruction. Adapters reject invalid dimensions, capacities, prefix lengths, handles, uniforms and draw ranges. Application data is trusted in-process memory, not an untrusted command stream. A texture owns its Sokol image/view underneath. The native adapter owns the samplers and shaders until shutdown; the browser adapter links one program per shader, shared by its pipelines.
+
+## 3D
+
+`helix.render3d` is right-handed with +y up; distances are world units, angles radians. `Camera3D` is a perspective eye-and-target camera with GL clip depth and the same viewport and viewport-area model as `Camera2D`. `Mat4` is column-major, as shaders take it. `Batch3D` draws immediate triangles and lines (cubes, wire cubes, spheres, a grid) through the `Color3D` and `Lines3D` pipelines, shading solid shapes on the CPU by one directional light; lighting in shaders, meshes and materials come with later examples.
 
 ## Host and diagnostics
 

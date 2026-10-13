@@ -1,11 +1,13 @@
 package helix.adapters.graphics.webgl2;
 
 import helix.graphics.IGraphics;
+import helix.graphics.PipelineKind;
 import haxe.io.Bytes;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
-/** IGraphics on a canvas's WebGL2 context: raw browser API calls only; geometry and batching stay in Batch2D. */
+/** IGraphics on a canvas's WebGL2 context: raw browser API calls only; geometry and batching stay in Batch2D and Batch3D. One program per framework
+	shader, shared by every pipeline that uses it. */
 class WebGL2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
 
@@ -17,31 +19,18 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var buffers:Map<Int, Dynamic> = [];
 	var textures:Map<Int, Dynamic> = [];
 	var pipelines:Map<Int, Dynamic> = [];
-	var clearColor = 0;
-	var customClear = false;
-
-	public function setClearColor(color:Int):Void {
-		clearColor = color;
-		customClear = true;
-	}
-
+	// The programs, by shader: sprite2d, then color3d (shared by Color3D and Lines3D). Made on first use.
+	var programs:Array<Dynamic> = [null, null];
 	var active = false;
-	var cacheState:Bool;
-	var shareShader:Bool;
-	var shared:Dynamic;
-	var currentProgram:Dynamic;
-	var currentBuffer = 0;
-	var currentTexture = 0;
-	var currentAlpha:Null<Bool>;
+	var uniformData = new js.lib.Float32Array(16);
 
-	/** Takes canvas's WebGL2 context, without alpha, antialiasing, depth or stencil; preserve keeps the drawing buffer between frames, cacheState skips rebinding state a draw shares with the one before, shareShader gives every pipeline one program. Throws without WebGL2. */
-	public function new(canvas:CanvasElement, preserve:Bool, cacheState:Bool = false, shareShader:Bool = false) {
-		this.cacheState = cacheState;
-		this.shareShader = shareShader;
+	/** Takes canvas's WebGL2 context, without alpha, antialiasing or stencil, with a depth buffer; preserve keeps the drawing buffer between
+		frames. Throws without WebGL2. */
+	public function new(canvas:CanvasElement, preserve:Bool) {
 		gl = cast canvas.getContext("webgl2", {
 			alpha: false,
 			antialias: false,
-			depth: false,
+			depth: true,
 			stencil: false,
 			preserveDrawingBuffer: preserve
 		});
@@ -53,7 +42,6 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int {
 		if (width <= 0 || height <= 0 || levels.length == 0)
 			throw "Invalid texture";
-		currentTexture = 0;
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
@@ -79,7 +67,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	}
 
 	public function createBuffer(capacityBytes:Int):Int {
-		if (capacityBytes <= 0 || capacityBytes % GeneratedLayout.stride != 0)
+		if (capacityBytes <= 0 || capacityBytes % 4 != 0)
 			throw "Invalid buffer capacity";
 		var buffer = gl.createBuffer();
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, buffer);
@@ -98,122 +86,144 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	function program():Dynamic {
-		var v = shader(WebGL2RenderingContext.VERTEX_SHADER, GeneratedShader.vertex()),
-			f = shader(WebGL2RenderingContext.FRAGMENT_SHADER, GeneratedShader.fragment()),
+	/** The framework shader's sources and attribute bindings: 0 sprite2d, 1 color3d. */
+	static function sources(index:Int):{vertex:String, fragment:String, attributes:Array<{slot:Int, name:String}>}
+		return index == 0 ? {
+			vertex: GeneratedShader.sprite2dVertex(),
+			fragment: GeneratedShader.sprite2dFragment(),
+			attributes: [
+				{slot: Sprite2DLayout.positionSlot, name: Sprite2DLayout.positionName},
+				{slot: Sprite2DLayout.uvSlot, name: Sprite2DLayout.uvName},
+				{slot: Sprite2DLayout.colorSlot, name: Sprite2DLayout.colorName}
+			]
+		} : {
+			vertex: GeneratedShader.color3dVertex(),
+			fragment: GeneratedShader.color3dFragment(),
+			attributes: [
+				{slot: Color3DLayout.positionSlot, name: Color3DLayout.positionName},
+				{slot: Color3DLayout.colorSlot, name: Color3DLayout.colorName}
+			]
+			};
+
+	function link(index:Int):Dynamic {
+		var source = sources(index),
+			v = shader(WebGL2RenderingContext.VERTEX_SHADER, source.vertex),
+			f = shader(WebGL2RenderingContext.FRAGMENT_SHADER, source.fragment),
 			p = gl.createProgram();
 		gl.attachShader(p, v);
 		gl.attachShader(p, f);
-		gl.bindAttribLocation(p, GeneratedLayout.positionSlot, GeneratedLayout.positionName);
-		gl.bindAttribLocation(p, GeneratedLayout.uvSlot, GeneratedLayout.uvName);
-		gl.bindAttribLocation(p, GeneratedLayout.colorSlot, GeneratedLayout.colorName);
+		for (attribute in source.attributes)
+			gl.bindAttribLocation(p, attribute.slot, attribute.name);
 		gl.linkProgram(p);
 		gl.deleteShader(v);
 		gl.deleteShader(f);
 		if (!gl.getProgramParameter(p, WebGL2RenderingContext.LINK_STATUS))
 			throw gl.getProgramInfoLog(p);
-		var uniform = gl.getUniformLocation(p, GeneratedLayout.uniform);
+		var uniform = gl.getUniformLocation(p, index == 0 ? Sprite2DLayout.textureUniform : Color3DLayout.uniformName);
 		if (uniform == null)
-			throw "Missing generated texture uniform";
+			throw "Missing generated uniform";
 		return {
 			program: p,
 			uniform: uniform,
-			references: 0,
-			vertex: GeneratedShader.vertex(),
-			fragment: GeneratedShader.fragment()
+			vertex: source.vertex,
+			fragment: source.fragment
 		};
 	}
 
-	public function createPipeline(alpha:Bool):Int {
-		var shader = shareShader && shared != null ? shared : program();
-		if (shareShader)
-			shared = shader;
-		shader.references++;
+	function program(index:Int):Dynamic {
+		if (programs[index] == null)
+			programs[index] = link(index);
+		return programs[index];
+	}
+
+	public function createPipeline(kind:PipelineKind, alpha:Bool):Int {
+		var index = kind == Sprite2D ? 0 : 1;
+		program(index);
 		var id = next++;
-		pipelines[id] = {shader: shader, alpha: alpha};
+		pipelines[id] = {kind: kind, shader: index, alpha: alpha};
 		return id;
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		var b = buffers[handle];
-		if (b == null
-			|| usedBytes < 0
-			|| usedBytes % GeneratedLayout.stride != 0
-			|| usedBytes > b.capacity
-			|| usedBytes > data.length)
+		if (!active || b == null || usedBytes < 0 || usedBytes % 4 != 0 || usedBytes > b.capacity || usedBytes > data.length)
 			throw "Invalid upload";
 		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
 		gl.bufferSubData(WebGL2RenderingContext.ARRAY_BUFFER, 0, new js.lib.Uint8Array(data.getData(), 0, usedBytes));
 		b.used = usedBytes;
 	}
 
-	public function beginFrame(width:Int, height:Int, x:Int, y:Int, w:Int, h:Int):Void {
-		if (active || width <= 0 || height <= 0 || w <= 0 || h <= 0)
+	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
+		if (active || width <= 0 || height <= 0)
 			throw "Invalid pass";
 		active = true;
-		currentProgram = null;
-		currentBuffer = 0;
-		currentTexture = 0;
-		currentAlpha = null;
 		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
-		gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
-		if (customClear)
-			gl.clearColor((clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255, (clearColor & 255) / 255);
-		else
-			gl.clearColor(.015, .025, .045, 1);
-		gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
+		gl.depthMask(true);
+		gl.clearColor((clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255, (clearColor & 255) / 255);
+		gl.clearDepth(1);
+		gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+		gl.viewport(0, 0, width, height);
+	}
+
+	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {
+		if (!active || w <= 0 || h <= 0)
+			throw "Invalid viewport";
 		gl.viewport(x, y, w, h);
 	}
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int):Void {
-		var p = pipelines[pipeline],
-			b = buffers[buffer],
-			t = textures[texture];
-		if (!active
-			|| p == null
-			|| b == null
-			|| t == null
-			|| vertices <= 0
-			|| vertices % 3 != 0
-			|| firstVertex < 0
-			|| firstVertex % 3 != 0
-			|| firstVertex > b.used / GeneratedLayout.stride - vertices)
+	function attribute(slot:Int, components:Int, stride:Int, offset:Int):Void {
+		gl.enableVertexAttribArray(slot);
+		gl.vertexAttribPointer(slot, components, WebGL2RenderingContext.FLOAT, false, stride, offset);
+	}
+
+	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
+		var p = pipelines[pipeline], b = buffers[buffer];
+		if (!active || p == null || b == null)
 			throw "Invalid draw";
-		// Match the reference's consecutive-state reuse. Validation still runs for every draw.
-		if (!cacheState || currentProgram != p.shader.program) {
-			gl.useProgram(p.shader.program);
-			gl.uniform1i(p.shader.uniform, GeneratedLayout.textureUnit);
-			currentProgram = p.shader.program;
-		}
-		if (!cacheState || currentBuffer != buffer) {
-			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
-			gl.enableVertexAttribArray(GeneratedLayout.positionSlot);
-			gl.vertexAttribPointer(GeneratedLayout.positionSlot, GeneratedLayout.positionComponents, WebGL2RenderingContext.FLOAT, false,
-				GeneratedLayout.stride, GeneratedLayout.positionOffset);
-			gl.enableVertexAttribArray(GeneratedLayout.uvSlot);
-			gl.vertexAttribPointer(GeneratedLayout.uvSlot, GeneratedLayout.uvComponents, WebGL2RenderingContext.FLOAT, false, GeneratedLayout.stride,
-				GeneratedLayout.uvOffset);
-			gl.enableVertexAttribArray(GeneratedLayout.colorSlot);
-			gl.vertexAttribPointer(GeneratedLayout.colorSlot, GeneratedLayout.colorComponents, WebGL2RenderingContext.FLOAT, false, GeneratedLayout.stride,
-				GeneratedLayout.colorOffset);
-			currentBuffer = buffer;
-		}
-		if (!cacheState || currentTexture != texture) {
-			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + GeneratedLayout.textureUnit);
+		var kind:PipelineKind = p.kind,
+			sprite = kind == Sprite2D,
+			stride = sprite ? Sprite2DLayout.stride : Color3DLayout.stride,
+			group = kind == Lines3D ? 2 : 3,
+			t = sprite ? textures[texture] : null;
+		if (vertices <= 0
+			|| vertices % group != 0
+			|| firstVertex < 0
+			|| firstVertex % group != 0
+			|| firstVertex > b.used / stride - vertices
+			|| (sprite ? t == null || uniforms != null : uniforms == null || uniforms.length != Color3DLayout.uniformBytes))
+			throw "Invalid draw";
+		var shader = programs[p.shader];
+		gl.useProgram(shader.program);
+		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, b.buffer);
+		for (slot in 0...3)
+			gl.disableVertexAttribArray(slot);
+		if (sprite) {
+			gl.uniform1i(shader.uniform, Sprite2DLayout.textureUnit);
+			attribute(Sprite2DLayout.positionSlot, Sprite2DLayout.positionComponents, stride, Sprite2DLayout.positionOffset);
+			attribute(Sprite2DLayout.uvSlot, Sprite2DLayout.uvComponents, stride, Sprite2DLayout.uvOffset);
+			attribute(Sprite2DLayout.colorSlot, Sprite2DLayout.colorComponents, stride, Sprite2DLayout.colorOffset);
+			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Sprite2DLayout.textureUnit);
 			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
-			currentTexture = texture;
+			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
+			gl.depthMask(false);
+		} else {
+			for (i in 0...16)
+				uniformData[i] = uniforms.getFloat(i * 4);
+			gl.uniform4fv(shader.uniform, uniformData);
+			attribute(Color3DLayout.positionSlot, Color3DLayout.positionComponents, stride, Color3DLayout.positionOffset);
+			attribute(Color3DLayout.colorSlot, Color3DLayout.colorComponents, stride, Color3DLayout.colorOffset);
+			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
+			gl.depthFunc(WebGL2RenderingContext.LEQUAL);
+			gl.depthMask(true);
 		}
-		if (!cacheState || currentAlpha != p.alpha) {
-			if (p.alpha) {
-				gl.enable(WebGL2RenderingContext.BLEND);
-				gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA, WebGL2RenderingContext.ONE,
-					WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
-			} else
-				gl.disable(WebGL2RenderingContext.BLEND);
-			currentAlpha = p.alpha;
-		}
-		gl.drawArrays(WebGL2RenderingContext.TRIANGLES, firstVertex, vertices);
+		if (p.alpha) {
+			gl.enable(WebGL2RenderingContext.BLEND);
+			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA, WebGL2RenderingContext.ONE,
+				WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+		} else
+			gl.disable(WebGL2RenderingContext.BLEND);
+		gl.drawArrays(kind == Lines3D ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES, firstVertex, vertices);
 	}
 
 	public function endFrame():Void {
@@ -228,7 +238,6 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid buffer";
 		gl.deleteBuffer(b.buffer);
 		buffers.remove(handle);
-		currentBuffer = 0;
 	}
 
 	public function destroyTexture(handle:Int):Void {
@@ -237,50 +246,38 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid texture";
 		gl.deleteTexture(t);
 		textures.remove(handle);
-		currentTexture = 0;
 	}
 
 	public function destroyPipeline(handle:Int):Void {
-		var p = pipelines[handle];
-		if (p == null)
+		if (pipelines[handle] == null)
 			throw "Invalid pipeline";
-		p.shader.references--;
-		if (p.shader.references == 0) {
-			gl.deleteProgram(p.shader.program);
-			if (shared == p.shader)
-				shared = null;
-		}
 		pipelines.remove(handle);
-		currentProgram = null;
-		currentAlpha = null;
 	}
 
-	public function shutdown():Void {#if hotreload live.remove(this); #end
+	public function shutdown():Void {
+		for (i in 0...programs.length)
+			if (programs[i] != null) {
+				gl.deleteProgram(programs[i].program);
+				programs[i] = null;
+			}
+		#if hotreload live.remove(this); #end
 	}
 
 	#if hotreload
-	// Development only (hotreload-hx): a reload brings new generated shader source; programs are rebuilt in place so pipeline handles stay valid.
+	// Development only (hotreload-hx): a reload brings new generated shader source; programs are relinked in place so pipeline handles stay valid.
 	static var live:Array<WebGL2GraphicsAdapter> = [];
 
 	@:afterHotReload static function reloadShaders():Void
 		for (adapter in live)
 			adapter.rebuildPrograms();
 
-	function rebuildPrograms():Void {
-		var seen = [];
-		for (p in pipelines) {
-			var s:Dynamic = p.shader;
-			if (seen.indexOf(s) >= 0 || s.vertex == GeneratedShader.vertex() && s.fragment == GeneratedShader.fragment())
+	function rebuildPrograms():Void
+		for (i in 0...programs.length) {
+			var old:Dynamic = programs[i], source = sources(i);
+			if (old == null || old.vertex == source.vertex && old.fragment == source.fragment)
 				continue;
-			seen.push(s);
-			var fresh = program();
-			gl.deleteProgram(s.program);
-			s.program = fresh.program;
-			s.uniform = fresh.uniform;
-			s.vertex = fresh.vertex;
-			s.fragment = fresh.fragment;
+			programs[i] = link(i);
+			gl.deleteProgram(old.program);
 		}
-		currentProgram = null;
-	}
 	#end
 }

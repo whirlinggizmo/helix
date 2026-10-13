@@ -31,7 +31,7 @@ class App extends BaseApp {
 		batch = new Batch2D(host.graphics);
 		ticker = new Ticker(host.input);
 		ticker.setMaxSteps(6);
-		renderer = new Renderer(batch);
+		renderer = new Renderer(host.graphics, batch);
 		host.diagnostics.expose(inspect);
 		var script = host.diagnostics.getOption("autopilot", "");
 		if (script != "")

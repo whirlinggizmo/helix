@@ -37,7 +37,8 @@ class App extends BaseApp {
 		fps.update(dt, host.diagnostics.getFrameCpu());
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0xf5f5f5ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0xf5f5f5ff);
+		batch.begin(camera);
 		// filled and outlined rectangles
 		batch.rect(40, 40, 200, 120, 0x66bfffff);
 		batch.frame(40, 40, 200, 120, 1, 0x0052acff);
@@ -56,5 +57,6 @@ class App extends BaseApp {
 			Text2D.draw(batch, "press Esc to quit", 40, 440, 16, 0x828282ff);
 		fps.draw(batch, 40, 12);
 		batch.end();
+		host.graphics.endFrame();
 	}
 }

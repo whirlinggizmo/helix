@@ -11,13 +11,13 @@
 #include "sokol_app.h"
 #include "sokol_glue.h"
 #include "sokol_log.h"
-#include "sprite.glsl.h"
-#include "vertex_layout.h"
+#include "shaders.h"
 
-static sg_shader shader;
-static sg_sampler sampler,linear_sampler,mip_sampler;static uint32_t linear_textures[256],mip_textures[256];static sg_color clear_color={.015f,.025f,.045f,1};
-void helix_clear_color(uint32_t color){clear_color=(sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
-static int active,used[256],audit_enabled;
+static sg_shader shaders[2];
+static sg_sampler sampler,linear_sampler,mip_sampler;static uint32_t linear_textures[256],mip_textures[256];
+/* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D). */
+static int pipeline_kinds[256];
+static int active,used[256],audit_enabled,frame_width,frame_height;
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
@@ -26,17 +26,18 @@ void helix_setup(void){
  audit_enabled=getenv("HELIX_AUDIT")&&strcmp(getenv("HELIX_AUDIT"),"1")==0;
  if(!audit_enabled)sg_disable_stats();
  else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}
- shader=sg_make_shader(HELIX_SHADER_DESC(sg_query_backend()));
+ shaders[0]=sg_make_shader(HELIX_SPRITE2D_SHADER_DESC(sg_query_backend()));
+ shaders[1]=sg_make_shader(HELIX_COLOR3D_SHADER_DESC(sg_query_backend()));
  sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_NEAREST,.mag_filter=SG_FILTER_NEAREST,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  linear_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
  /* Trilinear, for a linear texture with mipmaps: drawn smaller than itself without shimmering. */
  mip_sampler=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,.mipmap_filter=SG_FILTER_LINEAR,.wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE});
- memset(linear_textures,0,sizeof linear_textures);memset(mip_textures,0,sizeof mip_textures);clear_color=(sg_color){.015f,.025f,.045f,1};
- if(sg_query_shader_state(shader)!=SG_RESOURCESTATE_VALID)abort();
-
+ memset(linear_textures,0,sizeof linear_textures);memset(mip_textures,0,sizeof mip_textures);
+ for(int i=0;i<2;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
- sg_destroy_sampler(sampler);sg_destroy_sampler(linear_sampler);sg_destroy_sampler(mip_sampler);sg_destroy_shader(shader);sg_shutdown();
+ sg_destroy_sampler(sampler);sg_destroy_sampler(linear_sampler);sg_destroy_sampler(mip_sampler);
+ for(int i=0;i<2;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
 /* levels mip levels, each half the last (at least 1), packed one after another in data. */
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int linear){
@@ -55,32 +56,54 @@ uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int lin
  if((view&0xffff)<256){linear_textures[view&0xffff]=linear?view:0;mip_textures[view&0xffff]=linear&&levels>1?view:0;}return view;
 }
 uint32_t helix_buffer(int capacity){
- if(capacity<=0||capacity%HELIX_VERTEX_STRIDE)return 0;
+ if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
  if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;}return buffer.id;
 }
-uint32_t helix_pipeline(int alpha){
- return sg_make_pipeline(&(sg_pipeline_desc){.shader=shader,
-  .layout=helix_vertex_layout(),
-  .depth.compare=SG_COMPAREFUNC_ALWAYS,.cull_mode=SG_CULLMODE_NONE,
-  .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}}).id;
+uint32_t helix_pipeline(int kind,int alpha){
+ if(kind<0||kind>2)return 0;
+ const int three=kind!=0;
+ sg_pipeline pipeline=sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[three],
+  .layout=three?helix_color3d_layout():helix_sprite2d_layout(),
+  .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
+  .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},.cull_mode=SG_CULLMODE_NONE,
+  .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
+ if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
+ pipeline_kinds[pipeline.id&0xffff]=kind;return pipeline.id;
 }
 int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
- if(!active||!data||bytes<0||bytes%HELIX_VERTEX_STRIDE||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer))return 0;
+ if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer))return 0;
  frame_uploaded_bytes+=bytes;
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=buffer});used[slot]=bytes;return 1;
 }
-int helix_begin(int width,int height,int x,int y,int w,int h){
- if(active||width<=0||height<=0||w<=0||h<=0)return 0;
- active=1;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;memset(used,0,sizeof used);
- sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=clear_color}});
+int helix_begin(int width,int height,uint32_t color){
+ if(active||width<=0||height<=0)return 0;
+ active=1;frame_width=width;frame_height=height;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;memset(used,0,sizeof used);
+ const sg_color clear={(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};
+ sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=clear},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
+ return 1;
+}
+int helix_viewport(int x,int y,int w,int h){
+ if(!active||w<=0||h<=0)return 0;
  sg_apply_viewport(x,y,w,h,false);return 1;
 }
-int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex){
- int slot=b&0xffff;
- if(!active||vertices<=0||vertices%3||slot>=256||first_vertex<0||first_vertex%3||vertices>used[slot]/HELIX_VERTEX_STRIDE||first_vertex>used[slot]/HELIX_VERTEX_STRIDE-vertices||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
- sg_apply_pipeline((sg_pipeline){p});sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_VIEW_SLOT]={t},.samplers[HELIX_SAMPLER_SLOT]=(t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler});sg_draw(first_vertex,vertices,1);return 1;
+int helix_draw(uint32_t p,uint32_t b,uint32_t t,int vertices,int first_vertex,const void *uniforms,int uniform_bytes){
+ int slot=b&0xffff,pslot=p&0xffff;
+ if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID)return 0;
+ const int kind=pipeline_kinds[pslot],stride=kind?HELIX_COLOR3D_STRIDE:HELIX_SPRITE2D_STRIDE,group=kind==2?2:3;
+ if(vertices<=0||vertices%group||first_vertex<0||first_vertex%group||vertices>used[slot]/stride||first_vertex>used[slot]/stride-vertices)return 0;
+ if(kind==0){
+  if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
+  sg_apply_pipeline((sg_pipeline){p});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b},.views[HELIX_SPRITE2D_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_SAMPLER_SLOT]=(t&0xffff)>=256?sampler:mip_textures[t&0xffff]==t?mip_sampler:linear_textures[t&0xffff]==t?linear_sampler:sampler});
+ }else{
+  if(!uniforms||uniform_bytes!=HELIX_COLOR3D_UNIFORM_BYTES)return 0;
+  sg_apply_pipeline((sg_pipeline){p});
+  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]={b}});
+  sg_apply_uniforms(HELIX_COLOR3D_UNIFORM_SLOT,&(sg_range){uniforms,(size_t)uniform_bytes});
+ }
+ sg_draw(first_vertex,vertices,1);return 1;
 }
 void helix_end(void){if(!active)abort();sg_end_pass();sg_commit();active=0;}
 int helix_destroy(int kind,uint32_t id){

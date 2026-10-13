@@ -15,28 +15,34 @@ import subprocess
 import sys
 import time
 import urllib.request
-from shader_metadata import generate
+from shader_metadata import generate,manifest
 import fontbake
 
 ROOT=Path(__file__).resolve().parents[1]
-GENERATED=ROOT/'build/generated/sprite2d'
-SHADER=ROOT/'src/helix/render2d/shaders/sprite2d.glsl'
+GENERATED=ROOT/'build/generated/shaders'
+SHADERS=ROOT/'src/helix/graphics/shaders'
 SHARED=ROOT/'examples/shared'
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
+def shader_stamp():
+    """The newest change to the framework's shader sources and their manifest."""
+    return max(p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json'))
+
 def shader(shdc):
-    """Generate the framework's 2D shader when its source is newer than the output."""
+    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""
     GENERATED.mkdir(parents=True,exist_ok=True)
     output=GENERATED/'GeneratedShader.hx'
-    if output.is_file() and output.stat().st_mtime>=max(SHADER.stat().st_mtime,(SHADER.parent/'vertex.json').stat().st_mtime):return
+    if output.is_file() and output.stat().st_mtime>=shader_stamp():return
     remembered=ROOT/'build/generated/shdc-path.txt'
     shdc=shdc or (remembered.read_text().strip() if remembered.is_file() else None) or shutil.which('sokol-shdc')
     if not shdc:raise RuntimeError('Pass --shdc /path/to/pinned/sokol-shdc')
     remembered.write_text(shdc+'\n')
-    run([shdc,'-i',SHADER,'-o',GENERATED/'sprite.glsl.h','-l','glsl410:glsl300es','--no-log-cmdline'])
-    run([shdc,'-i',SHADER,'-o',GENERATED/'sprite','-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
-    generate(GENERATED/'sprite_reflection.yaml',SHADER.parent/'vertex.json',GENERATED,ROOT)
+    for spec in manifest(SHADERS/'shaders.json'):
+        program=spec['program'];source=SHADERS/f'{program}.glsl'
+        run([shdc,'-i',source,'-o',GENERATED/f'{program}.glsl.h','-l','glsl410:glsl300es','--no-log-cmdline'])
+        run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
+    generate(SHADERS/'shaders.json',GENERATED,ROOT)
 
 def source(name):
     """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
@@ -45,7 +51,7 @@ def source(name):
 def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
     launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
-    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/sprite2d','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
+    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}','-D HXCPP_M64','-D HXCPP_COMPILE_THREADS=4']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n')
     return path.relative_to(ROOT)
@@ -145,7 +151,7 @@ def main():
             failed=None
             while server.poll() is None:
                 # A failed source is retried only once it changes again.
-                stamp=SHADER.stat().st_mtime
+                stamp=shader_stamp()
                 if stamp!=failed:
                     try:shader(a.shdc);failed=None
                     except (subprocess.CalledProcessError,RuntimeError) as error:print('example: shader generation failed:',error,flush=True);failed=stamp

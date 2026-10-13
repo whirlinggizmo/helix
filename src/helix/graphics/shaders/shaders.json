@@ -1,0 +1,23 @@
+{
+  "programs": [
+    {
+      "program": "sprite2d",
+      "attributes": [
+        {"role": "position", "name": "position", "type": "vec2"},
+        {"role": "uv", "name": "uv", "type": "vec2"},
+        {"role": "color", "name": "color", "type": "vec4"}
+      ],
+      "texture": true,
+      "uniformBytes": 0
+    },
+    {
+      "program": "color3d",
+      "attributes": [
+        {"role": "position", "name": "position", "type": "vec3"},
+        {"role": "color", "name": "color", "type": "vec4"}
+      ],
+      "texture": false,
+      "uniformBytes": 64
+    }
+  ]
+}

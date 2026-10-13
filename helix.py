@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parent
-UNIT={'InputTests':[],'HostTests':[],'AssetTests':[],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
+UNIT={'InputTests':[],'HostTests':[],'AssetTests':[],'Render3DTests':[],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 

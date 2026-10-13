@@ -9,12 +9,11 @@ import helix.adapters.storage.indexeddb.IndexedDbStorageAdapter;
 
 /** This sample profile chooses providers. Reusable host code owns their lifecycle. */
 class BrowserWebGL2Profile extends DomHostAdapter {
-	/** A browser host for identity on the page's canvas: assets fetched from assetBase and cached in IndexedDB as "<company>/<product>";
-		cacheGraphics and shareShader pick WebGL2 variants. */
-	public function new(identity:helix.host.Identity, assetBase:String = "assets/", cacheGraphics:Bool = false, shareShader:Bool = false) {
+	/** A browser host for identity on the page's canvas: assets fetched from assetBase and cached in IndexedDB as "<company>/<product>". */
+	public function new(identity:helix.host.Identity, assetBase:String = "assets/") {
 		var cacheName = identity.getCompany() + "/" + identity.getProduct();
 		super((canvas, preserve) -> {
-			var graphics = new WebGL2GraphicsAdapter(canvas, preserve, cacheGraphics, shareShader),
+			var graphics = new WebGL2GraphicsAdapter(canvas, preserve),
 				input = new DomInputAdapter(canvas),
 				audio = new WebAudioAdapter();
 			return {
@@ -41,8 +40,6 @@ class BrowserWebGL2Profile extends DomHostAdapter {
 						ext = gl.getExtension("WEBGL_debug_renderer_info"),
 						value = audio.info();
 					value.backend = "raw-webgl2";
-					value.cacheGraphics = cacheGraphics;
-					value.shareShader = shareShader;
 					value.renderer = gl.getParameter(ext == null ? js.html.webgl.WebGL2RenderingContext.RENDERER : untyped ext.UNMASKED_RENDERER_WEBGL);
 					return value;
 				}

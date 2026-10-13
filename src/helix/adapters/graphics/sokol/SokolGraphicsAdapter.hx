@@ -2,6 +2,7 @@ package helix.adapters.graphics.sokol;
 
 import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.IGraphics;
+import helix.graphics.PipelineKind;
 import haxe.io.Bytes;
 
 /** IGraphics on sokol_gfx for native hxcpp builds; a call the bridge refuses throws. */
@@ -35,27 +36,31 @@ class SokolGraphicsAdapter implements IGraphics {
 		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, linear ? 1 : 0));
 	}
 
-	public function setClearColor(color:Int):Void
-		GraphicsBridge.clearColor(color);
-
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsBridge.buffer(capacityBytes));
 
-	public function createPipeline(alpha:Bool):Int
-		return valid(GraphicsBridge.pipeline(alpha ? 1 : 0));
+	public function createPipeline(kind:PipelineKind, alpha:Bool):Int
+		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0));
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		if (usedBytes > data.length || usedBytes < 0 || GraphicsBridge.update(handle, pointer(data), usedBytes) != 1)
 			throw "Invalid native upload";
 	}
 
-	public function beginFrame(width:Int, height:Int, x:Int, y:Int, w:Int, h:Int):Void {
-		if (GraphicsBridge.begin(width, height, x, y, w, h) != 1)
+	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
+		if (GraphicsBridge.begin(width, height, clearColor) != 1)
 			throw "Invalid native pass";
 	}
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int):Void {
-		if (GraphicsBridge.draw(pipeline, buffer, texture, vertices, firstVertex) != 1)
+	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {
+		if (GraphicsBridge.viewport(x, y, w, h) != 1)
+			throw "Invalid native viewport";
+	}
+
+	public function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
+		var ok = uniforms == null ? GraphicsBridge.draw(pipeline, buffer, texture, vertices, firstVertex, null,
+			0) : GraphicsBridge.draw(pipeline, buffer, texture, vertices, firstVertex, pointer(uniforms), uniforms.length);
+		if (ok != 1)
 			throw "Invalid native draw";
 	}
 

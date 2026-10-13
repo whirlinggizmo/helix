@@ -42,7 +42,8 @@ class App extends BaseApp {
 				deadzone = (deadzone + 1) % DEADZONES.length;
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0x181c26ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		batch.begin(camera);
 		var connected = 0;
 		for (i in 0...input.getPadCount())
 			if (input.getPad(i).isConnected())
@@ -60,6 +61,7 @@ class App extends BaseApp {
 			column++;
 		}
 		batch.end();
+		host.graphics.endFrame();
 	}
 
 	/** One pad's panel, its top-left at x, y. */

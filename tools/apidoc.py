@@ -19,12 +19,12 @@ def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
-    args=['haxe','-cp','src','-cp','build/generated/sprite2d','-cp','build/generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
+    args=['haxe','-cp','src','-cp','build/generated/shaders','-cp','build/generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
     subprocess.run(args,cwd=ROOT,check=True)
 
 def main():
-    if not (ROOT/'build/generated/sprite2d/GeneratedShader.hx').is_file():sys.exit('Generate the 2D shader first: python3 tools/example.py app-hello build web')
+    if not (ROOT/'build/generated/shaders/GeneratedShader.hx').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build web')
     version=json.loads((ROOT/'dependencies.json').read_text())['dox']
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'))
     if not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)

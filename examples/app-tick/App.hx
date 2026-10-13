@@ -67,7 +67,8 @@ class App extends BaseApp {
 		fps.update(dt, host.diagnostics.getFrameCpu());
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0x181a22ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181a22ff);
+		batch.begin(camera);
 		Text2D.draw(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", 20, 20, 20, 0xf5f5f5ff);
 		Text2D.draw(batch,
 			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   ' +
@@ -80,6 +81,7 @@ class App extends BaseApp {
 		batch.rect(previousX + (x - previousX) * t, 275, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, 20, HEIGHT - 30);
 		batch.end();
+		host.graphics.endFrame();
 	}
 
 	static function fixed(value:Float, places:Int):String {

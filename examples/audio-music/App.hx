@@ -70,7 +70,8 @@ class App extends BaseApp {
 		fps.update(dt, host.diagnostics.getFrameCpu());
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0x12141cff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x12141cff);
+		batch.begin(camera);
 		Text2D.draw(batch, "HeliX audio", 24, 30, 28, 0xf5f5f5ff);
 		Text2D.draw(batch, music == null ? "music: loading..." : switch (music.getState()) {
 			case Playing: "music: playing (mp3, streamed, looping)";
@@ -82,5 +83,6 @@ class App extends BaseApp {
 		Text2D.draw(batch, "[SPACE] play click   [M] pause music   [S] stall 300 ms" + (host.canQuit() ? "   [ESC] quit" : ""), 24, 150, 16, 0xc8c8c8ff);
 		fps.draw(batch, 24, 8);
 		batch.end();
+		host.graphics.endFrame();
 	}
 }

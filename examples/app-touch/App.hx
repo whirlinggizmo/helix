@@ -101,7 +101,8 @@ class App extends BaseApp {
 				ring[2] = 1;
 			}
 
-		batch.begin(camera, 0x161921ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x161921ff);
+		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
 		if (tiles != null) {
@@ -134,6 +135,7 @@ class App extends BaseApp {
 		Text2D.draw(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', 16, 40, 18, 0xffffffff);
 		Text2D.draw(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", 16, 64, 16, 0x969eafff);
 		batch.end();
+		host.graphics.endFrame();
 	}
 
 	/** A finger's color, by its id, with alpha. */

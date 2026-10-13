@@ -22,7 +22,9 @@ class App extends BaseApp {
 
 	override public function frame(dt:Float):Void {
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		batch.begin(camera, 0xf5f5f5ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0xf5f5f5ff);
+		batch.begin(camera);
 		batch.end();
+		host.graphics.endFrame();
 	}
 }

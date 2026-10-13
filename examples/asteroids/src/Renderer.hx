@@ -1,4 +1,5 @@
 import Game.Body;
+import helix.graphics.IGraphics;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
@@ -9,10 +10,12 @@ class Renderer {
 	/** The clear color, 0xRRGGBBAA, of the field and the bars around it. */
 	public static inline var BACKGROUND = 0x04060bff;
 
+	var gpu:IGraphics;
 	var batch:Batch2D;
 	var color = 0xffffffff;
 
-	public function new(batch:Batch2D) {
+	public function new(gpu:IGraphics, batch:Batch2D) {
+		this.gpu = gpu;
 		this.batch = batch;
 	}
 
@@ -51,7 +54,8 @@ class Renderer {
 
 	/** Draws game seen through camera; ready false shows the menu's buttons as loading. */
 	public function render(game:Game, camera:Camera2D, menu:Menu = null, ready:Bool = true):Void {
-		batch.begin(camera, BACKGROUND);
+		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), BACKGROUND);
+		batch.begin(camera);
 		setColor(.22, .27, .36);
 		for (i in 0...100)
 			batch.rect((i * 137 + 51) % Game.W, (i * 83 + 19) % Game.H, 1, 1, color);
@@ -108,5 +112,6 @@ class Renderer {
 			}
 		}
 		batch.end();
+		gpu.endFrame();
 	}
 }

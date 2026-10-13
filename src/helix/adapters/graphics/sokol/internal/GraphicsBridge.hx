@@ -8,12 +8,13 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_shutdown") static function shutdown():Void;
 	@:native("helix_renderer") static function renderer():cpp.ConstCharStar;
 	@:native("helix_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, linear:Int):Int;
-	@:native("helix_clear_color") static function clearColor(color:Int):Void;
 	@:native("helix_buffer") static function buffer(capacity:Int):Int;
-	@:native("helix_pipeline") static function pipeline(alpha:Int):Int;
+	@:native("helix_pipeline") static function pipeline(kind:Int, alpha:Int):Int;
 	@:native("helix_update") static function update(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
-	@:native("helix_begin") static function begin(width:Int, height:Int, x:Int, y:Int, w:Int, h:Int):Int;
-	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int):Int;
+	@:native("helix_begin") static function begin(width:Int, height:Int, color:Int):Int;
+	@:native("helix_viewport") static function viewport(x:Int, y:Int, w:Int, h:Int):Int;
+	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, vertices:Int, firstVertex:Int, uniforms:cpp.RawPointer<cpp.UInt8>,
+		uniformBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_destroy") static function destroy(kind:Int, handle:Int):Int;
 	@:native("helix_peak_rss") static function peakRss():Float;

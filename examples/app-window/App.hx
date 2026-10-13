@@ -86,7 +86,8 @@ class App extends BaseApp {
 			report("monitor", window.setMonitor((window.getMonitor() + 1) % window.getMonitorCount()));
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0x181c26ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		batch.begin(camera);
 		var row = 12.;
 		Text2D.draw(batch,
 			"HeliX window   arrows: move   =/-: size   " + (window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)") + "   M: next monitor   H: hide",
@@ -109,5 +110,6 @@ class App extends BaseApp {
 			row += 22;
 		}
 		batch.end();
+		host.graphics.endFrame();
 	}
 }

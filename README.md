@@ -2,14 +2,14 @@
 
 HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
-Status: milestone 1 (the platform, 2D and services) is complete. Every example below runs in the browser and natively on Linux/X11. 3D comes next. Windows, macOS and mobile have not run.
+Status: milestone 1 (the platform, 2D and services) is complete; milestone 2 (3D basics) has begun with `hello3d`. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
 
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
 ## Layout
 
 ```text
-src/helix/                 the framework: contracts, policy, render2d, input, audio, assets
+src/helix/                 the framework: contracts, policy, render2d, render3d, input, audio, assets
   adapters/<service>/<provider>/           Haxe adapters; internal/ holds their C glue and externs
   profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
@@ -73,8 +73,9 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `asset-fetch` | assets from a host, the cache, and asking whether a host answers |
 | `asset-force-fetch` | ensure with a source and past the cache |
 | `quit` | quitting mid-load: shutdown runs after the frame |
+| `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
 
-Still to come: milestones 2–6, covering gfx and 3D, pick and ui-menu. `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: the rest of milestone 2 (meshes, materials, lights, model) and milestones 3–6 (2D gfx, advanced 3D, scene and pick, UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

@@ -23,7 +23,7 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
 - `IAudio.destroyStream`: Web Audio stops the stream's playbacks; Sokol's doesn't, and a playing stream keeps reading its file. `AudioResources` hides it by keeping resources alive while played.
-- `IGraphics`: Sokol refuses `updateBuffer` outside a frame and textures over 4096; WebGL2 accepts both. Bounds checks differ slightly.
+- `IGraphics`: Sokol refuses textures over 4096; WebGL2 accepts them. Bounds checks differ slightly. (Both now refuse `updateBuffer` outside a frame.)
 - `capture("")` does nothing on the web; natively it writes the capture.
 
 **Correctness**

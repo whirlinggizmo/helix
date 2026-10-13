@@ -1,3 +1,4 @@
+import helix.graphics.IGraphics;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
@@ -14,9 +15,11 @@ class Renderer {
 		0xf09030ff
 	];
 
+	var gpu:IGraphics;
 	var batch:Batch2D;
 
-	public function new(batch:Batch2D) {
+	public function new(gpu:IGraphics, batch:Batch2D) {
+		this.gpu = gpu;
 		this.batch = batch;
 	}
 
@@ -61,7 +64,8 @@ class Renderer {
 	}
 
 	public function render(game:Game, layout:Layout, camera:Camera2D, tick:Int):Void {
-		batch.begin(camera, 0x0a0e18ff);
+		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x0a0e18ff);
+		batch.begin(camera);
 		var fx = layout.fieldX,
 			fy = layout.fieldY,
 			visible = Game.H - Game.HIDDEN;
@@ -139,5 +143,6 @@ class Renderer {
 			}
 		}
 		batch.end();
+		gpu.endFrame();
 	}
 }

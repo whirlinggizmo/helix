@@ -38,7 +38,7 @@ class App extends BaseApp {
 		var seed = Std.parseInt(host.diagnostics.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
 		batch = new Batch2D(host.graphics);
-		renderer = new Renderer(batch);
+		renderer = new Renderer(host.graphics, batch);
 		ticker = new Ticker(host.input);
 		ticker.setMaxSteps(6);
 		host.diagnostics.expose(inspect);

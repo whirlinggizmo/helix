@@ -107,7 +107,8 @@ class App extends BaseApp {
 		if (host.canQuit() && input.isFramePressed(Key.Escape))
 			host.quit();
 		fps.update(dt, host.diagnostics.getFrameCpu());
-		batch.begin(camera, 0x1c1e26ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1c1e26ff);
+		batch.begin(camera);
 		Text2D.draw(batch, "HeliX asset fetch", 12, 40, 24, 0xf5f5f5ff);
 		Text2D.draw(batch, "from: " + (asking ? "..." : source), 12, 80, 16, 0xc8c8c8ff);
 		Text2D.draw(batch, state, 12, 110, 16, 0xffcb00ff);
@@ -117,6 +118,7 @@ class App extends BaseApp {
 			batch.sprite(logo, 400, 360, 220, 220);
 		fps.draw(batch, 12, 8);
 		batch.end();
+		host.graphics.endFrame();
 	}
 
 	static inline var BUTTON_WIDTH = 180;

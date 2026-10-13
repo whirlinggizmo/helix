@@ -8,7 +8,7 @@ The useful package boundary is the Haxe framework API and utilities, with separa
 
 `tests/consumer/PackageSmoke.hx` is a separate consumer compiled and executed with only the framework and test classpaths under the Haxe interpreter and JS/Node. It checks reusable input and autopilot behavior and type-checks the service contracts. The examples run against both real adapters. This proves a source boundary; it does not prove installation of a packaged backend into another game. No `haxelib.json`, global dev registration, package archive or publication has been created.
 
-The first graphics contract deliberately retains one fixed vertex layout and generated shader. `GeneratedLayout`/`GeneratedShader` belong to the application build, so the current adapters need that build output. Generalizing shader injection and testing an installed-package consumer comes before a reusable backend package. Avoid expanding the API into a new general GPU framework merely to make packaging look complete.
+The graphics contract keeps a fixed set of framework shaders (`src/helix/graphics/shaders/`), generated into `Sprite2DLayout`, `Color3DLayout`, `GeneratedShader` and `shaders.h` by each build, so the adapters need that build output. Packaging the generated code, or generating it at install, comes before a reusable backend package. Avoid expanding the API into a new general GPU framework merely to make packaging look complete.
 
 ## Build front door
 

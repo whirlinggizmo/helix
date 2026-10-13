@@ -41,12 +41,14 @@ class App extends BaseApp {
 			host.quit();
 		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
 		camera.pixels(host.getPixelRatio());
-		batch.begin(camera, 0x1e2430ff);
+		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
+		batch.begin(camera);
 		Text2D.draw(batch, "HeliX quit   Q: quit now", 12, 12, 16, 0xf5f5f5ff);
 		Text2D.draw(batch,
 			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - host.getTime()) * 10) / 10} s',
 			12, 40, 16, 0xc8c8c8ff);
 		batch.end();
+		host.graphics.endFrame();
 		if (!quitting && host.getTime() >= quitAt) {
 			quitting = true;
 			// Only in flight at the quit: loads begun and never used.

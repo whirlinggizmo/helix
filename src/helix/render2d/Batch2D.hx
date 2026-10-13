@@ -1,9 +1,11 @@
 package helix.render2d;
 
 import helix.graphics.IGraphics;
+import helix.graphics.PipelineKind;
 import haxe.io.Bytes;
 
-/** Immediate 2D drawing in world units through a Camera2D. A frame is one upload and one draw per run of a texture. Colors are 0xRRGGBBAA. */
+/** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
+	run of a texture, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. */
 class Batch2D {
 	var vertices = 0;
 	var draws = 0;
@@ -39,17 +41,16 @@ class Batch2D {
 	public function new(gpu:IGraphics, capacity = 32768) {
 		this.gpu = gpu;
 		this.capacity = capacity;
-		data = Bytes.alloc(capacity * GeneratedLayout.stride);
-		buffer = gpu.createBuffer(capacity * GeneratedLayout.stride);
-		pipeline = gpu.createPipeline(true);
+		data = Bytes.alloc(capacity * Sprite2DLayout.stride);
+		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
+		pipeline = gpu.createPipeline(Sprite2D, true);
 		font = Font2D.builtIn(gpu);
 		texture = font.getTexture();
 	}
 
-	/** Starts collecting a frame seen through camera, cleared to clearColor (0xRRGGBBAA); later calls only fill the batch until end. */
-	public function begin(camera:Camera2D, clearColor:Int):Void {
+	/** Starts collecting a batch seen through camera; later calls only fill it until end. */
+	public function begin(camera:Camera2D):Void {
 		this.camera = camera;
-		gpu.setClearColor(clearColor);
 		vertices = 0;
 		draws = 0;
 		runStart = 0;
@@ -57,21 +58,18 @@ class Batch2D {
 		texture = font.getTexture();
 	}
 
-	/** Draws the frame: clears the camera's whole framebuffer, then one upload of every vertex and one draw per run of a texture, in the camera's
-		viewport. */
+	/** Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture, in the camera's viewport. Once a frame. */
 	public function end():Void {
 		closeRun();
-		var height = camera.getFramebufferHeight();
-		gpu.beginFrame(camera.getFramebufferWidth(), height, camera.getViewportX(), height - camera.getViewportY() - camera.getViewportHeight(),
-			camera.getViewportWidth(), camera.getViewportHeight());
-		gpu.updateBuffer(buffer, data, vertices * GeneratedLayout.stride);
+		gpu.setViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(), camera.getViewportWidth(),
+			camera.getViewportHeight());
+		gpu.updateBuffer(buffer, data, vertices * Sprite2DLayout.stride);
 		var i = 0;
 		while (i < runs.length) {
 			gpu.draw(pipeline, buffer, runs[i], runs[i + 2], runs[i + 1]);
 			draws++;
 			i += 3;
 		}
-		gpu.endFrame();
 	}
 
 	/** Later quads sample this texture. */
@@ -100,10 +98,10 @@ class Batch2D {
 	inline function vertex(x:Float, y:Float, u:Float, v:Float):Void {
 		if (vertices >= capacity)
 			throw "Batch2D capacity exceeded";
-		var p = vertices++ * GeneratedLayout.stride,
-			position = p + GeneratedLayout.positionOffset,
-			uv = p + GeneratedLayout.uvOffset,
-			c = p + GeneratedLayout.colorOffset;
+		var p = vertices++ * Sprite2DLayout.stride,
+			position = p + Sprite2DLayout.positionOffset,
+			uv = p + Sprite2DLayout.uvOffset,
+			c = p + Sprite2DLayout.colorOffset;
 		data.setFloat(position, camera.clipX(x));
 		data.setFloat(position + 4, camera.clipY(y));
 		data.setFloat(uv, u);
