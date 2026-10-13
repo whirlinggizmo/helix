@@ -23,7 +23,7 @@ class Renderer {
 
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		texture = gpu.createTexture(128, 64, Atlas.make());
+		texture = gpu.createTexture(128, 64, [Atlas.make()]);
 		buffer = gpu.createBuffer(CAPACITY);
 		pipeline = gpu.createPipeline(true);
 	}

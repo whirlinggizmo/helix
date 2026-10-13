@@ -28,6 +28,11 @@ class InputState implements IInput {
 	var wheelY = 0.;
 	var touches:Array<Touch> = [];
 
+	/** The gesture's pan x, y, log scale and rotation summed this frame, and since the last tick. */
+	var frameGesture = [0., 0., 0., 0.];
+
+	var tickGesture = [0., 0., 0., 0.];
+
 	/** Nothing held, the pointer off the window, and four empty pad slots. */
 	public function new() {}
 
@@ -212,6 +217,14 @@ class InputState implements IInput {
 
 	/** A finger down, moved or lifted. A lifted one stays in touches, not down, until the frame ends. */
 	public function touchEvent(id:Int, x:Float, y:Float, value:Bool):Void {
+		var pair = gesturePair();
+		var ax = 0., ay = 0., bx = 0., by = 0.;
+		if (pair != null) {
+			ax = pair[0].x;
+			ay = pair[0].y;
+			bx = pair[1].x;
+			by = pair[1].y;
+		}
 		var touch = null;
 		for (t in touches)
 			if (t.id == id && t.down)
@@ -219,15 +232,14 @@ class InputState implements IInput {
 		if (touch == null) {
 			if (!value)
 				return;
-			touch = {
+			touches.push({
 				id: id,
 				x: x,
 				y: y,
 				down: true,
 				pressed: true,
 				released: false
-			};
-			touches.push(touch);
+			});
 			return;
 		}
 		touch.x = x;
@@ -236,7 +248,63 @@ class InputState implements IInput {
 			touch.down = false;
 			touch.released = true;
 		}
+		// The same two fingers before and after: they panned, pinched and twisted.
+		var after = gesturePair();
+		if (pair != null && after != null && after[0] == pair[0] && after[1] == pair[1]) {
+			var nax = after[0].x,
+				nay = after[0].y,
+				nbx = after[1].x,
+				nby = after[1].y;
+			var before = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)),
+				now = Math.sqrt((nbx - nax) * (nbx - nax) + (nby - nay) * (nby - nay));
+			var panX = (nax + nbx - ax - bx) / 2,
+				panY = (nay + nby - ay - by) / 2;
+			var turn = Math.atan2(nby - nay, nbx - nax) - Math.atan2(by - ay, bx - ax);
+			if (turn > Math.PI)
+				turn -= 2 * Math.PI;
+			if (turn < -Math.PI)
+				turn += 2 * Math.PI;
+			for (g in [frameGesture, tickGesture]) {
+				g[0] += panX;
+				g[1] += panY;
+				if (before > 0 && now > 0) {
+					g[2] += Math.log(now / before);
+					g[3] += turn;
+				}
+			}
+		}
 	}
+
+	/** The two fingers down longest, which make the gesture; null with fewer than two down. */
+	function gesturePair():Null<Array<Touch>> {
+		var down = [for (t in touches) if (t.down) t];
+		return down.length >= 2 ? [down[0], down[1]] : null;
+	}
+
+	public function isTouchGesture():Bool
+		return gesturePair() != null;
+
+	public function getTouchGestureCenterX():Float {
+		var pair = gesturePair();
+		return pair == null ? 0 : (pair[0].x + pair[1].x) / 2;
+	}
+
+	public function getTouchGestureCenterY():Float {
+		var pair = gesturePair();
+		return pair == null ? 0 : (pair[0].y + pair[1].y) / 2;
+	}
+
+	public function getTouchGesturePanX(perTick = false):Float
+		return (perTick ? tickGesture : frameGesture)[0];
+
+	public function getTouchGesturePanY(perTick = false):Float
+		return (perTick ? tickGesture : frameGesture)[1];
+
+	public function getTouchGestureScale(perTick = false):Float
+		return Math.exp((perTick ? tickGesture : frameGesture)[2]);
+
+	public function getTouchGestureRotation(perTick = false):Float
+		return (perTick ? tickGesture : frameGesture)[3];
 
 	/** Lets go of everything held, as when focus is lost: the releases are edges, and presses not yet consumed are dropped. */
 	public function clear():Void {
@@ -270,6 +338,7 @@ class InputState implements IInput {
 	}
 
 	public function consume():Void {
+		tickGesture = [0., 0., 0., 0.];
 		for (i in 0...pushes.length) {
 			if (pushes[i] > 0)
 				pushes[i]--;
@@ -292,6 +361,7 @@ class InputState implements IInput {
 
 	/** The host calls this after each frame. */
 	public function endFrame():Void {
+		frameGesture = [0., 0., 0., 0.];
 		for (i in 0...framePushes.length) {
 			framePushes[i] = false;
 			frameLifts[i] = false;

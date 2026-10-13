@@ -20,8 +20,20 @@ class SokolGraphicsAdapter implements IGraphics {
 		return handle;
 	}
 
-	public function createTexture(width:Int, height:Int, rgba:Bytes, linear:Bool = false):Int
-		return valid(GraphicsBridge.texture(width, height, pointer(rgba), rgba.length, linear ? 1 : 0));
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int {
+		if (levels.length == 0)
+			throw "Invalid texture";
+		// One buffer, the levels one after another: the bridge points each mip level into it.
+		var total = 0;
+		for (level in levels)
+			total += level.length;
+		var packed = Bytes.alloc(total), at = 0;
+		for (level in levels) {
+			packed.blit(at, level, 0, level.length);
+			at += level.length;
+		}
+		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, linear ? 1 : 0));
+	}
 
 	public function setClearColor(color:Int):Void
 		GraphicsBridge.clearColor(color);

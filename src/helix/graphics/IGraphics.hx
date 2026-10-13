@@ -4,8 +4,10 @@ import haxe.io.Bytes;
 
 /** Thin resource/submission contract. No scene policy belongs in an adapter. */
 interface IGraphics {
-	/** Uploads an RGBA8 image, rows top first, 4 bytes per pixel, and returns its handle; linear picks bilinear filtering over nearest. Throws for a size of 0 or less or a byte count other than width*height*4. */
-	public function createTexture(width:Int, height:Int, rgba:Bytes, linear:Bool = false):Int;
+	/** Uploads an RGBA8 image, rows top first, 4 bytes per pixel, and returns its handle. levels is the image then, optionally, its mipmaps, each half
+		the size of the last (at least 1; Mipmaps.build makes them). linear picks bilinear filtering over nearest, trilinear with mipmaps. Throws for a size
+		of 0 or less, no levels, or a level whose byte count isn't its width*height*4. */
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int;
 
 	/** The color, 0xRRGGBBAA, the next beginFrame clears to; until it is set, a dark blue. */
 	public function setClearColor(color:Int):Void;

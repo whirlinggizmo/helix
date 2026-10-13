@@ -24,6 +24,9 @@ interface IHost {
 	/** Sounds loaded through assets and decoded for audio. */
 	public var audioResources(default, null):AudioResources;
 
+	/** Textures from image files, decoded off the frame, reloading in place when a file changes during development. */
+	public var textures(default, null):helix.render2d.Textures;
+
 	/** Downloads over the network. */
 	public var fetch(default, null):IFetch;
 

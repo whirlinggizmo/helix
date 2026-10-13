@@ -131,6 +131,29 @@ class Batch2D {
 		vertex(x, y + h, u0, v1);
 	}
 
+	/** texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it
+		(the whole texture by default), tinted (0xRRGGBBAA, white by default). Throws when the frame's vertices pass capacity. */
+	public function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, rotation = 0., tint = 0xffffffff, u0 = 0., v0 = 0., u1 = 1.,
+			v1 = 1.):Void {
+		useTexture(texture);
+		color(tint);
+		var c = Math.cos(rotation),
+			s = Math.sin(rotation),
+			hw = width / 2,
+			hh = height / 2;
+		// The corners from the center, turned: top-left, top-right, bottom-right, bottom-left.
+		var ax = x + -hw * c - -hh * s, ay = y + -hw * s + -hh * c;
+		var bx = x + hw * c - -hh * s, by = y + hw * s + -hh * c;
+		var cx = x + hw * c - hh * s, cy = y + hw * s + hh * c;
+		var dx = x + -hw * c - hh * s, dy = y + -hw * s + hh * c;
+		vertex(ax, ay, u0, v0);
+		vertex(bx, by, u1, v0);
+		vertex(cx, cy, u1, v1);
+		vertex(ax, ay, u0, v0);
+		vertex(cx, cy, u1, v1);
+		vertex(dx, dy, u0, v1);
+	}
+
 	/** A filled rectangle in world units, top-left at x, y. */
 	public function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
 		solid();

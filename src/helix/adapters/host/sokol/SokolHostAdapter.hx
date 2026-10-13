@@ -26,6 +26,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 	public var fetch(default, null):IFetch;
 	public var storage(default, null):IStorage;
 	public var audioResources(default, null):AudioResources;
+	public var textures(default, null):helix.render2d.Textures;
 
 	var focused = true;
 
@@ -62,6 +63,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.resources = new AssetService(s.fetch, s.storage, s.packaged, s.base);
 		instance.assets = instance.resources;
 		instance.audioResources = new AudioResources(instance.assets, instance.audio);
+		instance.textures = new helix.render2d.Textures(instance.assets, s.images, instance.graphics);
 		instance.app.init();
 	}
 
@@ -71,6 +73,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.previousCallback = cpuStart;
 		instance.resources.poll();
 		instance.audioResources.poll();
+		instance.textures.poll();
 		instance.services.pollInput();
 		instance.focused = InputBridge.focused() != 0;
 		instance.app.frame(dt);
@@ -86,6 +89,8 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 
 	static function onCleanup():Void {
 		instance.audioResources.shutdown();
+		instance.textures.shutdown();
+		instance.services.images.shutdown();
 		instance.resources.shutdown();
 		instance.app.cleanup();
 		instance.services.shutdownInput();

@@ -7,7 +7,7 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("hy_setup") static function setup():Void;
 	@:native("hy_shutdown") static function shutdown():Void;
 	@:native("hy_renderer") static function renderer():cpp.ConstCharStar;
-	@:native("hy_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, linear:Int):Int;
+	@:native("hy_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, linear:Int):Int;
 	@:native("hy_clear_color") static function clearColor(color:Int):Void;
 	@:native("hy_buffer") static function buffer(capacity:Int):Int;
 	@:native("hy_pipeline") static function pipeline(alpha:Int):Int;

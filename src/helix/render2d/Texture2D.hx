@@ -37,14 +37,26 @@ class Texture2D {
 		this.height = height;
 	}
 
-	/** Uploads width x height RGBA8 pixels, rows top first; whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. The caller destroys it. */
-	public static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:Bytes, linear = false, whiteX = -1, whiteY = -1):Texture2D {
-		var texture = new Texture2D(gpu.createTexture(width, height, rgba, linear), width, height);
+	/** Uploads width x height RGBA8 pixels, rows top first; whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds
+		a chain (Mipmaps.build), so a linear texture drawn smaller than itself doesn't shimmer. The caller destroys it. */
+	public static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:Bytes, linear = false, whiteX = -1, whiteY = -1, mipmaps = false):Texture2D {
+		var texture = new Texture2D(gpu.createTexture(width, height, mipmaps ? helix.graphics.Mipmaps.build(width, height, rgba) : [rgba], linear), width,
+			height);
 		if (whiteX >= 0) {
 			texture.whiteU = (whiteX + .5) / width;
 			texture.whiteV = (whiteY + .5) / height;
 		}
 		return texture;
+	}
+
+	/** A new image in place of this one (a hot reload): the same object, a new GPU texture. */
+	@:allow(helix.render2d.Textures)
+	function replace(gpu:IGraphics, width:Int, height:Int, rgba:Bytes, linear:Bool):Void {
+		var old = handle;
+		handle = gpu.createTexture(width, height, linear ? helix.graphics.Mipmaps.build(width, height, rgba) : [rgba], linear);
+		this.width = width;
+		this.height = height;
+		gpu.destroy("texture", old);
 	}
 
 	/** Frees the GPU texture on gpu, the adapter that made it. */

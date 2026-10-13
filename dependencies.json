@@ -70,5 +70,12 @@
       "vendor/fonts/JetBrainsMono/OFL.txt": "a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697"
     },
     "license": "SIL Open Font License 1.1"
+  },
+  "stbImage": {
+    "version": "2.30",
+    "source": "https://github.com/nothings/stb (master, identical to the v2.30 header)",
+    "file": "vendor/stb/stb_image.h",
+    "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+    "license": "public domain or MIT, at the end of the header"
   }
 }

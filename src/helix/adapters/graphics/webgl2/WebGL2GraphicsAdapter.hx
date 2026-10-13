@@ -50,17 +50,25 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		#if hotreload live.push(this); #end
 	}
 
-	public function createTexture(width:Int, height:Int, rgba:Bytes, linear:Bool = false):Int {
-		if (width <= 0 || height <= 0 || rgba.length != width * height * 4)
+	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, linear:Bool = false):Int {
+		if (width <= 0 || height <= 0 || levels.length == 0)
 			throw "Invalid texture";
 		currentTexture = 0;
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
-		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA,
-			WebGL2RenderingContext.UNSIGNED_BYTE, new js.lib.Uint8Array(rgba.getData()));
+		var lw = width, lh = height;
+		for (i in 0...levels.length) {
+			if (levels[i].length != lw * lh * 4)
+				throw "Invalid texture";
+			gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, i, WebGL2RenderingContext.RGBA, lw, lh, 0, WebGL2RenderingContext.RGBA,
+				WebGL2RenderingContext.UNSIGNED_BYTE, new js.lib.Uint8Array(levels[i].getData()));
+			lw = lw > 1 ? Std.int(lw / 2) : 1;
+			lh = lh > 1 ? Std.int(lh / 2) : 1;
+		}
+		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER,
-			linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
+			linear ? (levels.length > 1 ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.LINEAR) : WebGL2RenderingContext.NEAREST);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAG_FILTER,
 			linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_S, WebGL2RenderingContext.CLAMP_TO_EDGE);

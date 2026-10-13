@@ -23,6 +23,7 @@ class NativeSokolGLProfile extends SokolHostAdapter {
 				graphics: new SokolGraphicsAdapter(),
 				input: input,
 				audio: audio,
+				images: new helix.adapters.images.stb.StbImagesAdapter(),
 				fetch: new HaxeHttpFetchAdapter(),
 				storage: new FileStorageAdapter(cache),
 				packaged: new FileStorageAdapter(haxe.io.Path.join([root, "assets"]), true),

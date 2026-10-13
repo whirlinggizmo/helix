@@ -68,6 +68,27 @@ interface IInput {
 	/** Fingers down, and those lifted this frame. */
 	public function getTouches():Array<Touch>;
 
+	/** Whether two fingers are down: the two down longest make the gesture. */
+	public function isTouchGesture():Bool;
+
+	/** The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture. */
+	public function getTouchGestureCenterX():Float;
+
+	/** See getTouchGestureCenterX. */
+	public function getTouchGestureCenterY():Float;
+
+	/** How far the point between the fingers moved, in framebuffer pixels: this frame, or since the last tick with perTick. */
+	public function getTouchGesturePanX(perTick:Bool = false):Float;
+
+	/** See getTouchGesturePanX. */
+	public function getTouchGesturePanY(perTick:Bool = false):Float;
+
+	/** How much the fingers spread (over 1) or pinched (under 1), as a factor: this frame, or since the last tick with perTick; 1 without. */
+	public function getTouchGestureScale(perTick:Bool = false):Float;
+
+	/** How far the line between the fingers turned, in radians, clockwise on screen positive: this frame, or since the last tick with perTick. */
+	public function getTouchGestureRotation(perTick:Bool = false):Float;
+
 	/** Four slots, connected or not. */
 	public function getPadCount():Int;
 

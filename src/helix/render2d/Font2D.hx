@@ -70,7 +70,7 @@ class Font2D {
 			rgba.set(i * 4 + 2, 255);
 			rgba.set(i * 4 + 3, field.get(i));
 		}
-		var texture = Texture2D.fromRgba(gpu, width, height, rgba, true, GeneratedFont.whiteX, GeneratedFont.whiteY);
+		var texture = Texture2D.fromRgba(gpu, width, height, rgba, true, GeneratedFont.whiteX, GeneratedFont.whiteY, true);
 		var glyphs:Array<Null<Glyph2D>> = [];
 		for (n in 0...95) {
 			var g = GeneratedFont.glyphs, i = n * 6;

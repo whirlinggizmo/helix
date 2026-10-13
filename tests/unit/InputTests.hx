@@ -82,6 +82,23 @@ class InputTests {
 		input.mouseEvent(MouseButton.Middle, true);
 		input.mouseEvent(MouseButton.Middle, false);
 		check(input.isMouseReleased(MouseButton.Middle) && input.isMouseFrameReleased(MouseButton.Middle), "Mouse release edges");
+		// Two fingers pan, pinch and twist: the same pair before and after each move.
+		input.endFrame();
+		input.touchEvent(1, 100, 100, true);
+		input.touchEvent(2, 200, 100, true);
+		check(input.isTouchGesture() && input.getTouchGestureCenterX() == 150, "Two fingers make a gesture");
+		input.touchEvent(2, 300, 100, true);
+		input.touchEvent(1, 100, 200, true);
+		check(Math.abs(input.getTouchGestureScale() - Math.sqrt(200 * 200 + 100 * 100) / 100) < 1e-9, "Scale multiplies");
+		check(input.getTouchGesturePanX() == 50 && input.getTouchGesturePanY() == 50, "Pan follows the midpoint");
+		check(Math.abs(input.getTouchGestureRotation() - Math.atan2(-100, 200)) < 1e-9, "Rotation is the turn of the line between the fingers");
+		input.endFrame();
+		check(input.getTouchGestureScale() == 1 && input.getTouchGestureScale(true) != 1, "Frame sums end with the frame; tick sums wait for consume");
+		input.consume();
+		input.touchEvent(1, 100, 200, false);
+		check(!input.isTouchGesture() && input.getTouchGesturePanX(true) == 0, "One finger is no gesture");
+		input.touchEvent(2, 300, 100, false);
+		input.endFrame();
 		// Ticker: fixed steps, a pause, bounded catch-up, and input consumed per tick.
 		var ticker = new Ticker(input, 10), ticks = 0;
 		input.keyEvent(Key.A, true);

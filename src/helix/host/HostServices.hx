@@ -15,6 +15,9 @@ typedef HostServices = {
 	var input:IInput;
 
 	/** The audio service. */
+	/** Image decoding, under the host's textures service. */
+	var images:helix.graphics.IImages;
+
 	var audio:IAudio;
 
 	/** Downloads over the network. */

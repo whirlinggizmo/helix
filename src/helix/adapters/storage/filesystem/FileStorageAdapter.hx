@@ -75,6 +75,15 @@ class FileStorageAdapter implements IStorage {
 		} catch (error:Dynamic)
 			Failed(Std.string(error)), complete, Cancelled);
 
+	/** Creates dir and its parents. Writes run on several threads, and two may create the same directory at once: one that exists by the time
+		creating it fails is fine. */
+	static function makeDirectory(dir:String):Void
+		try
+			sys.FileSystem.createDirectory(dir)
+		catch (error:Dynamic)
+			if (!sys.FileSystem.exists(dir) || !sys.FileSystem.isDirectory(dir))
+				throw error;
+
 	public function write(key:String, bytes:Bytes, complete:StorageWriteResult->Void):IRequest {
 		var copy = bytes.sub(0, bytes.length), suffix = ++serial;
 		return job(() -> try {
@@ -83,7 +92,7 @@ class FileStorageAdapter implements IStorage {
 			if (copy.length > 8 * 1024 * 1024)
 				throw "Stored file exceeds byte limit";
 			var file = path(key), temp = file + ".part-" + suffix;
-			sys.FileSystem.createDirectory(Path.directory(file));
+			makeDirectory(Path.directory(file));
 			try {
 				sys.io.File.saveBytes(temp, copy);
 				sys.FileSystem.rename(temp, file);

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 void hy_setup(void);void hy_shutdown(void);const char *hy_renderer(void);
-uint32_t hy_texture(int w,int h,const void *data,int bytes,int linear);
+uint32_t hy_texture(int w,int h,const void *data,int bytes,int levels,int linear);
 void hy_clear_color(uint32_t color);
 uint32_t hy_buffer(int capacity);uint32_t hy_pipeline(int alpha);
 int hy_update(uint32_t buffer,const void *data,int bytes);

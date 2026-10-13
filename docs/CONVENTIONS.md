@@ -25,6 +25,16 @@ The one exception is by design: `examples/asteroids-parity`'s `wgf` package, a c
 - **Say clamp or refuse.** A setter clamps when every value in range is the same request at another fidelity; it refuses, returning `false`, when the value would change what was asked or has no meaning here. Its comment says which, and a "False for ..." sentence names every refusal. A setter that can never refuse returns `Void`.
 - **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.
+- **Capitals:** `2D` and `3D` keep a capital D. Acronyms are written as words, as in Haxe's standard library (`Json`, `Xml`, `Http`): `getId`, `Url`, `IndexedDb`. Product names keep their own spelling (`WebGL2`, `Sokol`).
+
+## Units
+
+One unit per kind of value across the API, so nothing has to be converted at a call:
+
+- **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. (3D's handedness is decided with 3D.)
+- **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.getBudgetMs`) or, where the name can't, in its doc comment (the diagnostics' frame costs are milliseconds).
+- **Colors are `0xRRGGBBAA`** integers.
+- **Positions and sizes name their space** in the doc comment: framebuffer pixels (the host, the pointer), logical pixels (the window), or world units (a camera's).
 
 ## Layout and documentation
 

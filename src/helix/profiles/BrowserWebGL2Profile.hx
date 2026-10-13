@@ -19,6 +19,7 @@ class BrowserWebGL2Profile extends DomHostAdapter {
 				graphics: graphics,
 				input: input,
 				audio: audio,
+				images: new helix.adapters.images.canvas.CanvasImagesAdapter(),
 				fetch: new FetchApiAdapter(),
 				storage: new IndexedDbStorageAdapter(cacheName),
 				packaged: new IndexedDbStorageAdapter(cacheName + "-packaged"),
