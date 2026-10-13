@@ -60,5 +60,5 @@ class Batch2D {
  }
  /** Triangle outline drawn along its edges. */
  public function triangleLines(x0:Float,y0:Float,x1:Float,y1:Float,x2:Float,y2:Float,width:Float,tint:Int):Void {line(x0,y0,x1,y1,width,tint);line(x1,y1,x2,y2,width,tint);line(x2,y2,x0,y0,width,tint);}
- public function cleanup():Void {gpu.destroy("pipeline",pipeline);gpu.destroy("buffer",buffer);font.texture.destroy(gpu);}
+ public function cleanup():Void {gpu.destroy("pipeline",pipeline);gpu.destroy("buffer",buffer);font.destroy(gpu);}
 }

@@ -2,7 +2,7 @@ package helix.render2d;
 import helix.graphics.IGraphics;
 import haxe.io.Bytes;
 
-/** A monospaced bitmap font: one cell per character from space to underscore. Lowercase draws as uppercase. */
+/** A monospaced bitmap font: one cell per printable ASCII character, space to tilde. */
 class Font2D {
  public var texture(default,null):Texture2D;
  /** Glyph size and advance, in font pixels. */
@@ -11,11 +11,12 @@ class Font2D {
  function new(texture:Texture2D,glyphWidth:Int,glyphHeight:Int,advance:Int,cell:Int){this.texture=texture;this.glyphWidth=glyphWidth;this.glyphHeight=glyphHeight;this.advance=advance;this.cell=cell;columns=Std.int(texture.width/cell);}
  /** Texture coordinates of a character's glyph, or null when it has none. */
  public function glyph(code:Int):Null<Array<Float>> {
-  if(code>=97&&code<=122)code-=32;var n=code-32;if(n<=0||n>=64)return null;
+  var n=code-32;if(n<=0||n>=95)return null;
   var x=n%columns*cell,y=Std.int(n/columns)*cell,w=texture.width,h=texture.height;
   return [(x+.01)/w,(y+.01)/h,(x+glyphWidth+.01)/w,(y+glyphHeight+.01)/h];
  }
- static final rows:Map<String,String>=[
+ /** The glyphs, as rows of five pixels. A function, not a static: a browser hot reload keeps statics' old values, and an edit here should show. */
+ static function rows():Map<String,String> return [
   "A"=>"01110/10001/10001/11111/10001/10001/10001","B"=>"11110/10001/10001/11110/10001/10001/11110","C"=>"01111/10000/10000/10000/10000/10000/01111",
   "D"=>"11110/10001/10001/10001/10001/10001/11110","E"=>"11111/10000/10000/11110/10000/10000/11111","F"=>"11111/10000/10000/11110/10000/10000/10000",
   "G"=>"01111/10000/10000/10111/10001/10001/01111","H"=>"10001/10001/10001/11111/10001/10001/10001","I"=>"11111/00100/00100/00100/00100/00100/11111",
@@ -31,14 +32,68 @@ class Font2D {
   "9"=>"01110/10001/10001/01111/00001/00001/01110",":"=>"00000/00100/00100/00000/00100/00100/00000","-"=>"00000/00000/00000/11111/00000/00000/00000",
   "."=>"00000/00000/00000/00000/00000/01100/01100","!"=>"00100/00100/00100/00100/00100/00000/00100","?"=>"01110/10001/00001/00010/00100/00000/00100",
   "/"=>"00001/00010/00010/00100/01000/01000/10000","+"=>"00000/00100/00100/11111/00100/00100/00000","'"=>"00100/00100/01000/00000/00000/00000/00000",
-  "("=>"00010/00100/01000/01000/01000/00100/00010",")"=>"01000/00100/00010/00010/00010/00100/01000"
+  "("=>"00010/00100/01000/01000/01000/00100/00010",")"=>"01000/00100/00010/00010/00010/00100/01000",
+  "\""=>"01010/01010/00000/00000/00000/00000/00000",
+  "#"=>"01010/11111/01010/01010/11111/01010/00000",
+  "$"=>"00100/01111/10100/01110/00101/11110/00100",
+  "%"=>"11001/11010/00010/00100/01000/01011/10011",
+  "&"=>"01100/10010/10100/01000/10101/10010/01101",
+  "*"=>"00000/10101/01110/11111/01110/10101/00000",
+  ","=>"00000/00000/00000/00000/01100/00100/01000",
+  ";"=>"00000/01100/01100/00000/01100/00100/01000",
+  "<"=>"00010/00100/01000/10000/01000/00100/00010",
+  "="=>"00000/00000/11111/00000/11111/00000/00000",
+  ">"=>"01000/00100/00010/00001/00010/00100/01000",
+  "@"=>"01110/10001/10111/10101/10111/10000/01111",
+  "["=>"01110/01000/01000/01000/01000/01000/01110",
+  "\\"=>"10000/01000/01000/00100/00010/00010/00001",
+  "]"=>"01110/00010/00010/00010/00010/00010/01110",
+  "^"=>"00100/01010/10001/00000/00000/00000/00000",
+  "_"=>"00000/00000/00000/00000/00000/00000/11111",
+  "`"=>"01000/00100/00010/00000/00000/00000/00000",
+  "{"=>"00110/00100/00100/01000/00100/00100/00110",
+  "|"=>"00100/00100/00100/00100/00100/00100/00100",
+  "}"=>"01100/00100/00100/00010/00100/00100/01100",
+  "~"=>"00000/00000/01000/10101/00010/00000/00000",
+  "a"=>"00000/00000/01110/00001/01111/10001/01111",
+  "b"=>"10000/10000/10110/11001/10001/10001/11110",
+  "c"=>"00000/00000/01110/10000/10000/10001/01110",
+  "d"=>"00001/00001/01101/10011/10001/10001/01111",
+  "e"=>"00000/00000/01110/10001/11111/10000/01110",
+  "f"=>"00110/01001/01000/11100/01000/01000/01000",
+  "g"=>"00000/01111/10001/10001/01111/00001/01110",
+  "h"=>"10000/10000/10110/11001/10001/10001/10001",
+  "i"=>"00100/00000/01100/00100/00100/00100/01110",
+  "j"=>"00010/00000/00110/00010/00010/10010/01100",
+  "k"=>"10000/10000/10010/10100/11000/10100/10010",
+  "l"=>"01100/00100/00100/00100/00100/00100/01110",
+  "m"=>"00000/00000/11010/10101/10101/10101/10101",
+  "n"=>"00000/00000/10110/11001/10001/10001/10001",
+  "o"=>"00000/00000/01110/10001/10001/10001/01110",
+  "p"=>"00000/11110/10001/10001/11110/10000/10000",
+  "q"=>"00000/01111/10001/10001/01111/00001/00001",
+  "r"=>"00000/00000/10110/11001/10000/10000/10000",
+  "s"=>"00000/00000/01111/10000/01110/00001/11110",
+  "t"=>"01000/01000/11100/01000/01000/01001/00110",
+  "u"=>"00000/00000/10001/10001/10001/10011/01101",
+  "v"=>"00000/00000/10001/10001/10001/01010/00100",
+  "w"=>"00000/00000/10001/10001/10101/10101/01010",
+  "x"=>"00000/00000/10001/01010/00100/01010/10001",
+  "y"=>"00000/10001/10001/10001/01111/00001/01110",
+  "z"=>"00000/00000/11111/00010/00100/01000/11111"
  ];
  /** The built-in 5x7 pixel font. Its texture also carries a white texel for shapes. */
- public static function pixel(gpu:IGraphics):Font2D {
+ public static function pixel(gpu:IGraphics):Font2D {var font=new Font2D(bake(gpu),5,7,6,8);live.push({font:font,gpu:gpu});return font;}
+ /** Pixel fonts in use, so a hot reload that changes the glyphs can bake their textures again. */
+ static var live:Array<{font:Font2D,gpu:IGraphics}>=[];
+ @:afterHotReload static function rebake():Void for(entry in live){var old=entry.font.texture;entry.font.texture=bake(entry.gpu);old.destroy(entry.gpu);}
+ public function destroy(gpu:IGraphics):Void {texture.destroy(gpu);live=live.filter(e->e.font!=this);}
+ static function bake(gpu:IGraphics):Texture2D {
   var bytes=Bytes.alloc(128*64*4);
-  for(c in rows.keys()){var n=c.charCodeAt(0)-32,ox=(n%16)*8,oy=Std.int(n/16)*8,lines=rows[c].split('/');
+  var glyphs=rows();
+  for(c in glyphs.keys()){var n=c.charCodeAt(0)-32,ox=(n%16)*8,oy=Std.int(n/16)*8,lines=glyphs[c].split('/');
    for(y in 0...7)for(x in 0...5)if(lines[y].charAt(x)=="1"){var p=((oy+y)*128+ox+x)*4;for(k in 0...4)bytes.set(p+k,255);}}
   for(k in 0...4)bytes.set((63*128+127)*4+k,255);
-  return new Font2D(Texture2D.fromRgba(gpu,128,64,bytes,false,127,63),5,7,6,8);
+  return Texture2D.fromRgba(gpu,128,64,bytes,false,127,63);
  }
 }
