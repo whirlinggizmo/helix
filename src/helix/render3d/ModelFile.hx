@@ -3,6 +3,9 @@ package helix.render3d;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
 import helix.render3d.Gltf.field;
+import helix.render3d.AnimationClip.Track;
+import helix.render3d.AnimationClip.TrackInterpolation;
+import helix.render3d.AnimationClip.TrackPath;
 import helix.render3d.Light.LightKind;
 
 /** A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
@@ -13,10 +16,12 @@ import helix.render3d.Light.LightKind;
 	or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked
 	out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive
 	color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and
-	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights. Not
-	read yet (warned once a file): skins and animations (a skinned mesh draws in its bind pose), morph targets, metallic-roughness, occlusion
-	and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), and a second texture
-	coordinate set. */
+	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins
+	(each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models
+	bound to that copy's joints; animations as AnimationClips (getClips), their tracks targeting nodes by name, so a file of animations alone
+	plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights),
+	metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate
+	set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints). */
 class ModelFile {
 	var gltf:Gltf;
 	var parts:Array<Array<{mesh:Mesh, material:Material}>> = [];
@@ -24,6 +29,8 @@ class ModelFile {
 	var lights:Array<Dynamic>;
 	var roots:Array<Int> = [];
 	var warnings:Array<String> = [];
+	var skins:Array<Skin> = [];
+	var clips:Array<AnimationClip> = [];
 
 	/** The file read, its images not yet decoded (Models decodes them and sets them on its materials). Throws, saying why, for a file it can't
 		read. */
@@ -49,8 +56,12 @@ class ModelFile {
 			}
 			parts.push(list);
 		}
-		if (gltf.list("skins").length > 0 || gltf.list("animations").length > 0)
-			warn("skins and animations are ignored: a skinned mesh draws in its bind pose");
+		var nodes = gltf.list("nodes");
+		for (s in gltf.list("skins"))
+			skins.push(skin(s, nodes));
+		var index = 0;
+		for (a in gltf.list("animations"))
+			clips.push(clip(a, index++, nodes));
 		lights = field(field(field(gltf.document, "extensions"), "KHR_lights_punctual"), "lights");
 		if (lights == null)
 			lights = [];
@@ -76,6 +87,28 @@ class ModelFile {
 	public function getWarnings():Array<String>
 		return warnings.copy();
 
+	/** Its skins, in the file's order: the joints its skinned meshes follow. */
+	public function getSkins():Array<Skin>
+		return skins.copy();
+
+	/** Its animations, in the file's order. */
+	public function getClips():Array<AnimationClip>
+		return clips.copy();
+
+	/** The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it);
+		null for none. */
+	public function getClip(name:String):Null<AnimationClip> {
+		for (clip in clips)
+			if (clip.getName() == name)
+				return clip;
+		for (clip in clips) {
+			var full = clip.getName();
+			if (full.substr(full.lastIndexOf("|") + 1) == name)
+				return clip;
+		}
+		return null;
+	}
+
 	/** Its materials, in the file's order: change one and every copy's parts with it change. */
 	public function getMaterials():Array<Material>
 		return materials.copy();
@@ -85,8 +118,13 @@ class ModelFile {
 	public function instantiate(name = ""):Node {
 		var root = Node.group();
 		root.setName(name);
+		var skinned = [];
 		for (r in roots)
-			root.add(node(r));
+			root.add(node(r, skinned));
+		// Each copy's skinned models follow that copy's joints, found by name once the tree is whole.
+		for (s in skinned)
+			if (!s.model.bindSkeleton(root, skins[s.skin]))
+				throw 'A skinned model\'s joints aren\'t all in its file\'s scene';
 		return root;
 	}
 
@@ -206,9 +244,59 @@ class ModelFile {
 		var normal:Null<Int> = field(attributes, "NORMAL"),
 			uv:Null<Int> = field(attributes, "TEXCOORD_0"),
 			tangent:Null<Int> = field(attributes, "TANGENT"),
-			indices:Null<Int> = field(p, "indices");
+			indices:Null<Int> = field(p, "indices"),
+			joints:Null<Int> = field(attributes, "JOINTS_0"),
+			weights:Null<Int> = field(attributes, "WEIGHTS_0");
+		if (field(attributes, "JOINTS_1") != null)
+			warn("a second set of joints and weights is ignored: a vertex follows its first four joints");
+		var skinned = joints != null && weights != null;
 		return Mesh.fromArrays(gltf.floats(position), normal == null ? null : gltf.floats(normal), uv == null ? null : gltf.floats(uv),
-			tangent == null ? null : gltf.floats(tangent), indices == null ? null : gltf.ints(indices));
+			tangent == null ? null : gltf.floats(tangent), indices == null ? null : gltf.ints(indices), skinned ? gltf.floats(joints) : null,
+			skinned ? gltf.floats(weights) : null);
+	}
+
+	// A skin: its joints by their nodes' names, which must be there and unique in the file for a copy's models to find them.
+	function skin(s:Dynamic, nodes:Array<Dynamic>):Skin {
+		var joints:Array<Int> = field(s, "joints");
+		if (joints == null || joints.length == 0)
+			throw "A skin has no joints";
+		var names = [];
+		for (j in joints) {
+			var name:String = field(nodes[j], "name");
+			if (name == null || name == "")
+				throw 'A skin\'s joint (node $j) has no name';
+			names.push(name);
+		}
+		for (n in names)
+			if ([for (node in nodes) if (field(node, "name") == n) 1].length > 1)
+				throw 'A skin\'s joint name "$n" is used by more than one node';
+		var inverseBind:Null<Int> = field(s, "inverseBindMatrices");
+		return new Skin(names, inverseBind == null ? null : gltf.floats(inverseBind));
+	}
+
+	// An animation: a track a channel, targeting its node by name; morph targets' weights aren't read.
+	function clip(a:Dynamic, index:Int, nodes:Array<Dynamic>):AnimationClip {
+		var name:String = field(a, "name"), samplers:Array<Dynamic> = field(a, "samplers"), channels:Array<Dynamic> = field(a, "channels"), tracks = [];
+		for (c in channels) {
+			var target:Dynamic = field(c, "target"),
+				node:Null<Int> = field(target, "node"),
+				path:String = field(target, "path");
+			if (path == "weights") {
+				warn("animations of morph target weights are ignored");
+				continue;
+			}
+			if (node == null)
+				continue;
+			var nodeName:String = field(nodes[node], "name");
+			if (nodeName == null || nodeName == "")
+				throw 'An animation moves a node ($node) without a name';
+			var sampler = samplers[field(c, "sampler")],
+				interpolation:String = field(sampler, "interpolation");
+			tracks.push(new Track(nodeName, path == "rotation" ? TrackPath.Rotation : path == "scale" ? TrackPath.Scale : TrackPath.Translation,
+				interpolation == "STEP" ? TrackInterpolation.Step : interpolation == "CUBICSPLINE" ? TrackInterpolation.CubicSpline : TrackInterpolation.Linear,
+				gltf.floats(field(sampler, "input")), gltf.floats(field(sampler, "output"))));
+		}
+		return new AnimationClip(name == null || name == "" ? 'animation$index' : name, tracks);
 	}
 
 	function light(index:Int):Light {
@@ -229,7 +317,7 @@ class ModelFile {
 		return light;
 	}
 
-	function node(index:Int):Node {
+	function node(index:Int, skinned:Array<{model:Node, skin:Int}>):Node {
 		var n = gltf.list("nodes")[index],
 			meshIndex:Null<Int> = field(n, "mesh");
 		var lightIndex:Null<Int> = field(field(field(n, "extensions"), "KHR_lights_punctual"), "light");
@@ -260,10 +348,17 @@ class ModelFile {
 			if (s != null)
 				node.setScale(s[0], s[1], s[2]);
 		}
+		var skin:Null<Int> = field(n, "skin");
+		if (skin != null) {
+			var models = node.getKind() == Model ? [node] : [for (i in 0...node.getChildCount()) node.getChild(i)];
+			for (model in models)
+				if (model.getKind() == Model && model.getMesh().isSkinned())
+					skinned.push({model: model, skin: skin});
+		}
 		var children:Array<Int> = field(n, "children");
 		if (children != null)
 			for (c in children)
-				node.add(this.node(c));
+				node.add(this.node(c, skinned));
 		return node;
 	}
 }

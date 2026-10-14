@@ -27,6 +27,7 @@ class Mesh {
 	var indexBuffer = 0;
 	var skinData:Null<Bytes>;
 	var skinBuffer = 0;
+	var reaches:Array<{skin:Skin, reach:haxe.ds.Vector<Float>}> = [];
 
 	/** A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices.
 		Throws for a count of 0 or less, too few bytes, or an index past the vertices. */
@@ -108,6 +109,43 @@ class Mesh {
 		summing to 1. Null for one that isn't skinned. */
 	public function getSkinData():Null<Bytes>
 		return skinData;
+
+	/** How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position
+		(Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model.
+		Null for a mesh that isn't skinned. */
+	public function getJointReach(skin:Skin):Null<haxe.ds.Vector<Float>> {
+		if (skinData == null)
+			return null;
+		for (r in reaches)
+			if (r.skin == skin)
+				return r.reach;
+		var count = skin.getJointCount(),
+			reach = new haxe.ds.Vector<Float>(count);
+		for (j in 0...count)
+			reach[j] = -1;
+		for (i in 0...vertexCount) {
+			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset,
+				x = vertexData.getFloat(at),
+				y = vertexData.getFloat(at + 4),
+				z = vertexData.getFloat(at + 8);
+			for (k in 0...4) {
+				var s = i * Skinned3DLayout.skinStride;
+				if (skinData.getFloat(s + Skinned3DLayout.weightsOffset + k * 4) <= 0)
+					continue;
+				var j = Std.int(skinData.getFloat(s + Skinned3DLayout.jointsOffset + k * 4) + .5);
+				if (j >= count)
+					continue;
+				var dx = x - skin.getBindPosition(j, 0),
+					dy = y - skin.getBindPosition(j, 1),
+					dz = z - skin.getBindPosition(j, 2);
+				var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+				if (d > reach[j])
+					reach[j] = d;
+			}
+		}
+		reaches.push({skin: skin, reach: reach});
+		return reach;
+	}
 
 	/** A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned. */
 	public function getSkinBuffer(gpu:IGraphics):Int {

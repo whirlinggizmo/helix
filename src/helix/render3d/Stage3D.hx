@@ -50,7 +50,7 @@ class Stage3D {
 	var count = 0;
 	var lights:Array<Node> = [];
 	var planes = new Vector<Float>(24);
-	var inverse = new Vector<Float>(16);
+	var inverse = new Mat4();
 	var eyeX = 0.;
 	var eyeY = 0.;
 	var eyeZ = 0.;
@@ -72,6 +72,14 @@ class Stage3D {
 	var casterCapacity = 256;
 	var casterBuffer:Int;
 	var casterRecords:Bytes;
+	// Skinned casters' records (Skinneddepth3DLayout's: the world matrix's rows, then the first joint), apart from the others'.
+	var skinnedCasterCapacity = 16;
+	var skinnedCasterBuffer:Int;
+	var skinnedCasterRecords:Bytes;
+	// The joints of the pass's skinned models, and the skinned models the walk met, placed once it has posed every joint.
+	var palette:JointPalette;
+	var skinned:Array<Node> = [];
+	var posed = new Vector<Float>(6);
 	// The shadow map (layers of the size the last drawShadows needed), and a map of one texel that stands in when there are none.
 	var shadowMap = 0;
 	var shadowMapSize = 0;
@@ -122,6 +130,9 @@ class Stage3D {
 		sprites = new Sprites3D(gpu);
 		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
 		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
+		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+		palette = new JointPalette(gpu);
 		noShadows = gpu.createShadowMap(1, 1);
 		var black = Bytes.alloc(6 * 4);
 		for (face in 0...6)
@@ -257,6 +268,11 @@ class Stage3D {
 		gathering = true;
 		walk();
 		gathering = false;
+		palette.clear();
+		for (i in 0...casterCount)
+			if (casters[i].skinned)
+				casters[i].jointBase = palette.add(casters[i].node);
+		palette.upload();
 		var size = 0;
 		for (node in lights)
 			if (node.getLight().isShadowCasting()) {
@@ -439,13 +455,20 @@ class Stage3D {
 				layerCasters.push(c);
 		}
 		gpu.beginShadowPass(shadowMap, layer);
-		var n = layerCasters.length;
+		// Skinned casters after the others, each kind's alike meshes together.
+		layerCasters.sort((a, b) -> a.skinned != b.skinned ? (a.skinned ? 1 : -1) : a.mesh.id - b.mesh.id);
+		var n = 0;
+		while (n < layerCasters.length && !layerCasters[n].skinned)
+			n++;
+		drawSkinnedCasters(n);
+		layerCasters.resize(n);
 		if (n > 0) {
-			layerCasters.sort((a, b) -> a.mesh.id - b.mesh.id);
 			if (n > casterCapacity) {
 				while (casterCapacity < n)
 					casterCapacity *= 2;
 				gpu.destroyBuffer(casterBuffer);
+				gpu.destroyBuffer(skinnedCasterBuffer);
+				palette.destroy();
 				casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
 				casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
 			}
@@ -471,6 +494,42 @@ class Stage3D {
 			shadowCasters += n;
 		}
 		gpu.endTargetPass();
+	}
+
+	// Draws the layer's skinned casters, those from first on in layerCasters, through the skinned depth program.
+	function drawSkinnedCasters(first:Int):Void {
+		var n = layerCasters.length - first;
+		if (n <= 0)
+			return;
+		if (n > skinnedCasterCapacity) {
+			while (skinnedCasterCapacity < n)
+				skinnedCasterCapacity *= 2;
+			gpu.destroyBuffer(skinnedCasterBuffer);
+			skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+			skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+		}
+		for (i in 0...n) {
+			var c = layerCasters[first + i],
+				w = c.node.getWorldMatrix(),
+				at = i * Skinneddepth3DLayout.instanceStride;
+			for (row in 0...3)
+				for (col in 0...4)
+					skinnedCasterRecords.setFloat(at + Skinneddepth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+			skinnedCasterRecords.setFloat(at + Skinneddepth3DLayout.skinOffset, c.jointBase);
+		}
+		gpu.updateBuffer(skinnedCasterBuffer, skinnedCasterRecords, n * Skinneddepth3DLayout.instanceStride);
+		lightViewProjection.writeTo(depthUniforms);
+		var uniforms = [depthUniforms], i = 0;
+		while (i < n) {
+			var last = i, mesh = layerCasters[first + i].mesh;
+			while (last + 1 < n && layerCasters[first + last + 1].mesh == mesh)
+				last++;
+			gpu.draw(pipelines.skinnedDepth3d(), [mesh.getVertexBuffer(gpu), skinnedCasterBuffer, mesh.getSkinBuffer(gpu)], mesh.getIndexBuffer(gpu), 0,
+				mesh.getIndexCount(), i, last - i + 1, [palette.getTexture()], [Sampling.NEAREST], uniforms);
+			shadowDraws++;
+			i = last + 1;
+		}
+		shadowCasters += n;
 	}
 
 	/** Draws the stage in the open frame, through camera, in its viewport. */
@@ -504,6 +563,11 @@ class Stage3D {
 			instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
 			records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
 		}
+		palette.clear();
+		for (i in 0...count)
+			if (drawn[i].skinned)
+				drawn[i].jointBase = palette.add(drawn[i].node);
+		palette.upload();
 		for (i in 0...count)
 			writeRecord(i, drawn[i]);
 		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
@@ -538,10 +602,10 @@ class Stage3D {
 
 	// The background, behind everything: the environment's background cube in each pixel's direction, through the inverse view-projection.
 	function drawBackground(viewProjection:Mat4):Void {
-		inverseOf(viewProjection);
+		inverse.setInverse(viewProjection);
 		var u = backgroundUniforms[1];
 		for (i in 0...16)
-			u.setFloat(i * 4, inverse[i]);
+			u.setFloat(i * 4, inverse.get(i));
 		u.setFloat(64, environmentIntensity);
 		u.setFloat(68, backgroundBlur * (background.getBackgroundMipCount() - 1));
 		u.setFloat(72, Math.cos(environmentRotation));
@@ -568,6 +632,8 @@ class Stage3D {
 			var parent = node.getParent();
 			var changed = node.update(parent.getWorldMatrix(), parentChanged);
 			switch (node.getKind()) {
+				case Model if (isSkinned(node)):
+					skinned.push(node);
 				case Model if (gathering):
 					gatherCaster(node);
 				case Model:
@@ -589,7 +655,18 @@ class Stage3D {
 				stackChanged.push(changed);
 			}
 		}
+		// Skinned models once every joint is where this frame has it: their boxes are their joints'.
+		for (node in skinned)
+			if (gathering)
+				gatherCaster(node);
+			else
+				visitModel(node);
+		skinned.resize(0);
 	}
+
+	// A model whose mesh follows joints it's bound to (a skinned mesh not bound draws as bound, still).
+	static inline function isSkinned(node:Node):Bool
+		return node.getJointCount() > 0 && node.getMesh().isSkinned();
 
 	// The six planes of m's view (Gribb and Hartmann), each ax + by + cz + d >= 0 inside, into out.
 	static function planesOf(m:Mat4, out:Vector<Float>):Void
@@ -625,6 +702,15 @@ class Stage3D {
 	var boxRZ = 0.;
 
 	function placeBox(node:Node):Void {
+		if (isSkinned(node) && JointPalette.posedBox(node, posed)) {
+			boxX = posed[0];
+			boxY = posed[1];
+			boxZ = posed[2];
+			boxRX = posed[3];
+			boxRY = posed[4];
+			boxRZ = posed[5];
+			return;
+		}
 		var mesh = node.getMesh(), w = node.getWorldMatrix();
 		var hx = (mesh.getMaxX() - mesh.getMinX()) / 2,
 			hy = (mesh.getMaxY() - mesh.getMinY()) / 2,
@@ -650,6 +736,7 @@ class Stage3D {
 		var c = casters[casterCount++];
 		c.node = node;
 		c.mesh = node.getMesh();
+		c.skinned = isSkinned(node);
 		c.cx = boxX;
 		c.cy = boxY;
 		c.cz = boxZ;
@@ -670,6 +757,7 @@ class Stage3D {
 		item.node = node;
 		item.mesh = mesh;
 		item.material = node.getMaterial();
+		item.skinned = isSkinned(node);
 		item.blended = item.material.isBlended() || node.getTint() & 255 < 255;
 		// A placement that mirrors (its matrix's determinant below 0) turns the triangles' winding over.
 		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
@@ -688,60 +776,37 @@ class Stage3D {
 			return a.material.id - b.material.id;
 		if (a.mesh.id != b.mesh.id)
 			return a.mesh.id - b.mesh.id;
+		if (a.skinned != b.skinned)
+			return a.skinned ? 1 : -1;
 		if (a.mirrored != b.mirrored)
 			return a.mirrored ? 1 : -1;
 		return a.order - b.order;
 	}
 
 	static inline function alike(a:Item, b:Item):Bool
-		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored;
+		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored && a.skinned == b.skinned;
 
 	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the first's w the tangents' handedness, the
 	// second's whether shadows fall on it), the tint (linear).
 	function writeRecord(index:Int, item:Item):Void {
 		var w = item.node.getWorldMatrix(), r = inverse, at = index * Lit3DLayout.instanceStride;
-		inverseOf(w);
+		inverse.setInverse(w);
 		for (row in 0...3)
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
 		// The w of the normals' first row: the tangents' handedness, -1 where the placement mirrors them.
-		var mirrored = r[0] * (r[5] * r[10] - r[9] * r[6]) - r[4] * (r[1] * r[10] - r[9] * r[2]) + r[8] * (r[1] * r[6] - r[5] * r[2]) < 0;
+		var mirrored = r.get(0) * (r.get(5) * r.get(10) - r.get(9) * r.get(6)) - r.get(4) * (r.get(1) * r.get(10) - r.get(9) * r.get(2))
+			+ r.get(8) * (r.get(1) * r.get(6) - r.get(5) * r.get(2)) < 0;
 		for (row in 0...3)
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
-					col < 3 ? r[row * 4 + col] : row == 0 ? (mirrored ? -1 : 1) : row == 1 && item.node.isShadowReceiving() ? 1 : 0);
+					col < 3 ? r.get(row * 4 +
+						col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (item.node.isShadowReceiving() ? 1 : 0) : item.skinned ? item.jointBase : 0);
 		var tint = item.node.getTint();
 		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
 		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
 		records.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
 		records.setFloat(at + Lit3DLayout.tintOffset + 12, (tint & 255) / 255);
-	}
-
-	// The inverse of m into `inverse`, by its adjugate; all zeros for a singular m.
-	function inverseOf(w:Mat4):Void {
-		var m0 = w.get(0), m1 = w.get(1), m2 = w.get(2), m3 = w.get(3), m4 = w.get(4), m5 = w.get(5), m6 = w.get(6), m7 = w.get(7);
-		var m8 = w.get(8), m9 = w.get(9), m10 = w.get(10), m11 = w.get(11), m12 = w.get(12), m13 = w.get(13), m14 = w.get(14), m15 = w.get(15);
-		var r = inverse;
-		r[0] = m5 * m10 * m15 - m5 * m11 * m14 - m9 * m6 * m15 + m9 * m7 * m14 + m13 * m6 * m11 - m13 * m7 * m10;
-		r[4] = -m4 * m10 * m15 + m4 * m11 * m14 + m8 * m6 * m15 - m8 * m7 * m14 - m12 * m6 * m11 + m12 * m7 * m10;
-		r[8] = m4 * m9 * m15 - m4 * m11 * m13 - m8 * m5 * m15 + m8 * m7 * m13 + m12 * m5 * m11 - m12 * m7 * m9;
-		r[12] = -m4 * m9 * m14 + m4 * m10 * m13 + m8 * m5 * m14 - m8 * m6 * m13 - m12 * m5 * m10 + m12 * m6 * m9;
-		r[1] = -m1 * m10 * m15 + m1 * m11 * m14 + m9 * m2 * m15 - m9 * m3 * m14 - m13 * m2 * m11 + m13 * m3 * m10;
-		r[5] = m0 * m10 * m15 - m0 * m11 * m14 - m8 * m2 * m15 + m8 * m3 * m14 + m12 * m2 * m11 - m12 * m3 * m10;
-		r[9] = -m0 * m9 * m15 + m0 * m11 * m13 + m8 * m1 * m15 - m8 * m3 * m13 - m12 * m1 * m11 + m12 * m3 * m9;
-		r[13] = m0 * m9 * m14 - m0 * m10 * m13 - m8 * m1 * m14 + m8 * m2 * m13 + m12 * m1 * m10 - m12 * m2 * m9;
-		r[2] = m1 * m6 * m15 - m1 * m7 * m14 - m5 * m2 * m15 + m5 * m3 * m14 + m13 * m2 * m7 - m13 * m3 * m6;
-		r[6] = -m0 * m6 * m15 + m0 * m7 * m14 + m4 * m2 * m15 - m4 * m3 * m14 - m12 * m2 * m7 + m12 * m3 * m6;
-		r[10] = m0 * m5 * m15 - m0 * m7 * m13 - m4 * m1 * m15 + m4 * m3 * m13 + m12 * m1 * m7 - m12 * m3 * m5;
-		r[14] = -m0 * m5 * m14 + m0 * m6 * m13 + m4 * m1 * m14 - m4 * m2 * m13 - m12 * m1 * m6 + m12 * m2 * m5;
-		r[3] = -m1 * m6 * m11 + m1 * m7 * m10 + m5 * m2 * m11 - m5 * m3 * m10 - m9 * m2 * m7 + m9 * m3 * m6;
-		r[7] = m0 * m6 * m11 - m0 * m7 * m10 - m4 * m2 * m11 + m4 * m3 * m10 + m8 * m2 * m7 - m8 * m3 * m6;
-		r[11] = -m0 * m5 * m11 + m0 * m7 * m9 + m4 * m1 * m11 - m4 * m3 * m9 - m8 * m1 * m7 + m8 * m3 * m5;
-		r[15] = m0 * m5 * m10 - m0 * m6 * m9 - m4 * m1 * m10 + m4 * m2 * m9 + m8 * m1 * m6 - m8 * m2 * m5;
-		var det = m0 * r[0] + m1 * r[4] + m2 * r[8] + m3 * r[12];
-		var scale = det != 0 ? 1 / det : 0;
-		for (i in 0...16)
-			r[i] *= scale;
 	}
 
 	// The fragment uniforms the whole draw shares: the camera, the ambient light, the lights and their shadows (the material is a run's).
@@ -851,6 +916,21 @@ class Stage3D {
 			shadows = shadowLights.length > 0 ? shadowMap : noShadows,
 			cube = environment != null ? environment.getLightingTexture() : noEnvironment,
 			table = brdf != null ? brdf.getHandle() : white.getHandle();
+		// A skinned model draws through the skinned program, its joints from the palette; a surface shader isn't skinned yet, so it's ignored.
+		if (item.skinned) {
+			gpu.draw(pipelines.skinned3d(blendOf(item), item.material.isDoubleSided(), item.mirrored),
+				[item.mesh.getVertexBuffer(gpu), instanceBuffer, item.mesh.getSkinBuffer(gpu)], item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(),
+				first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table, palette.getTexture()], [
+					base.getSampling(),
+					normal.getSampling(),
+					Sampling.NEAREST,
+					Sampling.LINEAR,
+					Sampling.LINEAR,
+					Sampling.NEAREST
+				], [vertexUniforms, u]);
+			draws++;
+			return;
+		}
 		if (shader == null) {
 			gpu.draw(pipelines.lit3d(blendOf(item), item.material.isDoubleSided(), item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
 				item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
@@ -934,6 +1014,12 @@ private class Item {
 	/** Whether its placement mirrors it, so its front faces wind clockwise. */
 	public var mirrored = false;
 
+	/** Whether it follows joints (Stage3D.isSkinned). */
+	public var skinned = false;
+
+	/** Its first joint in the palette, when skinned. */
+	public var jointBase = 0;
+
 	/** Its box's center's distance along the camera's view. */
 	public var depth = 0.;
 
@@ -951,6 +1037,12 @@ private class Caster {
 
 	/** Its mesh. */
 	public var mesh:Mesh;
+
+	/** Whether it follows joints. */
+	public var skinned = false;
+
+	/** Its first joint in the palette, when skinned. */
+	public var jointBase = 0;
 
 	/** Its box's center in the world, x. */
 	public var cx = 0.;
