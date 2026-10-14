@@ -1,7 +1,7 @@
 package helix.input;
 
-/** Physical keys by place on a US layout. The values are Sokol's (GLFW's) key codes, so native input passes them through;
-	the browser maps KeyboardEvent.code to them. Left and right Shift, Control and Alt are one key each. */
+/** Physical keys by place on a US layout, numbered as GLFW numbers them; each input adapter maps its platform's codes to them. Left and
+	right Shift, Control, Alt and Super are one key each. */
 enum abstract Key(Int) to Int {
 	var Space = 32;
 	var Apostrophe = 39;
@@ -369,24 +369,4 @@ enum abstract Key(Int) to Int {
 			throw 'Unknown key ' + name;
 		return all[i];
 	}
-
-	/** The key a native code names: Sokol's right-hand modifiers are the left-hand ones here. */
-	public static function fromCode(code:Int):Null<Key> {
-		if (code == 344)
-			code = 340;
-		if (code == 345)
-			code = 341;
-		if (code == 346)
-			code = 342;
-		if (code == 347)
-			code = 343;
-		return code >= 0 && code < COUNT && valid[code] ? cast code : null;
-	}
-
-	static final valid:Array<Bool> = {
-		var v = [for (_ in 0...COUNT) false];
-		for (k in all)
-			v[k] = true;
-		v;
-	};
 }

@@ -1,102 +1,76 @@
 package helix.adapters.input.dom;
 
-import helix.input.InputState;
+import helix.input.IInputEvents;
+import helix.input.IInputSource;
 import helix.input.Key;
 import helix.input.MouseButton;
-import helix.input.PadButton;
 import helix.input.PadAxis;
+import helix.input.PadButton;
 import js.Browser;
 import js.html.CanvasElement;
 
-/** Browser input: keys and typed text from the window; pointer, mouse buttons, fingers and wheel from the canvas, in its framebuffer pixels; gamepads read at poll(). */
-class DomInputAdapter extends InputState implements helix.input.IInputDevice {
-	// Whether the page has the input: while not (blurred or hidden), key presses are ignored and poll() lets go of everything.
-	var active = true;
-
+/** Browser input: keys and typed text from the window; mouse buttons, moves, fingers and wheel from the canvas, in its framebuffer pixels;
+	focus from the window's focus and the page's visibility; gamepads read at poll(), in the W3C standard layout. */
+class DomInputAdapter implements IInputSource {
 	var canvas:CanvasElement;
+	var events:IInputEvents;
+	var buttons:Array<Bool> = [for (_ in PadButton.all) false];
+	var axes:Array<Float> = [for (_ in PadAxis.all) 0.];
 
-	/** Fingers down on the canvas; the first is the pointer until a second lands, then none is until all lift. */
-	var fingers:Array<Int> = [];
-
-	var pointerFinger = -1;
-	var gesture = false;
-
-	/** Listens on the window and the canvas. */
-	public function new(canvas:CanvasElement) {
-		super();
+	/** Input from the window and canvas, once started. */
+	public function new(canvas:CanvasElement)
 		this.canvas = canvas;
-		Browser.window.addEventListener("blur", _ -> active = false);
-		Browser.window.addEventListener("focus", _ -> active = !Browser.document.hidden);
-		Browser.document.addEventListener("visibilitychange", _ -> active = !Browser.document.hidden);
+
+	public function start(events:IInputEvents):Void {
+		this.events = events;
+		if (Browser.document.hidden)
+			events.focus(false);
+		Browser.window.addEventListener("blur", _ -> events.focus(false));
+		Browser.window.addEventListener("focus", _ -> events.focus(!Browser.document.hidden));
+		Browser.document.addEventListener("visibilitychange", _ -> events.focus(!Browser.document.hidden));
 		Browser.window.addEventListener("keydown", e -> {
-			if (!active)
-				return;
 			var event:js.html.KeyboardEvent = cast e,
 				k = codes.get(event.code);
-			var shortcut = event.ctrlKey || event.metaKey || event.altKey;
 			if (k != null) {
-				keyEvent(k, true);
+				events.key(k, true);
+				// The page keeps its own shortcuts and the function keys; the game gets the rest.
 				var n:Int = k;
-				if (!shortcut && !(n >= (Key.F1 : Int) && n <= (Key.F25 : Int)))
+				if (!(event.ctrlKey || event.metaKey || event.altKey) && !(n >= (Key.F1 : Int) && n <= (Key.F25 : Int)))
 					event.preventDefault();
 			}
 			// Typed characters: event.key is one character (or a surrogate pair) once the layout is applied.
-			if (!shortcut
-				&& event.key != null
-				&& (event.key.length == 1 || event.key.length == 2 && StringTools.fastCodeAt(event.key, 0) >= 0xD800))
-				textEvent(event.key);
+			if (event.key != null && (event.key.length == 1 || event.key.length == 2 && StringTools.fastCodeAt(event.key, 0) >= 0xD800))
+				events.text(event.key);
 		});
 		Browser.window.addEventListener("keyup", e -> {
 			var event:js.html.KeyboardEvent = cast e,
 				k = codes.get(event.code);
 			if (k != null)
-				keyEvent(k, false);
+				events.key(k, false);
 		});
 		canvas.addEventListener("contextmenu", e -> e.preventDefault());
 		canvas.addEventListener("pointerdown", e -> {
 			var event:js.html.PointerEvent = cast e;
 			canvas.setPointerCapture(event.pointerId);
 			event.preventDefault();
-			if (event.pointerType == "touch")
-				finger(event, true);
-			else {
-				mouse(event.buttons);
-				if (event.button == 0)
-					pointer(event, true);
-			}
+			pointer(event, true);
 		});
-		canvas.addEventListener("pointermove", e -> {
-			var event:js.html.PointerEvent = cast e;
-			if (event.pointerType == "touch")
-				finger(event, fingers.indexOf(event.pointerId) >= 0);
-			else {
-				mouse(event.buttons);
-				pointer(event, event.buttons & 1 != 0);
-			}
-		});
-		canvas.addEventListener("pointerup", e -> {
-			var event:js.html.PointerEvent = cast e;
-			if (event.pointerType == "touch")
-				finger(event, false);
-			else {
-				mouse(event.buttons);
-				if (event.button == 0)
-					pointer(event, false);
-			}
-		});
+		canvas.addEventListener("pointermove", e -> pointer(cast e, true));
+		canvas.addEventListener("pointerup", e -> pointer(cast e, false));
 		canvas.addEventListener("pointercancel", e -> {
 			var event:js.html.PointerEvent = cast e;
-			if (event.pointerType == "touch")
-				finger(event, false);
-			else
-				pointerEvent(-1, -1, false);
+			if (event.pointerType == "touch") {
+				var p = position(event);
+				events.touch(event.pointerId, p.x, p.y, false);
+			} else
+				events.mouseLeave();
 		});
 		canvas.addEventListener("wheel", e -> {
 			var event:js.html.WheelEvent = cast e;
 			event.preventDefault();
 			// Notches: Chromium and Firefox report about 100 pixels or 3 lines a notch.
 			var scale = event.deltaMode == 0 ? 1 / 100 : event.deltaMode == 1 ? 1 / 3 : 1;
-			wheelEvent(event.deltaX * scale, -event.deltaY * scale);
+			events.wheel(event.deltaX * scale, -event.deltaY * scale);
 		}, {passive: false});
 	}
 
@@ -105,78 +79,39 @@ class DomInputAdapter extends InputState implements helix.input.IInputDevice {
 		return {x: (event.clientX - box.left) * canvas.width / box.width, y: (event.clientY - box.top) * canvas.height / box.height};
 	}
 
-	function pointer(event:js.html.PointerEvent, value:Bool):Void {
+	/** A finger down, moved (down) or lifted; or the mouse's buttons from the event's bitmask (a second button pressed while one is held
+		arrives as a move, not a down), then its move. */
+	function pointer(event:js.html.PointerEvent, down:Bool):Void {
 		var p = position(event);
-		pointerEvent(p.x, p.y, value);
-	}
-
-	/** Every button from the event's bitmask: a second button pressed while one is held arrives as a move, not a down. */
-	function mouse(buttons:Int):Void {
-		mouseEvent(MouseButton.Left, buttons & 1 != 0);
-		mouseEvent(MouseButton.Right, buttons & 2 != 0);
-		mouseEvent(MouseButton.Middle, buttons & 4 != 0);
-	}
-
-	function finger(event:js.html.PointerEvent, value:Bool):Void {
-		var p = position(event), id = event.pointerId;
-		touchEvent(id, p.x, p.y, value);
-		if (value && fingers.indexOf(id) < 0)
-			fingers.push(id);
-		if (!value)
-			fingers.remove(id);
-		// A second finger lets the pointer go, off the window, so a pinch never drops or clicks anything.
-		if (fingers.length > 1 && !gesture) {
-			gesture = true;
-			if (pointerFinger >= 0) {
-				pointerEvent(-1, -1, false);
-				pointerFinger = -1;
-			}
-		}
-		if (gesture) {
-			if (fingers.length == 0)
-				gesture = false;
+		if (event.pointerType == "touch") {
+			events.touch(event.pointerId, p.x, p.y, down);
 			return;
 		}
-		if (pointerFinger < 0 && value) {
-			pointerFinger = id;
-			pointerEvent(p.x, p.y, true);
-		} else if (id == pointerFinger) {
-			pointerEvent(p.x, p.y, value);
-			if (!value)
-				pointerFinger = -1;
-		}
+		var held = event.buttons;
+		events.mouseButton(MouseButton.Left, held & 1 != 0, p.x, p.y);
+		events.mouseButton(MouseButton.Right, held & 2 != 0, p.x, p.y);
+		events.mouseButton(MouseButton.Middle, held & 4 != 0, p.x, p.y);
+		events.mouseMove(p.x, p.y);
 	}
 
-	/** Call once a frame: reads the gamepads into the first four slots, or lets go of everything while not active. */
+	/** Reports the first pads the page sees (a page sees a pad only after a button press on it), each in the W3C standard layout. */
 	public function poll():Void {
-		if (!active) {
-			clear();
-			return;
-		}
-		// The first four pads the page sees, in the W3C standard layout; a page sees a pad only after a button press on it.
-		var list:Dynamic = Browser.navigator.getGamepads(), slot = 0;
+		var list:Dynamic = Browser.navigator.getGamepads();
 		for (i in 0...list.length) {
 			var pad:Dynamic = list[i];
-			if (pad == null || !pad.connected || slot >= 4)
+			if (pad == null || !pad.connected)
 				continue;
-			var state = pads[slot++];
-			if (!state.isConnected() || state.getName() != pad.id)
-				state.connect(true, pad.id);
 			for (button in PadButton.all) {
 				var b:Int = button;
-				state.buttonEvent(button, pad.buttons.length > b && pad.buttons[b].pressed);
+				buttons[b] = pad.buttons.length > b && pad.buttons[b].pressed;
 			}
 			for (axis in [PadAxis.LeftX, PadAxis.LeftY, PadAxis.RightX, PadAxis.RightY]) {
 				var a:Int = axis;
-				state.axisEvent(axis, pad.axes.length > a ? pad.axes[a] : 0);
+				axes[a] = pad.axes.length > a ? pad.axes[a] : 0;
 			}
-			state.axisEvent(PadAxis.LeftTrigger, pad.buttons.length > 6 ? pad.buttons[6].value : 0);
-			state.axisEvent(PadAxis.RightTrigger, pad.buttons.length > 7 ? pad.buttons[7].value : 0);
-		}
-		while (slot < 4) {
-			if (pads[slot].isConnected())
-				pads[slot].connect(false, "");
-			slot++;
+			axes[(PadAxis.LeftTrigger : Int)] = pad.buttons.length > 6 ? pad.buttons[6].value : 0;
+			axes[(PadAxis.RightTrigger : Int)] = pad.buttons.length > 7 ? pad.buttons[7].value : 0;
+			events.pad(pad.id, buttons, axes);
 		}
 	}
 

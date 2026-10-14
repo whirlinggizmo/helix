@@ -7,6 +7,7 @@ import helix.assets.Storage;
 import helix.graphics.ImageDecoding;
 import helix.audio.AudioDecoding;
 import helix.audio.AudioResources;
+import helix.input.InputRouter;
 
 /** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
 	frame it runs them in their order (the shared services' polls, input's, the app's frame, input's frame end) with the clock and timings,
@@ -24,6 +25,7 @@ class Runner {
 	var resources:AssetService;
 	var decoding:ImageDecoding;
 	var audioDecoding:AudioDecoding;
+	var input:InputRouter;
 	var clock = new FrameClock();
 	var frameCpu = 0.;
 	var frameInterval = 0.;
@@ -73,7 +75,9 @@ class Runner {
 		audioDecoding = new AudioDecoding(a.audioDecoder);
 		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
 		s.graphics = a.graphics;
-		s.input = a.input;
+		input = new InputRouter();
+		a.input.start(input);
+		s.input = input.getInput();
 		s.audio = a.audio;
 		s.window = host.getWindow();
 		s.fetch = fetch;
@@ -96,9 +100,9 @@ class Runner {
 		decoding.poll();
 		audioDecoding.poll();
 		services.environments.poll();
-		adapters.input.poll();
+		input.poll(adapters.input);
 		app.frame(clock.getDelta());
-		adapters.input.endFrame();
+		input.endFrame();
 		frameCpu = (host.getTime() - now) * 1000;
 	}
 

@@ -98,10 +98,10 @@ interface IInput {
 	/** Any connected pad. */
 	public function isPadDown(button:PadButton):Bool;
 
-	/** A connected pad's button went down: a tick edge until consume(), not counted, so two presses between ticks reach one. */
+	/** A connected pad's button went down: a counted tick edge, as a key's. */
 	public function isPadPressed(button:PadButton):Bool;
 
-	/** The first connected pad's axis, before the dead zone. */
+	/** The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it. */
 	public function getPadAxis(axis:PadAxis):Float;
 
 	/** Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges. */

@@ -16,7 +16,7 @@ class Gamepad {
 	/** An empty slot. */
 	public function new() {}
 
-	/** Whether a pad is in this slot; natively, only while the window has the focus. */
+	/** Whether a pad is in this slot. While the window is unfocused a pad stays connected, its buttons up and axes centred. */
 	public function isConnected():Bool
 		return connected;
 

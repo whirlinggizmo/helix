@@ -23,6 +23,9 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `IAudio.destroyStream`: Web Audio stopped the stream's playbacks; Sokol's didn't, and a playing stream kept reading its file. `AudioResources` hid it by keeping resources alive while played. Now both stop them (DECISIONS 83).
 - A hot reload whose new audio failed to decode threw inside the decode callback. Now it's traced and the old clip kept (DECISIONS 83).
 - `WebAudioAdapter.unlock()` made the AudioContext without the 44,100 Hz rate decoding asked for, so which ran first decided the rate. Decoding now has its own 44,100 Hz `OfflineAudioContext` (DECISIONS 83).
+- `DomInputAdapter` gated only keydown on focus: pointer, mouse and wheel still recorded while inactive. Native touch never drove the pointer. The shared `InputRouter` now applies one focus and pointer policy (DECISIONS 84).
+- `InputState.clear()` kept typed text and wheel notches; now it drops them. `InputState.capture`/`capturePointer` had no callers and are gone (DECISIONS 84).
+- `isPadPressed` was documented as not counted, but is; `getPadAxis` was raw while `getPad().getAxis` applied the dead zone; both now say and do the same (DECISIONS 84).
 
 ## Open
 
@@ -34,14 +37,11 @@ Found while documenting every public member (2026-10-13), by reading each implem
 
 **Correctness**
 - `HaxeHttpFetchAdapter`: cancelling doesn't stop the download (the worker runs to the end and holds one of two slots); `timeoutSeconds` limits only connecting; `noCache` is ignored; `Content-Length` is read case-sensitively; cancelled requests' progress readers are never removed.
-- `DomInputAdapter` gates only keydown on `active`: pointer, mouse and wheel still record while inactive.
-- `InputState.clear()` keeps typed text and wheel notches.
 
 - A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**
 - `FileStorageAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
-- `InputState.capture`/`capturePointer` have no callers.
 - The default clear color is written twice (WebGL2 adapter and graphics.c).
 - One native host per program (`SokolHostAdapter.instance`).
 - Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).

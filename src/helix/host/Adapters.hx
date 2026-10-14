@@ -7,7 +7,7 @@ import helix.audio.IAudioDecoder;
 import helix.debug.ITestHarness;
 import helix.graphics.IGraphics;
 import helix.graphics.IImageDecoder;
-import helix.input.IInputDevice;
+import helix.input.IInputSource;
 
 /** A profile's choice of adapter for each platform contract, which the Runner builds the app's Services over. */
 typedef Adapters = {
@@ -15,7 +15,7 @@ typedef Adapters = {
 	var graphics:IGraphics;
 
 	/** Keyboard, mouse, touch and gamepads. */
-	var input:IInputDevice;
+	var input:IInputSource;
 
 	/** Sound output. */
 	var audio:IAudio;

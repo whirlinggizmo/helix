@@ -1,6 +1,6 @@
 package helix.input;
 
-/** Shared edge accumulator used by real adapters, replay and tooling.
+/** The input an app reads, as edges and state: fed by the InputRouter from a platform's events, or directly by replay and tests.
 	Tick edges (isPressed, isReleased) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick,
 	and two presses between ticks reach two ticks;
 	frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame, until the host's endFrame(). */
@@ -122,7 +122,7 @@ class InputState implements IInput {
 	public function getPadAxis(axis:PadAxis):Float {
 		for (pad in pads)
 			if (pad.isConnected())
-				return pad.getRawAxis(axis);
+				return pad.getAxis(axis);
 		return 0;
 	}
 
@@ -137,17 +137,6 @@ class InputState implements IInput {
 			frameLifts[key] = true;
 		}
 		held[key] = value;
-	}
-
-	/** A key's state and edges applied as given, not derived from a change: for replay. */
-	public function capture(key:Key, value:Bool, push:Bool, lift:Bool):Void {
-		held[key] = value;
-		if (push)
-			pushes[key]++;
-		if (lift)
-			lifts[key]++;
-		framePushes[key] = framePushes[key] || push;
-		frameLifts[key] = frameLifts[key] || lift;
 	}
 
 	/** Pad 0's button or axis, connecting it: for replay and tests. */
@@ -190,19 +179,6 @@ class InputState implements IInput {
 			pointerFrameReleased = true;
 		}
 		pointerDown = value;
-	}
-
-	/** The primary pointer's position, state and edges applied as given, not derived from a change: for replay. */
-	public function capturePointer(x:Float, y:Float, value:Bool, push:Bool, lift:Bool):Void {
-		pointerX = x;
-		pointerY = y;
-		pointerDown = value;
-		if (push)
-			pointerPushes++;
-		if (lift)
-			pointerLifts++;
-		pointerFramePressed = pointerFramePressed || push;
-		pointerFrameReleased = pointerFrameReleased || lift;
 	}
 
 	/** Typed characters, appended to this frame's text. */
@@ -306,7 +282,7 @@ class InputState implements IInput {
 	public function getTouchGestureRotation(perTick = false):Float
 		return (perTick ? tickGesture : frameGesture)[3];
 
-	/** Lets go of everything held, as when focus is lost: the releases are edges, and presses not yet consumed are dropped. */
+	/** Lets go of everything held, as when focus is lost: the releases are edges; presses not yet consumed, typed text and the wheel are dropped. */
 	public function clear():Void {
 		for (key in Key.all)
 			keyEvent(key, false);
@@ -335,6 +311,9 @@ class InputState implements IInput {
 		}
 		pointerPushes = 0;
 		pointerFramePressed = false;
+		text = "";
+		wheelX = 0;
+		wheelY = 0;
 	}
 
 	public function consume():Void {

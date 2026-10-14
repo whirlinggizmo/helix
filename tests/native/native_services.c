@@ -28,14 +28,13 @@ static void *render_thread(void *unused) {
 }
 int main(void) {
     helix_input_setup();
-    /* Events queue in order and drain once; focus changes are tracked as they are queued. */
+    /* Events queue in order and drain once. */
     helix_input_push(HELIX_EVENT_KEY,257,1,0,0); helix_input_push(HELIX_EVENT_KEY,257,0,0,0); helix_input_push(HELIX_EVENT_MOUSE_BUTTON,0,1,20,30);
     CHECK(helix_input_next() && helix_event_type()==HELIX_EVENT_KEY && helix_event_code()==257 && helix_event_value()==1);
     CHECK(helix_input_next() && helix_event_value()==0); CHECK(helix_input_next() && helix_event_type()==HELIX_EVENT_MOUSE_BUTTON && helix_event_x()==20 && helix_event_y()==30);
     CHECK(!helix_input_next());
     for (int i=0; i<1100; i++) helix_input_push(HELIX_EVENT_MOUSE_MOVE,0,0,(float)i,0);
     int drained=0; while (helix_input_next()) drained++; CHECK(drained==1024); /* A full queue drops the newest. */
-    helix_input_push(HELIX_EVENT_FOCUS,0,0,0,0); CHECK(!helix_focused()); helix_input_push(HELIX_EVENT_FOCUS,0,1,0,0); CHECK(helix_focused()); while (helix_input_next()) {}
 
     int pipefd[2]; CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0);
     helix_gamepad_test_connect(1,pipefd[0]); helix_gamepad_test_driver(1,1,0); /* xpad: X and Y report BTN_NORTH's and BTN_WEST's codes */
@@ -47,7 +46,6 @@ int main(void) {
     CHECK(helix_pad_button(1,1) && helix_pad_button(1,3) && !helix_pad_button(1,2) && helix_pad_axis(1,0)<-.7 && helix_pad_axis(1,3)>.7 && helix_pad_axis(1,5)>.7 && helix_pad_axis(1,4)==0);
     helix_gamepad_test_driver(1,0,0); CHECK(helix_pad_button(1,2) && !helix_pad_button(1,3)); helix_gamepad_test_driver(1,1,0); /* by the kernel's spec, BTN_Y (BTN_WEST) is West */
     event(pipefd[1],EV_ABS,ABS_HAT0X,-1); event(pipefd[1],EV_ABS,ABS_HAT0Y,1); helix_input_poll(); CHECK(helix_pad_button(1,14) && helix_pad_button(1,13) && !helix_pad_button(1,12));
-    helix_input_push(HELIX_EVENT_FOCUS,0,0,0,0); CHECK(!helix_pad_button(1,1) && helix_pad_axis(1,0)==0); helix_input_push(HELIX_EVENT_FOCUS,0,1,0,0); while (helix_input_next()) {}
     event(pipefd[1],EV_ABS,ABS_X,40000); event(pipefd[1],EV_KEY,BTN_EAST,0); helix_input_poll(); CHECK(helix_pad_axis(1,0)==1 && !helix_pad_button(1,1));
     close(pipefd[1]); helix_input_poll(); CHECK(!helix_pad_connected(1) && !helix_pad_button(1,1) && helix_pad_axis(1,5)==0);
     CHECK(pipe(pipefd)==0); CHECK(fcntl(pipefd[0],F_SETFL,O_NONBLOCK)==0); helix_gamepad_test_connect(0,pipefd[0]);

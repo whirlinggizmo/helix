@@ -13,7 +13,7 @@ extern class InputBridge extends SokolNativeBuild {
 	@:native("helix_event_value") static function eventValue():Int;
 	@:native("helix_event_x") static function eventX():cpp.Float32;
 	@:native("helix_event_y") static function eventY():cpp.Float32;
-	@:native("helix_focused") static function focused():Int;
+	@:native("helix_pad_slots") static function padSlots():Int;
 	@:native("helix_pad_connected") static function padConnected(pad:Int):Int;
 	@:native("helix_pad_name") static function padName(pad:Int):cpp.ConstCharStar;
 	@:native("helix_pad_button") static function padButton(pad:Int, button:Int):Int;

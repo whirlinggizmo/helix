@@ -1,21 +1,27 @@
 package helix.adapters.input.sokol;
 
 import helix.adapters.input.sokol.internal.InputBridge;
-import helix.input.InputState;
+import helix.input.IInputEvents;
+import helix.input.IInputSource;
 import helix.input.Key;
 import helix.input.MouseButton;
-import helix.input.PadButton;
 import helix.input.PadAxis;
+import helix.input.PadButton;
 
-/** Sokol's queued events applied in order, so a press and release in one frame keep both edges; then the evdev pads. */
-class SokolInputAdapter extends InputState implements helix.input.IInputDevice {
+/** Native input: sokol's queued window events reported in order at poll (so a press and release in one frame keep both edges), then the
+	evdev gamepads. */
+class SokolInputAdapter implements IInputSource {
+	var events:IInputEvents;
+	var buttons:Array<Bool> = [for (_ in PadButton.all) false];
+	var axes:Array<Float> = [for (_ in PadAxis.all) 0.];
+
 	/** Sets up the native input bridge. */
-	public function new() {
-		super();
+	public function new()
 		InputBridge.inputSetup();
-	}
 
-	/** Call once a frame: applies Sokol's queued events, then reads the pads (none while the window lacks the focus). */
+	public function start(events:IInputEvents):Void
+		this.events = events;
+
 	public function poll():Void {
 		InputBridge.inputPoll();
 		while (InputBridge.next() != 0) {
@@ -25,47 +31,50 @@ class SokolInputAdapter extends InputState implements helix.input.IInputDevice {
 				y:Float = InputBridge.eventY();
 			switch (InputBridge.eventType()) {
 				case 1:
-					var key = Key.fromCode(code);
+					var key = toKey(code);
 					if (key != null)
-						keyEvent(key, value);
+						events.key(key, value);
 				case 2:
-					textEvent(String.fromCharCode(code));
+					events.text(String.fromCharCode(code));
 				case 3:
 					if (code >= 0 && code < 3)
-						mouseEvent(cast code, value);
-					if (code == MouseButton.Left)
-						pointerEvent(x, y, value);
-					else
-						pointerEvent(x, y, pointerDown);
+						events.mouseButton(cast code, value, x, y);
 				case 4:
-					pointerEvent(x, y, pointerDown);
+					events.mouseMove(x, y);
 				case 5:
-					wheelEvent(x, y);
+					events.wheel(x, y);
 				case 6:
-					touchEvent(code, x, y, value);
+					events.touch(code, x, y, value);
 				case 7:
-					if (!value)
-						clear();
+					events.focus(value);
 				default:
 			}
 		}
-		var focused = InputBridge.focused() != 0;
-		for (i in 0...pads.length) {
-			var pad = pads[i], connected = focused && InputBridge.padConnected(i) != 0;
-			if (!connected) {
-				if (pad.isConnected())
-					pad.connect(false, "");
+		for (i in 0...InputBridge.padSlots()) {
+			if (InputBridge.padConnected(i) == 0)
 				continue;
-			}
-			var name:String = InputBridge.padName(i);
-			if (!pad.isConnected() || pad.getName() != name)
-				pad.connect(true, name);
 			for (button in PadButton.all)
-				pad.buttonEvent(button, InputBridge.padButton(i, button) != 0);
+				buttons[button] = InputBridge.padButton(i, button) != 0;
 			for (axis in PadAxis.all)
-				pad.axisEvent(axis, InputBridge.padAxis(i, axis));
+				axes[axis] = InputBridge.padAxis(i, axis);
+			events.pad(InputBridge.padName(i), buttons, axes);
 		}
 	}
+
+	/** The Key a sokol key code names: sokol's codes are Key's numbers, its right-hand modifiers folded onto the left-hand ones; null for a
+		key HeliX doesn't name. */
+	static function toKey(code:Int):Null<Key> {
+		if (code >= 344 && code <= 347)
+			code -= 4;
+		return code >= 0 && code < Key.COUNT && known[code] ? cast code : null;
+	}
+
+	static final known:Array<Bool> = {
+		var v = [for (_ in 0...Key.COUNT) false];
+		for (k in Key.all)
+			v[k] = true;
+		v;
+	};
 
 	/** Releases the native input bridge. */
 	public function shutdown():Void
