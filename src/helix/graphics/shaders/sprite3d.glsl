@@ -10,7 +10,8 @@
  * i_right     xyz its own right (facing 2+)
  * i_up        xyz its own up (facing 2+), w the alpha mode: above 0 a mask's cutoff (texels below it discarded, the rest opaque), below 0
  *             opaque, 0 as is (blended or added by the pipeline)
- * i_tint      rgba, sRGB values */
+ * i_tint      rgba, sRGB values; an alpha over 1.5 marks a distance-field texture (text: alpha 0.5 is the outline), tinted by the alpha less 2,
+ *             as the 2D sprites' does */
 @vs sprite3d_vs
 layout(binding=0) uniform sprite3d_vs_params {
     mat4 view_projection;
@@ -57,7 +58,14 @@ in vec4 v_tint;
 in float v_alpha_mode;
 out vec4 frag_color;
 void main() {
-    frag_color = texture(sampler2D(sprite3d_texture, sprite3d_sampler), v_uv) * v_tint;
+    vec4 texel = texture(sampler2D(sprite3d_texture, sprite3d_sampler), v_uv);
+    if (v_tint.a > 1.5) {
+        // A distance field (text): the edge smoothed over about a pixel at any distance.
+        float w = max(fwidth(texel.a) * 0.75, 1e-4);
+        frag_color = vec4(v_tint.rgb, smoothstep(0.5 - w, 0.5 + w, texel.a) * (v_tint.a - 2.0));
+        return;
+    }
+    frag_color = texel * v_tint;
     if (v_alpha_mode > 0.0 && frag_color.a < v_alpha_mode) {
         discard;
     }

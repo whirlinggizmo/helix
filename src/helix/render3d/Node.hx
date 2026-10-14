@@ -38,6 +38,9 @@ class Node {
 	var facing:SpriteFacing = Camera;
 	var alphaMode:SpriteAlpha = Blend;
 	var cutoff = .5;
+	var content = "";
+	var textSize = .5;
+	var font:Null<helix.render2d.Font2D>;
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
@@ -90,6 +93,54 @@ class Node {
 		return node;
 	}
 
+	/** A line of text: value, size world units tall (ascent to descent), in font (null: the stage's built-in one), its block centered on its
+		position (its pivot), facing the camera, tinted color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance
+		(a distance-field font). Sized, pivoted and faced as a sprite. */
+	public static function text3d(value:String, size = .5, color = 0xffffffff, ?font:helix.render2d.Font2D):Node {
+		var node = new Node(TextNode);
+		node.content = value;
+		node.textSize = size;
+		node.tint = color;
+		node.font = font;
+		return node;
+	}
+
+	/** A text node's text; "" for another kind. */
+	public function getText():String
+		return content;
+
+	/** Sets a text node's text. False for another kind. */
+	public function setText(value:String):Bool {
+		if (kind != TextNode)
+			return false;
+		content = value;
+		return true;
+	}
+
+	/** A text node's size, world units tall. */
+	public function getTextSize():Float
+		return textSize;
+
+	/** Sets a text node's size. False for another kind or a size of 0 or less. */
+	public function setTextSize(value:Float):Bool {
+		if (kind != TextNode || !(value > 0))
+			return false;
+		textSize = value;
+		return true;
+	}
+
+	/** A text node's font, or null for the stage's built-in one. */
+	public function getFont():Null<helix.render2d.Font2D>
+		return font;
+
+	/** Sets a text node's font (null: the stage's built-in one). False for another kind. */
+	public function setFont(value:Null<helix.render2d.Font2D>):Bool {
+		if (kind != TextNode)
+			return false;
+		font = value;
+		return true;
+	}
+
 	/** A sprite's texture, or null. */
 	public function getTexture():Null<helix.render2d.Texture2D>
 		return texture;
@@ -135,10 +186,10 @@ class Node {
 		return true;
 	}
 
-	/** The point of a sprite at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its
-		bottom-right (0.5, 0.5, its center, by default). False for another kind. */
+	/** The point of a sprite (or a text's block) at its position, which it turns and scales about, as a fraction of its size: 0, 0 its
+		top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default). False for another kind. */
 	public function setPivot(x:Float, y:Float):Bool {
-		if (kind != SpriteNode)
+		if (kind != SpriteNode && kind != TextNode)
 			return false;
 		pivotX = x;
 		pivotY = y;
@@ -157,9 +208,9 @@ class Node {
 	public function getFacing():SpriteFacing
 		return facing;
 
-	/** Sets how a sprite faces. False for another kind. */
+	/** Sets how a sprite or text faces. False for another kind. */
 	public function setFacing(value:SpriteFacing):Bool {
-		if (kind != SpriteNode)
+		if (kind != SpriteNode && kind != TextNode)
 			return false;
 		facing = value;
 		return true;
@@ -498,6 +549,9 @@ enum abstract NodeKind(Int) {
 
 	/** A textured quad: a sprite. */
 	var SpriteNode = 4;
+
+	/** A line of text in the world. */
+	var TextNode = 5;
 }
 
 /** How a 3D sprite faces. */

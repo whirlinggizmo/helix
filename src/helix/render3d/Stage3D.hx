@@ -199,6 +199,8 @@ class Stage3D {
 						lights.push(node);
 				case SpriteNode:
 					sprites.visit(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+				case TextNode:
+					sprites.visitText(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 				case Group | CameraNode:
 			}
 			for (i in 0...node.getChildCount()) {

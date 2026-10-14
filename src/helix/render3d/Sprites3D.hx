@@ -8,7 +8,7 @@ import helix.render2d.Texture2D;
 import helix.render3d.Node.SpriteAlpha;
 import helix.render3d.Node.SpriteFacing;
 
-/** A Stage3D's sprites, drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
+/** A Stage3D's sprites and texts (a text a sprite a glyph, in its plane), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
 	reach), sorts them (opaque and masked ones by texture; blended ones back to front; added ones by texture), writes their records (where the
 	pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and
 	draws each run of a texture as one instanced draw: the opaque ones after the opaque models, the blended ones among the see-through models
@@ -33,6 +33,11 @@ class Sprites3D {
 	var addStart = 0;
 	var nextBlend = 0;
 	var draws = 0;
+	var font:Null<helix.render2d.Font2D>;
+	// The camera's axes this draw, and the upright facing's right.
+	var cameraRight = [1., 0, 0];
+	var cameraUp = [0., 1, 0];
+	var upright = [1., 0, 0];
 
 	/** Sprites on gpu: their pipelines, quad and instance buffer. */
 	public function new(gpu:IGraphics) {
@@ -70,6 +75,69 @@ class Sprites3D {
 		draws = 0;
 	}
 
+	// The font a text without its own draws in: the built-in one, made when first needed.
+	function builtIn():helix.render2d.Font2D {
+		if (font == null)
+			font = helix.render2d.Font2D.builtIn(gpu);
+		return font;
+	}
+
+	function item():SpriteItem {
+		if (count == items.length)
+			items.push(new SpriteItem());
+		var it = items[count];
+		it.order = count;
+		count++;
+		return it;
+	}
+
+	/** Adds a text node's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended. */
+	public function visitText(node:Node, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+		var text = node.getText();
+		if (text.length == 0)
+			return;
+		var font = node.getFont() != null ? node.getFont() : builtIn(),
+			size = node.getTextSize();
+		var w = node.getWorldMatrix(), x = w.get(12), y = w.get(13), z = w.get(14);
+		var width = helix.render2d.Text2D.measure(font, text, size),
+			unit = size / font.getSize();
+		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
+		var radius = Math.sqrt(width * width + size * size) * scale;
+		for (p in 0...6)
+			if (planes[p * 4] * x + planes[p * 4 + 1] * y + planes[p * 4 + 2] * z + planes[p * 4 + 3] < -radius)
+				return;
+		var depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
+		// From the block's top-left (the pivot's share of its size away), the pen on the baseline.
+		var penX = -node.getPivotX() * width,
+			top = -node.getPivotY() * size,
+			baseline = top + font.getAscent() * unit;
+		for (i in 0...text.length) {
+			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
+			if (glyph != null) {
+				if (glyph.width > 0) {
+					var it = item();
+					it.node = node;
+					it.texture = font.getTexture();
+					it.phase = 1;
+					it.depth = depth;
+					it.glyph = true;
+					it.distanceField = font.isDistanceField();
+					it.u0 = glyph.u0;
+					it.v0 = glyph.v0;
+					it.u1 = glyph.u1;
+					it.v1 = glyph.v1;
+					it.gx = penX + glyph.x * unit;
+					it.gy = baseline + glyph.y * unit;
+					it.gw = glyph.width * unit;
+					it.gh = glyph.height * unit;
+				}
+				penX += glyph.advance * unit;
+			}
+			if (i + 1 < text.length)
+				penX += font.getKerning(code, text.charCodeAt(i + 1)) * unit;
+		}
+	}
+
 	/** Adds node (a sprite, its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth
 		is along forward from the eye. */
 	public function visit(node:Node, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
@@ -86,19 +154,16 @@ class Sprites3D {
 		for (p in 0...6)
 			if (planes[p * 4] * x + planes[p * 4 + 1] * y + planes[p * 4 + 2] * z + planes[p * 4 + 3] < -radius)
 				return;
-		if (count == items.length)
-			items.push(new SpriteItem());
-		var item = items[count];
-		item.node = node;
-		item.texture = texture;
-		item.phase = switch node.getAlphaMode() {
+		var it = item();
+		it.node = node;
+		it.texture = texture;
+		it.glyph = false;
+		it.phase = switch node.getAlphaMode() {
 			case Blend: 1;
 			case Add: 2;
 			case _: 0;
 		};
-		item.depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
-		item.order = count;
-		count++;
+		it.depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
 	}
 
 	static inline function length(w:Mat4, column:Int):Float
@@ -117,6 +182,29 @@ class Sprites3D {
 	/** Sorts the sprites collected, writes their records into one upload and the draw's uniforms: viewProjection, and the camera's right and up
 		(from forward and its up), and the upright facing's right. */
 	public function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+		// The camera's right is forward across its up; its up, right across forward; upright, the right flattened onto the ground.
+		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
+		var rx = forwardY * uz - forwardZ * uy,
+			ry = forwardZ * ux - forwardX * uz,
+			rz = forwardX * uy - forwardY * ux;
+		var rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
+		if (rl > 0) {
+			rx /= rl;
+			ry /= rl;
+			rz /= rl;
+		}
+		var hl = Math.sqrt(rx * rx + rz * rz);
+		cameraRight = [rx, ry, rz];
+		cameraUp = [
+			ry * forwardZ - rz * forwardY,
+			rz * forwardX - rx * forwardZ,
+			rx * forwardY - ry * forwardX
+		];
+		upright = [hl > 0 ? rx / hl : 1, 0, hl > 0 ? rz / hl : 0];
+		viewProjection.writeTo(uniforms);
+		var values = cameraRight.concat([0]).concat(cameraUp).concat([0]).concat(upright).concat([0]);
+		for (i in 0...values.length)
+			uniforms.setFloat(64 + i * 4, values[i]);
 		drawn.resize(count);
 		for (i in 0...count)
 			drawn[i] = items[i];
@@ -130,8 +218,6 @@ class Sprites3D {
 				break;
 			}
 		}
-		if (blendStart > addStart)
-			blendStart = addStart;
 		nextBlend = blendStart;
 		if (count > capacity) {
 			while (capacity < count)
@@ -144,26 +230,6 @@ class Sprites3D {
 			write(i, drawn[i]);
 		if (count > 0)
 			gpu.updateBuffer(instanceBuffer, records, count * Sprite3DLayout.instanceStride);
-		viewProjection.writeTo(uniforms);
-		// The camera's right is forward across its up; its up, right across forward.
-		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
-		var rx = forwardY * uz - forwardZ * uy,
-			ry = forwardZ * ux - forwardX * uz,
-			rz = forwardX * uy - forwardY * ux;
-		var rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
-		if (rl > 0) {
-			rx /= rl;
-			ry /= rl;
-			rz /= rl;
-		}
-		var vx = ry * forwardZ - rz * forwardY,
-			vy = rz * forwardX - rx * forwardZ,
-			vz = rx * forwardY - ry * forwardX;
-		// Upright: the right flattened onto the ground.
-		var hl = Math.sqrt(rx * rx + rz * rz);
-		var values = [rx, ry, rz, 0, vx, vy, vz, 0, hl > 0 ? rx / hl : 1, 0, hl > 0 ? rz / hl : 0, 0];
-		for (i in 0...values.length)
-			uniforms.setFloat(64 + i * 4, values[i]);
 	}
 
 	function write(index:Int, item:SpriteItem):Void {
@@ -179,6 +245,10 @@ class Sprites3D {
 		}
 		var facing = node.getFacing();
 		var sx = length(w, 0), sy = length(w, 4), sz = length(w, 8);
+		if (item.glyph) {
+			writeGlyph(at, item, w, facing, sx, sy, sz);
+			return;
+		}
 		put(Sprite3DLayout.positionOffset, w.get(12), w.get(13), w.get(14), facing == Camera ? 0 : facing == Upright ? 1 : 2);
 		// Ground lies along the node's z, its texture's top toward -z; anything else along its y.
 		var height = facing == Ground ? sz : sy;
@@ -202,6 +272,46 @@ class Sprites3D {
 			put(Sprite3DLayout.upOffset, sy > 0 ? w.get(4) / sy : 0, sy > 0 ? w.get(5) / sy : 1, sy > 0 ? w.get(6) / sy : 0, alpha);
 		var tint = node.getTint();
 		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255, (tint & 255) / 255);
+	}
+
+	// A glyph: a sprite with its own axes (the text's plane), its top-left at its place in the text, tinted as the text (a distance field
+	// marked in the alpha).
+	function writeGlyph(at:Int, item:SpriteItem, w:Mat4, facing:SpriteFacing, sx:Float, sy:Float, sz:Float):Void {
+		var right:Array<Float>, up:Array<Float>, height = sy;
+		switch facing {
+			case Camera:
+				right = cameraRight;
+				up = cameraUp;
+			case Upright:
+				right = upright;
+				up = [0, 1, 0];
+			case Ground:
+				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				up = [-w.get(8) / sz, -w.get(9) / sz, -w.get(10) / sz];
+				height = sz;
+			case _:
+				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				up = [w.get(4) / sy, w.get(5) / sy, w.get(6) / sy];
+		}
+		var ox = item.gx * sx, oy = -item.gy * height;
+		inline function put(offset:Int, a:Float, b:Float, c:Float, d:Float):Void {
+			records.setFloat(at + offset, a);
+			records.setFloat(at + offset + 4, b);
+			records.setFloat(at + offset + 8, c);
+			records.setFloat(at + offset + 12, d);
+		}
+		put(Sprite3DLayout.positionOffset, w.get(12)
+			+ right[0] * ox + up[0] * oy, w.get(13)
+			+ right[1] * ox + up[1] * oy,
+			w.get(14)
+			+ right[2] * ox + up[2] * oy, 2);
+		put(Sprite3DLayout.sizeOffset, item.gw * sx, item.gh * height, 0, 0);
+		put(Sprite3DLayout.regionOffset, item.u0, item.v0, item.u1, item.v1);
+		put(Sprite3DLayout.rightOffset, right[0], right[1], right[2], 0);
+		put(Sprite3DLayout.upOffset, up[0], up[1], up[2], 0);
+		var tint = item.node.getTint();
+		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255,
+			(tint & 255) / 255 + (item.distanceField ? 2 : 0));
 	}
 
 	// Draws drawn[from..to) as runs of a texture through phase's pipeline.
@@ -237,8 +347,10 @@ class Sprites3D {
 		drawRange(addStart, count, 2);
 	}
 
-	/** Frees its pipelines and buffers. */
+	/** Frees its pipelines, buffers and built-in font. */
 	public function destroy():Void {
+		if (font != null)
+			font.destroy(gpu);
 		for (p in pipelines)
 			gpu.destroyPipeline(p);
 		gpu.destroyBuffer(corners);
@@ -263,6 +375,36 @@ private class SpriteItem {
 
 	/** Its place in the walk: ties keep it. */
 	public var order = 0;
+
+	/** Whether it is a text's glyph (and so the fields below are its). */
+	public var glyph = false;
+
+	/** Whether the glyph's texture is a distance field. */
+	public var distanceField = false;
+
+	/** The glyph's texture region. */
+	public var u0 = 0.;
+
+	/** The region's top. */
+	public var v0 = 0.;
+
+	/** The region's right. */
+	public var u1 = 0.;
+
+	/** The region's bottom. */
+	public var v1 = 0.;
+
+	/** The glyph's top-left in the text's plane from its node's position, world units before scale, y down. */
+	public var gx = 0.;
+
+	/** Its y, down. */
+	public var gy = 0.;
+
+	/** The glyph's width, world units before scale. */
+	public var gw = 0.;
+
+	/** Its height. */
+	public var gh = 0.;
 
 	/** An empty item, filled by the walk. */
 	public function new() {}
