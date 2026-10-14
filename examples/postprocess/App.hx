@@ -95,8 +95,8 @@ class App extends BaseApp {
 		shaders.load("shaders/vignette.hxshader", result -> switch result {
 			case Ready(shader):
 				vignette = new ScreenEffect(gpu, shader);
-				vignette.setFloat("radius", .35);
-				vignette.setColor("tint", 0xfff2deff);
+				vignette.getParameters().setFloat("radius", .35);
+				vignette.getParameters().setColor("tint", 0xfff2deff);
 				status = "";
 			case Failed(message):
 				status = message;
@@ -105,10 +105,10 @@ class App extends BaseApp {
 		shaders.load("shaders/scanlines.hxshader", result -> switch result {
 			case Ready(shader):
 				scanlines = new ScreenEffect(gpu, shader);
-				scanlines.setFloat("lines", 240);
-				scanlines.setFloat("darkness", .35);
-				scanlines.setFloat("offset", 1.5);
-				scanlines.setFloat("flicker", 1);
+				scanlines.getParameters().setFloat("lines", 240);
+				scanlines.getParameters().setFloat("darkness", .35);
+				scanlines.getParameters().setFloat("offset", 1.5);
+				scanlines.getParameters().setFloat("flicker", 1);
 			case Failed(message):
 				status = message;
 			case Cancelled:
@@ -137,7 +137,7 @@ class App extends BaseApp {
 		fps.update(dt, host.diagnostics.getFrameCpu());
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
 		if (vignette != null)
-			vignette.setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
+			vignette.getParameters().setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
 		var gpu = host.graphics,
 			width = host.getFramebufferWidth(),
 			height = host.getFramebufferHeight();

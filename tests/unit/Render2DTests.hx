@@ -34,7 +34,7 @@ class CountingGraphics implements IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int
 		return next++;
 
 	public var screen:Null<{textures:Array<Int>, uniforms:Array<Null<Bytes>>}>;
@@ -68,8 +68,8 @@ class CountingGraphics implements IGraphics {
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
 		draws.push({vertices: vertices, first: firstVertex, sampling: sampling});
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-		baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {}
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
+		textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
 
 	public function endFrame():Void {}
 
@@ -357,14 +357,14 @@ class Render2DTests {
 		});
 		var shader = helix.graphics.Shader.fromText(gpu, text),
 			effect = new helix.graphics.ScreenEffect(gpu, shader);
-		check(effect.setFloat("strength", .5)
-			&& effect.setValues("shift", [1, 2, 3])
-			&& effect.setValues("weights", [0, 0, 0, 0, 7])
-			&& effect.setValues("grade", [0, 0, 0, 0, 9]),
+		check(effect.getParameters().setFloat("strength", .5)
+			&& effect.getParameters().setValues("shift", [1, 2, 3])
+			&& effect.getParameters().setValues("weights", [0, 0, 0, 0, 7])
+			&& effect.getParameters().setValues("grade", [0, 0, 0, 0, 9]),
 			"Parameters are set by name");
-		check(!effect.setFloat("missing", 1)
-			&& !effect.setValues("strength", [1, 2])
-			&& !effect.setTexture("helix_screen_texture", texture),
+		check(!effect.getParameters().setFloat("missing", 1)
+			&& !effect.getParameters().setValues("strength", [1, 2])
+			&& !effect.getParameters().setTexture("helix_screen_texture", texture),
 			"Unknown parameters, too many values and the framework's texture are refused");
 		effect.draw(texture, 640, 480, 2.5);
 		var block = gpu.screen.uniforms[2], info = gpu.screen.uniforms[1];

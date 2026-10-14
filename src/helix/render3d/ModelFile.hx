@@ -11,9 +11,9 @@ import helix.render3d.Light.LightKind;
 
 	Read: triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing);
 	metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with
-	KHR_materials_emissive_strength) and alphaMode BLEND; nodes' names, translation, rotation and scale or matrix, and children; the default
+	KHR_materials_emissive_strength) alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default
 	scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights. Not read yet (warned once a file): skins and animations (a skinned
-	mesh draws in its bind pose), morph targets, metallic-roughness, occlusion and emissive textures, alphaMode MASK, double-sided materials,
+	mesh draws in its bind pose), morph targets, metallic-roughness, occlusion and emissive textures, alphaMode MASK,
 	texture transforms, a second texture coordinate set, and files other than GLB. */
 class ModelFile {
 	var gltf:Gltf;
@@ -124,8 +124,7 @@ class ModelFile {
 			material.setBlended(true);
 		else if (field(m, "alphaMode") == "MASK")
 			warn("alphaMode MASK draws opaque");
-		if (field(m, "doubleSided") == true)
-			warn("double-sided materials draw one-sided");
+		material.setDoubleSided(field(m, "doubleSided") == true);
 		if (field(pbr, "metallicRoughnessTexture") != null || field(m, "occlusionTexture") != null || field(m, "emissiveTexture") != null)
 			warn("metallic-roughness, occlusion and emissive textures are ignored");
 		return material;

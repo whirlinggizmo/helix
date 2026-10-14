@@ -2,7 +2,7 @@
 
 HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
-Status: milestones 1 (the platform, 2D and services) and 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) are complete; milestone 3 (2D gfx) is under way. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
+Status: milestones 1 (the platform, 2D and services), 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) and 3 (2D stages, textures, fonts, render targets, apps' shaders and screen effects) are complete. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
 
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
@@ -84,9 +84,10 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
 | `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |
 | `render-target` | drawing into textures: a low-resolution pixel view, an orthographic minimap, a text label worn by a globe |
+| `shaders` | Stage3D materials drawn by the example's own surface shaders: toon shading, a double-sided dissolve through a noise texture, water moved by a vertex hook |
 | `postprocess` | screen effects of the example's own shaders (`shaders/*.glsl`, packed into `.hxshader` assets, reloaded as they're edited) over a finished frame |
 
-Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: milestones 4–6 (advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 

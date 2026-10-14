@@ -3,6 +3,7 @@ package helix.render3d;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
+import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
 import helix.render3d.Light.LightKind;
 import helix.render3d.Node.NodeKind;
@@ -20,8 +21,8 @@ class Stage3D {
 	var root = Node.group();
 	var ambientColor = 0xffffffff;
 	var ambientIntensity = 0.;
-	var opaquePipeline:Int;
-	var blendedPipeline:Int;
+	// The framework's lit pipelines: opaque, blended, then each again double sided (index blended + 2 double sided).
+	var pipelines:Array<Int>;
 	var white:Texture2D;
 	var flat:Texture2D;
 	var capacity = 1024;
@@ -43,13 +44,15 @@ class Stage3D {
 	var forwardZ = -1.;
 	var draws = 0;
 	var stack:Array<Node> = [];
+	var time = 0.;
+	// Apps' surface shaders' pipelines, as the framework's four, and the shader version they were made for.
+	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
 	var stackChanged:Array<Bool> = [];
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		opaquePipeline = gpu.createPipeline(Lit3D, false);
-		blendedPipeline = gpu.createPipeline(Lit3D, true);
+		pipelines = [for (i in 0...4) gpu.createPipeline(Lit3D, i % 2 == 1, 0, i >= 2)];
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
 		white = Texture2D.fromRgba(gpu, 1, 1, pixel);
@@ -84,6 +87,14 @@ class Stage3D {
 		ambientIntensity = intensity;
 		return true;
 	}
+
+	/** The seconds surface shaders see (helix_time): what the app last set. */
+	public function getTime():Float
+		return time;
+
+	/** Sets the seconds surface shaders see, for whatever moves with time in them. */
+	public function setTime(seconds:Float):Void
+		time = seconds;
 
 	/** Models drawn by the last draw (in view). */
 	public function getDrawnCount():Int
@@ -358,16 +369,71 @@ class Stage3D {
 			base = white;
 		if (normal == null)
 			normal = flat;
-		gpu.drawMesh(item.blended ? blendedPipeline : opaquePipeline, item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu),
-			item.mesh.getIndexCount(), instanceBuffer, first, runCount, base.getHandle(), base.getSampling(), normal.getHandle(), normal.getSampling(),
-			vertexUniforms, u);
+		var shader = material.getShader();
+		if (shader == null) {
+			gpu.drawMesh(pipelines[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(), instanceBuffer,
+				first, runCount, [base.getHandle(), normal.getHandle()], [base.getSampling(), normal.getSampling()], [vertexUniforms, u]);
+			draws++;
+			return;
+		}
+		// An app's surface shader: the stage's blocks with the time after them, the shader's own values, its own textures (white where unset).
+		var blocks = [for (size in shader.getBlockSizes()) size > 0 ? Bytes.alloc(size) : null];
+		if (blocks.length > 0 && blocks[0] != null) {
+			blocks[0].blit(0, vertexUniforms, 0, vertexUniforms.length);
+			blocks[0].setFloat(vertexUniforms.length, time);
+		}
+		if (blocks.length > 1 && blocks[1] != null) {
+			blocks[1].blit(0, u, 0, u.length);
+			blocks[1].setFloat(u.length, time);
+		}
+		var parameters = material.getShaderParameters();
+		parameters.write(blocks);
+		var own = parameters.getTextureSlots(), textures = [], samplings = [];
+		for (slot in shader.getTextureSlots()) {
+			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
+			while (textures.length < slot) {
+				textures.push(0);
+				samplings.push(Sampling.NEAREST);
+			}
+			textures.push(texture.getHandle());
+			samplings.push(texture.getSampling());
+		}
+		gpu.drawMesh(surfacePipeline(shader)[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(),
+			instanceBuffer, first, runCount, textures, samplings, blocks);
 		draws++;
+	}
+
+	// Which of a program's four pipelines draws item: blended or not, double sided or not.
+	static inline function variant(item:Item):Int
+		return (item.blended ? 1 : 0) + (item.material.isDoubleSided() ? 2 : 0);
+
+	// shader's four pipelines, made again after the shader reloads.
+	function surfacePipeline(shader:helix.graphics.Shader):Array<Int> {
+		var made = surfacePipelines.get(shader);
+		if (made == null || made.version != shader.getVersion()) {
+			if (made != null)
+				for (p in made.pipelines)
+					gpu.destroyPipeline(p);
+			made = {
+				pipelines: [
+					for (i in 0...4)
+						gpu.createPipeline(Lit3D, i % 2 == 1, shader.getHandle(), i >= 2)
+				],
+				version: shader.getVersion()
+			};
+			surfacePipelines.set(shader, made);
+		}
+		return made.pipelines;
 	}
 
 	/** Frees the stage's own GPU objects (its pipelines, instance buffer and white texture); meshes and textures are their owners' to free. */
 	public function destroy():Void {
-		gpu.destroyPipeline(opaquePipeline);
-		gpu.destroyPipeline(blendedPipeline);
+		for (made in surfacePipelines)
+			for (p in made.pipelines)
+				gpu.destroyPipeline(p);
+		surfacePipelines.clear();
+		for (p in pipelines)
+			gpu.destroyPipeline(p);
 		gpu.destroyBuffer(instanceBuffer);
 		white.destroy(gpu);
 		flat.destroy(gpu);

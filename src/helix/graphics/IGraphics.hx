@@ -23,16 +23,17 @@ interface IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int;
 
 	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle: with its framework shader, or with shader (a
-		createShader handle) for a kind that takes an app's, which Screen always does. Throws for a shader of another kind's layout. */
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int;
+		createShader handle) for a kind that takes an app's: Screen always does, Lit3D may (a surface shader). doubleSided draws a Lit3D pipeline's back
+		faces too (its triangles aren't culled; the shader sees which side it draws through gl_FrontFacing); other kinds cull nothing anyway. Throws for a shader of another kind's layout. */
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int;
 
 	/** Builds an app's program (a .hxshader's source, in this adapter's dialect) and returns its handle, for createPipeline. Throws, with the
 		compiler's log, for one that doesn't build. */
 	public function createShader(source:ShaderSource):Int;
 
 	/** Draws one triangle over the viewport through a Screen pipeline: textures[i] (createTexture or createRenderTarget handles) bound at the
-		shader's texture slot i, sampled as samplings[i] says, and uniforms[i] the bytes of its uniform block at slot i (its declared size;
-		null for a slot it doesn't have). Block 0 is the vertex stage's clip scale, which the adapter sets. Throws for anything invalid, before
+		shader's texture slot i, sampled as samplings[i] says (0 for a slot it doesn't sample), and uniforms[i] the bytes of its uniform block at
+		slot i (its declared size; null for a slot it doesn't have). Block 0 is the vertex stage's clip scale, which the adapter sets. Throws for anything invalid, before
 		drawing. */
 	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
@@ -65,12 +66,13 @@ interface IGraphics {
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
 
 	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
-		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline: baseTexture is its
-		base color texture (sRGB) sampled as baseSampling says, normalTexture its normal map (linear, tangent space) sampled as normalSampling says,
-		vertexUniforms the view-projection matrix (64 bytes) and fragmentUniforms the lights and material (Lit3DLayout.fragmentUniformBytes). Throws
-		for anything invalid, before drawing. */
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-		baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void;
+		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline (the framework's
+		program, or an app's surface shader): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
+		sample; the framework's are 0, the base color texture, sRGB, and 1, the normal map, linear), and uniforms[i] its uniform block at slot i
+		(null for one it lacks; 0 the vertex stage's, starting with the view-projection matrix, 1 the fragment stage's lights and material, as
+		Lit3DLayout and the surface kind lay them out). Throws for anything invalid, before drawing. */
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
+		textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
 	/** Ends the screen's pass and with it the frame; sokol also commits it for presentation. Throws when no screen pass is open. */
 	public function endFrame():Void;

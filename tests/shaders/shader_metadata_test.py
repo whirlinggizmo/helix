@@ -56,7 +56,7 @@ class ShaderMetadataTests(unittest.TestCase):
         sprite, color, lit = contracts
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
-        self.assertEqual(color['textures'], []); self.assertEqual(sprite['uniforms'], [])
+        self.assertEqual(color['textures'], []); self.assertEqual([(u['stage'], u['bytes']) for u in sprite['uniforms']], [('vertex', 16)])
         self.assertEqual([t['role'] for t in lit['textures']], ['base', 'normal'])
         self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
@@ -99,9 +99,10 @@ class ShaderMetadataTests(unittest.TestCase):
         with self.assertRaises(MetadataError): load_contract(path, self.specs['sprite2d'])
 
     def test_undeclared_uniform_block_rejected(self):
-        block = {'slot': 0, 'stage': 'vertex', 'size': 64, 'struct_name': 'extra', 'inst_name': '_1',
+        # One more block than the manifest declares (sprite2d has only its vertex block, at slot 0).
+        block = {'slot': 1, 'stage': 'fragment', 'size': 64, 'struct_name': 'extra', 'inst_name': '_1',
                  'glsl_uniforms': [{'type': 'vec4', 'array_count': 4, 'offset': 0, 'glsl_name': 'extra'}]}
-        path = self.mutated(lambda d: [s['programs'][0].update(uniform_blocks=[block]) for s in d['shaders']])
+        path = self.mutated(lambda d: [s['programs'][0].update(uniform_blocks=s['programs'][0]['uniform_blocks'] + [block]) for s in d['shaders']])
         with self.assertRaisesRegex(MetadataError, 'uniform blocks'): load_contract(path, self.specs['sprite2d'])
 
     def test_uniform_size_mismatch_rejected(self):

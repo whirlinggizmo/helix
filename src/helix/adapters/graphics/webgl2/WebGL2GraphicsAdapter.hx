@@ -43,7 +43,6 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		height:Int
 	}> = [];
 	var uniformData = new js.lib.Float32Array(16);
-	var fragmentData = new js.lib.Float32Array(Std.int(Lit3DLayout.fragmentUniformBytes / 4));
 
 	// Attribute slots any program uses: each draw enables its own and leaves the rest off, every divisor 0 but an instance attribute's.
 	static inline var SLOTS = 11;
@@ -270,9 +269,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return programs[index];
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int {
-		// Screen takes an app's program and nothing else does yet.
-		if ((kind == Screen) != (shader != 0) || shader != 0 && !appShaders.exists(shader))
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int {
+		// Screen takes an app's program; Lit3D may (a surface shader).
+		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
 		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : 1;
 		if (kind != Screen)
@@ -282,7 +281,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			kind: kind,
 			shader: index,
 			app: shader,
-			alpha: alpha
+			alpha: alpha,
+			doubleSided: doubleSided
 		};
 		return id;
 	}
@@ -318,6 +318,57 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return id;
 	}
 
+	// The framework's lit program as an app's is described: its blocks and texture slots.
+	function litProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
+		var lit = program(2);
+		return {
+			program: lit.program,
+			blocks: [
+				{location: lit.vertexUniform, size: Lit3DLayout.vertexUniformBytes},
+				{location: lit.fragmentUniform, size: Lit3DLayout.fragmentUniformBytes}
+			],
+			textures: [lit.texture, lit.normalTexture]
+		};
+	}
+
+	/** Uses program, binding textures (by slot; each slot it samples needs one) and its uniform blocks (by slot, each its size); block 0 is turned
+		over in a flipped pass: a screen program's clip scale, or a lit one's view-projection's y row. Throws for a mismatch. */
+	function bindProgram(program:{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}, textures:Array<Int>,
+			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>, screen:Bool):Void {
+		gl.useProgram(program.program);
+		for (slot in 0...program.textures.length) {
+			var location = program.textures[slot];
+			if (location == null)
+				continue;
+			var t = slot < textures.length ? this.textures[textures[slot]] : null;
+			if (t == null)
+				throw "Invalid draw texture";
+			gl.uniform1i(location, slot);
+			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + slot);
+			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+			gl.bindSampler(slot, sampler(samplings[slot]));
+		}
+		for (slot in 0...program.blocks.length) {
+			var block = program.blocks[slot];
+			if (block == null)
+				continue;
+			var data = slot < uniforms.length ? uniforms[slot] : null;
+			if (data == null || data.length != block.size)
+				throw "Invalid draw uniforms";
+			var floats = new js.lib.Float32Array(Std.int(block.size / 4));
+			for (i in 0...floats.length)
+				floats[i] = data.getFloat(i * 4);
+			if (slot == 0 && screen) {
+				floats[0] = 1;
+				floats[1] = flipped ? -1 : 1;
+			} else if (slot == 0 && flipped)
+				for (i in [1, 5, 9, 13])
+					floats[i] = -floats[i];
+			if (block.location != null)
+				gl.uniform4fv(block.location, floats);
+		}
+	}
+
 	public function destroyShader(handle:Int):Void {
 		var s = appShaders[handle];
 		if (s == null)
@@ -331,34 +382,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (!active || p == null || p.kind != Screen)
 			throw "Invalid screen draw";
 		var app = appShaders[p.app];
-		if (app == null || textures.length != app.textures.length)
+		if (app == null)
 			throw "Invalid screen draw";
-		gl.useProgram(app.program);
-		for (i in 0...textures.length) {
-			var t = textures[i];
-			if (!this.textures.exists(t))
-				throw "Invalid screen draw texture";
-			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + i);
-			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, this.textures[t]);
-			gl.bindSampler(i, sampler(samplings[i]));
-		}
-		for (slot in 0...app.blocks.length) {
-			var block = app.blocks[slot];
-			if (block == null)
-				continue;
-			var data = uniforms[slot];
-			if (data == null || data.length != block.size)
-				throw "Invalid screen draw uniforms";
-			var floats = new js.lib.Float32Array(Std.int(block.size / 4));
-			for (i in 0...floats.length)
-				floats[i] = data.getFloat(i * 4);
-			// Block 0 is the clip scale: y is -1 in a flipped pass.
-			if (slot == 0) {
-				floats[0] = 1;
-				floats[1] = flipped ? -1 : 1;
-			}
-			gl.uniform4fv(block.location, floats);
-		}
+		bindProgram(app, textures, samplings, uniforms, true);
 		resetAttributes();
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		gl.disable(WebGL2RenderingContext.DEPTH_TEST);
@@ -527,18 +553,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.drawArrays(kind == Lines3D ? WebGL2RenderingContext.LINES : WebGL2RenderingContext.TRIANGLES, firstVertex, vertices);
 	}
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-			baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
+			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var p = pipelines[pipeline],
 			v = buffers[vertices],
 			ix = buffers[indices],
-			n = buffers[instances],
-			t = textures[baseTexture],
-			nt = textures[normalTexture];
+			n = buffers[instances];
 		if (!active
 			|| p == null
 			|| p.kind != Lit3D
-			|| nt == null
 			|| v == null
 			|| v.index
 			|| !v.isStatic
@@ -546,35 +569,18 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| !ix.index
 			|| n == null
 			|| n.isStatic
-			|| t == null
 			|| indexCount <= 0
 			|| indexCount % 3 != 0
 			|| indexCount * 4 > ix.used
 			|| firstInstance < 0
 			|| instanceCount <= 0
-			|| (firstInstance + instanceCount) * Lit3DLayout.instanceStride > n.used
-				|| vertexUniforms == null
-				|| vertexUniforms.length != Lit3DLayout.vertexUniformBytes
-				|| fragmentUniforms == null
-				|| fragmentUniforms.length != Lit3DLayout.fragmentUniformBytes)
+			|| (firstInstance + instanceCount) * Lit3DLayout.instanceStride > n.used)
 			throw "Invalid mesh draw";
-		var shader = programs[2];
-		gl.useProgram(shader.program);
-		for (i in 0...16)
-			uniformData[i] = vertexUniforms.getFloat(i * 4);
-		flipRows();
-		gl.uniform4fv(shader.vertexUniform, uniformData);
-		for (i in 0...fragmentData.length)
-			fragmentData[i] = fragmentUniforms.getFloat(i * 4);
-		gl.uniform4fv(shader.fragmentUniform, fragmentData);
-		gl.uniform1i(shader.texture, Lit3DLayout.baseUnit);
-		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.baseUnit);
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
-		gl.bindSampler(Lit3DLayout.baseUnit, sampler(baseSampling));
-		gl.uniform1i(shader.normalTexture, Lit3DLayout.normalUnit);
-		gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + Lit3DLayout.normalUnit);
-		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, nt);
-		gl.bindSampler(Lit3DLayout.normalUnit, sampler(normalSampling));
+		// The framework's lit program, or an app's surface shader.
+		var app = p.app != 0 ? appShaders[p.app] : litProgram();
+		if (app == null)
+			throw "Invalid mesh draw";
+		bindProgram(app, textures, samplings, uniforms, false);
 		resetAttributes();
 		var stride = Lit3DLayout.stride,
 			record = Lit3DLayout.instanceStride,
@@ -597,7 +603,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthFunc(WebGL2RenderingContext.LEQUAL);
 		gl.depthMask(true);
-		gl.enable(WebGL2RenderingContext.CULL_FACE);
+		if (p.doubleSided)
+			gl.disable(WebGL2RenderingContext.CULL_FACE);
+		else
+			gl.enable(WebGL2RenderingContext.CULL_FACE);
 		gl.cullFace(WebGL2RenderingContext.BACK);
 		// Flipped, the front faces wind the other way.
 		gl.frontFace(flipped ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);

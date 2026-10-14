@@ -150,6 +150,10 @@ class Render3DTests {
 		check(!Node.group().setMatrix([1, 0, 0, 0])
 			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).getVertices().getFloat(Lit3DLayout.normalOffset + 8), 1),
 			"Missing normals are worked out (a triangle in x, y faces +z)");
+		var sided = new Material();
+		check(!sided.isDoubleSided(), "Materials draw one side by default");
+		sided.setDoubleSided(true);
+		check(sided.isDoubleSided(), "A material can draw both sides");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

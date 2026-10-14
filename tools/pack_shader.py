@@ -5,9 +5,13 @@ textures). Programs load it as any asset (helix.graphics.Shaders) and the adapte
 A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
 
     @include_block helix_screen   a screen effect: drawn over a whole finished frame (helix.graphics.ScreenEffect)
+    @include_block helix_surface  a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights,
+                                  the material's base color and textures; optionally a vertex hook, `@block vertex` defining
+                                  `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, before placing)
 
-Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name; its own
-textures are at binding 1 and up, each with a sampler at the same binding. Uniform blocks 0 and 1 and texture 0 are the framework's.
+Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
+either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 2), each with a sampler at the same binding.
+Uniform blocks 0 and 1 are the framework's.
 
     python3 tools/pack_shader.py [--shdc path] input.glsl output.hxshader"""
 import argparse
@@ -58,8 +62,177 @@ void helix_output(vec3 color, float alpha) { helix_frag_color = vec4(color, alph
 @end
 ''',
 }
-VERTEX = {'helix_screen': 'helix_screen_vs'}
-ATTRIBUTES = {'helix_screen': []}
+KINDS['helix_surface'] = '''
+@vs helix_surface_vs
+layout(binding=0) uniform helix_surface_vs_params {
+    mat4 helix_view_projection;
+    vec4 helix_vs_info; // x seconds since the stage began
+};
+float helix_time() { return helix_vs_info.x; }
+@include_block vertex
+layout(location=0) in vec3 position;
+layout(location=1) in vec3 normal;
+layout(location=2) in vec2 uv;
+layout(location=3) in vec4 tangent;
+layout(location=4) in vec4 i_model0;
+layout(location=5) in vec4 i_model1;
+layout(location=6) in vec4 i_model2;
+layout(location=7) in vec4 i_normal0;
+layout(location=8) in vec4 i_normal1;
+layout(location=9) in vec4 i_normal2;
+layout(location=10) in vec4 i_tint;
+out vec3 helix_v_normal;
+out vec4 helix_v_tangent;
+out vec2 helix_v_uv;
+out vec4 helix_v_tint;
+out vec3 helix_v_world;
+void main() {
+    vec3 moved = position, bent = normal;
+    helix_vertex(moved, bent);
+    vec4 p = vec4(moved, 1.0);
+    vec3 world = vec3(dot(i_model0, p), dot(i_model1, p), dot(i_model2, p));
+    gl_Position = helix_view_projection * vec4(world, 1.0);
+    helix_v_normal = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));
+    helix_v_tangent = vec4(dot(i_model0.xyz, tangent.xyz), dot(i_model1.xyz, tangent.xyz), dot(i_model2.xyz, tangent.xyz), tangent.w * i_normal0.w);
+    helix_v_uv = uv;
+    helix_v_tint = i_tint;
+    helix_v_world = world;
+}
+@end
+
+@block helix_surface
+// The stage's: its camera, ambient light and lights (as the lit models' shader has them), the material's own values, and the time.
+layout(binding=1) uniform helix_surface_params {
+    vec4 helix_camera;        // xyz the camera's position
+    vec4 helix_ambient_light; // rgb linear, times intensity
+    vec4 helix_base_factor;   // the material's base color, linear rgba
+    vec4 helix_pbr;           // x metallic, y roughness, z 1 lit (0 unlit), w the number of lights
+    vec4 helix_emission;      // rgb the light it gives off, linear; w the normal map's strength
+    vec4 helix_light_position[4];
+    vec4 helix_light_direction[4];
+    vec4 helix_light_radiance[4];
+    vec4 helix_light_spot[4];
+    vec4 helix_fs_info;       // x seconds since the stage began
+};
+layout(binding=0) uniform texture2D helix_base_texture;
+layout(binding=0) uniform sampler helix_base_sampler;
+layout(binding=1) uniform texture2D helix_normal_texture;
+layout(binding=1) uniform sampler helix_normal_sampler;
+in vec3 helix_v_normal;
+in vec4 helix_v_tangent;
+in vec2 helix_v_uv;
+in vec4 helix_v_tint;
+in vec3 helix_v_world;
+out vec4 helix_frag_color;
+const float HELIX_PI = 3.14159265359;
+
+vec3 helix_srgb_to_linear(vec3 c) {
+    return mix(c / 12.92, pow((max(c, vec3(0.04045)) + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+float helix_time() { return helix_fs_info.x; }
+vec2 helix_uv() { return helix_v_uv; }
+vec3 helix_world_position() { return helix_v_world; }
+vec3 helix_camera_position() { return helix_camera.xyz; }
+vec3 helix_ambient() { return helix_ambient_light.rgb; }
+vec3 helix_emissive() { return helix_emission.rgb; }
+float helix_metallic() { return clamp(helix_pbr.x, 0.0, 1.0); }
+float helix_roughness() { return clamp(helix_pbr.y, 0.03, 1.0); }
+int helix_light_count() { return int(helix_pbr.w + 0.5); }
+// The base color: the material's, times its texture (decoded from sRGB) and the model's tint; linear.
+vec4 helix_base() {
+    vec4 texel = texture(sampler2D(helix_base_texture, helix_base_sampler), helix_v_uv);
+    return vec4(helix_srgb_to_linear(texel.rgb), texel.a) * helix_base_factor * helix_v_tint;
+}
+// The surface's normal in the world: the normal map's (when the material has one) through the tangent frame, facing the viewer.
+vec3 helix_normal() {
+    vec3 n = normalize(helix_v_normal);
+    vec3 t = helix_v_tangent.xyz - n * dot(n, helix_v_tangent.xyz);
+    if (dot(t, t) > 1e-8 && helix_emission.w > 0.0) {
+        t = normalize(t);
+        vec3 b = cross(n, t) * helix_v_tangent.w;
+        vec3 tn = texture(sampler2D(helix_normal_texture, helix_normal_sampler), helix_v_uv).xyz * 2.0 - 1.0;
+        tn.xy *= helix_emission.w;
+        n = normalize(mat3(t, b, n) * tn);
+    }
+    return gl_FrontFacing ? n : -n;
+}
+float helix_attenuation(float d, float range) {
+    float inv_sq = 1.0 / max(d * d, 0.01);
+    if (range <= 0.0) return inv_sq;
+    float r = d / range;
+    float w = clamp(1.0 - r * r * r * r, 0.0, 1.0);
+    return w * w * inv_sq;
+}
+// Light i at world: the radiance reaching it (color times intensity, its falloff and cone applied) and to_light, the direction toward it.
+vec3 helix_light(int i, vec3 world, out vec3 to_light) {
+    float falloff = 1.0;
+    vec3 travel;
+    if (helix_light_direction[i].w < 0.5) {
+        travel = normalize(helix_light_direction[i].xyz);
+    } else {
+        vec3 to_frag = world - helix_light_position[i].xyz;
+        float d = length(to_frag);
+        travel = d > 1e-6 ? to_frag / d : vec3(0.0, -1.0, 0.0);
+        falloff = helix_attenuation(d, helix_light_position[i].w);
+        if (helix_light_direction[i].w > 1.5) {
+            float inner = helix_light_spot[i].x, outer = helix_light_spot[i].y, c = dot(travel, normalize(helix_light_direction[i].xyz));
+            falloff *= inner - outer <= 1e-6 ? (c >= outer ? 1.0 : 0.0) : smoothstep(outer, inner, c);
+        }
+    }
+    to_light = -travel;
+    return helix_light_radiance[i].rgb * falloff;
+}
+// The stage's own shading of base with normal n (glTF metallic-roughness under its lights and ambient light, plus emission): for a shader
+// that only changes the inputs.
+vec3 helix_shade(vec3 n, vec4 base) {
+    float metallic = helix_metallic(), alpha = helix_roughness() * helix_roughness(), alpha_sq = alpha * alpha;
+    vec3 f0 = mix(vec3(0.04), base.rgb, metallic), c_diff = base.rgb * (1.0 - metallic);
+    vec3 v = normalize(helix_camera.xyz - helix_v_world);
+    float n_dot_v = clamp(abs(dot(n, v)), 1e-4, 1.0);
+    vec3 color = helix_ambient_light.rgb * (c_diff + f0);
+    for (int i = 0; i < 4; i++) {
+        if (i >= helix_light_count()) break;
+        vec3 l;
+        vec3 radiance = helix_light(i, helix_v_world, l);
+        float n_dot_l = dot(n, l);
+        if (n_dot_l <= 0.0) continue;
+        vec3 h = normalize(l + v);
+        float n_dot_h = clamp(dot(n, h), 0.0, 1.0), v_dot_h = clamp(dot(v, h), 0.0, 1.0);
+        vec3 fresnel = f0 + (1.0 - f0) * pow(1.0 - v_dot_h, 5.0);
+        float dd = n_dot_h * n_dot_h * (alpha_sq - 1.0) + 1.0, distribution = alpha_sq / (HELIX_PI * dd * dd);
+        float gv = n_dot_l * sqrt(n_dot_v * n_dot_v * (1.0 - alpha_sq) + alpha_sq), gl = n_dot_v * sqrt(n_dot_l * n_dot_l * (1.0 - alpha_sq) + alpha_sq);
+        color += radiance * n_dot_l * ((1.0 - fresnel) * c_diff / HELIX_PI + fresnel * distribution * 0.5 / max(gv + gl, 1e-6));
+    }
+    return color + helix_emission.rgb;
+}
+vec3 helix_tonemap(vec3 color) {
+    const float start = 0.8 - 0.04, desaturation = 0.15;
+    float x = min(color.r, min(color.g, color.b));
+    color -= x < 0.08 ? x - 6.25 * x * x : 0.04;
+    float peak = max(color.r, max(color.g, color.b));
+    if (peak < start) return color;
+    const float d = 1.0 - start;
+    float new_peak = 1.0 - d * d / (peak + d - start);
+    color *= new_peak / peak;
+    return mix(color, vec3(new_peak), 1.0 - 1.0 / (desaturation * (peak - new_peak) + 1.0));
+}
+// Writes linear color (tone mapped, then encoded as the framebuffer's sRGB) and alpha.
+void helix_output(vec3 color, float alpha) {
+    vec3 c = clamp(helix_tonemap(color), vec3(0.0), vec3(1.0));
+    helix_frag_color = vec4(mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)), alpha);
+}
+@end
+'''
+VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs'}
+ATTRIBUTES = {'helix_screen': [], 'helix_surface': ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1',
+                                                    'i_normal2', 'i_tint']}
+# The first texture binding an app's own may use.
+FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 2}
+NO_VERTEX_HOOK = '''
+@block vertex
+void helix_vertex(inout vec3 position, inout vec3 normal) {}
+@end
+'''
 
 # std140: each member's size and alignment in bytes; an array's elements are each 16 aligned.
 TYPES = {'float': (4, 4), 'vec2': (8, 8), 'vec3': (12, 16), 'vec4': (16, 16), 'mat4': (64, 16)}
@@ -101,7 +274,12 @@ def pack(shdc, source_path, output_path):
         fail(f'{source_path}: the fragment stage must be "@fs fs"')
     kind = kinds[0]
     program = 'shader'
-    full = KINDS[kind] + '\n' + source + f'\n@program {program} {VERTEX[kind]} fs\n'
+    # The vertex hook block comes first, as the framework's vertex stage includes it.
+    found = re.search(r'@block\s+vertex\b.*?@end', source, re.S)
+    hook, rest = (found.group(0), source[:found.start()] + source[found.end():]) if found else (NO_VERTEX_HOOK if kind == 'helix_surface' else '', source)
+    if found and kind != 'helix_surface':
+        fail(f'{source_path}: only a surface shader has a vertex hook')
+    full = hook + '\n' + KINDS[kind] + '\n' + rest + f'\n@program {program} {VERTEX[kind]} fs\n'
     with tempfile.TemporaryDirectory() as scratch:
         scratch = Path(scratch)
         (scratch / 'shader.glsl').write_text(full)
@@ -138,6 +316,8 @@ def pack(shdc, source_path, output_path):
     for pair in p.get('texture_sampler_pairs') or []:
         if pair['view_slot'] != pair['sampler_slot']:
             fail(f'{source_path}: texture {pair["view_name"]} and its sampler must share a binding')
+        if not pair['view_name'].startswith('helix_') and pair['view_slot'] < FIRST_TEXTURE[kind]:
+            fail(f'{source_path}: texture {pair["view_name"]} needs binding {FIRST_TEXTURE[kind]} or more; the lower ones are the framework\'s')
         textures.append({'slot': pair['view_slot'], 'stage': pair['stage'], 'name': pair['view_name'], 'glslName': pair['glsl_name']})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')

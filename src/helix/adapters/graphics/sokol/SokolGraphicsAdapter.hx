@@ -51,15 +51,48 @@ class SokolGraphicsAdapter implements IGraphics {
 		return valid(GraphicsBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
 	}
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int, baseTexture:Int,
-			baseSampling:Sampling, normalTexture:Int, normalSampling:Sampling, vertexUniforms:Bytes, fragmentUniforms:Bytes):Void {
-		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount, baseTexture, baseSampling,
-			normalTexture, normalSampling, pointer(vertexUniforms), vertexUniforms.length, pointer(fragmentUniforms), fragmentUniforms.length) != 1)
+	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
+			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var args = pack(textures, samplings, uniforms);
+		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount,
+			cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length, pointer(args.uniforms),
+			args.bytes) != 1)
 			throw "Invalid native mesh draw";
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int
-		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0, shader));
+	// Textures, samplings and uniform blocks by slot as the bridge reads them: two arrays, and the blocks' bytes one after another.
+	static function pack(textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):{
+		handles:haxe.ds.Vector<cpp.UInt32>,
+		modes:haxe.ds.Vector<Int>,
+		uniforms:Bytes,
+		bytes:Int
+	} {
+		var total = 0;
+		for (block in uniforms)
+			if (block != null)
+				total += block.length;
+		var packed = Bytes.alloc(total < 4 ? 4 : total), at = 0;
+		for (block in uniforms)
+			if (block != null) {
+				packed.blit(at, block, 0, block.length);
+				at += block.length;
+			}
+		var handles = new haxe.ds.Vector<cpp.UInt32>(textures.length < 1 ? 1 : textures.length),
+			modes = new haxe.ds.Vector<Int>(textures.length < 1 ? 1 : textures.length);
+		for (i in 0...textures.length) {
+			handles[i] = textures[i];
+			modes[i] = samplings[i];
+		}
+		return {
+			handles: handles,
+			modes: modes,
+			uniforms: packed,
+			bytes: total
+		};
+	}
+
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int
+		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0, shader, doubleSided ? 1 : 0));
 
 	public function createShader(source:ShaderSource):Int {
 		// The layout the bridge reads, a line each: attributes, uniform blocks, textures.
@@ -79,24 +112,9 @@ class SokolGraphicsAdapter implements IGraphics {
 	}
 
 	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
-		var total = 0;
-		for (block in uniforms)
-			if (block != null)
-				total += block.length;
-		var packed = Bytes.alloc(total < 4 ? 4 : total), at = 0;
-		for (block in uniforms)
-			if (block != null) {
-				packed.blit(at, block, 0, block.length);
-				at += block.length;
-			}
-		var handles = new haxe.ds.Vector<cpp.UInt32>(textures.length < 1 ? 1 : textures.length),
-			modes = new haxe.ds.Vector<Int>(textures.length < 1 ? 1 : textures.length);
-		for (i in 0...textures.length) {
-			handles[i] = textures[i];
-			modes[i] = samplings[i];
-		}
-		if (GraphicsBridge.drawScreen(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, cpp.Pointer.ofArray(modes.toData()).raw, textures.length,
-			pointer(packed), total) != 1)
+		var args = pack(textures, samplings, uniforms);
+		if (GraphicsBridge.drawScreen(pipeline, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length,
+			pointer(args.uniforms), args.bytes) != 1)
 			throw "Invalid native screen draw";
 	}
 

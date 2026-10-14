@@ -11,7 +11,7 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_can_sample") static function canSample(format:Int):Int;
 	@:native("helix_buffer") static function buffer(capacity:Int):Int;
 	@:native("helix_static_buffer") static function staticBuffer(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, index:Int):Int;
-	@:native("helix_pipeline") static function pipeline(kind:Int, alpha:Int, shader:Int):Int;
+	@:native("helix_pipeline") static function pipeline(kind:Int, alpha:Int, shader:Int, doubleSided:Int):Int;
 	@:native("helix_shader") static function shader(vs:cpp.ConstCharStar, fs:cpp.ConstCharStar, layout:cpp.ConstCharStar):Int;
 	@:native("helix_draw_screen") static function drawScreen(pipeline:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>,
 		textureCount:Int, uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
@@ -24,8 +24,8 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Int, vertices:Int, firstVertex:Int,
 		uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
 	@:native("helix_draw_mesh") static function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int,
-		instanceCount:Int, texture:Int, textureSampling:Int, normal:Int, normalSampling:Int, vs:cpp.RawPointer<cpp.UInt8>, vsBytes:Int,
-		fs:cpp.RawPointer<cpp.UInt8>, fsBytes:Int):Int;
+		instanceCount:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>, textureCount:Int, uniforms:cpp.RawPointer<cpp.UInt8>,
+		uniformBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_destroy") static function destroy(kind:Int, handle:Int):Int;
 	@:native("helix_peak_rss") static function peakRss():Float;

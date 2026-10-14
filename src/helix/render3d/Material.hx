@@ -1,5 +1,7 @@
 package helix.render3d;
 
+import helix.graphics.Shader;
+import helix.graphics.ShaderParameters;
 import helix.render2d.Texture2D;
 
 /** How a model's surface looks: glTF's metallic-roughness model. A base color (0xRRGGBBAA, its color sRGB-encoded as the convention's colors
@@ -23,6 +25,9 @@ class Material {
 	var emissive = 0x000000ff;
 	var emissiveStrength = 1.;
 	var blendAlways = false;
+	var doubleSided = false;
+	var shader:Null<Shader>;
+	var parameters:Null<ShaderParameters>;
 
 	/** White, not metallic, roughness 0.5, lit, untextured, giving off no light. */
 	public function new() {}
@@ -111,6 +116,34 @@ class Material {
 		emissiveStrength = strength;
 		return true;
 	}
+
+	/** Whether both sides of its triangles draw (the back with its normal turned toward the viewer); otherwise back faces are culled. */
+	public function isDoubleSided():Bool
+		return doubleSided;
+
+	/** Draws both sides of its triangles, or only the front: for open surfaces, leaves, cloth, or a surface a shader cuts holes in. */
+	public function setDoubleSided(value:Bool):Void
+		doubleSided = value;
+
+	/** The app's surface shader it draws with, or null for the stage's own shading. */
+	public function getShader():Null<Shader>
+		return shader;
+
+	/** Draws it with an app's surface shader (a .hxshader of kind surface: its own fragment stage, and maybe a vertex hook), which gets the
+		material's values and textures and the stage's lights; null goes back to the stage's own shading. False, changing nothing, for a shader
+		of another kind. Its parameters (getShaderParameters) start empty when the shader changes. */
+	public function setShader(value:Null<Shader>):Bool {
+		if (value != null && value.getKind() != "surface")
+			return false;
+		if (value != shader)
+			parameters = value == null ? null : new ShaderParameters(value);
+		shader = value;
+		return true;
+	}
+
+	/** Its surface shader's own parameters and textures, set by name; null without a shader. */
+	public function getShaderParameters():Null<ShaderParameters>
+		return parameters;
 
 	/** Whether it is see-through: drawn blended, back to front after the opaque, when set so or when its base color's alpha is below 255. */
 	public function isBlended():Bool

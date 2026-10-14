@@ -76,7 +76,7 @@ class Shader {
 	public function getHandle():Int
 		return handle;
 
-	/** Its kind: "screen" (a screen effect). */
+	/** Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's). */
 	public function getKind():String
 		return kind;
 
@@ -105,9 +105,9 @@ class Shader {
 		return slot == null ? -1 : slot;
 	}
 
-	/** How many textures it samples: its slots 0 to this less one. */
-	public function getTextureCount():Int
-		return source.textures.length;
+	/** The texture slots it samples, the framework's and its own, in order (there may be gaps: a slot it doesn't use). */
+	public function getTextureSlots():Array<Int>
+		return [for (t in source.textures) t.slot];
 
 	/** The file changed: the program is built again in place. A file that doesn't read or build leaves it as it was (and throws, saying why). */
 	@:allow(helix.graphics.Shaders)
