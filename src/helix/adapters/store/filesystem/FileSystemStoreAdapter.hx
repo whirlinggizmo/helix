@@ -11,7 +11,7 @@ import sys.thread.Thread;
 
 /** IStore natively: files under a root directory, a key as a relative path, each operation on a worker thread; a write goes to a sibling
 	temporary file renamed over the old one, so a reader never sees half a file. A lease is the file's path, with nothing to release. */
-class FileStorageAdapter implements IStore {
+class FileSystemStoreAdapter implements IStore {
 	var root:String;
 	var mailbox = new Mailbox();
 	var serial = 0;

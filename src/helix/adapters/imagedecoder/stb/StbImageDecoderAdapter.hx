@@ -8,7 +8,7 @@ import helix.graphics.ImageDecoding.ImageDecodeResult;
 import sys.thread.Thread;
 
 /** IImageDecoder natively over stb_image, each decode on a worker thread. */
-class StbImagesAdapter implements IImageDecoder {
+class StbImageDecoderAdapter implements IImageDecoder {
 	var mailbox = new Mailbox();
 
 	/** A decoder with no work. */

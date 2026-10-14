@@ -1,22 +1,22 @@
-import helix.adapters.http.fetchapi.FetchApiAdapter;
+import helix.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.adapters.audio.webaudio.WebAudioAdapter;
-import helix.adapters.audiodecoder.webaudio.WebAudioDecoder;
-import helix.adapters.store.indexeddb.IndexedDbStorageAdapter;
+import helix.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;
+import helix.adapters.store.indexeddb.IndexedDbStoreAdapter;
 
 class ServiceEnvironment {
-	public var fetcher = new FetchApiAdapter();
+	public var fetcher = new FetchApiHttpAdapter();
 	public var remoteStreams = true;
 	public var base:String;
-	public var storage:IndexedDbStorageAdapter;
-	public var packaged:IndexedDbStorageAdapter;
+	public var storage:IndexedDbStoreAdapter;
+	public var packaged:IndexedDbStoreAdapter;
 	public var audio:WebAudioAdapter;
-	public var decoder = new WebAudioDecoder();
+	public var decoder = new WebAudioDecoderAdapter();
 
 	public function new() {
 		var params = new js.html.URLSearchParams(js.Browser.window.location.search);
 		base = js.Browser.window.location.origin;
-		storage = new IndexedDbStorageAdapter(params.get("db"));
-		packaged = new IndexedDbStorageAdapter(params.get("db") + "-unused");
+		storage = new IndexedDbStoreAdapter(params.get("db"));
+		packaged = new IndexedDbStoreAdapter(params.get("db") + "-unused");
 		audio = new WebAudioAdapter();
 		audio.unlock();
 	}

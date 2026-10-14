@@ -77,7 +77,7 @@ private class Transfer {
 
 /** IHttp natively over haxe.Http, a worker thread a transfer: http and https URLs only (others end with a failure), noCache has nothing to
 	bypass, and an abort stops the transfer at its next part of the body (not while it connects). */
-class HaxeHttpFetchAdapter implements IHttp {
+class HaxeHttpAdapter implements IHttp {
 	var mailbox = new Mailbox();
 	var transfers:Array<Transfer> = [];
 

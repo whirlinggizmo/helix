@@ -9,7 +9,7 @@ import sys.thread.Thread;
 
 /** IAudioDecoder natively over libsndfile (Ogg Vorbis and Opus, MP3; mixed down and resampled to mono at 44100 Hz in its C), each decode on a
 	worker thread. */
-class LibsndfileDecoder implements IAudioDecoder {
+class LibsndfileAudioDecoderAdapter implements IAudioDecoder {
 	var mailbox = new Mailbox();
 
 	/** A decoder with no work. */

@@ -1,24 +1,24 @@
-import helix.adapters.http.haxehttp.HaxeHttpFetchAdapter;
-import helix.adapters.audiodecoder.libsndfile.LibsndfileDecoder;
-import helix.adapters.audiodecoder.libsndfile.LibsndfileFiles;
+import helix.adapters.http.haxehttp.HaxeHttpAdapter;
+import helix.adapters.audiodecoder.libsndfile.LibsndfileAudioDecoderAdapter;
+import helix.adapters.audiodecoder.libsndfile.LibsndfilePcmFiles;
 import helix.adapters.audio.sokol.SokolAudioAdapter;
-import helix.adapters.store.filesystem.FileStorageAdapter;
+import helix.adapters.store.filesystem.FileSystemStoreAdapter;
 
 class ServiceEnvironment {
-	public var fetcher = new HaxeHttpFetchAdapter();
+	public var fetcher = new HaxeHttpAdapter();
 	public var remoteStreams = false;
 	public var base:String;
-	public var storage:FileStorageAdapter;
-	public var packaged:FileStorageAdapter;
+	public var storage:FileSystemStoreAdapter;
+	public var packaged:FileSystemStoreAdapter;
 	public var audio:SokolAudioAdapter;
-	public var decoder = new LibsndfileDecoder();
+	public var decoder = new LibsndfileAudioDecoderAdapter();
 
 	public function new() {
 		var args = Sys.args();
 		base = args[0];
-		storage = new FileStorageAdapter(args[1]);
-		packaged = new FileStorageAdapter(args[1] + "-unused");
-		audio = new SokolAudioAdapter(new LibsndfileFiles());
+		storage = new FileSystemStoreAdapter(args[1]);
+		packaged = new FileSystemStoreAdapter(args[1] + "-unused");
+		audio = new SokolAudioAdapter(new LibsndfilePcmFiles());
 	}
 
 	public function start(poll:Void->Void, done:Void->Bool, result:Void->Dynamic):Void {

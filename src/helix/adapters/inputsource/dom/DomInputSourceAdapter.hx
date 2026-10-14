@@ -11,7 +11,7 @@ import js.html.CanvasElement;
 
 /** Browser input: keys and typed text from the window; mouse buttons, moves, fingers and wheel from the canvas, in its framebuffer pixels;
 	focus from the window's focus and the page's visibility; gamepads read at poll(), in the W3C standard layout. */
-class DomInputAdapter implements IInputSource {
+class DomInputSourceAdapter implements IInputSource {
 	var canvas:CanvasElement;
 	var events:IInputEvents;
 	var buttons:Array<Bool> = [for (_ in PadButton.all) false];

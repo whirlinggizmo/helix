@@ -4,7 +4,7 @@ Found while documenting every public member (2026-10-13), by reading each implem
 
 ## Fixed with the documentation pass
 
-- Public `var`s against the conventions: `WebGL2GraphicsAdapter.gl`, `DomInputAdapter.active`, `WebAudioAdapter.played`/`stopped`.
+- Public `var`s against the conventions: `WebGL2GraphicsAdapter.gl`, `DomInputSourceAdapter.active`, `WebAudioAdapter.played`/`stopped`.
 - `Camera2D.fit()` and `pixels()` set the zoom without `setZoom`'s refusal: a zero width, height or scale gave an infinite or zero zoom.
 - `Ticker`'s constructor and `PointerGestures`' ignored their own setters' refusals (a rate of 0 kept 60 silently).
 - Gamepad edges weren't counted as keys' are, and pads and the mouse had no release edges.
@@ -23,7 +23,7 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `IAudio.destroyStream`: Web Audio stopped the stream's playbacks; Sokol's didn't, and a playing stream kept reading its file. `AudioResources` hid it by keeping resources alive while played. Now both stop them (DECISIONS 83).
 - A hot reload whose new audio failed to decode threw inside the decode callback. Now it's traced and the old clip kept (DECISIONS 83).
 - `WebAudioAdapter.unlock()` made the AudioContext without the 44,100 Hz rate decoding asked for, so which ran first decided the rate. Decoding now has its own 44,100 Hz `OfflineAudioContext` (DECISIONS 83).
-- `DomInputAdapter` gated only keydown on focus: pointer, mouse and wheel still recorded while inactive. Native touch never drove the pointer. The shared `InputRouter` now applies one focus and pointer policy (DECISIONS 84).
+- `DomInputSourceAdapter` gated only keydown on focus: pointer, mouse and wheel still recorded while inactive. Native touch never drove the pointer. The shared `InputRouter` now applies one focus and pointer policy (DECISIONS 84).
 - `InputState.clear()` kept typed text and wheel notches; now it drops them. `InputState.capture`/`capturePointer` had no callers and are gone (DECISIONS 84).
 - `isPadPressed` was documented as not counted, but is; `getPadAxis` was raw while `getPad().getAxis` applied the dead zone; both now say and do the same (DECISIONS 84).
 
@@ -36,12 +36,12 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `capture("")` does nothing on the web; natively it writes the capture.
 
 **Correctness**
-- `HaxeHttpFetchAdapter`: cancelling doesn't stop the download (the worker runs to the end and holds one of two slots); `timeoutSeconds` limits only connecting; `noCache` is ignored; `Content-Length` is read case-sensitively; cancelled requests' progress readers are never removed.
+- `HaxeHttpAdapter`: cancelling doesn't stop the download (the worker runs to the end and holds one of two slots); `timeoutSeconds` limits only connecting; `noCache` is ignored; `Content-Length` is read case-sensitively; cancelled requests' progress readers are never removed.
 
 - A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**
-- `FileStorageAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
+- `FileSystemStoreAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
 - The default clear color is written twice (WebGL2 adapter and graphics.c).
 - One native host per program (`SokolHostAdapter.instance`).
 - Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).

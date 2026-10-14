@@ -10,7 +10,7 @@ import helix.input.PadButton;
 
 /** Native input: sokol's queued window events reported in order at poll (so a press and release in one frame keep both edges), then the
 	evdev gamepads. */
-class SokolInputAdapter implements IInputSource {
+class SokolInputSourceAdapter implements IInputSource {
 	var events:IInputEvents;
 	var buttons:Array<Bool> = [for (_ in PadButton.all) false];
 	var axes:Array<Float> = [for (_ in PadAxis.all) 0.];

@@ -8,7 +8,7 @@ import helix.assets.Storage.StorageWriteResult;
 
 /** IStore in a browser: Blobs in an IndexedDB database, a lease a Blob URL (released by revoking it). Operations asked before the database
 	opens wait for it. */
-class IndexedDbStorageAdapter implements IStore {
+class IndexedDbStoreAdapter implements IStore {
 	var db:Dynamic;
 	var error:Null<String>;
 	var ready = false;

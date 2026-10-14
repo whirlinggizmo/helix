@@ -5,7 +5,7 @@ import helix.adapters.audiodecoder.libsndfile.internal.CodecBridge;
 import helix.adapters.internal.IPcmFiles;
 
 /** Audio files natively over libsndfile (WAV, Ogg Vorbis and Opus, MP3), read as mono at 44100 Hz for a native output to stream. */
-class LibsndfileFiles implements IPcmFiles {
+class LibsndfilePcmFiles implements IPcmFiles {
 	/** libsndfile's files. */
 	public function new() {}
 

@@ -10,6 +10,8 @@
      one area. The same logic written differently isn't caught here; review is for that.
   5. Each adapter directory (adapters/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
      name being the interface's without the I, lowercased.
+  6. Each API directory (adapters/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
+     name ends with and the contract's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
 
 Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
 landed); one that has gone must be taken off, so the list only shrinks. Exits 1 on any other violation.
@@ -75,6 +77,16 @@ def duplicates(files):
     return found
 
 
+def adapter_name(api, contract):
+    """The lowercased class name an adapter for contract (I<Contract>, given without the I) in api/ must have: api, the contract without
+    the words api already ends with, then 'adapter'."""
+    words = [w.lower() for w in re.findall(r'[A-Z][a-z0-9]*', contract)]
+    for k in range(len(words), 0, -1):
+        if api.endswith(''.join(words[:k])):
+            return api + ''.join(words[k:]) + 'adapter'
+    return api + ''.join(words) + 'adapter'
+
+
 def main():
     violations = []
     for path in sorted(ADAPTERS.rglob('*.hx')):
@@ -102,6 +114,19 @@ def main():
         contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text())}
         if area.name not in contracts:
             violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(contracts)})'))
+    # Each API directory holds <Api><Contract>Adapter, its overlap written once.
+    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
+        for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):
+            found = []
+            for f in api.glob('*.hx'):
+                for name, contract in re.findall(r'\bclass\s+(\w+)[^{]*?\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text()):
+                    if contract.lower() == area.name:
+                        found.append(name)
+                        expected = adapter_name(api.name, contract)
+                        if name.lower() != expected:
+                            violations.append(('name', f, 0, f'{name} implements I{contract} in {area.name}/{api.name}/: expected {expected} (any case)'))
+            if not found and any(api.glob('*.hx')):
+                violations.append(('name', api, 0, f'no class in {area.name}/{api.name}/ implements I<{area.name}>'))
     known = {(rule, SRC / file) for rule, file, _ in KNOWN}
     seen = set()
     failed = False

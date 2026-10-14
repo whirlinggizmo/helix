@@ -8,7 +8,7 @@ HeliX is three layers, and code belongs to exactly one of them.
 | Platform contracts | the interfaces the engine calls (below) | What a platform must provide, stated as capabilities, not as engine features. |
 | Adapters | `src/helix/adapters/<contract>/<api>/` | One platform API behind one contract: a hardware and OS abstraction layer, nothing more. |
 
-**Adapter directories are named for their contract:** `adapters/<contract>/<api>/`, where `<contract>` is the interface's name without the `I`, lowercase, words run together (`IAudioDecoder` → `audiodecoder/`, `IInputSource` → `inputsource/`), and `<api>` is the platform API it uses (`webgl2/`, `sokol/`, `dom/`). A contract whose object comes with another adapter's lives in that adapter's directory: `IWindow` in `host/` (the host makes the window), `IPcmFiles` in `audiodecoder/libsndfile/` (the native audio output streams through the codec). Native C, headers and extern bindings go in the adapter's `internal/`; what several adapters share, in `adapters/internal/`.
+**Adapter directories are named for their contract:** `adapters/<contract>/<api>/`, where `<contract>` is the interface's name without the `I`, lowercase, words run together (`IAudioDecoder` → `audiodecoder/`, `IInputSource` → `inputsource/`), and `<api>` is the platform API it uses (`webgl2/`, `sokol/`, `dom/`). A contract whose object comes with another adapter's lives in that adapter's directory: `IWindow` in `host/` (the host makes the window), `IPcmFiles` in `audiodecoder/libsndfile/` (the native audio output streams through the codec). The `<api>` directory names the exact API, not the platform, so it says where an adapter can run (`http/fetchapi` runs wherever the Fetch API exists: browsers, Node, Bun, Deno); profiles are named for platforms. **The adapter class is `<Api><Contract>Adapter`**, with words the API's name ends with and the contract's starts with written once: `graphics/webgl2/WebGL2GraphicsAdapter`, `store/indexeddb/IndexedDbStoreAdapter`, `audio/webaudio/WebAudioAdapter` (not WebAudioAudio), `http/haxehttp/HaxeHttpAdapter`. Helpers beside it are named `<Api><Thing>` (`DomWindow`, `LibsndfilePcmFiles`). Native C, headers and extern bindings go in the adapter's `internal/`; what several adapters share, in `adapters/internal/`.
 
 A **profile** (`src/helix/profiles/`) picks one adapter per contract for a target and hands them to the engine.
 
@@ -28,7 +28,8 @@ An adapter holds only what differs because of its platform or API.
 2. engine code using a platform API (`js.html`, `js.Browser`, `js.Syntax`, `js.lib`, `sys.`, `cpp.`) or a target conditional;
 3. an adapter's C including a generated shader header;
 4. two adapters of one contract sharing a run of six or more identical lines;
-5. an adapter directory not named for a contract one of its adapters implements.
+5. an adapter directory not named for a contract one of its adapters implements;
+6. an adapter class not named `<Api><Contract>Adapter` as above.
 
 What it can't see (the same logic written twice in different words, policy hiding in a contract's doc comment) is review's. Violations that predate the rule are listed in the check with the audit step that removes each ([ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)); the list only shrinks.
 

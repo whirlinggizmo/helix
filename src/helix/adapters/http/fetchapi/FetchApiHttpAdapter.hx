@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.assets.IHttp;
 
 /** IHttp in a browser over fetch(): the body read as it arrives, abort through an AbortController. */
-class FetchApiAdapter implements IHttp {
+class FetchApiHttpAdapter implements IHttp {
 	var controllers:Array<js.html.AbortController> = [];
 
 	/** No transfers yet. */
