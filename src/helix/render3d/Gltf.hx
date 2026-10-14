@@ -2,9 +2,10 @@ package helix.render3d;
 
 import haxe.io.Bytes;
 
-/** A glTF 2.0 file as read: its JSON document and its binary buffer, from a GLB (the binary container: a JSON chunk and a BIN chunk), with
-	the reading of its accessors. Only what a ModelFile needs is interpreted here; the document stays as parsed. Throws, saying why, for a file
-	it can't read. */
+/** A glTF 2.0 file as read: its JSON document and its buffers, from a GLB (the binary container: a JSON chunk and a BIN chunk, its first
+	buffer) or a .gltf (the JSON alone), with the reading of its accessors. A buffer inside the file (the GLB's, or a base64 data: URI) is read
+	here; one in a file of its own (a uri beside the model) is the loader's to fetch and set (getMissingBuffers, setBuffer). Only what a
+	ModelFile needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read. */
 class Gltf {
 	static inline var JSON_CHUNK = 0x4E4F534A;
 	static inline var BIN_CHUNK = 0x004E4942;
@@ -12,15 +13,33 @@ class Gltf {
 	/** The document: glTF's JSON, as parsed. */
 	public var document(default, null):Dynamic;
 
-	/** The binary chunk: the file's first buffer, or null for none. */
-	public var binary(default, null):Null<Bytes>;
+	var buffers:Array<Null<Bytes>> = [];
 
 	function new(document:Dynamic, binary:Null<Bytes>) {
 		this.document = document;
-		this.binary = binary;
 		var version:String = field(field(document, "asset"), "version");
 		if (version == null || !StringTools.startsWith(version, "2."))
 			throw 'glTF version $version is not 2.x';
+		var list = this.list("buffers");
+		for (i in 0...list.length) {
+			var uri:String = field(list[i], "uri");
+			// A GLB's first buffer has no uri: its BIN chunk.
+			buffers.push(uri == null ? (i == 0 ? binary : null) : dataUri(uri));
+			if (uri == null && (i != 0 || binary == null))
+				throw 'Buffer $i has no uri and no BIN chunk';
+		}
+	}
+
+	/** Reads a GLB, or a .gltf (its JSON, as UTF-8 bytes): by its first bytes. */
+	public static function read(bytes:Bytes):Gltf {
+		if (bytes.length >= 4 && bytes.getString(0, 4) == "glTF")
+			return readGlb(bytes);
+		var text = bytes.toString(), at = 0;
+		while (at < text.length && StringTools.isSpace(text, at))
+			at++;
+		if (at >= text.length || text.charAt(at) != "{")
+			throw "Neither a GLB nor a glTF (JSON) file";
+		return new Gltf(haxe.Json.parse(text), null);
 	}
 
 	/** Reads a GLB file. */
@@ -49,6 +68,55 @@ class Gltf {
 		return new Gltf(haxe.Json.parse(json), binary);
 	}
 
+	/** The bytes of a base64 data: URI, or null for any other uri (a file's). Throws for a data: URI that isn't base64. */
+	public static function dataUri(uri:String):Null<Bytes> {
+		if (!StringTools.startsWith(uri, "data:"))
+			return null;
+		var comma = uri.indexOf(",");
+		if (comma < 0 || !StringTools.endsWith(uri.substring(0, comma), ";base64"))
+			throw "A data: URI that isn't base64";
+		return haxe.crypto.Base64.decode(uri.substr(comma + 1));
+	}
+
+	/** The asset path of uri (a file the model names, relative to it) beside the model at path: its %-escapes decoded and its "." and ".."
+		segments followed. Null for one that isn't a relative path inside the assets (a URL, an absolute path, one climbing above them). */
+	public static function resolve(path:String, uri:String):Null<String> {
+		var decoded = try StringTools.urlDecode(uri) catch (e:Dynamic) return null;
+		if (decoded.indexOf(":") >= 0 || StringTools.startsWith(decoded, "/"))
+			return null;
+		var parts = path.split("/");
+		parts.pop();
+		for (part in decoded.split("/")) {
+			if (part == "" || part == ".")
+				continue;
+			if (part == "..") {
+				if (parts.length == 0)
+					return null;
+				parts.pop();
+			} else
+				parts.push(part);
+		}
+		var joined = parts.join("/");
+		return helix.assets.AssetPath.valid(joined) ? joined : null;
+	}
+
+	/** The buffers that are files of their own, not read yet: each its index and uri. */
+	public function getMissingBuffers():Array<{index:Int, uri:String}> {
+		var list = this.list("buffers");
+		return [
+			for (i in 0...buffers.length)
+				if (buffers[i] == null) {index: i, uri: field(list[i], "uri")}
+		];
+	}
+
+	/** Sets buffer index to bytes, the file its uri names. Throws for bytes shorter than its byteLength. */
+	public function setBuffer(index:Int, bytes:Bytes):Void {
+		var length:Null<Int> = field(list("buffers")[index], "byteLength");
+		if (length != null && bytes.length < length)
+			throw 'Buffer $index is cut short: ${bytes.length} of $length bytes';
+		buffers[index] = bytes;
+	}
+
 	/** A field of a JSON object, or null. */
 	public static function field(object:Dynamic, name:String):Dynamic
 		return object == null ? null : Reflect.field(object, name);
@@ -59,7 +127,7 @@ class Gltf {
 		return value == null ? [] : value;
 	}
 
-	// The bytes of buffer view index: a slice of the binary chunk (a GLB's only buffer).
+	// The bytes of buffer view index: a slice of its buffer.
 	function view(index:Int):{
 		bytes:Bytes,
 		offset:Int,
@@ -70,15 +138,16 @@ class Gltf {
 		if (index < 0 || index >= views.length)
 			throw 'No buffer view $index';
 		var v = views[index], buffer:Int = field(v, "buffer");
-		if (buffer != 0 || binary == null)
-			throw "Only a GLB's own buffer is read";
+		if (buffer < 0 || buffer >= buffers.length || buffers[buffer] == null)
+			throw 'Buffer $buffer isn\'t read';
+		var bytes = buffers[buffer];
 		var offset:Int = field(v, "byteOffset") == null ? 0 : field(v, "byteOffset");
 		var length:Int = field(v, "byteLength");
-		if (offset < 0 || length < 0 || offset + length > binary.length)
+		if (offset < 0 || length < 0 || offset + length > bytes.length)
 			throw 'Buffer view $index runs past its buffer';
 		var stride:Int = field(v, "byteStride") == null ? 0 : field(v, "byteStride");
 		return {
-			bytes: binary,
+			bytes: bytes,
 			offset: offset,
 			length: length,
 			stride: stride

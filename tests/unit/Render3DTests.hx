@@ -3,6 +3,7 @@ import helix.render3d.Light;
 import helix.render3d.Mat4;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.ModelFile.ImageSource;
 import helix.render3d.Node;
 import helix.render3d.Node.NodeKind;
 
@@ -132,7 +133,7 @@ class Render3DTests {
 			"A spot's cones: inner <= outer < pi/2");
 		check(!spot.setIntensity(-1) && !spot.setRange(-1) && spot.getKind() == Spot, "A light refuses negative intensity and range");
 		// A glTF file read whole: the toy car (examples/assets/models/toy_car.glb).
-		var file = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.readGlb(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
+		var file = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.read(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
 		var car = file.instantiate("car");
 		var wheel = car.find("wheel_rl"),
 			beam = car.find("headlight_l_beam"),
@@ -169,6 +170,47 @@ class Render3DTests {
 		check(mount.getKind() == CameraNode && mount.getCamera() == lens && lens.getNode() == mount, "The node and its camera know each other");
 		var other = Node.camera(lens);
 		check(mount.getCamera() == null && lens.getNode() == other, "A camera on another node moves there");
+		// .gltf: a triangle whose buffer is inline (a data: URI), and one whose buffer is a file beside it; relative paths resolved.
+		var data = haxe.io.Bytes.alloc(36);
+		for (k in 0...9)
+			data.setFloat(k * 4, [0, 0, 0, 1, 0, 0, 0, 1, 0][k]);
+		function gltfText(uri:String):String
+			return haxe.Json.stringify({
+				asset: {version: "2.0"},
+				buffers: [{byteLength: 36, uri: uri}],
+				bufferViews: [{buffer: 0, byteLength: 36}],
+				accessors: [
+					{
+						bufferView: 0,
+						componentType: 5126,
+						count: 3,
+						type: "VEC3"
+					}
+				],
+				meshes: [{primitives: [{attributes: {POSITION: 0}}]}],
+				nodes: [{mesh: 0, name: "tri"}],
+				scenes: [{nodes: [0]}],
+				images: [{uri: "Textures/colormap.png"}],
+				textures: [{source: 0}],
+				materials: [{pbrMetallicRoughness: {baseColorTexture: {index: 0}}}]
+			});
+		var embedded = helix.render3d.Gltf.read(haxe.io.Bytes.ofString(gltfText("data:application/octet-stream;base64," + haxe.crypto.Base64.encode(data))));
+		check(embedded.getMissingBuffers().length == 0 && embedded.floats(0)[3] == 1, "An inline buffer is read from its data: URI");
+		var apart = helix.render3d.Gltf.read(haxe.io.Bytes.ofString(gltfText("tri.bin")));
+		check(apart.getMissingBuffers().length == 1
+			&& apart.getMissingBuffers()[0].uri == "tri.bin", "A buffer in a file of its own waits for it");
+		apart.setBuffer(0, data);
+		var triangle = @:privateAccess new helix.render3d.ModelFile(apart);
+		check(triangle.instantiate().find("tri") != null, "With its buffer set, the model builds");
+		var sources = @:privateAccess triangle.images();
+		check(sources.length == 1
+			&& sources[0].source.match(File("Textures/colormap.png")), "An image file beside the model is named by its uri");
+		check(helix.render3d.Gltf.resolve("models/car/car.gltf", "Textures/colormap.png") == "models/car/Textures/colormap.png"
+			&& helix.render3d.Gltf.resolve("models/car/car.gltf", "../shared/a%20b.png") == null
+			&& helix.render3d.Gltf.resolve("models/car/car.gltf", "../shared/ab.png") == "models/shared/ab.png"
+			&& helix.render3d.Gltf.resolve("models/car.gltf", "../../x.png") == null
+			&& helix.render3d.Gltf.resolve("models/car.gltf", "https://example.com/x.png") == null,
+			"URIs resolve beside the model, inside the assets");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

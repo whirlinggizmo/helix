@@ -18,7 +18,7 @@ import helix.render3d.Node;
 import helix.render3d.Stage3D;
 
 /** Materials drawn by shaders of the example's own (shaders/*.glsl, surface shaders packed into .hxshader assets and loaded at run time):
-	- left: toon shading (the lights in flat bands, a rim light) on every material of the toy car
+	- left: toon shading (the lights in flat bands, a rim light) on every material of the Kenney sports car
 	- middle: a sphere dissolving and coming back through a noise texture, with a glowing edge (the time, a texture, discard), double sided so
 		its inside shows through the holes
 	- right: a sphere of water rippling in waves (a vertex hook moves the surface), with glints and the sky at grazing angles
@@ -93,13 +93,13 @@ class App extends BaseApp {
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 
-		new Models(host.assets, host.textures).load("models/toy_car.glb", result -> switch result {
+		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file;
 				var node = file.instantiate("car");
 				node.setPosition(-1.9, FLOOR_Y, 0);
 				node.setRotation(0, .4, 0);
-				node.setScale(.5, .5, .5);
+				node.setScale(.75, .75, .75);
 				stage.add(node);
 				toonCar();
 			case Failed(message):

@@ -9,12 +9,14 @@ import helix.render3d.Light.LightKind;
 	(Models loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
 	together; each copy has lights of its own. Made by Models; read, never changed after.
 
-	Read: triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing);
-	metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with
-	KHR_materials_emissive_strength) alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default
-	scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights. Not read yet (warned once a file): skins and animations (a skinned
-	mesh draws in its bind pose), morph targets, metallic-roughness, occlusion and emissive textures, alphaMode MASK,
-	texture transforms, a second texture coordinate set, and files other than GLB. */
+	Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline
+	or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked
+	out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive
+	color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and
+	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights. Not
+	read yet (warned once a file): skins and animations (a skinned mesh draws in its bind pose), morph targets, metallic-roughness, occlusion
+	and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), and a second texture
+	coordinate set. */
 class ModelFile {
 	var gltf:Gltf;
 	var parts:Array<Array<{mesh:Mesh, material:Material}>> = [];
@@ -134,29 +136,53 @@ class ModelFile {
 	static function wrap(mode:Null<Int>):Wrap
 		return mode == 33071 ? Clamp : mode == 33648 ? Mirror : Repeat;
 
-	/** The images materials use: for each, the buffer view holding its file, how its texture samples (its sampler's filter, linear unless
-		its magnification filter is nearest, and wrap), and how to set it once decoded. */
+	/** The images materials use, each once (an image two materials share is decoded once): where its file is (in a buffer view, inline, or a
+		file of its own named by a uri relative to the model), how its texture samples (its sampler's filter, linear unless its magnification
+		filter is nearest, and wrap), and what to set once it's decoded. */
 	@:allow(helix.render3d.Models)
-	function images():Array<{view:Int, sampling:Sampling, set:Texture2D->Void}> {
-		var out = [], textures = gltf.list("textures"), images = gltf.list("images"), samplers = gltf.list("samplers");
+	function images():Array<{source:ImageSource, sampling:Sampling, set:Array<Texture2D->Void>}> {
+		var out:Array<{source:ImageSource, sampling:Sampling, set:Array<Texture2D->Void>}> = [],
+			byKey = new Map<String, Int>();
+		var textures = gltf.list("textures"),
+			images = gltf.list("images"),
+			samplers = gltf.list("samplers");
 		function image(info:Dynamic, set:Texture2D->Void):Void {
 			if (info == null)
 				return;
 			if (field(info, "texCoord") != null && field(info, "texCoord") != 0)
 				warn("a second texture coordinate set is read as the first");
-			var t = textures[field(info, "index")],
-				source:Null<Int> = field(t, "source");
-			if (source == null || field(images[source], "bufferView") == null) {
-				warn("images outside the GLB's buffer are skipped");
+			var transform:Dynamic = field(field(info, "extensions"), "KHR_texture_transform");
+			if (transform != null
+				&& (field(transform, "offset") != null || field(transform, "scale") != null || field(transform, "rotation") != null))
+				warn("texture transforms (KHR_texture_transform) are ignored");
+			var textureIndex:Int = field(info, "index"),
+				t = textures[textureIndex],
+				imageIndex:Null<Int> = field(t, "source");
+			if (imageIndex == null || imageIndex < 0 || imageIndex >= images.length) {
+				warn("a texture without an image is skipped");
 				return;
 			}
-			var index:Null<Int> = field(t, "sampler"),
-				sampler:Dynamic = index == null ? null : samplers[index];
+			var samplerIndex:Null<Int> = field(t, "sampler");
+			var key = '$imageIndex/$samplerIndex';
+			if (byKey.exists(key)) {
+				out[byKey[key]].set.push(set);
+				return;
+			}
+			var img = images[imageIndex],
+				view:Null<Int> = field(img, "bufferView"),
+				uri:Null<String> = field(img, "uri");
+			var source = view != null ? InView(view) : uri == null ? null : StringTools.startsWith(uri, "data:") ? Inline(Gltf.dataUri(uri)) : File(uri);
+			if (source == null) {
+				warn("an image with neither a buffer view nor a uri is skipped");
+				return;
+			}
+			var sampler:Dynamic = samplerIndex == null ? null : samplers[samplerIndex];
 			var mag:Null<Int> = field(sampler, "magFilter");
+			byKey[key] = out.length;
 			out.push({
-				view: field(images[source], "bufferView"),
+				source: source,
 				sampling: new Sampling(mag != 9728, wrap(field(sampler, "wrapS")), wrap(field(sampler, "wrapT"))),
-				set: set
+				set: [set]
 			});
 		}
 		var list = gltf.list("materials");
@@ -240,4 +266,16 @@ class ModelFile {
 				node.add(this.node(c));
 		return node;
 	}
+}
+
+/** Where a model's image file is. */
+enum ImageSource {
+	/** In a buffer view. */
+	InView(view:Int);
+
+	/** Inline: a data: URI's bytes. */
+	Inline(bytes:haxe.io.Bytes);
+
+	/** A file of its own: a uri relative to the model. */
+	File(uri:String);
 }

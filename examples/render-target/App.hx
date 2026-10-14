@@ -89,10 +89,10 @@ class App extends BaseApp {
 		globe.setScale(1.6, 1.6, 1.6);
 		stage.add(globe);
 
-		new Models(host.assets, host.textures).load("models/toy_car.glb", result -> switch result {
+		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file.instantiate("car");
-				car.setScale(.6, .6, .6);
+				car.setScale(.9, .9, .9);
 				stage.add(car);
 			case Failed(message):
 				trace(message);

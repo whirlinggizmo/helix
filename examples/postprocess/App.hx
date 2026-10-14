@@ -16,7 +16,7 @@ import helix.render3d.Models;
 import helix.render3d.Node;
 import helix.render3d.Stage3D;
 
-/** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the toy car on a floor, generated
+/** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor, generated
 	shapes, a circling point light. The effects are the example's own shaders (shaders/vignette.glsl and scanlines.glsl, packed into
 	.hxshader assets and loaded at run time):
 	- the vignette darkens the corners and warms the middle
@@ -83,9 +83,11 @@ class App extends BaseApp {
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			stage.add(model);
 		}
-		new Models(host.assets, host.textures).load("models/toy_car.glb", result -> switch result {
+		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
-				stage.add(file.instantiate("car"));
+				var car = file.instantiate("car");
+				car.setScale(1.5, 1.5, 1.5);
+				stage.add(car);
 			case Failed(message):
 				trace(message);
 			case Cancelled:

@@ -13,13 +13,13 @@ import helix.render3d.Models;
 import helix.render3d.Node;
 import helix.render3d.Stage3D;
 
-/** A glTF model on a lit stage, under a circling camera: the toy car (a checkered body, a see-through cabin, four wheels, emissive
-	headlights with a spot light each), loaded through Models and placed once it's ready. Its parts are found by name once and kept: the
-	wheels turn, and H switches the headlights' lights. D drives the car around a circle and parks it; C rides along, through a camera node
+/** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit (its texture a file beside the model, loaded with
+	it), placed once it's ready. Its parts are found by name once and kept: the wheels turn, and the example gives the body two headlights (spot
+	lights, nodes of its own under the body), which H switches. D drives the car around a circle and parks it; C rides along, through a camera node
 	parented to the car (behind it and above, looking ahead), and back to the circling camera. O stops the circling camera; Escape quits where
 	quitting means anything. */
 class App extends BaseApp {
-	static inline var MODEL = "models/toy_car.glb";
+	static inline var MODEL = "models/car-kit/sedan-sports.glb";
 
 	var host:IHost;
 	var stage:Stage3D;
@@ -64,16 +64,30 @@ class App extends BaseApp {
 
 		new Models(host.assets, host.textures).load(MODEL, result -> switch result {
 			case Ready(file):
-				car = file.instantiate("toy_car");
-				for (name in ["wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"])
+				car = file.instantiate("car");
+				car.setScale(1.5, 1.5, 1.5);
+				for (name in ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"])
 					wheels.push(car.find(name));
-				for (name in ["headlight_l_beam", "headlight_r_beam"])
-					beams.push(car.find(name));
+				// Headlights: spot lights at the body's two yellow lamps (in its own units, the faces whose texture is yellow: x 0.28 to 0.55,
+				// y 0.45 to 0.53, z 1.05 to 1.18), just in front of each, shining ahead and a little down (the car faces its +z).
+				var body = car.find("body");
+				for (side in [-1, 1]) {
+					var spot = new Light(Spot);
+					spot.setColor(0xfff2d6ff);
+					spot.setIntensity(30);
+					spot.setRange(12);
+					spot.setCone(.25, .45);
+					var beam = Node.light(spot);
+					beam.setPosition(side * .41, .49, 1.2);
+					beam.lookAt(side * .5, -.2, 5);
+					body.add(beam);
+					beams.push(beam);
+				}
 				stage.add(car);
-				// Behind and above it, looking ahead (the car faces its +z); in the car's own units.
+				// Behind and above it, looking ahead; in the car's own units.
 				chaseNode = Node.camera(chase);
-				chaseNode.setPosition(0, 3, -8);
-				chaseNode.lookAt(0, .5, 3);
+				chaseNode.setPosition(0, 1.8, -4.5);
+				chaseNode.lookAt(0, .4, 2);
 				car.add(chaseNode);
 				status = MODEL;
 				for (warning in file.getWarnings())
