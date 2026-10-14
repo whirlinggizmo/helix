@@ -73,10 +73,14 @@ class Stage2D {
 		}
 		while (stack.length > 0) {
 			var node = stack.pop(), parentChanged = stackChanged.pop();
-			if (!node.visible)
+			if (!node.enabled)
 				continue;
 			var changed = node.update(parentChanged);
-			if (node.kind != Group)
+			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
+			if (!node.visible) {
+				if (node.kind == Emitter)
+					node.emitterOf.advance(dt, node.wx, node.wy, 0);
+			} else if (node.kind != Group)
 				drawNode(batch, node);
 			var j = node.children.length;
 			while (j-- > 0) {

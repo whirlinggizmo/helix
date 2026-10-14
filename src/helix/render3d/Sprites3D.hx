@@ -90,7 +90,7 @@ class Sprites3D {
 		particles to draw. Not culled: particles reach past where it is. */
 	public function visitEmitter(node:Node, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var emitter = node.getEmitter(), w = node.getWorldMatrix();
-		emitter.advance(dt, w.get(12), w.get(13), w.get(14));
+		advanceEmitter(node);
 		if (!emitter.isDrawable())
 			return;
 		if (emitterCount == emitters.length)
@@ -104,6 +104,12 @@ class Sprites3D {
 		};
 		it.depth = (w.get(12) - eyeX) * forwardX + (w.get(13) - eyeY) * forwardY + (w.get(14) - eyeZ) * forwardZ;
 		it.order = emitterCount;
+	}
+
+	/** Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's). */
+	public function advanceEmitter(node:Node):Void {
+		var w = node.getWorldMatrix();
+		node.getEmitter().advance(dt, w.get(12), w.get(13), w.get(14));
 	}
 
 	// The font a text without its own draws in: the built-in one, made when first needed.

@@ -615,7 +615,7 @@ class Stage3D {
 		gpu.draw(pipelines.background3d(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
 	}
 
-	// The tree depth first, each node's world matrix brought up to date on the way down; hidden nodes skip their children.
+	// The tree depth first, each node's world matrix brought up to date on the way down; disabled nodes skip their children.
 	function walk():Void {
 		stack.resize(0);
 		stackChanged.resize(0);
@@ -627,11 +627,16 @@ class Stage3D {
 		}
 		while (stack.length > 0) {
 			var node = stack.pop(), parentChanged = stackChanged.pop();
-			if (!node.isVisible())
+			if (!node.isEnabled())
 				continue;
 			var parent = node.getParent();
 			var changed = node.update(parent.getWorldMatrix(), parentChanged);
+			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are walked.
+			var shown = node.isVisible();
 			switch (node.getKind()) {
+				case EmitterNode if (!gathering && !shown):
+					sprites.advanceEmitter(node);
+				case _ if (!shown):
 				case Model if (isSkinned(node)):
 					skinned.push(node);
 				case Model if (gathering):

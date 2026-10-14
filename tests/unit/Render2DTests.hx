@@ -275,7 +275,19 @@ class Render2DTests {
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnCount() == 2, "Only nodes in view, and shown, are drawn");
+		check(culled.getDrawnCount() == 3, "Only nodes in view are drawn; a hidden group's child still is");
+		hidden.setEnabled(false);
+		batch.begin(camera);
+		culled.draw(batch, camera);
+		batch.end();
+		check(culled.getDrawnCount() == 2 && hidden.isVisible() == false && !hidden.isEnabled(), "A disabled group takes its children with it");
+		hidden.setEnabled(true);
+		hidden.getChild(0).setVisible(false);
+		hidden.setVisible(true);
+		batch.begin(camera);
+		culled.draw(batch, camera);
+		batch.end();
+		check(culled.getDrawnCount() == 2 && hidden.getChild(0).isPickable(), "A hidden node isn't drawn, still pickable by default");
 
 		// Two cameras in one batch: a run each, each in its own viewport.
 		var left = new Camera2D(), right = new Camera2D();

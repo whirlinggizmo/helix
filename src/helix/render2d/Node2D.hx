@@ -12,7 +12,9 @@ class Node2D {
 	var name = "";
 	var parent:Null<Node2D>;
 	var children:Array<Node2D> = [];
+	var enabled = true;
 	var visible = true;
+	var pickable = true;
 	var px = 0.;
 	var py = 0.;
 	var angle = 0.;
@@ -325,17 +327,36 @@ class Node2D {
 		return true;
 	}
 
-	/** Whether it and its children are drawn. */
+	/** Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't
+		moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as
+		set. On to start. */
+	public function isEnabled():Bool
+		return enabled;
+
+	/** Turns it, and everything under it, on or off (isEnabled). */
+	public function setEnabled(value:Bool):Void {
+		// Off, it isn't brought up to date as its parent moves: on again, it is.
+		if (value && !enabled)
+			localDirty = true;
+		enabled = value;
+	}
+
+	/** Whether its own output is drawn: off, a sprite, shape, text or emitter isn't drawn (an emitter still moves on) isn't drawn; it stays placed, and its children are as they are. On to start. */
 	public function isVisible():Bool
 		return visible;
 
-	/** Shows or hides it and its children. */
-	public function setVisible(value:Bool):Void {
-		// Hidden, it isn't brought up to date as its parent moves: shown again, it is.
-		if (value && !visible)
-			localDirty = true;
+	/** Shows or hides its own output (isVisible). */
+	public function setVisible(value:Bool):Void
 		visible = value;
-	}
+
+	/** Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter
+		to it: hidden and pickable is a hit area. On to start. */
+	public function isPickable():Bool
+		return pickable;
+
+	/** Lets picks hit its own output, or not (isPickable). */
+	public function setPickable(value:Bool):Void
+		pickable = value;
 
 	/** Its parent, or null. */
 	public function getParent():Null<Node2D>

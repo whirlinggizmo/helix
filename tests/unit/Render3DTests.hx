@@ -212,6 +212,7 @@ class Render3DTests {
 			&& helix.render3d.Gltf.resolve("models/car.gltf", "https://example.com/x.png") == null,
 			"URIs resolve beside the model, inside the assets");
 		shadows();
+		flags();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -291,5 +292,35 @@ class Render3DTests {
 		check(Math.abs(below[0] / below[3]) < 1e-6 && Math.abs(below[2] / below[3]) < 1, "The spot's map centers what it points at");
 		check(Math.abs(aside[0] / aside[3]) > 1, "Past its cone is outside its map");
 		stage.destroy();
+	}
+
+	// The three flags: enabled takes the subtree, visible only the node's own output, pickable only picks.
+	static function flags():Void {
+		var gpu = new Render2DTests.CountingGraphics(),
+			stage = new helix.render3d.Stage3D(gpu);
+		var group = Node.model(Mesh.cube(1, 1, 1), new Material()),
+			child = Node.model(Mesh.cube(1, 1, 1), new Material());
+		child.setPosition(2, 0, 0);
+		group.add(child);
+		stage.add(group);
+		var lamp = Node.light(new Light(Point));
+		stage.add(lamp);
+		var view = new Camera3D();
+		view.setViewport(800, 600);
+		view.setView(0, 2, 8, 0, 0, 0);
+		function draw():Int {
+			gpu.beginFrame(800, 600, 0);
+			stage.draw(view);
+			return stage.getDrawnCount();
+		}
+		check(draw() == 2 && @:privateAccess stage.lights.length == 1, "Both models drawn, the lamp shining");
+		group.setVisible(false);
+		lamp.setVisible(false);
+		check(draw() == 1 && @:privateAccess stage.lights.length == 0, "A hidden model's child still drawn; a hidden light doesn't shine");
+		group.setVisible(true);
+		group.setEnabled(false);
+		check(draw() == 0 && child.isEnabled(), "A disabled model takes its child with it; the child's own flag kept");
+		group.setEnabled(true);
+		check(draw() == 2 && group.isPickable(), "Enabled again, both drawn");
 	}
 }
