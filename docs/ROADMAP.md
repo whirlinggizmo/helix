@@ -4,10 +4,6 @@ What comes next, milestone by milestone. What's done, and when: [HISTORY.md](HIS
 
 Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf, libwgt) feature by feature, as examples that run in the browser and natively. Mid-milestone, work is checked in the browser with hot reload and the interpreter's unit tests; a milestone ends with the full checks on both targets.
 
-## Now: milestone 4, advanced 3D
-
-Built: shadows, environments, instancing, particles, 3D sprites and text, camera nodes, skinning and animation. Left: its checkpoint (the full checks, every 3D example natively).
-
 ## Next
 
 - **Milestone 5: scene and pick.** Picking models and sprites under the pointer; what a scene adds over stages (the earlier frameworks' `scene3d` and `pick` examples).
