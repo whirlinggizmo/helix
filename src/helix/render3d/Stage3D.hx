@@ -114,9 +114,15 @@ class Stage3D {
 	// The lights the last drawShadows gave a layer, in layer order, and what each layer's readers need.
 	var shadowLights:Array<Node> = [];
 	var shadowLayers = new Vector<Float>(SHADOW_LIGHTS * LAYER_FLOATS);
-	// The table this draw's shaders read, and each gathered light's score against the model being scored.
+	// The table this draw's shaders read; for choosing it, each gathered light's constants, its best score, its place in the table, each
+	// model's scores, and a model's best eight so far.
 	var table:Array<Node> = [];
-	var scores:Array<Float> = [];
+	var lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
+	var cones = new Vector<Float>(GATHERED_LIGHTS * 2);
+	var best = new Vector<Float>(GATHERED_LIGHTS);
+	var tableOf = new Vector<Int>(GATHERED_LIGHTS);
+	var itemScores = new Vector<Float>(0);
+	var slotScores = new Vector<Float>(8);
 	var shadowDraws = 0;
 	var shadowCasters = 0;
 	var lightView = new Mat4();
@@ -1068,81 +1074,130 @@ class Stage3D {
 	}
 
 	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order
-	// found; then each model's own: the table's lights that reach it most, at most MODEL_LIGHTS, the nearest-reaching first.
+	// found; then each model's own: the table's lights that reach it most, at most MODEL_LIGHTS, the nearest-reaching first. Each light's
+	// constants are worked out once, each light and model scored once, and nothing is made per model (libwgt's insertion into fixed slots).
 	function chooseLights():Void {
-		var best = [for (_ in lights) 0.];
-		for (i in 0...count) {
-			scoreLights(drawn[i]);
-			for (l in 0...lights.length)
-				if (scores[l] > best[l])
-					best[l] = scores[l];
-		}
-		var order = [for (l in 0...lights.length) if (best[l] > 0) l];
-		order.sort((a, b) -> best[a] > best[b] ? -1 : best[a] < best[b] ? 1 : a - b);
-		if (order.length > TABLE_LIGHTS)
-			order.resize(TABLE_LIGHTS);
-		order.sort((a, b) -> a - b);
-		table = [for (l in order) lights[l]];
+		var n = lights.length;
+		prepareLights();
+		if (itemScores.length < count * n)
+			itemScores = new Vector<Float>(count * n * 2);
+		for (l in 0...n)
+			best[l] = 0;
 		for (i in 0...count) {
 			var item = drawn[i];
-			scoreLights(item);
-			var mine = [for (t in 0...order.length) if (scores[order[t]] > 0) t];
-			mine.sort((a, b) -> scores[order[a]] > scores[order[b]] ? -1 : scores[order[a]] < scores[order[b]] ? 1 : a - b);
-			for (k in 0...MODEL_LIGHTS)
-				item.lights[k] = k < mine.length ? mine[k] : -1;
+			for (l in 0...n) {
+				var score = scoreLight(l, item);
+				itemScores[i * n + l] = score;
+				if (score > best[l])
+					best[l] = score;
+			}
+		}
+		// The table: the TABLE_LIGHTS best, kept in the order found.
+		table.resize(0);
+		for (l in 0...n) {
+			tableOf[l] = -1;
+			if (best[l] <= 0)
+				continue;
+			var better = 0;
+			for (o in 0...n)
+				if (best[o] > best[l] || best[o] == best[l] && o < l)
+					better++;
+			if (better < TABLE_LIGHTS) {
+				tableOf[l] = table.length;
+				table.push(lights[l]);
+			}
+		}
+		for (i in 0...count) {
+			var item = drawn[i], chosen = 0;
+			for (l in 0...n) {
+				var t = tableOf[l], score = itemScores[i * n + l];
+				if (t < 0 || score <= 0)
+					continue;
+				// Into the descending list, ties in table order.
+				var at = chosen;
+				while (at > 0 && slotScores[at - 1] < score)
+					at--;
+				if (at >= MODEL_LIGHTS)
+					continue;
+				if (chosen < MODEL_LIGHTS)
+					chosen++;
+				var j = chosen - 1;
+				while (j > at) {
+					slotScores[j] = slotScores[j - 1];
+					item.lights[j] = item.lights[j - 1];
+					j--;
+				}
+				slotScores[at] = score;
+				item.lights[at] = t;
+			}
+			for (k in chosen...MODEL_LIGHTS)
+				item.lights[k] = -1;
 		}
 	}
 
-	// How much each gathered light reaches item's box (libwgt's estimate): its brightness, through its falloff at the box's nearest point and
-	// its cone at the box's center; 0 for one that can't reach it. Into scores, by gathered light.
-	function scoreLights(item:Item):Void {
-		scores.resize(lights.length);
-		for (l in 0...lights.length) {
-			var node = lights[l],
-				light = node.getLight(),
-				color = light.getColor(),
-				w = node.getWorldMatrix();
-			var score = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.getIntensity();
-			if (score > 0 && light.getKind() != Directional) {
-				var px = w.get(12), py = w.get(13), pz = w.get(14);
-				var nx = Math.max(item.cx - item.rx, Math.min(px, item.cx + item.rx)) - px,
-					ny = Math.max(item.cy - item.ry, Math.min(py, item.cy + item.ry)) - py,
-					nz = Math.max(item.cz - item.rz, Math.min(pz, item.cz + item.rz)) - pz;
-				var d = Math.sqrt(nx * nx + ny * ny + nz * nz),
-					range = light.getRange();
-				if (range > 0 && d >= range)
-					score = 0;
-				else {
-					// The shader's falloff: inverse square (from 0.1 out), windowed to nothing at the range.
-					var falloff = 1 / Math.max(d * d, .01);
-					if (range > 0) {
-						var q = d / range, window = Math.max(0, Math.min(1, 1 - q * q * q * q));
-						falloff *= window * window;
-					}
-					score *= falloff;
-					if (light.getKind() == Spot) {
-						var tx = item.cx - px,
-							ty = item.cy - py,
-							tz = item.cz - pz,
-							tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
-						var dx = -w.get(8),
-							dy = -w.get(9),
-							dz = -w.get(10),
-							dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
-						if (tl > 1e-6 && dl > 0) {
-							var c = (tx * dx + ty * dy + tz * dz) / (tl * dl),
-								inner = Math.cos(light.getInnerCone()),
-								outer = Math.cos(light.getOuterCone());
-							// Inside a box the light's in, its cone can't miss it.
-							var inside = Math.abs(tx) <= item.rx && Math.abs(ty) <= item.ry && Math.abs(tz) <= item.rz;
-							if (!inside)
-								score *= inner - outer <= 1e-6 ? (c >= outer ? 1 : 0) : smooth(outer, inner, c);
-						}
-					}
-				}
-			}
-			scores[l] = score;
+	// Each gathered light's constants for scoring, once a draw: its brightness, place, range, kind, direction and cone.
+	function prepareLights():Void {
+		var n = lights.length;
+		if (lightData.length < n * 10)
+			lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
+		for (l in 0...n) {
+			var light = lights[l].getLight(), color = light.getColor(), w = lights[l].getWorldMatrix(), at = l * 10;
+			lightData[at] = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.getIntensity();
+			lightData[at + 1] = w.get(12);
+			lightData[at + 2] = w.get(13);
+			lightData[at + 3] = w.get(14);
+			lightData[at + 4] = light.getRange();
+			lightData[at + 5] = light.getKind() == Directional ? 0 : light.getKind() == Point ? 1 : 2;
+			var dx = -w.get(8),
+				dy = -w.get(9),
+				dz = -w.get(10),
+				dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			lightData[at + 6] = dl > 0 ? dx / dl : 0;
+			lightData[at + 7] = dl > 0 ? dy / dl : -1;
+			lightData[at + 8] = dl > 0 ? dz / dl : 0;
+			lightData[at + 9] = 0;
+			cones[l * 2] = Math.cos(light.getInnerCone());
+			cones[l * 2 + 1] = Math.cos(light.getOuterCone());
 		}
+	}
+
+	// How much gathered light l reaches item's box (libwgt's estimate): its brightness, through its falloff at the box's nearest point and its
+	// cone at the box's center; 0 for one that can't reach it.
+	function scoreLight(l:Int, item:Item):Float {
+		var at = l * 10, score = lightData[at];
+		if (score <= 0 || lightData[at + 5] == 0)
+			return score;
+		var px = lightData[at + 1],
+			py = lightData[at + 2],
+			pz = lightData[at + 3],
+			range = lightData[at + 4];
+		var nx = Math.max(item.cx - item.rx, Math.min(px, item.cx + item.rx)) - px,
+			ny = Math.max(item.cy - item.ry, Math.min(py, item.cy + item.ry)) - py,
+			nz = Math.max(item.cz - item.rz, Math.min(pz, item.cz + item.rz)) - pz;
+		var d2 = nx * nx + ny * ny + nz * nz;
+		if (range > 0 && d2 >= range * range)
+			return 0;
+		// The shader's falloff: inverse square (from 0.1 out), windowed to nothing at the range.
+		score /= Math.max(d2, .01);
+		if (range > 0) {
+			var q2 = d2 / (range * range),
+				window = Math.max(0, Math.min(1, 1 - q2 * q2));
+			score *= window * window;
+		}
+		if (lightData[at + 5] == 2) {
+			var tx = item.cx - px,
+				ty = item.cy - py,
+				tz = item.cz - pz,
+				tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
+			// Inside a box the light's in, its cone can't miss it.
+			if (tl > 1e-6 && (Math.abs(tx) > item.rx || Math.abs(ty) > item.ry || Math.abs(tz) > item.rz)) {
+				var c = (tx * lightData[at + 6] + ty * lightData[at + 7] + tz * lightData[at + 8]) / tl,
+					inner = cones[l * 2],
+					outer = cones[l * 2 + 1];
+				score *= inner - outer <= 1e-6 ? (c >= outer ? 1 : 0) : smooth(outer, inner, c);
+			}
+		}
+		return score;
 	}
 
 	static inline function smooth(edge0:Float, edge1:Float, x:Float):Float {
