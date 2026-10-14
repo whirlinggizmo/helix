@@ -1,4 +1,4 @@
-package helix.adapters.storage.filesystem;
+package helix.adapters.store.filesystem;
 
 import haxe.io.Bytes;
 import haxe.io.Path;

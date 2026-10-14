@@ -1,4 +1,4 @@
-package helix.adapters.harness.dom;
+package helix.adapters.testharness.dom;
 
 import helix.debug.ITestHarness;
 

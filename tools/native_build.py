@@ -6,7 +6,7 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
-INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','input/sokol/internal','input/evdev/internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
+INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','inputsource/evdev/internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 
 def codec_library():
@@ -25,7 +25,7 @@ def tool(name):
     """Build one C-only test tool into build/native-tools and return its path."""
     TOOLS.mkdir(parents=True,exist_ok=True)
     flags=['cc','-std=c11','-O3','-D_POSIX_C_SOURCE=200809L']+[f'-I{d}' for d in INCLUDES]
-    services=[ADAPTERS/'input/sokol/internal/input.c',ADAPTERS/'input/evdev/internal/gamepad_linux.c',ADAPTERS/'audio/sokol/internal/audio.c']
+    services=[ADAPTERS/'inputsource/sokol/internal/input.c',ADAPTERS/'inputsource/evdev/internal/gamepad_linux.c',ADAPTERS/'audio/sokol/internal/audio.c']
     if name=='native-services-test':
         command=flags+['-UNDEBUG','-DHELIX_SERVICES_TEST','-DSOKOL_DUMMY_BACKEND',ROOT/'tests/native/native_services.c']+services+['-lm','-lpthread']
     elif name=='native-audio-probe':

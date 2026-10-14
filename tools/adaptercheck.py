@@ -8,6 +8,8 @@
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
   4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
      one area. The same logic written differently isn't caught here; review is for that.
+  5. Each adapter directory (adapters/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
+     name being the interface's without the I, lowercased.
 
 Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
 landed); one that has gone must be taken off, so the list only shrinks. Exits 1 on any other violation.
@@ -95,6 +97,11 @@ def main():
             files = sorted(area.rglob(suffix))
             for a, la, b, lb in duplicates(files):
                 violations.append(('duplicate', area, la, f'{a.relative_to(SRC)}:{la} repeats in {b.relative_to(SRC)}:{lb}'))
+    # Each area is named for a contract one of its classes implements.
+    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
+        contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text())}
+        if area.name not in contracts:
+            violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(contracts)})'))
     known = {(rule, SRC / file) for rule, file, _ in KNOWN}
     seen = set()
     failed = False

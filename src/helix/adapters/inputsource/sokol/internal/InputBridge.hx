@@ -1,4 +1,4 @@
-package helix.adapters.input.sokol.internal;
+package helix.adapters.inputsource.sokol.internal;
 
 import helix.adapters.internal.SokolNativeBuild;
 

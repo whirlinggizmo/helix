@@ -1,6 +1,6 @@
-package helix.adapters.input.sokol;
+package helix.adapters.inputsource.sokol;
 
-import helix.adapters.input.sokol.internal.InputBridge;
+import helix.adapters.inputsource.sokol.internal.InputBridge;
 import helix.input.IInputEvents;
 import helix.input.IInputSource;
 import helix.input.Key;

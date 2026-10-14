@@ -1,4 +1,4 @@
-package helix.adapters.harness.stdio;
+package helix.adapters.testharness.stdio;
 
 import helix.debug.ITestHarness;
 

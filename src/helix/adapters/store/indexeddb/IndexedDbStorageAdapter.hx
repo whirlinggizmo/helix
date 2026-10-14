@@ -1,4 +1,4 @@
-package helix.adapters.storage.indexeddb;
+package helix.adapters.store.indexeddb;
 
 import haxe.io.Bytes;
 import helix.assets.IStore;

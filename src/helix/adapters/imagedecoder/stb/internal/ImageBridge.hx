@@ -1,4 +1,4 @@
-package helix.adapters.images.stb.internal;
+package helix.adapters.imagedecoder.stb.internal;
 
 import helix.adapters.internal.SokolNativeBuild;
 

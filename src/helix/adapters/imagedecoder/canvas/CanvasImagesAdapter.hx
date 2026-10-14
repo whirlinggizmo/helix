@@ -1,4 +1,4 @@
-package helix.adapters.images.canvas;
+package helix.adapters.imagedecoder.canvas;
 
 import haxe.io.Bytes;
 import helix.graphics.IImageDecoder;

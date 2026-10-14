@@ -6,7 +6,9 @@ HeliX is three layers, and code belongs to exactly one of them.
 | --- | --- | --- |
 | Engine | `src/helix/` outside `adapters/` and `profiles/` | Everything that is the same on every platform: rendering (`render2d`, `render3d`, the framework's shaders and pipelines), assets, audio resources, input state, particles, math, the runner. Pure Haxe: no platform API, no target conditional. |
 | Platform contracts | the interfaces the engine calls (below) | What a platform must provide, stated as capabilities, not as engine features. |
-| Adapters | `src/helix/adapters/<area>/<api>/` | One platform API behind one contract: a hardware and OS abstraction layer, nothing more. |
+| Adapters | `src/helix/adapters/<contract>/<api>/` | One platform API behind one contract: a hardware and OS abstraction layer, nothing more. |
+
+**Adapter directories are named for their contract:** `adapters/<contract>/<api>/`, where `<contract>` is the interface's name without the `I`, lowercase, words run together (`IAudioDecoder` → `audiodecoder/`, `IInputSource` → `inputsource/`), and `<api>` is the platform API it uses (`webgl2/`, `sokol/`, `dom/`). A contract whose object comes with another adapter's lives in that adapter's directory: `IWindow` in `host/` (the host makes the window), `IPcmFiles` in `audiodecoder/libsndfile/` (the native audio output streams through the codec). Native C, headers and extern bindings go in the adapter's `internal/`; what several adapters share, in `adapters/internal/`.
 
 A **profile** (`src/helix/profiles/`) picks one adapter per contract for a target and hands them to the engine.
 
@@ -25,7 +27,8 @@ An adapter holds only what differs because of its platform or API.
 1. an adapter naming engine code (rendering, engine services, generated layouts or framework programs, shared decoders, the runner);
 2. engine code using a platform API (`js.html`, `js.Browser`, `js.Syntax`, `js.lib`, `sys.`, `cpp.`) or a target conditional;
 3. an adapter's C including a generated shader header;
-4. two adapters of one area sharing a run of six or more identical lines.
+4. two adapters of one contract sharing a run of six or more identical lines;
+5. an adapter directory not named for a contract one of its adapters implements.
 
 What it can't see (the same logic written twice in different words, policy hiding in a contract's doc comment) is review's. Violations that predate the rule are listed in the check with the audit step that removes each ([ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)); the list only shrinks.
 
@@ -38,20 +41,20 @@ As built today. The audit's plan changes several contracts; the target shape is 
 | `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1) | Textures (2D, cube, data, render targets, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw. |
 | `IHost` | `host/dom` (browser), `host/sokol` + C (native) | The loop, the clock, the window, quitting, run options. The `Runner` (engine) is what it pumps; the app gets `Services` (engine). |
 | `IWindow` | `host/dom/DomWindow`, `host/sokol/SokolWindow` | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them. |
-| `ITestHarness` | `harness/dom` (browser), `harness/stdio` (native) | Hands a check the program's result. |
-| `IInputSource` | `input/dom` (browser), `input/sokol` + `input/evdev` C (native) | Keyboard, text, mouse, wheel, touch and focus events as they arrive, each connected gamepad's state at poll, and the platform's key codes as a table. The shared `InputRouter` owns edges, the pointer, focus policy and pad slots; the app reads its `InputState` as `IInput`. |
+| `ITestHarness` | `testharness/dom` (browser), `testharness/stdio` (native) | Hands a check the program's result. |
+| `IInputSource` | `inputsource/dom` (browser), `inputsource/sokol` + `inputsource/evdev` C (native) | Keyboard, text, mouse, wheel, touch and focus events as they arrive, each connected gamepad's state at poll, and the platform's key codes as a table. The shared `InputRouter` owns edges, the pointer, focus policy and pad slots; the app reads its `InputState` as `IInput`. |
 | `IAudio` | `audio/webaudio` (browser), `audio/sokol` + C (native) | Output: clips copied from PCM, streams opened from a source, voices; whether audio exists and runs now. Natively it streams through an `IPcmFiles` (the codec adapter's) and pumps its voices, as a push-based output must. The shared `AudioResources` and `AudioPlayback` own lifetimes, volume checks and waiting for audio to start. |
 | `IAudioDecoder` | `audiodecoder/webaudio` (browser), `audiodecoder/libsndfile` + C (native; also `IPcmFiles` for streaming) | A whole Ogg or MP3 file to mono float PCM at 44.1 kHz. The shared `AudioDecoding` owns sniffing, the WAV path, the limits, PCM checks and queuing. |
-| `IHttp` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
-| `IStore` | `storage/indexeddb` (browser), `storage/filesystem` (native) | Files by key (read, write, remove, clear, lease). The shared `Storage` owns key checks, the size limit, read-only refusal and queuing. |
-| `IImageDecoder` | `images/canvas` (browser), `images/stb` + C (native) | Bytes to RGBA. The shared `ImageDecoding` owns queuing, cancellation and shutdown. |
+| `IFetch` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
+| `IStore` | `store/indexeddb` (browser), `store/filesystem` (native) | Files by key (read, write, remove, clear, lease). The shared `Storage` owns key checks, the size limit, read-only refusal and queuing. |
+| `IImageDecoder` | `imagedecoder/canvas` (browser), `imagedecoder/stb` + C (native) | Bytes to RGBA. The shared `ImageDecoding` owns queuing, cancellation and shutdown. |
 
 ### Target shape (decided)
 
 - **Host: done** (DECISIONS 81). Backend facts (`Adapters.info`) went with step 4: nothing read them.
 - **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
-- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
-- **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IHttp`; a shared service on top for what's policy (reconnecting, queuing messages).
+- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IFetch`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
+- **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IFetch`; a shared service on top for what's policy (reconnecting, queuing messages).
 - **Audio: done** (DECISIONS 83).
 - **Input: done** (DECISIONS 84).
 

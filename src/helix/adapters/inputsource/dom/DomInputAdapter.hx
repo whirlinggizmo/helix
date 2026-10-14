@@ -1,4 +1,4 @@
-package helix.adapters.input.dom;
+package helix.adapters.inputsource.dom;
 
 import helix.input.IInputEvents;
 import helix.input.IInputSource;
