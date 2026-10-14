@@ -42,9 +42,16 @@ class Widget {
 	public function setVisible(value:Bool):Void
 		root.setEnabled(value);
 
-	/** Whether it's shown. */
-	public function isVisible():Bool
-		return root.isEnabled();
+	/** Whether it's shown: it, and any panel holding it. */
+	public function isVisible():Bool {
+		var at = root;
+		while (at != null && at != ui.getRoot()) {
+			if (!at.isEnabled())
+				return false;
+			at = at.getParent();
+		}
+		return true;
+	}
 
 	/** Whether focus can rest on it. */
 	public function isFocusable():Bool

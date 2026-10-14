@@ -196,8 +196,11 @@ class Ui {
 			focused = null;
 		if (move != 0)
 			focused = focused == null ? first() : next(focused, move);
-		else if (keys && focused == null)
+		else if (keys && focused == null) {
+			// Keys or a pad in use and nothing focused (a new screen): the first widget, shown.
 			focused = first();
+			showFocus = focused != null;
+		}
 		var activated = !guarded
 			&& focused != null
 			&& (input.isFramePressed(Key.Enter) || !focused.takesText() && input.isFramePressed(Key.Space) || pad(PadButton.South));
