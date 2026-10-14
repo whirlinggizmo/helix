@@ -1,6 +1,6 @@
 # Agent instructions: HeliX
 
-HeliX is a Haxe game framework: Haxe → JS for the browser, Haxe → hxcpp/C++ for native (not HashLink). You are developing it, not prototyping. Read [README.md](README.md) and [docs/CONVENTIONS.md](docs/CONVENTIONS.md) before changing code.
+HeliX is a Haxe game framework: Haxe → JS for the browser, Haxe → hxcpp/C++ for native (not HashLink). You are developing it, not prototyping. Read [README.md](README.md), [BUILDING.md](BUILDING.md) and [docs/CONVENTIONS.md](docs/CONVENTIONS.md) before changing code; what is next is in [docs/ROADMAP.md](docs/ROADMAP.md), and a milestone that ends adds its section to [docs/HISTORY.md](docs/HISTORY.md).
 
 ## Rules
 

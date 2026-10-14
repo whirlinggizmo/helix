@@ -2,142 +2,35 @@
 
 HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
-Status: milestones 1 (the platform, 2D and services), 2 (3D basics: immediate 3D, stages of lit models, materials, lights, glTF models) and 3 (2D stages, textures, fonts, render targets, apps' shaders and screen effects) are complete. Every example below runs in the browser and natively on Linux/X11. Windows, macOS and mobile have not run.
-
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
-## Layout
+**Status:** milestones 1–3 are done (the platform, 2D and services; 3D basics; 2D stages and the rest of 2D). Milestone 4 (advanced 3D, through skinning and animation) is built and at its checkpoint. Every example runs in the browser and natively on Linux/X11; Windows, macOS and mobile have not run.
 
-```text
-src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
-  adapters/<contract>/<api>/   one platform API behind one contract (<Api><Contract>Adapter); internal/ holds C glue and externs
-  profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
-examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
-examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
-examples/blocks/src/
-tests/                    unit (Haxe interpreter), services (both targets), native, consumer, shader checks
-tools/                    example/build/check/format/doc tools (Python, some Node)
-docs/                     ARCHITECTURE, CONVENTIONS, INTERFACE, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
-vendor/                   pinned third-party headers, fonts and their licenses
-helix.py / Run.hx          front door for the tests and the services checks
-build/                    ignored: generated code, builds, caches, check output
-```
+## Try it
 
-## Prerequisites
-
-Executed on Linux:
-- **Haxe 4.3.7.**
-- **hxcpp 4.3.2.** Installed on the first native build into the repository's own `build/haxelib`, so the global haxelib is untouched. `tools/pins.py` stops a native build that would resolve another version.
-- **Python 3.12** with PyYAML (`python3 -m pip install -r requirements-build.txt`).
-- **FFmpeg** with the libvorbis and libopus encoders, for the test fixtures and Asteroids' sounds.
-- **Node 26**, with Terser, Playwright and pngjs for release builds and browser checks:
-  ```console
-  npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
-  ```
-- **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `8df4871` or later (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
-- **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. Pass it with `--shdc` or `SOKOL_SHDC`. Nothing is downloaded or installed globally.
-- **Native builds:**
-  - GCC/G++ 13 and ALSA headers.
-  - X11/Xrandr/Xi/Xcursor and GL libraries.
-  - The libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
-  - No CMake: hxcpp compiles the adapters' C with each app.
-- **Pinned in `vendor/`, hashes in `dependencies.json`:**
-  - the Sokol headers, from the Whirling Gizmo fork [whirlinggizmo/sokol](https://github.com/whirlinggizmo/sokol) at `c237609` (upstream to `5e94d12`)
-  - [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) at `8e85d19` (window position, size, displays, style and visibility)
-  - stb_image
-  - JetBrains Mono, baked into the built-in distance-field font by `tools/fontbake.py` (HeliX's own TrueType reader and baker, under the Haxe interpreter)
-
-Third-party licenses, and what builds ship with: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Example asset credits: [examples/assets/CREDITS.md](examples/assets/CREDITS.md).
-
-## Develop an example
-
-Work happens in the browser with hot reload: edit, save, and the running page takes the new code (or the changed asset, shader or font) without restarting.
+With Haxe 4.3.7, Python 3 and `sokol-shdc` (the rest, and the native toolchain: [BUILDING.md](BUILDING.md)):
 
 ```console
-python3 tools/example.py app-hello dev            # hotreload-hx dev server, http://localhost:8060/
-python3 tools/example.py app-hello build web      # build/web/app-hello/
-python3 tools/example.py app-hello build native   # build/native/app-hello/Main
+python3 tools/example.py animation dev --shdc /path/to/sokol-shdc   # http://localhost:8060/, hot reload as you edit
+python3 tools/example.py animation build native                   # build/native/animation/Main
 ```
-
-**F9 saves a screenshot** in every example: a download in the browser, natively a PNG in `~/Pictures/<example>/` (or `HELIX_EXPORT`). Autopilot scripts take them too (`{"op": "screenshot"}`).
-
-The catalog follows the earlier C frameworks' example names. Each example matches the feature, not the original's scene.
-
-| Example | Shows |
-|---|---|
-| `app-skeleton` | a window cleared each frame |
-| `app-hello` | shapes and text |
-| `app-tick` | a fixed-rate simulation, time scale and the tick fraction |
-| `app-window` | window size, position, fullscreen and displays (get/set/can/request) |
-| `app-gamepad` | four pads in the W3C standard layout |
-| `app-touch` | two-finger pan, pinch and twist; images and mipmaps |
-| `audio-music` | streamed music and decoded clips, with play state |
-| `asset-fetch` | assets from a host, the cache, and asking whether a host answers |
-| `asset-force-fetch` | ensure with a source and past the cache |
-| `quit` | quitting mid-load: shutdown runs after the frame |
-| `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
-| `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |
-| `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
-| `lights` | directional, point and spot lights on a stage, beside an immediate grid |
-| `animation` | skinned characters (Quaternius's modular women): a skeleton and 24 clips from a file of animations alone, an outfit of skinned parts from files of their own bound to it by joint name and swapped at run time, a sword in a socket (a joint), crossfades, posed shadows |
-| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded into nodes: parts and lights found by name, a chase camera on a camera node |
-| `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
-| `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture |
-| `text3d` | text in the world: labels facing the camera, a sign's text (a TrueType font) turning with its node; lines on the ground |
-| `particles` | GPU particles: a fountain, trailing sparks, a campfire's flames (a flipbook) and smoke (curves) on a 3D stage; confetti on a 2D one |
-| `shadows` | a sun and a circling spot casting into one shadow map, a layer each; a ball that casts nothing and one nothing shadows; distance, bias, map size, strength and tint live |
-| `environment` | image-based light from two 1K Poly Haven HDRs, prepared a few milliseconds a frame: plastic and gold roughness steps, a mirror, a normal map, a pearl (a surface shader shaded by the stage) and a car, no lights; a background sharp to blurred, Neutral, ACES or no tone mapping, exposure and turn live |
-| `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
-| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group, a trailing emitter |
-| `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
-| `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
-| `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |
-| `render-target` | drawing into textures: a low-resolution pixel view, an orthographic minimap, a text label worn by a globe |
-| `shaders` | Stage3D materials drawn by the example's own surface shaders: toon shading, a double-sided dissolve through a noise texture, water moved by a vertex hook |
-| `postprocess` | screen effects of the example's own shaders (`shaders/*.glsl`, packed into `.hxshader` assets, reloaded as they're edited) over a finished frame |
-
-Milestone 4 (advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, camera nodes, skinning and animation) is built; its checkpoint is next. Animation layers (an upper body's clip over a lower body's) and skinned surface shaders follow when a game needs them. Still to come: milestones 5–7 (scene and pick; UI; native network streaming: a native audio stream playing a remote file as it downloads, and both targets playing while keeping the copy, shown starting before the download ends on a slowed network). `ecs-scene` waits on the game model. A Clay-style UI is deferred. Open, to be designed with physics: work off the frame (a module of fixed bulk calls, as the physics study's, that can run in place, in a Web Worker or on a thread without its callers changing; the environment bake would be its first one-shot client). Architecture and the adapter rule: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Larger examples: Asteroids and Blocks
-
-Both are whole games, built and developed like every other example, on HeliX's own 2D API, `Ticker` and shared launchers. Each has autopilot scripts that must end in the same game on both targets.
-
-- **Asteroids** (`examples/asteroids`): menus, flight, splitting rocks, waves, Ogg sound, keyboard/pointer/gamepad, letterboxed with a camera viewport area.
-- **Blocks** (`examples/blocks`): falling blocks, with keyboard, gamepad and touch.
-
-```console
-python3 tools/example.py asteroids dev
-python3 tools/example.py blocks autopilot --browser /path/to/chromium --shdc /path/to/sokol-shdc
-```
-
-## Checks
-
-```console
-python3 tools/typecheck.py --no-output    # every entry point, both targets, in seconds
-python3 tools/format.py --check           # haxe-formatter, pinned
-python3 tools/doccheck.py                 # public API without a doc comment
-python3 tools/apidoc.py                   # the API reference, build/api/index.html
-python3 helix.py test --native --shdc /path/to/sokol-shdc
-python3 helix.py services --browser /path/to/chromium --native
-```
-
-- **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, 3D math, trigonometry, Blocks and the Asteroids simulation. `helix.math.Trig` must also give the same bits in JS and, with `--native`, in hxcpp.
-- **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures.
-- **Autopilot** (`tools/example.py <name> autopilot`) replays an example's scripts in a headless browser and natively, and requires the same final game.
-- **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
 ## Documents
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md): the engine, the platform contracts and their adapters, and the rule for what an adapter may hold.
-- [CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout, and how examples are developed.
-- [INTERFACE.md](docs/INTERFACE.md): the contracts and their limits.
-- [DECISIONS.md](docs/DECISIONS.md): why things are the way they are, in order.
-- [API_FINDINGS.md](docs/API_FINDINGS.md): known API problems, fixed and open.
-- [PACKAGING.md](docs/PACKAGING.md): tooling, autopilot and the road to a haxelib.
-- [ADAPTER_AUDIT.md](docs/ADAPTER_AUDIT.md): the adapter audit of 2026-10-14, what it found and how each step landed.
+- [BUILDING.md](BUILDING.md): prerequisites and pins, building, the dev loop, the checks, the repository's layout.
+- [docs/EXAMPLES.md](docs/EXAMPLES.md): every example, and the larger games (Asteroids, Blocks).
+- [docs/ROADMAP.md](docs/ROADMAP.md): what comes next.
+- [docs/HISTORY.md](docs/HISTORY.md): what was built, milestone by milestone.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the engine, the platform contracts and their adapters, and the rule for what an adapter may hold.
+- [docs/INTERFACE.md](docs/INTERFACE.md): the contracts and their limits.
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout, and how examples are developed.
+- [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are, numbered, in order.
+- [docs/API_FINDINGS.md](docs/API_FINDINGS.md): known API problems, fixed and open.
+- [docs/PACKAGING.md](docs/PACKAGING.md): tooling, autopilot and the road to a haxelib.
+- [docs/ADAPTER_AUDIT.md](docs/ADAPTER_AUDIT.md): the adapter audit of 2026-10-14, what it found and how each step landed.
 
 ## License
 
-MIT: [LICENSE](LICENSE). Third-party code, fonts and assets keep their own licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT: [LICENSE](LICENSE). Third-party code, fonts and assets keep their own licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the examples' assets: [examples/assets/CREDITS.md](examples/assets/CREDITS.md).
 
-HeliX began as experiment 05 of whirlinggizmo's framework architecture study. That study keeps its comparison and measurements; this repository carries HeliX's history from it.
+HeliX began as experiment 05 of whirlinggizmo's framework architecture study. That study keeps its comparison and measurements; this repository carries HeliX's history from it ([docs/HISTORY.md](docs/HISTORY.md)).
