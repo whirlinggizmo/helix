@@ -32,7 +32,17 @@ class Textures implements IReloadable {
 	var images:IImages;
 	var gpu:IGraphics;
 	var live = true;
-	var loaded:Array<{path:String, texture:Texture2D, mipmaps:Bool}> = [];
+	// Textures loaded: each the file it came from, what it was asked for by (the path and filter: loads of both alike share it), whether it
+	// has mipmaps, and how many loads hold it.
+	var loaded:Array<{
+		path:String,
+		key:String,
+		texture:Texture2D,
+		mipmaps:Bool,
+		users:Int
+	}> = [];
+	// Loads under way, by what they were asked for: those waiting on each.
+	var pending = new Map<String, {request:IRequest, waiting:Array<{request:Request, complete:TextureLoadResult->Void}>}>();
 
 	/** Loads through assets, decodes with images and uploads to gpu; poll polls images, and shutdown shuts nothing down but this service. */
 	public function new(assets:IAssets, images:IImages, gpu:IGraphics) {
@@ -65,25 +75,76 @@ class Textures implements IReloadable {
 	}
 
 	/** Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest,
-		for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). complete
-		runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes. */
+		for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the
+		same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load
+		releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no
+		candidate loads and decodes. */
 	public function load(path:String, linear:Bool, complete:TextureLoadResult->Void):IRequest {
-		var child:IRequest = null, request:Request = null;
+		var key = (linear ? "linear:" : "nearest:") + path, request:Request = null, waiter = null;
 		request = new Request(() -> {
-			if (child != null)
-				child.cancel();
+			// One load giving up: the shared one goes on while another still waits.
+			var shared = pending[key];
+			if (shared != null) {
+				shared.waiting.remove(waiter);
+				if (shared.waiting.length == 0) {
+					pending.remove(key);
+					shared.request.cancel();
+				}
+			}
 			complete(Cancelled);
 		});
+		waiter = {request: request, complete: complete};
 		if (!live) {
 			request.finish();
 			complete(Failed("Closed texture service"));
 			return request;
 		}
+		for (entry in loaded)
+			if (entry.key == key) {
+				entry.users++;
+				request.finish();
+				complete(Ready(entry.texture));
+				return request;
+			}
+		var shared = pending[key];
+		if (shared != null) {
+			shared.waiting.push(waiter);
+			return request;
+		}
+		shared = {request: null, waiting: [waiter]};
+		pending[key] = shared;
+		shared.request = fetch(path, linear, (file, result) -> {
+			if (pending[key] != shared)
+				return;
+			pending.remove(key);
+			switch result {
+				case Ready(texture):
+					loaded.push({
+						path: file,
+						key: key,
+						texture: texture,
+						mipmaps: linear && texture.getFormat() == Rgba8,
+						users: shared.waiting.length
+					});
+					assets.subscribe(file, this);
+				case _:
+			}
+			for (w in shared.waiting)
+				if (w.request.finish())
+					w.complete(result);
+		});
+		return request;
+	}
+
+	// Loads path's first candidate that loads and decodes into a new texture; done gets the file it came from. Cancelled gives up silently.
+	function fetch(path:String, linear:Bool, done:(String, TextureLoadResult) -> Void):IRequest {
+		var child:IRequest = null, request:Request = null;
+		request = new Request(() -> if (child != null) child.cancel());
 		var candidates = getCandidates(path), errors = [];
 		function next():Void {
 			if (candidates.length == 0) {
 				if (request.finish())
-					complete(Failed(errors.join("; ")));
+					done(path, Failed(errors.join("; ")));
 				return;
 			}
 			var file = candidates.shift();
@@ -101,14 +162,14 @@ class Textures implements IReloadable {
 							return;
 						}
 						if (request.finish())
-							ready(file, texture, false, complete);
+							done(file, Ready(texture));
 						else
 							texture.destroy(gpu);
 						return;
 					}
 					child = images.decode(bytes, decoded -> switch decoded {
 						case Decoded(width, height, rgba):
-							if (request.finish()) ready(file, Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear), linear, complete);
+							if (request.finish()) done(file, Ready(Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear)));
 						case Failed(message):
 							if (!request.isSettled()) fail(message);
 						case Cancelled:
@@ -127,12 +188,6 @@ class Textures implements IReloadable {
 		if (!gpu.canSample(ktx.format))
 			throw "This GPU can't sample its format";
 		return Texture2D.fromLevels(gpu, ktx.width, ktx.height, ktx.levels, ktx.format, new Sampling(linear));
-	}
-
-	function ready(file:String, texture:Texture2D, mipmaps:Bool, complete:TextureLoadResult->Void):Void {
-		loaded.push({path: file, texture: texture, mipmaps: mipmaps});
-		assets.subscribe(file, this);
-		complete(Ready(texture));
 	}
 
 	/** Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but
@@ -159,16 +214,18 @@ class Textures implements IReloadable {
 		return request;
 	}
 
-	/** Frees a texture this service loaded, and stops reloading it. */
-	public function release(texture:Texture2D):Void {
+	/** Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it. */
+	public function release(texture:Texture2D):Void
 		for (entry in loaded.copy())
 			if (entry.texture == texture) {
+				if (--entry.users > 0)
+					return;
 				loaded.remove(entry);
 				texture.destroy(gpu);
 				if (!Lambda.exists(loaded, e -> e.path == entry.path))
 					assets.unsubscribe(entry.path, this);
+				return;
 			}
-	}
 
 	/** The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them
 		shows the new image. A file that no longer reads leaves them as they were. */

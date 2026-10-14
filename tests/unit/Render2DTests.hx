@@ -76,11 +76,76 @@ class CountingGraphics implements IGraphics {
 
 	public function endFrame():Void {}
 
-	public function destroyTexture(handle:Int):Void {}
+	public var destroyedTextures = 0;
+
+	public function destroyTexture(handle:Int):Void
+		destroyedTextures++;
 
 	public function destroyBuffer(handle:Int):Void {}
 
 	public function destroyPipeline(handle:Int):Void {}
+
+	public function shutdown():Void {}
+}
+
+/** Assets whose loads complete when flush says, counting them. Only load and the subscriptions do anything. */
+class HeldAssets implements helix.assets.IAssets {
+	public var loads = 0;
+	public var held:Array<Void->Void> = [];
+
+	public function new() {}
+
+	public function load(path:String, complete:helix.assets.IAssets.AssetResult->Void):Void {
+		loads++;
+		held.push(() -> complete(Loaded(Bytes.alloc(4))));
+	}
+
+	public function flush():Void {
+		var now = held;
+		held = [];
+		for (f in now)
+			f();
+	}
+
+	public function ensure(path:String, complete:helix.assets.IAssets.AssetResult->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
+			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function getHost():Null<String>
+		return null;
+
+	public function setHost(host:Null<String>):Bool
+		return false;
+
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function clearCache(complete:helix.assets.IStorage.StorageWriteResult->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
+
+	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+}
+
+/** Images decoding at once to one white texel, counting decodes. */
+class WhiteImages implements helix.graphics.IImages {
+	public var decodes = 0;
+
+	public function new() {}
+
+	public function decode(encoded:Bytes, complete:helix.graphics.IImages.ImageDecodeResult->Void):helix.assets.IRequest {
+		decodes++;
+		var pixel = Bytes.alloc(4);
+		pixel.fill(0, 4, 255);
+		complete(Decoded(1, 1, pixel));
+		return new helix.assets.Request(() -> {});
+	}
+
+	public function poll():Void {}
 
 	public function shutdown():Void {}
 }
@@ -400,6 +465,35 @@ class Render2DTests {
 		check(stage3D.getDrawCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
 			"A mirrored model is its own run, through another pipeline");
 		stage3D.destroy();
+		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
+		// others theirs; another filter is another texture; the last release frees it.
+		var heldAssets = new HeldAssets(),
+			images = new WhiteImages(),
+			shared = new helix.render2d.Textures(heldAssets, images, gpu);
+		var got:Array<Texture2D> = [];
+		function keep(result:helix.render2d.Textures.TextureLoadResult):Void
+			switch result {
+				case Ready(texture):
+					got.push(texture);
+				case _:
+			}
+		shared.load("a.png", true, keep);
+		var given = shared.load("a.png", true, keep);
+		shared.load("a.png", true, keep);
+		given.cancel();
+		heldAssets.flush();
+		check(heldAssets.loads == 1 && images.decodes == 1 && got.length == 2 && got[0] == got[1], "Loads under way of one file share one fetch and texture");
+		shared.load("a.png", true, keep);
+		check(heldAssets.loads == 1 && got.length == 3 && got[2] == got[0], "A later load of it is given the same texture");
+		shared.load("a.png", false, keep);
+		heldAssets.flush();
+		check(heldAssets.loads == 2 && got.length == 4 && got[3] != got[0], "Another filter is another texture");
+		var destroyed = gpu.destroyedTextures;
+		shared.release(got[0]);
+		shared.release(got[0]);
+		check(gpu.destroyedTextures == destroyed, "A texture still held isn't freed");
+		shared.release(got[0]);
+		check(gpu.destroyedTextures == destroyed + 1, "The last release frees it");
 		batch.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
