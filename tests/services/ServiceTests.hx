@@ -17,6 +17,7 @@ class ServiceTests {
 	static var storage:Storage;
 	static var assets:AssetService;
 	static var audio:AudioResources;
+	static var decoding:helix.audio.AudioDecoding;
 	static var steps:Array<Void->Void> = [];
 	static var finished = false;
 	static var delay = 0.;
@@ -55,7 +56,8 @@ class ServiceTests {
 		fetcher = new Fetch(env.fetcher);
 		storage = new Storage(env.storage);
 		assets = new AssetService(fetcher, storage, new Storage(env.packaged, true), env.base + "/assets/");
-		audio = new AudioResources(assets, env.audio);
+		decoding = new helix.audio.AudioDecoding(env.decoder);
+		audio = new AudioResources(assets, env.audio, decoding);
 		steps = [
 			() -> {
 				var returned = false;
@@ -319,7 +321,7 @@ class ServiceTests {
 			var codecSteps:Array<Void->Void> = [
 				() -> assets.ensure(path, result -> {
 					switch result {
-						case Loaded(bytes): env.audio.decodeClip(bytes, result -> {
+						case Loaded(bytes): decoding.decode(bytes, result -> {
 								switch result {
 									case Decoded(samples):
 										helix.audio.Pcm.validate(samples);
@@ -427,7 +429,7 @@ class ServiceTests {
 			}
 			next();
 		}));
-		steps.insert(steps.length - 1, () -> env.audio.decodeClip(Bytes.alloc(0), result -> {
+		steps.insert(steps.length - 1, () -> decoding.decode(Bytes.alloc(0), result -> {
 			switch result {
 				case Failed(_): check(true, "Empty encoded audio fails explicitly");
 				case _: fail(result);
@@ -437,14 +439,14 @@ class ServiceTests {
 		steps.insert(steps.length - 1, () -> assets.ensure("fixture.opus", result -> {
 			switch result {
 				case Loaded(bytes):
-					var callbacks = 0, request = env.audio.decodeClip(bytes, result -> {
+					var callbacks = 0, request = decoding.decode(bytes, result -> {
 						callbacks++;
 						switch result {
 							case Cancelled: check(true, "Encoded decode cancellation");
 							case _: fail(result);
 						}
 					});
-					env.audio.poll();
+					decoding.poll();
 					request.cancel();
 					wait(.15, () -> {
 						check(callbacks == 1, "Late codec completion suppressed");
@@ -456,6 +458,7 @@ class ServiceTests {
 		next();
 		env.start(() -> {
 			assets.poll();
+			decoding.poll();
 			audio.poll();
 			if (delayed != null && haxe.Timer.stamp() >= delay) {
 				var callback = delayed;

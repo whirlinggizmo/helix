@@ -1,60 +1,61 @@
 package helix.audio;
 
-import helix.assets.IRequest;
 import haxe.io.Bytes;
 import helix.assets.IAssets.AudioLocation;
 
-/** How opening a stream ended: its backend id, a failure message, or cancellation. */
-enum StreamResult {
-	Created(id:Int);
+/** How opening a stream ended: its id, or a failure message. */
+enum StreamOpenResult {
+	Opened(id:Int);
 	Failed(message:String);
-	Cancelled;
 }
 
-/** How a decode ended: mono 32-bit float PCM at 44100 Hz, samples -1 to 1, a failure message, or cancellation. */
-enum ClipDecodeResult {
-	Decoded(samples:Bytes);
-	Failed(message:String);
-	Cancelled;
-}
-
-/** Adapter-level IDs. Public resource/playback lifetime lives in AudioResources. */
+/** Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's;
+	lifetimes, volume checks, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its
+	audio on the page's first key or pointer press and suspends it while the page is hidden; natively it runs once the device opens. */
 interface IAudio {
-	/** Decodes a whole WAV (mono PCM16 at 44100 Hz, at most 4 seconds), Ogg (Vorbis, Opus) or MP3 file to PCM, off the host thread where the target allows; the caller keeps encoded. complete runs exactly once on the host thread; Failed for a closed adapter, more than 8 MiB encoded, more than 2Mi decoded frames, or an unsupported or corrupt file. */
-	function decodeClip(encoded:Bytes, complete:ClipDecodeResult->Void):IRequest;
+	/** Whether there is an output at all: false natively without an audio device. */
+	public function isAvailable():Bool;
 
-	/** Copies PCM samples (from decodeClip) into a new backend clip and returns its id. Throws for invalid PCM or when the backend has no room for a clip. */
-	function createClip(samples:Bytes):Int;
+	/** Whether voices start now: in a browser, once a key or pointer press has unlocked audio. */
+	public function isRunning():Bool;
 
-	/** Opens source for progressive playback and completes on the host thread with a stream id; a Stored lease stays the caller's and must outlive the stream. Failed for a closed adapter or a source the adapter cannot open (natively a remote URL, a non-canonical WAV, or a compressed file libsndfile cannot read as Ogg Vorbis, Opus or MP3; in the browser a load error or no metadata within 15 seconds). */
-	function createStream(source:AudioLocation, complete:StreamResult->Void):IRequest;
+	/** Copies samples (mono 32-bit float PCM at 44100 Hz, checked) into a new clip and returns its id. Throws when there's no room for a clip. */
+	public function createClip(samples:Bytes):Int;
 
-	/** Starts clip or stream resource at volume 0 to 1 and returns a playback id, or 0 when it can't play (no free voice, a closed backend). In a
-		browser whose audio is still locked (no key press or click yet) the playback waits, and starts when audio unlocks. Throws for an unknown resource
-		or a volume outside 0 to 1. */
-	function play(resource:Int, loop:Bool = false, volume:Float = 1):Int;
+	/** Destroys clip and stops its voices. Throws for an unknown clip. */
+	public function destroyClip(clip:Int):Void;
 
-	/** Stops playback and frees what it holds; does nothing for an unknown or ended playback. */
-	function stop(playback:Int):Void;
+	/** Opens source for playing as it's read; done runs once on the host thread, never during this call: Opened, or Failed for a source the
+		platform can't open (natively a remote URL or a file its codec can't read; in a browser a load error or no metadata within 15 seconds).
+		A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is closed. */
+	public function openStream(source:AudioLocation, done:StreamOpenResult->Void):Void->Void;
 
-	/** Pauses playback, or resumes it when paused is false; does nothing for an unknown playback. */
-	function pause(playback:Int, paused:Bool):Void;
+	/** Destroys stream and stops its voices. Throws for an unknown stream. */
+	public function destroyStream(stream:Int):Void;
 
-	/** Sets playback's volume, 0 to 1; does nothing for an unknown playback. Throws for a volume outside 0 to 1. */
-	function setVolume(playback:Int, volume:Float):Void;
+	/** Starts clip at volume (0 to 1), looping if asked, and returns its voice, or 0 when it can't start (no free voice). Throws for an unknown
+		clip. */
+	public function playClip(clip:Int, loop:Bool, volume:Float):Int;
 
-	/** Whether playback is still active, paused included; false once it ended or was stopped. */
-	function isPlaying(playback:Int):Bool;
+	/** Starts stream from its beginning at volume (0 to 1), looping if asked, and returns its voice, or 0 when it can't start. Throws for an
+		unknown stream. */
+	public function playStream(stream:Int, loop:Bool, volume:Float):Int;
 
-	/** Destroys clip and stops its playbacks. Throws for an unknown clip. */
-	function destroyClip(clip:Int):Void;
+	/** Stops voice; nothing for an unknown or ended one. */
+	public function stop(voice:Int):Void;
 
-	/** Destroys stream; the browser adapter stops its playbacks, the native one lets them play out. Throws for an unknown stream. */
-	function destroyStream(stream:Int):Void;
+	/** Pauses voice, or resumes it when paused is false; nothing for an unknown one. */
+	public function pause(voice:Int, paused:Bool):Void;
 
-	/** Runs completions on the host thread and, natively, starts queued decodes and refills stream playbacks. Call once per frame. */
-	function poll():Void;
+	/** Sets voice's volume, 0 to 1; nothing for an unknown one. */
+	public function setVolume(voice:Int, volume:Float):Void;
 
-	/** Cancels pending requests (each completes Cancelled), stops every playback, destroys every stream and clip, and closes the audio device. */
-	function shutdown():Void;
+	/** Whether voice is still playing (or paused); false once it ended or was stopped. */
+	public function isPlaying(voice:Int):Bool;
+
+	/** Keeps streamed voices fed and delivers what arrived from the platform's threads; the shared AudioResources calls it once a frame. */
+	public function poll():Void;
+
+	/** Stops every voice, destroys every stream and clip, and closes the output. */
+	public function shutdown():Void;
 }

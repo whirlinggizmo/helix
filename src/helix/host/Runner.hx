@@ -5,6 +5,7 @@ import helix.assets.AssetService;
 import helix.assets.Fetch;
 import helix.assets.Storage;
 import helix.graphics.ImageDecoding;
+import helix.audio.AudioDecoding;
 import helix.audio.AudioResources;
 
 /** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
@@ -22,6 +23,7 @@ class Runner {
 	var app:IApp;
 	var resources:AssetService;
 	var decoding:ImageDecoding;
+	var audioDecoding:AudioDecoding;
 	var clock = new FrameClock();
 	var frameCpu = 0.;
 	var frameInterval = 0.;
@@ -58,13 +60,6 @@ class Runner {
 	public function getFrameInterval():Float
 		return frameInterval;
 
-	/** The adapters' backend facts and how many assets have loaded again in place. */
-	public function getInfo():Dynamic {
-		var value:Dynamic = adapters == null ? {} : adapters.info();
-		value.assetReloads = resources == null ? 0 : resources.getReloads();
-		return value;
-	}
-
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
 		if (resources != null)
@@ -75,6 +70,7 @@ class Runner {
 		var a = adapters, s = services;
 		var fetch = new Fetch(a.http), storage = new Storage(a.storage);
 		decoding = new ImageDecoding(a.images);
+		audioDecoding = new AudioDecoding(a.audioDecoder);
 		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
 		s.graphics = a.graphics;
 		s.input = a.input;
@@ -83,7 +79,7 @@ class Runner {
 		s.fetch = fetch;
 		s.storage = storage;
 		s.assets = resources;
-		s.audioResources = new AudioResources(resources, a.audio);
+		s.audioResources = new AudioResources(resources, a.audio, audioDecoding);
 		s.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
 		s.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
 		s.harness = a.harness;
@@ -98,6 +94,7 @@ class Runner {
 		resources.poll();
 		services.audioResources.poll();
 		decoding.poll();
+		audioDecoding.poll();
 		services.environments.poll();
 		adapters.input.poll();
 		app.frame(clock.getDelta());
@@ -113,6 +110,7 @@ class Runner {
 		services.textures.shutdown();
 		services.environments.shutdown();
 		decoding.shutdown();
+		audioDecoding.shutdown();
 		resources.shutdown();
 		app.cleanup();
 		adapters.audio.shutdown();

@@ -38,11 +38,12 @@ static SF_VIRTUAL_IO memory_io={memory_length,memory_seek,memory_read,memory_wri
 
 static int register_decoder(decoder_t *d) {
     int subtype=d->info.format&SF_FORMAT_SUBMASK;
-    /* Ogg Vorbis or Opus, or MP3 (libsndfile 1.1 and later, through mpg123) */
+    /* Ogg Vorbis or Opus, MP3 (libsndfile 1.1 and later, through mpg123), or WAV (a stored file streamed) */
     const int type=d->info.format&SF_FORMAT_TYPEMASK;
     const int ogg=type==SF_FORMAT_OGG&&(subtype==SF_FORMAT_VORBIS||subtype==SF_FORMAT_OPUS);
     const int mp3=type==SF_FORMAT_MPEG&&subtype==SF_FORMAT_MPEG_LAYER_III;
-    if(!d->file || (!ogg&&!mp3) ||
+    const int wav=type==SF_FORMAT_WAV;
+    if(!d->file || (!ogg&&!mp3&&!wav) ||
        d->info.channels<1 || d->info.channels>2 || d->info.samplerate<8000 ||
        d->info.samplerate>192000 || d->info.frames<=0) {
         if(d->file)sf_close(d->file);free(d->memory);free(d);return 0;

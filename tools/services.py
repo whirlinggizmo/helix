@@ -81,7 +81,10 @@ def main():
   if a.native:
    counts.clear();peak=0;runs=[]
    for _ in range(2):
-    output=subprocess.check_output([str(build/'services-native/ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True)
+    native=subprocess.run([str(build/'services-native/ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True,capture_output=True)
+    if native.returncode!=0:
+     sys.stderr.write(native.stdout+native.stderr);raise SystemExit(f"native ServiceTests exited {native.returncode}")
+    output=native.stdout
     value=json.loads(output.strip().splitlines()[-1]);assert value['passed'];runs.append(value)
    assert not runs[0]['persisted'] and runs[1]['persisted']
    assert counts['/assets/fixture.wav']==1,dict(counts)

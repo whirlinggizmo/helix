@@ -48,6 +48,11 @@ class AudioResource {
 	function dispose():Void
 		destroy();
 
+	/** Starts a voice of it at volume, looping if asked: the adapter's voice, or 0 when it can't start. Each kind starts its own. */
+	@:allow(helix.audio.AudioPlayback)
+	function startVoice(loop:Bool, volume:Float):Int
+		throw "A resource of no kind";
+
 	/** Drops the owner's reference, once; the backend resource is destroyed when no playback still holds it. */
 	public function release():Void {
 		if (!ownerReleased) {

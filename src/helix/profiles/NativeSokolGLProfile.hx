@@ -1,9 +1,10 @@
 package helix.profiles;
 
+import helix.adapters.audio.libsndfile.LibsndfileDecoder;
+import helix.adapters.audio.libsndfile.LibsndfileFiles;
 import helix.adapters.audio.sokol.SokolAudioAdapter;
 import helix.adapters.fetch.haxehttp.HaxeHttpFetchAdapter;
 import helix.adapters.graphics.sokol.SokolGraphicsAdapter;
-import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.adapters.harness.stdio.StdioTestHarness;
 import helix.adapters.host.sokol.SokolHostAdapter;
 import helix.adapters.images.stb.StbImagesAdapter;
@@ -26,23 +27,17 @@ class NativeSokolGLProfile {
 				cache = FileStorageAdapter.getCacheDirectory(identity.getCompany(), identity.getProduct());
 			if (cache == null)
 				cache = haxe.io.Path.join([root, "cache"]);
-			var audio = new SokolAudioAdapter();
 			return {
 				graphics: new SokolGraphicsAdapter(),
 				input: new SokolInputAdapter(),
-				audio: audio,
+				audio: new SokolAudioAdapter(new LibsndfileFiles()),
+				audioDecoder: new LibsndfileDecoder(),
 				images: new StbImagesAdapter(),
 				http: new HaxeHttpFetchAdapter(),
 				storage: new FileStorageAdapter(cache),
 				packaged: new FileStorageAdapter(haxe.io.Path.join([root, "assets"])),
 				base: Sys.getEnv("HELIX_ASSET_HOST"),
-				harness: new StdioTestHarness(),
-				info: () -> {
-					var value = audio.info();
-					value.backend = "sokol-glcore";
-					value.renderer = Std.string(GraphicsBridge.renderer());
-					return value;
-				}
+				harness: new StdioTestHarness()
 			};
 		});
 		runner.run(makeApp(runner.services));

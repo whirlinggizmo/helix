@@ -16,13 +16,6 @@ class AssetService implements IAssets {
 	var requests:Array<IRequest> = [];
 	var subscribers:Map<String, Array<IReloadable>> = [];
 
-	/** Development diagnostics: each reload's path and outcome, newest last. */
-	var reloads:Array<{path:String, ok:Bool, message:String}> = [];
-
-	/** The latest hot reloads of assets, newest last (development). */
-	public function getReloads():Array<{path:String, ok:Bool, message:String}>
-		return reloads;
-
 	/** Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three. */
 	public function new(fetcher:Fetch, cache:Storage, packaged:Storage, base:Null<String>) {
 		this.fetcher = fetcher;
@@ -235,11 +228,10 @@ class AssetService implements IAssets {
 	public function changed(path:String):Void {
 		if (!live || !AssetPath.valid(path) || !subscribers.exists(path))
 			return;
-		function done(ok:Bool, message:String) {
-			reloads.push({path: path, ok: ok, message: message});
-			if (reloads.length > 64)
-				reloads.shift();
-		}
+		// A reload that fails says so (development): the subscribers keep what they have.
+		function done(ok:Bool, message:String)
+			if (!ok)
+				trace('Asset reload failed: $path: $message');
 		function deliver(bytes:haxe.io.Bytes)
 			cache.write(key(path), bytes, result -> switch result {
 				case Written:

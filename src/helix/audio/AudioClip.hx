@@ -14,6 +14,9 @@ class AudioClip extends AudioResource {
 		this.path = path;
 	}
 
+	override function startVoice(loop:Bool, volume:Float):Int
+		return backend.playClip(id, loop, volume);
+
 	// The current backend clip: a reload may have replaced the one it was made with.
 	override function dispose():Void
 		backend.destroyClip(id);

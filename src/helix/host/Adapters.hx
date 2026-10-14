@@ -3,6 +3,7 @@ package helix.host;
 import helix.assets.IHttp;
 import helix.assets.IStore;
 import helix.audio.IAudio;
+import helix.audio.IAudioDecoder;
 import helix.debug.ITestHarness;
 import helix.graphics.IGraphics;
 import helix.graphics.IImageDecoder;
@@ -16,8 +17,11 @@ typedef Adapters = {
 	/** Keyboard, mouse, touch and gamepads. */
 	var input:IInputDevice;
 
-	/** Sound output and decoding. */
+	/** Sound output. */
 	var audio:IAudio;
+
+	/** Compressed audio decoding. */
+	var audioDecoder:IAudioDecoder;
 
 	/** Image decoding. */
 	var images:IImageDecoder;
@@ -36,7 +40,4 @@ typedef Adapters = {
 
 	/** Where results go for the check that launched the program. */
 	var harness:ITestHarness;
-
-	/** Backend facts for Services.getInfo: the graphics backend, its renderer, the audio's. */
-	var info:Void->Dynamic;
 }

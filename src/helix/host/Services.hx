@@ -84,8 +84,4 @@ class Services {
 		frames stop and the canvas keeps its last one. */
 	public function quit():Void
 		runner.getHost().quit();
-
-	/** Backend facts: the graphics backend and renderer, the audio's, and how many assets have loaded again in place. */
-	public function getInfo():Dynamic
-		return runner.getInfo();
 }

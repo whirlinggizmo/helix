@@ -1,15 +1,19 @@
 package helix.audio;
 
-/** One active/paused playback; holds its resource until stopped or naturally finished. */
+/** One playback, playing or paused; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the
+	page's first key or pointer press) it waits, its pause and volume kept, and starts once audio runs. */
 class AudioPlayback {
-	var id:Int;
+	var id = 0;
+	var waiting = true;
 	var finished = false;
 	var paused = false;
 	var stopped = false;
 	var resource:AudioResource;
 	var source:Int;
+	var loop:Bool;
+	var volume:Float;
 
-	/** The backend playback id; 0 when the backend could not start it. */
+	/** The adapter's voice; 0 while it waits for audio to start, or when it couldn't start. */
 	public function getId():Int
 		return id;
 
@@ -17,19 +21,35 @@ class AudioPlayback {
 	public function isFinished():Bool
 		return finished;
 
-	/** The backend resource it plays, kept as it started: a reload may replace the resource's. */
+	/** The adapter's resource it plays, kept as it started: a reload may replace the resource's. */
 	public function getSource():Int
 		return source;
 
-	/** Holds a playback reference on resource that the caller retained; an id of 0 finishes it, releasing that reference, at once. AudioResources.play creates it. */
-	public function new(id:Int, resource:AudioResource) {
-		this.id = id;
+	/** A playback of resource (whose playback reference the caller retained) at volume, looping if asked: it starts now if audio runs, waits if
+		audio is available but hasn't started, and finishes at once otherwise. AudioResources.play makes it. */
+	public function new(resource:AudioResource, loop:Bool, volume:Float) {
 		this.resource = resource;
+		this.loop = loop;
+		this.volume = volume;
 		source = resource.getId();
+		var backend = resource.getBackend();
+		if (!backend.isAvailable()) {
+			waiting = false;
+			stopped = true;
+			end();
+		} else if (backend.isRunning())
+			begin();
+	}
+
+	// Starts its voice: one that can't start (no free voice) finishes it.
+	function begin():Void {
+		waiting = false;
+		id = resource.startVoice(loop, volume);
 		if (id == 0) {
 			stopped = true;
 			end();
-		}
+		} else if (paused)
+			resource.getBackend().pause(id, true);
 	}
 
 	function end():Void {
@@ -39,7 +59,8 @@ class AudioPlayback {
 		}
 	}
 
-	/** Playing or Paused while it lasts; then Stopped (stop(), or it never started) or Complete (it played to its end). */
+	/** Playing or Paused while it lasts (waiting counts as playing); then Stopped (stop(), or it never started) or Complete (it played to its
+		end). */
 	public function getState():PlayState
 		return finished ? (stopped ? Stopped : Complete) : paused ? Paused : Playing;
 
@@ -47,7 +68,8 @@ class AudioPlayback {
 	public function stop():Bool {
 		if (finished)
 			return false;
-		resource.getBackend().stop(id);
+		if (id != 0)
+			resource.getBackend().stop(id);
 		stopped = true;
 		end();
 		return true;
@@ -57,7 +79,8 @@ class AudioPlayback {
 	public function pause():Bool {
 		if (finished || paused)
 			return false;
-		resource.getBackend().pause(id, true);
+		if (id != 0)
+			resource.getBackend().pause(id, true);
 		paused = true;
 		return true;
 	}
@@ -66,20 +89,32 @@ class AudioPlayback {
 	public function resume():Bool {
 		if (finished || !paused)
 			return false;
-		resource.getBackend().pause(id, false);
+		if (id != 0)
+			resource.getBackend().pause(id, false);
 		paused = false;
 		return true;
 	}
 
 	/** Sets its volume, 0 to 1; does nothing once finished. Throws for a volume outside 0 to 1. */
 	public function setVolume(volume:Float):Void {
-		if (!finished)
+		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
+			throw "Invalid volume";
+		this.volume = volume;
+		if (!finished && id != 0)
 			resource.getBackend().setVolume(id, volume);
 	}
 
-	/** Finishes it, releasing its resource reference, once the backend no longer plays it. AudioResources.poll calls it. */
+	/** Starts it once audio runs, and finishes it, releasing its resource reference, once the adapter no longer plays it. AudioResources.poll
+		calls it. */
 	public function poll():Void {
-		if (!finished && !resource.getBackend().isPlaying(id))
+		if (finished)
+			return;
+		if (waiting) {
+			if (resource.getBackend().isRunning())
+				begin();
+			return;
+		}
+		if (!resource.getBackend().isPlaying(id))
 			end();
 	}
 }

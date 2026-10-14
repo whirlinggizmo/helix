@@ -1,36 +1,21 @@
 package helix.adapters.audio.webaudio;
 
-import helix.audio.Wav;
-import helix.audio.IAudio;
-import helix.audio.IAudio.StreamResult;
-import helix.audio.IAudio.ClipDecodeResult;
-import helix.assets.IAssets.AudioLocation;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.core.WorkQueue;
-import helix.audio.Pcm;
 import haxe.io.Bytes;
+import helix.assets.IAssets.AudioLocation;
+import helix.audio.IAudio;
 
-/** Browser IAudio (adapter level) over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph. Plays nothing until unlock runs in a user gesture. */
+/** IAudio in a browser over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph. The page's first
+	key or pointer press unlocks audio (browsers let it start only in a user gesture); the page losing focus or being hidden suspends it. */
 class WebAudioAdapter implements IAudio {
 	var context:Dynamic;
-	var nextClip = 1;
-	var nextPlayback = 1;
 	var clips:Map<Int, Bytes> = [];
 	var buffers:Map<Int, Dynamic> = [];
-	var streams:Map<Int, Dynamic> = [];
+	var streams:Map<Int, {url:String, element:Null<js.html.AudioElement>}> = [];
 	var playbacks:Map<Int, Dynamic> = [];
-	var queue = new WorkQueue();
-	var requests:Array<IRequest> = [];
-	var live = true;
+	var nextClip = 1;
+	var nextPlayback = 1;
 
-	/** Playbacks started and ended by stop, for info()'s diagnostics. */
-	var played = 0;
-
-	var stopped = 0;
-
-	/** Creates no AudioContext until a decode or unlock needs one. A key press or a pointer press anywhere on the page unlocks it (browsers
-		let audio start only in a user gesture); the page losing focus or being hidden suspends it. */
+	/** Listens for the page's gestures and visibility; no AudioContext until a gesture unlocks audio. */
 	public function new() {
 		js.Browser.window.addEventListener("keydown", _ -> unlock());
 		js.Browser.window.addEventListener("pointerdown", _ -> unlock());
@@ -38,136 +23,58 @@ class WebAudioAdapter implements IAudio {
 		js.Browser.document.addEventListener("visibilitychange", _ -> if (js.Browser.document.hidden) suspend());
 	}
 
-	public function decodeClip(encoded:Bytes, complete:ClipDecodeResult->Void):IRequest {
-		var request:Request = null;
-		function finish(result:ClipDecodeResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				queue.add(() -> complete(result));
-			}
-		}
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
-		queue.add(() -> {
-			if (request.isSettled())
-				return;
-			if (!live || encoded.length > 8 * 1024 * 1024) {
-				finish(Failed("Closed decoder or encoded audio exceeds byte limit"));
-				return;
-			}
-			try {
-				if (encoded.length >= 4 && encoded.getString(0, 4) == "RIFF") {
-					finish(Decoded(helix.audio.Wav.decode(encoded)));
-					return;
-				}
-				// Ogg's capture pattern, or an MP3: its ID3 tag or an MPEG frame's sync bits.
-				var mp3 = encoded.length >= 4
-					&& (encoded.getString(0, 3) == "ID3" || encoded.get(0) == 0xFF && encoded.get(1) & 0xE0 == 0xE0);
-				if (encoded.length < 4 || encoded.getString(0, 4) != "OggS" && !mp3)
-					throw "Unsupported encoded audio; expected WAV, Ogg or MP3";
-				if (context == null)
-					context = js.Syntax.code("new (window.AudioContext || window.webkitAudioContext)({sampleRate:44100})");
-				// decodeAudioData consumes/detaches its input. Cache bytes remain caller-owned.
-				var data:js.lib.ArrayBuffer = encoded.getData().slice(0, encoded.length);
-				context.decodeAudioData(data).then(buffer -> {
-					if (request.isSettled())
-						return null;
-					try {
-						var frames = Std.int(Math.ceil(buffer.length * 44100 / buffer.sampleRate));
-						if (buffer.sampleRate <= 0 || buffer.numberOfChannels < 1 || buffer.numberOfChannels > 2 || frames <= 0 || frames > 2 * 1024 * 1024)
-							throw "Unsupported decoded rate/channels or PCM byte limit";
-						var samples = Bytes.alloc(frames * 4),
-							channels:Array<js.lib.Float32Array> = [];
-						for (c in 0...buffer.numberOfChannels)
-							channels.push(buffer.getChannelData(c));
-						for (i in 0...frames) {
-							var at = i * buffer.sampleRate / 44100, a = Std.int(at), b = Std.int(Math.min(a + 1, buffer.length - 1)), fraction = at - a,
-								value = 0.;
-							for (channel in channels)
-								value += channel[a] + (channel[b] - channel[a]) * fraction;
-							value /= channels.length;
-							if (!Math.isFinite(value))
-								throw "Invalid decoded PCM";
-							samples.setFloat(i * 4, Math.max(-1, Math.min(1, value)));
-						}
-						finish(Decoded(samples));
-					} catch (error:Dynamic)
-						finish(Failed(Std.string(error)));
-					return null;
-				}, error -> {
-					finish(Failed("Ogg decode failed: " + Std.string(error)));
-					return null;
-				});
-			} catch (error:Dynamic)
-				finish(Failed(Std.string(error)));
-		});
-		return request;
-	}
-
-	/** Creates the AudioContext if needed and resumes it; call it in a user gesture, the only time browsers allow audio to start. */
+	/** Creates the AudioContext if needed and resumes it; it works only in a user gesture (the page's listeners call it). */
 	public function unlock():Void {
 		if (context == null)
 			context = js.Syntax.code("new (window.AudioContext || window.webkitAudioContext)()");
 		context.resume();
 	}
 
-	/** Suspends a running AudioContext, as when the page is hidden; unlock resumes it. */
+	/** Suspends a running AudioContext, as when the page is hidden; the next gesture resumes it. */
 	public function suspend():Void {
 		if (context != null && context.state == "running")
 			context.suspend();
 	}
 
+	public function isAvailable():Bool
+		return true;
+
+	public function isRunning():Bool
+		return context != null && context.state == "running";
+
 	public function createClip(samples:Bytes):Int {
-		Pcm.validate(samples);
 		var id = nextClip++;
 		clips[id] = samples.sub(0, samples.length);
 		return id;
 	}
 
-	public function createStream(location:AudioLocation, complete:StreamResult->Void):IRequest {
+	public function openStream(location:AudioLocation, done:StreamOpenResult->Void):Void->Void {
 		var url = switch location {
 			case Stored(value): value.location;
 			case Remote(url): url;
-		}, element = js.Browser.document.createAudioElement(), request:Request = null;
-		function detach() {
+		}, element = js.Browser.document.createAudioElement(), settled = false, timer = 0, opened = 0;
+		function dispose():Void {
 			element.onloadedmetadata = null;
 			element.onerror = null;
-		}
-		function dispose() {
-			detach();
 			element.pause();
 			element.removeAttribute("src");
 			element.load();
 		}
-		var timer = 0;
-		function finish(result:StreamResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				js.Browser.window.clearTimeout(timer);
-				detach();
-				queue.add(() -> complete(result));
-			}
-		}
-		request = new Request(() -> {
-			requests.remove(request);
+		function finish(result:StreamOpenResult):Void {
+			if (settled)
+				return;
+			settled = true;
 			js.Browser.window.clearTimeout(timer);
-			dispose();
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
-		if (!live) {
-			queue.add(() -> finish(Failed("Closed audio backend")));
-			return request;
+			element.onloadedmetadata = null;
+			element.onerror = null;
+			done(result);
 		}
 		element.preload = "metadata";
 		element.crossOrigin = "anonymous";
 		element.onloadedmetadata = _ -> {
-			var id = nextClip++;
-			streams[id] = {url: url, element: element};
-			finish(Created(id));
+			opened = nextClip++;
+			streams[opened] = {url: url, element: element};
+			finish(Opened(opened));
 		};
 		element.onerror = _ -> {
 			dispose();
@@ -179,7 +86,14 @@ class WebAudioAdapter implements IAudio {
 		}, 15000);
 		element.src = url;
 		element.load();
-		return request;
+		return () -> {
+			if (!settled) {
+				settled = true;
+				js.Browser.window.clearTimeout(timer);
+				dispose();
+			} else if (opened != 0 && streams.exists(opened))
+				destroyStream(opened);
+		};
 	}
 
 	function clipSource(id:Int, v:Dynamic):Void {
@@ -200,23 +114,23 @@ class WebAudioAdapter implements IAudio {
 		source.start(0, v.offset);
 	}
 
-	public function play(resource:Int, loop:Bool = false, volume:Float = 1):Int {
-		if ((!clips.exists(resource) && !streams.exists(resource)) || !Math.isFinite(volume) || volume < 0 || volume > 1)
-			throw "Invalid audio playback";
-		if (!live)
+	public function playClip(clip:Int, loop:Bool, volume:Float):Int {
+		if (!clips.exists(clip))
+			throw "Invalid audio clip";
+		if (!isRunning())
 			return 0;
 		var id = nextPlayback++;
-		// Before the page's first key press or click the browser keeps audio locked: the playback waits, and poll starts it once audio runs.
-		if (context == null || context.state != "running")
-			playbacks[id] = {
-				kind: "waiting",
-				resource: resource,
-				loop: loop,
-				volume: volume,
-				paused: false
-			};
-		else
-			start(id, resource, loop, volume);
+		start(id, clip, loop, volume);
+		return id;
+	}
+
+	public function playStream(stream:Int, loop:Bool, volume:Float):Int {
+		if (!streams.exists(stream))
+			throw "Invalid audio stream";
+		if (!isRunning())
+			return 0;
+		var id = nextPlayback++;
+		start(id, stream, loop, volume);
 		return id;
 	}
 
@@ -273,7 +187,6 @@ class WebAudioAdapter implements IAudio {
 			playbacks[id] = v;
 			clipSource(id, v);
 		}
-		played++;
 	}
 
 	function finishStream(id:Int, v:Dynamic):Void {
@@ -293,9 +206,7 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null)
 			return;
-		if (v.kind == "waiting")
-			playbacks.remove(id);
-		else if (v.kind == "stream")
+		if (v.kind == "stream")
 			finishStream(id, v);
 		else {
 			playbacks.remove(id);
@@ -305,17 +216,12 @@ class WebAudioAdapter implements IAudio {
 			v.source.disconnect();
 			v.gain.disconnect();
 		}
-		stopped++;
 	}
 
 	public function pause(id:Int, paused:Bool):Void {
 		var v = playbacks[id];
 		if (v == null || v.paused == paused)
 			return;
-		if (v.kind == "waiting") {
-			v.paused = paused;
-			return;
-		}
 		if (v.kind == "stream") {
 			v.paused = paused;
 			if (paused)
@@ -343,12 +249,8 @@ class WebAudioAdapter implements IAudio {
 	}
 
 	public function setVolume(id:Int, volume:Float):Void {
-		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
-			throw "Invalid volume";
 		var v = playbacks[id];
-		if (v != null && v.kind == "waiting")
-			v.volume = volume;
-		else if (v != null)
+		if (v != null)
 			v.gain.gain.value = volume;
 	}
 
@@ -377,46 +279,19 @@ class WebAudioAdapter implements IAudio {
 		streams.remove(id);
 	}
 
-	public function poll():Void {
-		queue.poll();
-		// Playbacks that waited for audio to unlock start now, paused if they were paused while they waited.
-		if (live && context != null && context.state == "running")
-			for (id in [for (p in playbacks.keys()) if (playbacks[p].kind == "waiting") p]) {
-				var v = playbacks[id];
-				start(id, v.resource, v.loop, v.volume);
-				if (v.paused)
-					pause(id, true);
-			}
-	}
+	/** Nothing to keep fed: media elements and the audio graph run on their own. */
+	public function poll():Void {}
 
 	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
 		for (id in [for (p in playbacks.keys()) p])
 			stop(id);
 		for (id in [for (s in streams.keys()) s])
 			destroyStream(id);
 		clips.clear();
 		buffers.clear();
-		queue.poll();
 		if (context != null) {
 			context.close();
 			context = null;
 		}
-	}
-
-	/** Diagnostics: whether audio is running, playbacks started and stopped, and looping playbacks. */
-	public function info():Dynamic {
-		var loops = 0;
-		for (v in playbacks)
-			if (v.kind == "stream" ? v.source.loop : v.loop)
-				loops++;
-		return {
-			audioAvailable: context != null && context.state == "running",
-			audioPlayed: played,
-			audioStopped: stopped,
-			audioLoops: loops
-		};
 	}
 }

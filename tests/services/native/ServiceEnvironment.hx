@@ -1,4 +1,6 @@
 import helix.adapters.fetch.haxehttp.HaxeHttpFetchAdapter;
+import helix.adapters.audio.libsndfile.LibsndfileDecoder;
+import helix.adapters.audio.libsndfile.LibsndfileFiles;
 import helix.adapters.audio.sokol.SokolAudioAdapter;
 import helix.adapters.storage.filesystem.FileStorageAdapter;
 
@@ -9,13 +11,14 @@ class ServiceEnvironment {
 	public var storage:FileStorageAdapter;
 	public var packaged:FileStorageAdapter;
 	public var audio:SokolAudioAdapter;
+	public var decoder = new LibsndfileDecoder();
 
 	public function new() {
 		var args = Sys.args();
 		base = args[0];
 		storage = new FileStorageAdapter(args[1]);
 		packaged = new FileStorageAdapter(args[1] + "-unused");
-		audio = new SokolAudioAdapter();
+		audio = new SokolAudioAdapter(new LibsndfileFiles());
 	}
 
 	public function start(poll:Void->Void, done:Void->Bool, result:Void->Dynamic):Void {

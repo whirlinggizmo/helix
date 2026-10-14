@@ -18,28 +18,30 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `IGraphics.destroy(kind:String, ...)` took the kind as a string: now `destroyTexture`, `destroyBuffer` and `destroyPipeline`.
 - `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `exp` and `log` differ by 1 ulp between V8 and glibc for 1–18% of inputs (3.3% for `sin`, 18% for `atan2`), so a simulation calling them plays differently on each target. `helix.math.Trig` gives the same bits everywhere (`helix.py test` holds the interpreter, JS and hxcpp to one hash), and native builds that use it compile with `-ffp-contract=off`.
 
+## Fixed with the adapter audit
+
+- `IAudio.destroyStream`: Web Audio stopped the stream's playbacks; Sokol's didn't, and a playing stream kept reading its file. `AudioResources` hid it by keeping resources alive while played. Now both stop them (DECISIONS 83).
+- A hot reload whose new audio failed to decode threw inside the decode callback. Now it's traced and the old clip kept (DECISIONS 83).
+- `WebAudioAdapter.unlock()` made the AudioContext without the 44,100 Hz rate decoding asked for, so which ran first decided the rate. Decoding now has its own 44,100 Hz `OfflineAudioContext` (DECISIONS 83).
+
 ## Open
 
 **Behaviour that differs between the targets**
 - A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
-- `IAudio.destroyStream`: Web Audio stops the stream's playbacks; Sokol's doesn't, and a playing stream keeps reading its file. `AudioResources` hides it by keeping resources alive while played.
 - `IGraphics`: Sokol refuses textures over 4096; WebGL2 accepts them. Bounds checks differ slightly. (Both now refuse `updateBuffer` outside a frame.)
 - `capture("")` does nothing on the web; natively it writes the capture.
 
 **Correctness**
 - `HaxeHttpFetchAdapter`: cancelling doesn't stop the download (the worker runs to the end and holds one of two slots); `timeoutSeconds` limits only connecting; `noCache` is ignored; `Content-Length` is read case-sensitively; cancelled requests' progress readers are never removed.
-- A hot reload whose new audio fails to decode throws inside the decode callback, past `AssetService`'s try/catch, so it isn't recorded in `getReloads()`.
-- `WebAudioAdapter.unlock()` creates the AudioContext without the 44,100 Hz rate `decodeClip` asks for, so which runs first decides the rate.
 - `DomInputAdapter` gates only keydown on `active`: pointer, mouse and wheel still record while inactive.
 - `InputState.clear()` keeps typed text and wheel notches.
 
 - A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**
-- `AudioResources` doesn't own the services it's given: `poll` polls only the backend, `shutdown` shuts down neither.
 - `FileStorageAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
 - `InputState.capture`/`capturePointer` have no callers.
 - The default clear color is written twice (WebGL2 adapter and graphics.c).
 - One native host per program (`SokolHostAdapter.instance`).
-- Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`play` returns 0 when full).
+- Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).

@@ -1,357 +1,177 @@
 package helix.adapters.audio.sokol;
 
-import helix.adapters.audio.sokol.internal.AudioBridge;
-import helix.adapters.audio.libsndfile.internal.CodecBridge;
-import helix.audio.Wav;
-import helix.audio.IAudio;
-import helix.audio.IAudio.StreamResult;
-import helix.audio.IAudio.ClipDecodeResult;
-import helix.assets.IAssets.AudioLocation;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.core.WorkQueue;
-import helix.audio.WavStream;
-import helix.audio.Pcm;
 import haxe.io.Bytes;
-import sys.thread.Deque;
+import helix.adapters.audio.sokol.internal.AudioBridge;
+import helix.adapters.internal.IPcmFiles;
+import helix.adapters.internal.Mailbox;
+import helix.assets.IAssets.AudioLocation;
+import helix.audio.IAudio;
 import sys.thread.Thread;
 
-/** An opened stream's file: its path, its PCM16 data length in bytes (WAV), and whether libsndfile decodes it (Ogg, MP3). */
-private typedef StreamFile = {var path:String; var bytes:Int; var codec:Bool;}
+/** A stream voice's producer: its file's handle, its stream, and whether it loops. */
+private typedef Producer = {var handle:Int; var stream:Int; var loop:Bool;}
 
-/** A stream playback's producer: its open file or codec, the WAV bytes left to read, and whether it loops. */
-private typedef StreamPlayback = {var file:Null<sys.io.FileInput>; var codec:Int; var stream:StreamFile; var remaining:Int; var loop:Bool;}
-
-/** Native IAudio (adapter level) over sokol_audio (mono at 44100 Hz, 16 voices, 32 clips) and libsndfile for Ogg Vorbis, Opus and MP3. Decodes on worker threads, two at once; streams stored files only, refilling each playback from poll for up to 2 ms. */
+/** IAudio natively over sokol_audio: mono at 44100 Hz, 16 voices, 32 clips, mixed in C. Streams play stored files (a remote URL fails), read
+	through files (a codec adapter's), each voice kept 8192 frames ahead by poll for up to 2 ms a frame: how a push-based output plays a file as
+	it's read. */
 class SokolAudioAdapter implements IAudio {
-	var streams:Map<Int, StreamFile> = [];
-	var streaming:Map<Int, StreamPlayback> = [];
-	var nextStream = 1;
-	var done = new Deque<Void->Void>();
-	var queue = new WorkQueue();
-	var requests:Array<IRequest> = [];
-	var live = true;
-	var decodeJobs:Array<Void->Void> = [];
-	var decoding = 0;
+	static inline var CHUNK = 2048;
+	static inline var AHEAD = 8192;
 
-	/** Opens the audio device; when it is unavailable, play returns 0. */
-	public function new() {
+	var files:IPcmFiles;
+	var mailbox = new Mailbox();
+	var streams:Map<Int, String> = [];
+	var producers:Map<Int, Producer> = [];
+	var nextStream = 1;
+	var chunk = Bytes.alloc(CHUNK * 4);
+
+	/** Opens the audio device (isAvailable says whether it did); streams read through files. */
+	public function new(files:IPcmFiles) {
+		this.files = files;
 		AudioBridge.audioSetup();
 	}
 
-	public function decodeClip(encoded:Bytes, complete:ClipDecodeResult->Void):IRequest {
-		var request:Request = null;
-		function finish(result:ClipDecodeResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				queue.add(() -> complete(result));
-			}
-		}
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
-		decodeJobs.push(() -> {
-			if (request.isSettled())
-				return;
-			if (!live || encoded.length < 4 || encoded.length > 8 * 1024 * 1024) {
-				finish(Failed("Closed decoder or invalid encoded audio byte length"));
-				return;
-			}
-			decoding++;
-			Thread.create(() -> {
-				var result:ClipDecodeResult, codec = 0;
-				try {
-					if (encoded.length >= 4 && encoded.getString(0, 4) == "RIFF")
-						result = Decoded(helix.audio.Wav.decode(encoded));
-					else {
-						codec = CodecBridge.codecMemory(cpp.Pointer.arrayElem(encoded.getData(), 0).raw, encoded.length);
-						if (codec == 0)
-							throw "Audio decode failed; expected mono/stereo Vorbis, Opus or MP3";
-						var frames = CodecBridge.codecFrames(codec);
-						if (frames <= 0 || frames > 2 * 1024 * 1024)
-							throw "Decoded PCM exceeds byte limit";
-						var samples = Bytes.alloc(Std.int(frames) * 4), chunk = Bytes.alloc(2048 * 4), count = 0;
-						while (true) {
-							var n = CodecBridge.codecRead(codec, cpp.Pointer.arrayElem(chunk.getData(), 0).raw, 2048);
-							if (n < 0)
-								throw "Audio decode failed";
-							if (n == 0)
-								break;
-							if (count + n > 2 * 1024 * 1024)
-								throw "Decoded PCM exceeds byte limit";
-							if ((count + n) * 4 > samples.length)
-								throw "Audio sample count changed during decode";
-							samples.blit(count * 4, chunk, 0, n * 4);
-							count += n;
-						}
-						if (count == 0)
-							throw "Empty decoded audio";
-						result = Decoded(samples.sub(0, count * 4));
-					}
-				} catch (error:Dynamic) {
-					result = Failed(Std.string(error));
-				}
-				if (codec != 0)
-					CodecBridge.codecClose(codec);
-				done.add(() -> {
-					decoding--;
-					finish(result);
-				});
-			});
-		});
-		return request;
-	}
+	public function isAvailable():Bool
+		return AudioBridge.audioAvailable() != 0;
+
+	public function isRunning():Bool
+		return isAvailable();
 
 	public function createClip(samples:Bytes):Int {
-		Pcm.validate(samples);
 		var id = AudioBridge.audioClip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, samples.length);
 		if (id == 0)
 			throw "Audio clip creation failed";
 		return id;
 	}
 
-	public function createStream(source:AudioLocation, complete:StreamResult->Void):IRequest {
-		var request:Request = null;
-		function finish(result:StreamResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				queue.add(() -> complete(result));
-			}
-		}
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
+	public function destroyClip(clip:Int):Void
+		if (AudioBridge.audioDestroyClip(clip) != 1)
+			throw "Invalid audio clip";
+
+	public function openStream(source:AudioLocation, done:StreamOpenResult->Void):Void->Void {
+		var aborted = false;
 		switch source {
 			case Remote(_):
-				queue.add(() -> finish(Failed("Sokol remote audio streaming is unsupported; ensure the audio asset first")));
-			case Stored(value):
-				if (!live) {
-					queue.add(() -> finish(Failed("Closed audio backend")));
-					return request;
-				}
-				var path = value.location;
+				mailbox.post(() -> if (!aborted) done(Failed("Remote audio isn't streamed natively; ensure the asset first")));
+			case Stored(lease):
+				var path = lease.location;
+				// Opened once on a worker to check it reads; each voice opens it again.
 				Thread.create(() -> {
-					var file:sys.io.FileInput = null;
-					var stream:StreamFile = null, error:String = null;
-					try {
-						file = sys.io.File.read(path, true);
-						var magic = file.read(4).toString();
-						file.seek(0, sys.io.FileSeek.SeekBegin);
-						// WAV streams through WavStream; anything else (Ogg Vorbis or Opus, MP3) through libsndfile.
-						if (magic != "RIFF") {
-							var codec = CodecBridge.codecFile(path);
-							if (codec == 0)
-								throw "Unsupported audio stream; expected mono/stereo Vorbis, Opus, MP3 or WAV";
-							CodecBridge.codecClose(codec);
-							stream = {path: path, bytes: 0, codec: true};
-						} else
-							stream = {path: path, bytes: WavStream.header(file.read(44), sys.FileSystem.stat(path).size), codec: false};
-					} catch (e:Dynamic) {
-						error = Std.string(e);
-					}
-					if (file != null)
-						file.close();
-					done.add(() -> {
-						if (request.isSettled())
+					var handle = files.open(path);
+					if (handle != 0)
+						files.close(handle);
+					mailbox.post(() -> {
+						if (aborted)
 							return;
-						if (error != null)
-							finish(Failed(error));
+						if (handle == 0)
+							done(Failed("Unsupported audio stream: " + path));
 						else {
-							var id = -(nextStream++);
-							streams[id] = stream;
-							finish(Created(id));
+							var id = nextStream++;
+							streams[id] = path;
+							done(Opened(id));
 						}
 					});
 				});
 		}
-		return request;
+		return () -> aborted = true;
 	}
 
-	public function play(resource:Int, loop:Bool = false, volume:Float = 1):Int {
-		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
-			throw "Invalid volume";
-		if (resource >= 0) {
-			var id = AudioBridge.audioPlay(resource, loop ? 1 : 0, volume);
-			if (id < 0)
-				throw "Invalid audio clip";
-			return id;
-		}
-		var stream = streams[resource];
-		if (stream == null)
+	public function destroyStream(stream:Int):Void {
+		if (!streams.exists(stream))
 			throw "Invalid audio stream";
-		var file:sys.io.FileInput = null, codec = 0, path:String = stream.path;
-		if (stream.codec) {
-			codec = CodecBridge.codecFile(path);
-			if (codec == 0)
-				throw "Audio stream open failed";
-		} else {
-			file = sys.io.File.read(path, true);
-			file.seek(44, sys.io.FileSeek.SeekBegin);
-		}
-		var id = AudioBridge.audioStream(volume);
-		if (id == 0) {
-			if (file != null)
-				file.close();
-			if (codec != 0)
-				CodecBridge.codecClose(codec);
-			return 0;
-		}
-		streaming[id] = {
-			file: file,
-			codec: codec,
-			stream: stream,
-			remaining: stream.bytes,
-			loop: loop
-		};
-		try {
-			fill(id, streaming[id]);
-		} catch (error:Dynamic) {
-			stop(id);
-			throw error;
-		}
+		for (voice in [for (v => p in producers) if (p.stream == stream) v])
+			stop(voice);
+		streams.remove(stream);
+	}
+
+	public function playClip(clip:Int, loop:Bool, volume:Float):Int {
+		var id = AudioBridge.audioPlay(clip, loop ? 1 : 0, volume);
+		if (id < 0)
+			throw "Invalid audio clip";
 		return id;
 	}
 
-	function closeProducer(id:Int, value:StreamPlayback):Void {
-		if (value.file != null)
-			value.file.close();
-		if (value.codec != 0)
-			CodecBridge.codecClose(value.codec);
-		streaming.remove(id);
+	public function playStream(stream:Int, loop:Bool, volume:Float):Int {
+		var path = streams[stream];
+		if (path == null)
+			throw "Invalid audio stream";
+		var handle = files.open(path);
+		if (handle == 0)
+			return 0;
+		var voice = AudioBridge.audioStream(volume);
+		if (voice == 0) {
+			files.close(handle);
+			return 0;
+		}
+		producers[voice] = {handle: handle, stream: stream, loop: loop};
+		return fill(voice) ? voice : 0;
 	}
 
-	function fill(id:Int, value:StreamPlayback):Void {
-		var start = haxe.Timer.stamp();
-		while ((haxe.Timer.stamp() - start) * 1000 < .002 * 1000) {
-			var queued = AudioBridge.audioStreamQueued(id);
+	// Feeds voice up to AHEAD frames queued, for up to 2 ms; false when its stream failed (the voice is stopped).
+	function fill(voice:Int):Bool {
+		var p = producers[voice], start = haxe.Timer.stamp();
+		while (haxe.Timer.stamp() - start < .002) {
+			var queued = AudioBridge.audioStreamQueued(voice);
 			if (queued < 0) {
-				closeProducer(id, value);
-				return;
+				close(voice);
+				return true;
 			}
-			var frames = Std.int(Math.min(2048, 8192 - queued));
+			var frames = Std.int(Math.min(CHUNK, AHEAD - queued));
 			if (frames == 0)
-				return;
-			if (value.codec != 0) {
-				var pcm = Bytes.alloc(frames * 4),
-					count = CodecBridge.codecRead(value.codec, cpp.Pointer.arrayElem(pcm.getData(), 0).raw, frames);
-				if (count < 0)
-					throw "Audio stream decode failed";
-				if (count == 0) {
-					if (value.loop) {
-						if (CodecBridge.codecRewind(value.codec) != 1)
-							throw "Audio stream rewind failed";
-						continue;
-					}
-					AudioBridge.audioStreamPush(id, null, 0, 1);
-					closeProducer(id, value);
-					return;
-				}
-				if (AudioBridge.audioStreamPush(id, cpp.Pointer.arrayElem(pcm.getData(), 0).raw, count * 4, 0) != count)
-					throw "Sokol stream queue rejected samples";
-				continue;
+				return true;
+			var count = files.read(p.handle, chunk, frames);
+			if (count < 0 || count == 0 && p.loop && !files.rewind(p.handle)) {
+				Sys.println("Audio stream failed: " + streams[p.stream]);
+				stop(voice);
+				return false;
 			}
-			if (value.remaining == 0) {
-				if (value.loop) {
-					value.file.seek(44, sys.io.FileSeek.SeekBegin);
-					value.remaining = value.stream.bytes;
-				} else {
-					AudioBridge.audioStreamPush(id, null, 0, 1);
-					closeProducer(id, value);
-					return;
-				}
+			if (count == 0) {
+				if (p.loop)
+					continue;
+				AudioBridge.audioStreamPush(voice, null, 0, 1);
+				close(voice);
+				return true;
 			}
-			var count = Std.int(Math.min(value.remaining, frames * 2)),
-				bytes = value.file.read(count);
-			if (bytes.length != count)
-				throw "Truncated streamed WAV";
-			var pcm = WavStream.decode(bytes),
-				accepted = AudioBridge.audioStreamPush(id, cpp.Pointer.arrayElem(pcm.getData(), 0).raw, pcm.length, 0);
-			if (accepted != count / 2)
-				throw "Sokol stream queue rejected samples";
-			value.remaining -= count;
+			if (AudioBridge.audioStreamPush(voice, cpp.Pointer.arrayElem(chunk.getData(), 0).raw, count * 4, 0) != count) {
+				stop(voice);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	function close(voice:Int):Void {
+		var p = producers[voice];
+		if (p != null) {
+			files.close(p.handle);
+			producers.remove(voice);
 		}
 	}
 
-	public function stop(id:Int):Void {
-		var value = streaming[id];
-		if (value != null)
-			closeProducer(id, value);
-		AudioBridge.audioStop(id);
+	public function stop(voice:Int):Void {
+		close(voice);
+		AudioBridge.audioStop(voice);
 	}
 
-	public function pause(id:Int, paused:Bool):Void
-		AudioBridge.audioPause(id, paused ? 1 : 0);
+	public function pause(voice:Int, paused:Bool):Void
+		AudioBridge.audioPause(voice, paused ? 1 : 0);
 
-	public function setVolume(id:Int, volume:Float):Void {
-		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
-			throw "Invalid volume";
-		AudioBridge.audioVolume(id, volume);
-	}
+	public function setVolume(voice:Int, volume:Float):Void
+		AudioBridge.audioVolume(voice, volume);
 
-	public function isPlaying(id:Int):Bool
-		return AudioBridge.audioIsPlaying(id) != 0;
-
-	public function destroyClip(id:Int):Void {
-		if (AudioBridge.audioDestroyClip(id) != 1)
-			throw "Invalid audio clip";
-	}
-
-	public function destroyStream(id:Int):Void {
-		if (!streams.exists(id))
-			throw "Invalid audio stream";
-		streams.remove(id);
-	}
+	public function isPlaying(voice:Int):Bool
+		return AudioBridge.audioIsPlaying(voice) != 0;
 
 	public function poll():Void {
-		while (true) {
-			var work = done.pop(false);
-			if (work == null)
-				break;
-			queue.add(work);
-		}
-		while (live && decoding < 2 && decodeJobs.length > 0)
-			decodeJobs.shift()();
-		queue.poll();
-		for (id in [for (id in streaming.keys()) id])
-			try {
-				fill(id, streaming[id]);
-			} catch (error:Dynamic) {
-				stop(id);
-				Sys.println("Audio stream failed: " + Std.string(error));
-			}
+		mailbox.deliver();
+		for (voice in [for (v in producers.keys()) v])
+			fill(voice);
 	}
 
 	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
-		decodeJobs = [];
-		for (id in [for (id in streaming.keys()) id])
-			stop(id);
+		for (voice in [for (v in producers.keys()) v])
+			stop(voice);
 		streams.clear();
-		queue.poll();
 		AudioBridge.audioShutdown();
-	}
-
-	/** Diagnostics: device availability, playbacks started and stopped, looping playbacks, mixer callbacks, sample rate and channels. */
-	public function info():Dynamic {
-		var loops = AudioBridge.audioLoops();
-		for (value in streaming)
-			if (value.loop)
-				loops++;
-		return {
-			audioBackend: "sokol-audio",
-			audioAvailable: AudioBridge.audioAvailable() != 0,
-			audioPlayed: AudioBridge.audioPlayed(),
-			audioStopped: AudioBridge.audioStopped(),
-			audioLoops: loops,
-			audioCallbacks: AudioBridge.audioCallbacks(),
-			audioSampleRate: AudioBridge.audioSampleRate(),
-			audioChannels: AudioBridge.audioChannels()
-		};
 	}
 }

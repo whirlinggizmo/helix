@@ -9,8 +9,8 @@
   4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
      one area. The same logic written differently isn't caught here; review is for that.
 
-Known violations, each with the audit step that removes it (docs/ADAPTER_AUDIT.md), are listed in KNOWN; a known violation that has gone
-must be taken off the list, so the list only shrinks. Exits 1 on any other violation.
+Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
+landed); one that has gone must be taken off, so the list only shrinks. Exits 1 on any other violation.
 
     python3 tools/adaptercheck.py"""
 import re
@@ -30,11 +30,7 @@ PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A
 GENERATED_HEADER = re.compile(r'#include\s+"([^"]*\.glsl\.h|shaders\.h)"')
 
 # Known violations: (rule, file relative to src/helix, the step that removes it).
-KNOWN = [
-    ('engine', 'adapters/audio/webaudio/WebAudioAdapter.hx', 'audio (4): WAV dispatch moves to shared code'),
-    ('engine', 'adapters/audio/sokol/SokolAudioAdapter.hx', 'audio (4): WAV dispatch and the stream pump move to shared code'),
-    ('duplicate', 'adapters/audio', 'audio (4)'),
-]
+KNOWN = []
 
 
 def code_lines(path):

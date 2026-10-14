@@ -6,7 +6,6 @@ import helix.adapters.internal.SokolNativeBuild;
 extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_setup") static function setup():Void;
 	@:native("helix_shutdown") static function shutdown():Void;
-	@:native("helix_renderer") static function renderer():cpp.ConstCharStar;
 	@:native("helix_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_cube_texture") static function cubeTexture(size:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_data_texture") static function dataTexture(w:Int, h:Int):Int;

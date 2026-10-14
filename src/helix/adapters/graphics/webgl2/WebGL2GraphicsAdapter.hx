@@ -15,10 +15,6 @@ import js.html.webgl.WebGL2RenderingContext;
 class WebGL2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
 
-	/** The canvas's WebGL2 context. */
-	public function getContext():WebGL2RenderingContext
-		return gl;
-
 	var next = 1;
 	var buffers:Map<Int, Dynamic> = [];
 	var textures:Map<Int, Dynamic> = [];

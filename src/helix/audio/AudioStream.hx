@@ -9,4 +9,7 @@ class AudioStream extends AudioResource {
 			releaseSource();
 		});
 	}
+
+	override function startVoice(loop:Bool, volume:Float):Int
+		return backend.playStream(id, loop, volume);
 }

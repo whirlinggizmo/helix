@@ -14,10 +14,13 @@ enum AudioLoadResult<T> {
 	Cancelled;
 }
 
-/** Shared audio loading/policy/lifetime; adapters own decoding and delivery mechanisms. */
+/** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or
+	packaged copy (or a remote URL where the platform plays one), their lifetimes counted, and playbacks, which wait while audio hasn't
+	started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it. */
 class AudioResources implements IReloadable {
 	var assets:IAssets;
 	var backend:IAudio;
+	var decoding:AudioDecoding;
 	var playbacks:Array<AudioPlayback> = [];
 	var resources:Array<AudioResource> = [];
 	var requests:Array<IRequest> = [];
@@ -27,10 +30,11 @@ class AudioResources implements IReloadable {
 	/** Backend clips a reload replaced, destroyed once nothing started from them still plays. */
 	var retired:Array<Int> = [];
 
-	/** Loads through assets and plays on backend; poll polls backend, and neither is shut down by this service. */
-	public function new(assets:IAssets, backend:IAudio) {
+	/** Loads through assets, decodes with decoding (polled by its owner) and plays on backend (polled here). */
+	public function new(assets:IAssets, backend:IAudio, decoding:AudioDecoding) {
 		this.assets = assets;
 		this.backend = backend;
+		this.decoding = decoding;
 	}
 
 	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released. */
@@ -62,7 +66,7 @@ class AudioResources implements IReloadable {
 			if (request.isSettled())
 				return;
 			switch result {
-				case Loaded(bytes): child = backend.decodeClip(bytes, result -> {
+				case Loaded(bytes): child = decoding.decode(bytes, result -> {
 						if (request.isSettled())
 							return;
 						switch result {
@@ -86,7 +90,9 @@ class AudioResources implements IReloadable {
 
 	/** Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively. */
 	public function loadStream(path:String, complete:AudioLoadResult<AudioStream>->Void):IRequest {
-		var child:IRequest = null, request:Request = null;
+		var child:IRequest = null,
+			request:Request = null,
+			abort:Null<Void->Void> = null;
 		function finish(result:AudioLoadResult<AudioStream>) {
 			if (request.finish()) {
 				requests.remove(request);
@@ -101,6 +107,8 @@ class AudioResources implements IReloadable {
 		request = new Request(() -> {
 			if (child != null)
 				child.cancel();
+			if (abort != null)
+				abort();
 			requests.remove(request);
 			queue.add(() -> complete(Cancelled));
 		});
@@ -123,17 +131,18 @@ class AudioResources implements IReloadable {
 						case Stored(value): value.release;
 						case Remote(_): () -> {};
 					}
-					child = backend.createStream(source, result -> switch result {
-						case Created(id):
-							var resource = new AudioStream(id, backend, release);
-							resources.push(resource);
-							finish(Ready(resource));
-						case Failed(message):
-							release();
-							finish(Failed(message));
-						case Cancelled:
-							release();
-							finish(Cancelled);
+					child = null;
+					abort = backend.openStream(source, result -> {
+						abort = null;
+						switch result {
+							case Opened(id):
+								var resource = new AudioStream(id, backend, release);
+								resources.push(resource);
+								finish(Ready(resource));
+							case Failed(message):
+								release();
+								finish(Failed(message));
+						}
 					});
 				case Failed(message): finish(Failed(message));
 				case Cancelled: finish(Cancelled);
@@ -142,19 +151,20 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
-	/** Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. When the backend cannot play now (browser audio still locked, no free voice), returns an already finished playback. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1. */
+	/** Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While
+		audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an
+		output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by
+		its owner, or a volume outside 0 to 1. */
 	public function play(resource:AudioResource, loop = false, volume = 1.):AudioPlayback {
 		if (!live || resource.getBackend() != backend)
 			throw "Invalid audio resource service";
+		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
+			throw "Invalid volume";
 		resource.retainPlayback();
-		var id:Int;
-		try {
-			id = backend.play(resource.id, loop, volume);
-		} catch (error:Dynamic) {
+		var playback = try new AudioPlayback(resource, loop, volume) catch (error:Dynamic) {
 			resource.releasePlayback();
 			throw error;
-		}
-		var playback = new AudioPlayback(id, resource);
+		};
 		if (!playback.isFinished())
 			playbacks.push(playback);
 		return playback;
@@ -164,14 +174,14 @@ class AudioResources implements IReloadable {
 	public function reloaded(path:String, bytes:haxe.io.Bytes):Void {
 		if (!live)
 			return;
-		backend.decodeClip(bytes, result -> switch result {
+		decoding.decode(bytes, result -> switch result {
 			case Decoded(samples):
 				for (resource in resources)
 					if (!resource.isDisposed() && Std.isOfType(resource, AudioClip) && (cast resource : AudioClip).getPath() == path) {
 						retired.push(resource.id);
 						resource.id = backend.createClip(samples);
 					}
-			case Failed(message): throw 'Reloaded clip failed to decode: ' + path + ': ' + message;
+			case Failed(message): trace('Reloaded clip failed to decode, kept the old one: ' + path + ': ' + message);
 			case Cancelled:
 		});
 	}

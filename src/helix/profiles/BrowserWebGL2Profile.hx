@@ -1,6 +1,7 @@
 package helix.profiles;
 
 import helix.adapters.audio.webaudio.WebAudioAdapter;
+import helix.adapters.audio.webaudio.WebAudioDecoder;
 import helix.adapters.fetch.fetchapi.FetchApiAdapter;
 import helix.adapters.graphics.webgl2.WebGL2GraphicsAdapter;
 import helix.adapters.harness.dom.DomTestHarness;
@@ -24,19 +25,14 @@ class BrowserWebGL2Profile {
 			return {
 				graphics: graphics,
 				input: new DomInputAdapter(host.getCanvas()),
-				audio: audio,
+				audio: new WebAudioAdapter(),
+				audioDecoder: new WebAudioDecoder(),
 				images: new CanvasImagesAdapter(),
 				http: new FetchApiAdapter(),
 				storage: new IndexedDbStorageAdapter(cacheName),
 				packaged: new IndexedDbStorageAdapter(cacheName + "-packaged"),
 				base: assetBase,
-				harness: new DomTestHarness(),
-				info: () -> {
-					var gl = graphics.getContext(), ext = gl.getExtension("WEBGL_debug_renderer_info"), value = audio.info();
-					value.backend = "raw-webgl2";
-					value.renderer = gl.getParameter(ext == null ? js.html.webgl.WebGL2RenderingContext.RENDERER : untyped ext.UNMASKED_RENDERER_WEBGL);
-					return value;
-				}
+				harness: new DomTestHarness()
 			};
 		});
 		#if hotreload new helix.adapters.host.dom.AssetWatcher(assetBase, runner.assetChanged); #end

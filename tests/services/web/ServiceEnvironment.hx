@@ -1,5 +1,6 @@
 import helix.adapters.fetch.fetchapi.FetchApiAdapter;
 import helix.adapters.audio.webaudio.WebAudioAdapter;
+import helix.adapters.audio.webaudio.WebAudioDecoder;
 import helix.adapters.storage.indexeddb.IndexedDbStorageAdapter;
 
 class ServiceEnvironment {
@@ -9,6 +10,7 @@ class ServiceEnvironment {
 	public var storage:IndexedDbStorageAdapter;
 	public var packaged:IndexedDbStorageAdapter;
 	public var audio:WebAudioAdapter;
+	public var decoder = new WebAudioDecoder();
 
 	public function new() {
 		var params = new js.html.URLSearchParams(js.Browser.window.location.search);

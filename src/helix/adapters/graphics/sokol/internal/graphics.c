@@ -432,5 +432,3 @@ int helix_destroy(int kind,uint32_t id){
  if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){destroy_pipeline(id);return 1;}
  return 0;
 }
-/* The GPU driver's name for its renderer, for the backend facts a check reports. */
-const char *helix_renderer(void){return (const char*)glGetString(GL_RENDERER);}
