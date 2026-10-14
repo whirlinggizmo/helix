@@ -11,7 +11,7 @@ import helix.graphics.TextureFormat;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
-// A render target: the framebuffer of its texture and its depth buffer, its size; multisampled, the framebuffer drawn into and its color.
+/** A render target: the framebuffer of its texture and its depth buffer, its size; multisampled, the framebuffer drawn into and its color. */
 private typedef Target = {
 	framebuffer:Dynamic,
 	depth:Dynamic,
