@@ -77,7 +77,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
 | `lights` | directional, point and spot lights on a stage, beside an immediate grid |
-| `model` | a glTF model (Kenney's sports car, its texture a file beside it) loaded into nodes: parts found by name, headlights added to its body, a chase camera on a camera node |
+| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded into nodes: parts and lights found by name, a chase camera on a camera node |
 | `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
 | `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group |
 | `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
