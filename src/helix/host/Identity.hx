@@ -50,24 +50,4 @@ class Identity {
 			&& stem.charAt(3) <= "9";
 		return device ? "_" + text : text;
 	}
-
-	#if sys
-	/** Where this program's cache goes on this desktop: under $XDG_CACHE_HOME (or ~/.cache) on Linux, ~/Library/Caches on macOS, and
-		%LOCALAPPDATA%\<company>\<product>\cache on Windows (that folder is the program's own, not only its cache). null when the user's
-		directories aren't known. */
-	public function getCacheDirectory():Null<String> {
-		var system = Sys.systemName();
-		if (system == "Windows") {
-			var local = Sys.getEnv("LOCALAPPDATA");
-			return local == null || local == "" ? null : haxe.io.Path.join([local, company, product, "cache"]);
-		}
-		var home = Sys.getEnv("HOME");
-		if (system == "Mac")
-			return home == null || home == "" ? null : haxe.io.Path.join([home, "Library/Caches", company, product]);
-		var xdg = Sys.getEnv("XDG_CACHE_HOME");
-		var base = xdg != null
-			&& StringTools.startsWith(xdg, "/") ? xdg : home == null || home == "" ? null : haxe.io.Path.join([home, ".cache"]);
-		return base == null ? null : haxe.io.Path.join([base, company, product]);
-	}
-	#end
 }

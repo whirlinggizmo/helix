@@ -25,7 +25,7 @@ class HostTests {
 		} catch (_:Dynamic)
 			true;
 		check(threw, "An identity that cleans to nothing throws");
-		var cache = identity.getCacheDirectory();
+		var cache = helix.adapters.storage.filesystem.FileStorageAdapter.getCacheDirectory(identity.getCompany(), identity.getProduct());
 		check(cache != null && StringTools.endsWith(cache, "HeliX/blocks"), "A cache directory under the user's");
 		var clock = new FrameClock();
 		clock.frame(10);

@@ -1,25 +1,17 @@
 package helix.adapters.fetch.haxehttp;
 
-import helix.assets.IFetch;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.core.WorkQueue;
 import haxe.io.Bytes;
+import helix.adapters.internal.Mailbox;
+import helix.assets.IHttp;
 import sys.thread.Thread;
-import sys.thread.Deque;
 
-/** Collects a response body on the worker thread, publishing the count received and throwing past the byte limit. */
-private class FetchOutput extends haxe.io.Output {
-	var buffer = new haxe.io.BytesBuffer();
-	var limit:Int;
-	var notify:Int->Void;
-	var received = 0;
+/** A response body arriving on a worker thread, each part handed to the host thread; it stops the transfer (by throwing) once aborted. */
+private class Parts extends haxe.io.Output {
+	var transfer:Transfer;
 
-	/** Collects up to limit bytes, calling notify with the total received after each write. */
-	public function new(limit:Int, notify:Int->Void) {
-		this.limit = limit;
-		this.notify = notify;
-	}
+	/** Writes into transfer. */
+	public function new(transfer:Transfer)
+		this.transfer = transfer;
 
 	public override function writeByte(value:Int):Void {
 		var b = Bytes.alloc(1);
@@ -28,135 +20,105 @@ private class FetchOutput extends haxe.io.Output {
 	}
 
 	public override function writeBytes(bytes:Bytes, pos:Int, len:Int):Int {
-		if (received + len > limit)
-			throw "Fetch exceeds byte limit";
-		buffer.addBytes(bytes, pos, len);
-		received += len;
-		notify(received);
+		if (transfer.aborted)
+			throw "Aborted";
+		transfer.started();
+		var part = bytes.sub(pos, len);
+		transfer.mailbox.post(() -> if (!transfer.aborted) transfer.body(part));
 		return len;
 	}
-
-	/** The body collected so far. */
-	public function bytes():Bytes
-		return buffer.getBytes();
 }
 
-/** Native IFetch (adapter level) over haxe.Http on worker threads, http and https URLs only (Failed for others). timeoutSeconds is the connection timeout, noCache is ignored, and cancel settles the request without stopping the transfer. */
-class HaxeHttpFetchAdapter implements IFetch {
-	var done = new Deque<Void->Void>();
-	var queue = new WorkQueue();
-	var jobs:Array<Void->Void> = [];
-	var requests:Array<IRequest> = [];
-	var active = 0;
-	var live = true;
-	var progressReaders:Array<Void->Void> = [];
+/** One GET on its worker thread: its callbacks, run on the host thread through the mailbox. */
+private class Transfer {
+	/** The adapter's mailbox. */
+	public var mailbox:Mailbox;
 
-	/** Creates the adapter; fetches start from poll. */
+	/** Set on the host thread when aborted; the worker stops at its next write, and nothing more is delivered. */
+	public var aborted = false;
+
+	/** The response's head, delivered once. */
+	public var head:(Int, Map<String, String>) -> Void;
+
+	/** Each part of the body. */
+	public var body:Bytes->Void;
+
+	/** The end. */
+	public var end:Null<String>->Void;
+
+	var http:haxe.Http;
+	var headed = false;
+
+	/** A transfer of http's response. */
+	public function new(mailbox:Mailbox, http:haxe.Http, head:(Int, Map<String, String>) -> Void, body:Bytes->Void, end:Null<String>->Void) {
+		this.mailbox = mailbox;
+		this.http = http;
+		this.head = head;
+		this.body = body;
+		this.end = end;
+	}
+
+	/** Hands the head over before the first part (and before the end of an empty body), once; on the worker thread. */
+	public function started():Void {
+		if (headed)
+			return;
+		headed = true;
+		var headers:Map<String, String> = [];
+		if (http.responseHeaders != null)
+			for (name => value in http.responseHeaders)
+				headers[name.toLowerCase()] = value;
+		var code = this.status;
+		mailbox.post(() -> if (!aborted) head(code, headers));
+	}
+
+	/** The response's status, as onStatus reported it. */
+	public var status = 0;
+}
+
+/** IHttp natively over haxe.Http, a worker thread a transfer: http and https URLs only (others end with a failure), noCache has nothing to
+	bypass, and an abort stops the transfer at its next part of the body (not while it connects). */
+class HaxeHttpFetchAdapter implements IHttp {
+	var mailbox = new Mailbox();
+	var transfers:Array<Transfer> = [];
+
+	/** No transfers yet. */
 	public function new() {}
 
-	public function fetch(spec:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void):IRequest {
-		var request:Request = null, readProgress:Void->Void = null;
-		var lock = new sys.thread.Mutex(), received = 0, last = -1, total:Null<Int> = null;
-		function finish(result:FetchResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				if (readProgress != null) {
-					readProgress();
-					progressReaders.remove(readProgress);
-				}
-				queue.add(() -> complete(result));
-			}
-		}
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
-		var url = spec.url,
-			limit = spec.maxBytes == null ? 8 * 1024 * 1024 : spec.maxBytes,
-			timeout = spec.timeoutSeconds == null ? 15. : spec.timeoutSeconds;
-		jobs.push(() -> {
-			if (request.isSettled())
-				return;
-			if (!live
-				|| limit <= 0
-				|| !Math.isFinite(timeout)
-				|| timeout <= 0
-				|| !(StringTools.startsWith(url, "http://") || StringTools.startsWith(url, "https://"))) {
-				finish(Failed("Invalid fetch request or closed service"));
-				return;
-			}
-			readProgress = () -> {
-				lock.acquire();
-				var count = received, length = total;
-				lock.release();
-				if (count != last && progress != null && !request.isSettled()) {
-					last = count;
-					progress({received: count, total: length});
-				}
-			};
-			progressReaders.push(readProgress);
-			active++;
-			Thread.create(() -> {
-				var result:FetchResult;
-				try {
-					var http = new haxe.Http(url);
-					http.cnxTimeout = timeout;
-					var status = 0, error:Null<String> = null;
-					http.onStatus = value -> {
-						status = value;
-						lock.acquire();
-						total = Std.parseInt(http.responseHeaders["Content-Length"]);
-						lock.release();
-					};
-					http.onError = value -> error = value;
-					// Worker publishes a coalesced byte count; application callbacks run only in poll.
-					var output = new FetchOutput(limit, value -> {
-						lock.acquire();
-						received = value;
-						lock.release();
-					});
-					http.customRequest(false, output);
-					var headers:Map<String, String> = [];
-					if (http.responseHeaders != null)
-						for (name => value in http.responseHeaders)
-							headers[name.toLowerCase()] = value;
-					result = status != 0 && (error == null || error == "Http Error #" + status) ? Response({
-						status: status,
-						headers: headers,
-						bytes: output.bytes()
-					}) : Failed(error == null ? "No HTTP response" : error);
-				} catch (error:Dynamic) {
-					result = Failed(Std.string(error));
-				}
-				done.add(() -> {
-					active--;
-					finish(result);
-				});
+	public function get(url:String, noCache:Bool, head:(Int, Map<String, String>) -> Void, body:Bytes->Void, end:Null<String>->Void):Void->Void {
+		var http = new haxe.Http(url),
+			transfer = new Transfer(mailbox, http, head, body, end);
+		transfers.push(transfer);
+		function finish(error:Null<String>):Void
+			mailbox.post(() -> {
+				transfers.remove(transfer);
+				if (!transfer.aborted)
+					transfer.end(error);
 			});
-		});
-		return request;
+		if (!(StringTools.startsWith(url, "http://") || StringTools.startsWith(url, "https://")))
+			finish("Only http and https URLs are fetched natively");
+		else
+			Thread.create(() -> {
+				var error:Null<String> = null;
+				http.onStatus = value -> transfer.status = value;
+				http.onError = value -> error = value;
+				try {
+					http.customRequest(false, new Parts(transfer));
+					transfer.started();
+					// haxe.Http reports an HTTP error status as an error too: that's a response here.
+					finish(transfer.status != 0
+						&& (error == null
+							|| error == "Http Error #" + transfer.status) ? null : error == null ? "No HTTP response" : error);
+				} catch (e:Dynamic) {
+					finish(Std.string(e));
+				}
+			});
+		return () -> transfer.aborted = true;
 	}
 
-	public function poll():Void {
-		for (reader in progressReaders.copy())
-			reader();
-		while (true) {
-			var work = done.pop(false);
-			if (work == null)
-				break;
-			queue.add(work);
-		}
-		while (live && active < 2 && jobs.length > 0)
-			jobs.shift()();
-		queue.poll();
-	}
+	public function poll():Void
+		mailbox.deliver();
 
-	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
-		jobs = [];
-		queue.poll();
-	}
+	public function shutdown():Void
+		for (t in transfers)
+			t.aborted = true;
 }

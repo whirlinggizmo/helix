@@ -1,5 +1,5 @@
-import helix.assets.IFetch;
-import helix.assets.IStorage;
+import helix.assets.Fetch;
+import helix.assets.Storage;
 import helix.assets.IAssets;
 import helix.assets.AssetService;
 import helix.audio.AudioResources;
@@ -13,7 +13,8 @@ import haxe.io.Bytes;
 class ServiceTests {
 	static var checks = 0;
 	static var env:ServiceEnvironment;
-	static var fetcher:helix.assets.IFetch;
+	static var fetcher:Fetch;
+	static var storage:Storage;
 	static var assets:AssetService;
 	static var audio:AudioResources;
 	static var steps:Array<Void->Void> = [];
@@ -51,8 +52,9 @@ class ServiceTests {
 
 	static function main():Void {
 		env = new ServiceEnvironment();
-		fetcher = env.fetcher;
-		assets = new AssetService(fetcher, env.storage, env.packaged, env.base + "/assets/");
+		fetcher = new Fetch(env.fetcher);
+		storage = new Storage(env.storage);
+		assets = new AssetService(fetcher, storage, new Storage(env.packaged, true), env.base + "/assets/");
 		audio = new AudioResources(assets, env.audio);
 		steps = [
 			() -> {
@@ -124,7 +126,7 @@ class ServiceTests {
 					next();
 				});
 			},
-			() -> env.storage.read("marker", result -> {
+			() -> storage.read("marker", result -> {
 				switch result {
 					case Stored(bytes):
 						persisted = true;
@@ -132,7 +134,7 @@ class ServiceTests {
 					case Missing: check(true, "Initially empty storage");
 					case _: fail(result);
 				}
-				env.storage.write("marker", Bytes.ofString("persisted"), result -> {
+				storage.write("marker", Bytes.ofString("persisted"), result -> {
 					switch result {
 						case Written: check(true, "Committed storage write");
 						case _: fail(result);
@@ -140,18 +142,18 @@ class ServiceTests {
 					next();
 				});
 			}),
-			() -> env.storage.read("../escape", result -> {
+			() -> storage.read("../escape", result -> {
 				switch result {
 					case Failed(_): check(true, "Storage rejects escaping path");
 					case _: fail(result);
 				}
 				next();
 			}),
-			() -> env.storage.write("remove-me", Bytes.ofString("temporary"), result -> {
+			() -> storage.write("remove-me", Bytes.ofString("temporary"), result -> {
 				switch result {
-					case Written: env.storage.remove("remove-me", result -> {
+					case Written: storage.remove("remove-me", result -> {
 							switch result {
-								case Written: env.storage.read("remove-me", result -> {
+								case Written: storage.read("remove-me", result -> {
 										switch result {
 											case Missing: check(true, "Removed storage entry");
 											case _: fail(result);

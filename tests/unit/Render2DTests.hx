@@ -149,7 +149,7 @@ class HeldAssets implements helix.assets.IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.IStorage.StorageWriteResult->Void):helix.assets.IRequest
+	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
@@ -160,23 +160,20 @@ class HeldAssets implements helix.assets.IAssets {
 	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
 }
 
-/** Images decoding at once to one white texel, counting decodes. */
-class WhiteImages implements helix.graphics.IImages {
+/** A decoder answering at once with one white texel, counting decodes. */
+class WhiteImages implements helix.graphics.IImageDecoder {
 	public var decodes = 0;
 
 	public function new() {}
 
-	public function decode(encoded:Bytes, complete:helix.graphics.IImages.ImageDecodeResult->Void):helix.assets.IRequest {
+	public function decode(encoded:Bytes, done:helix.graphics.ImageDecoding.ImageDecodeResult->Void):Void {
 		decodes++;
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
-		complete(Decoded(1, 1, pixel));
-		return new helix.assets.Request(() -> {});
+		done(Decoded(1, 1, pixel));
 	}
 
 	public function poll():Void {}
-
-	public function shutdown():Void {}
 }
 
 /** Polygon2D, Node2D's transforms, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
@@ -513,7 +510,8 @@ class Render2DTests {
 		// others theirs; another filter is another texture; the last release frees it.
 		var heldAssets = new HeldAssets(),
 			images = new WhiteImages(),
-			shared = new helix.render2d.Textures(heldAssets, images, gpu);
+			decoding = new helix.graphics.ImageDecoding(images),
+			shared = new helix.render2d.Textures(heldAssets, decoding, gpu);
 		var got:Array<Texture2D> = [];
 		function keep(result:helix.render2d.Textures.TextureLoadResult):Void
 			switch result {
@@ -526,11 +524,13 @@ class Render2DTests {
 		shared.load("a.png", true, keep);
 		given.cancel();
 		heldAssets.flush();
+		decoding.poll();
 		check(heldAssets.loads == 1 && images.decodes == 1 && got.length == 2 && got[0] == got[1], "Loads under way of one file share one fetch and texture");
 		shared.load("a.png", true, keep);
 		check(heldAssets.loads == 1 && got.length == 3 && got[2] == got[0], "A later load of it is given the same texture");
 		shared.load("a.png", false, keep);
 		heldAssets.flush();
+		decoding.poll();
 		check(heldAssets.loads == 2 && got.length == 4 && got[3] != got[0], "Another filter is another texture");
 		var destroyed = gpu.destroyedTextures;
 		shared.release(got[0]);

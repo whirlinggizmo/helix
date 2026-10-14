@@ -1,23 +1,27 @@
 package helix.adapters.storage.indexeddb;
 
-import helix.assets.IStorage;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.assets.AssetPath;
-import helix.core.WorkQueue;
 import haxe.io.Bytes;
+import helix.assets.IStore;
+import helix.assets.Storage.StorageResult;
+import helix.assets.Storage.StorageSourceResult;
+import helix.assets.Storage.StorageWriteResult;
 
-/** IndexedDB stores encoded Blobs. Audio receives a leased local Blob URL. */
-class IndexedDbStorageAdapter implements IStorage {
-	var queue = new WorkQueue();
+/** IStore in a browser: Blobs in an IndexedDB database, a lease a Blob URL (released by revoking it). Operations asked before the database
+	opens wait for it. */
+class IndexedDbStorageAdapter implements IStore {
 	var db:Dynamic;
 	var error:Null<String>;
 	var ready = false;
-	var live = true;
-	var requests:Array<IRequest> = [];
+	var waiting:Array<Void->Void> = [];
 
-	/** Opens the IndexedDB database name, creating it if needed; operations wait until it opens and fail if it cannot. */
+	/** Opens the IndexedDB database name, creating it if needed; operations fail if it can't open. */
 	public function new(name:String) {
+		function opened():Void {
+			ready = true;
+			for (w in waiting)
+				w();
+			waiting = [];
+		}
 		try {
 			var open = js.Browser.window.indexedDB.open(name, 1);
 			open.onupgradeneeded = _ -> {
@@ -26,11 +30,11 @@ class IndexedDbStorageAdapter implements IStorage {
 			};
 			open.onsuccess = _ -> {
 				db = open.result;
-				ready = true;
+				opened();
 			};
 			open.onerror = _ -> {
 				error = Std.string(open.error);
-				ready = true;
+				opened();
 			};
 		} catch (e:Dynamic) {
 			error = Std.string(e);
@@ -38,36 +42,13 @@ class IndexedDbStorageAdapter implements IStorage {
 		}
 	}
 
-	function job<T>(key:Null<String>, mode:String, operation:Dynamic->Dynamic, decode:Dynamic->(T->Void)->Void, complete:T->Void, failed:String->T,
-			cancelled:T, ?discard:T->Void):IRequest {
-		var request:Request = null;
-		function finish(result:T) {
-			if (request.finish()) {
-				requests.remove(request);
-				queue.add(() -> complete(result));
-			} else if (discard != null)
-				discard(result);
-		}
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(cancelled));
-		});
-		requests.push(request);
-		var begin:Void->Void = null;
-		begin = () -> {
-			if (request.isSettled())
-				return;
-			if (!ready) {
-				queue.add(begin);
-				return;
-			}
-			// A null key is the whole store (clear).
-			if (!live || key != null && !AssetPath.valid(key)) {
-				finish(failed("Invalid storage path or closed service"));
-				return;
-			}
+	// Runs operation in a transaction of mode once the database is open, then decode with its value; failed for a failure. Never answers during
+	// the call.
+	function transact<T>(mode:String, operation:Dynamic->Dynamic, decode:Dynamic->(T->Void)->Void, failed:String->T, done:T->Void):Void {
+		function begin():Void {
 			if (error != null) {
-				finish(failed(error));
+				var message = error;
+				js.Browser.window.setTimeout(() -> done(failed(message)), 0);
 				return;
 			}
 			try {
@@ -75,22 +56,25 @@ class IndexedDbStorageAdapter implements IStorage {
 					task:Dynamic = operation(tx.objectStore("files")),
 					value:Dynamic = null;
 				task.onsuccess = _ -> value = task.result;
-				tx.oncomplete = _ -> decode(value, finish);
-				tx.onerror = _ -> finish(failed(Std.string(tx.error)));
-				tx.onabort = _ -> finish(failed("Storage transaction aborted"));
+				tx.oncomplete = _ -> decode(value, done);
+				tx.onerror = _ -> done(failed(Std.string(tx.error)));
+				tx.onabort = _ -> done(failed("Storage transaction aborted"));
 			} catch (e:Dynamic) {
-				finish(failed(Std.string(e)));
+				var message = Std.string(e);
+				js.Browser.window.setTimeout(() -> done(failed(message)), 0);
 			}
-		};
-		queue.add(begin);
-		return request;
+		}
+		if (ready)
+			begin();
+		else
+			waiting.push(begin);
 	}
 
-	public function read(key:String, complete:StorageResult->Void):IRequest
-		return job(key, "readonly", store -> store.get(key), (value, finish:StorageResult->Void) -> {
+	public function read(key:String, maxBytes:Int, done:StorageResult->Void):Void
+		transact("readonly", store -> store.get(key), (value, finish:StorageResult->Void) -> {
 			if (value == null)
 				finish(Missing);
-			else if (value.size > 8 * 1024 * 1024)
+			else if (value.size > maxBytes)
 				finish(Failed("Stored file exceeds byte limit"));
 			else
 				value.arrayBuffer().then(data -> {
@@ -100,47 +84,33 @@ class IndexedDbStorageAdapter implements IStorage {
 					finish(Failed(Std.string(e)));
 					return null;
 				});
-		}, complete, message -> Failed(message), Cancelled);
+		}, message -> Failed(message), done);
 
-	public function write(key:String, bytes:Bytes, complete:StorageWriteResult->Void):IRequest {
+	public function write(key:String, bytes:Bytes, done:StorageWriteResult->Void):Void {
 		var blob = new js.html.Blob([new js.lib.Uint8Array(bytes.getData(), 0, bytes.length)]);
-		return job(key, "readwrite", store -> {
-			if (bytes.length > 8 * 1024 * 1024)
-				throw "Stored file exceeds byte limit";
-			return store.put(blob, key);
-		}, (_, finish) -> finish(Written), complete, message -> Failed(message),
-			Cancelled);
+		transact("readwrite", store -> store.put(blob, key), (_, finish) -> finish(Written), message -> Failed(message), done);
 	}
 
-	public function remove(key:String, complete:StorageWriteResult->Void):IRequest
-		return job(key, "readwrite", store -> store.delete(key), (_, finish) -> finish(Written), complete, message -> Failed(message), Cancelled);
+	public function remove(key:String, done:StorageWriteResult->Void):Void
+		transact("readwrite", store -> store.delete(key), (_, finish) -> finish(Written), message -> Failed(message), done);
 
-	public function clear(complete:StorageWriteResult->Void):IRequest
-		return job(null, "readwrite", store -> store.clear(), (_, finish) -> finish(Written), complete, message -> Failed(message), Cancelled);
+	public function clear(done:StorageWriteResult->Void):Void
+		transact("readwrite", store -> store.clear(), (_, finish) -> finish(Written), message -> Failed(message), done);
 
-	public function source(key:String, complete:StorageSourceResult->Void):IRequest
-		return job(key, "readonly", store -> store.get(key), (value, finish:StorageSourceResult->Void) -> {
+	public function lease(key:String, done:StorageSourceResult->Void):Void
+		transact("readonly", store -> store.get(key), (value, finish:StorageSourceResult->Void) -> {
 			if (value == null)
 				finish(Missing);
 			else {
 				var url = js.html.URL.createObjectURL(value);
 				finish(Local({location: url, release: () -> js.html.URL.revokeObjectURL(url)}));
 			}
-		}, complete,
-			message -> StorageSourceResult.Failed(message), StorageSourceResult.Cancelled, result -> switch result {
-				case Local(value): value.release();
-				case _:
-			});
+		}, message -> StorageSourceResult.Failed(message), done);
 
-	public function poll():Void
-		queue.poll();
+	/** Nothing to deliver: IndexedDB's callbacks already run on the host thread. */
+	public function poll():Void {}
 
-	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
-		queue.poll();
+	public function shutdown():Void
 		if (db != null)
 			db.close();
-	}
 }

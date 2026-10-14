@@ -1,11 +1,11 @@
 package helix.host;
 
-import helix.assets.IFetch;
-import helix.assets.IStorage;
+import helix.assets.IHttp;
+import helix.assets.IStore;
 import helix.audio.IAudio;
 import helix.debug.ITestHarness;
 import helix.graphics.IGraphics;
-import helix.graphics.IImages;
+import helix.graphics.IImageDecoder;
 import helix.input.IInputDevice;
 
 /** A profile's choice of adapter for each platform contract, which the Runner builds the app's Services over. */
@@ -20,16 +20,16 @@ typedef Adapters = {
 	var audio:IAudio;
 
 	/** Image decoding. */
-	var images:IImages;
+	var images:IImageDecoder;
 
-	/** Downloads. */
-	var fetch:IFetch;
+	/** HTTP downloads. */
+	var http:IHttp;
 
 	/** The writable cache downloaded assets are kept in. */
-	var storage:IStorage;
+	var storage:IStore;
 
-	/** The assets shipped with the build, read when base is null. */
-	var packaged:IStorage;
+	/** The assets shipped with the build, read when base is null (read-only). */
+	var packaged:IStore;
 
 	/** The URL prefix assets are fetched from; null reads them from packaged instead. */
 	var base:Null<String>;

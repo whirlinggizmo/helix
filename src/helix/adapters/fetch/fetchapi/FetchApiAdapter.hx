@@ -1,132 +1,71 @@
 package helix.adapters.fetch.fetchapi;
 
-import helix.assets.IFetch;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.core.WorkQueue;
 import haxe.io.Bytes;
+import helix.assets.IHttp;
 
-/** Browser IFetch (adapter level) over fetch(), reading the body as it arrives: timeoutSeconds covers the whole transfer, cancel aborts it, and the progress total is null for a compressed body. */
-class FetchApiAdapter implements IFetch {
-	var queue = new WorkQueue();
-	var jobs:Array<Void->Void> = [];
-	var requests:Array<IRequest> = [];
-	var active = 0;
-	var live = true;
+/** IHttp in a browser over fetch(): the body read as it arrives, abort through an AbortController. */
+class FetchApiAdapter implements IHttp {
+	var controllers:Array<js.html.AbortController> = [];
 
-	/** Creates the adapter; fetches start from poll. */
+	/** No transfers yet. */
 	public function new() {}
 
-	public function fetch(spec:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void):IRequest {
-		var controller = new js.html.AbortController(), request:Request = null, timer = 0, started = false, cancelled = false, progressPending = false;
-		function finish(result:FetchResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				if (started)
-					active--;
-				if (timer != 0)
-					js.Browser.window.clearTimeout(timer);
-				queue.add(() -> complete(result));
+	public function get(url:String, noCache:Bool, head:(Int, Map<String, String>) -> Void, body:Bytes->Void, end:Null<String>->Void):Void->Void {
+		var controller = new js.html.AbortController(), stopped = false;
+		controllers.push(controller);
+		function finish(error:Null<String>):Void
+			if (!stopped) {
+				stopped = true;
+				controllers.remove(controller);
+				end(error);
 			}
-		}
-		request = new Request(() -> {
-			cancelled = true;
-			controller.abort();
-			requests.remove(request);
-			if (started)
-				active--;
-			if (timer != 0)
-				js.Browser.window.clearTimeout(timer);
-			queue.add(() -> complete(Cancelled));
-		});
-		requests.push(request);
-		var limit = spec.maxBytes == null ? 8 * 1024 * 1024 : spec.maxBytes,
-			timeout = spec.timeoutSeconds == null ? 15. : spec.timeoutSeconds;
-		jobs.push(() -> {
-			if (request.isSettled())
-				return;
-			if (!live || limit <= 0 || !Math.isFinite(timeout) || timeout <= 0) {
-				finish(Failed("Invalid fetch request or closed service"));
-				return;
-			}
-			started = true;
-			active++;
-			timer = js.Browser.window.setTimeout(() -> {
-				controller.abort();
-				finish(Failed("Fetch timeout"));
-			}, Std.int(timeout * 1000));
-			js.Browser.window.fetch(spec.url,
-				{signal: controller.signal, cache: spec.noCache == true ? js.html.RequestCache.NO_STORE : js.html.RequestCache.DEFAULT})
-				.then(response -> {
-					var headers:Map<String, String> = [];
-					response.headers.forEach((value, name, _) -> headers[name.toLowerCase()] = value);
-					var length = Std.parseInt(headers["content-length"]),
-						total = headers.exists("content-encoding") ? null : length;
-					var reader:Dynamic = (cast response : Dynamic).body == null ? null : (cast response : Dynamic).body.getReader(),
-						buffer = new haxe.io.BytesBuffer(), received = 0;
-					function accept(data:Bytes):Bool {
-						if (request.isSettled())
-							return false;
-						received += data.length;
-						if (received > limit) {
-							controller.abort();
-							finish(Failed("Fetch exceeds byte limit"));
-							return false;
-						}
-						buffer.addBytes(data, 0, data.length);
-						if (progress != null && !progressPending) {
-							progressPending = true;
-							queue.add(() -> {
-								progressPending = false;
-								if (!cancelled)
-									progress({received: received, total: total});
-							});
-						}
-						return true;
-					}
-					if (reader == null) {
-						finish(Response({status: response.status, headers: headers, bytes: Bytes.alloc(0)}));
+		js.Browser.window.fetch(url, {signal: controller.signal, cache: noCache ? js.html.RequestCache.NO_STORE : js.html.RequestCache.DEFAULT})
+			.then(response -> {
+				if (stopped)
+					return null;
+				var headers:Map<String, String> = [];
+				response.headers.forEach((value, name, _) -> headers[name.toLowerCase()] = value);
+				head(response.status, headers);
+				var reader:Dynamic = (cast response : Dynamic).body == null ? null : (cast response : Dynamic).body.getReader();
+				if (reader == null) {
+					finish(null);
+					return null;
+				}
+				var read:Void->Void = null;
+				read = () -> reader.read().then(part -> {
+					if (stopped)
 						return null;
+					if (part.done)
+						finish(null);
+					else {
+						var chunk:js.lib.Uint8Array = cast part.value;
+						body(Bytes.ofData(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength)));
+						read();
 					}
-					var read:Void->Void = null;
-					read = () -> {
-						reader.read().then(part -> {
-							if (request.isSettled())
-								return null;
-							if (part.done)
-								finish(Response({status: response.status, headers: headers, bytes: buffer.getBytes()}));
-							else {
-								var chunk:js.lib.Uint8Array = cast part.value;
-								if (accept(Bytes.ofData(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength))))
-									read();
-							}
-							return null;
-						}, error -> {
-							finish(Failed(Std.string(error)));
-							return null;
-						});
-					};
-					read();
 					return null;
 				}, error -> {
-					finish(Failed(Std.string(error)));
+					finish(Std.string(error));
 					return null;
 				});
-		});
-		return request;
+				read();
+				return null;
+			}, error -> {
+				finish(Std.string(error));
+				return null;
+			});
+		return () -> if (!stopped) {
+			stopped = true;
+			controllers.remove(controller);
+			controller.abort();
+		};
 	}
 
-	public function poll():Void {
-		while (active < 2 && jobs.length > 0)
-			jobs.shift()();
-		queue.poll();
-	}
+	/** Nothing to deliver: the page's callbacks already run on the host thread. */
+	public function poll():Void {}
 
 	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
-		jobs = [];
-		queue.poll();
+		for (controller in controllers.copy())
+			controller.abort();
+		controllers = [];
 	}
 }

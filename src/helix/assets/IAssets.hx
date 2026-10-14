@@ -1,8 +1,8 @@
 package helix.assets;
 
 import haxe.io.Bytes;
-import helix.assets.IStorage.LocalAudio;
-import helix.assets.IStorage.StorageWriteResult;
+import helix.assets.Storage.Lease;
+import helix.assets.Storage.StorageWriteResult;
 
 /** How an asset load ended: its bytes, a failure message, or cancellation. */
 enum AssetResult {
@@ -13,7 +13,7 @@ enum AssetResult {
 
 /** Where a streamed audio asset is read from: a leased local copy, which its holder releases, or a remote URL. */
 enum AudioLocation {
-	Stored(value:LocalAudio);
+	Stored(value:Lease);
 	Remote(url:String);
 }
 

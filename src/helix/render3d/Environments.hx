@@ -6,7 +6,7 @@ import helix.assets.IReloadable;
 import helix.assets.IRequest;
 import helix.assets.Request;
 import helix.graphics.IGraphics;
-import helix.graphics.IImages;
+import helix.graphics.ImageDecoding;
 
 /** How an environment load ended. */
 enum EnvironmentLoadResult {
@@ -22,7 +22,7 @@ enum EnvironmentLoadResult {
 	loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does. */
 class Environments implements IReloadable {
 	var assets:IAssets;
-	var images:IImages;
+	var images:ImageDecoding;
 	var gpu:IGraphics;
 	var live = true;
 	var budgetMs = 4.;
@@ -34,7 +34,7 @@ class Environments implements IReloadable {
 	var queue:Array<{path:String, bake:EnvironmentBake, done:Null<String>->Void}> = [];
 
 	/** Loads through assets, decodes 8-bit images with images and uploads to gpu. */
-	public function new(assets:IAssets, images:IImages, gpu:IGraphics) {
+	public function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics) {
 		this.assets = assets;
 		this.images = images;
 		this.gpu = gpu;

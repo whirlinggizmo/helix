@@ -1,79 +1,61 @@
 package helix.adapters.storage.filesystem;
 
-import helix.assets.IStorage;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.assets.AssetPath;
-import helix.core.WorkQueue;
 import haxe.io.Bytes;
 import haxe.io.Path;
+import helix.adapters.internal.Mailbox;
+import helix.assets.IStore;
+import helix.assets.Storage.StorageResult;
+import helix.assets.Storage.StorageSourceResult;
+import helix.assets.Storage.StorageWriteResult;
 import sys.thread.Thread;
-import sys.thread.Deque;
 
-/** Bounded worker queue; completed writes replace a sibling temporary file. */
-class FileStorageAdapter implements IStorage {
+/** IStore natively: files under a root directory, a key as a relative path, each operation on a worker thread; a write goes to a sibling
+	temporary file renamed over the old one, so a reader never sees half a file. A lease is the file's path, with nothing to release. */
+class FileStorageAdapter implements IStore {
 	var root:String;
-	var readonly:Bool;
-	var done = new Deque<Void->Void>();
-	var queue = new WorkQueue();
-	var jobs:Array<Void->Void> = [];
-	var requests:Array<IRequest> = [];
-	var active = 0;
-	var live = true;
+	var mailbox = new Mailbox();
 	var serial = 0;
 
-	/** Stores files under the root directory, a key as a relative path; readonly refuses write and remove (packaged assets). A source lease is the file's path, with nothing to release. */
-	public function new(root:String, readonly = false) {
+	/** Files under root. */
+	public function new(root:String)
 		this.root = root;
-		this.readonly = readonly;
+
+	/** Where a program's cache goes on this desktop, for company and product: under $XDG_CACHE_HOME (or ~/.cache) on Linux, ~/Library/Caches on
+		macOS, and %LOCALAPPDATA%\<company>\<product>\cache on Windows (that folder is the program's own, not only its cache). null when the
+		user's directories aren't known. */
+	public static function getCacheDirectory(company:String, product:String):Null<String> {
+		var system = Sys.systemName();
+		if (system == "Windows") {
+			var local = Sys.getEnv("LOCALAPPDATA");
+			return local == null || local == "" ? null : Path.join([local, company, product, "cache"]);
+		}
+		var home = Sys.getEnv("HOME");
+		if (system == "Mac")
+			return home == null || home == "" ? null : Path.join([home, "Library/Caches", company, product]);
+		var xdg = Sys.getEnv("XDG_CACHE_HOME");
+		var base = xdg != null && StringTools.startsWith(xdg, "/") ? xdg : home == null || home == "" ? null : Path.join([home, ".cache"]);
+		return base == null ? null : Path.join([base, company, product]);
 	}
 
-	function path(key:String):String {
-		if (!AssetPath.valid(key))
-			throw "Invalid storage path";
-		return Path.join([root, key]);
-	}
-
-	function job<T>(work:Void->T, complete:T->Void, cancelled:T):IRequest {
-		var request:Request = null;
-		request = new Request(() -> {
-			requests.remove(request);
-			queue.add(() -> complete(cancelled));
+	// Runs work on a worker thread and hands its result to done on the host thread.
+	function run<T>(work:Void->T, done:T->Void):Void
+		Thread.create(() -> {
+			var result = work();
+			mailbox.post(() -> done(result));
 		});
-		requests.push(request);
-		jobs.push(() -> {
-			if (request.isSettled())
-				return;
-			if (!live) {
-				request.cancel();
-				return;
-			}
-			active++;
-			Thread.create(() -> {
-				var result = work();
-				done.add(() -> {
-					active--;
-					if (request.finish()) {
-						requests.remove(request);
-						complete(result);
-					}
-				});
-			});
-		});
-		return request;
-	}
 
-	public function read(key:String, complete:StorageResult->Void):IRequest
-		return job(() -> try {
-			var file = path(key);
+	public function read(key:String, maxBytes:Int, done:StorageResult->Void):Void {
+		var file = Path.join([root, key]);
+		run(() -> try {
 			if (!sys.FileSystem.exists(file))
-				Missing;
-			else if (sys.FileSystem.stat(file).size > 8 * 1024 * 1024)
-				Failed("Stored file exceeds byte limit");
+				StorageResult.Missing;
+			else if (sys.FileSystem.stat(file).size > maxBytes)
+				StorageResult.Failed("Stored file exceeds byte limit");
 			else
-				Stored(sys.io.File.getBytes(file));
+				StorageResult.Stored(sys.io.File.getBytes(file));
 		} catch (error:Dynamic)
-			Failed(Std.string(error)), complete, Cancelled);
+			StorageResult.Failed(Std.string(error)), done);
+	}
 
 	/** Creates dir and its parents. Writes run on several threads, and two may create the same directory at once: one that exists by the time
 		creating it fails is fine. */
@@ -84,17 +66,12 @@ class FileStorageAdapter implements IStorage {
 			if (!sys.FileSystem.exists(dir) || !sys.FileSystem.isDirectory(dir))
 				throw error;
 
-	public function write(key:String, bytes:Bytes, complete:StorageWriteResult->Void):IRequest {
-		var copy = bytes.sub(0, bytes.length), suffix = ++serial;
-		return job(() -> try {
-			if (readonly)
-				throw "Read-only storage";
-			if (copy.length > 8 * 1024 * 1024)
-				throw "Stored file exceeds byte limit";
-			var file = path(key), temp = file + ".part-" + suffix;
+	public function write(key:String, bytes:Bytes, done:StorageWriteResult->Void):Void {
+		var file = Path.join([root, key]), temp = file + ".part-" + (++serial);
+		run(() -> try {
 			makeDirectory(Path.directory(file));
 			try {
-				sys.io.File.saveBytes(temp, copy);
+				sys.io.File.saveBytes(temp, bytes);
 				sys.FileSystem.rename(temp, file);
 			} catch (error:Dynamic) {
 				if (sys.FileSystem.exists(temp))
@@ -103,29 +80,26 @@ class FileStorageAdapter implements IStorage {
 			}
 			Written;
 		} catch (error:Dynamic)
-			StorageWriteResult.Failed(Std.string(error)), complete, StorageWriteResult.Cancelled);
+			StorageWriteResult.Failed(Std.string(error)), done);
 	}
 
-	public function remove(key:String, complete:StorageWriteResult->Void):IRequest
-		return job(() -> try {
-			if (readonly)
-				throw "Read-only storage";
-			var file = path(key);
+	public function remove(key:String, done:StorageWriteResult->Void):Void {
+		var file = Path.join([root, key]);
+		run(() -> try {
 			if (sys.FileSystem.exists(file))
 				sys.FileSystem.deleteFile(file);
 			Written;
 		} catch (error:Dynamic)
-			StorageWriteResult.Failed(Std.string(error)), complete, StorageWriteResult.Cancelled);
+			StorageWriteResult.Failed(Std.string(error)), done);
+	}
 
-	public function clear(complete:StorageWriteResult->Void):IRequest
-		return job(() -> try {
-			if (readonly)
-				throw "Read-only storage";
+	public function clear(done:StorageWriteResult->Void):Void
+		run(() -> try {
 			if (sys.FileSystem.exists(root))
 				removeContents(root);
 			Written;
 		} catch (error:Dynamic)
-			StorageWriteResult.Failed(Std.string(error)), complete, StorageWriteResult.Cancelled);
+			StorageWriteResult.Failed(Std.string(error)), done);
 
 	/** Deletes what dir holds, leaving dir itself. */
 	static function removeContents(dir:String):Void
@@ -138,33 +112,20 @@ class FileStorageAdapter implements IStorage {
 				sys.FileSystem.deleteFile(path);
 		}
 
-	public function source(key:String, complete:StorageSourceResult->Void):IRequest
-		return job(() -> try {
-			var file = path(key);
+	public function lease(key:String, done:StorageSourceResult->Void):Void {
+		var file = Path.join([root, key]);
+		run(() -> try {
 			if (!sys.FileSystem.exists(file))
 				StorageSourceResult.Missing;
 			else
 				StorageSourceResult.Local({location: file, release: () -> {}});
 		} catch (error:Dynamic)
-			StorageSourceResult.Failed(Std.string(error)), complete, StorageSourceResult.Cancelled);
-
-	public function poll():Void {
-		while (true) {
-			var work = done.pop(false);
-			if (work == null)
-				break;
-			queue.add(work);
-		}
-		while (live && active < 2 && jobs.length > 0)
-			jobs.shift()();
-		queue.poll();
+			StorageSourceResult.Failed(Std.string(error)), done);
 	}
 
-	public function shutdown():Void {
-		live = false;
-		for (request in requests.copy())
-			request.cancel();
-		jobs = [];
-		queue.poll();
-	}
+	public function poll():Void
+		mailbox.deliver();
+
+	/** Nothing to close: a worker still running finishes on its own, and its answer is dropped. */
+	public function shutdown():Void {}
 }

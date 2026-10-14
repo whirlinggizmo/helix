@@ -1,8 +1,8 @@
 package helix.host;
 
 import helix.assets.IAssets;
-import helix.assets.IFetch;
-import helix.assets.IStorage;
+import helix.assets.Fetch;
+import helix.assets.Storage;
 import helix.audio.AudioResources;
 import helix.audio.IAudio;
 import helix.debug.ITestHarness;
@@ -30,10 +30,10 @@ class Services {
 	public var assets(default, null):IAssets;
 
 	/** Downloads. */
-	public var fetch(default, null):IFetch;
+	public var fetch(default, null):Fetch;
 
 	/** The writable cache. */
-	public var storage(default, null):IStorage;
+	public var storage(default, null):Storage;
 
 	/** Sounds loaded through the assets and decoded for audio. */
 	public var audioResources(default, null):AudioResources;

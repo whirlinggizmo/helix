@@ -26,7 +26,7 @@ class BrowserWebGL2Profile {
 				input: new DomInputAdapter(host.getCanvas()),
 				audio: audio,
 				images: new CanvasImagesAdapter(),
-				fetch: new FetchApiAdapter(),
+				http: new FetchApiAdapter(),
 				storage: new IndexedDbStorageAdapter(cacheName),
 				packaged: new IndexedDbStorageAdapter(cacheName + "-packaged"),
 				base: assetBase,

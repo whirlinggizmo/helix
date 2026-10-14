@@ -14,7 +14,7 @@ class ServiceEnvironment {
 		var args = Sys.args();
 		base = args[0];
 		storage = new FileStorageAdapter(args[1]);
-		packaged = new FileStorageAdapter(args[1] + "-unused", true);
+		packaged = new FileStorageAdapter(args[1] + "-unused");
 		audio = new SokolAudioAdapter();
 	}
 

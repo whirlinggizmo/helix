@@ -6,7 +6,7 @@ import helix.assets.IReloadable;
 import helix.assets.IRequest;
 import helix.assets.Request;
 import helix.graphics.IGraphics;
-import helix.graphics.IImages;
+import helix.graphics.ImageDecoding;
 import helix.graphics.Sampling;
 import helix.graphics.TextureFormat;
 
@@ -29,7 +29,7 @@ class Textures implements IReloadable {
 	];
 
 	var assets:IAssets;
-	var images:IImages;
+	var images:ImageDecoding;
 	var gpu:IGraphics;
 	var live = true;
 	// Textures loaded: each the file it came from, what it was asked for by (the path and filter: loads of both alike share it), whether it
@@ -44,8 +44,8 @@ class Textures implements IReloadable {
 	// Loads under way, by what they were asked for: those waiting on each.
 	var pending = new Map<String, {request:IRequest, waiting:Array<{request:Request, complete:TextureLoadResult->Void}>}>();
 
-	/** Loads through assets, decodes with images and uploads to gpu; poll polls images, and shutdown shuts nothing down but this service. */
-	public function new(assets:IAssets, images:IImages, gpu:IGraphics) {
+	/** Loads through assets, decodes with images (shared, polled by its owner) and uploads to gpu; shutdown shuts nothing down but this service. */
+	public function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics) {
 		this.assets = assets;
 		this.images = images;
 		this.gpu = gpu;
@@ -248,10 +248,6 @@ class Textures implements IReloadable {
 			case _:
 		});
 	}
-
-	/** Delivers finished decodes; the host calls it once a frame. */
-	public function poll():Void
-		images.poll();
 
 	/** Refuses new loads; the textures already loaded stay until released. */
 	public function shutdown():Void

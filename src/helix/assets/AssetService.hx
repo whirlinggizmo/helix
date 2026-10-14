@@ -2,14 +2,14 @@ package helix.assets;
 
 import helix.core.WorkQueue;
 import helix.assets.IAssets;
-import helix.assets.IStorage;
-import helix.assets.IFetch;
+import helix.assets.Storage;
+import helix.assets.Fetch;
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
 class AssetService implements IAssets {
-	var fetcher:IFetch;
-	var cache:IStorage;
-	var packaged:IStorage;
+	var fetcher:Fetch;
+	var cache:Storage;
+	var packaged:Storage;
 	var base:Null<String>;
 	var queue = new WorkQueue();
 	var live = true;
@@ -24,7 +24,7 @@ class AssetService implements IAssets {
 		return reloads;
 
 	/** Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three. */
-	public function new(fetcher:IFetch, cache:IStorage, packaged:IStorage, base:Null<String>) {
+	public function new(fetcher:Fetch, cache:Storage, packaged:Storage, base:Null<String>) {
 		this.fetcher = fetcher;
 		this.cache = cache;
 		this.packaged = packaged;

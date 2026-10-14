@@ -41,16 +41,16 @@ As built today. The audit's plan changes several contracts; the target shape is 
 | `ITestHarness` | `harness/dom` (browser), `harness/stdio` (native) | Hands a check the program's result. |
 | `IInput` | `input/dom` (browser), `input/sokol` + `input/evdev` C (native) | Keyboard, mouse, touch and gamepad events and devices. |
 | `IAudio` | `audio/webaudio` (browser), `audio/sokol` + `audio/libsndfile` C (native) | Output, clips and voices, streaming, compressed decoding. |
-| `IFetch` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | Downloads. |
-| `IStorage` | `storage/indexeddb` (browser), `storage/filesystem` (native) | The writable cache. |
-| `IImages` | `images/canvas` (browser), `images/stb` + C (native) | Image decoding. |
+| `IHttp` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
+| `IStore` | `storage/indexeddb` (browser), `storage/filesystem` (native) | Files by key (read, write, remove, clear, lease). The shared `Storage` owns key checks, the size limit, read-only refusal and queuing. |
+| `IImageDecoder` | `images/canvas` (browser), `images/stb` + C (native) | Bytes to RGBA. The shared `ImageDecoding` owns queuing, cancellation and shutdown. |
 
 ### Target shape (decided)
 
 - **Host: done** (DECISIONS 81). Left: backend facts (`Adapters.info`) are still untyped.
 - **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
-- **Images.** `IImageDecoder`: bytes in, RGBA out, and nothing else (the browser's own decoder, stb natively); queuing, cancellation and shutdown in shared code.
-- **Shared async plumbing.** One job pool in the engine (requests, the queue, a concurrency cap as policy, cancel on shutdown, hand-off to the host thread) under one frame budget; adapters keep only their platform calls and the hand-off mechanism.
+- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
+- **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IHttp`; a shared service on top for what's policy (reconnecting, queuing messages).
 - **Audio, fetch, storage, input:** as in [ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)'s plan.
 
 ## Graphics

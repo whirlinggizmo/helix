@@ -2,6 +2,9 @@ package helix.host;
 
 import helix.app.IApp;
 import helix.assets.AssetService;
+import helix.assets.Fetch;
+import helix.assets.Storage;
+import helix.graphics.ImageDecoding;
 import helix.audio.AudioResources;
 
 /** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
@@ -18,6 +21,7 @@ class Runner {
 	var adapters:Adapters;
 	var app:IApp;
 	var resources:AssetService;
+	var decoding:ImageDecoding;
 	var clock = new FrameClock();
 	var frameCpu = 0.;
 	var frameInterval = 0.;
@@ -69,17 +73,19 @@ class Runner {
 	function init():Void {
 		adapters = compose();
 		var a = adapters, s = services;
-		resources = new AssetService(a.fetch, a.storage, a.packaged, a.base);
+		var fetch = new Fetch(a.http), storage = new Storage(a.storage);
+		decoding = new ImageDecoding(a.images);
+		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
 		s.graphics = a.graphics;
 		s.input = a.input;
 		s.audio = a.audio;
 		s.window = host.getWindow();
-		s.fetch = a.fetch;
-		s.storage = a.storage;
+		s.fetch = fetch;
+		s.storage = storage;
 		s.assets = resources;
 		s.audioResources = new AudioResources(resources, a.audio);
-		s.textures = new helix.render2d.Textures(resources, a.images, a.graphics);
-		s.environments = new helix.render3d.Environments(resources, a.images, a.graphics);
+		s.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
+		s.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
 		s.harness = a.harness;
 		app.init();
 	}
@@ -91,7 +97,7 @@ class Runner {
 		previousFrame = now;
 		resources.poll();
 		services.audioResources.poll();
-		services.textures.poll();
+		decoding.poll();
 		services.environments.poll();
 		adapters.input.poll();
 		app.frame(clock.getDelta());
@@ -106,7 +112,7 @@ class Runner {
 		services.audioResources.shutdown();
 		services.textures.shutdown();
 		services.environments.shutdown();
-		adapters.images.shutdown();
+		decoding.shutdown();
 		resources.shutdown();
 		app.cleanup();
 		adapters.audio.shutdown();
