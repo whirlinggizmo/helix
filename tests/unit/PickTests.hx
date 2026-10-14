@@ -26,6 +26,7 @@ class PickTests {
 		rays();
 		models();
 		skinned();
+		sprites();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -143,5 +144,45 @@ class PickTests {
 			"A skinned model is hit where its joints put it");
 		c.setView(1.6, .3, 10, 1.6, .3, 0);
 		check(stage.pick(c, 400, 300) == null, "Not where it was bound (wgrender-c's 6e79587: ghost arms in the rest pose)");
+	}
+
+	// The framebuffer pixel a world point is drawn at, through c.
+	static function pixel(c:Camera3D, x:Float, y:Float, z:Float):Array<Float> {
+		var m = c.getViewProjection();
+		var cx = m.get(0) * x + m.get(4) * y + m.get(8) * z + m.get(12),
+			cy = m.get(1) * x + m.get(5) * y + m.get(9) * z + m.get(13),
+			cw = m.get(3) * x + m.get(7) * y + m.get(11) * z + m.get(15);
+		return [
+			(cx / cw * .5 + .5) * c.getViewportWidth(),
+			(.5 - cy / cw * .5) * c.getViewportHeight()
+		];
+	}
+
+	static function sprites():Void {
+		var gpu = new CountingGraphics(), stage = new Stage3D(gpu), c = camera();
+		c.setView(0, 4, 10, 0, 0, 0);
+		var logo = Node.sprite(helix.render2d.Texture2D.fromRgba(gpu, 2, 2, haxe.io.Bytes.alloc(16)));
+		logo.setSpriteSize(2, 2);
+		logo.setPosition(3, 0, 0);
+		stage.add(logo);
+		var at = pixel(c, 3.8, .8, 0), hit = stage.pick(c, at[0], at[1]);
+		check(hit != null && hit.getNode() == logo, "A camera-facing sprite, near its corner");
+		at = pixel(c, 4.3, 0, 0);
+		check(stage.pick(c, at[0], at[1]) == null, "Past its edge: missed");
+		var label = Node.text3d("PICK ME", 1);
+		label.setPosition(-3, 0, 0);
+		stage.add(label);
+		at = pixel(c, -3, 0, 0);
+		hit = stage.pick(c, at[0], at[1]);
+		check(hit != null && hit.getNode() == label, "A text by its block");
+		// In front of a model, the sprite wins; behind it, the model does.
+		var box = Node.model(Mesh.cube(1, 1, 1), new Material());
+		box.setPosition(3, 0, -2);
+		stage.add(box);
+		at = pixel(c, 3, 0, 0);
+		check(stage.pick(c, at[0], at[1]).getNode() == logo, "The sprite before the box");
+		logo.setPosition(3, 0, -4);
+		at = pixel(c, 3, 0, -2);
+		check(stage.pick(c, at[0], at[1]).getNode() == box, "The box before the sprite");
 	}
 }

@@ -83,6 +83,7 @@ class Stage3D {
 	var pickRay = new Ray();
 	var pickHit:PickHit;
 	var pickBest = 0.;
+	var pickCamera:Null<Camera3D>;
 	var pickInverse = new Mat4();
 	var pickPalette:JointPalette;
 	var posedVertices = new Vector<Float>(0);
@@ -541,16 +542,18 @@ class Stage3D {
 		shadowCasters += n;
 	}
 
-	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model it shows there, into
+	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into
 		hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a
 		disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a
 		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
-		blended or its tint) only where its alpha reaches a half. World matrices are brought up to date, as a draw does. */
+		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
 	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit):Null<PickHit>
-		return camera.getRay(x, y, pickRay) ? pickAlong(pickRay, hit) : null;
+		return camera.getRay(x, y, pickRay) ? pickAlong(pickRay, camera, hit) : null;
 
-	/** The nearest model along ray, as pick says, into hit (a new one when not given); null for none. */
-	public function pickAlong(ray:Ray, ?hit:PickHit):Null<PickHit> {
+	/** The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as
+		camera shows them: without a camera, only models are hit. */
+	public function pickAlong(ray:Ray, ?camera:Camera3D, ?hit:PickHit):Null<PickHit> {
+		pickCamera = camera;
 		var result = hit != null ? hit : new PickHit();
 		result.clear();
 		if (ray != pickRay)
@@ -828,6 +831,8 @@ class Stage3D {
 					skinned.push(node);
 				case Model if (picking && node.isPickable()):
 					pickModel(node);
+				case SpriteNode | TextNode if (picking && node.isPickable() && pickCamera != null):
+					pickBest = sprites.pick(node, pickCamera, pickRay, pickBest, pickHit);
 				case _ if (picking):
 				case EmitterNode if (!gathering && !shown):
 					sprites.advanceEmitter(node);

@@ -203,6 +203,87 @@ class Sprites3D {
 		it.depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
 	}
 
+	/** Tests a sprite or text node against ray as camera shows it (its quad, or a text's whole block, facing as drawn): the distance along the
+		ray, recorded in hit when nearer than best, else best. A sprite without a texture, a text without text, or a see-through one (blended,
+		its tint's alpha under a half) isn't hit. */
+	public function pick(node:Node, camera:Camera3D, ray:Ray, best:Float, hit:PickHit):Float {
+		var w = node.getWorldMatrix(),
+			facing = node.getFacing(),
+			text = node.getKind() == TextNode;
+		if (text ? node.getText().length == 0 : node.getTexture() == null)
+			return best;
+		if ((text || node.getAlphaMode() == Blend || node.getAlphaMode() == Add) && (node.getTint() & 255) < 128)
+			return best;
+		var sx = length(w, 0),
+			sy = length(w, 4),
+			sz = length(w, 8),
+			height = facing == Ground ? sz : sy;
+		var width:Float, tall:Float;
+		if (text) {
+			var font = node.getFont() != null ? node.getFont() : builtIn();
+			width = helix.render2d.Text2D.measure(font, node.getText(), node.getTextSize());
+			tall = node.getTextSize();
+		} else {
+			width = node.getSpriteWidth();
+			tall = node.getSpriteHeight();
+		}
+		width *= sx;
+		tall *= height;
+		// The quad's axes as its facing draws it.
+		var fx = camera.getTargetX() - camera.getEyeX(),
+			fy = camera.getTargetY() - camera.getEyeY(),
+			fz = camera.getTargetZ() - camera.getEyeZ();
+		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+		cameraAxes(camera, fx / fl, fy / fl, fz / fl);
+		var right:Array<Float>, up:Array<Float>;
+		switch facing {
+			case Camera:
+				right = cameraRight;
+				up = cameraUp;
+			case Upright:
+				right = upright;
+				up = [0, 1, 0];
+			case Ground:
+				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				up = [-w.get(8) / sz, -w.get(9) / sz, -w.get(10) / sz];
+			case _:
+				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				up = [w.get(4) / sy, w.get(5) / sy, w.get(6) / sy];
+		}
+		// Where the ray meets its plane, then whether that's inside its rectangle about the pivot.
+		var nx = right[1] * up[2] - right[2] * up[1],
+			ny = right[2] * up[0] - right[0] * up[2],
+			nz = right[0] * up[1] - right[1] * up[0];
+		var dx = ray.getDirectionX(),
+			dy = ray.getDirectionY(),
+			dz = ray.getDirectionZ();
+		var facingRay = nx * dx + ny * dy + nz * dz;
+		if (Math.abs(facingRay) < 1e-9)
+			return best;
+		var px = w.get(12),
+			py = w.get(13),
+			pz = w.get(14),
+			ox = ray.getOriginX(),
+			oy = ray.getOriginY(),
+			oz = ray.getOriginZ();
+		var t = ((px - ox) * nx + (py - oy) * ny + (pz - oz) * nz) / facingRay;
+		if (t < 0 || t >= best)
+			return best;
+		var hx = ox + dx * t - px,
+			hy = oy + dy * t - py,
+			hz = oz + dz * t - pz;
+		var a = hx * right[0] + hy * right[1] + hz * right[2],
+			b = hx * up[0] + hy * up[1] + hz * up[2];
+		var pivotX = node.getPivotX(), pivotY = node.getPivotY();
+		if (a < -pivotX * width || a > (1 - pivotX) * width || b < (pivotY - 1) * tall || b > pivotY * tall)
+			return best;
+		var nl = Math.sqrt(nx * nx + ny * ny + nz * nz),
+			sign = facingRay > 0 ? -1 : 1;
+		hit.record(node, t, ox + dx * t, oy + dy * t, oz + dz * t, sx > 0 ? a / sx : 0, height > 0 ? b / height : 0, 0, sign * nx / nl, sign * ny / nl,
+			sign * nz / nl);
+		return t;
+	}
+
 	static inline function length(w:Mat4, column:Int):Float
 		return Math.sqrt(w.get(column) * w.get(column) + w.get(column + 1) * w.get(column + 1) + w.get(column + 2) * w.get(column + 2));
 
@@ -219,7 +300,16 @@ class Sprites3D {
 	/** Sorts the sprites collected, writes their records into one upload and the draw's uniforms: viewProjection, and the camera's right and up
 		(from forward and its up), and the upright facing's right. */
 	public function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
-		// The camera's right is forward across its up; its up, right across forward; upright, the right flattened onto the ground.
+		cameraAxes(camera, forwardX, forwardY, forwardZ);
+		viewProjection.writeTo(uniforms);
+		var values = cameraRight.concat([0]).concat(cameraUp).concat([0]).concat(upright).concat([0]);
+		for (i in 0...values.length)
+			uniforms.setFloat(64 + i * 4, values[i]);
+		finishPrepare(viewProjection);
+	}
+
+	// The camera's right is forward across its up; its up, right across forward; upright, the right flattened onto the ground.
+	function cameraAxes(camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
 		var rx = forwardY * uz - forwardZ * uy,
 			ry = forwardZ * ux - forwardX * uz,
@@ -238,10 +328,9 @@ class Sprites3D {
 			rx * forwardY - ry * forwardX
 		];
 		upright = [hl > 0 ? rx / hl : 1, 0, hl > 0 ? rz / hl : 0];
-		viewProjection.writeTo(uniforms);
-		var values = cameraRight.concat([0]).concat(cameraUp).concat([0]).concat(upright).concat([0]);
-		for (i in 0...values.length)
-			uniforms.setFloat(64 + i * 4, values[i]);
+	}
+
+	function finishPrepare(viewProjection:Mat4):Void {
 		drawn.resize(count);
 		for (i in 0...count)
 			drawn[i] = items[i];

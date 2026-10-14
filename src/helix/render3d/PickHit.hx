@@ -33,6 +33,7 @@ class PickHit {
 		return normal[axis];
 
 	@:allow(helix.render3d.Stage3D)
+	@:allow(helix.render3d.Sprites3D)
 	function record(node:Node, distance:Float, px:Float, py:Float, pz:Float, lx:Float, ly:Float, lz:Float, nx:Float, ny:Float, nz:Float):Void {
 		this.node = node;
 		this.distance = distance;
