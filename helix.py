@@ -15,10 +15,11 @@ UNIT={'InputTests':[],'HostTests':[],'AssetTests':[],'Render2DTests':['build/gen
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(shdc,native,audio_device):
-    """The shader tool tests, the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
+    """The adapter rule's check, the shader tool tests, the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
     sys.path.insert(0,str(ROOT/'tools'))
     from fixtures import generate
     generate()
+    run([sys.executable,'tools/adaptercheck.py'])
     for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py','--shdc',shdc or shutil.which('sokol-shdc') or 'sokol-shdc'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)

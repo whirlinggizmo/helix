@@ -34,7 +34,8 @@ def generate():
 
 def main():
     generate()
-    failures=0
+    # The adapter rule (docs/ARCHITECTURE.md), checked first: it takes a moment.
+    failures=subprocess.run([sys.executable,'tools/adaptercheck.py'],cwd=ROOT).returncode!=0
     for label,args in targets():
         result=subprocess.run(['haxe',*args,'--no-output'],cwd=ROOT,capture_output=True,text=True)
         ok=result.returncode==0

@@ -195,7 +195,7 @@ class EnvironmentTests {
 		var mid = (32 * size + 32) * 4;
 		check(near(table.get(mid) / 255, .72, .03) && near(table.get(mid + 1) / 255, .02, .02),
 			'Half and half: ${table.get(mid) / 255}, ${table.get(mid + 1) / 255}');
-		Sys.println('Environment: $checks checks passed');
+		Sys.println('{"passed":true,"checks":$checks}');
 	}
 
 	// A .hdr of width x height: flat, each pixel 1, 0.5, 0 but the last, 0.09375, 0, 0; or run-length encoded, red a run of eight 64s then
