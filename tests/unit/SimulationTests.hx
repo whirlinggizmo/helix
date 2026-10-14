@@ -26,7 +26,7 @@ class SimulationTests {
 
 	static function main():Void {
 		var g = new Game(), c = new Controls();
-		check(g.state == "title" && g.rocks.length == 6, "Drifting title field");
+		check(g.state == "title" && g.attract.length == 6 && g.rocks.length == 0, "A drifting title field: dressing, no game rocks");
 		c.start = true;
 		g.step(c);
 		check(g.state == "playing" && g.lives == 3 && g.wave == 1 && g.rocks.length == 4, "Start reference wave count");
@@ -54,7 +54,7 @@ class SimulationTests {
 		var best = g.best;
 		c.title = true;
 		g.step(c);
-		check(g.state == "title" && g.rocks.length == 6, "Return to title");
+		check(g.state == "title" && g.attract.length == 6 && g.rocks.length == 0, "Return to title");
 		c.title = false;
 		c.start = true;
 		g.step(c);
@@ -66,6 +66,24 @@ class SimulationTests {
 			b.step(c);
 		}
 		check(haxe.Json.stringify(a.snapshot()) == haxe.Json.stringify(b.snapshot()), "Seeded replay repeats exactly");
+		// When play starts doesn't matter: started after 5 title ticks or 300, the same input from the start gives the same game. A menu, a
+		// load or a frame's timing can delay the start without the game differing (the title's rocks are dressing).
+		var early = new Game(91), late = new Game(91), idle = new Controls();
+		for (_ in 0...5)
+			early.step(idle);
+		for (_ in 0...300)
+			late.step(idle);
+		for (g2 in [early, late]) {
+			var played = new Controls();
+			played.start = true;
+			g2.step(played);
+			played.start = false;
+			for (i in 0...1200) {
+				played.replay(i);
+				g2.step(played);
+			}
+		}
+		check(haxe.Json.stringify(early.snapshot()) == haxe.Json.stringify(late.snapshot()), "Started 5 or 300 ticks into the title: the same game");
 		g = new Game();
 		c = new Controls();
 		c.start = true;
@@ -157,6 +175,13 @@ class SimulationTests {
 		var timeout = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"never","timeout":1}]}');
 		timeout.advance(g.probe);
 		rejects(() -> timeout.advance(g.probe), "Unmet wait fails with bounded timeout");
+		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"x"}]}'), "A wait needs a limit");
+		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"x","timeout":5,"seconds":1}]}'),
+			"A wait has one limit");
+		var patient = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"never","seconds":30}]}');
+		for (_ in 0...500)
+			patient.advance(g.probe);
+		check(!patient.isDone(), "A wait in seconds outlasts any tick count, until its seconds pass");
 		var shots:Array<Null<String>> = [];
 		var shooter = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"title.png"},{"op":"screenshot"},{"op":"press","key":"Enter"}]}',
 			name -> shots.push(name));

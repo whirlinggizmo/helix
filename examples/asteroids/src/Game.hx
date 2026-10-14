@@ -35,6 +35,12 @@ class Game {
 	public var wave = 0;
 	public var ship = new Body(W * Q >> 1, H * Q >> 1, 0, 0, 12, 0, 192);
 	public var rocks:Array<Body> = [];
+
+	// The title screen's drifting rocks: dressing only, from a generator of their own, never part of a game (play starts from a fresh field).
+	public var attract:Array<Body> = [];
+
+	var attractRng = 0x2545f491;
+
 	public var bullets:Array<Body> = [];
 	public var particles:Array<Body> = [];
 	public var hits = 0;
@@ -101,8 +107,12 @@ class Game {
 		bullets = [];
 		particles = [];
 		thrusting = false;
-		for (_ in 0...6)
-			rocks.push(makeRock(3, random(W) * Q, random(H) * Q));
+		// The dressing's own generator: the game's isn't touched, so when play starts doesn't matter.
+		var gameRng = rng;
+		rng = attractRng;
+		attract = [for (_ in 0...6) makeRock(3, random(W) * Q, random(H) * Q)];
+		attractRng = rng;
+		rng = gameRng;
 	}
 
 	public function reset():Void {
@@ -111,6 +121,7 @@ class Game {
 		lives = 3;
 		wave = 0;
 		rocks = [];
+		attract = [];
 		bullets = [];
 		particles = [];
 		hits = 0;
@@ -198,7 +209,7 @@ class Game {
 			reset();
 		startDown = input.start;
 		if (state != "playing") {
-			for (rock in rocks) {
+			for (rock in rocks.concat(attract)) {
 				move(rock);
 				rock.angle = wrap(rock.angle + 1, 256);
 			}

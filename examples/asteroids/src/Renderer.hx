@@ -60,7 +60,7 @@ class Renderer {
 		for (i in 0...100)
 			batch.rect((i * 137 + 51) % Game.W, (i * 83 + 19) % Game.H, 1, 1, color);
 		setColor(.78, .80, .84);
-		for (body in game.rocks)
+		for (body in game.rocks.concat(game.attract))
 			rock(body);
 		for (body in game.bullets)
 			batch.rect(body.x / 256. - 2, body.y / 256. - 2, 4, 4, 0xffffffff);

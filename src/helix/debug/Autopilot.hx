@@ -4,7 +4,14 @@ import helix.input.IInput;
 import helix.input.Key;
 import helix.input.InputState;
 
-/** Bounded JSON commands produce normal input. Probes are supplied by the app. */
+/** Bounded JSON commands produce normal input, a tick at a time; probes (named values) are supplied by the app. A script replays alike on
+	every target when it keeps two rules:
+	- It waits on state, never on time, for anything that isn't the simulation's (a load, a menu, a screen appearing): `wait` on a probe, its
+	  limit in seconds (`"seconds"`); tick counts (`"timeout"`, `hold`) only for what the simulation itself does, once a wait has found it
+	  running.
+	- The game starts each replayed phase from a known state when it begins: play starting fresh from the seed (a new level), however late it
+	  starts; a title screen's motion is dressing, not part of the game. Then a menu, a slow load or a frame's timing can delay a start without
+	  the game differing. */
 class Autopilot {
 	var done = false;
 	var ticks = 0;
@@ -32,9 +39,10 @@ class Autopilot {
 	var elapsed = 0;
 	var input = new InputState();
 	var screenshot:Null<Null<String>->Void>;
+	var waitStarted = 0.;
 
 	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, screenshot; at most 128) and throws on anything invalid or
-		unknown. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
+		unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
 		one. */
 	public function new(json:String, ?screenshot:Null<String>->Void) {
 		this.screenshot = screenshot;
@@ -61,10 +69,16 @@ class Autopilot {
 					if (!integer(command.ticks, 1, 36000))
 						throw "Invalid hold duration";
 				case "wait":
-					fields(command, ["op", "probe", "timeout"], ["equals", "atLeast", "keys"]);
+					fields(command, ["op", "probe"], ["equals", "atLeast", "keys", "timeout", "seconds"]);
 					condition(command);
-					if (!integer(command.timeout, 1, 36000))
+					// Exactly one limit: ticks for what the simulation does, seconds for what happens outside it (a load, a menu).
+					if (Reflect.hasField(command, "timeout") == Reflect.hasField(command, "seconds"))
+						throw "A wait needs a timeout in ticks or in seconds";
+					if (Reflect.hasField(command, "timeout") && !integer(command.timeout, 1, 36000))
 						throw "Invalid wait timeout";
+					if (Reflect.hasField(command, "seconds")
+						&& (!Std.isOfType(command.seconds, Float) || !(command.seconds > 0) || command.seconds > 600))
+						throw "Invalid wait seconds";
 					if (command.keys != null)
 						keys(command.keys);
 				case "assert":
@@ -152,9 +166,11 @@ class Autopilot {
 				case "wait":
 					setKeys(command.keys == null ? [] : keys(command.keys));
 					value = probe(command.probe);
+					if (elapsed == 0)
+						waitStarted = haxe.Timer.stamp();
 					if (matches(command, value))
 						finish = true;
-					else if (elapsed >= command.timeout)
+					else if (Reflect.hasField(command, "timeout") ? elapsed >= command.timeout : haxe.Timer.stamp() - waitStarted >= command.seconds)
 						throw 'Autopilot timeout at command ' + index + ': ' + command.probe + '=' + haxe.Json.stringify(value);
 				case "assert":
 					value = probe(command.probe);

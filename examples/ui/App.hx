@@ -92,7 +92,8 @@ class App extends BaseApp {
 		levels = ui.panel("levels");
 		levels.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		list = ui.list([
-			for (i in 0...30) 'Level ${i + 1}: ${["The Belt", "Ice Field", "Debris", "The Rift", "Dark Side"][i % 5]}'
+			for (i in 0...30)
+				'Level ${i + 1}: ${["The Belt", "Ice Field", "Debris", "The Rift", "Dark Side"][i % 5]}'
 		], 6);
 		start = ui.button("Start");
 		backFromLevels = ui.button("Back");
