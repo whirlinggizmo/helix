@@ -145,6 +145,19 @@ class PickTests {
 			"A skinned model is hit where its joints put it");
 		c.setView(1.6, .3, 10, 1.6, .3, 0);
 		check(stage.pick(c, 400, 300) == null, "Not where it was bound (wgrender-c's 6e79587: ghost arms in the rest pose)");
+		// Gear swapped: the old part's model off the character, a new one (the strip a unit higher) bound to the same skeleton; the next pick
+		// tests the new one as posed, and the old is gone.
+		character.remove(model);
+		var gear = Mesh.fromArrays([0., 1, 0, 1, 1, 0, 0, 2, 0, 1, 1, 0, 2, 1, 0, 1, 2, 0], null, null, null, null,
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
+		var worn = Node.model(gear, new Material());
+		check(worn.bindSkeleton(character, skin), "The new part binds to the same skeleton");
+		character.add(worn);
+		c.setView(40.6, .3, 10, 40.6, .3, 0);
+		check(stage.pick(c, 400, 300) == null, "Where the old part was posed: nothing now");
+		c.setView(40.6, 1.3, 10, 40.6, 1.3, 0);
+		var swapped = stage.pick(c, 400, 300);
+		check(swapped != null && swapped.getNode() == worn, "The new part, where the skeleton poses it");
 	}
 
 	// The framebuffer pixel a world point is drawn at, through c.
