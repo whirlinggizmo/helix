@@ -4,7 +4,8 @@ import helix.adapters.internal.SokolNativeBuild;
 
 @:include("host.h")
 extern class HostBridge extends SokolNativeBuild {
-	@:native("helix_run") static function run(init:cpp.Callable<Void->Void>, frame:cpp.Callable<Void->Void>, cleanup:cpp.Callable<Void->Void>):Void;
+	@:native("helix_run") static function run(init:cpp.Callable<Void->Void>, frame:cpp.Callable<Void->Void>, cleanup:cpp.Callable<Void->Void>,
+		sampleCount:Int):Void;
 	@:native("helix_quit") static function quit():Void;
 	@:native("helix_width") static function width():Int;
 	@:native("helix_height") static function height():Int;

@@ -60,8 +60,9 @@ static void event(const sapp_event *e){
  }
 }
 
-void helix_run(void (*init)(void),void (*tick)(void),void (*cleanup)(void)){
+/* Opens the window, asking for sample_count samples a pixel (1: none), and runs its loop. */
+void helix_run(void (*init)(void),void (*tick)(void),void (*cleanup)(void),int sample_count){
  init_cb=init;frame_cb=tick;cleanup_cb=cleanup;
  sapp_run(&(sapp_desc){.init_cb=init_cb,.frame_cb=frame,.cleanup_cb=cleanup_cb,.event_cb=event,
-  .width=800,.height=600,.sample_count=1,.swap_interval=1,.high_dpi=false,.window_title="HeliX Haxe",.logger.func=slog_func});
+  .width=800,.height=600,.sample_count=sample_count,.swap_interval=1,.high_dpi=false,.window_title="HeliX Haxe",.logger.func=slog_func});
 }

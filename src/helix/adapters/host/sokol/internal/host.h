@@ -4,7 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void helix_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void));
+void helix_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void),int sample_count);
 void helix_quit(void);int helix_width(void);int helix_height(void);float helix_pixel_ratio(void);
 void helix_window_set_title(const char*title);int helix_window_width(void);int helix_window_height(void);void helix_window_set_size(int w,int h);
 int helix_window_can_move(void);int helix_window_x(void);int helix_window_y(void);void helix_window_set_position(int x,int y);

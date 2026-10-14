@@ -12,15 +12,18 @@ class SokolHostAdapter implements IHost {
 	static var cleanup:Void->Void;
 
 	var window = new SokolWindow();
+	var samples:Int;
 
-	/** The program's host; its window opens when run starts. */
-	public function new() {}
+	/** The program's host; its window opens when run starts, asking for samples a pixel (1: none). */
+	public function new(samples:Int) {
+		this.samples = samples;
+	}
 
 	public function run(init:Void->Void, frame:Void->Void, cleanup:Void->Void):Void {
 		SokolHostAdapter.init = init;
 		SokolHostAdapter.frame = frame;
 		SokolHostAdapter.cleanup = cleanup;
-		HostBridge.run(cpp.Callable.fromStaticFunction(onInit), cpp.Callable.fromStaticFunction(onFrame), cpp.Callable.fromStaticFunction(onCleanup));
+		HostBridge.run(cpp.Callable.fromStaticFunction(onInit), cpp.Callable.fromStaticFunction(onFrame), cpp.Callable.fromStaticFunction(onCleanup), samples);
 	}
 
 	static function onInit():Void

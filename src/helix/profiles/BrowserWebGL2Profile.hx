@@ -17,12 +17,15 @@ import helix.host.Services;
 /** The browser on WebGL2: the page's host and canvas, Web Audio, fetch, IndexedDB and the page's image decoder. */
 class BrowserWebGL2Profile {
 	/** Runs the app makeApp builds over its services, on the page's canvas, for identity: assets fetched from assetBase and cached in IndexedDB
-		as "<company>/<product>". The tick option keeps the drawing buffer between frames, for checks that read it. */
-	public static function run(identity:helix.host.Identity, assetBase:String, makeApp:Services->IApp):Void {
+		as "<company>/<product>", the canvas made as options ask (the defaults when not given). The tick option keeps the drawing buffer between
+		frames, for checks that read it. */
+	public static function run(identity:helix.host.Identity, assetBase:String, makeApp:Services->IApp, ?options:helix.host.WindowOptions):Void {
+		if (options == null)
+			options = new helix.host.WindowOptions();
 		var host = new DomHostAdapter(),
 			cacheName = identity.getCompany() + "/" + identity.getProduct();
 		var runner = new Runner(host, () -> {
-			var graphics = new WebGL2GraphicsAdapter(host.getCanvas(), host.getOption("tick") != null);
+			var graphics = new WebGL2GraphicsAdapter(host.getCanvas(), host.getOption("tick") != null, options.getSamples());
 			return {
 				graphics: graphics,
 				input: new DomInputSourceAdapter(host.getCanvas()),

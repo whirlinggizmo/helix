@@ -35,7 +35,7 @@ static int screen_width,screen_height,frame_ended;
 static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
 /* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A pipeline's flipped twin, by pipeline
    slot. */
-static struct{sg_view color,depth;sg_image depth_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
+static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 16
@@ -47,6 +47,9 @@ static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}s
 static struct{sg_image image;int width,height,written,bound,renamed;float *copy;sg_image extra_images[MAX_RENAMES];sg_view extra_views[MAX_RENAMES];}data_textures[256];
 /* Per buffer slot: whether it is a stream buffer (createBuffer's), rewritten each frame. */
 static int stream_buffers[256];
+/* The samples a pixel the window's framebuffer got (GL's count: what the window asked for, or fewer), read at setup. */
+static int window_samples=1;
+int helix_samples(void){return window_samples;}
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
     a few surface shaders, each several pipelines and their flipped twins. */
@@ -54,6 +57,7 @@ void helix_setup(void){
   .shader_pool_size=255,.pipeline_pool_size=255,.view_pool_size=255});
  sg_disable_stats();
  memset(samplers,0,sizeof samplers);
+ GLint n=0;glBindFramebuffer(GL_FRAMEBUFFER,0);glGetIntegerv(GL_SAMPLES,&n);window_samples=n>1?n:1;
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
@@ -256,15 +260,23 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
 /* A render target: a color image (8 bits a channel) sampled through the returned texture view, with a depth image for its passes. */
 uint32_t helix_target(int w,int h){
  if(w<=0||h<=0||w>16384||h>16384)return 0;
- /* The screen's formats (sokol's environment defaults), so the same pipelines draw into both. */
+ /* The screen's formats and samples (sokol's environment defaults), so the same pipelines draw into both: multisampled, its passes draw
+    into an image of the screen's samples, resolved at the pass's end into the one sampled. */
  const sg_environment_defaults defaults=sg_query_desc().environment.defaults;
- sg_image color=sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=defaults.color_format,.sample_count=1});
- sg_image depth=sg_make_image(&(sg_image_desc){.usage.depth_stencil_attachment=true,.width=w,.height=h,.pixel_format=defaults.depth_format,.sample_count=1});
- if(sg_query_image_state(color)!=SG_RESOURCESTATE_VALID||sg_query_image_state(depth)!=SG_RESOURCESTATE_VALID){sg_destroy_image(color);sg_destroy_image(depth);return 0;}
+ const int samples=defaults.sample_count>1?defaults.sample_count:1;
+ sg_image color=sg_make_image(&(sg_image_desc){.usage={.color_attachment=samples==1,.resolve_attachment=samples>1},.width=w,.height=h,
+  .pixel_format=defaults.color_format,.sample_count=1});
+ sg_image drawn=samples>1?sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=defaults.color_format,
+  .sample_count=samples}):color;
+ sg_image depth=sg_make_image(&(sg_image_desc){.usage.depth_stencil_attachment=true,.width=w,.height=h,.pixel_format=defaults.depth_format,.sample_count=samples});
+ if(sg_query_image_state(color)!=SG_RESOURCESTATE_VALID||sg_query_image_state(drawn)!=SG_RESOURCESTATE_VALID||sg_query_image_state(depth)!=SG_RESOURCESTATE_VALID){
+  sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);sg_destroy_image(depth);return 0;
+ }
  sg_view texture=sg_make_view(&(sg_view_desc){.texture.image=color});
  int slot=texture.id&0xffff;
- if(slot>=256){sg_destroy_view(texture);sg_destroy_image(color);sg_destroy_image(depth);return 0;}
- targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=color});
+ if(slot>=256){sg_destroy_view(texture);sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);sg_destroy_image(depth);return 0;}
+ targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=drawn});
+ if(samples>1){targets[slot].resolve=sg_make_view(&(sg_view_desc){.resolve_attachment.image=color});targets[slot].samples_image=drawn;}
  targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth});
  targets[slot].depth_image=depth;targets[slot].width=w;targets[slot].height=h;
  return texture.id;
@@ -303,7 +315,7 @@ int helix_begin_target(uint32_t target,uint32_t color){
  if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
  active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
-  .attachments={.colors[0]=targets[slot].color,.depth_stencil=targets[slot].depth}});
+  .attachments={.colors[0]=targets[slot].color,.resolves[0]=targets[slot].resolve,.depth_stencil=targets[slot].depth}});
  return 1;
 }
 int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
@@ -325,7 +337,7 @@ int helix_read_pixels(uint32_t target,unsigned char *out){
  if(active||!out||w<=0||h<=0)return 0;
  GLuint framebuffer=0;
  if(target){
-  sg_gl_image_info info=sg_gl_query_image_info(sg_query_view_image(targets[target&0xffff].color));
+  sg_gl_image_info info=sg_gl_query_image_info(sg_query_view_image((sg_view){target}));
   glGenFramebuffers(1,&framebuffer);glBindFramebuffer(GL_READ_FRAMEBUFFER,framebuffer);
   glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,info.tex[info.active_slot],0);
   glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -455,7 +467,11 @@ int helix_destroy(int kind,uint32_t id){
    for(int i=0;i<MAX_RENAMES;i++)if(data_textures[slot].extra_images[i].id){sg_destroy_view(data_textures[slot].extra_views[i]);sg_destroy_image(data_textures[slot].extra_images[i]);}
    free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
   }
-  if(slot<256&&targets[slot].color.id){sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);memset(&targets[slot],0,sizeof targets[slot]);}
+  if(slot<256&&targets[slot].color.id){
+   sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);
+   if(targets[slot].samples_image.id){sg_destroy_view(targets[slot].resolve);sg_destroy_image(targets[slot].samples_image);}
+   memset(&targets[slot],0,sizeof targets[slot]);
+  }
   return 1;
  }
  if(kind==3&&sg_query_shader_state((sg_shader){id})==SG_RESOURCESTATE_VALID){

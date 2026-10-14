@@ -20,9 +20,9 @@ class NativeSokolGLProfile {
 	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program;
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
-		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. Returns when the window closes. */
-	public static function run(identity:helix.host.Identity, makeApp:Services->IApp):Void {
-		var host = new SokolHostAdapter();
+		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
+	public static function run(identity:helix.host.Identity, makeApp:Services->IApp, ?options:helix.host.WindowOptions):Void {
+		var host = new SokolHostAdapter(options != null ? options.getSamples() : new helix.host.WindowOptions().getSamples());
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
 			if (cache == null)

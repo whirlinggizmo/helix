@@ -11,6 +11,16 @@ import helix.graphics.TextureFormat;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
+// A render target: the framebuffer of its texture and its depth buffer, its size; multisampled, the framebuffer drawn into and its color.
+private typedef Target = {
+	framebuffer:Dynamic,
+	depth:Dynamic,
+	drawn:Dynamic,
+	color:Dynamic,
+	width:Int,
+	height:Int
+}
+
 /** IGraphics on a canvas's WebGL2 context: raw browser API calls only. It builds whatever program it is given (a ShaderSource's GLSL ES) and
 	makes whatever pipeline it is described (a PipelineDesc); it knows no program, layout or pipeline of HeliX's own. */
 class WebGL2GraphicsAdapter implements IGraphics {
@@ -40,13 +50,13 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var frameHeight = 0;
 	var frameEnded = false;
 	var passHeight = 0;
-	// Render targets, by texture handle: their framebuffer, depth buffer and size.
-	var targets:Map<Int, {
-		framebuffer:Dynamic,
-		depth:Dynamic,
-		width:Int,
-		height:Int
-	}> = [];
+	// Render targets, by texture handle: their framebuffer, depth buffer and size; multisampled, the framebuffer drawn into (its color and
+	// depth the screen's samples), resolved into the texture's at the pass's end.
+	var targets:Map<Int, Target> = [];
+	// The target a target pass draws into, or null.
+	var drawing:Null<Target>;
+	// Samples a pixel of the canvas, as the browser gave them.
+	var samples = 1;
 	// Shadow maps, by texture handle: a framebuffer a layer, and their size.
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
@@ -56,19 +66,23 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
 	var enabled:Array<Bool> = [];
 
-	/** Takes canvas's WebGL2 context, without alpha, antialiasing or stencil, with a depth buffer; preserve keeps the drawing buffer between
-		frames. Throws without WebGL2. */
-	public function new(canvas:CanvasElement, preserve:Bool) {
+	/** Takes canvas's WebGL2 context, without alpha or stencil, with a depth buffer, antialiased (multisampled) when samples is over 1: the
+		browser chooses how many (getSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws without WebGL2. */
+	public function new(canvas:CanvasElement, preserve:Bool, samples:Int) {
 		gl = cast canvas.getContext("webgl2", {
 			alpha: false,
-			antialias: false,
+			antialias: samples > 1,
 			depth: true,
 			stencil: false,
 			preserveDrawingBuffer: preserve
 		});
 		if (gl == null)
 			throw "WebGL2 is required";
+		this.samples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 	}
+
+	public function getSamples():Int
+		return samples;
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
@@ -334,18 +348,41 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA8, width, height, 0, WebGL2RenderingContext.RGBA,
 			WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
+		// The screen's samples (at most this GPU's), so a target is drawn as smooth as the screen.
+		var count = Std.int(Math.min(samples, gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES)));
 		var depth = gl.createRenderbuffer();
 		gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depth);
-		gl.renderbufferStorage(WebGL2RenderingContext.RENDERBUFFER, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		if (count > 1)
+			gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		else
+			gl.renderbufferStorage(WebGL2RenderingContext.RENDERBUFFER, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
 		var framebuffer = gl.createFramebuffer();
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
 		gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, tex, 0);
-		gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
+		if (count <= 1)
+			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
 		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
+		var drawn:Dynamic = null, color:Dynamic = null;
+		if (count > 1) {
+			color = gl.createRenderbuffer();
+			gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, color);
+			gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, WebGL2RenderingContext.RGBA8, width, height);
+			drawn = gl.createFramebuffer();
+			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, drawn);
+			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.RENDERBUFFER,
+				color);
+			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
+			complete = complete
+				&& gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
+		}
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		if (!complete) {
 			gl.deleteFramebuffer(framebuffer);
 			gl.deleteRenderbuffer(depth);
+			if (drawn != null) {
+				gl.deleteFramebuffer(drawn);
+				gl.deleteRenderbuffer(color);
+			}
 			gl.deleteTexture(tex);
 			throw "Render target incomplete";
 		}
@@ -354,6 +391,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		targets[id] = {
 			framebuffer: framebuffer,
 			depth: depth,
+			drawn: drawn,
+			color: color,
 			width: width,
 			height: height
 		};
@@ -422,7 +461,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		var t = targets[target];
 		if (active || t == null)
 			throw "Invalid target pass";
-		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.framebuffer);
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
+		drawing = t;
 		inTarget = flipped = true;
 		open(t.width, t.height, clearColor);
 	}
@@ -430,6 +470,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	public function endTargetPass():Void {
 		if (!inTarget)
 			throw "No target pass";
+		// Multisampled: its samples resolved into the texture (a blit, which the scissor would cut).
+		var t = drawing;
+		if (t != null && t.drawn != null) {
+			gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
+			gl.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, t.drawn);
+			gl.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, t.framebuffer);
+			gl.blitFramebuffer(0, 0, t.width, t.height, 0, 0, t.width, t.height, WebGL2RenderingContext.COLOR_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
+		}
+		drawing = null;
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		active = inTarget = flipped = false;
 	}
@@ -681,6 +730,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (target != null) {
 			gl.deleteFramebuffer(target.framebuffer);
 			gl.deleteRenderbuffer(target.depth);
+			if (target.drawn != null) {
+				gl.deleteFramebuffer(target.drawn);
+				gl.deleteRenderbuffer(target.color);
+			}
 			targets.remove(handle);
 		}
 	}
