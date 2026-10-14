@@ -28,4 +28,7 @@ extern class GraphicsBridge extends SokolNativeBuild {
 		uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_destroy") static function destroy(kind:Int, handle:Int):Int;
+	@:native("helix_read_width") static function readWidth(target:cpp.UInt32):Int;
+	@:native("helix_read_height") static function readHeight(target:cpp.UInt32):Int;
+	@:native("helix_read_pixels") static function readPixels(target:cpp.UInt32, out:cpp.RawPointer<cpp.UInt8>):Int;
 }

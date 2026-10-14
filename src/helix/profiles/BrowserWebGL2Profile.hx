@@ -1,6 +1,7 @@
 package helix.profiles;
 
 import helix.adapters.audio.webaudio.WebAudioAdapter;
+import helix.adapters.export.download.DownloadExportAdapter;
 import helix.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;
 import helix.adapters.http.fetchapi.FetchApiHttpAdapter;
 import helix.adapters.graphics.webgl2.WebGL2GraphicsAdapter;
@@ -32,7 +33,9 @@ class BrowserWebGL2Profile {
 				storage: new IndexedDbStoreAdapter(cacheName),
 				packaged: new IndexedDbStoreAdapter(cacheName + "-packaged"),
 				base: assetBase,
-				harness: new DomTestHarnessAdapter()
+				harness: new DomTestHarnessAdapter(),
+				export: new DownloadExportAdapter(),
+				name: identity.getProduct()
 			};
 		});
 		#if hotreload new helix.adapters.host.dom.AssetWatcher(assetBase, runner.assetChanged); #end

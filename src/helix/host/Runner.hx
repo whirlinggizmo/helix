@@ -87,6 +87,7 @@ class Runner {
 		s.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
 		s.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
 		s.harness = a.harness;
+		s.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
 		app.init();
 	}
 
@@ -102,6 +103,7 @@ class Runner {
 		services.environments.poll();
 		input.poll(adapters.input);
 		app.frame(clock.getDelta());
+		services.screenshots.frameEnded();
 		input.endFrame();
 		frameCpu = (host.getTime() - now) * 1000;
 	}
@@ -110,6 +112,7 @@ class Runner {
 		if (closed || adapters == null)
 			return;
 		closed = true;
+		services.screenshots.shutdown();
 		services.audioResources.shutdown();
 		services.textures.shutdown();
 		services.environments.shutdown();

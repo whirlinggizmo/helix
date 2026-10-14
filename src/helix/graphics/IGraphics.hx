@@ -2,6 +2,12 @@ package helix.graphics;
 
 import haxe.io.Bytes;
 
+/** Pixels read back from the GPU: width x height RGBA8, rows top first; or why they couldn't be. */
+enum ReadPixelsResult {
+	Read(width:Int, height:Int, rgba:Bytes);
+	Failed(message:String);
+}
+
 /** The GPU, as thin as HeliX can make it: a platform's graphics adapter implements it and nothing else. Resources (textures of a few kinds,
 	buffers, programs built from a ShaderSource, pipelines made from a PipelineDesc), passes (the frame's screen pass after any passes into
 	render targets and shadow maps) and one draw. An adapter knows no program, layout or pipeline of HeliX's own: shared code describes those
@@ -104,6 +110,12 @@ interface IGraphics {
 
 	/** Ends the screen's pass and with it the frame, presenting it. Throws when no screen pass is open. */
 	public function endFrame():Void;
+
+	/** Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser
+		presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back
+		asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and
+		checks, not every frame. Throws inside a pass or for a handle that isn't a render target. */
+	public function readPixels(target:Int, done:ReadPixelsResult->Void):Void;
 
 	/** Releases the adapter itself, after its handles are destroyed. */
 	public function shutdown():Void;

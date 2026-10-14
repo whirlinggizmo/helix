@@ -1,5 +1,6 @@
 package helix.host;
 
+import helix.assets.IExport;
 import helix.assets.IHttp;
 import helix.assets.IStore;
 import helix.audio.IAudio;
@@ -40,4 +41,10 @@ typedef Adapters = {
 
 	/** Where results go for the check that launched the program. */
 	var harness:ITestHarness;
+
+	/** Where files made for the user (screenshots) go. */
+	var export:IExport;
+
+	/** The program's name, beginning the names of the files it makes (Identity.getProduct). */
+	var name:String;
 }

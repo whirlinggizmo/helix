@@ -59,6 +59,8 @@ python3 tools/example.py app-hello build web      # build/web/app-hello/
 python3 tools/example.py app-hello build native   # build/native/app-hello/Main
 ```
 
+**F9 saves a screenshot** in every example: a download in the browser, natively a PNG in `~/Pictures/<example>/` (or `HELIX_EXPORT`). Autopilot scripts take them too (`{"op": "screenshot"}`).
+
 The catalog follows the earlier C frameworks' example names. Each example matches the feature, not the original's scene.
 
 | Example | Shows |

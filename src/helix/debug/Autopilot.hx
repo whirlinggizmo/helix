@@ -31,9 +31,13 @@ class Autopilot {
 	var index = 0;
 	var elapsed = 0;
 	var input = new InputState();
+	var screenshot:Null<Null<String>->Void>;
 
-	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert; at most 128) and throws on anything invalid or unknown. */
-	public function new(json:String) {
+	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, screenshot; at most 128) and throws on anything invalid or
+		unknown. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
+		one. */
+	public function new(json:String, ?screenshot:Null<String>->Void) {
+		this.screenshot = screenshot;
 		var document:Dynamic = haxe.Json.parse(json);
 		fields(document, ["version", "seed", "commands"]);
 		if (document.version != 1
@@ -66,6 +70,11 @@ class Autopilot {
 				case "assert":
 					fields(command, ["op", "probe"], ["equals", "atLeast"]);
 					condition(command);
+				case "screenshot":
+					fields(command, ["op"], ["name"]);
+					if (command.name != null
+						&& (!Std.isOfType(command.name, String) || !~/^[A-Za-z0-9_-]{1,64}\.png$/.match(command.name)))
+						throw "Invalid screenshot name";
 				default:
 					throw "Unknown autopilot command";
 			}
@@ -151,6 +160,10 @@ class Autopilot {
 					value = probe(command.probe);
 					if (!matches(command, value))
 						throw 'Autopilot assertion failed at command ' + index + ': ' + command.probe + '=' + haxe.Json.stringify(value);
+					finish = true;
+				case "screenshot":
+					if (screenshot != null)
+						screenshot(command.name);
 					finish = true;
 			}
 			if (finish) {

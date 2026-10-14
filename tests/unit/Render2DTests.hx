@@ -105,6 +105,9 @@ class CountingGraphics implements IGraphics {
 
 	public function endFrame():Void {}
 
+	public function readPixels(target:Int, done:helix.graphics.IGraphics.ReadPixelsResult->Void):Void
+		done(Failed("No GPU"));
+
 	public var destroyedTextures = 0;
 
 	public function destroyTexture(handle:Int):Void

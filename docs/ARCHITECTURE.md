@@ -39,7 +39,7 @@ As built today; what is still to change is under **Target shape** below.
 
 | Contract | Adapters | Platform part (theirs) |
 | --- | --- | --- |
-| `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1) | Textures (2D, cube, data, render targets, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw. |
+| `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1) | Textures (2D, cube, data, render targets, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back. |
 | `IHost` | `host/dom` (browser), `host/sokol` + C (native) | The loop, the clock, the window, quitting, run options. The `Runner` (engine) is what it pumps; the app gets `Services` (engine). |
 | `IWindow` | `host/dom/DomWindow`, `host/sokol/SokolWindow` | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them. |
 | `ITestHarness` | `testharness/dom` (browser), `testharness/stdio` (native) | Hands a check the program's result. |
@@ -48,12 +48,13 @@ As built today; what is still to change is under **Target shape** below.
 | `IAudioDecoder` | `audiodecoder/webaudio` (browser), `audiodecoder/libsndfile` + C (native; also `IPcmFiles` for streaming) | A whole Ogg or MP3 file to mono float PCM at 44.1 kHz. The shared `AudioDecoding` owns sniffing, the WAV path, the limits, PCM checks and queuing. |
 | `IHttp` | `http/fetchapi` (browser), `http/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
 | `IStore` | `store/indexeddb` (browser), `store/filesystem` (native) | Files by key (read, write, remove, clear, lease). The shared `Storage` owns key checks, the size limit, read-only refusal and queuing. |
+| `IExport` | `export/download` (browser), `export/filesystem` (native) | Hands a finished file to the user: a download, or a file in the directory the profile chose (`HELIX_EXPORT`, else the user's pictures). The shared `Screenshots` reads the frame, encodes PNG (`Png`) and names the files. |
 | `IImageDecoder` | `imagedecoder/canvas` (browser), `imagedecoder/stb` + C (native) | Bytes to RGBA. The shared `ImageDecoding` owns queuing, cancellation and shutdown. |
 
 ### Target shape (decided)
 
 - **Host: done** (DECISIONS 81). Backend facts (`Adapters.info`) went with step 4: nothing read them.
-- **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
+- **Screenshots: done** (DECISIONS 86). `IGraphics.readPixels` reads the finished frame or a render target back; `Png` encodes in shared Haxe; `IExport` saves; `Services.screenshots` and the autopilot's `screenshot` command use them, in release builds too.
 - **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage`, `ImageDecoding` and `AudioDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
 - **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IHttp`; a shared service on top for what's policy (reconnecting, queuing messages).
 - **Audio: done** (DECISIONS 83).

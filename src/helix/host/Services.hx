@@ -47,6 +47,9 @@ class Services {
 	/** Where results go for the check that launched the program. */
 	public var harness(default, null):ITestHarness;
 
+	/** Screenshots of the frame, saved for the user (a download in a browser, a file natively). */
+	public var screenshots(default, null):helix.graphics.Screenshots;
+
 	var runner:Runner;
 
 	function new(runner:Runner)

@@ -3,6 +3,7 @@ package helix.adapters.graphics.webgl2;
 import haxe.io.Bytes;
 import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
+import helix.graphics.IGraphics.ReadPixelsResult;
 import helix.graphics.PipelineDesc;
 import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
@@ -34,6 +35,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
 	var inTarget = false;
+	// The screen's size this frame, and whether endFrame has ended it (so it can be read back).
+	var frameWidth = 0;
+	var frameHeight = 0;
+	var frameEnded = false;
 	var passHeight = 0;
 	// Render targets, by texture handle: their framebuffer, depth buffer and size.
 	var targets:Map<Int, {
@@ -432,7 +437,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		if (active || width <= 0 || height <= 0)
 			throw "Invalid pass";
-		inTarget = flipped = false;
+		inTarget = flipped = frameEnded = false;
+		frameWidth = width;
+		frameHeight = height;
 		open(width, height, clearColor);
 	}
 
@@ -603,6 +610,35 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (!active || inTarget)
 			throw "No screen pass";
 		active = false;
+		frameEnded = true;
+	}
+
+	public function readPixels(target:Int, done:ReadPixelsResult->Void):Void {
+		if (active)
+			throw "Inside a pass";
+		var t = targets[target];
+		if (target != 0 && t == null)
+			throw "Invalid render target";
+		if (target == 0 && !frameEnded) {
+			done(Failed("No frame has ended"));
+			return;
+		}
+		var width = target == 0 ? frameWidth : t.width,
+			height = target == 0 ? frameHeight : t.height;
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, target == 0 ? null : t.framebuffer);
+		var pixels = new js.lib.Uint8Array(width * height * 4);
+		gl.readPixels(0, 0, width, height, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, pixels);
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+		var read = Bytes.ofData(pixels.buffer);
+		if (target != 0) {
+			done(Read(width, height, read));
+			return;
+		}
+		// The screen's rows come bottom first (GL's origin); a target's are already top first, drawn flipped.
+		var rgba = Bytes.alloc(read.length), row = width * 4;
+		for (y in 0...height)
+			rgba.blit(y * row, read, (height - 1 - y) * row, row);
+		done(Read(width, height, rgba));
 	}
 
 	public function destroyBuffer(handle:Int):Void {

@@ -46,7 +46,7 @@ class App extends BaseApp {
 		if (!pilotReady)
 			services.assets.load(script, result -> switch result {
 				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString());
+					pilot = new Autopilot(bytes.toString(), name -> services.screenshots.take(name));
 					pilotReady = true;
 					prepare();
 				case Failed(message): throw 'Autopilot load failed: ' + message;

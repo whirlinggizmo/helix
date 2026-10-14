@@ -3,6 +3,7 @@ package helix.adapters.graphics.sokol;
 import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
+import helix.graphics.IGraphics.ReadPixelsResult;
 import helix.graphics.PipelineDesc;
 import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
@@ -200,6 +201,21 @@ class SokolGraphicsAdapter implements IGraphics {
 
 	public function endFrame():Void
 		GraphicsBridge.end();
+
+	public function readPixels(target:Int, done:ReadPixelsResult->Void):Void {
+		var width = GraphicsBridge.readWidth(target),
+			height = GraphicsBridge.readHeight(target);
+		if (target != 0 && width == 0)
+			throw "Invalid render target";
+		if (width == 0) {
+			done(Failed("No frame has ended"));
+			return;
+		}
+		var rgba = Bytes.alloc(width * height * 4);
+		if (GraphicsBridge.readPixels(target, cpp.Pointer.arrayElem(rgba.getData(), 0).raw) != 1)
+			throw "Native read back failed";
+		done(Read(width, height, rgba));
+	}
 
 	public function destroyBuffer(handle:Int):Void
 		if (GraphicsBridge.destroy(0, handle) != 1)

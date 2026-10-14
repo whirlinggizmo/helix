@@ -27,6 +27,8 @@ static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is. */
 static int active,flipped,used[256],frame_width,frame_height;
+/* The screen's size this frame, and whether helix_end has ended it (so it can be read back). */
+static int screen_width,screen_height,frame_ended;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
@@ -307,9 +309,34 @@ int helix_begin_target(uint32_t target,uint32_t color){
 int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
- active=1;flipped=0;frame_width=width;frame_height=height;
+ active=1;flipped=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
  sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
  return 1;
+}
+/* Reading back. The back buffer holds the ended frame until sokol_app swaps, after the frame callback returns. */
+/* What target 0 (the frame just ended) or a render target reads back as: its width and height, 0 when it can't be read now. */
+int helix_read_width(uint32_t target){int slot=target&0xffff;return target?(slot<256&&targets[slot].color.id?targets[slot].width:0):(frame_ended?screen_width:0);}
+int helix_read_height(uint32_t target){int slot=target&0xffff;return target?(slot<256&&targets[slot].color.id?targets[slot].height:0):(frame_ended?screen_height:0);}
+/* Reads target into out (width * height * 4 bytes, RGBA8, rows top first) through GL, outside any pass: the back buffer for 0 (GL's rows
+   come bottom first, so they're turned over), else the target's color image attached to a framebuffer of the moment (its rows are already
+   top first: target passes draw flipped). sokol caches GL state, so its cache is reset after. */
+int helix_read_pixels(uint32_t target,unsigned char *out){
+ int w=helix_read_width(target),h=helix_read_height(target);
+ if(active||!out||w<=0||h<=0)return 0;
+ GLuint framebuffer=0;
+ if(target){
+  sg_gl_image_info info=sg_gl_query_image_info(sg_query_view_image(targets[target&0xffff].color));
+  glGenFramebuffers(1,&framebuffer);glBindFramebuffer(GL_READ_FRAMEBUFFER,framebuffer);
+  glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,info.tex[info.active_slot],0);
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+ }else{glBindFramebuffer(GL_READ_FRAMEBUFFER,0);glReadBuffer(GL_BACK);}
+ glPixelStorei(GL_PACK_ALIGNMENT,1);glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,out);
+ int ok=glGetError()==GL_NO_ERROR;
+ if(framebuffer){glBindFramebuffer(GL_READ_FRAMEBUFFER,0);glDeleteFramebuffers(1,&framebuffer);}
+ sg_reset_state_cache();
+ if(ok&&!target){size_t row=(size_t)w*4;unsigned char *swap=malloc(row);if(!swap)return 0;
+  for(int y=0;y<h/2;y++){memcpy(swap,out+row*y,row);memcpy(out+row*y,out+row*(h-1-y),row);memcpy(out+row*(h-1-y),swap,row);}free(swap);}
+ return ok;
 }
 int helix_viewport(int x,int y,int w,int h){
  if(!active||w<=0||h<=0)return 0;
@@ -394,7 +421,7 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
  sg_draw(first,count,instance_count);return 1;
 }
 void helix_end(void){
- if(active!=1)abort();sg_end_pass();sg_commit();active=0;
+ if(active!=1)abort();sg_end_pass();sg_commit();active=0;frame_ended=1;
  /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
  for(int i=0;i<256;i++){if(stream_buffers[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
 }

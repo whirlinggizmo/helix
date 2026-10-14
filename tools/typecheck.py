@@ -16,8 +16,8 @@ def targets():
     found=[]
     for example in sorted({p.parent.name for p in (ROOT/'examples').glob('*/App.hx')}|{p.parent.parent.name for p in (ROOT/'examples').glob('*/src/App.hx')}):
         for target,launch in (('web','browser-webgl2'),('native','native-sokol-gl')):
-            found.append((f'{example} {target}',['-cp','src','-cp',source(example),'-cp',f'examples/shared/launch/{launch}','-cp',GENERATED['shaders'],'-cp',GENERATED['fonts'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])))
-    for main,cp in (('SimulationTests',['examples/asteroids/src']),('BlocksTests',['examples/blocks/src']),('InputTests',[]),('HostTests',[]),('AssetTests',[]),('Render2DTests',[GENERATED['shaders'],GENERATED['fonts']]),('ParticleTests',[GENERATED['shaders'],GENERATED['fonts']]),('Render3DTests',[GENERATED['shaders'],GENERATED['fonts']]),('EnvironmentTests',[]),('TrigTests',[])):
+            found.append((f'{example} {target}',['-cp','src','-cp',source(example),'-cp',f'examples/shared/launch/{launch}','-cp','examples/shared/src','-cp',GENERATED['shaders'],'-cp',GENERATED['fonts'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])))
+    for main,cp in (('SimulationTests',['examples/asteroids/src']),('BlocksTests',['examples/blocks/src']),('InputTests',[]),('HostTests',[]),('AssetTests',[]),('Render2DTests',[GENERATED['shaders'],GENERATED['fonts']]),('ParticleTests',[GENERATED['shaders'],GENERATED['fonts']]),('Render3DTests',[GENERATED['shaders'],GENERATED['fonts']]),('EnvironmentTests',[]),('TrigTests',[]),('PngTests',[])):
         found.append((f'unit {main}',['-cp','src','-cp','tests/unit']+sum((['-cp',c] for c in cp),[])+['-main',main,'--interp']))
     found.append(('trig bits',['-cp','src','-cp','tests/trig','-main','TrigBits','--interp']))
     found.append(('package smoke',['-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp']))
