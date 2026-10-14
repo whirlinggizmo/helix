@@ -15,6 +15,10 @@ class Mat4 {
 	public inline function get(index:Int):Float
 		return m[index];
 
+	/** Sets element column * 4 + row to value. */
+	public inline function set(index:Int, value:Float):Void
+		m[index] = value;
+
 	/** The identity. */
 	public function setIdentity():Void
 		for (i in 0...16)

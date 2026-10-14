@@ -36,6 +36,7 @@ class Node2D {
 	var textSize = 16.;
 	var font:Null<Font2D>;
 	var align:Align2D = Left;
+	var emitterOf:Null<helix.particles.Emitter>;
 	var localDirty = true;
 
 	// The world transform: a point x, y of its own is at wa * x + wc * y + wx, wb * x + wd * y + wy.
@@ -113,6 +114,18 @@ class Node2D {
 		node.font = font;
 		return node;
 	}
+
+	/** An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the
+		stage advances it by its clock (Stage2D.setTime) each draw. Its particles draw at its place in the stage's order, through the GPU. */
+	public static function emitter(emitter:helix.particles.Emitter):Node2D {
+		var node = new Node2D(Emitter);
+		node.emitterOf = emitter;
+		return node;
+	}
+
+	/** An emitter node's emitter; null for another kind. */
+	public function getEmitter():Null<helix.particles.Emitter>
+		return emitterOf;
 
 	/** Its kind. */
 	public function getKind():Node2DKind
@@ -472,4 +485,7 @@ enum abstract Node2DKind(Int) {
 
 	/** A line of text. */
 	var Text = 6;
+
+	/** A particle emitter's place. */
+	var Emitter = 7;
 }

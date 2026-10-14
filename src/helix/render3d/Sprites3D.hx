@@ -8,7 +8,8 @@ import helix.render2d.Texture2D;
 import helix.render3d.Node.SpriteAlpha;
 import helix.render3d.Node.SpriteFacing;
 
-/** A Stage3D's sprites and texts (a text a sprite a glyph, in its plane), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
+/** A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
+	drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
 	reach), sorts them (opaque and masked ones by texture; blended ones back to front; added ones by texture), writes their records (where the
 	pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and
 	draws each run of a texture as one instanced draw: the opaque ones after the opaque models, the blended ones among the see-through models
@@ -34,6 +35,17 @@ class Sprites3D {
 	var nextBlend = 0;
 	var draws = 0;
 	var font:Null<helix.render2d.Font2D>;
+	// Emitters: their pipelines by phase, the draw's particles in one upload, and those in view, sorted, each its first record and count.
+	var particlePipelines:Array<Int>;
+	var particleCapacity = 1024;
+	var particleBuffer:Int;
+	var particleRecords:Bytes;
+	var emitters:Array<EmitterItem> = [];
+	var emitterCount = 0;
+	var dt = 0.;
+	var nextEmitter = 0;
+	var emitterBlendStart = 0;
+	var emitterAddStart = 0;
 	// The camera's axes this draw, and the upright facing's right.
 	var cameraRight = [1., 0, 0];
 	var cameraUp = [0., 1, 0];
@@ -59,6 +71,13 @@ class Sprites3D {
 		indices = gpu.createStaticBuffer(order, 24, true);
 		instanceBuffer = gpu.createBuffer(capacity * Sprite3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Sprite3DLayout.instanceStride);
+		particlePipelines = [
+			gpu.createPipeline(Particle3D, Opaque),
+			gpu.createPipeline(Particle3D, Alpha),
+			gpu.createPipeline(Particle3D, Additive)
+		];
+		particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
+		particleRecords = Bytes.alloc(particleCapacity * Particle3DLayout.instanceStride);
 	}
 
 	/** Sprites drawn by the last draw (in view). */
@@ -69,10 +88,32 @@ class Sprites3D {
 	public function getDrawCount():Int
 		return draws;
 
-	/** Starts a draw: no sprites yet. */
-	public function begin():Void {
+	/** Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet. */
+	public function begin(dt:Float):Void {
 		count = 0;
 		draws = 0;
+		emitterCount = 0;
+		this.dt = dt;
+	}
+
+	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has
+		particles to draw. Not culled: particles reach past where it is. */
+	public function visitEmitter(node:Node, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+		var emitter = node.getEmitter(), w = node.getWorldMatrix();
+		emitter.advance(dt, w.get(12), w.get(13), w.get(14));
+		if (!emitter.isDrawable())
+			return;
+		if (emitterCount == emitters.length)
+			emitters.push(new EmitterItem());
+		var it = emitters[emitterCount++];
+		it.emitter = emitter;
+		it.phase = switch emitter.getAlphaMode() {
+			case Blend: 1;
+			case Add: 2;
+			case _: 0;
+		};
+		it.depth = (w.get(12) - eyeX) * forwardX + (w.get(13) - eyeY) * forwardY + (w.get(14) - eyeZ) * forwardZ;
+		it.order = emitterCount;
 	}
 
 	// The font a text without its own draws in: the built-in one, made when first needed.
@@ -230,6 +271,52 @@ class Sprites3D {
 			write(i, drawn[i]);
 		if (count > 0)
 			gpu.updateBuffer(instanceBuffer, records, count * Sprite3DLayout.instanceStride);
+		prepareEmitters(viewProjection);
+	}
+
+	// The emitters in view sorted as sprites are (by phase; blended back to front), their particles in one upload, and each its uniforms.
+	function prepareEmitters(viewProjection:Mat4):Void {
+		var list = emitters.slice(0, emitterCount);
+		list.sort((a,
+				b) -> a.phase != b.phase ? a.phase - b.phase : a.phase == 1 ? (a.depth > b.depth ? -1 : a.depth < b.depth ? 1 : a.order - b.order) : a.order
+				- b.order);
+		for (i in 0...emitterCount)
+			emitters[i] = list[i];
+		var total = 0;
+		for (i in 0...emitterCount)
+			total += emitters[i].emitter.getCount();
+		if (total > particleCapacity) {
+			while (particleCapacity < total)
+				particleCapacity *= 2;
+			gpu.destroyBuffer(particleBuffer);
+			particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
+			particleRecords = Bytes.alloc(particleCapacity * Particle3DLayout.instanceStride);
+		}
+		var at = 0;
+		emitterBlendStart = emitterAddStart = emitterCount;
+		for (i in 0...emitterCount) {
+			var it = emitters[i];
+			if (it.phase >= 1 && emitterBlendStart == emitterCount)
+				emitterBlendStart = i;
+			if (it.phase == 2 && emitterAddStart == emitterCount)
+				emitterAddStart = i;
+			it.first = at;
+			it.count = it.emitter.writeRecords(particleRecords, at * Particle3DLayout.instanceStride);
+			at += it.count;
+			if (it.uniforms == null)
+				it.uniforms = Bytes.alloc(Particle3DLayout.vertexUniformBytes);
+			it.emitter.writeUniforms(it.uniforms, viewProjection, cameraRight, cameraUp);
+		}
+		nextEmitter = emitterBlendStart;
+		if (at > 0)
+			gpu.updateBuffer(particleBuffer, particleRecords, at * Particle3DLayout.instanceStride);
+	}
+
+	function drawEmitter(it:EmitterItem):Void {
+		var texture = it.emitter.getTexture();
+		gpu.drawMesh(particlePipelines[it.phase], corners, indices, 6, particleBuffer, it.first, it.count, [texture.getHandle()], [texture.getSampling()],
+			[it.uniforms]);
+		draws++;
 	}
 
 	function write(index:Int, item:SpriteItem):Void {
@@ -327,24 +414,38 @@ class Sprites3D {
 		}
 	}
 
-	/** Draws the opaque and masked sprites. */
-	public function drawOpaque():Void
+	/** Draws the opaque and masked sprites, then emitters. */
+	public function drawOpaque():Void {
 		drawRange(0, blendStart, 0);
-
-	/** Draws the blended sprites farther than depth along the view not yet drawn: called before each see-through model run, back to front. */
-	public function drawBlendedBeyond(depth:Float):Void {
-		var end = nextBlend;
-		while (end < addStart && drawn[end].depth > depth)
-			end++;
-		drawRange(nextBlend, end, 1);
-		nextBlend = end;
+		for (i in 0...emitterBlendStart)
+			drawEmitter(emitters[i]);
 	}
 
-	/** Draws the blended sprites left, then the added ones. */
+	/** Draws the blended sprites and emitters farther than depth along the view not yet drawn, back to front together: called before each
+		see-through model run. */
+	public function drawBlendedBeyond(depth:Float):Void
+		while (true) {
+			var sprite = nextBlend < addStart ? drawn[nextBlend].depth : Math.NEGATIVE_INFINITY,
+				emitter = nextEmitter < emitterAddStart ? emitters[nextEmitter].depth : Math.NEGATIVE_INFINITY;
+			if (Math.max(sprite, emitter) <= depth)
+				return;
+			if (sprite >= emitter) {
+				// The sprites farther than both the next emitter and depth, at least one.
+				var end = nextBlend + 1, limit = Math.max(emitter, depth);
+				while (end < addStart && drawn[end].depth > limit)
+					end++;
+				drawRange(nextBlend, end, 1);
+				nextBlend = end;
+			} else
+				drawEmitter(emitters[nextEmitter++]);
+		}
+
+	/** Draws the blended sprites and emitters left, then the added ones. */
 	public function drawRest():Void {
-		drawRange(nextBlend, addStart, 1);
-		nextBlend = addStart;
+		drawBlendedBeyond(Math.NEGATIVE_INFINITY);
 		drawRange(addStart, count, 2);
+		for (i in emitterAddStart...emitterCount)
+			drawEmitter(emitters[i]);
 	}
 
 	/** Frees its pipelines, buffers and built-in font. */
@@ -356,6 +457,9 @@ class Sprites3D {
 		gpu.destroyBuffer(corners);
 		gpu.destroyBuffer(indices);
 		gpu.destroyBuffer(instanceBuffer);
+		for (p in particlePipelines)
+			gpu.destroyPipeline(p);
+		gpu.destroyBuffer(particleBuffer);
 	}
 }
 
@@ -405,6 +509,33 @@ private class SpriteItem {
 
 	/** Its height. */
 	public var gh = 0.;
+
+	/** An empty item, filled by the walk. */
+	public function new() {}
+}
+
+/** An emitter in view this draw. Pooled. */
+private class EmitterItem {
+	/** Its emitter. */
+	public var emitter:helix.particles.Emitter;
+
+	/** 0 opaque or masked, 1 blended, 2 added. */
+	public var phase = 0;
+
+	/** Its place's distance along the camera's view. */
+	public var depth = 0.;
+
+	/** Its place in the walk: ties keep it. */
+	public var order = 0;
+
+	/** Its first record in the draw's upload. */
+	public var first = 0;
+
+	/** Its records there. */
+	public var count = 0;
+
+	/** Its draw's uniforms. */
+	public var uniforms:Null<Bytes>;
 
 	/** An empty item, filled by the walk. */
 	public function new() {}

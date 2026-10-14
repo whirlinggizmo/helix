@@ -9,8 +9,8 @@ import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 
 /** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in logical pixels: a polygon rock turning in outline, a ring,
-	a box turning about its center, a sprite of a loaded texture, and a group (a hub with two moons) turning as one; then immediate text over
-	both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
+	a box turning about its center, a sprite of a loaded texture, a group (a hub with two moons) turning as one, and a particle emitter circling
+	and trailing (drawn by the GPU at its place in the stage's order); then immediate text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	var host:IHost;
 	var world = new Stage2D();
@@ -23,6 +23,7 @@ class App extends BaseApp {
 	var box:Node2D;
 	var sprite:Node2D;
 	var orbit:Node2D;
+	var sparks:Node2D;
 	var time = 0.;
 
 	public function new(host:IHost) {
@@ -70,6 +71,23 @@ class App extends BaseApp {
 		orbit.getChild(0).add(spoke);
 		world.add(orbit);
 
+		// An emitter: every way, 10 to 40 a second, shrinking from gold to a clear orange.
+		var emitter = new helix.particles.Emitter(null, 512, true);
+		emitter.setRate(120);
+		emitter.setLife(.4, .9);
+		emitter.setVelocity(25, 0, 0, Math.PI, .6);
+		emitter.setSize(4, 0);
+		emitter.setColor(0xffcb00ff, 0xff3c0000);
+		sparks = Node2D.emitter(emitter);
+		world.add(sparks);
+		host.textures.load("textures/particle.png", true, result -> switch result {
+			case Ready(texture):
+				emitter.setTexture(texture);
+			case Failed(message):
+				trace(message);
+			case Cancelled:
+		});
+
 		var title = Node2D.text("HeliX stage2d", 20, 0xf5f5f5ff);
 		title.setPosition(12, 32);
 		hud.add(title);
@@ -84,6 +102,8 @@ class App extends BaseApp {
 		box.setRotation(-time * .8);
 		sprite.setRotation(-time * .3);
 		orbit.setRotation(time * 1.5);
+		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);
+		world.setTime(time);
 		var width = host.getFramebufferWidth(),
 			height = host.getFramebufferHeight(),
 			ratio = host.getPixelRatio();

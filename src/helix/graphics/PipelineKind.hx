@@ -25,4 +25,10 @@ enum abstract PipelineKind(Int) {
 		size, pivot, texture region, alpha mode and tint (a stream buffer); one texture, unlit. Depth-tested, written only when opaque; nothing
 		culled. Drawn by IGraphics.drawMesh. */
 	var Sprite3D = 5;
+
+	/** Particles: a quad (Particle3DLayout's corners, as Sprite3D's) drawn once a particle, each particle's birth record (where and when, its
+		velocity and life, its size, spin and a random value) from a stream buffer; where it is, its size, color and turn follow from its age in
+		the vertex stage, by the emitter's settings in its uniforms. One texture, unlit; depth written only when opaque; nothing culled. Drawn by
+		IGraphics.drawMesh. */
+	var Particle3D = 6;
 }

@@ -15,6 +15,10 @@ class Stage2D {
 	var top = 0.;
 	var right = 0.;
 	var bottom = 0.;
+	var time = 0.;
+	// The clock at the last draw: emitters advance by the difference.
+	var drawnTime = Math.NaN;
+	var dt = 0.;
 
 	/** An empty stage. */
 	public function new() {}
@@ -30,6 +34,14 @@ class Stage2D {
 	/** Takes node from the stage's root. */
 	public function remove(node:Node2D):Bool
 		return root.remove(node);
+
+	/** The stage's clock, seconds: what the app last set. */
+	public function getTime():Float
+		return time;
+
+	/** Sets the stage's clock; its emitters advance by how far it moved since the last draw. */
+	public function setTime(seconds:Float):Void
+		time = seconds;
 
 	/** Nodes drawn by the last draw (in view). */
 	public function getDrawnCount():Int
@@ -48,6 +60,8 @@ class Stage2D {
 		top = Math.min(y0, y1);
 		bottom = Math.max(y0, y1);
 		count = 0;
+		dt = Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime);
+		drawnTime = time;
 		var rootChanged = root.update(false);
 		// Children are pushed last first, so they pop in order.
 		stack.resize(0);
@@ -110,6 +124,14 @@ class Stage2D {
 				w = Text2D.measure(font, node.content, node.textSize);
 				h = node.textSize;
 				x = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
+			case Emitter:
+				// Not culled: particles reach past where it is.
+				var e = node.emitterOf;
+				e.advance(dt, node.wx, node.wy, 0);
+				count++;
+				batch.resetTransform();
+				batch.emitter(e);
+				return;
 			case Group:
 				return;
 		}
@@ -145,7 +167,7 @@ class Stage2D {
 					batch.polygon(node.points, node.color, node.triangles);
 			case Text:
 				Text2D.draw(batch, node.content, 0, 0, node.textSize, node.color, node.align, node.font);
-			case Group:
+			case Group | Emitter:
 		}
 	}
 

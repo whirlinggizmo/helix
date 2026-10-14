@@ -198,6 +198,46 @@
           "name": "sprite3d_texture"
         }
       ]
+    },
+    {
+      "program": "particle3d",
+      "attributes": [
+        {
+          "role": "corner",
+          "name": "corner",
+          "type": "vec2"
+        },
+        {
+          "role": "born",
+          "name": "i_born",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "motion",
+          "name": "i_motion",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "shape",
+          "name": "i_shape",
+          "type": "vec4",
+          "instance": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 528
+        }
+      ],
+      "textures": [
+        {
+          "role": "atlas",
+          "name": "particle3d_texture"
+        }
+      ]
     }
   ]
 }

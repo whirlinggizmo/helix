@@ -47,6 +47,8 @@ class Stage3D {
 	var stack:Array<Node> = [];
 	var sprites:Sprites3D;
 	var time = 0.;
+	// The clock at the last draw: emitters advance by the difference.
+	var drawnTime = Math.NaN;
 	// Apps' surface shaders' pipelines, by the framework's variants, and the shader version they were made for.
 	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
 	var stackChanged:Array<Bool> = [];
@@ -98,7 +100,7 @@ class Stage3D {
 	public function getTime():Float
 		return time;
 
-	/** Sets the seconds surface shaders see, for whatever moves with time in them. */
+	/** Sets the seconds surface shaders see, for whatever moves with time in them; emitters advance by how far it moved since the last draw. */
 	public function setTime(seconds:Float):Void
 		time = seconds;
 
@@ -132,7 +134,8 @@ class Stage3D {
 		count = 0;
 		draws = 0;
 		lights.resize(0);
-		sprites.begin();
+		sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime));
+		drawnTime = time;
 		walk();
 		drawn.resize(count);
 		for (i in 0...count)
@@ -201,6 +204,8 @@ class Stage3D {
 					sprites.visit(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 				case TextNode:
 					sprites.visitText(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+				case EmitterNode:
+					sprites.visitEmitter(node, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 				case Group | CameraNode:
 			}
 			for (i in 0...node.getChildCount()) {

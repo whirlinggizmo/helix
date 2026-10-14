@@ -81,8 +81,9 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
 | `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture |
 | `text3d` | text in the world: labels facing the camera, a sign's text (a TrueType font) turning with its node; lines on the ground |
+| `particles` | GPU particles: a fountain, trailing sparks, a campfire's flames (a flipbook) and smoke (curves) on a 3D stage; confetti on a 2D one |
 | `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
-| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group |
+| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group, a trailing emitter |
 | `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
 | `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |

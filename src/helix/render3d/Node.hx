@@ -41,6 +41,7 @@ class Node {
 	var content = "";
 	var textSize = .5;
 	var font:Null<helix.render2d.Font2D>;
+	var emitterOf:Null<helix.particles.Emitter>;
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
@@ -104,6 +105,19 @@ class Node {
 		node.font = font;
 		return node;
 	}
+
+	/** An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way,
+		and particles may inherit its velocity), and the stage advances it by its clock (Stage3D.setTime) each draw. Particles stay where they
+		were born, so they trail as the node moves. */
+	public static function emitter(emitter:helix.particles.Emitter):Node {
+		var node = new Node(EmitterNode);
+		node.emitterOf = emitter;
+		return node;
+	}
+
+	/** An emitter node's emitter; null for another kind. */
+	public function getEmitter():Null<helix.particles.Emitter>
+		return emitterOf;
 
 	/** A text node's text; "" for another kind. */
 	public function getText():String
@@ -552,6 +566,9 @@ enum abstract NodeKind(Int) {
 
 	/** A line of text in the world. */
 	var TextNode = 5;
+
+	/** A particle emitter's place. */
+	var EmitterNode = 6;
 }
 
 /** How a 3D sprite faces. */

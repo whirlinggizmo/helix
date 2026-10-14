@@ -1,0 +1,510 @@
+package helix.particles;
+
+import haxe.io.Bytes;
+import helix.render2d.Texture2D;
+import helix.render3d.Node.SpriteAlpha;
+
+/** A particle emitter, after wgrender-c's: many particles from one texture, each decided when it's born (where, how fast, how long it lives,
+	how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag
+	move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them
+	does. A node places it on a stage (Node.emitter, Node2D.emitter), which advances it by the stage's clock each draw; particles stay where
+	they were born when it moves (trails), face the camera, and aren't sorted among themselves. Its random numbers are its own (setSeed): the
+	same seed and settings give the same particles. Colors are 0xRRGGBBAA, sRGB values, as sprites' are. */
+class Emitter {
+	static inline var RECORD = 48;
+	static inline var MAX_KEYS = 8;
+	static inline var REBASE = 4096.;
+	static var seeds = 1;
+
+	var texture:Null<Texture2D>;
+	var regionX = 0.;
+	var regionY = 0.;
+	var regionWidth = 0.;
+	var regionHeight = 0.;
+	var columns = 1;
+	var rows = 1;
+	var frameCount = 1;
+	var framesPerSecond = 0.;
+	var rate = 0.;
+	var owed = 0.;
+	var emitting = true;
+	var max:Int;
+	var lifeMin = 1.;
+	var lifeMax = 1.;
+	var boxX = 0.;
+	var boxY = 0.;
+	var boxZ = 0.;
+	var sphere = 0.;
+	var dirX = 0.;
+	var dirY = 1.;
+	var dirZ = 0.;
+	var spread = 0.;
+	var speedVariance = 0.;
+	var gravityX = 0.;
+	var gravityY = 0.;
+	var gravityZ = 0.;
+	var drag = 0.;
+	var inherit = 0.;
+	var sizeTimes:Array<Float> = [0, 1];
+	var sizeValues:Array<Float> = [1, 1];
+	var sizeVariance = 0.;
+	var colorTimes:Array<Float> = [0, 1];
+	var colorValues:Array<Int> = [0xffffffff, 0xffffffff];
+	var palette:Array<Int> = [];
+	var spinMin = 0.;
+	var spinMax = 0.;
+	var stretch = 0.;
+	var alphaMode:SpriteAlpha = Add;
+	var cutoff = .5;
+	var random:Int;
+	var flat:Bool;
+	// The ring of birth records, newest at next - 1; live of them (the newest) may still be alive.
+	var ring:Bytes;
+	var next = 0;
+	var live = 0;
+	var time = 0.;
+	// Where it was at its last advance, and how fast it moved over it.
+	var placed = false;
+	var lastX = 0.;
+	var lastY = 0.;
+	var lastZ = 0.;
+	var moveX = 0.;
+	var moveY = 0.;
+	var moveZ = 0.;
+	var jumped = false;
+
+	/** An emitter of particles drawn from texture (null for none yet: it draws nothing), at most max alive at once (newer replace the oldest),
+		flat for a 2D stage (its particles in the x-y plane, a sphere a circle). By default: no steady rate (bursts only), a life of 1 second,
+		born at a point, moving up at 1 unit a second, size 1, white, added. */
+	public function new(texture:Null<Texture2D>, max = 1024, flat = false) {
+		this.texture = texture;
+		this.max = max < 1 ? 1 : max > 65536 ? 65536 : max;
+		this.flat = flat;
+		ring = Bytes.alloc(this.max * RECORD);
+		random = seeds++ * 0x9E3779B1;
+		if (random == 0)
+			random = 1;
+	}
+
+	/** Its texture, or null. */
+	public function getTexture():Null<Texture2D>
+		return texture;
+
+	/** Sets its texture (null: it draws nothing). */
+	public function setTexture(value:Null<Texture2D>):Void
+		texture = value;
+
+	/** The region of the texture each particle shows, in texels from its top-left (an atlas cell); a width or height of 0 or less (the default)
+		is the whole texture. */
+	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {
+		regionX = x;
+		regionY = y;
+		regionWidth = width;
+		regionHeight = height;
+	}
+
+	/** A flipbook: the region split into columns x rows frames (left to right, top to bottom), of which the first count are used (0 or less:
+		all). With perSecond 0 each particle plays them once over its life (puffs, explosions); above 0 it loops at that rate from a random frame
+		(flames). False for columns or rows below 1. */
+	public function setFrames(columns:Int, rows:Int, count = 0, perSecond = 0.):Bool {
+		if (columns < 1 || rows < 1 || !(perSecond >= 0))
+			return false;
+		this.columns = columns;
+		this.rows = rows;
+		frameCount = count <= 0 || count > columns * rows ? columns * rows : count;
+		framesPerSecond = perSecond;
+		return true;
+	}
+
+	/** Its steady rate, particles a second (0: bursts only). False below 0. */
+	public function setRate(perSecond:Float):Bool {
+		if (!(perSecond >= 0))
+			return false;
+		rate = perSecond;
+		return true;
+	}
+
+	/** Whether the steady rate runs. */
+	public function isEmitting():Bool
+		return emitting;
+
+	/** Starts or stops the steady rate; the particles alive finish their lives. */
+	public function setEmitting(value:Bool):Void
+		emitting = value;
+
+	/** Each particle's life, seconds, between min and max. False unless 0 < min <= max. */
+	public function setLife(min:Float, max:Float):Bool {
+		if (!(min > 0 && max >= min))
+			return false;
+		lifeMin = min;
+		lifeMax = max;
+		return true;
+	}
+
+	/** Born anywhere in a box of these half sizes around its position (a point by default). */
+	public function setSpawnBox(halfX:Float, halfY:Float, halfZ:Float):Void {
+		boxX = Math.abs(halfX);
+		boxY = Math.abs(halfY);
+		boxZ = Math.abs(halfZ);
+		sphere = 0;
+	}
+
+	/** Born evenly within a sphere (a circle, flat) of radius around its position. False below 0. */
+	public function setSpawnSphere(radius:Float):Bool {
+		if (!(radius >= 0))
+			return false;
+		sphere = radius;
+		return true;
+	}
+
+	/** Moving along x, y, z at its length's speed, turned up to spread radians off it (a cone; flat, a fan), faster or slower by up to variance
+		(0..1) of it. */
+	public function setVelocity(x:Float, y:Float, z:Float, spread = 0., variance = 0.):Void {
+		dirX = x;
+		dirY = y;
+		dirZ = flat ? 0 : z;
+		this.spread = Math.abs(spread);
+		speedVariance = variance < 0 ? 0 : variance > 1 ? 1 : variance;
+	}
+
+	/** An acceleration on every particle, units a second squared (none by default). */
+	public function setGravity(x:Float, y:Float, z:Float):Void {
+		gravityX = x;
+		gravityY = y;
+		gravityZ = flat ? 0 : z;
+	}
+
+	/** Slowing in proportion to speed, a second (1 loses about 63% of the speed in a second, less gravity's pull; gravity / drag is how fast they
+		end up falling). False below 0. */
+	public function setDrag(perSecond:Float):Bool {
+		if (!(perSecond >= 0))
+			return false;
+		drag = perSecond;
+		return true;
+	}
+
+	/** The fraction of its own movement (where its node went over the last advance) particles take at birth: 1 carries them along with it. */
+	public function setInheritVelocity(fraction:Float):Void
+		inherit = fraction;
+
+	/** Size over life, world units: start at birth to end at death, each particle's scaled by up to variance (0..1). Replaces the size keys. */
+	public function setSize(start:Float, end:Float, variance = 0.):Void {
+		sizeTimes = [0, 1];
+		sizeValues = [start, end];
+		sizeVariance = variance < 0 ? 0 : variance > 1 ? 1 : variance;
+	}
+
+	/** Clears the size keys (a curve without keys draws nothing until one is added). */
+	public function clearSizeKeys():Void {
+		sizeTimes = [];
+		sizeValues = [];
+	}
+
+	/** Adds a size key at t (0..1 of a life), in order: between keys the size moves in a line; before the first and after the last it holds.
+		False past 8 keys, or for a t before the last key's or outside 0..1. */
+	public function addSizeKey(t:Float, size:Float):Bool {
+		if (sizeTimes.length >= MAX_KEYS || !(t >= 0 && t <= 1) || sizeTimes.length > 0 && t < sizeTimes[sizeTimes.length - 1])
+			return false;
+		sizeTimes.push(t);
+		sizeValues.push(size);
+		return true;
+	}
+
+	/** Color over life (alpha included, so a fade): start at birth to end at death. Replaces the color keys. */
+	public function setColor(start:Int, end:Int):Void {
+		colorTimes = [0, 1];
+		colorValues = [start, end];
+	}
+
+	/** Clears the color keys. */
+	public function clearColorKeys():Void {
+		colorTimes = [];
+		colorValues = [];
+	}
+
+	/** Adds a color key at t, as addSizeKey. */
+	public function addColorKey(t:Float, color:Int):Bool {
+		if (colorTimes.length >= MAX_KEYS || !(t >= 0 && t <= 1) || colorTimes.length > 0 && t < colorTimes[colorTimes.length - 1])
+			return false;
+		colorTimes.push(t);
+		colorValues.push(color);
+		return true;
+	}
+
+	/** Adds a palette color (at most 8): each particle picks one at birth, tinting its color over life (confetti from one emitter). False past 8. */
+	public function addPaletteColor(color:Int):Bool {
+		if (palette.length >= 8)
+			return false;
+		palette.push(color);
+		return true;
+	}
+
+	/** Clears the palette: no tint. */
+	public function clearPalette():Void
+		palette = [];
+
+	/** Spin, radians a second between min and max (positive clockwise on screen), from a random angle. None by default. */
+	public function setSpin(min:Float, max:Float):Void {
+		spinMin = min;
+		spinMax = max < min ? min : max;
+	}
+
+	/** Stretched along the motion (sparks, rain): each particle's texture points its top along its velocity across the screen, as long as the
+		distance it moves in seconds (plus its size); stretched ones don't spin. 0 (the default) is off. */
+	public function setStretch(seconds:Float):Void
+		stretch = seconds < 0 ? 0 : seconds;
+
+	/** How it uses its texels' alpha (Add by default: glows, sparks, fire), and a Mask's cutoff. False for a cutoff outside 0..1. */
+	public function setAlphaMode(mode:SpriteAlpha, cutoff = .5):Bool {
+		if (!(cutoff >= 0 && cutoff <= 1))
+			return false;
+		alphaMode = mode;
+		this.cutoff = cutoff;
+		return true;
+	}
+
+	/** How it uses its texels' alpha. */
+	public function getAlphaMode():SpriteAlpha
+		return alphaMode;
+
+	/** Where its random numbers start: the same seed and settings give the same particles. */
+	public function setSeed(seed:Int):Void
+		random = seed == 0 ? 1 : seed;
+
+	/** Particles that may still be alive. */
+	public function getCount():Int
+		return live;
+
+	/** All of them gone. */
+	public function clear():Void {
+		live = 0;
+		owed = 0;
+	}
+
+	// xorshift32: 0..1.
+	function next01():Float {
+		random ^= random << 13;
+		random ^= random >>> 17;
+		random ^= random << 5;
+		return (random >>> 8) / 16777216;
+	}
+
+	inline function signed():Float
+		return next01() * 2 - 1;
+
+	/** Bursts count particles at once, where it is now. False below 0. */
+	public function burst(count:Int):Bool {
+		if (count < 0)
+			return false;
+		for (_ in 0...count)
+			spawn(time, lastX, lastY, lastZ);
+		return true;
+	}
+
+	/** Starts over as if the steady rate had run for seconds: those it would have made and still alive now are made where it is. */
+	public function prewarm(seconds:Float):Void {
+		clear();
+		if (!(seconds > 0) || rate <= 0)
+			return;
+		var n = Std.int(rate * seconds);
+		for (i in 0...n)
+			spawn(time - seconds + (i + .5) / rate, lastX, lastY, lastZ);
+		forgetDead();
+	}
+
+	/** Puts it at x, y, z without a move: nothing spawns along the way, and particles inherit no velocity from it. */
+	public function jump(x:Float, y:Float, z:Float):Void {
+		lastX = x;
+		lastY = y;
+		lastZ = flat ? 0 : z;
+		placed = true;
+		jumped = true;
+	}
+
+	/** Advances its clock by dt seconds, it being at x, y, z now (its node's world position): the steady rate's particles due are born along
+		the way it moved, and the dead are let go. A stage calls this each draw. */
+	public function advance(dt:Float, x:Float, y:Float, z:Float):Void {
+		if (flat)
+			z = 0;
+		if (!placed || jumped) {
+			lastX = x;
+			lastY = y;
+			lastZ = z;
+			placed = true;
+			jumped = false;
+		}
+		var fromX = lastX, fromY = lastY, fromZ = lastZ;
+		if (dt > 0) {
+			moveX = (x - fromX) / dt;
+			moveY = (y - fromY) / dt;
+			moveZ = (z - fromZ) / dt;
+		}
+		lastX = x;
+		lastY = y;
+		lastZ = z;
+		if (dt > 0)
+			time += dt;
+		// The shader's clock is a float: rebase it now and then, moving every birth with it.
+		if (time > REBASE) {
+			time -= REBASE;
+			for (i in 0...max)
+				ring.setFloat(i * RECORD + 12, ring.getFloat(i * RECORD + 12) - REBASE);
+		}
+		if (emitting && rate > 0 && dt > 0) {
+			owed += rate * dt;
+			var n = Std.int(owed);
+			owed -= n;
+			// Spread along the way it moved, each at the time it passed there.
+			for (i in 0...n) {
+				var along = (i + 1) / n;
+				spawn(time - dt * (1 - along), fromX + (x - fromX) * along, fromY + (y - fromY) * along, fromZ + (z - fromZ) * along);
+			}
+		}
+		forgetDead();
+	}
+
+	// Lets the oldest go while they're dead.
+	function forgetDead():Void
+		while (live > 0) {
+			var at = ((next - live + max) % max) * RECORD;
+			if (time - ring.getFloat(at + 12) < ring.getFloat(at + 28))
+				break;
+			live--;
+		}
+
+	function spawn(when:Float, x:Float, y:Float, z:Float):Void {
+		var ox = 0., oy = 0., oz = 0.;
+		if (sphere > 0) {
+			if (flat) {
+				var a = next01() * Math.PI * 2,
+					r = Math.sqrt(next01()) * sphere;
+				ox = Math.cos(a) * r;
+				oy = Math.sin(a) * r;
+			} else {
+				var zz = signed(), ring = Math.sqrt(Math.max(0, 1 - zz * zz)), phi = next01() * Math.PI * 2, r = Math.pow(next01(), 1 / 3) * sphere;
+				ox = Math.cos(phi) * ring * r;
+				oy = Math.sin(phi) * ring * r;
+				oz = zz * r;
+			}
+		} else {
+			ox = signed() * boxX;
+			oy = signed() * boxY;
+			oz = flat ? 0 : signed() * boxZ;
+		}
+		// The velocity: its direction turned up to spread off it, its speed varied.
+		var speed = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ), vx = 0., vy = 0., vz = 0.;
+		if (speed > 0) {
+			var dx = dirX / speed, dy = dirY / speed, dz = dirZ / speed;
+			if (flat) {
+				var a = signed() * spread, c = Math.cos(a), s = Math.sin(a);
+				vx = dx * c - dy * s;
+				vy = dx * s + dy * c;
+			} else {
+				// Two axes across the direction (from a helper not along it), then a turn off it up to spread, around it at random.
+				var hx = Math.abs(dy) < .9 ? 0. : 1.,
+					hy = Math.abs(dy) < .9 ? 1. : 0.;
+				var px = dy * 0 - dz * hy,
+					py = dz * hx - dx * 0,
+					pz = dx * hy - dy * hx;
+				var pl = Math.sqrt(px * px + py * py + pz * pz);
+				px /= pl;
+				py /= pl;
+				pz /= pl;
+				var qx = dy * pz - dz * py,
+					qy = dz * px - dx * pz,
+					qz = dx * py - dy * px;
+				var around = next01() * Math.PI * 2,
+					off = Math.acos(1 - next01() * (1 - Math.cos(spread)));
+				var ca = Math.cos(around),
+					sa = Math.sin(around),
+					so = Math.sin(off),
+					co = Math.cos(off);
+				vx = dx * co + (px * ca + qx * sa) * so;
+				vy = dy * co + (py * ca + qy * sa) * so;
+				vz = dz * co + (pz * ca + qz * sa) * so;
+			}
+			var v = speed * (1 + signed() * speedVariance);
+			vx *= v;
+			vy *= v;
+			vz *= v;
+		}
+		vx += moveX * inherit;
+		vy += moveY * inherit;
+		vz += moveZ * inherit;
+		var at = next * RECORD;
+		ring.setFloat(at, x + ox);
+		ring.setFloat(at + 4, y + oy);
+		ring.setFloat(at + 8, flat ? 0 : z + oz);
+		ring.setFloat(at + 12, when);
+		ring.setFloat(at + 16, vx);
+		ring.setFloat(at + 20, vy);
+		ring.setFloat(at + 24, flat ? 0 : vz);
+		ring.setFloat(at + 28, lifeMin + (lifeMax - lifeMin) * next01());
+		ring.setFloat(at + 32, 1 + signed() * sizeVariance);
+		ring.setFloat(at + 36, spinMin + (spinMax - spinMin) * next01());
+		ring.setFloat(at + 40, next01() * Math.PI * 2);
+		ring.setFloat(at + 44, next01());
+		next = (next + 1) % max;
+		if (live < max)
+			live++;
+	}
+
+	/** Copies the particles that may still be alive, oldest first, into out at byte at (48 bytes each); how many. */
+	public function writeRecords(out:Bytes, at:Int):Int {
+		var first = (next - live + max) % max;
+		for (i in 0...live) {
+			var from = ((first + i) % max) * RECORD;
+			out.blit(at + i * RECORD, ring, from, RECORD);
+		}
+		return live;
+	}
+
+	/** Whether it draws: a texture, particles alive, and a size and color key each. */
+	public function isDrawable():Bool
+		return texture != null && live > 0 && sizeTimes.length > 0 && colorTimes.length > 0;
+
+	/** Writes its draw's uniforms (the particle program's block) into out: viewProjection, the quad's axes before spin (3D: the camera's right
+		and up; 2D: across and up the screen), and its settings, its clock now. */
+	public function writeUniforms(out:Bytes, viewProjection:helix.render3d.Mat4, axisX:Array<Float>, axisY:Array<Float>):Void {
+		viewProjection.writeTo(out);
+		inline function put(index:Int, a:Float, b:Float, c:Float, d:Float):Void {
+			out.setFloat(64 + index * 16, a);
+			out.setFloat(68 + index * 16, b);
+			out.setFloat(72 + index * 16, c);
+			out.setFloat(76 + index * 16, d);
+		}
+		put(0, axisX[0], axisX[1], axisX[2], 0);
+		put(1, axisY[0], axisY[1], axisY[2], 0);
+		put(2, gravityX, gravityY, gravityZ, time);
+		var alpha = switch alphaMode {
+			case Opaque: -1.;
+			case Mask: Math.max(cutoff, 1e-4);
+			case _: 0.;
+		};
+		put(3, sizeTimes.length, colorTimes.length, alpha, palette.length);
+		var tw = texture.getWidth(), th = texture.getHeight();
+		if (regionWidth > 0 && regionHeight > 0)
+			put(4, regionX / tw, regionY / th, (regionX + regionWidth) / tw, (regionY + regionHeight) / th);
+		else
+			put(4, 0, 0, 1, 1);
+		put(5, drag, stretch, 0, 0);
+		put(6, columns, rows, frameCount, framesPerSecond);
+		inline function keys(index:Int, list:Array<Float>):Void
+			for (half in 0...2)
+				put(index + half, k(list, half * 4), k(list, half * 4 + 1), k(list, half * 4 + 2), k(list, half * 4 + 3));
+		keys(7, sizeTimes);
+		keys(9, sizeValues);
+		keys(11, colorTimes);
+		for (i in 0...MAX_KEYS) {
+			var c = i < colorValues.length ? colorValues[i] : 0;
+			put(13 + i, (c >>> 24) / 255, ((c >>> 16) & 255) / 255, ((c >>> 8) & 255) / 255, (c & 255) / 255);
+		}
+		for (i in 0...8) {
+			var c = i < palette.length ? palette[i] : 0;
+			put(21 + i, (c >>> 24) / 255, ((c >>> 16) & 255) / 255, ((c >>> 8) & 255) / 255, (c & 255) / 255);
+		}
+	}
+
+	static inline function k(list:Array<Float>, i:Int):Float
+		return i < list.length ? list[i] : 0;
+}

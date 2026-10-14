@@ -30,7 +30,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// Apps' programs (createShader), by handle: the linked program, its uniform blocks' locations and sizes, its textures' sampler locations.
 	var appShaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
 	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
-	var programs:Array<Dynamic> = [null, null, null, null];
+	var programs:Array<Dynamic> = [null, null, null, null, null];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -178,7 +178,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d. */
+	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d, 4 particle3d. */
 	static function sources(index:Int):Dynamic {
 		if (index == 0)
 			return {
@@ -205,6 +205,21 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				texture: null,
 				normalTexture: null,
 				vertexUniform: Color3DLayout.vertexUniformName,
+				fragmentUniform: null
+			};
+		if (index == 4)
+			return {
+				vertex: GeneratedShader.particle3dVertex(),
+				fragment: GeneratedShader.particle3dFragment(),
+				attributes: [
+					{slot: Particle3DLayout.cornerSlot, name: Particle3DLayout.cornerName},
+					{slot: Particle3DLayout.bornSlot, name: Particle3DLayout.bornName},
+					{slot: Particle3DLayout.motionSlot, name: Particle3DLayout.motionName},
+					{slot: Particle3DLayout.shapeSlot, name: Particle3DLayout.shapeName}
+				],
+				texture: Particle3DLayout.atlasUniform,
+				normalTexture: null,
+				vertexUniform: Particle3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
 		if (index == 3)
@@ -292,7 +307,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		// Screen takes an app's program; Lit3D may (a surface shader).
 		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
-		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : 1;
+		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : kind == Particle3D ? 4 : 1;
 		if (kind != Screen)
 			program(index);
 		var id = next++;
@@ -336,6 +351,16 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		var id = next++;
 		appShaders[id] = {program: p, blocks: blocks, textures: textures};
 		return id;
+	}
+
+	// The framework's particle program as an app's is described: its block and texture slot.
+	function particleProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
+		var particle = program(4);
+		return {
+			program: particle.program,
+			blocks: [{location: particle.vertexUniform, size: Particle3DLayout.vertexUniformBytes}],
+			textures: [particle.texture]
+		};
 	}
 
 	// The framework's sprite program as an app's is described: its block and texture slot.
@@ -540,7 +565,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
 		var p = pipelines[pipeline], b = buffers[buffer];
-		if (!active || p == null || b == null || b.index || p.kind == Lit3D || p.kind == Sprite3D || p.kind == Screen)
+		if (!active || p == null || b == null || b.index || p.kind == Lit3D || p.kind == Sprite3D || p.kind == Particle3D || p.kind == Screen)
 			throw "Invalid draw";
 		var kind:PipelineKind = p.kind,
 			sprite = kind == Sprite2D,
@@ -596,6 +621,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| p == null
 			|| p.kind != Lit3D
 			&& p.kind != Sprite3D
+			&& p.kind != Particle3D
 			|| v == null
 			|| v.index
 			|| !v.isStatic
@@ -608,15 +634,25 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| indexCount * 4 > ix.used
 			|| firstInstance < 0
 			|| instanceCount <= 0
-			|| (firstInstance + instanceCount) * (p.kind == Sprite3D ? Sprite3DLayout.instanceStride : Lit3DLayout.instanceStride) > n.used)
+			|| (firstInstance +
+				instanceCount) * (p.kind == Sprite3D ? Sprite3DLayout.instanceStride : p.kind == Particle3D ? Particle3DLayout.instanceStride : Lit3DLayout.instanceStride) > n.used)
 			throw "Invalid mesh draw";
 		// The framework's lit program, or an app's surface shader.
-		var app = p.app != 0 ? appShaders[p.app] : p.kind == Sprite3D ? spriteProgram() : litProgram();
+		var app = p.app != 0 ? appShaders[p.app] : p.kind == Sprite3D ? spriteProgram() : p.kind == Particle3D ? particleProgram() : litProgram();
 		if (app == null)
 			throw "Invalid mesh draw";
 		bindProgram(app, textures, samplings, uniforms, false);
 		resetAttributes();
-		if (p.kind == Sprite3D) {
+		if (p.kind == Particle3D) {
+			var record = Particle3DLayout.instanceStride,
+				base = firstInstance * record;
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
+			attribute(Particle3DLayout.cornerSlot, Particle3DLayout.cornerComponents, Particle3DLayout.stride, Particle3DLayout.cornerOffset);
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
+			attribute(Particle3DLayout.bornSlot, 4, record, base + Particle3DLayout.bornOffset, 1);
+			attribute(Particle3DLayout.motionSlot, 4, record, base + Particle3DLayout.motionOffset, 1);
+			attribute(Particle3DLayout.shapeSlot, 4, record, base + Particle3DLayout.shapeOffset, 1);
+		} else if (p.kind == Sprite3D) {
 			var record = Sprite3DLayout.instanceStride,
 				base = firstInstance * record;
 			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
@@ -653,7 +689,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.depthFunc(WebGL2RenderingContext.LEQUAL);
 		// Lit models write depth; sprites only when opaque (see-through and added ones show what's behind them, drawn after).
 		gl.depthMask(p.kind == Lit3D || p.alpha == Opaque);
-		if (p.doubleSided || p.kind == Sprite3D)
+		if (p.doubleSided || p.kind == Sprite3D || p.kind == Particle3D)
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
 		else
 			gl.enable(WebGL2RenderingContext.CULL_FACE);
