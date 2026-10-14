@@ -182,6 +182,14 @@ class SokolGraphicsAdapter implements IGraphics {
 			throw "Invalid native pass";
 	}
 
+	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void
+		if (GraphicsBridge.scissor(x, y, w, h, 1) != 1)
+			throw "Invalid native scissor";
+
+	public function resetScissor():Void
+		if (GraphicsBridge.scissor(0, 0, 0, 0, 0) != 1)
+			throw "No native pass";
+
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {
 		if (GraphicsBridge.viewport(x, y, w, h) != 1)
 			throw "Invalid native viewport";

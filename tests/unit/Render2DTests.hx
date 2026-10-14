@@ -82,6 +82,15 @@ class CountingGraphics implements IGraphics {
 		viewports = [];
 	}
 
+	/** Each scissor set (x, y, w, h), or null for a reset, in order. */
+	public var scissors:Array<Null<Array<Int>>> = [];
+
+	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void
+		scissors.push([x, y, w, h]);
+
+	public function resetScissor():Void
+		scissors.push(null);
+
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void
 		viewports.push([x, y, w, h]);
 
@@ -555,6 +564,7 @@ class Render2DTests {
 		check(gpu.destroyedTextures == destroyed + 1, "The last release frees it");
 		batch.destroy();
 		pick2D();
+		clipping();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -616,5 +626,47 @@ class Render2DTests {
 		box.setEnabled(false);
 		camera.pixels(1);
 		check(stage.pick(camera, 105, 105) == null, "A disabled node isn't hit");
+	}
+
+	// Clips: a batch's nested clips as scissors (bottom-left, within the outer one), and a Stage2D node clipping its children, drawn and picked.
+	static function clipping():Void {
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			camera = new Camera2D();
+		camera.setViewport(400, 300);
+		camera.pixels(1);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		batch.rect(0, 0, 10, 10, -1);
+		batch.pushClip(50, 40, 100, 100);
+		batch.rect(0, 0, 400, 300, -1);
+		batch.pushClip(120, 0, 100, 100);
+		batch.rect(0, 0, 400, 300, -1);
+		batch.popClip();
+		batch.popClip();
+		batch.rect(0, 0, 10, 10, -1);
+		batch.end();
+		var s = gpu.scissors;
+		check(s.length == 3 && s[0].join(",") == "50,160,100,100" && s[1].join(",") == "120,200,30,60" && s[2] == null,
+			"Nested clips: the outer, then within it, as the GPU's bottom-left rectangles; reset after: " + s.map(x -> x == null ? "-" : x.join(","))
+			.join(" "));
+		// A list's window: a group clipping its rows; a row scrolled out of it is neither drawn there nor picked.
+		var stage = new Stage2D(), list = Node2D.group();
+		list.setPosition(20, 20);
+		check(list.setClip(100, 50) && list.isClipping() && !list.setClip(-1, 5), "A clip, and a size below 0 refused");
+		var inside = Node2D.rectangle(100, 20),
+			outside = Node2D.rectangle(100, 20);
+		outside.setPosition(0, 60);
+		list.add(inside);
+		list.add(outside);
+		stage.add(list);
+		gpu.scissors = [];
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(gpu.scissors.length >= 1 && gpu.scissors[0].join(",") == "20,230,100,50", "The group's window as the scissor");
+		check(stage.pick(camera, 30, 30) == inside && stage.pick(camera, 30, 85) == null, "A row out of the window isn't picked");
+		list.clearClip();
+		check(stage.pick(camera, 30, 85) == outside, "Without the clip it is");
 	}
 }

@@ -98,6 +98,13 @@ interface IGraphics {
 	/** Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less. */
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void;
 
+	/** Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as setViewport), until resetScissor or the pass
+		ends; a pass begins unclipped. Throws outside a pass or for a size below 0. */
+	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void;
+
+	/** Draws everywhere in the pass again. Throws outside a pass. */
+	public function resetScissor():Void;
+
 	/** Draws through pipeline: count vertices from first of its buffers (or, for an indexed pipeline, count indices from first of indices, a
 		static index buffer), whole primitives, as instanceCount instances whose records start at record firstInstance of its instanced buffers.
 		buffers[i] is the buffer (createBuffer's, as this frame's upload left it, or createStaticBuffer's) for the pipeline's buffer i (0 for a

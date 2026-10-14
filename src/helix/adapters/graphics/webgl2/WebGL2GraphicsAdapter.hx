@@ -458,6 +458,20 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.viewport(0, 0, width, height);
 	}
 
+	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void {
+		if (!active || w < 0 || h < 0)
+			throw "Invalid scissor";
+		gl.enable(WebGL2RenderingContext.SCISSOR_TEST);
+		// From the bottom left, as asked; a flipped pass's rows are upside down.
+		gl.scissor(x, flipped ? passHeight - y - h : y, w, h);
+	}
+
+	public function resetScissor():Void {
+		if (!active)
+			throw "No pass";
+		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
+	}
+
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {
 		if (!active || w <= 0 || h <= 0)
 			throw "Invalid viewport";

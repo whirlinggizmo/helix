@@ -10,6 +10,12 @@ class Stage2D {
 	var root = Node2D.group();
 	var stack:Array<Node2D> = [];
 	var stackChanged:Array<Bool> = [];
+
+	// On the walk's stack after a clipping node's children: its clip ends there.
+	static final clipEnd = Node2D.group();
+
+	// The clipping nodes a pick is inside, outermost first.
+	var pickClips:Array<Node2D> = [];
 	var count = 0;
 	var left = 0.;
 	var top = 0.;
@@ -76,6 +82,10 @@ class Stage2D {
 		}
 		while (stack.length > 0) {
 			var node = stack.pop(), parentChanged = stackChanged.pop();
+			if (node == clipEnd) {
+				batch.popClip();
+				continue;
+			}
 			if (!node.enabled)
 				continue;
 			var changed = node.update(parentChanged);
@@ -85,6 +95,12 @@ class Stage2D {
 					node.emitterOf.advance(dt, node.wx, node.wy, 0);
 			} else if (node.kind != Group)
 				drawNode(batch, node);
+			if (node.clipWidth >= 0) {
+				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
+				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
+				stack.push(clipEnd);
+				stackChanged.push(false);
+			}
 			var j = node.children.length;
 			while (j-- > 0) {
 				stack.push(node.children[j]);
@@ -212,13 +228,23 @@ class Stage2D {
 			stack.push(root.children[i]);
 			stackChanged.push(rootChanged);
 		}
+		pickClips.resize(0);
 		while (stack.length > 0) {
 			var node = stack.pop(), parentChanged = stackChanged.pop();
+			if (node == clipEnd) {
+				pickClips.pop();
+				continue;
+			}
 			if (!node.enabled)
 				continue;
 			var changed = node.update(parentChanged);
-			if (node.pickable && hits(node, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+			if (node.pickable && insideClips(wx, wy) && hits(node, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
 				hit = node;
+			if (node.clipWidth >= 0) {
+				pickClips.push(node);
+				stack.push(clipEnd);
+				stackChanged.push(false);
+			}
 			var j = node.children.length;
 			while (j-- > 0) {
 				stack.push(node.children[j]);
@@ -226,6 +252,16 @@ class Stage2D {
 			}
 		}
 		return hit;
+	}
+
+	// Whether world point x, y is inside every clip the walk is in (a node scrolled out of a list's window isn't picked).
+	function insideClips(x:Float, y:Float):Bool {
+		for (c in pickClips) {
+			var lx = c.toLocalX(x, y), ly = c.toLocalY(x, y);
+			if (!(lx >= 0 && lx <= c.clipWidth && ly >= 0 && ly <= c.clipHeight))
+				return false;
+		}
+		return true;
 	}
 
 	// Whether node's own point x, y is on what it draws.

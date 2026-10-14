@@ -13,6 +13,8 @@ class Node2D {
 	var parent:Null<Node2D>;
 	var children:Array<Node2D> = [];
 	var enabled = true;
+	var clipWidth = -1.;
+	var clipHeight = -1.;
 	var visible = true;
 	var pickable = true;
 	var px = 0.;
@@ -326,6 +328,32 @@ class Node2D {
 		align = value;
 		return true;
 	}
+
+	/** Whether its children are clipped (setClip). */
+	public function isClipping():Bool
+		return clipWidth >= 0;
+
+	/** The clip's width in its own units, or -1 without one. */
+	public function getClipWidth():Float
+		return clipWidth;
+
+	/** The clip's height in its own units, or -1 without one. */
+	public function getClipHeight():Float
+		return clipHeight;
+
+	/** Clips its children (drawn and picked) to the rectangle width x height from its own origin, in its own units: a scrolling list's window. A
+		turned node clips to the turned rectangle's bounds. Its own output isn't clipped. False, changing nothing, for a size below 0. */
+	public function setClip(width:Float, height:Float):Bool {
+		if (!(width >= 0 && height >= 0))
+			return false;
+		clipWidth = width;
+		clipHeight = height;
+		return true;
+	}
+
+	/** Stops clipping its children. */
+	public function clearClip():Void
+		clipWidth = clipHeight = -1;
 
 	/** Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't
 		moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as

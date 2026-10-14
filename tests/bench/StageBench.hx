@@ -137,6 +137,10 @@ class NullGraphics implements IGraphics {
 
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {}
 
+	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void {}
+
+	public function resetScissor():Void {}
+
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void {}
 
 	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,

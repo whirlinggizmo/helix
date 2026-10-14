@@ -40,6 +40,10 @@ class Batch2D {
 	var runs:Array<Int> = [];
 	var runCameras:Array<Camera2D> = [];
 	var runSamplings:Array<Sampling> = [];
+	// By run: its clip in framebuffer pixels from the top-left (x, y, w, h), w -1 for none.
+	var runClips:Array<Int> = [];
+	// The clips pushed, each within the one before (x, y, w, h each); the current one last.
+	var clips:Array<Int> = [];
 	// By run: the emitter it draws (its first record and count in the batch's particle upload, its uniforms), or null for a run of quads.
 	var runEmitters:Array<Null<{
 		emitter:helix.particles.Emitter,
@@ -88,6 +92,8 @@ class Batch2D {
 		runCameras = [];
 		runSamplings = [];
 		runEmitters = [];
+		runClips = [];
+		clips = [];
 		particleCount = 0;
 		texture = font.getTexture();
 		sampling = texture.getSampling();
@@ -135,13 +141,26 @@ class Batch2D {
 			}
 			gpu.updateBuffer(particleBuffer, particleRecords, particleCount * Particle3DLayout.instanceStride);
 		}
-		var i = 0, viewport:Camera2D = null;
+		var i = 0, viewport:Camera2D = null, clipped = false, cx = 0, cy = 0, cw = 0, ch = 0;
 		while (i < runs.length) {
 			var run = Std.int(i / 3), c = runCameras[run];
 			if (c != viewport) {
 				viewport = c;
 				gpu.setViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
 					c.getViewportHeight());
+			}
+			// The run's clip, set when it changes (from the top-left here, the bottom-left for the GPU).
+			var at = run * 4, w = runClips[at + 2];
+			if (w < 0 && clipped) {
+				gpu.resetScissor();
+				clipped = false;
+			} else if (w >= 0 && (!clipped || runClips[at] != cx || runClips[at + 1] != cy || w != cw || runClips[at + 3] != ch)) {
+				cx = runClips[at];
+				cy = runClips[at + 1];
+				cw = w;
+				ch = runClips[at + 3];
+				gpu.setScissor(cx, c.getFramebufferHeight() - cy - ch, cw, ch);
+				clipped = true;
 			}
 			var e = runEmitters[run];
 			if (e != null) {
@@ -157,6 +176,56 @@ class Batch2D {
 			draws++;
 			i += 3;
 		}
+		if (clipped)
+			gpu.resetScissor();
+	}
+
+	/** Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a
+		turned one's bounds), within any clip already pushed, until popClip. */
+	public function pushClip(x:Float, y:Float, w:Float, h:Float):Void {
+		closeRun();
+		var lx = Math.POSITIVE_INFINITY,
+			ly = Math.POSITIVE_INFINITY,
+			hx = Math.NEGATIVE_INFINITY,
+			hy = Math.NEGATIVE_INFINITY;
+		for (k in 0...4) {
+			var px = k & 1 == 0 ? x : x + w, py = k & 2 == 0 ? y : y + h;
+			var sx = camera.worldToScreenX(ta * px + tc * py + tx),
+				sy = camera.worldToScreenY(tb * px + td * py + ty);
+			lx = Math.min(lx, sx);
+			ly = Math.min(ly, sy);
+			hx = Math.max(hx, sx);
+			hy = Math.max(hy, sy);
+		}
+		var left = Math.round(lx),
+			top = Math.round(ly),
+			right = Math.round(hx),
+			bottom = Math.round(hy);
+		var n = clips.length;
+		if (n > 0) {
+			left = Std.int(Math.max(left, clips[n - 4]));
+			top = Std.int(Math.max(top, clips[n - 3]));
+			right = Std.int(Math.min(right, clips[n - 4] + clips[n - 2]));
+			bottom = Std.int(Math.min(bottom, clips[n - 3] + clips[n - 1]));
+		}
+		clips.push(left);
+		clips.push(top);
+		clips.push(Std.int(Math.max(0, right - left)));
+		clips.push(Std.int(Math.max(0, bottom - top)));
+	}
+
+	/** Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed. */
+	public function popClip():Void {
+		if (clips.length == 0)
+			return;
+		closeRun();
+		clips.resize(clips.length - 4);
+	}
+
+	function pushRunClip():Void {
+		var n = clips.length;
+		for (k in 0...4)
+			runClips.push(n == 0 ? (k == 2 ? -1 : 0) : clips[n - 4 + k]);
 	}
 
 	/** Later quads sample this texture, as its sampling is now (Texture2D.setSampling). */
@@ -175,6 +244,7 @@ class Batch2D {
 			runCameras.push(camera);
 			runSamplings.push(sampling);
 			runEmitters.push(null);
+			pushRunClip();
 		}
 		runStart = vertices;
 	}
@@ -309,6 +379,7 @@ class Batch2D {
 		runs.push(count);
 		runCameras.push(camera);
 		runSamplings.push(texture.getSampling());
+		pushRunClip();
 		runEmitters.push({
 			emitter: emitter,
 			first: first,

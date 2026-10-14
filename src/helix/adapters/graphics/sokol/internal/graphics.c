@@ -338,6 +338,13 @@ int helix_read_pixels(uint32_t target,unsigned char *out){
   for(int y=0;y<h/2;y++){memcpy(swap,out+row*y,row);memcpy(out+row*y,out+row*(h-1-y),row);memcpy(out+row*(h-1-y),swap,row);}free(swap);}
  return ok;
 }
+/* Clips to x, y, w, h from the bottom left (on), or to the whole pass (off). sokol's scissor lasts the pass. */
+int helix_scissor(int x,int y,int w,int h,int on){
+ if(!active||(on&&(w<0||h<0)))return 0;
+ if(on)sg_apply_scissor_rect(x,flipped?frame_height-y-h:y,w,h,false);
+ else sg_apply_scissor_rect(0,0,frame_width,frame_height,false);
+ return 1;
+}
 int helix_viewport(int x,int y,int w,int h){
  if(!active||w<=0||h<=0)return 0;
  /* From the bottom left, as asked; a flipped pass's rows are upside down. */
