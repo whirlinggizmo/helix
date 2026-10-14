@@ -51,6 +51,10 @@ class Stage2D {
 	public function setTime(seconds:Float):Void
 		time = seconds;
 
+	/** The font a text without its own was last drawn in (the batch's), or null before a draw. */
+	public function getFont():Null<Font2D>
+		return lastFont;
+
 	/** Nodes drawn by the last draw (in view). */
 	public function getDrawnCount():Int
 		return count;

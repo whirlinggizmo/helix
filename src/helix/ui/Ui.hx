@@ -61,6 +61,10 @@ class Ui {
 	public function getRoot():Node2D
 		return root;
 
+	/** The font text is drawn in without the theme's: the stage's last (the batch's built-in), once drawn. */
+	public function getFont():Null<helix.render2d.Font2D>
+		return stage.getFont();
+
 	/** The camera it's drawn through. */
 	public function getCamera():Camera2D
 		return camera;
@@ -92,6 +96,10 @@ class Ui {
 	/** How far along something is, 0 to 1. */
 	public function progress(value:Float, ?name:String):ProgressBar
 		return adopt(new ProgressBar(this, name != null ? name : "progress", value));
+
+	/** A line of text typed in, at most maxLength characters, hint shown while it's empty. */
+	public function textField(value:String, hint = "", maxLength = 64, ?name:String):TextField
+		return adopt(new TextField(this, name != null ? name : "text", value, hint, maxLength));
 
 	/** A list of items rows tall, scrolled by the wheel or a drag, an item chosen by the pointer or Up and Down. */
 	public function list(items:Array<String>, rows:Int, ?name:String):ListView
@@ -129,7 +137,7 @@ class Ui {
 
 	/** Whether a widget has the keys: a game should leave arrows, Enter and Space be. */
 	public function hasKeys():Bool
-		return focused != null && keys;
+		return focused != null && (keys || focused.takesText());
 
 	/** Whether Escape or a pad's East was pressed this frame (not held over from before reset). */
 	public function isBackPressed():Bool
@@ -192,7 +200,7 @@ class Ui {
 			focused = first();
 		var activated = !guarded
 			&& focused != null
-			&& (input.isFramePressed(Key.Enter) || input.isFramePressed(Key.Space) || pad(PadButton.South));
+			&& (input.isFramePressed(Key.Enter) || !focused.takesText() && input.isFramePressed(Key.Space) || pad(PadButton.South));
 		if (activated) {
 			keys = true;
 			showFocus = true;

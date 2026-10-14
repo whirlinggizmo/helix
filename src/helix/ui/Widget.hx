@@ -68,6 +68,12 @@ class Widget {
 	function takesSideways():Bool
 		return false;
 
+	// Whether it takes typed text while focused (a text field): the UI has the keys however it got focus, and Space is typed, not activating.
+
+	@:allow(helix.ui.Ui)
+	function takesText():Bool
+		return false;
+
 	// Whether it uses Up and Down itself while focused (a list), so they don't move focus.
 
 	@:allow(helix.ui.Ui)

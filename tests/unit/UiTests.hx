@@ -22,6 +22,7 @@ class UiTests {
 		var font = Font2D.builtIn(new CountingGraphics());
 		layout(font);
 		widgets(font);
+		typing(font);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -177,5 +178,50 @@ class UiTests {
 		check(play.isClicked(), "Pressed afresh, it does");
 		frame([Escape]);
 		check(ui.isBackPressed(), "Escape is back");
+	}
+
+	// A text field: focused by a click, then typed in (spaces typed, not activating), Backspace, Enter, its limit; the keys the UI's meanwhile.
+	static function typing(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input),
+			name = ui.textField("", "your name", 8);
+		var layout = Box.column().setSize(Fixed(300), Fit).add(name.getBox());
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?typed:String, ?key:helix.input.Key, ?x:Float, ?y:Float, ?down:Bool):Void {
+			input.endFrame();
+			if (typed != null)
+				input.textEvent(typed);
+			if (key != null) {
+				input.keyEvent(key, true);
+				input.keyEvent(key, false);
+			}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			Box.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		frame();
+		frame(20, 10, true);
+		frame(20, 10, false);
+		check(ui.getFocused() == name && ui.hasKeys(), "A click focuses the field; the UI has the keys though the pointer gave focus");
+		frame("ab c");
+		check(name.getText() == "ab c" && name.isChanged(), "Typed, a space among it");
+		frame(" ", Space);
+		check(name.getText() == "ab c " && !name.isSubmitted(), "Space types, not activates");
+		frame(Backspace);
+		frame("defghijk");
+		check(name.getText() == "ab cdefg", "Backspace takes one off; typing stops at the limit: " + name.getText());
+		frame(Enter);
+		check(name.isSubmitted(), "Enter submits");
 	}
 }
