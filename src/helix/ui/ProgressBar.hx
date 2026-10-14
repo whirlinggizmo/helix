@@ -15,9 +15,11 @@ class ProgressBar extends Widget {
 		var theme = ui.getTheme();
 		track = Node2D.rectangle(1, 1, theme.face);
 		track.setPivot(0, 0);
+		track.setCornerRadius(theme.corner);
 		track.setPickable(false);
 		fill = Node2D.rectangle(1, 1, theme.accent);
 		fill.setPivot(0, 0);
+		fill.setCornerRadius(theme.corner);
 		fill.setPickable(false);
 		root.add(track);
 		root.add(fill);

@@ -38,6 +38,10 @@ class Theme {
 	/** The focus ring's width. */
 	public var focusWidth = 2.;
 
+	/** The radius of a panel's, a button's, a field's and a list's corners (a track's, a bar's and a box's at most half their height); 0 for
+		square. The focus ring follows them. */
+	public var corner = 8.;
+
 	/** Room inside a button or panel, around its content. */
 	public var padding = 10.;
 

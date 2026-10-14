@@ -42,6 +42,7 @@ class Node2D {
 	var points:Array<Float> = [];
 	var triangles:Array<Int> = [];
 	var outline = 0.;
+	var cornerRadius = 0.;
 	var content = "";
 	var textSize = 16.;
 	var font:Null<Font2D>;
@@ -114,7 +115,8 @@ class Node2D {
 	}
 
 	/** One line of text, size world units tall (ascent to descent), in font (null: the drawing batch's built-in one); its position is the top
-		of the text and, by align, its left edge, center or right edge. */
+		of the text and, by align, its left edge, center or right edge. Not pickable until setPickable(true): a label lets the pointer through to
+		what it's on. */
 	public static function text(value:String, size = 16., color = 0xffffffff, align:Align2D = Left, ?font:Font2D):Node2D {
 		var node = new Node2D(Text);
 		node.content = value;
@@ -122,6 +124,7 @@ class Node2D {
 		node.color = color;
 		node.align = align;
 		node.font = font;
+		node.pickable = false;
 		return node;
 	}
 
@@ -271,6 +274,19 @@ class Node2D {
 			return false;
 		points = value.copy();
 		triangles = Polygon2D.triangulate(points);
+		return true;
+	}
+
+	/** A rectangle's corners' radius, in its own units; 0 for square (and for another kind). */
+	public function getCornerRadius():Float
+		return cornerRadius;
+
+	/** Rounds a rectangle's corners to radius (drawn at most half its shorter side; outlined, the outline's middle follows the corners), and
+		picks it by its rounded shape. False for another kind or a radius below 0. */
+	public function setCornerRadius(radius:Float):Bool {
+		if (kind != Rectangle || !(radius >= 0))
+			return false;
+		cornerRadius = radius;
 		return true;
 	}
 
@@ -425,7 +441,7 @@ class Node2D {
 		visible = value;
 
 	/** Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter
-		to it: hidden and pickable is a hit area. On to start. */
+		to it: hidden and pickable is a hit area. On to start, but for text. */
 	public function isPickable():Bool
 		return pickable;
 
@@ -567,7 +583,7 @@ enum abstract Node2DKind(Int) {
 	/** A texture, or a region of one. */
 	var Sprite = 1;
 
-	/** A rectangle, filled or outlined. */
+	/** A rectangle, filled or outlined, its corners square or rounded. */
 	var Rectangle = 2;
 
 	/** A circle, filled or outlined. */

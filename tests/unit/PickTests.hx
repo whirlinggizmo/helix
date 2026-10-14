@@ -187,6 +187,8 @@ class PickTests {
 		label.setPosition(-3, 0, 0);
 		stage.add(label);
 		at = pixel(c, -3, 0, 0);
+		check(stage.pick(c, at[0], at[1]) == null, "A text isn't pickable until asked");
+		label.setPickable(true);
 		hit = stage.pick(c, at[0], at[1]);
 		check(hit != null && hit.getNode() == label, "A text by its block");
 		// In front of a model, the sprite wins; behind it, the model does.

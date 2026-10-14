@@ -11,7 +11,6 @@ class Label extends Widget {
 		super(ui, name);
 		var theme = ui.getTheme();
 		node = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
-		node.setPickable(false);
 		root.add(node);
 		box = Box.of(node);
 	}

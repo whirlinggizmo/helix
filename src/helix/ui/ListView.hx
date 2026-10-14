@@ -26,6 +26,7 @@ class ListView extends Widget {
 		var theme = ui.getTheme();
 		face = Node2D.rectangle(1, 1, theme.face);
 		face.setPivot(0, 0);
+		face.setCornerRadius(theme.corner);
 		window = Node2D.group();
 		content = Node2D.group();
 		window.add(content);
@@ -51,9 +52,9 @@ class ListView extends Widget {
 		for (i in 0...items.length) {
 			var rowFace = Node2D.rectangle(1, theme.height, 0);
 			rowFace.setPivot(0, 0);
+			rowFace.setCornerRadius(theme.corner);
 			rowFace.setPickable(false);
 			var text = Node2D.text(items[i], theme.textSize, theme.text, Left, theme.font);
-			text.setPickable(false);
 			content.add(rowFace);
 			content.add(text);
 			rows.push({face: rowFace, text: text});

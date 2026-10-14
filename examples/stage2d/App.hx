@@ -9,8 +9,9 @@ import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 
 /** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in logical pixels: a polygon rock turning in outline, a ring,
-	a box turning about its center, a sprite of a loaded texture, a group (a hub with two moons) turning as one, and a particle emitter circling
-	and trailing (drawn by the GPU at its place in the stage's order); then immediate text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
+	a box turning about its center, a rounded one turning with it and a rounded outline, a sprite of a loaded texture, a group (a hub with two
+	moons) turning as one, and a particle emitter circling and trailing (drawn by the GPU at its place in the stage's order); then immediate
+	text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	var services:Services;
 	var world = new Stage2D();
@@ -21,6 +22,7 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 	var rock:Node2D;
 	var box:Node2D;
+	var card:Node2D;
 	var sprite:Node2D;
 	var orbit:Node2D;
 	var sparks:Node2D;
@@ -47,6 +49,18 @@ class App extends BaseApp {
 		box.setPivot(.5, .5);
 		box.setPosition(120, 0);
 		world.add(box);
+		// Rounded, filled and outlined.
+		card = Node2D.rectangle(50, 30, 0x2fa36bff);
+		card.setCornerRadius(10);
+		card.setPivot(.5, .5);
+		card.setPosition(120, 75);
+		world.add(card);
+		var frame = Node2D.rectangle(60, 40, 0xe8a33cff);
+		frame.setCornerRadius(12);
+		frame.setOutline(3);
+		frame.setPivot(.5, .5);
+		frame.setPosition(-120, 75);
+		world.add(frame);
 		sprite = Node2D.sprite(null);
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
@@ -100,6 +114,7 @@ class App extends BaseApp {
 		fps.update(dt, services.getFrameCpu());
 		rock.setRotation(time * .6);
 		box.setRotation(-time * .8);
+		card.setRotation(-time * .8);
 		sprite.setRotation(-time * .3);
 		orbit.setRotation(time * 1.5);
 		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);

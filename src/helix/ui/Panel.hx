@@ -15,6 +15,7 @@ class Panel extends Widget {
 		var theme = ui.getTheme();
 		background = Node2D.rectangle(1, 1, theme.panel);
 		background.setPivot(0, 0);
+		background.setCornerRadius(theme.corner);
 		root.add(background);
 		content = Box.column()
 			.setPadding(theme.padding, theme.padding, theme.padding, theme.padding)

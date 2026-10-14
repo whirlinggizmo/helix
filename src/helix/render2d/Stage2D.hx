@@ -180,10 +180,12 @@ class Stage2D {
 					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getSourceWidth()) / tw, (sy + node.getSourceHeight()) / th, node.color);
 				}
 			case Rectangle:
+				// Outlined, the corners' arcs are the outline's middle: their radius half the outline more outside.
+				var r = Math.min(node.cornerRadius, Math.min(node.width, node.height) / 2);
 				if (o > 0)
-					batch.frame(x, y, w, h, o, node.color);
+					batch.roundedFrame(x, y, w, h, r > 0 ? r + o / 2 : 0, o, node.color);
 				else
-					batch.rect(x, y, w, h, node.color);
+					batch.roundedRect(x, y, w, h, r, node.color);
 			case Circle:
 				if (o > 0)
 					batch.circleLines(0, 0, node.radius + o / 2, o, node.color);
@@ -276,6 +278,16 @@ class Stage2D {
 		return true;
 	}
 
+	// Whether x, y is inside the rectangle left, top, w x h with corners of radius: within the rectangle, and within radius of the nearest
+	// point of it radius in from its edges.
+	static function insideRounded(x:Float, y:Float, left:Float, top:Float, w:Float, h:Float, radius:Float):Bool {
+		if (x < left || x > left + w || y < top || y > top + h)
+			return false;
+		var cx = Math.max(left + radius, Math.min(x, left + w - radius)),
+			cy = Math.max(top + radius, Math.min(y, top + h - radius));
+		return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius;
+	}
+
 	// Whether node's own point x, y is on what it draws.
 	function hits(node:Node2D, x:Float, y:Float):Bool {
 		var o = node.outline, half = o / 2;
@@ -286,12 +298,12 @@ class Stage2D {
 				var w = node.getWidth(),
 					h = node.getHeight(),
 					left = -node.pivotX * w,
-					top = -node.pivotY * h;
-				var outside = x < left - half || x > left + w + half || y < top - half || y > top + h + half;
-				if (outside)
+					top = -node.pivotY * h,
+					r = Math.min(node.cornerRadius, Math.min(w, h) / 2);
+				if (!insideRounded(x, y, left - half, top - half, w + o, h + o, r > 0 ? r + half : 0))
 					return false;
 				// An outlined rectangle is its frame: not inside it.
-				return node.kind == Sprite || o <= 0 || x < left + half || x > left + w - half || y < top + half || y > top + h - half;
+				return node.kind == Sprite || o <= 0 || !insideRounded(x, y, left + half, top + half, w - o, h - o, Math.max(0, r - half));
 			case Circle:
 				var d = Math.sqrt(x * x + y * y);
 				return o > 0 ? Math.abs(d - node.radius - half) <= half : d <= node.radius;

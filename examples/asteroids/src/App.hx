@@ -89,6 +89,7 @@ class App extends BaseApp {
 		theme.textSize = 22;
 		theme.height = 52;
 		theme.gap = 12;
+		theme.corner = 12;
 		ui = new Ui(hud, camera, pointer, services.input, theme);
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");

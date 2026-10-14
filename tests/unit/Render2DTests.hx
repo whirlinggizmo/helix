@@ -566,7 +566,49 @@ class Render2DTests {
 		pick2D();
 		clipping();
 		sliceAndWrap();
+		rounded();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// Rounded rectangles: drawn as fans and bands, picked by their rounded shape, filled or outlined.
+	static function rounded():Void {
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			stage = new Stage2D(),
+			camera = new Camera2D();
+		camera.setViewport(400, 300);
+		camera.pixels(1);
+		check(!Node2D.circle(5).setCornerRadius(2)
+			&& !Node2D.rectangle(5, 5).setCornerRadius(-1), "Only a rectangle rounds, by a radius of 0 or more");
+		var card = Node2D.rectangle(100, 60);
+		card.setCornerRadius(20);
+		card.setPosition(100, 100);
+		stage.add(card);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		var roundedVertices = gpu.draws[0].vertices;
+		check(stage.pick(camera, 102, 102) == null && stage.pick(camera, 120, 102) == card && stage.pick(camera, 150, 130) == card,
+			"A rounded rectangle is picked by its shape: not in a corner cut off");
+		card.setCornerRadius(100);
+		check(stage.pick(camera, 101, 130) == card
+			&& stage.pick(camera, 105, 105) == null, "A radius past half the shorter side is half of it");
+		card.setCornerRadius(20);
+		card.setOutline(4);
+		check(stage.pick(camera, 100, 130) == card
+			&& stage.pick(camera, 150, 130) == null
+			&& stage.pick(camera, 106, 106) == card
+			&& stage.pick(camera, 102, 102) == null,
+			"Outlined, it's the stroke along its rounded edge");
+		card.setOutline(0);
+		card.setCornerRadius(0);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(gpu.draws[0].vertices == 6 && roundedVertices > 6 && roundedVertices % 3 == 0, "Square, two triangles; rounded, a fan of them");
+		batch.destroy();
 	}
 
 	// Picking a Stage2D: the topmost node under a point, by each kind's own area, through the camera, honouring the flags.
@@ -584,6 +626,8 @@ class Render2DTests {
 		stage.add(box);
 		stage.add(disc);
 		var label = Node2D.text("HELLO", 20);
+		check(!label.isPickable() && Node2D.rectangle(1, 1).isPickable(), "Text isn't pickable until asked; shapes are");
+		label.setPickable(true);
 		label.setPosition(250, 50);
 		stage.add(label);
 		gpu.beginFrame(400, 300, 0);
@@ -713,6 +757,7 @@ class Render2DTests {
 		var note = Node2D.text("the quick brown fox jumps over the lazy dog", 16);
 		check(note.setWrapWidth(100) && !Node2D.circle(1).setWrapWidth(10), "Wrapping is a text's");
 		note.setPosition(250, 20);
+		note.setPickable(true);
 		stage.add(note);
 		batch.begin(camera);
 		stage.draw(batch, camera);

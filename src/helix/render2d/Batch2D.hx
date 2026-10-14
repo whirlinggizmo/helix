@@ -54,6 +54,9 @@ class Batch2D {
 	// Particles, made when first drawn: their quad, and the frame's records in one upload.
 	var particlesReady = false;
 	var particleCorners = 0;
+	// A rounded rectangle's outlines, outside and in, reused.
+	var outer:Array<Float> = [];
+	var inner:Array<Float> = [];
 	var particleIndices = 0;
 	var particleBuffer = 0;
 	var particleCapacity = 0;
@@ -451,21 +454,60 @@ class Batch2D {
 		rect(x + w - width, y + width, width, h - 2 * width, tint);
 	}
 
-	/** A filled rectangle with corners of radius world units, the radius clamped to half the shorter side. */
+	/** A filled rectangle with corners of radius world units (clamped to half the shorter side), with segments for their size on screen. */
 	public function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void {
+		if (radius <= 0 || w <= 0 || h <= 0) {
+			rect(x, y, w, h, tint);
+			return;
+		}
+		var n = roundedOutline(x, y, w, h, radius, cornerSteps(radius), outer), cx = x + w / 2, cy = y + h / 2;
+		for (i in 0...n) {
+			var j = (i + 1) % n;
+			triangle(cx, cy, outer[i * 2], outer[i * 2 + 1], outer[j * 2], outer[j * 2 + 1], tint);
+		}
+	}
+
+	/** A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers. */
+	public function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void {
+		if (radius <= 0) {
+			frame(x, y, w, h, width, tint);
+			return;
+		}
+		if (w <= 0 || h <= 0 || width <= 0)
+			return;
+		width = Math.min(width, Math.min(w, h) / 2);
 		radius = Math.min(radius, Math.min(w, h) / 2);
-		rect(x + radius, y, w - 2 * radius, h, tint);
-		rect(x, y + radius, radius, h - 2 * radius, tint);
-		rect(x + w - radius, y + radius, radius, h - 2 * radius, tint);
+		var steps = cornerSteps(radius);
+		var n = roundedOutline(x, y, w, h, radius, steps, outer);
+		roundedOutline(x + width, y + width, w - width * 2, h - width * 2, radius - width, steps, inner);
+		for (i in 0...n) {
+			var j = (i + 1) % n;
+			triangle(outer[i * 2], outer[i * 2 + 1], outer[j * 2], outer[j * 2 + 1], inner[i * 2], inner[i * 2 + 1], tint);
+			triangle(inner[i * 2], inner[i * 2 + 1], outer[j * 2], outer[j * 2 + 1], inner[j * 2], inner[j * 2 + 1], tint);
+		}
+	}
+
+	// A quarter of a circle's segments for radius, 2 at least.
+	function cornerSteps(radius:Float):Int
+		return Std.int(Math.max(2, Math.ceil(segments(radius) / 4)));
+
+	// The outline of the rectangle x, y, w x h with corners of radius (0 to half its shorter side), into out: clockwise from the top-left
+	// corner's arc, steps + 1 points a corner, so two outlines of the same steps join into a band. Returns its count of points.
+	static function roundedOutline(x:Float, y:Float, w:Float, h:Float, radius:Float, steps:Int, out:Array<Float>):Int {
+		w = Math.max(0, w);
+		h = Math.max(0, h);
+		var r = Math.max(0, Math.min(radius, Math.min(w, h) / 2)), k = 0;
 		for (corner in 0...4) {
-			var cx = corner == 0 || corner == 3 ? x + radius : x + w - radius,
-				cy = corner < 2 ? y + radius : y + h - radius,
+			var cx = corner == 0 || corner == 3 ? x + r : x + w - r,
+				cy = corner < 2 ? y + r : y + h - r,
 				start = Math.PI + corner * Math.PI / 2;
-			for (i in 0...6) {
-				var p = start + i * Math.PI / 12, q = p + Math.PI / 12;
-				triangle(cx, cy, cx + Math.cos(p) * radius, cy + Math.sin(p) * radius, cx + Math.cos(q) * radius, cy + Math.sin(q) * radius, tint);
+			for (i in 0...steps + 1) {
+				var a = start + i * Math.PI / 2 / steps;
+				out[k++] = cx + Math.cos(a) * r;
+				out[k++] = cy + Math.sin(a) * r;
 			}
 		}
+		return k >> 1;
 	}
 
 	/** Enough segments for the circle's size on screen: about one per 2.5 pixels of circumference, 12 at least. */

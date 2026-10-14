@@ -17,9 +17,10 @@ import helix.render3d.Node;
 import helix.render3d.PickHit;
 import helix.render3d.Stage3D;
 
-/** Every kind a Stage3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text (their quads as drawn),
-	a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). The hit's point is marked, its
-	normal drawn, and its node, distance and point shown. O stops the circling camera; Escape quits where quitting means anything. */
+/** Every kind a Stage3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
+	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). The hit's
+	point is marked, its normal drawn, and its node, distance and point shown. O stops the circling camera; Escape quits where quitting means
+	anything. */
 class App extends BaseApp {
 	var services:Services;
 	var stage:Stage3D;
@@ -69,6 +70,8 @@ class App extends BaseApp {
 		stage.add(sphere);
 		var label = Node.text3d("PICK ME", .5, 0xf5d25aff);
 		label.setName("a text");
+		// Text lets picks through unless asked.
+		label.setPickable(true);
 		label.setPosition(1, 2.4, -2);
 		stage.add(label);
 		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {

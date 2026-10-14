@@ -23,7 +23,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
 | `lights` | directional, point and spot lights on a stage, beside an immediate grid |
 | `animation` | skinned characters (Quaternius's modular women): a skeleton and 24 clips from a file of animations alone, an outfit of skinned parts from files of their own bound to it by joint name and swapped at run time, a sword in a socket (a joint), crossfades, posed shadows |
-| `ui` | menus (helix.ui): a main menu, settings (toggle, slider, a name typed in) and a scrolling list of levels in nine-slice panels, laid out in a fitted 1280 x 720 design, used by the pointer, keys or a pad |
+| `ui` | menus (helix.ui): a main menu, settings (toggle, slider, a name typed in) and a scrolling list of levels, the main menu in a nine-slice panel and the others in rounded ones, laid out in a fitted 1280 x 720 design, used by the pointer, keys or a pad |
 | `scene3d` | the pointer over a scene: shapes in a ring hovered and clicked to select, a HUD button over the world that captures the pointer, an unpickable ground and label (helix.scene.Pointer) |
 | `pick` | every kind a Stage3D picks: a cube, a sphere, a sprite, a text, a glTF car and a walking skinned character, the hit's point, normal and distance shown |
 | `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded into nodes: parts and lights found by name, a chase camera on a camera node |
@@ -34,7 +34,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `shadows` | a sun and a circling spot casting into one shadow map, a layer each; a ball that casts nothing and one nothing shadows; distance, bias, map size, strength and tint live |
 | `environment` | image-based light from two 1K Poly Haven HDRs, prepared a few milliseconds a frame: plastic and gold roughness steps, a mirror, a normal map, a pearl (a surface shader shaded by the stage) and a car, no lights; a background sharp to blurred, Neutral, ACES or no tone mapping, exposure and turn live |
 | `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
-| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes, a sprite, text, a turning group, a trailing emitter |
+| `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes (a square box, a rounded one and a rounded outline among them), a sprite, text, a turning group, a trailing emitter |
 | `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
 | `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |

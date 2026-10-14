@@ -251,6 +251,8 @@ class Ui {
 			ring.setSize(b.getWidth() + out * 2, b.getHeight() + out * 2);
 			ring.setPivot(0, 0);
 			ring.setPosition(b.getX() - out, b.getY() - out);
+			// Its corners round about the widgets' corners' centers.
+			ring.setCornerRadius(theme.corner > 0 ? theme.corner + out : 0);
 			ring.setVisible(true);
 		} else
 			ring.setVisible(false);

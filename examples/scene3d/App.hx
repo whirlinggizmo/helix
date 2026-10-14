@@ -96,8 +96,6 @@ class App extends BaseApp {
 		hud.add(button);
 		label = Node2D.text("", 16, 0xf5f5f5ff);
 		label.setPosition(24, 102);
-		// The label lies on the button: unpickable, so the button under it is what's hit.
-		label.setPickable(false);
 		hud.add(label);
 		pointer = new Pointer(services.input);
 		pointer.addStage3D(stage, camera);

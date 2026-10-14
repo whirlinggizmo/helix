@@ -20,10 +20,11 @@ import helix.ui.TextField;
 import helix.ui.Toggle;
 import helix.ui.Ui;
 
-/** A game's menus (helix.ui): a main menu, settings (a toggle, a slider, a name typed in) and a scrolling list of levels, in nine-slice panels
-	laid out in a 1280 x 720 design fitted to the window, used alike by the pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South,
-	East). Nothing is called back: each frame the example asks the widgets what happened. A progress bar fills; the status in the corner is
-	anchored there. Escape on the main menu quits where quitting means anything. */
+/** A game's menus (helix.ui): a main menu, settings (a toggle, a slider, a name typed in) and a scrolling list of levels, the main menu in a
+	nine-slice panel, the others in the theme's rounded ones, every widget's corners rounded too, laid out in a 1280 x 720 design fitted to the
+	window, used alike by the pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South, East). Nothing is called back: each frame
+	the example asks the widgets what happened. A progress bar fills; the status in the corner is anchored there. Escape on the main menu quits
+	where quitting means anything. */
 class App extends BaseApp {
 	var services:Services;
 	var stage = new Stage2D();
@@ -80,7 +81,6 @@ class App extends BaseApp {
 		for (w in [title, play, openSettings, openLevels, quit])
 			main.add(w);
 		settings = ui.panel("settings");
-		settings.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		sound = ui.toggle("Sound", true);
 		volume = ui.slider("Volume", 0, 10, 7, 1);
 		name = ui.textField("", "your name", 16);
@@ -90,7 +90,6 @@ class App extends BaseApp {
 		for (w in [heading, sound, volume, name, back])
 			settings.add(w);
 		levels = ui.panel("levels");
-		levels.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		list = ui.list([
 			for (i in 0...30)
 				'Level ${i + 1}: ${["The Belt", "Ice Field", "Debris", "The Rift", "Dark Side"][i % 5]}'

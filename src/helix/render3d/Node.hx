@@ -102,13 +102,15 @@ class Node {
 
 	/** A line of text: value, size world units tall (ascent to descent), in font (null: the stage's built-in one), its block centered on its
 		position (its pivot), facing the camera, tinted color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance
-		(a distance-field font). Sized, pivoted and faced as a sprite. */
+		(a distance-field font). Sized, pivoted and faced as a sprite. Not pickable until setPickable(true): a label lets a pick through to what
+		it's on. */
 	public static function text3d(value:String, size = .5, color = 0xffffffff, ?font:helix.render2d.Font2D):Node {
 		var node = new Node(TextNode);
 		node.content = value;
 		node.textSize = size;
 		node.tint = color;
 		node.font = font;
+		node.pickable = false;
 		return node;
 	}
 
@@ -404,7 +406,7 @@ class Node {
 		visible = value;
 
 	/** Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter
-		to it: hidden and pickable is a hit area. On to start. */
+		to it: hidden and pickable is a hit area. On to start, but for text. */
 	public function isPickable():Bool
 		return pickable;
 

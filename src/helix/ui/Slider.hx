@@ -28,15 +28,17 @@ class Slider extends Widget {
 		face = Node2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
 		label = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
-		label.setPickable(false);
 		track = Node2D.rectangle(1, 6, theme.face);
 		track.setPivot(0, 0);
+		track.setCornerRadius(theme.corner);
 		track.setPickable(false);
 		fill = Node2D.rectangle(1, 6, theme.accent);
 		fill.setPivot(0, 0);
+		fill.setCornerRadius(theme.corner);
 		fill.setPickable(false);
 		knob = Node2D.rectangle(10, theme.textSize + 4, theme.accent);
 		knob.setPivot(.5, .5);
+		knob.setCornerRadius(theme.corner);
 		knob.setPickable(false);
 		for (n in [face, track, fill, knob, label])
 			root.add(n);

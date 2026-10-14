@@ -23,10 +23,9 @@ class TextField extends Widget {
 		var theme = ui.getTheme();
 		face = Node2D.rectangle(1, 1, theme.face);
 		face.setPivot(0, 0);
+		face.setCornerRadius(theme.corner);
 		text = Node2D.text(value.substr(0, maxLength), theme.textSize, theme.text, Left, theme.font);
-		text.setPickable(false);
 		hint = Node2D.text(hintText, theme.textSize, theme.disabledText, Left, theme.font);
-		hint.setPickable(false);
 		caret = Node2D.rectangle(2, theme.textSize + 4, theme.focus);
 		caret.setPivot(0, 0);
 		caret.setPickable(false);

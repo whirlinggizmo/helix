@@ -21,12 +21,13 @@ class Toggle extends Widget {
 		face.setPivot(0, 0);
 		check = Node2D.rectangle(side, side, theme.face);
 		check.setPivot(0, 0);
+		check.setCornerRadius(theme.corner / 2);
 		check.setPickable(false);
 		mark = Node2D.rectangle(side - 8, side - 8, theme.accent);
 		mark.setPivot(0, 0);
+		mark.setCornerRadius(theme.corner / 4);
 		mark.setPickable(false);
 		label = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
-		label.setPickable(false);
 		for (n in [face, check, mark, label])
 			root.add(n);
 		var row = Box.row()

@@ -15,8 +15,8 @@ class Button extends Widget {
 		var theme = ui.getTheme();
 		face = Node2D.rectangle(1, 1, theme.face);
 		face.setPivot(0, 0);
+		face.setCornerRadius(theme.corner);
 		label = Node2D.text(text, theme.textSize, theme.text, Center, theme.font);
-		label.setPickable(false);
 		root.add(face);
 		root.add(label);
 		box = Box.stack(face).setSize(Fit, Fixed(theme.height)).setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
