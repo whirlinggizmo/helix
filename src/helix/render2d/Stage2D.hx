@@ -19,6 +19,8 @@ class Stage2D {
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
 	var dt = 0.;
+	// The font a text without its own was last drawn in (the batch's), for picking it by its block.
+	var lastFont:Null<Font2D>;
 
 	/** An empty stage. */
 	public function new() {}
@@ -51,6 +53,7 @@ class Stage2D {
 		transform. Node world transforms are up to date after it, for toLocalX and the like. */
 	public function draw(batch:Batch2D, camera:Camera2D):Void {
 		batch.setCamera(camera);
+		lastFont = batch.getFont();
 		var x0 = camera.screenToWorldX(camera.getViewportX()),
 			y0 = camera.screenToWorldY(camera.getViewportY()),
 			x1 = camera.screenToWorldX(camera.getViewportX() + camera.getViewportWidth()),
@@ -184,5 +187,103 @@ class Stage2D {
 			ex = Math.abs(node.wa) * hw + Math.abs(node.wc) * hh,
 			ey = Math.abs(node.wb) * hw + Math.abs(node.wd) * hh;
 		return wx + ex >= left && wx - ex <= right && wy + ey >= top && wy - ey <= bottom;
+	}
+
+	/** The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none
+		(or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled
+		circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of
+		its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are
+		passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the
+		node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)). */
+	public function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
+		if (!(x >= camera.getViewportX()
+			&& x < camera.getViewportX() + camera.getViewportWidth()
+			&& y >= camera.getViewportY()
+			&& y < camera.getViewportY() + camera.getViewportHeight()))
+			return null;
+		var wx = camera.screenToWorldX(x),
+			wy = camera.screenToWorldY(y),
+			hit:Null<Node2D> = null;
+		var rootChanged = root.update(false);
+		stack.resize(0);
+		stackChanged.resize(0);
+		var i = root.children.length;
+		while (i-- > 0) {
+			stack.push(root.children[i]);
+			stackChanged.push(rootChanged);
+		}
+		while (stack.length > 0) {
+			var node = stack.pop(), parentChanged = stackChanged.pop();
+			if (!node.enabled)
+				continue;
+			var changed = node.update(parentChanged);
+			if (node.pickable && hits(node, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+				hit = node;
+			var j = node.children.length;
+			while (j-- > 0) {
+				stack.push(node.children[j]);
+				stackChanged.push(changed);
+			}
+		}
+		return hit;
+	}
+
+	// Whether node's own point x, y is on what it draws.
+	function hits(node:Node2D, x:Float, y:Float):Bool {
+		var o = node.outline, half = o / 2;
+		switch node.kind {
+			case Sprite | Rectangle:
+				if (node.kind == Sprite && node.texture == null)
+					return false;
+				var w = node.getWidth(),
+					h = node.getHeight(),
+					left = -node.pivotX * w,
+					top = -node.pivotY * h;
+				var outside = x < left - half || x > left + w + half || y < top - half || y > top + h + half;
+				if (outside)
+					return false;
+				// An outlined rectangle is its frame: not inside it.
+				return node.kind == Sprite || o <= 0 || x < left + half || x > left + w - half || y < top + half || y > top + h - half;
+			case Circle:
+				var d = Math.sqrt(x * x + y * y);
+				return o > 0 ? Math.abs(d - node.radius - half) <= half : d <= node.radius;
+			case Line:
+				var p = node.points;
+				return segment(x, y, p[0], p[1], p[2], p[3]) <= Math.max(half, .5);
+			case Polygon:
+				var p = node.points, n = p.length >> 1;
+				if (o > 0) {
+					for (k in 0...n)
+						if (segment(x, y, p[k * 2], p[k * 2 + 1], p[((k + 1) % n) * 2], p[((k + 1) % n) * 2 + 1]) <= half)
+							return true;
+					return false;
+				}
+				// Even-odd: crossings of a ray to the right.
+				var inside = false, j = n - 1;
+				for (k in 0...n) {
+					var ax = p[k * 2], ay = p[k * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+					if ((ay > y) != (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax)
+						inside = !inside;
+					j = k;
+				}
+				return inside;
+			case Text:
+				var font = node.font != null ? node.font : lastFont;
+				if (font == null)
+					return false;
+				var w = Text2D.measure(font, node.content, node.textSize),
+					left = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
+				return x >= left && x <= left + w && y >= 0 && y <= node.textSize;
+			case Emitter | Group:
+				return false;
+		}
+	}
+
+	// How far x, y is from the segment a to b.
+	static function segment(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float):Float {
+		var dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+		var t = l > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0;
+		var px = ax + dx * t - x, py = ay + dy * t - y;
+		return Math.sqrt(px * px + py * py);
 	}
 }

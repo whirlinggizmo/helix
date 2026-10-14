@@ -554,6 +554,67 @@ class Render2DTests {
 		shared.release(got[0]);
 		check(gpu.destroyedTextures == destroyed + 1, "The last release frees it");
 		batch.destroy();
+		pick2D();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// Picking a Stage2D: the topmost node under a point, by each kind's own area, through the camera, honouring the flags.
+	static function pick2D():Void {
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			stage = new Stage2D(),
+			camera = new Camera2D();
+		camera.setViewport(400, 300);
+		// World units as screen pixels, from the top-left, as a HUD's.
+		camera.pixels(1);
+		var box = Node2D.rectangle(100, 100), disc = Node2D.circle(30);
+		box.setPosition(100, 100);
+		disc.setPosition(150, 150);
+		stage.add(box);
+		stage.add(disc);
+		var label = Node2D.text("HELLO", 20);
+		label.setPosition(250, 50);
+		stage.add(label);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(stage.pick(camera, 160, 160) == disc
+			&& stage.pick(camera, 105, 105) == box, "The topmost under the point: the disc over the box");
+		check(stage.pick(camera, 300, 250) == null && stage.pick(camera, -1, -1) == null, "Nothing, and off the viewport nothing");
+		check(stage.pick(camera, 260, 60) == label && stage.pick(camera, 260, 75) == null, "Text by its block");
+		disc.setPickable(false);
+		check(stage.pick(camera, 160, 160) == box, "Unpickable: the box under it");
+		disc.setPickable(true);
+		disc.setVisible(false);
+		check(stage.pick(camera, 160, 160) == disc, "Hidden is still hit");
+		disc.setVisible(true);
+		// A ring: its stroke, not its middle.
+		var ring = Node2D.circle(40);
+		ring.setOutline(4);
+		ring.setPosition(300, 200);
+		stage.add(ring);
+		check(stage.pick(camera, 342, 200) == ring && stage.pick(camera, 300, 200) == null, "An outlined circle is its stroke");
+		var slash = Node2D.line(0, 0, 50, 50);
+		slash.setPosition(20, 220);
+		stage.add(slash);
+		check(stage.pick(camera, 45, 245) == slash && stage.pick(camera, 60, 230) == null, "A line by its stroke");
+		var wedge = Node2D.polygon([0., 0, 60, 0, 0, 60]);
+		wedge.setPosition(330, 10);
+		stage.add(wedge);
+		check(stage.pick(camera, 340, 20) == wedge && stage.pick(camera, 385, 65) == null, "A filled polygon by its inside");
+		// Turned a quarter (y down: clockwise on screen), a tall thin rectangle lies down, its length reaching left from its corner.
+		var bar = Node2D.rectangle(10, 80);
+		bar.setPosition(200, 200);
+		bar.setRotation(Math.PI / 2);
+		stage.add(bar);
+		check(stage.pick(camera, 150, 205) == bar && stage.pick(camera, 205, 250) != bar, "A turned rectangle where it's turned to, not where it was");
+		// Through a zoomed camera: screen points are the camera's.
+		camera.setZoom(2);
+		var at = [camera.worldToScreenX(150), camera.worldToScreenY(150)];
+		check(stage.pick(camera, at[0], at[1]) == disc, "Through a zoomed camera");
+		box.setEnabled(false);
+		camera.pixels(1);
+		check(stage.pick(camera, 105, 105) == null, "A disabled node isn't hit");
 	}
 }
