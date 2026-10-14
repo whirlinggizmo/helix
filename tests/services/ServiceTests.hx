@@ -20,6 +20,8 @@ class ServiceTests {
 	static var finished = false;
 	static var delay = 0.;
 	static var delayed:Void->Void;
+	// The test server's /bytes and /concurrent body, 128 KiB (tools/services.py's BODY_BYTES).
+	static inline var BODY_BYTES = 128 * 1024;
 	static var persisted = false;
 	static var clip:AudioClip;
 	static var stream:AudioStream;
@@ -55,15 +57,23 @@ class ServiceTests {
 		steps = [
 			() -> {
 				var returned = false;
+				// Progress reports come coalesced between polls, as many as the bytes' arrival makes: kept, and checked once at completion,
+				// so the run's count of checks is the same every time.
+				var progress:Array<{received:Int, total:Null<Int>}> = [];
 				fetcher.fetch({url: env.base + "/bytes"}, result -> {
 					check(returned, "Fetch completed synchronously");
 					switch result {
-						case Response(value): check(value.status == 200 && value.bytes.length == 131072, "Whole response bytes/status");
+						case Response(value): check(value.status == 200 && value.bytes.length == BODY_BYTES, "Whole response bytes/status");
 						case _: fail(result);
 					}
+					var ordered = true, last = 0;
+					for (p in progress) {
+						ordered = ordered && p.received >= last && p.received <= BODY_BYTES && (p.total == null || p.total == BODY_BYTES);
+						last = p.received;
+					}
+					check(ordered, "Byte progress within the body's size, never going back");
 					next();
-				},
-					value -> check(value.received >= 0 && (value.total == null || value.total == 131072), "Byte progress"));
+				}, value -> progress.push({received: value.received, total: value.total}));
 				returned = true;
 			},
 			() -> {
@@ -71,7 +81,7 @@ class ServiceTests {
 				for (_ in 0...3)
 					fetcher.fetch({url: env.base + "/concurrent"}, result -> {
 						switch result {
-							case Response(value): check(value.bytes.length == 131072, "Concurrent bounded downloads finish");
+							case Response(value): check(value.bytes.length == BODY_BYTES, "Concurrent bounded downloads finish");
 							case _: fail(result);
 						}
 						if (--pending == 0)

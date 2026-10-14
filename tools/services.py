@@ -15,6 +15,9 @@ import time
 import uuid
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/results/services'
+# The body /bytes and /concurrent send, sent slowly in 4 KiB pieces: tests/services/ServiceTests.hx's BODY_BYTES.
+BODY_BYTES=128*1024
+
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true');a=p.parse_args()
@@ -39,7 +42,7 @@ def main():
    if path=='/':body=b'<script src="/service-tests.js"></script>'
    elif path=='/service-tests.js':body=(build/'service-tests.js').read_bytes()
    elif path in ('/bytes','/concurrent'):
-    body=b'x'*131072;slow=True
+    body=b'x'*BODY_BYTES;slow=True
     if path=='/concurrent':
      tracked=True
      with lock:active+=1;peak=max(peak,active)
