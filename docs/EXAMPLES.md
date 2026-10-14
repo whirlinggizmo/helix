@@ -23,6 +23,8 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `materials` | metallic-roughness steps, unlit, emissive, a normal map, see-through; a sun and a point light |
 | `lights` | directional, point and spot lights on a stage, beside an immediate grid |
 | `animation` | skinned characters (Quaternius's modular women): a skeleton and 24 clips from a file of animations alone, an outfit of skinned parts from files of their own bound to it by joint name and swapped at run time, a sword in a socket (a joint), crossfades, posed shadows |
+| `scene3d` | the pointer over a scene: shapes in a ring hovered and clicked to select, a HUD button over the world that captures the pointer, an unpickable ground and label (helix.scene.Pointer) |
+| `pick` | every kind a Stage3D picks: a cube, a sphere, a sprite, a text, a glTF car and a walking skinned character, the hit's point, normal and distance shown |
 | `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded into nodes: parts and lights found by name, a chase camera on a camera node |
 | `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
 | `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture |
