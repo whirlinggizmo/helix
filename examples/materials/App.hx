@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -20,7 +20,7 @@ class App extends BaseApp {
 	static inline var COLUMNS = 5;
 	static inline var SPACING = 1.35;
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -32,9 +32,9 @@ class App extends BaseApp {
 	var bottom:Array<Node> = [];
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A linear color (as the earlier frameworks' examples give them) as 0xRRGGBBAA, sRGB-encoded.
@@ -60,9 +60,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX materials");
-		host.window.setSize(1000, 700);
-		stage = new Stage3D(host.graphics);
+		services.window.setTitle("HeliX materials");
+		services.window.setSize(1000, 700);
+		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 
@@ -100,20 +100,20 @@ class App extends BaseApp {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		host.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		services.textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
-		batch = new Batch2D(host.graphics);
+		batch = new Batch2D(services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
@@ -127,14 +127,14 @@ class App extends BaseApp {
 		marker.setVisible(lamp.isVisible());
 		for (node in bottom)
 			node.setRotation(0, time * .5, 0);
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera2D.setViewport(width, height);
-		camera2D.pixels(host.getPixelRatio());
+		camera2D.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x14161cff);
+		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		Text2D.draw(batch, "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", 12, 36, 18, 0xf5f5f5ff);
@@ -143,7 +143,7 @@ class App extends BaseApp {
 			12, 62, 15, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

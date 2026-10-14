@@ -29,8 +29,14 @@ class WebAudioAdapter implements IAudio {
 
 	var stopped = 0;
 
-	/** Creates no AudioContext until a decode or unlock needs one. */
-	public function new() {}
+	/** Creates no AudioContext until a decode or unlock needs one. A key press or a pointer press anywhere on the page unlocks it (browsers
+		let audio start only in a user gesture); the page losing focus or being hidden suspends it. */
+	public function new() {
+		js.Browser.window.addEventListener("keydown", _ -> unlock());
+		js.Browser.window.addEventListener("pointerdown", _ -> unlock());
+		js.Browser.window.addEventListener("blur", _ -> suspend());
+		js.Browser.document.addEventListener("visibilitychange", _ -> if (js.Browser.document.hidden) suspend());
+	}
 
 	public function decodeClip(encoded:Bytes, complete:ClipDecodeResult->Void):IRequest {
 		var request:Request = null;

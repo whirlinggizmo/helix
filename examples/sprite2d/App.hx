@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -23,7 +23,7 @@ class App extends BaseApp {
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
 	static var NAMES = ["sheet", "spin", "swing", "flip", "tint"];
 
-	var host:IHost;
+	var services:Services;
 	var stage = new Stage2D();
 	var batch:Batch2D;
 	var camera = new Camera2D();
@@ -35,15 +35,15 @@ class App extends BaseApp {
 	var sheetFrame = 0;
 	var hovered = -1;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX sprite2d");
-		host.window.setSize(900, 520);
-		batch = new Batch2D(host.graphics);
+		services.window.setTitle("HeliX sprite2d");
+		services.window.setSize(900, 520);
+		batch = new Batch2D(services.graphics);
 		// Colors are values, so cycle a palette.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;
@@ -66,7 +66,7 @@ class App extends BaseApp {
 		sprites[3].setPosition(760, 400);
 		sprites[4].setPosition(450, 110);
 		sprites[4].setSize(96, 96);
-		host.textures.load(LOGO, true, result -> switch result {
+		services.textures.load(LOGO, true, result -> switch result {
 			case Ready(texture):
 				logo = texture;
 				for (i in 0...4)
@@ -75,7 +75,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		host.textures.load(WHITE_LOGO, true, result -> switch result {
+		services.textures.load(WHITE_LOGO, true, result -> switch result {
 			case Ready(texture):
 				sprites[4].setTexture(texture);
 			case Failed(message):
@@ -98,15 +98,15 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		time += dt;
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		camera.pixels(host.getPixelRatio());
+		camera.pixels(services.window.getPixelRatio());
 
 		// The sheet: one quarter of the 256x256 texture an animation frame.
 		sheetFrame = Std.int(time * 2) % 4;
@@ -131,17 +131,17 @@ class App extends BaseApp {
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
 
-		host.graphics.beginFrame(width, height, 0x1c1e26ff);
+		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		if (logo != null)
-			batch.sprite(logo, width / host.getPixelRatio() - 42, 42, 64, 64);
+			batch.sprite(logo, width / services.window.getPixelRatio() - 42, 42, 64, 64);
 		Text2D.draw(batch, "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", 12, 36, 16, 0xf5f5f5ff);
 		Text2D.draw(batch, 'pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', 12, 60, 16,
 			0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void

@@ -1,13 +1,13 @@
 import helix.app.BaseApp;
 import helix.app.Ticker;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.IInput;
 import helix.debug.Autopilot;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 
 class App extends BaseApp {
-	var host:IHost;
+	var services:Services;
 	var game:Game;
 	var controls = new Controls();
 	var layout = new Layout();
@@ -19,23 +19,22 @@ class App extends BaseApp {
 	var ticks = 0;
 	var stopped = false;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		var seed = Std.parseInt(host.diagnostics.getOption("seed", "12345"));
+		var seed = Std.parseInt(services.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
-		host.window.setTitle("HeliX Blocks");
-		batch = new Batch2D(host.graphics);
-		ticker = new Ticker(host.input);
+		services.window.setTitle("HeliX Blocks");
+		batch = new Batch2D(services.graphics);
+		ticker = new Ticker(services.input);
 		ticker.setMaxSteps(6);
-		renderer = new Renderer(host.graphics, batch);
-		host.diagnostics.expose(inspect);
-		var script = host.diagnostics.getOption("autopilot", "");
+		renderer = new Renderer(services.graphics, batch);
+		var script = services.getOption("autopilot", "");
 		if (script != "")
-			host.assets.load(script, result -> switch result {
+			services.assets.load(script, result -> switch result {
 				case Loaded(bytes):
 					pilot = new Autopilot(bytes.toString());
 					game = new Game(pilot.getSeed());
@@ -53,20 +52,20 @@ class App extends BaseApp {
 			draws: batch.getDrawCount(),
 			portrait: layout.portrait,
 			zoom: camera.getZoom(),
-			width: host.getFramebufferWidth(),
-			height: host.getFramebufferHeight()
+			width: services.window.getFramebufferWidth(),
+			height: services.window.getFramebufferHeight()
 		};
 
 	function step():Void {
-		var source:IInput = host.input;
+		var source:IInput = services.input;
 		if (pilot != null) {
 			source = pilot.advance(game.probe);
 			if (pilot.isDone()) {
-				host.diagnostics.publish(inspect());
+				services.harness.publish(inspect());
 				pilot = null;
-				stopped = host.diagnostics.getOption("autoclose", "0") == "1";
+				stopped = services.getOption("autoclose", "0") == "1";
 				if (stopped)
-					host.quit();
+					services.quit();
 				return;
 			}
 		}
@@ -76,19 +75,18 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (stopped || host.getFramebufferWidth() <= 0 || host.getFramebufferHeight() <= 0)
+		if (stopped || services.window.getFramebufferWidth() <= 0 || services.window.getFramebufferHeight() <= 0)
 			return;
-		layout.update(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
+		layout.update(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
 		camera.fit(0, 0, layout.worldWidth, layout.worldHeight);
-		if (!host.isFocused() && game.state == "playing")
+		if (!services.window.isFocused() && game.state == "playing")
 			game.state = "paused";
-		ticker.advance(host.getFrameElapsed(), () -> if (!stopped) step());
+		ticker.advance(services.getFrameElapsed(), () -> if (!stopped) step());
 		renderer.render(game, layout, camera, ticks);
 	}
 
 	override public function cleanup():Void {
 		batch.destroy();
-		host.graphics.shutdown();
 	}
 }

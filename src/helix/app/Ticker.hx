@@ -65,7 +65,7 @@ class Ticker {
 		return true;
 	}
 
-	/** Runs tick for each step due after elapsed seconds (IHost.getFrameElapsed), at most getMaxSteps of them; returns how many ran. */
+	/** Runs tick for each step due after elapsed seconds (Services.getFrameElapsed), at most getMaxSteps of them; returns how many ran. */
 	public function advance(elapsed:Float, tick:Void->Void):Int {
 		accumulator += Math.max(0, elapsed) * timeScale;
 		var steps = 0;

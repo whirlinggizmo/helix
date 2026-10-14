@@ -1,7 +1,7 @@
 import helix.app.BaseApp;
 import helix.audio.AudioPlayback;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,29 +15,28 @@ class App extends BaseApp {
 	static inline var KEY = "music/invalid.mp3";
 	static inline var SOURCE = "music/a_hero_is_born.mp3";
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
 	var music:Null<AudioPlayback>;
 	var state = 'ensuring $KEY from $SOURCE...';
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX force fetch");
-		host.window.setSize(720, 240);
-		batch = new Batch2D(host.graphics);
-		host.diagnostics.expose(() -> ({state: state, music: music == null ? "none" : Std.string(music.getState())} : Dynamic));
-		host.assets.ensure(KEY, result -> switch result {
+		services.window.setTitle("HeliX force fetch");
+		services.window.setSize(720, 240);
+		batch = new Batch2D(services.graphics);
+		services.assets.ensure(KEY, result -> switch result {
 			case Loaded(_):
 				// The bytes are local now, under the key: stream the key.
-				host.audioResources.loadStream(KEY, loaded -> switch loaded {
+				services.audioResources.loadStream(KEY, loaded -> switch loaded {
 					case Ready(stream):
-						music = host.audioResources.play(stream, true, .5);
+						music = services.audioResources.play(stream, true, .5);
 						stream.release();
 						state = '$KEY played from the bytes of $SOURCE';
 					case Failed(message):
@@ -51,23 +50,23 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
+		var input = services.input;
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x12141cff);
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
+		fps.update(dt, services.getFrameCpu());
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
 		Text2D.draw(batch, "HeliX audio + force fetch", 24, 30, 28, 0xf5f5f5ff);
 		Text2D.draw(batch, music == null ? "music: loading..." : music.getState() == Paused ? "music: paused" : "music: playing (mp3, looping)", 24, 80, 18,
 			0x66bfffff);
 		Text2D.draw(batch, state, 24, 110, 14, 0xc8c8c8ff);
-		Text2D.draw(batch, "[M] toggle music" + (host.canQuit() ? "   [ESC] quit" : ""), 24, 150, 16, 0xc8c8c8ff);
+		Text2D.draw(batch, "[M] toggle music" + (services.canQuit() ? "   [ESC] quit" : ""), 24, 150, 16, 0xc8c8c8ff);
 		fps.draw(batch, 24, 8);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 }

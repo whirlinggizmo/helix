@@ -36,8 +36,9 @@ As built today. The audit's plan changes several contracts; the target shape is 
 | Contract | Adapters | Platform part (theirs) |
 | --- | --- | --- |
 | `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1) | Textures (2D, cube, data, render targets, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw. |
-| `IHost` (with `HostServices`) | `host/dom` (browser), `host/sokol` + C (native) | The loop, time, framebuffer and pixel ratio, focus, quit, options. |
-| `IWindow` | `host/dom/DomWindow`, `host/sokol/SokolWindow` | Title, sizes, position, fullscreen, displays, style and visibility where the platform has them. |
+| `IHost` | `host/dom` (browser), `host/sokol` + C (native) | The loop, the clock, the window, quitting, run options. The `Runner` (engine) is what it pumps; the app gets `Services` (engine). |
+| `IWindow` | `host/dom/DomWindow`, `host/sokol/SokolWindow` | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them. |
+| `ITestHarness` | `harness/dom` (browser), `harness/stdio` (native) | Hands a check the program's result. |
 | `IInput` | `input/dom` (browser), `input/sokol` + `input/evdev` C (native) | Keyboard, mouse, touch and gamepad events and devices. |
 | `IAudio` | `audio/webaudio` (browser), `audio/sokol` + `audio/libsndfile` C (native) | Output, clips and voices, streaming, compressed decoding. |
 | `IFetch` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | Downloads. |
@@ -46,7 +47,8 @@ As built today. The audit's plan changes several contracts; the target shape is 
 
 ### Target shape (decided)
 
-- **Host.** `IHost` is the adapter contract: it owns the loop (`run(runner)`), time, quit and raw option lookup; nothing else. The **`Runner`** (engine) is what the host pumps: it builds the shared services, runs a frame in order (the services' polls, input's, the app's frame, input's frame end, timing), keeps the clock, quits after the frame, passes focus on to input and audio, and closes everything (the services, the app, the framework's pipelines, the GPU). **`Services`** (engine) is what the app receives: graphics, input, audio, assets, sounds, textures, environments, the window, the clock, `quit` and `canQuit`; a plain record the runner fills, so tests can build one from fakes. **`IWindow`** gains the drawing surface (framebuffer size, pixel ratio) and focus and visibility with one definition across platforms. **`IHarness`** holds the test and tool hooks (publish, expose, capture, the live dump, memory phases, the GL audit), optional: a game's profile plugs in none. `HostServices` loses its closures and becomes the list of adapters a profile picks.
+- **Host: done** (DECISIONS 81). Left: backend facts (`Adapters.info`) are still untyped.
+- **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
 - **Images.** `IImageDecoder`: bytes in, RGBA out, and nothing else (the browser's own decoder, stb natively); queuing, cancellation and shutdown in shared code.
 - **Shared async plumbing.** One job pool in the engine (requests, the queue, a concurrency cap as policy, cancel on shutdown, hand-off to the host thread) under one frame budget; adapters keep only their platform calls and the hand-off mechanism.
 - **Audio, fetch, storage, input:** as in [ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)'s plan.

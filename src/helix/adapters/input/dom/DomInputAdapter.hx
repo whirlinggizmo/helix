@@ -9,16 +9,9 @@ import js.Browser;
 import js.html.CanvasElement;
 
 /** Browser input: keys and typed text from the window; pointer, mouse buttons, fingers and wheel from the canvas, in its framebuffer pixels; gamepads read at poll(). */
-class DomInputAdapter extends InputState {
+class DomInputAdapter extends InputState implements helix.input.IInputDevice {
+	// Whether the page has the input: while not (blurred or hidden), key presses are ignored and poll() lets go of everything.
 	var active = true;
-
-	/** Whether the page has the input: while not, key presses are ignored and poll() lets go of everything. The host sets it as the page gains and loses focus. */
-	public function isActive():Bool
-		return active;
-
-	/** The host calls this as the page gains (true) or loses (false) focus. */
-	public function setActive(value:Bool):Void
-		active = value;
 
 	var canvas:CanvasElement;
 
@@ -32,6 +25,9 @@ class DomInputAdapter extends InputState {
 	public function new(canvas:CanvasElement) {
 		super();
 		this.canvas = canvas;
+		Browser.window.addEventListener("blur", _ -> active = false);
+		Browser.window.addEventListener("focus", _ -> active = !Browser.document.hidden);
+		Browser.document.addEventListener("visibilitychange", _ -> active = !Browser.document.hidden);
 		Browser.window.addEventListener("keydown", e -> {
 			if (!active)
 				return;
@@ -250,4 +246,7 @@ class DomInputAdapter extends InputState {
 			m.set(code, key);
 		m;
 	};
+
+	/** Nothing to release: the page's listeners go with it. */
+	public function shutdown():Void {}
 }

@@ -1,76 +1,28 @@
 package helix.host;
 
-import helix.audio.IAudio;
-import helix.audio.AudioResources;
-import helix.assets.IAssets;
-import helix.assets.IFetch;
-import helix.assets.IStorage;
-import helix.input.IInput;
-import helix.debug.IDiagnostics;
-import helix.graphics.IGraphics;
-import helix.app.IApp;
-
-/** Composition and window lifecycle. Services have independent contracts. */
+/** The host: what runs the program on a platform (a browser page's frame callbacks, a native process's app loop). It owns the loop, the
+	clock, quitting, the window and where run options come from, and nothing else: the Runner it pumps builds and runs everything the app
+	sees (Services). */
 interface IHost {
-	/** Drawing. Natively the services are set when run starts, before the app's init; in a browser, when the host is made. */
-	public var graphics(default, null):IGraphics;
-
-	/** Keyboard, mouse and touch. */
-	public var input(default, null):IInput;
-
-	/** Sound playback. */
-	public var audio(default, null):IAudio;
-
-	/** Sounds loaded through assets and decoded for audio. */
-	public var audioResources(default, null):AudioResources;
-
-	/** Textures from image files, decoded off the frame, reloading in place when a file changes during development. */
-	public var textures(default, null):helix.render2d.Textures;
-
-	/** Environment maps from equirectangular images, prepared a little each frame, reloading in place when a file changes during development. */
-	public var environments(default, null):helix.render3d.Environments;
-
-	/** Downloads over the network. */
-	public var fetch(default, null):IFetch;
-
-	/** The writable cache: IndexedDB in a browser, files natively (HELIX_CACHE, or cache/ beside the program). */
-	public var storage(default, null):IStorage;
-
-	/** Assets by path, from the network, the cache or the build. */
-	public var assets(default, null):IAssets;
-
-	/** Run options, probes and captures, for checks and tools. */
-	public var diagnostics(default, null):IDiagnostics;
-
-	/** The window the app draws in (the page, on the web). */
-	public var window(default, null):IWindow;
-
-	/** Whether the window (the page, on the web) has the keyboard. */
-	public function isFocused():Bool;
-
-	/** Whether quitting closes anything, so whether to offer a quit key: not in a browser page, where quit() stops the program but the page stays. */
-	public function canQuit():Bool;
-
-	/** Calls the app's init, then its frame once a display refresh, then its cleanup when the window or page closes. Natively it returns only after the window closes. */
-	public function run(app:IApp):Void;
+	/** Runs the program: init once, when the window and the GPU exist; frame once a display refresh; cleanup once, when it closes (the window
+		closed, quit, or a browser page going away). Natively it returns only after the window closes. */
+	public function run(init:Void->Void, frame:Void->Void, cleanup:Void->Void):Void;
 
 	/** Seconds on a monotonic clock. */
 	public function getTime():Float;
 
-	/** The seconds since the last frame, unheld (frame's dt is held at 0.1), and 0 on the first: what a fixed-rate simulation (Ticker.advance) is fed,
-		so a slow frame is caught up in ticks instead of lost. */
-	public function getFrameElapsed():Float;
+	/** The window the program draws in (the page, on the web). */
+	public function getWindow():IWindow;
 
-	/** The drawable area in framebuffer pixels (IWindow's sizes are logical pixels). */
-	public function getFramebufferWidth():Int;
+	/** Whether quitting closes anything, so whether an app should offer a quit key: not in a browser page, where quit stops the program but
+		the page stays. */
+	public function canQuit():Bool;
 
-	/** The drawable height in framebuffer pixels. */
-	public function getFramebufferHeight():Int;
-
-	/** Framebuffer pixels per logical pixel. */
-	public function getPixelRatio():Float;
-
-	/** Ends the program after this frame: the services shut down and the app's cleanup runs. Natively the window closes; in a browser page the
-		frame loop stops and the canvas keeps its last frame. */
+	/** Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its
+		last one. */
 	public function quit():Void;
+
+	/** A run option as the platform passes it, or null when it isn't given: in a browser the URL query parameter name, natively the
+		environment variable HELIX_ and name in capitals. */
+	public function getOption(name:String):Null<String>;
 }

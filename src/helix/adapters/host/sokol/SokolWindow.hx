@@ -10,6 +10,18 @@ class SokolWindow implements IWindow {
 	/** The program's one sokol_app window. */
 	public function new() {}
 
+	public function getFramebufferWidth():Int
+		return HostBridge.width();
+
+	public function getFramebufferHeight():Int
+		return HostBridge.height();
+
+	public function getPixelRatio():Float
+		return HostBridge.pixelRatio();
+
+	public function isFocused():Bool
+		return HostBridge.focused() != 0;
+
 	public function getTitle():String
 		return title;
 

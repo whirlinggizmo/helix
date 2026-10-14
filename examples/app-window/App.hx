@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -9,54 +9,35 @@ import helix.render2d.Text2D;
 	window can be, M moves it to the next monitor, H hides it for two seconds (it keeps running), Esc quits where quitting means anything.
 	Where programs don't place their windows (the web, a Wayland desktop) moving and changing monitor say "not supported here". */
 class App extends BaseApp {
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var status = "press a key";
 	var hiddenFor = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX window");
-		host.window.setSize(900, 400);
-		batch = new Batch2D(host.graphics);
-		host.diagnostics.expose(inspect);
+		services.window.setTitle("HeliX window");
+		services.window.setSize(900, 400);
+		batch = new Batch2D(services.graphics);
 	}
-
-	function inspect():Dynamic {
-		var w = host.window;
-		return {
-			status: status,
-			fullscreen: w.isFullscreen(),
-			visible: w.isVisible(),
-			x: w.getX(),
-			y: w.getY(),
-			width: w.getWidth(),
-			height: w.getHeight(),
-			monitor: w.getMonitor(),
-			hiddenFor: hiddenFor,
-			frames: ++frames
-		};
-	}
-
-	var frames = 0;
 
 	function report(what:String, ok:Bool):Void
 		status = what + ": " + (ok ? "done" : "not supported here");
 
 	override public function frame(dt:Float):Void {
-		var input = host.input,
-			window = host.window,
+		var input = services.input,
+			window = services.window,
 			width = window.getWidth(),
 			height = window.getHeight(),
 			x = window.getX(),
 			y = window.getY();
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Left))
 			report("move", window.setPosition(x - 50, y));
 		if (input.isFramePressed(Key.Right))
@@ -84,9 +65,9 @@ class App extends BaseApp {
 		}
 		if (input.isFramePressed(Key.M))
 			report("monitor", window.setMonitor((window.getMonitor() + 1) % window.getMonitorCount()));
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
 		var row = 12.;
 		Text2D.draw(batch,
@@ -97,7 +78,7 @@ class App extends BaseApp {
 			'window: $width x $height at ($x, $y)   fullscreen: '
 			+ (window.isFullscreen() ? "yes" : "no")
 			+ "   focused: "
-			+ (host.isFocused() ? "yes" : "no"),
+			+ (services.window.isFocused() ? "yes" : "no"),
 			12, row, 16, 0xc8c8c8ff);
 		row += 24;
 		Text2D.draw(batch, status, 12, row, 16, 0xffcb00ff);
@@ -110,6 +91,6 @@ class App extends BaseApp {
 			row += 22;
 		}
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 }

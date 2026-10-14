@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,7 +15,7 @@ import helix.render2d.Texture2D;
 class App extends BaseApp {
 	static inline var TEXTURE = "sprites/logo/wg-logo-white-alpha.png";
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -25,16 +25,16 @@ class App extends BaseApp {
 	var asking = false;
 	var waiting = false;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX asset fetch");
-		host.window.setSize(800, 520);
-		batch = new Batch2D(host.graphics);
-		var assets = host.assets, url = assets.getHost();
+		services.window.setTitle("HeliX asset fetch");
+		services.window.setSize(800, 520);
+		batch = new Batch2D(services.graphics);
+		var assets = services.assets, url = assets.getHost();
 		if (url == null) {
 			source = "the packaged files";
 			fetch();
@@ -61,19 +61,19 @@ class App extends BaseApp {
 	/** Loads the logo again, watching whether it's downloaded or read from the cache. */
 	function fetch():Void {
 		if (logo != null)
-			host.textures.release(logo);
+			services.textures.release(logo);
 		logo = null;
 		waiting = true;
 		state = 'fetching $TEXTURE...';
 		var downloaded = false;
-		host.assets.ensure(TEXTURE, result -> switch result {
+		services.assets.ensure(TEXTURE, result -> switch result {
 			case Loaded(_):
 				// Now cached: the texture reads it from there.
-				host.textures.load(TEXTURE, true, loaded -> switch loaded {
+				services.textures.load(TEXTURE, true, loaded -> switch loaded {
 					case Ready(texture):
 						logo = texture;
 						waiting = false;
-						state = host.assets.getHost() == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
+						state = services.assets.getHost() == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
 					case Failed(message):
 						waiting = false;
 						state = message;
@@ -87,16 +87,16 @@ class App extends BaseApp {
 	}
 
 	function clearCache():Void
-		host.assets.clearCache(result -> state = switch result {
+		services.assets.clearCache(result -> state = switch result {
 			case Written: "cache cleared: the next fetch downloads";
 			case Failed(message): "cache not cleared: " + message;
 			case Cancelled: state;
 		});
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
+		var input = services.input;
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
 		var x = camera.screenToWorldX(input.getPointerX()),
 			y = camera.screenToWorldY(input.getPointerY());
 		var clicked = input.isPointerFramePressed();
@@ -104,10 +104,10 @@ class App extends BaseApp {
 			fetch();
 		if (input.isFramePressed(Key.C) || clicked && inside(x, y, 204, 150))
 			clearCache();
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1c1e26ff);
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
+		fps.update(dt, services.getFrameCpu());
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1c1e26ff);
 		batch.begin(camera);
 		Text2D.draw(batch, "HeliX asset fetch", 12, 40, 24, 0xf5f5f5ff);
 		Text2D.draw(batch, "from: " + (asking ? "..." : source), 12, 80, 16, 0xc8c8c8ff);
@@ -118,7 +118,7 @@ class App extends BaseApp {
 			batch.sprite(logo, 400, 360, 220, 220);
 		fps.draw(batch, 12, 8);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	static inline var BUTTON_WIDTH = 180;

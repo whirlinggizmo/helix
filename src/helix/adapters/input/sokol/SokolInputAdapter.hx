@@ -8,7 +8,7 @@ import helix.input.PadButton;
 import helix.input.PadAxis;
 
 /** Sokol's queued events applied in order, so a press and release in one frame keep both edges; then the evdev pads. */
-class SokolInputAdapter extends InputState {
+class SokolInputAdapter extends InputState implements helix.input.IInputDevice {
 	/** Sets up the native input bridge. */
 	public function new() {
 		super();

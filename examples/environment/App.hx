@@ -1,7 +1,7 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Shaders;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -34,7 +34,7 @@ class App extends BaseApp {
 	static var TONEMAPS = [Tonemap.Neutral, Tonemap.Aces, Tonemap.None];
 	static var TONEMAP_NAMES = ["Neutral", "ACES", "none"];
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -53,9 +53,9 @@ class App extends BaseApp {
 	var turning:Array<Node> = [];
 	var shaders:Shaders;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A linear color as 0xRRGGBBAA, sRGB-encoded.
@@ -78,10 +78,10 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX environment");
-		host.window.setSize(1000, 700);
-		batch = new Batch2D(host.graphics);
-		stage = new Stage3D(host.graphics);
+		services.window.setTitle("HeliX environment");
+		services.window.setSize(1000, 700);
+		batch = new Batch2D(services.graphics);
+		stage = new Stage3D(services.graphics);
 		var ball = Mesh.sphere(.5, 32, 64);
 		for (c in 0...COLUMNS) {
 			var x = (c - (COLUMNS - 1) / 2) * SPACING,
@@ -90,20 +90,20 @@ class App extends BaseApp {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		host.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		services.textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
-		shaders = new Shaders(host.assets, host.graphics);
+		shaders = new Shaders(services.assets, services.graphics);
 		shaders.load("shaders/pearl.hxshader", result -> switch result {
 			case Ready(shader): pearl.setShader(shader);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
-		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setPosition(2.7, -.5, .2);
@@ -115,11 +115,11 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		for (i in 0...PATHS.length) {
-			var started = host.getTime();
-			host.environments.load(PATHS[i], result -> switch result {
+			var started = services.getTime();
+			services.environments.load(PATHS[i], result -> switch result {
 				case Ready(environment):
 					environments[i] = environment;
-					loadMs[i] = (host.getTime() - started) * 1000;
+					loadMs[i] = (services.getTime() - started) * 1000;
 				case Failed(message):
 					trace(message);
 				case Cancelled:
@@ -128,9 +128,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.E))
 			current = (current + 1) % NAMES.length;
 		if (input.isFramePressed(Key.B))
@@ -152,7 +152,7 @@ class App extends BaseApp {
 			angle += dt * .15;
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
-		fps.update(dt, host.diagnostics.getFrameCpu());
+		fps.update(dt, services.getFrameCpu());
 
 		var environment = current < PATHS.length ? environments[current] : null;
 		stage.setEnvironment(environment, 1, rotation);
@@ -160,18 +160,18 @@ class App extends BaseApp {
 		stage.setTonemap(TONEMAPS[tonemap]);
 		stage.setExposure(exposure);
 
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x14161cff);
+		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
-		batch.rect(0, 0, width / host.getPixelRatio(), 82, 0x0000008c);
+		batch.rect(0, 0, width / services.window.getPixelRatio(), 82, 0x0000008c);
 		Text2D.draw(batch, "HeliX environment: image-based light, a background and tone mapping", 12, 36, 20, 0xf5f5f5ff);
 		var state = current == PATHS.length ? "" : environment == null ? " (preparing)" : ' (ready in ${Math.round(loadMs[current])} ms)';
 		Text2D.draw(batch,
@@ -180,13 +180,13 @@ class App extends BaseApp {
 			12, 64, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		for (environment in environments)
 			if (environment != null)
-				host.environments.release(environment);
+				services.environments.release(environment);
 		stage.destroy();
 		batch.destroy();
 	}

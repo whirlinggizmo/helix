@@ -3,7 +3,7 @@ import helix.input.IInput;
 import helix.graphics.IGraphics;
 import helix.audio.IAudio;
 import helix.assets.IAssets;
-import helix.debug.IDiagnostics;
+import helix.debug.ITestHarness;
 import helix.input.InputState;
 import helix.input.Key;
 import helix.debug.Autopilot;
@@ -24,7 +24,7 @@ class PackageSmoke {
 			graphics:Null<IGraphics> = null,
 			audio:Null<IAudio> = null,
 			assets:Null<IAssets> = null,
-			diagnostics:Null<IDiagnostics> = null;
+			harness:Null<ITestHarness> = null;
 		trace("Standalone framework consumer passed");
 	}
 }

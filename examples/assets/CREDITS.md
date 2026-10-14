@@ -17,6 +17,7 @@ CC0 asks for no credit; they're credited anyway.
 
 ## Whirling Gizmo's own
 
+- `../shared/favicon.png` (the examples' page icon, beside each page): the Whirling Gizmo logo, 16 pixels.
 - `sprites/logo/wg-logo-bw-alpha.png`, `sprites/logo/wg-logo-white-alpha.png`: the Whirling Gizmo logo, black and white.
 - `textures/flame.png`: a generated soft flame, MIT.
 - `sprites/logo/wg-logo-bw-alpha.{bc7,astc,etc2}.ktx`, `textures/flame.{bc7,astc,etc2}.ktx`: the PNGs compressed, with their mipmaps, as KTX 1 by Basis Universal 1.16.4 (UASTC level 2, transcoded to BC7, ASTC 4x4 and ETC2 RGBA8).

@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -22,7 +22,7 @@ import helix.render3d.Stage3D;
 	Sprites are unlit and instanced: alike ones (a texture, an alpha mode) are one draw, and the readout counts them.
 	O stops the camera; Escape quits where quitting means anything. */
 class App extends BaseApp {
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch3D:Batch3D;
 	var batch:Batch2D;
@@ -38,9 +38,9 @@ class App extends BaseApp {
 	var tileSprites:Array<Node> = [];
 	var flames:Array<Node> = [];
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A sprite of the tile sheet's cell x, y, width x height texels, placed at x, z on the ground.
@@ -55,9 +55,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX sprite3d");
-		host.window.setSize(1000, 600);
-		var gpu = host.graphics;
+		services.window.setTitle("HeliX sprite3d");
+		services.window.setSize(1000, 600);
+		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -96,7 +96,7 @@ class App extends BaseApp {
 		coin.setFacing(Ground);
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		host.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				logo.setTexture(texture);
 				logo.setTint(0x66bfffff);
@@ -104,7 +104,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		host.textures.load("textures/tiles.png", false, result -> switch result {
+		services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
 				for (sprite in tileSprites)
 					sprite.setTexture(texture);
@@ -113,7 +113,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		// Masked flames, cut out where their soft edges fade: a row of them behind the pedestal.
-		host.textures.load("textures/flame.png", true, result -> switch result {
+		services.textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				for (i in 0...5) {
 					var flame = Node.sprite(texture, 0xffa040ff);
@@ -140,25 +140,25 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		time += dt;
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, host.diagnostics.getFrameCpu());
+		fps.update(dt, services.getFrameCpu());
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x1c1e26ff);
+		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch3D.begin(camera);
 		batch3D.grid(16, 1, 0x3c3f48ff);
 		batch3D.end();
@@ -168,7 +168,7 @@ class App extends BaseApp {
 		Text2D.draw(batch, '${stage.getDrawnCount()} models and sprites in ${stage.getDrawCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

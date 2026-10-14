@@ -1,7 +1,7 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Sampling;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -31,7 +31,7 @@ class App extends BaseApp {
 	static var COIN = [42, 22, 16, 16];
 	static var ROCK = [62, 22, 16, 16];
 
-	var host:IHost;
+	var services:Services;
 	var stage = new Stage2D();
 	var batch:Batch2D;
 	var camera = new Camera2D();
@@ -48,9 +48,9 @@ class App extends BaseApp {
 	var lastX = -1.;
 	var lastY = -1.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A sprite of one cell, placed at x, y in world units by its pivot, size width x height.
@@ -70,9 +70,9 @@ class App extends BaseApp {
 		return y >= WORLD_H - 2 ? WATER : y >= WORLD_H - 3 ? SAND : x == 8 || y == 6 ? STONE : GRASS;
 
 	override public function init():Void {
-		host.window.setTitle("HeliX tilemap");
-		host.window.setSize(960, 600);
-		batch = new Batch2D(host.graphics);
+		services.window.setTitle("HeliX tilemap");
+		services.window.setSize(960, 600);
+		batch = new Batch2D(services.graphics);
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
 		for (y in 0...WORLD_H)
 			for (x in 0...WORLD_W)
@@ -85,7 +85,7 @@ class App extends BaseApp {
 			add(ROCK, 4.5 + i * 3.5, 12 - (i % 2) * 2, 1, 1, .5, 1);
 		for (i in 0...8)
 			coins.push(add(COIN, 3.5 + i * 2.5, 9 - i % 3, .8, .8, .5, 1));
-		host.textures.load("textures/tiles.png", false, result -> switch result {
+		services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(loaded):
 				// Pixel art: crisp texels when zoomed in.
 				loaded.setSampling(Sampling.NEAREST);
@@ -111,12 +111,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		var unitsPerPixel = seen / height;
 
 		// Scroll: drag, or the arrow keys.
@@ -144,7 +144,7 @@ class App extends BaseApp {
 		camera.setZoom(height / seen);
 		camera.setPosition(centerX, centerY);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
 		// Coins: hover lights them up, a click collects them.
 		var hovered = px >= 0 ? coinAt(camera.screenToWorldX(px), camera.screenToWorldY(py)) : null;
@@ -161,20 +161,20 @@ class App extends BaseApp {
 		for (coin in coins)
 			coin.setColor(coin == hovered ? 0xffe68cff : 0xffffffff);
 
-		host.graphics.beginFrame(width, height, 0x181c26ff);
+		services.graphics.beginFrame(width, height, 0x181c26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.setCamera(hud);
-		batch.rect(0, 0, width / host.getPixelRatio(), 88, 0x121418be);
+		batch.rect(0, 0, width / services.window.getPixelRatio(), 88, 0x121418be);
 		Text2D.draw(batch, "HeliX tilemap: a 2D camera over sprite tiles", 20, 20, 20, 0xebeef5ff);
 		Text2D.draw(batch,
 			'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
 			20, 46, 15, 0x8c929eff);
 		Text2D.draw(batch, 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnCount()} of ${sprites.length} drawn)', 20, 68, 15,
 			0x8c929eff);
-		fps.draw(batch, width / host.getPixelRatio() - 150, 4);
+		fps.draw(batch, width / services.window.getPixelRatio() - 150, 4);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void

@@ -12,7 +12,6 @@ int helix_begin(int width,int height,uint32_t color);int helix_viewport(int x,in
 int helix_draw(uint32_t pipeline,const uint32_t *buffers,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
  const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes);
 void helix_end(void);int helix_destroy(int kind,uint32_t handle);
-void helix_capture(const char *path);const char *helix_graphics_audit(void);double helix_peak_rss(void);int helix_vertex_reserved(void);
 #ifdef __cplusplus
 }
 #endif

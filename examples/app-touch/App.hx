@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,7 +15,7 @@ class App extends BaseApp {
 	static inline var COIN = 96.;
 	static inline var FINGERS = 8;
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var logo:Null<Texture2D>;
@@ -31,22 +31,22 @@ class App extends BaseApp {
 	/** Where each finger id last lifted, x and y, and how much of its ring is left to fade (1 down to 0). */
 	var lifted = [for (_ in 0...FINGERS) [0., 0., 0.]];
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX touch");
-		host.window.setSize(900, 700);
-		batch = new Batch2D(host.graphics);
-		host.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		services.window.setTitle("HeliX touch");
+		services.window.setSize(900, 700);
+		batch = new Batch2D(services.graphics);
+		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture): logo = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		// Pixel art: nearest, no smoothing.
-		host.textures.load("textures/tiles.png", false, result -> switch result {
+		services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture): tiles = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
@@ -64,12 +64,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
-		var ratio = host.getPixelRatio();
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
+		var ratio = services.window.getPixelRatio();
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		// Two fingers move the logo; the wheel zooms it about the mouse.
 		if (input.isTouchGesture()) {
 			logoX += input.getTouchGesturePanX() / ratio;
@@ -101,7 +101,7 @@ class App extends BaseApp {
 				ring[2] = 1;
 			}
 
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x161921ff);
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x161921ff);
 		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
@@ -135,7 +135,7 @@ class App extends BaseApp {
 		Text2D.draw(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', 16, 40, 18, 0xffffffff);
 		Text2D.draw(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", 16, 64, 16, 0x969eafff);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	/** A finger's color, by its id, with alpha. */

@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -20,7 +20,7 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var FIGURES = 5;
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var grid:Batch3D;
 	var batch:Batch2D;
@@ -33,15 +33,15 @@ class App extends BaseApp {
 	var spot:Node;
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX lights");
-		host.window.setSize(1000, 600);
-		stage = new Stage3D(host.graphics);
+		services.window.setTitle("HeliX lights");
+		services.window.setSize(1000, 600);
+		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
 
@@ -80,23 +80,23 @@ class App extends BaseApp {
 		spot.setPosition(0, 6, 2);
 		stage.add(spot);
 
-		grid = new Batch3D(host.graphics);
-		batch = new Batch2D(host.graphics);
+		grid = new Batch3D(services.graphics);
+		batch = new Batch2D(services.graphics);
 	}
 
 	static function onOff(node:Node):String
 		return node.isVisible() ? "on " : "off";
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
+		var input = services.input;
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
 			lamp.setVisible(!lamp.isVisible());
 		if (input.isFramePressed(Key.Digit3))
 			spot.setVisible(!spot.isVisible());
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		time += dt;
 		// The point light orbits through the row; the spot sweeps left and right.
 		var lx = Math.sin(time * .6) * 5, lz = Math.cos(time * .6) * 2;
@@ -104,14 +104,14 @@ class App extends BaseApp {
 		marker.setPosition(lx, 1.2, lz);
 		marker.setVisible(lamp.isVisible());
 		spot.lookAt(Math.sin(time * .8) * .7, 5, 1.7);
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera2D.setViewport(width, height);
-		camera2D.pixels(host.getPixelRatio());
+		camera2D.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x0c0d12ff);
+		services.graphics.beginFrame(width, height, 0x0c0d12ff);
 		grid.begin(camera);
 		grid.grid(20, 1, 0x282a32ff);
 		grid.end();
@@ -121,7 +121,7 @@ class App extends BaseApp {
 		Text2D.draw(batch, '[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', 12, 64, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Gamepad;
 import helix.input.Key;
 import helix.input.PadAxis;
@@ -17,32 +17,32 @@ class App extends BaseApp {
 	static inline var HEIGHT = 420;
 	static final DEADZONES = [.1, .2, .3, 0.];
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var deadzone = 0;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX gamepad");
-		host.window.setSize(WIDTH, HEIGHT);
-		batch = new Batch2D(host.graphics);
+		services.window.setTitle("HeliX gamepad");
+		services.window.setSize(WIDTH, HEIGHT);
+		batch = new Batch2D(services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		for (i in 0...input.getPadCount())
 			if (input.getPad(i).isFramePressed(PadButton.South))
 				deadzone = (deadzone + 1) % DEADZONES.length;
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
 		var connected = 0;
 		for (i in 0...input.getPadCount())
@@ -61,7 +61,7 @@ class App extends BaseApp {
 			column++;
 		}
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	/** One pad's panel, its top-left at x, y. */

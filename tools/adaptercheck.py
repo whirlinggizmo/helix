@@ -33,12 +33,9 @@ GENERATED_HEADER = re.compile(r'#include\s+"([^"]*\.glsl\.h|shaders\.h)"')
 KNOWN = [
     ('engine', 'adapters/audio/webaudio/WebAudioAdapter.hx', 'audio (4): WAV dispatch moves to shared code'),
     ('engine', 'adapters/audio/sokol/SokolAudioAdapter.hx', 'audio (4): WAV dispatch and the stream pump move to shared code'),
-    ('engine', 'adapters/host/dom/DomHostAdapter.hx', 'host (1): the Runner builds the services; the host only runs the loop'),
-    ('engine', 'adapters/host/sokol/SokolHostAdapter.hx', 'host (1): the Runner builds the services; the host only runs the loop'),
     ('platform', 'host/Identity.hx', 'storage (3): the cache directory moves to the native storage adapter'),
     ('duplicate', 'adapters/audio', 'audio (4)'),
     ('duplicate', 'adapters/fetch', 'shared async plumbing (2) and fetch (3)'),
-    ('duplicate', 'adapters/host', 'host (1)'),
 ]
 
 

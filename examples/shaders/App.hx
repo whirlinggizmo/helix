@@ -3,7 +3,7 @@ import helix.debug.FpsOverlay;
 import helix.graphics.Sampling;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -29,7 +29,7 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var FLOOR_Y = -.5;
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -46,15 +46,15 @@ class App extends BaseApp {
 	var status = "loading the shaders";
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX shaders");
-		host.window.setSize(1000, 600);
-		var gpu = host.graphics;
+		services.window.setTitle("HeliX shaders");
+		services.window.setSize(1000, 600);
+		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .15);
@@ -93,7 +93,7 @@ class App extends BaseApp {
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 
-		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file;
 				var node = file.instantiate("car");
@@ -106,7 +106,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		host.textures.load("textures/noise.png", true, result -> switch result {
+		services.textures.load("textures/noise.png", true, result -> switch result {
 			case Ready(texture):
 				// The shader samples it twice across: it tiles.
 				texture.setSampling(new Sampling(true, Repeat, Repeat));
@@ -117,7 +117,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		shaders = new Shaders(host.assets, gpu);
+		shaders = new Shaders(services.assets, gpu);
 		shaders.load("shaders/toon.hxshader", result -> switch result {
 			case Ready(shader):
 				toon = shader;
@@ -171,9 +171,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2)) {
@@ -182,19 +182,19 @@ class App extends BaseApp {
 		}
 		time += dt;
 		stage.setTime(time);
-		fps.update(dt, host.diagnostics.getFrameCpu());
+		fps.update(dt, services.getFrameCpu());
 		// Circling in front of the models, toward the camera: always in view, and far enough not to wash them out.
 		var lx = Math.cos(time * .7) * 2.2,
 			ly = .8 + Math.sin(time * .7),
 			lz = 1.6 + Math.sin(time * .7) * .4;
 		lamp.setPosition(lx, ly, lz);
 		marker.setPosition(lx, ly, lz);
-		var gpu = host.graphics,
-			width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		var gpu = services.graphics,
+			width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
 		gpu.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);

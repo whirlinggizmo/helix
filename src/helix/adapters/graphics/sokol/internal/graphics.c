@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/resource.h>
-#include <dlfcn.h>
 #define SOKOL_GFX_IMPL
 #define SOKOL_GLUE_IMPL
 #define SOKOL_GLCORE
@@ -28,7 +26,7 @@ static struct{uint32_t id,shader;int buffer_count,stride[MAX_BUFFERS],instanced[
 static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is. */
-static int active,flipped,used[256],audit_enabled,frame_width,frame_height;
+static int active,flipped,used[256],frame_width,frame_height;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
@@ -45,17 +43,14 @@ static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}s
    frame without a write of its own; and a write after a bind goes to a spare of the same size (made the first time it's needed): renamed is
    how many are in use this frame, and the texture's draws read the latest. */
 static struct{sg_image image;int width,height,written,bound,renamed;float *copy;sg_image extra_images[MAX_RENAMES];sg_view extra_views[MAX_RENAMES];}data_textures[256];
-static void (*driver_audit_reset)(void);
-static const char *(*driver_audit_json)(void);
-static int frame_uploaded_bytes;static int vertex_reserved[256];
+/* Per buffer slot: whether it is a stream buffer (createBuffer's), rewritten each frame. */
+static int stream_buffers[256];
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
     a few surface shaders, each several pipelines and their flipped twins. */
  sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func,.buffer_pool_size=255,.image_pool_size=255,.sampler_pool_size=255,
   .shader_pool_size=255,.pipeline_pool_size=255,.view_pool_size=255});
- audit_enabled=getenv("HELIX_AUDIT")&&strcmp(getenv("HELIX_AUDIT"),"1")==0;
- if(!audit_enabled)sg_disable_stats();
- else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}
+ sg_disable_stats();
  memset(samplers,0,sizeof samplers);
 }
 void helix_shutdown(void){
@@ -150,7 +145,7 @@ static sg_view current_view(uint32_t texture){
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
- if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;vertex_reserved[slot]=capacity*sg_query_buffer_info(buffer).num_slots;
+ if((buffer.id&0xffff)<256){int slot=buffer.id&0xffff;used[slot]=0;index_buffers[slot]=0;stream_buffers[slot]=1;
   renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return buffer.id;
 }
 /* The sokol buffer a stream buffer's draws read now: itself, or the extra its latest write went to. */
@@ -160,7 +155,7 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(!data||bytes<=0||bytes%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.data={data,(size_t)bytes},.usage={.vertex_buffer=!index,.index_buffer=index!=0}});
  if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=256){sg_destroy_buffer(buffer);return 0;}
- int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;vertex_reserved[slot]=0;return buffer.id;
+ int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;stream_buffers[slot]=0;return buffer.id;
 }
 /* helix.graphics.BlendMode's: opaque (none), alpha (straight), additive (the source times its alpha, plus what's there). */
 static sg_blend_state blend_of(int blend){
@@ -208,7 +203,7 @@ uint32_t helix_pipeline(const int *desc,int count){
 }
 int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
- if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!vertex_reserved[slot])return 0;
+ if(!active||!data||bytes<0||bytes%4||slot>=256||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!stream_buffers[slot])return 0;
  if(bound[slot]){
   /* Bound since its last write: the write goes to the next extra, made the first time it's needed. */
   if(renamed[slot]==MAX_RENAMES)return 0;
@@ -216,11 +211,9 @@ int helix_update(uint32_t id,const void *data,int bytes){
   if(!extra->id){
    *extra=sg_make_buffer(&(sg_buffer_desc){.size=sg_query_buffer_size(buffer),.usage={.vertex_buffer=true,.write_transient=true}});
    if(sg_query_buffer_state(*extra)!=SG_RESOURCESTATE_VALID)return 0;
-   vertex_reserved[slot]+=(int)sg_query_buffer_size(buffer)*sg_query_buffer_info(*extra).num_slots;
   }
   renamed[slot]++;bound[slot]=0;
  }
- frame_uploaded_bytes+=bytes;
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
 }
 /* A program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>" a
@@ -401,9 +394,9 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
  sg_draw(first,count,instance_count);return 1;
 }
 void helix_end(void){
- if(active!=1)abort();sg_end_pass();sg_commit();active=0;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;
+ if(active!=1)abort();sg_end_pass();sg_commit();active=0;
  /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
- for(int i=0;i<256;i++){if(vertex_reserved[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
+ for(int i=0;i<256;i++){if(stream_buffers[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
 }
 /* Destroys a pipeline, its twin and its record. */
 static void destroy_pipeline(uint32_t id){
@@ -415,7 +408,7 @@ int helix_destroy(int kind,uint32_t id){
  int slot=id&0xffff;
  if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){
   sg_destroy_buffer((sg_buffer){id});
-  if(slot<256){vertex_reserved[slot]=0;for(int i=0;i<MAX_RENAMES;i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);memset(extras[slot],0,sizeof extras[slot]);}
+  if(slot<256){stream_buffers[slot]=0;for(int i=0;i<MAX_RENAMES;i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);memset(extras[slot],0,sizeof extras[slot]);}
   return 1;
  }
  if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){
@@ -439,24 +432,5 @@ int helix_destroy(int kind,uint32_t id){
  if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){destroy_pipeline(id);return 1;}
  return 0;
 }
-void helix_capture(const char *path){
- int w=sapp_width(),h=sapp_height();size_t row=(size_t)w*3;unsigned char *pixels=malloc(row*h);FILE *f=fopen(path,"wb");if(!pixels||!f)abort();
- glPixelStorei(GL_PACK_ALIGNMENT,1);glReadPixels(0,0,w,h,GL_RGB,GL_UNSIGNED_BYTE,pixels);if(glGetError())abort();
- fprintf(f,"P6\n%d %d\n255\n",w,h);for(int y=h-1;y>=0;y--)if(fwrite(pixels+row*y,1,row,f)!=row)abort();fclose(f);free(pixels);
-}
+/* The GPU driver's name for its renderer, for the backend facts a check reports. */
 const char *helix_renderer(void){return (const char*)glGetString(GL_RENDERER);}
-
-/* Sokol's public counters count actual GL backend state calls after its cache.
-   sg draw/write counters are actual API entries, separately labelled. Stats stay off in timing. */
-const char *helix_graphics_audit(void){
- static char json[1024];
- if(!audit_enabled)return "null";
- sg_frame_stats f=sg_query_stats().prev_frame;
- snprintf(json,sizeof json,"{\"sgDraws\":%u,\"sgPipelines\":%u,\"sgBindings\":%u,\"sgUploads\":%u,\"uploadedBytes\":%d,\"glPrograms\":%u,\"glTextures\":%u,\"glSamplers\":%u,\"glBuffers\":%u,\"glAttributes\":%u,\"glRenderState\":%u,\"glUniforms\":%u,\"driver\":%s}",
-  f.num_draw,f.num_apply_pipeline,f.num_apply_bindings,f.num_write_buffer_transient,frame_uploaded_bytes,
-  f.gl.num_use_program,f.gl.num_bind_texture,f.gl.num_bind_sampler,f.gl.num_bind_buffer,f.gl.num_vertex_attrib_pointer,f.gl.num_render_state,f.gl.num_uniform,driver_audit_json?driver_audit_json():"null");
- return json;
-}
-
-double helix_peak_rss(void){struct rusage usage;if(getrusage(RUSAGE_SELF,&usage)!=0)return -1;return (double)usage.ru_maxrss*1024.0;}
-int helix_vertex_reserved(void){int bytes=0;for(int i=0;i<256;i++)bytes+=vertex_reserved[i];return bytes;}

@@ -11,6 +11,9 @@
 
 static void (*init_cb)(void),(*cleanup_cb)(void);
 static void (*frame_cb)(void);
+/* Whether the window has the keyboard and is shown: sokol's focus and suspend events. */
+static int focused=1;
+int helix_window_focused(void){return focused;}
 int helix_width(void){return sapp_width();}int helix_height(void){return sapp_height();}
 float helix_pixel_ratio(void){return sapp_dpi_scale();}
 void helix_quit(void){sapp_request_quit();}
@@ -51,8 +54,8 @@ static void event(const sapp_event *e){
    for(int i=0;i<e->num_touches;i++){const sapp_touchpoint*t=&e->touches[i];if(!t->changed)continue;
     const int down=e->type==SAPP_EVENTTYPE_TOUCHES_BEGAN||e->type==SAPP_EVENTTYPE_TOUCHES_MOVED;helix_input_push(HELIX_EVENT_TOUCH,(int)t->identifier,down,t->pos_x,t->pos_y);}
    break;
-  case SAPP_EVENTTYPE_UNFOCUSED:case SAPP_EVENTTYPE_SUSPENDED:helix_input_push(HELIX_EVENT_FOCUS,0,0,0,0);break;
-  case SAPP_EVENTTYPE_FOCUSED:case SAPP_EVENTTYPE_RESUMED:helix_input_push(HELIX_EVENT_FOCUS,0,1,0,0);break;
+  case SAPP_EVENTTYPE_UNFOCUSED:case SAPP_EVENTTYPE_SUSPENDED:focused=0;helix_input_push(HELIX_EVENT_FOCUS,0,0,0,0);break;
+  case SAPP_EVENTTYPE_FOCUSED:case SAPP_EVENTTYPE_RESUMED:focused=1;helix_input_push(HELIX_EVENT_FOCUS,0,1,0,0);break;
   default:break;
  }
 }

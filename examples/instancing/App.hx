@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -24,7 +24,7 @@ class App extends BaseApp {
 	static inline var CARS = 6;
 	static inline var GLASS = 5;
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -36,9 +36,9 @@ class App extends BaseApp {
 	var ownMaterials = false;
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A colour around the hue circle for cube i.
@@ -63,9 +63,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX instancing");
-		host.window.setSize(1000, 600);
-		var gpu = host.graphics;
+		services.window.setTitle("HeliX instancing");
+		services.window.setSize(1000, 600);
+		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xa0b4dcff, .35);
@@ -97,7 +97,7 @@ class App extends BaseApp {
 			stage.add(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
-		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				for (i in 0...CARS) {
 					var car = file.instantiate('car $i');
@@ -113,15 +113,15 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
 		time += dt;
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(time * .15) * 22, 12, Math.cos(time * .15) * 22, 0, 1, 0);
 		for (i in 0...cubes.length) {
@@ -134,9 +134,9 @@ class App extends BaseApp {
 		for (i in 0...cars.length)
 			cars[i].setRotation(0, Math.PI + Math.sin(time + i * .35) * .6, 0);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x1c1e26ff);
+		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		Text2D.draw(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", 12, 36, 20, 0xf5f5f5ff);
@@ -145,7 +145,7 @@ class App extends BaseApp {
 			16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

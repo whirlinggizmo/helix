@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,7 +15,7 @@ import helix.render3d.Stage3D;
 /** Shapes made in code on a Stage3D: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
 	sun and an ambient light, the camera turning around them. O stops and starts the camera; Escape quits where quitting means anything. */
 class App extends BaseApp {
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -24,15 +24,15 @@ class App extends BaseApp {
 	var orbit = true;
 	var angle = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX meshes");
-		host.window.setSize(1000, 600);
-		stage = new Stage3D(host.graphics);
+		services.window.setTitle("HeliX meshes");
+		services.window.setSize(1000, 600);
+		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new Light(Directional);
 		sun.setIntensity(3);
@@ -63,33 +63,33 @@ class App extends BaseApp {
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
 			stage.add(node);
 		}
-		batch = new Batch2D(host.graphics);
+		batch = new Batch2D(services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (orbit)
 			angle += dt * .2;
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 3.5, 9 * Math.cos(angle), 0, .4, 0);
 		camera2D.setViewport(width, height);
-		camera2D.pixels(host.getPixelRatio());
+		camera2D.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x14161cff);
+		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		Text2D.draw(batch, "HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, (orbit ? "O: stop the camera" : "O: turn the camera") + (host.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
+		Text2D.draw(batch, (orbit ? "O: stop the camera" : "O: turn the camera") + (services.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

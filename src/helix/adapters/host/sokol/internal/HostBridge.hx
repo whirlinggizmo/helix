@@ -17,6 +17,7 @@ extern class HostBridge extends SokolNativeBuild {
 	@:native("helix_window_x") static function windowX():Int;
 	@:native("helix_window_y") static function windowY():Int;
 	@:native("helix_window_set_position") static function setPosition(x:Int, y:Int):Void;
+	@:native("helix_window_focused") static function focused():Int;
 	@:native("helix_window_fullscreen") static function fullscreen():Int;
 	@:native("helix_window_set_fullscreen") static function requestFullscreen(on:Int):Void;
 	@:native("helix_window_visible") static function visible():Int;

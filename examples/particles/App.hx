@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.particles.Emitter;
 import helix.render2d.Batch2D;
@@ -26,7 +26,7 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var ORBIT = 14;
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var flat = new Stage2D();
 	var grid:Batch3D;
@@ -46,9 +46,9 @@ class App extends BaseApp {
 	var angle = 0.;
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node {
@@ -59,9 +59,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX particles");
-		host.window.setSize(1000, 600);
-		var gpu = host.graphics;
+		services.window.setTitle("HeliX particles");
+		services.window.setSize(1000, 600);
+		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		grid = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -147,7 +147,7 @@ class App extends BaseApp {
 		confettiNode = Node2D.emitter(confetti);
 		flat.add(confettiNode);
 
-		host.textures.load("textures/particle.png", true, result -> switch result {
+		services.textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
 				for (e in [fountain, sparks, smoke, confetti])
 					e.setTexture(texture);
@@ -156,7 +156,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		host.textures.load("textures/flame.png", true, result -> switch result {
+		services.textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				flame.setTexture(texture);
 			case Failed(message):
@@ -173,9 +173,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Space)) {
 			paused = !paused;
 			for (e in [fountain, sparks, smoke, flame])
@@ -183,7 +183,7 @@ class App extends BaseApp {
 		}
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
-		var ratio = host.getPixelRatio();
+		var ratio = services.window.getPixelRatio();
 		if (input.isPointerFramePressed())
 			burst(input.getPointerX() / ratio, input.getPointerY() / ratio);
 		time += dt;
@@ -193,15 +193,15 @@ class App extends BaseApp {
 		flat.setTime(time);
 		// The sparks' source circles the fountain; the sparks stay where they were born.
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
 		hud.setViewport(width, height);
 		hud.pixels(ratio);
 
-		host.graphics.beginFrame(width, height, 0x0e1018ff);
+		services.graphics.beginFrame(width, height, 0x0e1018ff);
 		grid.begin(camera);
 		grid.grid(24, 1, 0x50505aff);
 		grid.end();
@@ -213,7 +213,7 @@ class App extends BaseApp {
 			0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

@@ -1,7 +1,7 @@
 import helix.app.BaseApp;
 import helix.app.Ticker;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -19,7 +19,7 @@ class App extends BaseApp {
 	static inline var RIGHT = WIDTH - 80;
 	static inline var SPEED = 240.;
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -30,16 +30,16 @@ class App extends BaseApp {
 	var tickPresses = 0;
 	var framePresses = 0;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX tick");
-		host.window.setSize(WIDTH, HEIGHT);
-		batch = new Batch2D(host.graphics);
-		ticker = new Ticker(host.input, 10);
+		services.window.setTitle("HeliX tick");
+		services.window.setSize(WIDTH, HEIGHT);
+		batch = new Batch2D(services.graphics);
+		ticker = new Ticker(services.input, 10);
 	}
 
 	function tick():Void {
@@ -50,24 +50,24 @@ class App extends BaseApp {
 			previousX = x;
 		} // not smoothed across the wrap
 		ticks++;
-		if (host.input.isPressed(Key.Enter))
+		if (services.input.isPressed(Key.Enter))
 			tickPresses++;
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
+		var input = services.input;
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;
 		if (input.isFramePressed(Key.Space))
 			ticker.setTimeScale(ticker.getTimeScale() > 0 ? 0 : 1);
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
-		ticker.advance(host.getFrameElapsed(), tick);
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
+		ticker.advance(services.getFrameElapsed(), tick);
 		var t = ticker.getFraction();
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		camera.setViewport(host.getFramebufferWidth(), host.getFramebufferHeight());
-		camera.pixels(host.getPixelRatio());
-		host.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181a22ff);
+		fps.update(dt, services.getFrameCpu());
+		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		camera.pixels(services.window.getPixelRatio());
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181a22ff);
 		batch.begin(camera);
 		Text2D.draw(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", 20, 20, 20, 0xf5f5f5ff);
 		Text2D.draw(batch,
@@ -81,7 +81,7 @@ class App extends BaseApp {
 		batch.rect(previousX + (x - previousX) * t, 275, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, 20, HEIGHT - 30);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	static function fixed(value:Float, places:Int):String {

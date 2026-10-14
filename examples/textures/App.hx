@@ -1,7 +1,7 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Sampling;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -39,22 +39,22 @@ class App extends BaseApp {
 		[2, 22, 16, 32], [22, 22, 16, 32], [42, 22, 16, 16], [62, 22, 16, 16]
 	];
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
 	var slots:Array<Slot> = [];
 	var compressed:Array<Slot> = [];
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX textures");
-		host.window.setSize(1010, 610);
-		batch = new Batch2D(host.graphics);
+		services.window.setTitle("HeliX textures");
+		services.window.setSize(1010, 610);
+		batch = new Batch2D(services.graphics);
 		for (path in PATHS)
 			slots.push(load(path));
 		for (path in KTX_PATHS)
@@ -62,12 +62,12 @@ class App extends BaseApp {
 	}
 
 	function load(path:String):Slot {
-		var slot = new Slot(path, host.getTime());
-		host.textures.load(path, true, result -> switch result {
+		var slot = new Slot(path, services.getTime());
+		services.textures.load(path, true, result -> switch result {
 			case Ready(texture):
 				slot.texture = texture;
-				slot.took = host.getTime() - slot.asked;
-				slot.chosen = host.textures.getPath(texture);
+				slot.took = services.getTime() - slot.asked;
+				slot.chosen = services.textures.getPath(texture);
 			case Failed(message):
 				slot.status = "failed";
 				trace(message);
@@ -107,15 +107,15 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (host.canQuit() && host.input.isFramePressed(Key.Escape))
-			host.quit();
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		if (services.canQuit() && services.input.isFramePressed(Key.Escape))
+			services.quit();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		camera.pixels(host.getPixelRatio());
+		camera.pixels(services.window.getPixelRatio());
 
-		host.graphics.beginFrame(width, height, 0x262a36ff);
+		services.graphics.beginFrame(width, height, 0x262a36ff);
 		batch.begin(camera);
 		Text2D.draw(batch, "HeliX textures: smooth (linear) and sharp (nearest) sampling", 12, 30, 22, 0xf5f5f5ff);
 		for (i in 0...slots.length) {
@@ -138,13 +138,13 @@ class App extends BaseApp {
 		}
 		fps.draw(batch, 12, 6);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		for (slot in slots.concat(compressed))
 			if (slot.texture != null)
-				host.textures.release(slot.texture);
+				services.textures.release(slot.texture);
 		batch.destroy();
 	}
 }

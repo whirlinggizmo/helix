@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -28,7 +28,7 @@ class App extends BaseApp {
 	// What a shadow keeps of the surface's color: nothing (physical), then two stylized tints.
 	static var TINTS = [0x000000ff, 0x1e3c64ff, 0x64321eff];
 
-	var host:IHost;
+	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -47,9 +47,9 @@ class App extends BaseApp {
 	var angle = 0.;
 	var time = 0.;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
@@ -64,9 +64,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX shadows");
-		host.window.setSize(1000, 600);
-		var gpu = host.graphics;
+		services.window.setTitle("HeliX shadows");
+		services.window.setSize(1000, 600);
+		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0x8caae1ff, .25);
@@ -104,7 +104,7 @@ class App extends BaseApp {
 		// One that casts nothing, and one that nothing shadows.
 		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xf8ed95ff, .35).setShadowCasting(false);
 		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xf395bcff, .35).setShadowReceiving(false);
-		new Models(host.assets, host.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -117,9 +117,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setShadowCasting(!sun.isShadowCasting());
 		if (input.isFramePressed(Key.Digit2))
@@ -148,7 +148,7 @@ class App extends BaseApp {
 			sun.setShadowBias(bias, bias * 4);
 		}
 		time += dt;
-		fps.update(dt, host.diagnostics.getFrameCpu());
+		fps.update(dt, services.getFrameCpu());
 		// The spot circles overhead, aimed at the middle of the stage.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);
 		spotNode.setPosition(sx, 6.5, sz);
@@ -156,15 +156,15 @@ class App extends BaseApp {
 		marker.setPosition(sx, 6.5, sz);
 		if (orbit)
 			angle += dt * .18;
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight();
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(11 * Math.sin(angle), 5, 11 * Math.cos(angle), 0, 1.2, 0);
 		hud.setViewport(width, height);
-		hud.pixels(host.getPixelRatio());
+		hud.pixels(services.window.getPixelRatio());
 
 		stage.drawShadows(camera);
-		host.graphics.beginFrame(width, height, 0x7896c8ff);
+		services.graphics.beginFrame(width, height, 0x7896c8ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		Text2D.draw(batch, "HeliX shadows: lights casting into a depth map", 12, 36, 20, 0xf5f5f5ff);
@@ -179,7 +179,7 @@ class App extends BaseApp {
 		Text2D.draw(batch, "left ball casts nothing; right ball receives nothing", 12, 108, 16, 0x9a9a9aff);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

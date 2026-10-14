@@ -5,6 +5,18 @@ package helix.host;
 	request asks for what the platform may refuse or grant later, returning whether it asked, never whether it was granted.
 	A setter that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows. */
 interface IWindow {
+	/** The drawable area's width in framebuffer pixels (the getWidth and getHeight sizes are logical pixels). */
+	function getFramebufferWidth():Int;
+
+	/** The drawable area's height in framebuffer pixels. */
+	function getFramebufferHeight():Int;
+
+	/** Framebuffer pixels per logical pixel. */
+	function getPixelRatio():Float;
+
+	/** Whether the window has the keyboard and is shown: false while it's in the background, minimized, or (on the web) the page is hidden. */
+	function isFocused():Bool;
+
 	/** The title bar's text (the document's title, on the web). */
 	function getTitle():String;
 

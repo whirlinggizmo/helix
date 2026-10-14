@@ -8,10 +8,35 @@ import js.html.CanvasElement;
 	or choose a monitor; it sees one screen. */
 class DomWindow implements IWindow {
 	var canvas:CanvasElement;
+	var focused = true;
 
-	/** The page's window, with canvas as what goes fullscreen or hides. */
-	public function new(canvas:CanvasElement)
+	/** The page's window, with canvas as what goes fullscreen or hides, and as the drawing surface: its pixels follow the viewport's size and
+		the pixel ratio. */
+	public function new(canvas:CanvasElement) {
 		this.canvas = canvas;
+		resize();
+		Browser.window.addEventListener("resize", _ -> resize());
+		Browser.window.addEventListener("blur", _ -> focused = false);
+		Browser.window.addEventListener("focus", _ -> focused = !Browser.document.hidden);
+		Browser.document.addEventListener("visibilitychange", _ -> focused = !Browser.document.hidden);
+	}
+
+	function resize():Void {
+		canvas.width = Std.int(Math.max(1, Browser.window.innerWidth * getPixelRatio()));
+		canvas.height = Std.int(Math.max(1, Browser.window.innerHeight * getPixelRatio()));
+	}
+
+	public function getFramebufferWidth():Int
+		return canvas.width;
+
+	public function getFramebufferHeight():Int
+		return canvas.height;
+
+	public function getPixelRatio():Float
+		return Browser.window.devicePixelRatio;
+
+	public function isFocused():Bool
+		return focused;
 
 	public function getTitle():String
 		return Browser.document.title;

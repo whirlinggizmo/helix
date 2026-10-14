@@ -62,6 +62,7 @@ def prepare(name,shdc):
     shader(shdc);fontbake.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
     (web/'index.html').write_text((SHARED/'index.html').read_text().replace('{{name}}',name))
+    shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
     if (web/'assets').is_symlink():(web/'assets').unlink()
     assets(name,web/'assets')
     licenses(web)

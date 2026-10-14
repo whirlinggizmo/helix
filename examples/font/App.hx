@@ -1,6 +1,6 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.IHost;
+import helix.host.Services;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,7 +15,7 @@ class App extends BaseApp {
 	static inline var MONO = "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf";
 	static inline var KOMIKA = "fonts/Komika/KOMIKAH_.ttf";
 
-	var host:IHost;
+	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -25,16 +25,16 @@ class App extends BaseApp {
 	var failed = false;
 	var useKomika = false;
 
-	public function new(host:IHost) {
+	public function new(services:Services) {
 		super();
-		this.host = host;
+		this.services = services;
 	}
 
 	override public function init():Void {
-		host.window.setTitle("HeliX font");
-		host.window.setSize(900, 500);
-		batch = new Batch2D(host.graphics);
-		fonts = new Fonts(host.assets, host.graphics);
+		services.window.setTitle("HeliX font");
+		services.window.setSize(900, 500);
+		batch = new Batch2D(services.graphics);
+		fonts = new Fonts(services.assets, services.graphics);
 		fonts.load(MONO, result -> switch result {
 			case Ready(font):
 				mono = font;
@@ -54,19 +54,19 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = host.input;
-		if (host.canQuit() && input.isFramePressed(Key.Escape))
-			host.quit();
+		var input = services.input;
+		if (services.canQuit() && input.isFramePressed(Key.Escape))
+			services.quit();
 		if (input.isFramePressed(Key.D) && komika != null)
 			useKomika = !useKomika;
-		fps.update(dt, host.diagnostics.getFrameCpu());
-		var width = host.getFramebufferWidth(),
-			height = host.getFramebufferHeight(),
-			ratio = host.getPixelRatio();
+		fps.update(dt, services.getFrameCpu());
+		var width = services.window.getFramebufferWidth(),
+			height = services.window.getFramebufferHeight(),
+			ratio = services.window.getPixelRatio();
 		camera.setViewport(width, height);
 		camera.pixels(ratio);
 
-		host.graphics.beginFrame(width, height, 0xf8f8faff);
+		services.graphics.beginFrame(width, height, 0xf8f8faff);
 		batch.begin(camera);
 		// A centered title, measured.
 		if (komika != null)
@@ -84,7 +84,7 @@ class App extends BaseApp {
 			useKomika ? komika : null);
 		fps.draw(batch, 12, 12);
 		batch.end();
-		host.graphics.endFrame();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
