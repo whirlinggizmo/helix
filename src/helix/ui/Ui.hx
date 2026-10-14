@@ -37,6 +37,7 @@ class Ui {
 	var back = false;
 	var lastX = -1.;
 	var lastY = -1.;
+	var pressing:Null<Widget>;
 
 	/** A UI on stage (drawn through camera, which pointer looks at), read from input, in theme's look (a new Theme when not given). */
 	public function new(stage:Stage2D, camera:Camera2D, pointer:Pointer, input:IInput, ?theme:Theme) {
@@ -119,6 +120,25 @@ class Ui {
 		root.remove(widget.getRoot());
 		if (focused == widget)
 			focused = null;
+	}
+
+	/** The widget named name (Widget.getName), or null. */
+	public function find(name:String):Null<Widget> {
+		for (w in widgets)
+			if (w.getName() == name)
+				return w;
+		return null;
+	}
+
+	/** Uses the widget named name as a click would (a button clicked, a toggle switched, a list's choice activated), at the next update, when
+		it's shown, enabled and can be: as a test or an autopilot does, by name rather than by place. False, doing nothing, when there's no such
+		widget or it isn't usable now. */
+	public function press(name:String):Bool {
+		var w = find(name);
+		if (w == null || !w.isEnabled() || !w.isVisible() || !w.isFocusable())
+			return false;
+		pressing = w;
+		return true;
 	}
 
 	/** The widget with focus, or null. */
@@ -218,8 +238,13 @@ class Ui {
 			// The pointer pressing a widget gives it focus, unshown.
 			if (usable && target != null && pointer.isPressed(target) && w.isFocusable())
 				focused = w;
+			if (w == pressing && usable) {
+				clicked = true;
+				focused = w;
+			}
 			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, w == stepped && usable ? step : 0);
 		}
+		pressing = null;
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
 		if (showFocus && focused != null) {
 			var b = focused.getBox(), out = theme.focusWidth * 2;

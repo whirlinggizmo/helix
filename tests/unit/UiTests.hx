@@ -178,6 +178,11 @@ class UiTests {
 		check(play.isClicked(), "Pressed afresh, it does");
 		frame([Escape]);
 		check(ui.isBackPressed(), "Escape is back");
+		// Used by name, as a test or an autopilot does: at the next update, when shown and usable.
+		check(ui.press("Play") && !play.isClicked(), "Pressed by name; it takes at the next update");
+		frame();
+		check(play.isClicked() && ui.getFocused() == play, "Clicked by name, focus with it");
+		check(!ui.press("Locked") && !ui.press("Nothing"), "A disabled widget, or none of that name, isn't pressed");
 	}
 
 	// A text field: focused by a click, then typed in (spaces typed, not activating), Backspace, Enter, its limit; the keys the UI's meanwhile.

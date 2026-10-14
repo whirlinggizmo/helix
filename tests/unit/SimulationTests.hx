@@ -141,29 +141,20 @@ class SimulationTests {
 		check(c.fire && c.left && c.thrust, "Standard controller actions");
 		state.clear();
 		check(state.getPadAxis(PadAxis.LeftX) == 0 && !state.isPadDown(PadButton.East), "Controller disconnect clears state");
-		g = new Game();
-		c = new Controls();
-		state = new InputState();
-		var menu = new Menu();
-		state.pointerEvent(500, 416 * 700 / 720., true);
-		c.read(state);
-		var camera = new helix.render2d.Camera2D();
-		Field.view(camera, 1000, 700);
-		menu.update(g, c, state, camera);
-		g.step(c);
-		check(g.state == "playing", "Letterboxed pointer menu activation");
 		for (name in ["smoke", "playthrough"]) {
-			var pilot = new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/" + name + ".json"));
+			// The game-over menu's Title, pressed by name as the app's Ui.press would.
+			var wantTitle = false;
+			var pilot = new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/" + name + ".json"), null,
+				target -> target == "title" && g.state == "gameover" ? wantTitle = true : false);
 			g = new Game(pilot.getSeed());
-			menu = new Menu();
-			Field.view(camera, 800, 600);
 			c = new Controls();
 			for (_ in 0...15000) {
 				var source = pilot.advance(g.probe);
 				if (pilot.isDone())
 					break;
 				c.read(source);
-				menu.update(g, c, source, camera);
+				c.title = wantTitle;
+				wantTitle = false;
 				g.step(c);
 				source.consume();
 			}

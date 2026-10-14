@@ -52,8 +52,8 @@ class Renderer {
 		batch.line(x - 8, y + 10, x, y - 12, 2, color);
 	}
 
-	/** Draws game seen through camera; ready false shows the menu's buttons as loading. */
-	public function render(game:Game, camera:Camera2D, menu:Menu = null, ready:Bool = true):Void {
+	/** Draws game seen through camera, and over its menu's panel hud (the menu's buttons), when given. */
+	public function render(game:Game, camera:Camera2D, ?hud:helix.render2d.Stage2D):Void {
 		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), BACKGROUND);
 		batch.begin(camera);
 		setColor(.22, .27, .36);
@@ -90,27 +90,19 @@ class Renderer {
 			text("WAVE " + game.wave, Game.W - 150, 24, 2);
 		}
 		if (game.state != "playing") {
-			var over = game.state == "gameover",
-				selection = menu == null ? 0 : menu.selected,
-				hover = menu == null ? -1 : menu.hovered;
+			var over = game.state == "gameover";
 			batch.roundedRect(245, over ? 205 : 235, 470, over ? 330 : 240, 8, rgba(.055, .07, .12, .94));
 			setColor(.85, .9, .97);
 			centered(over ? "GAME OVER" : "ASTEROIDS", over ? 245 : 275, 6);
 			setColor(.65, .72, .8);
 			centered(over ? "SCORE " + game.score + "   BEST " + game.best : "TURN: ARROWS   THRUST: UP   FIRE: SPACE", over ? 325 : 345, over ? 2 : 1.5);
-			for (i in 0...(over ? 2 : 1)) {
-				var y = 390 + i * 64;
-				if (i == selection)
-					batch.roundedRect(328, y - 2, 304, 56, 5, rgba(.45, .85, 1));
-				batch.roundedRect(330, y, 300, 52, 4, i == hover ? rgba(.19, .24, .34) : rgba(.12, .16, .24));
-				setColor(.85, .9, .97);
-				centered(ready ? (over ? (i == 0 ? "PLAY AGAIN" : "TITLE") : "PLAY") : "LOADING", y + 17, 2.5);
-			}
 			if (!over && game.best > 0) {
 				setColor(.65, .72, .8);
 				centered("BEST " + game.best, 490, 2);
 			}
 		}
+		if (hud != null)
+			hud.draw(batch, camera);
 		batch.end();
 		gpu.endFrame();
 	}
