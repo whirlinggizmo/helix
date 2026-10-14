@@ -95,7 +95,7 @@ def main():
    report['native']={'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
   report['sources']={str(file.relative_to(ROOT)):hashlib.sha256(file.read_bytes()).hexdigest() for group in ['src','tests'] for file in sorted((ROOT/group).rglob('*.hx'))}
   report['sources']['src/helix/adapters/audio/sokol/internal/audio.c']=hashlib.sha256((ROOT/'src/helix/adapters/audio/sokol/internal/audio.c').read_bytes()).hexdigest()
-  report['sources']['src/helix/adapters/audio/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapters/audio/libsndfile/internal/codec.c').read_bytes()).hexdigest()
+  report['sources']['src/helix/adapters/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapters/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()
   report['sources']['vendor/sndfile/sndfile.h']=hashlib.sha256((ROOT/'vendor/sndfile/sndfile.h').read_bytes()).hexdigest()
   report['audioFormats']=['PCM16 WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((build/'audio-encoder.json').read_text())
   OUT.mkdir(parents=True,exist_ok=True);(OUT/'service-checks.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({target:report[target]['runs'] for target in ['browser','native'] if target in report}))

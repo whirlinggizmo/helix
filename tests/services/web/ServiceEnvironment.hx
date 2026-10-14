@@ -1,6 +1,6 @@
 import helix.adapters.fetch.fetchapi.FetchApiAdapter;
 import helix.adapters.audio.webaudio.WebAudioAdapter;
-import helix.adapters.audio.webaudio.WebAudioDecoder;
+import helix.adapters.audiodecoder.webaudio.WebAudioDecoder;
 import helix.adapters.storage.indexeddb.IndexedDbStorageAdapter;
 
 class ServiceEnvironment {

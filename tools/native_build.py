@@ -6,7 +6,7 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
-INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','input/sokol/internal','input/evdev/internal','audio/sokol/internal','audio/libsndfile/internal')]
+INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','input/sokol/internal','input/evdev/internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 
 def codec_library():

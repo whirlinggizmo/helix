@@ -1,7 +1,7 @@
-package helix.adapters.audio.libsndfile;
+package helix.adapters.audiodecoder.libsndfile;
 
 import haxe.io.Bytes;
-import helix.adapters.audio.libsndfile.internal.CodecBridge;
+import helix.adapters.audiodecoder.libsndfile.internal.CodecBridge;
 import helix.adapters.internal.Mailbox;
 import helix.audio.AudioDecoding.AudioDecodeResult;
 import helix.audio.IAudioDecoder;

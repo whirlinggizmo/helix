@@ -1,4 +1,4 @@
-package helix.adapters.audio.webaudio;
+package helix.adapters.audiodecoder.webaudio;
 
 import haxe.io.Bytes;
 import helix.audio.AudioDecoding.AudioDecodeResult;

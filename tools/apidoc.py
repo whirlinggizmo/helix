@@ -13,7 +13,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/api'
 BROWSER_ONLY=['helix.adapters.host.dom','helix.adapters.graphics.webgl2','helix.adapters.input.dom','helix.adapters.audio.webaudio','helix.adapters.fetch.fetchapi','helix.adapters.storage.indexeddb','helix.profiles.BrowserWebGL2Profile']
-NATIVE_ONLY=['helix.adapters.host.sokol','helix.adapters.graphics.sokol','helix.adapters.input.sokol','helix.adapters.audio.sokol','helix.adapters.audio.libsndfile','helix.adapters.fetch.haxehttp','helix.adapters.storage.filesystem','helix.adapters.internal','helix.profiles.NativeSokolGLProfile']
+NATIVE_ONLY=['helix.adapters.host.sokol','helix.adapters.graphics.sokol','helix.adapters.input.sokol','helix.adapters.audio.sokol','helix.adapters.audiodecoder.libsndfile','helix.adapters.fetch.haxehttp','helix.adapters.storage.filesystem','helix.adapters.internal','helix.profiles.NativeSokolGLProfile']
 
 def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""

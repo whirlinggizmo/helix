@@ -1,4 +1,4 @@
-package helix.adapters.audio.libsndfile.internal;
+package helix.adapters.audiodecoder.libsndfile.internal;
 
 import helix.adapters.internal.SokolNativeBuild;
 
