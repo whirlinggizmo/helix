@@ -45,7 +45,7 @@ As built today. The audit's plan changes several contracts; the target shape is 
 | `IInputSource` | `inputsource/dom` (browser), `inputsource/sokol` + `inputsource/evdev` C (native) | Keyboard, text, mouse, wheel, touch and focus events as they arrive, each connected gamepad's state at poll, and the platform's key codes as a table. The shared `InputRouter` owns edges, the pointer, focus policy and pad slots; the app reads its `InputState` as `IInput`. |
 | `IAudio` | `audio/webaudio` (browser), `audio/sokol` + C (native) | Output: clips copied from PCM, streams opened from a source, voices; whether audio exists and runs now. Natively it streams through an `IPcmFiles` (the codec adapter's) and pumps its voices, as a push-based output must. The shared `AudioResources` and `AudioPlayback` own lifetimes, volume checks and waiting for audio to start. |
 | `IAudioDecoder` | `audiodecoder/webaudio` (browser), `audiodecoder/libsndfile` + C (native; also `IPcmFiles` for streaming) | A whole Ogg or MP3 file to mono float PCM at 44.1 kHz. The shared `AudioDecoding` owns sniffing, the WAV path, the limits, PCM checks and queuing. |
-| `IFetch` | `fetch/fetchapi` (browser), `fetch/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
+| `IHttp` | `http/fetchapi` (browser), `http/haxehttp` (native) | A GET whose response arrives in parts, and its abort. The shared `Fetch` owns limits, the timeout, progress and queuing. |
 | `IStore` | `store/indexeddb` (browser), `store/filesystem` (native) | Files by key (read, write, remove, clear, lease). The shared `Storage` owns key checks, the size limit, read-only refusal and queuing. |
 | `IImageDecoder` | `imagedecoder/canvas` (browser), `imagedecoder/stb` + C (native) | Bytes to RGBA. The shared `ImageDecoding` owns queuing, cancellation and shutdown. |
 
@@ -53,8 +53,8 @@ As built today. The audit's plan changes several contracts; the target shape is 
 
 - **Host: done** (DECISIONS 81). Backend facts (`Adapters.info`) went with step 4: nothing read them.
 - **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
-- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IFetch`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
-- **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IFetch`; a shared service on top for what's policy (reconnecting, queuing messages).
+- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
+- **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IHttp`; a shared service on top for what's policy (reconnecting, queuing messages).
 - **Audio: done** (DECISIONS 83).
 - **Input: done** (DECISIONS 84).
 

@@ -1,4 +1,4 @@
-import helix.adapters.fetch.fetchapi.FetchApiAdapter;
+import helix.adapters.http.fetchapi.FetchApiAdapter;
 import helix.adapters.audio.webaudio.WebAudioAdapter;
 import helix.adapters.audiodecoder.webaudio.WebAudioDecoder;
 import helix.adapters.store.indexeddb.IndexedDbStorageAdapter;

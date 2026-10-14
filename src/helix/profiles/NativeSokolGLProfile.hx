@@ -3,7 +3,7 @@ package helix.profiles;
 import helix.adapters.audiodecoder.libsndfile.LibsndfileDecoder;
 import helix.adapters.audiodecoder.libsndfile.LibsndfileFiles;
 import helix.adapters.audio.sokol.SokolAudioAdapter;
-import helix.adapters.fetch.haxehttp.HaxeHttpFetchAdapter;
+import helix.adapters.http.haxehttp.HaxeHttpFetchAdapter;
 import helix.adapters.graphics.sokol.SokolGraphicsAdapter;
 import helix.adapters.testharness.stdio.StdioTestHarness;
 import helix.adapters.host.sokol.SokolHostAdapter;

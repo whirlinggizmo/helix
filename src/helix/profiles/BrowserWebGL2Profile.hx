@@ -2,7 +2,7 @@ package helix.profiles;
 
 import helix.adapters.audio.webaudio.WebAudioAdapter;
 import helix.adapters.audiodecoder.webaudio.WebAudioDecoder;
-import helix.adapters.fetch.fetchapi.FetchApiAdapter;
+import helix.adapters.http.fetchapi.FetchApiAdapter;
 import helix.adapters.graphics.webgl2.WebGL2GraphicsAdapter;
 import helix.adapters.testharness.dom.DomTestHarness;
 import helix.adapters.host.dom.DomHostAdapter;

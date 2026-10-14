@@ -1,4 +1,4 @@
-import helix.adapters.fetch.haxehttp.HaxeHttpFetchAdapter;
+import helix.adapters.http.haxehttp.HaxeHttpFetchAdapter;
 import helix.adapters.audiodecoder.libsndfile.LibsndfileDecoder;
 import helix.adapters.audiodecoder.libsndfile.LibsndfileFiles;
 import helix.adapters.audio.sokol.SokolAudioAdapter;

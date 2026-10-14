@@ -1,6 +1,6 @@
 package helix.host;
 
-import helix.assets.IFetch;
+import helix.assets.IHttp;
 import helix.assets.IStore;
 import helix.audio.IAudio;
 import helix.audio.IAudioDecoder;
@@ -27,7 +27,7 @@ typedef Adapters = {
 	var images:IImageDecoder;
 
 	/** HTTP downloads. */
-	var http:IFetch;
+	var http:IHttp;
 
 	/** The writable cache downloaded assets are kept in. */
 	var storage:IStore;

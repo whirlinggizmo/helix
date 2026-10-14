@@ -1,8 +1,8 @@
-package helix.adapters.fetch.haxehttp;
+package helix.adapters.http.haxehttp;
 
 import haxe.io.Bytes;
 import helix.adapters.internal.Mailbox;
-import helix.assets.IFetch;
+import helix.assets.IHttp;
 import sys.thread.Thread;
 
 /** A response body arriving on a worker thread, each part handed to the host thread; it stops the transfer (by throwing) once aborted. */
@@ -75,9 +75,9 @@ private class Transfer {
 	public var status = 0;
 }
 
-/** IFetch natively over haxe.Http, a worker thread a transfer: http and https URLs only (others end with a failure), noCache has nothing to
+/** IHttp natively over haxe.Http, a worker thread a transfer: http and https URLs only (others end with a failure), noCache has nothing to
 	bypass, and an abort stops the transfer at its next part of the body (not while it connects). */
-class HaxeHttpFetchAdapter implements IFetch {
+class HaxeHttpFetchAdapter implements IHttp {
 	var mailbox = new Mailbox();
 	var transfers:Array<Transfer> = [];
 

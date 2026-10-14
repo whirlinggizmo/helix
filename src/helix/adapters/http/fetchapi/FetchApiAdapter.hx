@@ -1,10 +1,10 @@
-package helix.adapters.fetch.fetchapi;
+package helix.adapters.http.fetchapi;
 
 import haxe.io.Bytes;
-import helix.assets.IFetch;
+import helix.assets.IHttp;
 
-/** IFetch in a browser over fetch(): the body read as it arrives, abort through an AbortController. */
-class FetchApiAdapter implements IFetch {
+/** IHttp in a browser over fetch(): the body read as it arrives, abort through an AbortController. */
+class FetchApiAdapter implements IHttp {
 	var controllers:Array<js.html.AbortController> = [];
 
 	/** No transfers yet. */

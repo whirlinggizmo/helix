@@ -3,7 +3,7 @@ package helix.assets;
 import haxe.io.Bytes;
 
 /** HTTP GET on a platform: a response arriving in parts. Limits, timeouts, progress and queuing are the shared Fetch's. */
-interface IFetch {
+interface IHttp {
 	/** Starts a GET of url (relative to the page in a browser; http or https natively), bypassing HTTP caches when noCache (where the platform
 		can). On the host thread, never during this call: head once (the HTTP status, and the headers with lower-case names), body for each part
 		of the body as it arrives, then end once (null when the body is all here, else why the transfer failed). An HTTP error status is a

@@ -20,19 +20,19 @@ enum FetchResult {
 	Cancelled;
 }
 
-/** Bounded whole-response GETs over a platform's IFetch, the same on every platform: at most two at once, each body limited and the whole transfer
+/** Bounded whole-response GETs over a platform's IHttp, the same on every platform: at most two at once, each body limited and the whole transfer
 	timed, progress coalesced to once a frame, completions on the host thread. */
 class Fetch {
 	static inline var DEFAULT_MAX = 8 * 1024 * 1024;
 	static inline var DEFAULT_TIMEOUT = 15.;
 
-	var http:IFetch;
+	var http:IHttp;
 	var jobs = new Jobs(2);
 	// The running fetches' timeouts and failures: each its job, its time limit, and what failing it does.
 	var timers:Array<{job:Job<FetchResult>, seconds:Float, fail:String->Void}> = [];
 
 	/** Fetches over http. */
-	public function new(http:IFetch)
+	public function new(http:IHttp)
 		this.http = http;
 
 	/** Queues a GET of request.url. complete runs exactly once on the host thread; Failed for a maxBytes or timeoutSeconds not above 0, a closed
