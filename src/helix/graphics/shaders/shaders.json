@@ -118,6 +118,18 @@
           "name": "i_tint",
           "type": "vec4",
           "instance": true
+        },
+        {
+          "role": "lights0",
+          "name": "i_lights0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "lights1",
+          "name": "i_lights1",
+          "type": "vec4",
+          "instance": true
         }
       ],
       "uniforms": [
@@ -127,7 +139,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 960
+          "bytes": 1728
         }
       ],
       "textures": [
@@ -376,6 +388,18 @@
           "instance": true
         },
         {
+          "role": "lights0",
+          "name": "i_lights0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "lights1",
+          "name": "i_lights1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
           "role": "joints",
           "name": "joints",
           "type": "vec4",
@@ -395,7 +419,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 960
+          "bytes": 1728
         }
       ],
       "textures": [

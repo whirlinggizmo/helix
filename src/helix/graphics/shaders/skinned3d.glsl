@@ -8,8 +8,8 @@ layout(binding=0) uniform skinned3d_vs_params {
     mat4 view_projection;
 };
 @include_block lit3d_vertex
-layout(location=11) in vec4 joints;
-layout(location=12) in vec4 weights;
+layout(location=13) in vec4 joints;
+layout(location=14) in vec4 weights;
 layout(binding=5) uniform texture2D skinned3d_joint_texture;
 layout(binding=5) uniform sampler skinned3d_joint_sampler;
 @image_sample_type skinned3d_joint_texture unfilterable_float

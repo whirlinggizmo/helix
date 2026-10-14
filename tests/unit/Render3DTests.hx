@@ -213,6 +213,7 @@ class Render3DTests {
 			"URIs resolve beside the model, inside the assets");
 		shadows();
 		flags();
+		lightChoice();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -268,15 +269,21 @@ class Render3DTests {
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
 		var fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
-		check(fs.getFloat(280) == 0 && fs.getFloat(296) == -1, "The sun reads layer 0; light slots without a light read none");
-		check(fs.getFloat(592) == 1 / 1024 && fs.getFloat(656) == 1 && fs.getFloat(668) == 0, "A texel in uv, full strength, an orthographic map");
+		check(fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 8) == 0
+			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 24) == -1,
+			"The sun reads layer 0; light slots without a light read none");
+		check(fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS) == 1 / 1024
+			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 64) == 1
+			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 76) == 0,
+			"A texel in uv, full strength, an orthographic map");
 		sunLight.setShadowCasting(false);
 		gpu.shadowPasses = [];
 		stage.drawShadows(view);
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
 		fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
-		check(gpu.shadowPasses.length == 0 && fs.getFloat(280) == -1, "With no casting light, no passes and no shadows");
+		check(gpu.shadowPasses.length == 0 && fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 8) == -1,
+			"With no casting light, no passes and no shadows");
 		// A spot: a perspective map whose cone holds what it points at.
 		var spotLight = new Light(Spot);
 		spotLight.setCone(.3, .5);
@@ -322,5 +329,72 @@ class Render3DTests {
 		check(draw() == 0 && child.isEnabled(), "A disabled model takes its child with it; the child's own flag kept");
 		group.setEnabled(true);
 		check(draw() == 2 && group.isPickable(), "Enabled again, both drawn");
+	}
+
+	// Lights chosen per model: a table of the 16 that reach the drawn models most, each model lit by the 8 of those that reach it most.
+	static function lightChoice():Void {
+		var gpu = new Render2DTests.CountingGraphics(),
+			stage = new helix.render3d.Stage3D(gpu);
+		var left = Node.model(Mesh.cube(1, 1, 1), new Material()),
+			right = Node.model(Mesh.cube(1, 1, 1), new Material());
+		left.setPosition(-10, 0, 0);
+		right.setPosition(10, 0, 0);
+		stage.add(left);
+		stage.add(right);
+		// Twenty lamps of range 3: ten by the right model, then ten by the left, the left's nearest last.
+		var lamps = [];
+		for (k in 0...20) {
+			var light = new Light(Point);
+			light.setRange(3);
+			var lamp = Node.light(light);
+			lamp.setPosition(k < 10 ? 10 : -10, 1 + (k % 10) * .1, 0);
+			if (k == 19)
+				lamp.setPosition(-10, .6, 0);
+			lamps.push(lamp);
+			stage.add(lamp);
+		}
+		var view = new Camera3D();
+		view.setViewport(800, 600);
+		view.setView(0, 5, 30, 0, 0, 0);
+		gpu.beginFrame(800, 600, 0);
+		stage.draw(view);
+		var table:Array<Node> = @:privateAccess stage.table;
+		check(table.length == 16, "Twenty lamps reaching the models: a table of 16");
+		var items:Array<Dynamic> = @:privateAccess stage.drawn;
+		function lightsOf(model:Node):Array<Node> {
+			for (item in items)
+				if (item.node == model)
+					return [for (t in (item.lights : Array<Int>)) if (t >= 0) table[t]];
+			return null;
+		}
+		var mine = lightsOf(left);
+		check(mine.length == 8 && mine[0] == lamps[19] && [for (l in mine) if (l.getX() != -10) l].length == 0,
+			"The left model: 8 of its own lamps, the nearest (the last found) first");
+		check([for (l in lightsOf(right)) if (l.getX() != 10) l].length == 0, "The right model: only lamps that reach it");
+		// The old limit: the first four found lit everything, so a model by the fifth lamp went dark.
+		var stage2 = new helix.render3d.Stage3D(gpu),
+			far = Node.model(Mesh.cube(1, 1, 1), new Material());
+		far.setPosition(50, 0, 0);
+		stage2.add(far);
+		for (k in 0...5) {
+			var light = new Light(Point);
+			light.setRange(2);
+			var lamp = Node.light(light);
+			lamp.setPosition(k < 4 ? -50 : 50, 1, 0);
+			stage2.add(lamp);
+		}
+		var sun = new Light(Directional);
+		stage2.add(Node.light(sun));
+		view.setView(50, 5, 20, 50, 0, 0);
+		stage2.draw(view);
+		var only:Array<Dynamic> = @:privateAccess stage2.drawn,
+			t2:Array<Node> = @:privateAccess stage2.table;
+		var lit = [for (t in (only[0].lights : Array<Int>)) if (t >= 0) t2[t]];
+		check(lit.length == 2 && lit[0].getX() == 50 && lit[1].getLight().getKind() == Directional,
+			"The fifth lamp lights the model beside it, the sun everything; lamps out of range don't");
+		var u = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
+		check(u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION) == 50
+			|| u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION + 16) == 50,
+			"The table, as the shader reads it");
 	}
 }

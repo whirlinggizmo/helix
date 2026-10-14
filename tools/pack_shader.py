@@ -81,12 +81,16 @@ layout(location=7) in vec4 i_normal0;
 layout(location=8) in vec4 i_normal1;
 layout(location=9) in vec4 i_normal2;
 layout(location=10) in vec4 i_tint;
+layout(location=11) in vec4 i_lights0;
+layout(location=12) in vec4 i_lights1;
 out vec3 helix_v_normal;
 out vec4 helix_v_tangent;
 out vec2 helix_v_uv;
 out vec4 helix_v_tint;
 out vec3 helix_v_world;
 out float helix_v_receive;
+flat out vec4 helix_v_lights0;
+flat out vec4 helix_v_lights1;
 void main() {
     vec3 moved = position, bent = normal;
     helix_vertex(moved, bent);
@@ -99,6 +103,8 @@ void main() {
     helix_v_tint = i_tint;
     helix_v_world = world;
     helix_v_receive = i_normal1.w;
+    helix_v_lights0 = i_lights0;
+    helix_v_lights1 = i_lights1;
 }
 @end
 
@@ -109,12 +115,12 @@ layout(binding=1) uniform helix_surface_params {
     vec4 helix_camera;        // xyz the camera's position
     vec4 helix_ambient_light; // rgb linear, times intensity
     vec4 helix_base_factor;   // the material's base color, linear rgba
-    vec4 helix_pbr;           // x metallic, y roughness, z 1 lit (0 unlit), w the number of lights
+    vec4 helix_pbr;           // x metallic, y roughness, z 1 lit (0 unlit)
     vec4 helix_emission;      // rgb the light it gives off, linear; w the normal map's strength
-    vec4 helix_light_position[4];
-    vec4 helix_light_direction[4];
-    vec4 helix_light_radiance[4];
-    vec4 helix_light_spot[4];      // x cos(inner), y cos(outer), z its shadow slot (-1: none)
+    vec4 helix_light_position[16];  // the stage's table of lights; a model's own are up to 8 of them (helix_light_index)
+    vec4 helix_light_direction[16];
+    vec4 helix_light_radiance[16];
+    vec4 helix_light_spot[16];      // x cos(inner), y cos(outer), z its shadow slot (-1: none)
     mat4 helix_shadow_matrix[4];   // as the lit models' shader has them
     vec4 helix_shadow_params[4];
     vec4 helix_shadow_extra[4];
@@ -142,6 +148,8 @@ in vec2 helix_v_uv;
 in vec4 helix_v_tint;
 in vec3 helix_v_world;
 in float helix_v_receive;
+flat in vec4 helix_v_lights0;
+flat in vec4 helix_v_lights1;
 out vec4 helix_frag_color;
 const float HELIX_PI = 3.14159265359;
 
@@ -156,7 +164,17 @@ vec3 helix_ambient() { return helix_ambient_light.rgb; }
 vec3 helix_emissive() { return helix_emission.rgb; }
 float helix_metallic() { return clamp(helix_pbr.x, 0.0, 1.0); }
 float helix_roughness() { return clamp(helix_pbr.y, 0.03, 1.0); }
-int helix_light_count() { return int(helix_pbr.w + 0.5); }
+// The table entry of the model's i-th light (it's lit by up to 8 of the stage's, those reaching it most), -1 past its last.
+int helix_light_index(int i) { return int(floor((i < 4 ? helix_v_lights0[i] : helix_v_lights1[i - 4]) + 0.5)); }
+// How many lights light the model.
+int helix_light_count() {
+    int count = 0;
+    for (int k = 0; k < 8; k++) {
+        if (helix_light_index(k) < 0) break;
+        count++;
+    }
+    return count;
+}
 // The base color: the material's, times its texture (decoded from sRGB) and the model's tint; linear.
 vec4 helix_base() {
     vec4 texel = texture(sampler2D(helix_base_texture, helix_base_sampler), helix_v_uv);
@@ -182,10 +200,10 @@ float helix_attenuation(float d, float range) {
     float w = clamp(1.0 - r * r * r * r, 0.0, 1.0);
     return w * w * inv_sq;
 }
-// How much of light i reaches world, facing n, past what casts shadows: 1 in the open, 0 in shadow (the lit models' shader's lookup, unbranched
+// How much of the model's light i (0 to helix_light_count() - 1) reaches world, facing n, past what casts shadows: 1 in the open, 0 in shadow (the lit models' shader's lookup, unbranched
 // around its reads); 1 for a light without shadows or a model that doesn't receive them.
 float helix_shadow_at(int i, vec3 world, vec3 n, vec3 to_light) {
-    int s = int(helix_light_spot[i].z);
+    int s = int(helix_light_spot[helix_light_index(i)].z);
     if (s < 0 || helix_v_receive < 0.5) return 1.0;
     float slant = 1.0 - clamp(dot(n, to_light), 0.0, 1.0);
     vec4 clip = helix_shadow_matrix[s] * vec4(world + n * (helix_shadow_params[s].y * (1.0 + 2.0 * slant)), 1.0);
@@ -208,28 +226,29 @@ float helix_shadow_at(int i, vec3 world, vec3 n, vec3 to_light) {
             lit += texture(sampler2DArrayShadow(helix_shadow_texture, helix_shadow_sampler), vec4(at + vec2(float(x), float(y)) * texel, float(s), clamp(depth, 0.0, 1.0)));
     return mix(1.0, lit / 9.0, edge * extra.x);
 }
-// Light i at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied), to_light, the direction
+// The model's light i (0 to helix_light_count() - 1) at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied), to_light, the direction
 // toward it, and lit, how much of it its shadow lets through.
 vec3 helix_light_lit(int i, vec3 world, vec3 n, out vec3 to_light, out float lit) {
+    int t = helix_light_index(i);
     float falloff = 1.0;
     vec3 travel;
-    if (helix_light_direction[i].w < 0.5) {
-        travel = normalize(helix_light_direction[i].xyz);
+    if (helix_light_direction[t].w < 0.5) {
+        travel = normalize(helix_light_direction[t].xyz);
     } else {
-        vec3 to_frag = world - helix_light_position[i].xyz;
+        vec3 to_frag = world - helix_light_position[t].xyz;
         float d = length(to_frag);
         travel = d > 1e-6 ? to_frag / d : vec3(0.0, -1.0, 0.0);
-        falloff = helix_attenuation(d, helix_light_position[i].w);
-        if (helix_light_direction[i].w > 1.5) {
-            float inner = helix_light_spot[i].x, outer = helix_light_spot[i].y, c = dot(travel, normalize(helix_light_direction[i].xyz));
+        falloff = helix_attenuation(d, helix_light_position[t].w);
+        if (helix_light_direction[t].w > 1.5) {
+            float inner = helix_light_spot[t].x, outer = helix_light_spot[t].y, c = dot(travel, normalize(helix_light_direction[t].xyz));
             falloff *= inner - outer <= 1e-6 ? (c >= outer ? 1.0 : 0.0) : smoothstep(outer, inner, c);
         }
     }
     to_light = -travel;
     lit = helix_shadow_at(i, world, n, to_light);
-    return helix_light_radiance[i].rgb * falloff * lit;
+    return helix_light_radiance[t].rgb * falloff * lit;
 }
-// Light i at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied) and to_light, the
+// The model's light i (0 to helix_light_count() - 1) at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied) and to_light, the
 // direction toward it.
 vec3 helix_light(int i, vec3 world, vec3 n, out vec3 to_light) {
     float lit;

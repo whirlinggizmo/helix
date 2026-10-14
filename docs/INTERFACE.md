@@ -22,6 +22,10 @@ Models come from glTF 2.0 files (GLB, or `.gltf` with its buffers and images bes
 
 Input's focus policy is shared (below); an input adapter only reports focus: the window's focus and the page's visibility in a browser, sokol's focus events natively. Web Audio unlocks on the page's first key or pointer press and suspends while the page is blurred or hidden. `ITestHarness.publish` hands a check its result (`window.result` in a browser; a JSON line on stdout and the `HELIX_RESULT` file natively).
 
+## Lights
+
+A Stage3D considers the first 64 lights its walk finds (a hidden or disabled one isn't found). Each draw it scores every one against each drawn model's box, as libwgt did: its brightness (luminance of color times intensity), times its falloff at the box's nearest point (inverse square from 0.1 out, windowed to nothing at its range; nothing past the range), times a spot's cone at the box's center (unless the light is inside the box); a directional light scores its brightness everywhere. The 16 with the best score over the drawn models are the table the shaders read; each model is lit by the 8 of those that reach it most, named in its instance record, so models sharing a mesh still draw as one. The first four lights that cast have shadows. A surface shader's `helix_light_count()` and `helix_light(i, …)` are the model's own lights, 0 to the count less one.
+
 ## Node flags
 
 Every node, 3D and 2D, has libwgf's three flags, each its own and on to start: `enabled` (off: it and everything under it are skipped by drawing, picking and updates, an emitter under it not moved on; the only one reaching the children, whose own flags are kept), `visible` (off: its own output isn't drawn, a light doesn't shine or cast, an emitter still moves on; it stays placed and its children are as they are) and `pickable` (off: a pick's ray passes its own output; its children can still be hit). Drawing and picking don't depend on each other: hidden and pickable is a hit area.

@@ -18,6 +18,10 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `IGraphics.destroy(kind:String, ...)` took the kind as a string: now `destroyTexture`, `destroyBuffer` and `destroyPipeline`.
 - `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `exp` and `log` differ by 1 ulp between V8 and glibc for 1–18% of inputs (3.3% for `sin`, 18% for `atan2`), so a simulation calling them plays differently on each target. `helix.math.Trig` gives the same bits everywhere (`helix.py test` holds the interpreter, JS and hxcpp to one hash), and native builds that use it compile with `-ffp-contract=off`.
 
+## Fixed in milestone 5
+
+- A `Stage3D` lit every model with the first four lights its walk found, a fifth ignored. Each model is now lit by the 8 of a table of 16 that reach its box most, as the earlier frameworks chose (DECISIONS 89).
+
 ## Fixed with the adapter audit
 
 - A host's services existed from construction on the web but only from Sokol's init natively; the `Runner` fills `Services` at init on both (DECISIONS 81). `capture` went with the diagnostics (DECISIONS 81).
@@ -39,7 +43,6 @@ Found while documenting every public member (2026-10-13), by reading each implem
 **Correctness**
 - `HaxeHttpAdapter`: an abort stops a transfer only at the next part of its body, not while it connects; `noCache` has nothing to bypass (no HTTP cache natively).
 
-- A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**
 - One native host per program: `SokolHostAdapter` keeps sokol's callbacks in statics.

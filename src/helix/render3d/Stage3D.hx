@@ -26,7 +26,24 @@ import helix.render3d.Node.NodeKind;
 	into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites,
 	text and particles are display colors, untouched. */
 class Stage3D {
-	static inline var MAX_LIGHTS = 4;
+	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
+	// is lit by the 8 of those that reach it most (libwgt's, wgrender-c's); the first 4 that cast have shadows.
+	static inline var GATHERED_LIGHTS = 64;
+	static inline var TABLE_LIGHTS = 16;
+	static inline var MODEL_LIGHTS = 8;
+	static inline var SHADOW_LIGHTS = 4;
+	// The fragment block's layout (lit3d_shared.glsl's lit3d_fs_members): the table's four arrays, then the shadows', tone mapping and the
+	// environment.
+	static inline var LIGHT_POSITION = 80;
+	static inline var LIGHT_DIRECTION = LIGHT_POSITION + TABLE_LIGHTS * 16;
+	static inline var LIGHT_RADIANCE = LIGHT_DIRECTION + TABLE_LIGHTS * 16;
+	static inline var LIGHT_SPOT = LIGHT_RADIANCE + TABLE_LIGHTS * 16;
+	static inline var SHADOW_MATRIX = LIGHT_SPOT + TABLE_LIGHTS * 16;
+	static inline var SHADOW_PARAMS = SHADOW_MATRIX + SHADOW_LIGHTS * 64;
+	static inline var SHADOW_TINT = SHADOW_PARAMS + 2 * SHADOW_LIGHTS * 16;
+	static inline var TONEMAP = SHADOW_TINT + SHADOW_LIGHTS * 16;
+	static inline var ENVIRONMENT = TONEMAP + 16;
+	static inline var IRRADIANCE = ENVIRONMENT + 16;
 	// How far a directional light's map starts behind what the camera sees: casters out of view still cast into it.
 	static inline var SHADOW_PULLBACK = 50.;
 	// Per shadow layer, what the shaders read: its matrix (16), a texel in uv, a texel in world units, bias constant and slope, strength, near,
@@ -96,7 +113,10 @@ class Stage3D {
 	var noShadows:Int;
 	// The lights the last drawShadows gave a layer, in layer order, and what each layer's readers need.
 	var shadowLights:Array<Node> = [];
-	var shadowLayers = new Vector<Float>(MAX_LIGHTS * LAYER_FLOATS);
+	var shadowLayers = new Vector<Float>(SHADOW_LIGHTS * LAYER_FLOATS);
+	// The table this draw's shaders read, and each gathered light's score against the model being scored.
+	var table:Array<Node> = [];
+	var scores:Array<Float> = [];
 	var shadowDraws = 0;
 	var shadowCasters = 0;
 	var lightView = new Mat4();
@@ -285,7 +305,7 @@ class Stage3D {
 		palette.upload();
 		var size = 0;
 		for (node in lights)
-			if (node.getLight().isShadowCasting()) {
+			if (node.getLight().isShadowCasting() && shadowLights.length < SHADOW_LIGHTS) {
 				shadowLights.push(node);
 				size = Std.int(Math.max(size, node.getLight().getShadowMapSize()));
 			}
@@ -761,6 +781,7 @@ class Stage3D {
 			if (drawn[i].skinned)
 				drawn[i].jointBase = palette.add(drawn[i].node);
 		palette.upload();
+		chooseLights();
 		for (i in 0...count)
 			writeRecord(i, drawn[i]);
 		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
@@ -844,7 +865,7 @@ class Stage3D {
 				case Model:
 					visitModel(node);
 				case LightNode:
-					if (lights.length < MAX_LIGHTS)
+					if (lights.length < GATHERED_LIGHTS)
 						lights.push(node);
 				case _ if (gathering):
 				case SpriteNode:
@@ -970,6 +991,12 @@ class Stage3D {
 		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
 			+ w.get(8) * (w.get(1) * w.get(6) - w.get(5) * w.get(2)) < 0;
 		item.depth = (cx - eyeX) * forwardX + (cy - eyeY) * forwardY + (cz - eyeZ) * forwardZ;
+		item.cx = cx;
+		item.cy = cy;
+		item.cz = cz;
+		item.rx = boxRX;
+		item.ry = boxRY;
+		item.rz = boxRZ;
 		item.order = count;
 		count++;
 	}
@@ -1009,11 +1036,96 @@ class Stage3D {
 				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
 					col < 3 ? r.get(row * 4 +
 						col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (item.node.isShadowReceiving() ? 1 : 0) : item.skinned ? item.jointBase : 0);
+		for (k in 0...MODEL_LIGHTS)
+			records.setFloat(at + (k < 4 ? Lit3DLayout.lights0Offset + k * 4 : Lit3DLayout.lights1Offset + (k - 4) * 4), item.lights[k]);
 		var tint = item.node.getTint();
 		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
 		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
 		records.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
 		records.setFloat(at + Lit3DLayout.tintOffset + 12, (tint & 255) / 255);
+	}
+
+	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order
+	// found; then each model's own: the table's lights that reach it most, at most MODEL_LIGHTS, the nearest-reaching first.
+	function chooseLights():Void {
+		var best = [for (_ in lights) 0.];
+		for (i in 0...count) {
+			scoreLights(drawn[i]);
+			for (l in 0...lights.length)
+				if (scores[l] > best[l])
+					best[l] = scores[l];
+		}
+		var order = [for (l in 0...lights.length) if (best[l] > 0) l];
+		order.sort((a, b) -> best[a] > best[b] ? -1 : best[a] < best[b] ? 1 : a - b);
+		if (order.length > TABLE_LIGHTS)
+			order.resize(TABLE_LIGHTS);
+		order.sort((a, b) -> a - b);
+		table = [for (l in order) lights[l]];
+		for (i in 0...count) {
+			var item = drawn[i];
+			scoreLights(item);
+			var mine = [for (t in 0...order.length) if (scores[order[t]] > 0) t];
+			mine.sort((a, b) -> scores[order[a]] > scores[order[b]] ? -1 : scores[order[a]] < scores[order[b]] ? 1 : a - b);
+			for (k in 0...MODEL_LIGHTS)
+				item.lights[k] = k < mine.length ? mine[k] : -1;
+		}
+	}
+
+	// How much each gathered light reaches item's box (libwgt's estimate): its brightness, through its falloff at the box's nearest point and
+	// its cone at the box's center; 0 for one that can't reach it. Into scores, by gathered light.
+	function scoreLights(item:Item):Void {
+		scores.resize(lights.length);
+		for (l in 0...lights.length) {
+			var node = lights[l],
+				light = node.getLight(),
+				color = light.getColor(),
+				w = node.getWorldMatrix();
+			var score = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.getIntensity();
+			if (score > 0 && light.getKind() != Directional) {
+				var px = w.get(12), py = w.get(13), pz = w.get(14);
+				var nx = Math.max(item.cx - item.rx, Math.min(px, item.cx + item.rx)) - px,
+					ny = Math.max(item.cy - item.ry, Math.min(py, item.cy + item.ry)) - py,
+					nz = Math.max(item.cz - item.rz, Math.min(pz, item.cz + item.rz)) - pz;
+				var d = Math.sqrt(nx * nx + ny * ny + nz * nz),
+					range = light.getRange();
+				if (range > 0 && d >= range)
+					score = 0;
+				else {
+					// The shader's falloff: inverse square (from 0.1 out), windowed to nothing at the range.
+					var falloff = 1 / Math.max(d * d, .01);
+					if (range > 0) {
+						var q = d / range, window = Math.max(0, Math.min(1, 1 - q * q * q * q));
+						falloff *= window * window;
+					}
+					score *= falloff;
+					if (light.getKind() == Spot) {
+						var tx = item.cx - px,
+							ty = item.cy - py,
+							tz = item.cz - pz,
+							tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
+						var dx = -w.get(8),
+							dy = -w.get(9),
+							dz = -w.get(10),
+							dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+						if (tl > 1e-6 && dl > 0) {
+							var c = (tx * dx + ty * dy + tz * dz) / (tl * dl),
+								inner = Math.cos(light.getInnerCone()),
+								outer = Math.cos(light.getOuterCone());
+							// Inside a box the light's in, its cone can't miss it.
+							var inside = Math.abs(tx) <= item.rx && Math.abs(ty) <= item.ry && Math.abs(tz) <= item.rz;
+							if (!inside)
+								score *= inner - outer <= 1e-6 ? (c >= outer ? 1 : 0) : smooth(outer, inner, c);
+						}
+					}
+				}
+			}
+			scores[l] = score;
+		}
+	}
+
+	static inline function smooth(edge0:Float, edge1:Float, x:Float):Float {
+		var t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+		return t * t * (3 - 2 * t);
 	}
 
 	// The fragment uniforms the whole draw shares: the camera, the ambient light, the lights and their shadows (the material is a run's).
@@ -1027,20 +1139,21 @@ class Stage3D {
 		u.setFloat(20, linear((ambientColor >>> 16) & 255) * ambientIntensity);
 		u.setFloat(24, linear((ambientColor >>> 8) & 255) * ambientIntensity);
 		u.setFloat(28, 0);
-		for (i in 0...MAX_LIGHTS) {
-			var position = 80 + i * 16,
-				direction = 144 + i * 16,
-				radiance = 208 + i * 16;
-			if (i >= lights.length) {
+		for (i in 0...TABLE_LIGHTS) {
+			var position = LIGHT_POSITION + i * 16,
+				direction = LIGHT_DIRECTION + i * 16,
+				radiance = LIGHT_RADIANCE + i * 16,
+				spot = LIGHT_SPOT + i * 16;
+			if (i >= table.length) {
 				for (k in 0...4) {
 					u.setFloat(position + k * 4, 0);
 					u.setFloat(direction + k * 4, 0);
 					u.setFloat(radiance + k * 4, 0);
-					u.setFloat(272 + i * 16 + k * 4, k == 2 ? -1 : 0);
+					u.setFloat(spot + k * 4, k == 2 ? -1 : 0);
 				}
 				continue;
 			}
-			var node = lights[i],
+			var node = table[i],
 				light = node.getLight(),
 				w = node.getWorldMatrix();
 			var dx = -w.get(8),
@@ -1055,11 +1168,11 @@ class Stage3D {
 			u.setFloat(direction + 4, dl > 0 ? dy / dl : -1);
 			u.setFloat(direction + 8, dl > 0 ? dz / dl : 0);
 			u.setFloat(direction + 12, light.getKind() == Spot ? 2 : light.getKind() == Point ? 1 : 0);
-			u.setFloat(272 + i * 16, Math.cos(light.getInnerCone()));
-			u.setFloat(276 + i * 16, Math.cos(light.getOuterCone()));
+			u.setFloat(spot, Math.cos(light.getInnerCone()));
+			u.setFloat(spot + 4, Math.cos(light.getOuterCone()));
 			// Its shadow slot: its layer of the map the last drawShadows made, or -1.
-			u.setFloat(280 + i * 16, shadowLights.indexOf(node));
-			u.setFloat(284 + i * 16, 0);
+			u.setFloat(spot + 8, shadowLights.indexOf(node));
+			u.setFloat(spot + 12, 0);
 			var color = light.getColor(), intensity = light.getIntensity();
 			u.setFloat(radiance, linear(color >>> 24) * intensity);
 			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);
@@ -1067,28 +1180,29 @@ class Stage3D {
 			u.setFloat(radiance + 12, 0);
 		}
 		// Each shadow layer: its matrix, then params, extra and tint (each four floats a layer).
-		for (layer in 0...MAX_LIGHTS) {
+		for (layer in 0...SHADOW_LIGHTS) {
 			var at = layer * LAYER_FLOATS;
 			for (k in 0...16)
-				u.setFloat(336 + layer * 64 + k * 4, layer < shadowLights.length ? shadowLayers[at + k] : 0);
+				u.setFloat(SHADOW_MATRIX + layer * 64 + k * 4, layer < shadowLights.length ? shadowLayers[at + k] : 0);
 			for (k in 0...12)
-				u.setFloat(592 + Std.int(k / 4) * 64 + layer * 16 + (k % 4) * 4, layer < shadowLights.length ? shadowLayers[at + 16 + k] : 0);
+				u.setFloat(SHADOW_PARAMS + Std.int(k / 4) * SHADOW_LIGHTS * 16 + layer * 16 + (k % 4) * 4,
+					layer < shadowLights.length ? shadowLayers[at + 16 + k] : 0);
 			for (k in 0...4)
-				u.setFloat(720 + layer * 16 + k * 4, layer < shadowLights.length ? shadowLayers[at + 24 + k] : 0);
+				u.setFloat(SHADOW_TINT + layer * 16 + k * 4, layer < shadowLights.length ? shadowLayers[at + 24 + k] : 0);
 		}
 		// Tone mapping, then the environment: its intensity (0 for none), last mip, rotation, and irradiance.
-		u.setFloat(784, tonemap);
-		u.setFloat(788, Math.pow(2, exposure));
-		u.setFloat(792, 0);
-		u.setFloat(796, 0);
-		u.setFloat(800, environment != null ? environmentIntensity : 0);
-		u.setFloat(804, EnvironmentBake.MIP_COUNT - 1);
-		u.setFloat(808, Math.cos(environmentRotation));
-		u.setFloat(812, Math.sin(environmentRotation));
+		u.setFloat(TONEMAP, tonemap);
+		u.setFloat(TONEMAP + 4, Math.pow(2, exposure));
+		u.setFloat(TONEMAP + 8, 0);
+		u.setFloat(TONEMAP + 12, 0);
+		u.setFloat(ENVIRONMENT, environment != null ? environmentIntensity : 0);
+		u.setFloat(ENVIRONMENT + 4, EnvironmentBake.MIP_COUNT - 1);
+		u.setFloat(ENVIRONMENT + 8, Math.cos(environmentRotation));
+		u.setFloat(ENVIRONMENT + 12, Math.sin(environmentRotation));
 		var irradiance = environment != null ? environment.getIrradiance() : null;
 		for (k in 0...9)
 			for (c in 0...4)
-				u.setFloat(816 + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
+				u.setFloat(IRRADIANCE + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
 		if (environment != null && brdf == null)
 			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.getBrdfTable(), true);
 	}
@@ -1106,7 +1220,7 @@ class Stage3D {
 		u.setFloat(48, material.getMetallic());
 		u.setFloat(52, material.getRoughness());
 		u.setFloat(56, material.isLit() ? 1 : 0);
-		u.setFloat(60, lights.length);
+		u.setFloat(60, 0);
 		var emissive = material.getEmissive(),
 			strength = material.getEmissiveStrength(),
 			normal = material.getNormalTexture();
@@ -1232,6 +1346,27 @@ private class Item {
 
 	/** Its place in the walk: ties keep it. */
 	public var order = 0;
+
+	/** Its box in the world: its center. */
+	public var cx = 0.;
+
+	/** Its box's center, y. */
+	public var cy = 0.;
+
+	/** Its box's center, z. */
+	public var cz = 0.;
+
+	/** Its box's reach along x from its center. */
+	public var rx = 0.;
+
+	/** Its box's reach along y. */
+	public var ry = 0.;
+
+	/** Its box's reach along z. */
+	public var rz = 0.;
+
+	/** The table entries of the lights lighting it, the nearest-reaching first, -1 past the last. */
+	public var lights = [for (_ in 0...8) -1];
 
 	/** An empty item, filled by the walk. */
 	public function new() {}

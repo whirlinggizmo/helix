@@ -1,7 +1,7 @@
 /* What the lit models' programs share, included by lit3d.glsl (static models) and skinned3d.glsl (skinned ones): their vertex inputs and
  * placing, their fragment block's members and their whole fragment stage.
  *
- * Lit models (render3d's Stage3D): glTF metallic-roughness materials lit by up to 4 lights and an environment, tone mapped and written as
+ * Lit models (render3d's Stage3D): glTF metallic-roughness materials lit by up to 8 lights each and an environment, tone mapped and written as
  * sRGB. The BRDF follows glTF 2.0's appendix B: Lambert diffuse, GGX / Smith height-correlated specular, Schlick Fresnel. Each instance's
  * placement (the model matrix's rows), its normals' matrix (the inverse transpose's rows) and its tint come from the instance buffer, so
  * placements alike in everything else are one draw.
@@ -9,7 +9,8 @@
  * Color space: the framebuffer holds sRGB values. The base color texture is decoded from sRGB; the normal map is linear (tangent space,
  * green up, as glTF's); factors, tints, emissive and light radiance are linear; lighting happens in linear space. i_normal0.w is the
  * tangents' handedness: -1 where the placement mirrors them; i_normal1.w is 1 where the model receives shadows; i_normal2.w a skinned model's
- * first joint in the joint texture.
+ * first joint in the joint texture. i_lights0 and i_lights1 are its lights: up to 8 indices into the stage's table of 16 (the ones that reach it
+ * most, chosen by Stage3D), -1 past its last.
  *
  * Shadows: a casting light has a slot (light_spot[i].z; -1 for none), a layer of the shadow map (a depth array, read through a comparison
  * sampler). Its map is looked up a texel or so along the normal (more where the light grazes the surface) with a little depth slack in texels
@@ -27,9 +28,9 @@
  *   camera_position    xyz
  *   ambient            rgb, linear, times intensity
  *   base_color         linear rgba, the material's
- *   pbr                x metallic, y roughness, z 1 = lit (0 = unlit), w the number of lights (0..4)
+ *   pbr                x metallic, y roughness, z 1 = lit (0 = unlit)
  *   emissive           rgb linear light the surface gives off, w the normal map's strength
- *   light_position[i]  xyz position, w range (0: unlimited)
+ *   light_position[i]  the stage's table of 16 lights: xyz position, w range (0: unlimited)
  *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point, 2 spot)
  *   light_radiance[i]  rgb color times intensity, linear
  *   light_spot[i]      x cos(inner cone), y cos(outer cone): a spot's full light inside the inner, none past the outer; z its shadow slot
@@ -53,12 +54,16 @@ layout(location=7) in vec4 i_normal0;
 layout(location=8) in vec4 i_normal1;
 layout(location=9) in vec4 i_normal2;
 layout(location=10) in vec4 i_tint;
+layout(location=11) in vec4 i_lights0;
+layout(location=12) in vec4 i_lights1;
 out vec3 v_normal;
 out vec4 v_tangent;
 out vec2 v_uv;
 out vec4 v_tint;
 out vec3 v_world;
 out float v_receive;
+flat out vec4 v_lights0;
+flat out vec4 v_lights1;
 // Places a vertex (its position, normal and tangent in the model's space) by its instance's record.
 void lit3d_place(vec3 placed, vec3 bent, vec3 turned) {
     vec4 p = vec4(placed, 1.0);
@@ -70,6 +75,8 @@ void lit3d_place(vec3 placed, vec3 bent, vec3 turned) {
     v_tint = i_tint;
     v_world = world;
     v_receive = i_normal1.w;
+    v_lights0 = i_lights0;
+    v_lights1 = i_lights1;
 }
 @end
 
@@ -79,10 +86,10 @@ void lit3d_place(vec3 placed, vec3 bent, vec3 turned) {
     vec4 base_color;
     vec4 pbr;
     vec4 emissive;
-    vec4 light_position[4];
-    vec4 light_direction[4];
-    vec4 light_radiance[4];
-    vec4 light_spot[4];
+    vec4 light_position[16];
+    vec4 light_direction[16];
+    vec4 light_radiance[16];
+    vec4 light_spot[16];
     mat4 shadow_matrix[4];
     vec4 shadow_params[4];
     vec4 shadow_extra[4];
@@ -112,6 +119,8 @@ in vec2 v_uv;
 in vec4 v_tint;
 in vec3 v_world;
 in float v_receive;
+flat in vec4 v_lights0;
+flat in vec4 v_lights1;
 out vec4 frag_color;
 
 vec3 srgb_to_linear(vec3 c) {
@@ -256,9 +265,10 @@ void main() {
     vec3 v = normalize(camera_position.xyz - v_world);
     float n_dot_v = clamp(abs(dot(n, v)), 1e-4, 1.0);
     vec3 color = ambient.rgb * (c_diff + f0);
-    int count = int(pbr.w + 0.5);
-    for (int i = 0; i < 4; i++) {
-        if (i >= count) {
+    // The model's own lights: indices into the table, -1 past the last.
+    for (int k = 0; k < 8; k++) {
+        int i = int(floor((k < 4 ? v_lights0[k] : v_lights1[k - 4]) + 0.5));
+        if (i < 0) {
             break;
         }
         vec3 light_dir;

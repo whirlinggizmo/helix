@@ -69,7 +69,7 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual((background['attributes'], [t['cube'] for t in background['textures']]), ([], [True]))
         # The depth program reads the lit models' vertices: their stride, its own positions' offset.
         self.assertEqual((depth['stride'], depth['attributes'][0]['offset'], depth['instanceStride']), (48, 0, 48))
-        self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))
+        self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 144, ['vertex', 'fragment']))
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         # Programs reach adapters as Haxe data only: no C header, no GLSL ES class, whatever an older build left.
         self.assertFalse([p.name for p in self.baseline.iterdir() if p.name in ('shaders.h', 'GeneratedShader.hx') or p.name.endswith('.glsl.h')])
