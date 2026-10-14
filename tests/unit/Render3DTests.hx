@@ -4,6 +4,7 @@ import helix.render3d.Mat4;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Node;
+import helix.render3d.Node.NodeKind;
 
 /** Mat4 and Camera3D: projection, view and their product, checked by where they put known points. */
 class Render3DTests {
@@ -154,6 +155,20 @@ class Render3DTests {
 		check(!sided.isDoubleSided(), "Materials draw one side by default");
 		sided.setDoubleSided(true);
 		check(sided.isDoubleSided(), "A material can draw both sides");
+		// A camera node: under a parent turned a quarter about y and moved, it sees from the parent's point down the turned -z (toward -x).
+		var rig = Node.group(),
+			lens = new Camera3D(),
+			mount = Node.camera(lens);
+		rig.setPosition(5, 1, 0);
+		rig.setRotation(0, Math.PI / 2, 0);
+		rig.add(mount);
+		lens.getViewProjection();
+		check(near(lens.getEyeX(), 5) && near(lens.getEyeY(), 1) && near(lens.getEyeZ(), 0), "A camera node's eye is its world position");
+		check(Math.abs(lens.getTargetX() - lens.getEyeX() + 1) < 1e-9
+			&& Math.abs(lens.getTargetZ() - lens.getEyeZ()) < 1e-9, "It looks down its turned -z");
+		check(mount.getKind() == CameraNode && mount.getCamera() == lens && lens.getNode() == mount, "The node and its camera know each other");
+		var other = Node.camera(lens);
+		check(mount.getCamera() == null && lens.getNode() == other, "A camera on another node moves there");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

@@ -26,12 +26,18 @@ class Camera3D {
 	var view = new Mat4();
 	var projection = new Mat4();
 	var viewProjection = new Mat4();
+	var placed = new Mat4();
+
+	/** The node placing it (Node.camera), or null: then its view is setView's. */
+	@:allow(helix.render3d.Node)
+	var node(default, null):Null<Node>;
 
 	/** A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport. */
 	public function new()
 		setView(0, 0, 10, 0, 0, 0);
 
-	/** Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. */
+	/** Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. On a
+		node, the node's place replaces it at the next draw. */
 	public function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX = 0., upY = 1., upZ = 0.):Bool {
 		if (!view.setLookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ))
 			return false;
@@ -147,8 +153,24 @@ class Camera3D {
 		return true;
 	}
 
-	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call. */
+	/** The node placing it, or null. */
+	public function getNode():Null<Node>
+		return node;
+
+	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call (on a node, the view from where the node is
+		now). */
 	public function getViewProjection():Mat4 {
+		if (node != null && node.getCamera() == this) {
+			// Seeing from the node, down its -z, its +y up; its scale ignored.
+			node.computeWorld(placed);
+			var fx = -placed.get(8),
+				fy = -placed.get(9),
+				fz = -placed.get(10),
+				fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+			var ex = placed.get(12), ey = placed.get(13), ez = placed.get(14);
+			if (fl > 0)
+				setView(ex, ey, ez, ex + fx / fl, ey + fy / fl, ez + fz / fl, placed.get(4), placed.get(5), placed.get(6));
+		}
 		if (orthographicHeight > 0)
 			projection.setOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
 		else

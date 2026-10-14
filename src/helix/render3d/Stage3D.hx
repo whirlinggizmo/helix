@@ -159,24 +159,25 @@ class Stage3D {
 	function walk():Void {
 		stack.resize(0);
 		stackChanged.resize(0);
-		root.update(null, false);
+		// The root's own transform places everything on the stage.
+		var rootChanged = root.update(null, false);
 		for (i in 0...root.getChildCount()) {
 			stack.push(root.getChild(root.getChildCount() - 1 - i));
-			stackChanged.push(false);
+			stackChanged.push(rootChanged);
 		}
 		while (stack.length > 0) {
 			var node = stack.pop(), parentChanged = stackChanged.pop();
 			if (!node.isVisible())
 				continue;
 			var parent = node.getParent();
-			var changed = node.update(parent == root ? null : parent.getWorldMatrix(), parentChanged);
+			var changed = node.update(parent.getWorldMatrix(), parentChanged);
 			switch (node.getKind()) {
 				case Model:
 					visitModel(node);
 				case LightNode:
 					if (lights.length < MAX_LIGHTS)
 						lights.push(node);
-				case Group:
+				case Group | CameraNode:
 			}
 			for (i in 0...node.getChildCount()) {
 				stack.push(node.getChild(node.getChildCount() - 1 - i));

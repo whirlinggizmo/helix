@@ -15,7 +15,9 @@ import helix.render3d.Stage3D;
 
 /** A glTF model on a lit stage, under a circling camera: the toy car (a checkered body, a see-through cabin, four wheels, emissive
 	headlights with a spot light each), loaded through Models and placed once it's ready. Its parts are found by name once and kept: the
-	wheels turn, and H switches the headlights' lights. O stops the camera; Escape quits where quitting means anything. */
+	wheels turn, and H switches the headlights' lights. D drives the car around a circle and parks it; C rides along, through a camera node
+	parented to the car (behind it and above, looking ahead), and back to the circling camera. O stops the circling camera; Escape quits where
+	quitting means anything. */
 class App extends BaseApp {
 	static inline var MODEL = "models/toy_car.glb";
 
@@ -23,6 +25,12 @@ class App extends BaseApp {
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
+	// The chase camera: on a node of the car's, so it follows it.
+	var chase = new Camera3D();
+	var chaseNode:Node;
+	var chasing = false;
+	var driving = false;
+	var travel = 0.;
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
 	var car:Null<Node>;
@@ -62,6 +70,11 @@ class App extends BaseApp {
 				for (name in ["headlight_l_beam", "headlight_r_beam"])
 					beams.push(car.find(name));
 				stage.add(car);
+				// Behind and above it, looking ahead (the car faces its +z); in the car's own units.
+				chaseNode = Node.camera(chase);
+				chaseNode.setPosition(0, 3, -8);
+				chaseNode.lookAt(0, .5, 3);
+				car.add(chaseNode);
 				status = MODEL;
 				for (warning in file.getWarnings())
 					trace('$MODEL: $warning');
@@ -83,8 +96,18 @@ class App extends BaseApp {
 			for (beam in beams)
 				beam.setVisible(headlights);
 		}
+		if (car != null && input.isFramePressed(Key.D))
+			driving = !driving;
+		if (car != null && input.isFramePressed(Key.C))
+			chasing = !chasing;
 		if (orbit)
 			angle += dt * .25;
+		if (driving && car != null) {
+			// A circle of 3, facing the way it goes: its +z along the circle's tangent.
+			travel += dt * .5;
+			car.setPosition(3 * Math.cos(travel), 0, 3 * Math.sin(travel));
+			car.setRotation(0, -travel, 0);
+		}
 		roll += dt * 3;
 		for (wheel in wheels)
 			wheel.setRotation(roll, 0, 0);
@@ -93,14 +116,15 @@ class App extends BaseApp {
 			height = host.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
+		chase.setViewport(width, height);
 		camera2D.setViewport(width, height);
 		camera2D.pixels(host.getPixelRatio());
 
 		host.graphics.beginFrame(width, height, 0x14161cff);
-		stage.draw(camera);
+		stage.draw(chasing ? chase : camera);
 		batch.begin(camera2D);
 		Text2D.draw(batch, 'HeliX glTF model: $status', 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, "O: the camera   H: the headlights" + (host.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
+		Text2D.draw(batch, "D: drive   C: ride along   O: the camera   H: the headlights" + (host.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
 		host.graphics.endFrame();

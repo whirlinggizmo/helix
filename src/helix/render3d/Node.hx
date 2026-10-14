@@ -1,6 +1,6 @@
 package helix.render3d;
 
-/** What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a light). Made by the static
+/** What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a light; a camera). Made by the static
 	constructors and never subclassed; a node only draws or lights, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61).
 	Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world
 	matrix is worked out when a stage draws it, only after it or a node above it changed. */
@@ -24,6 +24,7 @@ class Node {
 	var material:Null<Material>;
 	var tint = 0xffffffff;
 	var lightOf:Null<Light>;
+	var cameraOf:Null<Camera3D>;
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
@@ -51,6 +52,18 @@ class Node {
 	public static function light(light:Light):Node {
 		var node = new Node(LightNode);
 		node.lightOf = light;
+		return node;
+	}
+
+	/** A camera, seeing from this node's place down its -z, its +y up (its scale ignored): parent it to what it should follow, or aim it with
+		lookAt. The camera is drawn through as any (Stage3D.draw, Batch3D.begin), and while it is on this node its view is the node's; a camera
+		on another node moves here. */
+	public static function camera(camera:Camera3D):Node {
+		var node = new Node(CameraNode);
+		if (camera.node != null)
+			camera.node.cameraOf = null;
+		camera.node = node;
+		node.cameraOf = camera;
 		return node;
 	}
 
@@ -106,6 +119,24 @@ class Node {
 	/** A light node's light; null for another kind. */
 	public function getLight():Null<Light>
 		return lightOf;
+
+	/** A camera node's camera; null for another kind, or a camera since moved to another node. */
+	public function getCamera():Null<Camera3D>
+		return cameraOf;
+
+	/** Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps
+		(a camera node's view is found so before the stage's walk). */
+	public function computeWorld(out:Mat4):Void {
+		out.setTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+		var at = parent, above = new Mat4(), product = new Mat4();
+		// Two scratch matrices a call: a chain of parents is short, and a camera asks once a draw.
+		while (at != null) {
+			above.setTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
+			product.setProduct(above, out);
+			out.setFrom(product);
+			at = at.parent;
+		}
+	}
 
 	/** Whether it and its children are drawn. */
 	public function isVisible():Bool
@@ -346,4 +377,7 @@ enum abstract NodeKind(Int) {
 
 	/** A light. */
 	var LightNode = 2;
+
+	/** A camera's place and aim. */
+	var CameraNode = 3;
 }
