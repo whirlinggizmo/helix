@@ -9,13 +9,14 @@ import helix.audio.IAudio;
 import helix.debug.IDiagnostics;
 import helix.assets.IFetch;
 import helix.assets.IStorage;
-import helix.assets.AssetService;
 import helix.audio.AudioResources;
 import helix.app.IApp;
+import helix.host.HostCore;
 import js.Browser;
 import js.html.CanvasElement;
 
-/** The browser host: the page's canvas, a requestAnimationFrame loop, and options from the URL query. Its own IDiagnostics. */
+/** The browser host: the page's canvas, a requestAnimationFrame loop, and options from the URL query; the rest of a host is HostCore's. Its
+	own IDiagnostics. */
 class DomHostAdapter implements IHost implements IDiagnostics {
 	public var graphics(default, null):IGraphics;
 	public var input(default, null):IInput;
@@ -33,10 +34,9 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 
 	public var window(default, null):helix.host.IWindow;
 
-	var resources:AssetService;
+	var core:HostCore;
 	var canvas:CanvasElement;
 	var stopped = false;
-	var closed = false;
 	var services:HostServices;
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
@@ -52,11 +52,11 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 		audio = services.audio;
 		fetch = services.fetch;
 		storage = services.storage;
-		resources = new AssetService(fetch, storage, services.packaged, services.base);
-		assets = resources;
-		audioResources = new AudioResources(assets, audio);
-		textures = new helix.render2d.Textures(assets, services.images, graphics);
-		environments = new helix.render3d.Environments(assets, services.images, graphics);
+		core = new HostCore(services);
+		assets = core.resources;
+		audioResources = core.audioResources;
+		textures = core.textures;
+		environments = core.environments;
 		#if hotreload watchAssets(services.base); #end
 		Browser.window.addEventListener("resize", _ -> resize());
 		Browser.window.addEventListener("keydown", _ -> services.unlockAudio());
@@ -100,23 +100,11 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	public function run(app:IApp):Void {
 		this.app = app;
 		app.init();
-		var previous = getTime();
 		var loop:Float->Void = null;
 		loop = _ -> {
 			if (stopped)
 				return;
-			var current = getTime(), cpuStart = current;
-			lastFrameInterval = (current - previous) * 1000;
-			resources.poll();
-			audioResources.poll();
-			textures.poll();
-			environments.poll();
-			services.pollInput();
-			clock.frame(current);
-			app.frame(clock.getDelta());
-			services.endInputFrame();
-			lastFrameCpu = (getTime() - cpuStart) * 1000;
-			previous = current;
+			core.frame(app, getTime(), getTime);
 			// A quit during the frame closes after it, as natively.
 			if (quitting)
 				close();
@@ -130,19 +118,11 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	var app:IApp;
 	var quitting = false;
 
-	/** Stops the frame loop and shuts down, once: the services, then the app's cleanup. The canvas keeps its last frame. */
+	/** Stops the frame loop and shuts down, once (HostCore.close). The canvas keeps its last frame. */
 	function close():Void {
 		stopped = true;
-		if (closed || app == null)
-			return;
-		closed = true;
-		audioResources.shutdown();
-		textures.shutdown();
-		environments.shutdown();
-		services.images.shutdown();
-		resources.shutdown();
-		app.cleanup();
-		services.shutdownInput();
+		if (app != null)
+			core.close(app);
 	}
 
 	public function isFocused():Bool
@@ -184,19 +164,14 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	public function quit():Void
 		quitting = true;
 
-	var clock = new helix.host.FrameClock();
-
 	public function getFrameElapsed():Float
-		return clock.getElapsed();
-
-	var lastFrameCpu = 0.;
-	var lastFrameInterval = 0.;
+		return core.clock.getElapsed();
 
 	public function getFrameCpu():Float
-		return lastFrameCpu;
+		return core.getFrameCpu();
 
 	public function getFrameInterval():Float
-		return lastFrameInterval;
+		return core.getFrameInterval();
 
 	public function getFrameAudit():Dynamic
 		return null;
@@ -208,7 +183,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 
 	public function getInfo():Dynamic {
 		var value:Dynamic = services.info();
-		value.assetReloads = resources.getReloads();
+		value.assetReloads = core.resources.getReloads();
 		return value;
 	}
 
@@ -227,6 +202,6 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	function assetsChanged(prefix:String, urls:Array<String>):Void
 		for (url in urls)
 			if (StringTools.startsWith(url, prefix))
-				resources.changed(url.substr(prefix.length));
+				core.resources.changed(url.substr(prefix.length));
 	#end
 }

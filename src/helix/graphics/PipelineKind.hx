@@ -42,4 +42,15 @@ enum abstract PipelineKind(Int) {
 		view-projection, intensity, blur's mip, rotation and tone mapping). Depth-tested (less or equal, so only where nothing's been drawn yet,
 		or before anything is) and not written. Drawn by IGraphics.drawScreen. */
 	var Background3D = 8;
+
+	/** Skinned lit models: Lit3D's vertices, records, uniforms, textures and state, each vertex first moved by up to four joints: its joint
+		indices and weights from a static skin buffer beside the vertices (Skinned3DLayout's skin attributes), the joints' matrices from a data
+		texture (createDataTexture) at Skinned3DLayout's joint slot, three texels a joint, 1024 texels a row, from the record's first joint (the
+		normals' third row's w). Drawn by IGraphics.drawMesh with its skin buffer. */
+	var Skinned3D = 9;
+
+	/** Skinned casters' shadow-map depth: Depth3D's vertices and pass, a record of 64 bytes (Skinneddepth3DLayout: the placement's rows, then
+		the first joint), each vertex moved by its joints as Skinned3D's are (the data texture at Skinneddepth3DLayout's joint slot). Drawn by
+		IGraphics.drawMesh with its skin buffer, in a shadow pass. */
+	var SkinnedDepth3D = 10;
 }

@@ -24,7 +24,7 @@ def describe(target,ignore):
     subprocess.run(args,cwd=ROOT,check=True)
 
 def main():
-    if not (ROOT/'build/generated/shaders/GeneratedShader.hx').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build web')
+    if not (ROOT/'build/generated/shaders/shader-contract.json').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build web')
     version=json.loads((ROOT/'dependencies.json').read_text())['dox']
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'))
     if not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)

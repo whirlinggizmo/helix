@@ -309,6 +309,187 @@
           "cube": true
         }
       ]
+    },
+    {
+      "program": "skinned3d",
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "normal",
+          "name": "normal",
+          "type": "vec3"
+        },
+        {
+          "role": "uv",
+          "name": "uv",
+          "type": "vec2"
+        },
+        {
+          "role": "tangent",
+          "name": "tangent",
+          "type": "vec4"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal0",
+          "name": "i_normal0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal1",
+          "name": "i_normal1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal2",
+          "name": "i_normal2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "tint",
+          "name": "i_tint",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "joints",
+          "name": "joints",
+          "type": "vec4",
+          "skin": true
+        },
+        {
+          "role": "weights",
+          "name": "weights",
+          "type": "vec4",
+          "skin": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 64
+        },
+        {
+          "stage": "fragment",
+          "bytes": 960
+        }
+      ],
+      "textures": [
+        {
+          "role": "base",
+          "name": "lit3d_base_texture"
+        },
+        {
+          "role": "normal",
+          "name": "lit3d_normal_texture"
+        },
+        {
+          "role": "shadow",
+          "name": "lit3d_shadow_texture",
+          "depth_array": true
+        },
+        {
+          "role": "environment",
+          "name": "lit3d_environment_texture",
+          "cube": true
+        },
+        {
+          "role": "brdf",
+          "name": "lit3d_brdf_texture"
+        },
+        {
+          "role": "joints",
+          "name": "skinned3d_joint_texture",
+          "data": true,
+          "stage": "vertex"
+        }
+      ]
+    },
+    {
+      "program": "skinneddepth3d",
+      "stride": 48,
+      "instanceStride": 64,
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "skin",
+          "name": "i_skin",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "joints",
+          "name": "joints",
+          "type": "vec4",
+          "skin": true
+        },
+        {
+          "role": "weights",
+          "name": "weights",
+          "type": "vec4",
+          "skin": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 64
+        }
+      ],
+      "textures": [
+        {
+          "role": "joints",
+          "name": "skinneddepth3d_joint_texture",
+          "data": true,
+          "stage": "vertex"
+        }
+      ]
     }
   ]
 }

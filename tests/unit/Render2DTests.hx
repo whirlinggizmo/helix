@@ -1,6 +1,6 @@
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
-import helix.graphics.PipelineKind;
+import helix.graphics.PipelineDesc;
 import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
@@ -13,9 +13,11 @@ import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Node.SpriteAlpha;
 
-/** Graphics that only counts: handles, and the draws and viewports of a frame. */
+/** Graphics that only counts: handles, and the draws and viewports of a frame, sorted by what their pipeline draws: a 2D batch's
+	(unindexed, with buffers), a screen effect's or background's (no buffers), or a mesh's (indexed). */
 class CountingGraphics implements IGraphics {
 	var next = 1;
+	var pipelineDescs = new Map<Int, PipelineDesc>();
 
 	public var draws:Array<{vertices:Int, first:Int, sampling:Sampling}> = [];
 	public var viewports:Array<Array<Int>> = [];
@@ -29,6 +31,11 @@ class CountingGraphics implements IGraphics {
 	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int
 		return next++;
 
+	public function createDataTexture(width:Int, height:Int):Int
+		return next++;
+
+	public function updateDataTexture(handle:Int, data:Bytes):Void {}
+
 	public function canSample(format:TextureFormat):Bool
 		return format == Rgba8 || format == Astc4x4 || format == Rgba16f;
 
@@ -38,8 +45,11 @@ class CountingGraphics implements IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
 
-	public function createPipeline(kind:PipelineKind, blend:helix.graphics.BlendMode, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
-		return next++;
+	public function createPipeline(desc:PipelineDesc):Int {
+		var id = next++;
+		pipelineDescs[id] = desc;
+		return id;
+	}
 
 	public var screen:Null<{textures:Array<Int>, uniforms:Array<Null<Bytes>>}>;
 
@@ -47,9 +57,6 @@ class CountingGraphics implements IGraphics {
 		return next++;
 
 	public function destroyShader(handle:Int):Void {}
-
-	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void
-		screen = {textures: textures, uniforms: uniforms};
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
 		uploaded = data.sub(0, usedBytes);
@@ -78,18 +85,22 @@ class CountingGraphics implements IGraphics {
 	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void
 		viewports.push([x, y, w, h]);
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
-		draws.push({vertices: vertices, first: firstVertex, sampling: sampling});
-
+	/** Each mesh draw's pipeline, in order. */
 	public var meshPipelines:Array<Int> = [];
 
 	/** Each mesh draw's instance count and uniform blocks, in order. */
 	public var meshDraws:Array<{instances:Int, uniforms:Array<Null<Bytes>>}> = [];
 
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
-			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
-		meshPipelines.push(pipeline);
-		meshDraws.push({instances: instanceCount, uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]});
+	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
+			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var desc = pipelineDescs[pipeline];
+		if (desc.indexed) {
+			meshPipelines.push(pipeline);
+			meshDraws.push({instances: instanceCount, uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]});
+		} else if (desc.buffers.length == 0)
+			screen = {textures: textures, uniforms: uniforms};
+		else
+			draws.push({vertices: count, first: first, sampling: samplings.length > 0 ? samplings[0] : Sampling.NEAREST});
 	}
 
 	public function endFrame():Void {}

@@ -9,13 +9,13 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_renderer") static function renderer():cpp.ConstCharStar;
 	@:native("helix_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_cube_texture") static function cubeTexture(size:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
+	@:native("helix_data_texture") static function dataTexture(w:Int, h:Int):Int;
+	@:native("helix_update_data") static function updateData(texture:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_can_sample") static function canSample(format:Int):Int;
 	@:native("helix_buffer") static function buffer(capacity:Int):Int;
 	@:native("helix_static_buffer") static function staticBuffer(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, index:Int):Int;
-	@:native("helix_pipeline") static function pipeline(kind:Int, blend:Int, shader:Int, doubleSided:Int, clockwise:Int):Int;
+	@:native("helix_pipeline") static function pipeline(desc:cpp.RawPointer<Int>, count:Int):Int;
 	@:native("helix_shader") static function shader(vs:cpp.ConstCharStar, fs:cpp.ConstCharStar, layout:cpp.ConstCharStar):Int;
-	@:native("helix_draw_screen") static function drawScreen(pipeline:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>,
-		textureCount:Int, uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
 	@:native("helix_update") static function update(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_target") static function target(w:Int, h:Int):Int;
 	@:native("helix_begin_target") static function beginTarget(target:Int, color:Int):Int;
@@ -24,11 +24,9 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_begin_shadow") static function beginShadow(map:Int, layer:Int):Int;
 	@:native("helix_begin") static function begin(width:Int, height:Int, color:Int):Int;
 	@:native("helix_viewport") static function viewport(x:Int, y:Int, w:Int, h:Int):Int;
-	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Int, vertices:Int, firstVertex:Int,
+	@:native("helix_draw") static function draw(pipeline:Int, buffers:cpp.RawPointer<cpp.UInt32>, bufferCount:Int, indices:Int, first:Int, count:Int,
+		firstInstance:Int, instanceCount:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>, textureCount:Int,
 		uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;
-	@:native("helix_draw_mesh") static function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int,
-		instanceCount:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>, textureCount:Int, uniforms:cpp.RawPointer<cpp.UInt8>,
-		uniformBytes:Int):Int;
 	@:native("helix_end") static function end():Void;
 	@:native("helix_destroy") static function destroy(kind:Int, handle:Int):Int;
 	@:native("helix_peak_rss") static function peakRss():Float;

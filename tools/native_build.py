@@ -15,11 +15,11 @@ def codec_library():
         if 'libsndfile.so.1 ' in line and 'x86-64' in line:return line.split('=>')[1].strip()
     raise RuntimeError('libsndfile.so.1 not found by ldconfig')
 
-def env(shader_dir):
-    """The environment hxcpp's build reads: HeliX's root, the app's generated shader, the codec, and a shared compile cache."""
+def env():
+    """The environment hxcpp's build reads: HeliX's root, the codec, and a shared compile cache."""
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
     config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n')
-    return dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_SHADER_DIR=Path(shader_dir).resolve().as_posix(),HELIX_CODEC_LIBRARY=codec_library(),HXCPP_CONFIG=str(config))
+    return dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_CODEC_LIBRARY=codec_library(),HXCPP_CONFIG=str(config))
 
 def tool(name):
     """Build one C-only test tool into build/native-tools and return its path."""

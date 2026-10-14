@@ -1,9 +1,6 @@
 package helix.render3d;
 
-import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
-import helix.graphics.PipelineKind;
-import helix.graphics.Sampling;
 import haxe.io.Bytes;
 
 /** Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame
@@ -16,8 +13,7 @@ class Batch3D {
 	var lines:Bytes;
 	var triangleBuffer:Int;
 	var lineBuffer:Int;
-	var trianglePipeline:Int;
-	var linePipeline:Int;
+	var pipelines:helix.graphics.Pipelines;
 	var uniforms = Bytes.alloc(64);
 	var camera:Camera3D;
 	var triangleVertices = 0;
@@ -28,8 +24,7 @@ class Batch3D {
 	var lightZ = .3;
 	var ambient = .35;
 
-	/** A batch of up to capacity triangle vertices and capacity line vertices a frame, with its own buffers and pipelines on gpu; destroy frees
-		them. */
+	/** A batch of up to capacity triangle vertices and capacity line vertices a frame, with its own buffers on gpu; destroy frees them. */
 	public function new(gpu:IGraphics, capacity = 65536) {
 		this.gpu = gpu;
 		this.capacity = capacity;
@@ -37,8 +32,7 @@ class Batch3D {
 		lines = Bytes.alloc(capacity * Color3DLayout.stride);
 		triangleBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
 		lineBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
-		trianglePipeline = gpu.createPipeline(Color3D, Opaque);
-		linePipeline = gpu.createPipeline(Lines3D, Opaque);
+		pipelines = helix.graphics.Pipelines.of(gpu);
 		setLight(.3, .9, .3, .35);
 	}
 
@@ -79,11 +73,11 @@ class Batch3D {
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);
 		if (triangleVertices > 0) {
-			gpu.draw(trianglePipeline, triangleBuffer, 0, Sampling.NEAREST, triangleVertices, 0, uniforms);
+			gpu.draw(pipelines.color3d(), [triangleBuffer], 0, 0, triangleVertices, 0, 1, [], [], [uniforms]);
 			draws++;
 		}
 		if (lineVertices > 0) {
-			gpu.draw(linePipeline, lineBuffer, 0, Sampling.NEAREST, lineVertices, 0, uniforms);
+			gpu.draw(pipelines.lines3d(), [lineBuffer], 0, 0, lineVertices, 0, 1, [], [], [uniforms]);
 			draws++;
 		}
 	}
@@ -216,10 +210,8 @@ class Batch3D {
 		}
 	}
 
-	/** Frees the buffers and pipelines made by new; the batch is unusable after. */
+	/** Frees the buffers made by new; the batch is unusable after. */
 	public function destroy():Void {
-		gpu.destroyPipeline(trianglePipeline);
-		gpu.destroyPipeline(linePipeline);
 		gpu.destroyBuffer(triangleBuffer);
 		gpu.destroyBuffer(lineBuffer);
 	}

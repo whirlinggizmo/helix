@@ -3,13 +3,14 @@ package helix.adapters.graphics.sokol;
 import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
-import helix.graphics.PipelineKind;
+import helix.graphics.PipelineDesc;
 import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 
-/** IGraphics on sokol_gfx for native hxcpp builds; a call the bridge refuses throws. */
+/** IGraphics on sokol_gfx for native hxcpp builds: what it is given (a ShaderSource's GLSL 410, a PipelineDesc) passed to the C bridge as
+	plain data; it knows no program, layout or pipeline of HeliX's own. A call the bridge refuses throws. */
 class SokolGraphicsAdapter implements IGraphics {
 	/** Sets up sokol_gfx; the window and its GL context must already exist. */
 	public function new() {
@@ -52,6 +53,13 @@ class SokolGraphicsAdapter implements IGraphics {
 		return packed;
 	}
 
+	public function createDataTexture(width:Int, height:Int):Int
+		return valid(GraphicsBridge.dataTexture(width, height));
+
+	public function updateDataTexture(handle:Int, data:Bytes):Void
+		if (data.length == 0 || GraphicsBridge.updateData(handle, pointer(data), data.length) != 1)
+			throw "Invalid native data texture update";
+
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsBridge.canSample(format) == 1;
 
@@ -62,15 +70,6 @@ class SokolGraphicsAdapter implements IGraphics {
 		if (bytes <= 0 || bytes > data.length)
 			throw "Invalid static buffer";
 		return valid(GraphicsBridge.staticBuffer(pointer(data), bytes, index ? 1 : 0));
-	}
-
-	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
-			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
-		var args = pack(textures, samplings, uniforms);
-		if (GraphicsBridge.drawMesh(pipeline, vertices, indices, indexCount, instances, firstInstance, instanceCount,
-			cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length, pointer(args.uniforms),
-			args.bytes) != 1)
-			throw "Invalid native mesh draw";
 	}
 
 	// Textures, samplings and uniform blocks by slot as the bridge reads them: two arrays, and the blocks' bytes one after another.
@@ -104,8 +103,34 @@ class SokolGraphicsAdapter implements IGraphics {
 		};
 	}
 
-	public function createPipeline(kind:PipelineKind, blend:BlendMode, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
-		return valid(GraphicsBridge.pipeline(cast kind, blend, shader, doubleSided ? 1 : 0, clockwise ? 1 : 0));
+	public function createPipeline(desc:PipelineDesc):Int {
+		// The description as the bridge reads it: the state, then each buffer's stride, step and attributes.
+		var ints = [
+			desc.shader,
+			desc.primitive,
+			desc.indexed ? 1 : 0,
+			desc.blend,
+			desc.depthTest ? 1 : 0,
+			desc.depthWrite ? 1 : 0,
+			desc.cullBack ? 1 : 0,
+			desc.clockwise ? 1 : 0,
+			desc.depthOnly ? 1 : 0,
+			desc.flip,
+			desc.buffers.length
+		];
+		for (b in desc.buffers) {
+			ints.push(b.stride);
+			ints.push(b.instanced ? 1 : 0);
+			ints.push(b.attributes.length);
+			for (a in b.attributes) {
+				ints.push(a.slot);
+				ints.push(a.components);
+				ints.push(a.offset);
+			}
+		}
+		var packed = haxe.ds.Vector.fromArrayCopy(ints);
+		return valid(GraphicsBridge.pipeline(cpp.Pointer.ofArray(packed.toData()).raw, ints.length));
+	}
 
 	public function createShader(source:ShaderSource):Int {
 		// The layout the bridge reads, a line each: attributes, uniform blocks, textures.
@@ -113,7 +138,7 @@ class SokolGraphicsAdapter implements IGraphics {
 		for (b in source.uniformBlocks)
 			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4s} ${b.glslName}');
 		for (t in source.textures)
-			lines.push('${t.shadow ? "s" : t.cube ? "c" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
+			lines.push('${t.shadow ? "s" : t.cube ? "c" : t.data ? "d" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
 		// Typed first: an anonymous structure's fields reach C++ as variants.
 		var vertex:String = source.glsl410.vertex,
 			fragment:String = source.glsl410.fragment,
@@ -122,13 +147,6 @@ class SokolGraphicsAdapter implements IGraphics {
 		if (handle == 0)
 			throw "The shader didn't build (see the log)";
 		return handle;
-	}
-
-	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
-		var args = pack(textures, samplings, uniforms);
-		if (GraphicsBridge.drawScreen(pipeline, cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length,
-			pointer(args.uniforms), args.bytes) != 1)
-			throw "Invalid native screen draw";
 	}
 
 	public function destroyShader(handle:Int):Void
@@ -168,10 +186,15 @@ class SokolGraphicsAdapter implements IGraphics {
 			throw "Invalid native viewport";
 	}
 
-	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
-		var ok = uniforms == null ? GraphicsBridge.draw(pipeline, buffer, texture, sampling, vertices, firstVertex, null,
-			0) : GraphicsBridge.draw(pipeline, buffer, texture, sampling, vertices, firstVertex, pointer(uniforms), uniforms.length);
-		if (ok != 1)
+	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
+			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var args = pack(textures, samplings, uniforms),
+			handles = new haxe.ds.Vector<cpp.UInt32>(buffers.length < 1 ? 1 : buffers.length);
+		for (i in 0...buffers.length)
+			handles[i] = buffers[i];
+		if (GraphicsBridge.draw(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, buffers.length, indices, first, count, firstInstance, instanceCount,
+			cpp.Pointer.ofArray(args.handles.toData()).raw, cpp.Pointer.ofArray(args.modes.toData()).raw, textures.length, pointer(args.uniforms),
+			args.bytes) != 1)
 			throw "Invalid native draw";
 	}
 

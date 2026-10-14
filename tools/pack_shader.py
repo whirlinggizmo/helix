@@ -417,7 +417,8 @@ def pack(shdc, source_path, output_path):
             fail(f'{source_path}: texture {pair["view_name"]} needs binding {FIRST_TEXTURE[kind]} or more; the lower ones are the framework\'s')
         textures.append({'slot': pair['view_slot'], 'stage': pair['stage'], 'name': pair['view_name'], 'glslName': pair['glsl_name'],
                          'shadow': views.get(pair['view_slot'], {}).get('sample_type') == 'depth',
-                         'cube': views.get(pair['view_slot'], {}).get('type') == 'cube'})
+                         'cube': views.get(pair['view_slot'], {}).get('type') == 'cube',
+                         'data': views.get(pair['view_slot'], {}).get('sample_type') == 'unfilterable_float'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
     shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],

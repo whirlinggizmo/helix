@@ -44,6 +44,8 @@ class Node {
 	var textSize = .5;
 	var font:Null<helix.render2d.Font2D>;
 	var emitterOf:Null<helix.particles.Emitter>;
+	var skin:Null<Skin>;
+	var joints:Null<Array<Node>>;
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
@@ -274,6 +276,39 @@ class Node {
 		return null;
 	}
 
+	/** A skinned model's skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose. */
+	public function getSkin():Null<Skin>
+		return skin;
+
+	/** How many joints a skinned model follows: its skin's, once bound; 0 otherwise. */
+	public function getJointCount():Int
+		return joints == null ? 0 : joints.length;
+
+	/** The node a skinned model's joint index follows; null past them or unbound. */
+	public function getJoint(index:Int):Null<Node>
+		return joints == null || index < 0 || index >= joints.length ? null : joints[index];
+
+	/** Binds a model of a skinned mesh to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under
+		skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character
+		this way, by joint name. False, changing nothing, for another kind, a mesh that isn't skinned, no skin, or a joint name the skeleton
+		lacks. */
+	public function bindSkeleton(skeleton:Node, ?skin:Skin):Bool {
+		var chosen = skin != null ? skin : this.skin;
+		if (kind != Model || mesh == null || !mesh.isSkinned() || chosen == null)
+			return false;
+		var found = [];
+		for (j in 0...chosen.getJointCount()) {
+			var name = chosen.getJointName(j);
+			var node = skeleton.name == name ? skeleton : skeleton.find(name);
+			if (node == null)
+				return false;
+			found.push(node);
+		}
+		this.skin = chosen;
+		joints = found;
+		return true;
+	}
+
 	/** A model's mesh; null for another kind. */
 	public function getMesh():Null<Mesh>
 		return mesh;
@@ -405,6 +440,34 @@ class Node {
 	/** Its position's z. */
 	public function getZ():Float
 		return pz;
+
+	/** Its rotation's quaternion x, relative to its parent. */
+	public function getQuaternionX():Float
+		return qx;
+
+	/** Its rotation's quaternion y. */
+	public function getQuaternionY():Float
+		return qy;
+
+	/** Its rotation's quaternion z. */
+	public function getQuaternionZ():Float
+		return qz;
+
+	/** Its rotation's quaternion w. */
+	public function getQuaternionW():Float
+		return qw;
+
+	/** Its scale along its own x. */
+	public function getScaleX():Float
+		return sx;
+
+	/** Its scale along its own y. */
+	public function getScaleY():Float
+		return sy;
+
+	/** Its scale along its own z. */
+	public function getScaleZ():Float
+		return sz;
 
 	/** Places it at x, y, z, relative to its parent. */
 	public function setPosition(x:Float, y:Float, z:Float):Void {

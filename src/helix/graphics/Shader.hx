@@ -13,7 +13,7 @@ typedef ShaderParameter = {
 
 /** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its
 	uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps
-	getVersion, so what draws with it makes its pipeline again. */
+	getVersion; its pipelines (Pipelines) are made again over the new program as they're next asked for. */
 class Shader {
 	var gpu:IGraphics;
 	var handle:Int;
@@ -62,7 +62,8 @@ class Shader {
 						stage: t.stage,
 						glslName: t.glslName,
 						shadow: t.shadow == true,
-						cube: t.cube == true
+						cube: t.cube == true,
+						data: t.data == true
 					}
 			]
 		};
@@ -135,12 +136,15 @@ class Shader {
 			textureSlots = old.textureSlots;
 			throw e;
 		}
+		Pipelines.of(gpu).forgetShader(handle);
 		gpu.destroyShader(handle);
 		handle = made;
 		version++;
 	}
 
-	/** Frees the program; the pipelines made with it must be destroyed first. */
-	public function destroy():Void
+	/** Frees the program and the pipelines made over it. */
+	public function destroy():Void {
+		Pipelines.of(gpu).forgetShader(handle);
 		gpu.destroyShader(handle);
+	}
 }

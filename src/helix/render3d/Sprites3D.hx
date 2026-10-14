@@ -19,7 +19,7 @@ class Sprites3D {
 
 	var gpu:IGraphics;
 	// By phase: 0 opaque and masked, 1 blended, 2 added.
-	var pipelines:Array<Int>;
+	var pipelines:helix.graphics.Pipelines;
 	var corners:Int;
 	var indices:Int;
 	var capacity = 256;
@@ -35,8 +35,7 @@ class Sprites3D {
 	var nextBlend = 0;
 	var draws = 0;
 	var font:Null<helix.render2d.Font2D>;
-	// Emitters: their pipelines by phase, the draw's particles in one upload, and those in view, sorted, each its first record and count.
-	var particlePipelines:Array<Int>;
+	// Emitters: the draw's particles in one upload, and those in view, sorted, each its first record and count.
 	var particleCapacity = 1024;
 	var particleBuffer:Int;
 	var particleRecords:Bytes;
@@ -51,14 +50,10 @@ class Sprites3D {
 	var cameraUp = [0., 1, 0];
 	var upright = [1., 0, 0];
 
-	/** Sprites on gpu: their pipelines, quad and instance buffer. */
+	/** Sprites on gpu: their quad and instance buffer. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		pipelines = [
-			gpu.createPipeline(Sprite3D, Opaque),
-			gpu.createPipeline(Sprite3D, Alpha),
-			gpu.createPipeline(Sprite3D, Additive)
-		];
+		pipelines = helix.graphics.Pipelines.of(gpu);
 		var quad = Bytes.alloc(4 * Sprite3DLayout.stride), at = 0;
 		for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
 			quad.setFloat(at, c);
@@ -71,11 +66,6 @@ class Sprites3D {
 		indices = gpu.createStaticBuffer(order, 24, true);
 		instanceBuffer = gpu.createBuffer(capacity * Sprite3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Sprite3DLayout.instanceStride);
-		particlePipelines = [
-			gpu.createPipeline(Particle3D, Opaque),
-			gpu.createPipeline(Particle3D, Alpha),
-			gpu.createPipeline(Particle3D, Additive)
-		];
 		particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
 		particleRecords = Bytes.alloc(particleCapacity * Particle3DLayout.instanceStride);
 	}
@@ -314,8 +304,8 @@ class Sprites3D {
 
 	function drawEmitter(it:EmitterItem):Void {
 		var texture = it.emitter.getTexture();
-		gpu.drawMesh(particlePipelines[it.phase], corners, indices, 6, particleBuffer, it.first, it.count, [texture.getHandle()], [texture.getSampling()],
-			[it.uniforms]);
+		gpu.draw(pipelines.particle3d(cast it.phase), [corners, particleBuffer], indices, 0, 6, it.first, it.count, [texture.getHandle()],
+			[texture.getSampling()], [it.uniforms]);
 		draws++;
 	}
 
@@ -408,7 +398,8 @@ class Sprites3D {
 			var last = i, texture = drawn[i].texture;
 			while (last + 1 < to && drawn[last + 1].texture == texture)
 				last++;
-			gpu.drawMesh(pipelines[phase], corners, indices, 6, instanceBuffer, i, last - i + 1, [texture.getHandle()], [texture.getSampling()], [uniforms]);
+			gpu.draw(pipelines.sprite3d(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.getHandle()],
+				[texture.getSampling()], [uniforms]);
 			draws++;
 			i = last + 1;
 		}
@@ -448,17 +439,13 @@ class Sprites3D {
 			drawEmitter(emitters[i]);
 	}
 
-	/** Frees its pipelines, buffers and built-in font. */
+	/** Frees its buffers and built-in font. */
 	public function destroy():Void {
 		if (font != null)
 			font.destroy(gpu);
-		for (p in pipelines)
-			gpu.destroyPipeline(p);
 		gpu.destroyBuffer(corners);
 		gpu.destroyBuffer(indices);
 		gpu.destroyBuffer(instanceBuffer);
-		for (p in particlePipelines)
-			gpu.destroyPipeline(p);
 		gpu.destroyBuffer(particleBuffer);
 	}
 }

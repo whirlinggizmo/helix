@@ -11,19 +11,21 @@
 #include "sokol_app.h"
 #include "sokol_glue.h"
 #include "sokol_log.h"
-#include "shaders.h"
 
-static sg_shader shaders[7];
-/* Apps' programs (helix_shader), by shader slot: their uniform blocks' stages and sizes and their textures' count, by binding slot. A pipeline's
-   app program, by pipeline slot (0 for the framework's). */
+/* Programs (helix_shader), by shader slot: their uniform blocks' count and sizes by binding slot, and the texture slots they sample (a bit
+   each). */
 #define MAX_BLOCKS 4
 #define MAX_TEXTURES 12
-static struct{int blocks,texture_mask,block_size[MAX_BLOCKS];}programs[256];static uint32_t pipeline_shaders[256];
+#define MAX_BUFFERS 4
+static struct{int blocks,texture_mask,block_size[MAX_BLOCKS];}programs[256];
 static sg_sampler sampler_of(int sampling);
 /* One sampler for each Sampling value used (helix.graphics.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
 static sg_sampler samplers[32];
-/* Per pipeline slot: its kind (helix.graphics.PipelineKind). Per buffer slot: whether it is an index buffer. */
-static int pipeline_kinds[256],index_buffers[256];
+/* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
+   is an instance's and read at all, indexed or not, lines or triangles, block 0's clip flip) and its twin for flipped passes (its front faces
+   the other way round), where it draws triangles into colors. Per buffer slot: whether it is an index buffer. */
+static struct{uint32_t id,shader;int buffer_count,stride[MAX_BUFFERS],instanced[MAX_BUFFERS],read[MAX_BUFFERS],indexed,lines,flip;}pipeline_info[256];
+static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is. */
 static int active,flipped,used[256],audit_enabled,frame_width,frame_height;
@@ -31,38 +33,35 @@ static int active,flipped,used[256],audit_enabled,frame_width,frame_height;
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
 static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
-/* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A Lit3D pipeline's flipped twin (its
-   front faces clockwise), by pipeline slot. */
+/* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A pipeline's flipped twin, by pipeline
+   slot. */
 static struct{sg_view color,depth;sg_image depth_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 16
 static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}shadow_maps[256];static sg_sampler comparison;
+/* Data textures, by texture view slot: RGBA32F, rewritten whole by helix_update_data. sokol's write-transient images hold what's written for
+   the frame alone, and take writes only until they're bound, so the adapter keeps the contents (copy) and writes them at the first bind of a
+   frame without a write of its own; and a write after a bind goes to a spare of the same size (made the first time it's needed): renamed is
+   how many are in use this frame, and the texture's draws read the latest. */
+static struct{sg_image image;int width,height,written,bound,renamed;float *copy;sg_image extra_images[MAX_RENAMES];sg_view extra_views[MAX_RENAMES];}data_textures[256];
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
-    a few surface shaders, each eight pipelines and their flipped twins. */
+    a few surface shaders, each several pipelines and their flipped twins. */
  sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func,.buffer_pool_size=255,.image_pool_size=255,.sampler_pool_size=255,
   .shader_pool_size=255,.pipeline_pool_size=255,.view_pool_size=255});
  audit_enabled=getenv("HELIX_AUDIT")&&strcmp(getenv("HELIX_AUDIT"),"1")==0;
  if(!audit_enabled)sg_disable_stats();
  else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}
- shaders[0]=sg_make_shader(HELIX_SPRITE2D_SHADER_DESC(sg_query_backend()));
- shaders[1]=sg_make_shader(HELIX_COLOR3D_SHADER_DESC(sg_query_backend()));
- shaders[2]=sg_make_shader(HELIX_LIT3D_SHADER_DESC(sg_query_backend()));
- shaders[3]=sg_make_shader(HELIX_SPRITE3D_SHADER_DESC(sg_query_backend()));
- shaders[4]=sg_make_shader(HELIX_PARTICLE3D_SHADER_DESC(sg_query_backend()));
- shaders[5]=sg_make_shader(HELIX_DEPTH3D_SHADER_DESC(sg_query_backend()));
- shaders[6]=sg_make_shader(HELIX_BACKGROUND3D_SHADER_DESC(sg_query_backend()));
  memset(samplers,0,sizeof samplers);
- for(int i=0;i<7;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  if(comparison.id)sg_destroy_sampler(comparison);
- for(int i=0;i<7;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
+ sg_shutdown();
 }
 /* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8, RGBA16F. */
 static sg_pixel_format format_of(int format){
@@ -104,6 +103,50 @@ uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int f
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
  return sg_make_view(&(sg_view_desc){.texture.image=image}).id;
 }
+/* A data texture: RGBA32F, width x height, written each frame it's used and read texel by texel. */
+static sg_image data_image(int w,int h){return sg_make_image(&(sg_image_desc){.width=w,.height=h,.pixel_format=SG_PIXELFORMAT_RGBA32F,.usage.write_transient=true,.label="helix-data"});}
+uint32_t helix_data_texture(int w,int h){
+ if(w<=0||h<=0||w>16384||h>16384||!sg_query_pixelformat(SG_PIXELFORMAT_RGBA32F).sample)return 0;
+ sg_image image=data_image(w,h);
+ if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID){sg_destroy_image(image);return 0;}
+ sg_view view=sg_make_view(&(sg_view_desc){.texture.image=image});int slot=view.id&0xffff;
+ float *copy=calloc((size_t)w*(size_t)h*4,sizeof(float));
+ if(slot>=256||!copy){free(copy);sg_destroy_view(view);sg_destroy_image(image);return 0;}
+ memset(&data_textures[slot],0,sizeof data_textures[slot]);data_textures[slot].image=image;data_textures[slot].width=w;data_textures[slot].height=h;
+ data_textures[slot].copy=copy;
+ return view.id;
+}
+/* The image a data texture's draws read now: itself, or the spare its latest write went to. */
+static sg_image current_data_image(int slot){return data_textures[slot].renamed?data_textures[slot].extra_images[data_textures[slot].renamed-1]:data_textures[slot].image;}
+/* Writes a data texture's contents into its current image. */
+static void write_data(int slot){
+ const size_t size=(size_t)data_textures[slot].width*(size_t)data_textures[slot].height*16;
+ sg_write_image_transient(&(sg_write_image_desc){.src.data={data_textures[slot].copy,size},.dst.image=current_data_image(slot)});
+ data_textures[slot].written=1;
+}
+int helix_update_data(uint32_t texture,const void *data,int bytes){
+ const int slot=texture&0xffff;
+ if(!data||slot>=256||!data_textures[slot].image.id||sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
+ const size_t size=(size_t)data_textures[slot].width*(size_t)data_textures[slot].height*16;
+ if((size_t)bytes<size)return 0;
+ if(data_textures[slot].bound){
+  /* Bound since its last write: the write goes to the next spare. */
+  const int r=data_textures[slot].renamed;
+  if(r==MAX_RENAMES)return 0;
+  if(!data_textures[slot].extra_images[r].id){
+   data_textures[slot].extra_images[r]=data_image(data_textures[slot].width,data_textures[slot].height);
+   if(sg_query_image_state(data_textures[slot].extra_images[r])!=SG_RESOURCESTATE_VALID)return 0;
+   data_textures[slot].extra_views[r]=sg_make_view(&(sg_view_desc){.texture.image=data_textures[slot].extra_images[r]});
+  }
+  data_textures[slot].renamed++;data_textures[slot].bound=0;
+ }
+ memcpy(data_textures[slot].copy,data,size);write_data(slot);return 1;
+}
+/* The view a texture's draws read: a data texture's latest write, or itself. */
+static sg_view current_view(uint32_t texture){
+ const int slot=texture&0xffff;
+ return slot<256&&data_textures[slot].image.id&&data_textures[slot].renamed?data_textures[slot].extra_views[data_textures[slot].renamed-1]:(sg_view){texture};
+}
 uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
@@ -125,41 +168,43 @@ static sg_blend_state blend_of(int blend){
  const sg_blend_factor dst=blend==2?SG_BLENDFACTOR_ONE:SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
  return (sg_blend_state){.enabled=true,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=dst,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=dst};
 }
-static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint32_t shader,int double_sided){
- /* Casters: depth only into a shadow map, never culled (a one-sided floor still casts). */
- if(kind==7)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[5],.layout=helix_depth3d_layout(),.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
-  .index_type=SG_INDEXTYPE_UINT32,.depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=true,.pixel_format=SG_PIXELFORMAT_DEPTH},
-  .cull_mode=SG_CULLMODE_NONE,.color_count=0,.sample_count=1});
- /* A background: at the far plane, behind whatever's drawn already; never written. */
- if(kind==8)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[6],.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
-  .depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,.colors[0].blend=blend_of(blend)});
- if(kind==4)return sg_make_pipeline(&(sg_pipeline_desc){.shader={shader},.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
-  .depth={.compare=SG_COMPAREFUNC_ALWAYS,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,
-  .colors[0].blend=blend_of(blend)});
- /* Sprites and particles: an indexed quad, an instance each; depth written only when opaque; nothing culled. */
- if(kind==5||kind==6)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[kind==5?3:4],.layout=kind==5?helix_sprite3d_layout():helix_particle3d_layout(),.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
-  .index_type=SG_INDEXTYPE_UINT32,.depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=blend==0},.cull_mode=SG_CULLMODE_NONE,
-  .face_winding=winding,.colors[0].blend=blend_of(blend)});
- const int three=kind!=0;
- /* Lit models are indexed, their back faces culled unless double sided (counter-clockwise is the front, as GL's, unless winding turns it:
-    gl_FrontFacing follows it too). */
- return sg_make_pipeline(&(sg_pipeline_desc){.shader=shader?(sg_shader){shader}:shaders[kind==3?2:three],
-  .layout=kind==3?helix_lit3d_layout():three?helix_color3d_layout():helix_sprite2d_layout(),
-  .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,.index_type=kind==3?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,
-  .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},
-  .cull_mode=kind==3&&!double_sided?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=winding,
-  .colors[0].blend=blend_of(blend)});
-}
-uint32_t helix_pipeline(int kind,int blend,uint32_t shader,int double_sided,int clockwise){
- if(blend<0||blend>2)return 0;
- /* Screen takes an app's program; Lit3D may (a surface shader). */
- if(kind<0||kind>8||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
- if(shader&&((shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID))return 0;
- sg_pipeline pipeline=make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
+/* A pipeline as helix.graphics.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend,
+   depth test, depth write, cull back, clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the buffer count, then each
+   buffer's stride, instanced and attribute count, each attribute's slot, components and offset. 0 for a description it can't make. */
+uint32_t helix_pipeline(const int *desc,int count){
+ if(!desc||count<11)return 0;
+ const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],blend=desc[3],depth_only=desc[8],clockwise=desc[7];
+ if(blend<0||blend>2||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
+ sg_pipeline_desc pd={.shader={shader},.primitive_type=lines?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
+  .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
+  .cull_mode=desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0].blend=blend_of(blend)};
+ /* Depth alone: a shadow pass's, no color attachment. */
+ if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
+ const int buffers=desc[10];int at=11,strides[MAX_BUFFERS]={0},instanced[MAX_BUFFERS]={0},read[MAX_BUFFERS]={0};
+ if(buffers<0||buffers>MAX_BUFFERS)return 0;
+ for(int b=0;b<buffers;b++){
+  if(at+3>count)return 0;
+  strides[b]=desc[at];instanced[b]=desc[at+1]!=0;const int attrs=desc[at+2];at+=3;
+  if(strides[b]<0||attrs<0||at+attrs*3>count)return 0;
+  pd.layout.buffers[b].stride=strides[b];if(instanced[b])pd.layout.buffers[b].step_func=SG_VERTEXSTEP_PER_INSTANCE;
+  for(int a=0;a<attrs;a++,at+=3){
+   const int slot=desc[at],components=desc[at+1],offset=desc[at+2];
+   if(slot<0||slot>=SG_MAX_VERTEX_ATTRIBUTES||components<1||components>4||offset<0||offset+components*4>strides[b])return 0;
+   static const sg_vertex_format formats[4]={SG_VERTEXFORMAT_FLOAT,SG_VERTEXFORMAT_FLOAT2,SG_VERTEXFORMAT_FLOAT3,SG_VERTEXFORMAT_FLOAT4};
+   pd.layout.attrs[slot]=(sg_vertex_attr_state){.format=formats[components-1],.offset=offset,.buffer_index=b};
+  }
+  read[b]=attrs>0;
+ }
+ sg_pipeline pipeline=sg_make_pipeline(&pd);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
- /* A lit pipeline's twin for flipped passes: its front faces the other way round. */
- flipped_pipelines[pipeline.id&0xffff]=kind==3||kind==5||kind==6?make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW,shader,double_sided):(sg_pipeline){0};
- pipeline_kinds[pipeline.id&0xffff]=kind;pipeline_shaders[pipeline.id&0xffff]=shader;return pipeline.id;
+ const int slot=pipeline.id&0xffff;
+ /* Triangles into colors get a twin for flipped passes: their front faces (and gl_FrontFacing) the other way round. */
+ flipped_pipelines[slot]=(sg_pipeline){0};
+ if(!lines&&!depth_only){pd.face_winding=clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;flipped_pipelines[slot]=sg_make_pipeline(&pd);}
+ pipeline_info[slot].id=pipeline.id;pipeline_info[slot].shader=shader;pipeline_info[slot].buffer_count=buffers;pipeline_info[slot].indexed=indexed!=0;pipeline_info[slot].lines=lines;
+ pipeline_info[slot].flip=desc[9];
+ memcpy(pipeline_info[slot].stride,strides,sizeof strides);memcpy(pipeline_info[slot].instanced,instanced,sizeof instanced);memcpy(pipeline_info[slot].read,read,sizeof read);
+ return pipeline.id;
 }
 int helix_update(uint32_t id,const void *data,int bytes){
  sg_buffer buffer={id};int slot=id&0xffff;
@@ -178,9 +223,10 @@ int helix_update(uint32_t id,const void *data,int bytes){
  frame_uploaded_bytes+=bytes;
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
 }
-/* An app's program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>"
-   a uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot, "s <slot> <v|f> <name>" a
-   shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a cube and its sampler. */
+/* A program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>" a
+   uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot, "s <slot> <v|f> <name>" a
+   shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a cube and its sampler, "d <slot> <v|f> <name>" a data
+   texture (RGBA32F, unfiltered) and its nonfiltering sampler. */
 uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  sg_shader_desc desc={.vertex_func={.source=vs,.entry="main"},.fragment_func={.source=fs,.entry="main"},.label="app_shader"};
  static char names[32][128];int name=0,blocks=0,textures=0,sizes[MAX_BLOCKS]={0};
@@ -196,12 +242,12 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
    desc.uniform_blocks[slot].size=(uint32_t)size;desc.uniform_blocks[slot].glsl_uniforms[0].type=SG_UNIFORMTYPE_FLOAT4;
    desc.uniform_blocks[slot].glsl_uniforms[0].array_count=(uint16_t)count;desc.uniform_blocks[slot].glsl_uniforms[0].glsl_name=names[name++];
    sizes[slot]=size;if(slot+1>blocks)blocks=slot+1;
-  }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s'||kind=='c')){
+  }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s'||kind=='c'||kind=='d')){
    if(slot<0||slot>=MAX_TEXTURES)return 0;
    const sg_shader_stage st=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;const int shadow=kind=='s';
    desc.views[slot].texture=(sg_shader_texture_view){.stage=st,.image_type=shadow?SG_IMAGETYPE_ARRAY:kind=='c'?SG_IMAGETYPE_CUBE:SG_IMAGETYPE_2D,
-    .sample_type=shadow?SG_IMAGESAMPLETYPE_DEPTH:SG_IMAGESAMPLETYPE_FLOAT};
-   desc.samplers[slot]=(sg_shader_sampler){.stage=st,.sampler_type=shadow?SG_SAMPLERTYPE_COMPARISON:SG_SAMPLERTYPE_FILTERING};
+    .sample_type=shadow?SG_IMAGESAMPLETYPE_DEPTH:kind=='d'?SG_IMAGESAMPLETYPE_UNFILTERABLE_FLOAT:SG_IMAGESAMPLETYPE_FLOAT};
+   desc.samplers[slot]=(sg_shader_sampler){.stage=st,.sampler_type=shadow?SG_SAMPLERTYPE_COMPARISON:kind=='d'?SG_SAMPLERTYPE_NONFILTERING:SG_SAMPLERTYPE_FILTERING};
    desc.texture_sampler_pairs[slot]=(sg_shader_texture_sampler_pair){.stage=st,.view_slot=(uint8_t)slot,.sampler_slot=(uint8_t)slot,.glsl_name=names[name++]};
    textures|=1<<slot;
   }else return 0;
@@ -211,59 +257,6 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  if(sg_query_shader_state(shader)!=SG_RESOURCESTATE_VALID||(shader.id&0xffff)>=256){sg_destroy_shader(shader);return 0;}
  int slot=shader.id&0xffff;programs[slot].blocks=blocks;programs[slot].texture_mask=textures;memcpy(programs[slot].block_size,sizes,sizeof sizes);
  return shader.id;
-}
-/* What a pipeline's program binds: its uniform blocks' sizes by slot (0 for one it lacks) and its texture slots (a bit each); the framework's
-   lit program's, or an app's. */
-static void program_of(int pslot,int *blocks,int *sizes,int *mask){
- if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==5){*blocks=1;sizes[0]=HELIX_SPRITE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
- if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==6){*blocks=1;sizes[0]=HELIX_PARTICLE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
- if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==7){*blocks=1;sizes[0]=HELIX_DEPTH3D_VERTEX_UNIFORM_BYTES;*mask=0;return;}
- if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==8){*blocks=2;sizes[0]=HELIX_BACKGROUND3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_BACKGROUND3D_FRAGMENT_UNIFORM_BYTES;*mask=1;return;}
- if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=31;return;}
- const int s=pipeline_shaders[pslot]&0xffff;*blocks=programs[s].blocks;memcpy(sizes,programs[s].block_size,sizeof programs[s].block_size);*mask=programs[s].texture_mask;
-}
-/* Binds textures (by slot, each of the program's set) into bindings, and checks uniforms: the blocks' bytes one after another by slot, each its
-   declared size. 0 for a mismatch. */
-static int bind_program(int pslot,sg_bindings *bindings,const uint32_t *textures,const int *samplings,int texture_count,int uniform_bytes){
- int blocks,sizes[MAX_BLOCKS]={0},mask,total=0;program_of(pslot,&blocks,sizes,&mask);
- for(int i=0;i<blocks;i++)total+=sizes[i];
- if(total!=uniform_bytes||texture_count>MAX_TEXTURES||(mask>>texture_count))return 0;
- for(int i=0;i<texture_count;i++){
-  if(!(mask&1<<i))continue;
-  if(sg_query_view_state((sg_view){textures[i]})!=SG_RESOURCESTATE_VALID)return 0;
-  /* A shadow map is read through the comparison sampler. */
-  const int vslot=textures[i]&0xffff;
-  bindings->views[i]=(sg_view){textures[i]};bindings->samplers[i]=vslot<256&&shadow_maps[vslot].image.id?comparison:sampler_of(samplings[i]);
- }
- return 1;
-}
-/* Applies the uniform blocks after the pipeline and bindings: block 0 in a flipped pass is turned over here (a clip scale's y, or a
-   view-projection's y row). */
-static void apply_blocks(int pslot,const void *uniforms){
- int blocks,sizes[MAX_BLOCKS]={0},mask;program_of(pslot,&blocks,sizes,&mask);
- const char *at=uniforms;
- for(int i=0;i<blocks;i++){
-  if(!sizes[i])continue;
-  if(i==0&&(pipeline_kinds[pslot]==4||pipeline_kinds[pslot]==8)){float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};sg_apply_uniforms(0,&SG_RANGE(clip));}
-  else if(i==0&&flipped){
-   /* The block's own size: up to a particle block's 528 bytes (a framework block's largest), or an app's. */
-   float copy[256];if((size_t)sizes[0]>sizeof copy)return;memcpy(copy,at,(size_t)sizes[0]);
-   copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];sg_apply_uniforms(0,&(sg_range){copy,(size_t)sizes[0]});
-  }else sg_apply_uniforms(i,&(sg_range){at,(size_t)sizes[i]});
-  at+=sizes[i];
- }
-}
-/* A Screen or Background3D pipeline's draw: one triangle over the viewport, the program's textures and samplings by slot, its uniform blocks' bytes one after
-   another by slot, block 0 (the clip scale) set here. */
-int helix_draw_screen(uint32_t p,const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
- const int pslot=p&0xffff;
- if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||(pipeline_kinds[pslot]!=4&&pipeline_kinds[pslot]!=8))return 0;
- sg_bindings bindings={0};
- if(!bind_program(pslot,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
- sg_apply_pipeline((sg_pipeline){p});
- sg_apply_bindings(&bindings);
- apply_blocks(pslot,uniforms);
- sg_draw(0,3,1);return 1;
 }
 /* A render target: a color image (8 bits a channel) sampled through the returned texture view, with a depth image for its passes. */
 uint32_t helix_target(int w,int h){
@@ -330,11 +323,6 @@ int helix_viewport(int x,int y,int w,int h){
  /* From the bottom left, as asked; a flipped pass's rows are upside down. */
  sg_apply_viewport(x,flipped?frame_height-y-h:y,w,h,false);return 1;
 }
-/* A 3D kind's view-projection, its y row negated in a flipped pass. */
-static const void *view_projection(const void *uniforms,float *copy){
- if(!flipped)return uniforms;
- memcpy(copy,uniforms,64);copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];return copy;
-}
 /* The sampler for a Sampling value: linear (through the mipmaps, when there are any) or nearest, and each axis's wrap. */
 static sg_sampler sampler_of(int sampling){
  static const sg_wrap wraps[3]={SG_WRAP_CLAMP_TO_EDGE,SG_WRAP_REPEAT,SG_WRAP_MIRRORED_REPEAT};
@@ -346,54 +334,82 @@ static sg_sampler sampler_of(int sampling){
  }
  return samplers[sampling];
 }
-int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int first_vertex,const void *uniforms,int uniform_bytes){
- int slot=b&0xffff,pslot=p&0xffff;
- if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
- const int kind=pipeline_kinds[pslot],stride=kind?HELIX_COLOR3D_STRIDE:HELIX_SPRITE2D_STRIDE,group=kind==2?2:3;
- if(kind>=3)return 0; /* lit models and sprites draw with helix_draw_mesh, screen effects with helix_draw_screen */
- if(vertices<=0||vertices%group||first_vertex<0||first_vertex%group||vertices>used[slot]/stride||first_vertex>used[slot]/stride-vertices)return 0;
- if(kind==0){
-  if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
-  /* Its clip space's y scale: -1 in a flipped pass. */
-  const float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};
-  sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]=current_buffer(b),.views[HELIX_SPRITE2D_ATLAS_VIEW_SLOT]={t},.samplers[HELIX_SPRITE2D_ATLAS_SAMPLER_SLOT]=sampler_of(sampling)});
-  sg_apply_uniforms(HELIX_SPRITE2D_VERTEX_UNIFORM_SLOT,&SG_RANGE(clip));
- }else{
-  if(!uniforms||uniform_bytes!=HELIX_COLOR3D_VERTEX_UNIFORM_BYTES)return 0;
-  float copy[16];
-  sg_apply_pipeline((sg_pipeline){p});
-  sg_apply_bindings(&(sg_bindings){.vertex_buffers[0]=current_buffer(b)});
-  sg_apply_uniforms(HELIX_COLOR3D_VERTEX_UNIFORM_SLOT,&(sg_range){view_projection(uniforms,copy),(size_t)uniform_bytes});
+/* Binds textures (by slot, each of the program's set) into bindings, and checks uniforms: the blocks' bytes one after another by slot, each its
+   declared size. A shadow map is read through the comparison sampler, a data texture (its latest write) through the nearest one. 0 for a
+   mismatch. */
+static int bind_program(int shader,sg_bindings *bindings,const uint32_t *textures,const int *samplings,int texture_count,int uniform_bytes){
+ int total=0;
+ for(int i=0;i<programs[shader].blocks;i++)total+=programs[shader].block_size[i];
+ const int mask=programs[shader].texture_mask;
+ if(total!=uniform_bytes||texture_count>MAX_TEXTURES||(mask>>texture_count))return 0;
+ for(int i=0;i<texture_count;i++){
+  if(!(mask&1<<i))continue;
+  if(sg_query_view_state((sg_view){textures[i]})!=SG_RESOURCESTATE_VALID)return 0;
+  const int vslot=textures[i]&0xffff,data=vslot<256&&data_textures[vslot].image.id;
+  /* A data texture not yet written this frame gets its contents first: sokol keeps them a frame. */
+  if(data){if(!data_textures[vslot].written)write_data(vslot);data_textures[vslot].bound=1;}
+  bindings->views[i]=current_view(textures[i]);
+  bindings->samplers[i]=vslot<256&&shadow_maps[vslot].image.id?comparison:sampler_of(data?0:samplings[i]);
  }
- bound[slot]=1;
- sg_draw(first_vertex,vertices,1);return 1;
+ return 1;
 }
-/* A lit pipeline's indexed, instanced draw: index_count indices of `indices` into `vertices`, instance_count instances from first_instance of
-   `instances`' upload this frame, the program's textures and samplings by slot and its uniform blocks' bytes one after another by slot. */
-int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,
-                    const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
- const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
- if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]<3||pipeline_kinds[pslot]==4||pipeline_kinds[pslot]==8)return 0;
- const int kind=pipeline_kinds[pslot];
- const int record=kind==5?HELIX_SPRITE3D_INSTANCE_STRIDE:kind==6?HELIX_PARTICLE3D_INSTANCE_STRIDE:kind==7?HELIX_DEPTH3D_INSTANCE_STRIDE:HELIX_LIT3D_INSTANCE_STRIDE;
- if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
- if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot])return 0;
- if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
-    (long)(first_instance+instance_count)*record>used[nslot])return 0;
- sg_bindings bindings={.vertex_buffers={{vertices},current_buffer(instances)},.vertex_buffer_offsets[1]=first_instance*record,.index_buffer={indices}};
- if(!bind_program(pslot,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
+/* Applies the program's uniform blocks after the pipeline and bindings; block 0 as the pipeline's clip flip says: a clip scale written here,
+   or a view-projection's y row negated in a flipped pass. */
+static void apply_blocks(int shader,int flip,const void *uniforms){
+ const char *at=uniforms;
+ for(int i=0;i<programs[shader].blocks;i++){
+  const int size=programs[shader].block_size[i];
+  if(!size)continue;
+  if(i==0&&flip==1){float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};sg_apply_uniforms(0,&SG_RANGE(clip));}
+  else if(i==0&&flip==2&&flipped){
+   float copy[256];if((size_t)size>sizeof copy)return;memcpy(copy,at,(size_t)size);
+   copy[1]=-copy[1];copy[5]=-copy[5];copy[9]=-copy[9];copy[13]=-copy[13];sg_apply_uniforms(0,&(sg_range){copy,(size_t)size});
+  }else sg_apply_uniforms(i,&(sg_range){at,(size_t)size});
+  at+=size;
+ }
+}
+/* A draw through pipeline p: count vertices from first (or indices, for an indexed pipeline, from first of `indices`) as instance_count
+   instances from record first_instance of its instanced buffers; buffers[i] its buffer i (0 for one it doesn't read), the program's textures
+   and samplings by slot, its uniform blocks' bytes one after another by slot. 0, drawing nothing, for anything invalid. */
+int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
+               const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
+ const int pslot=p&0xffff;
+ if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID)return 0;
+ const int shader=pipeline_info[pslot].shader&0xffff,group=pipeline_info[pslot].lines?2:3,indexed=pipeline_info[pslot].indexed;
+ if(first<0||count<=0||count%group||first_instance<0||instance_count<=0||buffer_count<pipeline_info[pslot].buffer_count)return 0;
+ sg_bindings bindings={0};
+ if(indexed){
+  const int islot=indices&0xffff;
+  if(islot>=256||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot]||(long)(first+count)*4>used[islot])return 0;
+  bindings.index_buffer=(sg_buffer){indices};
+ }
+ for(int b=0;b<pipeline_info[pslot].buffer_count;b++){
+  if(!pipeline_info[pslot].read[b])continue;
+  const int slot=buffers[b]&0xffff,stride=pipeline_info[pslot].stride[b],instanced=pipeline_info[pslot].instanced[b];
+  if(slot>=256||sg_query_buffer_state((sg_buffer){buffers[b]})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
+  if(instanced&&(long)(first_instance+instance_count)*stride>used[slot])return 0;
+  if(!instanced&&!indexed&&(long)(first+count)*stride>used[slot])return 0;
+  bindings.vertex_buffers[b]=current_buffer(buffers[b]);
+  if(instanced)bindings.vertex_buffer_offsets[b]=first_instance*stride;
+ }
+ if(!bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
  /* Flipped, the front faces wind the other way: the pipeline's twin. */
  sg_apply_pipeline(flipped&&flipped_pipelines[pslot].id?flipped_pipelines[pslot]:(sg_pipeline){p});
  sg_apply_bindings(&bindings);
- apply_blocks(pslot,uniforms);
- bound[nslot]=1;
- sg_draw(0,index_count,instance_count);return 1;
+ apply_blocks(shader,pipeline_info[pslot].flip,uniforms);
+ for(int b=0;b<pipeline_info[pslot].buffer_count;b++)if(pipeline_info[pslot].read[b])bound[buffers[b]&0xffff]=1;
+ sg_draw(first,count,instance_count);return 1;
 }
 void helix_end(void){
  if(active!=1)abort();sg_end_pass();sg_commit();active=0;if(driver_audit_reset)driver_audit_reset();frame_uploaded_bytes=0;
  /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
- for(int i=0;i<256;i++)if(vertex_reserved[i]){used[i]=0;renamed[i]=bound[i]=0;}
+ for(int i=0;i<256;i++){if(vertex_reserved[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
+}
+/* Destroys a pipeline, its twin and its record. */
+static void destroy_pipeline(uint32_t id){
+ const int slot=id&0xffff;
+ sg_destroy_pipeline((sg_pipeline){id});
+ if(slot<256){if(flipped_pipelines[slot].id)sg_destroy_pipeline(flipped_pipelines[slot]);flipped_pipelines[slot].id=0;memset(&pipeline_info[slot],0,sizeof pipeline_info[slot]);}
 }
 int helix_destroy(int kind,uint32_t id){
  int slot=id&0xffff;
@@ -408,13 +424,19 @@ int helix_destroy(int kind,uint32_t id){
    for(int i=0;i<shadow_maps[slot].count;i++)sg_destroy_view(shadow_maps[slot].layers[i]);
    memset(&shadow_maps[slot],0,sizeof shadow_maps[slot]);
   }
+  if(slot<256&&data_textures[slot].image.id){
+   for(int i=0;i<MAX_RENAMES;i++)if(data_textures[slot].extra_images[i].id){sg_destroy_view(data_textures[slot].extra_views[i]);sg_destroy_image(data_textures[slot].extra_images[i]);}
+   free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
+  }
   if(slot<256&&targets[slot].color.id){sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);memset(&targets[slot],0,sizeof targets[slot]);}
   return 1;
  }
- if(kind==3&&sg_query_shader_state((sg_shader){id})==SG_RESOURCESTATE_VALID){sg_destroy_shader((sg_shader){id});return 1;}
- if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){
-  sg_destroy_pipeline((sg_pipeline){id});if(slot<256&&flipped_pipelines[slot].id){sg_destroy_pipeline(flipped_pipelines[slot]);flipped_pipelines[slot].id=0;}return 1;
+ if(kind==3&&sg_query_shader_state((sg_shader){id})==SG_RESOURCESTATE_VALID){
+  /* Its pipelines (and their twins) go first. */
+  for(int i=0;i<256;i++)if(pipeline_info[i].id&&pipeline_info[i].shader==id)destroy_pipeline(pipeline_info[i].id);
+  sg_destroy_shader((sg_shader){id});return 1;
  }
+ if(kind==2&&sg_query_pipeline_state((sg_pipeline){id})==SG_RESOURCESTATE_VALID){destroy_pipeline(id);return 1;}
  return 0;
 }
 void helix_capture(const char *path){

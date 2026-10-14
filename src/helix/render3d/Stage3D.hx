@@ -37,8 +37,7 @@ class Stage3D {
 	var root = Node.group();
 	var ambientColor = 0xffffffff;
 	var ambientIntensity = 0.;
-	// The framework's lit pipelines, by variant: blended + 2 double sided + 4 mirrored (front faces clockwise).
-	var pipelines:Array<Int>;
+	var pipelines:helix.graphics.Pipelines;
 	var white:Texture2D;
 	var flat:Texture2D;
 	var capacity = 1024;
@@ -64,15 +63,12 @@ class Stage3D {
 	var time = 0.;
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
-	// Apps' surface shaders' pipelines, by the framework's variants, and the shader version they were made for.
-	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
 	var stackChanged:Array<Bool> = [];
 	// Shadows: the walk gathering casters rather than drawing; the casters (every model that casts, in view or not) and those of one layer.
 	var gathering = false;
 	var casters:Array<Caster> = [];
 	var casterCount = 0;
 	var layerCasters:Array<Caster> = [];
-	var depthPipeline:Int;
 	var casterCapacity = 256;
 	var casterBuffer:Int;
 	var casterRecords:Bytes;
@@ -102,7 +98,6 @@ class Stage3D {
 	// A black cube that stands in when there's no environment, and the BRDF table, made with the first environment.
 	var noEnvironment:Int;
 	var brdf:Null<Texture2D>;
-	var backgroundPipeline:Int;
 	var backgroundUniforms = [
 		Bytes.alloc(Background3DLayout.vertexUniformBytes),
 		Bytes.alloc(Background3DLayout.fragmentUniformBytes)
@@ -111,10 +106,7 @@ class Stage3D {
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		pipelines = [
-			for (i in 0...8)
-				gpu.createPipeline(Lit3D, i & 1 != 0 ? Alpha : Opaque, 0, i & 2 != 0, i & 4 != 0)
-		];
+		pipelines = helix.graphics.Pipelines.of(gpu);
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
 		white = Texture2D.fromRgba(gpu, 1, 1, pixel);
@@ -128,7 +120,6 @@ class Stage3D {
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
 		sprites = new Sprites3D(gpu);
-		depthPipeline = gpu.createPipeline(Depth3D, Opaque);
 		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
 		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
 		noShadows = gpu.createShadowMap(1, 1);
@@ -136,7 +127,6 @@ class Stage3D {
 		for (face in 0...6)
 			black.set(face * 4 + 3, 255);
 		noEnvironment = gpu.createCubeTexture(1, [black], Rgba8);
-		backgroundPipeline = gpu.createPipeline(Background3D, Opaque);
 	}
 
 	/** The node everything on the stage hangs from. */
@@ -473,8 +463,8 @@ class Stage3D {
 				var last = i, mesh = layerCasters[i].mesh;
 				while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
 					last++;
-				gpu.drawMesh(depthPipeline, mesh.getVertexBuffer(gpu), mesh.getIndexBuffer(gpu), mesh.getIndexCount(), casterBuffer, i, last - i + 1, [], [],
-					uniforms);
+				gpu.draw(pipelines.depth3d(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.getIndexCount(), i, last - i + 1,
+					[], [], uniforms);
 				shadowDraws++;
 				i = last + 1;
 			}
@@ -558,7 +548,7 @@ class Stage3D {
 		u.setFloat(76, Math.sin(environmentRotation));
 		u.setFloat(80, tonemap);
 		u.setFloat(84, Math.pow(2, exposure));
-		gpu.drawScreen(backgroundPipeline, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
+		gpu.draw(pipelines.background3d(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
 	}
 
 	// The tree depth first, each node's world matrix brought up to date on the way down; hidden nodes skip their children.
@@ -862,8 +852,8 @@ class Stage3D {
 			cube = environment != null ? environment.getLightingTexture() : noEnvironment,
 			table = brdf != null ? brdf.getHandle() : white.getHandle();
 		if (shader == null) {
-			gpu.drawMesh(pipelines[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(), instanceBuffer,
-				first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
+			gpu.draw(pipelines.lit3d(blendOf(item), item.material.isDoubleSided(), item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
+				item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
 					base.getSampling(),
 					normal.getSampling(),
 					Sampling.NEAREST,
@@ -900,46 +890,21 @@ class Stage3D {
 			textures.push(texture.getHandle());
 			samplings.push(texture.getSampling());
 		}
-		gpu.drawMesh(surfacePipeline(shader)[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(),
-			instanceBuffer, first, runCount, textures, samplings, blocks);
+		gpu.draw(pipelines.surface(shader.getHandle(), blendOf(item), item.material.isDoubleSided(), item.mirrored),
+			[item.mesh.getVertexBuffer(gpu), instanceBuffer], item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, textures,
+			samplings, blocks);
 		draws++;
 	}
 
-	// Which of a program's pipelines draws item: blended or not, double sided or not, mirrored or not.
-	static inline function variant(item:Item):Int
-		return (item.blended ? 1 : 0) + (item.material.isDoubleSided() ? 2 : 0) + (item.mirrored ? 4 : 0);
+	// How item's colors meet what's behind: blended (see-through) or opaque.
+	static inline function blendOf(item:Item):helix.graphics.BlendMode
+		return item.blended ? Alpha : Opaque;
 
-	// shader's pipelines, made again after the shader reloads.
-	function surfacePipeline(shader:helix.graphics.Shader):Array<Int> {
-		var made = surfacePipelines.get(shader);
-		if (made == null || made.version != shader.getVersion()) {
-			if (made != null)
-				for (p in made.pipelines)
-					gpu.destroyPipeline(p);
-			made = {
-				pipelines: [
-					for (i in 0...8)
-						gpu.createPipeline(Lit3D, i & 1 != 0 ? Alpha : Opaque, shader.getHandle(), i & 2 != 0, i & 4 != 0)
-				],
-				version: shader.getVersion()
-			};
-			surfacePipelines.set(shader, made);
-		}
-		return made.pipelines;
-	}
-
-	/** Frees the stage's own GPU objects (its pipelines, instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and
-		environments are their owners' to free. */
+	/** Frees the stage's own GPU objects (its instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and
+		environments are their owners' to free, and the pipelines the GPU's (Pipelines). */
 	public function destroy():Void {
-		for (made in surfacePipelines)
-			for (p in made.pipelines)
-				gpu.destroyPipeline(p);
-		surfacePipelines.clear();
-		for (p in pipelines)
-			gpu.destroyPipeline(p);
 		sprites.destroy();
 		gpu.destroyBuffer(instanceBuffer);
-		gpu.destroyPipeline(depthPipeline);
 		gpu.destroyBuffer(casterBuffer);
 		gpu.destroyTexture(noShadows);
 		if (shadowMap != 0)
@@ -947,7 +912,6 @@ class Stage3D {
 		white.destroy(gpu);
 		flat.destroy(gpu);
 		gpu.destroyTexture(noEnvironment);
-		gpu.destroyPipeline(backgroundPipeline);
 		if (brdf != null)
 			brdf.destroy(gpu);
 	}

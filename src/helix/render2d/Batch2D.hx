@@ -2,7 +2,7 @@ package helix.render2d;
 
 import helix.graphics.IGraphics;
 import helix.graphics.BlendMode;
-import helix.graphics.PipelineKind;
+import helix.graphics.Pipelines;
 import helix.graphics.Sampling;
 import helix.render3d.Node.SpriteAlpha;
 import haxe.io.Bytes;
@@ -31,7 +31,9 @@ class Batch2D {
 	var capacity:Int;
 	var data:Bytes;
 	var buffer:Int;
-	var pipeline:Int;
+	var pipelines:Pipelines;
+	// Block 0 of the sprite program, its clip scale, which the adapter writes.
+	var clip = Bytes.alloc(16);
 	var camera:Camera2D;
 	var texture:Texture2D;
 	var runStart = 0;
@@ -45,8 +47,8 @@ class Batch2D {
 		count:Int,
 		uniforms:Bytes
 	}>> = [];
-	// Particles, made when first drawn: their pipelines (opaque, alpha, additive), quad, and the frame's records in one upload.
-	var particlePipelines:Null<Array<Int>>;
+	// Particles, made when first drawn: their quad, and the frame's records in one upload.
+	var particlesReady = false;
 	var particleCorners = 0;
 	var particleIndices = 0;
 	var particleBuffer = 0;
@@ -71,7 +73,7 @@ class Batch2D {
 		this.capacity = capacity;
 		data = Bytes.alloc(capacity * Sprite2DLayout.stride);
 		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
-		pipeline = gpu.createPipeline(Sprite2D, Alpha);
+		pipelines = Pipelines.of(gpu);
 		font = Font2D.builtIn(gpu);
 		texture = font.getTexture();
 	}
@@ -148,10 +150,10 @@ class Batch2D {
 					case Add: 2;
 					case _: 0;
 				};
-				gpu.drawMesh(particlePipelines[phase], particleCorners, particleIndices, 6, particleBuffer, e.first, e.count, [runs[i]], [runSamplings[run]],
-					[e.uniforms]);
+				gpu.draw(pipelines.particle3d(cast phase), [particleCorners, particleBuffer], particleIndices, 0, 6, e.first, e.count, [runs[i]],
+					[runSamplings[run]], [e.uniforms]);
 			} else
-				gpu.draw(pipeline, buffer, runs[i], runSamplings[run], runs[i + 2], runs[i + 1]);
+				gpu.draw(pipelines.sprite2d(Alpha), [buffer], 0, runs[i + 1], runs[i + 2], 0, 1, [runs[i]], [runSamplings[run]], [clip]);
 			draws++;
 			i += 3;
 		}
@@ -266,12 +268,8 @@ class Batch2D {
 		if (!emitter.isDrawable())
 			return;
 		closeRun();
-		if (particlePipelines == null) {
-			particlePipelines = [
-				gpu.createPipeline(Particle3D, Opaque),
-				gpu.createPipeline(Particle3D, Alpha),
-				gpu.createPipeline(Particle3D, Additive)
-			];
+		if (!particlesReady) {
+			particlesReady = true;
 			var quad = Bytes.alloc(4 * Particle3DLayout.stride), at = 0;
 			for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
 				quad.setFloat(at, c);
@@ -468,13 +466,10 @@ class Batch2D {
 		}
 	}
 
-	/** Frees the buffer, pipeline and font made by new; the batch is unusable after. */
+	/** Frees the buffers and font made by new; the batch is unusable after. */
 	public function destroy():Void {
-		gpu.destroyPipeline(pipeline);
 		gpu.destroyBuffer(buffer);
-		if (particlePipelines != null) {
-			for (p in particlePipelines)
-				gpu.destroyPipeline(p);
+		if (particlesReady) {
 			gpu.destroyBuffer(particleCorners);
 			gpu.destroyBuffer(particleIndices);
 		}

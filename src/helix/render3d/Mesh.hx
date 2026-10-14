@@ -4,7 +4,8 @@ import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 
 /** Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DLayout's packing; the tangent's w its
-	bitangent's sign, glTF's convention), indexed, with the box around them. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
+	bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights
+	(Skinned3DLayout's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
 	counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes. */
 class Mesh {
 	static var nextId = 1;
@@ -24,6 +25,8 @@ class Mesh {
 	var gpu:IGraphics;
 	var vertexBuffer = 0;
 	var indexBuffer = 0;
+	var skinData:Null<Bytes>;
+	var skinBuffer = 0;
 
 	/** A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices.
 		Throws for a count of 0 or less, too few bytes, or an index past the vertices. */
@@ -97,6 +100,21 @@ class Mesh {
 	public function getMaxZ():Float
 		return hiZ;
 
+	/** Whether its vertices follow joints (a skin's): Model nodes showing it need one (Node.getSkin). */
+	public function isSkinned():Bool
+		return skinData != null;
+
+	/** A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights,
+		summing to 1. Null for one that isn't skinned. */
+	public function getSkinData():Null<Bytes>
+		return skinData;
+
+	/** A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned. */
+	public function getSkinBuffer(gpu:IGraphics):Int {
+		upload(gpu);
+		return skinBuffer;
+	}
+
 	/** Its static vertex buffer on gpu, made the first time it's asked for. */
 	public function getVertexBuffer(gpu:IGraphics):Int {
 		upload(gpu);
@@ -117,6 +135,8 @@ class Mesh {
 		this.gpu = gpu;
 		vertexBuffer = gpu.createStaticBuffer(vertexData, vertexCount * Lit3DLayout.stride, false);
 		indexBuffer = gpu.createStaticBuffer(indexData, indexCount * 4, true);
+		if (skinData != null)
+			skinBuffer = gpu.createStaticBuffer(skinData, vertexCount * Skinned3DLayout.skinStride, false);
 	}
 
 	/** Frees its buffers, if it was uploaded; drawing it again uploads it again. */
@@ -125,15 +145,18 @@ class Mesh {
 			return;
 		gpu.destroyBuffer(vertexBuffer);
 		gpu.destroyBuffer(indexBuffer);
-		vertexBuffer = indexBuffer = 0;
+		if (skinBuffer != 0)
+			gpu.destroyBuffer(skinBuffer);
+		vertexBuffer = indexBuffer = skinBuffer = 0;
 		gpu = null;
 	}
 
 	/** A mesh from arrays: positions (x, y, z each), normals (one a position, unit length; null to work them out from the triangles), texture
 		coordinates (u, v each; null for zeros), tangents (x, y, z, w each, w the bitangent's sign; null to work them out) and indices (whole
-		triangles; null for each three positions a triangle, in order). Throws for arrays that don't agree. */
+		triangles; null for each three positions a triangle, in order); skinned when joints (four joint indices a vertex) and weights (their four
+		weights, normalized here) are given. Throws for arrays that don't agree. */
 	public static function fromArrays(positions:Array<Float>, normals:Null<Array<Float>>, uvs:Null<Array<Float>>, tangents:Null<Array<Float>>,
-			indices:Null<Array<Int>>):Mesh {
+			indices:Null<Array<Int>>, ?joints:Array<Float>, ?weights:Array<Float>):Mesh {
 		var count = Std.int(positions.length / 3);
 		if (count == 0 || positions.length != count * 3 || normals != null && normals.length != count * 3 || uvs != null && uvs.length != count * 2
 			|| tangents != null && tangents.length != count * 4)
@@ -153,7 +176,26 @@ class Mesh {
 		b.raw(order);
 		if (normals == null)
 			b.smoothNormals();
-		return b.build(tangents);
+		var mesh = b.build(tangents);
+		if (joints != null || weights != null) {
+			if (joints == null || weights == null || joints.length != count * 4 || weights.length != count * 4)
+				throw "Mesh arrays disagree";
+			var skin = Bytes.alloc(count * Skinned3DLayout.skinStride);
+			for (i in 0...count) {
+				var at = i * Skinned3DLayout.skinStride, sum = 0.;
+				for (k in 0...4)
+					sum += weights[i * 4 + k];
+				for (k in 0...4) {
+					if (joints[i * 4 + k] < 0)
+						throw "A negative joint";
+					skin.setFloat(at + Skinned3DLayout.jointsOffset + k * 4, joints[i * 4 + k]);
+					// Weights summing to 0 (an unweighted vertex) follow the first joint.
+					skin.setFloat(at + Skinned3DLayout.weightsOffset + k * 4, sum > 0 ? weights[i * 4 + k] / sum : k == 0 ? 1 : 0);
+				}
+			}
+			mesh.skinData = skin;
+		}
+		return mesh;
 	}
 
 	/** Flat in x and z, facing +y, width along x and length along z, subdivisions (0..256) more cells each way; texture coordinates span it

@@ -1,15 +1,15 @@
 """Parse sokol-shdc bare_yaml with PyYAML; generate the framework shaders' fixed ABI.
 
 shaders.json lists each program: its packed vertex attributes (order and roles; "instance": true puts one in the
-second buffer, stepped once an instance), the textures it samples (each a role and its texture's name in the
+second buffer, stepped once an instance; "skin": true in the third, a skinned mesh's joints and weights beside its vertices), the textures it samples (each a role and its texture's name in the
 GLSL, each with a sampler of its own; "depth_array": true for a layered depth texture read through a comparison
-sampler, a shadow map; "cube": true for a cubemap), and its uniform blocks (at most one a stage, each its bytes). A program reading only some
-of another's vertices gives each buffer's "stride" (and "offset" on an attribute that doesn't follow the last); one drawing a triangle from
+sampler, a shadow map; "cube": true for a cubemap; "data": true for a float texture read unfiltered with texelFetch; "stage": "vertex"
+for one the vertex stage reads), and its uniform blocks (at most one a stage, each its bytes). A program reading only some
+of another's vertices gives each buffer's "stride" ("instanceStride", "skinStride") (and "offset" on an attribute that doesn't follow the last); one drawing a triangle from
 its vertex index alone has no attributes. Shader reflection describes inputs
 and bindings, not CPU packing, so the manifest supplies that and the reflection must agree with it.
-Unsupported shapes fail closed. No generated C/GLSL text is inspected to discover bindings or filenames.
-Every program's headers are compiled into one C file, so its stages, uniform blocks and samplers need names of
-their own: prefix them with the program's name (color3d_vs, color3d_params).
+Unsupported shapes fail closed. No generated GLSL text is inspected to discover bindings or filenames. The
+adapters build every program from the generated sources and bindings at run time, as they build an app's.
 """
 import json
 from pathlib import Path
@@ -85,20 +85,20 @@ def normalize(program, spec):
         require(ident not in by_name and index not in slots, 'Duplicate attribute name or slot')
         require(attr['base_type'] == 'Float', 'Only float vertex attributes are supported')
         by_name[ident] = attr; slots.add(index)
-    packed = []; offsets = [0, 0]
+    packed = []; offsets = [0, 0, 0]
     for attribute in spec['attributes']:
         attr = by_name.get(attribute['name'])
         require(attr is not None and attr['type'] == attribute['type'], f'Vertex schema mismatch: {attribute["role"]}')
         components = COMPONENTS[attribute['type']]
-        buffer = 1 if attribute.get('instance') else 0
+        buffer = 1 if attribute.get('instance') else 2 if attribute.get('skin') else 0
         offset = attribute.get('offset', offsets[buffer])
         require(offset >= offsets[buffer], f'Overlapping attribute: {attribute["role"]}')
         packed.append({'role': attribute['role'], 'name': attribute['name'], 'type': attribute['type'], 'buffer': buffer, 'slot': attr['slot'],
                        'components': components, 'offset': offset})
         offsets[buffer] = offset + components * 4
-    strides = [spec.get('stride', offsets[0]), spec.get('instanceStride', offsets[1])]
-    require(strides[0] >= offsets[0] and strides[1] >= offsets[1], 'A stride shorter than its attributes')
-    contract = {'program': program['name'], 'stride': strides[0], 'instanceStride': strides[1], 'attributes': packed, 'textures': [], 'uniforms': []}
+    strides = [spec.get('stride', offsets[0]), spec.get('instanceStride', offsets[1]), spec.get('skinStride', offsets[2])]
+    require(all(strides[i] >= offsets[i] for i in range(3)), 'A stride shorter than its attributes')
+    contract = {'program': program['name'], 'stride': strides[0], 'instanceStride': strides[1], 'skinStride': strides[2], 'attributes': packed, 'textures': [], 'uniforms': []}
     wanted = spec['textures']
     for key in ['views', 'samplers', 'texture_sampler_pairs']:
         require(isinstance(program.get(key, []), list) and len(program.get(key, [])) == len(wanted), f'Expected {len(wanted)} {key} binding(s)')
@@ -108,9 +108,11 @@ def normalize(program, spec):
         require(len(views) == 1, f'Expected the texture {want["name"]}')
         fields(views[0], ['texture']); texture = views[0]['texture']
         fields(texture, ['slot', 'stage', 'name', 'multisampled', 'type', 'sample_type'])
-        depth = want.get('depth_array', False); cube = want.get('cube', False)
-        require(texture['stage'] == 'fragment' and texture['multisampled'] is False and
-                (texture['type'], texture['sample_type']) == (('array', 'depth') if depth else ('cube', 'float') if cube else ('2d', 'float')),
+        depth = want.get('depth_array', False); cube = want.get('cube', False); data = want.get('data', False)
+        stage = want.get('stage', 'fragment')
+        require(texture['stage'] == stage and texture['multisampled'] is False and
+                (texture['type'], texture['sample_type']) == (('array', 'depth') if depth else ('cube', 'float') if cube else
+                                                              ('2d', 'unfilterable_float') if data else ('2d', 'float')),
                 'Unsupported texture')
         slot(texture['slot'], 32)
         pairs = [p for p in program['texture_sampler_pairs'] if isinstance(p, dict) and p.get('view_name') == want['name']]
@@ -121,12 +123,13 @@ def normalize(program, spec):
         require(len(samplers) == 1, f'Expected the sampler {pair["sampler_name"]}')
         sampler = samplers[0]
         fields(sampler, ['slot', 'stage', 'name', 'sampler_type'])
-        require(sampler['stage'] == 'fragment' and sampler['sampler_type'] == ('comparison' if depth else 'filtering'), 'Unsupported sampler')
+        require(sampler['stage'] == stage and sampler['sampler_type'] == ('comparison' if depth else 'nonfiltering' if data else 'filtering'),
+                'Unsupported sampler')
         name(sampler['name']); slot(sampler['slot'], 16)
-        require(pair['stage'] == 'fragment' and pair['view_slot'] == texture['slot'] and pair['sampler_slot'] == sampler['slot'],
+        require(pair['stage'] == stage and pair['view_slot'] == texture['slot'] and pair['sampler_slot'] == sampler['slot'],
                 'Inconsistent texture/sampler pair')
         name(pair['name']); name(pair['glsl_name']); slot(pair['slot'], 16)
-        contract['textures'].append({'role': want['role'], 'depthArray': depth, 'cube': cube, 'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
+        contract['textures'].append({'role': want['role'], 'depthArray': depth, 'cube': cube, 'data': data, 'stage': stage, 'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
                                      'samplerName': sampler['name'], 'unit': pair['slot'], 'uniform': pair['glsl_name']})
     blocks = program.get('uniform_blocks', [])
     require(isinstance(blocks, list) and len(blocks) == len(spec['uniforms']), 'Unexpected uniform blocks')
@@ -147,23 +150,25 @@ def normalize(program, spec):
 
 
 def load_spec(spec):
-    fields(spec, ['program', 'attributes', 'textures', 'uniforms'], ['stride', 'instanceStride']); name(spec['program'])
-    for key in ['stride', 'instanceStride']:
+    fields(spec, ['program', 'attributes', 'textures', 'uniforms'], ['stride', 'instanceStride', 'skinStride']); name(spec['program'])
+    for key in ['stride', 'instanceStride', 'skinStride']:
         require(key not in spec or type(spec[key]) is int and spec[key] > 0 and spec[key] % 4 == 0, f'{key} is a positive multiple of 4')
     require(isinstance(spec['attributes'], list), 'Expected packed attributes')
     for attribute in spec['attributes']:
-        fields(attribute, ['role', 'name', 'type'], ['instance', 'offset']); name(attribute['role']); name(attribute['name'])
+        fields(attribute, ['role', 'name', 'type'], ['instance', 'skin', 'offset']); name(attribute['role']); name(attribute['name'])
+        require(not (attribute.get('instance') and attribute.get('skin')), 'An attribute is an instance one or a skin one, not both')
         require('offset' not in attribute or type(attribute['offset']) is int and attribute['offset'] >= 0 and attribute['offset'] % 4 == 0,
                 'An offset is a multiple of 4')
         require(attribute['type'] in COMPONENTS, 'Unsupported CPU vertex packing')
-        require(attribute.get('instance', False) in (True, False), 'instance is true or false')
+        require(attribute.get('instance', False) in (True, False) and attribute.get('skin', False) in (True, False), 'instance and skin are true or false')
     require(len({a['name'] for a in spec['attributes']}) == len(spec['attributes']) and
             len({a['role'] for a in spec['attributes']}) == len(spec['attributes']), 'Duplicate vertex schema names or roles')
     require(isinstance(spec['textures'], list), 'textures is a list')
     for texture in spec['textures']:
-        fields(texture, ['role', 'name'], ['depth_array', 'cube']); name(texture['role']); name(texture['name'])
-        require(texture.get('depth_array', False) in (True, False) and texture.get('cube', False) in (True, False) and
-                not (texture.get('depth_array') and texture.get('cube')), 'depth_array and cube are true or false, not both')
+        fields(texture, ['role', 'name'], ['depth_array', 'cube', 'data', 'stage']); name(texture['role']); name(texture['name'])
+        kinds = [texture.get(k, False) for k in ('depth_array', 'cube', 'data')]
+        require(all(k in (True, False) for k in kinds) and sum(kinds) <= 1, 'depth_array, cube and data are true or false, at most one')
+        require(texture.get('stage', 'fragment') in ('vertex', 'fragment'), 'A texture stage is vertex or fragment')
     require(len({t['role'] for t in spec['textures']}) == len(spec['textures']), 'Duplicate texture roles')
     require(isinstance(spec['uniforms'], list), 'uniforms is a list')
     for block in spec['uniforms']:
@@ -202,56 +207,56 @@ def manifest(path):
 
 
 def generate(manifest_path, output, working_dir):
-    """Writes each program's <Name>Layout.hx, GeneratedShader.hx (every program's GLSL ES source), shaders.h (the C layouts and
-    binding slots) and shader-contract.json from output/<program>_reflection.yaml."""
+    """Writes each program's <Name>Layout.hx (its CPU packing; source(), the program in both dialects with its bindings, as
+    IGraphics.createShader takes it; buffers(), its vertex buffers' layout, as a PipelineDesc takes it) and shader-contract.json, from
+    output/<program>_reflection.yaml and the dialects' sources beside it."""
     output = Path(output); working_dir = Path(working_dir)
-    hx_shader = ['// Generated from structured shader reflection and shaders.json.', 'class GeneratedShader {']
-    c = ['/* Generated from structured shader reflection and shaders.json. */', '#pragma once']
     contracts = []
     for spec in manifest(manifest_path):
         contract, programs = load_contract(output / f'{spec["program"]}_reflection.yaml', spec)
-        program = contract['program']; upper = program.upper(); type_name = class_name(program) + 'Layout'
-        for stage in ['vertex', 'fragment']:
-            function = programs['glsl300es'][stage + '_func']
-            path = (working_dir / function['path']).resolve()
-            require(path.is_relative_to(output.resolve()), 'Shader source must be inside the generated directory')
-            hx_shader.append(f' public static function {program}{stage.capitalize()}():String return {json.dumps(path.read_text())};')
+        program = contract['program']; type_name = class_name(program) + 'Layout'
+        sources = {}
+        for dialect in ['glsl410', 'glsl300es']:
+            for stage in ['vertex', 'fragment']:
+                function = programs[dialect][stage + '_func']
+                path = (working_dir / function['path']).resolve()
+                require(path.is_relative_to(output.resolve()), 'Shader source must be inside the generated directory')
+                sources[dialect, stage] = path.read_text()
+        slots = sorted(a['slot'] for a in contract['attributes'])
+        require(slots == list(range(len(slots))), 'Attribute slots must run from 0 without gaps')
+        by_slot = sorted(contract['attributes'], key=lambda a: a['slot'])
         hx = [f'// Generated from structured shader reflection and shaders.json: the {program} program.', f'class {type_name} {{',
-              f' public static inline var stride={contract["stride"]};', f' public static inline var instanceStride={contract["instanceStride"]};']
-        c += [f'#include "{program}.glsl.h"', f'#define HELIX_{upper}_SHADER_DESC {program}_shader_desc', f'#define HELIX_{upper}_STRIDE {contract["stride"]}',
-              f'#define HELIX_{upper}_INSTANCE_STRIDE {contract["instanceStride"]}']
+              f' public static inline var stride={contract["stride"]};', f' public static inline var instanceStride={contract["instanceStride"]};',
+              f' public static inline var skinStride={contract["skinStride"]};']
         for t in contract['textures']:
-            role = t['role']; ROLE = role.upper()
-            hx += [f' public static inline var {role}Unit={t["unit"]};', f' public static inline var {role}Uniform={json.dumps(t["uniform"])};']
-            c += [f'#define HELIX_{upper}_{ROLE}_VIEW_SLOT {t["view"]}', f'#define HELIX_{upper}_{ROLE}_SAMPLER_SLOT {t["sampler"]}',
-                  f'_Static_assert(VIEW_{t["viewName"]} == HELIX_{upper}_{ROLE}_VIEW_SLOT, "Shader view mismatch");',
-                  f'_Static_assert(SMP_{t["samplerName"]} == HELIX_{upper}_{ROLE}_SAMPLER_SLOT, "Shader sampler mismatch");']
+            hx.append(f' public static inline var {t["role"]}Texture={t["view"]};')
         for u in contract['uniforms']:
-            stage = u['stage']; STAGE = stage.upper()
-            hx += [f' public static inline var {stage}UniformBytes={u["bytes"]};', f' public static inline var {stage}UniformName={json.dumps(u["name"])};']
-            c += [f'#define HELIX_{upper}_{STAGE}_UNIFORM_SLOT {u["slot"]}', f'#define HELIX_{upper}_{STAGE}_UNIFORM_BYTES {u["bytes"]}',
-                  f'_Static_assert(UB_{u["block"]} == HELIX_{upper}_{STAGE}_UNIFORM_SLOT, "Uniform block mismatch");']
-        if not contract['attributes']:
-            hx.append('}')
-            (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n')
-            contracts.append(contract)
-            continue
-        c += [f'static sg_vertex_layout_state helix_{program}_layout(void) {{', ' sg_vertex_layout_state layout = {0};',
-              f' layout.buffers[0].stride = HELIX_{upper}_STRIDE;']
-        if contract['instanceStride']:
-            c += [f' layout.buffers[1].stride = HELIX_{upper}_INSTANCE_STRIDE;', ' layout.buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE;']
+            hx.append(f' public static inline var {u["stage"]}UniformBytes={u["bytes"]};')
         for attr in contract['attributes']:
-            role = attr['role']
-            for suffix, value in [('Slot', attr['slot']), ('Offset', attr['offset']), ('Components', attr['components']), ('Name', attr['name'])]:
-                hx.append(f' public static inline var {role}{suffix}={json.dumps(value)};')
-            c += [f' _Static_assert(ATTR_{program}_{attr["name"]} == {attr["slot"]}, "Shader attribute mismatch");',
-                  f' layout.attrs[{attr["slot"]}].format = SG_VERTEXFORMAT_FLOAT{attr["components"]};',
-                  f' layout.attrs[{attr["slot"]}].offset = {attr["offset"]};', f' layout.attrs[{attr["slot"]}].buffer_index = {attr["buffer"]};']
-        hx.append('}'); c += [' return layout;', '}']
+            for suffix, value in [('Slot', attr['slot']), ('Offset', attr['offset']), ('Components', attr['components'])]:
+                hx.append(f' public static inline var {attr["role"]}{suffix}={json.dumps(value)};')
+        stages = lambda dialect: '{vertex: ' + json.dumps(sources[dialect, 'vertex']) + ', fragment: ' + json.dumps(sources[dialect, 'fragment']) + '}'
+        blocks = ', '.join(f'{{slot: {u["slot"]}, stage: "{u["stage"]}", size: {u["bytes"]}, glslName: {json.dumps(u["name"])}, vec4s: {u["bytes"] // 16}}}'
+                           for u in contract['uniforms'])
+        textures = ', '.join(f'{{slot: {t["view"]}, stage: "{t["stage"]}", glslName: {json.dumps(t["uniform"])}, shadow: {str(t["depthArray"]).lower()}, '
+                             f'cube: {str(t["cube"]).lower()}, data: {str(t["data"]).lower()}}}' for t in contract['textures'])
+        hx += [' /** The program, as IGraphics.createShader takes it. */',
+               ' public static function source():helix.graphics.ShaderSource',
+               f'  return {{attributes: {json.dumps([a["name"] for a in by_slot])}, glsl410: {stages("glsl410")}, glsl300es: {stages("glsl300es")}, '
+               f'uniformBlocks: [{blocks}], textures: [{textures}]}};']
+        # Its vertex buffers by index (0 the vertices, 1 the instance records, 2 the skin), up to the last it reads.
+        used = [a['buffer'] for a in contract['attributes']]
+        layouts = []
+        for index in range(max(used) + 1 if used else 0):
+            stride = [contract['stride'], contract['instanceStride'], contract['skinStride']][index]
+            attrs = ', '.join(f'{{slot: {a["slot"]}, components: {a["components"]}, offset: {a["offset"]}}}' for a in contract['attributes'] if a['buffer'] == index)
+            layouts.append(f'{{stride: {stride}, instanced: {str(index == 1).lower()}, attributes: [{attrs}]}}')
+        hx += [' /** Its vertex buffers by index (0 the vertices, 1 the instance records, 2 a skin\'s joints), as a PipelineDesc takes them. */',
+               ' public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>', f'  return [{", ".join(layouts)}];', '}']
         (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n')
         contracts.append(contract)
-    hx_shader.append('}')
-    (output / 'GeneratedShader.hx').write_text('\n'.join(hx_shader) + '\n')
-    (output / 'shaders.h').write_text('\n'.join(c) + '\n')
+    # What the generator wrote before the adapters built programs from data: the GLSL ES class and the C headers.
+    for stale in [output / 'GeneratedShader.hx', output / 'shaders.h', *output.glob('*.glsl.h')]:
+        stale.unlink(missing_ok=True)
     (output / 'shader-contract.json').write_text(json.dumps(contracts, indent=2) + '\n')
     return contracts

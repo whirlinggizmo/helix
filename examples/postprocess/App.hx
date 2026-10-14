@@ -170,10 +170,8 @@ class App extends BaseApp {
 
 	override public function cleanup():Void {
 		for (e in [vignette, scanlines])
-			if (e != null) {
-				e.destroy();
+			if (e != null)
 				shaders.release(e.getShader());
-			}
 		post.destroy();
 		stage.destroy();
 		batch.destroy();

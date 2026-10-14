@@ -34,7 +34,7 @@ def shader_stamp():
 def shader(shdc):
     """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""
     GENERATED.mkdir(parents=True,exist_ok=True)
-    output=GENERATED/'GeneratedShader.hx'
+    output=GENERATED/'shader-contract.json'
     if output.is_file() and output.stat().st_mtime>=shader_stamp():return
     remembered=ROOT/'build/generated/shdc-path.txt'
     shdc=shdc or (remembered.read_text().strip() if remembered.is_file() else None) or shutil.which('sokol-shdc')
@@ -42,7 +42,6 @@ def shader(shdc):
     remembered.write_text(shdc+'\n')
     for spec in manifest(SHADERS/'shaders.json'):
         program=spec['program'];source=SHADERS/f'{program}.glsl'
-        run([shdc,'-i',source,'-o',GENERATED/f'{program}.glsl.h','-l','glsl410:glsl300es','--no-log-cmdline'])
         run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
     generate(SHADERS/'shaders.json',GENERATED,ROOT)
 
@@ -108,7 +107,7 @@ def build(name,target,shdc):
     else:
         from pins import check_hxcpp,check_sokol
         from native_build import env as native_env
-        check_hxcpp();check_sokol(ROOT);env=native_env(GENERATED)
+        check_hxcpp();check_sokol(ROOT);env=native_env()
         run(['haxe',hxml(name,'native')],env)
         out=ROOT/f'build/native/{name}/assets'
         assets(name,out)

@@ -10,8 +10,6 @@ class ScreenEffect {
 	var shader:Shader;
 	var parameters:ShaderParameters;
 	var alpha:Bool;
-	var pipeline = 0;
-	var version = -1;
 	var enabled = true;
 
 	/** An effect drawing with shader (kind screen) on gpu, blended over what's there when alpha, else replacing it. Throws for a shader of another
@@ -44,13 +42,6 @@ class ScreenEffect {
 	/** Draws the effect over the open pass's viewport, reading source (the frame it changes), width x height pixels, seconds since it began. A
 		texture of its own that isn't set is drawn as source. */
 	public function draw(source:Texture2D, width:Int, height:Int, time:Float):Void {
-		if (version != shader.getVersion()) {
-			// Made or reloaded: a pipeline for this program.
-			if (pipeline != 0)
-				gpu.destroyPipeline(pipeline);
-			pipeline = gpu.createPipeline(Screen, alpha ? Alpha : Opaque, shader.getHandle());
-			version = shader.getVersion();
-		}
 		var blocks = [for (size in shader.getBlockSizes()) size > 0 ? Bytes.alloc(size) : null];
 		// The framework's: block 1 is the frame's size and the time (block 0 the adapter's clip scale).
 		if (blocks.length > 1 && blocks[1] != null) {
@@ -70,13 +61,6 @@ class ScreenEffect {
 			textures.push(texture.getHandle());
 			samplings.push(texture.getSampling());
 		}
-		gpu.drawScreen(pipeline, textures, samplings, blocks);
+		gpu.draw(Pipelines.of(gpu).screen(shader.getHandle(), alpha ? Alpha : Opaque), [], 0, 0, 3, 0, 1, textures, samplings, blocks);
 	}
-
-	/** Frees its pipeline; the shader stays its loader's. */
-	public function destroy():Void
-		if (pipeline != 0) {
-			gpu.destroyPipeline(pipeline);
-			pipeline = 0;
-		}
 }

@@ -12,11 +12,12 @@ import helix.audio.IAudio;
 import helix.debug.IDiagnostics;
 import helix.assets.IFetch;
 import helix.assets.IStorage;
-import helix.assets.AssetService;
 import helix.audio.AudioResources;
 import helix.app.IApp;
+import helix.host.HostCore;
 
-/** The native host: one sokol_app window and its frame loop, and options from HELIX_* environment variables. Its own IDiagnostics. */
+/** The native host: one sokol_app window and its frame loop, and options from HELIX_* environment variables; the rest of a host is HostCore's.
+	Its own IDiagnostics. */
 class SokolHostAdapter implements IHost implements IDiagnostics {
 	public var graphics(default, null):IGraphics;
 	public var input(default, null):IInput;
@@ -36,7 +37,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 
 	static var instance:SokolHostAdapter;
 
-	var resources:AssetService;
+	var core:HostCore;
 	var services:HostServices;
 	var compose:Void->HostServices;
 	var app:IApp;
@@ -56,50 +57,33 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 
 	static function onInit():Void {
 		instance.services = instance.compose();
-		var s = instance.services;
+		var s = instance.services, core = new HostCore(s);
+		instance.core = core;
 		instance.fetch = s.fetch;
 		instance.storage = s.storage;
 		instance.input = s.input;
 		instance.audio = s.audio;
 		instance.graphics = s.graphics;
-		instance.resources = new AssetService(s.fetch, s.storage, s.packaged, s.base);
-		instance.assets = instance.resources;
-		instance.audioResources = new AudioResources(instance.assets, instance.audio);
-		instance.textures = new helix.render2d.Textures(instance.assets, s.images, instance.graphics);
-		instance.environments = new helix.render3d.Environments(instance.assets, s.images, instance.graphics);
+		instance.assets = core.resources;
+		instance.audioResources = core.audioResources;
+		instance.textures = core.textures;
+		instance.environments = core.environments;
 		instance.app.init();
 	}
 
 	static function onFrame():Void {
-		var cpuStart = instance.getTime();
-		instance.clock.frame(cpuStart);
-		instance.lastFrameInterval = instance.previousCallback == 0 ? 0 : (cpuStart - instance.previousCallback) * 1000;
-		instance.previousCallback = cpuStart;
-		instance.resources.poll();
-		instance.audioResources.poll();
-		instance.textures.poll();
-		instance.environments.poll();
-		instance.services.pollInput();
 		instance.focused = InputBridge.focused() != 0;
-		instance.app.frame(instance.clock.getDelta());
-		instance.services.endInputFrame();
+		instance.core.frame(instance.app, instance.getTime(), instance.getTime);
 		var path = Sys.getEnv("HELIX_LIVE");
 		if (path != null && instance.inspectCallback != null) {
 			var value = instance.inspectCallback();
 			value.host = instance.getInfo();
 			sys.io.File.saveContent(path, haxe.Json.stringify(value));
 		}
-		instance.lastFrameCpu = (instance.getTime() - cpuStart) * 1000;
 	}
 
 	static function onCleanup():Void {
-		instance.audioResources.shutdown();
-		instance.textures.shutdown();
-		instance.environments.shutdown();
-		instance.services.images.shutdown();
-		instance.resources.shutdown();
-		instance.app.cleanup();
-		instance.services.shutdownInput();
+		instance.core.close(instance.app);
 	}
 
 	public function isFocused():Bool
@@ -148,20 +132,14 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 	public function quit():Void
 		HostBridge.quit();
 
-	var clock = new helix.host.FrameClock();
-
 	public function getFrameElapsed():Float
-		return clock.getElapsed();
-
-	var lastFrameCpu = 0.;
-	var lastFrameInterval = 0.;
-	var previousCallback = 0.;
+		return core.clock.getElapsed();
 
 	public function getFrameCpu():Float
-		return lastFrameCpu;
+		return core.getFrameCpu();
 
 	public function getFrameInterval():Float
-		return lastFrameInterval;
+		return core.getFrameInterval();
 
 	public function getFrameAudit():Dynamic
 		return haxe.Json.parse(Std.string(GraphicsBridge.audit()));

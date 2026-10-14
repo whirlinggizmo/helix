@@ -16,14 +16,14 @@ class PostProcess {
 	var last:Null<ScreenEffect>;
 	var time = 0.;
 	// Drawing the frame as it is: two clip-space triangles, sampling it whole.
-	var copyPipeline:Int;
 	var copyBuffer:Int;
+	// The sprite program's block 0, its clip scale, which the adapter writes.
+	var clip = Bytes.alloc(16);
 	var quad = Bytes.alloc(6 * Sprite2DLayout.stride);
 
 	/** Effects drawn on gpu. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		copyPipeline = gpu.createPipeline(Sprite2D, Opaque);
 		copyBuffer = gpu.createBuffer(6 * Sprite2DLayout.stride);
 		var corners = [
 			[-1, 1, 0, 0],
@@ -94,15 +94,14 @@ class PostProcess {
 			return;
 		}
 		gpu.updateBuffer(copyBuffer, quad, quad.length);
-		gpu.draw(copyPipeline, copyBuffer, result.getHandle(), Sampling.NEAREST, 6, 0);
+		gpu.draw(Pipelines.of(gpu).sprite2d(Opaque), [copyBuffer], 0, 0, 6, 0, 1, [result.getHandle()], [Sampling.NEAREST], [clip]);
 	}
 
-	/** Frees its textures, pipeline and buffer; the effects stay their owner's. */
+	/** Frees its textures and buffer; the effects stay their owner's. */
 	public function destroy():Void {
 		for (t in targets)
 			if (t != null)
 				t.destroy(gpu);
-		gpu.destroyPipeline(copyPipeline);
 		gpu.destroyBuffer(copyBuffer);
 	}
 }
