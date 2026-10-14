@@ -32,7 +32,9 @@ class Node {
 		this.kind = kind;
 	}
 
-	/** A node that only holds others: their common transform. */
+	/** A group: a node that draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D).
+		Any node can have children; use a group when the parent shouldn't itself be a model or a light: a handle that moves or hides a set of
+		things together, or a pivot to turn them about. */
 	public static function group():Node
 		return new Node(Group);
 
@@ -336,7 +338,7 @@ class Node {
 
 /** What a node is. */
 enum abstract NodeKind(Int) {
-	/** Holds other nodes. */
+	/** Draws nothing: a transform for its children. */
 	var Group = 0;
 
 	/** A mesh drawn with a material. */

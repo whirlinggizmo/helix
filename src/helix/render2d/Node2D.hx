@@ -50,7 +50,9 @@ class Node2D {
 		this.kind = kind;
 	}
 
-	/** A node that only holds others: their common transform. */
+	/** A group: a node that draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D).
+		Any node can have children; use a group when the parent shouldn't itself be a sprite, a shape or text: a handle that moves or hides a set of
+		things together, or a pivot to turn them about. */
 	public static function group():Node2D
 		return new Node2D(Group);
 
@@ -450,7 +452,7 @@ class Node2D {
 
 /** What a 2D node is. */
 enum abstract Node2DKind(Int) {
-	/** Holds other nodes. */
+	/** Draws nothing: a transform for its children. */
 	var Group = 0;
 
 	/** A texture, or a region of one. */
