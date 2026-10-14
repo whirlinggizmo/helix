@@ -27,6 +27,7 @@ class PickTests {
 		models();
 		skinned();
 		sprites();
+		pointer();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -184,5 +185,49 @@ class PickTests {
 		logo.setPosition(3, 0, -4);
 		at = pixel(c, 3, 0, -2);
 		check(stage.pick(c, at[0], at[1]).getNode() == box, "The box before the sprite");
+	}
+
+	// The pointer over a world and a HUD: hover, press, a click released over what was pressed, a drag released elsewhere, and capture.
+	static function pointer():Void {
+		var gpu = new CountingGraphics(), world = new Stage3D(gpu), c = camera(), input = new helix.input.InputState();
+		var cube = Node.model(Mesh.cube(2, 2, 2), new Material());
+		world.add(cube);
+		var hud = new helix.render2d.Stage2D(),
+			hudCamera = new helix.render2d.Camera2D();
+		hudCamera.setViewport(800, 600);
+		hudCamera.pixels(1);
+		var button = helix.render2d.Node2D.rectangle(100, 40);
+		button.setPosition(10, 10);
+		hud.add(button);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage3D(world, c);
+		pointer.addStage2D(hud, hudCamera);
+		function frame(x:Float, y:Float, down:Bool):Void {
+			input.endFrame();
+			input.pointerEvent(x, y, down);
+			pointer.update();
+		}
+		frame(400, 300, false);
+		check(pointer.isHovered(cube) && pointer.getHit3D() != null && !pointer.isPressed(cube), "The cube under the pointer, its hit at hand");
+		frame(400, 300, true);
+		check(pointer.isPressed(cube) && pointer.isDown(cube) && !pointer.isCaptured(), "Pressed on the cube; the world doesn't capture");
+		frame(400, 300, false);
+		check(pointer.isClicked(cube) && !pointer.isDown(cube), "Released over it: a click");
+		frame(400, 300, true);
+		frame(10, 590, true);
+		check(pointer.isDown(cube) && !pointer.isHovered(cube), "Dragged off: still held");
+		frame(10, 590, false);
+		check(!pointer.isClicked(cube) && pointer.getHeld() == null, "Released elsewhere: no click");
+		// The HUD over the world: its button first, and a press on it captures the pointer from the world.
+		frame(50, 30, false);
+		check(pointer.isHovered(button), "The HUD's button, drawn over the world, first");
+		frame(50, 30, true);
+		check(pointer.isCaptured() && pointer.isPressed(button), "A press on the HUD captures");
+		frame(400, 300, true);
+		check(pointer.getHovered() == null && pointer.isDown(button), "Captured: the world under the pointer sees nothing");
+		frame(400, 300, false);
+		check(!pointer.isCaptured() && !pointer.isClicked(button), "Released off the button: no click, the capture let go");
+		frame(400, 300, false);
+		check(pointer.isHovered(cube), "The world has the pointer again");
 	}
 }
