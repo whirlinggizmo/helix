@@ -19,6 +19,8 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_target") static function target(w:Int, h:Int):Int;
 	@:native("helix_begin_target") static function beginTarget(target:Int, color:Int):Int;
 	@:native("helix_end_target") static function endTarget():Int;
+	@:native("helix_shadow_map") static function shadowMap(size:Int, layers:Int):Int;
+	@:native("helix_begin_shadow") static function beginShadow(map:Int, layer:Int):Int;
 	@:native("helix_begin") static function begin(width:Int, height:Int, color:Int):Int;
 	@:native("helix_viewport") static function viewport(x:Int, y:Int, w:Int, h:Int):Int;
 	@:native("helix_draw") static function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Int, vertices:Int, firstVertex:Int,

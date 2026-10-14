@@ -55,7 +55,14 @@ class Shader {
 						vec4s: b.vec4s
 					}
 			],
-			textures: [for (t in textures) {slot: t.slot, stage: t.stage, glslName: t.glslName}]
+			textures: [
+				for (t in textures) {
+					slot: t.slot,
+					stage: t.stage,
+					glslName: t.glslName,
+					shadow: t.shadow == true
+				}
+			]
 		};
 		parameters = new Map();
 		for (b in blocks) {

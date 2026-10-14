@@ -5,12 +5,12 @@ textures). Programs load it as any asset (helix.graphics.Shaders) and the adapte
 A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
 
     @include_block helix_screen   a screen effect: drawn over a whole finished frame (helix.graphics.ScreenEffect)
-    @include_block helix_surface  a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights,
-                                  the material's base color and textures; optionally a vertex hook, `@block vertex` defining
+    @include_block helix_surface  a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights
+                                  and their shadows, the material's base color and textures; optionally a vertex hook, `@block vertex` defining
                                   `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, before placing)
 
 Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
-either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 2), each with a sampler at the same binding.
+either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 3), each with a sampler at the same binding.
 Uniform blocks 0 and 1 are the framework's.
 
     python3 tools/pack_shader.py [--shdc path] input.glsl output.hxshader"""
@@ -86,6 +86,7 @@ out vec4 helix_v_tangent;
 out vec2 helix_v_uv;
 out vec4 helix_v_tint;
 out vec3 helix_v_world;
+out float helix_v_receive;
 void main() {
     vec3 moved = position, bent = normal;
     helix_vertex(moved, bent);
@@ -97,6 +98,7 @@ void main() {
     helix_v_uv = uv;
     helix_v_tint = i_tint;
     helix_v_world = world;
+    helix_v_receive = i_normal1.w;
 }
 @end
 
@@ -111,18 +113,27 @@ layout(binding=1) uniform helix_surface_params {
     vec4 helix_light_position[4];
     vec4 helix_light_direction[4];
     vec4 helix_light_radiance[4];
-    vec4 helix_light_spot[4];
+    vec4 helix_light_spot[4];      // x cos(inner), y cos(outer), z its shadow slot (-1: none)
+    mat4 helix_shadow_matrix[4];   // as the lit models' shader has them
+    vec4 helix_shadow_params[4];
+    vec4 helix_shadow_extra[4];
+    vec4 helix_shadow_tint[4];
     vec4 helix_fs_info;       // x seconds since the stage began
 };
 layout(binding=0) uniform texture2D helix_base_texture;
 layout(binding=0) uniform sampler helix_base_sampler;
 layout(binding=1) uniform texture2D helix_normal_texture;
 layout(binding=1) uniform sampler helix_normal_sampler;
+layout(binding=2) uniform texture2DArray helix_shadow_texture;
+layout(binding=2) uniform sampler helix_shadow_sampler;
+@image_sample_type helix_shadow_texture depth
+@sampler_type helix_shadow_sampler comparison
 in vec3 helix_v_normal;
 in vec4 helix_v_tangent;
 in vec2 helix_v_uv;
 in vec4 helix_v_tint;
 in vec3 helix_v_world;
+in float helix_v_receive;
 out vec4 helix_frag_color;
 const float HELIX_PI = 3.14159265359;
 
@@ -163,8 +174,35 @@ float helix_attenuation(float d, float range) {
     float w = clamp(1.0 - r * r * r * r, 0.0, 1.0);
     return w * w * inv_sq;
 }
-// Light i at world: the radiance reaching it (color times intensity, its falloff and cone applied) and to_light, the direction toward it.
-vec3 helix_light(int i, vec3 world, out vec3 to_light) {
+// How much of light i reaches world, facing n, past what casts shadows: 1 in the open, 0 in shadow (the lit models' shader's lookup, unbranched
+// around its reads); 1 for a light without shadows or a model that doesn't receive them.
+float helix_shadow_at(int i, vec3 world, vec3 n, vec3 to_light) {
+    int s = int(helix_light_spot[i].z);
+    if (s < 0 || helix_v_receive < 0.5) return 1.0;
+    float slant = 1.0 - clamp(dot(n, to_light), 0.0, 1.0);
+    vec4 clip = helix_shadow_matrix[s] * vec4(world + n * (helix_shadow_params[s].y * (1.0 + 2.0 * slant)), 1.0);
+    vec3 ndc = clip.xyz / max(abs(clip.w), 1e-6) * sign(clip.w);
+    vec2 uv = ndc.xy * 0.5 + 0.5;
+    float texels = helix_shadow_params[s].z + helix_shadow_params[s].w * slant;
+    vec4 extra = helix_shadow_extra[s];
+    float ortho_depth = ndc.z * 0.5 + 0.5 - texels * helix_shadow_tint[s].w;
+    float near_z = max(extra.y, 1e-4), far_z = max(extra.z, near_z + 1e-3);
+    float z = 2.0 * near_z * far_z / max(far_z + near_z - ndc.z * (far_z - near_z), 1e-6);
+    float z_slack = max(z - texels * helix_shadow_params[s].y * (z / far_z), near_z);
+    float spot_depth = (far_z + near_z - 2.0 * near_z * far_z / z_slack) / (far_z - near_z) * 0.5 + 0.5;
+    float depth = mix(ortho_depth, spot_depth, step(0.5, extra.w));
+    vec2 to_edge = 1.0 - abs(ndc.xy);
+    float edge = clamp(min(to_edge.x, to_edge.y) / 0.1, 0.0, 1.0) * step(0.0, min(to_edge.x, to_edge.y)) * step(depth, 1.0) * step(0.0, clip.w);
+    float texel = helix_shadow_params[s].x, lit = 0.0;
+    vec2 at = clamp(uv, vec2(texel), vec2(1.0 - texel));
+    for (int y = -1; y <= 1; y++)
+        for (int x = -1; x <= 1; x++)
+            lit += texture(sampler2DArrayShadow(helix_shadow_texture, helix_shadow_sampler), vec4(at + vec2(float(x), float(y)) * texel, float(s), clamp(depth, 0.0, 1.0)));
+    return mix(1.0, lit / 9.0, edge * extra.x);
+}
+// Light i at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied), to_light, the direction
+// toward it, and lit, how much of it its shadow lets through.
+vec3 helix_light_lit(int i, vec3 world, vec3 n, out vec3 to_light, out float lit) {
     float falloff = 1.0;
     vec3 travel;
     if (helix_light_direction[i].w < 0.5) {
@@ -180,7 +218,14 @@ vec3 helix_light(int i, vec3 world, out vec3 to_light) {
         }
     }
     to_light = -travel;
-    return helix_light_radiance[i].rgb * falloff;
+    lit = helix_shadow_at(i, world, n, to_light);
+    return helix_light_radiance[i].rgb * falloff * lit;
+}
+// Light i at world, facing n: the radiance reaching it (color times intensity, its falloff, cone and shadow applied) and to_light, the
+// direction toward it.
+vec3 helix_light(int i, vec3 world, vec3 n, out vec3 to_light) {
+    float lit;
+    return helix_light_lit(i, world, n, to_light, lit);
 }
 // The stage's own shading of base with normal n (glTF metallic-roughness under its lights and ambient light, plus emission): for a shader
 // that only changes the inputs.
@@ -193,7 +238,11 @@ vec3 helix_shade(vec3 n, vec4 base) {
     for (int i = 0; i < 4; i++) {
         if (i >= helix_light_count()) break;
         vec3 l;
-        vec3 radiance = helix_light(i, helix_v_world, l);
+        float lit;
+        vec3 radiance = helix_light_lit(i, helix_v_world, n, l, lit);
+        // What a shadow keeps: its tint, deepest where it's darkest.
+        int s = int(helix_light_spot[i].z);
+        if (s >= 0) color += helix_shadow_tint[s].rgb * (1.0 - lit) * c_diff;
         float n_dot_l = dot(n, l);
         if (n_dot_l <= 0.0) continue;
         vec3 h = normalize(l + v);
@@ -227,7 +276,7 @@ VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs'
 ATTRIBUTES = {'helix_screen': [], 'helix_surface': ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1',
                                                     'i_normal2', 'i_tint']}
 # The first texture binding an app's own may use.
-FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 2}
+FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 3}
 NO_VERTEX_HOOK = '''
 @block vertex
 void helix_vertex(inout vec3 position, inout vec3 normal) {}
@@ -318,7 +367,8 @@ def pack(shdc, source_path, output_path):
             fail(f'{source_path}: texture {pair["view_name"]} and its sampler must share a binding')
         if not pair['view_name'].startswith('helix_') and pair['view_slot'] < FIRST_TEXTURE[kind]:
             fail(f'{source_path}: texture {pair["view_name"]} needs binding {FIRST_TEXTURE[kind]} or more; the lower ones are the framework\'s')
-        textures.append({'slot': pair['view_slot'], 'stage': pair['stage'], 'name': pair['view_name'], 'glslName': pair['glsl_name']})
+        textures.append({'slot': pair['view_slot'], 'stage': pair['stage'], 'name': pair['view_name'], 'glslName': pair['glsl_name'],
+                         'shadow': views.get(pair['view_slot'], {}).get('sample_type') == 'depth'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
     shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],

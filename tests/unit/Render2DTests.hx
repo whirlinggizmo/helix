@@ -58,6 +58,15 @@ class CountingGraphics implements IGraphics {
 
 	public function endTargetPass():Void {}
 
+	/** The layers shadow passes drew into, in order. */
+	public var shadowPasses:Array<Int> = [];
+
+	public function createShadowMap(size:Int, layers:Int):Int
+		return next++;
+
+	public function beginShadowPass(map:Int, layer:Int):Void
+		shadowPasses.push(layer);
+
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		draws = [];
 		viewports = [];
@@ -71,9 +80,14 @@ class CountingGraphics implements IGraphics {
 
 	public var meshPipelines:Array<Int> = [];
 
+	/** Each mesh draw's instance count and uniform blocks, in order. */
+	public var meshDraws:Array<{instances:Int, uniforms:Array<Null<Bytes>>}> = [];
+
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
-			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void
+			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		meshPipelines.push(pipeline);
+		meshDraws.push({instances: instanceCount, uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]});
+	}
 
 	public function endFrame():Void {}
 

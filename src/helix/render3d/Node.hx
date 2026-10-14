@@ -24,6 +24,8 @@ class Node {
 	var mesh:Null<Mesh>;
 	var material:Null<Material>;
 	var tint = 0xffffffff;
+	var castsShadows = true;
+	var receivesShadows = true;
 	var lightOf:Null<Light>;
 	var cameraOf:Null<Camera3D>;
 	var texture:Null<helix.render2d.Texture2D>;
@@ -295,6 +297,30 @@ class Node {
 	/** Sets a model's tint, 0xRRGGBBAA. */
 	public function setTint(value:Int):Void
 		tint = value;
+
+	/** Whether a model casts shadows (from the lights that cast them; see-through models never do). True by default. */
+	public function isShadowCasting():Bool
+		return kind == Model && castsShadows;
+
+	/** Makes a model cast shadows or not. False for another kind. */
+	public function setShadowCasting(value:Bool):Bool {
+		if (kind != Model)
+			return false;
+		castsShadows = value;
+		return true;
+	}
+
+	/** Whether shadows fall on a model. True by default. */
+	public function isShadowReceiving():Bool
+		return kind == Model && receivesShadows;
+
+	/** Lets shadows fall on a model or not. False for another kind. */
+	public function setShadowReceiving(value:Bool):Bool {
+		if (kind != Model)
+			return false;
+		receivesShadows = value;
+		return true;
+	}
 
 	/** A light node's light; null for another kind. */
 	public function getLight():Null<Light>

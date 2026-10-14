@@ -16,7 +16,7 @@ void main() {
             break;
         }
         vec3 to_light;
-        vec3 radiance = helix_light(i, helix_world_position(), to_light);
+        vec3 radiance = helix_light(i, helix_world_position(), n, to_light);
         float lambert = max(dot(n, to_light), 0.0);
         light += radiance * (floor(lambert * bands + 0.5) / max(bands, 1.0)) / 3.14159265;
     }

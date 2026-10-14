@@ -29,8 +29,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var pipelines:Map<Int, Dynamic> = [];
 	// Apps' programs (createShader), by handle: the linked program, its uniform blocks' locations and sizes, its textures' sampler locations.
 	var appShaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
-	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
-	var programs:Array<Dynamic> = [null, null, null, null, null];
+	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d, sprite3d, particle3d, depth3d. Made on first use.
+	var programs:Array<Dynamic> = [null, null, null, null, null, null];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -43,6 +43,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		width:Int,
 		height:Int
 	}> = [];
+	// Shadow maps, by texture handle: a framebuffer a layer, and their size.
+	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
+	// The sampler shadow maps are read through: comparing, linear, clamped.
+	var comparison:Dynamic = null;
 	var uniformData = new js.lib.Float32Array(16);
 
 	// Attribute slots any program uses: each draw enables its own and leaves the rest off, every divisor 0 but an instance attribute's.
@@ -178,8 +182,24 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d, 4 particle3d. */
+	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d, 4 particle3d, 5 depth3d. */
 	static function sources(index:Int):Dynamic {
+		if (index == 5)
+			return {
+				vertex: GeneratedShader.depth3dVertex(),
+				fragment: GeneratedShader.depth3dFragment(),
+				attributes: [
+					{slot: Depth3DLayout.positionSlot, name: Depth3DLayout.positionName},
+					{slot: Depth3DLayout.model0Slot, name: Depth3DLayout.model0Name},
+					{slot: Depth3DLayout.model1Slot, name: Depth3DLayout.model1Name},
+					{slot: Depth3DLayout.model2Slot, name: Depth3DLayout.model2Name}
+				],
+				texture: null,
+				normalTexture: null,
+				shadowTexture: null,
+				vertexUniform: Depth3DLayout.vertexUniformName,
+				fragmentUniform: null
+			};
 		if (index == 0)
 			return {
 				vertex: GeneratedShader.sprite2dVertex(),
@@ -191,6 +211,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				],
 				texture: Sprite2DLayout.atlasUniform,
 				normalTexture: null,
+				shadowTexture: null,
 				vertexUniform: Sprite2DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -204,6 +225,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				],
 				texture: null,
 				normalTexture: null,
+				shadowTexture: null,
 				vertexUniform: Color3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -219,6 +241,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				],
 				texture: Particle3DLayout.atlasUniform,
 				normalTexture: null,
+				shadowTexture: null,
 				vertexUniform: Particle3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -237,6 +260,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				],
 				texture: Sprite3DLayout.atlasUniform,
 				normalTexture: null,
+				shadowTexture: null,
 				vertexUniform: Sprite3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -258,6 +282,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			],
 			texture: Lit3DLayout.baseUniform,
 			normalTexture: Lit3DLayout.normalUniform,
+			shadowTexture: Lit3DLayout.shadowUniform,
 			vertexUniform: Lit3DLayout.vertexUniformName,
 			fragmentUniform: Lit3DLayout.fragmentUniformName
 		};
@@ -290,6 +315,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			program: p,
 			texture: location(source.texture),
 			normalTexture: location(source.normalTexture),
+			shadowTexture: location(source.shadowTexture),
 			vertexUniform: location(source.vertexUniform),
 			fragmentUniform: location(source.fragmentUniform),
 			vertex: source.vertex,
@@ -307,7 +333,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		// Screen takes an app's program; Lit3D may (a surface shader).
 		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
-		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : kind == Particle3D ? 4 : 1;
+		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : kind == Particle3D ? 4 : kind == Depth3D ? 5 : 1;
 		if (kind != Screen)
 			program(index);
 		var id = next++;
@@ -373,6 +399,16 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		};
 	}
 
+	// The framework's depth program as an app's is described: its block.
+	function depthProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
+		var depth = program(5);
+		return {
+			program: depth.program,
+			blocks: [{location: depth.vertexUniform, size: Depth3DLayout.vertexUniformBytes}],
+			textures: []
+		};
+	}
+
 	// The framework's lit program as an app's is described: its blocks and texture slots.
 	function litProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
 		var lit = program(2);
@@ -382,7 +418,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				{location: lit.vertexUniform, size: Lit3DLayout.vertexUniformBytes},
 				{location: lit.fragmentUniform, size: Lit3DLayout.fragmentUniformBytes}
 			],
-			textures: [lit.texture, lit.normalTexture]
+			textures: [lit.texture, lit.normalTexture, lit.shadowTexture]
 		};
 	}
 
@@ -400,8 +436,14 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				throw "Invalid draw texture";
 			gl.uniform1i(location, slot);
 			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + slot);
-			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
-			gl.bindSampler(slot, sampler(samplings[slot]));
+			// A shadow map is a depth array, read through the comparison sampler.
+			if (shadowMaps.exists(textures[slot])) {
+				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, t);
+				gl.bindSampler(slot, comparisonSampler());
+			} else {
+				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
+				gl.bindSampler(slot, sampler(samplings[slot]));
+			}
 		}
 		for (slot in 0...program.blocks.length) {
 			var block = program.blocks[slot];
@@ -495,6 +537,64 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			height: height
 		};
 		return id;
+	}
+
+	public function createShadowMap(size:Int, layers:Int):Int {
+		var largest:Int = gl.getParameter(WebGL2RenderingContext.MAX_TEXTURE_SIZE),
+			most:Int = gl.getParameter(WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS);
+		if (size <= 0 || layers <= 0 || size > largest || layers > most)
+			throw "Invalid shadow map";
+		var tex = gl.createTexture();
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, tex);
+		gl.texStorage3D(WebGL2RenderingContext.TEXTURE_2D_ARRAY, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, layers);
+		var framebuffers = [];
+		for (layer in 0...layers) {
+			var framebuffer = gl.createFramebuffer();
+			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
+			gl.framebufferTextureLayer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, tex, 0, layer);
+			// Depth only: nothing to draw colors into.
+			gl.drawBuffers([WebGL2RenderingContext.NONE]);
+			gl.readBuffer(WebGL2RenderingContext.NONE);
+			framebuffers.push(framebuffer);
+		}
+		// Checked once here, never at a pass (a check at every pass stalls the browser).
+		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+		if (!complete) {
+			for (framebuffer in framebuffers)
+				gl.deleteFramebuffer(framebuffer);
+			gl.deleteTexture(tex);
+			throw "Shadow map incomplete";
+		}
+		var id = next++;
+		textures[id] = tex;
+		shadowMaps[id] = {framebuffers: framebuffers, size: size};
+		return id;
+	}
+
+	// The sampler for shadow maps: each read compares with the map's depth (less or equal), filtered linearly over its texels.
+	function comparisonSampler():Dynamic {
+		if (comparison == null) {
+			comparison = gl.createSampler();
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_MIN_FILTER, WebGL2RenderingContext.LINEAR);
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_MAG_FILTER, WebGL2RenderingContext.LINEAR);
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_WRAP_S, WebGL2RenderingContext.CLAMP_TO_EDGE);
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_WRAP_T, WebGL2RenderingContext.CLAMP_TO_EDGE);
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_COMPARE_MODE, WebGL2RenderingContext.COMPARE_REF_TO_TEXTURE);
+			gl.samplerParameteri(comparison, WebGL2RenderingContext.TEXTURE_COMPARE_FUNC, WebGL2RenderingContext.LEQUAL);
+		}
+		return comparison;
+	}
+
+	public function beginShadowPass(map:Int, layer:Int):Void {
+		var m = shadowMaps[map];
+		if (active || m == null || layer < 0 || layer >= m.framebuffers.length)
+			throw "Invalid shadow pass";
+		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, m.framebuffers[layer]);
+		// Not flipped: a shadow map's rows run bottom first, as its lookups expect.
+		inTarget = true;
+		flipped = false;
+		open(m.size, m.size, 0);
 	}
 
 	public function beginTargetPass(target:Int, clearColor:Int):Void {
@@ -622,6 +722,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| p.kind != Lit3D
 			&& p.kind != Sprite3D
 			&& p.kind != Particle3D
+			&& p.kind != Depth3D
 			|| v == null
 			|| v.index
 			|| !v.isStatic
@@ -635,15 +736,24 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| firstInstance < 0
 			|| instanceCount <= 0
 			|| (firstInstance +
-				instanceCount) * (p.kind == Sprite3D ? Sprite3DLayout.instanceStride : p.kind == Particle3D ? Particle3DLayout.instanceStride : Lit3DLayout.instanceStride) > n.used)
+				instanceCount) * (p.kind == Sprite3D ? Sprite3DLayout.instanceStride : p.kind == Particle3D ? Particle3DLayout.instanceStride : p.kind == Depth3D ? Depth3DLayout.instanceStride : Lit3DLayout.instanceStride) > n.used)
 			throw "Invalid mesh draw";
 		// The framework's lit program, or an app's surface shader.
-		var app = p.app != 0 ? appShaders[p.app] : p.kind == Sprite3D ? spriteProgram() : p.kind == Particle3D ? particleProgram() : litProgram();
+		var app = p.app != 0 ? appShaders[p.app] : p.kind == Sprite3D ? spriteProgram() : p.kind == Particle3D ? particleProgram() : p.kind == Depth3D ? depthProgram() : litProgram();
 		if (app == null)
 			throw "Invalid mesh draw";
 		bindProgram(app, textures, samplings, uniforms, false);
 		resetAttributes();
-		if (p.kind == Particle3D) {
+		if (p.kind == Depth3D) {
+			var record = Depth3DLayout.instanceStride,
+				base = firstInstance * record;
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
+			attribute(Depth3DLayout.positionSlot, Depth3DLayout.positionComponents, Depth3DLayout.stride, Depth3DLayout.positionOffset);
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
+			attribute(Depth3DLayout.model0Slot, 4, record, base + Depth3DLayout.model0Offset, 1);
+			attribute(Depth3DLayout.model1Slot, 4, record, base + Depth3DLayout.model1Offset, 1);
+			attribute(Depth3DLayout.model2Slot, 4, record, base + Depth3DLayout.model2Offset, 1);
+		} else if (p.kind == Particle3D) {
 			var record = Particle3DLayout.instanceStride,
 				base = firstInstance * record;
 			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
@@ -687,9 +797,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
 		gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthFunc(WebGL2RenderingContext.LEQUAL);
-		// Lit models write depth; sprites only when opaque (see-through and added ones show what's behind them, drawn after).
-		gl.depthMask(p.kind == Lit3D || p.alpha == Opaque);
-		if (p.doubleSided || p.kind == Sprite3D || p.kind == Particle3D)
+		// Lit models and casters write depth; sprites only when opaque (see-through and added ones show what's behind them, drawn after).
+		gl.depthMask(p.kind == Lit3D || p.kind == Depth3D || p.alpha == Opaque);
+		if (p.doubleSided || p.kind == Sprite3D || p.kind == Particle3D || p.kind == Depth3D)
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
 		else
 			gl.enable(WebGL2RenderingContext.CULL_FACE);
@@ -726,6 +836,12 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid texture";
 		gl.deleteTexture(t);
 		textures.remove(handle);
+		var map = shadowMaps[handle];
+		if (map != null) {
+			for (framebuffer in map.framebuffers)
+				gl.deleteFramebuffer(framebuffer);
+			shadowMaps.remove(handle);
+		}
 		var target = targets[handle];
 		if (target != null) {
 			gl.deleteFramebuffer(target.framebuffer);
@@ -750,6 +866,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			if (made != null)
 				gl.deleteSampler(made);
 		samplers = [];
+		if (comparison != null)
+			gl.deleteSampler(comparison);
+		comparison = null;
 		#if hotreload live.remove(this); #end
 	}
 

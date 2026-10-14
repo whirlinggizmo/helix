@@ -105,6 +105,18 @@ class Camera3D {
 		return true;
 	}
 
+	/** The near clip plane's distance from the eye. */
+	public function getNear():Float
+		return near;
+
+	/** The far clip plane's distance from the eye. */
+	public function getFar():Float
+		return far;
+
+	/** An orthographic projection's height in world units; 0 for a perspective one. */
+	public function getOrthographicHeight():Float
+		return orthographicHeight;
+
 	/** Whether the projection is orthographic. */
 	public function isOrthographic():Bool
 		return orthographicHeight > 0;

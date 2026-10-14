@@ -31,4 +31,9 @@ enum abstract PipelineKind(Int) {
 		the vertex stage, by the emitter's settings in its uniforms. One texture, unlit; depth written only when opaque; nothing culled. Drawn by
 		IGraphics.drawMesh. */
 	var Particle3D = 6;
+
+	/** Shadow-map depth: Lit3D's vertices (Lit3DLayout's stride, Depth3DLayout reads their positions), each instance's placement (Depth3DLayout's
+		record: its model matrix's rows) from a stream buffer, through a light's view-projection (the vertex uniforms). Depth only, tested and
+		written; nothing culled, so a one-sided floor still casts. Drawn by IGraphics.drawMesh in a shadow pass (beginShadowPass). */
+	var Depth3D = 7;
 }

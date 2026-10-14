@@ -31,7 +31,7 @@ void main() {
             break;
         }
         vec3 to_light;
-        vec3 radiance = helix_light(i, helix_world_position(), to_light);
+        vec3 radiance = helix_light(i, helix_world_position(), n, to_light);
         light += radiance * max(dot(n, to_light), 0.0) / 3.14159265;
         glint += radiance * pow(max(dot(n, normalize(to_light + v)), 0.0), shininess);
     }

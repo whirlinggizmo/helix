@@ -13,10 +13,20 @@ import helix.render3d.Node.NodeKind;
 	worked out only where something changed), gathers the first four lights it finds, places each model's box and culls it against the
 	camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after
 	them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as
-	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). */
+	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material).
+
+	Shadows: lights that cast them (Light.setShadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of
+	a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the
+	maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels
+	the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its
+	cone. */
 class Stage3D {
 	static inline var MAX_LIGHTS = 4;
-	static inline var RECORD_FLOATS = 28;
+	// How far a directional light's map starts behind what the camera sees: casters out of view still cast into it.
+	static inline var SHADOW_PULLBACK = 50.;
+	// Per shadow layer, what the shaders read: its matrix (16), a texel in uv, a texel in world units, bias constant and slope, strength, near,
+	// far, perspective (1 or 0), tint rgb (linear), bias texels to depth units.
+	static inline var LAYER_FLOATS = 30;
 
 	var gpu:IGraphics;
 	var root = Node.group();
@@ -52,6 +62,30 @@ class Stage3D {
 	// Apps' surface shaders' pipelines, by the framework's variants, and the shader version they were made for.
 	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
 	var stackChanged:Array<Bool> = [];
+	// Shadows: the walk gathering casters rather than drawing; the casters (every model that casts, in view or not) and those of one layer.
+	var gathering = false;
+	var casters:Array<Caster> = [];
+	var casterCount = 0;
+	var layerCasters:Array<Caster> = [];
+	var depthPipeline:Int;
+	var casterCapacity = 256;
+	var casterBuffer:Int;
+	var casterRecords:Bytes;
+	// The shadow map (layers of the size the last drawShadows needed), and a map of one texel that stands in when there are none.
+	var shadowMap = 0;
+	var shadowMapSize = 0;
+	var shadowMapLayers = 0;
+	var noShadows:Int;
+	// The lights the last drawShadows gave a layer, in layer order, and what each layer's readers need.
+	var shadowLights:Array<Node> = [];
+	var shadowLayers = new Vector<Float>(MAX_LIGHTS * LAYER_FLOATS);
+	var shadowDraws = 0;
+	var shadowCasters = 0;
+	var lightView = new Mat4();
+	var lightProjection = new Mat4();
+	var lightViewProjection = new Mat4();
+	var lightPlanes = new Vector<Float>(24);
+	var depthUniforms = Bytes.alloc(Depth3DLayout.vertexUniformBytes);
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
@@ -73,6 +107,10 @@ class Stage3D {
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
 		sprites = new Sprites3D(gpu);
+		depthPipeline = gpu.createPipeline(Depth3D, Opaque);
+		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
+		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
+		noShadows = gpu.createShadowMap(1, 1);
 	}
 
 	/** The node everything on the stage hangs from. */
@@ -112,15 +150,255 @@ class Stage3D {
 	public function getDrawCount():Int
 		return draws + sprites.getDrawCount();
 
+	/** Draws into shadow maps by the last drawShadows: one a run of casters alike in mesh, in each light's layer. */
+	public function getShadowDrawCount():Int
+		return shadowDraws;
+
+	/** Casters drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
+	public function getShadowCasterCount():Int
+		return shadowCasters;
+
 	static inline function linear(channel:Int):Float {
 		var c = channel / 255;
 		return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
 	}
 
+	/** Draws the shadows of its casting lights (Light.setShadowCasting; the first four lights found) for what camera sees: each light's casters
+		into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move;
+		draws after use them. With no casting light or no caster, there are no shadows. */
+	public function drawShadows(camera:Camera3D):Void {
+		shadowDraws = 0;
+		shadowCasters = 0;
+		shadowLights.resize(0);
+		var viewProjection = camera.getViewProjection();
+		eyeX = camera.getEyeX();
+		eyeY = camera.getEyeY();
+		eyeZ = camera.getEyeZ();
+		lights.resize(0);
+		casterCount = 0;
+		gathering = true;
+		walk();
+		gathering = false;
+		var size = 0;
+		for (node in lights)
+			if (node.getLight().isShadowCasting()) {
+				shadowLights.push(node);
+				size = Std.int(Math.max(size, node.getLight().getShadowMapSize()));
+			}
+		if (shadowLights.length == 0 || casterCount == 0) {
+			shadowLights.resize(0);
+			return;
+		}
+		if (shadowMap == 0 || shadowMapSize != size || shadowMapLayers != shadowLights.length) {
+			if (shadowMap != 0)
+				gpu.destroyTexture(shadowMap);
+			shadowMap = gpu.createShadowMap(size, shadowLights.length);
+			shadowMapSize = size;
+			shadowMapLayers = shadowLights.length;
+		}
+		for (layer in 0...shadowLights.length) {
+			var light = shadowLights[layer].getLight(),
+				at = layer * LAYER_FLOATS;
+			var fit = light.getKind() == Spot ? fitSpot(shadowLights[layer], size) : fitDirectional(shadowLights[layer], camera, size);
+			for (i in 0...16)
+				shadowLayers[at + i] = lightViewProjection.get(i);
+			shadowLayers[at + 16] = 1 / size;
+			shadowLayers[at + 17] = fit.texelWorld;
+			shadowLayers[at + 18] = light.getShadowBiasConstant();
+			shadowLayers[at + 19] = light.getShadowBiasSlope();
+			shadowLayers[at + 20] = light.getShadowStrength();
+			shadowLayers[at + 21] = fit.near;
+			shadowLayers[at + 22] = fit.far;
+			shadowLayers[at + 23] = fit.perspective ? 1 : 0;
+			var tint = light.getShadowColor();
+			shadowLayers[at + 24] = linear(tint >>> 24);
+			shadowLayers[at + 25] = linear((tint >>> 16) & 255);
+			shadowLayers[at + 26] = linear((tint >>> 8) & 255);
+			// The bias is in texels, what acne is made of; an orthographic map's depth units are its range.
+			shadowLayers[at + 27] = fit.far > fit.near ? fit.texelWorld / (fit.far - fit.near) : 0;
+			drawLayer(layer);
+		}
+	}
+
+	// Fits a directional light's map to what camera sees out to its shadow distance, into lightViewProjection: a square around the view's slice
+	// from the near plane, as wide as the slice's bounding sphere (so its texels keep their size as the camera turns), its corner snapped to
+	// whole texels of a light space fixed to the world (so its shadows don't crawl as the camera moves), from SHADOW_PULLBACK behind the slice.
+	function fitDirectional(node:Node, camera:Camera3D, size:Int):{
+		texelWorld:Float,
+		near:Float,
+		far:Float,
+		perspective:Bool
+	} {
+		var w = node.getWorldMatrix(),
+			distance = node.getLight().getShadowDistance();
+		var dx = -w.get(8),
+			dy = -w.get(9),
+			dz = -w.get(10),
+			dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (dl > 0) {
+			dx /= dl;
+			dy /= dl;
+			dz /= dl;
+		} else {
+			dx = dz = 0;
+			dy = -1;
+		}
+		// The camera's frame: forward, right and up.
+		var fx = camera.getTargetX() - eyeX,
+			fy = camera.getTargetY() - eyeY,
+			fz = camera.getTargetZ() - eyeZ;
+		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+		fx /= fl;
+		fy /= fl;
+		fz /= fl;
+		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
+		var rx = fy * uz - fz * uy,
+			ry = fz * ux - fx * uz,
+			rz = fx * uy - fy * ux;
+		var rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
+		rx /= rl;
+		ry /= rl;
+		rz /= rl;
+		ux = ry * fz - rz * fy;
+		uy = rz * fx - rx * fz;
+		uz = rx * fy - ry * fx;
+		var aspect = camera.getViewportWidth() / camera.getViewportHeight(),
+			orthographic = camera.isOrthographic();
+		var corners = new Vector<Float>(24), cx = 0., cy = 0., cz = 0.;
+		for (p in 0...2) {
+			var z = p == 0 ? (orthographic ? 0 : camera.getNear()) : distance;
+			var halfHeight = orthographic ? camera.getOrthographicHeight() / 2 : Math.tan(camera.getFovY() / 2) * z,
+				halfWidth = halfHeight * aspect;
+			for (c in 0...4) {
+				var x = c & 1 != 0 ? halfWidth : -halfWidth,
+					y = c & 2 != 0 ? halfHeight : -halfHeight,
+					at = (p * 4 + c) * 3;
+				corners[at] = eyeX + fx * z + rx * x + ux * y;
+				corners[at + 1] = eyeY + fy * z + ry * x + uy * y;
+				corners[at + 2] = eyeZ + fz * z + rz * x + uz * y;
+				cx += corners[at] / 8;
+				cy += corners[at + 1] / 8;
+				cz += corners[at + 2] / 8;
+			}
+		}
+		// The slice's bounding sphere, its radius rounded up to a sixteenth so rounding error doesn't change it frame to frame.
+		var radius = 0.;
+		for (i in 0...8) {
+			var ex = corners[i * 3] - cx,
+				ey = corners[i * 3 + 1] - cy,
+				ez = corners[i * 3 + 2] - cz;
+			radius = Math.max(radius, Math.sqrt(ex * ex + ey * ey + ez * ez));
+		}
+		radius = Math.ceil(radius * 16) / 16;
+		// Light space: from the world's origin along the light, so a texel is the same place in the world whichever way the camera moves.
+		var flat = Math.abs(dy) > .99;
+		lightView.setLookAt(0, 0, 0, dx, dy, dz, 0, flat ? 0 : 1, flat ? 1 : 0);
+		var vx = lightView.get(0) * cx + lightView.get(4) * cy + lightView.get(8) * cz;
+		var vy = lightView.get(1) * cx + lightView.get(5) * cy + lightView.get(9) * cz;
+		// The view looks down -z: depth grows that way.
+		var depth = -(lightView.get(2) * cx + lightView.get(6) * cy + lightView.get(10) * cz);
+		var side = radius * 2, texel = side / size;
+		var left = Math.floor((vx - radius) / texel) * texel,
+			bottom = Math.floor((vy - radius) / texel) * texel;
+		var near = depth - radius - SHADOW_PULLBACK, far = depth + radius;
+		lightProjection.setOrthographicBox(left, left + side, bottom, bottom + side, near, far);
+		lightViewProjection.setProduct(lightProjection, lightView);
+		return {
+			texelWorld: texel,
+			near: near,
+			far: far,
+			perspective: false
+		};
+	}
+
+	// Fits a spot's map to its cone into lightViewProjection: a perspective from its position down its axis, a little wider than the cone, out to
+	// its range (or its shadow distance, the nearer).
+	function fitSpot(node:Node, size:Int):{
+		texelWorld:Float,
+		near:Float,
+		far:Float,
+		perspective:Bool
+	} {
+		var light = node.getLight(), w = node.getWorldMatrix();
+		var dx = -w.get(8),
+			dy = -w.get(9),
+			dz = -w.get(10),
+			dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (dl > 0) {
+			dx /= dl;
+			dy /= dl;
+			dz /= dl;
+		} else {
+			dx = dz = 0;
+			dy = -1;
+		}
+		var reach = light.getRange() > 0 ? Math.min(light.getRange(), light.getShadowDistance()) : light.getShadowDistance();
+		var cosOuter = Math.cos(light.getOuterCone());
+		var fovY = 2 * Math.acos(cosOuter < -.99 ? -.99 : cosOuter > 1 ? 1 : cosOuter) * 1.1;
+		fovY = fovY > 2.8 ? 2.8 : fovY < .02 ? .02 : fovY;
+		var px = w.get(12),
+			py = w.get(13),
+			pz = w.get(14),
+			flat = Math.abs(dy) > .99;
+		lightView.setLookAt(px, py, pz, px + dx, py + dy, pz + dz, 0, flat ? 0 : 1, flat ? 1 : 0);
+		lightProjection.setPerspective(fovY, 1, reach * .01, reach);
+		lightViewProjection.setProduct(lightProjection, lightView);
+		return {
+			texelWorld: 2 * Math.tan(fovY / 2) * reach / size,
+			near: reach * .01,
+			far: reach,
+			perspective: true
+		};
+	}
+
+	// Draws layer's casters into it, through lightViewProjection: those its view reaches, alike meshes one draw.
+	function drawLayer(layer:Int):Void {
+		planesOf(lightViewProjection, lightPlanes);
+		layerCasters.resize(0);
+		for (i in 0...casterCount) {
+			var c = casters[i];
+			if (inside(lightPlanes, c.cx, c.cy, c.cz, c.rx, c.ry, c.rz))
+				layerCasters.push(c);
+		}
+		gpu.beginShadowPass(shadowMap, layer);
+		var n = layerCasters.length;
+		if (n > 0) {
+			layerCasters.sort((a, b) -> a.mesh.id - b.mesh.id);
+			if (n > casterCapacity) {
+				while (casterCapacity < n)
+					casterCapacity *= 2;
+				gpu.destroyBuffer(casterBuffer);
+				casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
+				casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
+			}
+			for (i in 0...n) {
+				var w = layerCasters[i].node.getWorldMatrix(),
+					at = i * Depth3DLayout.instanceStride;
+				for (row in 0...3)
+					for (col in 0...4)
+						casterRecords.setFloat(at + Depth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+			}
+			gpu.updateBuffer(casterBuffer, casterRecords, n * Depth3DLayout.instanceStride);
+			lightViewProjection.writeTo(depthUniforms);
+			var uniforms = [depthUniforms], i = 0;
+			while (i < n) {
+				var last = i, mesh = layerCasters[i].mesh;
+				while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
+					last++;
+				gpu.drawMesh(depthPipeline, mesh.getVertexBuffer(gpu), mesh.getIndexBuffer(gpu), mesh.getIndexCount(), casterBuffer, i, last - i + 1, [], [],
+					uniforms);
+				shadowDraws++;
+				i = last + 1;
+			}
+			shadowCasters += n;
+		}
+		gpu.endTargetPass();
+	}
+
 	/** Draws the stage in the open frame, through camera, in its viewport. */
 	public function draw(camera:Camera3D):Void {
 		var viewProjection = camera.getViewProjection();
-		planesOf(viewProjection);
+		planesOf(viewProjection, planes);
 		eyeX = camera.getEyeX();
 		eyeY = camera.getEyeY();
 		eyeZ = camera.getEyeZ();
@@ -195,11 +473,14 @@ class Stage3D {
 			var parent = node.getParent();
 			var changed = node.update(parent.getWorldMatrix(), parentChanged);
 			switch (node.getKind()) {
+				case Model if (gathering):
+					gatherCaster(node);
 				case Model:
 					visitModel(node);
 				case LightNode:
 					if (lights.length < MAX_LIGHTS)
 						lights.push(node);
+				case _ if (gathering):
 				case SpriteNode:
 					sprites.visit(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 				case TextNode:
@@ -215,39 +496,79 @@ class Stage3D {
 		}
 	}
 
-	function planesOf(m:Mat4):Void
+	// The six planes of m's view (Gribb and Hartmann), each ax + by + cz + d >= 0 inside, into out.
+	static function planesOf(m:Mat4, out:Vector<Float>):Void
 		for (p in 0...6) {
 			var row = Std.int(p / 2), sign = p % 2 == 0 ? 1. : -1.;
 			for (c in 0...4)
-				planes[p * 4 + c] = m.get(c * 4 + 3) + sign * m.get(c * 4 + row);
-			var length = Math.sqrt(planes[p * 4] * planes[p * 4] + planes[p * 4 + 1] * planes[p * 4 + 1] + planes[p * 4 + 2] * planes[p * 4 + 2]);
+				out[p * 4 + c] = m.get(c * 4 + 3) + sign * m.get(c * 4 + row);
+			var length = Math.sqrt(out[p * 4] * out[p * 4] + out[p * 4 + 1] * out[p * 4 + 1] + out[p * 4 + 2] * out[p * 4 + 2]);
 			if (length > 0)
 				for (c in 0...4)
-					planes[p * 4 + c] /= length;
+					out[p * 4 + c] /= length;
 		}
 
-	function visitModel(node:Node):Void {
+	// Whether the box centered at c reaching r along each world axis is at least partly inside planes.
+	static function inside(planes:Vector<Float>, cx:Float, cy:Float, cz:Float, rx:Float, ry:Float, rz:Float):Bool {
+		for (p in 0...6) {
+			var a = planes[p * 4],
+				b = planes[p * 4 + 1],
+				c = planes[p * 4 + 2];
+			if (a * (cx + (a >= 0 ? rx : -rx)) + b * (cy + (b >= 0 ? ry : -ry)) + c * (cz + (c >= 0 ? rz : -rz)) + planes[p * 4 + 3] < 0)
+				return false;
+		}
+		return true;
+	}
+
+	// A model's box in the world, into boxX..boxRZ: its mesh's box's center moved, each world axis's reach the absolute matrix times the half
+	// extents.
+	var boxX = 0.;
+	var boxY = 0.;
+	var boxZ = 0.;
+	var boxRX = 0.;
+	var boxRY = 0.;
+	var boxRZ = 0.;
+
+	function placeBox(node:Node):Void {
 		var mesh = node.getMesh(), w = node.getWorldMatrix();
-		// The mesh's box placed: its center moved, each world axis's reach the absolute matrix times the half extents.
 		var hx = (mesh.getMaxX() - mesh.getMinX()) / 2,
 			hy = (mesh.getMaxY() - mesh.getMinY()) / 2,
 			hz = (mesh.getMaxZ() - mesh.getMinZ()) / 2;
 		var mx = (mesh.getMaxX() + mesh.getMinX()) / 2,
 			my = (mesh.getMaxY() + mesh.getMinY()) / 2,
 			mz = (mesh.getMaxZ() + mesh.getMinZ()) / 2;
-		var cx = w.get(0) * mx + w.get(4) * my + w.get(8) * mz + w.get(12);
-		var cy = w.get(1) * mx + w.get(5) * my + w.get(9) * mz + w.get(13);
-		var cz = w.get(2) * mx + w.get(6) * my + w.get(10) * mz + w.get(14);
-		var rx = Math.abs(w.get(0)) * hx + Math.abs(w.get(4)) * hy + Math.abs(w.get(8)) * hz;
-		var ry = Math.abs(w.get(1)) * hx + Math.abs(w.get(5)) * hy + Math.abs(w.get(9)) * hz;
-		var rz = Math.abs(w.get(2)) * hx + Math.abs(w.get(6)) * hy + Math.abs(w.get(10)) * hz;
-		for (p in 0...6) {
-			var a = planes[p * 4],
-				b = planes[p * 4 + 1],
-				c = planes[p * 4 + 2];
-			if (a * (cx + (a >= 0 ? rx : -rx)) + b * (cy + (b >= 0 ? ry : -ry)) + c * (cz + (c >= 0 ? rz : -rz)) + planes[p * 4 + 3] < 0)
-				return;
-		}
+		boxX = w.get(0) * mx + w.get(4) * my + w.get(8) * mz + w.get(12);
+		boxY = w.get(1) * mx + w.get(5) * my + w.get(9) * mz + w.get(13);
+		boxZ = w.get(2) * mx + w.get(6) * my + w.get(10) * mz + w.get(14);
+		boxRX = Math.abs(w.get(0)) * hx + Math.abs(w.get(4)) * hy + Math.abs(w.get(8)) * hz;
+		boxRY = Math.abs(w.get(1)) * hx + Math.abs(w.get(5)) * hy + Math.abs(w.get(9)) * hz;
+		boxRZ = Math.abs(w.get(2)) * hx + Math.abs(w.get(6)) * hy + Math.abs(w.get(10)) * hz;
+	}
+
+	// A model that casts, in view or not (see-through ones don't).
+	function gatherCaster(node:Node):Void {
+		if (!node.isShadowCasting() || node.getMaterial().isBlended() || node.getTint() & 255 < 255)
+			return;
+		placeBox(node);
+		if (casterCount == casters.length)
+			casters.push(new Caster());
+		var c = casters[casterCount++];
+		c.node = node;
+		c.mesh = node.getMesh();
+		c.cx = boxX;
+		c.cy = boxY;
+		c.cz = boxZ;
+		c.rx = boxRX;
+		c.ry = boxRY;
+		c.rz = boxRZ;
+	}
+
+	function visitModel(node:Node):Void {
+		var mesh = node.getMesh(), w = node.getWorldMatrix();
+		placeBox(node);
+		var cx = boxX, cy = boxY, cz = boxZ;
+		if (!inside(planes, cx, cy, cz, boxRX, boxRY, boxRZ))
+			return;
 		if (count == items.length)
 			items.push(new Item());
 		var item = items[count];
@@ -280,7 +601,8 @@ class Stage3D {
 	static inline function alike(a:Item, b:Item):Bool
 		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored;
 
-	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's), the tint (linear).
+	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the first's w the tangents' handedness, the
+	// second's whether shadows fall on it), the tint (linear).
 	function writeRecord(index:Int, item:Item):Void {
 		var w = item.node.getWorldMatrix(), r = inverse, at = index * Lit3DLayout.instanceStride;
 		inverseOf(w);
@@ -292,7 +614,7 @@ class Stage3D {
 		for (row in 0...3)
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
-					col < 3 ? r[row * 4 + col] : row == 0 && mirrored ? -1 : row == 0 ? 1 : 0);
+					col < 3 ? r[row * 4 + col] : row == 0 ? (mirrored ? -1 : 1) : row == 1 && item.node.isShadowReceiving() ? 1 : 0);
 		var tint = item.node.getTint();
 		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
 		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
@@ -327,7 +649,7 @@ class Stage3D {
 			r[i] *= scale;
 	}
 
-	// The fragment uniforms the whole draw shares: the camera, the ambient light and the lights (the material is a run's).
+	// The fragment uniforms the whole draw shares: the camera, the ambient light, the lights and their shadows (the material is a run's).
 	function writeScene():Void {
 		var u = fragmentUniforms;
 		u.setFloat(0, eyeX);
@@ -347,7 +669,7 @@ class Stage3D {
 					u.setFloat(position + k * 4, 0);
 					u.setFloat(direction + k * 4, 0);
 					u.setFloat(radiance + k * 4, 0);
-					u.setFloat(272 + i * 16 + k * 4, 0);
+					u.setFloat(272 + i * 16 + k * 4, k == 2 ? -1 : 0);
 				}
 				continue;
 			}
@@ -368,13 +690,24 @@ class Stage3D {
 			u.setFloat(direction + 12, light.getKind() == Spot ? 2 : light.getKind() == Point ? 1 : 0);
 			u.setFloat(272 + i * 16, Math.cos(light.getInnerCone()));
 			u.setFloat(276 + i * 16, Math.cos(light.getOuterCone()));
-			u.setFloat(280 + i * 16, 0);
+			// Its shadow slot: its layer of the map the last drawShadows made, or -1.
+			u.setFloat(280 + i * 16, shadowLights.indexOf(node));
 			u.setFloat(284 + i * 16, 0);
 			var color = light.getColor(), intensity = light.getIntensity();
 			u.setFloat(radiance, linear(color >>> 24) * intensity);
 			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);
 			u.setFloat(radiance + 8, linear((color >>> 8) & 255) * intensity);
 			u.setFloat(radiance + 12, 0);
+		}
+		// Each shadow layer: its matrix, then params, extra and tint (each four floats a layer).
+		for (layer in 0...MAX_LIGHTS) {
+			var at = layer * LAYER_FLOATS;
+			for (k in 0...16)
+				u.setFloat(336 + layer * 64 + k * 4, layer < shadowLights.length ? shadowLayers[at + k] : 0);
+			for (k in 0...12)
+				u.setFloat(592 + Std.int(k / 4) * 64 + layer * 16 + (k % 4) * 4, layer < shadowLights.length ? shadowLayers[at + 16 + k] : 0);
+			for (k in 0...4)
+				u.setFloat(720 + layer * 16 + k * 4, layer < shadowLights.length ? shadowLayers[at + 24 + k] : 0);
 		}
 	}
 
@@ -404,10 +737,12 @@ class Stage3D {
 			base = white;
 		if (normal == null)
 			normal = flat;
-		var shader = material.getShader();
+		var shader = material.getShader(),
+			shadows = shadowLights.length > 0 ? shadowMap : noShadows;
 		if (shader == null) {
 			gpu.drawMesh(pipelines[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(), instanceBuffer,
-				first, runCount, [base.getHandle(), normal.getHandle()], [base.getSampling(), normal.getSampling()], [vertexUniforms, u]);
+				first, runCount, [base.getHandle(), normal.getHandle(), shadows], [base.getSampling(), normal.getSampling(), Sampling.NEAREST],
+				[vertexUniforms, u]);
 			draws++;
 			return;
 		}
@@ -425,11 +760,16 @@ class Stage3D {
 		parameters.write(blocks);
 		var own = parameters.getTextureSlots(), textures = [], samplings = [];
 		for (slot in shader.getTextureSlots()) {
-			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
 			while (textures.length < slot) {
 				textures.push(0);
 				samplings.push(Sampling.NEAREST);
 			}
+			if (slot == 2) {
+				textures.push(shadows);
+				samplings.push(Sampling.NEAREST);
+				continue;
+			}
+			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
 			textures.push(texture.getHandle());
 			samplings.push(texture.getSampling());
 		}
@@ -461,7 +801,8 @@ class Stage3D {
 		return made.pipelines;
 	}
 
-	/** Frees the stage's own GPU objects (its pipelines, instance buffer and white texture); meshes and textures are their owners' to free. */
+	/** Frees the stage's own GPU objects (its pipelines, instance buffers, shadow maps and white texture); meshes and textures are their owners'
+		to free. */
 	public function destroy():Void {
 		for (made in surfacePipelines)
 			for (p in made.pipelines)
@@ -471,6 +812,11 @@ class Stage3D {
 			gpu.destroyPipeline(p);
 		sprites.destroy();
 		gpu.destroyBuffer(instanceBuffer);
+		gpu.destroyPipeline(depthPipeline);
+		gpu.destroyBuffer(casterBuffer);
+		gpu.destroyTexture(noShadows);
+		if (shadowMap != 0)
+			gpu.destroyTexture(shadowMap);
 		white.destroy(gpu);
 		flat.destroy(gpu);
 	}
@@ -500,5 +846,35 @@ private class Item {
 	public var order = 0;
 
 	/** An empty item, filled by the walk. */
+	public function new() {}
+}
+
+/** A model that casts shadows, gathered by drawShadows. Pooled. */
+private class Caster {
+	/** The model's node. */
+	public var node:Node;
+
+	/** Its mesh. */
+	public var mesh:Mesh;
+
+	/** Its box's center in the world, x. */
+	public var cx = 0.;
+
+	/** Its box's center, y. */
+	public var cy = 0.;
+
+	/** Its box's center, z. */
+	public var cz = 0.;
+
+	/** Its box's reach along world x. */
+	public var rx = 0.;
+
+	/** Its box's reach along world y. */
+	public var ry = 0.;
+
+	/** Its box's reach along world z. */
+	public var rz = 0.;
+
+	/** An empty caster, filled by the walk. */
 	public function new() {}
 }

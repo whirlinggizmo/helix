@@ -55,6 +55,23 @@ class Mat4 {
 		return true;
 	}
 
+	/** An orthographic projection of the box left..right, bottom..top (in view space's x and y), near..far its depth: GL clip depth (-1 near to 1
+		far). False, changing nothing, unless left < right, bottom < top and near < far. */
+	public function setOrthographicBox(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Bool {
+		if (!(right > left && top > bottom && far > near))
+			return false;
+		for (i in 0...16)
+			m[i] = 0;
+		m[0] = 2 / (right - left);
+		m[5] = 2 / (top - bottom);
+		m[10] = 2 / (near - far);
+		m[12] = (left + right) / (left - right);
+		m[13] = (bottom + top) / (bottom - top);
+		m[14] = (far + near) / (near - far);
+		m[15] = 1;
+		return true;
+	}
+
 	/** A view from eye looking at target, up giving the roll: right-handed, the eye looking down its -z. False, changing nothing, when the eye is at
 		the target or up is parallel to the view. */
 	public function setLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Bool {

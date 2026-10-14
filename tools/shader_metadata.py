@@ -2,7 +2,9 @@
 
 shaders.json lists each program: its packed vertex attributes (order and roles; "instance": true puts one in the
 second buffer, stepped once an instance), the textures it samples (each a role and its texture's name in the
-GLSL, each with a sampler of its own), and its uniform blocks (at most one a stage, each its bytes). Shader reflection describes inputs
+GLSL, each with a sampler of its own; "depth_array": true for a layered depth texture read through a comparison
+sampler, a shadow map), and its uniform blocks (at most one a stage, each its bytes). A program reading only some
+of another's vertices gives each buffer's "stride" (and "offset" on an attribute that doesn't follow the last). Shader reflection describes inputs
 and bindings, not CPU packing, so the manifest supplies that and the reflection must agree with it.
 Unsupported shapes fail closed. No generated C/GLSL text is inspected to discover bindings or filenames.
 Every program's headers are compiled into one C file, so its stages, uniform blocks and samplers need names of
@@ -88,10 +90,14 @@ def normalize(program, spec):
         require(attr is not None and attr['type'] == attribute['type'], f'Vertex schema mismatch: {attribute["role"]}')
         components = COMPONENTS[attribute['type']]
         buffer = 1 if attribute.get('instance') else 0
+        offset = attribute.get('offset', offsets[buffer])
+        require(offset >= offsets[buffer], f'Overlapping attribute: {attribute["role"]}')
         packed.append({'role': attribute['role'], 'name': attribute['name'], 'type': attribute['type'], 'buffer': buffer, 'slot': attr['slot'],
-                       'components': components, 'offset': offsets[buffer]})
-        offsets[buffer] += components * 4
-    contract = {'program': program['name'], 'stride': offsets[0], 'instanceStride': offsets[1], 'attributes': packed, 'textures': [], 'uniforms': []}
+                       'components': components, 'offset': offset})
+        offsets[buffer] = offset + components * 4
+    strides = [spec.get('stride', offsets[0]), spec.get('instanceStride', offsets[1])]
+    require(strides[0] >= offsets[0] and strides[1] >= offsets[1], 'A stride shorter than its attributes')
+    contract = {'program': program['name'], 'stride': strides[0], 'instanceStride': strides[1], 'attributes': packed, 'textures': [], 'uniforms': []}
     wanted = spec['textures']
     for key in ['views', 'samplers', 'texture_sampler_pairs']:
         require(isinstance(program.get(key, []), list) and len(program.get(key, [])) == len(wanted), f'Expected {len(wanted)} {key} binding(s)')
@@ -101,8 +107,9 @@ def normalize(program, spec):
         require(len(views) == 1, f'Expected the texture {want["name"]}')
         fields(views[0], ['texture']); texture = views[0]['texture']
         fields(texture, ['slot', 'stage', 'name', 'multisampled', 'type', 'sample_type'])
+        depth = want.get('depth_array', False)
         require(texture['stage'] == 'fragment' and texture['multisampled'] is False and
-                texture['type'] == '2d' and texture['sample_type'] == 'float', 'Unsupported texture')
+                (texture['type'], texture['sample_type']) == (('array', 'depth') if depth else ('2d', 'float')), 'Unsupported texture')
         slot(texture['slot'], 32)
         pairs = [p for p in program['texture_sampler_pairs'] if isinstance(p, dict) and p.get('view_name') == want['name']]
         require(len(pairs) == 1, f'Expected one sampler for {want["name"]}')
@@ -112,12 +119,12 @@ def normalize(program, spec):
         require(len(samplers) == 1, f'Expected the sampler {pair["sampler_name"]}')
         sampler = samplers[0]
         fields(sampler, ['slot', 'stage', 'name', 'sampler_type'])
-        require(sampler['stage'] == 'fragment' and sampler['sampler_type'] == 'filtering', 'Unsupported sampler')
+        require(sampler['stage'] == 'fragment' and sampler['sampler_type'] == ('comparison' if depth else 'filtering'), 'Unsupported sampler')
         name(sampler['name']); slot(sampler['slot'], 16)
         require(pair['stage'] == 'fragment' and pair['view_slot'] == texture['slot'] and pair['sampler_slot'] == sampler['slot'],
                 'Inconsistent texture/sampler pair')
         name(pair['name']); name(pair['glsl_name']); slot(pair['slot'], 16)
-        contract['textures'].append({'role': want['role'], 'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
+        contract['textures'].append({'role': want['role'], 'depthArray': depth, 'view': texture['slot'], 'viewName': texture['name'], 'sampler': sampler['slot'],
                                      'samplerName': sampler['name'], 'unit': pair['slot'], 'uniform': pair['glsl_name']})
     blocks = program.get('uniform_blocks', [])
     require(isinstance(blocks, list) and len(blocks) == len(spec['uniforms']), 'Unexpected uniform blocks')
@@ -138,17 +145,22 @@ def normalize(program, spec):
 
 
 def load_spec(spec):
-    fields(spec, ['program', 'attributes', 'textures', 'uniforms']); name(spec['program'])
+    fields(spec, ['program', 'attributes', 'textures', 'uniforms'], ['stride', 'instanceStride']); name(spec['program'])
+    for key in ['stride', 'instanceStride']:
+        require(key not in spec or type(spec[key]) is int and spec[key] > 0 and spec[key] % 4 == 0, f'{key} is a positive multiple of 4')
     require(isinstance(spec['attributes'], list) and spec['attributes'], 'Expected packed attributes')
     for attribute in spec['attributes']:
-        fields(attribute, ['role', 'name', 'type'], ['instance']); name(attribute['role']); name(attribute['name'])
+        fields(attribute, ['role', 'name', 'type'], ['instance', 'offset']); name(attribute['role']); name(attribute['name'])
+        require('offset' not in attribute or type(attribute['offset']) is int and attribute['offset'] >= 0 and attribute['offset'] % 4 == 0,
+                'An offset is a multiple of 4')
         require(attribute['type'] in COMPONENTS, 'Unsupported CPU vertex packing')
         require(attribute.get('instance', False) in (True, False), 'instance is true or false')
     require(len({a['name'] for a in spec['attributes']}) == len(spec['attributes']) and
             len({a['role'] for a in spec['attributes']}) == len(spec['attributes']), 'Duplicate vertex schema names or roles')
     require(isinstance(spec['textures'], list), 'textures is a list')
     for texture in spec['textures']:
-        fields(texture, ['role', 'name']); name(texture['role']); name(texture['name'])
+        fields(texture, ['role', 'name'], ['depth_array']); name(texture['role']); name(texture['name'])
+        require(texture.get('depth_array', False) in (True, False), 'depth_array is true or false')
     require(len({t['role'] for t in spec['textures']}) == len(spec['textures']), 'Duplicate texture roles')
     require(isinstance(spec['uniforms'], list), 'uniforms is a list')
     for block in spec['uniforms']:

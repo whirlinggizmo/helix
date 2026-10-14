@@ -127,7 +127,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 336
+          "bytes": 784
         }
       ],
       "textures": [
@@ -138,6 +138,11 @@
         {
           "role": "normal",
           "name": "lit3d_normal_texture"
+        },
+        {
+          "role": "shadow",
+          "name": "lit3d_shadow_texture",
+          "depth_array": true
         }
       ]
     },
@@ -238,6 +243,42 @@
           "name": "particle3d_texture"
         }
       ]
+    },
+    {
+      "program": "depth3d",
+      "stride": 48,
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 64
+        }
+      ],
+      "textures": []
     }
   ]
 }

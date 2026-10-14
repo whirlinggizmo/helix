@@ -16,11 +16,13 @@ typedef ShaderBlock = {
 	var vec4s:Int;
 }
 
-/** A texture a program samples: its binding slot (its sampler's too), its stage, and the GLSL name of the pair. */
+/** A texture a program samples: its binding slot (its sampler's too), its stage, the GLSL name of the pair, and whether it is a shadow map (a
+	depth array read through a comparison sampler: a surface shader's slot 2). */
 typedef ShaderTexture = {
 	var slot:Int;
 	var stage:String;
 	var glslName:String;
+	var shadow:Bool;
 }
 
 /** An app's compiled shader, as a .hxshader holds it (tools/pack_shader.py): the program in every dialect HeliX's adapters use (GLSL 410

@@ -211,6 +211,85 @@ class Render3DTests {
 			&& helix.render3d.Gltf.resolve("models/car.gltf", "../../x.png") == null
 			&& helix.render3d.Gltf.resolve("models/car.gltf", "https://example.com/x.png") == null,
 			"URIs resolve beside the model, inside the assets");
+		shadows();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// Shadows: which lights cast and how their settings take, which models cast into a layer, what the lit shader is told, and a sun's map holding
+	// its texels in place as the camera moves.
+	static function shadows():Void {
+		check(!new Light(Point).setShadowCasting(true) && new Light(Spot).setShadowCasting(true), "A point light doesn't cast; a spot does");
+		var sunLight = new Light(Directional);
+		check(sunLight.setShadowCasting(true) && sunLight.isShadowCasting(), "The sun casts when asked");
+		check(sunLight.setShadowMapSize(3000) && sunLight.getShadowMapSize() == 2048 && sunLight.setShadowMapSize(9999)
+			&& sunLight.getShadowMapSize() == 4096 && sunLight.setShadowMapSize(1) && sunLight.getShadowMapSize() == 256 && !sunLight.setShadowMapSize(0),
+			"Map sizes round down to a power of two, 256 to 4096");
+		check(!sunLight.setShadowBias(-1, 0) && !sunLight.setShadowDistance(0) && sunLight.setShadowStrength(3) && sunLight.getShadowStrength() == 1,
+			"Bad settings are refused; strength is clamped");
+		sunLight.setShadowMapSize(1024);
+		var gpu = new Render2DTests.CountingGraphics(),
+			stage = new helix.render3d.Stage3D(gpu);
+		var sun = Node.light(sunLight);
+		sun.lookAt(-.3, -1, -.2);
+		stage.add(sun);
+		stage.add(Node.model(Mesh.plane(20, 20), new Material()));
+		var pillar = Node.model(Mesh.cube(.5, 2, .5), new Material());
+		pillar.setPosition(0, 1, 0);
+		stage.add(pillar);
+		var glass = Node.model(Mesh.cube(1, 1, 1), new Material(), 0xffffff80);
+		glass.setPosition(3, 1, 0);
+		stage.add(glass);
+		var kept = Node.model(Mesh.cube(1, 1, 1), new Material());
+		check(kept.setShadowCasting(false) && !kept.isShadowCasting() && !Node.group().setShadowCasting(true), "Only a model casts, unless told not to");
+		stage.add(kept);
+		var view = new Camera3D();
+		view.setViewport(800, 600);
+		view.setView(0, 6, 12, 0, 0, 0);
+		stage.drawShadows(view);
+		check(gpu.shadowPasses.join(",") == "0" && stage.getShadowCasterCount() == 2 && stage.getShadowDrawCount() == 2,
+			"The sun's layer gets the floor and the pillar, not the see-through model or the one that doesn't cast");
+		var map = @:privateAccess stage.lightViewProjection;
+		var middle = clip(map, 0, 0, 0);
+		check(Math.abs(middle[0]) < 1 && Math.abs(middle[1]) < 1 && Math.abs(middle[2]) < 1, "What the camera looks at is inside the sun's map");
+		// A point's place in texels keeps its fraction as the camera slides: the map moves by whole texels.
+		function texelPhase():Float {
+			var at = clip(@:privateAccess stage.lightViewProjection, 1.234, 0, -.567),
+				u = (at[0] * .5 + .5) * 1024;
+			return u - Math.floor(u);
+		}
+		var phase = texelPhase(), held = true;
+		for (k in 1...6) {
+			view.setView(k * .0137, 6, 12 - k * .0291, k * .0137, 0, -k * .0291);
+			stage.drawShadows(view);
+			held = held && Math.abs(texelPhase() - phase) < 1e-3;
+		}
+		check(held, "The sun's texels stay put in the world as the camera moves");
+		gpu.beginFrame(800, 600, 0);
+		stage.draw(view);
+		var fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
+		check(fs.getFloat(280) == 0 && fs.getFloat(296) == -1, "The sun reads layer 0; light slots without a light read none");
+		check(fs.getFloat(592) == 1 / 1024 && fs.getFloat(656) == 1 && fs.getFloat(668) == 0, "A texel in uv, full strength, an orthographic map");
+		sunLight.setShadowCasting(false);
+		gpu.shadowPasses = [];
+		stage.drawShadows(view);
+		gpu.beginFrame(800, 600, 0);
+		stage.draw(view);
+		fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
+		check(gpu.shadowPasses.length == 0 && fs.getFloat(280) == -1, "With no casting light, no passes and no shadows");
+		// A spot: a perspective map whose cone holds what it points at.
+		var spotLight = new Light(Spot);
+		spotLight.setCone(.3, .5);
+		spotLight.setRange(30);
+		spotLight.setShadowCasting(true);
+		var spot = Node.light(spotLight);
+		spot.setPosition(0, 8, 4);
+		spot.lookAt(0, 0, 0);
+		stage.add(spot);
+		stage.drawShadows(view);
+		var below = clip(@:privateAccess stage.lightViewProjection, 0, 0, 0),
+			aside = clip(@:privateAccess stage.lightViewProjection, 8, 0, 0);
+		check(Math.abs(below[0] / below[3]) < 1e-6 && Math.abs(below[2] / below[3]) < 1, "The spot's map centers what it points at");
+		check(Math.abs(aside[0] / aside[3]) > 1, "Past its cone is outside its map");
+		stage.destroy();
 	}
 }

@@ -5,7 +5,12 @@
  *
  * Color space: the framebuffer holds sRGB values. The base color texture is decoded from sRGB; the normal map is linear (tangent space,
  * green up, as glTF's); factors, tints, emissive and light radiance are linear; lighting happens in linear space. i_normal0.w is the
- * tangents' handedness: -1 where the placement mirrors them.
+ * tangents' handedness: -1 where the placement mirrors them; i_normal1.w is 1 where the model receives shadows.
+ *
+ * Shadows: a casting light has a slot (light_spot[i].z; -1 for none), a layer of the shadow map (a depth array, read through a comparison
+ * sampler). Its map is looked up a texel or so along the normal (more where the light grazes the surface) with a little depth slack in texels
+ * on top, filtered over 3x3 texels by the GPU, and fades out over the map's last tenth. No branch guards these reads (Adreno's compiler can't
+ * bound one): what's outside the map is a weight.
  *
  * lit3d_vs_params: view_projection
  * lit3d_fs_params:
@@ -17,7 +22,11 @@
  *   light_position[i]  xyz position, w range (0: unlimited)
  *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point, 2 spot)
  *   light_radiance[i]  rgb color times intensity, linear
- *   light_spot[i]      x cos(inner cone), y cos(outer cone): a spot's full light inside the inner, none past the outer */
+ *   light_spot[i]      x cos(inner cone), y cos(outer cone): a spot's full light inside the inner, none past the outer; z its shadow slot
+ *   shadow_matrix[s]   world -> the slot's light's clip space (GL's -1..1 depth)
+ *   shadow_params[s]   x a texel in uv (1 / the map's size), y a texel in world units, z/w bias constant, slope (texels)
+ *   shadow_extra[s]    x strength (how much light a shadow takes); a perspective (spot) map: y/z its near and far, w 1
+ *   shadow_tint[s]     rgb what a shadow leaves behind (linear), w bias texels -> depth units (an orthographic map's) */
 @vs lit3d_vs
 layout(binding=0) uniform lit3d_vs_params {
     mat4 view_projection;
@@ -38,6 +47,7 @@ out vec4 v_tangent;
 out vec2 v_uv;
 out vec4 v_tint;
 out vec3 v_world;
+out float v_receive;
 void main() {
     vec4 p = vec4(position, 1.0);
     vec3 world = vec3(dot(i_model0, p), dot(i_model1, p), dot(i_model2, p));
@@ -47,6 +57,7 @@ void main() {
     v_uv = uv;
     v_tint = i_tint;
     v_world = world;
+    v_receive = i_normal1.w;
 }
 @end
 
@@ -62,16 +73,25 @@ layout(binding=1) uniform lit3d_fs_params {
     vec4 light_direction[4];
     vec4 light_radiance[4];
     vec4 light_spot[4];
+    mat4 shadow_matrix[4];
+    vec4 shadow_params[4];
+    vec4 shadow_extra[4];
+    vec4 shadow_tint[4];
 };
 layout(binding=0) uniform texture2D lit3d_base_texture;
 layout(binding=0) uniform sampler lit3d_base_sampler;
 layout(binding=1) uniform texture2D lit3d_normal_texture;
 layout(binding=1) uniform sampler lit3d_normal_sampler;
+layout(binding=2) uniform texture2DArray lit3d_shadow_texture;
+layout(binding=2) uniform sampler lit3d_shadow_sampler;
+@image_sample_type lit3d_shadow_texture depth
+@sampler_type lit3d_shadow_sampler comparison
 in vec3 v_normal;
 in vec4 v_tangent;
 in vec2 v_uv;
 in vec4 v_tint;
 in vec3 v_world;
+in float v_receive;
 out vec4 frag_color;
 
 vec3 srgb_to_linear(vec3 c) {
@@ -116,6 +136,41 @@ float attenuation(float d, float range) {
     float r = d / range;
     float w = clamp(1.0 - r * r * r * r, 0.0, 1.0);
     return w * w * inv_sq;
+}
+
+/* How much of shadow slot s's light reaches world (normal n, n_dot_l toward the light): 1 in the open, 0 in shadow, between across an edge. */
+float shadow_factor(int s, vec3 world, vec3 n, float n_dot_l) {
+    // Looked up a little along the normal rather than pushed far back in depth: no striping, and the shadow stays at its caster's foot.
+    float slant = 1.0 - clamp(n_dot_l, 0.0, 1.0);
+    vec4 clip = shadow_matrix[s] * vec4(world + n * (shadow_params[s].y * (1.0 + 2.0 * slant)), 1.0);
+    vec3 ndc = clip.xyz / max(abs(clip.w), 1e-6) * sign(clip.w);
+    vec2 uv = ndc.xy * 0.5 + 0.5;
+    /* Slack in texels. An orthographic map's depth is linear, converted once; a perspective map's isn't, so there it's taken in world units at
+     * this fragment's distance (a texel covers texel_world * z / far) and converted back. Both are worked out and one picked arithmetically; the
+     * clamps keep an orthographic slot's planes (0) finite, as mix() carries a NaN through even at weight 0. */
+    float texels = shadow_params[s].z + shadow_params[s].w * slant;
+    vec4 extra = shadow_extra[s];
+    float ortho_depth = ndc.z * 0.5 + 0.5 - texels * shadow_tint[s].w;
+    float near_z = max(extra.y, 1e-4);
+    float far_z = max(extra.z, near_z + 1e-3);
+    float z = 2.0 * near_z * far_z / max(far_z + near_z - ndc.z * (far_z - near_z), 1e-6);
+    float z_slack = max(z - texels * shadow_params[s].y * (z / far_z), near_z);
+    float spot_depth = (far_z + near_z - 2.0 * near_z * far_z / z_slack) / (far_z - near_z) * 0.5 + 0.5;
+    float depth = mix(ortho_depth, spot_depth, step(0.5, extra.w));
+    // Past the map's sides, its far end or behind the light, lit; fading over the last tenth, so a shadow running off the map dissolves.
+    vec2 to_edge = 1.0 - abs(ndc.xy);
+    float inside = step(0.0, min(to_edge.x, to_edge.y)) * step(depth, 1.0) * step(0.0, clip.w);
+    float edge = clamp(min(to_edge.x, to_edge.y) / 0.1, 0.0, 1.0) * inside;
+    float texel = shadow_params[s].x;
+    vec2 at = clamp(uv, vec2(texel), vec2(1.0 - texel));
+    float lit = 0.0;
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            lit += texture(sampler2DArrayShadow(lit3d_shadow_texture, lit3d_shadow_sampler),
+                           vec4(at + vec2(float(x), float(y)) * texel, float(s), clamp(depth, 0.0, 1.0)));
+        }
+    }
+    return mix(1.0, lit / 9.0, edge * extra.x);
 }
 
 void main() {
@@ -179,6 +234,13 @@ void main() {
         float visibility = 0.5 / max(gv + gl, 1e-6);
         vec3 diffuse = (1.0 - fresnel) * c_diff / PI;
         vec3 specular = fresnel * distribution * visibility;
+        // A light with a map is shadowed by it where the model receives; the tint is what a shadow keeps, deepest where it's darkest.
+        int s = int(light_spot[i].z);
+        if (s >= 0 && v_receive > 0.5) {
+            float lit_here = shadow_factor(s, v_world, n, n_dot_l);
+            color += shadow_tint[s].rgb * (1.0 - lit_here) * c_diff;
+            falloff *= lit_here;
+        }
         color += light_radiance[i].rgb * falloff * n_dot_l * (diffuse + specular);
     }
     color += emissive.rgb;

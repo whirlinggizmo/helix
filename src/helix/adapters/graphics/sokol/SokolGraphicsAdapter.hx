@@ -101,7 +101,7 @@ class SokolGraphicsAdapter implements IGraphics {
 		for (b in source.uniformBlocks)
 			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4s} ${b.glslName}');
 		for (t in source.textures)
-			lines.push('t ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
+			lines.push('${t.shadow ? "s" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
 		// Typed first: an anonymous structure's fields reach C++ as variants.
 		var vertex:String = source.glsl410.vertex,
 			fragment:String = source.glsl410.fragment,
@@ -130,6 +130,13 @@ class SokolGraphicsAdapter implements IGraphics {
 
 	public function createRenderTarget(width:Int, height:Int):Int
 		return valid(GraphicsBridge.target(width, height));
+
+	public function createShadowMap(size:Int, layers:Int):Int
+		return valid(GraphicsBridge.shadowMap(size, layers));
+
+	public function beginShadowPass(map:Int, layer:Int):Void
+		if (GraphicsBridge.beginShadow(map, layer) != 1)
+			throw "Invalid native shadow pass";
 
 	public function beginTargetPass(target:Int, clearColor:Int):Void
 		if (GraphicsBridge.beginTarget(target, clearColor) != 1)

@@ -47,11 +47,22 @@ interface IGraphics {
 		like any other, that a target pass draws into, with a depth buffer of its own. destroyTexture frees it. Throws for a size of 0 or less. */
 	public function createRenderTarget(width:Int, height:Int):Int;
 
+	/** Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass) and a Lit3D
+		pipeline samples at its shadow slot (Lit3DLayout.shadowUnit), through a comparison sampler (linear, less or equal, clamped to its edge;
+		the slot's sampling is ignored). Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. destroyTexture frees it. Throws for a
+		size or layer count of 0 or less, or past this GPU's. */
+	public function createShadowMap(size:Int, layers:Int):Int;
+
+	/** Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for Depth3D pipelines: clears it to the farthest
+		and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a
+		handle that isn't a shadow map or a layer it hasn't. */
+	public function beginShadowPass(map:Int, layer:Int):Void;
+
 	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets
 		the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
 	public function beginTargetPass(target:Int, clearColor:Int):Void;
 
-	/** Ends the pass beginTargetPass started; its target can be sampled from then on. Throws when no target pass is open. */
+	/** Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open. */
 	public function endTargetPass():Void;
 
 	/** Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all
@@ -69,8 +80,9 @@ interface IGraphics {
 
 	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
 		instance firstInstance of instances' upload this frame (the kind's layout's instanceStride bytes each), through a Lit3D pipeline (the
-		framework's program, or an app's surface shader) or a Sprite3D one (its one texture and vertex block): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
-		sample; the framework's are 0, the base color texture, sRGB, and 1, the normal map, linear), and uniforms[i] its uniform block at slot i
+		framework's program, or an app's surface shader), a Sprite3D or Particle3D one (its one texture and vertex block) or a Depth3D one (no
+		texture; its vertex block): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
+		sample; the framework's are 0, the base color texture, sRGB, 1, the normal map, linear, and 2, a shadow map), and uniforms[i] its uniform block at slot i
 		(null for one it lacks; 0 the vertex stage's, starting with the view-projection matrix, 1 the fragment stage's lights and material, as
 		Lit3DLayout and the surface kind lay them out). Throws for anything invalid, before drawing. */
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,

@@ -13,16 +13,16 @@
 #include "sokol_log.h"
 #include "shaders.h"
 
-static sg_shader shaders[5];
+static sg_shader shaders[6];
 /* Apps' programs (helix_shader), by shader slot: their uniform blocks' stages and sizes and their textures' count, by binding slot. A pipeline's
    app program, by pipeline slot (0 for the framework's). */
 #define MAX_BLOCKS 4
-#define MAX_TEXTURES 4
+#define MAX_TEXTURES 8
 static struct{int blocks,texture_mask,block_size[MAX_BLOCKS];}programs[256];static uint32_t pipeline_shaders[256];
 static sg_sampler sampler_of(int sampling);
 /* One sampler for each Sampling value used (helix.graphics.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
 static sg_sampler samplers[32];
-/* Per pipeline slot: its kind (0 Sprite2D, 1 Color3D, 2 Lines3D, 3 Lit3D). Per buffer slot: whether it is an index buffer. */
+/* Per pipeline slot: its kind (helix.graphics.PipelineKind). Per buffer slot: whether it is an index buffer. */
 static int pipeline_kinds[256],index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is. */
@@ -34,6 +34,10 @@ static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
 /* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A Lit3D pipeline's flipped twin (its
    front faces clockwise), by pipeline slot. */
 static struct{sg_view color,depth;sg_image depth_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
+/* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
+   (comparing, linear, clamped), made with the first. */
+#define MAX_SHADOW_LAYERS 16
+static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}shadow_maps[256];static sg_sampler comparison;
 static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
@@ -47,12 +51,14 @@ void helix_setup(void){
  shaders[2]=sg_make_shader(HELIX_LIT3D_SHADER_DESC(sg_query_backend()));
  shaders[3]=sg_make_shader(HELIX_SPRITE3D_SHADER_DESC(sg_query_backend()));
  shaders[4]=sg_make_shader(HELIX_PARTICLE3D_SHADER_DESC(sg_query_backend()));
+ shaders[5]=sg_make_shader(HELIX_DEPTH3D_SHADER_DESC(sg_query_backend()));
  memset(samplers,0,sizeof samplers);
- for(int i=0;i<5;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
+ for(int i=0;i<6;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
- for(int i=0;i<5;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
+ if(comparison.id)sg_destroy_sampler(comparison);
+ for(int i=0;i<6;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
 /* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8. */
 static sg_pixel_format format_of(int format){
@@ -97,6 +103,10 @@ static sg_blend_state blend_of(int blend){
  return (sg_blend_state){.enabled=true,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=dst,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=dst};
 }
 static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint32_t shader,int double_sided){
+ /* Casters: depth only into a shadow map, never culled (a one-sided floor still casts). */
+ if(kind==7)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[5],.layout=helix_depth3d_layout(),.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
+  .index_type=SG_INDEXTYPE_UINT32,.depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=true,.pixel_format=SG_PIXELFORMAT_DEPTH},
+  .cull_mode=SG_CULLMODE_NONE,.color_count=0,.sample_count=1});
  if(kind==4)return sg_make_pipeline(&(sg_pipeline_desc){.shader={shader},.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
   .depth={.compare=SG_COMPAREFUNC_ALWAYS,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,
   .colors[0].blend=blend_of(blend)});
@@ -117,7 +127,7 @@ static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint
 uint32_t helix_pipeline(int kind,int blend,uint32_t shader,int double_sided,int clockwise){
  if(blend<0||blend>2)return 0;
  /* Screen takes an app's program; Lit3D may (a surface shader). */
- if(kind<0||kind>6||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
+ if(kind<0||kind>7||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
  if(shader&&((shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID))return 0;
  sg_pipeline pipeline=make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
@@ -143,7 +153,8 @@ int helix_update(uint32_t id,const void *data,int bytes){
  if(bytes)sg_write_buffer_transient(&(sg_write_buffer_desc){.src.data={data,(size_t)bytes},.dst.buffer=current_buffer(id)});used[slot]=bytes;return 1;
 }
 /* An app's program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>"
-   a uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot. */
+   a uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot, "s <slot> <v|f> <name>" a
+   shadow map (a depth array) and its comparison sampler. */
 uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  sg_shader_desc desc={.vertex_func={.source=vs,.entry="main"},.fragment_func={.source=fs,.entry="main"},.label="app_shader"};
  static char names[32][128];int name=0,blocks=0,textures=0,sizes[MAX_BLOCKS]={0};
@@ -159,11 +170,12 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
    desc.uniform_blocks[slot].size=(uint32_t)size;desc.uniform_blocks[slot].glsl_uniforms[0].type=SG_UNIFORMTYPE_FLOAT4;
    desc.uniform_blocks[slot].glsl_uniforms[0].array_count=(uint16_t)count;desc.uniform_blocks[slot].glsl_uniforms[0].glsl_name=names[name++];
    sizes[slot]=size;if(slot+1>blocks)blocks=slot+1;
-  }else if(sscanf(line," t %d %c %127s%n",&slot,&stage,names[name],&used)==3){
+  }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s')){
    if(slot<0||slot>=MAX_TEXTURES)return 0;
-   const sg_shader_stage st=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;
-   desc.views[slot].texture=(sg_shader_texture_view){.stage=st,.image_type=SG_IMAGETYPE_2D,.sample_type=SG_IMAGESAMPLETYPE_FLOAT};
-   desc.samplers[slot]=(sg_shader_sampler){.stage=st,.sampler_type=SG_SAMPLERTYPE_FILTERING};
+   const sg_shader_stage st=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;const int shadow=kind=='s';
+   desc.views[slot].texture=(sg_shader_texture_view){.stage=st,.image_type=shadow?SG_IMAGETYPE_ARRAY:SG_IMAGETYPE_2D,
+    .sample_type=shadow?SG_IMAGESAMPLETYPE_DEPTH:SG_IMAGESAMPLETYPE_FLOAT};
+   desc.samplers[slot]=(sg_shader_sampler){.stage=st,.sampler_type=shadow?SG_SAMPLERTYPE_COMPARISON:SG_SAMPLERTYPE_FILTERING};
    desc.texture_sampler_pairs[slot]=(sg_shader_texture_sampler_pair){.stage=st,.view_slot=(uint8_t)slot,.sampler_slot=(uint8_t)slot,.glsl_name=names[name++]};
    textures|=1<<slot;
   }else return 0;
@@ -179,7 +191,8 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
 static void program_of(int pslot,int *blocks,int *sizes,int *mask){
  if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==5){*blocks=1;sizes[0]=HELIX_SPRITE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
  if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==6){*blocks=1;sizes[0]=HELIX_PARTICLE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
- if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=3;return;}
+ if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==7){*blocks=1;sizes[0]=HELIX_DEPTH3D_VERTEX_UNIFORM_BYTES;*mask=0;return;}
+ if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=7;return;}
  const int s=pipeline_shaders[pslot]&0xffff;*blocks=programs[s].blocks;memcpy(sizes,programs[s].block_size,sizeof programs[s].block_size);*mask=programs[s].texture_mask;
 }
 /* Binds textures (by slot, each of the program's set) into bindings, and checks uniforms: the blocks' bytes one after another by slot, each its
@@ -191,7 +204,9 @@ static int bind_program(int pslot,sg_bindings *bindings,const uint32_t *textures
  for(int i=0;i<texture_count;i++){
   if(!(mask&1<<i))continue;
   if(sg_query_view_state((sg_view){textures[i]})!=SG_RESOURCESTATE_VALID)return 0;
-  bindings->views[i]=(sg_view){textures[i]};bindings->samplers[i]=sampler_of(samplings[i]);
+  /* A shadow map is read through the comparison sampler. */
+  const int vslot=textures[i]&0xffff;
+  bindings->views[i]=(sg_view){textures[i]};bindings->samplers[i]=vslot<256&&shadow_maps[vslot].image.id?comparison:sampler_of(samplings[i]);
  }
  return 1;
 }
@@ -238,6 +253,33 @@ uint32_t helix_target(int w,int h){
  targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth});
  targets[slot].depth_image=depth;targets[slot].width=w;targets[slot].height=h;
  return texture.id;
+}
+/* A shadow map: a depth array of layers layers, each size x size, sampled through the returned texture view, with an attachment view a layer. */
+uint32_t helix_shadow_map(int size,int layers){
+ if(size<=0||size>16384||layers<=0||layers>MAX_SHADOW_LAYERS)return 0;
+ const sg_pixelformat_info info=sg_query_pixelformat(SG_PIXELFORMAT_DEPTH);
+ if(!info.depth||!info.sample)return 0;
+ sg_image image=sg_make_image(&(sg_image_desc){.type=SG_IMAGETYPE_ARRAY,.usage.depth_stencil_attachment=true,.width=size,.height=size,
+  .num_slices=layers,.pixel_format=SG_PIXELFORMAT_DEPTH,.sample_count=1,.label="helix-shadow-map"});
+ if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID){sg_destroy_image(image);return 0;}
+ sg_view texture=sg_make_view(&(sg_view_desc){.texture.image=image});
+ int slot=texture.id&0xffff;
+ if(slot>=256){sg_destroy_view(texture);sg_destroy_image(image);return 0;}
+ shadow_maps[slot].image=image;shadow_maps[slot].size=size;shadow_maps[slot].count=layers;
+ for(int i=0;i<layers;i++)shadow_maps[slot].layers[i]=sg_make_view(&(sg_view_desc){.depth_stencil_attachment={.image=image,.slice=i}});
+ if(!comparison.id)comparison=sg_make_sampler(&(sg_sampler_desc){.min_filter=SG_FILTER_LINEAR,.mag_filter=SG_FILTER_LINEAR,
+  .wrap_u=SG_WRAP_CLAMP_TO_EDGE,.wrap_v=SG_WRAP_CLAMP_TO_EDGE,.compare=SG_COMPAREFUNC_LESS_EQUAL});
+ return texture.id;
+}
+/* A depth-only pass into layer of map, cleared to the farthest and kept (sokol's default for depth is to discard it). Not flipped: a shadow map's
+   rows run bottom first, as its lookups expect. */
+int helix_begin_shadow(uint32_t map,int layer){
+ int slot=map&0xffff;
+ if(active||slot>=256||!shadow_maps[slot].image.id||layer<0||layer>=shadow_maps[slot].count||sg_query_view_state((sg_view){map})!=SG_RESOURCESTATE_VALID)return 0;
+ active=2;flipped=0;frame_width=frame_height=shadow_maps[slot].size;
+ sg_begin_pass(&(sg_pass){.action={.depth={.load_action=SG_LOADACTION_CLEAR,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f},
+  .stencil={.load_action=SG_LOADACTION_DONTCARE}},.attachments={.depth_stencil=shadow_maps[slot].layers[layer]},.label="helix-shadow-map"});
+ return 1;
 }
 static sg_color color_of(uint32_t color){return (sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
 /* A pass into target, cleared to color, before the screen's: drawn flipped where the backend's origin is the bottom left (GL). */
@@ -306,7 +348,8 @@ int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_coun
                     const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
  if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]<3||pipeline_kinds[pslot]==4)return 0;
- const int record=pipeline_kinds[pslot]==5?HELIX_SPRITE3D_INSTANCE_STRIDE:pipeline_kinds[pslot]==6?HELIX_PARTICLE3D_INSTANCE_STRIDE:HELIX_LIT3D_INSTANCE_STRIDE;
+ const int kind=pipeline_kinds[pslot];
+ const int record=kind==5?HELIX_SPRITE3D_INSTANCE_STRIDE:kind==6?HELIX_PARTICLE3D_INSTANCE_STRIDE:kind==7?HELIX_DEPTH3D_INSTANCE_STRIDE:HELIX_LIT3D_INSTANCE_STRIDE;
  if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
  if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot])return 0;
  if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
@@ -314,7 +357,7 @@ int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_coun
  sg_bindings bindings={.vertex_buffers={{vertices},current_buffer(instances)},.vertex_buffer_offsets[1]=first_instance*record,.index_buffer={indices}};
  if(!bind_program(pslot,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
  /* Flipped, the front faces wind the other way: the pipeline's twin. */
- sg_apply_pipeline(flipped?flipped_pipelines[pslot]:(sg_pipeline){p});
+ sg_apply_pipeline(flipped&&flipped_pipelines[pslot].id?flipped_pipelines[pslot]:(sg_pipeline){p});
  sg_apply_bindings(&bindings);
  apply_blocks(pslot,uniforms);
  bound[nslot]=1;
@@ -334,6 +377,10 @@ int helix_destroy(int kind,uint32_t id){
  }
  if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){
   sg_image image=sg_query_view_image((sg_view){id});sg_destroy_view((sg_view){id});sg_destroy_image(image);
+  if(slot<256&&shadow_maps[slot].image.id){
+   for(int i=0;i<shadow_maps[slot].count;i++)sg_destroy_view(shadow_maps[slot].layers[i]);
+   memset(&shadow_maps[slot],0,sizeof shadow_maps[slot]);
+  }
   if(slot<256&&targets[slot].color.id){sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);memset(&targets[slot],0,sizeof targets[slot]);}
   return 1;
  }
