@@ -144,8 +144,8 @@ class Stage2D {
 				h = maxY - minY + reach * 2;
 			case Text:
 				var font = node.font == null ? batch.getFont() : node.font;
-				w = Text2D.measure(font, node.content, node.textSize);
-				h = node.textSize;
+				w = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(font, node.content, node.textSize);
+				h = node.getTextHeight(font);
 				x = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
 			case Emitter:
 				// Not culled: particles reach past where it is.
@@ -168,8 +168,13 @@ class Stage2D {
 				var t = node.texture, tw = t.getWidth(), th = t.getHeight();
 				var sx = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceX : 0.,
 					sy = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceY : 0.;
-				batch.useTexture(t);
-				batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getSourceWidth()) / tw, (sy + node.getSourceHeight()) / th, node.color);
+				if (node.isNineSlice())
+					batch.nineSlice(t, x, y, w, h, node.sliceLeft, node.sliceTop, node.sliceRight, node.sliceBottom, node.color, sx, sy,
+						node.getSourceWidth(), node.getSourceHeight());
+				else {
+					batch.useTexture(t);
+					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getSourceWidth()) / tw, (sy + node.getSourceHeight()) / th, node.color);
+				}
 			case Rectangle:
 				if (o > 0)
 					batch.frame(x, y, w, h, o, node.color);
@@ -189,7 +194,10 @@ class Stage2D {
 				else
 					batch.polygon(node.points, node.color, node.triangles);
 			case Text:
-				Text2D.draw(batch, node.content, 0, 0, node.textSize, node.color, node.align, node.font);
+				if (node.wrapWidth > 0)
+					Text2D.drawWrapped(batch, node.content, 0, 0, node.textSize, node.wrapWidth, node.color, node.align, node.lineHeight, node.font);
+				else
+					Text2D.draw(batch, node.content, 0, 0, node.textSize, node.color, node.align, node.font);
 			case Group | Emitter:
 		}
 	}
@@ -307,9 +315,9 @@ class Stage2D {
 				var font = node.font != null ? node.font : lastFont;
 				if (font == null)
 					return false;
-				var w = Text2D.measure(font, node.content, node.textSize),
+				var w = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(font, node.content, node.textSize),
 					left = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
-				return x >= left && x <= left + w && y >= 0 && y <= node.textSize;
+				return x >= left && x <= left + w && y >= 0 && y <= node.getTextHeight(font);
 			case Emitter | Group:
 				return false;
 		}

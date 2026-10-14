@@ -23,6 +23,43 @@ class Text2D {
 		return width;
 	}
 
+	/** text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its
+		letters; a line break ("\n") always breaks. Lines keep no trailing spaces. */
+	public static function wrap(font:Font2D, text:String, size:Float, width:Float):Array<String> {
+		var lines = [];
+		for (paragraph in text.split("\n")) {
+			var line = "";
+			for (word in paragraph.split(" ")) {
+				var tried = line == "" ? word : line + " " + word;
+				if (measure(font, tried, size) <= width) {
+					line = tried;
+					continue;
+				}
+				if (line != "")
+					lines.push(line);
+				// A word wider than a line: as many of its letters as fit, line after line.
+				line = word;
+				while (line.length > 1 && measure(font, line, size) > width) {
+					var fit = 1;
+					while (fit < line.length && measure(font, line.substr(0, fit + 1), size) <= width)
+						fit++;
+					lines.push(line.substr(0, fit));
+					line = line.substr(fit);
+				}
+			}
+			lines.push(line);
+		}
+		return lines;
+	}
+
+	/** Draws text wrapped to width (wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x. */
+	public static function drawWrapped(batch:Batch2D, text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left,
+			lineHeight = 1.25, ?font:Font2D):Void {
+		var f = font == null ? batch.getFont() : font, row = 0;
+		for (line in wrap(f, text, size, width))
+			draw(batch, line, x, y + size * lineHeight * row++, size, color, align, font);
+	}
+
 	/** Draws text into batch, tinted color (0xRRGGBBAA), in font or the batch's built-in font. Characters without a glyph are skipped. */
 	public static function draw(batch:Batch2D, text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
 		if (font == null)

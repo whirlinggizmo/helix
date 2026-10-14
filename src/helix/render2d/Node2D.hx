@@ -14,6 +14,12 @@ class Node2D {
 	var children:Array<Node2D> = [];
 	var enabled = true;
 	var clipWidth = -1.;
+	var sliceLeft = 0.;
+	var sliceTop = 0.;
+	var sliceRight = 0.;
+	var sliceBottom = 0.;
+	var wrapWidth = 0.;
+	var lineHeight = 1.25;
 	var clipHeight = -1.;
 	var visible = true;
 	var pickable = true;
@@ -327,6 +333,47 @@ class Node2D {
 			return false;
 		align = value;
 		return true;
+	}
+
+	/** Draws a sprite as a nine-slice frame (Batch2D.nineSlice): its region's corners left, top, right and bottom texels in from its edges keep
+		their size as it's sized, its edges and middle stretch. All 0 (the start) draws it stretched whole. False for another kind or an inset
+		below 0. */
+	public function setNineSlice(left:Float, top:Float, right:Float, bottom:Float):Bool {
+		if (kind != Sprite || !(left >= 0 && top >= 0 && right >= 0 && bottom >= 0))
+			return false;
+		sliceLeft = left;
+		sliceTop = top;
+		sliceRight = right;
+		sliceBottom = bottom;
+		return true;
+	}
+
+	/** Whether a sprite draws as a nine-slice frame. */
+	public function isNineSlice():Bool
+		return sliceLeft > 0 || sliceTop > 0 || sliceRight > 0 || sliceBottom > 0;
+
+	/** A text's wrap width in its own units: 0 for one line. */
+	public function getWrapWidth():Float
+		return wrapWidth;
+
+	/** Wraps a text to width in its own units (Text2D.wrap), its lines lineHeight times its size apart; 0 for one line. False for another kind, a
+		width below 0 or a line height of 0 or less. */
+	public function setWrapWidth(width:Float, lineHeight = 1.25):Bool {
+		if (kind != Text || !(width >= 0) || !(lineHeight > 0))
+			return false;
+		wrapWidth = width;
+		this.lineHeight = lineHeight;
+		return true;
+	}
+
+	/** A text's height in its own units as drawn: its size, or its wrapped lines' (with font, the font it's drawn in). */
+	public function getTextHeight(font:Font2D):Float {
+		if (kind != Text)
+			return 0;
+		if (wrapWidth <= 0)
+			return textSize;
+		var lines = Text2D.wrap(font, content, textSize, wrapWidth).length;
+		return textSize * (1 + lineHeight * (lines - 1));
 	}
 
 	/** Whether its children are clipped (setClip). */

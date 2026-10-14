@@ -565,6 +565,7 @@ class Render2DTests {
 		batch.destroy();
 		pick2D();
 		clipping();
+		sliceAndWrap();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -668,5 +669,54 @@ class Render2DTests {
 		check(stage.pick(camera, 30, 30) == inside && stage.pick(camera, 30, 85) == null, "A row out of the window isn't picked");
 		list.clearClip();
 		check(stage.pick(camera, 30, 85) == outside, "Without the clip it is");
+	}
+
+	// Nine-slice frames and wrapped text.
+	static function sliceAndWrap():Void {
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			camera = new Camera2D();
+		camera.setViewport(400, 300);
+		camera.pixels(1);
+		var font = batch.getFont();
+		check(Text2D.measure(font, " ", 16) > 0, "A space has a width (wgrender-c's caa49dd)");
+		var lines = Text2D.wrap(font, "the quick brown fox jumps over the lazy dog", 16, 100);
+		check(lines.length > 1
+			&& [for (l in lines) if (Text2D.measure(font, l, 16) > 100) l].length == 0
+			&& lines.join(" ") == "the quick brown fox jumps over the lazy dog",
+			"Wrapped at spaces, no line wider than the width, nothing lost: "
+			+ lines.join("|"));
+		var long = Text2D.wrap(font, "abcdefghijklmnopqrstuvwxyz", 16, 60);
+		check(long.length > 1
+			&& long.join("") == "abcdefghijklmnopqrstuvwxyz"
+			&& [for (l in long) if (Text2D.measure(font, l, 16) > 60) l].length == 0,
+			"A word wider than a line, broken between its letters");
+		check(Text2D.wrap(font, "one\ntwo", 16, 1000).join("|") == "one|two", "A line break breaks");
+		// Nine quads, the corners keeping their texels' size; a frame too small shrinks them alike.
+		var texture = Texture2D.fromRgba(gpu, 16, 16, haxe.io.Bytes.alloc(16 * 16 * 4));
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		batch.nineSlice(texture, 10, 10, 200, 100, 4, 4, 4, 4);
+		batch.end();
+		var ninth = batch.getVertexCount();
+		batch.begin(camera);
+		batch.image(texture, 10, 10, 200, 100);
+		batch.end();
+		check(ninth == batch.getVertexCount() * 9, "Nine quads for a frame");
+		var stage = new Stage2D(), panel = Node2D.sprite(texture);
+		check(panel.setNineSlice(4, 4, 4, 4)
+			&& panel.isNineSlice()
+			&& !Node2D.rectangle(1, 1).setNineSlice(1, 1, 1, 1), "Nine-slice is a sprite's");
+		panel.setSize(200, 100);
+		panel.setPivot(0, 0);
+		stage.add(panel);
+		var note = Node2D.text("the quick brown fox jumps over the lazy dog", 16);
+		check(note.setWrapWidth(100) && !Node2D.circle(1).setWrapWidth(10), "Wrapping is a text's");
+		note.setPosition(250, 20);
+		stage.add(note);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(stage.pick(camera, 260, 50) == note && note.getTextHeight(font) > 40, "A wrapped text picked by its whole block, lines below the first");
 	}
 }

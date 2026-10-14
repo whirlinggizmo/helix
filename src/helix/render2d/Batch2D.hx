@@ -331,6 +331,34 @@ class Batch2D {
 		quad(x, y, width, height, sourceX / tw, sourceY / th, (sourceX + sourceWidth) / tw, (sourceY + sourceHeight) / th, tint);
 	}
 
+	/** Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y,
+		width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk
+		alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from
+		one image. */
+	public function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float,
+			tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0., sourceHeight = 0.):Void {
+		useTexture(texture);
+		var tw = texture.getWidth(), th = texture.getHeight();
+		if (!(sourceWidth > 0 && sourceHeight > 0)) {
+			sourceX = sourceY = 0;
+			sourceWidth = tw;
+			sourceHeight = th;
+		}
+		// Corners shrink together when the frame is narrower or shorter than they are.
+		var fitX = left + right > width && left + right > 0 ? width / (left + right) : 1.,
+			fitY = top + bottom > height && top + bottom > 0 ? height / (top + bottom) : 1.;
+		var xs = [x, x + left * fitX, x + width - right * fitX, x + width],
+			ys = [y, y + top * fitY, y + height - bottom * fitY, y + height];
+		var us = [sourceX, sourceX + left, sourceX + sourceWidth - right, sourceX + sourceWidth],
+			vs = [sourceY, sourceY + top, sourceY + sourceHeight - bottom, sourceY + sourceHeight];
+		for (row in 0...3)
+			for (col in 0...3) {
+				var w = xs[col + 1] - xs[col], h = ys[row + 1] - ys[row];
+				if (w > 0 && h > 0)
+					quad(xs[col], ys[row], w, h, us[col] / tw, vs[row] / th, us[col + 1] / tw, vs[row + 1] / th, tint);
+			}
+	}
+
 	/** Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places
 		are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An
 		emitter with nothing to draw draws nothing. */
