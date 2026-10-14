@@ -261,6 +261,28 @@ class Stage3D {
 	public function setTime(seconds:Float):Void
 		time = seconds;
 
+	/** Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. */
+	public function isCulling():Bool
+		return culling;
+
+	/** Culls, or draws everything (to measure what culling saves). */
+	public function setCulling(value:Bool):Void
+		culling = value;
+
+	var culling = true;
+
+	// m's view's planes into out; with culling off, planes everything is inside.
+	function viewPlanes(m:Mat4, out:Vector<Float>):Void {
+		if (culling) {
+			planesOf(m, out);
+			return;
+		}
+		for (p in 0...6) {
+			out[p * 4] = out[p * 4 + 1] = out[p * 4 + 2] = 0;
+			out[p * 4 + 3] = 1;
+		}
+	}
+
 	/** Models and sprites drawn by the last draw (in view). */
 	public function getDrawnCount():Int
 		return count + sprites.getDrawnCount();
@@ -477,7 +499,7 @@ class Stage3D {
 
 	// Draws layer's casters into it, through lightViewProjection: those its view reaches, alike meshes one draw.
 	function drawLayer(layer:Int):Void {
-		planesOf(lightViewProjection, lightPlanes);
+		viewPlanes(lightViewProjection, lightPlanes);
 		layerCasters.resize(0);
 		for (i in 0...casterCount) {
 			var c = casters[i];
@@ -748,7 +770,7 @@ class Stage3D {
 	/** Draws the stage in the open frame, through camera, in its viewport. */
 	public function draw(camera:Camera3D):Void {
 		var viewProjection = camera.getViewProjection();
-		planesOf(viewProjection, planes);
+		viewPlanes(viewProjection, planes);
 		eyeX = camera.getEyeX();
 		eyeY = camera.getEyeY();
 		eyeZ = camera.getEyeZ();

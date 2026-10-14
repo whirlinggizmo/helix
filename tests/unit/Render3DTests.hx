@@ -214,6 +214,7 @@ class Render3DTests {
 		shadows();
 		flags();
 		lightChoice();
+		cullingAndCasters();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -396,5 +397,37 @@ class Render3DTests {
 		check(u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION) == 50
 			|| u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION + 16) == 50,
 			"The table, as the shader reads it");
+	}
+
+	// The culling switch, and libwgf's shadow case: a caster above the view whose shadow falls into it is kept, one aside is dropped.
+	static function cullingAndCasters():Void {
+		var gpu = new Render2DTests.CountingGraphics(),
+			stage = new helix.render3d.Stage3D(gpu);
+		var floor = Node.model(Mesh.plane(10, 10), new Material()),
+			high = Node.model(Mesh.cube(1, 1, 1), new Material()),
+			aside = Node.model(Mesh.cube(1, 1, 1), new Material());
+		high.setPosition(0, 40, 0);
+		aside.setPosition(200, 1, 0);
+		stage.add(floor);
+		stage.add(high);
+		stage.add(aside);
+		var sunLight = new Light(Directional);
+		sunLight.setShadowCasting(true);
+		var sun = Node.light(sunLight);
+		// Straight down: up can't be +y then (lookAt would refuse), so it's -z.
+		check(sun.lookAt(0, -1, 0, 0, 0, -1), "A sun aimed straight down");
+		stage.add(sun);
+		var view = new Camera3D();
+		view.setViewport(800, 600);
+		view.setView(0, 6, 8, 0, 0, 0);
+		stage.drawShadows(view);
+		check(stage.getShadowCasterCount() == 2, "The floor and the cube high above (its shadow falls into view) cast; the one aside doesn't");
+		gpu.beginFrame(800, 600, 0);
+		stage.draw(view);
+		check(stage.getDrawnCount() == 1 && stage.isCulling(), "Only the floor is in view");
+		stage.setCulling(false);
+		stage.drawShadows(view);
+		stage.draw(view);
+		check(stage.getDrawnCount() == 3 && stage.getShadowCasterCount() == 3, "Culling off: everything drawn, every caster cast");
 	}
 }
