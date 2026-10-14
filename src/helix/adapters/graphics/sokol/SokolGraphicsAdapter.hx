@@ -91,8 +91,8 @@ class SokolGraphicsAdapter implements IGraphics {
 		};
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int
-		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0, shader, doubleSided ? 1 : 0));
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
+		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0, shader, doubleSided ? 1 : 0, clockwise ? 1 : 0));
 
 	public function createShader(source:ShaderSource):Int {
 		// The layout the bridge reads, a line each: attributes, uniform blocks, textures.

@@ -269,7 +269,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return programs[index];
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int {
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int {
 		// Screen takes an app's program; Lit3D may (a surface shader).
 		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
@@ -282,7 +282,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			shader: index,
 			app: shader,
 			alpha: alpha,
-			doubleSided: doubleSided
+			doubleSided: doubleSided,
+			clockwise: clockwise
 		};
 		return id;
 	}
@@ -608,8 +609,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		else
 			gl.enable(WebGL2RenderingContext.CULL_FACE);
 		gl.cullFace(WebGL2RenderingContext.BACK);
-		// Flipped, the front faces wind the other way.
-		gl.frontFace(flipped ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);
+		// Clockwise fronts for a mirrored model's pipeline; flipped, the front faces wind the other way again.
+		gl.frontFace(flipped != p.clockwise ? WebGL2RenderingContext.CW : WebGL2RenderingContext.CCW);
 		blend(p.alpha);
 		gl.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, indexCount, WebGL2RenderingContext.UNSIGNED_INT, 0, instanceCount);
 	}

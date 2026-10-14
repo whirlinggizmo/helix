@@ -24,8 +24,10 @@ interface IGraphics {
 
 	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle: with its framework shader, or with shader (a
 		createShader handle) for a kind that takes an app's: Screen always does, Lit3D may (a surface shader). doubleSided draws a Lit3D pipeline's back
-		faces too (its triangles aren't culled; the shader sees which side it draws through gl_FrontFacing); other kinds cull nothing anyway. Throws for a shader of another kind's layout. */
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int;
+		faces too (its triangles aren't culled; the shader sees which side it draws through gl_FrontFacing); other kinds cull nothing anyway.
+		clockwise makes a Lit3D pipeline's front faces the clockwise ones: for models whose placement mirrors them (an odd number of negative
+		scales), so they keep their faces. Throws for a shader of another kind's layout. */
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int;
 
 	/** Builds an app's program (a .hxshader's source, in this adapter's dialect) and returns its handle, for createPipeline. Throws, with the
 		compiler's log, for one that doesn't build. */

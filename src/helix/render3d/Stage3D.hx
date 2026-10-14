@@ -21,7 +21,7 @@ class Stage3D {
 	var root = Node.group();
 	var ambientColor = 0xffffffff;
 	var ambientIntensity = 0.;
-	// The framework's lit pipelines: opaque, blended, then each again double sided (index blended + 2 double sided).
+	// The framework's lit pipelines, by variant: blended + 2 double sided + 4 mirrored (front faces clockwise).
 	var pipelines:Array<Int>;
 	var white:Texture2D;
 	var flat:Texture2D;
@@ -45,14 +45,17 @@ class Stage3D {
 	var draws = 0;
 	var stack:Array<Node> = [];
 	var time = 0.;
-	// Apps' surface shaders' pipelines, as the framework's four, and the shader version they were made for.
+	// Apps' surface shaders' pipelines, by the framework's variants, and the shader version they were made for.
 	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
 	var stackChanged:Array<Bool> = [];
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		pipelines = [for (i in 0...4) gpu.createPipeline(Lit3D, i % 2 == 1, 0, i >= 2)];
+		pipelines = [
+			for (i in 0...8)
+				gpu.createPipeline(Lit3D, i & 1 != 0, 0, i & 2 != 0, i & 4 != 0)
+		];
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
 		white = Texture2D.fromRgba(gpu, 1, 1, pixel);
@@ -226,6 +229,9 @@ class Stage3D {
 		item.mesh = mesh;
 		item.material = node.getMaterial();
 		item.blended = item.material.isBlended() || node.getTint() & 255 < 255;
+		// A placement that mirrors (its matrix's determinant below 0) turns the triangles' winding over.
+		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
+			+ w.get(8) * (w.get(1) * w.get(6) - w.get(5) * w.get(2)) < 0;
 		item.depth = (cx - eyeX) * forwardX + (cy - eyeY) * forwardY + (cz - eyeZ) * forwardZ;
 		item.order = count;
 		count++;
@@ -240,11 +246,13 @@ class Stage3D {
 			return a.material.id - b.material.id;
 		if (a.mesh.id != b.mesh.id)
 			return a.mesh.id - b.mesh.id;
+		if (a.mirrored != b.mirrored)
+			return a.mirrored ? 1 : -1;
 		return a.order - b.order;
 	}
 
 	static inline function alike(a:Item, b:Item):Bool
-		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended;
+		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored;
 
 	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's), the tint (linear).
 	function writeRecord(index:Int, item:Item):Void {
@@ -404,11 +412,11 @@ class Stage3D {
 		draws++;
 	}
 
-	// Which of a program's four pipelines draws item: blended or not, double sided or not.
+	// Which of a program's pipelines draws item: blended or not, double sided or not, mirrored or not.
 	static inline function variant(item:Item):Int
-		return (item.blended ? 1 : 0) + (item.material.isDoubleSided() ? 2 : 0);
+		return (item.blended ? 1 : 0) + (item.material.isDoubleSided() ? 2 : 0) + (item.mirrored ? 4 : 0);
 
-	// shader's four pipelines, made again after the shader reloads.
+	// shader's pipelines, made again after the shader reloads.
 	function surfacePipeline(shader:helix.graphics.Shader):Array<Int> {
 		var made = surfacePipelines.get(shader);
 		if (made == null || made.version != shader.getVersion()) {
@@ -417,8 +425,8 @@ class Stage3D {
 					gpu.destroyPipeline(p);
 			made = {
 				pipelines: [
-					for (i in 0...4)
-						gpu.createPipeline(Lit3D, i % 2 == 1, shader.getHandle(), i >= 2)
+					for (i in 0...8)
+						gpu.createPipeline(Lit3D, i & 1 != 0, shader.getHandle(), i & 2 != 0, i & 4 != 0)
 				],
 				version: shader.getVersion()
 			};
@@ -454,6 +462,9 @@ private class Item {
 
 	/** Whether it is see-through (its material's or its tint's alpha). */
 	public var blended = false;
+
+	/** Whether its placement mirrors it, so its front faces wind clockwise. */
+	public var mirrored = false;
 
 	/** Its box's center's distance along the camera's view. */
 	public var depth = 0.;

@@ -102,14 +102,14 @@ static sg_pipeline make_pipeline(int kind,int alpha,sg_face_winding winding,uint
   .cull_mode=kind==3&&!double_sided?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=winding,
   .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
 }
-uint32_t helix_pipeline(int kind,int alpha,uint32_t shader,int double_sided){
+uint32_t helix_pipeline(int kind,int alpha,uint32_t shader,int double_sided,int clockwise){
  /* Screen takes an app's program; Lit3D may (a surface shader). */
  if(kind<0||kind>4||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
  if(shader&&((shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID))return 0;
- sg_pipeline pipeline=make_pipeline(kind,alpha,SG_FACEWINDING_CCW,shader,double_sided);
+ sg_pipeline pipeline=make_pipeline(kind,alpha,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
- /* A lit pipeline's twin for flipped passes: its front faces clockwise. */
- flipped_pipelines[pipeline.id&0xffff]=kind==3?make_pipeline(kind,alpha,SG_FACEWINDING_CW,shader,double_sided):(sg_pipeline){0};
+ /* A lit pipeline's twin for flipped passes: its front faces the other way round. */
+ flipped_pipelines[pipeline.id&0xffff]=kind==3?make_pipeline(kind,alpha,clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW,shader,double_sided):(sg_pipeline){0};
  pipeline_kinds[pipeline.id&0xffff]=kind;pipeline_shaders[pipeline.id&0xffff]=shader;return pipeline.id;
 }
 int helix_update(uint32_t id,const void *data,int bytes){

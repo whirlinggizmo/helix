@@ -34,8 +34,6 @@ Found while documenting every public member (2026-10-13), by reading each implem
 - `DomInputAdapter` gates only keydown on `active`: pointer, mouse and wheel still record while inactive.
 - `InputState.clear()` keeps typed text and wheel notches.
 
-- `Stage3D` culls back faces assuming counter-clockwise fronts, so a mirrored model (a negative scale, an odd number of them) loses its faces. The record carries the mirror sign already; a mirrored pipeline (front faces culled) is the fix, as the earlier frameworks had.
-
 - A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**

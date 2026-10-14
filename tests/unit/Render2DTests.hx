@@ -34,7 +34,7 @@ class CountingGraphics implements IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false):Int
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
 		return next++;
 
 	public var screen:Null<{textures:Array<Int>, uniforms:Array<Null<Bytes>>}>;
@@ -68,8 +68,11 @@ class CountingGraphics implements IGraphics {
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void
 		draws.push({vertices: vertices, first: firstVertex, sampling: sampling});
 
+	public var meshPipelines:Array<Int> = [];
+
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,
-		textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
+			textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void
+		meshPipelines.push(pipeline);
 
 	public function endFrame():Void {}
 
@@ -379,6 +382,24 @@ class Render2DTests {
 		catch (e:Dynamic)
 			refused = true;
 		check(refused, "A shader of another kind isn't a screen effect");
+		// A mirrored model (a negative scale) draws through another pipeline than an ordinary one: its front faces wind the other way.
+		var stage3D = new helix.render3d.Stage3D(gpu),
+			cube = helix.render3d.Mesh.cube(1, 1, 1),
+			material = new helix.render3d.Material();
+		var plain = helix.render3d.Node.model(cube, material),
+			mirrored = helix.render3d.Node.model(cube, material);
+		plain.setPosition(-2, 0, 0);
+		mirrored.setPosition(2, 0, 0);
+		mirrored.setScale(-1, 1, 1);
+		stage3D.add(plain);
+		stage3D.add(mirrored);
+		var view = new helix.render3d.Camera3D();
+		view.setViewport(400, 300);
+		gpu.meshPipelines = [];
+		stage3D.draw(view);
+		check(stage3D.getDrawCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
+			"A mirrored model is its own run, through another pipeline");
+		stage3D.destroy();
 		batch.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
