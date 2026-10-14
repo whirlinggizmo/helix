@@ -84,6 +84,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
 | `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |
 | `render-target` | drawing into textures: a low-resolution pixel view, an orthographic minimap, a text label worn by a globe |
+| `postprocess` | screen effects of the example's own shaders (`shaders/*.glsl`, packed into `.hxshader` assets, reloaded as they're edited) over a finished frame |
 
 Still to come: milestones 3–6 (2D gfx; advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 

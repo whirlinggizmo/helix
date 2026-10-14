@@ -19,7 +19,7 @@ def test(shdc,native,audio_device):
     sys.path.insert(0,str(ROOT/'tools'))
     from fixtures import generate
     generate()
-    run([sys.executable,'tests/shaders/shader_metadata_test.py','--shdc',shdc or shutil.which('sokol-shdc') or 'sokol-shdc'])
+    for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py','--shdc',shdc or shutil.which('sokol-shdc') or 'sokol-shdc'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','-js','build/tests/package-smoke.js','-dce','full'])

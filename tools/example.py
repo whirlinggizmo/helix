@@ -2,7 +2,8 @@
 
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
 and page in examples/shared and the files in examples/assets. A larger example adds its autopilot/ scripts (served as assets/autopilot) and the
-files its assets/generate.py makes.
+files its assets/generate.py makes. An example's shaders/*.glsl are packed (tools/pack_shader.py) into assets/shaders/*.hxshader, and in dev
+packed again as they change, reloading in the page.
 
 autopilot builds both targets and replays each of the example's autopilot scripts on both: in a headless browser, and natively on a private
 display (tools/private_display.py), with sound off. Both must publish the same final game."""
@@ -16,6 +17,7 @@ import sys
 import time
 import urllib.request
 from shader_metadata import generate,manifest
+import pack_shader
 import fontbake
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -76,6 +78,16 @@ def assets(name,out):
         import importlib.util
         spec=importlib.util.spec_from_file_location(f'{name}_assets',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         shutil.copytree(module.generate(),out,dirs_exist_ok=True)
+    pack_shaders(name,out)
+
+def pack_shaders(name,out,since=0):
+    """The example's shaders/*.glsl packed into out/shaders/*.hxshader: those changed since `since` (a time), all by default. Returns the newest
+    source's time."""
+    newest=since
+    for source in sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl')):
+        stamp=source.stat().st_mtime;newest=max(newest,stamp)
+        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,out/'shaders'/(source.stem+'.hxshader'))
+    return newest
 
 def licenses(out):
     """HeliX's license, the third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
@@ -148,8 +160,11 @@ def main():
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),hxml(a.name,'web')],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
-            failed=None
+            failed=None;packed=time.time()
             while server.poll() is None:
+                # The example's shaders, packed again as they change; the page reloads the asset.
+                try:packed=pack_shaders(a.name,ROOT/f'build/web/{a.name}/assets',packed)
+                except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # A failed source is retried only once it changes again.
                 stamp=shader_stamp()
                 if stamp!=failed:

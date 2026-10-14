@@ -4,6 +4,7 @@ import helix.adapters.graphics.sokol.internal.GraphicsBridge;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
+import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 
@@ -57,8 +58,51 @@ class SokolGraphicsAdapter implements IGraphics {
 			throw "Invalid native mesh draw";
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool):Int
-		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0));
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int
+		return valid(GraphicsBridge.pipeline(cast kind, alpha ? 1 : 0, shader));
+
+	public function createShader(source:ShaderSource):Int {
+		// The layout the bridge reads, a line each: attributes, uniform blocks, textures.
+		var lines = [for (i in 0...source.attributes.length) 'a $i ${source.attributes[i]}'];
+		for (b in source.uniformBlocks)
+			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4s} ${b.glslName}');
+		for (t in source.textures)
+			lines.push('t ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
+		// Typed first: an anonymous structure's fields reach C++ as variants.
+		var vertex:String = source.glsl410.vertex,
+			fragment:String = source.glsl410.fragment,
+			layout:String = lines.join("\n");
+		var handle = GraphicsBridge.shader(cpp.ConstCharStar.fromString(vertex), cpp.ConstCharStar.fromString(fragment), cpp.ConstCharStar.fromString(layout));
+		if (handle == 0)
+			throw "The shader didn't build (see the log)";
+		return handle;
+	}
+
+	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var total = 0;
+		for (block in uniforms)
+			if (block != null)
+				total += block.length;
+		var packed = Bytes.alloc(total < 4 ? 4 : total), at = 0;
+		for (block in uniforms)
+			if (block != null) {
+				packed.blit(at, block, 0, block.length);
+				at += block.length;
+			}
+		var handles = new haxe.ds.Vector<cpp.UInt32>(textures.length < 1 ? 1 : textures.length),
+			modes = new haxe.ds.Vector<Int>(textures.length < 1 ? 1 : textures.length);
+		for (i in 0...textures.length) {
+			handles[i] = textures[i];
+			modes[i] = samplings[i];
+		}
+		if (GraphicsBridge.drawScreen(pipeline, cpp.Pointer.ofArray(handles.toData()).raw, cpp.Pointer.ofArray(modes.toData()).raw, textures.length,
+			pointer(packed), total) != 1)
+			throw "Invalid native screen draw";
+	}
+
+	public function destroyShader(handle:Int):Void
+		if (GraphicsBridge.destroy(3, handle) != 1)
+			throw "Invalid native shader";
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		if (usedBytes > data.length || usedBytes < 0 || GraphicsBridge.update(handle, pointer(data), usedBytes) != 1)

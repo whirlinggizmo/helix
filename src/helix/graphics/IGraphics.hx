@@ -22,8 +22,19 @@ interface IGraphics {
 		uint32 indices (little-endian). Throws for a bad size. */
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int;
 
-	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle. */
-	public function createPipeline(kind:PipelineKind, alpha:Bool):Int;
+	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle: with its framework shader, or with shader (a
+		createShader handle) for a kind that takes an app's, which Screen always does. Throws for a shader of another kind's layout. */
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int;
+
+	/** Builds an app's program (a .hxshader's source, in this adapter's dialect) and returns its handle, for createPipeline. Throws, with the
+		compiler's log, for one that doesn't build. */
+	public function createShader(source:ShaderSource):Int;
+
+	/** Draws one triangle over the viewport through a Screen pipeline: textures[i] (createTexture or createRenderTarget handles) bound at the
+		shader's texture slot i, sampled as samplings[i] says, and uniforms[i] the bytes of its uniform block at slot i (its declared size;
+		null for a slot it doesn't have). Block 0 is the vertex stage's clip scale, which the adapter sets. Throws for anything invalid, before
+		drawing. */
+	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
 	/** Replaces a stream buffer's contents with the first usedBytes of data, for the draws after it; inside a pass, any number of times a frame
 		(a buffer drawn into a target and then the screen is uploaded twice). Throws outside a pass, for an unknown handle or a size out of range. */
@@ -69,6 +80,9 @@ interface IGraphics {
 
 	/** Frees a handle from createBuffer. Whoever created a handle destroys it, once. Throws for an unknown handle. */
 	public function destroyBuffer(handle:Int):Void;
+
+	/** Frees a handle from createShader; the pipelines made with it can only be destroyed after. Throws for an unknown handle. */
+	public function destroyShader(handle:Int):Void;
 
 	/** Frees a handle from createPipeline. Whoever created a handle destroys it, once. Throws for an unknown handle. */
 	public function destroyPipeline(handle:Int):Void;

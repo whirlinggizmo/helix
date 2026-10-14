@@ -3,6 +3,7 @@ package helix.adapters.graphics.webgl2;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
+import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 import js.html.CanvasElement;
@@ -25,6 +26,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// Whether each TextureFormat is sampled, once asked.
 	var formats:Array<Null<Bool>> = [];
 	var pipelines:Map<Int, Dynamic> = [];
+	// Apps' programs (createShader), by handle: the linked program, its uniform blocks' locations and sizes, its textures' sampler locations.
+	var appShaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
 	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
 	var programs:Array<Dynamic> = [null, null, null];
 	var active = false;
@@ -267,12 +270,101 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return programs[index];
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool):Int {
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int {
+		// Screen takes an app's program and nothing else does yet.
+		if ((kind == Screen) != (shader != 0) || shader != 0 && !appShaders.exists(shader))
+			throw "Invalid pipeline shader";
 		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : 1;
-		program(index);
+		if (kind != Screen)
+			program(index);
 		var id = next++;
-		pipelines[id] = {kind: kind, shader: index, alpha: alpha};
+		pipelines[id] = {
+			kind: kind,
+			shader: index,
+			app: shader,
+			alpha: alpha
+		};
 		return id;
+	}
+
+	public function createShader(source:ShaderSource):Int {
+		var v = shader(WebGL2RenderingContext.VERTEX_SHADER, source.glsl300es.vertex),
+			f = shader(WebGL2RenderingContext.FRAGMENT_SHADER, source.glsl300es.fragment),
+			p = gl.createProgram();
+		gl.attachShader(p, v);
+		gl.attachShader(p, f);
+		for (i in 0...source.attributes.length)
+			gl.bindAttribLocation(p, i, source.attributes[i]);
+		gl.linkProgram(p);
+		gl.deleteShader(v);
+		gl.deleteShader(f);
+		if (!gl.getProgramParameter(p, WebGL2RenderingContext.LINK_STATUS)) {
+			var log = gl.getProgramInfoLog(p);
+			gl.deleteProgram(p);
+			throw log;
+		}
+		var blocks:Array<Null<{location:Dynamic, size:Int}>> = [],
+			textures:Array<Dynamic> = [];
+		for (b in source.uniformBlocks)
+			blocks[b.slot] = {location: gl.getUniformLocation(p, b.glslName), size: b.size};
+		gl.useProgram(p);
+		for (t in source.textures) {
+			textures[t.slot] = gl.getUniformLocation(p, t.glslName);
+			// Texture slot i samples unit i.
+			gl.uniform1i(textures[t.slot], t.slot);
+		}
+		var id = next++;
+		appShaders[id] = {program: p, blocks: blocks, textures: textures};
+		return id;
+	}
+
+	public function destroyShader(handle:Int):Void {
+		var s = appShaders[handle];
+		if (s == null)
+			throw "Invalid shader";
+		gl.deleteProgram(s.program);
+		appShaders.remove(handle);
+	}
+
+	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
+		var p = pipelines[pipeline];
+		if (!active || p == null || p.kind != Screen)
+			throw "Invalid screen draw";
+		var app = appShaders[p.app];
+		if (app == null || textures.length != app.textures.length)
+			throw "Invalid screen draw";
+		gl.useProgram(app.program);
+		for (i in 0...textures.length) {
+			var t = textures[i];
+			if (!this.textures.exists(t))
+				throw "Invalid screen draw texture";
+			gl.activeTexture(WebGL2RenderingContext.TEXTURE0 + i);
+			gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, this.textures[t]);
+			gl.bindSampler(i, sampler(samplings[i]));
+		}
+		for (slot in 0...app.blocks.length) {
+			var block = app.blocks[slot];
+			if (block == null)
+				continue;
+			var data = uniforms[slot];
+			if (data == null || data.length != block.size)
+				throw "Invalid screen draw uniforms";
+			var floats = new js.lib.Float32Array(Std.int(block.size / 4));
+			for (i in 0...floats.length)
+				floats[i] = data.getFloat(i * 4);
+			// Block 0 is the clip scale: y is -1 in a flipped pass.
+			if (slot == 0) {
+				floats[0] = 1;
+				floats[1] = flipped ? -1 : 1;
+			}
+			gl.uniform4fv(block.location, floats);
+		}
+		resetAttributes();
+		gl.disable(WebGL2RenderingContext.CULL_FACE);
+		gl.disable(WebGL2RenderingContext.DEPTH_TEST);
+		gl.depthMask(false);
+		blend(p.alpha);
+		gl.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {

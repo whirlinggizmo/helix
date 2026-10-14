@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
+import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -33,8 +34,18 @@ class CountingGraphics implements IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool):Int
+	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0):Int
 		return next++;
+
+	public var screen:Null<{textures:Array<Int>, uniforms:Array<Null<Bytes>>}>;
+
+	public function createShader(source:ShaderSource):Int
+		return next++;
+
+	public function destroyShader(handle:Int):Void {}
+
+	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void
+		screen = {textures: textures, uniforms: uniforms};
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
 		uploaded = data.sub(0, usedBytes);
@@ -268,6 +279,106 @@ class Render2DTests {
 		catch (e:Dynamic)
 			cff = true;
 		check(cff, "A file that isn't TrueType is refused");
+		// A screen effect's parameters land at their std140 offsets: a float, a vec3 at 16, a vec4 array's second element at 48, a mat4's second
+		// column at 96 + 16; the framework's block 1 holds the frame's size and the time; an unset texture is drawn as the frame.
+		var stages = {vertex: "", fragment: ""};
+		var text = haxe.Json.stringify({
+			helixShader: 1,
+			kind: "screen",
+			attributes: [],
+			glsl410: stages,
+			glsl300es: stages,
+			uniformBlocks: [
+				{
+					slot: 0,
+					stage: "vertex",
+					size: 16,
+					glslName: "v",
+					vec4s: 1,
+					name: "helix_screen_vs_params"
+				},
+				{
+					slot: 1,
+					stage: "fragment",
+					size: 16,
+					glslName: "f",
+					vec4s: 1,
+					name: "helix_screen_params"
+				},
+				{
+					slot: 2,
+					stage: "fragment",
+					size: 160,
+					glslName: "params",
+					vec4s: 10,
+					name: "params",
+					members: [
+						{
+							name: "strength",
+							type: "float",
+							offset: 0,
+							count: 1
+						},
+						{
+							name: "shift",
+							type: "vec3",
+							offset: 16,
+							count: 1
+						},
+						{
+							name: "weights",
+							type: "vec4",
+							offset: 32,
+							count: 3
+						},
+						{
+							name: "grade",
+							type: "mat4",
+							offset: 96,
+							count: 1
+						}
+					]
+				}
+			],
+			textures: [
+				{
+					slot: 0,
+					stage: "fragment",
+					name: "helix_screen_texture",
+					glslName: "a"
+				},
+				{
+					slot: 1,
+					stage: "fragment",
+					name: "noise_texture",
+					glslName: "b"
+				}
+			]
+		});
+		var shader = helix.graphics.Shader.fromText(gpu, text),
+			effect = new helix.graphics.ScreenEffect(gpu, shader);
+		check(effect.setFloat("strength", .5)
+			&& effect.setValues("shift", [1, 2, 3])
+			&& effect.setValues("weights", [0, 0, 0, 0, 7])
+			&& effect.setValues("grade", [0, 0, 0, 0, 9]),
+			"Parameters are set by name");
+		check(!effect.setFloat("missing", 1)
+			&& !effect.setValues("strength", [1, 2])
+			&& !effect.setTexture("helix_screen_texture", texture),
+			"Unknown parameters, too many values and the framework's texture are refused");
+		effect.draw(texture, 640, 480, 2.5);
+		var block = gpu.screen.uniforms[2], info = gpu.screen.uniforms[1];
+		check(block.getFloat(0) == .5 && block.getFloat(16) == 1 && block.getFloat(24) == 3 && block.getFloat(48) == 7 && block.getFloat(112) == 9,
+			"Values land at their std140 offsets");
+		check(info.getFloat(0) == 640 && info.getFloat(4) == 480 && info.getFloat(8) == 2.5, "Block 1 holds the frame's size and the time");
+		check(gpu.screen.textures.length == 2 && gpu.screen.textures[1] == texture.getHandle(), "An unset texture is drawn as the frame");
+		var other = helix.graphics.Shader.fromText(gpu, StringTools.replace(text, '"screen"', '"surface"'));
+		var refused = false;
+		try
+			new helix.graphics.ScreenEffect(gpu, other)
+		catch (e:Dynamic)
+			refused = true;
+		check(refused, "A shader of another kind isn't a screen effect");
 		batch.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

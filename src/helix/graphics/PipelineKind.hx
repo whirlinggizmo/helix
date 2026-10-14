@@ -1,6 +1,7 @@
 package helix.graphics;
 
-/** What a pipeline draws, each with its framework shader (src/helix/graphics/shaders) and vertex layout. */
+/** What a pipeline draws: its vertex layout and state, and its framework shader (src/helix/graphics/shaders) unless an app's is given
+	(IGraphics.createPipeline's shader). */
 enum abstract PipelineKind(Int) {
 	/** Textured, vertex-colored triangles in clip space: Sprite2DLayout's vertices, one texture. No depth test. */
 	var Sprite2D = 0;
@@ -15,4 +16,8 @@ enum abstract PipelineKind(Int) {
 		normal matrices' rows, its tint) from a stream buffer; lit by the fragment uniforms' lights. Depth-tested and written, back faces culled
 		(counter-clockwise is the front). Drawn by IGraphics.drawMesh. */
 	var Lit3D = 3;
+
+	/** A screen effect: one triangle over the whole viewport, no vertex buffers, an app's shader (a .hxshader of kind screen) sampling textures
+		such as a finished frame. No depth test. Drawn by IGraphics.drawScreen; it has no framework shader. */
+	var Screen = 4;
 }
