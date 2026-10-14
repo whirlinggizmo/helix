@@ -12,7 +12,6 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 ## Deferred until a game needs it
 
 - **Decided after measuring** (milestone 5 left them for numbers that call for them): a spatial index (both culling and picking walk every node; neither earlier framework needed one), visibility and pick masks, skipping the posing of characters out of view (libwgt: 400 models looking away 0.94 ms posed lazily, 16.1 posed; and its trap: culling by last frame's posed box never poses a culled model, so it never walks back into view), occlusion culling, per-instance picks. Also caching skinned poses for picks, if picking many characters is measured to cost.
-
 - **Animation layers:** an upper body's clip over a lower body's.
 - **Skinned surface shaders:** an app's surface shader on a skinned model (it's ignored today).
 - **Morph targets**, and more than four joints a vertex.
