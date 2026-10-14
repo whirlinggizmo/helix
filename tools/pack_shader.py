@@ -10,7 +10,7 @@ A shader is a fragment stage `@fs fs` that includes one framework block, which d
                                   `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, before placing)
 
 Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
-either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 3), each with a sampler at the same binding.
+either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 5), each with a sampler at the same binding.
 Uniform blocks 0 and 1 are the framework's.
 
     python3 tools/pack_shader.py [--shdc path] input.glsl output.hxshader"""
@@ -103,7 +103,8 @@ void main() {
 @end
 
 @block helix_surface
-// The stage's: its camera, ambient light and lights (as the lit models' shader has them), the material's own values, and the time.
+// The stage's: its camera, ambient light, lights, environment and tone mapping (as the lit models' shader has them), the material's own
+// values, and the time.
 layout(binding=1) uniform helix_surface_params {
     vec4 helix_camera;        // xyz the camera's position
     vec4 helix_ambient_light; // rgb linear, times intensity
@@ -118,6 +119,9 @@ layout(binding=1) uniform helix_surface_params {
     vec4 helix_shadow_params[4];
     vec4 helix_shadow_extra[4];
     vec4 helix_shadow_tint[4];
+    vec4 helix_tonemap_params; // x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale
+    vec4 helix_environment;    // x intensity (0: none), y the cube's last mip, z/w its rotation's cosine and sine
+    vec4 helix_irradiance[9];  // the environment's irradiance over pi: 9 spherical-harmonic coefficients, rgb each
     vec4 helix_fs_info;       // x seconds since the stage began
 };
 layout(binding=0) uniform texture2D helix_base_texture;
@@ -128,6 +132,10 @@ layout(binding=2) uniform texture2DArray helix_shadow_texture;
 layout(binding=2) uniform sampler helix_shadow_sampler;
 @image_sample_type helix_shadow_texture depth
 @sampler_type helix_shadow_sampler comparison
+layout(binding=3) uniform textureCube helix_environment_texture;
+layout(binding=3) uniform sampler helix_environment_sampler;
+layout(binding=4) uniform texture2D helix_brdf_texture;
+layout(binding=4) uniform sampler helix_brdf_sampler;
 in vec3 helix_v_normal;
 in vec4 helix_v_tangent;
 in vec2 helix_v_uv;
@@ -227,8 +235,32 @@ vec3 helix_light(int i, vec3 world, vec3 n, out vec3 to_light) {
     float lit;
     return helix_light_lit(i, world, n, to_light, lit);
 }
-// The stage's own shading of base with normal n (glTF metallic-roughness under its lights and ambient light, plus emission): for a shader
-// that only changes the inputs.
+// Whether the stage has an environment to light by.
+bool helix_has_environment() { return helix_environment.x > 0.0; }
+// A world direction in the environment's frame.
+vec3 helix_environment_direction(vec3 d) {
+    return vec3(helix_environment.z * d.x - helix_environment.w * d.z, d.y, helix_environment.w * d.x + helix_environment.z * d.z);
+}
+// The environment's light on a surface facing unit n, over pi (times a diffuse color: its diffuse light), times its intensity; 0 without one.
+vec3 helix_environment_irradiance(vec3 n) {
+    vec3 d = helix_environment_direction(n);
+    vec3 e = helix_irradiance[0].xyz * 0.282095 + helix_irradiance[1].xyz * (0.488603 * d.y) + helix_irradiance[2].xyz * (0.488603 * d.z)
+        + helix_irradiance[3].xyz * (0.488603 * d.x) + helix_irradiance[4].xyz * (1.092548 * d.x * d.y) + helix_irradiance[5].xyz * (1.092548 * d.y * d.z)
+        + helix_irradiance[6].xyz * (0.315392 * (3.0 * d.z * d.z - 1.0)) + helix_irradiance[7].xyz * (1.092548 * d.x * d.z)
+        + helix_irradiance[8].xyz * (0.546274 * (d.x * d.x - d.y * d.y));
+    return max(e, vec3(0.0)) * helix_environment.x;
+}
+// The environment as a surface of roughness (0..1) reflects it in world direction r, times its intensity; 0 without one.
+vec3 helix_environment_reflection(vec3 r, float roughness) {
+    return textureLod(samplerCube(helix_environment_texture, helix_environment_sampler), helix_environment_direction(r), roughness * helix_environment.y).rgb
+        * helix_environment.x;
+}
+// The split-sum BRDF table at n.v and roughness: specular reflectance is f0 * x + y.
+vec2 helix_environment_brdf(float n_dot_v, float roughness) {
+    return texture(sampler2D(helix_brdf_texture, helix_brdf_sampler), vec2(n_dot_v, roughness)).rg;
+}
+// The stage's own shading of base with normal n (glTF metallic-roughness under its lights, environment and ambient light, plus emission):
+// for a shader that only changes the inputs.
 vec3 helix_shade(vec3 n, vec4 base) {
     float metallic = helix_metallic(), alpha = helix_roughness() * helix_roughness(), alpha_sq = alpha * alpha;
     vec3 f0 = mix(vec3(0.04), base.rgb, metallic), c_diff = base.rgb * (1.0 - metallic);
@@ -252,9 +284,14 @@ vec3 helix_shade(vec3 n, vec4 base) {
         float gv = n_dot_l * sqrt(n_dot_v * n_dot_v * (1.0 - alpha_sq) + alpha_sq), gl = n_dot_v * sqrt(n_dot_l * n_dot_l * (1.0 - alpha_sq) + alpha_sq);
         color += radiance * n_dot_l * ((1.0 - fresnel) * c_diff / HELIX_PI + fresnel * distribution * 0.5 / max(gv + gl, 1e-6));
     }
+    if (helix_has_environment()) {
+        vec2 ab = helix_environment_brdf(n_dot_v, helix_roughness());
+        color += helix_environment_irradiance(n) * c_diff + helix_environment_reflection(reflect(-v, n), helix_roughness()) * (f0 * ab.x + ab.y);
+    }
     return color + helix_emission.rgb;
 }
-vec3 helix_tonemap(vec3 color) {
+// Khronos PBR Neutral.
+vec3 helix_tonemap_neutral(vec3 color) {
     const float start = 0.8 - 0.04, desaturation = 0.15;
     float x = min(color.r, min(color.g, color.b));
     color -= x < 0.08 ? x - 6.25 * x * x : 0.04;
@@ -264,6 +301,17 @@ vec3 helix_tonemap(vec3 color) {
     float new_peak = 1.0 - d * d / (peak + d - start);
     color *= new_peak / peak;
     return mix(color, vec3(new_peak), 1.0 - 1.0 / (desaturation * (peak - new_peak) + 1.0));
+}
+// The stage's exposure and tone mapping (none, Neutral or ACES) of linear color: into 0..1.
+vec3 helix_tonemap(vec3 color) {
+    color *= helix_tonemap_params.y;
+    int mode = int(helix_tonemap_params.x + 0.5);
+    if (mode == 1) return helix_tonemap_neutral(color);
+    if (mode == 2) {
+        color *= 0.6;
+        return clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), 0.0, 1.0);
+    }
+    return color;
 }
 // Writes linear color (tone mapped, then encoded as the framebuffer's sRGB) and alpha.
 void helix_output(vec3 color, float alpha) {
@@ -276,7 +324,7 @@ VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs'
 ATTRIBUTES = {'helix_screen': [], 'helix_surface': ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1',
                                                     'i_normal2', 'i_tint']}
 # The first texture binding an app's own may use.
-FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 3}
+FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 5}
 NO_VERTEX_HOOK = '''
 @block vertex
 void helix_vertex(inout vec3 position, inout vec3 normal) {}
@@ -368,7 +416,8 @@ def pack(shdc, source_path, output_path):
         if not pair['view_name'].startswith('helix_') and pair['view_slot'] < FIRST_TEXTURE[kind]:
             fail(f'{source_path}: texture {pair["view_name"]} needs binding {FIRST_TEXTURE[kind]} or more; the lower ones are the framework\'s')
         textures.append({'slot': pair['view_slot'], 'stage': pair['stage'], 'name': pair['view_name'], 'glslName': pair['glsl_name'],
-                         'shadow': views.get(pair['view_slot'], {}).get('sample_type') == 'depth'})
+                         'shadow': views.get(pair['view_slot'], {}).get('sample_type') == 'depth',
+                         'cube': views.get(pair['view_slot'], {}).get('type') == 'cube'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
     shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],

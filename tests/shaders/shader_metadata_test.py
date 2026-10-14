@@ -54,12 +54,16 @@ class ShaderMetadataTests(unittest.TestCase):
         (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
         by = {c['program']: c for c in contracts}
-        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d'])
-        sprite, color, lit, depth = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d']
+        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d'])
+        sprite, color, lit, depth, background = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d'], by['background3d']
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
         self.assertEqual(color['textures'], []); self.assertEqual([(u['stage'], u['bytes']) for u in sprite['uniforms']], [('vertex', 16)])
-        self.assertEqual([(t['role'], t['depthArray']) for t in lit['textures']], [('base', False), ('normal', False), ('shadow', True)])
+        self.assertEqual([(t['role'], t['depthArray'], t['cube']) for t in lit['textures']],
+                         [('base', False, False), ('normal', False, False), ('shadow', True, False), ('environment', False, True), ('brdf', False, False)])
+        # The background draws a triangle from its vertex index: no attributes, no vertex layout; one cube.
+        self.assertEqual((background['attributes'], [t['cube'] for t in background['textures']]), ([], [True]))
+        self.assertNotIn('helix_background3d_layout', (self.baseline / 'shaders.h').read_text())
         # The depth program reads the lit models' vertices: their stride, its own positions' offset.
         self.assertEqual((depth['stride'], depth['attributes'][0]['offset'], depth['instanceStride']), (48, 0, 48))
         self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))

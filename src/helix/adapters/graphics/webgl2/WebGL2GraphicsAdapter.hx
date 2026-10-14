@@ -29,8 +29,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var pipelines:Map<Int, Dynamic> = [];
 	// Apps' programs (createShader), by handle: the linked program, its uniform blocks' locations and sizes, its textures' sampler locations.
 	var appShaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
-	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d, sprite3d, particle3d, depth3d. Made on first use.
-	var programs:Array<Dynamic> = [null, null, null, null, null, null];
+	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d, sprite3d, particle3d, depth3d, background3d. Made on
+	// first use.
+	var programs:Array<Dynamic> = [null, null, null, null, null, null, null];
+	// Cube textures' handles.
+	var cubes:Map<Int, Bool> = [];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -79,12 +82,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				gl.deleteTexture(tex);
 				throw "Invalid texture";
 			}
-			var data = new js.lib.Uint8Array(levels[i].getData(), 0, levels[i].length);
-			if (format == Rgba8)
-				gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, i, WebGL2RenderingContext.RGBA, lw, lh, 0, WebGL2RenderingContext.RGBA,
-					WebGL2RenderingContext.UNSIGNED_BYTE, data);
-			else
-				gl.compressedTexImage2D(WebGL2RenderingContext.TEXTURE_2D, i, glFormat(format), lw, lh, 0, data);
+			upload(WebGL2RenderingContext.TEXTURE_2D, i, format, lw, lh, levels[i], 0);
 			lw = lw > 1 ? Std.int(lw / 2) : 1;
 			lh = lh > 1 ? Std.int(lh / 2) : 1;
 		}
@@ -94,6 +92,45 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return id;
 	}
 
+	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
+		if (size <= 0 || levels.length == 0 || !canSample(format))
+			throw "Invalid cube texture";
+		var tex = gl.createTexture();
+		gl.bindTexture(WebGL2RenderingContext.TEXTURE_CUBE_MAP, tex);
+		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
+		var s = size;
+		for (i in 0...levels.length) {
+			var face = format.levelBytes(s, s);
+			if (levels[i].length != face * 6) {
+				gl.deleteTexture(tex);
+				throw "Invalid cube texture";
+			}
+			for (f in 0...6)
+				upload(WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X + f, i, format, s, s, levels[i], f * face);
+			s = s > 1 ? Std.int(s / 2) : 1;
+		}
+		gl.texParameteri(WebGL2RenderingContext.TEXTURE_CUBE_MAP, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
+		var id = next++;
+		textures[id] = tex;
+		cubes[id] = true;
+		return id;
+	}
+
+	// Uploads level `level` of the bound texture at target (a 2D texture or a cube's face), width x height of format, from bytes at offset.
+	function upload(target:Int, level:Int, format:TextureFormat, width:Int, height:Int, bytes:Bytes, offset:Int):Void {
+		var length = format.levelBytes(width, height);
+		switch format {
+			case Rgba8:
+				gl.texImage2D(target, level, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE,
+					new js.lib.Uint8Array(bytes.getData(), offset, length));
+			case Rgba16f:
+				gl.texImage2D(target, level, WebGL2RenderingContext.RGBA16F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.HALF_FLOAT,
+					new js.lib.Uint16Array(bytes.getData(), offset, Std.int(length / 2)));
+			case _:
+				gl.compressedTexImage2D(target, level, glFormat(format), width, height, 0, new js.lib.Uint8Array(bytes.getData(), offset, length));
+		}
+	}
+
 	// The GL internal format of a compressed one, from its extension.
 	static function glFormat(format:TextureFormat):Int
 		return switch format {
@@ -101,6 +138,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			case Astc4x4: 0x93B0; // COMPRESSED_RGBA_ASTC_4x4_KHR
 			case Etc2Rgba8: 0x9278; // COMPRESSED_RGBA8_ETC2_EAC
 			case Rgba8: WebGL2RenderingContext.RGBA8;
+			case Rgba16f: WebGL2RenderingContext.RGBA16F;
 		}
 
 	public function canSample(format:TextureFormat):Bool {
@@ -108,7 +146,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (known == null) {
 			// Asking for an extension also turns it on.
 			known = switch format {
-				case Rgba8: true;
+				// WebGL2 filters half floats without an extension.
+				case Rgba8 | Rgba16f: true;
 				case Bc7: gl.getExtension("EXT_texture_compression_bptc") != null;
 				case Astc4x4: gl.getExtension("WEBGL_compressed_texture_astc") != null;
 				case Etc2Rgba8: gl.getExtension("WEBGL_compressed_texture_etc") != null;
@@ -182,8 +221,18 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d, 4 particle3d, 5 depth3d. */
+	/** The framework shader's sources, attribute bindings, textures by slot and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d,
+		4 particle3d, 5 depth3d, 6 background3d. */
 	static function sources(index:Int):Dynamic {
+		if (index == 6)
+			return {
+				vertex: GeneratedShader.background3dVertex(),
+				fragment: GeneratedShader.background3dFragment(),
+				attributes: [],
+				textures: [Background3DLayout.environmentUniform],
+				vertexUniform: Background3DLayout.vertexUniformName,
+				fragmentUniform: Background3DLayout.fragmentUniformName
+			};
 		if (index == 5)
 			return {
 				vertex: GeneratedShader.depth3dVertex(),
@@ -194,9 +243,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Depth3DLayout.model1Slot, name: Depth3DLayout.model1Name},
 					{slot: Depth3DLayout.model2Slot, name: Depth3DLayout.model2Name}
 				],
-				texture: null,
-				normalTexture: null,
-				shadowTexture: null,
+				textures: [],
 				vertexUniform: Depth3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -209,9 +256,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Sprite2DLayout.uvSlot, name: Sprite2DLayout.uvName},
 					{slot: Sprite2DLayout.colorSlot, name: Sprite2DLayout.colorName}
 				],
-				texture: Sprite2DLayout.atlasUniform,
-				normalTexture: null,
-				shadowTexture: null,
+				textures: [Sprite2DLayout.atlasUniform],
 				vertexUniform: Sprite2DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -223,9 +268,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Color3DLayout.positionSlot, name: Color3DLayout.positionName},
 					{slot: Color3DLayout.colorSlot, name: Color3DLayout.colorName}
 				],
-				texture: null,
-				normalTexture: null,
-				shadowTexture: null,
+				textures: [],
 				vertexUniform: Color3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -239,9 +282,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Particle3DLayout.motionSlot, name: Particle3DLayout.motionName},
 					{slot: Particle3DLayout.shapeSlot, name: Particle3DLayout.shapeName}
 				],
-				texture: Particle3DLayout.atlasUniform,
-				normalTexture: null,
-				shadowTexture: null,
+				textures: [Particle3DLayout.atlasUniform],
 				vertexUniform: Particle3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -258,9 +299,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 					{slot: Sprite3DLayout.upSlot, name: Sprite3DLayout.upName},
 					{slot: Sprite3DLayout.tintSlot, name: Sprite3DLayout.tintName}
 				],
-				texture: Sprite3DLayout.atlasUniform,
-				normalTexture: null,
-				shadowTexture: null,
+				textures: [Sprite3DLayout.atlasUniform],
 				vertexUniform: Sprite3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
@@ -280,9 +319,13 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				{slot: Lit3DLayout.normal2Slot, name: Lit3DLayout.normal2Name},
 				{slot: Lit3DLayout.tintSlot, name: Lit3DLayout.tintName}
 			],
-			texture: Lit3DLayout.baseUniform,
-			normalTexture: Lit3DLayout.normalUniform,
-			shadowTexture: Lit3DLayout.shadowUniform,
+			textures: [
+				Lit3DLayout.baseUniform,
+				Lit3DLayout.normalUniform,
+				Lit3DLayout.shadowUniform,
+				Lit3DLayout.environmentUniform,
+				Lit3DLayout.brdfUniform
+			],
 			vertexUniform: Lit3DLayout.vertexUniformName,
 			fragmentUniform: Lit3DLayout.fragmentUniformName
 		};
@@ -311,11 +354,10 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				throw 'Missing generated uniform $name';
 			return found;
 		}
+		var names:Array<String> = source.textures;
 		return {
 			program: p,
-			texture: location(source.texture),
-			normalTexture: location(source.normalTexture),
-			shadowTexture: location(source.shadowTexture),
+			textures: [for (name in names) location(name)],
 			vertexUniform: location(source.vertexUniform),
 			fragmentUniform: location(source.fragmentUniform),
 			vertex: source.vertex,
@@ -333,7 +375,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		// Screen takes an app's program; Lit3D may (a surface shader).
 		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
-		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : kind == Particle3D ? 4 : kind == Depth3D ? 5 : 1;
+		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : kind == Particle3D ? 4 : kind == Depth3D ? 5 : kind == Background3D ? 6 : 1;
 		if (kind != Screen)
 			program(index);
 		var id = next++;
@@ -385,7 +427,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return {
 			program: particle.program,
 			blocks: [{location: particle.vertexUniform, size: Particle3DLayout.vertexUniformBytes}],
-			textures: [particle.texture]
+			textures: particle.textures
 		};
 	}
 
@@ -395,7 +437,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return {
 			program: sprite.program,
 			blocks: [{location: sprite.vertexUniform, size: Sprite3DLayout.vertexUniformBytes}],
-			textures: [sprite.texture]
+			textures: sprite.textures
 		};
 	}
 
@@ -418,7 +460,20 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				{location: lit.vertexUniform, size: Lit3DLayout.vertexUniformBytes},
 				{location: lit.fragmentUniform, size: Lit3DLayout.fragmentUniformBytes}
 			],
-			textures: [lit.texture, lit.normalTexture, lit.shadowTexture]
+			textures: lit.textures
+		};
+	}
+
+	// The framework's background program as an app's is described: its blocks (0 the clip scale) and its cube's slot.
+	function backgroundProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
+		var background = program(6);
+		return {
+			program: background.program,
+			blocks: [
+				{location: background.vertexUniform, size: Background3DLayout.vertexUniformBytes},
+				{location: background.fragmentUniform, size: Background3DLayout.fragmentUniformBytes}
+			],
+			textures: background.textures
 		};
 	}
 
@@ -440,6 +495,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			if (shadowMaps.exists(textures[slot])) {
 				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, t);
 				gl.bindSampler(slot, comparisonSampler());
+			} else if (cubes.exists(textures[slot])) {
+				gl.bindTexture(WebGL2RenderingContext.TEXTURE_CUBE_MAP, t);
+				gl.bindSampler(slot, sampler(samplings[slot]));
 			} else {
 				gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, t);
 				gl.bindSampler(slot, sampler(samplings[slot]));
@@ -476,15 +534,20 @@ class WebGL2GraphicsAdapter implements IGraphics {
 
 	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var p = pipelines[pipeline];
-		if (!active || p == null || p.kind != Screen)
+		if (!active || p == null || p.kind != Screen && p.kind != Background3D)
 			throw "Invalid screen draw";
-		var app = appShaders[p.app];
+		var app = p.kind == Background3D ? backgroundProgram() : appShaders[p.app];
 		if (app == null)
 			throw "Invalid screen draw";
 		bindProgram(app, textures, samplings, uniforms, true);
 		resetAttributes();
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
-		gl.disable(WebGL2RenderingContext.DEPTH_TEST);
+		// A background is at the far plane: behind whatever's drawn already.
+		if (p.kind == Background3D) {
+			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
+			gl.depthFunc(WebGL2RenderingContext.LEQUAL);
+		} else
+			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthMask(false);
 		blend(p.alpha);
 		gl.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
@@ -665,7 +728,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
 		var p = pipelines[pipeline], b = buffers[buffer];
-		if (!active || p == null || b == null || b.index || p.kind == Lit3D || p.kind == Sprite3D || p.kind == Particle3D || p.kind == Screen)
+		if (!active || p == null || b == null || b.index || p.kind == Lit3D || p.kind == Sprite3D || p.kind == Particle3D || p.kind == Screen
+			|| p.kind == Depth3D || p.kind == Background3D)
 			throw "Invalid draw";
 		var kind:PipelineKind = p.kind,
 			sprite = kind == Sprite2D,
@@ -685,7 +749,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		resetAttributes();
 		gl.disable(WebGL2RenderingContext.CULL_FACE);
 		if (sprite) {
-			gl.uniform1i(shader.texture, Sprite2DLayout.atlasUnit);
+			gl.uniform1i(shader.textures[0], Sprite2DLayout.atlasUnit);
 			// Clip space's y scale: -1 in a flipped pass.
 			gl.uniform4f(shader.vertexUniform, 1, flipped ? -1 : 1, 0, 0);
 			attribute(Sprite2DLayout.positionSlot, Sprite2DLayout.positionComponents, stride, Sprite2DLayout.positionOffset);
@@ -836,6 +900,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid texture";
 		gl.deleteTexture(t);
 		textures.remove(handle);
+		cubes.remove(handle);
 		var map = shadowMaps[handle];
 		if (map != null) {
 			for (framebuffer in map.framebuffers)

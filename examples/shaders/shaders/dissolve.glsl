@@ -1,5 +1,5 @@
 /* Dissolve (examples/shaders): the surface burns away and back where a noise texture is below a moving threshold, with a glowing edge. A
- * surface shader with a texture of its own (binding 3: the framework's base color, normal and shadow textures are 0 to 2). */
+ * surface shader with a texture of its own (binding 5: the framework's base color, normal, shadow, environment and BRDF textures are 0 to 4). */
 @fs fs
 @include_block helix_surface
 layout(binding=2) uniform params {
@@ -7,8 +7,8 @@ layout(binding=2) uniform params {
     vec3 edge_color; // linear rgb, may exceed 1
     float speed;     // cycles a second
 };
-layout(binding=3) uniform texture2D noise_texture;
-layout(binding=3) uniform sampler noise_sampler;
+layout(binding=5) uniform texture2D noise_texture;
+layout(binding=5) uniform sampler noise_sampler;
 
 void main() {
     float noise = texture(sampler2D(noise_texture, noise_sampler), helix_uv() * 2.0).r;

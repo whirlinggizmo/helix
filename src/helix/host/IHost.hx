@@ -27,6 +27,9 @@ interface IHost {
 	/** Textures from image files, decoded off the frame, reloading in place when a file changes during development. */
 	public var textures(default, null):helix.render2d.Textures;
 
+	/** Environment maps from equirectangular images, prepared a little each frame, reloading in place when a file changes during development. */
+	public var environments(default, null):helix.render3d.Environments;
+
 	/** Downloads over the network. */
 	public var fetch(default, null):IFetch;
 

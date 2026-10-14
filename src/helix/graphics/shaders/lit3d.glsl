@@ -1,4 +1,4 @@
-/* Lit models (render3d's Stage3D): glTF metallic-roughness materials lit by up to 4 lights, tone mapped (Khronos PBR Neutral) and written as
+/* Lit models (render3d's Stage3D): glTF metallic-roughness materials lit by up to 4 lights and an environment, tone mapped and written as
  * sRGB. The BRDF follows glTF 2.0's appendix B: Lambert diffuse, GGX / Smith height-correlated specular, Schlick Fresnel. Each instance's
  * placement (the model matrix's rows), its normals' matrix (the inverse transpose's rows) and its tint come from the instance buffer, so
  * placements alike in everything else are one draw.
@@ -11,6 +11,12 @@
  * sampler). Its map is looked up a texel or so along the normal (more where the light grazes the surface) with a little depth slack in texels
  * on top, filtered over 3x3 texels by the GPU, and fades out over the map's last tenth. No branch guards these reads (Adreno's compiler can't
  * bound one): what's outside the map is a weight.
+ *
+ * Environment: split-sum image-based light. Diffuse from its irradiance (9 spherical-harmonic coefficients, over pi), specular from its
+ * prefiltered cube (a mip a roughness step) scaled by the split-sum BRDF table (A, B by n.v and roughness: F0 * A + B), both turned about +y
+ * by its rotation and times its intensity (0: no environment, the cube and table not read).
+ *
+ * Tone mapping: exposure scales the light, then 0 none (clamped), 1 Khronos PBR Neutral or 2 ACES (Narkowicz's fit) brings it into 0..1.
  *
  * lit3d_vs_params: view_projection
  * lit3d_fs_params:
@@ -26,7 +32,10 @@
  *   shadow_matrix[s]   world -> the slot's light's clip space (GL's -1..1 depth)
  *   shadow_params[s]   x a texel in uv (1 / the map's size), y a texel in world units, z/w bias constant, slope (texels)
  *   shadow_extra[s]    x strength (how much light a shadow takes); a perspective (spot) map: y/z its near and far, w 1
- *   shadow_tint[s]     rgb what a shadow leaves behind (linear), w bias texels -> depth units (an orthographic map's) */
+ *   shadow_tint[s]     rgb what a shadow leaves behind (linear), w bias texels -> depth units (an orthographic map's)
+ *   tonemap            x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale (2 to the EV)
+ *   environment        x intensity (0: none), y the prefiltered cube's last mip, z/w the cosine and sine of its rotation about +y
+ *   irradiance[9]      xyz each coefficient's rgb */
 @vs lit3d_vs
 layout(binding=0) uniform lit3d_vs_params {
     mat4 view_projection;
@@ -77,6 +86,9 @@ layout(binding=1) uniform lit3d_fs_params {
     vec4 shadow_params[4];
     vec4 shadow_extra[4];
     vec4 shadow_tint[4];
+    vec4 tonemap;
+    vec4 environment;
+    vec4 irradiance[9];
 };
 layout(binding=0) uniform texture2D lit3d_base_texture;
 layout(binding=0) uniform sampler lit3d_base_sampler;
@@ -86,6 +98,10 @@ layout(binding=2) uniform texture2DArray lit3d_shadow_texture;
 layout(binding=2) uniform sampler lit3d_shadow_sampler;
 @image_sample_type lit3d_shadow_texture depth
 @sampler_type lit3d_shadow_sampler comparison
+layout(binding=3) uniform textureCube lit3d_environment_texture;
+layout(binding=3) uniform sampler lit3d_environment_sampler;
+layout(binding=4) uniform texture2D lit3d_brdf_texture;
+layout(binding=4) uniform sampler lit3d_brdf_sampler;
 in vec3 v_normal;
 in vec4 v_tangent;
 in vec2 v_uv;
@@ -119,6 +135,42 @@ vec3 tonemap_neutral(vec3 color) {
     color *= new_peak / peak;
     float g = 1.0 - 1.0 / (desaturation * (peak - new_peak) + 1.0);
     return mix(color, vec3(new_peak), g);
+}
+
+/* ACES filmic curve fit (Narkowicz 2015) */
+vec3 tonemap_aces(vec3 color) {
+    color *= 0.6;
+    return clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), 0.0, 1.0);
+}
+
+/* Linear light to the framebuffer's sRGB: exposure, then the tone mapping. */
+vec3 to_display(vec3 color) {
+    color *= tonemap.y;
+    int mode = int(tonemap.x + 0.5);
+    if (mode == 1) {
+        color = tonemap_neutral(color);
+    } else if (mode == 2) {
+        color = tonemap_aces(color);
+    }
+    return linear_to_srgb(color);
+}
+
+/* A world direction in the environment's frame: turned by -rotation about +y. */
+vec3 environment_direction(vec3 d) {
+    return vec3(environment.z * d.x - environment.w * d.z, d.y, environment.w * d.x + environment.z * d.z);
+}
+
+/* The environment's irradiance over pi toward unit n (in its frame). */
+vec3 environment_irradiance(vec3 n) {
+    return irradiance[0].xyz * 0.282095
+         + irradiance[1].xyz * (0.488603 * n.y)
+         + irradiance[2].xyz * (0.488603 * n.z)
+         + irradiance[3].xyz * (0.488603 * n.x)
+         + irradiance[4].xyz * (1.092548 * n.x * n.y)
+         + irradiance[5].xyz * (1.092548 * n.y * n.z)
+         + irradiance[6].xyz * (0.315392 * (3.0 * n.z * n.z - 1.0))
+         + irradiance[7].xyz * (1.092548 * n.x * n.z)
+         + irradiance[8].xyz * (0.546274 * (n.x * n.x - n.y * n.y));
 }
 
 float spot_factor(float cos_angle, float cos_inner, float cos_outer) {
@@ -177,7 +229,7 @@ void main() {
     vec4 texel = texture(sampler2D(lit3d_base_texture, lit3d_base_sampler), v_uv);
     vec4 base = vec4(srgb_to_linear(texel.rgb), texel.a) * base_color * v_tint;
     if (pbr.z < 0.5) {
-        frag_color = vec4(linear_to_srgb(tonemap_neutral(base.rgb + emissive.rgb)), base.a);
+        frag_color = vec4(to_display(base.rgb + emissive.rgb), base.a);
         return;
     }
     // The shading frame: the normal map's direction through the tangent, the bitangent and the normal.
@@ -243,8 +295,16 @@ void main() {
         }
         color += light_radiance[i].rgb * falloff * n_dot_l * (diffuse + specular);
     }
+    if (environment.x > 0.0) {
+        // Diffuse from the irradiance; specular from the cube's mip for this roughness, through the BRDF table.
+        vec3 diffuse_light = max(environment_irradiance(environment_direction(n)), vec3(0.0));
+        vec3 r = environment_direction(reflect(-v, n));
+        vec3 reflected = textureLod(samplerCube(lit3d_environment_texture, lit3d_environment_sampler), r, roughness * environment.y).rgb;
+        vec2 ab = texture(sampler2D(lit3d_brdf_texture, lit3d_brdf_sampler), vec2(n_dot_v, roughness)).rg;
+        color += (diffuse_light * c_diff + reflected * (f0 * ab.x + ab.y)) * environment.x;
+    }
     color += emissive.rgb;
-    frag_color = vec4(linear_to_srgb(tonemap_neutral(color)), base.a);
+    frag_color = vec4(to_display(color), base.a);
 }
 @end
 

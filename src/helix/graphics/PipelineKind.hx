@@ -36,4 +36,10 @@ enum abstract PipelineKind(Int) {
 		record: its model matrix's rows) from a stream buffer, through a light's view-projection (the vertex uniforms). Depth only, tested and
 		written; nothing culled, so a one-sided floor still casts. Drawn by IGraphics.drawMesh in a shadow pass (beginShadowPass). */
 	var Depth3D = 7;
+
+	/** An environment behind a 3D scene: one triangle over the viewport at the far plane, no vertex buffers, each pixel its framework shader's
+		cubemap (Background3DLayout's texture, a createCubeTexture handle) in the view direction (the fragment uniforms: the inverse
+		view-projection, intensity, blur's mip, rotation and tone mapping). Depth-tested (less or equal, so only where nothing's been drawn yet,
+		or before anything is) and not written. Drawn by IGraphics.drawScreen. */
+	var Background3D = 8;
 }

@@ -11,7 +11,14 @@ interface IGraphics {
 		size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample. */
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int;
 
-	/** Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them. */
+	/** Uploads a cubemap, each face size x size, and returns its handle, sampled at a texture slot like any texture (the samplings' filter
+		applies, their wrap doesn't: a cube's faces meet). levels is mip 0 then, optionally, its mips, each half the size of the last (at least 1),
+		each its six faces one after another (+X, -X, +Y, -Y, +Z, -Z, in GL's cube orientation: a face's first row is its t = 0), each face
+		format.levelBytes of its size. destroyTexture frees it. Throws for a size of 0 or less, no levels, a level of the wrong byte count, or a
+		format this GPU can't sample. */
+	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int;
+
+	/** Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them. */
 	public function canSample(format:TextureFormat):Bool;
 
 	/** Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle.
@@ -33,10 +40,10 @@ interface IGraphics {
 		compiler's log, for one that doesn't build. */
 	public function createShader(source:ShaderSource):Int;
 
-	/** Draws one triangle over the viewport through a Screen pipeline: textures[i] (createTexture or createRenderTarget handles) bound at the
-		shader's texture slot i, sampled as samplings[i] says (0 for a slot it doesn't sample), and uniforms[i] the bytes of its uniform block at
-		slot i (its declared size; null for a slot it doesn't have). Block 0 is the vertex stage's clip scale, which the adapter sets. Throws for anything invalid, before
-		drawing. */
+	/** Draws one triangle over the viewport through a Screen or Background3D pipeline: textures[i] (createTexture, createRenderTarget or, for
+		a cube slot, createCubeTexture handles) bound at the shader's texture slot i, sampled as samplings[i] says (0 for a slot it doesn't
+		sample), and uniforms[i] the bytes of its uniform block at slot i (its declared size; null for a slot it doesn't have). Block 0 is the
+		vertex stage's clip scale, which the adapter sets. Throws for anything invalid, before drawing. */
 	public function drawScreen(pipeline:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void;
 
 	/** Replaces a stream buffer's contents with the first usedBytes of data, for the draws after it; inside a pass, any number of times a frame
@@ -82,7 +89,8 @@ interface IGraphics {
 		instance firstInstance of instances' upload this frame (the kind's layout's instanceStride bytes each), through a Lit3D pipeline (the
 		framework's program, or an app's surface shader), a Sprite3D or Particle3D one (its one texture and vertex block) or a Depth3D one (no
 		texture; its vertex block): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
-		sample; the framework's are 0, the base color texture, sRGB, 1, the normal map, linear, and 2, a shadow map), and uniforms[i] its uniform block at slot i
+		sample; the framework's are 0, the base color texture, sRGB, 1, the normal map, linear, 2, a shadow map, 3, an environment's cube, and 4,
+		the BRDF table), and uniforms[i] its uniform block at slot i
 		(null for one it lacks; 0 the vertex stage's, starting with the view-projection matrix, 1 the fragment stage's lights and material, as
 		Lit3DLayout and the surface kind lay them out). Throws for anything invalid, before drawing. */
 	public function drawMesh(pipeline:Int, vertices:Int, indices:Int, indexCount:Int, instances:Int, firstInstance:Int, instanceCount:Int,

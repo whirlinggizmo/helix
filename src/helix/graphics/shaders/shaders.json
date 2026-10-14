@@ -127,7 +127,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 784
+          "bytes": 960
         }
       ],
       "textures": [
@@ -143,6 +143,15 @@
           "role": "shadow",
           "name": "lit3d_shadow_texture",
           "depth_array": true
+        },
+        {
+          "role": "environment",
+          "name": "lit3d_environment_texture",
+          "cube": true
+        },
+        {
+          "role": "brdf",
+          "name": "lit3d_brdf_texture"
         }
       ]
     },
@@ -279,6 +288,27 @@
         }
       ],
       "textures": []
+    },
+    {
+      "program": "background3d",
+      "attributes": [],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 16
+        },
+        {
+          "stage": "fragment",
+          "bytes": 96
+        }
+      ],
+      "textures": [
+        {
+          "role": "environment",
+          "name": "background3d_texture",
+          "cube": true
+        }
+      ]
     }
   ]
 }

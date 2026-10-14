@@ -27,6 +27,8 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 	public var audioResources(default, null):AudioResources;
 	public var textures(default, null):helix.render2d.Textures;
 
+	public var environments(default, null):helix.render3d.Environments;
+
 	var focused = true;
 
 	public var window(default, null):helix.host.IWindow;
@@ -54,6 +56,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 		assets = resources;
 		audioResources = new AudioResources(assets, audio);
 		textures = new helix.render2d.Textures(assets, services.images, graphics);
+		environments = new helix.render3d.Environments(assets, services.images, graphics);
 		#if hotreload watchAssets(services.base); #end
 		Browser.window.addEventListener("resize", _ -> resize());
 		Browser.window.addEventListener("keydown", _ -> services.unlockAudio());
@@ -107,6 +110,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 			resources.poll();
 			audioResources.poll();
 			textures.poll();
+			environments.poll();
 			services.pollInput();
 			clock.frame(current);
 			app.frame(clock.getDelta());
@@ -134,6 +138,7 @@ class DomHostAdapter implements IHost implements IDiagnostics {
 		closed = true;
 		audioResources.shutdown();
 		textures.shutdown();
+		environments.shutdown();
 		services.images.shutdown();
 		resources.shutdown();
 		app.cleanup();

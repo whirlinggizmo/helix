@@ -26,8 +26,11 @@ class CountingGraphics implements IGraphics {
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int
 		return next++;
 
+	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int
+		return next++;
+
 	public function canSample(format:TextureFormat):Bool
-		return format == Rgba8 || format == Astc4x4;
+		return format == Rgba8 || format == Astc4x4 || format == Rgba16f;
 
 	public function createBuffer(capacityBytes:Int):Int
 		return next++;

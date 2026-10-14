@@ -28,7 +28,19 @@ class SokolGraphicsAdapter implements IGraphics {
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (levels.length == 0 || !canSample(format))
 			throw "Invalid texture";
-		// One buffer, the levels one after another: the bridge points each mip level into it.
+		var packed = packLevels(levels);
+		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
+	}
+
+	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
+		if (levels.length == 0 || !canSample(format))
+			throw "Invalid cube texture";
+		var packed = packLevels(levels);
+		return valid(GraphicsBridge.cubeTexture(size, pointer(packed), packed.length, levels.length, format));
+	}
+
+	// Levels one after another in one buffer: the bridge points each mip level into it.
+	static function packLevels(levels:Array<Bytes>):Bytes {
 		var total = 0;
 		for (level in levels)
 			total += level.length;
@@ -37,7 +49,7 @@ class SokolGraphicsAdapter implements IGraphics {
 			packed.blit(at, level, 0, level.length);
 			at += level.length;
 		}
-		return valid(GraphicsBridge.texture(width, height, pointer(packed), packed.length, levels.length, format));
+		return packed;
 	}
 
 	public function canSample(format:TextureFormat):Bool
@@ -101,7 +113,7 @@ class SokolGraphicsAdapter implements IGraphics {
 		for (b in source.uniformBlocks)
 			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4s} ${b.glslName}');
 		for (t in source.textures)
-			lines.push('${t.shadow ? "s" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
+			lines.push('${t.shadow ? "s" : t.cube ? "c" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
 		// Typed first: an anonymous structure's fields reach C++ as variants.
 		var vertex:String = source.glsl410.vertex,
 			fragment:String = source.glsl410.fragment,

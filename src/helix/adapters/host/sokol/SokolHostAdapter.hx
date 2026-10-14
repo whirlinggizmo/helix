@@ -28,6 +28,8 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 	public var audioResources(default, null):AudioResources;
 	public var textures(default, null):helix.render2d.Textures;
 
+	public var environments(default, null):helix.render3d.Environments;
+
 	var focused = true;
 
 	public var window(default, null):helix.host.IWindow = new SokolWindow();
@@ -64,6 +66,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.assets = instance.resources;
 		instance.audioResources = new AudioResources(instance.assets, instance.audio);
 		instance.textures = new helix.render2d.Textures(instance.assets, s.images, instance.graphics);
+		instance.environments = new helix.render3d.Environments(instance.assets, s.images, instance.graphics);
 		instance.app.init();
 	}
 
@@ -75,6 +78,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 		instance.resources.poll();
 		instance.audioResources.poll();
 		instance.textures.poll();
+		instance.environments.poll();
 		instance.services.pollInput();
 		instance.focused = InputBridge.focused() != 0;
 		instance.app.frame(instance.clock.getDelta());
@@ -91,6 +95,7 @@ class SokolHostAdapter implements IHost implements IDiagnostics {
 	static function onCleanup():Void {
 		instance.audioResources.shutdown();
 		instance.textures.shutdown();
+		instance.environments.shutdown();
 		instance.services.images.shutdown();
 		instance.resources.shutdown();
 		instance.app.cleanup();

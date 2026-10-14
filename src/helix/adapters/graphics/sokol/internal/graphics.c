@@ -13,11 +13,11 @@
 #include "sokol_log.h"
 #include "shaders.h"
 
-static sg_shader shaders[6];
+static sg_shader shaders[7];
 /* Apps' programs (helix_shader), by shader slot: their uniform blocks' stages and sizes and their textures' count, by binding slot. A pipeline's
    app program, by pipeline slot (0 for the framework's). */
 #define MAX_BLOCKS 4
-#define MAX_TEXTURES 8
+#define MAX_TEXTURES 12
 static struct{int blocks,texture_mask,block_size[MAX_BLOCKS];}programs[256];static uint32_t pipeline_shaders[256];
 static sg_sampler sampler_of(int sampling);
 /* One sampler for each Sampling value used (helix.graphics.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
@@ -55,29 +55,49 @@ void helix_setup(void){
  shaders[3]=sg_make_shader(HELIX_SPRITE3D_SHADER_DESC(sg_query_backend()));
  shaders[4]=sg_make_shader(HELIX_PARTICLE3D_SHADER_DESC(sg_query_backend()));
  shaders[5]=sg_make_shader(HELIX_DEPTH3D_SHADER_DESC(sg_query_backend()));
+ shaders[6]=sg_make_shader(HELIX_BACKGROUND3D_SHADER_DESC(sg_query_backend()));
  memset(samplers,0,sizeof samplers);
- for(int i=0;i<6;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
+ for(int i=0;i<7;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  if(comparison.id)sg_destroy_sampler(comparison);
- for(int i=0;i<6;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
+ for(int i=0;i<7;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
-/* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8. */
+/* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8, RGBA16F. */
 static sg_pixel_format format_of(int format){
  switch(format){case 0:return SG_PIXELFORMAT_RGBA8;case 1:return SG_PIXELFORMAT_BC7_RGBA;case 2:return SG_PIXELFORMAT_ASTC_4x4_RGBA;
-  case 3:return SG_PIXELFORMAT_ETC2_RGBA8;default:return SG_PIXELFORMAT_NONE;}
+  case 3:return SG_PIXELFORMAT_ETC2_RGBA8;case 4:return SG_PIXELFORMAT_RGBA16F;default:return SG_PIXELFORMAT_NONE;}
 }
-int helix_can_sample(int format){sg_pixel_format f=format_of(format);return f!=SG_PIXELFORMAT_NONE&&sg_query_pixelformat(f).sample;}
+/* Half floats count only where they're filtered too. */
+int helix_can_sample(int format){sg_pixel_format f=format_of(format);if(f==SG_PIXELFORMAT_NONE)return 0;sg_pixelformat_info info=sg_query_pixelformat(f);
+ return info.sample&&(format!=4||info.filter);}
+/* The bytes of a w x h level (a face's, for a cube) of format: 4 a texel, 8 for half floats, or 4x4 blocks of 16. */
+static size_t level_bytes(int format,int w,int h){return format==0?(size_t)w*(size_t)h*4:format==4?(size_t)w*(size_t)h*8:(size_t)((w+3)/4)*(size_t)((h+3)/4)*16;}
 /* levels mip levels of format, each half the last (at least 1), packed one after another in data. */
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format){
  if(w<=0||h<=0||w>16384||h>16384||!data||levels<1||levels>SG_MAX_MIPMAPS||!helix_can_sample(format))return 0;
  sg_image_desc desc={.width=w,.height=h,.num_mipmaps=levels,.pixel_format=format_of(format)};
  size_t offset=0;int lw=w,lh=h;
  for(int i=0;i<levels;i++){
-  const size_t size=format==0?(size_t)lw*(size_t)lh*4:(size_t)((lw+3)/4)*(size_t)((lh+3)/4)*16;
+  const size_t size=level_bytes(format,lw,lh);
   desc.data.mip_levels[i]=(sg_range){(const char *)data+offset,size};offset+=size;
   lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;
+ }
+ if(offset!=(size_t)bytes)return 0;
+ sg_image image=sg_make_image(&desc);
+ if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
+ return sg_make_view(&(sg_view_desc){.texture.image=image}).id;
+}
+/* A cube of size, levels mip levels of format, each its six faces (+X, -X, +Y, -Y, +Z, -Z) one after another, the levels packed one after
+   another in data. */
+uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int format){
+ if(size<=0||size>16384||!data||levels<1||levels>SG_MAX_MIPMAPS||!helix_can_sample(format))return 0;
+ sg_image_desc desc={.type=SG_IMAGETYPE_CUBE,.width=size,.height=size,.num_mipmaps=levels,.pixel_format=format_of(format)};
+ size_t offset=0;int s=size;
+ for(int i=0;i<levels;i++){
+  const size_t level=6*level_bytes(format,s,s);
+  desc.data.mip_levels[i]=(sg_range){(const char *)data+offset,level};offset+=level;s=s>1?s/2:1;
  }
  if(offset!=(size_t)bytes)return 0;
  sg_image image=sg_make_image(&desc);
@@ -110,6 +130,9 @@ static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint
  if(kind==7)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[5],.layout=helix_depth3d_layout(),.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
   .index_type=SG_INDEXTYPE_UINT32,.depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=true,.pixel_format=SG_PIXELFORMAT_DEPTH},
   .cull_mode=SG_CULLMODE_NONE,.color_count=0,.sample_count=1});
+ /* A background: at the far plane, behind whatever's drawn already; never written. */
+ if(kind==8)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[6],.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
+  .depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,.colors[0].blend=blend_of(blend)});
  if(kind==4)return sg_make_pipeline(&(sg_pipeline_desc){.shader={shader},.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
   .depth={.compare=SG_COMPAREFUNC_ALWAYS,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,
   .colors[0].blend=blend_of(blend)});
@@ -130,7 +153,7 @@ static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint
 uint32_t helix_pipeline(int kind,int blend,uint32_t shader,int double_sided,int clockwise){
  if(blend<0||blend>2)return 0;
  /* Screen takes an app's program; Lit3D may (a surface shader). */
- if(kind<0||kind>7||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
+ if(kind<0||kind>8||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
  if(shader&&((shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID))return 0;
  sg_pipeline pipeline=make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
@@ -157,7 +180,7 @@ int helix_update(uint32_t id,const void *data,int bytes){
 }
 /* An app's program from its GLSL 410 stages and its layout, a line each: "a <slot> <name>" an attribute, "u <slot> <v|f> <size> <vec4s> <name>"
    a uniform block (flattened to a vec4 array), "t <slot> <v|f> <name>" a texture and its sampler, sharing the slot, "s <slot> <v|f> <name>" a
-   shadow map (a depth array) and its comparison sampler. */
+   shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a cube and its sampler. */
 uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  sg_shader_desc desc={.vertex_func={.source=vs,.entry="main"},.fragment_func={.source=fs,.entry="main"},.label="app_shader"};
  static char names[32][128];int name=0,blocks=0,textures=0,sizes[MAX_BLOCKS]={0};
@@ -173,10 +196,10 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
    desc.uniform_blocks[slot].size=(uint32_t)size;desc.uniform_blocks[slot].glsl_uniforms[0].type=SG_UNIFORMTYPE_FLOAT4;
    desc.uniform_blocks[slot].glsl_uniforms[0].array_count=(uint16_t)count;desc.uniform_blocks[slot].glsl_uniforms[0].glsl_name=names[name++];
    sizes[slot]=size;if(slot+1>blocks)blocks=slot+1;
-  }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s')){
+  }else if(sscanf(line," %c %d %c %127s%n",&kind,&slot,&stage,names[name],&used)==4&&(kind=='t'||kind=='s'||kind=='c')){
    if(slot<0||slot>=MAX_TEXTURES)return 0;
    const sg_shader_stage st=stage=='v'?SG_SHADERSTAGE_VERTEX:SG_SHADERSTAGE_FRAGMENT;const int shadow=kind=='s';
-   desc.views[slot].texture=(sg_shader_texture_view){.stage=st,.image_type=shadow?SG_IMAGETYPE_ARRAY:SG_IMAGETYPE_2D,
+   desc.views[slot].texture=(sg_shader_texture_view){.stage=st,.image_type=shadow?SG_IMAGETYPE_ARRAY:kind=='c'?SG_IMAGETYPE_CUBE:SG_IMAGETYPE_2D,
     .sample_type=shadow?SG_IMAGESAMPLETYPE_DEPTH:SG_IMAGESAMPLETYPE_FLOAT};
    desc.samplers[slot]=(sg_shader_sampler){.stage=st,.sampler_type=shadow?SG_SAMPLERTYPE_COMPARISON:SG_SAMPLERTYPE_FILTERING};
    desc.texture_sampler_pairs[slot]=(sg_shader_texture_sampler_pair){.stage=st,.view_slot=(uint8_t)slot,.sampler_slot=(uint8_t)slot,.glsl_name=names[name++]};
@@ -195,7 +218,8 @@ static void program_of(int pslot,int *blocks,int *sizes,int *mask){
  if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==5){*blocks=1;sizes[0]=HELIX_SPRITE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
  if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==6){*blocks=1;sizes[0]=HELIX_PARTICLE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
  if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==7){*blocks=1;sizes[0]=HELIX_DEPTH3D_VERTEX_UNIFORM_BYTES;*mask=0;return;}
- if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=7;return;}
+ if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==8){*blocks=2;sizes[0]=HELIX_BACKGROUND3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_BACKGROUND3D_FRAGMENT_UNIFORM_BYTES;*mask=1;return;}
+ if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=31;return;}
  const int s=pipeline_shaders[pslot]&0xffff;*blocks=programs[s].blocks;memcpy(sizes,programs[s].block_size,sizeof programs[s].block_size);*mask=programs[s].texture_mask;
 }
 /* Binds textures (by slot, each of the program's set) into bindings, and checks uniforms: the blocks' bytes one after another by slot, each its
@@ -220,7 +244,7 @@ static void apply_blocks(int pslot,const void *uniforms){
  const char *at=uniforms;
  for(int i=0;i<blocks;i++){
   if(!sizes[i])continue;
-  if(i==0&&pipeline_kinds[pslot]==4){float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};sg_apply_uniforms(0,&SG_RANGE(clip));}
+  if(i==0&&(pipeline_kinds[pslot]==4||pipeline_kinds[pslot]==8)){float clip[4]={1.0f,flipped?-1.0f:1.0f,0.0f,0.0f};sg_apply_uniforms(0,&SG_RANGE(clip));}
   else if(i==0&&flipped){
    /* The block's own size: up to a particle block's 528 bytes (a framework block's largest), or an app's. */
    float copy[256];if((size_t)sizes[0]>sizeof copy)return;memcpy(copy,at,(size_t)sizes[0]);
@@ -229,11 +253,11 @@ static void apply_blocks(int pslot,const void *uniforms){
   at+=sizes[i];
  }
 }
-/* A Screen pipeline's draw: one triangle over the viewport, the program's textures and samplings by slot, its uniform blocks' bytes one after
+/* A Screen or Background3D pipeline's draw: one triangle over the viewport, the program's textures and samplings by slot, its uniform blocks' bytes one after
    another by slot, block 0 (the clip scale) set here. */
 int helix_draw_screen(uint32_t p,const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff;
- if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]!=4)return 0;
+ if(!active||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||(pipeline_kinds[pslot]!=4&&pipeline_kinds[pslot]!=8))return 0;
  sg_bindings bindings={0};
  if(!bind_program(pslot,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
  sg_apply_pipeline((sg_pipeline){p});
@@ -350,7 +374,7 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int fi
 int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,
                     const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
- if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]<3||pipeline_kinds[pslot]==4)return 0;
+ if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]<3||pipeline_kinds[pslot]==4||pipeline_kinds[pslot]==8)return 0;
  const int kind=pipeline_kinds[pslot];
  const int record=kind==5?HELIX_SPRITE3D_INSTANCE_STRIDE:kind==6?HELIX_PARTICLE3D_INSTANCE_STRIDE:kind==7?HELIX_DEPTH3D_INSTANCE_STRIDE:HELIX_LIT3D_INSTANCE_STRIDE;
  if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;

@@ -56,12 +56,14 @@ class Shader {
 					}
 			],
 			textures: [
-				for (t in textures) {
-					slot: t.slot,
-					stage: t.stage,
-					glslName: t.glslName,
-					shadow: t.shadow == true
-				}
+				for (t in textures)
+					{
+						slot: t.slot,
+						stage: t.stage,
+						glslName: t.glslName,
+						shadow: t.shadow == true,
+						cube: t.cube == true
+					}
 			]
 		};
 		parameters = new Map();

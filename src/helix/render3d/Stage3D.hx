@@ -19,7 +19,12 @@ import helix.render3d.Node.NodeKind;
 	a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the
 	maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels
 	the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its
-	cone. */
+	cone.
+
+	Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and
+	reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes
+	into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites,
+	text and particles are display colors, untouched. */
 class Stage3D {
 	static inline var MAX_LIGHTS = 4;
 	// How far a directional light's map starts behind what the camera sees: casters out of view still cast into it.
@@ -86,6 +91,22 @@ class Stage3D {
 	var lightViewProjection = new Mat4();
 	var lightPlanes = new Vector<Float>(24);
 	var depthUniforms = Bytes.alloc(Depth3DLayout.vertexUniformBytes);
+	// The environment lighting the models, and the one behind them, with their settings.
+	var environment:Null<Environment>;
+	var environmentIntensity = 1.;
+	var environmentRotation = 0.;
+	var background:Null<Environment>;
+	var backgroundBlur = 0.;
+	var tonemap = Tonemap.Neutral;
+	var exposure = 0.;
+	// A black cube that stands in when there's no environment, and the BRDF table, made with the first environment.
+	var noEnvironment:Int;
+	var brdf:Null<Texture2D>;
+	var backgroundPipeline:Int;
+	var backgroundUniforms = [
+		Bytes.alloc(Background3DLayout.vertexUniformBytes),
+		Bytes.alloc(Background3DLayout.fragmentUniformBytes)
+	];
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
 	public function new(gpu:IGraphics) {
@@ -111,6 +132,11 @@ class Stage3D {
 		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
 		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
 		noShadows = gpu.createShadowMap(1, 1);
+		var black = Bytes.alloc(6 * 4);
+		for (face in 0...6)
+			black.set(face * 4 + 3, 255);
+		noEnvironment = gpu.createCubeTexture(1, [black], Rgba8);
+		backgroundPipeline = gpu.createPipeline(Background3D, Opaque);
 	}
 
 	/** The node everything on the stage hangs from. */
@@ -131,6 +157,68 @@ class Stage3D {
 			return false;
 		ambientColor = color;
 		ambientIntensity = intensity;
+		return true;
+	}
+
+	/** The environment lighting the lit models, or null. */
+	public function getEnvironment():Null<Environment>
+		return environment;
+
+	/** How strongly the environment lights them, and the background shows: 1 as its file has it. */
+	public function getEnvironmentIntensity():Float
+		return environmentIntensity;
+
+	/** How far the environment, and the background, turn about +y, in radians. */
+	public function getEnvironmentRotation():Float
+		return environmentRotation;
+
+	/** Lights the lit models with environment (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it)
+		and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0. */
+	public function setEnvironment(environment:Null<Environment>, intensity = 1., rotation = 0.):Bool {
+		if (!(intensity >= 0) || !Math.isFinite(rotation))
+			return false;
+		this.environment = environment;
+		environmentIntensity = intensity;
+		environmentRotation = rotation;
+		return true;
+	}
+
+	/** The environment drawn behind everything, or null. */
+	public function getBackground():Null<Environment>
+		return background;
+
+	/** How blurred the background is: 0 sharp to 1 its blurriest. */
+	public function getBackgroundBlur():Float
+		return backgroundBlur;
+
+	/** Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a
+		few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside
+		0..1. */
+	public function setBackground(environment:Null<Environment>, blur = 0.):Bool {
+		if (!(blur >= 0 && blur <= 1))
+			return false;
+		background = environment;
+		backgroundBlur = blur;
+		return true;
+	}
+
+	/** How lit color comes into the screen's 0..1 after the exposure. */
+	public function getTonemap():Tonemap
+		return tonemap;
+
+	/** Sets how lit color comes into the screen's 0..1 after the exposure. */
+	public function setTonemap(value:Tonemap):Void
+		tonemap = value;
+
+	/** The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. */
+	public function getExposure():Float
+		return exposure;
+
+	/** Sets the exposure in stops. False for one that isn't finite. */
+	public function setExposure(value:Float):Bool {
+		if (!Math.isFinite(value))
+			return false;
+		exposure = value;
 		return true;
 	}
 
@@ -433,6 +521,8 @@ class Stage3D {
 			camera.getViewportHeight());
 		viewProjection.writeTo(vertexUniforms);
 		writeScene();
+		if (background != null)
+			drawBackground(viewProjection);
 		sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ);
 		// The opaque models, the opaque and masked sprites, the see-through models with the blended sprites between them back to front, then the
 		// blended sprites nearer than any of those and the added ones.
@@ -454,6 +544,21 @@ class Stage3D {
 		if (!opaqueSprites)
 			sprites.drawOpaque();
 		sprites.drawRest();
+	}
+
+	// The background, behind everything: the environment's background cube in each pixel's direction, through the inverse view-projection.
+	function drawBackground(viewProjection:Mat4):Void {
+		inverseOf(viewProjection);
+		var u = backgroundUniforms[1];
+		for (i in 0...16)
+			u.setFloat(i * 4, inverse[i]);
+		u.setFloat(64, environmentIntensity);
+		u.setFloat(68, backgroundBlur * (background.getBackgroundMipCount() - 1));
+		u.setFloat(72, Math.cos(environmentRotation));
+		u.setFloat(76, Math.sin(environmentRotation));
+		u.setFloat(80, tonemap);
+		u.setFloat(84, Math.pow(2, exposure));
+		gpu.drawScreen(backgroundPipeline, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
 	}
 
 	// The tree depth first, each node's world matrix brought up to date on the way down; hidden nodes skip their children.
@@ -709,6 +814,21 @@ class Stage3D {
 			for (k in 0...4)
 				u.setFloat(720 + layer * 16 + k * 4, layer < shadowLights.length ? shadowLayers[at + 24 + k] : 0);
 		}
+		// Tone mapping, then the environment: its intensity (0 for none), last mip, rotation, and irradiance.
+		u.setFloat(784, tonemap);
+		u.setFloat(788, Math.pow(2, exposure));
+		u.setFloat(792, 0);
+		u.setFloat(796, 0);
+		u.setFloat(800, environment != null ? environmentIntensity : 0);
+		u.setFloat(804, EnvironmentBake.MIP_COUNT - 1);
+		u.setFloat(808, Math.cos(environmentRotation));
+		u.setFloat(812, Math.sin(environmentRotation));
+		var irradiance = environment != null ? environment.getIrradiance() : null;
+		for (k in 0...9)
+			for (c in 0...4)
+				u.setFloat(816 + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
+		if (environment != null && brdf == null)
+			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.getBrdfTable(), true);
 	}
 
 	// A run of alike models: the material's uniforms, then one instanced draw.
@@ -738,11 +858,18 @@ class Stage3D {
 		if (normal == null)
 			normal = flat;
 		var shader = material.getShader(),
-			shadows = shadowLights.length > 0 ? shadowMap : noShadows;
+			shadows = shadowLights.length > 0 ? shadowMap : noShadows,
+			cube = environment != null ? environment.getLightingTexture() : noEnvironment,
+			table = brdf != null ? brdf.getHandle() : white.getHandle();
 		if (shader == null) {
 			gpu.drawMesh(pipelines[variant(item)], item.mesh.getVertexBuffer(gpu), item.mesh.getIndexBuffer(gpu), item.mesh.getIndexCount(), instanceBuffer,
-				first, runCount, [base.getHandle(), normal.getHandle(), shadows], [base.getSampling(), normal.getSampling(), Sampling.NEAREST],
-				[vertexUniforms, u]);
+				first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
+					base.getSampling(),
+					normal.getSampling(),
+					Sampling.NEAREST,
+					Sampling.LINEAR,
+					Sampling.LINEAR
+				], [vertexUniforms, u]);
 			draws++;
 			return;
 		}
@@ -764,9 +891,9 @@ class Stage3D {
 				textures.push(0);
 				samplings.push(Sampling.NEAREST);
 			}
-			if (slot == 2) {
-				textures.push(shadows);
-				samplings.push(Sampling.NEAREST);
+			if (slot >= 2 && slot <= 4) {
+				textures.push(slot == 2 ? shadows : slot == 3 ? cube : table);
+				samplings.push(slot == 2 ? Sampling.NEAREST : Sampling.LINEAR);
 				continue;
 			}
 			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
@@ -801,8 +928,8 @@ class Stage3D {
 		return made.pipelines;
 	}
 
-	/** Frees the stage's own GPU objects (its pipelines, instance buffers, shadow maps and white texture); meshes and textures are their owners'
-		to free. */
+	/** Frees the stage's own GPU objects (its pipelines, instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and
+		environments are their owners' to free. */
 	public function destroy():Void {
 		for (made in surfacePipelines)
 			for (p in made.pipelines)
@@ -819,6 +946,10 @@ class Stage3D {
 			gpu.destroyTexture(shadowMap);
 		white.destroy(gpu);
 		flat.destroy(gpu);
+		gpu.destroyTexture(noEnvironment);
+		gpu.destroyPipeline(backgroundPipeline);
+		if (brdf != null)
+			brdf.destroy(gpu);
 	}
 }
 
