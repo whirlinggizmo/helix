@@ -42,7 +42,10 @@ static void (*driver_audit_reset)(void);
 static const char *(*driver_audit_json)(void);
 static int frame_uploaded_bytes;static int vertex_reserved[256];
 void helix_setup(void){
- sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func});
+ /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
+    a few surface shaders, each eight pipelines and their flipped twins. */
+ sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func,.buffer_pool_size=255,.image_pool_size=255,.sampler_pool_size=255,
+  .shader_pool_size=255,.pipeline_pool_size=255,.view_pool_size=255});
  audit_enabled=getenv("HELIX_AUDIT")&&strcmp(getenv("HELIX_AUDIT"),"1")==0;
  if(!audit_enabled)sg_disable_stats();
  else {driver_audit_reset=(void (*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_reset");driver_audit_json=(const char *(*)(void))dlsym(RTLD_DEFAULT,"helix_gl_audit_json");}

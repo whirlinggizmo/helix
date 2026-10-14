@@ -53,11 +53,15 @@ class ShaderMetadataTests(unittest.TestCase):
         # A misleading old source file must never be chosen by a filename glob.
         (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
-        sprite, color, lit = contracts
+        by = {c['program']: c for c in contracts}
+        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d'])
+        sprite, color, lit, depth = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d']
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
         self.assertEqual(color['textures'], []); self.assertEqual([(u['stage'], u['bytes']) for u in sprite['uniforms']], [('vertex', 16)])
-        self.assertEqual([t['role'] for t in lit['textures']], ['base', 'normal'])
+        self.assertEqual([(t['role'], t['depthArray']) for t in lit['textures']], [('base', False), ('normal', False), ('shadow', True)])
+        # The depth program reads the lit models' vertices: their stride, its own positions' offset.
+        self.assertEqual((depth['stride'], depth['attributes'][0]['offset'], depth['instanceStride']), (48, 0, 48))
         self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         self.assertNotIn('STALE', (self.baseline / 'GeneratedShader.hx').read_text())
