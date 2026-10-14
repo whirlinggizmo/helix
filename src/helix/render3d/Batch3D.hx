@@ -1,5 +1,6 @@
 package helix.render3d;
 
+import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
@@ -36,8 +37,8 @@ class Batch3D {
 		lines = Bytes.alloc(capacity * Color3DLayout.stride);
 		triangleBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
 		lineBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
-		trianglePipeline = gpu.createPipeline(Color3D, false);
-		linePipeline = gpu.createPipeline(Lines3D, false);
+		trianglePipeline = gpu.createPipeline(Color3D, Opaque);
+		linePipeline = gpu.createPipeline(Lines3D, Opaque);
 		setLight(.3, .9, .3, .35);
 	}
 

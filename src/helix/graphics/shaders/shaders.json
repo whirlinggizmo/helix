@@ -140,6 +140,64 @@
           "name": "lit3d_normal_texture"
         }
       ]
+    },
+    {
+      "program": "sprite3d",
+      "attributes": [
+        {
+          "role": "corner",
+          "name": "corner",
+          "type": "vec2"
+        },
+        {
+          "role": "position",
+          "name": "i_position",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "size",
+          "name": "i_size",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "region",
+          "name": "i_region",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "right",
+          "name": "i_right",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "up",
+          "name": "i_up",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "tint",
+          "name": "i_tint",
+          "type": "vec4",
+          "instance": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 112
+        }
+      ],
+      "textures": [
+        {
+          "role": "atlas",
+          "name": "sprite3d_texture"
+        }
+      ]
     }
   ]
 }

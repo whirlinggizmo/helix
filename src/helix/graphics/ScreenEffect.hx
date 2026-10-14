@@ -48,7 +48,7 @@ class ScreenEffect {
 			// Made or reloaded: a pipeline for this program.
 			if (pipeline != 0)
 				gpu.destroyPipeline(pipeline);
-			pipeline = gpu.createPipeline(Screen, alpha, shader.getHandle());
+			pipeline = gpu.createPipeline(Screen, alpha ? Alpha : Opaque, shader.getHandle());
 			version = shader.getVersion();
 		}
 		var blocks = [for (size in shader.getBlockSizes()) size > 0 ? Bytes.alloc(size) : null];

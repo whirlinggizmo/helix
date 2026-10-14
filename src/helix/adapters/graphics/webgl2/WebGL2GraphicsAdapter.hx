@@ -1,5 +1,6 @@
 package helix.adapters.graphics.webgl2;
 
+import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
@@ -29,7 +30,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// Apps' programs (createShader), by handle: the linked program, its uniform blocks' locations and sizes, its textures' sampler locations.
 	var appShaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
 	// The programs, by shader: sprite2d, color3d (shared by Color3D and Lines3D), lit3d. Made on first use.
-	var programs:Array<Dynamic> = [null, null, null];
+	var programs:Array<Dynamic> = [null, null, null, null];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -177,7 +178,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return s;
 	}
 
-	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d. */
+	/** The framework shader's sources, attribute bindings and uniforms: 0 sprite2d, 1 color3d, 2 lit3d, 3 sprite3d. */
 	static function sources(index:Int):Dynamic {
 		if (index == 0)
 			return {
@@ -204,6 +205,24 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				texture: null,
 				normalTexture: null,
 				vertexUniform: Color3DLayout.vertexUniformName,
+				fragmentUniform: null
+			};
+		if (index == 3)
+			return {
+				vertex: GeneratedShader.sprite3dVertex(),
+				fragment: GeneratedShader.sprite3dFragment(),
+				attributes: [
+					{slot: Sprite3DLayout.cornerSlot, name: Sprite3DLayout.cornerName},
+					{slot: Sprite3DLayout.positionSlot, name: Sprite3DLayout.positionName},
+					{slot: Sprite3DLayout.sizeSlot, name: Sprite3DLayout.sizeName},
+					{slot: Sprite3DLayout.regionSlot, name: Sprite3DLayout.regionName},
+					{slot: Sprite3DLayout.rightSlot, name: Sprite3DLayout.rightName},
+					{slot: Sprite3DLayout.upSlot, name: Sprite3DLayout.upName},
+					{slot: Sprite3DLayout.tintSlot, name: Sprite3DLayout.tintName}
+				],
+				texture: Sprite3DLayout.atlasUniform,
+				normalTexture: null,
+				vertexUniform: Sprite3DLayout.vertexUniformName,
 				fragmentUniform: null
 			};
 		return {
@@ -269,11 +288,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		return programs[index];
 	}
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int {
+	public function createPipeline(kind:PipelineKind, blend:BlendMode, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int {
 		// Screen takes an app's program; Lit3D may (a surface shader).
 		if (kind == Screen && shader == 0 || shader != 0 && (kind != Screen && kind != Lit3D || !appShaders.exists(shader)))
 			throw "Invalid pipeline shader";
-		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : 1;
+		var index = kind == Sprite2D ? 0 : kind == Lit3D ? 2 : kind == Sprite3D ? 3 : 1;
 		if (kind != Screen)
 			program(index);
 		var id = next++;
@@ -281,7 +300,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			kind: kind,
 			shader: index,
 			app: shader,
-			alpha: alpha,
+			alpha: blend,
 			doubleSided: doubleSided,
 			clockwise: clockwise
 		};
@@ -317,6 +336,16 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		var id = next++;
 		appShaders[id] = {program: p, blocks: blocks, textures: textures};
 		return id;
+	}
+
+	// The framework's sprite program as an app's is described: its block and texture slot.
+	function spriteProgram():{program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>} {
+		var sprite = program(3);
+		return {
+			program: sprite.program,
+			blocks: [{location: sprite.vertexUniform, size: Sprite3DLayout.vertexUniformBytes}],
+			textures: [sprite.texture]
+		};
 	}
 
 	// The framework's lit program as an app's is described: its blocks and texture slots.
@@ -498,17 +527,20 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			gl.vertexAttribDivisor(slot, 0);
 		}
 
-	function blend(alpha:Bool):Void
-		if (alpha) {
-			gl.enable(WebGL2RenderingContext.BLEND);
-			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA, WebGL2RenderingContext.ONE,
-				WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
-		} else
+	function blend(mode:BlendMode):Void
+		if (mode == Opaque)
 			gl.disable(WebGL2RenderingContext.BLEND);
+		else {
+			gl.enable(WebGL2RenderingContext.BLEND);
+			// Added: the source times its alpha, plus what's there.
+			var additive = mode == Additive;
+			gl.blendFuncSeparate(WebGL2RenderingContext.SRC_ALPHA, additive ? WebGL2RenderingContext.ONE : WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA,
+				WebGL2RenderingContext.ONE, additive ? WebGL2RenderingContext.ONE : WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+		}
 
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void {
 		var p = pipelines[pipeline], b = buffers[buffer];
-		if (!active || p == null || b == null || b.index || p.kind == Lit3D)
+		if (!active || p == null || b == null || b.index || p.kind == Lit3D || p.kind == Sprite3D || p.kind == Screen)
 			throw "Invalid draw";
 		var kind:PipelineKind = p.kind,
 			sprite = kind == Sprite2D,
@@ -563,6 +595,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (!active
 			|| p == null
 			|| p.kind != Lit3D
+			&& p.kind != Sprite3D
 			|| v == null
 			|| v.index
 			|| !v.isStatic
@@ -575,36 +608,52 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			|| indexCount * 4 > ix.used
 			|| firstInstance < 0
 			|| instanceCount <= 0
-			|| (firstInstance + instanceCount) * Lit3DLayout.instanceStride > n.used)
+			|| (firstInstance + instanceCount) * (p.kind == Sprite3D ? Sprite3DLayout.instanceStride : Lit3DLayout.instanceStride) > n.used)
 			throw "Invalid mesh draw";
 		// The framework's lit program, or an app's surface shader.
-		var app = p.app != 0 ? appShaders[p.app] : litProgram();
+		var app = p.app != 0 ? appShaders[p.app] : p.kind == Sprite3D ? spriteProgram() : litProgram();
 		if (app == null)
 			throw "Invalid mesh draw";
 		bindProgram(app, textures, samplings, uniforms, false);
 		resetAttributes();
-		var stride = Lit3DLayout.stride,
-			record = Lit3DLayout.instanceStride,
-			base = firstInstance * record;
-		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
-		attribute(Lit3DLayout.positionSlot, Lit3DLayout.positionComponents, stride, Lit3DLayout.positionOffset);
-		attribute(Lit3DLayout.normalSlot, Lit3DLayout.normalComponents, stride, Lit3DLayout.normalOffset);
-		attribute(Lit3DLayout.uvSlot, Lit3DLayout.uvComponents, stride, Lit3DLayout.uvOffset);
-		attribute(Lit3DLayout.tangentSlot, Lit3DLayout.tangentComponents, stride, Lit3DLayout.tangentOffset);
-		gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
-		// No base instance in WebGL2: the instance attributes start at the draw's first record instead.
-		attribute(Lit3DLayout.model0Slot, 4, record, base + Lit3DLayout.model0Offset, 1);
-		attribute(Lit3DLayout.model1Slot, 4, record, base + Lit3DLayout.model1Offset, 1);
-		attribute(Lit3DLayout.model2Slot, 4, record, base + Lit3DLayout.model2Offset, 1);
-		attribute(Lit3DLayout.normal0Slot, 4, record, base + Lit3DLayout.normal0Offset, 1);
-		attribute(Lit3DLayout.normal1Slot, 4, record, base + Lit3DLayout.normal1Offset, 1);
-		attribute(Lit3DLayout.normal2Slot, 4, record, base + Lit3DLayout.normal2Offset, 1);
-		attribute(Lit3DLayout.tintSlot, 4, record, base + Lit3DLayout.tintOffset, 1);
+		if (p.kind == Sprite3D) {
+			var record = Sprite3DLayout.instanceStride,
+				base = firstInstance * record;
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
+			attribute(Sprite3DLayout.cornerSlot, Sprite3DLayout.cornerComponents, Sprite3DLayout.stride, Sprite3DLayout.cornerOffset);
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
+			// No base instance in WebGL2: the instance attributes start at the draw's first record instead.
+			attribute(Sprite3DLayout.positionSlot, 4, record, base + Sprite3DLayout.positionOffset, 1);
+			attribute(Sprite3DLayout.sizeSlot, 4, record, base + Sprite3DLayout.sizeOffset, 1);
+			attribute(Sprite3DLayout.regionSlot, 4, record, base + Sprite3DLayout.regionOffset, 1);
+			attribute(Sprite3DLayout.rightSlot, 4, record, base + Sprite3DLayout.rightOffset, 1);
+			attribute(Sprite3DLayout.upSlot, 4, record, base + Sprite3DLayout.upOffset, 1);
+			attribute(Sprite3DLayout.tintSlot, 4, record, base + Sprite3DLayout.tintOffset, 1);
+		} else {
+			var stride = Lit3DLayout.stride,
+				record = Lit3DLayout.instanceStride,
+				base = firstInstance * record;
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, v.buffer);
+			attribute(Lit3DLayout.positionSlot, Lit3DLayout.positionComponents, stride, Lit3DLayout.positionOffset);
+			attribute(Lit3DLayout.normalSlot, Lit3DLayout.normalComponents, stride, Lit3DLayout.normalOffset);
+			attribute(Lit3DLayout.uvSlot, Lit3DLayout.uvComponents, stride, Lit3DLayout.uvOffset);
+			attribute(Lit3DLayout.tangentSlot, Lit3DLayout.tangentComponents, stride, Lit3DLayout.tangentOffset);
+			gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, n.buffer);
+			// No base instance in WebGL2: the instance attributes start at the draw's first record instead.
+			attribute(Lit3DLayout.model0Slot, 4, record, base + Lit3DLayout.model0Offset, 1);
+			attribute(Lit3DLayout.model1Slot, 4, record, base + Lit3DLayout.model1Offset, 1);
+			attribute(Lit3DLayout.model2Slot, 4, record, base + Lit3DLayout.model2Offset, 1);
+			attribute(Lit3DLayout.normal0Slot, 4, record, base + Lit3DLayout.normal0Offset, 1);
+			attribute(Lit3DLayout.normal1Slot, 4, record, base + Lit3DLayout.normal1Offset, 1);
+			attribute(Lit3DLayout.normal2Slot, 4, record, base + Lit3DLayout.normal2Offset, 1);
+			attribute(Lit3DLayout.tintSlot, 4, record, base + Lit3DLayout.tintOffset, 1);
+		}
 		gl.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, ix.buffer);
 		gl.enable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthFunc(WebGL2RenderingContext.LEQUAL);
-		gl.depthMask(true);
-		if (p.doubleSided)
+		// Lit models write depth; sprites only when opaque (see-through and added ones show what's behind them, drawn after).
+		gl.depthMask(p.kind == Lit3D || p.alpha == Opaque);
+		if (p.doubleSided || p.kind == Sprite3D)
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
 		else
 			gl.enable(WebGL2RenderingContext.CULL_FACE);

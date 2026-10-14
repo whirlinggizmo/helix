@@ -20,4 +20,9 @@ enum abstract PipelineKind(Int) {
 	/** A screen effect: one triangle over the whole viewport, no vertex buffers, an app's shader (a .hxshader of kind screen) sampling textures
 		such as a finished frame. No depth test. Drawn by IGraphics.drawScreen; it has no framework shader. */
 	var Screen = 4;
+
+	/** 3D sprites: a quad (Sprite3DLayout's corners, a static buffer, indexed) drawn once an instance, each instance's record its place, facing,
+		size, pivot, texture region, alpha mode and tint (a stream buffer); one texture, unlit. Depth-tested, written only when opaque; nothing
+		culled. Drawn by IGraphics.drawMesh. */
+	var Sprite3D = 5;
 }

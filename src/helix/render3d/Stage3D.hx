@@ -2,6 +2,7 @@ package helix.render3d;
 
 import haxe.ds.Vector;
 import haxe.io.Bytes;
+import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
@@ -44,6 +45,7 @@ class Stage3D {
 	var forwardZ = -1.;
 	var draws = 0;
 	var stack:Array<Node> = [];
+	var sprites:Sprites3D;
 	var time = 0.;
 	// Apps' surface shaders' pipelines, by the framework's variants, and the shader version they were made for.
 	var surfacePipelines = new haxe.ds.ObjectMap<helix.graphics.Shader, {pipelines:Array<Int>, version:Int}>();
@@ -54,7 +56,7 @@ class Stage3D {
 		this.gpu = gpu;
 		pipelines = [
 			for (i in 0...8)
-				gpu.createPipeline(Lit3D, i & 1 != 0, 0, i & 2 != 0, i & 4 != 0)
+				gpu.createPipeline(Lit3D, i & 1 != 0 ? Alpha : Opaque, 0, i & 2 != 0, i & 4 != 0)
 		];
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
@@ -68,6 +70,7 @@ class Stage3D {
 		flat = Texture2D.fromRgba(gpu, 1, 1, normal, true);
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
+		sprites = new Sprites3D(gpu);
 	}
 
 	/** The node everything on the stage hangs from. */
@@ -99,13 +102,13 @@ class Stage3D {
 	public function setTime(seconds:Float):Void
 		time = seconds;
 
-	/** Models drawn by the last draw (in view). */
+	/** Models and sprites drawn by the last draw (in view). */
 	public function getDrawnCount():Int
-		return count;
+		return count + sprites.getDrawnCount();
 
-	/** Draws of the last draw: one a run of alike models. */
+	/** Draws of the last draw: one a run of alike models, or of sprites of one texture. */
 	public function getDrawCount():Int
-		return draws;
+		return draws + sprites.getDrawCount();
 
 	static inline function linear(channel:Int):Float {
 		var c = channel / 255;
@@ -129,6 +132,7 @@ class Stage3D {
 		count = 0;
 		draws = 0;
 		lights.resize(0);
+		sprites.begin();
 		walk();
 		drawn.resize(count);
 		for (i in 0...count)
@@ -148,14 +152,27 @@ class Stage3D {
 			camera.getViewportHeight());
 		viewProjection.writeTo(vertexUniforms);
 		writeScene();
-		var i = 0;
+		sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ);
+		// The opaque models, the opaque and masked sprites, the see-through models with the blended sprites between them back to front, then the
+		// blended sprites nearer than any of those and the added ones.
+		var i = 0, opaqueSprites = false;
 		while (i < count) {
 			var last = i;
 			while (last + 1 < count && alike(drawn[i], drawn[last + 1]))
 				last++;
+			if (drawn[i].blended) {
+				if (!opaqueSprites) {
+					sprites.drawOpaque();
+					opaqueSprites = true;
+				}
+				sprites.drawBlendedBeyond(drawn[i].depth);
+			}
 			drawRun(i, last - i + 1);
 			i = last + 1;
 		}
+		if (!opaqueSprites)
+			sprites.drawOpaque();
+		sprites.drawRest();
 	}
 
 	// The tree depth first, each node's world matrix brought up to date on the way down; hidden nodes skip their children.
@@ -180,6 +197,8 @@ class Stage3D {
 				case LightNode:
 					if (lights.length < MAX_LIGHTS)
 						lights.push(node);
+				case SpriteNode:
+					sprites.visit(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 				case Group | CameraNode:
 			}
 			for (i in 0...node.getChildCount()) {
@@ -426,7 +445,7 @@ class Stage3D {
 			made = {
 				pipelines: [
 					for (i in 0...8)
-						gpu.createPipeline(Lit3D, i & 1 != 0, shader.getHandle(), i & 2 != 0, i & 4 != 0)
+						gpu.createPipeline(Lit3D, i & 1 != 0 ? Alpha : Opaque, shader.getHandle(), i & 2 != 0, i & 4 != 0)
 				],
 				version: shader.getVersion()
 			};
@@ -443,6 +462,7 @@ class Stage3D {
 		surfacePipelines.clear();
 		for (p in pipelines)
 			gpu.destroyPipeline(p);
+		sprites.destroy();
 		gpu.destroyBuffer(instanceBuffer);
 		white.destroy(gpu);
 		flat.destroy(gpu);

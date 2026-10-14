@@ -23,7 +23,7 @@ class PostProcess {
 	/** Effects drawn on gpu. */
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		copyPipeline = gpu.createPipeline(Sprite2D, false);
+		copyPipeline = gpu.createPipeline(Sprite2D, Opaque);
 		copyBuffer = gpu.createBuffer(6 * Sprite2DLayout.stride);
 		var corners = [
 			[-1, 1, 0, 0],

@@ -1,6 +1,7 @@
 package helix.render3d;
 
-/** What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a light; a camera). Made by the static
+/** What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a sprite's texture, region, size, facing
+	and alpha mode; a light; a camera). Made by the static
 	constructors and never subclassed; a node only draws or lights, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61).
 	Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world
 	matrix is worked out when a stage draws it, only after it or a node above it changed. */
@@ -25,6 +26,18 @@ class Node {
 	var tint = 0xffffffff;
 	var lightOf:Null<Light>;
 	var cameraOf:Null<Camera3D>;
+	var texture:Null<helix.render2d.Texture2D>;
+	var regionX = 0.;
+	var regionY = 0.;
+	var regionWidth = 0.;
+	var regionHeight = 0.;
+	var spriteWidth = 1.;
+	var spriteHeight = 1.;
+	var pivotX = .5;
+	var pivotY = .5;
+	var facing:SpriteFacing = Camera;
+	var alphaMode:SpriteAlpha = Blend;
+	var cutoff = .5;
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
@@ -65,6 +78,108 @@ class Node {
 		camera.node = node;
 		node.cameraOf = camera;
 		return node;
+	}
+
+	/** A sprite: texture (null for none yet: it draws nothing) on a quad 1 x 1 world units, centered on its position, facing the camera, blended
+		by its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its
+		own (Ground, Free). */
+	public static function sprite(texture:Null<helix.render2d.Texture2D>, tint = 0xffffffff):Node {
+		var node = new Node(SpriteNode);
+		node.texture = texture;
+		node.tint = tint;
+		return node;
+	}
+
+	/** A sprite's texture, or null. */
+	public function getTexture():Null<helix.render2d.Texture2D>
+		return texture;
+
+	/** Gives a sprite a texture (null for none: it draws nothing). False for another kind. */
+	public function setTexture(value:Null<helix.render2d.Texture2D>):Bool {
+		if (kind != SpriteNode)
+			return false;
+		texture = value;
+		return true;
+	}
+
+	/** A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
+		False for another kind. */
+	public function setRegion(x:Float, y:Float, width:Float, height:Float):Bool {
+		if (kind != SpriteNode)
+			return false;
+		regionX = x;
+		regionY = y;
+		regionWidth = width;
+		regionHeight = height;
+		return true;
+	}
+
+	/** A sprite's region: x, y, width, height in texels (a width or height of 0 or less: the whole texture). */
+	public function getRegion():Array<Float>
+		return [regionX, regionY, regionWidth, regionHeight];
+
+	/** A sprite's size in world units, before its scale (1 x 1 by default). */
+	public function getSpriteWidth():Float
+		return spriteWidth;
+
+	/** A sprite's height in world units, before its scale. */
+	public function getSpriteHeight():Float
+		return spriteHeight;
+
+	/** Sizes a sprite, in world units before its scale. False for another kind, or a size below 0. */
+	public function setSpriteSize(width:Float, height:Float):Bool {
+		if (kind != SpriteNode || !(width >= 0 && height >= 0))
+			return false;
+		spriteWidth = width;
+		spriteHeight = height;
+		return true;
+	}
+
+	/** The point of a sprite at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its
+		bottom-right (0.5, 0.5, its center, by default). False for another kind. */
+	public function setPivot(x:Float, y:Float):Bool {
+		if (kind != SpriteNode)
+			return false;
+		pivotX = x;
+		pivotY = y;
+		return true;
+	}
+
+	/** A sprite's pivot's x fraction. */
+	public function getPivotX():Float
+		return pivotX;
+
+	/** A sprite's pivot's y fraction. */
+	public function getPivotY():Float
+		return pivotY;
+
+	/** How a sprite faces. */
+	public function getFacing():SpriteFacing
+		return facing;
+
+	/** Sets how a sprite faces. False for another kind. */
+	public function setFacing(value:SpriteFacing):Bool {
+		if (kind != SpriteNode)
+			return false;
+		facing = value;
+		return true;
+	}
+
+	/** How a sprite's texels' alpha is used. */
+	public function getAlphaMode():SpriteAlpha
+		return alphaMode;
+
+	/** The alpha below which a Mask sprite's texels are cut out (0..1). */
+	public function getAlphaCutoff():Float
+		return cutoff;
+
+	/** Sets how a sprite uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False for another kind or a cutoff outside 0..1. */
+	public function setAlphaMode(mode:SpriteAlpha, cutoff = .5):Bool {
+		if (kind != SpriteNode || !(cutoff >= 0 && cutoff <= 1))
+			return false;
+		alphaMode = mode;
+		this.cutoff = cutoff;
+		return true;
 	}
 
 	/** Its kind. */
@@ -380,4 +495,37 @@ enum abstract NodeKind(Int) {
 
 	/** A camera's place and aim. */
 	var CameraNode = 3;
+
+	/** A textured quad: a sprite. */
+	var SpriteNode = 4;
+}
+
+/** How a 3D sprite faces. */
+enum abstract SpriteFacing(Int) to Int {
+	/** The camera, square to its view: a coin, a glow, a particle. */
+	var Camera = 0;
+
+	/** The camera, turning about y and staying upright: a tree, a character drawn flat. */
+	var Upright = 1;
+
+	/** Flat, its texture's top toward its node's -z, facing its node's +y (the ground's up, unturned): a decal, a shadow blob. */
+	var Ground = 2;
+
+	/** As its node is turned: in the node's x-y plane, facing its +z. A sign. */
+	var Free = 3;
+}
+
+/** How a 3D sprite uses its texels' alpha. */
+enum abstract SpriteAlpha(Int) to Int {
+	/** Ignored: drawn solid, with the opaque models. */
+	var Opaque = 0;
+
+	/** Texels below a cutoff are cut out, the rest solid: leaves, fences. Drawn with the opaque models. */
+	var Mask = 1;
+
+	/** Blended by it, among the see-through models back to front. */
+	var Blend = 2;
+
+	/** Added, times it, after everything else: light, fire, glows. */
+	var Add = 3;
 }

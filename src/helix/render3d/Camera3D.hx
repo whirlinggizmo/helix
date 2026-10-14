@@ -77,6 +77,18 @@ class Camera3D {
 	public function getTargetZ():Float
 		return targetZ;
 
+	/** The up direction setView was given (the roll), x. */
+	public function getUpX():Float
+		return upX;
+
+	/** The up direction's y. */
+	public function getUpY():Float
+		return upY;
+
+	/** The up direction's z. */
+	public function getUpZ():Float
+		return upZ;
+
 	/** The vertical field of view in radians. */
 	public function getFovY():Float
 		return fovY;

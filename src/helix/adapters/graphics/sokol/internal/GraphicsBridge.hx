@@ -11,7 +11,7 @@ extern class GraphicsBridge extends SokolNativeBuild {
 	@:native("helix_can_sample") static function canSample(format:Int):Int;
 	@:native("helix_buffer") static function buffer(capacity:Int):Int;
 	@:native("helix_static_buffer") static function staticBuffer(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, index:Int):Int;
-	@:native("helix_pipeline") static function pipeline(kind:Int, alpha:Int, shader:Int, doubleSided:Int, clockwise:Int):Int;
+	@:native("helix_pipeline") static function pipeline(kind:Int, blend:Int, shader:Int, doubleSided:Int, clockwise:Int):Int;
 	@:native("helix_shader") static function shader(vs:cpp.ConstCharStar, fs:cpp.ConstCharStar, layout:cpp.ConstCharStar):Int;
 	@:native("helix_draw_screen") static function drawScreen(pipeline:Int, textures:cpp.RawPointer<cpp.UInt32>, samplings:cpp.RawPointer<Int>,
 		textureCount:Int, uniforms:cpp.RawPointer<cpp.UInt8>, uniformBytes:Int):Int;

@@ -13,7 +13,7 @@
 #include "sokol_log.h"
 #include "shaders.h"
 
-static sg_shader shaders[3];
+static sg_shader shaders[4];
 /* Apps' programs (helix_shader), by shader slot: their uniform blocks' stages and sizes and their textures' count, by binding slot. A pipeline's
    app program, by pipeline slot (0 for the framework's). */
 #define MAX_BLOCKS 4
@@ -45,12 +45,13 @@ void helix_setup(void){
  shaders[0]=sg_make_shader(HELIX_SPRITE2D_SHADER_DESC(sg_query_backend()));
  shaders[1]=sg_make_shader(HELIX_COLOR3D_SHADER_DESC(sg_query_backend()));
  shaders[2]=sg_make_shader(HELIX_LIT3D_SHADER_DESC(sg_query_backend()));
+ shaders[3]=sg_make_shader(HELIX_SPRITE3D_SHADER_DESC(sg_query_backend()));
  memset(samplers,0,sizeof samplers);
- for(int i=0;i<3;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
+ for(int i=0;i<4;i++)if(sg_query_shader_state(shaders[i])!=SG_RESOURCESTATE_VALID)abort();
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
- for(int i=0;i<3;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
+ for(int i=0;i<4;i++)sg_destroy_shader(shaders[i]);sg_shutdown();
 }
 /* helix.graphics.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8. */
 static sg_pixel_format format_of(int format){
@@ -88,10 +89,20 @@ uint32_t helix_static_buffer(const void *data,int bytes,int index){
  if(sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(buffer.id&0xffff)>=256){sg_destroy_buffer(buffer);return 0;}
  int slot=buffer.id&0xffff;used[slot]=bytes;index_buffers[slot]=index!=0;vertex_reserved[slot]=0;return buffer.id;
 }
-static sg_pipeline make_pipeline(int kind,int alpha,sg_face_winding winding,uint32_t shader,int double_sided){
+/* helix.graphics.BlendMode's: opaque (none), alpha (straight), additive (the source times its alpha, plus what's there). */
+static sg_blend_state blend_of(int blend){
+ if(!blend)return (sg_blend_state){0};
+ const sg_blend_factor dst=blend==2?SG_BLENDFACTOR_ONE:SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+ return (sg_blend_state){.enabled=true,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=dst,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=dst};
+}
+static sg_pipeline make_pipeline(int kind,int blend,sg_face_winding winding,uint32_t shader,int double_sided){
  if(kind==4)return sg_make_pipeline(&(sg_pipeline_desc){.shader={shader},.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
   .depth={.compare=SG_COMPAREFUNC_ALWAYS,.write_enabled=false},.cull_mode=SG_CULLMODE_NONE,
-  .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
+  .colors[0].blend=blend_of(blend)});
+ /* Sprites: an indexed quad, an instance each; depth written only when opaque; nothing culled. */
+ if(kind==5)return sg_make_pipeline(&(sg_pipeline_desc){.shader=shaders[3],.layout=helix_sprite3d_layout(),.primitive_type=SG_PRIMITIVETYPE_TRIANGLES,
+  .index_type=SG_INDEXTYPE_UINT32,.depth={.compare=SG_COMPAREFUNC_LESS_EQUAL,.write_enabled=blend==0},.cull_mode=SG_CULLMODE_NONE,
+  .face_winding=winding,.colors[0].blend=blend_of(blend)});
  const int three=kind!=0;
  /* Lit models are indexed, their back faces culled unless double sided (counter-clockwise is the front, as GL's, unless winding turns it:
     gl_FrontFacing follows it too). */
@@ -100,16 +111,17 @@ static sg_pipeline make_pipeline(int kind,int alpha,sg_face_winding winding,uint
   .primitive_type=kind==2?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,.index_type=kind==3?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,
   .depth={.compare=three?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=three},
   .cull_mode=kind==3&&!double_sided?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=winding,
-  .colors[0].blend={.enabled=alpha!=0,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA}});
+  .colors[0].blend=blend_of(blend)});
 }
-uint32_t helix_pipeline(int kind,int alpha,uint32_t shader,int double_sided,int clockwise){
+uint32_t helix_pipeline(int kind,int blend,uint32_t shader,int double_sided,int clockwise){
+ if(blend<0||blend>2)return 0;
  /* Screen takes an app's program; Lit3D may (a surface shader). */
- if(kind<0||kind>4||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
+ if(kind<0||kind>5||(kind==4&&!shader)||(shader&&kind!=3&&kind!=4))return 0;
  if(shader&&((shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID))return 0;
- sg_pipeline pipeline=make_pipeline(kind,alpha,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
+ sg_pipeline pipeline=make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,shader,double_sided);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
  /* A lit pipeline's twin for flipped passes: its front faces the other way round. */
- flipped_pipelines[pipeline.id&0xffff]=kind==3?make_pipeline(kind,alpha,clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW,shader,double_sided):(sg_pipeline){0};
+ flipped_pipelines[pipeline.id&0xffff]=kind==3||kind==5?make_pipeline(kind,blend,clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW,shader,double_sided):(sg_pipeline){0};
  pipeline_kinds[pipeline.id&0xffff]=kind;pipeline_shaders[pipeline.id&0xffff]=shader;return pipeline.id;
 }
 int helix_update(uint32_t id,const void *data,int bytes){
@@ -164,6 +176,7 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
 /* What a pipeline's program binds: its uniform blocks' sizes by slot (0 for one it lacks) and its texture slots (a bit each); the framework's
    lit program's, or an app's. */
 static void program_of(int pslot,int *blocks,int *sizes,int *mask){
+ if(!pipeline_shaders[pslot]&&pipeline_kinds[pslot]==5){*blocks=1;sizes[0]=HELIX_SPRITE3D_VERTEX_UNIFORM_BYTES;*mask=1;return;}
  if(!pipeline_shaders[pslot]){*blocks=2;sizes[0]=HELIX_LIT3D_VERTEX_UNIFORM_BYTES;sizes[1]=HELIX_LIT3D_FRAGMENT_UNIFORM_BYTES;*mask=3;return;}
  const int s=pipeline_shaders[pslot]&0xffff;*blocks=programs[s].blocks;memcpy(sizes,programs[s].block_size,sizeof programs[s].block_size);*mask=programs[s].texture_mask;
 }
@@ -265,7 +278,7 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int fi
  int slot=b&0xffff,pslot=p&0xffff;
  if(!active||slot>=256||pslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||sg_query_buffer_state((sg_buffer){b})!=SG_RESOURCESTATE_VALID||index_buffers[slot])return 0;
  const int kind=pipeline_kinds[pslot],stride=kind?HELIX_COLOR3D_STRIDE:HELIX_SPRITE2D_STRIDE,group=kind==2?2:3;
- if(kind==3)return 0; /* lit models draw with helix_draw_mesh */
+ if(kind>=3)return 0; /* lit models and sprites draw with helix_draw_mesh, screen effects with helix_draw_screen */
  if(vertices<=0||vertices%group||first_vertex<0||first_vertex%group||vertices>used[slot]/stride||first_vertex>used[slot]/stride-vertices)return 0;
  if(kind==0){
   if(uniforms||sg_query_view_state((sg_view){t})!=SG_RESOURCESTATE_VALID)return 0;
@@ -289,12 +302,13 @@ int helix_draw(uint32_t p,uint32_t b,uint32_t t,int sampling,int vertices,int fi
 int helix_draw_mesh(uint32_t p,uint32_t vertices,uint32_t indices,int index_count,uint32_t instances,int first_instance,int instance_count,
                     const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes){
  const int pslot=p&0xffff,vslot=vertices&0xffff,islot=indices&0xffff,nslot=instances&0xffff;
- if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||pipeline_kinds[pslot]!=3)return 0;
+ if(!active||pslot>=256||vslot>=256||islot>=256||nslot>=256||sg_query_pipeline_state((sg_pipeline){p})!=SG_RESOURCESTATE_VALID||(pipeline_kinds[pslot]!=3&&pipeline_kinds[pslot]!=5))return 0;
+ const int record=pipeline_kinds[pslot]==5?HELIX_SPRITE3D_INSTANCE_STRIDE:HELIX_LIT3D_INSTANCE_STRIDE;
  if(sg_query_buffer_state((sg_buffer){vertices})!=SG_RESOURCESTATE_VALID||index_buffers[vslot]||sg_query_buffer_state((sg_buffer){indices})!=SG_RESOURCESTATE_VALID||!index_buffers[islot])return 0;
  if(sg_query_buffer_state((sg_buffer){instances})!=SG_RESOURCESTATE_VALID||index_buffers[nslot])return 0;
  if(index_count<=0||index_count%3||(size_t)index_count*4>(size_t)used[islot]||first_instance<0||instance_count<=0||
-    (long)(first_instance+instance_count)*HELIX_LIT3D_INSTANCE_STRIDE>used[nslot])return 0;
- sg_bindings bindings={.vertex_buffers={{vertices},current_buffer(instances)},.vertex_buffer_offsets[1]=first_instance*HELIX_LIT3D_INSTANCE_STRIDE,.index_buffer={indices}};
+    (long)(first_instance+instance_count)*record>used[nslot])return 0;
+ sg_bindings bindings={.vertex_buffers={{vertices},current_buffer(instances)},.vertex_buffer_offsets[1]=first_instance*record,.index_buffer={indices}};
  if(!bind_program(pslot,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
  /* Flipped, the front faces wind the other way: the pipeline's twin. */
  sg_apply_pipeline(flipped?flipped_pipelines[pslot]:(sg_pipeline){p});

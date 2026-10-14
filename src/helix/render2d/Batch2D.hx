@@ -1,6 +1,7 @@
 package helix.render2d;
 
 import helix.graphics.IGraphics;
+import helix.graphics.BlendMode;
 import helix.graphics.PipelineKind;
 import helix.graphics.Sampling;
 import haxe.io.Bytes;
@@ -54,7 +55,7 @@ class Batch2D {
 		this.capacity = capacity;
 		data = Bytes.alloc(capacity * Sprite2DLayout.stride);
 		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
-		pipeline = gpu.createPipeline(Sprite2D, true);
+		pipeline = gpu.createPipeline(Sprite2D, Alpha);
 		font = Font2D.builtIn(gpu);
 		texture = font.getTexture();
 	}

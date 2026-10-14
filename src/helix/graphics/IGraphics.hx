@@ -22,12 +22,12 @@ interface IGraphics {
 		uint32 indices (little-endian). Throws for a bad size. */
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int;
 
-	/** Creates a pipeline drawing kind, alpha-blended when alpha is true, and returns its handle: with its framework shader, or with shader (a
+	/** Creates a pipeline drawing kind, its colors meeting the framebuffer's as blend says, and returns its handle: with its framework shader, or with shader (a
 		createShader handle) for a kind that takes an app's: Screen always does, Lit3D may (a surface shader). doubleSided draws a Lit3D pipeline's back
 		faces too (its triangles aren't culled; the shader sees which side it draws through gl_FrontFacing); other kinds cull nothing anyway.
 		clockwise makes a Lit3D pipeline's front faces the clockwise ones: for models whose placement mirrors them (an odd number of negative
 		scales), so they keep their faces. Throws for a shader of another kind's layout. */
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int;
+	public function createPipeline(kind:PipelineKind, blend:BlendMode, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int;
 
 	/** Builds an app's program (a .hxshader's source, in this adapter's dialect) and returns its handle, for createPipeline. Throws, with the
 		compiler's log, for one that doesn't build. */
@@ -68,8 +68,8 @@ interface IGraphics {
 	public function draw(pipeline:Int, buffer:Int, texture:Int, sampling:Sampling, vertices:Int, firstVertex:Int, ?uniforms:Bytes):Void;
 
 	/** Draws indexCount indices (whole triangles) of indices into vertices, two static buffers, as instanceCount instances whose records start at
-		instance firstInstance of instances' upload this frame (Lit3DLayout.instanceStride bytes each), through a Lit3D pipeline (the framework's
-		program, or an app's surface shader): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
+		instance firstInstance of instances' upload this frame (the kind's layout's instanceStride bytes each), through a Lit3D pipeline (the
+		framework's program, or an app's surface shader) or a Sprite3D one (its one texture and vertex block): textures[i] bound at texture slot i, sampled as samplings[i] says (0 for a slot the program doesn't
 		sample; the framework's are 0, the base color texture, sRGB, and 1, the normal map, linear), and uniforms[i] its uniform block at slot i
 		(null for one it lacks; 0 the vertex stage's, starting with the view-projection matrix, 1 the fragment stage's lights and material, as
 		Lit3DLayout and the surface kind lay them out). Throws for anything invalid, before drawing. */

@@ -11,6 +11,7 @@ import helix.render2d.Polygon2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render3d.Node.SpriteAlpha;
 
 /** Graphics that only counts: handles, and the draws and viewports of a frame. */
 class CountingGraphics implements IGraphics {
@@ -34,7 +35,7 @@ class CountingGraphics implements IGraphics {
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
 
-	public function createPipeline(kind:PipelineKind, alpha:Bool, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
+	public function createPipeline(kind:PipelineKind, blend:helix.graphics.BlendMode, shader:Int = 0, doubleSided:Bool = false, clockwise:Bool = false):Int
 		return next++;
 
 	public var screen:Null<{textures:Array<Int>, uniforms:Array<Null<Bytes>>}>;
@@ -464,6 +465,21 @@ class Render2DTests {
 		stage3D.draw(view);
 		check(stage3D.getDrawCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
 			"A mirrored model is its own run, through another pipeline");
+		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
+		// sprites of one texture in a phase are one draw.
+		var spriteTexture = Texture2D.fromRgba(gpu, 1, 1, Bytes.alloc(4));
+		var modes:Array<helix.render3d.Node.SpriteAlpha> = [Add, Blend, Opaque, Blend, Add];
+		for (mode in modes) {
+			var s3 = helix.render3d.Node.sprite(spriteTexture);
+			s3.setAlphaMode(mode);
+			stage3D.add(s3);
+		}
+		gpu.meshPipelines = [];
+		stage3D.draw(view);
+		var p = gpu.meshPipelines;
+		// Two models (plain and mirrored), then the sprites' three phases.
+		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.getDrawnCount() == 7,
+			"Sprites draw opaque, then blended, then added, each phase a draw through its own pipeline");
 		stage3D.destroy();
 		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
 		// others theirs; another filter is another texture; the last release frees it.
