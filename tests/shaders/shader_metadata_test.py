@@ -36,6 +36,10 @@ class ShaderMetadataTests(unittest.TestCase):
 
     @classmethod
     def compile(cls, source, folder, program):
+        # The framework's shared pieces (@include lit3d_shared.glsl, skinning.glsl) resolve beside the input.
+        for shared in SHADERS.glob('*.glsl'):
+            if not (folder / shared.name).exists():
+                (folder / shared.name).write_text(shared.read_text())
         path = folder / f'{program}-input.glsl'; path.write_text(source)
         subprocess.run([SHDC, '-i', str(path), '-o', str(folder / program), '-l',
                         'glsl410:glsl300es', '-f', 'bare_yaml', '--no-log-cmdline'], check=True, cwd=ROOT)
@@ -54,7 +58,7 @@ class ShaderMetadataTests(unittest.TestCase):
         (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
         by = {c['program']: c for c in contracts}
-        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d'])
+        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d', 'skinned3d', 'skinneddepth3d'])
         sprite, color, lit, depth, background = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d'], by['background3d']
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
@@ -63,20 +67,20 @@ class ShaderMetadataTests(unittest.TestCase):
                          [('base', False, False), ('normal', False, False), ('shadow', True, False), ('environment', False, True), ('brdf', False, False)])
         # The background draws a triangle from its vertex index: no attributes, no vertex layout; one cube.
         self.assertEqual((background['attributes'], [t['cube'] for t in background['textures']]), ([], [True]))
-        self.assertNotIn('helix_background3d_layout', (self.baseline / 'shaders.h').read_text())
         # The depth program reads the lit models' vertices: their stride, its own positions' offset.
         self.assertEqual((depth['stride'], depth['attributes'][0]['offset'], depth['instanceStride']), (48, 0, 48))
         self.assertEqual((lit['stride'], lit['instanceStride'], [u['stage'] for u in lit['uniforms']]), (48, 112, ['vertex', 'fragment']))
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
-        self.assertNotIn('STALE', (self.baseline / 'GeneratedShader.hx').read_text())
-        header = (self.baseline / 'shaders.h').read_text()
-        self.assertIn('helix_sprite2d_layout', header); self.assertIn('helix_color3d_layout', header)
+        # Programs reach adapters as Haxe data only: no C header, no GLSL ES class, whatever an older build left.
+        self.assertFalse([p.name for p in self.baseline.iterdir() if p.name in ('shaders.h', 'GeneratedShader.hx') or p.name.endswith('.glsl.h')])
         self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text())
-        self.assertIn('SG_VERTEXSTEP_PER_INSTANCE', header)
+        self.assertIn('instanced: true', (self.baseline / 'Lit3DLayout.hx').read_text())
+        self.assertIn('return [];', (self.baseline / 'Background3DLayout.hx').read_text())
 
     def test_real_relocated_and_renamed_bindings(self):
         source = (SHADERS / 'sprite2d.glsl').read_text()
-        source = source.replace('location=0', 'location=5').replace('location=1', 'location=3').replace('location=2', 'location=1')
+        # Reordered (slots run from 0 without gaps, as ShaderSource lists attributes by slot).
+        source = source.replace('location=0', 'location=#2').replace('location=1', 'location=#0').replace('location=2', 'location=#1').replace('location=#', 'location=')
         source = source.replace('binding=0) uniform texture', 'binding=4) uniform texture')
         source = source.replace('binding=0) uniform sampler', 'binding=2) uniform sampler')
         source = source.replace('position', 'vertexPosition').replace('atlasSampler', 'pixelSampler').replace('atlas', 'pixels')
@@ -84,11 +88,18 @@ class ShaderMetadataTests(unittest.TestCase):
         self.compile(source, folder, 'sprite2d')
         spec = copy.deepcopy(self.specs['sprite2d']); spec['attributes'][0]['name'] = 'vertexPosition'; spec['textures'][0]['name'] = 'pixels'
         contract, = generate(self.manifest_of(folder, [spec]), folder, ROOT)
-        self.assertEqual([a['slot'] for a in contract['attributes']], [5, 3, 1])
+        self.assertEqual([a['slot'] for a in contract['attributes']], [2, 0, 1])
         texture, = contract['textures']
         self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
-        self.assertIn('layout.attrs[5]', (folder / 'shaders.h').read_text())
-        self.assertIn('positionName="vertexPosition"', (folder / 'Sprite2DLayout.hx').read_text())
+        layout = (folder / 'Sprite2DLayout.hx').read_text()
+        self.assertIn('{slot: 2, components: 2, offset: 0}', layout)
+        self.assertIn('"vertexPosition"', layout)
+
+    def test_attribute_slot_gap_rejected(self):
+        source = (SHADERS / 'sprite2d.glsl').read_text().replace('location=2', 'location=5')
+        folder = self.directory / 'gap'; folder.mkdir()
+        self.compile(source, folder, 'sprite2d')
+        with self.assertRaisesRegex(MetadataError, 'without gaps'): generate(self.manifest_of(folder, [self.specs['sprite2d']]), folder, ROOT)
 
     def test_duplicate_yaml_key_rejected(self):
         path = self.directory / 'duplicate.yaml'; path.write_text('shaders: []\nshaders: []\n')

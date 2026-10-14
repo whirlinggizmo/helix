@@ -1,6 +1,6 @@
 package helix.assets;
 
-/** The IRequest the services and adapters return: it settles exactly once, by finish or by cancel. */
+/** The IRequest the asset service and audio resources return for work they settle themselves (Jobs returns its own): it settles exactly once, by finish or by cancel. */
 class Request implements IRequest {
 	var settled = false;
 

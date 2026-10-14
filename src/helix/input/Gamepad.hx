@@ -74,7 +74,7 @@ class Gamepad {
 		return axes[axis] * scale;
 	}
 
-	/** Fills the slot with a named pad (true) or empties it (false), for adapters; emptying lets go of every button and centres every axis. */
+	/** Fills the slot with a named pad (true) or empties it (false), for the InputRouter; emptying lets go of every button and centres every axis. */
 	public function connect(value:Bool, name:String):Void {
 		if (connected && !value)
 			for (button in PadButton.all)
@@ -86,7 +86,7 @@ class Gamepad {
 				axes[i] = 0;
 	}
 
-	/** A button's state from the adapter; going down sets both press edges. */
+	/** A button's state, from the InputRouter; going down sets both press edges. */
 	public function buttonEvent(button:PadButton, value:Bool):Void {
 		if (value && !held[button]) {
 			pushes[button]++;
@@ -99,7 +99,7 @@ class Gamepad {
 		held[button] = value;
 	}
 
-	/** An axis's value from the adapter, clamped to -1..1 for a stick and 0..1 for a trigger. */
+	/** An axis's value, from the InputRouter, clamped to -1..1 for a stick and 0..1 for a trigger. */
 	public function axisEvent(axis:PadAxis, value:Float):Void
 		axes[axis] = Math.max(axis == PadAxis.LeftTrigger || axis == PadAxis.RightTrigger ? 0 : -1, Math.min(1, value));
 

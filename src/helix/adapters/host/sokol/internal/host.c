@@ -39,7 +39,7 @@ int helix_display_width(int i){return sapp_display_width(i);}
 int helix_display_height(int i){return sapp_display_height(i);}
 const char*helix_display_name(int i){const char*n=sapp_display_name(i);return n?n:"";}
 static void frame(void){frame_cb();}
-/* Sokol's key codes are Key's values; right-hand modifiers become left-hand ones there. Mouse x/y are framebuffer pixels. */
+/* Sokol's key codes are Key's values; the input adapter folds right-hand modifiers onto the left-hand ones. Mouse x/y are framebuffer pixels. */
 static void event(const sapp_event *e){
  switch(e->type){
   case SAPP_EVENTTYPE_KEY_DOWN:helix_input_push(HELIX_EVENT_KEY,(int)e->key_code,1,0,0);break;

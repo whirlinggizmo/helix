@@ -11,7 +11,7 @@ enum StreamOpenResult {
 
 /** Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's;
 	lifetimes, volume checks, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its
-	audio on the page's first key or pointer press and suspends it while the page is hidden; natively it runs once the device opens. */
+	audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens. */
 interface IAudio {
 	/** Whether there is an output at all: false natively without an audio device. */
 	public function isAvailable():Bool;

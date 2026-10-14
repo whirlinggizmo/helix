@@ -20,6 +20,9 @@ Found while documenting every public member (2026-10-13), by reading each implem
 
 ## Fixed with the adapter audit
 
+- A host's services existed from construction on the web but only from Sokol's init natively; the `Runner` fills `Services` at init on both (DECISIONS 81). `capture` went with the diagnostics (DECISIONS 81).
+- `HaxeHttpFetchAdapter`: cancelling didn't stop the download, the timeout limited only connecting, `Content-Length` was read case-sensitively and cancelled requests' progress readers were never removed; the read-only store still lent sources, a closed native store answered Cancelled, and the clear colour was written in both graphics adapters; each was gone by the end of the audit (fetch and storage with DECISIONS 82).
+- `Jobs.shutdown` dropped queued operations without completing them, against the pool's exactly-once promise; they now complete with their cancelled value (DECISIONS 85).
 - `IAudio.destroyStream`: Web Audio stopped the stream's playbacks; Sokol's didn't, and a playing stream kept reading its file. `AudioResources` hid it by keeping resources alive while played. Now both stop them (DECISIONS 83).
 - A hot reload whose new audio failed to decode threw inside the decode callback. Now it's traced and the old clip kept (DECISIONS 83).
 - `WebAudioAdapter.unlock()` made the AudioContext without the 44,100 Hz rate decoding asked for, so which ran first decided the rate. Decoding now has its own 44,100 Hz `OfflineAudioContext` (DECISIONS 83).
@@ -30,18 +33,14 @@ Found while documenting every public member (2026-10-13), by reading each implem
 ## Open
 
 **Behaviour that differs between the targets**
-- A host's services exist from construction on the web, but only from Sokol's init natively: read them in `init()` or later.
 - `IWindow.getX/getY` where the window can't move: native answers 0, the browser `screenX/screenY`.
-- `IGraphics`: Sokol refuses textures over 4096; WebGL2 accepts them. Bounds checks differ slightly. (Both now refuse `updateBuffer` outside a frame.)
-- `capture("")` does nothing on the web; natively it writes the capture.
+- `IGraphics`: Sokol refuses textures over 16384 on a side; WebGL2 refuses over the GPU's `MAX_TEXTURE_SIZE`. Bounds checks differ slightly. (Both now refuse `updateBuffer` outside a frame.)
 
 **Correctness**
-- `HaxeHttpAdapter`: cancelling doesn't stop the download (the worker runs to the end and holds one of two slots); `timeoutSeconds` limits only connecting; `noCache` is ignored; `Content-Length` is read case-sensitively; cancelled requests' progress readers are never removed.
+- `HaxeHttpAdapter`: an abort stops a transfer only at the next part of its body, not while it connects; `noCache` has nothing to bypass (no HTTP cache natively).
 
 - A `Stage3D` lights every model with the first four lights its walk finds; a fifth is ignored. The earlier framework chose up to 8 for each model by which reach its box.
 
 **Smaller**
-- `FileSystemStoreAdapter`'s read-only mode still reads and lends sources (by design?); a job after shutdown completes Cancelled, not Failed.
-- The default clear color is written twice (WebGL2 adapter and graphics.c).
-- One native host per program (`SokolHostAdapter.instance`).
+- One native host per program: `SokolHostAdapter` keeps sokol's callbacks in statics.
 - Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).

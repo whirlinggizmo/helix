@@ -10,7 +10,7 @@ class Jobs {
 	var maxActive:Int;
 	var active = 0;
 	var live = true;
-	var waiting:Array<Void->Void> = [];
+	var waiting:Array<{request:JobRequest<Dynamic>, start:Void->Void}> = [];
 	var running:Array<{job:Job<Dynamic>, request:JobRequest<Dynamic>}> = [];
 	var queue = new WorkQueue();
 
@@ -34,14 +34,17 @@ class Jobs {
 			request.settle(refused != null ? refused : cancelled);
 			return request;
 		}
-		waiting.push(() -> {
-			if (request.isSettled())
-				return;
-			active++;
-			running.push({job: cast job, request: cast request});
-			job.started = true;
-			job.startedAt = haxe.Timer.stamp();
-			start(job);
+		waiting.push({
+			request: cast request,
+			start: () -> {
+				if (request.isSettled())
+					return;
+				active++;
+				running.push({job: cast job, request: cast request});
+				job.started = true;
+				job.startedAt = haxe.Timer.stamp();
+				start(job);
+			}
 		});
 		return request;
 	}
@@ -53,7 +56,7 @@ class Jobs {
 	/** Starts queued operations while slots are free and runs completions; the owning service calls it once a frame. */
 	public function poll():Void {
 		while (live && active < maxActive && waiting.length > 0)
-			waiting.shift()();
+			waiting.shift().start();
 		queue.poll();
 	}
 
@@ -67,6 +70,8 @@ class Jobs {
 		live = false;
 		for (r in running.copy())
 			r.request.cancel();
+		for (w in waiting)
+			w.request.cancel();
 		waiting = [];
 		queue.poll();
 	}

@@ -31,11 +31,11 @@ An adapter holds only what differs because of its platform or API.
 5. an adapter directory not named for a contract one of its adapters implements;
 6. an adapter class not named `<Api><Contract>Adapter` as above.
 
-What it can't see (the same logic written twice in different words, policy hiding in a contract's doc comment) is review's. Violations that predate the rule are listed in the check with the audit step that removes each ([ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)); the list only shrinks.
+What it can't see (the same logic written twice in different words, policy hiding in a contract's doc comment) is review's. The check has a list for known violations, each with the audit step that removes it ([ADAPTER_AUDIT.md](ADAPTER_AUDIT.md)); the audit emptied it, and it only shrinks.
 
 ## Contracts and adapters
 
-As built today. The audit's plan changes several contracts; the target shape is noted under each, and this table is updated as each step lands.
+As built today; what is still to change is under **Target shape** below.
 
 | Contract | Adapters | Platform part (theirs) |
 | --- | --- | --- |
@@ -54,7 +54,7 @@ As built today. The audit's plan changes several contracts; the target shape is 
 
 - **Host: done** (DECISIONS 81). Backend facts (`Adapters.info`) went with step 4: nothing read them.
 - **Screenshots.** `IGraphics.readPixels` (read the finished frame, or a target, back as RGBA), PNG encoding in shared Haxe, saving per platform (a file natively, a download or storage in a browser); available in release builds, and to the test harness.
-- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage` and `ImageDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
+- **Asynchronous work: done** (DECISIONS 82). `helix.core.Jobs` is the shared pool (a queue, a cap, exactly-once completion on the host thread, cancellation with the platform's abort, shutdown); `Fetch`, `Storage`, `ImageDecoding` and `AudioDecoding` run on it over `IHttp`, `IStore` and `IImageDecoder`; native adapters hand thread results back through `adapters/internal/Mailbox`. Left: one frame budget across the pools (each still delivers under its own 2 ms).
 - **WebSockets, later:** a contract of their own (`IWebSocket`: open, send, receive, close), not folded into `IHttp`; a shared service on top for what's policy (reconnecting, queuing messages).
 - **Audio: done** (DECISIONS 83).
 - **Input: done** (DECISIONS 84).
@@ -74,7 +74,7 @@ Resource kinds are the adapter's concern (a cube, a depth array read through a c
 | To... | Needs |
 | --- | --- |
 | Build and run a game in a browser | Haxe. Node and Terser only to minify a release build. |
-| Build and run a game natively (Linux) | Haxe, hxcpp, a C/C++ compiler, and the native adapters' system libraries: X11/Xi/Xcursor and GL (window, graphics), ALSA (audio output), the libsndfile runtime with Vorbis, Opus and mpg123 (compressed audio). |
+| Build and run a game natively (Linux) | Haxe, hxcpp, a C/C++ compiler, and the native adapters' system libraries: X11/Xrandr/Xi/Xcursor and GL (window, graphics), ALSA (audio output), the libsndfile runtime with Vorbis, Opus and mpg123 (compressed audio). |
 | Write shaders (an app's `.hxshader`, or the framework's) | sokol-shdc, and Python with PyYAML for the packer and generator. |
 | Develop HeliX itself | The above, plus hotreload-hx (the dev loop), Node with Playwright and pngjs (browser checks), FFmpeg (test fixtures, Asteroids' sounds). |
 

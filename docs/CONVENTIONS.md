@@ -18,7 +18,7 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)` |
 | An action | a verb | `host.quit()`, `batch.rect(...)` |
 
-- **Methods, not Haxe properties.** Public state is read and changed through `get`/`set`/`is` methods, never public `var`s or `get_`/`set_` properties, so a setter can return whether it acted. The exceptions are composition (a host's services: `host.graphics`, `host.input`) and plain records of data (`Touch`).
+- **Methods, not Haxe properties.** Public state is read and changed through `get`/`set`/`is` methods, never public `var`s or `get_`/`set_` properties, so a setter can return whether it acted. The exceptions are composition (an app's `Services`: `services.graphics`, `services.input`) and plain records of data (`Touch`).
 - **Every setter has a getter:** `setX` with `getX`, or `isX` for a bool. A setter of several values (`setSize`) has a getter per value.
 - **Say clamp or refuse.** A setter clamps when every value in range is the same request at another fidelity; it refuses, returning `false`, when the value would change what was asked or has no meaning here. Its comment says which, and a "False for ..." sentence names every refusal. A setter that can never refuse returns `Void`.
 - **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
@@ -30,10 +30,10 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 One unit per kind of value across the API, so nothing has to be converted at a call:
 
 - **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. 3D is right-handed with +y up.
-- **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.getBudgetMs`) or, where the name can't, in its doc comment (the diagnostics' frame costs are milliseconds).
+- **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.getBudgetMs`) or, where the name can't, in its doc comment (`Services.getFrameCpu` and `getFrameInterval` are milliseconds).
 - **Colors are `0xRRGGBBAA`** integers.
 - **A simulation that must play alike on every target** (an autopilot's replay, lockstep, physics) takes its trigonometry from `helix.math.Trig`, never `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `acos`, `exp` or `log`, which differ in the last bit between the browser and native. Arithmetic, `sqrt`, `floor` and `pow` agree. Drawing may use `Math`.
-- **Positions and sizes name their space** in the doc comment: framebuffer pixels (the host, the pointer), logical pixels (the window), or world units (a camera's).
+- **Positions and sizes name their space** in the doc comment: framebuffer pixels (`IWindow`'s framebuffer size, the pointer), logical pixels (the window), or world units (a camera's).
 
 ## Layout and documentation
 

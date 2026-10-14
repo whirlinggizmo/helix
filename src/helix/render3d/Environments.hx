@@ -194,7 +194,7 @@ class Environments implements IReloadable {
 		});
 	}
 
-	/** Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the host calls it once a frame. */
+	/** Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the Runner calls it once a frame. */
 	public function poll():Void {
 		if (queue.length == 0)
 			return;

@@ -156,7 +156,7 @@ def main():
     if a.action=='dev':
         prepare(a.name,a.shdc)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
-        # The dev server watches Haxe source; shader source is regenerated here, and the new GeneratedShader.hx reloads like any Haxe edit.
+        # The dev server watches Haxe source; shader source is regenerated here, and the new layouts (Sprite2DLayout.hx and the rest) reload like any Haxe edit.
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),hxml(a.name,'web')],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:

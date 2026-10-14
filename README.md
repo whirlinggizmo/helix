@@ -10,14 +10,14 @@ Status: milestones 1 (the platform, 2D and services), 2 (3D basics: immediate 3D
 
 ```text
 src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
-  adapters/<service>/<provider>/           Haxe adapters; internal/ holds their C glue and externs
+  adapters/<contract>/<api>/   one platform API behind one contract (<Api><Contract>Adapter); internal/ holds C glue and externs
   profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
 examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
 examples/blocks/src/
 tests/                    unit (Haxe interpreter), services (both targets), native, consumer, shader checks
 tools/                    example/build/check/format/doc tools (Python, some Node)
-docs/                     CONVENTIONS, INTERFACE, DECISIONS, API_FINDINGS, PACKAGING
+docs/                     ARCHITECTURE, CONVENTIONS, INTERFACE, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
 helix.py / Run.hx          front door for the tests and the services checks
 build/                    ignored: generated code, builds, caches, check output
@@ -38,7 +38,7 @@ Executed on Linux:
 - **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. Pass it with `--shdc` or `SOKOL_SHDC`. Nothing is downloaded or installed globally.
 - **Native builds:**
   - GCC/G++ 13 and ALSA headers.
-  - X11/Xi/Xcursor and GL libraries.
+  - X11/Xrandr/Xi/Xcursor and GL libraries.
   - The libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - No CMake: hxcpp compiles the adapters' C with each app.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**
@@ -125,11 +125,13 @@ python3 helix.py services --browser /path/to/chromium --native
 
 ## Documents
 
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): the engine, the platform contracts and their adapters, and the rule for what an adapter may hold.
 - [CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout, and how examples are developed.
 - [INTERFACE.md](docs/INTERFACE.md): the contracts and their limits.
 - [DECISIONS.md](docs/DECISIONS.md): why things are the way they are, in order.
 - [API_FINDINGS.md](docs/API_FINDINGS.md): known API problems, fixed and open.
 - [PACKAGING.md](docs/PACKAGING.md): tooling, autopilot and the road to a haxelib.
+- [ADAPTER_AUDIT.md](docs/ADAPTER_AUDIT.md): the adapter audit of 2026-10-14, what it found and how each step landed.
 
 ## License
 

@@ -1,3 +1,4 @@
+import helix.core.Jobs;
 import helix.host.FrameClock;
 import helix.host.Identity;
 
@@ -35,6 +36,18 @@ class HostTests {
 			&& Math.abs(clock.getElapsed() - .25) < 1e-12, "A stall: the delta held, the elapsed time whole");
 		clock.frame(10.25);
 		check(clock.getDelta() == FrameClock.MIN && clock.getElapsed() == 0, "No time passed: the least delta");
+		// The job pool: a cap, completion at a later poll, and every operation, queued or running, completing once at shutdown.
+		var jobs = new Jobs(1), results:Array<String> = [], aborted = false;
+		jobs.add(job -> job.setAbort(() -> aborted = true), r -> results.push("a:" + r), "cancelled");
+		jobs.add(job -> job.finish("done"), r -> results.push("b:" + r), "cancelled");
+		jobs.poll();
+		check(results.length == 0 && jobs.getRunning().length == 1, "One at a time; nothing completes during the call");
+		jobs.shutdown();
+		check(results.join(",") == "a:cancelled,b:cancelled"
+			&& aborted, "Shutdown completes the running and the queued, aborting the running");
+		jobs.add(_ -> {}, r -> results.push("c:" + r), "cancelled", "refused");
+		jobs.poll();
+		check(results[2] == "c:refused", "Refused once shut down");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

@@ -3,7 +3,7 @@ package helix.input;
 /** The input an app reads, as edges and state: fed by the InputRouter from a platform's events, or directly by replay and tests.
 	Tick edges (isPressed, isReleased) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick,
 	and two presses between ticks reach two ticks;
-	frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame, until the host's endFrame(). */
+	frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame, until endFrame() (the InputRouter's, which the Runner calls). */
 class InputState implements IInput {
 	var held:Array<Bool> = [for (_ in 0...Key.COUNT) false];
 	var pushes:Array<Int> = [for (_ in 0...Key.COUNT) 0];
@@ -338,7 +338,7 @@ class InputState implements IInput {
 			pointerLifts--;
 	}
 
-	/** The host calls this after each frame. */
+	/** Ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame. */
 	public function endFrame():Void {
 		frameGesture = [0., 0., 0., 0.];
 		for (i in 0...framePushes.length) {
