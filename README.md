@@ -87,7 +87,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `shaders` | Stage3D materials drawn by the example's own surface shaders: toon shading, a double-sided dissolve through a noise texture, water moved by a vertex hook |
 | `postprocess` | screen effects of the example's own shaders (`shaders/*.glsl`, packed into `.hxshader` assets, reloaded as they're edited) over a finished frame |
 
-Still to come: milestones 4–6 (advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
+Still to come: milestones 4–7 (advanced 3D: shadows, environments, instancing, particles, 3D sprites and text, skinning and animation; scene and pick; UI; native network streaming: a native audio stream playing a remote file as it downloads, and both targets playing while keeping the copy, shown starting before the download ends on a slowed network). `ecs-scene` waits on the game model. A Clay-style UI is deferred.
 
 ## Larger examples: Asteroids and Blocks
 
