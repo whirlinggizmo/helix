@@ -202,4 +202,34 @@ class Camera3D {
 		viewProjection.setProduct(projection, view);
 		return viewProjection;
 	}
+
+	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the
+		camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it
+		was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). */
+	public function getRay(x:Float, y:Float, ray:Ray):Bool {
+		if (!(x >= viewportX && x < viewportX + viewportWidth && y >= viewportY && y < viewportY + viewportHeight))
+			return false;
+		// Normalized device coordinates: -1 to 1 across the viewport, y up.
+		var nx = (x - viewportX) / viewportWidth * 2 - 1,
+			ny = 1 - (y - viewportY) / viewportHeight * 2;
+		if (!inverse.setInverse(getViewProjection()))
+			return false;
+		var near = unproject(nx, ny, -1),
+			nearX = near[0],
+			nearY = near[1],
+			nearZ = near[2];
+		var far = unproject(nx, ny, 1);
+		return ray.set(nearX, nearY, nearZ, far[0] - nearX, far[1] - nearY, far[2] - nearZ);
+	}
+
+	// Clip-space x, y, z through `inverse` to the world, divided by w.
+	function unproject(x:Float, y:Float, z:Float):Array<Float> {
+		var m = inverse, w = m.get(3) * x + m.get(7) * y + m.get(11) * z + m.get(15);
+		for (r in 0...3)
+			point[r] = (m.get(r) * x + m.get(4 + r) * y + m.get(8 + r) * z + m.get(12 + r)) / w;
+		return point;
+	}
+
+	var inverse = new Mat4();
+	var point = [0., 0, 0];
 }

@@ -68,6 +68,11 @@ class JointPalette {
 		return base;
 	}
 
+	/** Element row (0 to 2), col (0 to 3) of joint index's matrix as added (from a model's base): what the GPU skins with, for skinning on the
+		CPU (a pick). */
+	public inline function getMatrix(index:Int, row:Int, col:Int):Float
+		return data.getFloat(index * 48 + row * 16 + col * 4);
+
 	/** Uploads what was added, making the texture taller when it must. */
 	public function upload():Void {
 		if (count == 0)

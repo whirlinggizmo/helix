@@ -78,6 +78,14 @@ class Stage3D {
 	var skinnedCasterRecords:Bytes;
 	// The joints of the pass's skinned models, and the skinned models the walk met, placed once it has posed every joint.
 	var palette:JointPalette;
+	// Picking: the walk testing what it meets against a ray, the nearest hit so far, a skinned model's vertices posed on the CPU.
+	var picking = false;
+	var pickRay = new Ray();
+	var pickHit:PickHit;
+	var pickBest = 0.;
+	var pickInverse = new Mat4();
+	var pickPalette:JointPalette;
+	var posedVertices = new Vector<Float>(0);
 	var skinned:Array<Node> = [];
 	var posed = new Vector<Float>(6);
 	// The shadow map (layers of the size the last drawShadows needed), and a map of one texel that stands in when there are none.
@@ -133,6 +141,7 @@ class Stage3D {
 		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
 		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
 		palette = new JointPalette(gpu);
+		pickPalette = new JointPalette(gpu);
 		noShadows = gpu.createShadowMap(1, 1);
 		var black = Bytes.alloc(6 * 4);
 		for (face in 0...6)
@@ -532,6 +541,187 @@ class Stage3D {
 		shadowCasters += n;
 	}
 
+	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model it shows there, into
+		hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a
+		disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a
+		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
+		blended or its tint) only where its alpha reaches a half. World matrices are brought up to date, as a draw does. */
+	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit):Null<PickHit>
+		return camera.getRay(x, y, pickRay) ? pickAlong(pickRay, hit) : null;
+
+	/** The nearest model along ray, as pick says, into hit (a new one when not given); null for none. */
+	public function pickAlong(ray:Ray, ?hit:PickHit):Null<PickHit> {
+		var result = hit != null ? hit : new PickHit();
+		result.clear();
+		if (ray != pickRay)
+			pickRay.set(ray.getOriginX(), ray.getOriginY(), ray.getOriginZ(), ray.getDirectionX(), ray.getDirectionY(), ray.getDirectionZ());
+		pickHit = result;
+		pickBest = Math.POSITIVE_INFINITY;
+		picking = true;
+		walk();
+		picking = false;
+		return result.getNode() == null ? null : result;
+	}
+
+	// Where the ray enters the box boxX..boxRZ (0 when it starts inside), or infinity when it misses.
+	function rayBox():Float {
+		var lo = 0., hi = Math.POSITIVE_INFINITY;
+		for (axis in 0...3) {
+			var o = axis == 0 ? pickRay.getOriginX() : axis == 1 ? pickRay.getOriginY() : pickRay.getOriginZ(),
+				d = axis == 0 ? pickRay.getDirectionX() : axis == 1 ? pickRay.getDirectionY() : pickRay.getDirectionZ(),
+				c = axis == 0 ? boxX : axis == 1 ? boxY : boxZ,
+				reach = axis == 0 ? boxRX : axis == 1 ? boxRY : boxRZ;
+			if (Math.abs(d) < 1e-12) {
+				if (o < c - reach || o > c + reach)
+					return Math.POSITIVE_INFINITY;
+				continue;
+			}
+			var a = (c - reach - o) / d, b = (c + reach - o) / d;
+			if (a > b) {
+				var t = a;
+				a = b;
+				b = t;
+			}
+			lo = Math.max(lo, a);
+			hi = Math.min(hi, b);
+			if (lo > hi)
+				return Math.POSITIVE_INFINITY;
+		}
+		return lo;
+	}
+
+	// Tests a model's triangles against the ray, in its own space, keeping the nearest hit: after its box, which must be nearer than the best.
+	function pickModel(node:Node):Void {
+		var material = node.getMaterial(),
+			alpha = (node.getTint() & 255) / 255;
+		if ((material.isBlended() || alpha < 1) && alpha * (material.getBaseColor() & 255) / 255 < .5)
+			return;
+		placeBox(node);
+		if (rayBox() >= pickBest)
+			return;
+		var mesh = node.getMesh(),
+			w = node.getWorldMatrix(),
+			inv = pickInverse;
+		if (!inv.setInverse(w))
+			return;
+		var ox = pickRay.getOriginX(),
+			oy = pickRay.getOriginY(),
+			oz = pickRay.getOriginZ();
+		var dx = pickRay.getDirectionX(),
+			dy = pickRay.getDirectionY(),
+			dz = pickRay.getDirectionZ();
+		// The ray in the model's space: the same t reaches the same point, so distances stay the world's.
+		var lox = inv.get(0) * ox + inv.get(4) * oy + inv.get(8) * oz + inv.get(12),
+			loy = inv.get(1) * ox + inv.get(5) * oy + inv.get(9) * oz + inv.get(13),
+			loz = inv.get(2) * ox + inv.get(6) * oy + inv.get(10) * oz + inv.get(14);
+		var ldx = inv.get(0) * dx + inv.get(4) * dy + inv.get(8) * dz,
+			ldy = inv.get(1) * dx + inv.get(5) * dy + inv.get(9) * dz,
+			ldz = inv.get(2) * dx + inv.get(6) * dy + inv.get(10) * dz;
+		var count = mesh.getVertexCount(),
+			vertices = mesh.getVertices(),
+			indices = mesh.getIndices();
+		var positions = posedVertices;
+		if (positions.length < count * 3)
+			positions = posedVertices = new Vector<Float>(count * 3);
+		if (isSkinned(node))
+			pose(node, mesh, positions);
+		else
+			for (i in 0...count)
+				for (c in 0...3)
+					positions[i * 3 + c] = vertices.getFloat(i * Lit3DLayout.stride + Lit3DLayout.positionOffset + c * 4);
+		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0.;
+		var i = 0, n = mesh.getIndexCount();
+		while (i < n) {
+			var a = indices.getInt32(i * 4) * 3,
+				b = indices.getInt32(i * 4 + 4) * 3,
+				c = indices.getInt32(i * 4 + 8) * 3;
+			i += 3;
+			// Möller–Trumbore, either face.
+			var e1x = positions[b] - positions[a],
+				e1y = positions[b + 1] - positions[a + 1],
+				e1z = positions[b + 2] - positions[a + 2];
+			var e2x = positions[c] - positions[a],
+				e2y = positions[c + 1] - positions[a + 1],
+				e2z = positions[c + 2] - positions[a + 2];
+			var px = ldy * e2z - ldz * e2y,
+				py = ldz * e2x - ldx * e2z,
+				pz = ldx * e2y - ldy * e2x;
+			var det = e1x * px + e1y * py + e1z * pz;
+			if (Math.abs(det) < 1e-12)
+				continue;
+			var sx = lox - positions[a],
+				sy = loy - positions[a + 1],
+				sz = loz - positions[a + 2];
+			var u = (sx * px + sy * py + sz * pz) / det;
+			if (u < 0 || u > 1)
+				continue;
+			var qx = sy * e1z - sz * e1y,
+				qy = sz * e1x - sx * e1z,
+				qz = sx * e1y - sy * e1x;
+			var v = (ldx * qx + ldy * qy + ldz * qz) / det;
+			if (v < 0 || u + v > 1)
+				continue;
+			var t = (e2x * qx + e2y * qy + e2z * qz) / det;
+			if (t < 0 || t >= pickBest || (found && t >= hitT))
+				continue;
+			found = true;
+			hitT = t;
+			hnx = e1y * e2z - e1z * e2y;
+			hny = e1z * e2x - e1x * e2z;
+			hnz = e1x * e2y - e1y * e2x;
+		}
+		if (!found)
+			return;
+		// The normal into the world by the inverse's transpose, made a unit vector, turned to face back along the ray.
+		var nx = inv.get(0) * hnx + inv.get(1) * hny + inv.get(2) * hnz,
+			ny = inv.get(4) * hnx + inv.get(5) * hny + inv.get(6) * hnz,
+			nz = inv.get(8) * hnx + inv.get(9) * hny + inv.get(10) * hnz;
+		var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+		if (length > 0) {
+			nx /= length;
+			ny /= length;
+			nz /= length;
+		}
+		if (nx * dx + ny * dy + nz * dz > 0) {
+			nx = -nx;
+			ny = -ny;
+			nz = -nz;
+		}
+		pickBest = hitT;
+		pickHit.record(node, hitT, ox + dx * hitT, oy + dy * hitT, oz + dz * hitT, lox + ldx * hitT, loy + ldy * hitT, loz + ldz * hitT, nx, ny, nz);
+	}
+
+	// A skinned model's vertices as posed now, in its own space, into out: each moved by its joints' matrices as the GPU blends them.
+	function pose(node:Node, mesh:Mesh, out:Vector<Float>):Void {
+		pickPalette.clear();
+		var base = pickPalette.add(node),
+			vertices = mesh.getVertices(),
+			skin = mesh.getSkinData();
+		for (i in 0...mesh.getVertexCount()) {
+			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset,
+				s = i * Skinned3DLayout.skinStride;
+			var x = vertices.getFloat(at),
+				y = vertices.getFloat(at + 4),
+				z = vertices.getFloat(at + 8);
+			var px = 0., py = 0., pz = 0.;
+			for (k in 0...4) {
+				var weight = skin.getFloat(s + Skinned3DLayout.weightsOffset + k * 4);
+				if (weight <= 0)
+					continue;
+				var j = base + Std.int(skin.getFloat(s + Skinned3DLayout.jointsOffset + k * 4) + .5);
+				px += weight * (pickPalette.getMatrix(j, 0, 0) * x + pickPalette.getMatrix(j, 0, 1) * y + pickPalette.getMatrix(j, 0, 2) * z
+					+ pickPalette.getMatrix(j, 0, 3));
+				py += weight * (pickPalette.getMatrix(j, 1, 0) * x + pickPalette.getMatrix(j, 1, 1) * y + pickPalette.getMatrix(j, 1, 2) * z
+					+ pickPalette.getMatrix(j, 1, 3));
+				pz += weight * (pickPalette.getMatrix(j, 2, 0) * x + pickPalette.getMatrix(j, 2, 1) * y + pickPalette.getMatrix(j, 2, 2) * z
+					+ pickPalette.getMatrix(j, 2, 3));
+			}
+			out[i * 3] = px;
+			out[i * 3 + 1] = py;
+			out[i * 3 + 2] = pz;
+		}
+	}
+
 	/** Draws the stage in the open frame, through camera, in its viewport. */
 	public function draw(camera:Camera3D):Void {
 		var viewProjection = camera.getViewProjection();
@@ -634,6 +824,11 @@ class Stage3D {
 			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are walked.
 			var shown = node.isVisible();
 			switch (node.getKind()) {
+				case Model if (picking && node.isPickable() && isSkinned(node)):
+					skinned.push(node);
+				case Model if (picking && node.isPickable()):
+					pickModel(node);
+				case _ if (picking):
 				case EmitterNode if (!gathering && !shown):
 					sprites.advanceEmitter(node);
 				case _ if (!shown):
@@ -662,7 +857,9 @@ class Stage3D {
 		}
 		// Skinned models once every joint is where this frame has it: their boxes are their joints'.
 		for (node in skinned)
-			if (gathering)
+			if (picking)
+				pickModel(node);
+			else if (gathering)
 				gatherCaster(node);
 			else
 				visitModel(node);
