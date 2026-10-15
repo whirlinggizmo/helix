@@ -22,7 +22,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX hello");
-		services.window.setSize(800, 600);
+		services.window.requestSize(800, 600);
 		batch = new Batch2D(services.graphics);
 	}
 

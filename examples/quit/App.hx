@@ -23,7 +23,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX quit");
-		services.window.setSize(640, 200);
+		services.window.requestSize(640, 200);
 		batch = new Batch2D(services.graphics);
 		quitAt = services.getTime() + 1;
 		services.audioResources.loadStream("music/a_hero_is_born.mp3", result -> switch result {

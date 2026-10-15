@@ -35,7 +35,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX stage2d");
-		services.window.setSize(800, 450);
+		services.window.requestSize(800, 450);
 		batch = new Batch2D(services.graphics);
 
 		rock = Node2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);

@@ -71,7 +71,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX tilemap");
-		services.window.setSize(960, 600);
+		services.window.requestSize(960, 600);
 		batch = new Batch2D(services.graphics);
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
 		for (y in 0...WORLD_H)

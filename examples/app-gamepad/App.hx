@@ -29,7 +29,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX gamepad");
-		services.window.setSize(WIDTH, HEIGHT);
+		services.window.requestSize(WIDTH, HEIGHT);
 		batch = new Batch2D(services.graphics);
 	}
 

@@ -61,7 +61,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX materials");
-		services.window.setSize(1000, 700);
+		services.window.requestSize(1000, 700);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);

@@ -38,7 +38,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX touch");
-		services.window.setSize(900, 700);
+		services.window.requestSize(900, 700);
 		batch = new Batch2D(services.graphics);
 		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture): logo = texture;

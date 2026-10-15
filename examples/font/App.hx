@@ -32,7 +32,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX font");
-		services.window.setSize(900, 500);
+		services.window.requestSize(900, 500);
 		batch = new Batch2D(services.graphics);
 		fonts = new Fonts(services.assets, services.graphics);
 		fonts.load(MONO, result -> switch result {

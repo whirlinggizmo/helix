@@ -79,7 +79,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX environment");
-		services.window.setSize(1000, 700);
+		services.window.requestSize(1000, 700);
 		batch = new Batch2D(services.graphics);
 		stage = new Stage3D(services.graphics);
 		var ball = Mesh.sphere(.5, 32, 64);

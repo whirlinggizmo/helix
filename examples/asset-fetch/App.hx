@@ -32,7 +32,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX asset fetch");
-		services.window.setSize(800, 520);
+		services.window.requestSize(800, 520);
 		batch = new Batch2D(services.graphics);
 		var assets = services.assets, url = assets.getHost();
 		if (url == null) {

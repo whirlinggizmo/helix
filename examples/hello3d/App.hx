@@ -25,7 +25,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX hello3d");
-		services.window.setSize(900, 700);
+		services.window.requestSize(900, 700);
 		batch3D = new Batch3D(services.graphics);
 		batch2D = new Batch2D(services.graphics);
 	}

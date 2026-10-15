@@ -49,7 +49,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX model");
-		services.window.setSize(1000, 600);
+		services.window.requestSize(1000, 600);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .2);
 		var sunLight = new Light(Directional);

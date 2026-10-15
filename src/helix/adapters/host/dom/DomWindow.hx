@@ -50,7 +50,7 @@ class DomWindow implements IWindow {
 	public function getHeight():Int
 		return Browser.window.innerHeight;
 
-	public function setSize(width:Int, height:Int):Bool
+	public function requestSize(width:Int, height:Int):Bool
 		return false;
 
 	public function canMove():Bool
@@ -62,7 +62,7 @@ class DomWindow implements IWindow {
 	public function getY():Int
 		return Browser.window.screenY;
 
-	public function setPosition(x:Int, y:Int):Bool
+	public function requestPosition(x:Int, y:Int):Bool
 		return false;
 
 	public function canFullscreen():Bool
@@ -96,7 +96,7 @@ class DomWindow implements IWindow {
 	public function getMonitor():Int
 		return 0;
 
-	public function setMonitor(index:Int):Bool
+	public function requestMonitor(index:Int):Bool
 		return false;
 
 	public function getMonitorName(index:Int):String

@@ -29,7 +29,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX force fetch");
-		services.window.setSize(720, 240);
+		services.window.requestSize(720, 240);
 		batch = new Batch2D(services.graphics);
 		services.assets.ensure(KEY, result -> switch result {
 			case Loaded(_):

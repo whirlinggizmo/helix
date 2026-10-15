@@ -54,7 +54,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX render targets");
-		services.window.setSize(1000, 560);
+		services.window.requestSize(1000, 560);
 		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		pixelView = Texture2D.renderTarget(gpu, PIXEL_W, PIXEL_H, false);

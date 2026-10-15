@@ -40,7 +40,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX lights");
-		services.window.setSize(1000, 600);
+		services.window.requestSize(1000, 600);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);

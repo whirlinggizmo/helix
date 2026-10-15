@@ -27,7 +27,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX audio");
-		services.window.setSize(720, 240);
+		services.window.requestSize(720, 240);
 		batch = new Batch2D(services.graphics);
 		var audio = services.audioResources;
 		audio.loadStream("music/a_hero_is_born.mp3", result -> switch result {

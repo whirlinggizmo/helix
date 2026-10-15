@@ -64,7 +64,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX instancing");
-		services.window.setSize(1000, 600);
+		services.window.requestSize(1000, 600);
 		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);

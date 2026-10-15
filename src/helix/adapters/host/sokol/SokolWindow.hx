@@ -36,7 +36,7 @@ class SokolWindow implements IWindow {
 	public function getHeight():Int
 		return HostBridge.windowHeight();
 
-	public function setSize(width:Int, height:Int):Bool {
+	public function requestSize(width:Int, height:Int):Bool {
 		if (width < 1 || height < 1)
 			return false;
 		HostBridge.setSize(width, height);
@@ -52,7 +52,7 @@ class SokolWindow implements IWindow {
 	public function getY():Int
 		return canMove() ? HostBridge.windowY() : 0;
 
-	public function setPosition(x:Int, y:Int):Bool {
+	public function requestPosition(x:Int, y:Int):Bool {
 		if (!canMove())
 			return false;
 		HostBridge.setPosition(x, y);
@@ -84,7 +84,7 @@ class SokolWindow implements IWindow {
 	public function getMonitor():Int
 		return HostBridge.displayCurrent();
 
-	public function setMonitor(index:Int):Bool {
+	public function requestMonitor(index:Int):Bool {
 		if (index < 0 || index >= getMonitorCount() || !canMove())
 			return false;
 		HostBridge.setDisplay(index);

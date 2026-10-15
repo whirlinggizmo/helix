@@ -22,7 +22,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX window");
-		services.window.setSize(900, 400);
+		services.window.requestSize(900, 400);
 		batch = new Batch2D(services.graphics);
 	}
 
@@ -39,17 +39,17 @@ class App extends BaseApp {
 		if (services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
 		if (input.isFramePressed(Key.Left))
-			report("move", window.setPosition(x - 50, y));
+			report("move", window.requestPosition(x - 50, y));
 		if (input.isFramePressed(Key.Right))
-			report("move", window.setPosition(x + 50, y));
+			report("move", window.requestPosition(x + 50, y));
 		if (input.isFramePressed(Key.Up))
-			report("move", window.setPosition(x, y - 50));
+			report("move", window.requestPosition(x, y - 50));
 		if (input.isFramePressed(Key.Down))
-			report("move", window.setPosition(x, y + 50));
+			report("move", window.requestPosition(x, y + 50));
 		if (input.isFramePressed(Key.Equal))
-			report("grow", window.setSize(Std.int(width * 1.1), Std.int(height * 1.1)));
+			report("grow", window.requestSize(Std.int(width * 1.1), Std.int(height * 1.1)));
 		if (input.isFramePressed(Key.Minus))
-			report("shrink", window.setSize(Std.int(width / 1.1), Std.int(height / 1.1)));
+			report("shrink", window.requestSize(Std.int(width / 1.1), Std.int(height / 1.1)));
 		// A request: fullscreen() answers on a later frame.
 		if (input.isFramePressed(Key.F)) {
 			status = "fullscreen: " + (window.requestFullscreen(!window.isFullscreen()) ? "asked for" : "not supported here");
@@ -64,7 +64,7 @@ class App extends BaseApp {
 			report("show", true);
 		}
 		if (input.isFramePressed(Key.M))
-			report("monitor", window.setMonitor((window.getMonitor() + 1) % window.getMonitorCount()));
+			report("monitor", window.requestMonitor((window.getMonitor() + 1) % window.getMonitorCount()));
 		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
 		camera.pixels(services.window.getPixelRatio());
 		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);

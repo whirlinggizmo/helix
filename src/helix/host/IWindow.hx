@@ -29,10 +29,11 @@ interface IWindow {
 	/** The window's inner height in logical pixels (the viewport's, on the web). */
 	function getHeight():Int;
 
-	/** False where a program can't size its window (the web), or for a size under 1. */
-	function setSize(width:Int, height:Int):Bool;
+	/** Asks for an inner size in logical pixels; getWidth and getHeight answer on a later frame, with what the window manager gave (it may
+		give another size, or none). False, asking nothing, where a program can't size its window (the web), or for a size under 1. */
+	function requestSize(width:Int, height:Int):Bool;
 
-	/** Whether setPosition and setMonitor can work: not on the web, nor where the compositor places windows (XWayland). */
+	/** Whether requestPosition and requestMonitor can ask: not on the web, nor where the compositor places windows (XWayland). */
 	function canMove():Bool;
 
 	/** The window's left edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's. */
@@ -41,8 +42,9 @@ interface IWindow {
 	/** The window's top edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's. */
 	function getY():Int;
 
-	/** False where the window can't move (canMove). */
-	function setPosition(x:Int, y:Int):Bool;
+	/** Asks for the window's left and top edges on the desktop in logical pixels; getX and getY answer on a later frame, with what the
+		window manager gave. False, asking nothing, where the window can't move (canMove). */
+	function requestPosition(x:Int, y:Int):Bool;
 
 	/** Whether requestFullscreen can ask: always natively; on the web, where the page may go fullscreen. */
 	function canFullscreen():Bool;
@@ -66,8 +68,9 @@ interface IWindow {
 	/** The monitor holding the window. */
 	function getMonitor():Int;
 
-	/** False for an index out of range, or where the window can't move (canMove). */
-	function setMonitor(index:Int):Bool;
+	/** Asks for the window on monitor index; getMonitor answers on a later frame. False, asking nothing, for an index out of range, or where
+		the window can't move (canMove). */
+	function requestMonitor(index:Int):Bool;
 
 	/** "" for an index out of range, as the other monitor getters answer 0. */
 	function getMonitorName(index:Int):String;

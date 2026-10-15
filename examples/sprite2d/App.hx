@@ -42,7 +42,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX sprite2d");
-		services.window.setSize(900, 520);
+		services.window.requestSize(900, 520);
 		batch = new Batch2D(services.graphics);
 		// Colors are values, so cycle a palette.
 		for (i in 0...24) {

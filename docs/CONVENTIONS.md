@@ -11,16 +11,17 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 | Kind | Form | Example |
 | --- | --- | --- |
 | Read a value | `getX()` | `window.getWidth()` |
-| Change a value | `setX(...)` | `window.setSize(800, 600)` |
+| Change a value, done when it returns | `setX(...)` | `window.setTitle("Asteroids")`, `node.setSize(64, 32)` |
 | A state now (a bool) | `isX()` | `window.isFullscreen()`, `input.isDown(Key.A)` |
 | Whether something exists | `hasX()` | |
 | Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `host.canQuit()` |
-| Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)` |
+| Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
 | An action | a verb | `host.quit()`, `batch.rect(...)` |
 
 - **Methods, not Haxe properties.** Public state is read and changed through `get`/`set`/`is` methods, never public `var`s or `get_`/`set_` properties, so a setter can return whether it acted. The exceptions are composition (an app's `Services`: `services.graphics`, `services.input`) and plain records of data (`Touch`).
-- **Every setter has a getter:** `setX` with `getX`, or `isX` for a bool. A setter of several values (`setSize`) has a getter per value.
+- **Every setter has a getter:** `setX` with `getX`, or `isX` for a bool. A setter of several values (`node.setSize`) has a getter per value.
 - **Say clamp or refuse.** A setter clamps when every value in range is the same request at another fidelity; it refuses, returning `false`, when the value would change what was asked or has no meaning here. Its comment says which, and a "False for ..." sentence names every refusal. A setter that can never refuse returns `Void`.
+- **`set` or `request`: whether the result is known when the call returns.** A `set` that returns true has happened: its getter answers the new value at once. When the platform decides later or may give something else (a window manager sizing or placing a window, a browser granting fullscreen, a driver granting multisampling), it's a `request`. Both return false, changing nothing, for a value that's invalid or impossible here.
 - **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
 - **A count names what it counts:** `getMsaaSamples()`, `getPadCount()`, never a bare `getSamples()`. **A limit comes first:** `getMaxMsaaSamples()`, `getMaxSteps()`, `getMinX()`.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.

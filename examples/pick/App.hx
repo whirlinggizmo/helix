@@ -42,7 +42,7 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		services.window.setTitle("HeliX pick");
-		services.window.setSize(1000, 600);
+		services.window.requestSize(1000, 600);
 		var gpu = services.graphics;
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
