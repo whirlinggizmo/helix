@@ -51,7 +51,10 @@ jobs:
           sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev
       - name: System packages (macOS)
         if: runner.os == 'macOS'
-        run: brew install ffmpeg libsndfile
+        # Homebrew's ffmpeg has no Vorbis encoder; ffmpeg-full has, keg-only, so its bin goes first on PATH.
+        run: |
+          brew install ffmpeg-full libsndfile
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
       - name: System packages (Windows)
         if: runner.os == 'Windows'
         run: choco install ffmpeg --no-progress -y

@@ -5,9 +5,11 @@ and page in examples/shared and the files in examples/assets. A larger example a
 files its assets/generate.py makes. An example's shaders/*.glsl are packed (tools/pack_shader.py) into assets/shaders/*.hxshader, and in dev
 packed again as they change, reloading in the page.
 
-autopilot builds both targets and replays each of the example's autopilot scripts on both: in a headless browser, and natively on a private
-display (tools/private_display.py), with sound off. Both must publish the same final game."""
+autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
+in a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
+logged-in session (tools/remote_windows.py --desktop). Both must publish the same final game."""
 import argparse
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -118,7 +120,7 @@ def build(name,target):
 def autopilot(name,browser):
     """Replays every examples/<name>/autopilot script on both targets; returns the scripts whose final games differ or that failed."""
     import functools,http.server,threading
-    from private_display import private_display
+    if sys.platform.startswith('linux'):from private_display import private_display
     scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
     if not scripts:sys.exit(f'examples/{name}/autopilot has no scripts')
     for target in ('web','native'):build(name,target)
@@ -127,16 +129,16 @@ def autopilot(name,browser):
         def log_message(self,*args):pass
     handler=functools.partial(Quiet,directory=str(ROOT/f'build/web/{name}'))
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),handler);threading.Thread(target=server.serve_forever,daemon=True).start()
-    failed=[]
+    failed=[];program=ROOT/f'build/native/{name}'/('Main.exe' if os.name=='nt' else 'Main')
     try:
-        with private_display() as env:
+        with private_display() if sys.platform.startswith('linux') else nullcontext(dict(os.environ)) as env:
             for script in scripts:
                 options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
                 query='&'.join(f'{k}={v}' for k,v in options.items())
                 web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True, encoding='utf-8'))
                 result=out/f'native-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
-                process=subprocess.run([str(ROOT/f'build/native/{name}/Main')],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
+                process=subprocess.run([str(program)],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
                 native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
                 (out/f'autopilot-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
