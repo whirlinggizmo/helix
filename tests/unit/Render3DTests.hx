@@ -32,8 +32,8 @@ class Render3DTests {
 		var m = new Mat4();
 		check(near(m.get(0), 1) && near(m.get(5), 1) && near(m.get(1), 0), "A new matrix is the identity");
 		check(!m.makePerspective(0, 1, .1, 10) && !m.makePerspective(1, 1, 1, .5) && near(m.get(0), 1), "A bad perspective is refused and changes nothing");
-		check(!m.setLookAt(1, 2, 3, 1, 2, 3, 0, 1, 0)
-			&& !m.setLookAt(0, 0, 0, 0, 5, 0, 0, 1, 0), "A view onto itself or along up is refused");
+		check(!m.makeLookAt(1, 2, 3, 1, 2, 3, 0, 1, 0)
+			&& !m.makeLookAt(0, 0, 0, 0, 5, 0, 0, 1, 0), "A view onto itself or along up is refused");
 		var camera = new Camera3D();
 		camera.setViewport(800, 400);
 		var vp = camera.getViewProjection();
@@ -51,7 +51,7 @@ class Render3DTests {
 		var right = clip(camera.getViewProjection(), 0, 0, -1);
 		check(right[0] / right[3] > 0, "Looking down -x from +x, -z is on the right: right-handed");
 		var product = new Mat4();
-		product.setProduct(m, m);
+		product.makeProduct(m, m);
 		check(near(product.get(0), 1) && near(product.get(15), 1), "The identity times itself");
 		// Every generated shape: each triangle faces the way its vertices' normals do (counter-clockwise from outside), and the box is right.
 		for (shape in [
@@ -170,6 +170,13 @@ class Render3DTests {
 		check(mount.getKind() == CameraNode && mount.getCamera() == lens && lens.getNode() == mount, "The node and its camera know each other");
 		var other = Node.camera(lens);
 		check(mount.getCamera() == null && lens.getNode() == other, "A camera on another node moves there");
+		var turned = Node.group();
+		turned.setRotation(.3, -.5, 1.2);
+		check(near(turned.getRotationX(), .3) && near(turned.getRotationY(), -.5) && near(turned.getRotationZ(), 1.2),
+			"Its rotation's angles read back as set (y within -pi/2..pi/2)");
+		turned.setPosition(1, 2, 3);
+		var m = turned.getMatrix();
+		check(m.length == 16 && m[12] == 1 && m[13] == 2 && m[14] == 3, "Its matrix holds its place in the last column");
 		// .gltf: a triangle whose buffer is inline (a data: URI), and one whose buffer is a file beside it; relative paths resolved.
 		var data = haxe.io.Bytes.alloc(36);
 		for (k in 0...9)

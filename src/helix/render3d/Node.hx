@@ -384,13 +384,13 @@ class Node {
 	/** Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps
 		(a camera node's view is found so before the stage's walk). */
 	public function computeWorld(out:Mat4):Void {
-		out.setTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+		out.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
 		var at = parent, above = new Mat4(), product = new Mat4();
 		// Two scratch matrices a call: a chain of parents is short, and a camera asks once a draw.
 		while (at != null) {
-			above.setTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
-			product.setProduct(above, out);
-			out.setFrom(product);
+			above.makeTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
+			product.makeProduct(above, out);
+			out.copyFrom(product);
 			at = at.parent;
 		}
 	}
@@ -512,6 +512,37 @@ class Node {
 		localDirty = true;
 	}
 
+	/** Its rotation as angles in radians about x, then y, then z (setRotation's), x of them: worked out from its quaternion, so an equal turn,
+		not always the angles set (y is kept within -pi/2..pi/2). */
+	public function getRotationX():Float
+		return euler(0);
+
+	/** Its rotation's angle about y, radians, as getRotationX. */
+	public function getRotationY():Float
+		return euler(1);
+
+	/** Its rotation's angle about z, radians, as getRotationX. */
+	public function getRotationZ():Float
+		return euler(2);
+
+	// One of the x, then y, then z angles turning as its quaternion does (the rotation matrix taken apart, as three.js does for this order).
+	function euler(axis:Int):Float {
+		var m11 = 1 - 2 * (qy * qy + qz * qz),
+			m12 = 2 * (qx * qy - qz * qw),
+			m21 = 2 * (qx * qy + qz * qw),
+			m22 = 1 - 2 * (qx * qx + qz * qz),
+			m31 = 2 * (qx * qz - qy * qw),
+			m32 = 2 * (qy * qz + qx * qw),
+			m33 = 1 - 2 * (qx * qx + qy * qy);
+		var s = m31 < -1 ? -1 : m31 > 1 ? 1 : m31;
+		var gimbal = Math.abs(s) >= .9999999;
+		return switch axis {
+			case 0: gimbal ? 0 : Math.atan2(m32, m33);
+			case 1: Math.asin(-s);
+			case _: gimbal ? Math.atan2(-m12, m22) : Math.atan2(m21, m11);
+		}
+	}
+
 	/** Turns it by angles in radians about x, then y, then z, relative to its parent. */
 	public function setRotation(x:Float, y:Float, z:Float):Void {
 		var cx = Math.cos(x / 2),
@@ -540,6 +571,13 @@ class Node {
 			qw = w / length;
 		}
 		localDirty = true;
+	}
+
+	/** Its matrix relative to its parent (16 floats, column-major): its place, turn and scale put together. */
+	public function getMatrix():Array<Float> {
+		var m = new Mat4();
+		m.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+		return [for (i in 0...16) m.get(i)];
 	}
 
 	/** Places, turns and scales it by a matrix (16 floats, column-major) relative to its parent, taken apart into translation, rotation and
@@ -660,13 +698,13 @@ class Node {
 		if (!localDirty && !parentChanged)
 			return false;
 		if (localDirty) {
-			local.setTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+			local.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
 			localDirty = false;
 		}
 		if (parentWorld == null)
-			world.setFrom(local);
+			world.copyFrom(local);
 		else
-			world.setProduct(parentWorld, local);
+			world.makeProduct(parentWorld, local);
 		return true;
 	}
 }

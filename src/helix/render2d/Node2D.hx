@@ -364,6 +364,22 @@ class Node2D {
 		return true;
 	}
 
+	/** A nine-slice's left inset, texels. */
+	public function getNineSliceLeft():Float
+		return sliceLeft;
+
+	/** A nine-slice's top inset, texels. */
+	public function getNineSliceTop():Float
+		return sliceTop;
+
+	/** A nine-slice's right inset, texels. */
+	public function getNineSliceRight():Float
+		return sliceRight;
+
+	/** A nine-slice's bottom inset, texels. */
+	public function getNineSliceBottom():Float
+		return sliceBottom;
+
 	/** Whether a sprite draws as a nine-slice frame. */
 	public function isNineSlice():Bool
 		return sliceLeft > 0 || sliceTop > 0 || sliceRight > 0 || sliceBottom > 0;
@@ -371,6 +387,10 @@ class Node2D {
 	/** A text's wrap width in its own units: 0 for one line. */
 	public function getWrapWidth():Float
 		return wrapWidth;
+
+	/** A wrapped text's lines apart, times its size. */
+	public function getLineHeight():Float
+		return lineHeight;
 
 	/** Wraps a text to width in its own units (Text2D.wrap), its lines lineHeight times its size apart; 0 for one line. False for another kind, a
 		width below 0 or a line height of 0 or less. */

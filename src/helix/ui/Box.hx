@@ -95,11 +95,9 @@ class Box {
 	public static function of(node:Node2D):Box
 		return new Box(Stack, node);
 
-	/** Adds child as its last; returns this box, for chaining. */
-	public function add(child:Box):Box {
+	/** Adds child as its last. */
+	public function add(child:Box):Void
 		children.push(child);
-		return this;
-	}
 
 	/** Takes child out. */
 	public function remove(child:Box):Bool
@@ -113,44 +111,90 @@ class Box {
 	public function getNode():Null<Node2D>
 		return node;
 
-	/** Sizes it; returns this box. */
-	public function setSize(width:Sizing, height:Sizing):Box {
+	/** How its width is decided. */
+	public function getWidthSizing():Sizing
+		return width;
+
+	/** How its height is decided. */
+	public function getHeightSizing():Sizing
+		return height;
+
+	/** How its width and height are decided (Fit both, to start). */
+	public function setSizing(width:Sizing, height:Sizing):Void {
 		this.width = width;
 		this.height = height;
-		return this;
 	}
 
-	/** Its padding inside its edges; returns this box. */
-	public function setPadding(left:Float, top:Float, right:Float, bottom:Float):Box {
+	/** Its padding inside its left edge. */
+	public function getPaddingLeft():Float
+		return paddingLeft;
+
+	/** Its padding inside its top edge. */
+	public function getPaddingTop():Float
+		return paddingTop;
+
+	/** Its padding inside its right edge. */
+	public function getPaddingRight():Float
+		return paddingRight;
+
+	/** Its padding inside its bottom edge. */
+	public function getPaddingBottom():Float
+		return paddingBottom;
+
+	/** Its padding inside its edges (none, to start). */
+	public function setPadding(left:Float, top:Float, right:Float, bottom:Float):Void {
 		paddingLeft = left;
 		paddingTop = top;
 		paddingRight = right;
 		paddingBottom = bottom;
-		return this;
 	}
 
-	/** The room between its children in a row or column; returns this box. */
-	public function setGap(value:Float):Box {
+	/** The room between its children in a row or column. */
+	public function getGap():Float
+		return gap;
+
+	/** Sets the room between its children in a row or column (none, to start). */
+	public function setGap(value:Float):Void
 		gap = value;
-		return this;
-	}
+
+	/** Where its children go along its row or column. */
+	public function getMainAlign():Alignment
+		return mainAlign;
+
+	/** Where its children go across its row or column. */
+	public function getCrossAlign():Alignment
+		return crossAlign;
 
 	/** Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross, Stretch filling it);
-		returns this box. */
-	public function setAlign(main:Alignment, cross:Alignment):Box {
+		Start both, to start. */
+	public function setAlign(main:Alignment, cross:Alignment):Void {
 		mainAlign = main;
 		crossAlign = cross;
-		return this;
 	}
 
+	/** Where it goes across a stack, or null for its stack's alignment. */
+	public function getAnchorX():Null<Alignment>
+		return selfX;
+
+	/** Where it goes down a stack, or null for its stack's alignment. */
+	public function getAnchorY():Null<Alignment>
+		return selfY;
+
+	/** How far it's moved right from its anchor. */
+	public function getAnchorOffsetX():Float
+		return offsetX;
+
+	/** How far it's moved down from its anchor. */
+	public function getAnchorOffsetY():Float
+		return offsetY;
+
 	/** Where it goes in a stack (horizontally, vertically; Stretch fills that way), moved by offsetX, offsetY: anchored to an edge, a corner
-		or the middle. Returns this box. */
-	public function setAnchor(horizontal:Alignment, vertical:Alignment, offsetX = 0., offsetY = 0.):Box {
+		or the middle. */
+	public function setAnchor(horizontal:Alignment, vertical:Alignment, offsetX = 0., offsetY = 0.):Void {
 		selfX = horizontal;
 		selfY = vertical;
 		this.offsetX = offsetX;
 		this.offsetY = offsetY;
-		return this;
 	}
 
 	/** Where the last arrange put it, x of its left edge. */

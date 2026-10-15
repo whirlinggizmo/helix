@@ -109,12 +109,21 @@ class Gltf {
 		];
 	}
 
-	/** Sets buffer index to bytes, the file its uri names. Throws for bytes shorter than its byteLength. */
-	public function setBuffer(index:Int, bytes:Bytes):Void {
-		var length:Null<Int> = field(list("buffers")[index], "byteLength");
+	/** Buffer index's bytes, or null while it waits for its file (or for an index out of range). */
+	public function getBuffer(index:Int):Null<Bytes>
+		return index >= 0 && index < buffers.length ? buffers[index] : null;
+
+	/** Sets buffer index to bytes, the file its uri names. False, changing nothing, for an index out of range or bytes shorter than its
+		byteLength. */
+	public function setBuffer(index:Int, bytes:Bytes):Bool {
+		var all = list("buffers");
+		if (index < 0 || index >= all.length)
+			return false;
+		var length:Null<Int> = field(all[index], "byteLength");
 		if (length != null && bytes.length < length)
-			throw 'Buffer $index is cut short: ${bytes.length} of $length bytes';
+			return false;
 		buffers[index] = bytes;
+		return true;
 	}
 
 	/** A field of a JSON object, or null. */

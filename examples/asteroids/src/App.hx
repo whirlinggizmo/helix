@@ -94,10 +94,16 @@ class App extends BaseApp {
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
-		var column = Box.column().setSize(Fixed(300), Fit).setGap(theme.gap).setAlign(Start, Stretch);
+		var column = Box.column();
+		column.setSizing(Fixed(300), Fit);
+		column.setGap(theme.gap);
+		column.setAlign(Start, Stretch);
+		column.setAnchor(Start, Start, 330, 390);
 		for (b in [play, again, toTitle])
 			column.add(b.getBox());
-		layout = Box.stack().setSize(Fixed(Game.W), Fixed(Game.H)).add(column.setAnchor(Start, Start, 330, 390));
+		layout = Box.stack();
+		layout.setSizing(Fixed(Game.W), Fixed(Game.H));
+		layout.add(column);
 	}
 
 	// The menu for the game's state: its buttons shown, a new screen begun when it changes (keys held into it do nothing).

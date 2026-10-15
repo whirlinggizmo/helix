@@ -114,6 +114,30 @@ class Batch2D {
 			camera = value;
 		}
 
+	/** The transform's a: x's share of a point's x. */
+	public function getTransformA():Float
+		return ta;
+
+	/** The transform's b: x's share of a point's y. */
+	public function getTransformB():Float
+		return tb;
+
+	/** The transform's c: y's share of a point's x. */
+	public function getTransformC():Float
+		return tc;
+
+	/** The transform's d: y's share of a point's y. */
+	public function getTransformD():Float
+		return td;
+
+	/** The transform's x offset, world units. */
+	public function getTransformX():Float
+		return tx;
+
+	/** The transform's y offset, world units. */
+	public function getTransformY():Float
+		return ty;
+
 	/** Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units. */
 	public function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void {
 		ta = a;
@@ -149,7 +173,7 @@ class Batch2D {
 			var run = Std.int(i / 3), c = runCameras[run];
 			if (c != viewport) {
 				viewport = c;
-				gpu.setViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
+				gpu.applyViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
 					c.getViewportHeight());
 			}
 			// The run's clip, set when it changes (from the top-left here, the bottom-left for the GPU).
@@ -162,7 +186,7 @@ class Batch2D {
 				cy = runClips[at + 1];
 				cw = w;
 				ch = runClips[at + 3];
-				gpu.setScissor(cx, c.getFramebufferHeight() - cy - ch, cw, ch);
+				gpu.applyScissor(cx, c.getFramebufferHeight() - cy - ch, cw, ch);
 				clipped = true;
 			}
 			var e = runEmitters[run];

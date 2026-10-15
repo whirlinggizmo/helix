@@ -39,7 +39,7 @@ class Camera3D {
 	/** Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. On a
 		node, the node's place replaces it at the next draw. */
 	public function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX = 0., upY = 1., upZ = 0.):Bool {
-		if (!view.setLookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ))
+		if (!view.makeLookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ))
 			return false;
 		this.eyeX = eyeX;
 		this.eyeY = eyeY;
@@ -199,7 +199,7 @@ class Camera3D {
 			projection.makeOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
 		else
 			projection.makePerspective(fovY, viewportWidth / viewportHeight, near, far);
-		viewProjection.setProduct(projection, view);
+		viewProjection.makeProduct(projection, view);
 		return viewProjection;
 	}
 
@@ -212,7 +212,7 @@ class Camera3D {
 		// Normalized device coordinates: -1 to 1 across the viewport, y up.
 		var nx = (x - viewportX) / viewportWidth * 2 - 1,
 			ny = 1 - (y - viewportY) / viewportHeight * 2;
-		if (!inverse.setInverse(getViewProjection()))
+		if (!inverse.makeInverse(getViewProjection()))
 			return false;
 		var near = unproject(nx, ny, -1),
 			nearX = near[0],

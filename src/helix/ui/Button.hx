@@ -19,8 +19,12 @@ class Button extends Widget {
 		label = Node2D.text(text, theme.textSize, theme.text, Center, theme.font);
 		root.add(face);
 		root.add(label);
-		box = Box.stack(face).setSize(Fit, Fixed(theme.height)).setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
-		box.add(Box.of(label).setAnchor(Center, Center));
+		box = Box.stack(face);
+		box.setSizing(Fit, Fixed(theme.height));
+		box.setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
+		var text = Box.of(label);
+		text.setAnchor(Center, Center);
+		box.add(text);
 	}
 
 	/** Whether it was clicked or activated this frame. */

@@ -96,19 +96,30 @@ class App extends BaseApp {
 		], 6);
 		start = ui.button("Start");
 		backFromLevels = ui.button("Back");
-		levels.add(list).adopt(start).adopt(backFromLevels);
-		levels.getContent().add(Box.row().setGap(ui.getTheme().gap).add(start.getBox()).add(backFromLevels.getBox()));
+		levels.add(list);
+		levels.adopt(start);
+		levels.adopt(backFromLevels);
+		var buttons = Box.row();
+		buttons.setGap(ui.getTheme().gap);
+		buttons.add(start.getBox());
+		buttons.add(backFromLevels.getBox());
+		levels.getContent().add(buttons);
 		bar = ui.progress(0);
 		corner = ui.label("");
 		corner.getNode().setColor(0x9aa2b8ff);
 		// The design: the panels centered, the bar along the bottom, the status in the corner.
-		layout = Box.stack()
-			.setSize(Grow(1), Grow(1))
-			.add(main.getBox().setSize(Fixed(360), Fit).setAnchor(Center, Center))
-			.add(settings.getBox().setSize(Fixed(480), Fit).setAnchor(Center, Center))
-			.add(levels.getBox().setSize(Fixed(520), Fit).setAnchor(Center, Center))
-			.add(bar.getBox().setSize(Fixed(400), Fixed(10)).setAnchor(Center, End, 0, -24))
-			.add(corner.getBox().setAnchor(End, End, -16, -48));
+		layout = Box.stack();
+		layout.setSizing(Grow(1), Grow(1));
+		for (panel in [main, settings, levels])
+			panel.getBox().setAnchor(Center, Center);
+		main.getBox().setSizing(Fixed(360), Fit);
+		settings.getBox().setSizing(Fixed(480), Fit);
+		levels.getBox().setSizing(Fixed(520), Fit);
+		bar.getBox().setSizing(Fixed(400), Fixed(10));
+		bar.getBox().setAnchor(Center, End, 0, -24);
+		corner.getBox().setAnchor(End, End, -16, -48);
+		for (w in [main, settings, levels, bar, corner])
+			layout.add(w.getBox());
 		show("main");
 	}
 

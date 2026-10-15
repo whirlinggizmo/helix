@@ -23,7 +23,8 @@ class ProgressBar extends Widget {
 		fill.setPickable(false);
 		root.add(track);
 		root.add(fill);
-		box = Box.of(track).setSize(Grow(1), Fixed(theme.textSize * .75));
+		box = Box.of(track);
+		box.setSizing(Grow(1), Fixed(theme.textSize * .75));
 	}
 
 	/** How far along, 0 to 1. */

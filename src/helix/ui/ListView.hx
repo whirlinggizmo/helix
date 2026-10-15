@@ -32,7 +32,8 @@ class ListView extends Widget {
 		window.add(content);
 		root.add(face);
 		root.add(window);
-		box = Box.of(face).setSize(Grow(1), Fixed(visibleRows * theme.height));
+		box = Box.of(face);
+		box.setSizing(Grow(1), Fixed(visibleRows * theme.height));
 		setItems(items);
 	}
 

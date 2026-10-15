@@ -117,6 +117,10 @@ class Job<T> {
 	public function isSettled():Bool
 		return request.isSettled();
 
+	/** What cancelling it while it runs does, or null. */
+	public function getAbort():Null<Void->Void>
+		return abort;
+
 	/** What cancelling it while it runs does on the platform (abort a transfer, release a lease that arrives late); run once, on the host thread. */
 	public function setAbort(abort:Void->Void):Void
 		this.abort = abort;

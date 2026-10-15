@@ -7,6 +7,7 @@ import helix.render2d.Texture2D;
 	frame (setFrame). Never focused; the pointer stops at it, so what's under a panel doesn't see it. */
 class Panel extends Widget {
 	var background:Node2D;
+	var frame:Null<Node2D>;
 	var content:Box;
 
 	@:allow(helix.ui.Ui)
@@ -17,19 +18,20 @@ class Panel extends Widget {
 		background.setPivot(0, 0);
 		background.setCornerRadius(theme.corner);
 		root.add(background);
-		content = Box.column()
-			.setPadding(theme.padding, theme.padding, theme.padding, theme.padding)
-			.setGap(theme.gap)
-			.setAlign(Start, Stretch);
-		box = Box.stack(background).add(content.setAnchor(Stretch, Stretch));
+		content = Box.column();
+		content.setPadding(theme.padding, theme.padding, theme.padding, theme.padding);
+		content.setGap(theme.gap);
+		content.setAlign(Start, Stretch);
+		content.setAnchor(Stretch, Stretch);
+		box = Box.stack(background);
+		box.add(content);
 	}
 
-	/** Puts widget in it, last in its column: its nodes under the panel's (hidden with it), its box in the column. Returns this panel. */
-	public function add(widget:Widget):Panel {
+	/** Puts widget in it, last in its column: its nodes under the panel's (hidden with it), its box in the column. */
+	public function add(widget:Widget):Void {
 		widget.getRoot().getParent().remove(widget.getRoot());
 		root.add(widget.getRoot());
 		content.add(widget.getBox());
-		return this;
 	}
 
 	/** The column its widgets go in, for boxes of other kinds (a row of buttons: put the buttons' boxes in a row, and the buttons in the panel
@@ -37,19 +39,21 @@ class Panel extends Widget {
 	public function getContent():Box
 		return content;
 
-	/** Puts widget's nodes under the panel's (hidden with it) without placing it: its box goes in a layout of the caller's inside getContent().
-		Returns this panel. */
-	public function adopt(widget:Widget):Panel {
+	/** Puts widget's nodes under the panel's (hidden with it) without placing it: its box goes in a layout of the caller's inside getContent(). */
+	public function adopt(widget:Widget):Void {
 		widget.getRoot().getParent().remove(widget.getRoot());
 		root.add(widget.getRoot());
-		return this;
 	}
 
-	/** Draws it as texture's nine-slice frame, its corners left, top, right and bottom texels in, tinted tint; returns false for no texture. */
+	/** Its nine-slice frame, a sprite (its texture, insets and tint read from it), or null for the theme's rectangle. */
+	public function getFrame():Null<Node2D>
+		return frame;
+
+	/** Draws it as texture's nine-slice frame, its corners left, top, right and bottom texels in, tinted tint. False, changing nothing, for no texture. */
 	public function setFrame(texture:Null<Texture2D>, left:Float, top:Float, right:Float, bottom:Float, tint = 0xffffffff):Bool {
 		if (texture == null)
 			return false;
-		var frame = Node2D.sprite(texture);
+		frame = Node2D.sprite(texture);
 		frame.setColor(tint);
 		frame.setPivot(0, 0);
 		frame.setNineSlice(left, top, right, bottom);
@@ -62,7 +66,8 @@ class Panel extends Widget {
 		for (n in others)
 			root.add(n);
 		background = frame;
-		box = Box.stack(background).add(content.setAnchor(Stretch, Stretch));
+		box = Box.stack(background);
+		box.add(content);
 		return true;
 	}
 

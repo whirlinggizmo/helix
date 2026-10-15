@@ -30,12 +30,17 @@ class Toggle extends Widget {
 		label = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
 		for (n in [face, check, mark, label])
 			root.add(n);
-		var row = Box.row()
-			.setGap(theme.gap)
-			.setAlign(Start, Center)
-			.add(Box.of(check).add(Box.of(mark).setAnchor(Center, Center)))
-			.add(Box.of(label));
-		box = Box.stack(face).setSize(Fit, Fixed(theme.height)).add(row.setAnchor(Start, Center));
+		var tick = Box.of(mark), square = Box.of(check), row = Box.row();
+		tick.setAnchor(Center, Center);
+		square.add(tick);
+		row.setGap(theme.gap);
+		row.setAlign(Start, Center);
+		row.setAnchor(Start, Center);
+		row.add(square);
+		row.add(Box.of(label));
+		box = Box.stack(face);
+		box.setSizing(Fit, Fixed(theme.height));
+		box.add(row);
 	}
 
 	/** Whether it's on. */

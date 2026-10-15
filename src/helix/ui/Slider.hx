@@ -42,9 +42,17 @@ class Slider extends Widget {
 		knob.setPickable(false);
 		for (n in [face, track, fill, knob, label])
 			root.add(n);
-		trackBox = Box.of(track).setSize(Grow(1), Fixed(6));
-		var row = Box.row().setGap(theme.gap * 2).setAlign(Start, Center).add(Box.of(label)).add(trackBox);
-		box = Box.stack(face).setSize(Grow(1), Fixed(theme.height)).add(row.setAnchor(Stretch, Center));
+		trackBox = Box.of(track);
+		trackBox.setSizing(Grow(1), Fixed(6));
+		var row = Box.row();
+		row.setGap(theme.gap * 2);
+		row.setAlign(Start, Center);
+		row.setAnchor(Stretch, Center);
+		row.add(Box.of(label));
+		row.add(trackBox);
+		box = Box.stack(face);
+		box.setSizing(Grow(1), Fixed(theme.height));
+		box.add(row);
 	}
 
 	/** Its value. */

@@ -44,6 +44,22 @@ class Batch3D {
 	public function getDrawCallCount():Int
 		return draws;
 
+	/** The direction toward the light, x (normalized). */
+	public function getLightX():Float
+		return lightX;
+
+	/** The direction toward the light, y (normalized). */
+	public function getLightY():Float
+		return lightY;
+
+	/** The direction toward the light, z (normalized). */
+	public function getLightZ():Float
+		return lightZ;
+
+	/** The brightness of a face turned away from the light, 0 to 1. */
+	public function getAmbient():Float
+		return ambient;
+
 	/** The light solid shapes are shaded by: from the direction x, y, z (toward the light, normalized here), with ambient the brightness of a face
 		turned away (0 to 1). False, changing nothing, for a zero direction or an ambient outside 0 to 1. */
 	public function setLight(x:Float, y:Float, z:Float, ambient:Float):Bool {
@@ -67,8 +83,8 @@ class Batch3D {
 
 	/** Draws the batch in the open frame, in the camera's viewport: its triangles, then its lines. Once a frame. */
 	public function end():Void {
-		gpu.setViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(), camera.getViewportWidth(),
-			camera.getViewportHeight());
+		gpu.applyViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(),
+			camera.getViewportWidth(), camera.getViewportHeight());
 		camera.getViewProjection().writeTo(uniforms);
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);

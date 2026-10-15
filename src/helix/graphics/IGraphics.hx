@@ -105,11 +105,11 @@ interface IGraphics {
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void;
 
 	/** Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less. */
-	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void;
+	public function applyViewport(x:Int, y:Int, w:Int, h:Int):Void;
 
-	/** Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as setViewport), until resetScissor or the pass
+	/** Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as applyViewport), until resetScissor or the pass
 		ends; a pass begins unclipped. Throws outside a pass or for a size below 0. */
-	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void;
+	public function applyScissor(x:Int, y:Int, w:Int, h:Int):Void;
 
 	/** Draws everywhere in the pass again. Throws outside a pass. */
 	public function resetScissor():Void;

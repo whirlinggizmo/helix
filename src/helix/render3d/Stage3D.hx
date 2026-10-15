@@ -188,6 +188,14 @@ class Stage3D {
 	public function remove(node:Node):Bool
 		return root.remove(node);
 
+	/** The ambient light's color, 0xRRGGBBAA (sRGB). */
+	public function getAmbientColor():Int
+		return ambientColor;
+
+	/** The ambient light's intensity. */
+	public function getAmbientIntensity():Float
+		return ambientIntensity;
+
 	/** The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0. */
 	public function setAmbient(color:Int, intensity:Float):Bool {
 		if (!(intensity >= 0))
@@ -444,7 +452,7 @@ class Stage3D {
 		radius = Math.ceil(radius * 16) / 16;
 		// Light space: from the world's origin along the light, so a texel is the same place in the world whichever way the camera moves.
 		var flat = Math.abs(dy) > .99;
-		lightView.setLookAt(0, 0, 0, dx, dy, dz, 0, flat ? 0 : 1, flat ? 1 : 0);
+		lightView.makeLookAt(0, 0, 0, dx, dy, dz, 0, flat ? 0 : 1, flat ? 1 : 0);
 		var vx = lightView.get(0) * cx + lightView.get(4) * cy + lightView.get(8) * cz;
 		var vy = lightView.get(1) * cx + lightView.get(5) * cy + lightView.get(9) * cz;
 		// The view looks down -z: depth grows that way.
@@ -454,7 +462,7 @@ class Stage3D {
 			bottom = Math.floor((vy - radius) / texel) * texel;
 		var near = depth - radius - SHADOW_PULLBACK, far = depth + radius;
 		lightProjection.makeOrthographicBox(left, left + side, bottom, bottom + side, near, far);
-		lightViewProjection.setProduct(lightProjection, lightView);
+		lightViewProjection.makeProduct(lightProjection, lightView);
 		return {
 			texelWorld: texel,
 			near: near,
@@ -492,9 +500,9 @@ class Stage3D {
 			py = w.get(13),
 			pz = w.get(14),
 			flat = Math.abs(dy) > .99;
-		lightView.setLookAt(px, py, pz, px + dx, py + dy, pz + dz, 0, flat ? 0 : 1, flat ? 1 : 0);
+		lightView.makeLookAt(px, py, pz, px + dx, py + dy, pz + dz, 0, flat ? 0 : 1, flat ? 1 : 0);
 		lightProjection.makePerspective(fovY, 1, reach * .01, reach);
-		lightViewProjection.setProduct(lightProjection, lightView);
+		lightViewProjection.makeProduct(lightProjection, lightView);
 		return {
 			texelWorld: 2 * Math.tan(fovY / 2) * reach / size,
 			near: reach * .01,
@@ -653,7 +661,7 @@ class Stage3D {
 		var mesh = node.getMesh(),
 			w = node.getWorldMatrix(),
 			inv = pickInverse;
-		if (!inv.setInverse(w))
+		if (!inv.makeInverse(w))
 			return;
 		var ox = pickRay.getOriginX(),
 			oy = pickRay.getOriginY(),
@@ -813,8 +821,8 @@ class Stage3D {
 		for (i in 0...count)
 			writeRecord(i, drawn[i]);
 		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
-		gpu.setViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(), camera.getViewportWidth(),
-			camera.getViewportHeight());
+		gpu.applyViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(),
+			camera.getViewportWidth(), camera.getViewportHeight());
 		viewProjection.writeTo(vertexUniforms);
 		writeScene();
 		if (background != null)
@@ -844,7 +852,7 @@ class Stage3D {
 
 	// The background, behind everything: the environment's background cube in each pixel's direction, through the inverse view-projection.
 	function drawBackground(viewProjection:Mat4):Void {
-		inverse.setInverse(viewProjection);
+		inverse.makeInverse(viewProjection);
 		var u = backgroundUniforms[1];
 		for (i in 0...16)
 			u.setFloat(i * 4, inverse.get(i));
@@ -1052,7 +1060,7 @@ class Stage3D {
 	// second's whether shadows fall on it), the tint (linear).
 	function writeRecord(index:Int, item:Item):Void {
 		var w = item.node.getWorldMatrix(), r = inverse, at = index * Lit3DLayout.instanceStride;
-		inverse.setInverse(w);
+		inverse.makeInverse(w);
 		for (row in 0...3)
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));

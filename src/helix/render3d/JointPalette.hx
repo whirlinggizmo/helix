@@ -44,7 +44,7 @@ class JointPalette {
 				grown.blit(0, data, 0, count * 48);
 			data = grown;
 		}
-		inverse.setInverse(model.getWorldMatrix());
+		inverse.makeInverse(model.getWorldMatrix());
 		for (j in 0...joints) {
 			var joint = model.getJoint(j).getWorldMatrix();
 			// inverse × joint world × inverse bind, column-major; its top three rows.

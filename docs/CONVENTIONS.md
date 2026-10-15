@@ -25,6 +25,8 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 - **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
 - **A count names what it counts:** `getMsaaSamples()`, `getPadCount()`, never a bare `getSamples()`. **A limit comes first:** `getMaxMsaaSamples()`, `getMaxSteps()`, `getMinX()`.
 - **A call that fills what it's given is a verb, not `get` or `set`:** `camera.computeRay(x, y, ray)`, `node.computeWorld(out)`, `matrix.makePerspective(...)` (the whole matrix overwritten). A `get` only reads; a `set` changes one value its getter answers.
+- **A command for what follows in a pass is `apply`** (sokol's word): `graphics.applyViewport(...)`, `graphics.applyScissor(...)`. It's an instruction to the GPU's stream, not a value kept to read back.
+- **No chaining.** Setters return `Void`, or `Bool` when they can refuse; none returns its object, which would make a call read like a property. Building something takes one call a line.
 - **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`setRegion`, `getRegionX`), not a region here and a source there.
 - **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/adaptercheck.py` checks both.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.

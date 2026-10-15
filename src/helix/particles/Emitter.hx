@@ -57,6 +57,7 @@ class Emitter {
 	var alphaMode:SpriteAlpha = Add;
 	var cutoff = .5;
 	var random:Int;
+	var seed:Int;
 	var flat:Bool;
 	// The ring of birth records, newest at next - 1; live of them (the newest) may still be alive.
 	var ring:Bytes;
@@ -84,6 +85,7 @@ class Emitter {
 		random = seeds++ * 0x9E3779B1;
 		if (random == 0)
 			random = 1;
+		seed = random;
 	}
 
 	/** Its texture, or null. */
@@ -94,6 +96,26 @@ class Emitter {
 	public function setTexture(value:Null<Texture2D>):Void
 		texture = value;
 
+	/** The most particles alive at once. */
+	public function getMaxParticles():Int
+		return max;
+
+	/** The region's left, in texels. */
+	public function getRegionX():Float
+		return regionX;
+
+	/** The region's top, in texels. */
+	public function getRegionY():Float
+		return regionY;
+
+	/** The region's width in texels (0 or less: the whole texture). */
+	public function getRegionWidth():Float
+		return regionWidth;
+
+	/** The region's height in texels (0 or less: the whole texture). */
+	public function getRegionHeight():Float
+		return regionHeight;
+
 	/** The region of the texture each particle shows, in texels from its top-left (an atlas cell); a width or height of 0 or less (the default)
 		is the whole texture. */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {
@@ -102,6 +124,22 @@ class Emitter {
 		regionWidth = width;
 		regionHeight = height;
 	}
+
+	/** The flipbook's columns (1: none). */
+	public function getFrameColumns():Int
+		return columns;
+
+	/** The flipbook's rows (1: none). */
+	public function getFrameRows():Int
+		return rows;
+
+	/** The flipbook frames used. */
+	public function getFrameCount():Int
+		return frameCount;
+
+	/** The flipbook frames a second (0: once over a life). */
+	public function getFramesPerSecond():Float
+		return framesPerSecond;
 
 	/** A flipbook: the region split into columns x rows frames (left to right, top to bottom), of which the first frameCount are used (0 or less,
 		or more than there are: all). With perSecond 0 each particle plays them once over its life (puffs, explosions); above 0 it loops at that rate from a random frame
@@ -115,6 +153,10 @@ class Emitter {
 		framesPerSecond = perSecond;
 		return true;
 	}
+
+	/** Its steady rate, particles a second. */
+	public function getRate():Float
+		return rate;
 
 	/** Its steady rate, particles a second (0: bursts only). False below 0. */
 	public function setRate(perSecond:Float):Bool {
@@ -132,6 +174,14 @@ class Emitter {
 	public function setEmitting(value:Bool):Void
 		emitting = value;
 
+	/** The shortest life, seconds. */
+	public function getMinLife():Float
+		return lifeMin;
+
+	/** The longest life, seconds. */
+	public function getMaxLife():Float
+		return lifeMax;
+
 	/** Each particle's life, seconds, between min and max. False unless 0 < min <= max. */
 	public function setLife(min:Float, max:Float):Bool {
 		if (!(min > 0 && max >= min))
@@ -141,6 +191,18 @@ class Emitter {
 		return true;
 	}
 
+	/** The spawn box's half size along x (0 with a sphere set). */
+	public function getSpawnHalfX():Float
+		return boxX;
+
+	/** The spawn box's half size along y. */
+	public function getSpawnHalfY():Float
+		return boxY;
+
+	/** The spawn box's half size along z. */
+	public function getSpawnHalfZ():Float
+		return boxZ;
+
 	/** Born anywhere in a box of these half sizes around its position (a point by default); a half size's sign is ignored (the same box). */
 	public function setSpawnBox(halfX:Float, halfY:Float, halfZ:Float):Void {
 		boxX = Math.abs(halfX);
@@ -149,6 +211,10 @@ class Emitter {
 		sphere = 0;
 	}
 
+	/** The spawn sphere's radius (0: born in the box). */
+	public function getSpawnRadius():Float
+		return sphere;
+
 	/** Born evenly within a sphere (a circle, flat) of radius around its position. False below 0. */
 	public function setSpawnSphere(radius:Float):Bool {
 		if (!(radius >= 0))
@@ -156,6 +222,26 @@ class Emitter {
 		sphere = radius;
 		return true;
 	}
+
+	/** The velocity's x, units a second. */
+	public function getVelocityX():Float
+		return dirX;
+
+	/** The velocity's y, units a second. */
+	public function getVelocityY():Float
+		return dirY;
+
+	/** The velocity's z, units a second (0 when flat). */
+	public function getVelocityZ():Float
+		return dirZ;
+
+	/** How far a particle may turn off the velocity, radians. */
+	public function getSpread():Float
+		return spread;
+
+	/** How much faster or slower a particle may be, 0..1 of the speed. */
+	public function getSpeedVariance():Float
+		return speedVariance;
 
 	/** Moving along x, y, z at its length's speed, turned up to spread radians off it (a cone; flat, a fan; its sign is ignored, the same cone),
 		faster or slower by up to variance (0..1) of it. False, changing nothing, for a variance outside 0..1. */
@@ -170,12 +256,28 @@ class Emitter {
 		return true;
 	}
 
+	/** Gravity's x, units a second squared. */
+	public function getGravityX():Float
+		return gravityX;
+
+	/** Gravity's y, units a second squared. */
+	public function getGravityY():Float
+		return gravityY;
+
+	/** Gravity's z, units a second squared (0 when flat). */
+	public function getGravityZ():Float
+		return gravityZ;
+
 	/** An acceleration on every particle, units a second squared (none by default). */
 	public function setGravity(x:Float, y:Float, z:Float):Void {
 		gravityX = x;
 		gravityY = y;
 		gravityZ = flat ? 0 : z;
 	}
+
+	/** Its drag, a second. */
+	public function getDrag():Float
+		return drag;
 
 	/** Slowing in proportion to speed, a second (1 loses about 63% of the speed in a second, less gravity's pull; gravity / drag is how fast they
 		end up falling). False below 0. */
@@ -186,9 +288,29 @@ class Emitter {
 		return true;
 	}
 
+	/** The fraction of its own movement particles take at birth. */
+	public function getInheritVelocity():Float
+		return inherit;
+
 	/** The fraction of its own movement (where its node went over the last advance) particles take at birth: 1 carries them along with it. */
 	public function setInheritVelocity(fraction:Float):Void
 		inherit = fraction;
+
+	/** How much each particle's size may be scaled, 0..1. */
+	public function getSizeVariance():Float
+		return sizeVariance;
+
+	/** The size keys. */
+	public function getSizeKeyCount():Int
+		return sizeTimes.length;
+
+	/** Size key index's time, 0..1 of a life (0 for an index out of range). */
+	public function getSizeKeyTime(index:Int):Float
+		return index >= 0 && index < sizeTimes.length ? sizeTimes[index] : 0;
+
+	/** Size key index's size, world units (0 for an index out of range). */
+	public function getSizeKeySize(index:Int):Float
+		return index >= 0 && index < sizeValues.length ? sizeValues[index] : 0;
 
 	/** Size over life, world units: start at birth to end at death, each particle's scaled by up to variance (0..1). Replaces the size keys.
 		False, changing nothing, for a variance outside 0..1. */
@@ -217,6 +339,18 @@ class Emitter {
 		return true;
 	}
 
+	/** The color keys. */
+	public function getColorKeyCount():Int
+		return colorTimes.length;
+
+	/** Color key index's time, 0..1 of a life (0 for an index out of range). */
+	public function getColorKeyTime(index:Int):Float
+		return index >= 0 && index < colorTimes.length ? colorTimes[index] : 0;
+
+	/** Color key index's color, 0xRRGGBBAA (0 for an index out of range). */
+	public function getColorKeyColor(index:Int):Int
+		return index >= 0 && index < colorValues.length ? colorValues[index] : 0;
+
 	/** Color over life (alpha included, so a fade): start at birth to end at death. Replaces the color keys. */
 	public function setColor(start:Int, end:Int):Void {
 		colorTimes = [0, 1];
@@ -238,6 +372,14 @@ class Emitter {
 		return true;
 	}
 
+	/** The palette colors. */
+	public function getPaletteColorCount():Int
+		return palette.length;
+
+	/** Palette color index, 0xRRGGBBAA (0 for an index out of range). */
+	public function getPaletteColor(index:Int):Int
+		return index >= 0 && index < palette.length ? palette[index] : 0;
+
 	/** Adds a palette color (at most 8): each particle picks one at birth, tinting its color over life (confetti from one emitter). False past 8. */
 	public function addPaletteColor(color:Int):Bool {
 		if (palette.length >= 8)
@@ -250,6 +392,14 @@ class Emitter {
 	public function clearPalette():Void
 		palette = [];
 
+	/** The slowest spin, radians a second. */
+	public function getMinSpin():Float
+		return spinMin;
+
+	/** The fastest spin, radians a second. */
+	public function getMaxSpin():Float
+		return spinMax;
+
 	/** Spin, radians a second between min and max (positive clockwise on screen), from a random angle. None by default. False, changing
 		nothing, unless min <= max. */
 	public function setSpin(min:Float, max:Float):Bool {
@@ -260,6 +410,10 @@ class Emitter {
 		return true;
 	}
 
+	/** How long the stretch is, seconds of movement (0: off). */
+	public function getStretch():Float
+		return stretch;
+
 	/** Stretched along the motion (sparks, rain): each particle's texture points its top along its velocity across the screen, as long as the
 		distance it moves in seconds (plus its size); stretched ones don't spin. 0 (the default) is off. False, changing nothing, below 0. */
 	public function setStretch(seconds:Float):Bool {
@@ -268,6 +422,10 @@ class Emitter {
 		stretch = seconds;
 		return true;
 	}
+
+	/** A Mask's alpha cutoff, 0..1. */
+	public function getAlphaCutoff():Float
+		return cutoff;
 
 	/** How it uses its texels' alpha (Add by default: glows, sparks, fire), and a Mask's cutoff. False for a cutoff outside 0..1. */
 	public function setAlphaMode(mode:SpriteAlpha, cutoff = .5):Bool {
@@ -282,10 +440,16 @@ class Emitter {
 	public function getAlphaMode():SpriteAlpha
 		return alphaMode;
 
+	/** The seed it was last given (or its own, unseeded). */
+	public function getSeed():Int
+		return seed;
+
 	/** Where its random numbers start: the same seed and settings give the same particles. 0 is taken as 1 (the generator needs a seed other
 		than 0). */
-	public function setSeed(seed:Int):Void
-		random = seed == 0 ? 1 : seed;
+	public function setSeed(seed:Int):Void {
+		this.seed = seed == 0 ? 1 : seed;
+		random = this.seed;
+	}
 
 	/** Particles that may still be alive. */
 	public function getParticleCount():Int

@@ -91,13 +91,13 @@ class CountingGraphics implements IGraphics {
 	/** Each scissor set (x, y, w, h), or null for a reset, in order. */
 	public var scissors:Array<Null<Array<Int>>> = [];
 
-	public function setScissor(x:Int, y:Int, w:Int, h:Int):Void
+	public function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
 		scissors.push([x, y, w, h]);
 
 	public function resetScissor():Void
 		scissors.push(null);
 
-	public function setViewport(x:Int, y:Int, w:Int, h:Int):Void
+	public function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
 		viewports.push([x, y, w, h]);
 
 	/** Each mesh draw's pipeline, in order. */

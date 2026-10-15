@@ -74,7 +74,7 @@ class Mat4 {
 
 	/** A view from eye looking at target, up giving the roll: right-handed, the eye looking down its -z. False, changing nothing, when the eye is at
 		the target or up is parallel to the view. */
-	public function setLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Bool {
+	public function makeLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Bool {
 		var fx = targetX - eyeX, fy = targetY - eyeY, fz = targetZ - eyeZ;
 		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
 		if (fl == 0)
@@ -114,7 +114,7 @@ class Mat4 {
 	}
 
 	/** Scale, then rotation (the unit quaternion qx, qy, qz, qw), then translation: a placement's matrix. */
-	public function setTransform(px:Float, py:Float, pz:Float, qx:Float, qy:Float, qz:Float, qw:Float, sx:Float, sy:Float, sz:Float):Void {
+	public function makeTransform(px:Float, py:Float, pz:Float, qx:Float, qy:Float, qz:Float, qw:Float, sx:Float, sy:Float, sz:Float):Void {
 		m[0] = (1 - 2 * (qy * qy + qz * qz)) * sx;
 		m[1] = 2 * (qx * qy + qz * qw) * sx;
 		m[2] = 2 * (qx * qz - qy * qw) * sx;
@@ -134,12 +134,12 @@ class Mat4 {
 	}
 
 	/** Copies other into this matrix. */
-	public function setFrom(other:Mat4):Void
+	public function copyFrom(other:Mat4):Void
 		for (i in 0...16)
 			m[i] = other.m[i];
 
 	/** a * b: b applied first, then a. Either may be this matrix. */
-	public function setProduct(a:Mat4, b:Mat4):Void {
+	public function makeProduct(a:Mat4, b:Mat4):Void {
 		var r = scratch;
 		for (c in 0...4)
 			for (row in 0...4)
@@ -151,7 +151,7 @@ class Mat4 {
 	static var scratch = new Vector<Float>(16);
 
 	/** The inverse of of (by its adjugate), which may be this matrix. False, setting all zeros, for a singular one. */
-	public function setInverse(of:Mat4):Bool {
+	public function makeInverse(of:Mat4):Bool {
 		var m0 = of.m[0], m1 = of.m[1], m2 = of.m[2], m3 = of.m[3], m4 = of.m[4], m5 = of.m[5], m6 = of.m[6], m7 = of.m[7];
 		var m8 = of.m[8], m9 = of.m[9], m10 = of.m[10], m11 = of.m[11], m12 = of.m[12], m13 = of.m[13], m14 = of.m[14], m15 = of.m[15];
 		var r = scratch;

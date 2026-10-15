@@ -61,10 +61,8 @@ class Models {
 						case Loaded(data):
 							if (request.isSettled())
 								return;
-							try
-								gltf.setBuffer(buffer.index, data)
-							catch (e:Dynamic) {
-								failed(Std.string(e));
+							if (!gltf.setBuffer(buffer.index, data)) {
+								failed('$file is shorter than buffer ${buffer.index}\'s byteLength');
 								return;
 							}
 							if (--waiting == 0) build(path, gltf, request, children, complete);

@@ -31,8 +31,14 @@ class TextField extends Widget {
 		caret.setPickable(false);
 		for (n in [face, hint, text, caret])
 			root.add(n);
-		box = Box.stack(face).setSize(Grow(1), Fixed(theme.height)).setPadding(theme.padding, 0, theme.padding, 0);
-		box.add(Box.of(text).setAnchor(Start, Center)).add(Box.of(hint).setAnchor(Start, Center));
+		box = Box.stack(face);
+		box.setSizing(Grow(1), Fixed(theme.height));
+		box.setPadding(theme.padding, 0, theme.padding, 0);
+		var typed = Box.of(text), hinted = Box.of(hint);
+		typed.setAnchor(Start, Center);
+		hinted.setAnchor(Start, Center);
+		box.add(typed);
+		box.add(hinted);
 	}
 
 	/** Its text. */

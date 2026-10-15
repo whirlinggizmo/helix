@@ -3,6 +3,8 @@ import helix.render2d.Font2D;
 import helix.render2d.Node2D;
 import helix.render2d.Text2D;
 import helix.ui.Box;
+import helix.ui.Box.BoxDirection;
+import helix.ui.Box.Sizing;
 
 /** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, alignment and anchors, and the nodes
 	placed by their pivots. */
@@ -26,52 +28,78 @@ class UiTests {
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
+	// A box laid out direction's way (a stack when not given), sized width x height.
+	static function sized(width:Sizing, height:Sizing, ?direction:BoxDirection):Box {
+		var box = new Box(direction != null ? direction : Stack);
+		box.setSizing(width, height);
+		return box;
+	}
+
 	static function fixed(w:Float, h:Float):Box
-		return Box.stack().setSize(Fixed(w), Fixed(h));
+		return sized(Fixed(w), Fixed(h));
+
+	// Adds children to box in order; returns box.
+	static function holding(box:Box, children:Array<Box>):Box {
+		for (c in children)
+			box.add(c);
+		return box;
+	}
 
 	static function layout(font:Font2D):Void {
 		// A row: fixed children, a gap between, padding around; it fits them.
 		var a = fixed(50, 20), b = fixed(50, 30), c = fixed(50, 20);
-		var row = Box.row().setPadding(5, 5, 5, 5).setGap(10).add(a).add(b).add(c);
+		var row = holding(Box.row(), [a, b, c]);
+		row.setPadding(5, 5, 5, 5);
+		row.setGap(10);
 		Box.arrange(row, 0, 0, 1000, 1000, font);
 		check(row.getWidth() == 180 && row.getHeight() == 40 && a.getX() == 5 && b.getX() == 65 && c.getX() == 125 && a.getY() == 5,
 			"A row fits its children, gaps and padding");
 		// Growing children share what's left by weight; a share of the parent; the main axis centered when none grows.
 		var fix = fixed(100, 10),
-			one = Box.stack().setSize(Grow(1), Fixed(10)),
-			two = Box.stack().setSize(Grow(2), Fixed(10));
-		var grow = Box.row().setSize(Fixed(400), Fixed(10)).add(fix).add(one).add(two);
+			one = sized(Grow(1), Fixed(10)),
+			two = sized(Grow(2), Fixed(10));
+		var grow = holding(sized(Fixed(400), Fixed(10), Row), [fix, one, two]);
 		Box.arrange(grow, 0, 0, 1000, 1000, font);
 		check(near(one.getWidth(), 100) && near(two.getWidth(), 200) && near(two.getX(), 200), "Growing children share the room left by weight");
-		var half = Box.stack().setSize(Percent(.5), Fixed(10)),
-			centred = Box.row().setSize(Fixed(400), Fixed(10)).setAlign(Center, Start).add(half);
+		var half = sized(Percent(.5), Fixed(10)),
+			centred = holding(sized(Fixed(400), Fixed(10), Row), [half]);
+		centred.setAlign(Center, Start);
 		Box.arrange(centred, 0, 0, 1000, 1000, font);
 		check(half.getWidth() == 200 && half.getX() == 100, "A share of the parent, centred when nothing grows");
 		// A column stretching its children across.
-		var wide = Box.stack().setSize(Fit, Fixed(10)),
-			column = Box.column().setSize(Fixed(300), Fit).setAlign(Start, Stretch).add(wide);
+		var wide = sized(Fit, Fixed(10)),
+			column = holding(sized(Fixed(300), Fit, Column), [wide]);
+		column.setAlign(Start, Stretch);
 		Box.arrange(column, 0, 0, 1000, 1000, font);
 		check(wide.getWidth() == 300, "Stretch fills across a column");
 		// A stack: anchored to a corner and the middle, moved by offsets.
-		var corner = fixed(40, 20).setAnchor(End, End, -10, -10),
-			middle = fixed(40, 20).setAnchor(Center, Center);
-		var screen = Box.stack().setSize(Grow(1), Grow(1)).add(corner).add(middle);
+		var corner = fixed(40, 20), middle = fixed(40, 20);
+		corner.setAnchor(End, End, -10, -10);
+		middle.setAnchor(Center, Center);
+		var screen = holding(sized(Grow(1), Grow(1)), [corner, middle]);
 		Box.arrange(screen, 0, 0, 800, 600, font);
 		check(corner.getX() == 750 && corner.getY() == 570 && middle.getX() == 380 && middle.getY() == 290, "Anchored to a corner and the middle");
+		check(corner.getAnchorX() == End
+			&& corner.getAnchorOffsetY() == -10
+			&& screen.getGap() == 0
+			&& column.getCrossAlign() == Stretch,
+			"A box answers what it was set to");
 		// Nodes placed by their pivots, sprites and rectangles sized; a text fitted to its measure.
 		var panel = Node2D.rectangle(1, 1),
 			dot = Node2D.circle(5),
 			label = Node2D.text("PLAY", 20, -1, Center);
-		var nodes = Box.column().setSize(Fixed(200), Fit).setAlign(Start, Stretch).setGap(4);
-		var panelBox = Box.of(panel).setSize(Fit, Fixed(30)),
+		var panelBox = Box.of(panel),
 			dotBox = Box.of(dot),
 			labelBox = Box.of(label);
-		nodes.add(panelBox).add(dotBox).add(labelBox);
+		panelBox.setSizing(Fit, Fixed(30));
+		var nodes = holding(sized(Fixed(200), Fit, Column), [panelBox, dotBox, labelBox]);
+		nodes.setAlign(Start, Stretch);
+		nodes.setGap(4);
 		Box.arrange(nodes, 10, 10, 1000, 1000, font);
 		check(panel.getX() == 10 && panel.getY() == 10 && panel.getWidth() == 200 && panel.getHeight() == 30, "A rectangle at its corner, sized");
 		check(dot.getX() == 110 && dot.getY() == 49 && dotBox.getHeight() == 10, "A circle at its center (stretched across: the column's middle)");
 		check(labelBox.getHeight() == 20 && label.getX() == 110 && label.getY() == 58, "A centred text at its middle, as tall as its size");
-		var fitted = Box.row().add(Box.of(Node2D.text("PLAY", 20)));
+		var fitted = holding(Box.row(), [Box.of(Node2D.text("PLAY", 20))]);
 		Box.arrange(fitted, 0, 0, 1000, 1000, font);
 		check(near(fitted.getWidth(), Text2D.measure(font, "PLAY", 20)), "A text fits its measure");
 	}
@@ -96,7 +124,9 @@ class UiTests {
 		off.setEnabled(false);
 		for (w in [play, sound, volume, levels, off])
 			panel.getContent().add(w.getBox());
-		var layout = Box.stack().setSize(Grow(1), Grow(1)).add(panel.getBox().setSize(Fixed(400), Fit).setAnchor(Center, Center));
+		panel.getBox().setSizing(Fixed(400), Fit);
+		panel.getBox().setAnchor(Center, Center);
+		var layout = holding(sized(Grow(1), Grow(1)), [panel.getBox()]);
 		var batch = new helix.render2d.Batch2D(new CountingGraphics());
 		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool, wheel = 0.):Void {
 			input.endFrame();
@@ -196,7 +226,7 @@ class UiTests {
 		pointer.addStage2D(stage, camera);
 		var ui = new helix.ui.Ui(stage, camera, pointer, input),
 			name = ui.textField("", "your name", 8);
-		var layout = Box.column().setSize(Fixed(300), Fit).add(name.getBox());
+		var layout = holding(sized(Fixed(300), Fit, Column), [name.getBox()]);
 		var batch = new helix.render2d.Batch2D(new CountingGraphics());
 		function frame(?typed:String, ?key:helix.input.Key, ?x:Float, ?y:Float, ?down:Bool):Void {
 			input.endFrame();
