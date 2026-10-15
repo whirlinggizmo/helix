@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 import pack_shader
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--shdc', required=True)
-SHDC = parser.parse_args().shdc
+argparse.ArgumentParser(description=__doc__).parse_args()
+import shdc
+SHDC = str(shdc.path())
 
 EFFECT = '''@fs fs
 @include_block helix_screen
@@ -38,9 +38,9 @@ class PackShaderTests(unittest.TestCase):
     def pack(self, source):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
             glsl, out = Path(scratch) / 'effect.glsl', Path(scratch) / 'effect.hxshader'
-            glsl.write_text(source)
+            glsl.write_text(source, encoding='utf-8')
             pack_shader.pack(SHDC, glsl, out)
-            return json.loads(out.read_text())
+            return json.loads(out.read_text(encoding='utf-8'))
 
     def test_screen_effect(self):
         shader = self.pack(EFFECT)

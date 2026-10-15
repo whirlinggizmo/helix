@@ -31,15 +31,13 @@ def shader_stamp():
     """The newest change to the framework's shader sources, their manifest, and the tool writing their generated code."""
     return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
 
-def shader(shdc):
+def shader():
     """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""
     GENERATED.mkdir(parents=True,exist_ok=True)
     output=GENERATED/'shader-contract.json'
     if output.is_file() and output.stat().st_mtime>=shader_stamp():return
-    remembered=ROOT/'build/generated/shdc-path.txt'
-    shdc=shdc or (remembered.read_text().strip() if remembered.is_file() else None) or shutil.which('sokol-shdc')
-    if not shdc:raise RuntimeError('Pass --shdc /path/to/pinned/sokol-shdc')
-    remembered.write_text(shdc+'\n')
+    import shdc as compiler
+    shdc=compiler.path()
     for spec in manifest(SHADERS/'shaders.json'):
         program=spec['program'];source=SHADERS/f'{program}.glsl'
         run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
@@ -54,14 +52,14 @@ def hxml(name,target):
     launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}','-D HXCPP_M64','-D HXCPP_COMPILE_THREADS=4']
-    path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n')
+    path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
-def prepare(name,shdc):
+def prepare(name):
     """The generated shader and font, and the served folder: the page and the shared files."""
-    shader(shdc);fontbake.generate()
+    shader();fontbake.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
-    (web/'index.html').write_text((SHARED/'index.html').read_text().replace('{{name}}',name))
+    (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name))
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
     if (web/'assets').is_symlink():(web/'assets').unlink()
     assets(name,web/'assets')
@@ -98,9 +96,9 @@ def licenses(out):
     for name,source in [('HeliX-MIT.txt','LICENSE'),('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
         shutil.copyfile(ROOT/source,target/name)
 
-def build(name,target,shdc):
+def build(name,target):
     """Builds the example for target ('web' or 'native') into build/<target>/<name>."""
-    prepare(name,shdc)
+    prepare(name)
     if target=='web':
         run(['haxe',hxml(name,'web')])
         terser=ROOT/'build/tools/node_modules/terser/bin/terser';js=ROOT/f'build/web/{name}/app.js'
@@ -117,13 +115,13 @@ def build(name,target,shdc):
         assets(name,out)
         licenses(out.parent)
 
-def autopilot(name,shdc,browser):
+def autopilot(name,browser):
     """Replays every examples/<name>/autopilot script on both targets; returns the scripts whose final games differ or that failed."""
     import functools,http.server,threading
     from private_display import private_display
     scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
     if not scripts:sys.exit(f'examples/{name}/autopilot has no scripts')
-    for target in ('web','native'):build(name,target,shdc)
+    for target in ('web','native'):build(name,target)
     out=ROOT/f'build/results/{name}';out.mkdir(parents=True,exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
@@ -135,13 +133,13 @@ def autopilot(name,shdc,browser):
             for script in scripts:
                 options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
                 query='&'.join(f'{k}={v}' for k,v in options.items())
-                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True))
+                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True, encoding='utf-8'))
                 result=out/f'native-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
-                process=subprocess.run([str(ROOT/f'build/native/{name}/Main')],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True,timeout=300)
+                process=subprocess.run([str(ROOT/f'build/native/{name}/Main')],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
-                native=json.loads(result.read_text());same=web['result']['game']==native['game'] and not web['errors']
-                (out/f'autopilot-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n')
+                native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
+                (out/f'autopilot-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
                 print(f'{script}: same final game on both targets: {same}',flush=True)
                 if not same:failed.append(script)
     finally:server.shutdown()
@@ -149,15 +147,15 @@ def autopilot(name,shdc,browser):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
-    p.add_argument('--shdc');p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
+    p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
     if not (ROOT/source(a.name)/'App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx or examples/{a.name}/src/App.hx')
     if a.action=='autopilot':
         if not a.browser:p.error('autopilot needs --browser')
-        failed=autopilot(a.name,a.shdc,a.browser)
+        failed=autopilot(a.name,a.browser)
         if failed:sys.exit('Autopilot outcomes differ: '+', '.join(failed)+f'; see build/results/{a.name}')
         return
     if a.action=='dev':
-        prepare(a.name,a.shdc)
+        prepare(a.name)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
         # The dev server watches Haxe source; shader source is regenerated here, and the new layouts (Sprite2DLayout.hx and the rest) reload like any Haxe edit.
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),hxml(a.name,'web')],cwd=ROOT)
@@ -171,7 +169,7 @@ def main():
                 # A failed source is retried only once it changes again.
                 stamp=shader_stamp()
                 if stamp!=failed:
-                    try:shader(a.shdc);failed=None
+                    try:shader();failed=None
                     except (subprocess.CalledProcessError,RuntimeError) as error:print('example: shader generation failed:',error,flush=True);failed=stamp
                 time.sleep(.25)
         except KeyboardInterrupt:pass
@@ -179,6 +177,6 @@ def main():
             try:urllib.request.urlopen(f'http://127.0.0.1:{a.port}/__hotreload_stop',timeout=5).read();server.wait(timeout=10)
             except Exception:server.terminate()
         return
-    build(a.name,a.target,a.shdc)
+    build(a.name,a.target)
 
 if __name__=='__main__':main()

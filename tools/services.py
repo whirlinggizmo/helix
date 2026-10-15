@@ -70,7 +70,7 @@ def main():
      with lock:active-=1
  server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start();base=f'http://127.0.0.1:{server.server_port}'
  try:
-  result=json.loads(subprocess.check_output(['node',str(ROOT/'tools/service-browser.cjs'),a.browser,base+'/?db=helix-services-'+token],cwd=ROOT,text=True))
+  result=json.loads(subprocess.check_output(['node',str(ROOT/'tools/service-browser.cjs'),a.browser,base+'/?db=helix-services-'+token],cwd=ROOT,text=True, encoding='utf-8'))
   assert result['runs'][0]['persisted'] is False and result['runs'][1]['persisted'] is True
   assert counts['/assets/fixture.wav']==1,dict(counts)
   assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
@@ -81,7 +81,7 @@ def main():
   if a.native:
    counts.clear();peak=0;runs=[]
    for _ in range(2):
-    native=subprocess.run([str(build/'services-native/ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True,capture_output=True)
+    native=subprocess.run([str(build/'services-native/ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True)
     if native.returncode!=0:
      sys.stderr.write(native.stdout+native.stderr);raise SystemExit(f"native ServiceTests exited {native.returncode}")
     output=native.stdout
@@ -97,7 +97,7 @@ def main():
   report['sources']['src/helix/adapters/audio/sokol/internal/audio.c']=hashlib.sha256((ROOT/'src/helix/adapters/audio/sokol/internal/audio.c').read_bytes()).hexdigest()
   report['sources']['src/helix/adapters/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapters/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()
   report['sources']['vendor/sndfile/sndfile.h']=hashlib.sha256((ROOT/'vendor/sndfile/sndfile.h').read_bytes()).hexdigest()
-  report['audioFormats']=['PCM16 WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((build/'audio-encoder.json').read_text())
-  OUT.mkdir(parents=True,exist_ok=True);(OUT/'service-checks.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({target:report[target]['runs'] for target in ['browser','native'] if target in report}))
+  report['audioFormats']=['PCM16 WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((build/'audio-encoder.json').read_text(encoding='utf-8'))
+  OUT.mkdir(parents=True,exist_ok=True);(OUT/'service-checks.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8');print(json.dumps({target:report[target]['runs'] for target in ['browser','native'] if target in report}))
  finally:server.shutdown();server.server_close();thread.join()
 if __name__=='__main__':main()

@@ -20,9 +20,9 @@ From the repository root:
 
 ```console
 python3 tools/example.py asteroids dev                          # hot reload in the browser
-python3 tools/example.py asteroids build native --shdc /path/to/sokol-shdc
+python3 tools/example.py asteroids build native
 python3 tools/example.py asteroids autopilot --browser /path/to/chromium
-python3 helix.py test --native --shdc /path/to/sokol-shdc
+python3 helix.py test --native
 python3 helix.py services --browser /path/to/chromium --native
 ```
 
@@ -32,7 +32,7 @@ An optional Haxe entry point delegates to the same Python CLI:
 
 ```console
 haxe --run Run --help
-haxe --run Run test --shdc /path/to/sokol-shdc
+haxe --run Run test
 ```
 
 `HELIX_PYTHON` selects a Python executable; defaults are `python` on Windows and `python3` elsewhere. The launcher is outside the game/library classpaths. A future package could expose a `haxelib run` entry point through its metadata, as described in the official package guide; that integration has not been built or tested.

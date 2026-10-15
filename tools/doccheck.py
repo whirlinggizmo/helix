@@ -20,7 +20,7 @@ def interface_members():
     """Each interface's member names, by interface name."""
     found={}
     for path in (ROOT/'src/helix').rglob('*.hx'):
-        text=path.read_text()
+        text=path.read_text(encoding='utf-8')
         for m in re.finditer(r'\binterface\s+(\w+)[^{]*\{(.*?)\n\}',text,re.S):
             found[m.group(1)]=set(re.findall(r'\b(?:function|var)\s+(\w+)',m.group(2)))
     return found
@@ -29,7 +29,7 @@ def main():
     interfaces=interface_members();missing=[]
     for path in sorted((ROOT/'src/helix').rglob('*.hx')):
         if '/internal/' in path.as_posix():continue
-        lines=path.read_text().splitlines();kind=None;inherited=set();depth=0
+        lines=path.read_text(encoding='utf-8').splitlines();kind=None;inherited=set();depth=0
         for i,line in enumerate(lines):
             t=TYPE.match(line)
             if t and depth==0:

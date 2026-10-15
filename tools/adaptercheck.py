@@ -40,7 +40,7 @@ KNOWN = []
 
 def code_lines(path):
     """The file's lines with comments and string contents blanked, as (number, text)."""
-    text = path.read_text()
+    text = path.read_text(encoding='utf-8')
     text = re.sub(r'/\*.*?\*/', lambda m: '\n' * m.group(0).count('\n'), text, flags=re.S)
     out = []
     for number, line in enumerate(text.split('\n'), 1):
@@ -95,7 +95,7 @@ def main():
             if ENGINE.search(line):
                 violations.append(('engine', path, number, line.strip()))
     for path in sorted(ADAPTERS.rglob('*.c')) + sorted(ADAPTERS.rglob('*.h')):
-        for number, line in enumerate(path.read_text().split('\n'), 1):
+        for number, line in enumerate(path.read_text(encoding='utf-8').split('\n'), 1):
             if GENERATED_HEADER.search(line):
                 violations.append(('header', path, number, line.strip()))
     for path in sorted(SRC.rglob('*.hx')):
@@ -112,7 +112,7 @@ def main():
                 violations.append(('duplicate', area, la, f'{a.relative_to(SRC)}:{la} repeats in {b.relative_to(SRC)}:{lb}'))
     # Each area is named for a contract one of its classes implements.
     for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
-        contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text())}
+        contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8'))}
         if area.name not in contracts:
             violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(contracts)})'))
     # Each API directory holds <Api><Contract>Adapter, its overlap written once.
@@ -120,7 +120,7 @@ def main():
         for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):
             found = []
             for f in api.glob('*.hx'):
-                for name, contract in re.findall(r'\bclass\s+(\w+)[^{]*?\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text()):
+                for name, contract in re.findall(r'\bclass\s+(\w+)[^{]*?\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8')):
                     if contract.lower() == area.name:
                         found.append(name)
                         expected = adapter_name(api.name, contract)

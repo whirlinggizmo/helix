@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from tools.shader_metadata import MetadataError, generate, load_contract, manifest, yaml
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--shdc', required=True)
-SHDC = parser.parse_args().shdc
+argparse.ArgumentParser(description=__doc__).parse_args()
+from tools import shdc
+SHDC = str(shdc.path())
 SHADERS = ROOT / 'src/helix/graphics/shaders'
 
 
@@ -26,9 +26,9 @@ class ShaderMetadataTests(unittest.TestCase):
         cls.specs = {spec['program']: spec for spec in manifest(SHADERS / 'shaders.json')}
         cls.baseline = cls.directory / 'baseline'; cls.baseline.mkdir()
         for program in cls.specs:
-            cls.compile((SHADERS / f'{program}.glsl').read_text(), cls.baseline, program)
+            cls.compile((SHADERS / f'{program}.glsl').read_text(encoding='utf-8'), cls.baseline, program)
         cls.sprite = cls.baseline / 'sprite2d_reflection.yaml'
-        cls.document = yaml.safe_load(cls.sprite.read_text())
+        cls.document = yaml.safe_load(cls.sprite.read_text(encoding='utf-8'))
 
     @classmethod
     def tearDownClass(cls):
@@ -39,23 +39,23 @@ class ShaderMetadataTests(unittest.TestCase):
         # The framework's shared pieces (@include lit3d_shared.glsl, skinning.glsl) resolve beside the input.
         for shared in SHADERS.glob('*.glsl'):
             if not (folder / shared.name).exists():
-                (folder / shared.name).write_text(shared.read_text())
-        path = folder / f'{program}-input.glsl'; path.write_text(source)
+                (folder / shared.name).write_text(shared.read_text(encoding='utf-8'))
+        path = folder / f'{program}-input.glsl'; path.write_text(source, encoding='utf-8')
         subprocess.run([SHDC, '-i', str(path), '-o', str(folder / program), '-l',
                         'glsl410:glsl300es', '-f', 'bare_yaml', '--no-log-cmdline'], check=True, cwd=ROOT)
 
     def manifest_of(self, folder, specs):
-        path = folder / 'shaders.json'; path.write_text(json.dumps({'programs': specs}))
+        path = folder / 'shaders.json'; path.write_text(json.dumps({'programs': specs}), encoding='utf-8')
         return path
 
     def mutated(self, change, source=None):
-        document = copy.deepcopy(yaml.safe_load((source or self.sprite).read_text())); change(document)
-        path = self.directory / 'mutated.yaml'; path.write_text(yaml.safe_dump(document))
+        document = copy.deepcopy(yaml.safe_load((source or self.sprite).read_text(encoding='utf-8'))); change(document)
+        path = self.directory / 'mutated.yaml'; path.write_text(yaml.safe_dump(document), encoding='utf-8')
         return path
 
     def test_real_output_and_paths(self):
         # A misleading old source file must never be chosen by a filename glob.
-        (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE')
+        (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE', encoding='utf-8')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
         by = {c['program']: c for c in contracts}
         self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d', 'skinned3d', 'skinneddepth3d'])
@@ -73,12 +73,12 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         # Programs reach adapters as Haxe data only: no C header, no GLSL ES class, whatever an older build left.
         self.assertFalse([p.name for p in self.baseline.iterdir() if p.name in ('shaders.h', 'GeneratedShader.hx') or p.name.endswith('.glsl.h')])
-        self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text())
-        self.assertIn('instanced: true', (self.baseline / 'Lit3DLayout.hx').read_text())
-        self.assertIn('return [];', (self.baseline / 'Background3DLayout.hx').read_text())
+        self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text(encoding='utf-8'))
+        self.assertIn('instanced: true', (self.baseline / 'Lit3DLayout.hx').read_text(encoding='utf-8'))
+        self.assertIn('return [];', (self.baseline / 'Background3DLayout.hx').read_text(encoding='utf-8'))
 
     def test_real_relocated_and_renamed_bindings(self):
-        source = (SHADERS / 'sprite2d.glsl').read_text()
+        source = (SHADERS / 'sprite2d.glsl').read_text(encoding='utf-8')
         # Reordered (slots run from 0 without gaps, as ShaderSource lists attributes by slot).
         source = source.replace('location=0', 'location=#2').replace('location=1', 'location=#0').replace('location=2', 'location=#1').replace('location=#', 'location=')
         source = source.replace('binding=0) uniform texture', 'binding=4) uniform texture')
@@ -91,18 +91,18 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual([a['slot'] for a in contract['attributes']], [2, 0, 1])
         texture, = contract['textures']
         self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
-        layout = (folder / 'Sprite2DLayout.hx').read_text()
+        layout = (folder / 'Sprite2DLayout.hx').read_text(encoding='utf-8')
         self.assertIn('{slot: 2, componentCount: 2, offset: 0}', layout)
         self.assertIn('"vertexPosition"', layout)
 
     def test_attribute_slot_gap_rejected(self):
-        source = (SHADERS / 'sprite2d.glsl').read_text().replace('location=2', 'location=5')
+        source = (SHADERS / 'sprite2d.glsl').read_text(encoding='utf-8').replace('location=2', 'location=5')
         folder = self.directory / 'gap'; folder.mkdir()
         self.compile(source, folder, 'sprite2d')
         with self.assertRaisesRegex(MetadataError, 'without gaps'): generate(self.manifest_of(folder, [self.specs['sprite2d']]), folder, ROOT)
 
     def test_duplicate_yaml_key_rejected(self):
-        path = self.directory / 'duplicate.yaml'; path.write_text('shaders: []\nshaders: []\n')
+        path = self.directory / 'duplicate.yaml'; path.write_text('shaders: []\nshaders: []\n', encoding='utf-8')
         with self.assertRaises(MetadataError): load_contract(path, self.specs['sprite2d'])
 
     def test_type_mismatch_rejected(self):
@@ -138,9 +138,9 @@ class ShaderMetadataTests(unittest.TestCase):
 
     def test_source_outside_output_rejected(self):
         folder = self.directory / 'outside'; folder.mkdir()
-        document = yaml.safe_load(self.sprite.read_text())
+        document = yaml.safe_load(self.sprite.read_text(encoding='utf-8'))
         document['shaders'][1]['programs'][0]['vertex_func']['path'] = str(SHADERS / 'shaders.json')
-        (folder / 'sprite2d_reflection.yaml').write_text(yaml.safe_dump(document))
+        (folder / 'sprite2d_reflection.yaml').write_text(yaml.safe_dump(document), encoding='utf-8')
         with self.assertRaises(MetadataError): generate(self.manifest_of(folder, [self.specs['sprite2d']]), folder, ROOT)
 
 

@@ -15,6 +15,11 @@ class TrigTests {
 	static function close(actual:Float, expected:Float, n = 4.):Bool
 		return actual == expected || Math.abs(actual - expected) <= n * 2.220446049250313e-16 * Math.max(Math.abs(expected), 1e-300);
 
+	// As close, or, near a zero of sin, cos or tan of x, within |x| times 2^-60: where a C runtime's argument reduction loses its relative
+	// accuracy (Windows' is off by 51 ulp at sin(9 pi), 3.6e-20 from the true value; Trig and glibc agree with it to the last bit).
+	static function closeAt(actual:Float, expected:Float, n:Float, x:Float):Bool
+		return close(actual, expected, n) || Math.abs(actual - expected) <= Math.abs(x) * 8.673617379884035e-19;
+
 	static function main():Void {
 		var seed = 12345.;
 		function next():Float {
@@ -26,8 +31,8 @@ class TrigTests {
 			var ok = true, okTan = true, okAtan = true, okInverse = true;
 			for (_ in 0...20000) {
 				var x = next() * range, y = next() * range, u = next();
-				ok = ok && close(Trig.sin(x), Math.sin(x), 8) && close(Trig.cos(x), Math.cos(x), 8);
-				okTan = okTan && close(Trig.tan(x), Math.tan(x), 16);
+				ok = ok && closeAt(Trig.sin(x), Math.sin(x), 8, x) && closeAt(Trig.cos(x), Math.cos(x), 8, x);
+				okTan = okTan && closeAt(Trig.tan(x), Math.tan(x), 16, x);
 				okAtan = okAtan && close(Trig.atan2(y, x), Math.atan2(y, x));
 				okInverse = okInverse && close(Trig.asin(u), Math.asin(u), 8) && close(Trig.acos(u), Math.acos(u), 8);
 			}

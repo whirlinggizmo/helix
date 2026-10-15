@@ -1,7 +1,7 @@
 """Type-check every Haxe entry point for the browser and native targets without building anything (haxe --no-output).
 
 For refactors: an API change is done when this passes, then the checks that run code. Takes seconds, no C++ compile.
-Generated shader code missing from a fresh checkout is made first, with --shdc or SOKOL_SHDC."""
+Generated shader code missing from a fresh checkout is made first, with the pinned sokol-shdc (tools/shdc.py)."""
 import os
 from pathlib import Path
 import subprocess
@@ -29,15 +29,14 @@ def generate():
     """The generated font, and the shaders' generated code when it's missing or older than its source."""
     import example,fontbake
     fontbake.generate()
-    shdc=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--shdc=')),None) or os.environ.get('SOKOL_SHDC')
-    example.shader(shdc)
+    example.shader()
 
 def main():
     generate()
     # The adapter rule (docs/ARCHITECTURE.md), checked first: it takes a moment.
     failures=subprocess.run([sys.executable,'tools/adaptercheck.py'],cwd=ROOT).returncode!=0
     for label,args in targets():
-        result=subprocess.run(['haxe',*args,'--no-output'],cwd=ROOT,capture_output=True,text=True)
+        result=subprocess.run(['haxe',*args,'--no-output'],cwd=ROOT,capture_output=True,text=True, encoding='utf-8')
         ok=result.returncode==0
         print(('ok   ' if ok else 'FAIL ')+label,flush=True)
         if not ok:failures+=1;print('     '+result.stderr.strip().replace('\n','\n     ')[:4000])

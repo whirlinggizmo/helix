@@ -3,8 +3,8 @@
 
     python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--keep]
 
-Packs the working tree (tracked files and new ones git doesn't ignore) with the generated shader and font code (build/generated: the
-Windows machine needs no sokol-shdc), copies it with scp into a scratch folder in the remote user's profile, and runs each --then there as
+Packs the working tree (tracked files and new ones git doesn't ignore) with the test fixtures (build/fixtures: FFmpeg encodes them, which the
+Windows machine needn't have), copies it with scp into a scratch folder in the remote user's profile, and runs each --then there as
 `python TOOL ARGS` in the copied tree (default: the hello example's native build). The scratch folder and the archive are deleted
 afterwards, also when a step fails, unless --keep.
 
@@ -20,18 +20,18 @@ import tarfile
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATED = ('build/generated/shaders', 'build/generated/fonts')
+GENERATED = ('build/fixtures',)
 DEFAULT = ['tools/example.py app-hello build native']
 
 
 def working_tree():
-    """Every file to send: tracked, new ones not ignored, and the generated code."""
+    """Every file to send: tracked, new ones not ignored, and the fixtures."""
     listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=ROOT, check=True,
                             stdout=subprocess.PIPE).stdout.decode()
     names = [name for name in listed.split('\0') if name and (ROOT / name).is_file()]
     for folder in GENERATED:
         if not (ROOT / folder).is_dir():
-            raise SystemExit(f'remote_windows: {folder} is missing; build an example here first, which generates it')
+            raise SystemExit(f'remote_windows: {folder} is missing; run python3 tools/fixtures.py here first')
         names += [p.relative_to(ROOT).as_posix() for p in (ROOT / folder).rglob('*') if p.is_file()]
     return names
 

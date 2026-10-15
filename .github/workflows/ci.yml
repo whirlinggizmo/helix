@@ -1,0 +1,122 @@
+# HeliX's CI: the checks a milestone ends with, on Linux, Windows and macOS (docs/ROADMAP.md, milestone 7). After wgrender-c's and libwgf's:
+#
+# - On every push and pull request (not for docs alone), on each system: the tool, package and unit tests, Trig's bits on the interpreter,
+#   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
+#   Linux also type-checks every example on both targets and checks formatting and doc comments.
+# - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display.
+# - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so nothing opens a window there (libwgf's finding); a window on Windows is
+#   tools/remote_windows.py's, on a machine with one.
+#
+# Haxe 4.3.7; hxcpp 4.3.2 and the formatter in the repository's haxelib (build/haxelib), cached, a cache miss fetching them with retries
+# (tools/pins.py); sokol-shdc fetched and checked by tools/shdc.py. A newer push cancels the run in progress.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
+  schedule:
+    - cron: "41 9 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - name: System packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev
+      - name: System packages (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg libsndfile
+      - name: System packages (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+      - name: Python packages
+        run: python -m pip install PyYAML==6.0.1
+      - uses: actions/cache@v4
+        with:
+          path: build/haxelib
+          key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Tool, package and unit tests; Trig's bits on every target
+        run: python helix.py test --native
+      - name: An example's native build (the adapters' C)
+        run: python tools/example.py asteroids build native
+      - name: Every example type-checked on both targets
+        if: runner.os == 'Linux'
+        run: python tools/typecheck.py
+      - name: Formatting and doc comments
+        if: runner.os == 'Linux'
+        run: |
+          python tools/format.py --check
+          python tools/doccheck.py
+
+  full:
+    name: services and autopilots (Linux, daily)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - name: System packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev xvfb openbox x11-xserver-utils libgl1-mesa-dri
+      - name: Python and Node packages, and Chromium
+        run: |
+          python -m pip install PyYAML==6.0.1
+          npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
+          (cd build/tools && npx playwright install --with-deps chromium)
+          echo "CHROME=$(node -e "console.log(require('./build/tools/node_modules/playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: build/haxelib
+          key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Platform services, in Chrome and natively
+        env:
+          HELIX_AUDIO: "0"
+        run: python helix.py services --browser "$CHROME" --native
+      - name: The autopilots, the same final game on both targets
+        env:
+          HELIX_AUDIO: "0"
+        run: |
+          python tools/example.py asteroids autopilot --browser "$CHROME"
+          python tools/example.py blocks autopilot --browser "$CHROME"
+      - name: The autopilots' results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-results
+          path: build/results
+          if-no-files-found: ignore

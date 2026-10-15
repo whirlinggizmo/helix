@@ -15,7 +15,7 @@ Executed on Linux:
   npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
   ```
 - **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `8df4871` or later (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
-- **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. Pass it with `--shdc` or `SOKOL_SHDC`. Nothing is downloaded or installed globally.
+- **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `tools/shdc.py` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`) and checks its SHA-256 every time it's used; nothing is installed globally.
 - **Native builds:**
   - GCC/G++ 13 and ALSA headers.
   - X11/Xrandr/Xi/Xcursor and GL libraries.
@@ -52,7 +52,7 @@ python3 tools/typecheck.py --no-output    # every entry point, both targets, in 
 python3 tools/format.py --check           # haxe-formatter, pinned
 python3 tools/doccheck.py                 # public API without a doc comment
 python3 tools/apidoc.py                   # the API reference, build/api/index.html
-python3 helix.py test --native --shdc /path/to/sokol-shdc
+python3 helix.py test --native
 python3 helix.py services --browser /path/to/chromium --native
 ```
 

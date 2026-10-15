@@ -13,7 +13,7 @@ Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, ve
 either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 5), each with a sampler at the same binding.
 Uniform blocks 0 and 1 are the framework's.
 
-    python3 tools/pack_shader.py [--shdc path] input.glsl output.hxshader"""
+    python3 tools/pack_shader.py input.glsl output.hxshader"""
 import argparse
 import json
 from pathlib import Path
@@ -382,7 +382,7 @@ def members(source, block):
 
 
 def pack(shdc, source_path, output_path):
-    source = Path(source_path).read_text()
+    source = Path(source_path).read_text(encoding='utf-8')
     kinds = [k for k in KINDS if re.search(r'@include_block\s+' + k + r'\b', source)]
     if len(kinds) != 1:
         fail(f'{source_path}: include exactly one framework block ({", ".join(KINDS)})')
@@ -398,18 +398,18 @@ def pack(shdc, source_path, output_path):
     full = hook + '\n' + KINDS[kind] + '\n' + rest + f'\n@program {program} {VERTEX[kind]} fs\n'
     with tempfile.TemporaryDirectory() as scratch:
         scratch = Path(scratch)
-        (scratch / 'shader.glsl').write_text(full)
+        (scratch / 'shader.glsl').write_text(full, encoding='utf-8')
         for args in (['-o', scratch / 'shader.h'], ['-o', scratch / 'shader', '-f', 'bare_yaml']):
             done = subprocess.run([shdc, '-i', scratch / 'shader.glsl', *args, '-l', 'glsl410:glsl300es', '--no-log-cmdline'],
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, encoding='utf-8')
             if done.returncode:
                 fail(f'{source_path}: sokol-shdc failed\n{done.stdout}{done.stderr}'.replace(str(scratch / 'shader.glsl'), str(source_path)))
-        reflection = yaml.safe_load((scratch / 'shader_reflection.yaml').read_text())
+        reflection = yaml.safe_load((scratch / 'shader_reflection.yaml').read_text(encoding='utf-8'))
         dialects, first = {}, None
         for entry in reflection['shaders']:
             p = entry['programs'][0]
-            dialects[entry['slang']] = {'vertex': Path(p['vertex_func']['path']).read_text(),
-                                        'fragment': Path(p['fragment_func']['path']).read_text()}
+            dialects[entry['slang']] = {'vertex': Path(p['vertex_func']['path']).read_text(encoding='utf-8'),
+                                        'fragment': Path(p['fragment_func']['path']).read_text(encoding='utf-8')}
             first = first or p
     p = first
     blocks = []
@@ -444,22 +444,19 @@ def pack(shdc, source_path, output_path):
               'glsl300es': dialects['glsl300es'], 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
               'textures': sorted(textures, key=lambda t: t['slot'])}
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(output_path).write_text(json.dumps(shader, indent=1) + '\n')
+    Path(output_path).write_text(json.dumps(shader, indent=1) + '\n', encoding='utf-8')
 
 
-def shdc_path(given=None):
-    """The pinned sokol-shdc: given, or the one the shader generation remembered."""
-    remembered = ROOT / 'build/generated/shdc-path.txt'
-    path = given or (remembered.read_text().strip() if remembered.is_file() else None)
-    if not path:
-        fail('pass --shdc /path/to/pinned/sokol-shdc')
-    return path
+def shdc_path():
+    """The pinned sokol-shdc (tools/shdc.py)."""
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import shdc
+    return shdc.path()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--shdc')
     parser.add_argument('input')
     parser.add_argument('output')
     a = parser.parse_args()
-    pack(shdc_path(a.shdc), a.input, a.output)
+    pack(shdc_path(), a.input, a.output)

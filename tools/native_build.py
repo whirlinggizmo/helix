@@ -13,7 +13,7 @@ TOOLS=ROOT/'build/native-tools'
 def sndfile_windows():
     """libsndfile's pinned official Windows release (dependencies.json, sndfileSDK.windows), fetched once into the user's cache and checked."""
     import hashlib,json,urllib.request,zipfile
-    pin=json.loads((ROOT/'dependencies.json').read_text())['sndfileSDK']['windows']
+    pin=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['sndfileSDK']['windows']
     cache=Path(os.environ.get('LOCALAPPDATA') or Path.home()/'.cache')/'helix'/'tools'
     folder=cache/pin['folder']
     if not (folder/'lib/sndfile.lib').is_file():
@@ -29,9 +29,9 @@ def codec_library():
     release's import library; on macOS Homebrew's."""
     if sys.platform=='win32':return str(sndfile_windows()/'lib/sndfile.lib')
     if sys.platform=='darwin':
-        prefix=subprocess.check_output(['brew','--prefix','libsndfile'],text=True).strip()
+        prefix=subprocess.check_output(['brew','--prefix','libsndfile'],text=True, encoding='utf-8').strip()
         return prefix+'/lib/libsndfile.dylib'
-    for line in subprocess.check_output(['ldconfig','-p'],text=True).splitlines():
+    for line in subprocess.check_output(['ldconfig','-p'],text=True, encoding='utf-8').splitlines():
         if 'libsndfile.so.1 ' in line and 'x86-64' in line:return line.split('=>')[1].strip()
     raise RuntimeError('libsndfile.so.1 not found by ldconfig')
 
@@ -42,7 +42,7 @@ def codec_runtime():
 def env():
     """The environment hxcpp's build reads: HeliX's root, the codec, and a shared compile cache."""
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
-    config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n')
+    config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n', encoding='utf-8')
     return dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_CODEC_LIBRARY=codec_library(),HXCPP_CONFIG=str(config))
 
 def tool(name):

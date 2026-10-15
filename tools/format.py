@@ -15,7 +15,7 @@ SOURCES=['src','examples','tests','Run.hx']
 
 def formatter():
     """The pinned formatter in the repository's haxelib, installed on first use."""
-    version=json.loads((ROOT/'dependencies.json').read_text())['formatter']
+    version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['formatter']
     env=dict(os.environ,HAXELIB_PATH=str(HAXELIB));HAXELIB.mkdir(parents=True,exist_ok=True)
     if not (HAXELIB/'formatter'/version.replace('.',',')).is_dir():
         subprocess.run(['haxelib','--always','install','formatter',version],env=env,check=True,stdout=subprocess.DEVNULL)
@@ -24,7 +24,7 @@ def formatter():
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--check',action='store_true',help="don't change files; fail if any isn't laid out");a=p.parse_args()
     env=formatter();args=['haxelib','run','formatter']+sum((['-s',s] for s in SOURCES),[])+(['--check'] if a.check else [])
-    result=subprocess.run(args,cwd=ROOT,env=env,capture_output=True,text=True)
+    result=subprocess.run(args,cwd=ROOT,env=env,capture_output=True,text=True, encoding='utf-8')
     print((result.stdout+result.stderr).strip()[-3000:])
     sys.exit(result.returncode)
 

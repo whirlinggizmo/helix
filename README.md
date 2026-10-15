@@ -11,7 +11,7 @@ HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → J
 With Haxe 4.3.7, Python 3 and `sokol-shdc` (the rest, and the native toolchain: [BUILDING.md](BUILDING.md)):
 
 ```console
-python3 tools/example.py animation dev --shdc /path/to/sokol-shdc   # http://localhost:8060/, hot reload as you edit
+python3 tools/example.py animation dev   # http://localhost:8060/, hot reload as you edit
 python3 tools/example.py animation build native                   # build/native/animation/Main
 ```
 

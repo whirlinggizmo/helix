@@ -31,7 +31,7 @@ def build():
 def cycles(core, command):
     """User-mode cycles of one run of command, pinned to core."""
     out = subprocess.run(['taskset', '-c', str(core), 'perf', 'stat', '-x,', '-e', 'cycles:u', *command], cwd=ROOT, capture_output=True,
-                         text=True, check=True)
+                         text=True, encoding='utf-8', check=True)
     # A hybrid CPU reports each kind of core's counter; the pinned core's is the one counted.
     for line in out.stderr.splitlines():
         if 'cycles' in line and line.split(',')[0].isdigit():

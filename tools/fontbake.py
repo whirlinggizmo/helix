@@ -26,7 +26,7 @@ def generate(force=False):
     atlas,metrics=OUT/'atlas.r8',OUT/'metrics.json'
     # The baker leaves the atlas's last row free and its last texel fully inside: Batch2D draws untextured shapes with it.
     subprocess.run(['haxe','-cp','src','-cp','tools/fontbake','--run','FontBake',str(FONT),str(HEIGHT),str(PADDING),str(WIDTH),str(atlas),str(metrics)],cwd=ROOT,check=True)
-    m=json.loads(metrics.read_text());raw=atlas.read_bytes()
+    m=json.loads(metrics.read_text(encoding='utf-8'));raw=atlas.read_bytes()
     data=base64.b64encode(zlib.compress(bytes(raw),9)).decode()
     glyphs=','.join(f'{g[0]},{g[1]},{g[2]},{g[3]},{g[4]},{g[5]}' for g in m['glyphs'])
     advances=','.join(f'{g[6]:.4f}' for g in m['glyphs'])
@@ -53,7 +53,7 @@ class GeneratedFont {{
 	/** The atlas, zlib-compressed, base64. */
 	public static final atlas = "{data}";
 }}
-''')
+''', encoding='utf-8')
     return output
 
 if __name__=='__main__':print(generate('--force' in sys.argv))

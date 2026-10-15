@@ -181,7 +181,7 @@ def load_spec(spec):
 def load_contract(metadata, spec):
     """One program's contract from its reflection; both GLSL dialects must agree."""
     load_spec(spec)
-    document = yaml.load(Path(metadata).read_text(), Loader=UniqueLoader)
+    document = yaml.load(Path(metadata).read_text(encoding='utf-8'), Loader=UniqueLoader)
     fields(document, ['shaders'])
     require(isinstance(document['shaders'], list) and len(document['shaders']) == 2, 'Expected two shader dialects')
     programs = {}; contracts = []
@@ -197,7 +197,7 @@ def load_contract(metadata, spec):
 
 def manifest(path):
     """The programs listed in shaders.json, checked."""
-    document = json.loads(Path(path).read_text())
+    document = json.loads(Path(path).read_text(encoding='utf-8'))
     fields(document, ['programs'])
     require(isinstance(document['programs'], list) and document['programs'], 'Expected programs')
     for spec in document['programs']:
@@ -221,7 +221,7 @@ def generate(manifest_path, output, working_dir):
                 function = programs[dialect][stage + '_func']
                 path = (working_dir / function['path']).resolve()
                 require(path.is_relative_to(output.resolve()), 'Shader source must be inside the generated directory')
-                sources[dialect, stage] = path.read_text()
+                sources[dialect, stage] = path.read_text(encoding='utf-8')
         slots = sorted(a['slot'] for a in contract['attributes'])
         require(slots == list(range(len(slots))), 'Attribute slots must run from 0 without gaps')
         by_slot = sorted(contract['attributes'], key=lambda a: a['slot'])
@@ -253,10 +253,10 @@ def generate(manifest_path, output, working_dir):
             layouts.append(f'{{stride: {stride}, instanced: {str(index == 1).lower()}, attributes: [{attrs}]}}')
         hx += [' /** Its vertex buffers by index (0 the vertices, 1 the instance records, 2 a skin\'s joints), as a PipelineDesc takes them. */',
                ' public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>', f'  return [{", ".join(layouts)}];', '}']
-        (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n')
+        (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n', encoding='utf-8')
         contracts.append(contract)
     # What the generator wrote before the adapters built programs from data: the GLSL ES class and the C headers.
     for stale in [output / 'GeneratedShader.hx', output / 'shaders.h', *output.glob('*.glsl.h')]:
         stale.unlink(missing_ok=True)
-    (output / 'shader-contract.json').write_text(json.dumps(contracts, indent=2) + '\n')
+    (output / 'shader-contract.json').write_text(json.dumps(contracts, indent=2) + '\n', encoding='utf-8')
     return contracts

@@ -27,7 +27,9 @@ class HostTests {
 			true;
 		check(threw, "An identity that cleans to nothing throws");
 		var cache = helix.adapters.store.filesystem.FileSystemStoreAdapter.getCacheDirectory(identity.getCompany(), identity.getProduct());
-		check(cache != null && StringTools.endsWith(cache, "HeliX/blocks"), "A cache directory under the user's");
+		// Windows' is the program's own folder under %LOCALAPPDATA%, its cache inside it.
+		var ending = Sys.systemName() == "Windows" ? "HeliX/blocks/cache" : "HeliX/blocks";
+		check(cache != null && StringTools.endsWith(cache, ending), "A cache directory under the user's");
 		var clock = new FrameClock();
 		clock.frame(10);
 		check(Math.abs(clock.getDelta() - 1 / 60) < 1e-12 && clock.getElapsed() == 0, "The first frame: 1/60 and nothing elapsed");
