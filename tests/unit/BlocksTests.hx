@@ -150,7 +150,7 @@ class BlocksTests {
 		input.consume();
 		input.pointerEvent(100, 300, false);
 		gestures.update(input, 2 + 5 / 60);
-		check(gestures.isDragging() && !gestures.isTapped() && gestures.getFlickY() > 1000, "Fast drag flicks down");
+		check(gestures.isDragging() && !gestures.isTapped() && gestures.getFlickVelocityY() > 1000, "Fast drag flicks down");
 		var camera = new Camera2D();
 		camera.setViewport(400, 800);
 		camera.fit(0, 0, 12, 26);

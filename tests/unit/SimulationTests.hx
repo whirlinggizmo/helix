@@ -177,7 +177,7 @@ class SimulationTests {
 		var shooter = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"title.png"},{"op":"screenshot"},{"op":"press","key":"Enter"}]}',
 			name -> shots.push(name));
 		shooter.advance(g.probe);
-		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.getTicks() == 1, "Screenshots take no tick, named or not");
+		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.getTickCount() == 1, "Screenshots take no tick, named or not");
 		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"../x.png"}]}'), "A screenshot name with a path rejected");
 		trace(haxe.Json.stringify({checks: checks, passed: true, replay: a.snapshot()}));
 	}

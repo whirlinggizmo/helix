@@ -331,7 +331,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			throw "Invalid pipeline shader";
 		for (b in desc.buffers)
 			for (a in b.attributes)
-				if (a.slot < 0 || a.components < 1 || a.components > 4 || a.offset < 0 || a.offset + a.components * 4 > b.stride)
+				if (a.slot < 0
+					|| a.componentCount < 1
+					|| a.componentCount > 4
+					|| a.offset < 0
+					|| a.offset + a.componentCount * 4 > b.stride)
 					throw "Invalid pipeline layout";
 		var id = next++;
 		pipelines[id] = desc;
@@ -587,7 +591,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			var base = layout.instanced ? firstInstance * layout.stride : 0;
 			for (a in layout.attributes) {
 				gl.enableVertexAttribArray(a.slot);
-				gl.vertexAttribPointer(a.slot, a.components, WebGL2RenderingContext.FLOAT, false, layout.stride, base + a.offset);
+				gl.vertexAttribPointer(a.slot, a.componentCount, WebGL2RenderingContext.FLOAT, false, layout.stride, base + a.offset);
 				gl.vertexAttribDivisor(a.slot, layout.instanced ? 1 : 0);
 				used[a.slot] = true;
 			}

@@ -248,10 +248,12 @@ class WebAudioAdapter implements IAudio {
 		}
 	}
 
-	public function setVolume(id:Int, volume:Float):Void {
+	public function setVolume(id:Int, volume:Float):Bool {
 		var v = playbacks[id];
-		if (v != null)
-			v.gain.gain.value = volume;
+		if (v == null || !Math.isFinite(volume) || volume < 0 || volume > 1)
+			return false;
+		v.gain.gain.value = volume;
+		return true;
 	}
 
 	public function isPlaying(id:Int):Bool

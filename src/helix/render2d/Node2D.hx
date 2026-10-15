@@ -186,7 +186,7 @@ class Node2D {
 
 	/** A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
 		False for another kind. */
-	public function setSource(x:Float, y:Float, width:Float, height:Float):Bool {
+	public function setRegion(x:Float, y:Float, width:Float, height:Float):Bool {
 		if (kind != Sprite)
 			return false;
 		sourceX = x;
@@ -197,28 +197,28 @@ class Node2D {
 	}
 
 	/** A sprite's region's left, in texels. */
-	public function getSourceX():Float
+	public function getRegionX():Float
 		return sourceX;
 
 	/** A sprite's region's top, in texels. */
-	public function getSourceY():Float
+	public function getRegionY():Float
 		return sourceY;
 
 	/** A sprite's region's width in texels: what was set, or else its texture's (0 without one). */
-	public function getSourceWidth():Float
+	public function getRegionWidth():Float
 		return sourceWidth > 0 && sourceHeight > 0 ? sourceWidth : texture == null ? 0 : texture.getWidth();
 
 	/** A sprite's region's height in texels: what was set, or else its texture's (0 without one). */
-	public function getSourceHeight():Float
+	public function getRegionHeight():Float
 		return sourceWidth > 0 && sourceHeight > 0 ? sourceHeight : texture == null ? 0 : texture.getHeight();
 
 	/** The width it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels. */
 	public function getWidth():Float
-		return kind == Sprite && !(width > 0 && height > 0) ? getSourceWidth() : width;
+		return kind == Sprite && !(width > 0 && height > 0) ? getRegionWidth() : width;
 
 	/** The height it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels. */
 	public function getHeight():Float
-		return kind == Sprite && !(width > 0 && height > 0) ? getSourceHeight() : height;
+		return kind == Sprite && !(width > 0 && height > 0) ? getRegionHeight() : height;
 
 	/** Sizes a sprite or a rectangle, in its own units; for a sprite, a width or height of 0 or less goes back to its region's size. False for
 		another kind, or a rectangle's size below 0. */

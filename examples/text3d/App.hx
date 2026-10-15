@@ -47,7 +47,7 @@ class App extends BaseApp {
 		var model = Node.model(mesh, material);
 		model.setPosition(x, y, z);
 		stage.add(model);
-		var text = Node.text3d(label, .4, 0xf5f5f5ff);
+		var text = Node.text3D(label, .4, 0xf5f5f5ff);
 		text.setPosition(x, labelHeight, z);
 		stage.add(text);
 		return model;
@@ -81,7 +81,7 @@ class App extends BaseApp {
 		var board = Node.model(Mesh.cube(2.2, .8, .08), wood);
 		board.setPosition(0, 1.6, 0);
 		sign.add(board);
-		signText = Node.text3d("HeliX text", .45, 0xffe68cff);
+		signText = Node.text3D("HeliX text", .45, 0xffe68cff);
 		signText.setFacing(Free);
 		signText.setPosition(0, 1.6, .05);
 		sign.add(signText);
@@ -132,7 +132,7 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		Text2D.draw(batch, "HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", 12, 36, 18, 0xf5f5f5ff);
-		Text2D.draw(batch, '${stage.getDrawnCount()} models and glyphs in ${stage.getDrawCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
+		Text2D.draw(batch, '${stage.getDrawnNodeCount()} models and glyphs in ${stage.getDrawCallCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
 		services.graphics.endFrame();

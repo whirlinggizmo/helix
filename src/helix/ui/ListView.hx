@@ -3,7 +3,7 @@ package helix.ui;
 import helix.render2d.Node2D;
 
 /** A list of items in a window rows tall: scrolled by the wheel over it or a drag, an item chosen by a click or, with focus, by Up and Down
-	(scrolled into view), and activated by a click on the chosen one or Enter, Space or a pad's South. Ask getSelected, isChanged and
+	(scrolled into view), and activated by a click on the chosen one or Enter, Space or a pad's South. Ask getSelectedIndex, isChanged and
 	isActivated once a frame. */
 class ListView extends Widget {
 	var face:Node2D;
@@ -64,13 +64,16 @@ class ListView extends Widget {
 	}
 
 	/** The chosen item's index, or -1. */
-	public function getSelected():Int
+	public function getSelectedIndex():Int
 		return selected;
 
-	/** Chooses item index (-1: none), scrolled into view; not counted as a change. */
-	public function setSelected(index:Int):Void {
-		selected = index >= 0 && index < items.length ? index : -1;
+	/** Chooses item index (-1: none), scrolled into view; not counted as a change. False, changing nothing, for an index out of range. */
+	public function setSelectedIndex(index:Int):Bool {
+		if (index < -1 || index >= items.length)
+			return false;
+		selected = index;
 		reveal();
+		return true;
 	}
 
 	/** Whether the chosen item changed this frame. */

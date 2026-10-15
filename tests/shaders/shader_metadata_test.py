@@ -92,7 +92,7 @@ class ShaderMetadataTests(unittest.TestCase):
         texture, = contract['textures']
         self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
         layout = (folder / 'Sprite2DLayout.hx').read_text()
-        self.assertIn('{slot: 2, components: 2, offset: 0}', layout)
+        self.assertIn('{slot: 2, componentCount: 2, offset: 0}', layout)
         self.assertIn('"vertexPosition"', layout)
 
     def test_attribute_slot_gap_rejected(self):

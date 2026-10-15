@@ -56,7 +56,7 @@ class Stage2D {
 		return lastFont;
 
 	/** Nodes drawn by the last draw (in view). */
-	public function getDrawnCount():Int
+	public function getDrawnNodeCount():Int
 		return count;
 
 	/** Draws the stage into batch (begun in this frame), through camera, in its viewport; the batch is left seen through camera, with no
@@ -174,10 +174,10 @@ class Stage2D {
 					sy = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceY : 0.;
 				if (node.isNineSlice())
 					batch.nineSlice(t, x, y, w, h, node.sliceLeft, node.sliceTop, node.sliceRight, node.sliceBottom, node.color, sx, sy,
-						node.getSourceWidth(), node.getSourceHeight());
+						node.getRegionWidth(), node.getRegionHeight());
 				else {
 					batch.useTexture(t);
-					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getSourceWidth()) / tw, (sy + node.getSourceHeight()) / th, node.color);
+					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getRegionWidth()) / tw, (sy + node.getRegionHeight()) / th, node.color);
 				}
 			case Rectangle:
 				// Outlined, the corners' arcs are the outline's middle: their radius half the outline more outside.

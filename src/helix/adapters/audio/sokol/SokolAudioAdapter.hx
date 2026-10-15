@@ -156,8 +156,12 @@ class SokolAudioAdapter implements IAudio {
 	public function pause(voice:Int, paused:Bool):Void
 		AudioBridge.audioPause(voice, paused ? 1 : 0);
 
-	public function setVolume(voice:Int, volume:Float):Void
+	public function setVolume(voice:Int, volume:Float):Bool {
+		if (!isPlaying(voice) || !Math.isFinite(volume) || volume < 0 || volume > 1)
+			return false;
 		AudioBridge.audioVolume(voice, volume);
+		return true;
+	}
 
 	public function isPlaying(voice:Int):Bool
 		return AudioBridge.audioIsPlaying(voice) != 0;

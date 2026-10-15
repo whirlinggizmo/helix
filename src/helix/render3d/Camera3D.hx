@@ -196,9 +196,9 @@ class Camera3D {
 				setView(ex, ey, ez, ex + fx / fl, ey + fy / fl, ez + fz / fl, placed.get(4), placed.get(5), placed.get(6));
 		}
 		if (orthographicHeight > 0)
-			projection.setOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
+			projection.makeOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
 		else
-			projection.setPerspective(fovY, viewportWidth / viewportHeight, near, far);
+			projection.makePerspective(fovY, viewportWidth / viewportHeight, near, far);
 		viewProjection.setProduct(projection, view);
 		return viewProjection;
 	}
@@ -206,7 +206,7 @@ class Camera3D {
 	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the
 		camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it
 		was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). */
-	public function getRay(x:Float, y:Float, ray:Ray):Bool {
+	public function computeRay(x:Float, y:Float, ray:Ray):Bool {
 		if (!(x >= viewportX && x < viewportX + viewportWidth && y >= viewportY && y < viewportY + viewportHeight))
 			return false;
 		// Normalized device coordinates: -1 to 1 across the viewport, y up.

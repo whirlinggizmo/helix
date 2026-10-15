@@ -31,7 +31,7 @@ class Render3DTests {
 	static function main():Void {
 		var m = new Mat4();
 		check(near(m.get(0), 1) && near(m.get(5), 1) && near(m.get(1), 0), "A new matrix is the identity");
-		check(!m.setPerspective(0, 1, .1, 10) && !m.setPerspective(1, 1, 1, .5) && near(m.get(0), 1), "A bad perspective is refused and changes nothing");
+		check(!m.makePerspective(0, 1, .1, 10) && !m.makePerspective(1, 1, 1, .5) && near(m.get(0), 1), "A bad perspective is refused and changes nothing");
 		check(!m.setLookAt(1, 2, 3, 1, 2, 3, 0, 1, 0)
 			&& !m.setLookAt(0, 0, 0, 0, 5, 0, 0, 1, 0), "A view onto itself or along up is refused");
 		var camera = new Camera3D();
@@ -249,7 +249,7 @@ class Render3DTests {
 		view.setViewport(800, 600);
 		view.setView(0, 6, 12, 0, 0, 0);
 		stage.drawShadows(view);
-		check(gpu.shadowPasses.join(",") == "0" && stage.getShadowCasterCount() == 2 && stage.getShadowDrawCount() == 2,
+		check(gpu.shadowPasses.join(",") == "0" && stage.getShadowCasterCount() == 2 && stage.getShadowDrawCallCount() == 2,
 			"The sun's layer gets the floor and the pillar, not the see-through model or the one that doesn't cast");
 		var map = @:privateAccess stage.lightViewProjection;
 		var middle = clip(map, 0, 0, 0);
@@ -319,7 +319,7 @@ class Render3DTests {
 		function draw():Int {
 			gpu.beginFrame(800, 600, 0);
 			stage.draw(view);
-			return stage.getDrawnCount();
+			return stage.getDrawnNodeCount();
 		}
 		check(draw() == 2 && @:privateAccess stage.lights.length == 1, "Both models drawn, the lamp shining");
 		group.setVisible(false);
@@ -424,10 +424,10 @@ class Render3DTests {
 		check(stage.getShadowCasterCount() == 2, "The floor and the cube high above (its shadow falls into view) cast; the one aside doesn't");
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
-		check(stage.getDrawnCount() == 1 && stage.isCulling(), "Only the floor is in view");
+		check(stage.getDrawnNodeCount() == 1 && stage.isCulling(), "Only the floor is in view");
 		stage.setCulling(false);
 		stage.drawShadows(view);
 		stage.draw(view);
-		check(stage.getDrawnCount() == 3 && stage.getShadowCasterCount() == 3, "Culling off: everything drawn, every caster cast");
+		check(stage.getDrawnNodeCount() == 3 && stage.getShadowCasterCount() == 3, "Culling off: everything drawn, every caster cast");
 	}
 }

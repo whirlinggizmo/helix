@@ -49,7 +49,7 @@ class App extends BaseApp {
 			game: game.snapshot(),
 			ticks: ticks,
 			vertices: batch.getVertexCount(),
-			draws: batch.getDrawCount(),
+			draws: batch.getDrawCallCount(),
 			portrait: layout.portrait,
 			zoom: camera.getZoom(),
 			width: services.window.getFramebufferWidth(),

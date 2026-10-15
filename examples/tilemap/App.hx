@@ -56,7 +56,7 @@ class App extends BaseApp {
 	// A sprite of one cell, placed at x, y in world units by its pivot, size width x height.
 	function add(cell:Array<Int>, x:Float, y:Float, width:Float, height:Float, pivotX:Float, pivotY:Float):Node2D {
 		var sprite = Node2D.sprite(texture);
-		sprite.setSource(cell[0], cell[1], cell[2], cell[3]);
+		sprite.setRegion(cell[0], cell[1], cell[2], cell[3]);
 		sprite.setSize(width, height);
 		sprite.setPivot(pivotX, pivotY);
 		sprite.setPosition(x, y);
@@ -170,7 +170,7 @@ class App extends BaseApp {
 		Text2D.draw(batch,
 			'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
 			20, 46, 15, 0x8c929eff);
-		Text2D.draw(batch, 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnCount()} of ${sprites.length} drawn)', 20, 68, 15,
+		Text2D.draw(batch, 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnNodeCount()} of ${sprites.length} drawn)', 20, 68, 15,
 			0x8c929eff);
 		fps.draw(batch, width / services.window.getPixelRatio() - 150, 4);
 		batch.end();

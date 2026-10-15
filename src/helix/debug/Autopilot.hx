@@ -23,7 +23,7 @@ class Autopilot {
 		return done;
 
 	/** Ticks the commands have run so far. */
-	public function getTicks():Int
+	public function getTickCount():Int
 		return ticks;
 
 	/** The script's seed, 1 to 2147483647, for the app's random numbers. */

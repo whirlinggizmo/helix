@@ -28,8 +28,8 @@ SHARED=ROOT/'examples/shared'
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def shader_stamp():
-    """The newest change to the framework's shader sources and their manifest."""
-    return max(p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json'))
+    """The newest change to the framework's shader sources, their manifest, and the tool writing their generated code."""
+    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
 
 def shader(shdc):
     """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""

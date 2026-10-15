@@ -165,7 +165,7 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		Text2D.draw(batch, "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", 12, 36, 18, 0xf5f5f5ff);
-		Text2D.draw(batch, '${stage.getDrawnCount()} models and sprites in ${stage.getDrawCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
+		Text2D.draw(batch, '${stage.getDrawnNodeCount()} models and sprites in ${stage.getDrawCallCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
 		services.graphics.endFrame();

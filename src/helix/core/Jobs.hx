@@ -14,7 +14,7 @@ class Jobs {
 	var running:Array<{job:Job<Dynamic>, request:JobRequest<Dynamic>}> = [];
 	var queue = new WorkQueue();
 
-	/** A pool running at most maxActive (at least 1) operations at once. */
+	/** A pool running at most maxActive operations at once (clamped to at least 1). */
 	public function new(maxActive:Int)
 		this.maxActive = maxActive < 1 ? 1 : maxActive;
 

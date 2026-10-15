@@ -209,7 +209,7 @@ class App extends BaseApp {
 		batch.begin(hud);
 		flat.draw(batch, hud);
 		Text2D.draw(batch, "HeliX particles", 12, 36, 24, 0xf5f5f5ff);
-		Text2D.draw(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.getDrawCount()} draws', 12, 70, 16,
+		Text2D.draw(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.getDrawCallCount()} draws', 12, 70, 16,
 			0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();

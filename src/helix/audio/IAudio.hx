@@ -47,8 +47,8 @@ interface IAudio {
 	/** Pauses voice, or resumes it when paused is false; nothing for an unknown one. */
 	public function pause(voice:Int, paused:Bool):Void;
 
-	/** Sets voice's volume, 0 to 1; nothing for an unknown one. */
-	public function setVolume(voice:Int, volume:Float):Void;
+	/** Sets voice's volume, 0 to 1. False, changing nothing, for a voice not playing (unknown, stopped or ended) or a volume outside 0 to 1. */
+	public function setVolume(voice:Int, volume:Float):Bool;
 
 	/** Whether voice is still playing (or paused); false once it ended or was stopped. */
 	public function isPlaying(voice:Int):Bool;

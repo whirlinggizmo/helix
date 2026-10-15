@@ -63,7 +63,7 @@ class ServiceTests {
 				var returned = false;
 				// Progress reports come coalesced between polls, as many as the bytes' arrival makes: kept, and checked once at completion,
 				// so the run's count of checks is the same every time.
-				var progress:Array<{received:Int, total:Null<Int>}> = [];
+				var progress:Array<{receivedBytes:Int, totalBytes:Null<Int>}> = [];
 				fetcher.fetch({url: env.base + "/bytes"}, result -> {
 					check(returned, "Fetch completed synchronously");
 					switch result {
@@ -72,12 +72,16 @@ class ServiceTests {
 					}
 					var ordered = true, last = 0;
 					for (p in progress) {
-						ordered = ordered && p.received >= last && p.received <= BODY_BYTES && (p.total == null || p.total == BODY_BYTES);
-						last = p.received;
+						ordered = ordered
+							&& p.receivedBytes >= last
+							&& p.receivedBytes <= BODY_BYTES
+							&& (p.totalBytes == null || p.totalBytes == BODY_BYTES);
+						last = p.receivedBytes;
 					}
 					check(ordered, "Byte progress within the body's size, never going back");
 					next();
-				}, value -> progress.push({received: value.received, total: value.total}));
+				},
+					value -> progress.push({receivedBytes: value.receivedBytes, totalBytes: value.totalBytes}));
 				returned = true;
 			},
 			() -> {

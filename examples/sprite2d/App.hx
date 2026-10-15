@@ -110,7 +110,7 @@ class App extends BaseApp {
 
 		// The sheet: one quarter of the 256x256 texture an animation frame.
 		sheetFrame = Std.int(time * 2) % 4;
-		sprites[0].setSource((sheetFrame % 2) * 128, Std.int(sheetFrame / 2) * 128, 128, 128);
+		sprites[0].setRegion((sheetFrame % 2) * 128, Std.int(sheetFrame / 2) * 128, 128, 128);
 		sprites[1].setRotation(time);
 		sprites[2].setRotation(Math.sin(time * 1.5) * .8);
 		sprites[4].setColor(palette[Std.int(time * 6) % palette.length]);

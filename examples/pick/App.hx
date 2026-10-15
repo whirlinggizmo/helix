@@ -68,7 +68,7 @@ class App extends BaseApp {
 		sphere.setName("a sphere");
 		sphere.setPosition(-1, .8, -1.5);
 		stage.add(sphere);
-		var label = Node.text3d("PICK ME", .5, 0xf5d25aff);
+		var label = Node.text3D("PICK ME", .5, 0xf5d25aff);
 		label.setName("a text");
 		// Text lets picks through unless asked.
 		label.setPickable(true);

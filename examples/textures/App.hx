@@ -88,7 +88,7 @@ class App extends BaseApp {
 			Text2D.draw(batch, 'loaded $chosen', x, y, 14, 0x66bfffff);
 		}
 		var t = slot.texture;
-		var line = t == null ? slot.status : '${t.getWidth()} x ${t.getHeight()}, GPU ${Math.round(t.getByteSize() / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
+		var line = t == null ? slot.status : '${t.getWidth()} x ${t.getHeight()}, GPU ${Math.round(t.getByteCount() / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
 		Text2D.draw(batch, line, x, y + 22, 14, 0xc8c8c8ff);
 	}
 

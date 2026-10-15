@@ -174,7 +174,7 @@ class App extends BaseApp {
 			12, 64, 16, 0xc8c8c8ff);
 		Text2D.draw(batch,
 			'UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   ' +
-			'${stage.getShadowCasterCount()} casters in ${stage.getShadowDrawCount()} draws',
+			'${stage.getShadowCasterCount()} casters in ${stage.getShadowDrawCallCount()} draws',
 			12, 86, 16, 0x9a9a9aff);
 		Text2D.draw(batch, "left ball casts nothing; right ball receives nothing", 12, 108, 16, 0x9a9a9aff);
 		fps.draw(batch, 12, 10);

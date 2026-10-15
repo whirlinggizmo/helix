@@ -8,12 +8,12 @@ typedef ShaderParameter = {
 	var slot:Int;
 	var offset:Int;
 	var type:String;
-	var count:Int;
+	var elementCount:Int;
 }
 
 /** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its
 	uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps
-	getVersion; its pipelines (Pipelines) are made again over the new program as they're next asked for. */
+	getReloadCount; its pipelines (Pipelines) are made again over the new program as they're next asked for. */
 class Shader {
 	var gpu:IGraphics;
 	var handle:Int;
@@ -52,7 +52,7 @@ class Shader {
 						stage: b.stage,
 						size: b.size,
 						glslName: b.glslName,
-						vec4s: b.vec4s
+						vec4Count: b.vec4s
 					}
 			],
 			textures: [
@@ -76,7 +76,7 @@ class Shader {
 						slot: b.slot,
 						offset: m.offset,
 						type: m.type,
-						count: m.count
+						elementCount: m.count
 					};
 		}
 		textureSlots = [for (t in textures) t.name => t.slot];
@@ -91,7 +91,7 @@ class Shader {
 		return kind;
 
 	/** How many times it has been replaced by a reload: a pipeline made before the latest is stale. */
-	public function getVersion():Int
+	public function getReloadCount():Int
 		return version;
 
 	/** Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks. */

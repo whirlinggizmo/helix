@@ -97,7 +97,7 @@ class Gltf {
 				parts.push(part);
 		}
 		var joined = parts.join("/");
-		return helix.assets.AssetPath.valid(joined) ? joined : null;
+		return helix.assets.AssetPath.isValid(joined) ? joined : null;
 	}
 
 	/** The buffers that are files of their own, not read yet: each its index and uri. */

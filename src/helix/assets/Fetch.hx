@@ -8,7 +8,7 @@ import helix.core.Jobs;
 typedef FetchRequest = {var url:String; @:optional var maxBytes:Int; @:optional var timeoutSeconds:Float; @:optional var noCache:Bool;}
 
 /** Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed). */
-typedef FetchProgress = {var received:Int; var total:Null<Int>;}
+typedef FetchProgress = {var receivedBytes:Int; var totalBytes:Null<Int>;}
 
 /** A complete response: HTTP status, headers with lower-case names, and the whole body. */
 typedef FetchResponse = {var status:Int; var headers:Map<String, String>; var bytes:Bytes;}
@@ -77,7 +77,7 @@ class Fetch {
 				if (progress != null && reported != received)
 					jobs.post(() -> if (!job.isSettled() && reported != received) {
 						reported = received;
-						progress({received: received, total: total});
+						progress({receivedBytes: received, totalBytes: total});
 					});
 			}, error -> {
 				if (job.isSettled())

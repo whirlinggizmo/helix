@@ -49,7 +49,7 @@ class AssetService implements IAssets {
 		requests.push(request);
 		function report(phase:String, received:Int, total:Null<Int>) {
 			if (progress != null && !request.isSettled())
-				progress({phase: phase, received: received, total: total});
+				progress({phase: phase, receivedBytes: received, totalBytes: total});
 		}
 		function obtained(bytes:haxe.io.Bytes) {
 			if (request.isSettled())
@@ -72,7 +72,7 @@ class AssetService implements IAssets {
 		queue.add(() -> {
 			if (request.isSettled())
 				return;
-			if (!live || !AssetPath.valid(path)) {
+			if (!live || !AssetPath.isValid(path)) {
 				finish(Failed("Invalid asset path or closed service"));
 				return;
 			}
@@ -88,7 +88,7 @@ class AssetService implements IAssets {
 							case Failed(message): finish(Failed(message));
 							case Cancelled: finish(Cancelled);
 						}
-					}, value -> report("downloading", value.received, value.total));
+					}, value -> report("downloading", value.receivedBytes, value.totalBytes));
 				else
 					child = packaged.read(source, result -> {
 						if (request.isSettled())
@@ -198,7 +198,7 @@ class AssetService implements IAssets {
 		queue.add(() -> {
 			if (request.isSettled())
 				return;
-			if (!live || !AssetPath.valid(path)) {
+			if (!live || !AssetPath.isValid(path)) {
 				finish(Failed("Invalid asset path or closed service"));
 				return;
 			}
@@ -226,7 +226,7 @@ class AssetService implements IAssets {
 
 	/** A file changed: load it again past every cache, keep the new copy, and tell the path's subscribers. A failure keeps what they have. */
 	public function changed(path:String):Void {
-		if (!live || !AssetPath.valid(path) || !subscribers.exists(path))
+		if (!live || !AssetPath.isValid(path) || !subscribers.exists(path))
 			return;
 		// A reload that fails says so (development): the subscribers keep what they have.
 		function done(ok:Bool, message:String)

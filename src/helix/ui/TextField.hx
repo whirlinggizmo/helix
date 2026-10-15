@@ -5,7 +5,7 @@ import helix.render2d.Node2D;
 import helix.render2d.Text2D;
 
 /** A line of text typed in: with focus, the characters typed (after the keyboard layout) are added, Backspace takes the last off and Enter
-	submits; the caret is at its end. While it has focus the UI has the keys (Ui.hasKeys), however it got focus, so a game doesn't act on
+	submits; the caret is at its end. While it has focus the UI has the keys (Ui.isCapturingKeys), however it got focus, so a game doesn't act on
 	letters typed. Ask getText, isChanged and isSubmitted once a frame. No input method (IME) composition yet. */
 class TextField extends Widget {
 	var face:Node2D;

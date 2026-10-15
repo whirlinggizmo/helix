@@ -13,7 +13,7 @@ typedef ShaderBlock = {
 	var stage:String;
 	var size:Int;
 	var glslName:String;
-	var vec4s:Int;
+	var vec4Count:Int;
 }
 
 /** A texture a program samples: its binding slot (its sampler's too), its stage, the GLSL name of the pair, and its kind: a shadow map (a

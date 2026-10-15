@@ -104,7 +104,7 @@ class Node {
 		position (its pivot), facing the camera, tinted color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance
 		(a distance-field font). Sized, pivoted and faced as a sprite. Not pickable until setPickable(true): a label lets a pick through to what
 		it's on. */
-	public static function text3d(value:String, size = .5, color = 0xffffffff, ?font:helix.render2d.Font2D):Node {
+	public static function text3D(value:String, size = .5, color = 0xffffffff, ?font:helix.render2d.Font2D):Node {
 		var node = new Node(TextNode);
 		node.content = value;
 		node.textSize = size;
@@ -187,9 +187,21 @@ class Node {
 		return true;
 	}
 
-	/** A sprite's region: x, y, width, height in texels (a width or height of 0 or less: the whole texture). */
-	public function getRegion():Array<Float>
-		return [regionX, regionY, regionWidth, regionHeight];
+	/** A sprite's region's left, in texels. */
+	public function getRegionX():Float
+		return regionX;
+
+	/** A sprite's region's top, in texels. */
+	public function getRegionY():Float
+		return regionY;
+
+	/** A sprite's region's width in texels (0 or less: the whole texture). */
+	public function getRegionWidth():Float
+		return regionWidth;
+
+	/** A sprite's region's height in texels (0 or less: the whole texture). */
+	public function getRegionHeight():Float
+		return regionHeight;
 
 	/** A sprite's size in world units, before its scale (1 x 1 by default). */
 	public function getSpriteWidth():Float

@@ -20,16 +20,16 @@ class PointerGestures {
 
 	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. Throws for a slop under 0 or tapSeconds of 0 or less, as the setters refuse. */
 	public function new(slop = 12., tapSeconds = .3) {
-		if (!setSlop(slop) || !setTapSeconds(tapSeconds))
+		if (!setMaxTapDistance(slop) || !setMaxTapDuration(tapSeconds))
 			throw 'Invalid gesture limits: slop $slop, tapSeconds $tapSeconds';
 	}
 
 	/** How far a press may move and still be a tap, in pixels. */
-	public function getSlop():Float
+	public function getMaxTapDistance():Float
 		return slop;
 
 	/** False for under 0. */
-	public function setSlop(value:Float):Bool {
+	public function setMaxTapDistance(value:Float):Bool {
 		if (!(value >= 0))
 			return false;
 		slop = value;
@@ -37,11 +37,11 @@ class PointerGestures {
 	}
 
 	/** How long a press may last and still be a tap, in seconds. */
-	public function getTapSeconds():Float
+	public function getMaxTapDuration():Float
 		return tapSeconds;
 
 	/** False for 0 or less. */
-	public function setTapSeconds(value:Float):Bool {
+	public function setMaxTapDuration(value:Float):Bool {
 		if (!(value > 0))
 			return false;
 		tapSeconds = value;
@@ -85,11 +85,11 @@ class PointerGestures {
 		return startY;
 
 	/** Velocity over the last tenth of a second before release, pixels per second. */
-	public function getFlickX():Float
+	public function getFlickVelocityX():Float
 		return flickX;
 
-	/** Vertical velocity as getFlickX, down positive. */
-	public function getFlickY():Float
+	/** Vertical velocity as getFlickVelocityX, down positive. */
+	public function getFlickVelocityY():Float
 		return flickY;
 
 	/** Reads the pointer once per tick, before the input is consumed; now is the time in seconds. */

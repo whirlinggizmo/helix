@@ -39,7 +39,7 @@ class Texture2D {
 		return levels;
 
 	/** The GPU memory its levels take, in bytes. */
-	public function getByteSize():Int {
+	public function getByteCount():Int {
 		var total = 0, w = width, h = height;
 		for (_ in 0...levels) {
 			total += format.levelBytes(w, h);

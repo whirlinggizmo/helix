@@ -73,7 +73,7 @@ class SokolWindow implements IWindow {
 	public function isVisible():Bool
 		return HostBridge.visible() != 0;
 
-	public function setVisible(visible:Bool):Bool {
+	public function requestVisible(visible:Bool):Bool {
 		HostBridge.setVisible(visible ? 1 : 0);
 		return true;
 	}
@@ -81,10 +81,10 @@ class SokolWindow implements IWindow {
 	public function getMonitorCount():Int
 		return HostBridge.displayCount();
 
-	public function getMonitor():Int
+	public function getMonitorIndex():Int
 		return HostBridge.displayCurrent();
 
-	public function requestMonitor(index:Int):Bool {
+	public function requestMonitorIndex(index:Int):Bool {
 		if (index < 0 || index >= getMonitorCount() || !canMove())
 			return false;
 		HostBridge.setDisplay(index);

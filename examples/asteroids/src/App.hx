@@ -136,7 +136,7 @@ class App extends BaseApp {
 			menu: {focus: ui.getFocusedName()},
 			autopilot: pilot == null ? null : pilot.getSnapshot(),
 			vertices: batch.getVertexCount(),
-			draws: batch.getDrawCount(),
+			draws: batch.getDrawCallCount(),
 			width: services.window.getFramebufferWidth(),
 			height: services.window.getFramebufferHeight(),
 			focused: services.window.isFocused()
@@ -154,7 +154,7 @@ class App extends BaseApp {
 		}
 		input.read(source);
 		// The UI decides the menu while it has the keys (Enter on Title isn't also a start); a click is taken here, by a tick.
-		if (ui.hasKeys())
+		if (ui.isCapturingKeys())
 			input.start = false;
 		input.start = input.start || wantStart;
 		input.title = wantTitle;

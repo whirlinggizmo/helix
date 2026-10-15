@@ -32,10 +32,10 @@ class HostTests {
 		clock.frame(10);
 		check(Math.abs(clock.getDelta() - 1 / 60) < 1e-12 && clock.getElapsed() == 0, "The first frame: 1/60 and nothing elapsed");
 		clock.frame(10.25);
-		check(clock.getDelta() == FrameClock.MAX
+		check(clock.getDelta() == FrameClock.MAX_DELTA
 			&& Math.abs(clock.getElapsed() - .25) < 1e-12, "A stall: the delta held, the elapsed time whole");
 		clock.frame(10.25);
-		check(clock.getDelta() == FrameClock.MIN && clock.getElapsed() == 0, "No time passed: the least delta");
+		check(clock.getDelta() == FrameClock.MIN_DELTA && clock.getElapsed() == 0, "No time passed: the least delta");
 		// The job pool: a cap, completion at a later poll, and every operation, queued or running, completing once at shutdown.
 		var jobs = new Jobs(1), results:Array<String> = [], aborted = false;
 		jobs.add(job -> job.setAbort(() -> aborted = true), r -> results.push("a:" + r), "cancelled");

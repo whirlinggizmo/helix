@@ -71,11 +71,11 @@ class Sprites3D {
 	}
 
 	/** Sprites drawn by the last draw (in view). */
-	public function getDrawnCount():Int
+	public function getDrawnSpriteCount():Int
 		return count;
 
 	/** Draws of the last draw: one a run of a texture. */
-	public function getDrawCount():Int
+	public function getDrawCallCount():Int
 		return draws;
 
 	/** Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet. */
@@ -369,7 +369,7 @@ class Sprites3D {
 			emitters[i] = list[i];
 		var total = 0;
 		for (i in 0...emitterCount)
-			total += emitters[i].emitter.getCount();
+			total += emitters[i].emitter.getParticleCount();
 		if (total > particleCapacity) {
 			while (particleCapacity < total)
 				particleCapacity *= 2;
@@ -399,7 +399,7 @@ class Sprites3D {
 
 	function drawEmitter(it:EmitterItem):Void {
 		var texture = it.emitter.getTexture();
-		gpu.draw(pipelines.particle3d(cast it.phase), [corners, particleBuffer], indices, 0, 6, it.first, it.count, [texture.getHandle()],
+		gpu.draw(pipelines.particle3D(cast it.phase), [corners, particleBuffer], indices, 0, 6, it.first, it.count, [texture.getHandle()],
 			[texture.getSampling()], [it.uniforms]);
 		draws++;
 	}
@@ -425,11 +425,14 @@ class Sprites3D {
 		// Ground lies along the node's z, its texture's top toward -z; anything else along its y.
 		var height = facing == Ground ? sz : sy;
 		put(Sprite3DLayout.sizeOffset, node.getSpriteWidth() * sx, node.getSpriteHeight() * height, node.getPivotX(), node.getPivotY());
-		var r = node.getRegion(),
+		var rx = node.getRegionX(),
+			ry = node.getRegionY(),
+			rw = node.getRegionWidth(),
+			rh = node.getRegionHeight(),
 			tw = texture.getWidth(),
 			th = texture.getHeight();
-		if (r[2] > 0 && r[3] > 0)
-			put(Sprite3DLayout.regionOffset, r[0] / tw, r[1] / th, (r[0] + r[2]) / tw, (r[1] + r[3]) / th);
+		if (rw > 0 && rh > 0)
+			put(Sprite3DLayout.regionOffset, rx / tw, ry / th, (rx + rw) / tw, (ry + rh) / th);
 		else
 			put(Sprite3DLayout.regionOffset, 0, 0, 1, 1);
 		put(Sprite3DLayout.rightOffset, sx > 0 ? w.get(0) / sx : 1, sx > 0 ? w.get(1) / sx : 0, sx > 0 ? w.get(2) / sx : 0, 0);
@@ -493,7 +496,7 @@ class Sprites3D {
 			var last = i, texture = drawn[i].texture;
 			while (last + 1 < to && drawn[last + 1].texture == texture)
 				last++;
-			gpu.draw(pipelines.sprite3d(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.getHandle()],
+			gpu.draw(pipelines.sprite3D(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.getHandle()],
 				[texture.getSampling()], [uniforms]);
 			draws++;
 			i = last + 1;

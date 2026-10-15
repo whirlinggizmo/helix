@@ -85,7 +85,7 @@ class DomWindow implements IWindow {
 	public function isVisible():Bool
 		return canvas.style.visibility != "hidden";
 
-	public function setVisible(visible:Bool):Bool {
+	public function requestVisible(visible:Bool):Bool {
 		canvas.style.visibility = visible ? "" : "hidden";
 		return true;
 	}
@@ -93,10 +93,10 @@ class DomWindow implements IWindow {
 	public function getMonitorCount():Int
 		return 1;
 
-	public function getMonitor():Int
+	public function getMonitorIndex():Int
 		return 0;
 
-	public function requestMonitor(index:Int):Bool
+	public function requestMonitorIndex(index:Int):Bool
 		return false;
 
 	public function getMonitorName(index:Int):String

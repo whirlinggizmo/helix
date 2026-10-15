@@ -94,7 +94,7 @@ class PostProcess {
 			return;
 		}
 		gpu.updateBuffer(copyBuffer, quad, quad.length);
-		gpu.draw(Pipelines.of(gpu).sprite2d(Opaque), [copyBuffer], 0, 0, 6, 0, 1, [result.getHandle()], [Sampling.NEAREST], [clip]);
+		gpu.draw(Pipelines.of(gpu).sprite2D(Opaque), [copyBuffer], 0, 0, 6, 0, 1, [result.getHandle()], [Sampling.NEAREST], [clip]);
 	}
 
 	/** Frees its textures and buffer; the effects stay their owner's. */

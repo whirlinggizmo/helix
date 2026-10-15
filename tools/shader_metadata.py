@@ -236,7 +236,7 @@ def generate(manifest_path, output, working_dir):
             for suffix, value in [('Slot', attr['slot']), ('Offset', attr['offset']), ('Components', attr['components'])]:
                 hx.append(f' public static inline var {attr["role"]}{suffix}={json.dumps(value)};')
         stages = lambda dialect: '{vertex: ' + json.dumps(sources[dialect, 'vertex']) + ', fragment: ' + json.dumps(sources[dialect, 'fragment']) + '}'
-        blocks = ', '.join(f'{{slot: {u["slot"]}, stage: "{u["stage"]}", size: {u["bytes"]}, glslName: {json.dumps(u["name"])}, vec4s: {u["bytes"] // 16}}}'
+        blocks = ', '.join(f'{{slot: {u["slot"]}, stage: "{u["stage"]}", size: {u["bytes"]}, glslName: {json.dumps(u["name"])}, vec4Count: {u["bytes"] // 16}}}'
                            for u in contract['uniforms'])
         textures = ', '.join(f'{{slot: {t["view"]}, stage: "{t["stage"]}", glslName: {json.dumps(t["uniform"])}, shadow: {str(t["depthArray"]).lower()}, '
                              f'cube: {str(t["cube"]).lower()}, data: {str(t["data"]).lower()}}}' for t in contract['textures'])
@@ -249,7 +249,7 @@ def generate(manifest_path, output, working_dir):
         layouts = []
         for index in range(max(used) + 1 if used else 0):
             stride = [contract['stride'], contract['instanceStride'], contract['skinStride']][index]
-            attrs = ', '.join(f'{{slot: {a["slot"]}, components: {a["components"]}, offset: {a["offset"]}}}' for a in contract['attributes'] if a['buffer'] == index)
+            attrs = ', '.join(f'{{slot: {a["slot"]}, componentCount: {a["components"]}, offset: {a["offset"]}}}' for a in contract['attributes'] if a['buffer'] == index)
             layouts.append(f'{{stride: {stride}, instanced: {str(index == 1).lower()}, attributes: [{attrs}]}}')
         hx += [' /** Its vertex buffers by index (0 the vertices, 1 the instance records, 2 a skin\'s joints), as a PipelineDesc takes them. */',
                ' public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>', f'  return [{", ".join(layouts)}];', '}']

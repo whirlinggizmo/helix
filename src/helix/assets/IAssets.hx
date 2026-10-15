@@ -25,7 +25,7 @@ enum AssetSourceResult {
 }
 
 /** Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown. */
-typedef AssetProgress = {var phase:String; var received:Int; var total:Null<Int>;}
+typedef AssetProgress = {var phase:String; var receivedBytes:Int; var totalBytes:Null<Int>;}
 
 /** How ensure finds a file. source: where its bytes come from instead of its own path, a path read against the host as a browser reads a URL
 	against a directory, or a whole URL; they're kept under the path asked for. forceFetch: go past the cache to the host (or the packaged files),

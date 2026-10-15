@@ -67,7 +67,7 @@ class StageBench {
 				stage.drawShadows(camera);
 			stage.draw(camera);
 		}
-		var line = '$kind $models $frames drawn ${stage.getDrawnCount()} draws ${stage.getDrawCount()} picked $picked';
+		var line = '$kind $models $frames drawn ${stage.getDrawnCount()} draws ${stage.getDrawCallCount()} picked $picked';
 		#if js js.Syntax.code("console.log({0})", line); #else Sys.println(line); #end
 	}
 

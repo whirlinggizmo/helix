@@ -73,12 +73,12 @@ class Emitter {
 	var moveZ = 0.;
 	var jumped = false;
 
-	/** An emitter of particles drawn from texture (null for none yet: it draws nothing), at most max alive at once (newer replace the oldest),
+	/** An emitter of particles drawn from texture (null for none yet: it draws nothing), at most maxParticles alive at once (newer replace the oldest; clamped to 1..65536),
 		flat for a 2D stage (its particles in the x-y plane, a sphere a circle). By default: no steady rate (bursts only), a life of 1 second,
 		born at a point, moving up at 1 unit a second, size 1, white, added. */
-	public function new(texture:Null<Texture2D>, max = 1024, flat = false) {
+	public function new(texture:Null<Texture2D>, maxParticles = 1024, flat = false) {
 		this.texture = texture;
-		this.max = max < 1 ? 1 : max > 65536 ? 65536 : max;
+		max = maxParticles < 1 ? 1 : maxParticles > 65536 ? 65536 : maxParticles;
 		this.flat = flat;
 		ring = Bytes.alloc(this.max * RECORD);
 		random = seeds++ * 0x9E3779B1;
@@ -103,15 +103,15 @@ class Emitter {
 		regionHeight = height;
 	}
 
-	/** A flipbook: the region split into columns x rows frames (left to right, top to bottom), of which the first count are used (0 or less:
-		all). With perSecond 0 each particle plays them once over its life (puffs, explosions); above 0 it loops at that rate from a random frame
+	/** A flipbook: the region split into columns x rows frames (left to right, top to bottom), of which the first frameCount are used (0 or less,
+		or more than there are: all). With perSecond 0 each particle plays them once over its life (puffs, explosions); above 0 it loops at that rate from a random frame
 		(flames). False for columns or rows below 1. */
-	public function setFrames(columns:Int, rows:Int, count = 0, perSecond = 0.):Bool {
+	public function setFrames(columns:Int, rows:Int, frameCount = 0, perSecond = 0.):Bool {
 		if (columns < 1 || rows < 1 || !(perSecond >= 0))
 			return false;
 		this.columns = columns;
 		this.rows = rows;
-		frameCount = count <= 0 || count > columns * rows ? columns * rows : count;
+		this.frameCount = frameCount <= 0 || frameCount > columns * rows ? columns * rows : frameCount;
 		framesPerSecond = perSecond;
 		return true;
 	}
@@ -141,7 +141,7 @@ class Emitter {
 		return true;
 	}
 
-	/** Born anywhere in a box of these half sizes around its position (a point by default). */
+	/** Born anywhere in a box of these half sizes around its position (a point by default); a half size's sign is ignored (the same box). */
 	public function setSpawnBox(halfX:Float, halfY:Float, halfZ:Float):Void {
 		boxX = Math.abs(halfX);
 		boxY = Math.abs(halfY);
@@ -157,14 +157,17 @@ class Emitter {
 		return true;
 	}
 
-	/** Moving along x, y, z at its length's speed, turned up to spread radians off it (a cone; flat, a fan), faster or slower by up to variance
-		(0..1) of it. */
-	public function setVelocity(x:Float, y:Float, z:Float, spread = 0., variance = 0.):Void {
+	/** Moving along x, y, z at its length's speed, turned up to spread radians off it (a cone; flat, a fan; its sign is ignored, the same cone),
+		faster or slower by up to variance (0..1) of it. False, changing nothing, for a variance outside 0..1. */
+	public function setVelocity(x:Float, y:Float, z:Float, spread = 0., variance = 0.):Bool {
+		if (!(variance >= 0 && variance <= 1))
+			return false;
 		dirX = x;
 		dirY = y;
 		dirZ = flat ? 0 : z;
 		this.spread = Math.abs(spread);
-		speedVariance = variance < 0 ? 0 : variance > 1 ? 1 : variance;
+		speedVariance = variance;
+		return true;
 	}
 
 	/** An acceleration on every particle, units a second squared (none by default). */
@@ -187,11 +190,15 @@ class Emitter {
 	public function setInheritVelocity(fraction:Float):Void
 		inherit = fraction;
 
-	/** Size over life, world units: start at birth to end at death, each particle's scaled by up to variance (0..1). Replaces the size keys. */
-	public function setSize(start:Float, end:Float, variance = 0.):Void {
+	/** Size over life, world units: start at birth to end at death, each particle's scaled by up to variance (0..1). Replaces the size keys.
+		False, changing nothing, for a variance outside 0..1. */
+	public function setSize(start:Float, end:Float, variance = 0.):Bool {
+		if (!(variance >= 0 && variance <= 1))
+			return false;
 		sizeTimes = [0, 1];
 		sizeValues = [start, end];
-		sizeVariance = variance < 0 ? 0 : variance > 1 ? 1 : variance;
+		sizeVariance = variance;
+		return true;
 	}
 
 	/** Clears the size keys (a curve without keys draws nothing until one is added). */
@@ -243,16 +250,24 @@ class Emitter {
 	public function clearPalette():Void
 		palette = [];
 
-	/** Spin, radians a second between min and max (positive clockwise on screen), from a random angle. None by default. */
-	public function setSpin(min:Float, max:Float):Void {
+	/** Spin, radians a second between min and max (positive clockwise on screen), from a random angle. None by default. False, changing
+		nothing, unless min <= max. */
+	public function setSpin(min:Float, max:Float):Bool {
+		if (!(min <= max))
+			return false;
 		spinMin = min;
-		spinMax = max < min ? min : max;
+		spinMax = max;
+		return true;
 	}
 
 	/** Stretched along the motion (sparks, rain): each particle's texture points its top along its velocity across the screen, as long as the
-		distance it moves in seconds (plus its size); stretched ones don't spin. 0 (the default) is off. */
-	public function setStretch(seconds:Float):Void
-		stretch = seconds < 0 ? 0 : seconds;
+		distance it moves in seconds (plus its size); stretched ones don't spin. 0 (the default) is off. False, changing nothing, below 0. */
+	public function setStretch(seconds:Float):Bool {
+		if (!(seconds >= 0))
+			return false;
+		stretch = seconds;
+		return true;
+	}
 
 	/** How it uses its texels' alpha (Add by default: glows, sparks, fire), and a Mask's cutoff. False for a cutoff outside 0..1. */
 	public function setAlphaMode(mode:SpriteAlpha, cutoff = .5):Bool {
@@ -267,12 +282,13 @@ class Emitter {
 	public function getAlphaMode():SpriteAlpha
 		return alphaMode;
 
-	/** Where its random numbers start: the same seed and settings give the same particles. */
+	/** Where its random numbers start: the same seed and settings give the same particles. 0 is taken as 1 (the generator needs a seed other
+		than 0). */
 	public function setSeed(seed:Int):Void
 		random = seed == 0 ? 1 : seed;
 
 	/** Particles that may still be alive. */
-	public function getCount():Int
+	public function getParticleCount():Int
 		return live;
 
 	/** All of them gone. */

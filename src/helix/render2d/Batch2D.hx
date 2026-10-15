@@ -20,7 +20,7 @@ class Batch2D {
 		return vertices;
 
 	/** Draws of the frame drawn last: one per run of a texture. */
-	public function getDrawCount():Int
+	public function getDrawCallCount():Int
 		return draws;
 
 	/** The built-in pixel font, whose texture also has the white texel shapes use. */
@@ -74,10 +74,10 @@ class Batch2D {
 	var b = 1.;
 	var a = 1.;
 
-	/** A batch of up to capacity vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. */
-	public function new(gpu:IGraphics, capacity = 32768) {
+	/** A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. */
+	public function new(gpu:IGraphics, maxVertices = 32768) {
 		this.gpu = gpu;
-		this.capacity = capacity;
+		capacity = maxVertices;
 		data = Bytes.alloc(capacity * Sprite2DLayout.stride);
 		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
 		pipelines = Pipelines.of(gpu);
@@ -172,10 +172,10 @@ class Batch2D {
 					case Add: 2;
 					case _: 0;
 				};
-				gpu.draw(pipelines.particle3d(cast phase), [particleCorners, particleBuffer], particleIndices, 0, 6, e.first, e.count, [runs[i]],
+				gpu.draw(pipelines.particle3D(cast phase), [particleCorners, particleBuffer], particleIndices, 0, 6, e.first, e.count, [runs[i]],
 					[runSamplings[run]], [e.uniforms]);
 			} else
-				gpu.draw(pipelines.sprite2d(Alpha), [buffer], 0, runs[i + 1], runs[i + 2], 0, 1, [runs[i]], [runSamplings[run]], [clip]);
+				gpu.draw(pipelines.sprite2D(Alpha), [buffer], 0, runs[i + 1], runs[i + 2], 0, 1, [runs[i]], [runSamplings[run]], [clip]);
 			draws++;
 			i += 3;
 		}
@@ -382,7 +382,7 @@ class Batch2D {
 				order.setInt32(k * 4, [0, 1, 2, 0, 2, 3][k]);
 			particleIndices = gpu.createStaticBuffer(order, 24, true);
 		}
-		var needed = (particleCount + emitter.getCount()) * Particle3DLayout.instanceStride;
+		var needed = (particleCount + emitter.getParticleCount()) * Particle3DLayout.instanceStride;
 		if (needed > particleRecords.length) {
 			var grown = Bytes.alloc(Std.int(Math.max(needed, particleRecords.length * 2)));
 			grown.blit(0, particleRecords, 0, particleCount * Particle3DLayout.instanceStride);

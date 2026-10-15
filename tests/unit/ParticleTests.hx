@@ -13,7 +13,8 @@ class ParticleTests {
 
 	// Its records now, 12 floats each.
 	static function records(e:Emitter):Array<Float> {
-		var out = Bytes.alloc(e.getCount() * 48), n = e.writeRecords(out, 0);
+		var out = Bytes.alloc(e.getParticleCount() * 48),
+			n = e.writeRecords(out, 0);
 		return [for (i in 0...n * 12) out.getFloat(i * 4)];
 	}
 
@@ -23,20 +24,20 @@ class ParticleTests {
 		e.setLife(10, 10);
 		for (_ in 0...10)
 			e.advance(.1, 0, 0, 0);
-		check(e.getCount() == 100, "A rate of 100 a second makes 100 in a second");
+		check(e.getParticleCount() == 100, "A rate of 100 a second makes 100 in a second");
 		e.setLife(.5, .5);
 		e.clear();
 		for (_ in 0...20)
 			e.advance(.1, 0, 0, 0);
-		check(e.getCount() >= 49 && e.getCount() <= 51, "Particles die after their life: about half a second's worth alive");
+		check(e.getParticleCount() >= 49 && e.getParticleCount() <= 51, "Particles die after their life: about half a second's worth alive");
 		var small = new Emitter(null, 8);
 		small.burst(20);
-		check(small.getCount() == 8, "At most max alive: newer replace the oldest");
+		check(small.getParticleCount() == 8, "At most max alive: newer replace the oldest");
 		var warm = new Emitter(null, 1000);
 		warm.setRate(50);
 		warm.setLife(1, 1);
 		warm.prewarm(5);
-		check(warm.getCount() == 50, "Prewarming leaves those still alive: a second's worth of a 1-second life");
+		check(warm.getParticleCount() == 50, "Prewarming leaves those still alive: a second's worth of a 1-second life");
 		// The same seed and settings give the same particles.
 		var a = new Emitter(null, 64), b = new Emitter(null, 64);
 		for (x in [a, b]) {

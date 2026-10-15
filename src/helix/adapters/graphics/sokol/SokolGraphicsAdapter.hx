@@ -131,7 +131,7 @@ class SokolGraphicsAdapter implements IGraphics {
 			ints.push(b.attributes.length);
 			for (a in b.attributes) {
 				ints.push(a.slot);
-				ints.push(a.components);
+				ints.push(a.componentCount);
 				ints.push(a.offset);
 			}
 		}
@@ -143,7 +143,7 @@ class SokolGraphicsAdapter implements IGraphics {
 		// The layout the bridge reads, a line each: attributes, uniform blocks, textures.
 		var lines = [for (i in 0...source.attributes.length) 'a $i ${source.attributes[i]}'];
 		for (b in source.uniformBlocks)
-			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4s} ${b.glslName}');
+			lines.push('u ${b.slot} ${b.stage.charAt(0)} ${b.size} ${b.vec4Count} ${b.glslName}');
 		for (t in source.textures)
 			lines.push('${t.shadow ? "s" : t.cube ? "c" : t.data ? "d" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
 		// Typed first: an anonymous structure's fields reach C++ as variants.

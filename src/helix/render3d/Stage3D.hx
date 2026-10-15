@@ -290,15 +290,15 @@ class Stage3D {
 	}
 
 	/** Models and sprites drawn by the last draw (in view). */
-	public function getDrawnCount():Int
-		return count + sprites.getDrawnCount();
+	public function getDrawnNodeCount():Int
+		return count + sprites.getDrawnSpriteCount();
 
 	/** Draws of the last draw: one a run of alike models, or of sprites of one texture. */
-	public function getDrawCount():Int
-		return draws + sprites.getDrawCount();
+	public function getDrawCallCount():Int
+		return draws + sprites.getDrawCallCount();
 
 	/** Draws into shadow maps by the last drawShadows: one a run of casters alike in mesh, in each light's layer. */
-	public function getShadowDrawCount():Int
+	public function getShadowDrawCallCount():Int
 		return shadowDraws;
 
 	/** Casters drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
@@ -453,7 +453,7 @@ class Stage3D {
 		var left = Math.floor((vx - radius) / texel) * texel,
 			bottom = Math.floor((vy - radius) / texel) * texel;
 		var near = depth - radius - SHADOW_PULLBACK, far = depth + radius;
-		lightProjection.setOrthographicBox(left, left + side, bottom, bottom + side, near, far);
+		lightProjection.makeOrthographicBox(left, left + side, bottom, bottom + side, near, far);
 		lightViewProjection.setProduct(lightProjection, lightView);
 		return {
 			texelWorld: texel,
@@ -493,7 +493,7 @@ class Stage3D {
 			pz = w.get(14),
 			flat = Math.abs(dy) > .99;
 		lightView.setLookAt(px, py, pz, px + dx, py + dy, pz + dz, 0, flat ? 0 : 1, flat ? 1 : 0);
-		lightProjection.setPerspective(fovY, 1, reach * .01, reach);
+		lightProjection.makePerspective(fovY, 1, reach * .01, reach);
 		lightViewProjection.setProduct(lightProjection, lightView);
 		return {
 			texelWorld: 2 * Math.tan(fovY / 2) * reach / size,
@@ -544,7 +544,7 @@ class Stage3D {
 				var last = i, mesh = layerCasters[i].mesh;
 				while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
 					last++;
-				gpu.draw(pipelines.depth3d(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.getIndexCount(), i, last - i + 1,
+				gpu.draw(pipelines.depth3D(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.getIndexCount(), i, last - i + 1,
 					[], [], uniforms);
 				shadowDraws++;
 				i = last + 1;
@@ -582,7 +582,7 @@ class Stage3D {
 			var last = i, mesh = layerCasters[first + i].mesh;
 			while (last + 1 < n && layerCasters[first + last + 1].mesh == mesh)
 				last++;
-			gpu.draw(pipelines.skinnedDepth3d(), [mesh.getVertexBuffer(gpu), skinnedCasterBuffer, mesh.getSkinBuffer(gpu)], mesh.getIndexBuffer(gpu), 0,
+			gpu.draw(pipelines.skinnedDepth3D(), [mesh.getVertexBuffer(gpu), skinnedCasterBuffer, mesh.getSkinBuffer(gpu)], mesh.getIndexBuffer(gpu), 0,
 				mesh.getIndexCount(), i, last - i + 1, [palette.getTexture()], [Sampling.NEAREST], uniforms);
 			shadowDraws++;
 			i = last + 1;
@@ -596,7 +596,7 @@ class Stage3D {
 		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
 		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
 	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit):Null<PickHit>
-		return camera.getRay(x, y, pickRay) ? pickAlong(pickRay, camera, hit) : null;
+		return camera.computeRay(x, y, pickRay) ? pickAlong(pickRay, camera, hit) : null;
 
 	/** The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as
 		camera shows them: without a camera, only models are hit. */
@@ -854,7 +854,7 @@ class Stage3D {
 		u.setFloat(76, Math.sin(environmentRotation));
 		u.setFloat(80, tonemap);
 		u.setFloat(84, Math.pow(2, exposure));
-		gpu.draw(pipelines.background3d(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
+		gpu.draw(pipelines.background3D(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
 	}
 
 	// The tree depth first, each node's world matrix brought up to date on the way down; disabled nodes skip their children.
@@ -958,7 +958,7 @@ class Stage3D {
 	var boxRZ = 0.;
 
 	function placeBox(node:Node):Void {
-		if (isSkinned(node) && JointPalette.posedBox(node, posed)) {
+		if (isSkinned(node) && JointPalette.computePosedBox(node, posed)) {
 			boxX = posed[0];
 			boxY = posed[1];
 			boxZ = posed[2];
@@ -1316,7 +1316,7 @@ class Stage3D {
 			table = brdf != null ? brdf.getHandle() : white.getHandle();
 		// A skinned model draws through the skinned program, its joints from the palette; a surface shader isn't skinned yet, so it's ignored.
 		if (item.skinned) {
-			gpu.draw(pipelines.skinned3d(blendOf(item), item.material.isDoubleSided(), item.mirrored),
+			gpu.draw(pipelines.skinned3D(blendOf(item), item.material.isDoubleSided(), item.mirrored),
 				[item.mesh.getVertexBuffer(gpu), instanceBuffer, item.mesh.getSkinBuffer(gpu)], item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(),
 				first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table, palette.getTexture()], [
 					base.getSampling(),
@@ -1330,7 +1330,7 @@ class Stage3D {
 			return;
 		}
 		if (shader == null) {
-			gpu.draw(pipelines.lit3d(blendOf(item), item.material.isDoubleSided(), item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
+			gpu.draw(pipelines.lit3D(blendOf(item), item.material.isDoubleSided(), item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
 				item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
 					base.getSampling(),
 					normal.getSampling(),

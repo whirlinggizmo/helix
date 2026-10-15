@@ -117,12 +117,12 @@ class UiTests {
 			ui.update();
 		}
 		frame();
-		check(ui.getFocused() == null && !ui.hasKeys(), "Nothing focused to start");
+		check(ui.getFocused() == null && !ui.isCapturingKeys(), "Nothing focused to start");
 		frame([Down]);
-		check(ui.getFocused() == play && ui.hasKeys() && ui.getFocusedName() == "Play", "Down: the first button, its name published");
+		check(ui.getFocused() == play && ui.isCapturingKeys() && ui.getFocusedName() == "Play", "Down: the first button, its name published");
 		frame([Down]);
 		frame([Enter]);
-		check(ui.getFocused() == sound && sound.isChanged() && !sound.getValue(), "Enter switches the toggle");
+		check(ui.getFocused() == sound && sound.isChanged() && !sound.isOn(), "Enter switches the toggle");
 		frame([Down]);
 		frame([Right]);
 		check(ui.getFocused() == volume && volume.getValue() == 6 && volume.isChanged(), "Right steps the slider, focus kept");
@@ -131,7 +131,7 @@ class UiTests {
 		frame([Down]);
 		frame([Down]);
 		frame([Down]);
-		check(ui.getFocused() == levels && levels.getSelected() == 1, "Up and Down choose in a focused list");
+		check(ui.getFocused() == levels && levels.getSelectedIndex() == 1, "Up and Down choose in a focused list");
 		frame([Tab]);
 		check(ui.getFocused() == play, "Tab leaves the list; the disabled button is skipped, focus wraps");
 		frame([Enter]);
@@ -139,7 +139,7 @@ class UiTests {
 		// The pointer: hovering hides the ring and hands back the keys; a click on a button.
 		var bx = play.getBox().getX() + 20, by = play.getBox().getY() + 10;
 		frame(bx, by, false);
-		check(!ui.hasKeys(), "The pointer moving hands back the keys");
+		check(!ui.isCapturingKeys(), "The pointer moving hands back the keys");
 		frame(bx, by, true);
 		frame(bx, by, false);
 		check(play.isClicked(), "A click on the button");
@@ -159,14 +159,14 @@ class UiTests {
 		frame(lx, ly, false, -2);
 		frame(lx, ly, true);
 		frame(lx, ly, false);
-		check(levels.getSelected() == 2 && levels.isChanged(), "Scrolled two rows by the wheel, the top row now the third");
+		check(levels.getSelectedIndex() == 2 && levels.isChanged(), "Scrolled two rows by the wheel, the top row now the third");
 		frame(lx, ly, true);
 		frame(lx, ly, false);
 		check(levels.isActivated(), "Clicked again: activated");
 		// A new screen: Enter held across it does nothing until let go; Escape is back.
 		input.keyEvent(Enter, true);
 		ui.reset();
-		ui.setFocus(play);
+		ui.setFocused(play);
 		frame();
 		input.keyEvent(Enter, false);
 		input.keyEvent(Enter, true);
@@ -218,7 +218,7 @@ class UiTests {
 		frame();
 		frame(20, 10, true);
 		frame(20, 10, false);
-		check(ui.getFocused() == name && ui.hasKeys(), "A click focuses the field; the UI has the keys though the pointer gave focus");
+		check(ui.getFocused() == name && ui.isCapturingKeys(), "A click focuses the field; the UI has the keys though the pointer gave focus");
 		frame("ab c");
 		check(name.getText() == "ab c" && name.isChanged(), "Typed, a space among it");
 		frame(" ", Space);

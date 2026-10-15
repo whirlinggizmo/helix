@@ -29,7 +29,10 @@ class AssetTests {
 		invalid.setInt32(24, 22050);
 		rejects(() -> Wav.decode(invalid), "Unsupported rate rejected");
 		rejects(() -> Wav.decode(wav.sub(0, wav.length - 1)), "Truncated WAV rejected");
-		check(AssetPath.valid("sounds/fire.wav") && !AssetPath.valid("../secret") && !AssetPath.valid("/tmp/file") && !AssetPath.valid("https://host/file"),
+		check(AssetPath.isValid("sounds/fire.wav")
+			&& !AssetPath.isValid("../secret")
+			&& !AssetPath.isValid("/tmp/file")
+			&& !AssetPath.isValid("https://host/file"),
 			"Assets use bounded packaged paths");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

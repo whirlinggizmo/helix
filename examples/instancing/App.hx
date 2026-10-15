@@ -141,8 +141,8 @@ class App extends BaseApp {
 		batch.begin(hud);
 		Text2D.draw(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", 12, 36, 20, 0xf5f5f5ff);
 		Text2D.draw(batch,
-			'${stage.getDrawnCount()} models in ${stage.getDrawCount()} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}', 12, 64,
-			16, 0xc8c8c8ff);
+			'${stage.getDrawnNodeCount()} models in ${stage.getDrawCallCount()} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
+			12, 64, 16, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();
 		services.graphics.endFrame();

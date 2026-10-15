@@ -40,24 +40,24 @@ class PickTests {
 
 	static function rays():Void {
 		var c = camera(), ray = new Ray();
-		check(c.getRay(400, 300, ray)
+		check(c.computeRay(400, 300, ray)
 			&& near(ray.getDirectionZ(), -1)
 			&& near(ray.getOriginX(), 0)
 			&& near(ray.getOriginZ(), 10 - c.getNear()),
 			"The middle pixel looks straight ahead, from the near plane");
-		check(c.getRay(800 - 1e-6, 300, ray) && ray.getDirectionX() > 0, "Right of the middle, to the right");
-		check(c.getRay(400, 0, ray) && ray.getDirectionY() > 0, "The top row looks up: y is turned over");
-		check(!c.getRay(-1, -1, ray) && !c.getRay(800, 300, ray), "Off the viewport: no ray");
+		check(c.computeRay(800 - 1e-6, 300, ray) && ray.getDirectionX() > 0, "Right of the middle, to the right");
+		check(c.computeRay(400, 0, ray) && ray.getDirectionY() > 0, "The top row looks up: y is turned over");
+		check(!c.computeRay(-1, -1, ray) && !c.computeRay(800, 300, ray), "Off the viewport: no ray");
 		// An orthographic camera's rays run parallel, each from its own place (wgrender-c's 526ff15: picks built a perspective and missed).
 		c.setOrthographic(6, .1, 100);
-		check(c.getRay(400, 0, ray) && near(ray.getDirectionY(), 0) && near(ray.getOriginY(), 3), "Orthographic: parallel rays from the edge");
+		check(c.computeRay(400, 0, ray) && near(ray.getDirectionY(), 0) && near(ray.getOriginY(), 3), "Orthographic: parallel rays from the edge");
 		// A viewport area: its own middle looks straight ahead; outside it, nothing.
 		var area = camera();
 		check(area.setViewportArea(400, 0, 400, 300)
-			&& area.getRay(600, 150, ray)
+			&& area.computeRay(600, 150, ray)
 			&& near(ray.getDirectionX(), 0)
 			&& near(ray.getDirectionY(), 0)
-			&& !area.getRay(100, 150, ray),
+			&& !area.computeRay(100, 150, ray),
 			"A viewport area's middle looks ahead; a point outside it has no ray");
 	}
 
@@ -183,7 +183,7 @@ class PickTests {
 		check(hit != null && hit.getNode() == logo, "A camera-facing sprite, near its corner");
 		at = pixel(c, 4.3, 0, 0);
 		check(stage.pick(c, at[0], at[1]) == null, "Past its edge: missed");
-		var label = Node.text3d("PICK ME", 1);
+		var label = Node.text3D("PICK ME", 1);
 		label.setPosition(-3, 0, 0);
 		stage.add(label);
 		at = pixel(c, -3, 0, 0);

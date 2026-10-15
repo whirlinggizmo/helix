@@ -9,11 +9,11 @@ class FpsOverlay {
 	var milliseconds = 0.;
 
 	/** Frames a second over the last half second. */
-	public function getRate():Float
+	public function getFrameRate():Float
 		return rate;
 
 	/** The frame's average cost in milliseconds over the last half second. */
-	public function getMilliseconds():Float
+	public function getFrameMs():Float
 		return milliseconds;
 
 	var frames = 0;

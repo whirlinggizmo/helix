@@ -17,7 +17,7 @@ import helix.scene.Pointer;
 	  a pad, something always has focus (the first widget, if nothing did).
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
 	  first button (libwgf's friction).
-	- While a widget has the keys (hasKeys), a game should leave arrows and Enter be (libwgf's arrows driving the game and the menu at once).
+	- While a widget has the keys (isCapturingKeys), a game should leave arrows and Enter be (libwgf's arrows driving the game and the menu at once).
 
 	The widgets' nodes are under one node (getRoot) on the stage, in the order made, the ring above them. The pointer must be looking at the
 	stage, through camera. */
@@ -150,13 +150,13 @@ class Ui {
 		return focused == null ? "" : focused.getName();
 
 	/** Gives widget focus (null: none), shown as keys would show it. */
-	public function setFocus(widget:Null<Widget>):Void {
+	public function setFocused(widget:Null<Widget>):Void {
 		focused = widget;
 		showFocus = widget != null;
 	}
 
 	/** Whether a widget has the keys: a game should leave arrows, Enter and Space be. */
-	public function hasKeys():Bool
+	public function isCapturingKeys():Bool
 		return focused != null && (keys || focused.takesText());
 
 	/** Whether Escape or a pad's East was pressed this frame (not held over from before reset). */

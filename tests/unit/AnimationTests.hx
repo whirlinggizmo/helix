@@ -167,21 +167,26 @@ class AnimationTests {
 		view.setView(40, 0, 10, 40, 0, 0);
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
-		check(stage.getDrawnCount() == 1, "A model posed out of its rest box is drawn where its joints are");
+		check(stage.getDrawnNodeCount() == 1, "A model posed out of its rest box is drawn where its joints are");
 		var palette:JointPalette = @:privateAccess stage.palette,
 			data = @:privateAccess palette.data;
 		// Joint 1's matrix: the model's space moved to the knee at x 40, its inverse bind's -1 applied: x + 39.
-		check(palette.getCount() == 2 && near(data.getFloat(48 + 12), 39) && near(data.getFloat(48), 1) && near(data.getFloat(12), 0),
+		check(palette.getJointCount() == 2
+			&& near(data.getFloat(48 + 12), 39)
+			&& near(data.getFloat(48), 1)
+			&& near(data.getFloat(12), 0),
 			"Joint matrices: inverse(model) x joint x inverse bind, their top rows");
 		var record = @:privateAccess stage.records;
 		check(record.getFloat(Lit3DLayout.normal2Offset + 12) == 0, "The model's first joint in its record");
 		var box = new Vector<Float>(6);
-		check(JointPalette.posedBox(model, box) && box[0] + box[3] > 41 && box[0] - box[3] < 0, "The posed box holds both joints' reach");
+		check(JointPalette.computePosedBox(model, box)
+			&& box[0] + box[3] > 41
+			&& box[0] - box[3] < 0, "The posed box holds both joints' reach");
 		// The model moved far off while its joints stay: it draws where its joints are, so nothing is drawn there.
 		knee.setPosition(1, 0, 0);
 		model.setPosition(500, 0, 0);
 		view.setView(500, 0, 10, 500, 0, 0);
 		stage.draw(view);
-		check(stage.getDrawnCount() == 0, "A skinned model's own placement doesn't move it: its joints do");
+		check(stage.getDrawnNodeCount() == 0, "A skinned model's own placement doesn't move it: its joints do");
 	}
 }

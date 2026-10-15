@@ -55,16 +55,16 @@ class App extends BaseApp {
 			status = "fullscreen: " + (window.requestFullscreen(!window.isFullscreen()) ? "asked for" : "not supported here");
 		}
 		if (input.isFramePressed(Key.H)) {
-			window.setVisible(false);
+			window.requestVisible(false);
 			hiddenFor = 2;
 			report("hide for 2 s", true);
 		}
 		if (hiddenFor > 0 && (hiddenFor -= dt) <= 0) {
-			window.setVisible(true);
+			window.requestVisible(true);
 			report("show", true);
 		}
 		if (input.isFramePressed(Key.M))
-			report("monitor", window.requestMonitor((window.getMonitor() + 1) % window.getMonitorCount()));
+			report("monitor", window.requestMonitorIndex((window.getMonitorIndex() + 1) % window.getMonitorCount()));
 		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
 		camera.pixels(services.window.getPixelRatio());
 		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
@@ -85,7 +85,7 @@ class App extends BaseApp {
 		row += 32;
 		for (m in 0...window.getMonitorCount()) {
 			Text2D.draw(batch,
-				(m == window.getMonitor() ? "> " : "  ") +
+				(m == window.getMonitorIndex() ? "> " : "  ") +
 				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
 				12, row, 16, 0xc8c8c8ff);
 			row += 22;

@@ -33,7 +33,7 @@ interface IWindow {
 		give another size, or none). False, asking nothing, where a program can't size its window (the web), or for a size under 1. */
 	function requestSize(width:Int, height:Int):Bool;
 
-	/** Whether requestPosition and requestMonitor can ask: not on the web, nor where the compositor places windows (XWayland). */
+	/** Whether requestPosition and requestMonitorIndex can ask: not on the web, nor where the compositor places windows (XWayland). */
 	function canMove():Bool;
 
 	/** The window's left edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's. */
@@ -59,18 +59,19 @@ interface IWindow {
 	/** Whether the window is shown (the canvas, on the web). */
 	function isVisible():Bool;
 
-	/** Shows or hides the window (the canvas, on the web). Never refuses. */
-	function setVisible(visible:Bool):Bool;
+	/** Asks to show or hide the window (the canvas, on the web); isVisible answers on a later frame (natively, once the window manager has
+		shown it). Always asks: true. */
+	function requestVisible(visible:Bool):Bool;
 
 	/** How many monitors there are, at least 1; the web sees one screen. */
 	function getMonitorCount():Int;
 
 	/** The monitor holding the window. */
-	function getMonitor():Int;
+	function getMonitorIndex():Int;
 
-	/** Asks for the window on monitor index; getMonitor answers on a later frame. False, asking nothing, for an index out of range, or where
+	/** Asks for the window on monitor index; getMonitorIndex answers on a later frame. False, asking nothing, for an index out of range, or where
 		the window can't move (canMove). */
-	function requestMonitor(index:Int):Bool;
+	function requestMonitorIndex(index:Int):Bool;
 
 	/** "" for an index out of range, as the other monitor getters answer 0. */
 	function getMonitorName(index:Int):String;

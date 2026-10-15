@@ -39,11 +39,11 @@ class Toggle extends Widget {
 	}
 
 	/** Whether it's on. */
-	public function getValue():Bool
+	public function isOn():Bool
 		return value;
 
 	/** Turns it on or off (not counted as a change). */
-	public function setValue(on:Bool):Void
+	public function setOn(on:Bool):Void
 		value = on;
 
 	/** Whether it was switched this frame. */

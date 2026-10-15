@@ -4,7 +4,7 @@ package helix.graphics;
 	each record. */
 typedef VertexAttribute = {
 	var slot:Int;
-	var components:Int;
+	var componentCount:Int;
 	var offset:Int;
 }
 

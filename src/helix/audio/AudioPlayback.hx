@@ -95,13 +95,18 @@ class AudioPlayback {
 		return true;
 	}
 
-	/** Sets its volume, 0 to 1; does nothing once finished. Throws for a volume outside 0 to 1. */
-	public function setVolume(volume:Float):Void {
-		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
-			throw "Invalid volume";
+	/** Its volume, 0 to 1. */
+	public function getVolume():Float
+		return volume;
+
+	/** Sets its volume, 0 to 1 (before it starts, it starts at it). False, changing nothing, for a volume outside 0 to 1, or once finished. */
+	public function setVolume(volume:Float):Bool {
+		if (finished || !Math.isFinite(volume) || volume < 0 || volume > 1)
+			return false;
 		this.volume = volume;
-		if (!finished && id != 0)
+		if (id != 0)
 			resource.getBackend().setVolume(id, volume);
+		return true;
 	}
 
 	/** Starts it once audio runs, and finishes it, releasing its resource reference, once the adapter no longer plays it. AudioResources.poll

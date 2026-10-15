@@ -9,7 +9,7 @@ class Mat4 {
 
 	/** The identity. */
 	public function new()
-		setIdentity();
+		makeIdentity();
 
 	/** Element column * 4 + row. */
 	public inline function get(index:Int):Float
@@ -20,13 +20,13 @@ class Mat4 {
 		m[index] = value;
 
 	/** The identity. */
-	public function setIdentity():Void
+	public function makeIdentity():Void
 		for (i in 0...16)
 			m[i] = i % 5 == 0 ? 1 : 0;
 
 	/** A perspective projection: fovY radians of vertical view, aspect width / height, near and far the clip planes' distances, GL clip depth
 		(-1 near to 1 far). False, changing nothing, unless 0 < fovY < pi, aspect > 0 and 0 < near < far. */
-	public function setPerspective(fovY:Float, aspect:Float, near:Float, far:Float):Bool {
+	public function makePerspective(fovY:Float, aspect:Float, near:Float, far:Float):Bool {
 		if (!(fovY > 0 && fovY < Math.PI && aspect > 0 && near > 0 && far > near))
 			return false;
 		var f = 1 / Math.tan(fovY / 2);
@@ -42,7 +42,7 @@ class Mat4 {
 
 	/** An orthographic projection: height world units of vertical view (width by aspect, width / height) centered on the view's axis, near and
 		far the clip planes' distances, GL clip depth (-1 near to 1 far). False, changing nothing, unless height > 0, aspect > 0 and near < far. */
-	public function setOrthographic(height:Float, aspect:Float, near:Float, far:Float):Bool {
+	public function makeOrthographic(height:Float, aspect:Float, near:Float, far:Float):Bool {
 		if (!(height > 0 && aspect > 0 && far > near))
 			return false;
 		for (i in 0...16)
@@ -57,7 +57,7 @@ class Mat4 {
 
 	/** An orthographic projection of the box left..right, bottom..top (in view space's x and y), near..far its depth: GL clip depth (-1 near to 1
 		far). False, changing nothing, unless left < right, bottom < top and near < far. */
-	public function setOrthographicBox(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Bool {
+	public function makeOrthographicBox(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Bool {
 		if (!(right > left && top > bottom && far > near))
 			return false;
 		for (i in 0...16)

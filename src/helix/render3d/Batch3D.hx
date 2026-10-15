@@ -24,10 +24,10 @@ class Batch3D {
 	var lightZ = .3;
 	var ambient = .35;
 
-	/** A batch of up to capacity triangle vertices and capacity line vertices a frame, with its own buffers on gpu; destroy frees them. */
-	public function new(gpu:IGraphics, capacity = 65536) {
+	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them. */
+	public function new(gpu:IGraphics, maxVertices = 65536) {
 		this.gpu = gpu;
-		this.capacity = capacity;
+		capacity = maxVertices;
 		triangles = Bytes.alloc(capacity * Color3DLayout.stride);
 		lines = Bytes.alloc(capacity * Color3DLayout.stride);
 		triangleBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
@@ -41,7 +41,7 @@ class Batch3D {
 		return triangleVertices + lineVertices;
 
 	/** Draws of the frame drawn last: up to two. */
-	public function getDrawCount():Int
+	public function getDrawCallCount():Int
 		return draws;
 
 	/** The light solid shapes are shaded by: from the direction x, y, z (toward the light, normalized here), with ambient the brightness of a face
@@ -73,11 +73,11 @@ class Batch3D {
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);
 		if (triangleVertices > 0) {
-			gpu.draw(pipelines.color3d(), [triangleBuffer], 0, 0, triangleVertices, 0, 1, [], [], [uniforms]);
+			gpu.draw(pipelines.color3D(), [triangleBuffer], 0, 0, triangleVertices, 0, 1, [], [], [uniforms]);
 			draws++;
 		}
 		if (lineVertices > 0) {
-			gpu.draw(pipelines.lines3d(), [lineBuffer], 0, 0, lineVertices, 0, 1, [], [], [uniforms]);
+			gpu.draw(pipelines.lines3D(), [lineBuffer], 0, 0, lineVertices, 0, 1, [], [], [uniforms]);
 			draws++;
 		}
 	}

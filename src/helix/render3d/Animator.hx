@@ -35,7 +35,8 @@ class Animator {
 	public function getTime():Float
 		return current == null ? 0 : current.time;
 
-	/** Moves the clip playing to seconds (wrapped into its duration when it loops, held between 0 and its end when not); nothing without one. */
+	/** Moves the clip playing to seconds (wrapped into its duration when it loops, held between 0 and its end when not). False, changing nothing, with no
+		clip playing or for a time that isn't finite. */
 	public function setTime(seconds:Float):Bool {
 		if (current == null || !Math.isFinite(seconds))
 			return false;

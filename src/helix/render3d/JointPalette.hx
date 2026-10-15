@@ -27,7 +27,7 @@ class JointPalette {
 		return texture;
 
 	/** How many joints since the last clear. */
-	public function getCount():Int
+	public function getJointCount():Int
 		return count;
 
 	/** Empties it, for a pass. */
@@ -102,7 +102,7 @@ class JointPalette {
 	/** A skinned model's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where they are,
 		each padded by how far its vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2% of the box's
 		diagonal (at least 0.01). False when no joint weights a vertex (use its mesh's box). */
-	public static function posedBox(model:Node, out:Vector<Float>):Bool {
+	public static function computePosedBox(model:Node, out:Vector<Float>):Bool {
 		var skin = model.getSkin(),
 			reach = model.getMesh().getJointReach(skin);
 		var loX = Math.POSITIVE_INFINITY,

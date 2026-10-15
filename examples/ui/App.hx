@@ -150,7 +150,7 @@ class App extends BaseApp {
 		switch screen {
 			case "main":
 				if (play.isClicked())
-					status = 'Playing as ${name.getText() == "" ? "nobody" : name.getText()}, sound ${sound.getValue() ? "on" : "off"}, volume ${volume.getValue()}';
+					status = 'Playing as ${name.getText() == "" ? "nobody" : name.getText()}, sound ${sound.isOn() ? "on" : "off"}, volume ${volume.getValue()}';
 				if (openSettings.isClicked())
 					show("settings");
 				if (openLevels.isClicked())
@@ -159,7 +159,7 @@ class App extends BaseApp {
 					services.quit();
 			case "settings":
 				if (sound.isChanged())
-					status = 'Sound ${sound.getValue() ? "on" : "off"}';
+					status = 'Sound ${sound.isOn() ? "on" : "off"}';
 				if (volume.isChanged())
 					status = 'Volume ${volume.getValue()}';
 				if (name.isSubmitted())
@@ -168,7 +168,7 @@ class App extends BaseApp {
 					show("main");
 			case "levels":
 				if (list.isChanged() || list.isActivated() || start.isClicked()) {
-					var chosen = list.getSelected();
+					var chosen = list.getSelectedIndex();
 					status = chosen < 0 ? "Choose a level" : (list.isActivated()
 						|| start.isClicked() ? "Starting " : "Chose ") + list.getItems()[chosen];
 				}
@@ -177,7 +177,7 @@ class App extends BaseApp {
 		}
 		loading = (loading + dt * .2) % 1;
 		bar.setValue(loading);
-		corner.setText('focus: ${ui.getFocusedName() == "" ? "none" : ui.getFocusedName()}${ui.hasKeys() ? " (keys)" : ""}');
+		corner.setText('focus: ${ui.getFocusedName() == "" ? "none" : ui.getFocusedName()}${ui.isCapturingKeys() ? " (keys)" : ""}');
 		fps.update(dt, services.getFrameCpu());
 
 		services.graphics.beginFrame(width, height, 0x14161cff);

@@ -18,17 +18,18 @@ class ShaderParameters {
 		False when the shader has no such parameter or the values don't fit it. */
 	public function setValues(name:String, values:Array<Float>):Bool {
 		var p = shader.getParameter(name);
-		if (p == null || values.length > components(p.type) * p.count)
+		if (p == null || values.length > components(p.type) * p.elementCount)
 			return false;
 		this.values[name] = values.copy();
 		return true;
 	}
 
-	/** Sets a float parameter. */
+	/** Sets a float parameter. False, changing nothing, when the shader has no such parameter. */
 	public function setFloat(name:String, value:Float):Bool
 		return setValues(name, [value]);
 
-	/** Sets a vector parameter to a color 0xRRGGBBAA, each channel 0..1 as it is (not decoded from sRGB). */
+	/** Sets a vector parameter to a color 0xRRGGBBAA, each channel 0..1 as it is (not decoded from sRGB). False, changing nothing,
+		when the shader has no such parameter or it has fewer than 4 components. */
 	public function setColor(name:String, color:Int):Bool
 		return setValues(name, [
 			(color >>> 24) / 255,
@@ -70,7 +71,7 @@ class ShaderParameters {
 			if (p == null || p.slot >= blocks.length || blocks[p.slot] == null)
 				continue;
 			// std140: an array's elements, and a matrix's columns, are 16 bytes apart; anything else is packed.
-			var spread = p.count > 1 || p.type == "mat4",
+			var spread = p.elementCount > 1 || p.type == "mat4",
 				per = p.type == "mat4" ? 4 : components(p.type);
 			for (i in 0...list.length) {
 				var at = p.offset + (spread ? Std.int(i / per) * 16 + (i % per) * 4 : i * 4);

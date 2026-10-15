@@ -271,9 +271,9 @@ class Render2DTests {
 		var texture = Texture2D.fromRgba(gpu, 4, 2, Bytes.alloc(32));
 		var sprite = Node2D.sprite(texture);
 		check(sprite.getWidth() == 4 && sprite.getHeight() == 2, "A sprite with no size is its texture's size in texels");
-		sprite.setSource(1, 0, 2, 2);
-		check(sprite.getWidth() == 2 && sprite.getSourceWidth() == 2, "A region gives it the region's size");
-		check(!Node2D.circle(1).setSource(0, 0, 1, 1) && !Node2D.circle(1).setTexture(texture), "Sprite calls refuse other kinds");
+		sprite.setRegion(1, 0, 2, 2);
+		check(sprite.getWidth() == 2 && sprite.getRegionWidth() == 2, "A region gives it the region's size");
+		check(!Node2D.circle(1).setRegion(0, 0, 1, 1) && !Node2D.circle(1).setTexture(texture), "Sprite calls refuse other kinds");
 
 		// Culling: of three circles, the one far outside the view isn't drawn; hidden nodes and their children aren't either.
 		var culled = new Stage2D();
@@ -290,19 +290,19 @@ class Render2DTests {
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnCount() == 3, "Only nodes in view are drawn; a hidden group's child still is");
+		check(culled.getDrawnNodeCount() == 3, "Only nodes in view are drawn; a hidden group's child still is");
 		hidden.setEnabled(false);
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnCount() == 2 && hidden.isVisible() == false && !hidden.isEnabled(), "A disabled group takes its children with it");
+		check(culled.getDrawnNodeCount() == 2 && hidden.isVisible() == false && !hidden.isEnabled(), "A disabled group takes its children with it");
 		hidden.setEnabled(true);
 		hidden.getChild(0).setVisible(false);
 		hidden.setVisible(true);
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnCount() == 2 && hidden.getChild(0).isPickable(), "A hidden node isn't drawn, still pickable by default");
+		check(culled.getDrawnNodeCount() == 2 && hidden.getChild(0).isPickable(), "A hidden node isn't drawn, still pickable by default");
 
 		// Two cameras in one batch: a run each, each in its own viewport.
 		var left = new Camera2D(), right = new Camera2D();
@@ -518,7 +518,7 @@ class Render2DTests {
 		view.setViewport(400, 300);
 		gpu.meshPipelines = [];
 		stage3D.draw(view);
-		check(stage3D.getDrawCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
+		check(stage3D.getDrawCallCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
 			"A mirrored model is its own run, through another pipeline");
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
@@ -533,7 +533,7 @@ class Render2DTests {
 		stage3D.draw(view);
 		var p = gpu.meshPipelines;
 		// Two models (plain and mirrored), then the sprites' three phases.
-		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.getDrawnCount() == 7,
+		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.getDrawnNodeCount() == 7,
 			"Sprites draw opaque, then blended, then added, each phase a draw through its own pipeline");
 		stage3D.destroy();
 		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the

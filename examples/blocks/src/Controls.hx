@@ -51,7 +51,7 @@ class Controls {
 
 	function touch(input:IInput, tick:Int, game:Game, layout:Layout, camera:Camera2D):Void {
 		var g = gestures, a = actions, cell = camera.getZoom();
-		g.setSlop(cell * .4);
+		g.setMaxTapDistance(cell * .4);
 		g.update(input, tick / 60);
 		if (g.isPressed()) {
 			anchorX = g.getX();
@@ -89,9 +89,9 @@ class Controls {
 		}
 		if (g.isReleased() && g.isDragging()) {
 			var fast = cell * 25;
-			if (g.getFlickY() > fast && g.getFlickY() > Math.abs(g.getFlickX()) * 2)
+			if (g.getFlickVelocityY() > fast && g.getFlickVelocityY() > Math.abs(g.getFlickVelocityX()) * 2)
 				a.hardDrop = true;
-			else if (-g.getFlickY() > fast && -g.getFlickY() > Math.abs(g.getFlickX()) * 2)
+			else if (-g.getFlickVelocityY() > fast && -g.getFlickVelocityY() > Math.abs(g.getFlickVelocityX()) * 2)
 				a.hold = true;
 		}
 	}

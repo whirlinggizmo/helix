@@ -49,7 +49,7 @@ class Storage {
 	/** Reads the whole file under key. Failed for an invalid key, a file over 8 MiB, a closed store, or an I/O error. */
 	public function read(key:String, complete:StorageResult->Void):IRequest
 		return jobs.add((job:Job<StorageResult>) -> {
-			if (!AssetPath.valid(key))
+			if (!AssetPath.isValid(key))
 				job.finish(Failed("Invalid storage key"));
 			else
 				store.read(key, MAX_BYTES, job.finish);
@@ -60,7 +60,7 @@ class Storage {
 	public function write(key:String, bytes:Bytes, complete:StorageWriteResult->Void):IRequest {
 		var copy = bytes.sub(0, bytes.length);
 		return jobs.add((job:Job<StorageWriteResult>) -> {
-			if (!AssetPath.valid(key))
+			if (!AssetPath.isValid(key))
 				job.finish(Failed("Invalid storage key"));
 			else if (readOnly)
 				job.finish(Failed("Read-only storage"));
@@ -75,7 +75,7 @@ class Storage {
 	/** Deletes the file under key; Written also when there was none. Failed for an invalid key, a read-only store, a closed store, or an I/O error. */
 	public function remove(key:String, complete:StorageWriteResult->Void):IRequest
 		return jobs.add((job:Job<StorageWriteResult>) -> {
-			if (!AssetPath.valid(key))
+			if (!AssetPath.isValid(key))
 				job.finish(Failed("Invalid storage key"));
 			else if (readOnly)
 				job.finish(Failed("Read-only storage"));
@@ -88,7 +88,7 @@ class Storage {
 		released for it. Failed for an invalid key, a closed store, or an I/O error. */
 	public function source(key:String, complete:StorageSourceResult->Void):IRequest
 		return jobs.add((job:Job<StorageSourceResult>) -> {
-			if (!AssetPath.valid(key)) {
+			if (!AssetPath.isValid(key)) {
 				job.finish(Failed("Invalid storage key"));
 				return;
 			}
