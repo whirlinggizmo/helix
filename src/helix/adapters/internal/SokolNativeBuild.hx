@@ -1,7 +1,7 @@
 package helix.adapters.internal;
 
 /** The native adapters' C, compiled by hxcpp with the app, and the system libraries each desktop links: no other build system. On Linux, X11,
-	GL, ALSA and the system libsndfile, with evdev gamepads; on Windows (MSVC, or MinGW-w64 with -D mingw), the Win32 and GL libraries and
+	GL, ALSA and the system libsndfile, with evdev gamepads; on Windows (MSVC, hxcpp's compiler there), the Win32 and GL libraries and
 	libsndfile's pinned release, with XInput gamepads; on macOS, Cocoa, OpenGL and AudioToolbox and Homebrew's libsndfile, without gamepads.
 	HELIX_CODEC_LIBRARY is the libsndfile to link, as tools/native_build.py finds it. */
 @:buildXml('<files id="helix-adapters" dir="${HELIX_ROOT}/src/helix/adapters">
@@ -11,7 +11,7 @@ package helix.adapters.internal;
  <compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/inputsource/sokol/internal"/>
  <compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audio/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/>
  <compilerflag value="-DNDEBUG"/>
- <compilerflag value="-O2" if="windows" unless="mingw"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-O3" if="mingw"/>
+ <compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/>
  <compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- sokol_app on macOS is Objective-C. -->
  <compilerflag value="-x" if="macos"/><compilerflag value="objective-c" if="macos"/>
@@ -34,8 +34,7 @@ package helix.adapters.internal;
  <files id="helix-adapters"/>
  <lib name="${HELIX_CODEC_LIBRARY}"/>
  <section if="linux"><lib name="-lX11"/><lib name="-lXrandr"/><lib name="-lXi"/><lib name="-lXcursor"/><lib name="-lGL"/><lib name="-lasound"/><lib name="-ldl"/><lib name="-lpthread"/></section>
- <section if="windows" unless="mingw"><lib name="opengl32.lib"/><lib name="gdi32.lib"/><lib name="user32.lib"/><lib name="kernel32.lib"/><lib name="shell32.lib"/><lib name="ole32.lib"/></section>
- <section if="mingw"><lib name="-lopengl32"/><lib name="-lgdi32"/><lib name="-luser32"/><lib name="-lkernel32"/><lib name="-lshell32"/><lib name="-lole32"/></section>
+ <section if="windows"><lib name="opengl32.lib"/><lib name="gdi32.lib"/><lib name="user32.lib"/><lib name="kernel32.lib"/><lib name="shell32.lib"/><lib name="ole32.lib"/></section>
  <section if="macos"><vflag name="-framework" value="Cocoa"/><vflag name="-framework" value="QuartzCore"/><vflag name="-framework" value="OpenGL"/><vflag name="-framework" value="AudioToolbox"/></section>
 </target>')
 extern class SokolNativeBuild {}
