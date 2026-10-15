@@ -6,9 +6,9 @@ package helix.math;
 	`Math.floor`, exact everywhere), each step its own statement, and within a few ulp of `Math`'s. Drawing doesn't need them. Radians; NaN
 	for an infinite or NaN angle, and for `asin` and `acos` past -1..1, as `Math`'s.
 
-	Natively the generated C++ is compiled with `-ffp-contract=off`: a compiler that fuses a multiply and an add (GCC does on arm64) would
-	round differently from a target that can't. */
-@:buildXml('<files id="haxe"><compilerflag value="-ffp-contract=off"/></files>')
+	Natively the generated C++ is compiled with `-ffp-contract=off` (GCC, MinGW and clang): a compiler that fuses a multiply and an add (GCC
+	does on arm64, clang by default) would round differently from a target that can't. MSVC's default, /fp:precise, doesn't fuse them. */
+@:buildXml('<files id="haxe"><compilerflag value="-ffp-contract=off" unless="windows"/><compilerflag value="-ffp-contract=off" if="mingw"/></files>')
 class Trig {
 	static inline var PI = 3.14159265358979323846;
 

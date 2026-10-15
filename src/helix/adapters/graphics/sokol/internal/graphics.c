@@ -10,6 +10,21 @@
 #include "sokol_glue.h"
 #include "sokol_log.h"
 
+#if defined(_WIN32)
+/* sokol's Win32 GL loader declares only what sokol calls; these are the rest this file uses. glReadPixels is GL 1.1's, which opengl32
+   exports itself. */
+#ifndef GL_SAMPLES
+#define GL_SAMPLES 0x80A9
+#endif
+#ifndef GL_MAX_SAMPLES
+#define GL_MAX_SAMPLES 0x8D57
+#endif
+#ifndef GL_PACK_ALIGNMENT
+#define GL_PACK_ALIGNMENT 0x0D05
+#endif
+__declspec(dllimport) void __stdcall glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);
+#endif
+
 /* Programs (helix_shader), by shader slot: their uniform blocks' count and sizes by binding slot, and the texture slots they sample (a bit
    each). */
 #define MAX_BLOCKS 4

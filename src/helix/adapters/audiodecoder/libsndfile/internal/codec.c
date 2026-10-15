@@ -1,7 +1,7 @@
 #include "codec.h"
 #include "sndfile/sndfile.h"
 #include <math.h>
-#include <pthread.h>
+#include "lock.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +17,7 @@ typedef struct {
     double phase;
 } decoder_t;
 static decoder_t *decoders[32];
-static pthread_mutex_t codec_lock = PTHREAD_MUTEX_INITIALIZER;
+static helix_lock_t codec_lock = HELIX_LOCK_INIT;
 
 static sf_count_t memory_length(void *user) { return ((decoder_t *)user)->length; }
 static sf_count_t memory_seek(sf_count_t offset, int whence, void *user) {
@@ -49,9 +49,9 @@ static int register_decoder(decoder_t *d) {
         if(d->file)sf_close(d->file);free(d->memory);free(d);return 0;
     }
     d->total=(sf_count_t)ceil((double)d->info.frames*44100/d->info.samplerate);
-    pthread_mutex_lock(&codec_lock);
+    helix_lock(&codec_lock);
     int id=0;for(int i=0;i<32;i++)if(!decoders[i]){decoders[i]=d;id=i+1;break;}
-    pthread_mutex_unlock(&codec_lock);
+    helix_unlock(&codec_lock);
     if(!id){sf_close(d->file);free(d->memory);free(d);}return id;
 }
 int helix_codec_memory(const void *data,int bytes) {
@@ -70,9 +70,9 @@ int helix_codec_file(const char *path) {
 }
 static decoder_t *get_decoder(int id) { return id>0&&id<=32?decoders[id-1]:NULL; }
 double helix_codec_frames(int id) {
-    pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
     double n=d?(double)d->total:0;
-    pthread_mutex_unlock(&codec_lock);return n;
+    helix_unlock(&codec_lock);return n;
 }
 static int next_sample(decoder_t *d,float *sample) {
     if(d->at==d->count){
@@ -87,8 +87,8 @@ static int next_sample(decoder_t *d,float *sample) {
 }
 int helix_codec_read(int id,void *destination,int frames) {
     if(!destination || frames<=0 || frames>2048)return -1;
-    pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);int n=0,error=0;float *out=destination;
-    if(!d){pthread_mutex_unlock(&codec_lock);return -1;}
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);int n=0,error=0;float *out=destination;
+    if(!d){helix_unlock(&codec_lock);return -1;}
     if(!d->have_a){int a=next_sample(d,&d->a);if(a<0)error=1;d->have_a=a>0;
         if(d->have_a){int b=next_sample(d,&d->b);if(b<0)error=1;d->have_b=b>0;}}
     while(!error && n<frames && d->have_a && d->produced<d->total){
@@ -100,17 +100,17 @@ int helix_codec_read(int id,void *destination,int frames) {
             if(d->have_a){int b=next_sample(d,&d->b);if(b<0)error=1;d->have_b=b>0;}
         }
     }
-    pthread_mutex_unlock(&codec_lock);return error?-1:n;
+    helix_unlock(&codec_lock);return error?-1:n;
 }
 int helix_codec_rewind(int id) {
-    pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
     int ok=d && sf_seek(d->file,0,SEEK_SET)==0;
     if(ok){d->at=d->count=d->have_a=d->have_b=0;d->phase=0;d->produced=0;}
-    pthread_mutex_unlock(&codec_lock);return ok;
+    helix_unlock(&codec_lock);return ok;
 }
 void helix_codec_close(int id) {
-    pthread_mutex_lock(&codec_lock);decoder_t *d=get_decoder(id);
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
     if(d){decoders[id-1]=NULL;sf_close(d->file);free(d->memory);free(d);}
-    pthread_mutex_unlock(&codec_lock);
+    helix_unlock(&codec_lock);
 }
 const char *helix_codec_version(void) { return sf_version_string(); }

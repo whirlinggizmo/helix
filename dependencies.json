@@ -47,6 +47,11 @@
     "files": {
       "vendor/sndfile/sndfile.h": "911098ea4b66f0c5ad59785b176f2b19f6e657042c15c93791edb53467efd6c0",
       "vendor/sndfile/COPYING": "ad01ea5cd2755f6048383c8d54c88459cd6fcb17757c5c8892f8c5ea060f6140"
+    },
+    "windows": {
+      "url": "https://github.com/libsndfile/libsndfile/releases/download/1.2.2/libsndfile-1.2.2-win64.zip",
+      "sha256": "2173935c0c1ed13cf627951d34483f9d405ead2eb473190461c42ba220643a3f",
+      "folder": "libsndfile-1.2.2-win64"
     }
   },
   "audioEncoder": {

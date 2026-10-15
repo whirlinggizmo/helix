@@ -107,9 +107,12 @@ def build(name,target,shdc):
         if terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
     else:
         from pins import check_hxcpp,check_sokol
-        from native_build import env as native_env
+        from native_build import codec_runtime,env as native_env
         check_hxcpp();check_sokol(ROOT);env=native_env()
         run(['haxe',hxml(name,'native')],env)
+        # On Windows, the libsndfile the program loads goes beside it.
+        runtime=codec_runtime()
+        if runtime:shutil.copy2(runtime,ROOT/f'build/native/{name}')
         out=ROOT/f'build/native/{name}/assets'
         assets(name,out)
         licenses(out.parent)

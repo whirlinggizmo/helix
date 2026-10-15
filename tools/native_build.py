@@ -3,17 +3,41 @@ C-only test tools are one compiler call each."""
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
-INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','inputsource/evdev/internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
+INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 
+def sndfile_windows():
+    """libsndfile's pinned official Windows release (dependencies.json, sndfileSDK.windows), fetched once into the user's cache and checked."""
+    import hashlib,json,urllib.request,zipfile
+    pin=json.loads((ROOT/'dependencies.json').read_text())['sndfileSDK']['windows']
+    cache=Path(os.environ.get('LOCALAPPDATA') or Path.home()/'.cache')/'helix'/'tools'
+    folder=cache/pin['folder']
+    if not (folder/'lib/sndfile.lib').is_file():
+        cache.mkdir(parents=True,exist_ok=True);archive=cache/(pin['folder']+'.zip')
+        urllib.request.urlretrieve(pin['url'],archive)
+        if hashlib.sha256(archive.read_bytes()).hexdigest()!=pin['sha256']:archive.unlink();raise RuntimeError('libsndfile download differs from its pin: '+pin['url'])
+        with zipfile.ZipFile(archive) as z:z.extractall(cache)
+        archive.unlink()
+    return folder
+
 def codec_library():
-    """The system libsndfile's runtime library: its development symlink may be absent, so link the .so.1 by path."""
+    """The libsndfile to link: on Linux the system's runtime library by path (its development symlink may be absent); on Windows the pinned
+    release's import library; on macOS Homebrew's."""
+    if sys.platform=='win32':return str(sndfile_windows()/'lib/sndfile.lib')
+    if sys.platform=='darwin':
+        prefix=subprocess.check_output(['brew','--prefix','libsndfile'],text=True).strip()
+        return prefix+'/lib/libsndfile.dylib'
     for line in subprocess.check_output(['ldconfig','-p'],text=True).splitlines():
         if 'libsndfile.so.1 ' in line and 'x86-64' in line:return line.split('=>')[1].strip()
     raise RuntimeError('libsndfile.so.1 not found by ldconfig')
+
+def codec_runtime():
+    """The libsndfile a program needs beside it to run, or None where the system provides it (Linux, macOS)."""
+    return sndfile_windows()/'bin/sndfile.dll' if sys.platform=='win32' else None
 
 def env():
     """The environment hxcpp's build reads: HeliX's root, the codec, and a shared compile cache."""
