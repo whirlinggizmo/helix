@@ -606,13 +606,13 @@ class EnvironmentBake {
 /** A cubemap of linear RGB floats with its mips: mips[m] holds the six faces of (size >> m) squared texels each, three floats a texel. */
 class Cube {
 	/** Its face size at mip 0. */
-	public var size(default, null):Int;
+	public final size:Int;
 
 	/** How many mips. */
-	public var mipCount(default, null):Int;
+	public final mipCount:Int;
 
 	/** Each mip's texels, zero to start. */
-	public var mips(default, null):Array<Vector<Float>> = [];
+	public final mips:Array<Vector<Float>> = [];
 
 	/** An all-black cube of size with mipCount mips. */
 	public function new(size:Int, mipCount:Int) {

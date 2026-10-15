@@ -11,7 +11,7 @@ class Gltf {
 	static inline var BIN_CHUNK = 0x004E4942;
 
 	/** The document: glTF's JSON, as parsed. */
-	public var document(default, null):Dynamic;
+	public final document:Dynamic;
 
 	var buffers:Array<Null<Bytes>> = [];
 

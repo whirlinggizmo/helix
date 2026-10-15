@@ -16,16 +16,10 @@ enum abstract Wrap(Int) to Int {
 	it wraps along u and v. A small value, passed with each texture a draw uses; adapters keep one sampler for each that is used. */
 abstract Sampling(Int) to Int {
 	/** Nearest, clamped: pixel art. */
-	public static var NEAREST(get, never):Sampling;
+	public static final NEAREST = new Sampling(false);
 
 	/** Linear, clamped: smooth. */
-	public static var LINEAR(get, never):Sampling;
-
-	static inline function get_NEAREST():Sampling
-		return new Sampling(false);
-
-	static inline function get_LINEAR():Sampling
-		return new Sampling(true);
+	public static final LINEAR = new Sampling(true);
 
 	/** Linear or nearest filtering, wrapping as wrapU and wrapV say. */
 	public inline function new(linear:Bool, wrapU:Wrap = Clamp, wrapV:Wrap = Clamp)

@@ -21,19 +21,19 @@ class TextField extends Widget {
 		super(ui, name);
 		this.maxLength = maxLength;
 		var theme = ui.getTheme();
-		face = Node2D.rectangle(1, 1, theme.face);
+		face = Node2D.rectangle(1, 1, theme.getFaceColor());
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.corner);
-		text = Node2D.text(value.substr(0, maxLength), theme.textSize, theme.text, Left, theme.font);
-		hint = Node2D.text(hintText, theme.textSize, theme.disabledText, Left, theme.font);
-		caret = Node2D.rectangle(2, theme.textSize + 4, theme.focus);
+		face.setCornerRadius(theme.getCornerRadius());
+		text = Node2D.text(value.substr(0, maxLength), theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
+		hint = Node2D.text(hintText, theme.getTextSize(), theme.getDisabledTextColor(), Left, theme.getFont());
+		caret = Node2D.rectangle(2, theme.getTextSize() + 4, theme.getFocusColor());
 		caret.setPivot(0, 0);
 		caret.setPickable(false);
 		for (n in [face, hint, text, caret])
 			root.add(n);
 		box = Box.stack(face);
-		box.setSizing(Grow(1), Fixed(theme.height));
-		box.setPadding(theme.padding, 0, theme.padding, 0);
+		box.setSizing(Grow(1), Fixed(theme.getWidgetHeight()));
+		box.setPadding(theme.getPadding(), 0, theme.getPadding(), 0);
 		var typed = Box.of(text), hinted = Box.of(hint);
 		typed.setAnchor(Start, Center);
 		hinted.setAnchor(Start, Center);
@@ -85,16 +85,16 @@ class TextField extends Widget {
 		text.setText(value);
 		changed = value != was;
 		hint.setVisible(value.length == 0);
-		face.setColor(focused ? theme.hovered : hovered ? theme.hovered : theme.face);
-		text.setColor(enabled ? theme.text : theme.disabledText);
+		face.setColor(focused ? theme.getHoveredColor() : hovered ? theme.getHoveredColor() : theme.getFaceColor());
+		text.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
 		// The caret after the text, as the layout last placed it.
-		var font = theme.font != null ? theme.font : ui.getFont();
+		var font = theme.getFont() != null ? theme.getFont() : ui.getFont();
 		caret.setVisible(enabled && focused);
 		caret.setPosition(box.getX()
-			+ theme.padding
-			+ (font != null ? Text2D.measure(font, value, theme.textSize) : 0)
+			+ theme.getPadding()
+			+ (font != null ? Text2D.measure(font, value, theme.getTextSize()) : 0)
 			+ 1,
 			box.getY()
-			+ (box.getHeight() - theme.textSize - 4) / 2);
+			+ (box.getHeight() - theme.getTextSize() - 4) / 2);
 	}
 }

@@ -13,18 +13,18 @@ class ProgressBar extends Widget {
 		super(ui, name);
 		this.value = Math.max(0, Math.min(1, value));
 		var theme = ui.getTheme();
-		track = Node2D.rectangle(1, 1, theme.face);
+		track = Node2D.rectangle(1, 1, theme.getFaceColor());
 		track.setPivot(0, 0);
-		track.setCornerRadius(theme.corner);
+		track.setCornerRadius(theme.getCornerRadius());
 		track.setPickable(false);
-		fill = Node2D.rectangle(1, 1, theme.accent);
+		fill = Node2D.rectangle(1, 1, theme.getAccentColor());
 		fill.setPivot(0, 0);
-		fill.setCornerRadius(theme.corner);
+		fill.setCornerRadius(theme.getCornerRadius());
 		fill.setPickable(false);
 		root.add(track);
 		root.add(fill);
 		box = Box.of(track);
-		box.setSizing(Grow(1), Fixed(theme.textSize * .75));
+		box.setSizing(Grow(1), Fixed(theme.getTextSize() * .75));
 	}
 
 	/** How far along, 0 to 1. */

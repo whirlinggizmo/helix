@@ -13,15 +13,15 @@ class Button extends Widget {
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
 		var theme = ui.getTheme();
-		face = Node2D.rectangle(1, 1, theme.face);
+		face = Node2D.rectangle(1, 1, theme.getFaceColor());
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.corner);
-		label = Node2D.text(text, theme.textSize, theme.text, Center, theme.font);
+		face.setCornerRadius(theme.getCornerRadius());
+		label = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Center, theme.getFont());
 		root.add(face);
 		root.add(label);
 		box = Box.stack(face);
-		box.setSizing(Fit, Fixed(theme.height));
-		box.setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
+		box.setSizing(Fit, Fixed(theme.getWidgetHeight()));
+		box.setPadding(theme.getPadding() * 2, 0, theme.getPadding() * 2, 0);
 		var text = Box.of(label);
 		text.setAnchor(Center, Center);
 		box.add(text);
@@ -48,7 +48,7 @@ class Button extends Widget {
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
 		var theme = ui.getTheme();
 		this.clicked = enabled && (clicked || activated);
-		face.setColor(held ? theme.pressed : hovered ? theme.hovered : theme.face);
-		label.setColor(enabled ? theme.text : theme.disabledText);
+		face.setColor(held ? theme.getPressedColor() : hovered ? theme.getHoveredColor() : theme.getFaceColor());
+		label.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
 	}
 }

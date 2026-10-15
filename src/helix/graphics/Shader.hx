@@ -5,10 +5,10 @@ import haxe.io.Bytes;
 /** One of a shader's own parameters: its uniform block's slot, its byte offset there, its type (float, vec2, vec3, vec4, mat4) and how many
 	(1 unless an array). */
 typedef ShaderParameter = {
-	var slot:Int;
-	var offset:Int;
-	var type:String;
-	var elementCount:Int;
+	final slot:Int;
+	final offset:Int;
+	final type:String;
+	final elementCount:Int;
 }
 
 /** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its
@@ -71,13 +71,15 @@ class Shader {
 		for (b in blocks) {
 			var members:Array<Dynamic> = b.members;
 			if (members != null)
-				for (m in members)
-					parameters[m.name] = {
+				for (m in members) {
+					var parameter:ShaderParameter = {
 						slot: b.slot,
 						offset: m.offset,
 						type: m.type,
 						elementCount: m.count
 					};
+					parameters[(m.name : String)] = parameter;
+				}
 		}
 		textureSlots = [for (t in textures) t.name => t.slot];
 	}

@@ -14,13 +14,13 @@ class Panel extends Widget {
 	function new(ui:Ui, name:String) {
 		super(ui, name);
 		var theme = ui.getTheme();
-		background = Node2D.rectangle(1, 1, theme.panel);
+		background = Node2D.rectangle(1, 1, theme.getPanelColor());
 		background.setPivot(0, 0);
-		background.setCornerRadius(theme.corner);
+		background.setCornerRadius(theme.getCornerRadius());
 		root.add(background);
 		content = Box.column();
-		content.setPadding(theme.padding, theme.padding, theme.padding, theme.padding);
-		content.setGap(theme.gap);
+		content.setPadding(theme.getPadding(), theme.getPadding(), theme.getPadding(), theme.getPadding());
+		content.setGap(theme.getGap());
 		content.setAlign(Start, Stretch);
 		content.setAnchor(Stretch, Stretch);
 		box = Box.stack(background);

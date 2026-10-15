@@ -5,13 +5,13 @@ import helix.core.Jobs;
 
 /** A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches
 	(default false). */
-typedef FetchRequest = {var url:String; @:optional var maxBytes:Int; @:optional var timeoutSeconds:Float; @:optional var noCache:Bool;}
+typedef FetchRequest = {final url:String; @:optional final maxBytes:Int; @:optional final timeoutSeconds:Float; @:optional final noCache:Bool;}
 
 /** Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed). */
-typedef FetchProgress = {var receivedBytes:Int; var totalBytes:Null<Int>;}
+typedef FetchProgress = {final receivedBytes:Int; final totalBytes:Null<Int>;}
 
 /** A complete response: HTTP status, headers with lower-case names, and the whole body. */
-typedef FetchResponse = {var status:Int; var headers:Map<String, String>; var bytes:Bytes;}
+typedef FetchResponse = {final status:Int; final headers:Map<String, String>; final bytes:Bytes;}
 
 /** How a fetch ended: a response of any HTTP status, a transport failure message, or cancellation. */
 enum FetchResult {

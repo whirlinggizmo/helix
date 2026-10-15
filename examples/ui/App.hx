@@ -100,7 +100,7 @@ class App extends BaseApp {
 		levels.adopt(start);
 		levels.adopt(backFromLevels);
 		var buttons = Box.row();
-		buttons.setGap(ui.getTheme().gap);
+		buttons.setGap(ui.getTheme().getGap());
 		buttons.add(start.getBox());
 		buttons.add(backFromLevels.getBox());
 		levels.getContent().add(buttons);

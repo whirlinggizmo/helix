@@ -24,16 +24,16 @@ class ListView extends Widget {
 		super(ui, name);
 		visibleRows = rows < 1 ? 1 : rows;
 		var theme = ui.getTheme();
-		face = Node2D.rectangle(1, 1, theme.face);
+		face = Node2D.rectangle(1, 1, theme.getFaceColor());
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.corner);
+		face.setCornerRadius(theme.getCornerRadius());
 		window = Node2D.group();
 		content = Node2D.group();
 		window.add(content);
 		root.add(face);
 		root.add(window);
 		box = Box.of(face);
-		box.setSizing(Grow(1), Fixed(visibleRows * theme.height));
+		box.setSizing(Grow(1), Fixed(visibleRows * theme.getWidgetHeight()));
 		setItems(items);
 	}
 
@@ -51,11 +51,11 @@ class ListView extends Widget {
 		}
 		rows = [];
 		for (i in 0...items.length) {
-			var rowFace = Node2D.rectangle(1, theme.height, 0);
+			var rowFace = Node2D.rectangle(1, theme.getWidgetHeight(), 0);
 			rowFace.setPivot(0, 0);
-			rowFace.setCornerRadius(theme.corner);
+			rowFace.setCornerRadius(theme.getCornerRadius());
 			rowFace.setPickable(false);
-			var text = Node2D.text(items[i], theme.textSize, theme.text, Left, theme.font);
+			var text = Node2D.text(items[i], theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
 			content.add(rowFace);
 			content.add(text);
 			rows.push({face: rowFace, text: text});
@@ -95,14 +95,14 @@ class ListView extends Widget {
 		return true;
 
 	function reveal():Void {
-		var height = ui.getTheme().height;
+		var height = ui.getTheme().getWidgetHeight();
 		if (selected < 0)
 			return;
 		scroll = Math.max(Math.min(scroll, selected * height), (selected + 1) * height - visibleRows * height);
 	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
-		var theme = ui.getTheme(), input = ui.getInput(), camera = ui.getCamera(), height = theme.height, was = selected;
+		var theme = ui.getTheme(), input = ui.getInput(), camera = ui.getCamera(), height = theme.getWidgetHeight(), was = selected;
 		this.activated = false;
 		var wx = camera.screenToWorldX(input.getPointerX()),
 			wy = camera.screenToWorldY(input.getPointerY());
@@ -143,9 +143,9 @@ class ListView extends Widget {
 			var r = rows[i];
 			r.face.setSize(box.getWidth(), height);
 			r.face.setPosition(0, i * height);
-			r.face.setColor(i == selected ? theme.accent : 0);
-			r.text.setPosition(theme.padding, i * height + (height - theme.textSize) / 2);
-			r.text.setColor(enabled ? theme.text : theme.disabledText);
+			r.face.setColor(i == selected ? theme.getAccentColor() : 0);
+			r.text.setPosition(theme.getPadding(), i * height + (height - theme.getTextSize()) / 2);
+			r.text.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
 		}
 	}
 }

@@ -46,8 +46,8 @@ class Ui {
 		this.pointer = pointer;
 		this.input = input;
 		this.theme = theme != null ? theme : new Theme();
-		ring = Node2D.rectangle(1, 1, this.theme.focus);
-		ring.setOutline(this.theme.focusWidth);
+		ring = Node2D.rectangle(1, 1, this.theme.getFocusColor());
+		ring.setOutline(this.theme.getFocusWidth());
 		ring.setPickable(false);
 		ring.setVisible(false);
 		root.add(ring);
@@ -247,12 +247,12 @@ class Ui {
 		pressing = null;
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
 		if (showFocus && focused != null) {
-			var b = focused.getBox(), out = theme.focusWidth * 2;
+			var b = focused.getBox(), out = theme.getFocusWidth() * 2;
 			ring.setSize(b.getWidth() + out * 2, b.getHeight() + out * 2);
 			ring.setPivot(0, 0);
 			ring.setPosition(b.getX() - out, b.getY() - out);
 			// Its corners round about the widgets' corners' centers.
-			ring.setCornerRadius(theme.corner > 0 ? theme.corner + out : 0);
+			ring.setCornerRadius(theme.getCornerRadius() > 0 ? theme.getCornerRadius() + out : 0);
 			ring.setVisible(true);
 		} else
 			ring.setVisible(false);

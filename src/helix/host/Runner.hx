@@ -16,7 +16,7 @@ import helix.input.InputRouter;
 	every platform: a host owns only the loop, the clock and the window. */
 class Runner {
 	/** What the app works with, filled at the host's init. */
-	public var services(default, null):Services;
+	public final services:Services;
 
 	var host:IHost;
 	var compose:Void->Adapters;

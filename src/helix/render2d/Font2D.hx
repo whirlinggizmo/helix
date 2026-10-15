@@ -5,15 +5,15 @@ import haxe.io.Bytes;
 
 /** Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels. */
 typedef Glyph2D = {
-	var u0:Float;
-	var v0:Float;
-	var u1:Float;
-	var v1:Float;
-	var x:Float;
-	var y:Float;
-	var width:Float;
-	var height:Float;
-	var advance:Float;
+	final u0:Float;
+	final v0:Float;
+	final u1:Float;
+	final v1:Float;
+	final x:Float;
+	final y:Float;
+	final width:Float;
+	final height:Float;
+	final advance:Float;
 }
 
 /** A font for Text2D: its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any

@@ -29,20 +29,20 @@ enum abstract TrackInterpolation(Int) to Int {
 /** One node's motion along one path in a clip: the node by name, its keys' times (seconds, rising) and values. */
 class Track {
 	/** The node it moves, by name: bound under whatever an Animator plays it on. */
-	public var target(default, null):String;
+	public final target:String;
 
 	/** What it moves. */
-	public var path(default, null):TrackPath;
+	public final path:TrackPath;
 
 	/** How it runs between keys. */
-	public var interpolation(default, null):TrackInterpolation;
+	public final interpolation:TrackInterpolation;
 
 	/** Its keys' times, seconds, rising. */
-	public var times(default, null):Vector<Float>;
+	public final times:Vector<Float>;
 
 	/** Its keys' values, one after another (3 floats a key, or 4 for a rotation; for a cubic spline, the in-tangent, value and out-tangent of
 		each key). */
-	public var values(default, null):Vector<Float>;
+	public final values:Vector<Float>;
 
 	/** A track moving target's path through times and values. Throws for values that don't match the times, or times that fall. */
 	public function new(target:String, path:TrackPath, interpolation:TrackInterpolation, times:Array<Float>, values:Array<Float>) {

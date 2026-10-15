@@ -13,38 +13,38 @@ import helix.input.IInputSource;
 /** A profile's choice of adapter for each platform contract, which the Runner builds the app's Services over. */
 typedef Adapters = {
 	/** The GPU. */
-	var graphics:IGraphics;
+	final graphics:IGraphics;
 
 	/** Keyboard, mouse, touch and gamepads. */
-	var input:IInputSource;
+	final input:IInputSource;
 
 	/** Sound output. */
-	var audio:IAudio;
+	final audio:IAudio;
 
 	/** Compressed audio decoding. */
-	var audioDecoder:IAudioDecoder;
+	final audioDecoder:IAudioDecoder;
 
 	/** Image decoding. */
-	var images:IImageDecoder;
+	final images:IImageDecoder;
 
 	/** HTTP downloads. */
-	var http:IHttp;
+	final http:IHttp;
 
 	/** The writable cache downloaded assets are kept in. */
-	var storage:IStore;
+	final storage:IStore;
 
 	/** The assets shipped with the build, read when base is null (read-only). */
-	var packaged:IStore;
+	final packaged:IStore;
 
 	/** The URL prefix assets are fetched from; null reads them from packaged instead. */
-	var base:Null<String>;
+	final base:Null<String>;
 
 	/** Where results go for the check that launched the program. */
-	var harness:ITestHarness;
+	final harness:ITestHarness;
 
 	/** Where files made for the user (screenshots) go. */
-	var export:IExport;
+	final export:IExport;
 
 	/** The program's name, beginning the names of the files it makes (Identity.getProduct). */
-	var name:String;
+	final name:String;
 }

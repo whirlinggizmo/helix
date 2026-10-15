@@ -1,5 +1,15 @@
 package helix.input;
 
+/** A touch as it's tracked: changed in place as its finger moves. */
+private typedef TouchState = {
+	var id:Int;
+	var x:Float;
+	var y:Float;
+	var down:Bool;
+	var pressed:Bool;
+	var released:Bool;
+}
+
 /** The input an app reads, as edges and state: fed by the InputRouter from a platform's events, or directly by replay and tests.
 	Tick edges (isPressed, isReleased) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick,
 	and two presses between ticks reach two ticks;
@@ -26,7 +36,7 @@ class InputState implements IInput {
 	var text = "";
 	var wheelX = 0.;
 	var wheelY = 0.;
-	var touches:Array<Touch> = [];
+	var touches:Array<TouchState> = [];
 
 	/** The gesture's pan x, y, log scale and rotation summed this frame, and since the last tick. */
 	var frameGesture = [0., 0., 0., 0.];
@@ -82,7 +92,17 @@ class InputState implements IInput {
 		return text;
 
 	public function getTouches():Array<Touch>
-		return touches;
+		return [
+			for (t in touches)
+				{
+					id: t.id,
+					x: t.x,
+					y: t.y,
+					down: t.down,
+					pressed: t.pressed,
+					released: t.released
+				}
+		];
 
 	public function getPadCount():Int
 		return pads.length;
@@ -252,7 +272,7 @@ class InputState implements IInput {
 	}
 
 	/** The two fingers down longest, which make the gesture; null with fewer than two down. */
-	function gesturePair():Null<Array<Touch>> {
+	function gesturePair():Null<Array<TouchState>> {
 		var down = [for (t in touches) if (t.down) t];
 		return down.length >= 2 ? [down[0], down[1]] : null;
 	}

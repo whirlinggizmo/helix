@@ -8,13 +8,13 @@ import haxe.io.Bytes;
 	large one can be read across frames. */
 class Hdr {
 	/** Its width in pixels. */
-	public var width(default, null):Int;
+	public final width:Int;
 
 	/** Its height in pixels. */
-	public var height(default, null):Int;
+	public final height:Int;
 
 	/** Its pixels: linear RGB, three floats each, rows top first; complete once every row is read. */
-	public var rgb(default, null):Vector<Float>;
+	public final rgb:Vector<Float>;
 
 	var bytes:Bytes;
 	var position:Int;

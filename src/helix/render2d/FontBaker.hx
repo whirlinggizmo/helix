@@ -5,28 +5,37 @@ import haxe.io.Bytes;
 /** A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height.
 	A glyph with nothing to draw (a space) has no size. */
 typedef BakedGlyph = {
-	var code:Int;
-	var x:Int;
-	var y:Int;
-	var width:Int;
-	var height:Int;
-	var xOffset:Int;
-	var yOffset:Int;
-	var advance:Float;
+	final code:Int;
+	final x:Int;
+	final y:Int;
+	final width:Int;
+	final height:Int;
+	final xOffset:Int;
+	final yOffset:Int;
+	final advance:Float;
+}
+
+/** A glyph's distance field and its box's size and offset from the pen. */
+private typedef Shape = {
+	final field:Bytes;
+	final width:Int;
+	final height:Int;
+	final xOffset:Int;
+	final yOffset:Int;
 }
 
 /** A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 /
 	padding a pixel. */
 typedef BakedFont = {
-	var width:Int;
-	var height:Int;
-	var field:Bytes;
-	var pixelHeight:Float;
-	var scale:Float;
-	var ascent:Float;
-	var descent:Float;
-	var lineGap:Float;
-	var glyphs:Array<BakedGlyph>;
+	final width:Int;
+	final height:Int;
+	final field:Bytes;
+	final pixelHeight:Float;
+	final scale:Float;
+	final ascent:Float;
+	final descent:Float;
+	final lineGap:Float;
+	final glyphs:Array<BakedGlyph>;
 }
 
 /** Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened
@@ -43,30 +52,30 @@ class FontBaker {
 		var x = 0, y = 0, rowHeight = 0;
 		for (code in codes) {
 			var glyph = font.getGlyphIndex(code);
-			var baked:BakedGlyph = {
-				code: code,
-				x: 0,
-				y: 0,
-				width: 0,
-				height: 0,
-				xOffset: 0,
-				yOffset: 0,
-				advance: font.getAdvance(glyph) * scale
-			};
-			var field = distanceField(font.getOutline(glyph), scale, padding, baked);
-			if (baked.width > 0) {
-				if (x + baked.width + 1 > atlasWidth) {
+			var shape = distanceField(font.getOutline(glyph), scale, padding);
+			var placeX = 0, placeY = 0;
+			if (shape != null) {
+				if (x + shape.width + 1 > atlasWidth) {
 					x = 0;
 					y += rowHeight + 1;
 					rowHeight = 0;
 				}
-				baked.x = x;
-				baked.y = y;
-				x += baked.width + 1;
-				rowHeight = baked.height > rowHeight ? baked.height : rowHeight;
+				placeX = x;
+				placeY = y;
+				x += shape.width + 1;
+				rowHeight = shape.height > rowHeight ? shape.height : rowHeight;
 			}
-			fields.push(field);
-			glyphs.push(baked);
+			fields.push(shape != null ? shape.field : null);
+			glyphs.push({
+				code: code,
+				x: placeX,
+				y: placeY,
+				width: shape != null ? shape.width : 0,
+				height: shape != null ? shape.height : 0,
+				xOffset: shape != null ? shape.xOffset : 0,
+				yOffset: shape != null ? shape.yOffset : 0,
+				advance: font.getAdvance(glyph) * scale
+			});
 		}
 		// A free row below the glyphs, for the white texel.
 		var height = 1;
@@ -153,8 +162,8 @@ class FontBaker {
 		return out;
 	}
 
-	// The glyph's field, its box set in baked; null with no size for an empty outline.
-	static function distanceField(outline:TrueType.GlyphOutline, scale:Float, padding:Int, baked:BakedGlyph):Null<Bytes> {
+	// The glyph's field and its box, or null for an empty outline.
+	static function distanceField(outline:TrueType.GlyphOutline, scale:Float, padding:Int):Null<Shape> {
 		var s = segments(outline, scale);
 		if (s.length == 0)
 			return null;
@@ -173,10 +182,6 @@ class FontBaker {
 		var w = x1 - x0, h = y1 - y0;
 		if (w <= padding * 2 || h <= padding * 2)
 			return null;
-		baked.width = w;
-		baked.height = h;
-		baked.xOffset = x0;
-		baked.yOffset = y0;
 		var field = Bytes.alloc(w * h), perPixel = ON_EDGE / padding;
 		for (j in 0...h) {
 			var py = y0 + j + .5;
@@ -206,6 +211,12 @@ class FontBaker {
 				field.set(j * w + i, value < 0 ? 0 : value > 255 ? 255 : Std.int(value));
 			}
 		}
-		return field;
+		return {
+			field: field,
+			width: w,
+			height: h,
+			xOffset: x0,
+			yOffset: y0
+		};
 	}
 }

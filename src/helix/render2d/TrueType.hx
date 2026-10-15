@@ -19,16 +19,16 @@ class TrueType {
 	var cmapFormat = -1;
 
 	/** Font units in an em: what the metrics below are counted in. */
-	public var unitsPerEm(default, null):Int;
+	public final unitsPerEm:Int;
 
 	/** How far the font reaches above the baseline, in font units. */
-	public var ascent(default, null):Int;
+	public final ascent:Int;
 
 	/** How far it reaches below the baseline, in font units: 0 or negative. */
-	public var descent(default, null):Int;
+	public final descent:Int;
 
 	/** The extra space between lines, in font units. */
-	public var lineGap(default, null):Int;
+	public final lineGap:Int;
 
 	/** Reads a TrueType file (the first font of a collection). */
 	public function new(data:Bytes) {

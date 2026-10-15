@@ -3,17 +3,17 @@ package helix.graphics;
 /** A vertex attribute a pipeline reads from one of its buffers: its shader's input slot, its float count (1 to 4) and its byte offset in
 	each record. */
 typedef VertexAttribute = {
-	var slot:Int;
-	var componentCount:Int;
-	var offset:Int;
+	final slot:Int;
+	final componentCount:Int;
+	final offset:Int;
 }
 
 /** A vertex buffer a pipeline reads, by its index in a draw's buffers: its record's bytes, whether a record is an instance's (stepped once
 	an instance) or a vertex's, and the attributes read from it. A buffer with no attributes is a gap the draw skips. */
 typedef VertexBuffer = {
-	var stride:Int;
-	var instanced:Bool;
-	var attributes:Array<VertexAttribute>;
+	final stride:Int;
+	final instanced:Bool;
+	final attributes:Array<VertexAttribute>;
 }
 
 /** What a pipeline's draws make: triangles, three vertices (or indices) each, or lines, two each. */
@@ -44,15 +44,15 @@ enum abstract ClipFlip(Int) to Int {
 	write, back-face culling and which winding is the front, whether it writes depth alone (a shadow pass's), and its block 0's clip flip.
 	Shared code describes the framework's pipelines (Pipelines); an adapter only makes what the description says. */
 typedef PipelineDesc = {
-	var shader:Int;
-	var buffers:Array<VertexBuffer>;
-	var primitive:Primitive;
-	var indexed:Bool;
-	var blend:BlendMode;
-	var depthTest:Bool;
-	var depthWrite:Bool;
-	var cullBack:Bool;
-	var clockwise:Bool;
-	var depthOnly:Bool;
-	var flip:ClipFlip;
+	final shader:Int;
+	final buffers:Array<VertexBuffer>;
+	final primitive:Primitive;
+	final indexed:Bool;
+	final blend:BlendMode;
+	final depthTest:Bool;
+	final depthWrite:Bool;
+	final cullBack:Bool;
+	final clockwise:Bool;
+	final depthOnly:Bool;
+	final flip:ClipFlip;
 }

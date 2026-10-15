@@ -16,30 +16,30 @@ class Toggle extends Widget {
 	function new(ui:Ui, name:String, text:String, value:Bool) {
 		super(ui, name);
 		this.value = value;
-		var theme = ui.getTheme(), side = theme.textSize + 4;
+		var theme = ui.getTheme(), side = theme.getTextSize() + 4;
 		face = Node2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
-		check = Node2D.rectangle(side, side, theme.face);
+		check = Node2D.rectangle(side, side, theme.getFaceColor());
 		check.setPivot(0, 0);
-		check.setCornerRadius(theme.corner / 2);
+		check.setCornerRadius(theme.getCornerRadius() / 2);
 		check.setPickable(false);
-		mark = Node2D.rectangle(side - 8, side - 8, theme.accent);
+		mark = Node2D.rectangle(side - 8, side - 8, theme.getAccentColor());
 		mark.setPivot(0, 0);
-		mark.setCornerRadius(theme.corner / 4);
+		mark.setCornerRadius(theme.getCornerRadius() / 4);
 		mark.setPickable(false);
-		label = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
+		label = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
 		for (n in [face, check, mark, label])
 			root.add(n);
 		var tick = Box.of(mark), square = Box.of(check), row = Box.row();
 		tick.setAnchor(Center, Center);
 		square.add(tick);
-		row.setGap(theme.gap);
+		row.setGap(theme.getGap());
 		row.setAlign(Start, Center);
 		row.setAnchor(Start, Center);
 		row.add(square);
 		row.add(Box.of(label));
 		box = Box.stack(face);
-		box.setSizing(Fit, Fixed(theme.height));
+		box.setSizing(Fit, Fixed(theme.getWidgetHeight()));
 		box.add(row);
 	}
 
@@ -66,8 +66,8 @@ class Toggle extends Widget {
 		changed = enabled && (clicked || activated);
 		if (changed)
 			value = !value;
-		check.setColor(held ? theme.pressed : hovered ? theme.hovered : theme.face);
+		check.setColor(held ? theme.getPressedColor() : hovered ? theme.getHoveredColor() : theme.getFaceColor());
 		mark.setVisible(value);
-		label.setColor(enabled ? theme.text : theme.disabledText);
+		label.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
 	}
 }

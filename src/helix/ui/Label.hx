@@ -10,7 +10,7 @@ class Label extends Widget {
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
 		var theme = ui.getTheme();
-		node = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
+		node = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
 		root.add(node);
 		box = Box.of(node);
 	}

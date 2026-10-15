@@ -27,31 +27,31 @@ class Slider extends Widget {
 		var theme = ui.getTheme();
 		face = Node2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
-		label = Node2D.text(text, theme.textSize, theme.text, Left, theme.font);
-		track = Node2D.rectangle(1, 6, theme.face);
+		label = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
+		track = Node2D.rectangle(1, 6, theme.getFaceColor());
 		track.setPivot(0, 0);
-		track.setCornerRadius(theme.corner);
+		track.setCornerRadius(theme.getCornerRadius());
 		track.setPickable(false);
-		fill = Node2D.rectangle(1, 6, theme.accent);
+		fill = Node2D.rectangle(1, 6, theme.getAccentColor());
 		fill.setPivot(0, 0);
-		fill.setCornerRadius(theme.corner);
+		fill.setCornerRadius(theme.getCornerRadius());
 		fill.setPickable(false);
-		knob = Node2D.rectangle(10, theme.textSize + 4, theme.accent);
+		knob = Node2D.rectangle(10, theme.getTextSize() + 4, theme.getAccentColor());
 		knob.setPivot(.5, .5);
-		knob.setCornerRadius(theme.corner);
+		knob.setCornerRadius(theme.getCornerRadius());
 		knob.setPickable(false);
 		for (n in [face, track, fill, knob, label])
 			root.add(n);
 		trackBox = Box.of(track);
 		trackBox.setSizing(Grow(1), Fixed(6));
 		var row = Box.row();
-		row.setGap(theme.gap * 2);
+		row.setGap(theme.getGap() * 2);
 		row.setAlign(Start, Center);
 		row.setAnchor(Stretch, Center);
 		row.add(Box.of(label));
 		row.add(trackBox);
 		box = Box.stack(face);
-		box.setSizing(Grow(1), Fixed(theme.height));
+		box.setSizing(Grow(1), Fixed(theme.getWidgetHeight()));
 		box.add(row);
 	}
 
@@ -99,7 +99,7 @@ class Slider extends Widget {
 		fill.setSize(Math.max(0, trackBox.getWidth() * fraction), 6);
 		fill.setPosition(trackBox.getX(), trackBox.getY());
 		knob.setPosition(trackBox.getX() + trackBox.getWidth() * fraction, trackBox.getY() + 3);
-		knob.setColor(held ? theme.pressed : hovered ? theme.hovered : theme.accent);
-		label.setColor(enabled ? theme.text : theme.disabledText);
+		knob.setColor(held ? theme.getPressedColor() : hovered ? theme.getHoveredColor() : theme.getAccentColor());
+		label.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
 	}
 }

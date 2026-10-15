@@ -10,16 +10,16 @@ class Ktx {
 	static var IDENTIFIER = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];
 
 	/** The texels' format. */
-	public var format(default, null):TextureFormat;
+	public final format:TextureFormat;
 
 	/** Width in texels. */
-	public var width(default, null):Int;
+	public final width:Int;
 
 	/** Height in texels. */
-	public var height(default, null):Int;
+	public final height:Int;
 
 	/** The image, then its mipmaps, each format.levelBytes of its size. */
-	public var levels(default, null):Array<Bytes>;
+	public final levels:Array<Bytes>;
 
 	function new(format:TextureFormat, width:Int, height:Int, levels:Array<Bytes>) {
 		this.format = format;
