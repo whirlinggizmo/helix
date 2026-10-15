@@ -1,10 +1,10 @@
 # HeliX
 
-HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
+HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → JS, WebGL2, Web Audio, Fetch, IndexedDB) and on the desktop (Haxe → hxcpp/C++, Sokol, libsndfile, evdev or XInput gamepads). Games use the same Haxe interfaces on both. Thin adapters supply each platform's services underneath them; a named profile picks the adapters for a build. Framework and game code have no target conditionals.
 
 > **Work in progress: caveat emptor.** HeliX is not yet stable, and backward compatibility is not a consideration. Any API, name or file layout may change in any commit, with every caller in this repository changed alongside and no deprecation period. There are no releases or versions to pin yet. If you build on it, pin a commit and expect to update your code when you move.
 
-**Status:** milestones 1–6 are done (the platform, 2D and services; 3D basics; 2D stages and the rest of 2D; advanced 3D, through skinning and animation; scene and pick; UI). Milestone 7 (Windows, macOS and CI) is next, then native network streaming. Every example runs in the browser and natively on Linux/X11; Windows, macOS and mobile have not run.
+**Status:** milestones 1–7 are done (the platform, 2D and services; 3D basics; 2D stages and the rest of 2D; advanced 3D, through skinning and animation; scene and pick; UI; Windows, macOS and CI). Native network streaming is next. Every example runs in the browser and natively on Linux/X11, and builds natively on Windows and macOS; on Windows both games have run in a window, and no window has opened on a Mac yet. CI checks all three. Mobile has not run.
 
 ## Try it
 

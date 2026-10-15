@@ -4,8 +4,7 @@ How to build, run and check HeliX and its examples. What HeliX is: [README.md](R
 
 ## Prerequisites
 
-
-Executed on Linux:
+Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: decisions 99–101):
 - **Haxe 4.3.7.**
 - **hxcpp 4.3.2.** Installed on the first native build into the repository's own `build/haxelib`, so the global haxelib is untouched. `tools/pins.py` stops a native build that would resolve another version.
 - **Python 3.12** with PyYAML (`python3 -m pip install -r requirements-build.txt`).
@@ -16,11 +15,11 @@ Executed on Linux:
   ```
 - **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `8df4871` or later (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
 - **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `tools/shdc.py` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`) and checks its SHA-256 every time it's used; nothing is installed globally.
-- **Native builds:**
-  - GCC/G++ 13 and ALSA headers.
-  - X11/Xrandr/Xi/Xcursor and GL libraries.
-  - The libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
-  - No CMake: hxcpp compiles the adapters' C with each app.
+- **Native builds:** no CMake: hxcpp compiles the adapters' C with each app (`src/helix/adapters/internal/SokolNativeBuild.hx`).
+  - Linux: GCC/G++ 13 and ALSA headers; X11/Xrandr/Xi/Xcursor and GL libraries; the libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
+  - Windows: Visual Studio's C++ tools (MSVC, which hxcpp finds itself; MinGW isn't supported). libsndfile's official 1.2.2 win64 release is downloaded and hash-checked into the user's cache, and its DLL copied beside each program.
+  - macOS: Xcode's command-line tools and Homebrew's `libsndfile`; for FFmpeg, Homebrew's `ffmpeg-full` (its `ffmpeg` has no Vorbis encoder). Apple silicon builds arm64.
+  - `python3 tools/remote_windows.py HOST` builds and checks this checkout on a Windows machine over ssh; `--desktop` runs in its logged-in session, where windows can open.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**
   - the Sokol headers, from the Whirling Gizmo fork [whirlinggizmo/sokol](https://github.com/whirlinggizmo/sokol) at `c237609` (upstream to `5e94d12`)
   - [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) at `8e85d19` (window position, size, displays, style and visibility)
