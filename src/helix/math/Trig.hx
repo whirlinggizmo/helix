@@ -1,10 +1,13 @@
 package helix.math;
 
+import haxe.io.FPHelper;
+
 /** Trigonometry that gives the same bits on every target, for simulations that must play alike in the browser and natively (an autopilot's
 	replay, lockstep, physics). `Math`'s functions don't: V8's and the C library's differ in the last bit for a few percent of angles (`atan2`
 	for about a fifth), and a simulation turns that into a different world. These are built from arithmetic alone (and `Math.sqrt` and
 	`Math.floor`, exact everywhere), each step its own statement, and within a few ulp of `Math`'s. Drawing doesn't need them. Radians; NaN
-	for an infinite or NaN angle, and for `asin` and `acos` past -1..1, as `Math`'s.
+	for an infinite or NaN angle, and for `asin` and `acos` past -1..1, as `Math`'s. Any finite angle is reduced exactly: a game's angle that
+	keeps growing (an unwrapped spin, a time used as a phase) stays within a few ulp of `Math`'s however large it gets.
 
 	Natively the generated C++ is compiled with `-ffp-contract=off` (GCC and clang): a compiler that fuses a multiply and an add (GCC
 	does on arm64, clang by default) would round differently from a target that can't. MSVC's default, /fp:precise, doesn't fuse them. */
@@ -12,10 +15,45 @@ package helix.math;
 class Trig {
 	static inline var PI = 3.14159265358979323846;
 
-	// pi/2 in three parts (fdlibm's): k times each is exact for |k| < 2^20, so the reduction is exact well past any angle a game turns through.
+	// pi/2 in three parts (fdlibm's): k times each is exact for |k| <= 2^20 (about 1.6 million radians); past that, reduceLarge.
 	static inline var PIO2_1 = 1.57079632673412561417e+00;
 	static inline var PIO2_2 = 6.07710050630396597660e-11;
 	static inline var PIO2_3 = 2.02226624879595063154e-21;
+
+	// The largest k reduced by the three parts.
+	static inline var MAX_K = 1048576.;
+
+	static inline var TWO24 = 16777216.;
+	static inline var TWON24 = 5.9604644775390625e-08;
+
+	// 2/pi's first 1584 bits, 24 a time (fdlibm's two_over_pi): enough to reduce any double exactly.
+	static final TWO_OVER_PI:Array<Int> = [
+		0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041, 0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09,
+		0xD1921C, 0xFE1DEB, 0x1CB129, 0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41, 0x3991D6, 0x398353, 0x39F49C, 0x845F8B, 0xBDF928, 0x3B1FF8,
+		0x97FFDE, 0x05980F, 0xEF2F11, 0x8B5A0A, 0x6D1F6D, 0x367ECF, 0x27CB09, 0xB74F46, 0x3F669E, 0x5FEA2D, 0x7527BA, 0xC7EBE5, 0xF17B3D, 0x0739F7, 0x8A5292,
+		0xEA6BFB, 0x5FB11F, 0x8D5D08, 0x560330, 0x46FC7B, 0x6BABF0, 0xCFBC20, 0x9AF436, 0x1DA9E3, 0x91615E, 0xE61B08, 0x659985, 0x5F14A0, 0x68408D, 0xFFD880,
+		0x4D7327, 0x310606, 0x1556CA, 0x73A8C9, 0x60E27B, 0xC08C6B
+	];
+
+	// pi/2 in 24-bit parts (fdlibm's PIo2), from their bits: high words, the low words being 0x40000000, 0, 0x80000000, 0x60000000, 0x80000000.
+	static final PIO2_PARTS:Array<Float> = [
+		FPHelper.i64ToDouble(0x40000000, 0x3FF921FB),
+		FPHelper.i64ToDouble(0, 0x3E74442D),
+		FPHelper.i64ToDouble(0x80000000, 0x3CF84698),
+		FPHelper.i64ToDouble(0x60000000, 0x3B78CC51),
+		FPHelper.i64ToDouble(0x80000000, 0x39F01B83)
+	];
+
+	// reduceLarge's working space, kept so a reduction allocates nothing. What goes into the Float arrays must be a Float: the interpreter keeps
+	// an Int stored in an Array<Float> an Int, and two of them multiply in 32 bits. Truncations are Math.ffloor (their values aren't negative).
+	static final tx:Array<Float> = [0., 0., 0.];
+	static final f:Array<Float> = [for (_ in 0...20) 0.];
+	static final q:Array<Float> = [for (_ in 0...20) 0.];
+	static final fq:Array<Float> = [for (_ in 0...20) 0.];
+	static final iq:Array<Int> = [for (_ in 0...20) 0];
+
+	// reduceLarge's remainder.
+	static var largeR = 0.;
 
 	static var sine = 0.;
 	static var cosine = 0.;
@@ -93,12 +131,18 @@ class Trig {
 	// sine and cosine of x: x = k * pi/2 + r with |r| <= pi/4, then a Taylor polynomial each whose next term is below a double's precision.
 	static function sinCos(x:Float):Void {
 		var k = Math.ffloor(x * 0.63661977236758134308 + 0.5);
-		var quadrant = k - 4 * Math.ffloor(k * 0.25);
-		var r = x - k * PIO2_1;
-		r = r - k * PIO2_2;
-		r = r - k * PIO2_3;
+		var quadrant:Int, r:Float;
+		if (Math.abs(k) <= MAX_K) {
+			quadrant = Std.int(k - 4 * Math.ffloor(k * 0.25));
+			r = x - k * PIO2_1;
+			r = r - k * PIO2_2;
+			r = r - k * PIO2_3;
+		} else {
+			quadrant = reduceLarge(x);
+			r = largeR;
+		}
 		var s = sinReduced(r), c = cosReduced(r);
-		switch (Std.int(quadrant)) {
+		switch (quadrant) {
 			case 0:
 				sine = s;
 				cosine = c;
@@ -112,6 +156,189 @@ class Trig {
 				sine = -c;
 				cosine = s;
 		}
+	}
+
+	// 2^e, from its bits, for e within a double's normal exponents.
+	static inline function pow2(e:Int):Float
+		return FPHelper.i64ToDouble(0, (e + 1023) << 20);
+
+	// x = n * pi/2 + r for a large |x|, by Payne and Hanek's method as fdlibm has it (__ieee754_rem_pio2's last case and __kernel_rem_pio2
+	// at double precision): x in three 24-bit parts times 2/pi's bits, 24 a time, only those that reach the fraction. Returns n mod 4, and r
+	// in largeR. The products of 24-bit parts are exact, so every target gets the same bits.
+	static function reduceLarge(x:Float):Int {
+		var bits = FPHelper.doubleToI64(x);
+		var hx = bits.high;
+		var ix = hx & 0x7fffffff;
+		// |x| scaled to 2^23..2^24, and its exponent beyond that.
+		var e0 = (ix >> 20) - 1046;
+		var z = FPHelper.i64ToDouble(bits.low, ix - (e0 << 20));
+		for (i in 0...2) {
+			tx[i] = Math.ffloor(z);
+			z = z - tx[i];
+			z = z * TWO24;
+		}
+		tx[2] = z;
+		var nx = 3;
+		while (nx > 0 && tx[nx - 1] == 0)
+			nx--;
+		var n = remPio2(e0, nx);
+		if (hx < 0) {
+			largeR = -largeR;
+			n = -n;
+		}
+		return n & 3;
+	}
+
+	// The sum of tx[0..nx-1] times the bits of 2/pi it needs, shifted by e0, into q[0..i].
+	static function product(i:Int, jx:Int):Void {
+		var fw = 0.;
+		for (j in 0...jx + 1) {
+			var p = tx[j] * f[jx + i - j];
+			fw = fw + p;
+		}
+		q[i] = fw;
+	}
+
+	// fdlibm's __kernel_rem_pio2 at double precision (prec 2; jk = jp = 4): returns n mod 8 and the remainder in largeR.
+	static function remPio2(e0:Int, nx:Int):Int {
+		var jk = 4, jp = 4;
+		var jx = nx - 1;
+		var jv = Std.int((e0 - 3) / 24);
+		if (jv < 0)
+			jv = 0;
+		var q0 = e0 - 24 * (jv + 1);
+		var j = jv - jx, m = jx + jk;
+		for (i in 0...20)
+			f[i] = 0;
+		for (i in 0...m + 1) {
+			f[i] = j < 0 ? 0. : TWO_OVER_PI[j] * 1.;
+			j++;
+		}
+		for (i in 0...jk + 1)
+			product(i, jx);
+		var jz = jk, n = 0, ih = 0, z = 0.;
+		while (true) {
+			// q[] into 24-bit integers iq[], lowest first.
+			var i = 0;
+			j = jz;
+			z = q[jz];
+			while (j > 0) {
+				var fw = Math.ffloor(TWON24 * z);
+				iq[i] = Std.int(z - TWO24 * fw);
+				z = q[j - 1] + fw;
+				i++;
+				j--;
+			}
+			for (k in jz...20)
+				iq[k] = 0;
+			// n, the integer part mod 8.
+			z = z * pow2(q0);
+			z = z - 8 * Math.ffloor(z * 0.125);
+			n = Std.int(z);
+			z = z - n;
+			ih = 0;
+			if (q0 > 0) {
+				i = iq[jz - 1] >> (24 - q0);
+				n += i;
+				iq[jz - 1] -= i << (24 - q0);
+				ih = iq[jz - 1] >> (23 - q0);
+			} else if (q0 == 0)
+				ih = iq[jz - 1] >> 23;
+			else if (z >= 0.5)
+				ih = 2;
+			// Past one half: n + 1, and the fraction becomes 1 - q.
+			if (ih > 0) {
+				n += 1;
+				var carry = 0;
+				for (k in 0...jz) {
+					j = iq[k];
+					if (carry == 0) {
+						if (j != 0) {
+							carry = 1;
+							iq[k] = 0x1000000 - j;
+						}
+					} else
+						iq[k] = 0xffffff - j;
+				}
+				if (q0 == 1)
+					iq[jz - 1] &= 0x7fffff;
+				else if (q0 == 2)
+					iq[jz - 1] &= 0x3fffff;
+				if (ih == 2) {
+					z = 1 - z;
+					if (carry != 0)
+						z = z - pow2(q0);
+				}
+			}
+			// A fraction that cancelled to zero needs more of 2/pi's bits.
+			if (z == 0) {
+				j = 0;
+				var k = jz - 1;
+				while (k >= jk) {
+					j |= iq[k];
+					k--;
+				}
+				if (j == 0) {
+					var more = 1;
+					while (iq[jk - more] == 0)
+						more++;
+					for (k in jz + 1...jz + more + 1) {
+						f[jx + k] = TWO_OVER_PI[jv + k] * 1.;
+						product(k, jx);
+					}
+					jz += more;
+					continue;
+				}
+			}
+			break;
+		}
+		// The fraction's 24-bit parts, zeros chopped off.
+		if (z == 0) {
+			jz -= 1;
+			q0 -= 24;
+			while (iq[jz] == 0) {
+				jz--;
+				q0 -= 24;
+			}
+		} else {
+			z = z * pow2(-q0);
+			if (z >= TWO24) {
+				var fw = Math.ffloor(TWON24 * z);
+				iq[jz] = Std.int(z - TWO24 * fw);
+				jz += 1;
+				q0 += 24;
+				iq[jz] = Std.int(fw);
+			} else
+				iq[jz] = Std.int(z);
+		}
+		// As doubles, then times pi/2's parts.
+		var fw = pow2(q0);
+		var i = jz;
+		while (i >= 0) {
+			q[i] = fw * (iq[i] * 1.);
+			fw = fw * TWON24;
+			i--;
+		}
+		i = jz;
+		while (i >= 0) {
+			fw = 0.;
+			var k = 0;
+			while (k <= jp && k <= jz - i) {
+				var p = PIO2_PARTS[k] * q[i + k];
+				fw = fw + p;
+				k++;
+			}
+			fq[jz - i] = fw;
+			i--;
+		}
+		fw = 0.;
+		i = jz;
+		while (i >= 0) {
+			fw = fw + fq[i];
+			i--;
+		}
+		largeR = ih == 0 ? fw : -fw;
+		return n & 7;
 	}
 
 	static function sinReduced(r:Float):Float {

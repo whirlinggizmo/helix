@@ -5,10 +5,12 @@ import helix.math.Trig;
 typedef Part = {name:String, bytes:Bytes, at:Int};
 
 /** helix.math.Trig's results over fixed inputs, every result's 64 bits hashed: the hash must be the same under the interpreter, in JS and in
-	hxcpp (helix.py test runs each). Inputs from a generator exact in doubles on every target, in four ranges, and the functions' own edges.
+	hxcpp (helix.py test runs each). Inputs from a generator exact in doubles on every target, in four ranges and two
+	past the three-part reduction (fewer: the interpreter is slow there), and the functions' own edges.
 	Each part (the inputs, each function in each range, the edges) is hashed too, so a difference between targets or machines can be placed. */
 class TrigBits {
 	static inline var COUNT = 50000;
+	static inline var LARGE_COUNT = 5000;
 
 	static var all:Bytes;
 	static var at = 0;
@@ -46,20 +48,21 @@ class TrigBits {
 	}
 
 	static function main():Void {
-		all = Bytes.alloc((COUNT * 4 * 6 + 64) * 8);
-		var names = ['pi', '1e3', '1e6', '1e-3'];
-		var ranges = [Math.PI, 1000., 1e6, 1e-3];
+		var names = ['pi', '1e3', '1e6', '1e-3', '1e12', '1e300'];
+		var ranges = [Math.PI, 1000., 1e6, 1e-3, 1e12, 1e300];
+		var counts = [COUNT, COUNT, COUNT, COUNT, LARGE_COUNT, LARGE_COUNT];
+		all = Bytes.alloc(((COUNT * 4 + LARGE_COUNT * 2) * 6 + 64) * 8);
 		for (r in 0...ranges.length) {
-			var range = ranges[r], name = names[r];
-			var inputs = part('$name inputs', COUNT * 4),
-				sin = part('$name sin', COUNT),
-				cos = part('$name cos', COUNT),
-				tan = part('$name tan', COUNT),
-				atan2 = part('$name atan2', COUNT),
-				asin = part('$name asin', COUNT),
-				acos = part('$name acos', COUNT);
+			var range = ranges[r], name = names[r], count = counts[r];
+			var inputs = part('$name inputs', count * 4),
+				sin = part('$name sin', count),
+				cos = part('$name cos', count),
+				tan = part('$name tan', count),
+				atan2 = part('$name atan2', count),
+				asin = part('$name asin', count),
+				acos = part('$name acos', count);
 			var seed = 12345.;
-			for (_ in 0...COUNT) {
+			for (_ in 0...count) {
 				seed = (seed * 16807) % 2147483647;
 				var a = seed / 1073741823.5 - 1;
 				seed = (seed * 16807) % 2147483647;
