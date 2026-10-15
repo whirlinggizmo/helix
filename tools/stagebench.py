@@ -23,8 +23,9 @@ def build():
     subprocess.run(['haxe', *BASE, '-js', 'build/bench/stagebench.js'], cwd=ROOT, check=True)
     sys.path.insert(0, str(ROOT / 'tools'))
     from pins import check_hxcpp
+    from native_build import ARCH
     check_hxcpp()
-    subprocess.run(['haxe', *BASE, '-cpp', 'build/bench/stagebench-cpp', '-D', 'HXCPP_M64'], cwd=ROOT, check=True, stdout=subprocess.DEVNULL,
+    subprocess.run(['haxe', *BASE, '-cpp', 'build/bench/stagebench-cpp', '-D', ARCH], cwd=ROOT, check=True, stdout=subprocess.DEVNULL,
                    env={**os.environ, 'HAXELIB_PATH': str(ROOT / 'build/haxelib')})
 
 

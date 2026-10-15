@@ -21,6 +21,7 @@ import urllib.request
 from shader_metadata import generate,manifest
 import pack_shader
 import fontbake
+from native_build import ARCH
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/shaders'
@@ -53,7 +54,7 @@ def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
     launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
-    lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}','-D HXCPP_M64','-D HXCPP_COMPILE_THREADS=4']
+    lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 

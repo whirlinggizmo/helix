@@ -16,7 +16,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
   3. **The Linux-only native parts:**
      - Gamepads: an XInput adapter on Windows (libwgf's, from wgrender-c, loading the DLL at runtime and reading the Guide button through ordinal 100). On macOS, a no-gamepad adapter, as none of the frameworks had one.
      - Audio decoding: libsndfile's pinned official Windows release and Homebrew's on macOS, as DECISIONS 28 chose a pinned SDK. The earlier frameworks vendored their decoders instead (dr_mp3, libogg, libvorbis); that's the alternative if the binaries prove awkward.
-     - The build's system libraries and flags per platform: Windows' and macOS' libraries in place of X11 and ALSA; `-ffp-contract=off`'s equivalents for MSVC and clang, so `Trig` keeps the same bits; hxcpp's 64-bit flag (`HXCPP_M64`, already set).
+     - The build's system libraries and flags per platform: Windows' and macOS' libraries in place of X11 and ALSA; `-ffp-contract=off`'s equivalents for MSVC and clang, so `Trig` keeps the same bits; hxcpp's 64-bit flag for the machine (`HXCPP_M64`, or `HXCPP_ARM64` on Apple silicon and arm64 Linux: tools/native_build.py).
      - The user's cache folder: `%LOCALAPPDATA%` and `~/Library/Caches`.
      - The native checks that open windows: on Windows and macOS they run headless, the private display staying Linux's.
   4. **Done when:** every example builds on Windows (sightblinder and CI) and macOS (CI), the test suite passes on all three, the Trig hash agrees on all of them, and on Windows the autopilots give the same final game in a window.

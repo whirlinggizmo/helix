@@ -50,8 +50,9 @@ def trig(native):
     outputs['js'] = lines(['node', 'build/tests/trigbits.js'])
     if native:
         from pins import check_hxcpp
+        from native_build import ARCH
         check_hxcpp()
-        run(['haxe', *base, '-cpp', 'build/tests/trigbits-cpp', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'HXCPP_M64'],
+        run(['haxe', *base, '-cpp', 'build/tests/trigbits-cpp', '-dce', 'full', '-D', 'analyzer-optimize', '-D', ARCH],
             env={**os.environ, 'HAXELIB_PATH': str(ROOT / 'build/haxelib')})
         outputs['hxcpp'] = lines([str(ROOT / 'build/tests/trigbits-cpp' / ('TrigBits.exe' if sys.platform == 'win32' else 'TrigBits'))])
     hashes = {target: out[0] for target, out in outputs.items()}

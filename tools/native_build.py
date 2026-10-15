@@ -2,6 +2,7 @@
 C-only test tools are one compiler call each."""
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 
@@ -9,6 +10,8 @@ ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
 INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
+# hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.
+ARCH='HXCPP_ARM64' if platform.machine().lower() in ('arm64','aarch64') else 'HXCPP_M64'
 
 def sndfile_windows():
     """libsndfile's pinned official Windows release (dependencies.json, sndfileSDK.windows), fetched once into the user's cache and checked."""
