@@ -3,7 +3,8 @@
 # - On every push and pull request (not for docs alone), on each system: the tool, package and unit tests, Trig's bits on the interpreter,
 #   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
-# - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display.
+# - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display;
+#   on Windows and macOS, every example's native build.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so nothing opens a window there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one.
 #
@@ -76,6 +77,39 @@ jobs:
         run: |
           python tools/format.py --check
           python tools/doccheck.py
+
+  examples:
+    name: every example's native build (${{ matrix.os }}, daily)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - name: System packages (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ffmpeg-full libsndfile
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
+      - name: System packages (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+      - name: Python packages
+        run: python -m pip install PyYAML==6.0.1
+      - uses: actions/cache@v4
+        with:
+          path: build/haxelib
+          key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Every example, natively
+        run: python tools/example.py all build native
 
   full:
     name: services and autopilots (Linux, daily)

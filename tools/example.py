@@ -1,4 +1,4 @@
-"""Examples: develop one under hotreload-hx, or build it for web or native.
+"""Examples: develop one under hotreload-hx, or build it for web or native; `all build TARGET` builds every example.
 
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
 and page in examples/shared and the files in examples/assets. A larger example adds its autopilot/ scripts (served as assets/autopilot) and the
@@ -151,6 +151,16 @@ def autopilot(name,browser):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
     p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
+    if a.name=='all':
+        if a.action!='build':p.error('all only builds')
+        names=sorted(d.name for d in (ROOT/'examples').iterdir() if (ROOT/source(d.name)/'App.hx').is_file())
+        failed=[]
+        for name in names:
+            try:build(name,a.target)
+            except subprocess.CalledProcessError:failed.append(name)
+        print(f'built {len(names)-len(failed)} of {len(names)} examples for {a.target}',flush=True)
+        if failed:sys.exit('Failed: '+', '.join(failed))
+        return
     if not (ROOT/source(a.name)/'App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx or examples/{a.name}/src/App.hx')
     if a.action=='autopilot':
         if not a.browser:p.error('autopilot needs --browser')
