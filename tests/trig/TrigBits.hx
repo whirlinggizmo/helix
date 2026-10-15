@@ -25,13 +25,22 @@ class TrigBits {
 
 	/** Appends v to the part only. */
 	static function note(p:Part, v:Float):Void {
-		p.bytes.setDouble(p.at, v);
+		write(p.bytes, p.at, v);
 		p.at += 8;
+	}
+
+	/** v's bits at `at`, every NaN as one: a NaN's sign and payload aren't promised (an x86 makes negative ones, an arm64 positive ones). */
+	static function write(bytes:Bytes, at:Int, v:Float):Void {
+		if (Math.isNaN(v)) {
+			bytes.setInt32(at, 0);
+			bytes.setInt32(at + 4, 0x7FF80000);
+		} else
+			bytes.setDouble(at, v);
 	}
 
 	/** Appends v to the whole and to the part. */
 	static function put(p:Part, v:Float):Void {
-		all.setDouble(at, v);
+		write(all, at, v);
 		at += 8;
 		note(p, v);
 	}
