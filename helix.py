@@ -41,21 +41,24 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-audio-probe'))],text=True, encoding='utf-8'),end='')
 
 def trig(native):
-    """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp."""
-    def line(args, **kw):return next(l for l in subprocess.check_output(args, cwd=ROOT, text=True, encoding='utf-8', **kw).splitlines() if l.startswith('trig bits:'))
+    """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp. When they
+    differ, the parts' hashes say where."""
+    def lines(args, **kw):return [l for l in subprocess.check_output(args, cwd=ROOT, text=True, encoding='utf-8', **kw).splitlines() if l.startswith('trig ')]
     base = ['-cp', 'src', '-cp', 'tests/trig', '-main', 'TrigBits']
-    hashes = {'interpreter': line(['haxe', *base, '--interp'])}
+    outputs = {'interpreter': lines(['haxe', *base, '--interp'])}
     run(['haxe', *base, '-js', 'build/tests/trigbits.js', '-dce', 'full', '-D', 'analyzer-optimize'])
-    hashes['js'] = line(['node', 'build/tests/trigbits.js'])
+    outputs['js'] = lines(['node', 'build/tests/trigbits.js'])
     if native:
         from pins import check_hxcpp
         check_hxcpp()
         run(['haxe', *base, '-cpp', 'build/tests/trigbits-cpp', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'HXCPP_M64'],
             env={**os.environ, 'HAXELIB_PATH': str(ROOT / 'build/haxelib')})
-        hashes['hxcpp'] = line([str(ROOT / 'build/tests/trigbits-cpp' / ('TrigBits.exe' if sys.platform == 'win32' else 'TrigBits'))])
+        outputs['hxcpp'] = lines([str(ROOT / 'build/tests/trigbits-cpp' / ('TrigBits.exe' if sys.platform == 'win32' else 'TrigBits'))])
+    hashes = {target: out[0] for target, out in outputs.items()}
     if len(set(hashes.values())) != 1:
+        for parts in zip(*outputs.values()):
+            if len(set(parts)) != 1:print('differs: ' + '  '.join(f'{target}: {part}' for target, part in zip(outputs, parts)))
         sys.exit(f'helix.math.Trig differs between targets: {hashes}')
-    # The hash itself, so machines can be compared too.
     print(f'Trig bits: the same on {", ".join(hashes)}: {next(iter(hashes.values()))}', flush=True)
 
 def main():
