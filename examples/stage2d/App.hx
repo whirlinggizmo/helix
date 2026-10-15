@@ -132,7 +132,8 @@ class App extends BaseApp {
 		batch.begin(worldCamera);
 		world.draw(batch, worldCamera);
 		hud.draw(batch, hudCamera);
-		Text2D.draw(batch, 'immediate text, over the stages: ${world.getDrawnCount()} world nodes drawn, ${services.graphics.getSamples()} samples a pixel',
+		Text2D.draw(batch,
+			'immediate text, over the stages: ${world.getDrawnCount()} world nodes drawn, ${services.graphics.getMsaaSamples()} of ${services.graphics.getMaxMsaaSamples()} MSAA samples a pixel',
 			12, 60, 14, 0xc8c8c8ff);
 		fps.draw(batch, 12, 10);
 		batch.end();

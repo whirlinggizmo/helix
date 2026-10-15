@@ -48,8 +48,9 @@ static struct{sg_image image;int width,height,written,bound,renamed;float *copy;
 /* Per buffer slot: whether it is a stream buffer (createBuffer's), rewritten each frame. */
 static int stream_buffers[256];
 /* The samples a pixel the window's framebuffer got (GL's count: what the window asked for, or fewer), read at setup. */
-static int window_samples=1;
-int helix_samples(void){return window_samples;}
+static int window_samples=1,max_samples=1;
+int helix_msaa_samples(void){return window_samples;}
+int helix_max_msaa_samples(void){return max_samples;}
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
     a few surface shaders, each several pipelines and their flipped twins. */
@@ -58,6 +59,7 @@ void helix_setup(void){
  sg_disable_stats();
  memset(samplers,0,sizeof samplers);
  GLint n=0;glBindFramebuffer(GL_FRAMEBUFFER,0);glGetIntegerv(GL_SAMPLES,&n);window_samples=n>1?n:1;
+ n=0;glGetIntegerv(GL_MAX_SAMPLES,&n);max_samples=n>=8?8:n>=4?4:n>=2?2:1;
 }
 void helix_shutdown(void){
  for(int i=0;i<32;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);

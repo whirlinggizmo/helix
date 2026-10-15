@@ -25,7 +25,7 @@ class BrowserWebGL2Profile {
 		var host = new DomHostAdapter(),
 			cacheName = identity.getCompany() + "/" + identity.getProduct();
 		var runner = new Runner(host, () -> {
-			var graphics = new WebGL2GraphicsAdapter(host.getCanvas(), host.getOption("tick") != null, options.getSamples());
+			var graphics = new WebGL2GraphicsAdapter(host.getCanvas(), host.getOption("tick") != null, options.getMsaaSamples());
 			return {
 				graphics: graphics,
 				input: new DomInputSourceAdapter(host.getCanvas()),

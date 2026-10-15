@@ -64,8 +64,11 @@ class SokolGraphicsAdapter implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsBridge.canSample(format) == 1;
 
-	public function getSamples():Int
-		return GraphicsBridge.samples();
+	public function getMsaaSamples():Int
+		return GraphicsBridge.msaaSamples();
+
+	public function getMaxMsaaSamples():Int
+		return GraphicsBridge.maxMsaaSamples();
 
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsBridge.buffer(capacityBytes));

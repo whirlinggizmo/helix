@@ -101,7 +101,10 @@ class NullGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function getSamples():Int
+	public function getMsaaSamples():Int
+		return 1;
+
+	public function getMaxMsaaSamples():Int
 		return 1;
 
 	public function createRenderTarget(width:Int, height:Int):Int

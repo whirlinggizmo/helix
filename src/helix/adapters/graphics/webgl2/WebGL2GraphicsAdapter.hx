@@ -55,8 +55,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var targets:Map<Int, Target> = [];
 	// The target a target pass draws into, or null.
 	var drawing:Null<Target>;
-	// Samples a pixel of the canvas, as the browser gave them.
-	var samples = 1;
+	// Multisampling samples a pixel of the canvas, as the browser gave them.
+	var msaaSamples = 1;
 	// Shadow maps, by texture handle: a framebuffer a layer, and their size.
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
@@ -66,23 +66,27 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
 	var enabled:Array<Bool> = [];
 
-	/** Takes canvas's WebGL2 context, without alpha or stencil, with a depth buffer, antialiased (multisampled) when samples is over 1: the
-		browser chooses how many (getSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws without WebGL2. */
-	public function new(canvas:CanvasElement, preserve:Bool, samples:Int) {
+	/** Takes canvas's WebGL2 context, without alpha or stencil, with a depth buffer, antialiased (multisampled) when msaaSamples is over 1: the
+		browser chooses how many (getMsaaSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws without WebGL2. */
+	public function new(canvas:CanvasElement, preserve:Bool, msaaSamples:Int) {
 		gl = cast canvas.getContext("webgl2", {
 			alpha: false,
-			antialias: samples > 1,
+			antialias: msaaSamples > 1,
 			depth: true,
 			stencil: false,
 			preserveDrawingBuffer: preserve
 		});
 		if (gl == null)
 			throw "WebGL2 is required";
-		this.samples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
+		this.msaaSamples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 	}
 
-	public function getSamples():Int
-		return samples;
+	public function getMsaaSamples():Int
+		return msaaSamples;
+
+	// The canvas's own count when antialiased; otherwise the 4 browsers give, where the GPU has 4.
+	public function getMaxMsaaSamples():Int
+		return msaaSamples > 1 ? msaaSamples : gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES) >= 4 ? 4 : 1;
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		if (width <= 0 || height <= 0 || levels.length == 0 || !canSample(format))
@@ -349,7 +353,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
 		// The screen's samples (at most this GPU's), so a target is drawn as smooth as the screen.
-		var count = Std.int(Math.min(samples, gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES)));
+		var count = Std.int(Math.min(msaaSamples, gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES)));
 		var depth = gl.createRenderbuffer();
 		gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depth);
 		if (count > 1)

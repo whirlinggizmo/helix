@@ -39,7 +39,10 @@ class CountingGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return format == Rgba8 || format == Astc4x4 || format == Rgba16f;
 
-	public function getSamples():Int
+	public function getMsaaSamples():Int
+		return 1;
+
+	public function getMaxMsaaSamples():Int
 		return 1;
 
 	public function createBuffer(capacityBytes:Int):Int
