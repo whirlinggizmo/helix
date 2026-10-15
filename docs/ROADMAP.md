@@ -6,7 +6,21 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 
 ## Next
 
-- **Milestone 7: native network streaming.** A native audio stream playing a remote file as it downloads, and both targets playing while keeping the copy, shown starting before the download ends on a slowed network.
+- **Milestone 7: Windows, macOS and CI.** HeliX has only run on Linux/X11 and in Chromium. This milestone carries the earlier frameworks' verification over, and fills the native parts that are Linux-only. The plan, to be agreed before it's built:
+  1. **Windows over ssh** (`tools/remote_windows.py`, from libwgt's `run_remote_windows.py` as libwgf extended it with `--then`). It packs the working tree (tracked and new, unignored files), copies it to a scratch folder on a Windows machine (sightblinder: Windows 11, Visual Studio 2026, Python 3.12, Haxe 4.3.7, hxcpp 4.3.2) and builds there with hxcpp and MSVC. It then runs the native suite and each example headless, and deletes the folder, also on failure. An ssh session has no desktop, so a window is checked as libwgf did: a MinGW cross build in a window under Wine on the private display, here.
+  2. **CI on GitHub Actions** (public, so Linux, Windows and macOS runners are free), with wgrender-c's and libwgf's shape:
+     - On every push except docs-only ones: the type check, the interpreter's unit tests, formatting and docs, and the tool tests. Also one native hxcpp build of an example, since the type check never compiles the C adapters (wgrender-c's "one example links" lesson).
+     - Daily and on demand: the full native suite under Xvfb, the services and both autopilots in Chrome, with screenshots uploaded as artifacts.
+     - A Windows job (MSVC) and a macOS arm64 job, headless: the runners have no GPU for GL 4.1 (libwgf's finding). macOS hasn't run for any of the frameworks yet; this is its first.
+     - The pins as the earlier CIs set them: Haxe 4.3.7, and hxcpp 4.3.2 cached, a cache miss fetching with retries. A newer push cancels the run in progress.
+  3. **The Linux-only native parts:**
+     - Gamepads: an XInput adapter on Windows (libwgf's, from wgrender-c, loading the DLL at runtime and reading the Guide button through ordinal 100). On macOS, a no-gamepad adapter, as none of the frameworks had one.
+     - Audio decoding: libsndfile's pinned official Windows release and Homebrew's on macOS, as DECISIONS 28 chose a pinned SDK. The earlier frameworks vendored their decoders instead (dr_mp3, libogg, libvorbis); that's the alternative if the binaries prove awkward.
+     - The build's system libraries and flags per platform: Windows' and macOS' libraries in place of X11 and ALSA; `-ffp-contract=off`'s equivalents for MSVC and clang, so `Trig` keeps the same bits; hxcpp's 64-bit flag (`HXCPP_M64`, already set).
+     - The user's cache folder: `%LOCALAPPDATA%` and `~/Library/Caches`.
+     - The native checks that open windows: on Windows and macOS they run headless, the private display staying Linux's.
+  4. **Done when:** every example builds and runs headless on Windows (sightblinder and CI) and macOS (CI), the Trig hash agrees on all of them, the autopilots give the same final game, and a window opens on Windows under Wine.
+- **Milestone 8: native network streaming.** A native audio stream playing a remote file as it downloads, and both targets playing while keeping the copy, shown starting before the download ends on a slowed network.
 
 ## Deferred until a game needs it
 
