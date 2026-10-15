@@ -42,8 +42,13 @@ class TrigBits {
 		var ranges = [Math.PI, 1000., 1e6, 1e-3];
 		for (r in 0...ranges.length) {
 			var range = ranges[r], name = names[r];
-			var inputs = part('$name inputs', COUNT * 4), sin = part('$name sin', COUNT), cos = part('$name cos', COUNT),
-				tan = part('$name tan', COUNT), atan2 = part('$name atan2', COUNT), asin = part('$name asin', COUNT), acos = part('$name acos', COUNT);
+			var inputs = part('$name inputs', COUNT * 4),
+				sin = part('$name sin', COUNT),
+				cos = part('$name cos', COUNT),
+				tan = part('$name tan', COUNT),
+				atan2 = part('$name atan2', COUNT),
+				asin = part('$name asin', COUNT),
+				acos = part('$name acos', COUNT);
 			var seed = 12345.;
 			for (_ in 0...COUNT) {
 				seed = (seed * 16807) % 2147483647;
@@ -63,7 +68,7 @@ class TrigBits {
 				put(acos, Trig.acos(b));
 			}
 		}
-		var edges = part('edges', 64);
+		// Each edge is its own part, named by its input's bits: the compiler reads these literals and folds the products itself.
 		for (x in [
 			0.,
 			-0.,
@@ -78,6 +83,8 @@ class TrigBits {
 			0.41421356237309504880,
 			2.41421356237309504880
 		]) {
+			var bits = haxe.io.FPHelper.doubleToI64(x);
+			var edges = part('edge ${StringTools.hex(bits.high, 8)}${StringTools.hex(bits.low, 8)}', 5);
 			put(edges, Trig.sin(x));
 			put(edges, Trig.cos(x));
 			put(edges, Trig.tan(x));
