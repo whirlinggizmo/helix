@@ -167,7 +167,8 @@ def autopilot(name,browser,profile='native'):
                     if line.startswith('HeliX SDL_GPU: '):print(f'{script}: {line}',flush=True)
                 native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
                 (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
-                print(f'{script}: same final game in the browser and {profile}: {same}',flush=True)
+                ran=web.get('renderer')+(f', after the GPU gave none: {web["fallback"]}' if web.get('fallback') else '')
+                print(f'{script}: same final game in the browser and {profile}: {same} (the browser on {ran})',flush=True)
                 if not same:failed.append(script)
     finally:server.shutdown()
     return failed

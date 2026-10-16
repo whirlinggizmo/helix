@@ -24,6 +24,7 @@ class DomHostAdapter implements IHost {
 		canvas.addEventListener("webglcontextlost", e -> {
 			e.preventDefault();
 			stopped = true;
+			unavailable("Graphics context lost");
 			Browser.document.getElementById("status").textContent = "Graphics context lost. Reload to recover.";
 		});
 	}
@@ -32,8 +33,15 @@ class DomHostAdapter implements IHost {
 	public function getCanvas():CanvasElement
 		return canvas;
 
+	/** Says on the page's window (graphicsUnavailable) that the platform can't draw, and why, for tools driving the page (tools/autopilot.cjs
+		falls back to software rendering), apart from the program's own failures. */
+	function unavailable(reason:String):Void
+		Reflect.setField(Browser.window, "graphicsUnavailable", reason);
+
 	function failure(error:Dynamic):Void {
 		stopped = true;
+		if (Std.isOfType(error, helix.graphics.GraphicsUnavailable))
+			unavailable((error : helix.graphics.GraphicsUnavailable).message);
 		var message = Std.string(error);
 		Browser.document.getElementById("status").textContent = message;
 		Browser.console.error(message);

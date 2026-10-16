@@ -67,7 +67,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var enabled:Array<Bool> = [];
 
 	/** Takes canvas's WebGL2 context, without alpha or stencil, with a depth buffer, antialiased (multisampled) when msaaSamples is over 1: the
-		browser chooses how many (getMsaaSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws without WebGL2. */
+		browser chooses how many (getMsaaSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws GraphicsUnavailable
+		without WebGL2. */
 	public function new(canvas:CanvasElement, preserve:Bool, msaaSamples:Int) {
 		gl = cast canvas.getContext("webgl2", {
 			alpha: false,
@@ -77,7 +78,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 			preserveDrawingBuffer: preserve
 		});
 		if (gl == null)
-			throw "WebGL2 is required";
+			throw new helix.graphics.GraphicsUnavailable("WebGL2 is required");
 		this.msaaSamples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 	}
 
