@@ -2,6 +2,9 @@
 #include "mixer.h"
 #define SOKOL_AUDIO_IMPL
 #include "sokol_audio.h"
+/* sokol_log, private to this file: each sokol piece keeps its own copy, as a build may link any of them without the others. */
+#define SOKOL_LOG_IMPL
+#define SOKOL_LOG_API_DECL static
 #include "sokol_log.h"
 
 /* The sokol_audio output: 44.1 kHz mono asked for, 512 frames a callback, the shared mixer stepping to whatever rate sokol gets. */

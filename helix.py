@@ -66,11 +66,11 @@ def trig(native):
 def main():
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True,metavar='command')
     tests=sub.add_parser('test',help='Run the tool, package and unit tests; --native adds the native service tests');tests.add_argument('--native',action='store_true');tests.add_argument('--audio-device',action='store_true')
-    services=sub.add_parser('services',help='Check the browser (and optionally native) platform services');services.add_argument('--browser',required=True);services.add_argument('--native',action='store_true')
+    services=sub.add_parser('services',help='Check the browser (and optionally native) platform services');services.add_argument('--browser',required=True);services.add_argument('--native',action='store_true');services.add_argument('--native-profile',choices=['sokol','sdl3'],default='sokol')
     a=p.parse_args()
     if a.command=='test':
         if a.audio_device and not a.native:p.error('--audio-device requires --native')
         test(a.native,a.audio_device)
-    else:run([sys.executable,ROOT/'tools/services.py','--browser',a.browser,*(['--native'] if a.native else [])])
+    else:run([sys.executable,ROOT/'tools/services.py','--browser',a.browser,*(['--native','--native-profile',a.native_profile] if a.native else [])])
 
 if __name__=='__main__':main()

@@ -4,9 +4,11 @@
 #include <string.h>
 #include "surface.h"
 #define SOKOL_GFX_IMPL
-#define SOKOL_LOG_IMPL
 #define SOKOL_GLCORE
 #include "sokol_gfx.h"
+/* sokol_log, private to this file: each sokol piece keeps its own copy, as a build may link any of them without the others. */
+#define SOKOL_LOG_IMPL
+#define SOKOL_LOG_API_DECL static
 #include "sokol_log.h"
 
 #if defined(_WIN32)

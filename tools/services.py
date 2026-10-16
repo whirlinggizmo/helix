@@ -20,7 +20,9 @@ BODY_BYTES=128*1024
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true')
+ p.add_argument('--native-profile',choices=['sokol','sdl3'],default='sokol',help='the native audio output: sokol_audio, or SDL3 (its dummy driver)');a=p.parse_args()
+ build_dir=None
  from fixtures import generate as fixtures_generate
  fixtures=fixtures_generate()
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
@@ -28,8 +30,13 @@ def main():
   from pins import check_hxcpp
   from native_build import ARCH,env as native_env
   from example import shader
-  check_hxcpp();shader();env=native_env()
-  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build/'services-native','-dce','full','-D','analyzer-optimize','-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4'],env)
+  sdl3=None;defines=[]
+  if a.native_profile=='sdl3':
+   import sdl3 as finder
+   sdl3=finder.find();defines=['-D','helix_sdl3']
+  check_hxcpp();shader();env=native_env(sdl3)
+  build_dir=build/('services-native-sdl3' if sdl3 else 'services-native')
+  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,'-dce','full','-D','analyzer-optimize','-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
  counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
   protocol_version='HTTP/1.1'
@@ -81,7 +88,8 @@ def main():
   if a.native:
    counts.clear();peak=0;runs=[]
    for _ in range(2):
-    native=subprocess.run([str(build/'services-native/ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True)
+    child=dict(os.environ,SDL_AUDIO_DRIVER='dummy') if a.native_profile=='sdl3' else None
+    native=subprocess.run([str(build_dir/'ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
     if native.returncode!=0:
      sys.stderr.write(native.stdout+native.stderr);raise SystemExit(f"native ServiceTests exited {native.returncode}")
     output=native.stdout

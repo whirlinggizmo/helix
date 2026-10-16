@@ -6,6 +6,9 @@
 #define SOKOL_NO_ENTRY
 #define SOKOL_GLCORE
 #include "sokol_app.h"
+/* sokol_log, private to this file: each sokol piece keeps its own copy, as a build may link any of them without the others. */
+#define SOKOL_LOG_IMPL
+#define SOKOL_LOG_API_DECL static
 #include "sokol_log.h"
 #define SOKOL_APP_UTILS_IMPL
 #include "sokol_app_utils.h"
