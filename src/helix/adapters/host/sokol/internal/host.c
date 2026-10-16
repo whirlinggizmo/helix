@@ -1,7 +1,7 @@
 #include "host.h"
 #include "input.h"
+#include "surface.h"
 #define SOKOL_APP_IMPL
-#define SOKOL_LOG_IMPL
 #define SOKOL_NO_ENTRY
 #define SOKOL_GLCORE
 #include "sokol_app.h"
@@ -16,6 +16,9 @@ static int focused=1;
 int helix_window_focused(void){return focused;}
 int helix_width(void){return sapp_width();}int helix_height(void){return sapp_height();}
 float helix_pixel_ratio(void){return sapp_dpi_scale();}
+int helix_surface_width(void){return sapp_width();}
+int helix_surface_height(void){return sapp_height();}
+int helix_surface_samples(void){return sapp_sample_count();}
 void helix_quit(void){sapp_request_quit();}
 /* The window, through sokol_app and sokol_app_utils: sizes and positions are the OS's pixels, which are logical here (high_dpi off). */
 void helix_window_set_title(const char*title){sapp_set_window_title(title);}

@@ -1,4 +1,4 @@
-"""Native builds without CMake: hxcpp compiles the adapters' C with each app (SokolNativeBuild.hx), and the
+"""Native builds without CMake: hxcpp compiles the adapters' C with each app (the build XML on each adapter's extern bridge), and the
 C-only test tools are one compiler call each."""
 import os
 from pathlib import Path

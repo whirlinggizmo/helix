@@ -1,9 +1,22 @@
 package helix.adapters.audio.sokol.internal;
 
-import helix.adapters.internal.SokolNativeBuild;
-
+/** Built with the app by hxcpp: sokol_audio and the mixer: ALSA on Linux, WASAPI on Windows, AudioToolbox on macOS. */
+@:buildXml('<files id="helix-audio-sokol" dir="${HELIX_ROOT}/src/helix/adapters">
+ <compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audio/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/>
+ <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
+ <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
+ <depend name="${HELIX_ROOT}/vendor/sokol_audio.h"/><depend name="${HELIX_ROOT}/vendor/sokol_log.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/internal/lock.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/audio/sokol/internal/audio.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal/codec.h"/>
+ <file name="audio/sokol/internal/audio.c"/>
+</files>
+<files id="haxe"><compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audio/sokol/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/></files>
+<target id="haxe">
+ <files id="helix-audio-sokol"/>
+ <section if="linux"><lib name="-lasound"/><lib name="-lpthread"/></section>
+ <section if="windows"><lib name="ole32.lib"/></section>
+ <section if="macos"><vflag name="-framework" value="AudioToolbox"/></section>
+</target>')
 @:include("audio.h")
-extern class AudioBridge extends SokolNativeBuild {
+extern class AudioBridge {
 	@:native("helix_audio_setup") static function audioSetup():Void;
 	@:native("helix_audio_shutdown") static function audioShutdown():Void;
 	@:native("helix_audio_clip") static function audioClip(data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;

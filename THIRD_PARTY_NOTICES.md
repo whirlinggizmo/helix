@@ -8,6 +8,7 @@ What HeliX builds include or link that it didn't write, with each one's license.
 | [sokol_utils](https://github.com/squk/sokol_utils), through the Whirling Gizmo fork [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) | `vendor/sokol_utils/sokol_app_utils.h` | native window size, position, displays, style, visibility | zlib; altered, as its top says | `vendor/sokol_utils/LICENSE` |
 | [stb_image](https://github.com/nothings/stb) v2.30 | `vendor/stb/stb_image.h` | native image decoding (PNG, JPEG, BMP, TGA, GIF) | public domain, or MIT | at the end of the header |
 | [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono Project Authors | `vendor/fonts/JetBrainsMono/` | the built-in font: its printable ASCII, baked into a distance-field atlas compiled into the program | SIL Open Font License 1.1 | `vendor/fonts/JetBrainsMono/OFL.txt` |
+| [SDL](https://github.com/libsdl-org/SDL) 3.4.18 | `vendor/sdl3/SDL3/` (its headers); the library is built or fetched into `build/deps` by `tools/sdl3.py`, or the system's (3.4.18 or newer) | the SDL3 profile's window, input, gamepads and audio | zlib | `vendor/sdl3/LICENSE.txt` |
 | [libsndfile](https://github.com/libsndfile/libsndfile) 1.2.2 | `vendor/sndfile/sndfile.h`; the library is the system's | native audio decoding (Ogg Vorbis, Opus, MP3), dynamically linked | LGPL 2.1 | `vendor/sndfile/COPYING` |
 
 Examples' assets (images, sounds, fonts) are credited in `examples/assets/CREDITS.md`.

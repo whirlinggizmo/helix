@@ -2,12 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "surface.h"
 #define SOKOL_GFX_IMPL
-#define SOKOL_GLUE_IMPL
+#define SOKOL_LOG_IMPL
 #define SOKOL_GLCORE
 #include "sokol_gfx.h"
-#include "sokol_app.h"
-#include "sokol_glue.h"
 #include "sokol_log.h"
 
 #if defined(_WIN32)
@@ -64,12 +63,20 @@ static struct{sg_image image;int width,height,written,bound,renamed;float *copy;
 static int stream_buffers[256];
 /* The samples a pixel the window's framebuffer got (GL's count: what the window asked for, or fewer), read at setup. */
 static int window_samples=1,max_samples=1;
+/* The host's window as sokol_gfx sees it (surface.h): framebuffer 0 of its GL context, RGBA8 with depth, as sokol_glue gave it from sokol_app. */
+static sg_environment environment(void){
+ return (sg_environment){.defaults={.color_format=SG_PIXELFORMAT_RGBA8,.depth_format=SG_PIXELFORMAT_DEPTH,.sample_count=helix_surface_samples()}};
+}
+static sg_swapchain swapchain(void){
+ return (sg_swapchain){.width=helix_surface_width(),.height=helix_surface_height(),.sample_count=helix_surface_samples(),
+  .color_format=SG_PIXELFORMAT_RGBA8,.depth_format=SG_PIXELFORMAT_DEPTH,.gl.framebuffer=0};
+}
 int helix_msaa_samples(void){return window_samples;}
 int helix_max_msaa_samples(void){return max_samples;}
 void helix_setup(void){
  /* Pools as large as the adapter's tables, which are indexed by slot (below 256): sokol's defaults (64 pipelines) run out on a stage with
     a few surface shaders, each several pipelines and their flipped twins. */
- sg_setup(&(sg_desc){.environment=sglue_environment(),.logger.func=slog_func,.buffer_pool_size=255,.image_pool_size=255,.sampler_pool_size=255,
+ sg_setup(&(sg_desc){.environment=environment(),.logger.func=slog_func,.buffer_pool_size=255,.image_pool_size=255,.sampler_pool_size=255,
   .shader_pool_size=255,.pipeline_pool_size=255,.view_pool_size=255});
  sg_disable_stats();
  memset(samplers,0,sizeof samplers);
@@ -339,7 +346,7 @@ int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
  active=1;flipped=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
- sg_begin_pass(&(sg_pass){.swapchain=sglue_swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
+ sg_begin_pass(&(sg_pass){.swapchain=swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
  return 1;
 }
 /* Reading back. The back buffer holds the ended frame until sokol_app swaps, after the frame callback returns. */

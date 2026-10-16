@@ -1,9 +1,20 @@
 package helix.adapters.audiodecoder.libsndfile.internal;
 
-import helix.adapters.internal.SokolNativeBuild;
-
+/** Built with the app by hxcpp: libsndfile: HELIX_CODEC_LIBRARY, as tools/native_build.py finds it (the system's on Linux, the pinned release on Windows, Homebrew's on macOS). */
+@:buildXml('<files id="helix-codec-libsndfile" dir="${HELIX_ROOT}/src/helix/adapters">
+ <compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/>
+ <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
+ <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
+ <depend name="${HELIX_ROOT}/vendor/sndfile/sndfile.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/internal/lock.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal/codec.h"/>
+ <file name="audiodecoder/libsndfile/internal/codec.c"/>
+</files>
+<files id="haxe"><compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/></files>
+<target id="haxe">
+ <files id="helix-codec-libsndfile"/>
+ <lib name="${HELIX_CODEC_LIBRARY}"/>
+</target>')
 @:include("codec.h")
-extern class CodecBridge extends SokolNativeBuild {
+extern class CodecBridge {
 	@:native("helix_codec_memory") static function codecMemory(data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_codec_file") static function codecFile(path:cpp.ConstCharStar):Int;
 	@:native("helix_codec_frames") static function codecFrames(id:Int):Float;
