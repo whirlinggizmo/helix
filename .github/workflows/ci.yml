@@ -4,7 +4,7 @@
 #   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display;
-#   on Windows and macOS, every example's native build.
+#   on Windows and macOS, every example's native build under each profile, the examples split among four runners a system.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so nothing opens a window there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one.
 # - Both native profiles, sokol's and SDL3's (docs/ROADMAP.md, milestone 8): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
@@ -91,12 +91,13 @@ jobs:
           python tools/doccheck.py
 
   examples:
-    name: every example's native build (${{ matrix.os }}, daily)
+    name: every example's native build (${{ matrix.os }}, group ${{ matrix.group }}/4, daily)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
         os: [windows-2025, macos-15]
+        group: [1, 2, 3, 4]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -124,10 +125,10 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: Every example, natively under each profile
+      - name: A quarter of the examples, natively under each profile
         run: |
-          python tools/example.py all build native
-          python tools/example.py all build native-sdl3
+          python tools/example.py all build native --group ${{ matrix.group }}/4
+          python tools/example.py all build native-sdl3 --group ${{ matrix.group }}/4
 
   full:
     name: services and autopilots (Linux, daily)

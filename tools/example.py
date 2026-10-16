@@ -1,4 +1,5 @@
-"""Examples: develop one under hotreload-hx, or build it for web or native; `all build TARGET` builds every example.
+"""Examples: develop one under hotreload-hx, or build it for web or native; `all build TARGET` builds every example (`--group I/N`, a share
+of them).
 
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
 and page in examples/shared and the files in examples/assets. A larger example adds its autopilot/ scripts (served as assets/autopilot) and the
@@ -154,10 +155,15 @@ def autopilot(name,browser,profile='native'):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native','native-sdl3'],default='web')
-    p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
+    p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot')
+    p.add_argument('--group',help='with all: build only group I of N (I/N, from 1), every Nth example in name order, so N runners share them');a=p.parse_args()
     if a.name=='all':
         if a.action!='build':p.error('all only builds')
         names=sorted(d.name for d in (ROOT/'examples').iterdir() if (ROOT/source(d.name)/'App.hx').is_file())
+        if a.group:
+            index,count=map(int,a.group.split('/'))
+            if not 1<=index<=count:p.error('--group is I/N with 1 <= I <= N')
+            names=names[index-1::count]
         failed=[]
         for name in names:
             try:build(name,a.target)
