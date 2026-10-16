@@ -2,7 +2,7 @@ package helix.adapters.host.sdl3.internal;
 
 /** Built with the app by hxcpp: the SDL3 window, its GL 4.1 context (or none, for SDL_GPU) and the frame loop, linked with HELIX_SDL3_LIBRARY (tools/sdl3.py:
 	the system's SDL3 of 3.4.18 or newer, or the pinned one built or fetched into build/deps), compiled against vendor/sdl3's headers. On Linux,
-	Xlib too, to ask whether X is XWayland. */
+	Xlib too, to ask whether X is XWayland; on Windows, DWM's, to wait on the compositor. */
 @:buildXml('<files id="helix-host-sdl3" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor/sdl3"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/host/sdl3/internal"/>
  <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
@@ -14,6 +14,7 @@ package helix.adapters.host.sdl3.internal;
 <target id="haxe">
  <files id="helix-host-sdl3"/>
  <lib name="${HELIX_SDL3_LIBRARY}"/>
+ <section if="windows"><lib name="dwmapi.lib"/></section>
  <section if="linux"><lib name="-lX11"/><lib name="-lm"/><lib name="-ldl"/><lib name="-lpthread"/></section>
  <flag value="-Wl,-rpath,@executable_path" if="macos"/>
 </target>')

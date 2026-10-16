@@ -6,6 +6,10 @@
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
+#if defined(_WIN32)
+#include <windows.h>
+#include <dwmapi.h>
+#endif
 
 static SDL_Window *window;
 static SDL_GLContext context;
@@ -71,6 +75,26 @@ int helix_display_width(int i){return bounds(i).w;}
 int helix_display_height(int i){return bounds(i).h;}
 const char*helix_display_name(int i){SDL_DisplayID id=display_id(i);const char*n=id?SDL_GetDisplayName(id):NULL;return n?n:"";}
 
+/* GL's wait for the display. On Windows, where the compositor (DWM) shows the frame (windowed, and in SDL's fullscreen too, a borderless
+   window at the desktop's mode), the host waits on the compositor (DwmFlush) with the swap interval 0, as GLFW does in a window: a GL driver
+   may busy-wait inside a vsynced swap there (Intel's did, a whole core at 60 frames a second; NVIDIA's has been reported to; sokol_app's
+   FIXME names the case). Measured on an Intel UHD 630: a core windowed and fullscreen before, 3 to 5% after, 60 frames a second both ways.
+   Elsewhere the swap waits (interval 1). */
+static int compositor_waits;
+static void swap_interval(void){
+#if defined(_WIN32)
+ BOOL composited=FALSE;
+ compositor_waits=SUCCEEDED(DwmIsCompositionEnabled(&composited))&&composited;
+#endif
+ SDL_GL_SetSwapInterval(compositor_waits?0:1);
+}
+static void swap(void){
+ SDL_GL_SwapWindow(window);
+#if defined(_WIN32)
+ if(compositor_waits)DwmFlush();
+#endif
+}
+
 /* The window with a GL 4.1 core context (forward compatible, as macOS requires), 24-bit depth and 8-bit stencil, and the samples asked for:
    fewer when the GL can't make that many, down to none. */
 static int open_window(int sample_count){
@@ -99,7 +123,7 @@ void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void)
  if(gl){
   if(!open_window(sample_count)){SDL_Quit();return;}
   SDL_GL_MakeCurrent(window,context);
-  SDL_GL_SetSwapInterval(1);
+  swap_interval();
  }else{
   samples=sample_count>1?sample_count:1;
   if(!(window=SDL_CreateWindow("HeliX Haxe",800,600,0))){fprintf(stderr,"HeliX SDL3 host: %s\n",SDL_GetError());SDL_Quit();return;}
@@ -118,7 +142,7 @@ void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void)
   }
   if(!running)break;
   frame();
-  if(gl)SDL_GL_SwapWindow(window);
+  if(gl)swap();
   /* Minimized, a swap may not wait for the display: don't spin. */
   if(SDL_GetWindowFlags(window)&SDL_WINDOW_MINIMIZED)SDL_Delay(16);
  }
