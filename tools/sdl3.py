@@ -9,7 +9,7 @@ vendor/sdl3's, SDL 3.4.18's (dependencies.json, sdl3), so a build never uses an 
     python3 tools/sdl3.py      # finds or builds it, and says which
 
     import sdl3
-    sdl3.find()   # an Sdl3: what to link, what goes beside the program, and where it came from
+    sdl3.find()   # an Sdl3: the library to link, what goes beside the program, and where it came from
 
 Standard library only."""
 import hashlib
@@ -29,11 +29,11 @@ DEPS = ROOT / 'build' / 'deps'
 
 
 class Sdl3:
-    """What a build needs of SDL3: the linker's arguments, the files a program needs beside it (none when the system provides them), and
-    where it came from, for the build to say."""
+    """What a build needs of SDL3: the library to link (a path), the files a program needs beside it (none when the system provides them),
+    and where it came from, for the build to say."""
 
-    def __init__(self, link, runtime, origin):
-        self.link = link
+    def __init__(self, library, runtime, origin):
+        self.library = library
         self.runtime = runtime
         self.origin = origin
 
@@ -84,14 +84,18 @@ def system_linux(minimum):
         version = subprocess.check_output(['pkg-config', '--modversion', 'sdl3'], text=True, stderr=subprocess.DEVNULL).strip()
         if not version_at_least(version, minimum):
             return None
-        libs = subprocess.check_output(['pkg-config', '--libs', 'sdl3'], text=True).split()
+        libdir = subprocess.check_output(['pkg-config', '--variable=libdir', 'sdl3'], text=True).strip()
     except (OSError, subprocess.CalledProcessError, ValueError):
         return None
-    return Sdl3(libs, [], f'the system\'s SDL {version} (pkg-config)')
+    library = Path(libdir) / 'libSDL3.so'
+    if not library.exists():
+        return None
+    return Sdl3(str(library), [], f'the system\'s SDL {version} ({library})')
 
 
 def built_linux(entry, version):
-    """The pinned source release built once into build/deps/<folder>-static: a static library, linked with what its pkg-config file lists."""
+    """The pinned source release built once into build/deps/<folder>-static: a static library (SDL loads X11, Wayland and the audio
+    libraries at run time, so it links only libm and pthread besides)."""
     prefix = DEPS / (entry['folder'] + '-static')
     pc = prefix / 'lib' / 'pkgconfig' / 'sdl3.pc'
     if not pc.is_file():
@@ -112,9 +116,7 @@ def built_linux(entry, version):
         subprocess.run(['cmake', '--install', build], check=True)
         shutil.rmtree(build)
         shutil.rmtree(source)
-    env = dict(os.environ, PKG_CONFIG_PATH=str(pc.parent))
-    libs = subprocess.check_output(['pkg-config', '--static', '--libs', str(pc)], text=True, env=env).split()
-    return Sdl3(libs, [], f'SDL {version} built from its pinned source ({prefix.relative_to(ROOT).as_posix()})')
+    return Sdl3(str(prefix / 'lib' / 'libSDL3.a'), [], f'SDL {version} built from its pinned source ({prefix.relative_to(ROOT).as_posix()})')
 
 
 def windows(entry, version):
@@ -125,11 +127,12 @@ def windows(entry, version):
     if not (lib / 'SDL3.lib').is_file():
         with zipfile.ZipFile(fetch(entry)) as z:
             z.extractall(DEPS)
-    return Sdl3([str(lib / 'SDL3.lib')], [lib / 'SDL3.dll'], f'SDL {version}, the pinned official Windows release')
+    return Sdl3(str(lib / 'SDL3.lib'), [lib / 'SDL3.dll'], f'SDL {version}, the pinned official Windows release')
 
 
 def macos(entry, version):
-    """The pinned disk image's SDL3.xcframework copied into build/deps: the framework for this machine linked, and beside the program."""
+    """The pinned disk image's SDL3.xcframework copied into build/deps: its macOS framework's library linked (found at run time through
+    the program's rpath, its own folder), and the framework beside the program."""
     folder = DEPS / entry['folder']
     xcframework = folder / 'SDL3.xcframework'
     if not xcframework.is_dir():
@@ -144,8 +147,7 @@ def macos(entry, version):
         finally:
             subprocess.run(['hdiutil', 'detach', mount], check=True)
     frameworks = xcframework / 'macos-arm64_x86_64'
-    return Sdl3(['-F' + str(frameworks), '-framework', 'SDL3', '-Wl,-rpath,@executable_path'], [frameworks / 'SDL3.framework'],
-                f'SDL {version}, the pinned official macOS release')
+    return Sdl3(str(frameworks / 'SDL3.framework' / 'SDL3'), [frameworks / 'SDL3.framework'], f'SDL {version}, the pinned official macOS release')
 
 
 def find():
@@ -162,6 +164,6 @@ def find():
 if __name__ == '__main__':
     found = find()
     print(f'sdl3: {found.origin}')
-    print('sdl3: link ' + ' '.join(found.link))
+    print(f'sdl3: link {found.library}')
     for file in found.runtime:
         print(f'sdl3: beside the program: {file}')

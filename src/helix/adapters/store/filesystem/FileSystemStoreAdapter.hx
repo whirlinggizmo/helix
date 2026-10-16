@@ -2,7 +2,7 @@ package helix.adapters.store.filesystem;
 
 import haxe.io.Bytes;
 import haxe.io.Path;
-import helix.adapters.internal.Mailbox;
+import helix.adapters.shared.Mailbox;
 import helix.assets.IStore;
 import helix.assets.Storage.StorageResult;
 import helix.assets.Storage.StorageSourceResult;

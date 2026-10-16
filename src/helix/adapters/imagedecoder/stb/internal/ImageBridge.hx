@@ -2,13 +2,13 @@ package helix.adapters.imagedecoder.stb.internal;
 
 /** Built with the app by hxcpp: stb_image. */
 @:buildXml('<files id="helix-images-stb" dir="${HELIX_ROOT}/src/helix/adapters">
- <compilerflag value="-I${HELIX_ROOT}/vendor/stb"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/imagedecoder/stb/internal"/>
+ <compilerflag value="-I${HELIX_ROOT}/vendor/stb"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/imagedecoder/stb/internal"/>
  <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
  <depend name="${HELIX_ROOT}/vendor/stb/stb_image.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/imagedecoder/stb/internal/images.h"/>
  <file name="imagedecoder/stb/internal/images.c"/>
 </files>
-<files id="haxe"><compilerflag value="-I${HELIX_ROOT}/vendor/stb"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/internal"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/imagedecoder/stb/internal"/></files>
+<files id="haxe"><compilerflag value="-I${HELIX_ROOT}/vendor/stb"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/imagedecoder/stb/internal"/></files>
 <target id="haxe">
  <files id="helix-images-stb"/>
 </target>')

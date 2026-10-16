@@ -52,9 +52,9 @@ def source(name):
 
 def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
-    launch='browser-webgl2' if target=='web' else 'native-sokol-gl'
+    launch={'web':'browser-webgl2','native':'native-sokol-gl','native-sdl3':'native-sdl3-gl'}[target]
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
-    lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/native/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
+    lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
@@ -100,7 +100,7 @@ def licenses(out):
         shutil.copyfile(ROOT/source,target/name)
 
 def build(name,target):
-    """Builds the example for target ('web' or 'native') into build/<target>/<name>."""
+    """Builds the example for target ('web', 'native' for the sokol profile or 'native-sdl3' for the SDL3 one) into build/<target>/<name>."""
     prepare(name)
     if target=='web':
         run(['haxe',hxml(name,'web')])
@@ -109,12 +109,19 @@ def build(name,target):
     else:
         from pins import check_hxcpp,check_sokol
         from native_build import codec_runtime,env as native_env
-        check_hxcpp();check_sokol(ROOT);env=native_env()
-        run(['haxe',hxml(name,'native')],env)
-        # On Windows, the libsndfile the program loads goes beside it.
-        runtime=codec_runtime()
-        if runtime:shutil.copy2(runtime,ROOT/f'build/native/{name}')
-        out=ROOT/f'build/native/{name}/assets'
+        check_hxcpp();check_sokol(ROOT)
+        sdl3=None
+        if target=='native-sdl3':
+            import sdl3 as finder
+            sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
+        run(['haxe',hxml(name,target)],native_env(sdl3))
+        # The libraries the program loads from beside it: on Windows libsndfile and SDL3's DLL, on macOS SDL3's framework.
+        folder=ROOT/f'build/{target}/{name}'
+        for runtime in [codec_runtime()]+(sdl3.runtime if sdl3 else []):
+            if runtime is None:continue
+            if Path(runtime).is_dir():shutil.copytree(runtime,folder/Path(runtime).name,symlinks=True,dirs_exist_ok=True)
+            else:shutil.copy2(runtime,folder)
+        out=folder/'assets'
         assets(name,out)
         licenses(out.parent)
 
@@ -149,7 +156,7 @@ def autopilot(name,browser):
     return failed
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native'],default='web')
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native','native-sdl3'],default='web')
     p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot');a=p.parse_args()
     if a.name=='all':
         if a.action!='build':p.error('all only builds')

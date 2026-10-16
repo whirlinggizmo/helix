@@ -2,8 +2,8 @@ package helix.adapters.audio.sokol;
 
 import haxe.io.Bytes;
 import helix.adapters.audio.sokol.internal.AudioBridge;
-import helix.adapters.internal.IPcmFiles;
-import helix.adapters.internal.Mailbox;
+import helix.adapters.shared.IPcmFiles;
+import helix.adapters.shared.Mailbox;
 import helix.assets.IAssets.AudioLocation;
 import helix.audio.IAudio;
 import sys.thread.Thread;

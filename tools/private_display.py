@@ -15,7 +15,8 @@ def private_display(number=91,width=1920,height=1080):
     """Yields an environment whose DISPLAY is the private server, one width x height monitor."""
     for tool in ('Xvfb','xrandr','openbox'):
         if not shutil.which(tool):raise RuntimeError(f'{tool} is needed for a private display')
-    display=f':{number}';env=dict(os.environ,DISPLAY=display);env.pop('XAUTHORITY',None);env.pop('WAYLAND_DISPLAY',None)
+    # SDL 3.4 tries Wayland before X11 when the session is Wayland's, which would open the window on the user's desktop: it's told X11.
+    display=f':{number}';env=dict(os.environ,DISPLAY=display,SDL_VIDEO_DRIVER='x11');env.pop('XAUTHORITY',None);env.pop('WAYLAND_DISPLAY',None)
     server=subprocess.Popen(['Xvfb',display,'-screen','0',f'{width}x{height}x24','+extension','GLX','+extension','RANDR','-nolisten','tcp'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     manager=None
     try:

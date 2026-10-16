@@ -1,7 +1,7 @@
 package helix.adapters.http.haxehttp;
 
 import haxe.io.Bytes;
-import helix.adapters.internal.Mailbox;
+import helix.adapters.shared.Mailbox;
 import helix.assets.IHttp;
 import sys.thread.Thread;
 

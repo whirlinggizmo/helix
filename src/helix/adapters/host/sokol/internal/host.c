@@ -1,6 +1,7 @@
 #include "host.h"
 #include "input.h"
 #include "surface.h"
+#include "window.h"
 #define SOKOL_APP_IMPL
 #define SOKOL_NO_ENTRY
 #define SOKOL_GLCORE
@@ -14,7 +15,6 @@ static void (*frame_cb)(void);
 /* Whether the window has the keyboard and is shown: sokol's focus and suspend events. */
 static int focused=1;
 int helix_window_focused(void){return focused;}
-int helix_width(void){return sapp_width();}int helix_height(void){return sapp_height();}
 float helix_pixel_ratio(void){return sapp_dpi_scale();}
 int helix_surface_width(void){return sapp_width();}
 int helix_surface_height(void){return sapp_height();}

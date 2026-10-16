@@ -8,7 +8,9 @@
      and no target conditional (#if js, cpp, sys, hl).
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
   4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
-     one area. The same logic written differently isn't caught here; review is for that.
+     one area. A call into an adapter's own extern bridge (its internal/*Bridge) is its own, as it reaches that adapter's C: two thin
+     adapters over shared code in adapters/shared/ (the native hosts over NativeHost) differ in what they call. The same logic written
+     differently isn't caught here; review is for that.
   5. Each adapter directory (adapters/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
      name being the interface's without the I, lowercased.
   6. Each API directory (adapters/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
@@ -59,7 +61,13 @@ def duplicates(files):
     """Runs of DUPLICATE_LINES or more identical normalized lines in two different files: (file a, line a, file b, line b, length)."""
     seqs = {}
     for f in files:
-        seqs[f] = [(n, normalized(l)) for n, l in code_lines(f) if normalized(l)]
+        # A call into the adapter's own bridge (one in its API directory's internal/) is qualified by that adapter, so calls into different
+        # C differ; a shared bridge's calls stay as they are.
+        api = ADAPTERS / f.relative_to(ADAPTERS).parts[0] / f.relative_to(ADAPTERS).parts[1]
+        own = {b.stem for b in (api / 'internal').glob('*Bridge.hx')}
+        def qualify(line):
+            return re.sub(r'\b(\w+Bridge)\b', lambda m: api.name + '.' + m.group(1) if m.group(1) in own else m.group(1), line)
+        seqs[f] = [(n, qualify(normalized(l))) for n, l in code_lines(f) if normalized(l)]
     found = []
     names = sorted(seqs)
     for i, a in enumerate(names):
@@ -105,18 +113,18 @@ def main():
             if PLATFORM.search(line):
                 violations.append(('platform', path, number, line.strip()))
     # Duplicates between adapters of one area (audio, host, ...), in Haxe and in C.
-    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
+    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'shared'):
         for suffix in ('*.hx', '*.c'):
             files = sorted(area.rglob(suffix))
             for a, la, b, lb in duplicates(files):
                 violations.append(('duplicate', area, la, f'{a.relative_to(SRC)}:{la} repeats in {b.relative_to(SRC)}:{lb}'))
     # Each area is named for a contract one of its classes implements.
-    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
+    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'shared'):
         contracts = {m.lower() for f in area.rglob('*.hx') for m in re.findall(r'\bimplements\s+(?:[\w.]+\.)?I(\w+)', f.read_text(encoding='utf-8'))}
         if area.name not in contracts:
             violations.append(('name', area, 0, f'no adapter in {area.name}/ implements I<{area.name}> (it implements {sorted(contracts)})'))
     # Each API directory holds <Api><Contract>Adapter, its overlap written once.
-    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'internal'):
+    for area in sorted(p for p in ADAPTERS.iterdir() if p.is_dir() and p.name != 'shared'):
         for api in sorted(p for p in area.iterdir() if p.is_dir() and p.name != 'internal'):
             found = []
             for f in api.glob('*.hx'):

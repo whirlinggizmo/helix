@@ -8,7 +8,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
-INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','internal','audio/sokol/internal','audiodecoder/libsndfile/internal')]
+INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','shared','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 # hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.
 ARCH='HXCPP_ARM64' if platform.machine().lower() in ('arm64','aarch64') else 'HXCPP_M64'
@@ -42,11 +42,13 @@ def codec_runtime():
     """The libsndfile a program needs beside it to run, or None where the system provides it (Linux, macOS)."""
     return sndfile_windows()/'bin/sndfile.dll' if sys.platform=='win32' else None
 
-def env():
-    """The environment hxcpp's build reads: HeliX's root, the codec, and a shared compile cache."""
+def env(sdl3=None):
+    """The environment hxcpp's build reads: HeliX's root, the codec, a shared compile cache, and for the SDL3 profile the library sdl3 names
+    (tools/sdl3.py's find)."""
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
     config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n', encoding='utf-8')
-    return dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_CODEC_LIBRARY=codec_library(),HXCPP_CONFIG=str(config))
+    extra={'HELIX_SDL3_LIBRARY':sdl3.library} if sdl3 else {}
+    return dict(os.environ,HELIX_ROOT=ROOT.as_posix(),HELIX_CODEC_LIBRARY=codec_library(),HXCPP_CONFIG=str(config),**extra)
 
 def tool(name):
     """Build one C-only test tool into build/native-tools and return its path."""

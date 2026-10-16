@@ -1,4 +1,4 @@
-package helix.adapters.internal;
+package helix.adapters.shared;
 
 import haxe.io.Bytes;
 

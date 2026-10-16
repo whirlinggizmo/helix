@@ -2,7 +2,7 @@ package helix.adapters.imagedecoder.stb;
 
 import haxe.io.Bytes;
 import helix.adapters.imagedecoder.stb.internal.ImageBridge;
-import helix.adapters.internal.Mailbox;
+import helix.adapters.shared.Mailbox;
 import helix.graphics.IImageDecoder;
 import helix.graphics.ImageDecoding.ImageDecodeResult;
 import sys.thread.Thread;
