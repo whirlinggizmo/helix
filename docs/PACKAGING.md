@@ -60,7 +60,9 @@ The schema is version 1, with a deterministic seed and up to 128 commands:
 
 `python3 tools/example.py <name> autopilot --browser /path/to/chromium` builds both targets and replays every script in `examples/<name>/autopilot/` in a headless browser and natively on a private display, with sound off and fast mode on. Both must publish the same final game; reports go to `build/results/<name>/`. Fast mode advances up to 120 fixed ticks per frame where the example supports it; its wall time is a correctness convenience, not a performance result.
 
-Manual browser use: `?autopilot=autopilot/playthrough.json&fast=1&audio=0`. Native: `HELIX_AUTOPILOT=autopilot/playthrough.json`, `HELIX_FAST=1`, `HELIX_AUDIO=0`.
+Manual browser use: `?autopilot=autopilot/asteroids/playthrough.json&fast=1&audio=0`. Native: `HELIX_AUTOPILOT=autopilot/asteroids/playthrough.json`, `HELIX_FAST=1`, `HELIX_AUDIO=0`. The scripts are under `autopilot/<example>/` in the target's shared assets folder (below).
+
+Each target's examples share one assets folder beside them, `build/<target>/assets`, which every example loads as `../assets` (the shared launchers pass it to the profile: the browser's asset base, a native profile's asset folder relative to the program). It holds `examples/assets` once, and each example's own files: its autopilot scripts as `autopilot/<example>/`, what its `assets/generate.py` makes and its packed shaders. An example's own file may not claim a path that a shared file or another example has; the build stops and names both. So a target's examples carry their 8 MB of shared files once instead of each a copy, and an example's build folder runs beside its target's `assets` rather than alone. The dev server serves that folder at `/assets` (hotreload-hx's `--mount`). A game of its own passes `"assets/"` (browser) or `"assets"` (native) and keeps its files beside itself.
 
 ## Recommendation
 

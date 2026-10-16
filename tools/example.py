@@ -2,9 +2,10 @@
 of them).
 
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
-and page in examples/shared and the files in examples/assets. A larger example adds its autopilot/ scripts (served as assets/autopilot) and the
-files its assets/generate.py makes. An example's shaders/*.glsl are packed (tools/pack_shader.py) into assets/shaders/*.hxshader, and in dev
-packed again as they change, reloading in the page.
+and page in examples/shared. Each target's examples share one assets folder beside them, build/<target>/assets, which each loads as ../assets:
+the files in examples/assets, and each example's own, which may not claim a path the shared files or another example has. A larger example
+adds its autopilot/ scripts (as autopilot/<name>/) and the files its assets/generate.py makes. An example's shaders/*.glsl are packed
+(tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page.
 
 autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
 in a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
@@ -70,34 +71,53 @@ def hxml(name,target):
     return path.relative_to(ROOT)
 
 def prepare(name):
-    """The generated shader and font, and the served folder: the page and the shared files."""
+    """The generated shader and font, and the served folder: the page, and the example's files in the web target's shared assets."""
     shader();fontbake.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
     (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name))
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
-    if (web/'assets').is_symlink():(web/'assets').unlink()
-    assets(name,web/'assets')
+    assets(name,'web')
     licenses(web)
 
-def assets(name,out,sdl_gpu=False):
-    """The shared files, then the example's own: its autopilot scripts, what its assets/generate.py makes and its shaders (with SDL_GPU's
-    dialects when sdl_gpu)."""
-    if out.exists():shutil.rmtree(out)
-    shutil.copytree(ROOT/'examples/assets',out)
+def assets(name,target):
+    """build/<target>/assets, which the target's examples share: the shared files, then the example's own (its autopilot scripts as
+    autopilot/<name>/, what its assets/generate.py makes and its shaders, with SDL_GPU's dialects for native-sdl3-gpu). The example's own
+    files may not claim a path the shared files or another example has. A copy of its own left from before (build/<target>/<name>/assets)
+    is removed."""
+    out=ROOT/f'build/{target}/assets'
+    old=ROOT/f'build/{target}/{name}/assets'
+    if old.is_symlink():old.unlink()
+    elif old.exists():shutil.rmtree(old)
+    shutil.copytree(ROOT/'examples/assets',out,dirs_exist_ok=True)
     pilots=ROOT/f'examples/{name}/autopilot'
-    if pilots.is_dir():shutil.copytree(pilots,out/'autopilot')
+    if (out/'autopilot'/name).exists():shutil.rmtree(out/'autopilot'/name)
+    if pilots.is_dir():shutil.copytree(pilots,out/'autopilot'/name)
     recipe=ROOT/f'examples/{name}/assets/generate.py'
     if recipe.is_file():
         import importlib.util
         spec=importlib.util.spec_from_file_location(f'{name}_assets',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-        shutil.copytree(module.generate(),out,dirs_exist_ok=True)
-    pack_shaders(name,out,sdl_gpu=sdl_gpu)
+        made=Path(module.generate())
+        claim(target,name,[p.relative_to(made).as_posix() for p in made.rglob('*') if p.is_file()])
+        shutil.copytree(made,out,dirs_exist_ok=True)
+    pack_shaders(name,out,sdl_gpu=target=='native-sdl3-gpu',target=target)
 
-def pack_shaders(name,out,since=0,sdl_gpu=False):
-    """The example's shaders/*.glsl packed into out/shaders/*.hxshader (with SDL_GPU's dialects when sdl_gpu): those changed since `since` (a
-    time), all by default. Returns the newest source's time."""
-    newest=since
-    for source in sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl')):
+def claim(target,name,paths):
+    """Records that the example owns these paths in build/<target>/assets (in build/examples/assets-<target>.json); exits when one is a
+    shared file or another example's."""
+    record=ROOT/f'build/examples/assets-{target}.json'
+    owners=json.loads(record.read_text(encoding='utf-8')) if record.is_file() else {}
+    for path in paths:
+        if (ROOT/'examples/assets'/path).exists():sys.exit(f'examples/{name}: its {path} is also a shared file (examples/assets/{path})')
+        if owners.get(path,name)!=name:sys.exit(f'examples/{name}: its {path} is also examples/{owners[path]}\'s, in their shared assets folder')
+        owners[path]=name
+    record.parent.mkdir(parents=True,exist_ok=True);record.write_text(json.dumps(owners,indent=1,sort_keys=True)+'\n',encoding='utf-8')
+
+def pack_shaders(name,out,since=0,sdl_gpu=False,target='web'):
+    """The example's shaders/*.glsl packed into out/shaders/*.hxshader (with SDL_GPU's dialects when sdl_gpu), claimed in the target's
+    shared assets: those changed since `since` (a time), all by default. Returns the newest source's time."""
+    newest=since;sources=sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl'))
+    claim(target,name,[f'shaders/{source.stem}.hxshader' for source in sources])
+    for source in sources:
         stamp=source.stat().st_mtime;newest=max(newest,stamp)
         if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,out/'shaders'/(source.stem+'.hxshader'),sdl_gpu)
     return newest
@@ -131,9 +151,8 @@ def build(name,target):
         run(['haxe',hxml(name,target)],native_env(sdl3))
         folder=ROOT/f'build/{target}/{name}'
         place_runtimes(folder,sdl3)
-        out=folder/'assets'
-        assets(name,out,target=='native-sdl3-gpu')
-        licenses(out.parent)
+        assets(name,target)
+        licenses(folder)
 
 def autopilot(name,browser,profile='native'):
     """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, 'native-sdl3' or
@@ -147,17 +166,17 @@ def autopilot(name,browser,profile='native'):
     out=ROOT/f'build/results/{name}';out.mkdir(parents=True,exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
-    handler=functools.partial(Quiet,directory=str(ROOT/f'build/web/{name}'))
+    handler=functools.partial(Quiet,directory=str(ROOT/'build/web'))
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),handler);threading.Thread(target=server.serve_forever,daemon=True).start()
     failed=[];program=ROOT/f'build/{profile}/{name}'/('Main.exe' if os.name=='nt' else 'Main')
     try:
         with private_display() if sys.platform.startswith('linux') else nullcontext(dict(os.environ)) as env:
             for script in scripts:
-                options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
+                options={'autopilot':f'autopilot/{name}/{script}','autoclose':'1','audio':'0','fast':'1'}
                 query='&'.join(f'{k}={v}' for k,v in options.items())
                 # The native program's Vulkan driver choice (lavapipe, for SDL_GPU on a private display) isn't Chrome's: there it leaves WebGL2 out.
                 browser_env={k:v for k,v in os.environ.items() if k not in ('VK_DRIVER_FILES','VK_ICD_FILENAMES')}
-                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,env=browser_env,text=True, encoding='utf-8'))
+                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/{name}/?{query}'],cwd=ROOT,env=browser_env,text=True, encoding='utf-8'))
                 result=out/f'{profile}-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
                 process=subprocess.run([str(program)],cwd=ROOT/f'build/{profile}/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
@@ -201,13 +220,14 @@ def main():
         prepare(a.name)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
         # The dev server watches Haxe source; shader source is regenerated here, and the new layouts (Sprite2DLayout.hx and the rest) reload like any Haxe edit.
-        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),hxml(a.name,'web')],cwd=ROOT)
+        # The page loads ../assets/, which from the served root is /assets/: the web target's shared assets, mounted there.
+        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web')],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
             failed=None;packed=time.time()
             while server.poll() is None:
                 # The example's shaders, packed again as they change; the page reloads the asset.
-                try:packed=pack_shaders(a.name,ROOT/f'build/web/{a.name}/assets',packed)
+                try:packed=pack_shaders(a.name,ROOT/'build/web/assets',packed)
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # A failed source is retried only once it changes again.
                 stamp=shader_stamp()

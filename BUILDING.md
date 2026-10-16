@@ -76,7 +76,7 @@ python3 helix.py services --browser /path/to/chromium --native
 src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
   adapters/<contract>/<api>/   one platform API behind one contract (<Api><Contract>Adapter); internal/ holds C glue and externs
   profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
-examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets
+examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets (built once a target, build/<target>/assets)
 examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
 examples/blocks/src/
 tests/                    unit (Haxe interpreter), services (both targets), native, consumer, shader checks
