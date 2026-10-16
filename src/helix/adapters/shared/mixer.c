@@ -1,19 +1,19 @@
 #include "audio.h"
+#include "mixer.h"
 #include <math.h>
 #include "lock.h"
 #include <stdlib.h>
 #include <string.h>
-#define SOKOL_AUDIO_IMPL
-#include "sokol_audio.h"
-#include "sokol_log.h"
 
-/* This prototype links Linux. Other native targets need their lock/link adapter. */
+/* The native audio adapters' mixer: 32 clips and 16 voices (a clip played, or a stream fed as it arrives) of 44.1 kHz mono floats, mixed
+   on the output's thread by whichever output the program links (sokol_audio's or SDL3's), which supplies setup, shutdown, available, sample
+   rate and channels (audio.h). */
 typedef struct { int id, count; float *samples; } clip_t;
 typedef struct { int id, clip_id, loop, paused, head, count, eof; double position; float volume; float *ring; } voice_t;
 static clip_t clips[32];
 static voice_t voices[16];
 static helix_lock_t audio_lock = HELIX_LOCK_INIT;
-static int next_clip = 1, next_voice = 1, played, stopped, initialized, callbacks;
+static int next_clip = 1, next_voice = 1, played, stopped, callbacks;
 
 static clip_t *find_clip(int id) {
     if (id <= 0) return NULL;
@@ -21,12 +21,11 @@ static clip_t *find_clip(int id) {
     return NULL;
 }
 
-static void audio_callback(float *out, int frames, int channels) {
+void helix_mixer_mix(float *out, int frames, int channels, int rate) {
     memset(out, 0, (size_t)frames * channels * sizeof(float));
     helix_lock(&audio_lock);
     callbacks++;
-    /* Clips use 44100Hz; account for the actual output rate negotiated by Sokol. */
-    const int rate = saudio_sample_rate();
+    /* Clips are 44.1 kHz; stepped to the output's rate. */
     const double step = rate > 0 ? 44100.0 / rate : 1.0;
     for (int v = 0; v < 16; v++) if (voices[v].id) {
         voice_t *voice = &voices[v];
@@ -62,13 +61,6 @@ static void audio_callback(float *out, int frames, int channels) {
     for (int i = 0; i < frames * channels; i++) out[i] = fmaxf(-1, fminf(1, out[i]));
 }
 
-void helix_audio_setup(void) {
-    if (initialized) return;
-    saudio_setup(&(saudio_desc){ .sample_rate = 44100, .num_channels = 1,
-        .buffer_frames = 512, .stream_cb = audio_callback, .logger.func = slog_func });
-    initialized = 1;
-}
-int helix_audio_available(void) { return initialized && saudio_isvalid(); }
 int helix_audio_clip(const void *data, int bytes) {
     if (!data || bytes <= 0 || bytes % 4) return 0;
     float *copy = malloc((size_t)bytes);
@@ -112,8 +104,6 @@ int helix_audio_stopped(void) { return stopped; }
 int helix_audio_callbacks(void) {
     helix_lock(&audio_lock); const int count=callbacks; helix_unlock(&audio_lock); return count;
 }
-int helix_audio_sample_rate(void) { return initialized ? saudio_sample_rate() : 0; }
-int helix_audio_channels(void) { return initialized ? saudio_channels() : 0; }
 int helix_audio_loops(void) {
     helix_lock(&audio_lock);
     int count = 0;
@@ -121,21 +111,12 @@ int helix_audio_loops(void) {
     helix_unlock(&audio_lock);
     return count;
 }
-void helix_audio_shutdown(void) {
-    /* Join Sokol's callback thread before freeing mixer-owned samples. */
-    if (initialized) { saudio_shutdown(); initialized = 0; }
+
+void helix_mixer_release(void) {
     for (int i = 0; i < 32; i++) { free(clips[i].samples); memset(&clips[i], 0, sizeof clips[i]); }
     for(int i=0;i<16;i++)free(voices[i].ring);
     memset(voices, 0, sizeof voices);
 }
-#ifdef HELIX_SERVICES_TEST
-/* Only the deterministic dummy-backend test target exports this callback hook. */
-void helix_audio_test_render(float *out, int frames, int channels) { audio_callback(out, frames, channels); }
-void helix_audio_test_setup(int rate) {
-    saudio_setup(&(saudio_desc){.sample_rate=rate, .num_channels=1, .buffer_frames=512,
-        .stream_cb=audio_callback, .logger.func=slog_func}); initialized=1;
-}
-#endif
 
 int helix_audio_is_playing(int id) {helix_lock(&audio_lock);int found=0;for(int i=0;i<16;i++)if(id&&voices[i].id==id)found=1;helix_unlock(&audio_lock);return found;}
 void helix_audio_pause(int id,int paused) {helix_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].paused=paused!=0;helix_unlock(&audio_lock);}

@@ -2,7 +2,7 @@ package helix.profiles;
 
 import helix.adapters.audiodecoder.libsndfile.LibsndfileAudioDecoderAdapter;
 import helix.adapters.audiodecoder.libsndfile.LibsndfilePcmFiles;
-import helix.adapters.audio.sokol.SokolAudioAdapter;
+import helix.adapters.audio.sdl3.Sdl3AudioAdapter;
 import helix.adapters.http.haxehttp.HaxeHttpAdapter;
 import helix.adapters.graphics.sokol.SokolGraphicsAdapter;
 import helix.adapters.testharness.stdio.StdioTestHarnessAdapter;
@@ -15,7 +15,7 @@ import helix.app.IApp;
 import helix.host.Runner;
 import helix.host.Services;
 
-/** The desktop through SDL3: an SDL window, its input and gamepads, sokol_gfx on GL 4.1 in its context, sokol_audio with libsndfile, haxe.Http and files, stb_image. */
+/** The desktop through SDL3: an SDL window, its input and gamepads, sokol_gfx on GL 4.1 in its context, an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
 class NativeSdl3GLProfile {
 	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program;
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
@@ -37,7 +37,7 @@ class NativeSdl3GLProfile {
 			return {
 				graphics: new SokolGraphicsAdapter(),
 				input: new Sdl3InputSourceAdapter(),
-				audio: new SokolAudioAdapter(new LibsndfilePcmFiles()),
+				audio: new Sdl3AudioAdapter(new LibsndfilePcmFiles()),
 				audioDecoder: new LibsndfileAudioDecoderAdapter(),
 				images: new StbImageDecoderAdapter(),
 				http: new HaxeHttpAdapter(),
