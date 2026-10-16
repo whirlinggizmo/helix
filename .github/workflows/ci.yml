@@ -165,7 +165,9 @@ jobs:
       - name: Platform services, in Chrome and natively under each profile
         env:
           HELIX_AUDIO: "0"
+        # The runner has no sound card: ALSA's default device is made a null one, so sokol_audio opens and its mixer runs.
         run: |
+          printf 'pcm.!default { type null }\n' > ~/.asoundrc
           python helix.py services --browser "$CHROME" --native
           python helix.py services --browser "$CHROME" --native --native-profile sdl3
       - name: The autopilots, the same final game in Chrome and natively under each profile
