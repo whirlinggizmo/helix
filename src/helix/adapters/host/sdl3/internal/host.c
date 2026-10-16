@@ -104,7 +104,7 @@ static int open_window(int sample_count){
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,24);SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE,8);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,n>1);SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,n>1?n:0);
-  window=SDL_CreateWindow("HeliX Haxe",800,600,SDL_WINDOW_OPENGL);
+  window=SDL_CreateWindow("HeliX Haxe",800,600,SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
   if(window&&(context=SDL_GL_CreateContext(window))){samples=n;return 1;}
   fprintf(stderr,"HeliX SDL3 host: a GL 4.1 window with %d samples: %s\n",n,SDL_GetError());
   if(window){SDL_DestroyWindow(window);window=NULL;}
@@ -114,7 +114,8 @@ static int open_window(int sample_count){
 
 /* Opens the window, asking for sample_count samples a pixel (1: none), with a GL context (with_gl) or without (for SDL_GPU, which makes its
    own multisampled textures), and runs its loop: each frame SDL's events (the input and audio adapters watch them for themselves), then the
-   frame, then the swap (with GL; SDL_GPU presents as the frame ends), until quit or the window is closed. */
+   frame, then the swap (with GL; SDL_GPU presents as the frame ends), until quit or the window is closed. The window can be resized by
+   the user, as sokol's can. */
 void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void),int sample_count,int with_gl){
  /* Windows scales the window as it does sokol's (high_dpi off), so sizes stay logical pixels on both native hosts. */
  SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS","unaware");
@@ -126,7 +127,7 @@ void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void)
   swap_interval();
  }else{
   samples=sample_count>1?sample_count:1;
-  if(!(window=SDL_CreateWindow("HeliX Haxe",800,600,0))){fprintf(stderr,"HeliX SDL3 host: %s\n",SDL_GetError());SDL_Quit();return;}
+  if(!(window=SDL_CreateWindow("HeliX Haxe",800,600,SDL_WINDOW_RESIZABLE))){fprintf(stderr,"HeliX SDL3 host: %s\n",SDL_GetError());SDL_Quit();return;}
  }
  running=1;
  init();
