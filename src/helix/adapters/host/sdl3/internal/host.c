@@ -9,13 +9,15 @@
 
 static SDL_Window *window;
 static SDL_GLContext context;
-static int samples=1,running,focused=1;
+/* gl: whether the window has a GL context the host swaps (the GL graphics adapter's), or none (SDL_GPU's, which presents for itself). */
+static int samples=1,running,focused=1,gl=1;
 
 /* The window's framebuffer for the GL graphics adapter (surface.h), and the window (window.h): sizes and positions are the OS's pixels,
    logical where it scales (Windows is told the program isn't DPI aware, as sokol's host tells it). */
 int helix_surface_width(void){int w=0,h=0;SDL_GetWindowSizeInPixels(window,&w,&h);return w;}
 int helix_surface_height(void){int w=0,h=0;SDL_GetWindowSizeInPixels(window,&w,&h);return h;}
 int helix_surface_samples(void){return samples;}
+void *helix_surface_window(void){return window;}
 
 float helix_pixel_ratio(void){float d=SDL_GetWindowPixelDensity(window);return d>0?d:1;}
 void helix_sdl3_quit(void){running=0;}
@@ -86,15 +88,22 @@ static int open_window(int sample_count){
  }
 }
 
-/* Opens the window, asking for sample_count samples a pixel (1: none), and runs its loop: each frame SDL's events (the input and audio
-   adapters watch them for themselves), then the frame, then the swap, until quit or the window is closed. */
-void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void),int sample_count){
+/* Opens the window, asking for sample_count samples a pixel (1: none), with a GL context (with_gl) or without (for SDL_GPU, which makes its
+   own multisampled textures), and runs its loop: each frame SDL's events (the input and audio adapters watch them for themselves), then the
+   frame, then the swap (with GL; SDL_GPU presents as the frame ends), until quit or the window is closed. */
+void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void),int sample_count,int with_gl){
  /* Windows scales the window as it does sokol's (high_dpi off), so sizes stay logical pixels on both native hosts. */
  SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS","unaware");
  if(!SDL_Init(SDL_INIT_VIDEO)){fprintf(stderr,"HeliX SDL3 host: %s\n",SDL_GetError());return;}
- if(!open_window(sample_count)){SDL_Quit();return;}
- SDL_GL_MakeCurrent(window,context);
- SDL_GL_SetSwapInterval(1);
+ gl=with_gl!=0;
+ if(gl){
+  if(!open_window(sample_count)){SDL_Quit();return;}
+  SDL_GL_MakeCurrent(window,context);
+  SDL_GL_SetSwapInterval(1);
+ }else{
+  samples=sample_count>1?sample_count:1;
+  if(!(window=SDL_CreateWindow("HeliX Haxe",800,600,0))){fprintf(stderr,"HeliX SDL3 host: %s\n",SDL_GetError());SDL_Quit();return;}
+ }
  running=1;
  init();
  while(running){
@@ -109,11 +118,12 @@ void helix_sdl3_run(void (*init)(void),void (*frame)(void),void (*cleanup)(void)
   }
   if(!running)break;
   frame();
-  SDL_GL_SwapWindow(window);
+  if(gl)SDL_GL_SwapWindow(window);
   /* Minimized, a swap may not wait for the display: don't spin. */
   if(SDL_GetWindowFlags(window)&SDL_WINDOW_MINIMIZED)SDL_Delay(16);
  }
  cleanup();
- SDL_GL_DestroyContext(context);SDL_DestroyWindow(window);context=NULL;window=NULL;
+ if(context)SDL_GL_DestroyContext(context);
+ SDL_DestroyWindow(window);context=NULL;window=NULL;
  SDL_Quit();
 }

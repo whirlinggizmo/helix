@@ -100,5 +100,30 @@
     "file": "vendor/stb/stb_image.h",
     "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
     "license": "public domain or MIT, at the end of the header"
+  },
+  "gpuShaders": {
+    "purpose": "SDL_GPU's shader dialects (tools/gpu_shaders.py): glslang compiles HeliX's GLSL to SPIR-V, SPIRV-Cross translates it to MSL and HLSL",
+    "glslang": {
+      "version": "16.6.0",
+      "license": "BSD-3-Clause and others (its LICENSE.txt)",
+      "linux": {
+        "url": "https://github.com/KhronosGroup/glslang/releases/download/16.6.0/glslang-16.6.0-linux-x86_64-release.zip",
+        "sha256": "a3fc4f083b1793eb53e55fa3577ac9649ffbe0340715e30d116290fb5382393f"
+      },
+      "macos": {
+        "url": "https://github.com/KhronosGroup/glslang/releases/download/16.6.0/glslang-16.6.0-macos-universal-release.zip",
+        "sha256": "1086bc6c7ce8ff188e4e1d1a69078e9e38156a4c2c3f13e4f91b9289a1d90453"
+      },
+      "windows": {
+        "url": "https://github.com/KhronosGroup/glslang/releases/download/16.6.0/glslang-16.6.0-windows-x86_64-release.zip",
+        "sha256": "82bf434e69b9bb4829de7e2b4bc2c5e7a7861e53d66cf75e5cc70f5f694a8d9b"
+      }
+    },
+    "spirvCross": {
+      "version": "vulkan-sdk-1.4.363.0",
+      "license": "Apache-2.0",
+      "url": "https://github.com/KhronosGroup/SPIRV-Cross/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz",
+      "sha256": "f708982e88b763ef5b0394ed468fc2c3628f68cdab89f2e7a946cd628c04e721"
+    }
   }
 }

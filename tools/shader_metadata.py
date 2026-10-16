@@ -14,7 +14,11 @@ adapters build every program from the generated sources and bindings at run time
 import json
 from pathlib import Path
 import re
+import sys
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gpu_shaders  # noqa: E402
 
 COMPONENTS = {'vec2': 2, 'vec3': 3, 'vec4': 4}
 
@@ -240,10 +244,15 @@ def generate(manifest_path, output, working_dir):
                            for u in contract['uniforms'])
         textures = ', '.join(f'{{slot: {t["view"]}, stage: "{t["stage"]}", glslName: {json.dumps(t["uniform"])}, shadow: {str(t["depthArray"]).lower()}, '
                              f'cube: {str(t["cube"]).lower()}, data: {str(t["data"]).lower()}}}' for t in contract['textures'])
-        hx += [' /** The program, as IGraphics.createShader takes it. */',
+        sdl_gpu = gpu_shaders.translate(sources['glsl410', 'vertex'], sources['glsl410', 'fragment'],
+                                        [{'slot': u['slot'], 'stage': u['stage'], 'glslName': u['name']} for u in contract['uniforms']],
+                                        [{'slot': t['view'], 'stage': t['stage'], 'glslName': t['uniform']} for t in contract['textures']])
+        gpu = ', '.join(f'{d}: {{vertex: {json.dumps(sdl_gpu[d]["vertex"])}, fragment: {json.dumps(sdl_gpu[d]["fragment"])}}}' for d in ('spirv', 'msl', 'hlsl'))
+        common = (f'attributes: {json.dumps([a["name"] for a in by_slot])}, glsl410: {stages("glsl410")}, glsl300es: {stages("glsl300es")}, '
+                  f'uniformBlocks: [{blocks}], textures: [{textures}]')
+        hx += [' /** The program, as IGraphics.createShader takes it: with SDL_GPU\'s dialects only where they\'re used. */',
                ' public static function source():helix.graphics.ShaderSource',
-               f'  return {{attributes: {json.dumps([a["name"] for a in by_slot])}, glsl410: {stages("glsl410")}, glsl300es: {stages("glsl300es")}, '
-               f'uniformBlocks: [{blocks}], textures: [{textures}]}};']
+               '  #if helix_sdl3_gpu', f'  return {{{common}, sdlGpu: {{{gpu}}}}};', '  #else', f'  return {{{common}}};', '  #end']
         # Its vertex buffers by index (0 the vertices, 1 the instance records, 2 the skin), up to the last it reads.
         used = [a['buffer'] for a in contract['attributes']]
         layouts = []

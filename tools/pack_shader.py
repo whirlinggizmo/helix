@@ -1,5 +1,5 @@
 """Pack an app's shader (.glsl) into a HeliX shader file (.hxshader): JSON holding its program for every graphics backend HeliX has (GLSL 410
-natively, GLSL ES 300 in the browser), compiled by sokol-shdc, and what the program needs bound (attributes, uniform blocks and their members,
+natively, GLSL ES 300 in the browser, compiled by sokol-shdc; SDL_GPU's SPIR-V, MSL and HLSL from the GLSL 410, by tools/gpu_shaders.py), and what the program needs bound (attributes, uniform blocks and their members,
 textures). Programs load it as any asset (helix.graphics.Shaders) and the adapters build the program from it at run time.
 
 A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
@@ -22,6 +22,9 @@ import subprocess
 import sys
 import tempfile
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gpu_shaders  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 1
@@ -440,8 +443,9 @@ def pack(shdc, source_path, output_path):
                          'data': views.get(pair['view_slot'], {}).get('sample_type') == 'unfilterable_float'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
+    sdl_gpu = gpu_shaders.translate(dialects['glsl410']['vertex'], dialects['glsl410']['fragment'], blocks, textures)
     shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],
-              'glsl300es': dialects['glsl300es'], 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
+              'glsl300es': dialects['glsl300es'], 'sdlGpu': sdl_gpu, 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
               'textures': sorted(textures, key=lambda t: t['slot'])}
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     Path(output_path).write_text(json.dumps(shader, indent=1) + '\n', encoding='utf-8')

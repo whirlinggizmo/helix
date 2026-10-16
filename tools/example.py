@@ -21,6 +21,7 @@ import time
 import urllib.request
 from shader_metadata import generate,manifest
 import pack_shader
+import gpu_shaders
 import fontbake
 from native_build import ARCH
 
@@ -33,7 +34,7 @@ def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check
 
 def shader_stamp():
     """The newest change to the framework's shader sources, their manifest, and the tool writing their generated code."""
-    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
+    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime,gpu_shaders.tool_stamp()])
 
 def shader():
     """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""
@@ -53,9 +54,11 @@ def source(name):
 
 def hxml(name,target):
     """The example's build arguments, written where the dev server and haxe read them."""
-    launch={'web':'browser-webgl2','native':'native-sokol-gl','native-sdl3':'native-sdl3-gl'}[target]
+    launch={'web':'browser-webgl2','native':'native-sokol-gl','native-sdl3':'native-sdl3-gl','native-sdl3-gpu':'native-sdl3-gpu'}[target]
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
+    # SDL_GPU's programs carry its dialects, which other builds leave out.
+    if target=='native-sdl3-gpu':lines.append('-D helix_sdl3_gpu')
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
@@ -101,7 +104,8 @@ def licenses(out):
         shutil.copyfile(ROOT/source,target/name)
 
 def build(name,target):
-    """Builds the example for target ('web', 'native' for the sokol profile or 'native-sdl3' for the SDL3 one) into build/<target>/<name>."""
+    """Builds the example for target ('web'; 'native' for the sokol profile; 'native-sdl3' for the SDL3 one with sokol_gfx on GL,
+    'native-sdl3-gpu' with SDL_GPU) into build/<target>/<name>."""
     prepare(name)
     if target=='web':
         run(['haxe',hxml(name,'web')])
@@ -112,7 +116,7 @@ def build(name,target):
         from native_build import env as native_env,place_runtimes
         check_hxcpp();check_sokol(ROOT)
         sdl3=None
-        if target=='native-sdl3':
+        if target.startswith('native-sdl3'):
             import sdl3 as finder
             sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
         run(['haxe',hxml(name,target)],native_env(sdl3))
@@ -123,7 +127,8 @@ def build(name,target):
         licenses(out.parent)
 
 def autopilot(name,browser,profile='native'):
-    """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, or 'native-sdl3');
+    """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, 'native-sdl3' or
+    'native-sdl3-gpu');
     returns the scripts whose final games differ or that failed."""
     import functools,http.server,threading
     if sys.platform.startswith('linux'):from private_display import private_display
@@ -156,7 +161,7 @@ def autopilot(name,browser,profile='native'):
     return failed
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native','native-sdl3'],default='web')
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native','native-sdl3','native-sdl3-gpu'],default='web')
     p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot')
     p.add_argument('--group',help='with all: build only group I of N (I/N, from 1), every Nth example in name order, so N runners share them');a=p.parse_args()
     if a.name=='all':

@@ -15,8 +15,8 @@ def targets():
     from example import source
     found=[]
     for example in sorted({p.parent.name for p in (ROOT/'examples').glob('*/App.hx')}|{p.parent.parent.name for p in (ROOT/'examples').glob('*/src/App.hx')}):
-        for target,launch in (('web','browser-webgl2'),('native','native-sokol-gl')):
-            found.append((f'{example} {target}',['-cp','src','-cp',source(example),'-cp',f'examples/shared/launch/{launch}','-cp','examples/shared/src','-cp',GENERATED['shaders'],'-cp',GENERATED['fonts'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])))
+        for target,launch in (('web','browser-webgl2'),('native','native-sokol-gl'),('native-sdl3','native-sdl3-gl'),('native-sdl3-gpu','native-sdl3-gpu')):
+            found.append((f'{example} {target}',['-cp','src','-cp',source(example),'-cp',f'examples/shared/launch/{launch}','-cp','examples/shared/src','-cp',GENERATED['shaders'],'-cp',GENERATED['fonts'],'-main','Main','-D',f'example={example}']+(['-js','build/typecheck.js'] if target=='web' else ['-cpp','build/typecheck-cpp'])+(['-D','helix_sdl3_gpu'] if target=='native-sdl3-gpu' else [])))
     for main,cp in (('SimulationTests',['examples/asteroids/src']),('BlocksTests',['examples/blocks/src']),('InputTests',[]),('HostTests',[]),('AssetTests',[]),('Render2DTests',[GENERATED['shaders'],GENERATED['fonts']]),('ParticleTests',[GENERATED['shaders'],GENERATED['fonts']]),('Render3DTests',[GENERATED['shaders'],GENERATED['fonts']]),('EnvironmentTests',[]),('TrigTests',[]),('PngTests',[]),('PickTests',[GENERATED['shaders'],GENERATED['fonts']]),('UiTests',[GENERATED['shaders'],GENERATED['fonts']]),('AnimationTests',[GENERATED['shaders'],GENERATED['fonts']])):
         found.append((f'unit {main}',['-cp','src','-cp','tests/unit']+sum((['-cp',c] for c in cp),[])+['-main',main,'--interp']))
     found.append(('trig bits',['-cp','src','-cp','tests/trig','-main','TrigBits','--interp']))

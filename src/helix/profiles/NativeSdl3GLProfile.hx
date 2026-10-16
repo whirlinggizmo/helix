@@ -22,7 +22,7 @@ class NativeSdl3GLProfile {
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
 	public static function run(identity:helix.host.Identity, makeApp:Services->IApp, ?options:helix.host.WindowOptions):Void {
-		var host = new Sdl3HostAdapter(options != null ? options.getMsaaSamples() : new helix.host.WindowOptions().getMsaaSamples());
+		var host = new Sdl3HostAdapter(options != null ? options.getMsaaSamples() : new helix.host.WindowOptions().getMsaaSamples(), true);
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
 			if (cache == null)

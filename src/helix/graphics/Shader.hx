@@ -45,6 +45,7 @@ class Shader {
 			attributes: file.attributes,
 			glsl410: file.glsl410,
 			glsl300es: file.glsl300es,
+			sdlGpu: file.sdlGpu,
 			uniformBlocks: [
 				for (b in blocks)
 					{

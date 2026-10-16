@@ -4,10 +4,12 @@
 #   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display;
-#   on Windows and macOS, every example's native build under each profile, the examples split among four runners a system.
-# - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so nothing opens a window there (libwgf's finding); a window on Windows is
-#   tools/remote_windows.py's, on a machine with one.
-# - Both native profiles, sokol's and SDL3's (docs/ROADMAP.md, milestone 8): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
+#   on Windows and macOS, every example's native build under each profile, the examples split among four runners a system; on macOS,
+#   whether its runner can run SDL_GPU through Metal in a window (Asteroids' autopilot, allowed to fail until it's known).
+# - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so no GL window opens there (libwgf's finding); a window on Windows is
+#   tools/remote_windows.py's, on a machine with one. Linux runs SDL_GPU's Vulkan through Mesa's software driver, lavapipe.
+# - The native profiles, sokol's and SDL3's with GL or SDL_GPU (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
+#   SPIRV-Cross (tools/gpu_shaders.py, in build/deps): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
 #   (CMake, the runner's) and the official release on Windows and macOS, kept in build/deps and cached.
 #
 # Haxe 4.3.7; hxcpp 4.3.2 and the formatter in the repository's haxelib (build/haxelib), cached, a cache miss fetching them with retries
@@ -81,6 +83,7 @@ jobs:
         run: |
           python tools/example.py asteroids build native
           python tools/example.py asteroids build native-sdl3
+          python tools/example.py asteroids build native-sdl3-gpu
       - name: Every example type-checked on both targets
         if: runner.os == 'Linux'
         run: python tools/typecheck.py
@@ -129,6 +132,7 @@ jobs:
         run: |
           python tools/example.py all build native --group ${{ matrix.group }}/4
           python tools/example.py all build native-sdl3 --group ${{ matrix.group }}/4
+          python tools/example.py all build native-sdl3-gpu --group ${{ matrix.group }}/4
 
   full:
     name: services and autopilots (Linux, daily)
@@ -148,7 +152,7 @@ jobs:
       - name: System packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev xvfb openbox x11-xserver-utils libgl1-mesa-dri $SDL3_BUILD
+          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev xvfb openbox x11-xserver-utils libgl1-mesa-dri mesa-vulkan-drivers $SDL3_BUILD
       - name: Python and Node packages, and Chromium
         run: |
           python -m pip install PyYAML==6.0.1
@@ -179,10 +183,66 @@ jobs:
           python tools/example.py blocks autopilot --browser "$CHROME"
           python tools/example.py asteroids autopilot native-sdl3 --browser "$CHROME"
           python tools/example.py blocks autopilot native-sdl3 --browser "$CHROME"
+      - name: The autopilots under SDL_GPU, on Vulkan through Mesa's software driver (lavapipe)
+        env:
+          HELIX_AUDIO: "0"
+          SDL_GPU_DRIVER: vulkan
+          VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.json
+        run: |
+          python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
+          python tools/example.py blocks autopilot native-sdl3-gpu --browser "$CHROME"
       - name: The autopilots' results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autopilot-results
+          path: build/results
+          if-no-files-found: ignore
+
+  mac-gpu:
+    name: SDL_GPU on CI's Mac (daily, finding out)
+    # Whether CI's macOS runner gives a window SDL_GPU can draw in through Metal: Asteroids' autopilot under the SDL_GPU profile. Allowed to
+    # fail until it's known to work; until then macOS is checked by builds and unit tests alone.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - name: System packages
+        run: |
+          brew install ffmpeg-full libsndfile
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
+      - name: Python and Node packages, and Chromium
+        run: |
+          python -m pip install PyYAML==6.0.1
+          npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
+          (cd build/tools && npx playwright install chromium)
+          echo "CHROME=$(node -e "console.log(require('./build/tools/node_modules/playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: build/haxelib
+          key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/deps
+          key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Asteroids' autopilot under SDL_GPU (Metal)
+        env:
+          HELIX_AUDIO: "0"
+        run: python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
+      - name: The autopilot's results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-gpu-results
           path: build/results
           if-no-files-found: ignore

@@ -1,6 +1,6 @@
 package helix.adapters.host.sdl3.internal;
 
-/** Built with the app by hxcpp: the SDL3 window, its GL 4.1 context and the frame loop, linked with HELIX_SDL3_LIBRARY (tools/sdl3.py:
+/** Built with the app by hxcpp: the SDL3 window, its GL 4.1 context (or none, for SDL_GPU) and the frame loop, linked with HELIX_SDL3_LIBRARY (tools/sdl3.py:
 	the system's SDL3 of 3.4.18 or newer, or the pinned one built or fetched into build/deps), compiled against vendor/sdl3's headers. On Linux,
 	Xlib too, to ask whether X is XWayland. */
 @:buildXml('<files id="helix-host-sdl3" dir="${HELIX_ROOT}/src/helix/adapters">
@@ -20,6 +20,6 @@ package helix.adapters.host.sdl3.internal;
 @:include("host.h")
 extern class HostBridge {
 	@:native("helix_sdl3_run") static function run(init:cpp.Callable<Void->Void>, frame:cpp.Callable<Void->Void>, cleanup:cpp.Callable<Void->Void>,
-		sampleCount:Int):Void;
+		sampleCount:Int, withGl:Int):Void;
 	@:native("helix_sdl3_quit") static function quit():Void;
 }

@@ -28,13 +28,23 @@ typedef ShaderTexture = {
 	final data:Bool;
 }
 
-/** A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser), its vertex attributes' names by
-	slot, and the uniform blocks and textures it binds. The framework's are generated (each layout's source()), an app's is a .hxshader
-	(tools/pack_shader.py); IGraphics.createShader builds either the same way. */
+/** A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal
+	(entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main). */
+typedef SdlGpuStages = {
+	final spirv:ShaderStages;
+	final msl:ShaderStages;
+	final hlsl:ShaderStages;
+}
+
+/** A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex
+	attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each layout's source(); SDL_GPU's
+	dialects only in a build defining helix_sdl3_gpu, so other builds don't carry them), an app's is a .hxshader (tools/pack_shader.py);
+	IGraphics.createShader builds either the same way. */
 typedef ShaderSource = {
 	final attributes:Array<String>;
 	final glsl410:ShaderStages;
 	final glsl300es:ShaderStages;
+	@:optional final sdlGpu:SdlGpuStages;
 	final uniformBlocks:Array<ShaderBlock>;
 	final textures:Array<ShaderTexture>;
 }
