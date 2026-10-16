@@ -125,32 +125,33 @@ def build(name,target):
         assets(name,out)
         licenses(out.parent)
 
-def autopilot(name,browser):
-    """Replays every examples/<name>/autopilot script on both targets; returns the scripts whose final games differ or that failed."""
+def autopilot(name,browser,profile='native'):
+    """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, or 'native-sdl3');
+    returns the scripts whose final games differ or that failed."""
     import functools,http.server,threading
     if sys.platform.startswith('linux'):from private_display import private_display
     scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
     if not scripts:sys.exit(f'examples/{name}/autopilot has no scripts')
-    for target in ('web','native'):build(name,target)
+    for target in ('web',profile):build(name,target)
     out=ROOT/f'build/results/{name}';out.mkdir(parents=True,exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
     handler=functools.partial(Quiet,directory=str(ROOT/f'build/web/{name}'))
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),handler);threading.Thread(target=server.serve_forever,daemon=True).start()
-    failed=[];program=ROOT/f'build/native/{name}'/('Main.exe' if os.name=='nt' else 'Main')
+    failed=[];program=ROOT/f'build/{profile}/{name}'/('Main.exe' if os.name=='nt' else 'Main')
     try:
         with private_display() if sys.platform.startswith('linux') else nullcontext(dict(os.environ)) as env:
             for script in scripts:
                 options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
                 query='&'.join(f'{k}={v}' for k,v in options.items())
                 web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True, encoding='utf-8'))
-                result=out/f'native-{script}';result.unlink(missing_ok=True)
+                result=out/f'{profile}-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
-                process=subprocess.run([str(program)],cwd=ROOT/f'build/native/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
+                process=subprocess.run([str(program)],cwd=ROOT/f'build/{profile}/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
                 native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
-                (out/f'autopilot-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
-                print(f'{script}: same final game on both targets: {same}',flush=True)
+                (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
+                print(f'{script}: same final game in the browser and {profile}: {same}',flush=True)
                 if not same:failed.append(script)
     finally:server.shutdown()
     return failed
@@ -171,7 +172,7 @@ def main():
     if not (ROOT/source(a.name)/'App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx or examples/{a.name}/src/App.hx')
     if a.action=='autopilot':
         if not a.browser:p.error('autopilot needs --browser')
-        failed=autopilot(a.name,a.browser)
+        failed=autopilot(a.name,a.browser,a.target if a.target!='web' else 'native')
         if failed:sys.exit('Autopilot outcomes differ: '+', '.join(failed)+f'; see build/results/{a.name}')
         return
     if a.action=='dev':

@@ -38,6 +38,7 @@ def test(native,audio_device):
     elif native:
         from native_build import tool
         print(subprocess.check_output([str(tool('native-services-test'))],text=True, encoding='utf-8'),end='')
+        print(subprocess.check_output([str(tool('native-sdl3-input-test'))],text=True, encoding='utf-8'),end='')
         if audio_device:print(subprocess.check_output([str(tool('native-audio-probe'))],text=True, encoding='utf-8'),end='')
 
 def trig(native):

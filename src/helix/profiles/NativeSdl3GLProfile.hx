@@ -8,14 +8,14 @@ import helix.adapters.graphics.sokol.SokolGraphicsAdapter;
 import helix.adapters.testharness.stdio.StdioTestHarnessAdapter;
 import helix.adapters.host.sdl3.Sdl3HostAdapter;
 import helix.adapters.imagedecoder.stb.StbImageDecoderAdapter;
-import helix.adapters.inputsource.sokol.SokolInputSourceAdapter;
+import helix.adapters.inputsource.sdl3.Sdl3InputSourceAdapter;
 import helix.adapters.export.filesystem.FileSystemExportAdapter;
 import helix.adapters.store.filesystem.FileSystemStoreAdapter;
 import helix.app.IApp;
 import helix.host.Runner;
 import helix.host.Services;
 
-/** The desktop through SDL3: an SDL window, sokol_gfx on GL 4.1 in its context, sokol_audio with libsndfile, haxe.Http and files, stb_image. Input is still the sokol adapter's gamepads only, until the SDL3 input adapter replaces it. */
+/** The desktop through SDL3: an SDL window, its input and gamepads, sokol_gfx on GL 4.1 in its context, sokol_audio with libsndfile, haxe.Http and files, stb_image. */
 class NativeSdl3GLProfile {
 	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set, else from assets/ beside the program;
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
@@ -36,7 +36,7 @@ class NativeSdl3GLProfile {
 				exports = haxe.io.Path.join([root, "exports"]);
 			return {
 				graphics: new SokolGraphicsAdapter(),
-				input: new SokolInputSourceAdapter(),
+				input: new Sdl3InputSourceAdapter(),
 				audio: new SokolAudioAdapter(new LibsndfilePcmFiles()),
 				audioDecoder: new LibsndfileAudioDecoderAdapter(),
 				images: new StbImageDecoderAdapter(),

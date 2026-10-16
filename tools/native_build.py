@@ -8,7 +8,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 ADAPTERS=ROOT/'src/helix/adapters'
-INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','inputsource/sokol/internal','shared','audio/sokol/internal','audiodecoder/libsndfile/internal')]
+INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','shared','audio/sokol/internal','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 # hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.
 ARCH='HXCPP_ARM64' if platform.machine().lower() in ('arm64','aarch64') else 'HXCPP_M64'
@@ -54,9 +54,14 @@ def tool(name):
     """Build one C-only test tool into build/native-tools and return its path."""
     TOOLS.mkdir(parents=True,exist_ok=True)
     flags=['cc','-std=c11','-O3','-D_POSIX_C_SOURCE=200809L']+[f'-I{d}' for d in INCLUDES]
-    services=[ADAPTERS/'inputsource/sokol/internal/input.c',ADAPTERS/'inputsource/evdev/internal/gamepad_linux.c',ADAPTERS/'audio/sokol/internal/audio.c']
+    services=[ADAPTERS/'shared/input.c',ADAPTERS/'inputsource/sokol/internal/input_sokol.c',ADAPTERS/'inputsource/evdev/internal/gamepad_linux.c',ADAPTERS/'audio/sokol/internal/audio.c']
     if name=='native-services-test':
         command=flags+['-UNDEBUG','-DHELIX_SERVICES_TEST','-DSOKOL_DUMMY_BACKEND',ROOT/'tests/native/native_services.c']+services+['-lm','-lpthread']
+    elif name=='native-sdl3-input-test':
+        import sdl3
+        found=sdl3.find()
+        command=flags+['-UNDEBUG',f'-I{ROOT/"vendor/sdl3"}',ROOT/'tests/native/native_sdl3_input.c',ADAPTERS/'shared/input.c',
+                       ADAPTERS/'inputsource/sdl3/internal/input_sdl3.c',found.library,'-lm','-lpthread','-ldl']
     elif name=='native-audio-probe':
         command=flags+['-DNDEBUG',ROOT/'tests/native/native_audio_probe.c',ADAPTERS/'audio/sokol/internal/audio.c','-lasound','-lm','-lpthread']
     else:raise ValueError(name)

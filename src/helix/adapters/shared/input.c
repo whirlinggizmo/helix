@@ -1,14 +1,13 @@
 #include "input.h"
 #include "gamepad.h"
 
-/* Keyboard, mouse, text and touch events come from Sokol in order; native gamepads use an OS adapter. */
+/* The native input sources' queue: keyboard, mouse, text, touch and focus events pushed in order as the host delivers them (sokol_app's
+   host pushes them, the SDL3 input adapter's event watch pushes SDL's), drained once a frame by NativeInputSource; and the gamepads the
+   adapter's gamepad.h gives. Each input adapter supplies helix_input_setup, _shutdown and _poll. */
 typedef struct {int type,code,value;float x,y;} helix_event;
 static helix_event queue[1024],current;
 static int head,count;
 
-void helix_input_setup(void){helix_gamepad_setup();}
-void helix_input_shutdown(void){helix_gamepad_shutdown();}
-void helix_input_poll(void){helix_gamepad_poll();}
 /* A full queue drops the newest events: a frame that long is already lost. */
 void helix_input_push(int type,int code,int value,float x,float y){
  if(count==1024)return;queue[(head+count++)%1024]=(helix_event){type,code,value,x,y};

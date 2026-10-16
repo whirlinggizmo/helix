@@ -4,8 +4,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Sokol's events, queued as they arrive and drained once a frame by the Haxe adapter, which reports them to the shared InputRouter. */
-enum {HELIX_EVENT_KEY=1,HELIX_EVENT_CHAR,HELIX_EVENT_MOUSE_BUTTON,HELIX_EVENT_MOUSE_MOVE,HELIX_EVENT_WHEEL,HELIX_EVENT_TOUCH,HELIX_EVENT_FOCUS};
+/* The native window's events, queued as they arrive and drained once a frame by NativeInputSource, which reports them to the shared
+   InputRouter: key codes are Key's numbers, positions framebuffer pixels, mouse buttons MouseButton's. helix_input_setup, _shutdown and
+   _poll are the input adapter's own (its gamepads, and SDL's event watch). */
+enum {HELIX_EVENT_KEY=1,HELIX_EVENT_CHAR,HELIX_EVENT_MOUSE_BUTTON,HELIX_EVENT_MOUSE_MOVE,HELIX_EVENT_WHEEL,HELIX_EVENT_TOUCH,HELIX_EVENT_FOCUS,HELIX_EVENT_MOUSE_LEAVE};
 void helix_input_setup(void);void helix_input_shutdown(void);void helix_input_poll(void);
 void helix_input_push(int type,int code,int value,float x,float y);
 int helix_input_next(void);int helix_event_type(void);int helix_event_code(void);int helix_event_value(void);float helix_event_x(void);float helix_event_y(void);
