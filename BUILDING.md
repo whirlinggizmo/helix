@@ -42,7 +42,10 @@ python3 tools/example.py app-hello build web      # build/web/app-hello/
 python3 tools/example.py app-hello build native   # build/native/app-hello/Main, the sokol profile
 python3 tools/example.py app-hello build native-sdl3   # build/native-sdl3/app-hello/Main, the SDL3 profile on GL
 python3 tools/example.py app-hello build native-sdl3-gpu   # build/native-sdl3-gpu/app-hello/Main, the SDL3 profile on SDL_GPU
+python3 tools/pages.py --browser /path/to/chromium   # the examples' site in build/web: every example, thumbnails, the index
 ```
+
+The examples' site is built and deployed to GitHub Pages on every push to main (CI's `pages` job): <https://whirlinggizmo.github.io/helix/>.
 
 SDL_GPU picks its backend (Direct3D 12 on Windows, Metal on macOS, Vulkan elsewhere); `SDL_GPU_DRIVER=vulkan` (or `direct3d12`, `metal`) chooses another. On a machine without a Vulkan GPU, such as the private display, Mesa's software driver runs it: `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json` (package `mesa-vulkan-drivers`).
 

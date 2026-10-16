@@ -5,7 +5,8 @@
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, and both autopilots, natively in a private X display;
 #   on Windows and macOS, every example's native build under each profile, the examples split among four runners a system; on macOS,
-#   whether its runner can run SDL_GPU through Metal in a window (Asteroids' autopilot, allowed to fail until it's known).
+#   both autopilots under SDL_GPU through Metal, in a window on the runner's virtual GPU.
+# - On every push to main: the examples' site (tools/pages.py), deployed to GitHub Pages.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so no GL window opens there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one. Linux runs SDL_GPU's Vulkan through Mesa's software driver, lavapipe.
 # - The native profiles, sokol's and SDL3's with GL or SDL_GPU (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
@@ -199,13 +200,49 @@ jobs:
           path: build/results
           if-no-files-found: ignore
 
+  pages:
+    name: the examples' site (GitHub Pages)
+    # Every example built for the web, a thumbnail of each, and the index (tools/pages.py), deployed as the repository's Pages site.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - uses: krdlab/setup-haxe@v2
+        with:
+          haxe-version: 4.3.7
+      - name: Python and Node packages, and Chromium
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          python -m pip install PyYAML==6.0.1
+          npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
+          (cd build/tools && npx playwright install --with-deps chromium)
+          echo "CHROME=$(node -e "console.log(require('./build/tools/node_modules/playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+      - name: The site
+        run: python tools/pages.py --browser "$CHROME"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
   mac-gpu:
-    name: SDL_GPU on CI's Mac (daily, finding out)
-    # Whether CI's macOS runner gives a window SDL_GPU can draw in through Metal: Asteroids' autopilot under the SDL_GPU profile. Allowed to
-    # fail until it's known to work; until then macOS is checked by builds and unit tests alone.
+    name: SDL_GPU on CI's Mac (Metal, daily)
+    # Both autopilots under the SDL_GPU profile, in a window SDL_GPU draws in through Metal on the runner's virtual GPU.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -235,11 +272,13 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: Asteroids' autopilot under SDL_GPU (Metal)
+      - name: The autopilots under SDL_GPU (Metal)
         env:
           HELIX_AUDIO: "0"
-        run: python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
-      - name: The autopilot's results
+        run: |
+          python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
+          python tools/example.py blocks autopilot native-sdl3-gpu --browser "$CHROME"
+      - name: The autopilots' results
         if: always()
         uses: actions/upload-artifact@v4
         with:

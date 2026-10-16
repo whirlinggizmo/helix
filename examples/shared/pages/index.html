@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HeliX examples</title>
+<meta name="description" content="HeliX, a Haxe game framework: {{count}} examples, each running in the browser on WebGL2.">
+<link rel="icon" href="favicon.png">
+<style>
+:root{
+ --slate:#3d4f73;--slate-deep:#26324d;--ink:#f3f5fa;--ink-soft:#c5cde0;--frame:#f6f3ec;--frame-edge:#d9d3c5;
+ --label:#1f2638;--label-soft:#566079;--accent:#9fc2ff;
+ --gutter:clamp(16px,3vw,40px);--gap:clamp(14px,2.2vw,28px);
+}
+*{box-sizing:border-box}
+html{background:var(--slate-deep)}
+body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ background:radial-gradient(ellipse at top,var(--slate) 0%,var(--slate-deep) 75%) fixed}
+a{color:var(--accent)}
+header,main,footer{max-width:1600px;margin:0 auto;padding:0 var(--gutter)}
+header{padding-top:clamp(24px,5vw,56px);padding-bottom:8px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:clamp(28px,5vw,44px);letter-spacing:.02em}
+header p{margin:4px 0 0;color:var(--ink-soft);max-width:60ch}
+input[type=search]{font:inherit;width:min(100%,280px);padding:8px 12px;border-radius:8px;border:1px solid #5d6f96;background:#1c2540;color:var(--ink)}
+input[type=search]::placeholder{color:#8e9abb}
+h2{margin:clamp(28px,4vw,44px) 0 14px;font-size:18px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:var(--gap);margin:0;padding:0;list-style:none}
+.tile{display:block;height:100%;text-decoration:none;color:var(--label);background:var(--frame);padding:10px 10px 0;border-radius:4px;
+ border:1px solid var(--frame-edge);box-shadow:0 2px 4px rgba(8,12,24,.35),0 10px 24px rgba(8,12,24,.35);
+ transition:transform .18s ease,box-shadow .18s ease}
+.tile:hover,.tile:focus-visible{transform:translateY(-4px);box-shadow:0 4px 8px rgba(8,12,24,.4),0 18px 36px rgba(8,12,24,.45)}
+.tile:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tile img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:#10141f;border:1px solid #b9b2a2}
+.tile figure{margin:0}
+.tile figcaption{padding:10px 2px 12px}
+.name{display:block;font:600 15px/1.3 ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+.size{display:block;margin-top:2px;font-size:12.5px;color:var(--label-soft);font-variant-numeric:tabular-nums}
+.size .sent{opacity:.8}
+.shows{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:13.5px;color:var(--label-soft)}
+.shows code{font:12.5px ui-monospace,Menlo,Consolas,monospace}
+.none{color:var(--ink-soft)}
+footer{padding-top:40px;padding-bottom:40px;color:var(--ink-soft);font-size:14px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover,.tile:focus-visible{transform:none}}
+</style>
+</head>
+<body>
+<header>
+ <div>
+  <h1>HeliX examples</h1>
+  <p>A Haxe game framework. Each example runs here in your browser on WebGL2, and natively on Windows, macOS and Linux. <a href="https://github.com/whirlinggizmo/helix">Source on GitHub</a>.</p>
+ </div>
+ <input type="search" id="filter" placeholder="Filter examples" aria-label="Filter examples">
+</header>
+<main>
+{{sections}}
+<p class="none" id="none" hidden>No example matches.</p>
+</main>
+<footer>
+ HeliX is MIT licensed. The examples' assets keep their own licenses: <a href="https://github.com/whirlinggizmo/helix/blob/main/examples/assets/CREDITS.md">credits</a>.
+ Built from <a href="https://github.com/whirlinggizmo/helix/commit/{{commit}}">{{short}}</a>.
+</footer>
+<script>
+// Narrows the tiles to those whose name or description holds what's typed, hiding sections left empty.
+const filter=document.getElementById('filter');
+filter.addEventListener('input',()=>{
+ const words=filter.value.toLowerCase().split(/\s+/).filter(Boolean);let shown=0;
+ for(const section of document.querySelectorAll('section')){
+  let any=false;
+  for(const item of section.querySelectorAll('li')){const match=words.every(w=>item.dataset.text.includes(w));item.hidden=!match;any||=match;shown+=match;}
+  section.hidden=!any;}
+ document.getElementById('none').hidden=shown>0;
+});
+</script>
+</body>
+</html>
