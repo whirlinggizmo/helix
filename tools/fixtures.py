@@ -1,7 +1,9 @@
-"""The test fixtures: a short tone as WAV, Ogg/Vorbis and Ogg/Opus, in build/fixtures (the unit and services tests read them).
+"""The test fixtures: a short tone as WAV, Ogg/Vorbis and Ogg/Opus, in build/fixtures (the unit and services tests read them), and
+encoder.json beside them, how they were encoded (the services report includes it).
 
 The WAV is 16-bit mono 44,100 Hz, 0.12 s; the Opus copy is stereo 48 kHz, to exercise channel and rate handling. FFmpeg encodes them, bit-exact."""
 import array
+import json
 import math
 from pathlib import Path
 import shutil
@@ -13,8 +15,8 @@ ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/fixtures'
 
 def generate():
-    """Writes tone.wav, tone.ogg and tone.opus when any is missing, and returns their folder."""
-    if all((OUT/f'tone.{kind}').is_file() for kind in ('wav','ogg','opus')):return OUT
+    """Writes tone.wav, tone.ogg, tone.opus and encoder.json when any is missing, and returns their folder."""
+    if all((OUT/name).is_file() for name in ('tone.wav','tone.ogg','tone.opus','encoder.json')):return OUT
     encoder=shutil.which('ffmpeg')
     if not encoder:raise RuntimeError('Install FFmpeg with the libvorbis and libopus encoders to make the test fixtures')
     OUT.mkdir(parents=True,exist_ok=True)
@@ -27,6 +29,9 @@ def generate():
     common=[encoder,'-v','error','-y','-bitexact','-i',str(OUT/'tone.wav'),'-map_metadata','-1']
     subprocess.run(common+['-c:a','libvorbis','-q:a','3','-fflags','+bitexact',str(OUT/'tone.ogg')],check=True)
     subprocess.run(common+['-ar','48000','-ac','2','-c:a','libopus','-b:a','64000','-fflags','+bitexact',str(OUT/'tone.opus')],check=True)
+    version=subprocess.check_output([encoder,'-version'],text=True,encoding='utf-8').splitlines()[0]
+    (OUT/'encoder.json').write_text(json.dumps({'version':version,'vorbisQuality':3,'opusFixtureBitrate':64000,
+        'deterministicFlags':['-bitexact','-map_metadata -1','-fflags +bitexact']},indent=2)+'\n',encoding='utf-8')
     return OUT
 
 if __name__=='__main__':print(generate())
