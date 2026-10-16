@@ -153,6 +153,9 @@ def autopilot(name,browser,profile='native'):
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
                 process=subprocess.run([str(program)],cwd=ROOT/f'build/{profile}/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
+                # What the native graphics said it runs on (SDL_GPU's backend), as SDL chooses it.
+                for line in process.stderr.splitlines():
+                    if line.startswith('HeliX SDL_GPU: '):print(f'{script}: {line}',flush=True)
                 native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
                 (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
                 print(f'{script}: same final game in the browser and {profile}: {same}',flush=True)

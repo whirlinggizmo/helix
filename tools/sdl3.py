@@ -55,18 +55,19 @@ def check_headers():
 
 
 def fetch(entry):
-    """The pinned archive, downloaded into build/deps and checked against its SHA-256; never kept when it differs."""
+    """A pinned archive (SDL's, or another build/deps tool's), downloaded into build/deps and checked against its SHA-256; never kept when it
+    differs."""
     DEPS.mkdir(parents=True, exist_ok=True)
     archive = DEPS / entry['url'].rsplit('/', 1)[1]
     if not archive.is_file() or hashlib.sha256(archive.read_bytes()).hexdigest() != entry['sha256']:
-        print(f'sdl3: downloading {entry["url"]}', flush=True)
+        print(f'build/deps: downloading {entry["url"]}', flush=True)
         partial = archive.with_name(archive.name + '.part')
         with urllib.request.urlopen(entry['url'], timeout=300) as response:
             partial.write_bytes(response.read())
         digest = hashlib.sha256(partial.read_bytes()).hexdigest()
         if digest != entry['sha256']:
             partial.unlink()
-            raise RuntimeError(f'sdl3: {entry["url"]} has SHA-256 {digest}, not the pinned {entry["sha256"]}')
+            raise RuntimeError(f'build/deps: {entry["url"]} has SHA-256 {digest}, not the pinned {entry["sha256"]}')
         partial.replace(archive)
     return archive
 

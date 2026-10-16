@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Build and check this checkout on a Windows machine over ssh, as it is, committed or not, and leave nothing behind there.
 
-    python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--desktop] [--keep]
+    python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--desktop] [--keep]
 
 Packs the working tree (tracked files and new ones git doesn't ignore) with what FFmpeg and npm made here: the test fixtures
 (build/fixtures), the examples' generated sounds (build/generated/*/assets) and the node tools (build/tools/node_modules, plain JavaScript).
 The Windows machine needn't have FFmpeg. It copies the archive with scp into a scratch folder in the remote user's profile and runs each
 --then there as `python TOOL ARGS` in the copied tree (default: the hello example's native build). The scratch folder and the archive are
 deleted afterwards, also when a step fails, unless --keep.
+
+--env sets a variable for every step (SDL_GPU_DRIVER=vulkan, say).
 
 --desktop runs the steps in the session logged in at the machine's screen, not the ssh session, which has no desktop: windows open there,
 on its GPU. A scheduled task that runs only interactively starts them, and its output is printed when they end. Someone must be logged in.
@@ -45,9 +47,9 @@ def working_tree():
     return names
 
 
-def desktop(steps):
-    """The .bat the desktop's scheduled task runs: each step, its output in log.txt, and a done.txt saying whether all passed."""
-    lines = ['@echo off', 'cd /d "%~dp0"', 'set FAILED=0']
+def desktop(steps, env):
+    """The .bat the desktop's scheduled task runs: env set, each step, its output in log.txt, and a done.txt saying whether all passed."""
+    lines = ['@echo off', 'cd /d "%~dp0"', 'set FAILED=0'] + [f'set "{pair}"' for pair in env]
     for step in steps:
         lines += [f'echo remote_windows: python {step} >> log.txt', f'python {step} >> log.txt 2>&1', 'if errorlevel 1 set FAILED=1']
     # Redirection first: "echo 0> f" would redirect stream 0. Renamed once written, so done.txt is never seen empty.
@@ -55,7 +57,7 @@ def desktop(steps):
     return '\r\n'.join(lines) + '\r\n'
 
 
-def script(folder, archive, steps, keep, on_desktop):
+def script(folder, archive, steps, env, keep, on_desktop):
     """The .bat run there: unpack, each step (in the desktop session with on_desktop), clean up, and exit with whether every step passed."""
     lines = ['@echo off',
              'rem written by HeliX tools/remote_windows.py; it deletes itself',
@@ -80,6 +82,7 @@ def script(folder, archive, steps, keep, on_desktop):
                   ':removetask',
                   f'schtasks /delete /tn {task} /f >nul 2>&1']
     else:
+        lines += [f'set "{pair}"' for pair in env]
         for step in steps:
             lines += [f'echo remote_windows: python {step}', f'python {step}', 'if errorlevel 1 set FAILED=1']
     lines += [':done', 'cd /d "%USERPROFILE%"']
@@ -94,6 +97,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('host')
     parser.add_argument('--then', action='append', metavar='TOOL', help='a tool and its arguments, run there as python TOOL; repeatable')
+    parser.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='a variable set for every step; repeatable')
     parser.add_argument('--desktop', action='store_true', help='run the steps in the logged-in desktop session, where windows can open')
     parser.add_argument('--keep', action='store_true', help='leave the scratch folder there, to look into it')
     args = parser.parse_args()
@@ -107,9 +111,9 @@ def main():
                 tar.add(ROOT / name, arcname=name)
             if args.desktop:
                 inner = Path(scratch) / 'desktop.bat'
-                inner.write_bytes(desktop(steps).encode())
+                inner.write_bytes(desktop(steps, args.env).encode())
                 tar.add(inner, arcname='desktop.bat')
-        local_bat.write_bytes(script(tag, archive, steps, args.keep, args.desktop).encode())
+        local_bat.write_bytes(script(tag, archive, steps, args.env, args.keep, args.desktop).encode())
         print(f'remote_windows: {len(steps)} step(s) on {args.host}', flush=True)
         if subprocess.run(['scp', '-q', str(local_archive), str(local_bat), f'{args.host}:']).returncode != 0:
             print('remote_windows: copying to the host failed')

@@ -182,6 +182,8 @@ int helix_sdl3gpu_setup(void){
  max_samples=1;
  for(int n=8;n>=2;n/=2)if(SDL_GPUTextureSupportsSampleCount(device,SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,sample_count_of(n))&&
   SDL_GPUTextureSupportsSampleCount(device,depth_format,sample_count_of(n))){max_samples=n;break;}
+ /* Which backend runs, as SDL may choose any: said once, for logs and checks (the autopilot repeats it). */
+ fprintf(stderr,"HeliX SDL_GPU: %s\n",SDL_GetGPUDeviceDriver(device));
  const int asked=helix_surface_samples();
  window_samples=1;for(int n=max_samples;n>=2;n/=2)if(n<=asked){window_samples=n;break;}
  return 1;
