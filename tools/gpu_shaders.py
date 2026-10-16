@@ -78,11 +78,14 @@ def spirv_cross():
     from native_build import ARCH
     check_hxcpp()
     archive = fetch(entry)
-    source = DEPS / f'spirv-cross-{entry["version"]}-source'
+    source = DEPS / 'spirv-cross-source'
     shutil.rmtree(source, ignore_errors=True)
     with tarfile.open(archive) as tar:
-        tar.extractall(source, filter='data')
-    source = next(source.iterdir())
+        # Its top folder's sources and license alone: its tests' names pass Windows' 260-character paths.
+        wanted = [m for m in tar.getmembers() if m.isfile() and m.name.count('/') == 1]
+        for member in wanted:
+            member.name = member.name.split('/', 1)[1]
+        tar.extractall(source, members=wanted, filter='data')
     files = ''.join(f'  <file name="{name}"/>\n' for name in ['main.cpp'] + sorted(p.name for p in source.glob('spirv_*.cpp')))
     build = source / 'Build.xml'
     build.write_text(f'''<xml>
@@ -102,7 +105,7 @@ def spirv_cross():
     folder.mkdir(parents=True, exist_ok=True)
     subprocess.run(['haxelib', 'run', 'hxcpp', 'Build.xml', f'-D{ARCH}', f'-DHXCPP_COMPILE_THREADS={os.cpu_count() or 4}'], cwd=source,
                    check=True)
-    shutil.rmtree(source.parent)
+    shutil.rmtree(source)
     if not program.is_file():
         raise RuntimeError(f'gpu_shaders: SPIRV-Cross built, but {program} is missing')
     return program
