@@ -19,14 +19,15 @@ import subprocess
 import sys
 import time
 import urllib.request
-from shader_metadata import generate,manifest
+from shader_metadata import generate,generate_sdl_gpu,manifest
 import pack_shader
-import gpu_shaders
 import fontbake
 from native_build import ARCH
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/shaders'
+# SDL_GPU's dialects of the framework's programs, made only for SDL_GPU builds (tools/gpu_shaders.py), so no other build needs its tools.
+GENERATED_SDL_GPU=ROOT/'build/generated/shaders-sdlgpu'
 SHADERS=ROOT/'src/helix/graphics/shaders'
 SHARED=ROOT/'examples/shared'
 
@@ -34,19 +35,25 @@ def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check
 
 def shader_stamp():
     """The newest change to the framework's shader sources, their manifest, and the tool writing their generated code."""
-    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime,gpu_shaders.tool_stamp()])
+    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
 
-def shader():
-    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output."""
+def shader(sdl_gpu=False):
+    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output; with
+    sdl_gpu, their SDL_GPU dialects too (build/generated/shaders-sdlgpu)."""
     GENERATED.mkdir(parents=True,exist_ok=True)
     output=GENERATED/'shader-contract.json'
-    if output.is_file() and output.stat().st_mtime>=shader_stamp():return
-    import shdc as compiler
-    shdc=compiler.path()
-    for spec in manifest(SHADERS/'shaders.json'):
-        program=spec['program'];source=SHADERS/f'{program}.glsl'
-        run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
-    generate(SHADERS/'shaders.json',GENERATED,ROOT)
+    if not output.is_file() or output.stat().st_mtime<shader_stamp():
+        import shdc as compiler
+        shdc=compiler.path()
+        for spec in manifest(SHADERS/'shaders.json'):
+            program=spec['program'];source=SHADERS/f'{program}.glsl'
+            run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
+        generate(SHADERS/'shaders.json',GENERATED,ROOT)
+    if sdl_gpu:
+        import gpu_shaders
+        stamp=GENERATED_SDL_GPU/'stamp'
+        if not stamp.is_file() or stamp.stat().st_mtime<max(output.stat().st_mtime,gpu_shaders.tool_stamp()):
+            generate_sdl_gpu(SHADERS/'shaders.json',GENERATED,GENERATED_SDL_GPU);stamp.write_text('',encoding='utf-8')
 
 def source(name):
     """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
@@ -58,7 +65,7 @@ def hxml(name,target):
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
     lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     # SDL_GPU's programs carry its dialects, which other builds leave out.
-    if target=='native-sdl3-gpu':lines.append('-D helix_sdl3_gpu')
+    if target=='native-sdl3-gpu':lines+=['-D helix_sdl3_gpu',f'-cp {GENERATED_SDL_GPU.relative_to(ROOT).as_posix()}']
     path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
@@ -72,8 +79,9 @@ def prepare(name):
     assets(name,web/'assets')
     licenses(web)
 
-def assets(name,out):
-    """The shared files, then the example's own: its autopilot scripts and what its assets/generate.py makes."""
+def assets(name,out,sdl_gpu=False):
+    """The shared files, then the example's own: its autopilot scripts, what its assets/generate.py makes and its shaders (with SDL_GPU's
+    dialects when sdl_gpu)."""
     if out.exists():shutil.rmtree(out)
     shutil.copytree(ROOT/'examples/assets',out)
     pilots=ROOT/f'examples/{name}/autopilot'
@@ -83,15 +91,15 @@ def assets(name,out):
         import importlib.util
         spec=importlib.util.spec_from_file_location(f'{name}_assets',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         shutil.copytree(module.generate(),out,dirs_exist_ok=True)
-    pack_shaders(name,out)
+    pack_shaders(name,out,sdl_gpu=sdl_gpu)
 
-def pack_shaders(name,out,since=0):
-    """The example's shaders/*.glsl packed into out/shaders/*.hxshader: those changed since `since` (a time), all by default. Returns the newest
-    source's time."""
+def pack_shaders(name,out,since=0,sdl_gpu=False):
+    """The example's shaders/*.glsl packed into out/shaders/*.hxshader (with SDL_GPU's dialects when sdl_gpu): those changed since `since` (a
+    time), all by default. Returns the newest source's time."""
     newest=since
     for source in sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl')):
         stamp=source.stat().st_mtime;newest=max(newest,stamp)
-        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,out/'shaders'/(source.stem+'.hxshader'))
+        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,out/'shaders'/(source.stem+'.hxshader'),sdl_gpu)
     return newest
 
 def licenses(out):
@@ -119,11 +127,12 @@ def build(name,target):
         if target.startswith('native-sdl3'):
             import sdl3 as finder
             sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
+        if target=='native-sdl3-gpu':shader(sdl_gpu=True)
         run(['haxe',hxml(name,target)],native_env(sdl3))
         folder=ROOT/f'build/{target}/{name}'
         place_runtimes(folder,sdl3)
         out=folder/'assets'
-        assets(name,out)
+        assets(name,out,target=='native-sdl3-gpu')
         licenses(out.parent)
 
 def autopilot(name,browser,profile='native'):

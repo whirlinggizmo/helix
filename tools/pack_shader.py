@@ -1,5 +1,5 @@
 """Pack an app's shader (.glsl) into a HeliX shader file (.hxshader): JSON holding its program for every graphics backend HeliX has (GLSL 410
-natively, GLSL ES 300 in the browser, compiled by sokol-shdc; SDL_GPU's SPIR-V, MSL and HLSL from the GLSL 410, by tools/gpu_shaders.py), and what the program needs bound (attributes, uniform blocks and their members,
+natively, GLSL ES 300 in the browser, compiled by sokol-shdc; and with --sdl-gpu SDL_GPU's SPIR-V, MSL and HLSL from the GLSL 410, by tools/gpu_shaders.py), and what the program needs bound (attributes, uniform blocks and their members,
 textures). Programs load it as any asset (helix.graphics.Shaders) and the adapters build the program from it at run time.
 
 A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
@@ -24,7 +24,6 @@ import tempfile
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import gpu_shaders  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 1
@@ -384,7 +383,9 @@ def members(source, block):
     return out
 
 
-def pack(shdc, source_path, output_path):
+def pack(shdc, source_path, output_path, sdl_gpu=False):
+    """Packs source_path into output_path, with SDL_GPU's dialects (tools/gpu_shaders.py) only when sdl_gpu, so other builds need neither
+    glslang nor SPIRV-Cross."""
     source = Path(source_path).read_text(encoding='utf-8')
     kinds = [k for k in KINDS if re.search(r'@include_block\s+' + k + r'\b', source)]
     if len(kinds) != 1:
@@ -443,10 +444,12 @@ def pack(shdc, source_path, output_path):
                          'data': views.get(pair['view_slot'], {}).get('sample_type') == 'unfilterable_float'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
-    sdl_gpu = gpu_shaders.translate(dialects['glsl410']['vertex'], dialects['glsl410']['fragment'], blocks, textures)
     shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],
-              'glsl300es': dialects['glsl300es'], 'sdlGpu': sdl_gpu, 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
+              'glsl300es': dialects['glsl300es'], 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
               'textures': sorted(textures, key=lambda t: t['slot'])}
+    if sdl_gpu:
+        import gpu_shaders
+        shader['sdlGpu'] = gpu_shaders.translate(dialects['glsl410']['vertex'], dialects['glsl410']['fragment'], blocks, textures)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     Path(output_path).write_text(json.dumps(shader, indent=1) + '\n', encoding='utf-8')
 
@@ -462,5 +465,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input')
     parser.add_argument('output')
+    parser.add_argument('--sdl-gpu', action='store_true', help="with SDL_GPU's dialects")
     a = parser.parse_args()
-    pack(shdc_path(), a.input, a.output)
+    pack(shdc_path(), a.input, a.output, a.sdl_gpu)
