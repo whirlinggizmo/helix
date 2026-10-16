@@ -120,6 +120,8 @@ class App extends BaseApp {
 				case Ready(environment):
 					environments[i] = environment;
 					loadMs[i] = (services.getTime() - started) * 1000;
+					// Said in the log too, so a run without a screen shows how long the bake took.
+					trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 				case Failed(message):
 					trace(message);
 				case Cancelled:

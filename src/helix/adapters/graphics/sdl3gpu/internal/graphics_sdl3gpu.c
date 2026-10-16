@@ -161,7 +161,9 @@ static ID3DBlob *dxbc(const char *hlsl,const char *target){
  if(!d3d_compile){fprintf(stderr,"HeliX SDL_GPU: d3dcompiler_47.dll can't be loaded\n");return NULL;}
  ID3DBlob *code=NULL,*errors=NULL;
  HRESULT result=d3d_compile(hlsl,strlen(hlsl),NULL,NULL,NULL,"main",target,D3DCOMPILE_OPTIMIZATION_LEVEL3,0,&code,&errors);
- if(errors){fprintf(stderr,"HeliX SDL_GPU: %s\n",(const char*)ID3D10Blob_GetBufferPointer(errors));ID3D10Blob_Release(errors);}
+ /* Its messages only when it fails: its warnings (loops unrolled, say) are about code SPIRV-Cross wrote, nothing to act on. */
+ if(FAILED(result)&&errors)fprintf(stderr,"HeliX SDL_GPU: %s\n",(const char*)ID3D10Blob_GetBufferPointer(errors));
+ if(errors)ID3D10Blob_Release(errors);
  if(FAILED(result)){if(code)ID3D10Blob_Release(code);return NULL;}
  return code;
 }
