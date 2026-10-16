@@ -118,13 +118,22 @@ static Command *add_command(int kind){
  command_size=(int)size;Command *c=&commands[command_count++];memset(c,0,sizeof *c);c->kind=kind;return c;
 }
 
-/* Copies staged uploads into their destinations through one transfer buffer and copy pass, on cmd. 0 when SDL refused. */
+/* The transfer buffer uploads go through, kept for the device's life and grown when an upload needs more; each use maps it cycled, so SDL
+   gives a free one of its own while the GPU still reads the last (making a buffer every pass cost Direct3D 12 most). */
+static SDL_GPUTransferBuffer *transfer;static Uint32 transfer_size;
+/* Copies staged uploads into their destinations through the transfer buffer and one copy pass, on cmd. 0 when SDL refused. */
 static int upload_staged(SDL_GPUCommandBuffer *cmd,const unsigned char *bytes,size_t total,const Upload *list,int count){
  if(!count)return 1;
- SDL_GPUTransferBuffer *transfer=SDL_CreateGPUTransferBuffer(device,&(SDL_GPUTransferBufferCreateInfo){.usage=SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,.size=(Uint32)total});
- if(!transfer)return 0;
- void *mapped=SDL_MapGPUTransferBuffer(device,transfer,false);
- if(!mapped){SDL_ReleaseGPUTransferBuffer(device,transfer);return 0;}
+ if(total>transfer_size){
+  Uint32 size=transfer_size?transfer_size:1<<20;while(size<total)size*=2;
+  SDL_GPUTransferBuffer *bigger=SDL_CreateGPUTransferBuffer(device,&(SDL_GPUTransferBufferCreateInfo){.usage=SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,.size=size});
+  if(!bigger)return 0;
+  /* Released once the GPU has used it. */
+  if(transfer)SDL_ReleaseGPUTransferBuffer(device,transfer);
+  transfer=bigger;transfer_size=size;
+ }
+ void *mapped=SDL_MapGPUTransferBuffer(device,transfer,true);
+ if(!mapped)return 0;
  memcpy(mapped,bytes,total);SDL_UnmapGPUTransferBuffer(device,transfer);
  SDL_GPUCopyPass *copy=SDL_BeginGPUCopyPass(cmd);
  for(int i=0;i<count;i++){
@@ -137,8 +146,6 @@ static int upload_staged(SDL_GPUCommandBuffer *cmd,const unsigned char *bytes,si
     &(SDL_GPUTextureRegion){.texture=u->texture,.mip_level=u->level,.layer=u->layer,.w=u->width,.h=u->height,.d=1},u->cycle);
  }
  SDL_EndGPUCopyPass(copy);
- /* Released once the GPU has used it. */
- SDL_ReleaseGPUTransferBuffer(device,transfer);
  return 1;
 }
 /* Uploads now, through a command buffer of its own submitted at once (before the frame's, which is submitted at its end): a static
@@ -681,20 +688,20 @@ int helix_read_pixels(uint32_t target,unsigned char *out){
  SDL_GPUTexture *texture=target?textures[slot_of(target)].texture:screen;
  if(command){SDL_SubmitGPUCommandBuffer(command);command=NULL;}
  const Uint32 size=(Uint32)w*(Uint32)h*4;
- SDL_GPUTransferBuffer *transfer=SDL_CreateGPUTransferBuffer(device,&(SDL_GPUTransferBufferCreateInfo){.usage=SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,.size=size});
- SDL_GPUCommandBuffer *cmd=transfer?SDL_AcquireGPUCommandBuffer(device):NULL;
- if(!cmd){if(transfer)SDL_ReleaseGPUTransferBuffer(device,transfer);return 0;}
+ SDL_GPUTransferBuffer *download=SDL_CreateGPUTransferBuffer(device,&(SDL_GPUTransferBufferCreateInfo){.usage=SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,.size=size});
+ SDL_GPUCommandBuffer *cmd=download?SDL_AcquireGPUCommandBuffer(device):NULL;
+ if(!cmd){if(download)SDL_ReleaseGPUTransferBuffer(device,download);return 0;}
  SDL_GPUCopyPass *copy=SDL_BeginGPUCopyPass(cmd);
- SDL_DownloadFromGPUTexture(copy,&(SDL_GPUTextureRegion){.texture=texture,.w=(Uint32)w,.h=(Uint32)h,.d=1},&(SDL_GPUTextureTransferInfo){.transfer_buffer=transfer});
+ SDL_DownloadFromGPUTexture(copy,&(SDL_GPUTextureRegion){.texture=texture,.w=(Uint32)w,.h=(Uint32)h,.d=1},&(SDL_GPUTextureTransferInfo){.transfer_buffer=download});
  SDL_EndGPUCopyPass(copy);
  SDL_GPUFence *fence=SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
  int ok=0;
  if(fence&&SDL_WaitForGPUFences(device,true,&fence,1)){
-  const void *mapped=SDL_MapGPUTransferBuffer(device,transfer,false);
-  if(mapped){memcpy(out,mapped,size);SDL_UnmapGPUTransferBuffer(device,transfer);ok=1;}
+  const void *mapped=SDL_MapGPUTransferBuffer(device,download,false);
+  if(mapped){memcpy(out,mapped,size);SDL_UnmapGPUTransferBuffer(device,download);ok=1;}
  }
  if(fence)SDL_ReleaseGPUFence(device,fence);
- SDL_ReleaseGPUTransferBuffer(device,transfer);
+ SDL_ReleaseGPUTransferBuffer(device,download);
  return ok;
 }
 
@@ -738,6 +745,7 @@ void helix_sdl3gpu_shutdown(void){
  for(int i=0;i<retired_count;i++)SDL_ReleaseGPUBuffer(device,retired[i]);
  retired_count=0;
  if(arena){SDL_ReleaseGPUBuffer(device,arena);arena=NULL;arena_size=arena_used=0;}
+ if(transfer){SDL_ReleaseGPUTransferBuffer(device,transfer);transfer=NULL;transfer_size=0;}
  if(screen)SDL_ReleaseGPUTexture(device,screen);if(screen_samples)SDL_ReleaseGPUTexture(device,screen_samples);if(screen_depth)SDL_ReleaseGPUTexture(device,screen_depth);
  screen=screen_samples=screen_depth=NULL;
  SDL_ReleaseWindowFromGPUDevice(device,window);SDL_DestroyGPUDevice(device);device=NULL;
