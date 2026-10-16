@@ -141,7 +141,9 @@ def autopilot(name,browser,profile='native'):
             for script in scripts:
                 options={'autopilot':f'autopilot/{script}','autoclose':'1','audio':'0','fast':'1'}
                 query='&'.join(f'{k}={v}' for k,v in options.items())
-                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,text=True, encoding='utf-8'))
+                # The native program's Vulkan driver choice (lavapipe, for SDL_GPU on a private display) isn't Chrome's: there it leaves WebGL2 out.
+                browser_env={k:v for k,v in os.environ.items() if k not in ('VK_DRIVER_FILES','VK_ICD_FILENAMES')}
+                web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/?{query}'],cwd=ROOT,env=browser_env,text=True, encoding='utf-8'))
                 result=out/f'{profile}-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
                 process=subprocess.run([str(program)],cwd=ROOT/f'build/{profile}/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
