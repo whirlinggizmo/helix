@@ -28,7 +28,7 @@ def main():
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if a.native:
   from pins import check_hxcpp
-  from native_build import ARCH,env as native_env
+  from native_build import ARCH,env as native_env,place_runtimes
   from example import shader
   sdl3=None;defines=[]
   if a.native_profile=='sdl3':
@@ -37,6 +37,7 @@ def main():
   check_hxcpp();shader();env=native_env(sdl3)
   build_dir=build/('services-native-sdl3' if sdl3 else 'services-native')
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,'-dce','full','-D','analyzer-optimize','-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
+  place_runtimes(build_dir,sdl3)
  counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
   protocol_version='HTTP/1.1'
@@ -89,7 +90,7 @@ def main():
    counts.clear();peak=0;runs=[]
    for _ in range(2):
     child=dict(os.environ,SDL_AUDIO_DRIVER='dummy') if a.native_profile=='sdl3' else None
-    native=subprocess.run([str(build_dir/'ServiceTests'),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
+    native=subprocess.run([str(build_dir/('ServiceTests.exe' if os.name=='nt' else 'ServiceTests')),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
     if native.returncode!=0:
      sys.stderr.write(native.stdout+native.stderr);raise SystemExit(f"native ServiceTests exited {native.returncode}")
     output=native.stdout
@@ -98,8 +99,9 @@ def main():
    assert counts['/assets/fixture.wav']==1,dict(counts)
    assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
    assert peak<=2,peak
-   from native_build import codec_library
-   library=ctypes.CDLL(codec_library());library.sf_version_string.restype=ctypes.c_char_p
+   from native_build import codec_library,codec_runtime
+   # The library the program loaded: on Windows the DLL (codec_library is the import library linked), elsewhere the one linked.
+   library=ctypes.CDLL(str(codec_runtime() or codec_library()));library.sf_version_string.restype=ctypes.c_char_p
    report['native']={'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
   report['sources']={str(file.relative_to(ROOT)):hashlib.sha256(file.read_bytes()).hexdigest() for group in ['src','tests'] for file in sorted((ROOT/group).rglob('*.hx'))}
   for source in ('src/helix/adapters/shared/mixer.c','src/helix/adapters/audio/sokol/internal/output_sokol.c'):report['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()

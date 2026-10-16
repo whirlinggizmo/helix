@@ -1,5 +1,6 @@
 package helix.adapters.export.filesystem;
 
+import helix.adapters.shared.ReplaceBridge;
 import haxe.io.Bytes;
 import haxe.io.Path;
 import helix.assets.IExport;
@@ -43,9 +44,8 @@ class FileSystemExportAdapter implements IExport {
 		try {
 			sys.FileSystem.createDirectory(directory);
 			sys.io.File.saveBytes(temporary, bytes);
-			if (sys.FileSystem.exists(path))
-				sys.FileSystem.deleteFile(path);
-			sys.FileSystem.rename(temporary, path);
+			if (ReplaceBridge.replace(temporary, path) == 0)
+				throw 'Could not replace $path';
 			done(Exported(path));
 		} catch (error:Dynamic) {
 			try

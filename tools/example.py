@@ -108,19 +108,15 @@ def build(name,target):
         if terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
     else:
         from pins import check_hxcpp,check_sokol
-        from native_build import codec_runtime,env as native_env
+        from native_build import env as native_env,place_runtimes
         check_hxcpp();check_sokol(ROOT)
         sdl3=None
         if target=='native-sdl3':
             import sdl3 as finder
             sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
         run(['haxe',hxml(name,target)],native_env(sdl3))
-        # The libraries the program loads from beside it: on Windows libsndfile and SDL3's DLL, on macOS SDL3's framework.
         folder=ROOT/f'build/{target}/{name}'
-        for runtime in [codec_runtime()]+(sdl3.runtime if sdl3 else []):
-            if runtime is None:continue
-            if Path(runtime).is_dir():shutil.copytree(runtime,folder/Path(runtime).name,symlinks=True,dirs_exist_ok=True)
-            else:shutil.copy2(runtime,folder)
+        place_runtimes(folder,sdl3)
         out=folder/'assets'
         assets(name,out)
         licenses(out.parent)

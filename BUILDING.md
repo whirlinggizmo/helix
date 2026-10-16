@@ -19,11 +19,13 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
   - Linux: GCC/G++ 13 and ALSA headers; X11/Xrandr/Xi/Xcursor and GL libraries; the libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - Windows: Visual Studio's C++ tools (MSVC, which hxcpp finds itself; MinGW isn't supported). libsndfile's official 1.2.2 win64 release is downloaded and hash-checked into the user's cache, and its DLL copied beside each program.
   - macOS: Xcode's command-line tools and Homebrew's `libsndfile`; for FFmpeg, Homebrew's `ffmpeg-full` (its `ffmpeg` has no Vorbis encoder). Apple silicon builds arm64.
+  - **The SDL3 profile** (`native-sdl3`): SDL 3.4.18, found or fetched by `tools/sdl3.py` into `build/deps` on its first build. On Linux, the system's SDL3 when pkg-config finds 3.4.18 or newer; else the pinned source release, checked and built once with **CMake** (needed for that build alone) against the X11, Wayland and audio development headers it finds (CI's list: `SDL3_BUILD` in `.github/workflows/ci.yml`). On Windows and macOS, SDL's official release, checked, its DLL or framework copied beside each program. The headers are vendored (`vendor/sdl3`).
   - `python3 tools/remote_windows.py HOST` builds and checks this checkout on a Windows machine over ssh; `--desktop` runs in its logged-in session, where windows can open.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**
   - the Sokol headers, from the Whirling Gizmo fork [whirlinggizmo/sokol](https://github.com/whirlinggizmo/sokol) at `c237609` (upstream to `5e94d12`)
   - [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) at `8e85d19` (window position, size, displays, style and visibility)
   - stb_image
+  - SDL 3.4.18's headers (`vendor/sdl3`)
   - JetBrains Mono, baked into the built-in distance-field font by `tools/fontbake.py` (HeliX's own TrueType reader and baker, under the Haxe interpreter)
 
 Third-party licenses, and what builds ship with: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Example asset credits: [examples/assets/CREDITS.md](examples/assets/CREDITS.md).
@@ -36,7 +38,8 @@ Work happens in the browser with hot reload: edit, save, and the running page ta
 ```console
 python3 tools/example.py app-hello dev            # hotreload-hx dev server, http://localhost:8060/
 python3 tools/example.py app-hello build web      # build/web/app-hello/
-python3 tools/example.py app-hello build native   # build/native/app-hello/Main
+python3 tools/example.py app-hello build native   # build/native/app-hello/Main, the sokol profile
+python3 tools/example.py app-hello build native-sdl3   # build/native-sdl3/app-hello/Main, the SDL3 profile
 ```
 
 **F9 saves a screenshot** in every example: a download in the browser, natively a PNG in `~/Pictures/<example>/` (or `HELIX_EXPORT`). Autopilot scripts take them too (`{"op": "screenshot"}`).
@@ -56,8 +59,8 @@ python3 helix.py services --browser /path/to/chromium --native
 ```
 
 - **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, 3D math, trigonometry, Blocks and the Asteroids simulation. `helix.math.Trig` must also give the same bits in JS and, with `--native`, in hxcpp.
-- **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures.
-- **Autopilot** (`tools/example.py <name> autopilot`) replays an example's scripts in a headless browser and natively, and requires the same final game.
+- **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures; `--native-profile sdl3` plays natively through SDL3's audio (its dummy driver) instead of sokol's.
+- **Autopilot** (`tools/example.py <name> autopilot [native-sdl3]`) replays an example's scripts in a headless browser and natively (the sokol profile, or the SDL3 one), and requires the same final game.
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
 

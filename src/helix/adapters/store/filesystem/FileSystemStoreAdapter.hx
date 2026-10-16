@@ -7,6 +7,7 @@ import helix.assets.IStore;
 import helix.assets.Storage.StorageResult;
 import helix.assets.Storage.StorageSourceResult;
 import helix.assets.Storage.StorageWriteResult;
+import helix.adapters.shared.ReplaceBridge;
 import sys.thread.Thread;
 
 /** IStore natively: files under a root directory, a key as a relative path, each operation on a worker thread; a write goes to a sibling
@@ -72,7 +73,8 @@ class FileSystemStoreAdapter implements IStore {
 			makeDirectory(Path.directory(file));
 			try {
 				sys.io.File.saveBytes(temp, bytes);
-				sys.FileSystem.rename(temp, file);
+				if (ReplaceBridge.replace(temp, file) == 0)
+					throw 'Could not replace $file';
 			} catch (error:Dynamic) {
 				if (sys.FileSystem.exists(temp))
 					sys.FileSystem.deleteFile(temp);

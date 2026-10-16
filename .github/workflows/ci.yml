@@ -7,6 +7,8 @@
 #   on Windows and macOS, every example's native build.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so nothing opens a window there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one.
+# - Both native profiles, sokol's and SDL3's (docs/ROADMAP.md, milestone 8): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
+#   (CMake, the runner's) and the official release on Windows and macOS, kept in build/deps and cached.
 #
 # Haxe 4.3.7; hxcpp 4.3.2 and the formatter in the repository's haxelib (build/haxelib), cached, a cache miss fetching them with retries
 # (tools/pins.py); sokol-shdc fetched and checked by tools/shdc.py. A newer push cancels the run in progress.
@@ -21,6 +23,10 @@ on:
   schedule:
     - cron: "41 9 * * *"
   workflow_dispatch:
+
+# What SDL's source build needs on Linux to have its X11, Wayland and audio parts: SDL loads their libraries at run time.
+env:
+  SDL3_BUILD: libxext-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols libdecor-0-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev libdrm-dev libgbm-dev libegl-dev
 
 concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name }}
@@ -49,7 +55,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev
+          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev $SDL3_BUILD
       - name: System packages (macOS)
         if: runner.os == 'macOS'
         # Homebrew's ffmpeg has no Vorbis encoder; ffmpeg-full has, keg-only, so its bin goes first on PATH.
@@ -65,10 +71,16 @@ jobs:
         with:
           path: build/haxelib
           key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/deps
+          key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
       - name: Tool, package and unit tests; Trig's bits on every target
         run: python helix.py test --native
-      - name: An example's native build (the adapters' C)
-        run: python tools/example.py asteroids build native
+      - name: An example's native build under each profile (the adapters' C)
+        run: |
+          python tools/example.py asteroids build native
+          python tools/example.py asteroids build native-sdl3
       - name: Every example type-checked on both targets
         if: runner.os == 'Linux'
         run: python tools/typecheck.py
@@ -108,8 +120,14 @@ jobs:
         with:
           path: build/haxelib
           key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: Every example, natively
-        run: python tools/example.py all build native
+      - uses: actions/cache@v4
+        with:
+          path: build/deps
+          key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Every example, natively under each profile
+        run: |
+          python tools/example.py all build native
+          python tools/example.py all build native-sdl3
 
   full:
     name: services and autopilots (Linux, daily)
@@ -129,7 +147,7 @@ jobs:
       - name: System packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev xvfb openbox x11-xserver-utils libgl1-mesa-dri
+          sudo apt-get install -y ffmpeg libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev xvfb openbox x11-xserver-utils libgl1-mesa-dri $SDL3_BUILD
       - name: Python and Node packages, and Chromium
         run: |
           python -m pip install PyYAML==6.0.1
@@ -140,16 +158,24 @@ jobs:
         with:
           path: build/haxelib
           key: haxelib-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: Platform services, in Chrome and natively
+      - uses: actions/cache@v4
+        with:
+          path: build/deps
+          key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - name: Platform services, in Chrome and natively under each profile
         env:
           HELIX_AUDIO: "0"
-        run: python helix.py services --browser "$CHROME" --native
-      - name: The autopilots, the same final game on both targets
+        run: |
+          python helix.py services --browser "$CHROME" --native
+          python helix.py services --browser "$CHROME" --native --native-profile sdl3
+      - name: The autopilots, the same final game in Chrome and natively under each profile
         env:
           HELIX_AUDIO: "0"
         run: |
           python tools/example.py asteroids autopilot --browser "$CHROME"
           python tools/example.py blocks autopilot --browser "$CHROME"
+          python tools/example.py asteroids autopilot native-sdl3 --browser "$CHROME"
+          python tools/example.py blocks autopilot native-sdl3 --browser "$CHROME"
       - name: The autopilots' results
         if: always()
         uses: actions/upload-artifact@v4

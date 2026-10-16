@@ -42,6 +42,16 @@ def codec_runtime():
     """The libsndfile a program needs beside it to run, or None where the system provides it (Linux, macOS)."""
     return sndfile_windows()/'bin/sndfile.dll' if sys.platform=='win32' else None
 
+def place_runtimes(folder,sdl3=None):
+    """Copies what a program built into folder loads from beside it: on Windows libsndfile's DLL and SDL3's, on macOS SDL3's framework;
+    nothing where the system provides them."""
+    import shutil
+    for runtime in [codec_runtime()]+(sdl3.runtime if sdl3 else []):
+        if runtime is None:continue
+        runtime=Path(runtime)
+        if runtime.is_dir():shutil.copytree(runtime,Path(folder)/runtime.name,symlinks=True,dirs_exist_ok=True)
+        else:shutil.copy2(runtime,folder)
+
 def env(sdl3=None):
     """The environment hxcpp's build reads: HeliX's root, the codec, a shared compile cache, and for the SDL3 profile the library sdl3 names
     (tools/sdl3.py's find)."""
