@@ -94,6 +94,49 @@ def system_linux(minimum):
     return Sdl3(str(library), [], f'the system\'s SDL {version} ({library})')
 
 
+# What building SDL needs on Linux, beyond a C compiler: CMake and the development headers of the parts SDL loads at run time (X11, Wayland,
+# audio, D-Bus, udev). Debian/Ubuntu's is CI's list (SDL3_BUILD in .github/workflows/ci.yml); Fedora's the same parts, after SDL's
+# docs/README-linux.md, which lists other distributions'.
+PACKAGES = {
+    'Debian/Ubuntu': 'sudo apt-get install cmake libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev '
+                     'libxkbcommon-dev libwayland-dev wayland-protocols libdecor-0-dev libasound2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev '
+                     'libudev-dev libdrm-dev libgbm-dev libegl-dev',
+    'Fedora': 'sudo dnf install cmake libX11-devel libXext-devel libXrandr-devel libXcursor-devel libXfixes-devel libXi-devel libXScrnSaver-devel '
+              'libXtst-devel libxkbcommon-devel wayland-devel wayland-protocols-devel libdecor-devel alsa-lib-devel pulseaudio-libs-devel '
+              'pipewire-devel dbus-devel systemd-devel libdrm-devel mesa-libgbm-devel mesa-libEGL-devel',
+}
+
+
+def install_hint():
+    """The commands that install what building SDL needs, a line each."""
+    return '\n'.join(f'  {name}: {command}' for name, command in PACKAGES.items()) + '\n  (others: SDL\'s docs/README-linux.md)'
+
+
+def backends(configure_output):
+    """SDL's configure summary's enabled backends, by kind ("Video drivers", "Audio drivers", ...): names, without "(dynamic)"."""
+    found = {}
+    for line in configure_output.splitlines():
+        line = line.removeprefix('--').strip()
+        kind, colon, names = line.partition(':')
+        if colon and kind.endswith(('drivers', 'libraries')):
+            found[kind] = {name.split('(')[0] for name in names.split()}
+    return found
+
+
+def check_backends(found, prefix):
+    """Stops when SDL found no windowing system to build for (its program could open no window); warns, naming the packages, for the
+    optional parts it left out (prefix: where the build goes, deleted to build again)."""
+    video, audio = found.get('Video drivers', set()), found.get('Audio drivers', set())
+    if not video & {'x11', 'wayland'}:
+        raise RuntimeError('sdl3: SDL found neither X11\'s nor Wayland\'s development headers, so it could open no window. Install them and '
+                           'build again:\n' + install_hint())
+    missing = [part for part, name in (('Wayland', 'wayland' in video), ('X11', 'x11' in video), ('PipeWire', 'pipewire' in audio),
+                                       ('PulseAudio', 'pulseaudio' in audio), ('ALSA', 'alsa' in audio)) if not name]
+    if missing:
+        print(f'sdl3: building without {", ".join(missing)} (their development headers weren\'t found); to have them, install these and delete '
+              f'{prefix.relative_to(ROOT).as_posix()}:\n' + install_hint(), flush=True)
+
+
 def built_linux(entry, version):
     """The pinned source release built once into build/deps/<folder>-static: a static library (SDL loads X11, Wayland and the audio
     libraries at run time, so it links only libm and pthread besides)."""
@@ -101,7 +144,8 @@ def built_linux(entry, version):
     pc = prefix / 'lib' / 'pkgconfig' / 'sdl3.pc'
     if not pc.is_file():
         if shutil.which('cmake') is None:
-            raise RuntimeError('sdl3: no system SDL3 of ' + entry['systemMinimum'] + ' or newer, and building the pinned one needs CMake')
+            raise RuntimeError(f'sdl3: no system SDL3 of {entry["systemMinimum"]} or newer, and building the pinned one (once) needs CMake and '
+                               'the development headers of what SDL uses:\n' + install_hint())
         archive = fetch(entry)
         source = DEPS / entry['folder']
         shutil.rmtree(source, ignore_errors=True)
@@ -110,9 +154,14 @@ def built_linux(entry, version):
         build = DEPS / (entry['folder'] + '-build')
         shutil.rmtree(build, ignore_errors=True)
         print(f'sdl3: building SDL {version} into {prefix.relative_to(ROOT)} (once)', flush=True)
-        subprocess.run(['cmake', '-S', source, '-B', build, '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={prefix}',
-                        '-DCMAKE_INSTALL_LIBDIR=lib', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-DSDL_SHARED=OFF', '-DSDL_STATIC=ON',
-                        '-DSDL_TEST_LIBRARY=OFF', '-DSDL_TESTS=OFF', '-DSDL_EXAMPLES=OFF', '-DSDL_INSTALL_DOCS=OFF'], check=True)
+        configured = subprocess.run(['cmake', '-S', source, '-B', build, '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={prefix}',
+                                     '-DCMAKE_INSTALL_LIBDIR=lib', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-DSDL_SHARED=OFF', '-DSDL_STATIC=ON',
+                                     '-DSDL_TEST_LIBRARY=OFF', '-DSDL_TESTS=OFF', '-DSDL_EXAMPLES=OFF', '-DSDL_INSTALL_DOCS=OFF'],
+                                    capture_output=True, text=True, encoding='utf-8')
+        print(configured.stdout, configured.stderr, sep='', flush=True)
+        if configured.returncode != 0:
+            raise RuntimeError('sdl3: configuring SDL failed (above)')
+        check_backends(backends(configured.stdout), prefix)
         subprocess.run(['cmake', '--build', build, '--parallel', str(os.cpu_count() or 4)], check=True)
         subprocess.run(['cmake', '--install', build], check=True)
         shutil.rmtree(build)
