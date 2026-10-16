@@ -84,9 +84,12 @@ class HaxeHttpAdapter implements IHttp {
 	/** No transfers yet. */
 	public function new() {}
 
-	public function get(url:String, noCache:Bool, head:(Int, Map<String, String>) -> Void, body:Bytes->Void, end:Null<String>->Void):Void->Void {
+	public function get(url:String, noCache:Bool, headers:Map<String, String>, head:(Int, Map<String, String>) -> Void, body:Bytes->Void,
+			end:Null<String>->Void):Void->Void {
 		var http = new haxe.Http(url),
 			transfer = new Transfer(mailbox, http, head, body, end);
+		for (name => value in headers)
+			http.setHeader(name, value);
 		transfers.push(transfer);
 		function finish(error:Null<String>):Void
 			mailbox.post(() -> {

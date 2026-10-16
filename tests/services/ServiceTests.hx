@@ -224,6 +224,14 @@ class ServiceTests {
 				}
 				next();
 			}),
+			// The host answers this one's ETag with 304 on the second visit (tools/services.py counts it): the copy kept.
+			() -> assets.ensure("revalidated.wav", result -> {
+				switch result {
+					case Loaded(bytes): check(bytes.getString(0, 4) == "RIFF", "A revalidated asset loads, kept or downloaded");
+					case _: fail(result);
+				}
+				next();
+			}),
 			() -> assets.streamSource("fixture.wav", result -> {
 				switch result {
 					case Located(Stored(value)):

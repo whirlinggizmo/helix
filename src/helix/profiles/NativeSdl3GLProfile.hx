@@ -44,6 +44,8 @@ class NativeSdl3GLProfile {
 				storage: new FileSystemStoreAdapter(cache),
 				packaged: new FileSystemStoreAdapter(haxe.io.Path.normalize(haxe.io.Path.join([root, assetFolder]))),
 				base: Sys.getEnv("HELIX_ASSET_HOST"),
+				// A host given by HELIX_ASSET_HOST is revalidated by its headers; a manifest is the browser builds' (tools/example.py).
+				manifest: null,
 				harness: new StdioTestHarnessAdapter(),
 				export: new FileSystemExportAdapter(exports),
 				name: identity.getProduct()

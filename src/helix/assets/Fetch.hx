@@ -4,8 +4,14 @@ import haxe.io.Bytes;
 import helix.core.Jobs;
 
 /** A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches
-	(default false). */
-typedef FetchRequest = {final url:String; @:optional final maxBytes:Int; @:optional final timeoutSeconds:Float; @:optional final noCache:Bool;}
+	(default false), headers are sent with it (none by default). */
+typedef FetchRequest = {
+	final url:String;
+	@:optional final maxBytes:Int;
+	@:optional final timeoutSeconds:Float;
+	@:optional final noCache:Bool;
+	@:optional final headers:Map<String, String>;
+}
 
 /** Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed). */
 typedef FetchProgress = {final receivedBytes:Int; final totalBytes:Null<Int>;}
@@ -60,7 +66,7 @@ class Fetch {
 			}
 			timer = {job: job, seconds: timeout, fail: fail};
 			timers.push(timer);
-			abort = http.get(request.url, request.noCache == true, (code, names) -> {
+			abort = http.get(request.url, request.noCache == true, request.headers == null ? [] : request.headers, (code, names) -> {
 				status = code;
 				headers = names;
 				// A compressed body's length isn't what arrives.

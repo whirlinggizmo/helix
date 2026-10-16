@@ -4,6 +4,40 @@ import helix.core.WorkQueue;
 import helix.assets.IAssets;
 import helix.assets.Storage;
 import helix.assets.Fetch;
+import helix.assets.AssetManifest;
+
+/** How obtain treats a cached copy: Revalidate uses a fresh one and asks about a stale one; Ask always asks; Force downloads past it. */
+private enum Obtain {
+	Revalidate;
+	Ask;
+	Force;
+}
+
+/** One load's state: its request, the step it waits on (cancelled with it), how it ends and how it reports progress. */
+private class Attempt {
+	/** The load's request. */
+	public final request:Request;
+
+	/** The step the load waits on, cancelled with the request. */
+	public var child:Null<IRequest> = null;
+
+	/** Ends the load. */
+	public final finish:AssetResult->Void;
+
+	/** Reports a phase of it. */
+	public final report:(String, Int, Null<Int>) -> Void;
+
+	/** A load of request, ending with finish and reporting through report. */
+	public function new(request:Request, finish:AssetResult->Void, report:(String, Int, Null<Int>) -> Void) {
+		this.request = request;
+		this.finish = finish;
+		this.report = report;
+	}
+
+	/** Whether the load has ended (or was cancelled). */
+	public function settled():Bool
+		return request.isSettled();
+}
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
 class AssetService implements IAssets {
@@ -15,6 +49,10 @@ class AssetService implements IAssets {
 	var live = true;
 	var requests:Array<IRequest> = [];
 	var subscribers:Map<String, Array<IReloadable>> = [];
+	var manifest:Null<String>;
+	// Each directory's manifest this run, by its path ("" the root's; null when there's none), and the loads waiting for one.
+	var manifests:Map<String, Null<AssetManifest>> = [];
+	var waiting:Map<String, Array<Null<AssetManifest>->Void>> = [];
 
 	/** Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three. */
 	public function new(fetcher:Fetch, cache:Storage, packaged:Storage, base:Null<String>) {
@@ -24,106 +62,248 @@ class AssetService implements IAssets {
 		this.base = base;
 	}
 
-	function key(path:String):String
-		return haxe.crypto.Sha256.encode((base == null ? "packaged" : base) + "\n" + path);
-
 	public function load(path:String, complete:AssetResult->Void):Void
 		ensure(path, complete);
 
 	public function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest {
 		var source = options != null && options.source != null ? options.source : path,
 			force = options != null && options.forceFetch == true;
-		var child:IRequest = null, request:Request = null;
-		function finish(result:AssetResult) {
-			if (request.finish()) {
-				requests.remove(request);
-				queue.add(() -> complete(result));
-			}
-		}
+		var attempt:Attempt = null, request:Request = null;
 		request = new Request(() -> {
-			if (child != null)
-				child.cancel();
+			if (attempt.child != null)
+				attempt.child.cancel();
 			requests.remove(request);
 			queue.add(() -> complete(Cancelled));
 		});
+		attempt = new Attempt(request, result -> if (request.finish()) {
+			requests.remove(request);
+			queue.add(() -> complete(result));
+		},
+			(phase, received, total) -> if (progress != null && !request.isSettled()) progress({phase: phase, receivedBytes: received, totalBytes: total}));
 		requests.push(request);
-		function report(phase:String, received:Int, total:Null<Int>) {
-			if (progress != null && !request.isSettled())
-				progress({phase: phase, receivedBytes: received, totalBytes: total});
-		}
-		function obtained(bytes:haxe.io.Bytes) {
-			if (request.isSettled())
-				return;
-			report("storing", bytes.length, bytes.length);
-			if (request.isSettled())
-				return;
-			child = cache.write(key(path), bytes, result -> {
-				if (request.isSettled())
-					return;
-				switch result {
-					case Written:
-						report("ready", bytes.length, bytes.length);
-						finish(Loaded(bytes));
-					case Failed(message): finish(Failed(message));
-					case Cancelled: finish(Cancelled);
-				}
-			});
-		}
 		queue.add(() -> {
 			if (request.isSettled())
 				return;
 			if (!live || !AssetPath.isValid(path)) {
-				finish(Failed("Invalid asset path or closed service"));
+				attempt.finish(Failed("Invalid asset path or closed service"));
 				return;
 			}
-			report("locating", 0, null);
-			function fetch():Void
-				if (base != null)
-					child = fetcher.fetch({url: source.indexOf("://") > 0 ? source : base + source, noCache: force}, result -> {
-						if (request.isSettled())
-							return;
-						switch result {
-							case Response(value): if (value.status >= 200 && value.status < 300) obtained(value.bytes); else finish(Failed('Asset HTTP '
-									+ value.status + ': ' + path));
-							case Failed(message): finish(Failed(message));
-							case Cancelled: finish(Cancelled);
-						}
-					}, value -> report("downloading", value.receivedBytes, value.totalBytes));
-				else
-					child = packaged.read(source, result -> {
-						if (request.isSettled())
-							return;
-						switch result {
-							// The packaged files are already on this machine: read in place, not copied into the cache, unless they're
-							// another path's bytes (options.source), which have to be found under the path asked for.
-							case Stored(bytes):
-								if (source != path) obtained(bytes); else {
-									report("ready", bytes.length, bytes.length);
-									finish(Loaded(bytes));
-								}
-							case Missing: finish(Failed("Missing asset: " + source));
-							case Failed(message): finish(Failed(message));
-							case Cancelled: finish(Cancelled);
-						}
-					});
-			if (force) {
-				fetch();
+			attempt.report("locating", 0, null);
+			if (base == null) {
+				attempt.child = packaged.read(source, result -> {
+					if (request.isSettled())
+						return;
+					switch result {
+						// The packaged files are already on this machine: read in place, not copied into the cache, unless they're
+						// another path's bytes (options.source), which have to be found under the path asked for.
+						case Stored(bytes):
+							if (source != path) store(path, bytes, [], AssetManifest.hash(bytes), attempt, attempt.finish); else {
+								attempt.report("ready", bytes.length, bytes.length);
+								attempt.finish(Loaded(bytes));
+							}
+						case Missing: attempt.finish(Failed("Missing asset: " + source));
+						case Failed(message): attempt.finish(Failed(message));
+						case Cancelled: attempt.finish(Cancelled);
+					}
+				});
 				return;
 			}
-			child = cache.read(key(path), result -> {
-				if (request.isSettled())
-					return;
-				switch result {
-					case Stored(bytes):
-						report("ready", bytes.length, bytes.length);
-						finish(Loaded(bytes));
-					case Failed(message): finish(Failed(message));
-					case Cancelled: finish(Cancelled);
-					case Missing: fetch();
-				}
-			});
+			var url = source.indexOf("://") > 0 ? source : base + source;
+			if (force)
+				obtain(path, url, null, Force, attempt, attempt.finish);
+			else if (source != path)
+				obtain(path, url, null, Revalidate, attempt, attempt.finish);
+			else
+				hashOf(path,
+					(expected, unlisted) -> if (!request.isSettled()) obtain(path, url, expected, unlisted ? Ask : Revalidate, attempt, attempt.finish));
 		});
 		return request;
+	}
+
+	// The cache key of path's bytes, and of their record.
+	function key(path:String):String
+		return haxe.crypto.Sha256.encode((base == null ? "packaged" : base) + "\n" + path);
+
+	function recordKey(path:String):String
+		return key(path) + ".meta";
+
+	static function now():Float
+		return Date.now().getTime() / 1000;
+
+	/** path's bytes from url, kept in the cache. expected is a manifest's hash for them, or null when none lists them: a copy with that hash is
+		used with no request, and anything else is downloaded past HTTP caches and kept only if it has that hash. Unlisted, a fresh copy is used
+		with no request, and a stale one is asked about (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no
+		answer (offline, a 5xx) uses it. Ask always asks (a manifest's root once a run, and a file its directory's manifest leaves out); Force
+		downloads past every cache. */
+	function obtain(path:String, url:String, expected:Null<String>, mode:Obtain, attempt:Attempt, done:AssetResult->Void):Void {
+		if (mode == Force) {
+			download(path, url, expected, null, mode, attempt, done);
+			return;
+		}
+		attempt.child = cache.read(recordKey(path), result -> {
+			if (attempt.settled())
+				return;
+			var record = switch result {
+				case Stored(bytes): CacheRecords.parse(bytes);
+				case Cancelled:
+					done(Cancelled);
+					return;
+				case _: null;
+			}
+			function fetch()
+				download(path, url, expected, expected == null ? record : null, mode, attempt, done);
+			if (expected != null ? record != null && record.hash == expected : mode == Revalidate && record != null && now() < record.freshUntil)
+				copy(path, attempt, done, fetch);
+			else
+				fetch();
+		});
+	}
+
+	// Downloads path from url, conditionally when record is the copy's; the answer decides (obtain).
+	function download(path:String, url:String, expected:Null<String>, record:Null<CacheRecord>, mode:Obtain, attempt:Attempt, done:AssetResult->Void):Void {
+		var headers:Map<String, String> = [];
+		if (record != null && record.etag != null)
+			headers["If-None-Match"] = record.etag;
+		if (record != null && record.lastModified != null)
+			headers["If-Modified-Since"] = record.lastModified;
+		// No answer: the copy, unless the download had to go past it.
+		function unanswered(message:String)
+			if (mode == Force)
+				done(Failed(message));
+			else
+				copy(path, attempt, done, () -> done(Failed(message)));
+		attempt.child = fetcher.fetch({url: url, noCache: expected != null || mode != Revalidate || record != null, headers: headers}, result -> {
+			if (attempt.settled())
+				return;
+			switch result {
+				case Response(value):
+					if (value.status == 304 && record != null) copy(path, attempt, done, () -> download(path, url, expected, null, Force, attempt, done),
+						() -> {
+							var renewed = CacheRecords.of(value.headers, record.hash, now());
+							cache.write(recordKey(path), CacheRecords.encode({
+								etag: renewed.etag != null ? renewed.etag : record.etag,
+								lastModified: renewed.lastModified != null ? renewed.lastModified : record.lastModified,
+								freshUntil: renewed.freshUntil,
+								hash: record.hash
+							}), _ -> {});
+						}); else if (value.status >= 200 && value.status < 300) {
+						var hash = AssetManifest.hash(value.bytes);
+						if (expected != null && hash != expected)
+							done(Failed('Asset does not match its manifest (a deploy still arriving?): $path'));
+						else
+							store(path, value.bytes, value.headers, hash, attempt, done);
+						} else if (value.status >= 400 && value.status < 500) {
+						// The host says it's gone: so is the copy.
+						cache.remove(key(path), _ -> {});
+						cache.remove(recordKey(path), _ -> {});
+						done(Failed('Asset HTTP ${value.status}: $path'));
+					} else unanswered('Asset HTTP ${value.status}: $path');
+				case Failed(message): unanswered(message);
+				case Cancelled: done(Cancelled);
+			}
+		}, value -> attempt.report("downloading", value.receivedBytes, value.totalBytes));
+	}
+
+	// The cached copy of path, or missing() when there's none; kept() once it's read.
+	function copy(path:String, attempt:Attempt, done:AssetResult->Void, missing:Void->Void, ?kept:Void->Void):Void
+		attempt.child = cache.read(key(path), result -> {
+			if (attempt.settled())
+				return;
+			switch result {
+				case Stored(bytes):
+					if (kept != null)
+						kept();
+					attempt.report("ready", bytes.length, bytes.length);
+					done(Loaded(bytes));
+				case Missing: missing();
+				case Failed(message): done(Failed(message));
+				case Cancelled: done(Cancelled);
+			}
+		});
+
+	// Keeps bytes (of hash) as path's copy, then their record from the response's headers.
+	function store(path:String, bytes:haxe.io.Bytes, headers:Map<String, String>, hash:String, attempt:Attempt, done:AssetResult->Void):Void {
+		attempt.report("storing", bytes.length, bytes.length);
+		attempt.child = cache.write(key(path), bytes, result -> {
+			if (attempt.settled())
+				return;
+			switch result {
+				case Written:
+					attempt.child = cache.write(recordKey(path), CacheRecords.encode(CacheRecords.of(headers, hash, now())), _ -> {
+						if (attempt.settled())
+							return;
+						attempt.report("ready", bytes.length, bytes.length);
+						done(Loaded(bytes));
+					});
+				case Failed(message): done(Failed(message));
+				case Cancelled: done(Cancelled);
+			}
+		});
+	}
+
+	/** The manifest's hash for path, or null when no manifest lists it (none is set, the host has none, or it doesn't name the file); and
+		whether its directory's manifest leaves it out, which says the file has changed or gone since it was kept: such a copy is always asked
+		about, however fresh. */
+	function hashOf(path:String, done:(Null<String>, Bool) -> Void):Void {
+		if (manifest == null || base == null) {
+			done(null, false);
+			return;
+		}
+		var parts = path.split("/"), name = parts.pop();
+		directory(parts, found -> done(found == null ? null : found.files[name], found != null && !found.files.exists(name)));
+	}
+
+	/** The manifest of the directory of parts (the root's for none), loaded once a run: the root asked about each run, a directory's fetched only
+		when its hash in its parent's differs from the copy's. */
+	function directory(parts:Array<String>, done:Null<AssetManifest>->Void):Void {
+		var dir = parts.join("/");
+		if (manifests.exists(dir)) {
+			done(manifests[dir]);
+			return;
+		}
+		if (waiting.exists(dir)) {
+			waiting[dir].push(done);
+			return;
+		}
+		waiting[dir] = [done];
+		var root = haxe.io.Path.directory(manifest),
+			name = haxe.io.Path.withoutDirectory(manifest);
+		var file = haxe.io.Path.join([root, dir, name]);
+		function settle(found:Null<AssetManifest>) {
+			manifests[dir] = found;
+			var callers = waiting[dir];
+			waiting.remove(dir);
+			for (caller in callers)
+				caller(found);
+		}
+		function loaded(result:AssetResult)
+			settle(switch result {
+				case Loaded(bytes): AssetManifest.parse(bytes);
+				case _: null;
+			});
+		// The manifests' own loads belong to no one request: cancelling one ensure leaves them running.
+		var own = new Attempt(new Request(() -> {}), loaded, (_, _, _) -> {});
+		if (parts.length == 0)
+			obtain(file, base + file, null, Ask, own, loaded);
+		else
+			directory(parts.slice(0, parts.length - 1), parent -> {
+				var expected = parent == null ? null : parent.dirs[parts[parts.length - 1]];
+				if (expected == null)
+					settle(null);
+				else
+					obtain(file, base + file, expected, Revalidate, own, loaded);
+			});
+	}
+
+	public function getManifest():Null<String>
+		return manifest;
+
+	public function setManifest(path:Null<String>):Bool {
+		if (path != null && !AssetPath.isValid(path))
+			return false;
+		manifest = path;
+		manifests.clear();
+		return true;
 	}
 
 	public function getHost():Null<String>
@@ -202,7 +382,28 @@ class AssetService implements IAssets {
 				finish(Failed("Invalid asset path or closed service"));
 				return;
 			}
-			child = cache.source(key(path), local);
+			if (base == null) {
+				child = cache.source(key(path), local);
+				return;
+			}
+			// A downloaded copy is streamed only while it's current (obtain's rules, without asking the host): the manifest's hash, else fresh.
+			// Otherwise the host's URL, where the platform's own HTTP cache decides.
+			hashOf(path, (expected, unlisted) -> {
+				if (request.isSettled())
+					return;
+				child = cache.read(recordKey(path), result -> {
+					if (request.isSettled())
+						return;
+					var record = switch result {
+						case Stored(bytes): CacheRecords.parse(bytes);
+						case _: null;
+					}
+					if (record != null && (expected != null ? record.hash == expected : !unlisted && now() < record.freshUntil))
+						child = cache.source(key(path), local);
+					else
+						finish(Located(Remote(base + path)));
+				});
+			});
 		});
 		return request;
 	}
@@ -232,9 +433,10 @@ class AssetService implements IAssets {
 		function done(ok:Bool, message:String)
 			if (!ok)
 				trace('Asset reload failed: $path: $message');
-		function deliver(bytes:haxe.io.Bytes)
+		function deliver(bytes:haxe.io.Bytes, headers:Map<String, String>)
 			cache.write(key(path), bytes, result -> switch result {
 				case Written:
+					cache.write(recordKey(path), CacheRecords.encode(CacheRecords.of(headers, AssetManifest.hash(bytes), now())), _ -> {});
 					var list = subscribers[path];
 					if (list != null)
 						for (target in list.copy())
@@ -250,13 +452,14 @@ class AssetService implements IAssets {
 			});
 		if (base != null)
 			fetcher.fetch({url: base + path, noCache: true}, result -> switch result {
-				case Response(value): if (value.status >= 200 && value.status < 300) deliver(value.bytes); else done(false, 'Asset HTTP ' + value.status);
+				case Response(value): if (value.status >= 200 && value.status < 300) deliver(value.bytes,
+						value.headers); else done(false, 'Asset HTTP ' + value.status);
 				case Failed(message): done(false, message);
 				case Cancelled:
 			});
 		else
 			packaged.read(path, result -> switch result {
-				case Stored(bytes): deliver(bytes);
+				case Stored(bytes): deliver(bytes, []);
 				case Missing: done(false, "Missing asset");
 				case Failed(message): done(false, message);
 				case Cancelled:

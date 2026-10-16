@@ -170,6 +170,12 @@ class HeldAssets implements helix.assets.IAssets {
 	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
+	public function getManifest():Null<String>
+		return null;
+
+	public function setManifest(path:Null<String>):Bool
+		return true;
+
 	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 

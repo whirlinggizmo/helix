@@ -40,7 +40,13 @@ interface IAssets {
 	/** Loads path's bytes as ensure does, without progress or a way to cancel. */
 	function load(path:String, complete:AssetResult->Void):Void;
 
-	/** Loads path's bytes from the cache, or else downloads them (a host is set) and caches them, or reads them from the packaged files in place. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299, or a storage or transport error. progress, if given, reports each phase until the request settles. */
+	/** Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A
+		cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else
+		the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then
+		after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx)
+		uses it. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status
+		outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given,
+		reports each phase until the request settles. */
 	function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
 
 	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null when
@@ -54,10 +60,20 @@ interface IAssets {
 	/** Whether host answers: it serves probePath (an asset it should have) within timeoutSeconds. complete runs once, on the host thread. */
 	function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):IRequest;
 
+	/** The root manifest's path under the host ("manifest.json"), or null for none (the default). */
+	function getManifest():Null<String>;
+
+	/** Uses the manifest tree under the host from path (tools/gen_manifest.py writes one): the root asked about once a run (its cached copy
+		used offline), a directory's manifest loaded only when an asset under it is, and again only when its hash changes; a file it lists is
+		used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are revalidated as ensure
+		says; a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path. */
+	function setManifest(path:Null<String>):Bool;
+
 	/** Forgets every downloaded file, so the next load downloads it again. complete runs once, on the host thread. */
 	function clearCache(complete:StorageWriteResult->Void):IRequest;
 
-	/** Locates path for streaming without loading it whole: a leased cached copy, else the remote URL (a base URL is set) or a leased packaged copy. complete runs exactly once on the host thread; the caller releases a Located(Stored) lease, and one that arrives after cancellation is released for it. Failed for an invalid path, a closed service, a missing packaged asset, or a storage error. */
+	/** Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host),
+		else the remote URL (a base URL is set) or a leased packaged copy. complete runs exactly once on the host thread; the caller releases a Located(Stored) lease, and one that arrives after cancellation is released for it. Failed for an invalid path, a closed service, a missing packaged asset, or a storage error. */
 	function streamSource(path:String, complete:AssetSourceResult->Void):IRequest;
 
 	/** Tell target when path's file changes and has loaded again (development hot reload). One target per path once. */

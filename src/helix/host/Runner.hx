@@ -74,6 +74,7 @@ class Runner {
 		decoding = new ImageDecoding(a.images);
 		audioDecoding = new AudioDecoding(a.audioDecoder);
 		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
+		resources.setManifest(a.manifest);
 		s.graphics = a.graphics;
 		input = new InputRouter();
 		a.input.start(input);

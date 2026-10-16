@@ -17,9 +17,10 @@ import helix.host.Services;
 /** The browser on WebGL2: the page's host and canvas, Web Audio, fetch, IndexedDB and the page's image decoder. */
 class BrowserWebGL2Profile {
 	/** Runs the app makeApp builds over its services, on the page's canvas, for identity: assets fetched from assetBase and cached in IndexedDB
-		as "<company>/<product>", the canvas made as options ask (the defaults when not given). The tick option keeps the drawing buffer between
+		as "<company>/<product>", following the manifest tree from assetManifest under it when given ("manifest.json"; tools/gen_manifest.py), the canvas made as options ask (the defaults when not given). The tick option keeps the drawing buffer between
 		frames, for checks that read it. */
-	public static function run(identity:helix.host.Identity, assetBase:String, makeApp:Services->IApp, ?options:helix.host.WindowOptions):Void {
+	public static function run(identity:helix.host.Identity, assetBase:String, assetManifest:Null<String>, makeApp:Services->IApp,
+			?options:helix.host.WindowOptions):Void {
 		if (options == null)
 			options = new helix.host.WindowOptions();
 		var host = new DomHostAdapter(),
@@ -36,6 +37,7 @@ class BrowserWebGL2Profile {
 				storage: new IndexedDbStoreAdapter(cacheName),
 				packaged: new IndexedDbStoreAdapter(cacheName + "-packaged"),
 				base: assetBase,
+				manifest: assetManifest,
 				harness: new DomTestHarnessAdapter(),
 				export: new DownloadExportAdapter(),
 				name: identity.getProduct()

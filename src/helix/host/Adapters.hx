@@ -39,6 +39,9 @@ typedef Adapters = {
 	/** The URL prefix assets are fetched from; null reads them from packaged instead. */
 	final base:Null<String>;
 
+	/** The root asset manifest's path under base (IAssets.setManifest), or null for none. */
+	final manifest:Null<String>;
+
 	/** Where results go for the check that launched the program. */
 	final harness:ITestHarness;
 

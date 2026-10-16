@@ -38,7 +38,7 @@ def main():
   build_dir=build/('services-native-sdl3' if sdl3 else 'services-native')
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,'-dce','full','-D','analyzer-optimize','-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
   place_runtimes(build_dir,sdl3)
- counts=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
+ counts=Counter();unchanged=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
   protocol_version='HTTP/1.1'
   def log_message(self,*args):pass
@@ -46,7 +46,7 @@ def main():
    nonlocal active,peak
    path=self.path.split('?')[0]
    with lock:counts[path]+=1
-   status=200;slow=False;tracked=False
+   status=200;slow=False;tracked=False;cache=[]
    if path=='/':body=b'<script src="/service-tests.js"></script>'
    elif path=='/service-tests.js':body=(build/'service-tests.js').read_bytes()
    elif path in ('/bytes','/concurrent'):
@@ -55,13 +55,22 @@ def main():
      tracked=True
      with lock:active+=1;peak=max(peak,active)
    elif path=='/stall':time.sleep(.5);body=b'stalled'
-   elif path in ('/assets/fixture.wav','/assets/uncached.wav'):body=wav
-   elif path in ('/assets/fixture.ogg','/assets/uncached.ogg'):body=vorbis
-   elif path in ('/assets/fixture.opus','/assets/uncached.opus'):body=opus
+   # The fixtures are fresh for an hour, as a host marks files that rarely change: a second visit asks nothing.
+   elif path in ('/assets/fixture.wav','/assets/uncached.wav'):body=wav;cache=[('Cache-Control','max-age=3600'),('ETag','"fixture"')]
+   # Revalidated each visit, as a host that says no-cache: its ETag answered with 304 once the client has it.
+   elif path=='/assets/revalidated.wav':
+    body=wav;cache=[('Cache-Control','no-cache'),('ETag','"revalidated-1"')]
+    if self.headers.get('If-None-Match')=='"revalidated-1"':
+     status=304;body=b''
+     with lock:unchanged[path]+=1
+   elif path in ('/assets/fixture.ogg','/assets/uncached.ogg'):body=vorbis;cache=[('Cache-Control','max-age=3600')]
+   elif path in ('/assets/fixture.opus','/assets/uncached.opus'):body=opus;cache=[('Cache-Control','max-age=3600')]
    elif path=='/assets/broken.ogg':body=b'OggS'+b'broken'*20
    else:status=404;body=b'missing'
    try:
-    self.send_response(status);self.send_header('Content-Length',str(len(body)));self.send_header('Content-Type','audio/wav' if path.endswith('.wav') else 'audio/ogg' if path.endswith(('.ogg','.opus')) else 'application/javascript' if path.endswith('.js') else 'text/html' if path=='/' else 'application/octet-stream');self.send_header('Connection','close');self.end_headers()
+    self.send_response(status);self.send_header('Content-Length',str(len(body)));self.send_header('Content-Type','audio/wav' if path.endswith('.wav') else 'audio/ogg' if path.endswith(('.ogg','.opus')) else 'application/javascript' if path.endswith('.js') else 'text/html' if path=='/' else 'application/octet-stream');self.send_header('Connection','close')
+    for name,value in cache:self.send_header(name,value)
+    self.end_headers()
     if slow:
      for at in range(0,len(body),4096):
       # The client can start its next request as soon as the last bytes arrive.
@@ -82,12 +91,14 @@ def main():
   assert result['runs'][0]['persisted'] is False and result['runs'][1]['persisted'] is True
   assert counts['/assets/fixture.wav']==1,dict(counts)
   assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
+  # Downloaded on the first visit, revalidated (304, the copy kept) on the second.
+  assert counts['/assets/revalidated.wav']==2 and unchanged['/assets/revalidated.wav']==1,(dict(counts),dict(unchanged))
   assert peak<=2,peak
   result['peakConcurrentTransfers']=peak
   result['requests']=dict(counts);result['singleDownloadStoredAudio']=True
   report={'browser':result}
   if a.native:
-   counts.clear();peak=0;runs=[]
+   counts.clear();unchanged.clear();peak=0;runs=[]
    for _ in range(2):
     child=dict(os.environ,SDL_AUDIO_DRIVER='dummy') if a.native_profile=='sdl3' else None
     native=subprocess.run([str(build_dir/('ServiceTests.exe' if os.name=='nt' else 'ServiceTests')),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
@@ -98,6 +109,7 @@ def main():
    assert not runs[0]['persisted'] and runs[1]['persisted']
    assert counts['/assets/fixture.wav']==1,dict(counts)
    assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
+   assert counts['/assets/revalidated.wav']==2 and unchanged['/assets/revalidated.wav']==1,(dict(counts),dict(unchanged))
    assert peak<=2,peak
    from native_build import codec_library,codec_runtime
    # The library the program loaded: on Windows the DLL (codec_library is the import library linked), elsewhere the one linked.

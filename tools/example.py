@@ -4,7 +4,8 @@ of them).
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
 and page in examples/shared. Each target's examples share one assets folder beside them, build/<target>/assets, which each loads as ../assets:
 the files in examples/assets, and each example's own, which may not claim a path the shared files or another example has. A larger example
-adds its autopilot/ scripts (as autopilot/<name>/) and the files its assets/generate.py makes. An example's shaders/*.glsl are packed
+adds its autopilot/ scripts (as autopilot/<name>/) and the files its assets/generate.py makes; the web target's folder carries manifests (tools/gen_manifest.py), which the
+page's asset cache follows. An example's shaders/*.glsl are packed
 (tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page.
 
 autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
@@ -22,6 +23,7 @@ import time
 import urllib.request
 from shader_metadata import generate,generate_sdl_gpu,manifest
 import pack_shader
+import gen_manifest
 import fontbake
 from native_build import ARCH
 
@@ -100,6 +102,8 @@ def assets(name,target):
         claim(target,name,[p.relative_to(made).as_posix() for p in made.rglob('*') if p.is_file()])
         shutil.copytree(made,out,dirs_exist_ok=True)
     pack_shaders(name,out,sdl_gpu=target=='native-sdl3-gpu',target=target)
+    # The browser's manifests (tools/gen_manifest.py), so a returning page re-fetches exactly what changed; native builds read in place.
+    if target=='web':gen_manifest.write(out)
 
 def claim(target,name,paths):
     """Records that the example owns these paths in build/<target>/assets (in build/examples/assets-<target>.json); exits when one is a
@@ -227,7 +231,11 @@ def main():
             failed=None;packed=time.time()
             while server.poll() is None:
                 # The example's shaders, packed again as they change; the page reloads the asset.
-                try:packed=pack_shaders(a.name,ROOT/'build/web/assets',packed)
+                try:
+                    repacked=pack_shaders(a.name,ROOT/'build/web/assets',packed)
+                    # A repacked shader changes its manifest, or the next page load would refuse it.
+                    if repacked!=packed:gen_manifest.write(ROOT/'build/web/assets')
+                    packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # A failed source is retried only once it changes again.
                 stamp=shader_stamp()
