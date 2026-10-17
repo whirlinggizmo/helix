@@ -16,7 +16,7 @@ on its GPU. A scheduled task that runs only interactively starts them, and its o
 
 HOST is an ssh destination whose shell is cmd.exe, with Python 3.12 or later first on its PATH, Haxe 4.3.7 and Visual Studio's C++ tools
 (hxcpp finds them itself). The pinned hxcpp is installed into the copy's build/haxelib, as on Linux. Exits 0 when every step passed.
-After libwgt's tools/run_remote_windows.py, with libwgf's --then. Standard library only."""
+Standard library only."""
 import argparse
 import os
 from pathlib import Path

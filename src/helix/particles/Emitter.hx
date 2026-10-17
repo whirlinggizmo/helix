@@ -5,7 +5,7 @@ import haxe.io.Bytes;
 import helix.render2d.Texture2D;
 import helix.render3d.Node.SpriteAlpha;
 
-/** A particle emitter, after wgrender-c's: many particles from one texture, each decided when it's born (where, how fast, how long it lives,
+/** A particle emitter: many particles from one texture, each decided when it's born (where, how fast, how long it lives,
 	how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag
 	move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them
 	does. A node places it on a stage (Node.emitter, Node2D.emitter), which advances it by the stage's clock each draw; particles stay where

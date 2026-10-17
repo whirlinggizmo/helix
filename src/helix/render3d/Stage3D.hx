@@ -27,7 +27,7 @@ import helix.render3d.Node.NodeKind;
 	text and particles are display colors, untouched. */
 class Stage3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
-	// is lit by the 8 of those that reach it most (libwgt's, wgrender-c's); the first 4 that cast have shadows.
+	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
 	static inline var GATHERED_LIGHTS = 64;
 	static inline var TABLE_LIGHTS = 16;
 	static inline var MODEL_LIGHTS = 8;
@@ -1083,7 +1083,7 @@ class Stage3D {
 
 	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order
 	// found; then each model's own: the table's lights that reach it most, at most MODEL_LIGHTS, the nearest-reaching first. Each light's
-	// constants are worked out once, each light and model scored once, and nothing is made per model (libwgt's insertion into fixed slots).
+	// constants are worked out once, each light and model scored once, and nothing is made per model (an insertion into fixed slots).
 	function chooseLights():Void {
 		var n = lights.length;
 		prepareLights();
@@ -1169,7 +1169,7 @@ class Stage3D {
 		}
 	}
 
-	// How much gathered light l reaches item's box (libwgt's estimate): its brightness, through its falloff at the box's nearest point and its
+	// How much gathered light l reaches item's box, an estimate: its brightness, through its falloff at the box's nearest point and its
 	// cone at the box's center; 0 for one that can't reach it.
 	function scoreLight(l:Int, item:Item):Float {
 		var at = l * 10, score = lightData[at];

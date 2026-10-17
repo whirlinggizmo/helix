@@ -2,7 +2,7 @@ package helix.host;
 
 import helix.render2d.Camera2D;
 
-/** How a game's design is fitted to the window (Godot's stretch modes and aspects, libwgf's presentation). */
+/** How a game's design is fitted to the window (Godot's stretch modes and aspects). */
 enum PresentationMode {
 	/** The default: a unit is a logical pixel (a framebuffer pixel over the pixel ratio), and the visible area is the window. */
 	None;

@@ -24,6 +24,7 @@ def test(native,audio_device):
     example.shader();bake_fonts.generate()
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
+    run([sys.executable,'tools/check_docs.py'])
     for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)

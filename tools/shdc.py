@@ -1,7 +1,6 @@
 """sokol-shdc, the shader compiler: the sokol-tools-bin build dependencies.json pins (sokolToolsBin), for this system, downloaded into the
 user's cache the first time and checked against its SHA-256 below every time it's used. From floooh's repository, or the Whirling Gizmo
-mirror when that can't be reached. To move to a newer build, change the pin, HASHES_PIN and the hashes together (wgrender-c's tools/shdc.py,
-whose hashes these are).
+mirror when that can't be reached. To move to a newer build, change the pin, HASHES_PIN and the hashes together.
 
     import shdc
     subprocess.run([shdc.path(), '-i', 'x.glsl', ...])

@@ -86,7 +86,7 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 
 *class* in `src/helix/math/Random.hx`
 
-Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't matter (Asteroids keeps the title's as a state, setState). libwgf had one for the program (PCG32); the games and emitters here each had this generator of their own.
+Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't matter (Asteroids keeps the title's as a state, setState).
 
 ```haxe
 function new(?seed:Int = 12345)

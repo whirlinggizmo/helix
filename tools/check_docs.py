@@ -1,4 +1,6 @@
-"""List HeliX's public types and members that have no doc comment (docs/CONVENTIONS.md), and fail if there are any.
+"""List HeliX's public types and members that have no doc comment (docs/CONVENTIONS.md), and fail if there are any; and
+fail if the code, the examples, the tools or the current docs name the earlier frameworks (wgrender, libwgf, libwgt),
+which are going away: what they taught is in DECISIONS.md and HISTORY.md, the record, which may name them.
 
 Covers src/helix. A member that implements an interface's is documented on the interface, and an override on what it
 overrides; adapters' internal packages (C bridges) are left out."""
@@ -7,6 +9,9 @@ import re
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
+EARLIER=re.compile(r'wgrender|libwgf|libwgt',re.I)
+# Where the earlier frameworks' names don't belong: everything a reader of HeliX reads but its record.
+NAMED=['src','examples','tools','helix.py','README.md','BUILDING.md','docs/INTERFACE.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PACKAGING.md','docs/EXAMPLES.md','docs/api']
 TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|interface|typedef|enum abstract|enum|abstract)\s+(\w+)')
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 
@@ -45,6 +50,15 @@ def main():
             depth+=line.count('{')-line.count('}')
     for item in missing:print(item)
     print(f'{len(missing)} undocumented',file=sys.stderr)
-    sys.exit(1 if missing else 0)
+    named=[]
+    for where in NAMED:
+        root=ROOT/where
+        for path in ([root] if root.is_file() else sorted(p for p in root.rglob('*') if p.is_file() and p.suffix in ('.hx','.py','.cjs','.md','.json','.html') and 'node_modules' not in p.parts)):
+            if path.resolve()==Path(__file__).resolve():continue
+            for number,line in enumerate(path.read_text(encoding='utf-8',errors='replace').splitlines(),1):
+                if EARLIER.search(line):named.append(f'{path.relative_to(ROOT)}:{number}: {line.strip()[:100]}')
+    for item in named:print(item)
+    if named:print(f'{len(named)} line(s) name the earlier frameworks; they belong in DECISIONS.md and HISTORY.md alone',file=sys.stderr)
+    sys.exit(1 if missing or named else 0)
 
 if __name__=='__main__':main()

@@ -224,7 +224,7 @@ function apply(camera:Camera2D):Void
 
 *enum* in `src/helix/host/Presentation.hx`
 
-How a game's design is fitted to the window (Godot's stretch modes and aspects, libwgf's presentation).
+How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
 - `None`: The default: a unit is a logical pixel (a framebuffer pixel over the pixel ratio), and the visible area is the window.
 - `Stretch`: The design scaled to the window on each axis apart, its aspect lost.

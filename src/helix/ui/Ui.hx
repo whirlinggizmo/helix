@@ -8,7 +8,7 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.scene.Pointer;
 
-/** A screen's widgets on a Stage2D, used by the pointer, keys and pads alike (libwgf's focus, wgrender-c's widgets of nodes): made here,
+/** A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here,
 	placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's:
 
 	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in
@@ -18,8 +18,8 @@ import helix.scene.Pointer;
 	- The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or
 	  a pad, something always has focus (the first widget, if nothing did).
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
-	  first button (libwgf's friction).
-	- While a widget has the keys (isCapturingKeys), a game should leave arrows and Enter be (libwgf's arrows driving the game and the menu at once).
+	  first button.
+	- While a widget has the keys (isCapturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once.
 
 	The widgets' nodes are under one node (getRoot) on the stage, in the order made, the ring above them. The pointer must be looking at the
 	stage, through camera. */
