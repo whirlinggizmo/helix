@@ -8,7 +8,7 @@ HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → J
 
 ## Try it
 
-In the browser: **[the examples](https://whirlinggizmo.github.io/helix/)**, each running on WebGL2.
+In the browser: **[the examples](https://whirlinggizmo.github.io/helix/)**, each running on WebGL2, and **[the API reference](https://whirlinggizmo.github.io/helix/api/)**.
 
 Locally, with Haxe 4.3.7, Python 3 and `sokol-shdc` (the rest, and the native toolchain: [BUILDING.md](BUILDING.md)):
 
@@ -25,6 +25,7 @@ python3 tools/example.py animation build native                   # build/native
 - [docs/HISTORY.md](docs/HISTORY.md): what was built, milestone by milestone.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the engine, the platform contracts and their adapters, and the rule for what an adapter may hold.
 - [docs/INTERFACE.md](docs/INTERFACE.md): the contracts and their limits.
+- [docs/api/](docs/api/README.md): the API reference, a file a package, generated from the doc comments (the site's HTML is the same).
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout, and how examples are developed.
 - [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are, numbered, in order.
 - [docs/API_FINDINGS.md](docs/API_FINDINGS.md): known API problems, fixed and open.
