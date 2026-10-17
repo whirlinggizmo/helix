@@ -85,7 +85,7 @@ int main(void) {
     helix_audio_pause(stream,0);helix_audio_volume(stream,.25f);helix_audio_test_render(out,4,1);CHECK(fabsf(out[1]-.1f)<1e-6&&helix_audio_stream_queued(stream)==0);
     helix_audio_test_render(out,4,1);CHECK(out[0]==0&&helix_audio_is_playing(stream)); /* Underrun waits without finishing. */
     CHECK(helix_audio_stream_push(stream,chunk,sizeof chunk,1)==4);helix_audio_test_render(out,8,1);CHECK(!helix_audio_is_playing(stream));
-    stream=helix_audio_stream(1);float *many=calloc(9000,sizeof(float));CHECK(helix_audio_stream_push(stream,many,9000*sizeof(float),1)==8192&&helix_audio_stream_queued(stream)==8192);free(many);
+    stream=helix_audio_stream(1);float *many=calloc(90000,sizeof(float));CHECK(helix_audio_stream_push(stream,many,90000*sizeof(float),1)==88200&&helix_audio_stream_queued(stream)==88200);free(many);
     helix_audio_stop(stream);CHECK(!helix_audio_is_playing(stream)&&helix_audio_stream_queued(stream)==-1);helix_audio_shutdown();
     printf("{\"passed\":true,\"checks\":%d,\"controller\":\"Pipe-fed evdev records; no kernel virtual-device or physical-controller claim\",\"audio\":\"Sokol dummy backend with mixer callback, concurrency and resampling checks; no audible-output claim\"}\n",checks);
     return 0;

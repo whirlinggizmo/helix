@@ -9,6 +9,8 @@
    on the output's thread by whichever output the program links (sokol_audio's or SDL3's), which supplies setup, shutdown, available, sample
    rate and channels (audio.h). */
 typedef struct { int id, count; float *samples; } clip_t;
+/* A stream voice's ring: 2 s at 44.1 kHz, so a frame thread stalled under that (a level load, a collection) feeds it in time. */
+#define HELIX_STREAM_RING 88200
 typedef struct { int id, clip_id, loop, paused, head, count, eof; double position; float volume; float *ring; } voice_t;
 static clip_t clips[32];
 static voice_t voices[16];
@@ -33,12 +35,12 @@ void helix_mixer_mix(float *out, int frames, int channels, int rate) {
         if (voice->ring) {
             for(int i=0;i<frames;i++){
                 if(voice->count==0){if(voice->eof){free(voice->ring);memset(voice,0,sizeof *voice);}break;}
-                int next=(voice->head+1)%8192;
+                int next=(voice->head+1)%HELIX_STREAM_RING;
                 float a=voice->ring[voice->head], b=voice->count>1?voice->ring[next]:a;
                 float sample=(a+(b-a)*(float)voice->position)*voice->volume;
                 for(int c=0;c<channels;c++)out[i*channels+c]+=sample;
                 voice->position+=step;int used=(int)voice->position;if(used>voice->count)used=voice->count;
-                voice->head=(voice->head+used)%8192;voice->count-=used;voice->position-=used;
+                voice->head=(voice->head+used)%HELIX_STREAM_RING;voice->count-=used;voice->position-=used;
             }
             continue;
         }
@@ -124,7 +126,7 @@ void helix_audio_volume(int id,float volume) {if(!isfinite(volume)||volume<0||vo
 int helix_audio_stream(float volume) {
  if(!isfinite(volume)||volume<0||volume>1)return 0;
  helix_lock(&audio_lock);int id=0;
- if(helix_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(8192,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.ring=ring};played++;}break;}
+ if(helix_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(HELIX_STREAM_RING,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.ring=ring};played++;}break;}
  helix_unlock(&audio_lock);return id;
 }
 int helix_audio_stream_queued(int id) {helix_lock(&audio_lock);int count=-1;for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring)count=voices[i].count;helix_unlock(&audio_lock);return count;}
@@ -132,6 +134,6 @@ int helix_audio_stream_push(int id,const void *data,int bytes,int eof) {
  if(bytes<0||bytes%4||(!data&&bytes))return -1;const float *samples=data;
  for(int i=0;i<bytes/4;i++)if(!isfinite(samples[i])||samples[i]<-1||samples[i]>1)return -1;
  helix_lock(&audio_lock);int accepted=-1;
- for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring){voice_t *v=&voices[i];accepted=bytes/4;if(accepted>8192-v->count)accepted=8192-v->count;for(int n=0;n<accepted;n++)v->ring[(v->head+v->count+n)%8192]=samples[n];v->count+=accepted;if(eof&&accepted==bytes/4)v->eof=1;break;}
+ for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring){voice_t *v=&voices[i];accepted=bytes/4;if(accepted>HELIX_STREAM_RING-v->count)accepted=HELIX_STREAM_RING-v->count;for(int n=0;n<accepted;n++)v->ring[(v->head+v->count+n)%HELIX_STREAM_RING]=samples[n];v->count+=accepted;if(eof&&accepted==bytes/4)v->eof=1;break;}
  helix_unlock(&audio_lock);return accepted;
 }

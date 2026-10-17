@@ -9,11 +9,11 @@ import sys.thread.Thread;
 private typedef Producer = {var handle:Int; var stream:Int; var loop:Bool;}
 
 /** IAudio natively, for either output (sokol_audio's or SDL3's): mono at 44100 Hz, 16 voices, 32 clips, mixed in C (mixer.c). Streams play stored files (a remote URL fails), read
-	through files (a codec adapter's), each voice kept 8192 frames ahead by poll for up to 2 ms a frame: how a push-based output plays a file as
+	through files (a codec adapter's), each voice kept 88200 frames (2 s) ahead by poll for up to 2 ms a frame, so a frame stalled under that plays on: how a push-based output plays a file as
 	it's read. */
 abstract class NativeAudio implements IAudio {
 	static inline var CHUNK = 2048;
-	static inline var AHEAD = 8192;
+	static inline var AHEAD = 88200;
 
 	var files:IPcmFiles;
 	var mailbox = new Mailbox();
