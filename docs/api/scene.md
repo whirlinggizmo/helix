@@ -57,12 +57,18 @@ function model(models:Models, path:String, complete:ModelLoadResult -> Void):IRe
 
 *class* in `src/helix/scene/Loading.hx`
 
-The built-in loading scene: the theme's panel color, "Loading", a bar of the loader's progress and the count, and what failed in the disabled text color. With setHoldForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening); else the scene runs as soon as its loads are in. Its theme is its own (setTheme), the default unless given.
+The built-in loading scene: the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption ("Loading the caves", setText; "Loading" unless given) over a bar of the loader's progress and the count, a tip along the bottom (setTip), and what failed in the disabled text color. With setHoldForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening); else the scene runs as soon as its loads are in. The game drives it: one for the program (Scenes.getLoadingScene) set before each level, or one a level brings (Scene.getLoadingScene). Its theme is its own (setTheme).
 
 ```haxe
 function new()
 function getTheme():Theme
 function setTheme(value:Theme):Void
+function getImage():Null<Texture2D>
+function setImage(value:Null<Texture2D>, ?cover:Bool = true):Void
+function getText():String
+function setText(value:String):Void
+function getTip():String
+function setTip(value:String):Void
 function isHoldForPress():Bool
 function setHoldForPress(value:Bool):Void
 function getPrompt():String
@@ -77,6 +83,12 @@ function draw():Void
 - `new`: The built-in loading scene with the default theme.
 - `getTheme`: Its theme.
 - `setTheme`: The theme it draws with.
+- `getImage`: Its picture, or null.
+- `setImage`: A picture behind the rest: covering the screen (cropped to its shape) when cover, else centered whole; null for the panel color alone.
+- `getText`: The caption over the bar.
+- `setText`: The caption over the bar: what's loading ("Loading the caves").
+- `getTip`: The tip along the bottom, "" for none.
+- `setTip`: A line along the bottom (a hint, a credit), wrapped; "" for none.
 - `isHoldForPress`: Whether it stays once loaded, until a press.
 - `setHoldForPress`: Stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed.
 - `getPrompt`: The line shown once loaded, while holding for a press.
@@ -147,6 +159,7 @@ function new()
 function getName():String
 function getScenes():Null<Scenes>
 function getLoader():Null<Loader>
+function getLoadingScene():Null<LoadingScene>
 function enter():Void
 function exit():Void
 function pause():Void
@@ -159,6 +172,7 @@ function draw():Void
 - `getName`: Its name: the class's, without its package, unless overridden; what an autopilot's probe reports.
 - `getScenes`: The stack it's on, or null.
 - `getLoader`: The loads it waits for before it runs, or null for none: made in enter.
+- `getLoadingScene`: The loading scene shown while its loads are pending, or null for the stack's (Scenes.getLoadingScene): a level with its own picture and caption.
 - `enter`: Pushed onto the stack: make what it needs, start its loads.
 - `exit`: Popped or replaced: free what it made.
 - `pause`: Another scene pushed over it, or the window lost focus (Scenes.setPauseOnBlur).

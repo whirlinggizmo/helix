@@ -92,10 +92,23 @@ class Scenes {
 	/** Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them (LoadingScene.isHolding). */
 	public function isLoading():Bool {
 		var top = getTop();
-		if (top == null || loading == null)
+		if (top == null)
+			return false;
+		var shown = loadingFor(top);
+		if (shown == null)
 			return false;
 		var loader = top.getLoader();
-		return loader != null && (!loader.isDone() || (waiting == top && loading.isHolding()));
+		return loader != null && (!loader.isDone() || (waiting == top && shown.isHolding()));
+	}
+
+	// The loading scene for scene: its own, else the stack's, else none.
+	function loadingFor(scene:Scene):Null<LoadingScene> {
+		var own = scene.getLoadingScene();
+		if (own != null) {
+			own.scenes = this;
+			return own;
+		}
+		return loading;
 	}
 
 	/** Puts scene on top: the one under pauses, scene enters. With transition, the swap comes at its middle. */
@@ -167,19 +180,20 @@ class Scenes {
 		var top = getTop();
 		if (top == null)
 			return;
-		var loader = top.getLoader();
-		if (loader != null && loading != null && (!loader.isDone() || (waiting == top && loading.isHolding()))) {
+		var loader = top.getLoader(), shown = loadingFor(top);
+		if (loader != null && shown != null && (!loader.isDone() || (waiting == top && shown.isHolding()))) {
 			if (waiting != top) {
 				waiting = top;
-				loading.setLoader(loader);
-				loading.enter();
+				shown.setLoader(loader);
+				shown.enter();
 			}
-			loading.update(dt);
+			shown.update(dt);
 			return;
 		}
 		if (waiting != null) {
-			if (loading != null)
-				loading.exit();
+			var was = loadingFor(waiting);
+			if (was != null)
+				was.exit();
 			waiting = null;
 		}
 		if (!blurred)
@@ -192,7 +206,7 @@ class Scenes {
 		if (top == null)
 			return;
 		if (waiting == top && isLoading())
-			loading.draw();
+			loadingFor(top).draw();
 		else
 			top.draw();
 		if (transition != null) {

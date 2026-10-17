@@ -24,6 +24,11 @@ class Scene {
 	public function getLoader():Null<Loader>
 		return null;
 
+	/** The loading scene shown while its loads are pending, or null for the stack's (Scenes.getLoadingScene): a level with its own picture
+		and caption. */
+	public function getLoadingScene():Null<LoadingScene>
+		return null;
+
 	/** Pushed onto the stack: make what it needs, start its loads. */
 	public function enter():Void {}
 

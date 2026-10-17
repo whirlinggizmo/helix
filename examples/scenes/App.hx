@@ -37,8 +37,11 @@ class App extends BaseApp {
 		Services.window.setTitle("HeliX scenes");
 		Services.window.requestSize(960, 540);
 		batch = new Batch2D(Services.graphics);
-		// The loading screen stays once loaded, for a press.
-		cast(scenes.getLoadingScene(), helix.scene.Loading).setHoldForPress(true);
+		// The loading screen stays once loaded, for a press, with a caption and a tip (a level may bring its own: Scene.getLoadingScene).
+		var loading = cast(scenes.getLoadingScene(), helix.scene.Loading);
+		loading.setHoldForPress(true);
+		loading.setText("Loading the field");
+		loading.setTip("Tip: Escape pauses; the window losing focus pauses too.");
 		var script = Services.getOption("autopilot", "");
 		fast = Services.getOption("fast", "0") == "1";
 		if (script != "")
