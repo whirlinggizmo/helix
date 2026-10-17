@@ -23,31 +23,30 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 
 	override public function init():Void {
-		Window.setTitle("HeliX hello3d");
+		Window.title = "HeliX hello3d";
 		Window.requestSize(900, 700);
 		batch3D = new Batch3D(Graphics.instance);
 		batch2D = new Batch2D(Graphics.instance);
 		// Framed for 16:9: the spheres either side stay in view on a phone held upright too.
-		camera3D.setMinAspect(16 / 9);
+		camera3D.minAspect = 16 / 9;
 	}
 
 	override public function frame(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second.
-		var angle = Time.getTime() * .4;
+		var angle = Time.time * .4;
 		camera3D.setViewport(width, height);
 		camera3D.setView(Math.cos(angle) * 16, 9, Math.sin(angle) * 16, 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x1c1c26ff);
 		batch3D.begin(camera3D);

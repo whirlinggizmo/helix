@@ -6,18 +6,6 @@ import helix.render2d.Texture2D;
 	its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own
 	(Ground, Free). */
 class Sprite3D extends Node3D {
-	var texture:Null<Texture2D>;
-	var tint = 0xffffffff;
-	var regionX = 0.;
-	var regionY = 0.;
-	var regionWidth = 0.;
-	var regionHeight = 0.;
-	var spriteWidth = 1.;
-	var spriteHeight = 1.;
-	var pivotX = .5;
-	var pivotY = .5;
-	var facing:SpriteFacing = Camera;
-	var alphaMode:SpriteAlpha = Blend;
 	var cutoff = .5;
 
 	/** A sprite of texture (null for none yet: it draws nothing), tinted (0xRRGGBBAA, white for none). */
@@ -28,20 +16,10 @@ class Sprite3D extends Node3D {
 	}
 
 	/** Its texture, or null. */
-	public function getTexture():Null<Texture2D>
-		return texture;
-
-	/** Gives it a texture (null for none: it draws nothing). */
-	public function setTexture(value:Null<Texture2D>):Void
-		texture = value;
+	public var texture:Null<Texture2D>;
 
 	/** Its tint, 0xRRGGBBAA (sRGB). */
-	public function getTint():Int
-		return tint;
-
-	/** Sets its tint, 0xRRGGBBAA (sRGB): white for none. */
-	public function setTint(value:Int):Void
-		tint = value;
+	public var tint:Int = 0xffffffff;
 
 	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {
@@ -52,28 +30,22 @@ class Sprite3D extends Node3D {
 	}
 
 	/** Its region's left, in texels. */
-	public function getRegionX():Float
-		return regionX;
+	public var regionX(default, null):Float = 0.;
 
 	/** Its region's top, in texels. */
-	public function getRegionY():Float
-		return regionY;
+	public var regionY(default, null):Float = 0.;
 
 	/** Its region's width in texels (0 or less: the whole texture). */
-	public function getRegionWidth():Float
-		return regionWidth;
+	public var regionWidth(default, null):Float = 0.;
 
 	/** Its region's height in texels (0 or less: the whole texture). */
-	public function getRegionHeight():Float
-		return regionHeight;
+	public var regionHeight(default, null):Float = 0.;
 
 	/** Its width in world units, before its scale (1 by default). */
-	public function getSpriteWidth():Float
-		return spriteWidth;
+	public var spriteWidth(default, null):Float = 1.;
 
 	/** Its height in world units, before its scale (1 by default). */
-	public function getSpriteHeight():Float
-		return spriteHeight;
+	public var spriteHeight(default, null):Float = 1.;
 
 	/** Sizes it, in world units before its scale. False, changing nothing, for a size below 0. */
 	public function setSpriteSize(width:Float, height:Float):Bool {
@@ -92,27 +64,21 @@ class Sprite3D extends Node3D {
 	}
 
 	/** Its pivot's x fraction. */
-	public function getPivotX():Float
-		return pivotX;
+	public var pivotX(default, null):Float = .5;
 
 	/** Its pivot's y fraction. */
-	public function getPivotY():Float
-		return pivotY;
+	public var pivotY(default, null):Float = .5;
 
 	/** How it faces. */
-	public function getFacing():SpriteFacing
-		return facing;
-
-	/** Sets how it faces. */
-	public function setFacing(value:SpriteFacing):Void
-		facing = value;
+	public var facing:SpriteFacing = Camera;
 
 	/** How its texels' alpha is used. */
-	public function getAlphaMode():SpriteAlpha
-		return alphaMode;
+	public var alphaMode(default, null):SpriteAlpha = Blend;
 
 	/** The alpha below which a Mask sprite's texels are cut out (0..1). */
-	public function getAlphaCutoff():Float
+	public var alphaCutoff(get, never):Float;
+
+	function get_alphaCutoff():Float
 		return cutoff;
 
 	/** Sets how it uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False, changing nothing, for a cutoff outside 0..1. */

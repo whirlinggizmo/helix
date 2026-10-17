@@ -34,8 +34,10 @@ class ImageDecoding {
 		}, complete, Cancelled, Failed("The image decoder is shut down"));
 
 	/** Whether a decode is queued, under way, or its completion not yet run. */
-	public function isBusy():Bool
-		return jobs.isBusy();
+	public var busy(get, never):Bool;
+
+	function get_busy():Bool
+		return jobs.busy;
 
 	/** Delivers finished decodes, starts queued ones and runs completions. Call once per frame. */
 	public function poll():Void {

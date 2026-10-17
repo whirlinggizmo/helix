@@ -21,19 +21,27 @@ class Time {
 	}
 
 	/** Seconds on the host's monotonic clock. */
-	public static function getTime():Float
-		return runner.getHost().getTime();
+	public static var time(get, never):Float;
+
+	static function get_time():Float
+		return runner.host.time;
 
 	/** The seconds since the last frame, unheld (the app's frame dt is held at 0.1), and 0 on the first: what a fixed-rate simulation
 		(Ticker.advance) is fed, so a slow frame is caught up in ticks instead of lost. */
-	public static function getFrameElapsed():Float
-		return runner.getClock().getElapsed();
+	public static var frameElapsed(get, never):Float;
+
+	static function get_frameElapsed():Float
+		return runner.clock.elapsed;
 
 	/** The last frame's CPU time in milliseconds, its services' polls included. */
-	public static function getFrameCpu():Float
-		return runner.getFrameCpu();
+	public static var frameCpu(get, never):Float;
+
+	static function get_frameCpu():Float
+		return runner.frameCpu;
 
 	/** Milliseconds between the last two frames' starts (0 for the first). */
-	public static function getFrameInterval():Float
-		return runner.getFrameInterval();
+	public static var frameInterval(get, never):Float;
+
+	static function get_frameInterval():Float
+		return runner.frameInterval;
 }

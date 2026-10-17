@@ -14,27 +14,39 @@ class Ray {
 	public function new() {}
 
 	/** Where it starts, x. */
-	public function getOriginX():Float
+	public var originX(get, never):Float;
+
+	function get_originX():Float
 		return ox;
 
 	/** Where it starts, y. */
-	public function getOriginY():Float
+	public var originY(get, never):Float;
+
+	function get_originY():Float
 		return oy;
 
 	/** Where it starts, z. */
-	public function getOriginZ():Float
+	public var originZ(get, never):Float;
+
+	function get_originZ():Float
 		return oz;
 
 	/** The way it goes, x (a unit vector's). */
-	public function getDirectionX():Float
+	public var directionX(get, never):Float;
+
+	function get_directionX():Float
 		return dx;
 
 	/** The way it goes, y. */
-	public function getDirectionY():Float
+	public var directionY(get, never):Float;
+
+	function get_directionY():Float
 		return dy;
 
 	/** The way it goes, z. */
-	public function getDirectionZ():Float
+	public var directionZ(get, never):Float;
+
+	function get_directionZ():Float
 		return dz;
 
 	/** Starts it at x, y, z going along dx, dy, dz (made a unit vector). False, changing nothing, for a direction of length 0 or one that isn't

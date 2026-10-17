@@ -4,92 +4,79 @@ package helix.input;
 class PointerGestures {
 	var slop:Float;
 	var tapSeconds:Float;
-	var down = false;
-	var pressed = false;
-	var released = false;
-	var dragging = false;
-	var tapped = false;
-	var x = 0.;
-	var y = 0.;
-	var startX = 0.;
-	var startY = 0.;
 	var flickX = 0.;
 	var flickY = 0.;
 	var started = 0.;
 	var samples:Array<Float> = [];
 
-	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. Throws for a slop under 0 or tapSeconds of 0 or less, as the setters refuse. */
+	/** Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds, clamped as maxTapDistance and maxTapDuration are. */
 	public function new(slop = 12., tapSeconds = .3) {
-		if (!setMaxTapDistance(slop) || !setMaxTapDuration(tapSeconds))
-			throw 'Invalid gesture limits: slop $slop, tapSeconds $tapSeconds';
+		maxTapDistance = slop;
+		maxTapDuration = tapSeconds;
 	}
 
-	/** How far a press may move and still be a tap, in pixels. */
-	public function getMaxTapDistance():Float
+	/** How far a press may move and still be a tap, in pixels. 0 or more (under 0, or NaN, is 0). */
+	public var maxTapDistance(get, set):Float;
+
+	function get_maxTapDistance():Float
 		return slop;
 
-	/** False for under 0. */
-	public function setMaxTapDistance(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_maxTapDistance(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		slop = value;
-		return true;
+		return value;
 	}
 
-	/** How long a press may last and still be a tap, in seconds. */
-	public function getMaxTapDuration():Float
+	/** How long a press may last and still be a tap, in seconds. At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	public var maxTapDuration(get, set):Float;
+
+	function get_maxTapDuration():Float
 		return tapSeconds;
 
-	/** False for 0 or less. */
-	public function setMaxTapDuration(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_maxTapDuration(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		tapSeconds = value;
-		return true;
+		return value;
 	}
 
 	/** Whether the pointer is down, as of the last update. */
-	public function isDown():Bool
-		return down;
+	public var down(default, null):Bool = false;
 
 	/** The pointer went down at the last update. */
-	public function isPressed():Bool
-		return pressed;
+	public var pressed(default, null):Bool = false;
 
 	/** The pointer came up at the last update. */
-	public function isReleased():Bool
-		return released;
+	public var released(default, null):Bool = false;
 
 	/** Moved past the slop during this press. */
-	public function isDragging():Bool
-		return dragging;
+	public var dragging(default, null):Bool = false;
 
 	/** The press that ended at the last update was a tap: it stayed within the slop and the tap time. */
-	public function isTapped():Bool
-		return tapped;
+	public var tapped(default, null):Bool = false;
 
-	/** The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after release. */
-	public function getX():Float
-		return x;
+	/** The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after
+		release. */
+	public var x(default, null):Float = 0.;
 
-	/** The pointer's y in framebuffer pixels, held as getX is. */
-	public function getY():Float
-		return y;
+	/** The pointer's y in framebuffer pixels, held as x is. */
+	public var y(default, null):Float = 0.;
 
 	/** Where the current or last press began, x in framebuffer pixels. */
-	public function getStartX():Float
-		return startX;
+	public var startX(default, null):Float = 0.;
 
 	/** Where the current or last press began, y in framebuffer pixels. */
-	public function getStartY():Float
-		return startY;
+	public var startY(default, null):Float = 0.;
 
 	/** Velocity over the last tenth of a second before release, pixels per second. */
-	public function getFlickVelocityX():Float
+	public var flickVelocityX(get, never):Float;
+
+	function get_flickVelocityX():Float
 		return flickX;
 
-	/** Vertical velocity as getFlickVelocityX, down positive. */
-	public function getFlickVelocityY():Float
+	/** Vertical velocity as flickVelocityX, down positive. */
+	public var flickVelocityY(get, never):Float;
+
+	function get_flickVelocityY():Float
 		return flickY;
 
 	/** Reads the pointer once per tick, before the input is consumed; now is the time in seconds. */
@@ -98,19 +85,19 @@ class PointerGestures {
 		released = false;
 		tapped = false;
 		flickX = flickY = 0;
-		if (input.isPointerPressed() && !down) {
+		if (input.pointerPressed && !down) {
 			down = true;
 			pressed = true;
 			dragging = false;
 			started = now;
-			startX = x = input.getPointerX();
-			startY = y = input.getPointerY();
+			startX = x = input.pointerX;
+			startY = y = input.pointerY;
 			samples = [];
 		}
 		if (down) {
-			if (input.getPointerX() >= 0) {
-				x = input.getPointerX();
-				y = input.getPointerY();
+			if (input.pointerX >= 0) {
+				x = input.pointerX;
+				y = input.pointerY;
 			}
 			samples.push(now);
 			samples.push(x);
@@ -119,7 +106,7 @@ class PointerGestures {
 				samples.splice(0, 3);
 			if (!dragging && (Math.abs(x - startX) > slop || Math.abs(y - startY) > slop))
 				dragging = true;
-			if (input.isPointerReleased() || !input.isPointerDown()) {
+			if (input.pointerReleased || !input.pointerDown) {
 				down = false;
 				released = true;
 				tapped = !dragging && now - started <= tapSeconds;

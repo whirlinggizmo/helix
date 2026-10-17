@@ -36,7 +36,7 @@ class App extends BaseApp {
 	var framePresses = 0;
 
 	override public function init():Void {
-		Window.setTitle("HeliX tick");
+		Window.title = "HeliX tick";
 		Window.requestSize(WIDTH, HEIGHT);
 		batch = new Batch2D(Graphics.instance);
 		ticker = new Ticker(Input.instance, 10);
@@ -44,7 +44,7 @@ class App extends BaseApp {
 
 	function tick():Void {
 		previousX = x;
-		x += SPEED * ticker.getDelta();
+		x += SPEED * ticker.delta;
 		if (x > RIGHT) {
 			x = LEFT;
 			previousX = x;
@@ -59,32 +59,32 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;
 		if (input.isFramePressed(Key.Space))
-			if (Time.clock.isPaused())
+			if (Time.clock.paused)
 				Time.clock.resume();
 			else
 				Time.clock.pause();
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		ticker.advance(Time.clock.getElapsed(), tick);
-		var t = ticker.getFraction();
-		fps.update(dt, Time.getFrameCpu());
+		ticker.advance(Time.clock.elapsed, tick);
+		var t = ticker.fraction;
+		fps.update(dt, Time.frameCpu);
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
 		// (LEFT to RIGHT) drawn across the visible width.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth(),
-			vh = presentation.getVisibleHeight();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth,
+			vh = presentation.visibleHeight;
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x181a22ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x181a22ff);
 		batch.begin(camera);
 		var y = vy + 20;
 		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
 		y += Text2D.drawWrapped(batch,
 			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
-			+ (Time.clock.isPaused() ? "paused (Space resumes)" : "running (Space pauses)"),
+			+ (Time.clock.paused ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
 			- 40, 0xc8c8c8ff)

@@ -59,7 +59,7 @@ class FetchService {
 				job.finish(result);
 			}
 			function fail(message:String):Void {
-				if (job.isSettled())
+				if (job.settled)
 					return;
 				if (abort != null)
 					abort();
@@ -73,7 +73,7 @@ class FetchService {
 				// A compressed body's length isn't what arrives.
 				total = headers.exists("content-encoding") ? null : Std.parseInt(headers["content-length"]);
 			}, part -> {
-				if (job.isSettled())
+				if (job.settled)
 					return;
 				received += part.length;
 				if (received > limit) {
@@ -82,19 +82,19 @@ class FetchService {
 				}
 				buffer.addBytes(part, 0, part.length);
 				if (progress != null && reported != received)
-					jobs.post(() -> if (!job.isSettled() && reported != received) {
+					jobs.post(() -> if (!job.settled && reported != received) {
 						reported = received;
 						progress({receivedBytes: received, totalBytes: total});
 					});
 			}, error -> {
-				if (job.isSettled())
+				if (job.settled)
 					return;
 				settle(error == null ? Response({status: status, headers: headers, bytes: buffer.getBytes()}) : Failed(error));
 			});
-			job.setAbort(() -> {
+			job.abort = () -> {
 				timers.remove(timer);
 				abort();
-			});
+			};
 		}, complete, Cancelled, Failed("Closed fetch service"));
 	}
 
@@ -102,7 +102,7 @@ class FetchService {
 	public function poll():Void {
 		http.poll();
 		for (t in timers.copy())
-			if (t.job.getRunningSeconds() > t.seconds)
+			if (t.job.runningSeconds > t.seconds)
 				t.fail("Fetch timeout");
 		jobs.poll();
 	}

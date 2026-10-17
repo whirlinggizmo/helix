@@ -61,7 +61,7 @@ class App extends BaseApp {
 	var corner:Label;
 
 	override public function init():Void {
-		Window.setTitle("HeliX ui");
+		Window.title = "HeliX ui";
 		Window.requestSize(1000, 600);
 		batch = new Batch2D(Graphics.instance);
 		pointer = new Pointer(Input.instance);
@@ -71,12 +71,12 @@ class App extends BaseApp {
 		main = ui.panel("main");
 		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		var title = ui.label("HeliX ui");
-		title.getNode().setTextSize(32);
+		title.node.setTextSize(32);
 		play = ui.button("Play");
 		openSettings = ui.button("Settings");
 		openLevels = ui.button("Levels");
 		quit = ui.button("Quit");
-		quit.setEnabled(Host.canQuit());
+		quit.enabled = Host.canQuit();
 		for (w in [title, play, openSettings, openLevels, quit])
 			main.add(w);
 		settings = ui.panel("settings");
@@ -85,7 +85,7 @@ class App extends BaseApp {
 		name = ui.textField("", "your name", 16);
 		back = ui.button("Back");
 		var heading = ui.label("Settings");
-		heading.getNode().setTextSize(26);
+		heading.node.setTextSize(26);
 		for (w in [heading, sound, volume, name, back])
 			settings.add(w);
 		levels = ui.panel("levels");
@@ -99,26 +99,26 @@ class App extends BaseApp {
 		levels.adopt(start);
 		levels.adopt(backFromLevels);
 		var buttons = Box.row();
-		buttons.setGap(ui.getTheme().getGap());
-		buttons.add(start.getBox());
-		buttons.add(backFromLevels.getBox());
-		levels.getContent().add(buttons);
+		buttons.gap = ui.theme.gap;
+		buttons.add(start.box);
+		buttons.add(backFromLevels.box);
+		levels.content.add(buttons);
 		bar = ui.progress(0);
 		corner = ui.label("");
-		corner.getNode().setColor(0x9aa2b8ff);
+		corner.node.color = 0x9aa2b8ff;
 		// The design: the panels centered, the bar along the bottom, the status in the corner.
 		layout = Box.stack();
 		layout.setSizing(Grow(1), Grow(1));
 		for (panel in [main, settings, levels])
-			panel.getBox().setAnchor(Center, Center);
-		main.getBox().setSizing(Fixed(360), Fit);
-		settings.getBox().setSizing(Fixed(480), Fit);
-		levels.getBox().setSizing(Fixed(520), Fit);
-		bar.getBox().setSizing(Fixed(400), Fixed(10));
-		bar.getBox().setAnchor(Center, End, 0, -24);
-		corner.getBox().setAnchor(End, End, -16, -48);
+			panel.box.setAnchor(Center, Center);
+		main.box.setSizing(Fixed(360), Fit);
+		settings.box.setSizing(Fixed(480), Fit);
+		levels.box.setSizing(Fixed(520), Fit);
+		bar.box.setSizing(Fixed(400), Fixed(10));
+		bar.box.setAnchor(Center, End, 0, -24);
+		corner.box.setAnchor(End, End, -16, -48);
 		for (w in [main, settings, levels, bar, corner])
-			layout.add(w.getBox());
+			layout.add(w.box);
 		show("main");
 	}
 
@@ -140,60 +140,58 @@ class App extends BaseApp {
 
 	function show(which:String):Void {
 		screen = which;
-		main.setVisible(which == "main");
-		settings.setVisible(which == "settings");
-		levels.setVisible(which == "levels");
+		main.visible = which == "main";
+		settings.visible = which == "settings";
+		levels.visible = which == "levels";
 		ui.reset();
 	}
 
 	override public function frame(dt:Float):Void {
 		var input = Input.instance;
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth(),
-			vh = presentation.getVisibleHeight();
-		Box.arrange(layout, vx, vy, vw, vh, batch.getFont());
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth,
+			vh = presentation.visibleHeight;
+		Box.arrange(layout, vx, vy, vw, vh, batch.font);
 		pointer.update();
 		ui.update();
 		// Asked, never told: what happened this frame.
 		switch screen {
 			case "main":
-				if (play.isClicked())
-					status = 'Playing as ${name.getText() == "" ? "nobody" : name.getText()}, sound ${sound.isOn() ? "on" : "off"}, volume ${volume.getValue()}';
-				if (openSettings.isClicked())
+				if (play.clicked)
+					status = 'Playing as ${name.text == "" ? "nobody" : name.text}, sound ${sound.on ? "on" : "off"}, volume ${volume.value}';
+				if (openSettings.clicked)
 					show("settings");
-				if (openLevels.isClicked())
+				if (openLevels.clicked)
 					show("levels");
-				if (quit.isClicked() || ui.isBackPressed() && Host.canQuit())
+				if (quit.clicked || ui.backPressed && Host.canQuit())
 					Host.quit();
 			case "settings":
-				if (sound.isChanged())
-					status = 'Sound ${sound.isOn() ? "on" : "off"}';
-				if (volume.isChanged())
-					status = 'Volume ${volume.getValue()}';
-				if (name.isSubmitted())
-					status = 'Hello, ${name.getText()}';
-				if (back.isClicked() || ui.isBackPressed() && !name.isSubmitted() && ui.getFocused() != name)
+				if (sound.changed)
+					status = 'Sound ${sound.on ? "on" : "off"}';
+				if (volume.changed)
+					status = 'Volume ${volume.value}';
+				if (name.submitted)
+					status = 'Hello, ${name.text}';
+				if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name)
 					show("main");
 			case "levels":
-				if (list.isChanged() || list.isActivated() || start.isClicked()) {
-					var chosen = list.getSelectedIndex();
-					status = chosen < 0 ? "Choose a level" : (list.isActivated()
-						|| start.isClicked() ? "Starting " : "Chose ") + list.getItems()[chosen];
+				if (list.changed || list.activated || start.clicked) {
+					var chosen = list.selectedIndex;
+					status = chosen < 0 ? "Choose a level" : (list.activated || start.clicked ? "Starting " : "Chose ") + list.items[chosen];
 				}
-				if (backFromLevels.isClicked() || ui.isBackPressed())
+				if (backFromLevels.clicked || ui.backPressed)
 					show("main");
 		}
 		loading = (loading + dt * .2) % 1;
-		bar.setValue(loading);
-		corner.setText('focus: ${ui.getFocusedName() == "" ? "none" : ui.getFocusedName()}${ui.isCapturingKeys() ? " (keys)" : ""}');
-		fps.update(dt, Time.getFrameCpu());
+		bar.value = loading;
+		corner.text = 'focus: ${ui.focusedName == "" ? "none" : ui.focusedName}${ui.capturingKeys ? " (keys)" : ""}';
+		fps.update(dt, Time.frameCpu);
 
 		Graphics.beginFrame(width, height, 0x14161cff);
 		batch.begin(camera);
@@ -202,8 +200,8 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
-		hud.pixels(Window.getPixelRatio());
-		batch.setCamera(hud);
+		hud.pixels(Window.pixelRatio);
+		batch.camera = hud;
 		fps.draw(batch, 12, 10);
 		batch.end();
 		Graphics.endFrame();

@@ -20,7 +20,7 @@ class App extends BaseApp {
 	var typed = "";
 
 	override public function init():Void {
-		Window.setTitle("HeliX hello");
+		Window.title = "HeliX hello";
 		Window.requestSize(800, 600);
 		batch = new Batch2D(Graphics.instance);
 	}
@@ -31,17 +31,17 @@ class App extends BaseApp {
 			Host.quit();
 		if (input.isFramePressed(Key.Backspace) && typed.length > 0)
 			typed = typed.substr(0, typed.length - 1);
-		if (typed.length + input.getText().length < 64)
-			typed += input.getText();
-		fps.update(dt, Time.getFrameCpu());
+		if (typed.length + input.text.length < 64)
+			typed += input.text;
+		fps.update(dt, Time.frameCpu);
 		// The drawing in the design for the window's shape, from the visible area's top-left corner.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var x = presentation.getVisibleX(),
-			y = presentation.getVisibleY(),
-			width = presentation.getVisibleWidth();
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0xf5f5f5ff);
+		var x = presentation.visibleX,
+			y = presentation.visibleY,
+			width = presentation.visibleWidth;
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xf5f5f5ff);
 		batch.begin(camera);
 		// filled and outlined rectangles
 		batch.rect(x + 40, y + 40, 200, 120, 0x66bfffff);
@@ -52,8 +52,8 @@ class App extends BaseApp {
 		batch.circle(x + 440, y + 120, 60, 0xc87affff);
 		batch.circleLines(x + 440, y + 120, 60, 1, 0x000000ff);
 		// a marker that follows the mouse
-		if (input.getPointerX() >= 0)
-			batch.circle(camera.screenToWorldX(input.getPointerX()), camera.screenToWorldY(input.getPointerY()), 8, 0xbe2137ff);
+		if (input.pointerX >= 0)
+			batch.circle(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY), 8, 0xbe2137ff);
 		// text
 		Text2D.draw(batch, "HeliX", x + 40, y + 360, 32, 0x505050ff);
 		var below = Text2D.drawWrapped(batch, typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);

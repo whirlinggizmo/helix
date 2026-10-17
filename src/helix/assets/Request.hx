@@ -2,10 +2,10 @@ package helix.assets;
 
 /** The IRequest the asset service and audio resources return for work they settle themselves (Jobs returns its own): it settles exactly once, by finish or by cancel. */
 class Request implements IRequest {
-	var settled = false;
-
 	/** Whether it has finished or been cancelled. */
-	public function isSettled():Bool
+	@:isVar public var settled(get, null):Bool = false;
+
+	function get_settled():Bool
 		return settled;
 
 	var cancelled:Void->Void;

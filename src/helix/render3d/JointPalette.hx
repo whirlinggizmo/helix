@@ -11,7 +11,6 @@ class JointPalette {
 	static inline var ROW = 1024;
 
 	var gpu:IGraphics;
-	var texture = 0;
 	var rows = 0;
 	var data:Bytes;
 	var count = 0;
@@ -23,11 +22,12 @@ class JointPalette {
 		this.gpu = gpu;
 
 	/** The data texture (0 before the first upload). */
-	public function getTexture():Int
-		return texture;
+	public var texture(default, null):Int = 0;
 
 	/** How many joints since the last clear. */
-	public function getJointCount():Int
+	public var jointCount(get, never):Int;
+
+	function get_jointCount():Int
 		return count;
 
 	/** Empties it, for a pass. */
@@ -36,7 +36,7 @@ class JointPalette {
 
 	/** Adds model's joints as posed now (its world matrix and its joints' up to date) and returns its base: the joint its first is. */
 	public function add(model:Model):Int {
-		var base = count, joints = model.getJointCount(), skin = model.getSkin();
+		var base = count, joints = model.jointCount, skin = model.skin;
 		var needed = Std.int(Math.ceil((count + joints) * 3 / ROW)) * ROW * 16;
 		if (data == null || data.length < needed) {
 			var grown = Bytes.alloc(Std.int(Math.max(needed, data == null ? ROW * 16 : data.length * 2)));
@@ -44,9 +44,9 @@ class JointPalette {
 				grown.blit(0, data, 0, count * 48);
 			data = grown;
 		}
-		inverse.makeInverse(model.getWorldMatrix());
+		inverse.makeInverse(model.worldMatrix);
 		for (j in 0...joints) {
-			var joint = model.getJoint(j).getWorldMatrix();
+			var joint = model.getJoint(j).worldMatrix;
 			// inverse × joint world × inverse bind, column-major; its top three rows.
 			for (col in 0...4)
 				for (row in 0...4) {
@@ -103,18 +103,18 @@ class JointPalette {
 		they are, each padded by how far mesh's vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2%
 		of the box's diagonal (at least 0.01). False when no joint weights a vertex (use mesh's box). */
 	public static function computePosedBox(model:Model, mesh:Mesh, out:Vector<Float>):Bool {
-		var skin = model.getSkin(), reach = mesh.getJointReach(skin);
+		var skin = model.skin, reach = mesh.getJointReach(skin);
 		var loX = Math.POSITIVE_INFINITY,
 			loY = Math.POSITIVE_INFINITY,
 			loZ = Math.POSITIVE_INFINITY;
 		var hiX = Math.NEGATIVE_INFINITY,
 			hiY = Math.NEGATIVE_INFINITY,
 			hiZ = Math.NEGATIVE_INFINITY;
-		for (j in 0...model.getJointCount()) {
+		for (j in 0...model.jointCount) {
 			var r = reach[j];
 			if (r < 0)
 				continue;
-			var w = model.getJoint(j).getWorldMatrix();
+			var w = model.getJoint(j).worldMatrix;
 			// How much the joint (with its inverse bind) can stretch a distance: its 3x3's Frobenius norm, never less than the largest stretch.
 			var norm = 0.;
 			for (col in 0...3)

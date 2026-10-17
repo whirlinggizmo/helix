@@ -26,7 +26,6 @@ class EnvironmentCache implements IReloadable {
 	var images:ImageDecoding;
 	var gpu:IGraphics;
 	var live = true;
-	var budgetMs = 4.;
 	// Environments loaded: each with how many loads hold it.
 	var loaded:Array<{environment:Environment, users:Int}> = [];
 	// Loads under way, by path: those waiting on each, and its bake once its file is read.
@@ -41,20 +40,22 @@ class EnvironmentCache implements IReloadable {
 		this.gpu = gpu;
 	}
 
-	/** The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. */
-	public function getBudgetMs():Float
+	/** The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	@:isVar public var budgetMs(get, set):Float = 4.;
+
+	function get_budgetMs():Float
 		return budgetMs;
 
-	/** False for a budget of 0 or less. */
-	public function setBudgetMs(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_budgetMs(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		budgetMs = value;
-		return true;
+		return value;
 	}
 
 	/** Whether anything is still loading or being prepared. */
-	public function isBusy():Bool
+	public var busy(get, never):Bool;
+
+	function get_busy():Bool
 		return pending.iterator().hasNext() || queue.length > 0;
 
 	/** Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release),
@@ -78,7 +79,7 @@ class EnvironmentCache implements IReloadable {
 			return request;
 		}
 		for (entry in loaded)
-			if (entry.environment.getPath() == path) {
+			if (entry.environment.path == path) {
 				entry.users++;
 				request.finish();
 				complete(Ready(entry.environment));
@@ -139,7 +140,7 @@ class EnvironmentCache implements IReloadable {
 		}
 		assets.load(path, result -> switch result {
 			case Loaded(bytes):
-				if (request.isSettled())
+				if (request.settled)
 					return;
 				if (Hdr.isHdr(bytes)) {
 					bake(EnvironmentBake.fromHdr(bytes));
@@ -147,7 +148,7 @@ class EnvironmentCache implements IReloadable {
 				}
 				child = images.decode(bytes, decoded -> switch decoded {
 					case Decoded(width, height, rgba):
-						if (!request.isSettled()) bake(EnvironmentBake.fromRgba(width, height, rgba));
+						if (!request.settled) bake(EnvironmentBake.fromRgba(width, height, rgba));
 					case Failed(message):
 						if (request.finish()) done(null, '$path: $message');
 					case Cancelled:
@@ -167,7 +168,7 @@ class EnvironmentCache implements IReloadable {
 					return;
 				loaded.remove(entry);
 				environment.destroy(gpu);
-				assets.unsubscribe(environment.getPath(), this);
+				assets.unsubscribe(environment.path, this);
 				return;
 			}
 
@@ -179,7 +180,7 @@ class EnvironmentCache implements IReloadable {
 				path: path,
 				bake: bake,
 				done: error -> if (error == null) for (entry in loaded)
-					if (entry.environment.getPath() == path)
+					if (entry.environment.path == path)
 						try
 							@:privateAccess entry.environment.replace(gpu, bake)
 						catch (e:Dynamic) {}

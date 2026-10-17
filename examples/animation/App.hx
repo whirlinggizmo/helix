@@ -47,20 +47,20 @@ class App extends BaseApp {
 	var angle = 0.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX animation");
+		Window.title = "HeliX animation";
 		Window.requestSize(1000, 600);
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xc8d2ffff, .35);
 		var sun = new DirectionalLight();
-		sun.setIntensity(2.5);
-		sun.setShadowCasting(true);
-		sun.setShadowDistance(8);
+		sun.intensity = 2.5;
+		sun.shadowCasting = true;
+		sun.shadowDistance = 8;
 		sun.lookAt(-.4, -1, -.6);
 		stage.add(sun);
 		var ground = new Material();
-		ground.setBaseColor(0x5a5f6aff);
-		ground.setRoughness(.9);
+		ground.baseColor = 0x5a5f6aff;
+		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(10, 10), ground));
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)
@@ -97,10 +97,10 @@ class App extends BaseApp {
 		copy.collectModels(skinned, rigid);
 		for (model in skinned)
 			if (model.bindSkeleton(character)) {
-				model.getParent().remove(model);
-				character.add(model);
+				model.parent = null;
+				character.addChild(model);
 			} else
-				status = '${model.getName()} names a joint the skeleton hasn\'t';
+				status = '${model.name} names a joint the skeleton hasn\'t';
 	}
 
 	function play(index:Int):Void {
@@ -108,9 +108,9 @@ class App extends BaseApp {
 		if (clip == null)
 			status = 'no clip ${CLIPS[index]}';
 		else if (!animator.play(clip, CLIPS[index] != "Death", fade ? .25 : 0))
-			status = '${clip.getName()} moves nodes the skeleton hasn\'t';
+			status = '${clip.name} moves nodes the skeleton hasn\'t';
 		else
-			status = clip.getName();
+			status = clip.name;
 	}
 
 	override public function frame(dt:Float):Void {
@@ -127,31 +127,30 @@ class App extends BaseApp {
 				fade = !fade;
 			if (input.isFramePressed(Key.Space)) {
 				paused = !paused;
-				animator.setSpeed(paused ? 0 : 1);
+				animator.speed = paused ? 0 : 1;
 			}
 			animator.update(dt);
 		}
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(3 * Math.sin(angle), 1.6, 3 * Math.cos(angle), 0, .9, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		stage.drawShadows(camera);
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, 'HeliX animation: $status${animator != null && animator.isFading() ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24,
+		y += Text2D.drawWrapped(batch, 'HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24,
 			0xf5f5f5ff)
 			+ 3;
 		y += Text2D.drawWrapped(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;

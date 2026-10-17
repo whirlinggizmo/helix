@@ -17,8 +17,7 @@ class Animator {
 	var current:Null<Playing>;
 	var previous:Null<Playing>;
 	var fade = 0.;
-	var fading = 0.;
-	var speed = 1.;
+	var faded = 0.;
 	var channels:Array<Channel> = [];
 	var sampled = new Vector<Float>(4);
 	var other = new Vector<Float>(4);
@@ -28,11 +27,15 @@ class Animator {
 		this.root = root;
 
 	/** The clip playing, or null. */
-	public function getClip():Null<AnimationClip>
+	public var clip(get, never):Null<AnimationClip>;
+
+	function get_clip():Null<AnimationClip>
 		return current == null ? null : current.clip;
 
 	/** Where the clip playing is, in seconds from its start (within its duration). */
-	public function getTime():Float
+	public var time(get, never):Float;
+
+	function get_time():Float
 		return current == null ? 0 : current.time;
 
 	/** Moves the clip playing to seconds (wrapped into its duration when it loops, held between 0 and its end when not). False, changing nothing, with no
@@ -44,24 +47,25 @@ class Animator {
 		return true;
 	}
 
-	/** How fast time runs: 1 as the clip was made, 0 held, below 0 backwards. */
-	public function getSpeed():Float
-		return speed;
+	/** How fast time runs: 1 as the clip was made, 0 held, below 0 backwards. A speed that isn't finite is taken as 0. */
+	public var speed(default, set):Float = 1.;
 
-	/** Sets how fast time runs. False for one that isn't finite. */
-	public function setSpeed(value:Float):Bool {
-		if (!Math.isFinite(value))
-			return false;
+	function set_speed(value:Float):Float {
+		value = Math.isFinite(value) ? value : 0;
 		speed = value;
-		return true;
+		return value;
 	}
 
 	/** Whether a clip that doesn't loop has reached its end (false while one loops, or with none). */
-	public function isFinished():Bool
-		return current != null && !current.loop && current.time >= current.clip.getDuration();
+	public var finished(get, never):Bool;
+
+	function get_finished():Bool
+		return current != null && !current.loop && current.time >= current.clip.duration;
 
 	/** Whether a crossfade is under way. */
-	public function isFading():Bool
+	public var fading(get, never):Bool;
+
+	function get_fading():Bool
 		return previous != null;
 
 	/** Plays clip from its start, looping or not, crossfading from the clip playing over fade seconds (0: at once); playing the clip already
@@ -79,7 +83,7 @@ class Animator {
 		previous = fade > 0 ? current : null;
 		current = new Playing(clip, nodes, loop);
 		this.fade = fade;
-		fading = 0;
+		faded = 0;
 		rebuild();
 		return true;
 	}
@@ -98,13 +102,13 @@ class Animator {
 		current.time = current.at(current.time + step);
 		if (previous != null) {
 			previous.time = previous.at(previous.time + step);
-			fading += Math.abs(seconds);
-			if (fading >= fade) {
+			faded += Math.abs(seconds);
+			if (faded >= fade) {
 				previous = null;
 				rebuild();
 			}
 		}
-		var weight = previous == null ? 1 : fading / fade;
+		var weight = previous == null ? 1 : faded / fade;
 		for (c in channels) {
 			var width = c.path == Rotation ? 4 : 3, rest = rests.get(c.node);
 			if (c.track != null)
@@ -139,9 +143,9 @@ class Animator {
 		if (nodes != null)
 			return nodes;
 		nodes = [];
-		for (i in 0...clip.getTrackCount()) {
+		for (i in 0...clip.trackCount) {
 			var name = clip.getTrack(i).target;
-			var node = root.getName() == name ? root : root.find(name);
+			var node = root.name == name ? root : root.find(name);
 			if (node == null)
 				return null;
 			nodes.push(node);
@@ -149,16 +153,16 @@ class Animator {
 		for (node in nodes)
 			if (!rests.exists(node)) {
 				var rest = new Vector<Float>(10);
-				rest[0] = node.getX();
-				rest[1] = node.getY();
-				rest[2] = node.getZ();
-				rest[3] = node.getQuaternionX();
-				rest[4] = node.getQuaternionY();
-				rest[5] = node.getQuaternionZ();
-				rest[6] = node.getQuaternionW();
-				rest[7] = node.getScaleX();
-				rest[8] = node.getScaleY();
-				rest[9] = node.getScaleZ();
+				rest[0] = node.x;
+				rest[1] = node.y;
+				rest[2] = node.z;
+				rest[3] = node.quaternionX;
+				rest[4] = node.quaternionY;
+				rest[5] = node.quaternionZ;
+				rest[6] = node.quaternionW;
+				rest[7] = node.scaleX;
+				rest[8] = node.scaleY;
+				rest[9] = node.scaleZ;
 				rests.set(node, rest);
 			}
 		bindings.set(clip, nodes);
@@ -175,7 +179,7 @@ class Animator {
 	function rebuild():Void {
 		channels = [];
 		function add(playing:Playing, isCurrent:Bool):Void
-			for (i in 0...playing.clip.getTrackCount()) {
+			for (i in 0...playing.clip.trackCount) {
 				var track = playing.clip.getTrack(i), node = playing.nodes[i];
 				var channel = null;
 				for (c in channels)
@@ -219,7 +223,7 @@ private class Playing {
 
 	/** seconds within the clip: wrapped into its duration when it loops, else held between 0 and its end. */
 	public function at(seconds:Float):Float {
-		var duration = clip.getDuration();
+		var duration = clip.duration;
 		if (duration <= 0)
 			return 0;
 		if (!loop)

@@ -10,18 +10,13 @@ import helix.render2d.Texture2D;
 import helix.ui.Theme;
 
 /** The built-in loading scene: the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption
-	("Loading the caves", setText; "Loading" unless given) over a bar of the loader's progress and the count, a tip along the bottom
-	(setTip), and what failed in the disabled text color. With setHoldForPress it stays once loaded, saying so, until a press (the "loaded,
+	("Loading the caves", text; "Loading" unless given) over a bar of the loader's progress and the count, a tip along the bottom
+	(tip), and what failed in the disabled text color. With holdForPress it stays once loaded, saying so, until a press (the "loaded,
 	go" screen of a movie-like opening); else the scene runs as soon as its loads are in. The game drives it: one for the program
-	(Scenes.getLoadingScene) set before each level, or one a level brings (Scene.getLoadingScene). Its theme is its own (setTheme). */
+	(Scenes.loadingScene) set before each level, or one a level brings (Scene.loadingScene). Its theme is its own (theme). */
 class Loading extends LoadingScene {
-	var theme = new Theme();
-	var image:Null<Texture2D>;
 	var cover = true;
-	var text = "Loading";
-	var tip = "";
 	var hold = false;
-	var prompt = "press any key";
 	var went = false;
 	var batch:Null<Batch2D>;
 	var camera = new Camera2D();
@@ -30,17 +25,11 @@ class Loading extends LoadingScene {
 	public function new()
 		super();
 
-	/** Its theme. */
-	public function getTheme():Theme
-		return theme;
-
 	/** The theme it draws with. */
-	public function setTheme(value:Theme):Void
-		theme = value;
+	public var theme:Theme = new Theme();
 
 	/** Its picture, or null. */
-	public function getImage():Null<Texture2D>
-		return image;
+	public var image(default, null):Null<Texture2D>;
 
 	/** A picture behind the rest: covering the screen (cropped to its shape) when cover, else centered whole; null for the panel color alone. */
 	public function setImage(value:Null<Texture2D>, cover = true):Void {
@@ -48,46 +37,34 @@ class Loading extends LoadingScene {
 		this.cover = cover;
 	}
 
-	/** The caption over the bar. */
-	public function getText():String
-		return text;
-
 	/** The caption over the bar: what's loading ("Loading the caves"). */
-	public function setText(value:String):Void
-		text = value;
-
-	/** The tip along the bottom, "" for none. */
-	public function getTip():String
-		return tip;
+	public var text:String = "Loading";
 
 	/** A line along the bottom (a hint, a credit), wrapped; "" for none. */
-	public function setTip(value:String):Void
-		tip = value;
+	public var tip:String = "";
 
-	/** Whether it stays once loaded, until a press. */
-	public function isHoldForPress():Bool
+	/** Whether it stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed. */
+	public var holdForPress(get, set):Bool;
+
+	function get_holdForPress():Bool
 		return hold;
 
-	/** Stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed. */
-	public function setHoldForPress(value:Bool):Void
+	function set_holdForPress(value:Bool):Bool {
 		hold = value;
+		return value;
+	}
 
 	/** The line shown once loaded, while holding for a press. */
-	public function getPrompt():String
-		return prompt;
-
-	/** Sets the line shown while holding. */
-	public function setPrompt(value:String):Void
-		prompt = value;
+	public var prompt:String = "press any key";
 
 	override public function enter():Void
 		went = false;
 
-	override public function isHolding():Bool
-		return hold && !went && !(scenes != null && scenes.isQuick());
+	override function get_holding():Bool
+		return hold && !went && !(scenes != null && scenes.quick);
 
 	override public function update(dt:Float):Void
-		if (hold && loader != null && loader.isDone() && scenes.getInput().isAnyFramePressed())
+		if (hold && shownLoader != null && shownLoader.done && scenes.input.anyFramePressed)
 			went = true;
 
 	override public function exit():Void {
@@ -97,43 +74,40 @@ class Loading extends LoadingScene {
 	}
 
 	override public function draw():Void {
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		if (batch == null)
 			batch = new Batch2D(Graphics.instance);
 		Screen.apply(camera);
 		var p = Screen.instance;
-		var vx = p.getVisibleX(),
-			vy = p.getVisibleY(),
-			vw = p.getVisibleWidth(),
-			vh = p.getVisibleHeight();
-		Graphics.beginFrame(width, height, theme.getPanelColor());
+		var vx = p.visibleX,
+			vy = p.visibleY,
+			vw = p.visibleWidth,
+			vh = p.visibleHeight;
+		Graphics.beginFrame(width, height, theme.panelColor);
 		batch.begin(camera);
 		if (image != null) {
 			// Covering: scaled to fill the visible area, its middle kept; else whole, centered, as large as fits.
-			var iw = image.getWidth(), ih = image.getHeight();
+			var iw = image.width, ih = image.height;
 			var scale = cover ? Math.max(vw / iw, vh / ih) : Math.min(vw / iw, vh / ih);
 			var w = iw * scale, h = ih * scale;
 			batch.sprite(image, vx + (vw - w) / 2, vy + (vh - h) / 2, w, h);
 		}
-		var progress = loader == null ? 1 : loader.getProgress();
+		var progress = shownLoader == null ? 1 : shownLoader.progress;
 		var barWidth = Math.min(360, vw - 80),
 			x = vx + (vw - barWidth) / 2,
 			y = vy + vh / 2;
-		Text2D.draw(batch, loader != null && loader.isDone() && hold ? "Loaded" : text, vx + vw / 2, y - 40, theme.getTextSize() * 1.2, theme.getTextColor(),
-			Center, theme.getFont());
-		batch.rect(x, y, barWidth, 10, theme.getFaceColor());
-		batch.rect(x, y, barWidth * progress, 10, theme.getAccentColor());
-		var count = loader == null ? "" : loader.isDone() && hold ? prompt : '${loader.getDoneCount()} of ${loader.getCount()}';
-		Text2D.draw(batch, count, vx + vw / 2, y + 24, theme.getTextSize() * .8, theme.getDisabledTextColor(), Center, theme.getFont());
+		Text2D.draw(batch, shownLoader != null && shownLoader.done && hold ? "Loaded" : text, vx + vw / 2, y - 40, theme.textSize * 1.2, theme.textColor,
+			Center, theme.font);
+		batch.rect(x, y, barWidth, 10, theme.faceColor);
+		batch.rect(x, y, barWidth * progress, 10, theme.accentColor);
+		var count = shownLoader == null ? "" : shownLoader.done && hold ? prompt : '${shownLoader.doneCount} of ${shownLoader.count}';
+		Text2D.draw(batch, count, vx + vw / 2, y + 24, theme.textSize * .8, theme.disabledTextColor, Center, theme.font);
 		if (tip != "")
-			Text2D.drawWrapped(batch, tip, vx + vw / 2, vy + vh - 60, theme.getTextSize() * .8, vw - 80, theme.getDisabledTextColor(), Center, 1.25,
-				theme.getFont());
-		if (loader != null) {
+			Text2D.drawWrapped(batch, tip, vx + vw / 2, vy + vh - 60, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
+		if (shownLoader != null) {
 			var line = y + 56;
-			for (failure in loader.getFailures()) {
-				line += Text2D.drawWrapped(batch, failure, vx + vw / 2, line, theme.getTextSize() * .8, vw - 80, theme.getDisabledTextColor(), Center, 1.25,
-					theme.getFont());
+			for (failure in shownLoader.failures) {
+				line += Text2D.drawWrapped(batch, failure, vx + vw / 2, line, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
 			}
 		}
 		batch.end();

@@ -1,6 +1,6 @@
 package helix.time;
 
-/** Timers on a clock: after(seconds, f) runs f once, every(seconds, f) runs it each interval, both measured in the clock's deltas (Clock.getDelta, so
+/** Timers on a clock: after(seconds, f) runs f once, every(seconds, f) runs it each interval, both measured in the clock's deltas (Clock.delta, so
 	a stall fires each once, not a burst) when update runs each frame. Those due in one update fire in the order made; one made or cancelled
 	inside a callback takes effect from the next update. */
 class Timers {
@@ -23,7 +23,9 @@ class Timers {
 	}
 
 	/** How many are set (running or waiting), done ones gone. */
-	public function getCount():Int
+	public var count(get, never):Int;
+
+	function get_count():Int
 		return timers.length + pending.length;
 
 	/** Cancels every timer. */
@@ -36,7 +38,7 @@ class Timers {
 		pending = [];
 	}
 
-	/** Advances every timer by delta seconds (a clock's getDelta) and runs those due. Once a frame. */
+	/** Advances every timer by delta seconds (a clock's delta) and runs those due. Once a frame. */
 	public function update(delta:Float):Void {
 		if (delta < 0)
 			delta = 0;
@@ -46,10 +48,10 @@ class Timers {
 		updating = false;
 		var kept = [];
 		for (t in timers)
-			if (!t.isDone())
+			if (!t.done)
 				kept.push(t);
 		for (t in pending)
-			if (!t.isDone())
+			if (!t.done)
 				kept.push(t);
 		pending = [];
 		timers = kept;
@@ -63,11 +65,7 @@ class Timers {
 
 /** One timer of a Timers set: cancelled by the game, or done once it has fired (a repeating one never is until cancelled). */
 class Timer {
-	var remaining:Float;
-	var interval:Float;
-	var repeating:Bool;
 	var f:Null<Void->Void>;
-	var done = false;
 
 	@:allow(helix.time.Timers)
 	function new(seconds:Float, repeating:Bool, f:Void->Void) {
@@ -78,20 +76,16 @@ class Timer {
 	}
 
 	/** Seconds until it fires (next), 0 or less when due. */
-	public function getRemaining():Float
-		return remaining;
+	public var remaining(default, null):Float;
 
 	/** Its interval, the seconds it was set with. */
-	public function getInterval():Float
-		return interval;
+	public var interval(default, null):Float;
 
 	/** Whether it repeats. */
-	public function isRepeating():Bool
-		return repeating;
+	public var repeating(default, null):Bool;
 
 	/** Whether it's over: cancelled, or fired once for a one-shot. */
-	public function isDone():Bool
-		return done;
+	public var done(default, null):Bool = false;
 
 	/** Stops it from firing again (nothing if it's done). */
 	public function cancel():Void {

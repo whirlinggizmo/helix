@@ -14,46 +14,56 @@ import helix.render3d.ModelFile;
 import helix.render3d.ModelCache;
 import helix.render3d.ModelCache.ModelLoadResult;
 
-/** A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (getProgress, from how many
-	have ended) and the scene starts once they're done (isDone), with what failed by name (getFailures). Each load goes through the service
+/** A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (progress, from how many
+	have ended) and the scene starts once they're done (done), with what failed by name (failures). Each load goes through the service
 	it always did, its own callback kept; the loader only counts. wrap counts any other load the game makes. Nothing here cancels: a scene
 	that exits early cancels its own requests. */
 class Loader {
 	var total = 0;
-	var done = 0;
-	var failures:Array<String> = [];
+	var finished = 0;
+	var failureList:Array<String> = [];
 
 	/** No loads yet: done, at progress 1. */
 	public function new() {}
 
 	/** How many loads were added. */
-	public function getCount():Int
+	public var count(get, never):Int;
+
+	function get_count():Int
 		return total;
 
 	/** How many have ended, failed ones included. */
-	public function getDoneCount():Int
-		return done;
+	public var doneCount(get, never):Int;
+
+	function get_doneCount():Int
+		return finished;
 
 	/** How far along, 0 to 1 (1 with nothing to load). */
-	public function getProgress():Float
-		return total == 0 ? 1 : done / total;
+	public var progress(get, never):Float;
+
+	function get_progress():Float
+		return total == 0 ? 1 : finished / total;
 
 	/** Whether every load has ended. */
-	public function isDone():Bool
-		return done >= total;
+	public var done(get, never):Bool;
+
+	function get_done():Bool
+		return finished >= total;
 
 	/** What failed, each as its name and the reason. */
-	public function getFailures():Array<String>
-		return failures.copy();
+	public var failures(get, never):Array<String>;
+
+	function get_failures():Array<String>
+		return failureList.copy();
 
 	/** Counts a load the game makes itself: wrap its completion, naming it; failed gives the reason for a result that failed, or null. */
 	public function wrap<T>(name:String, complete:T->Void, failed:T->Null<String>):T->Void {
 		total++;
 		return result -> {
-			done++;
+			finished++;
 			var reason = failed(result);
 			if (reason != null)
-				failures.push('$name: $reason');
+				failureList.push('$name: $reason');
 			complete(result);
 		};
 	}

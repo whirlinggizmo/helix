@@ -1,35 +1,32 @@
 package helix.host;
 
 /** The window the app draws in: title, size, place, fullscreen, visibility and the monitors, in logical pixels.
-	Names follow docs/CONVENTIONS.md: every set has a get (is for a bool); can says whether to offer an action at all;
-	request asks for what the platform may refuse or grant later, returning whether it asked, never whether it was granted.
-	A setter that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows. */
+	Names follow docs/CONVENTIONS.md: a value is a property; can says whether to offer an action at all; request asks for what the platform
+	may refuse or grant later, returning whether it asked, never whether it was granted, and the property answers on a later frame. A request
+	that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows. */
 interface IWindow {
-	/** The drawable area's width in framebuffer pixels (the getWidth and getHeight sizes are logical pixels). */
-	function getFramebufferWidth():Int;
+	/** The drawable area's width in framebuffer pixels (the width and height sizes are logical pixels). */
+	var framebufferWidth(get, never):Int;
 
 	/** The drawable area's height in framebuffer pixels. */
-	function getFramebufferHeight():Int;
+	var framebufferHeight(get, never):Int;
 
 	/** Framebuffer pixels per logical pixel. */
-	function getPixelRatio():Float;
+	var pixelRatio(get, never):Float;
 
 	/** Whether the window has the keyboard and is shown: false while it's in the background, minimized, or (on the web) the page is hidden. */
-	function isFocused():Bool;
+	var focused(get, never):Bool;
 
 	/** The title bar's text (the document's title, on the web). */
-	function getTitle():String;
-
-	/** Sets the title bar's text (the document's title, on the web). */
-	function setTitle(title:String):Void;
+	var title(get, set):String;
 
 	/** The window's inner width in logical pixels (the viewport's, on the web). */
-	function getWidth():Int;
+	var width(get, never):Int;
 
 	/** The window's inner height in logical pixels (the viewport's, on the web). */
-	function getHeight():Int;
+	var height(get, never):Int;
 
-	/** Asks for an inner size in logical pixels; getWidth and getHeight answer on a later frame, with what the window manager gave (it may
+	/** Asks for an inner size in logical pixels; width and height answer on a later frame, with what the window manager gave (it may
 		give another size, or none). False, asking nothing, where a program can't size its window (the web), or for a size under 1. */
 	function requestSize(width:Int, height:Int):Bool;
 
@@ -37,12 +34,12 @@ interface IWindow {
 	function canMove():Bool;
 
 	/** The window's left edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's. */
-	function getX():Int;
+	var x(get, never):Int;
 
 	/** The window's top edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's. */
-	function getY():Int;
+	var y(get, never):Int;
 
-	/** Asks for the window's left and top edges on the desktop in logical pixels; getX and getY answer on a later frame, with what the
+	/** Asks for the window's left and top edges on the desktop in logical pixels; x and y answer on a later frame, with what the
 		window manager gave. False, asking nothing, where the window can't move (canMove). */
 	function requestPosition(x:Int, y:Int):Bool;
 
@@ -50,26 +47,26 @@ interface IWindow {
 	function canFullscreen():Bool;
 
 	/** Whether the window is fullscreen now (the canvas, on the web). */
-	function isFullscreen():Bool;
+	var fullscreen(get, never):Bool;
 
-	/** Asks for fullscreen or a window; isFullscreen answers on a later frame. False where it can't ask (canFullscreen). On the web the browser
+	/** Asks for fullscreen or a window; fullscreen answers on a later frame. False where it can't ask (canFullscreen). On the web the browser
 		grants it only soon after a key press or click. */
 	function requestFullscreen(enabled:Bool):Bool;
 
 	/** Whether the window is shown (the canvas, on the web). */
-	function isVisible():Bool;
+	var visible(get, never):Bool;
 
-	/** Asks to show or hide the window (the canvas, on the web); isVisible answers on a later frame (natively, once the window manager has
+	/** Asks to show or hide the window (the canvas, on the web); visible answers on a later frame (natively, once the window manager has
 		shown it). Always asks: true. */
 	function requestVisible(visible:Bool):Bool;
 
 	/** How many monitors there are, at least 1; the web sees one screen. */
-	function getMonitorCount():Int;
+	var monitorCount(get, never):Int;
 
 	/** The monitor holding the window. */
-	function getMonitorIndex():Int;
+	var monitorIndex(get, never):Int;
 
-	/** Asks for the window on monitor index; getMonitorIndex answers on a later frame. False, asking nothing, for an index out of range, or where
+	/** Asks for the window on monitor index; monitorIndex answers on a later frame. False, asking nothing, for an index out of range, or where
 		the window can't move (canMove). */
 	function requestMonitorIndex(index:Int):Bool;
 

@@ -8,16 +8,10 @@ import helix.host.FrameClock;
 	frame has two measures, as FrameClock's: the delta, held at MAX_DELTA (a stall moves animation on by that much), and the elapsed time,
 	unheld, for a Ticker, which bounds its own catch-up. Both are 0 while paused. */
 class Clock {
-	var timeScale = 1.;
-	var paused = false;
-	var delta = 0.;
-	var elapsed = 0.;
-	var time = 0.;
-
 	/** A clock at 0, running at the frames' pace. */
 	public function new() {}
 
-	/** Advances by frameElapsed seconds of the frames' time (Time.getFrameElapsed), scaled; nothing while paused. Once a frame. */
+	/** Advances by frameElapsed seconds of the frames' time (Time.frameElapsed), scaled; nothing while paused. Once a frame. */
 	public function update(frameElapsed:Float):Void {
 		elapsed = paused ? 0 : Math.max(0, frameElapsed) * timeScale;
 		delta = elapsed > FrameClock.MAX_DELTA ? FrameClock.MAX_DELTA : elapsed;
@@ -25,32 +19,25 @@ class Clock {
 	}
 
 	/** This frame's delta in its seconds: the elapsed time held at FrameClock.MAX_DELTA, for animation; 0 while paused. */
-	public function getDelta():Float
-		return delta;
+	public var delta(default, null):Float = 0.;
 
 	/** This frame's elapsed time in its seconds, unheld, for a Ticker; 0 while paused. */
-	public function getElapsed():Float
-		return elapsed;
+	public var elapsed(default, null):Float = 0.;
 
 	/** Its seconds so far: the deltas summed (what animation has seen), not moving while paused. */
-	public function getTime():Float
-		return time;
+	public var time(default, null):Float = 0.;
 
-	/** How fast it runs against the frames: 1 as they do, 0.5 slow motion, 0 still. */
-	public function getTimeScale():Float
-		return timeScale;
+	/** How fast it runs against the frames: 1 as they do, 0.5 slow motion, 0 still. 0 or more (under 0, or NaN, is 0). */
+	public var timeScale(default, set):Float = 1.;
 
-	/** Sets how fast it runs; false, changing nothing, for a scale under 0. */
-	public function setTimeScale(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_timeScale(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		timeScale = value;
-		return true;
+		return value;
 	}
 
 	/** Whether it's paused: updates give 0 until resume. */
-	public function isPaused():Bool
-		return paused;
+	public var paused(default, null):Bool = false;
 
 	/** Stops it; the time scale is kept for resume. */
 	public function pause():Void

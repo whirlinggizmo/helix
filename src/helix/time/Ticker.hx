@@ -2,58 +2,45 @@ package helix.time;
 
 import helix.input.IInput;
 
-/** A fixed-rate simulation inside the frame callback, fed a clock's elapsed time (Clock.getElapsed: paused or scaled there, so the ticks are
-	too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. getFraction is how far the frame is
+/** A fixed-rate simulation inside the frame callback, fed a clock's elapsed time (Clock.elapsed: paused or scaled there, so the ticks are
+	too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. fraction is how far the frame is
 	between the last tick and the next, for drawing between them. */
 class Ticker {
-	var rate = 60.;
-	var delta = 1 / 60;
-	var fraction = 0.;
-	var maxSteps = 8;
 	var input:IInput;
 	var accumulator = 0.;
 
-	/** Ticks at rate a second, consuming input's tick edges after each. Throws for a rate of 0 or less. */
+	/** Ticks at rate a second (clamped as the rate property is), consuming input's tick edges after each. */
 	public function new(input:IInput, rate = 60.) {
 		this.input = input;
-		if (!setRate(rate))
-			throw 'Ticker rate must be over 0, not $rate';
+		this.rate = rate;
 	}
 
-	/** Ticks a second. */
-	public function getRate():Float
-		return rate;
+	/** Ticks a second. At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	public var rate(default, set):Float = 60.;
 
-	/** False for a rate of 0 or less. */
-	public function setRate(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_rate(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		rate = value;
 		delta = 1 / value;
-		return true;
+		return value;
 	}
 
 	/** Seconds a tick simulates. */
-	public function getDelta():Float
-		return delta;
+	public var delta(default, null):Float = 1 / 60;
 
 	/** How far the frame is from the last tick to the next, from 0 to under 1. */
-	public function getFraction():Float
-		return fraction;
+	public var fraction(default, null):Float = 0.;
 
-	/** Ticks run in one frame at most; a longer stall loses the rest rather than spiralling. */
-	public function getMaxSteps():Int
-		return maxSteps;
+	/** Ticks run in one frame at most; a longer stall loses the rest rather than spiralling. At least 1. */
+	public var maxSteps(default, set):Int = 8;
 
-	/** False for fewer than 1. */
-	public function setMaxSteps(value:Int):Bool {
-		if (value < 1)
-			return false;
+	function set_maxSteps(value:Int):Int {
+		value = value > 1 ? value : 1;
 		maxSteps = value;
-		return true;
+		return value;
 	}
 
-	/** Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Time.clock's for the game's time), at most getMaxSteps of
+	/** Runs tick for each step due after elapsed seconds (a Clock's elapsed, Time.clock's for the game's time), at most maxSteps of
 		them; returns how many ran. */
 	public function advance(elapsed:Float, tick:Void->Void):Int {
 		accumulator += Math.max(0, elapsed);

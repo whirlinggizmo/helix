@@ -71,7 +71,7 @@ class App extends BaseApp {
 		return y >= WORLD_H - 2 ? WATER : y >= WORLD_H - 3 ? SAND : x == 8 || y == 6 ? STONE : GRASS;
 
 	override public function init():Void {
-		Window.setTitle("HeliX tilemap");
+		Window.title = "HeliX tilemap";
 		Window.requestSize(960, 600);
 		batch = new Batch2D(Graphics.instance);
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
@@ -89,7 +89,7 @@ class App extends BaseApp {
 		Textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(loaded):
 				// Pixel art: crisp texels when zoomed in.
-				loaded.setSampling(Sampling.NEAREST);
+				loaded.sampling = Sampling.NEAREST;
 				texture = loaded;
 				for (sprite in sprites)
 					sprite.setTexture(loaded);
@@ -103,8 +103,8 @@ class App extends BaseApp {
 	function coinAt(x:Float, y:Float):Null<Node2D> {
 		var i = coins.length;
 		while (i-- > 0) {
-			var coin = coins[i], r = coin.getWidth() / 2;
-			if (coin.isVisible() && Collide2D.pointInCircle(x, y, coin.getX(), coin.getY() - r, r))
+			var coin = coins[i], r = coin.width / 2;
+			if (coin.visible && Collide2D.pointInCircle(x, y, coin.x, coin.y - r, r))
 				return coin;
 		}
 		return null;
@@ -114,14 +114,13 @@ class App extends BaseApp {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		var unitsPerPixel = seen / height;
 
 		// Scroll: drag, or the arrow keys.
-		var px = input.getPointerX(), py = input.getPointerY();
-		if (input.isPointerDown() && lastX >= 0 && px >= 0) {
+		var px = input.pointerX, py = input.pointerY;
+		if (input.pointerDown && lastX >= 0 && px >= 0) {
 			centerX -= (px - lastX) * unitsPerPixel;
 			centerY -= (py - lastY) * unitsPerPixel;
 		}
@@ -137,45 +136,45 @@ class App extends BaseApp {
 		if (input.isDown(Key.Down))
 			centerY += speed;
 		// Zoom: fewer world units seen is closer.
-		seen = Math.max(4, Math.min(32, seen - input.getWheelY() * 1.5));
+		seen = Math.max(4, Math.min(32, seen - input.wheelY * 1.5));
 		centerX = Math.max(0, Math.min(WORLD_W, centerX));
 		centerY = Math.max(0, Math.min(WORLD_H, centerY));
 		camera.setViewport(width, height);
-		camera.setZoom(height / seen);
+		camera.zoom = height / seen;
 		camera.setPosition(centerX, centerY);
 		// The HUD in the design for the window's shape, along the top of what's visible of it; the world keeps its own camera.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		// Coins: hover lights them up, a click collects them.
 		var hovered = px >= 0 ? coinAt(camera.screenToWorldX(px), camera.screenToWorldY(py)) : null;
-		if (input.isPointerFramePressed())
+		if (input.pointerFramePressed)
 			pressed = hovered;
-		if (input.isPointerFrameReleased()) {
+		if (input.pointerFrameReleased) {
 			if (pressed != null && pressed == hovered) {
-				hovered.setVisible(false);
+				hovered.visible = false;
 				collected++;
 				hovered = null;
 			}
 			pressed = null;
 		}
 		for (coin in coins)
-			coin.setColor(coin == hovered ? 0xffe68cff : 0xffffffff);
+			coin.color = coin == hovered ? 0xffe68cff : 0xffffffff;
 
 		Graphics.beginFrame(width, height, 0x181c26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
-		batch.setCamera(hud);
+		batch.camera = hud;
 		// The text wrapped to what's visible, the band behind it as tall as it wraps to.
 		var title = "HeliX tilemap: a 2D camera over sprite tiles",
 			status = 'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
-			help = 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnNodeCount()} of ${sprites.length} drawn)';
+			help = 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.drawnNodeCount} of ${sprites.length} drawn)';
 		inline function tall(text:String, size:Float):Float
-			return Text2D.measureWrapped(batch.getFont(), text, size, vw - 40);
+			return Text2D.measureWrapped(batch.font, text, size, vw - 40);
 		batch.rect(vx, vy, vw, 20 + tall(title, 20) + 1 + tall(status, 15) + 3 + tall(help, 15) + 1, 0x121418be);
 		var y = vy + 20;
 		y += Text2D.drawWrapped(batch, title, vx + 20, y, 20, vw - 40, 0xebeef5ff) + 1;

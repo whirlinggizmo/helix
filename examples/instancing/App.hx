@@ -54,46 +54,46 @@ class App extends BaseApp {
 			var material = shared;
 			if (own) {
 				material = new Material();
-				material.setRoughness(.5);
+				material.roughness = .5;
 			}
-			cube.setMaterial(material);
+			cube.material = material;
 		}
 		ownMaterials = own;
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX instancing");
+		Window.title = "HeliX instancing";
 		Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xa0b4dcff, .35);
 		// Framed for 16:9: the whole field across on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.setIntensity(3);
+		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
-		ground.setBaseColor(0xb4b8bfff);
-		ground.setRoughness(.9);
+		ground.baseColor = 0xb4b8bfff;
+		ground.roughness = .9;
 		var floor = new Model(Mesh.plane(60, 60), ground);
 		floor.setPosition(0, -.6, 0);
 		stage.add(floor);
 
 		// The field: one mesh, one material, a tint each.
 		var cube = Mesh.cube(.6, .6, .6);
-		shared.setRoughness(.5);
+		shared.roughness = .5;
 		for (i in 0...SIDE * SIDE) {
 			var node = new Model(cube, shared);
-			node.setTint(tint(i));
+			node.tint = tint(i);
 			cubes.push(node);
 			stage.add(node);
 		}
 		// See-through copies of the same cube: same mesh, same material, alpha in the tint.
 		for (i in 0...GLASS) {
 			var glass = new Model(cube, shared);
-			glass.setTint(0xffffff6e);
+			glass.tint = 0xffffff6e;
 			glass.setPosition(i * 2 - 4, 5.2, 5);
 			glass.setScale(2, 2, 2);
 			stage.add(glass);
@@ -121,10 +121,9 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var time = Time.clock.time;
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(time * .15) * 22, 12, Math.cos(time * .15) * 22, 0, 1, 0);
 		for (i in 0...cubes.length) {
@@ -140,9 +139,9 @@ class App extends BaseApp {
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
@@ -150,8 +149,8 @@ class App extends BaseApp {
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		Text2D.drawWrapped(batch,
-			'${stage.getDrawnNodeCount()} models in ${stage.getDrawCallCount()} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
-			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+			'${stage.drawnNodeCount} models in ${stage.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}', vx + 12,
+			y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

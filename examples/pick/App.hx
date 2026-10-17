@@ -44,44 +44,44 @@ class App extends BaseApp {
 	var angle = .3;
 
 	override public function init():Void {
-		Window.setTitle("HeliX pick");
+		Window.title = "HeliX pick";
 		Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
 		// Framed for 16:9: everything pickable in view on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.setIntensity(2.5);
+		sun.intensity = 2.5;
 		sun.lookAt(-.4, -1, -.5);
 		stage.add(sun);
 		var ground = new Material();
-		ground.setBaseColor(0x3a3f4aff);
+		ground.baseColor = 0x3a3f4aff;
 		var floor = new Model(Mesh.plane(14, 14), ground);
-		floor.setName("the ground");
+		floor.name = "the ground";
 		stage.add(floor);
 		var red = new Material(), blue = new Material();
-		red.setBaseColor(0xd2503cff);
-		blue.setBaseColor(0x3c78d2ff);
+		red.baseColor = 0xd2503cff;
+		blue.baseColor = 0x3c78d2ff;
 		var cube = new Model(Mesh.cube(1.2, 1.2, 1.2), red);
-		cube.setName("a cube");
+		cube.name = "a cube";
 		cube.setPosition(-3, .6, 1);
 		cube.setRotation(0, .6, 0);
 		stage.add(cube);
 		var sphere = new Model(Mesh.sphere(.8), blue);
-		sphere.setName("a sphere");
+		sphere.name = "a sphere";
 		sphere.setPosition(-1, .8, -1.5);
 		stage.add(sphere);
 		var label = new Text3D("PICK ME", .5, 0xf5d25aff);
-		label.setName("a text");
+		label.name = "a text";
 		// Text lets picks through unless asked.
-		label.setPickable(true);
+		label.pickable = true;
 		label.setPosition(1, 2.4, -2);
 		stage.add(label);
 		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				var logo = new Sprite3D(texture, 0x7ab4ffff);
-				logo.setName("a sprite");
+				logo.name = "a sprite";
 				logo.setSpriteSize(1.4, 1.4);
 				logo.setPosition(-3, 2.6, -1);
 				stage.add(logo);
@@ -117,9 +117,9 @@ class App extends BaseApp {
 		for (part in ["Casual_Body", "Casual_Head", "Casual_Legs", "Casual_Feet"])
 			for (model in skinned(files[part].instantiate()))
 				if (model.bindSkeleton(character)) {
-					model.getParent().remove(model);
-					model.setName("a character's " + part.split("_")[1].toLowerCase());
-					character.add(model);
+					model.parent = null;
+					model.name = "a character's " + part.split("_")[1].toLowerCase();
+					character.addChild(model);
 				}
 		animator = new Animator(character);
 		animator.play(animations.getClip("Walk"));
@@ -127,8 +127,8 @@ class App extends BaseApp {
 
 	static function skinned(node:Node3D):Array<Model> {
 		var model = Std.downcast(node, Model);
-		var out = model != null && model.getMesh().isSkinned() ? [model] : [];
-		for (i in 0...node.getChildCount())
+		var out = model != null && model.mesh.skinned ? [model] : [];
+		for (i in 0...node.childCount)
 			out = out.concat(skinned(node.getChild(i)));
 		return out;
 	}
@@ -136,9 +136,9 @@ class App extends BaseApp {
 	// The node's name, or its parent's (a file's parts are named for the node holding them).
 	static function nameOf(node:Node3D):String {
 		var at = node;
-		while (at != null && at.getName() == "")
-			at = at.getParent();
-		return at == null ? "a node" : at.getName();
+		while (at != null && at.name == "")
+			at = at.parent;
+		return at == null ? "a node" : at.name;
 	}
 
 	override public function frame(dt:Float):Void {
@@ -151,19 +151,18 @@ class App extends BaseApp {
 			angle += dt * .2;
 		if (animator != null)
 			animator.update(dt);
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 5, 9 * Math.cos(angle), 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		picked = stage.pick(camera, input.getPointerX(), input.getPointerY(), hit);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		picked = stage.pick(camera, input.pointerX, input.pointerY, hit);
 
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
@@ -179,7 +178,7 @@ class App extends BaseApp {
 		batch.begin(hud);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		var line = picked == null ? "nothing under the pointer" : '${nameOf(picked.getNode())}   ${Math.round(picked.getDistance() * 100) / 100} away   at '
+		var line = picked == null ? "nothing under the pointer" : '${nameOf(picked.node)}   ${Math.round(picked.distance * 100) / 100} away   at '
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
 		y += Text2D.drawWrapped(batch, line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;

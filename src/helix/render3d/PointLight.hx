@@ -3,28 +3,18 @@ package helix.render3d;
 /** A light from its node's position in every direction, fading with distance, out to its range. It casts no shadows: it would need a map
 	each way. */
 class PointLight extends Light {
-	var range = 0.;
-
 	/** A white point light of intensity 1 and unlimited range. */
 	public function new()
 		super();
 
-	/** Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance). */
-	public function getRange():Float
-		return range;
+	/** Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance). 0 or more (under 0, or
+		NaN, is 0). */
+	public var range(default, set):Float = 0.;
 
-	/** Sets its range in world units (0 for unlimited). False for a range under 0. */
-	public function setRange(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
-		range = value;
-		return true;
-	}
+	function set_range(value:Float):Float
+		return range = value >= 0 ? value : 0;
 
-	/** Makes it cast shadows or stop: false, changing nothing, for casting, which a point light can't. */
-	override public function setShadowCasting(value:Bool):Bool {
-		if (value)
-			return false;
-		return super.setShadowCasting(value);
-	}
+	// A point light never casts: true is taken as false.
+	override function set_shadowCasting(value:Bool):Bool
+		return super.set_shadowCasting(false);
 }

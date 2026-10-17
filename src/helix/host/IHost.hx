@@ -9,10 +9,10 @@ interface IHost {
 	public function run(init:Void->Void, frame:Void->Void, cleanup:Void->Void):Void;
 
 	/** Seconds on a monotonic clock. */
-	public function getTime():Float;
+	var time(get, never):Float;
 
 	/** The window the program draws in (the page, on the web). */
-	public function getWindow():IWindow;
+	var window(get, never):IWindow;
 
 	/** Whether quitting closes anything, so whether an app should offer a quit key: not in a browser page, where quit stops the program but
 		the page stays. */

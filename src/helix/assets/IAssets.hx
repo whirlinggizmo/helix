@@ -17,7 +17,7 @@ enum AudioLocation {
 	Remote(url:String);
 }
 
-/** How the cache treats a downloaded copy no manifest lists (IAssets.setCacheMode); a listed one follows its manifest in every mode, and
+/** How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and
 	ensure's forceFetch downloads past the cache in every mode.
 
 	- Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other
@@ -66,9 +66,9 @@ interface IAssets {
 		reports each phase until the request settles. */
 	function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
 
-	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null when
-		files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host). */
-	function getHost():Null<String>;
+	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null
+		when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host). */
+	var host(get, never):Null<String>;
 
 	/** Downloads from host from now on (a "/" is added if it has none), or reads the packaged files with null. The cache keeps each host's files
 		apart. False for an empty host. */
@@ -78,19 +78,16 @@ interface IAssets {
 	function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):IRequest;
 
 	/** The root manifest's path under the host ("manifest.json"), or null for none (the default). */
-	function getManifest():Null<String>;
+	var manifest(get, never):Null<String>;
 
 	/** Uses the manifest tree under the host from path (tools/gen_manifest.py writes one): the root asked about once a run (its cached copy
 		used offline), a directory's manifest loaded only when an asset under it is, and again only when its hash changes; a file it lists is
 		used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are treated as the cache mode
-		says (setCacheMode); a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path. */
+		says (cacheMode); a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path. */
 	function setManifest(path:Null<String>):Bool;
 
 	/** How downloaded copies no manifest lists are treated (AssetCacheMode); Revalidate by default. */
-	function getCacheMode():AssetCacheMode;
-
-	/** Treats every copy checked from now on as mode says. */
-	function setCacheMode(mode:AssetCacheMode):Void;
+	var cacheMode(get, set):AssetCacheMode;
 
 	/** Forgets every downloaded file, so the next load downloads it again, and what was read of the manifests, so the root is asked about
 		again. complete runs once, on the host thread. */
@@ -106,6 +103,6 @@ interface IAssets {
 	/** Stops telling target about path's changes; does nothing if it was not subscribed. */
 	function unsubscribe(path:String, target:IReloadable):Void;
 
-	/** Whether a load is under way or its completion not yet run (Host.isBusy asks it, with the decoders). */
-	function isBusy():Bool;
+	/** Whether a load is under way or its completion not yet run (Host.busy asks it, with the decoders). */
+	var busy(get, never):Bool;
 }

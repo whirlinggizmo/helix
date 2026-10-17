@@ -64,11 +64,11 @@ class AudioResources implements IReloadable {
 			return request;
 		}
 		child = assets.ensure(path, result -> {
-			if (request.isSettled())
+			if (request.settled)
 				return;
 			switch result {
 				case Loaded(bytes): child = decoding.decode(bytes, result -> {
-						if (request.isSettled())
+						if (request.settled)
 							return;
 						switch result {
 							case Decoded(samples): try {
@@ -119,7 +119,7 @@ class AudioResources implements IReloadable {
 			return request;
 		}
 		child = assets.streamSource(path, result -> {
-			if (request.isSettled()) {
+			if (request.settled) {
 				switch result {
 					case Located(Stored(value)): value.release();
 					case _:
@@ -157,7 +157,7 @@ class AudioResources implements IReloadable {
 		output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by
 		its owner, or a volume outside 0 to 1. */
 	public function play(resource:AudioResource, loop = false, volume = 1.):AudioPlayback {
-		if (!live || resource.getBackend() != backend)
+		if (!live || resource.backend != backend)
 			throw "Invalid audio resource service";
 		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
 			throw "Invalid volume";
@@ -166,7 +166,7 @@ class AudioResources implements IReloadable {
 			resource.releasePlayback();
 			throw error;
 		};
-		if (!playback.isFinished())
+		if (!playback.finished)
 			playbacks.push(playback);
 		return playback;
 	}
@@ -178,7 +178,7 @@ class AudioResources implements IReloadable {
 		decoding.decode(bytes, result -> switch result {
 			case Decoded(samples):
 				for (resource in resources)
-					if (!resource.isDisposed() && Std.isOfType(resource, AudioClip) && (cast resource : AudioClip).getPath() == path) {
+					if (!resource.disposed && Std.isOfType(resource, AudioClip) && (cast resource : AudioClip).path == path) {
 						retired.push(resource.id);
 						resource.id = backend.createClip(samples);
 					}
@@ -191,14 +191,14 @@ class AudioResources implements IReloadable {
 	public function poll():Void {
 		backend.poll();
 		for (id in retired.copy())
-			if (!Lambda.exists(playbacks, p -> !p.isFinished() && p.getSource() == id)) {
+			if (!Lambda.exists(playbacks, p -> !p.finished && p.source == id)) {
 				retired.remove(id);
 				backend.destroyClip(id);
 			}
-		resources = [for (resource in resources) if (!resource.isDisposed()) resource];
+		resources = [for (resource in resources) if (!resource.disposed) resource];
 		for (playback in playbacks.copy()) {
 			playback.poll();
-			if (playback.isFinished())
+			if (playback.finished)
 				playbacks.remove(playback);
 		}
 		queue.poll();

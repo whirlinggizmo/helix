@@ -45,7 +45,9 @@ class Skin {
 	}
 
 	/** How many joints. */
-	public function getJointCount():Int
+	public var jointCount(get, never):Int;
+
+	function get_jointCount():Int
 		return names.length;
 
 	/** Joint index's name. */

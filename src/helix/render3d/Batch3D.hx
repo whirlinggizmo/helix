@@ -19,10 +19,6 @@ class Batch3D {
 	var triangleVertices = 0;
 	var lineVertices = 0;
 	var draws = 0;
-	var lightX = .3;
-	var lightY = .9;
-	var lightZ = .3;
-	var ambient = .35;
 
 	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them. */
 	public function new(gpu:IGraphics, maxVertices = 65536) {
@@ -37,28 +33,28 @@ class Batch3D {
 	}
 
 	/** Vertices of the frame drawn last, triangles' and lines'. */
-	public function getVertexCount():Int
+	public var vertexCount(get, never):Int;
+
+	function get_vertexCount():Int
 		return triangleVertices + lineVertices;
 
 	/** Draws of the frame drawn last: up to two. */
-	public function getDrawCallCount():Int
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
 		return draws;
 
 	/** The direction toward the light, x (normalized). */
-	public function getLightX():Float
-		return lightX;
+	public var lightX(default, null):Float = .3;
 
 	/** The direction toward the light, y (normalized). */
-	public function getLightY():Float
-		return lightY;
+	public var lightY(default, null):Float = .9;
 
 	/** The direction toward the light, z (normalized). */
-	public function getLightZ():Float
-		return lightZ;
+	public var lightZ(default, null):Float = .3;
 
 	/** The brightness of a face turned away from the light, 0 to 1. */
-	public function getAmbient():Float
-		return ambient;
+	public var ambient(default, null):Float = .35;
 
 	/** The light solid shapes are shaded by: from the direction x, y, z (toward the light, normalized here), with ambient the brightness of a face
 		turned away (0 to 1). False, changing nothing, for a zero direction or an ambient outside 0 to 1. */
@@ -83,9 +79,8 @@ class Batch3D {
 
 	/** Draws the batch in the open frame, in the camera's viewport: its triangles, then its lines. Once a frame. */
 	public function end():Void {
-		gpu.applyViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(),
-			camera.getViewportWidth(), camera.getViewportHeight());
-		camera.getViewProjection().writeTo(uniforms);
+		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
+		camera.viewProjection.writeTo(uniforms);
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);
 		if (triangleVertices > 0) {

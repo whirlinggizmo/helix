@@ -3,13 +3,9 @@ package helix.ui;
 import helix.render2d.Node2D;
 
 /** A piece of UI: nodes it owns (under its root, on the Ui's stage) and the layout box placing them. A widget is asked what happened
-	(isClicked, getValue ...), never calls anything (DECISIONS 61); the Ui updates it once a frame. */
+	(clicked, value ...), never calls anything (DECISIONS 61); the Ui updates it once a frame. */
 class Widget {
 	var ui:Ui;
-	var root:Node2D;
-	var box:Box;
-	var name:String;
-	var enabled = true;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String) {
@@ -18,43 +14,40 @@ class Widget {
 		root = Node2D.group();
 	}
 
-	/** Its name: what the focus is published as (Ui.getFocusedName), for checks. */
-	public function getName():String
-		return name;
+	/** Its name: what the focus is published as (Ui.focusedName), for checks. */
+	public var name(default, null):String;
 
 	/** The box placing it: put it in a layout. */
-	public function getBox():Box
-		return box;
+	public var box(default, null):Box;
 
 	/** Its root node, everything it draws under it. */
-	public function getRoot():Node2D
-		return root;
+	public var root(default, null):Node2D;
 
 	/** Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing. */
-	public function isEnabled():Bool
-		return enabled;
-
-	/** Lets it be used, or not (isEnabled). */
-	public function setEnabled(value:Bool):Void
-		enabled = value;
-
-	/** Shows or hides it (and lets it take focus, or not). */
-	public function setVisible(value:Bool):Void
-		root.setEnabled(value);
+	public var enabled:Bool = true;
 
 	/** Whether it's shown: it, and any panel holding it. */
-	public function isVisible():Bool {
+	public var visible(get, set):Bool;
+
+	function get_visible():Bool {
 		var at = root;
-		while (at != null && at != ui.getRoot()) {
-			if (!at.isEnabled())
+		while (at != null && at != ui.root) {
+			if (!at.enabled)
 				return false;
-			at = at.getParent();
+			at = at.parent;
 		}
 		return true;
 	}
 
+	function set_visible(value:Bool):Bool {
+		root.enabled = value;
+		return value;
+	}
+
 	/** Whether focus can rest on it. */
-	public function isFocusable():Bool
+	public var focusable(get, never):Bool;
+
+	function get_focusable():Bool
 		return false;
 
 	/** The node the pointer uses it through, or null. */

@@ -14,9 +14,7 @@ class Mesh {
 	// Which one it is, for sorting alike draws together.
 	@:allow(helix.render3d.Stage3D) var id = nextId++;
 	var vertexData:Bytes;
-	var vertexCount:Int;
 	var indexData:Bytes;
-	var indexCount:Int;
 	var loX = 0.;
 	var loY = 0.;
 	var loZ = 0.;
@@ -26,7 +24,6 @@ class Mesh {
 	var gpu:IGraphics;
 	var vertexBuffer = 0;
 	var indexBuffer = 0;
-	var skinData:Null<Bytes>;
 	var skinBuffer = 0;
 	var reaches:Array<{skin:Skin, reach:haxe.ds.Vector<Float>}> = [];
 
@@ -63,53 +60,68 @@ class Mesh {
 	}
 
 	/** Its vertices. */
-	public function getVertexCount():Int
-		return vertexCount;
+	public var vertexCount(default, null):Int;
 
 	/** Its indices: three a triangle. */
-	public function getIndexCount():Int
-		return indexCount;
+	public var indexCount(default, null):Int;
 
 	/** The vertex data, Lit3DLayout.stride bytes a vertex. */
-	public function getVertices():Bytes
+	public var vertices(get, never):Bytes;
+
+	function get_vertices():Bytes
 		return vertexData;
 
 	/** The indices, uint32 each. */
-	public function getIndices():Bytes
+	public var indices(get, never):Bytes;
+
+	function get_indices():Bytes
 		return indexData;
 
 	/** The box around it: its smallest x. */
-	public function getMinX():Float
+	public var minX(get, never):Float;
+
+	function get_minX():Float
 		return loX;
 
 	/** Its smallest y. */
-	public function getMinY():Float
+	public var minY(get, never):Float;
+
+	function get_minY():Float
 		return loY;
 
 	/** Its smallest z. */
-	public function getMinZ():Float
+	public var minZ(get, never):Float;
+
+	function get_minZ():Float
 		return loZ;
 
 	/** Its largest x. */
-	public function getMaxX():Float
+	public var maxX(get, never):Float;
+
+	function get_maxX():Float
 		return hiX;
 
 	/** Its largest y. */
-	public function getMaxY():Float
+	public var maxY(get, never):Float;
+
+	function get_maxY():Float
 		return hiY;
 
 	/** Its largest z. */
-	public function getMaxZ():Float
+	public var maxZ(get, never):Float;
+
+	function get_maxZ():Float
 		return hiZ;
 
-	/** Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.getSkin). */
-	public function isSkinned():Bool
+	/** Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.skin). */
+	public var skinned(get, never):Bool;
+
+	function get_skinned():Bool
 		return skinData != null;
 
-	/** A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights,
-		summing to 1. Null for one that isn't skinned. */
-	public function getSkinData():Null<Bytes>
-		return skinData;
+	/** A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four
+		weights, summing to 1. Null for one that isn't skinned. */
+	public var skinData(default, null):Null<Bytes>;
 
 	/** How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position
 		(Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model.
@@ -120,8 +132,7 @@ class Mesh {
 		for (r in reaches)
 			if (r.skin == skin)
 				return r.reach;
-		var count = skin.getJointCount(),
-			reach = new haxe.ds.Vector<Float>(count);
+		var count = skin.jointCount, reach = new haxe.ds.Vector<Float>(count);
 		for (j in 0...count)
 			reach[j] = -1;
 		for (i in 0...vertexCount) {
@@ -264,7 +275,7 @@ class Mesh {
 		];
 		for (f in faces) {
 			var nx = f[0], ny = f[1], nz = f[2], cx = nx * x, cy = ny * y, cz = nz * z;
-			var first = b.getVertexCount();
+			var first = b.vertexCount;
 			for (corner in [[-1, -1, 0, 1], [1, -1, 1, 1], [1, 1, 1, 0], [-1, 1, 0, 0]])
 				b.vertex(cx
 					+ corner[0] * f[3] + corner[1] * f[6], cy
@@ -341,7 +352,7 @@ class Mesh {
 
 	// Part of a sphere from latitude from to to (0 the top pole, pi the bottom), raised by lift, v from v0 to v1.
 	static function band(b:MeshBuilder, rings:Int, segments:Int, radius:Float, from:Float, to:Float, lift:Float, v0:Float, v1:Float):Void {
-		var first = b.getVertexCount();
+		var first = b.vertexCount;
 		for (r in 0...rings + 1) {
 			var a = from + (to - from) * r / rings,
 				y = Math.cos(a),
@@ -371,7 +382,7 @@ class Mesh {
 
 	// A side around y from radius bottom at y0 to radius top at y1, normals tilted by the slope, v from v0 at the top to v1 at the bottom.
 	static function side(b:MeshBuilder, segments:Int, bottom:Float, top:Float, y0:Float, y1:Float, v0 = 0., v1 = 1.):Void {
-		var first = b.getVertexCount(),
+		var first = b.vertexCount,
 			slope = (bottom - top) / (y1 - y0),
 			length = Math.sqrt(1 + slope * slope);
 		for (s in 0...segments + 1) {
@@ -388,7 +399,7 @@ class Mesh {
 
 	// A flat disc of radius at y, facing up (1) or down (-1).
 	static function cap(b:MeshBuilder, segments:Int, radius:Float, y:Float, facing:Int):Void {
-		var center = b.getVertexCount();
+		var center = b.vertexCount;
 		b.vertex(0, y, 0, 0, facing, 0, .5, .5);
 		for (s in 0...segments + 1) {
 			var t = s / segments * Math.PI * 2,
@@ -412,7 +423,9 @@ private class MeshBuilder {
 	public function new() {}
 
 	/** The vertices so far. */
-	public function getVertexCount():Int
+	public var vertexCount(get, never):Int;
+
+	function get_vertexCount():Int
 		return Std.int(positions.length / 3);
 
 	/** A vertex: its position, its normal (unit length) and its texture coordinates. */
@@ -484,7 +497,7 @@ private class MeshBuilder {
 				normals[v * 3 + 2] += nz;
 			}
 		}
-		for (v in 0...getVertexCount()) {
+		for (v in 0...vertexCount) {
 			var x = normals[v * 3],
 				y = normals[v * 3 + 1],
 				z = normals[v * 3 + 2],
@@ -505,7 +518,7 @@ private class MeshBuilder {
 		vertex and made perpendicular to its normal, following increasing u; w is the bitangent's sign, the bitangent cross(normal, tangent) * w
 		pointing toward decreasing v (the texture's up). A vertex with no usable mapping gets any tangent perpendicular to its normal. */
 	function tangentsOf():Array<Float> {
-		var count = getVertexCount(),
+		var count = this.vertexCount,
 			tangents = [for (_ in 0...count * 4) 0.],
 			bitangents = [for (_ in 0...count * 3) 0.];
 		var k = 0;
@@ -582,7 +595,7 @@ private class MeshBuilder {
 	/** The mesh of everything added, with given tangents or, without, its tangents worked out from the triangles' positions and texture
 		coordinates. */
 	public function build(?given:Array<Float>):Mesh {
-		var count = getVertexCount(),
+		var count = this.vertexCount,
 			data = Bytes.alloc(count * Lit3DLayout.stride),
 			tangents = given != null ? given : tangentsOf();
 		for (i in 0...count) {

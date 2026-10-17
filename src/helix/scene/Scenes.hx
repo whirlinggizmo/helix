@@ -11,17 +11,14 @@ import helix.time.Time;
 
 /** A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off
 	(the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the
-	scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in
-	Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur,
-	on unless turned off); focus resumes them. Scenes read input through getInput (Input.instance, or what an autopilot gives through
-	setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option
+	scenes swap at its middle. A scene with a loader (Scene.loader) is shown the loading scene until its loads are done: the built-in
+	Loading unless loadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (pauseOnBlur,
+	on unless turned off); focus resumes them. Scenes read input through input (Input.instance, or what an autopilot gives through
+	input). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (quick; on with the run option
 	quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded. */
 class Scenes {
 	var stack:Array<Scene> = [];
-	var loading:Null<LoadingScene>;
-	var input:IInput;
-	var pauseOnBlur = true;
-	var quick = false;
+	var waitScene:Null<LoadingScene>;
 	var blurred = false;
 	var pausedClock = false;
 	// The transition under way: what it covers, how far, and the swap to make at its middle.
@@ -36,89 +33,87 @@ class Scenes {
 
 	/** An empty stack with the built-in loading scene and the program's input. */
 	public function new() {
-		loading = new Loading();
-		loading.scenes = this;
+		waitScene = new Loading();
+		waitScene.scenes = this;
 		input = Input.instance;
-		quick = Host.isRunning() && Host.getOption("quick", "0") == "1";
+		quick = Host.running && Host.getOption("quick", "0") == "1";
 	}
 
-	/** Whether the built-in screens' waits and the transitions are skipped (the run option quick=1, or setQuick). */
-	public function isQuick():Bool
-		return quick;
-
-	/** Skips, or not, the built-in screens' waits and every transition. */
-	public function setQuick(value:Bool):Void
-		quick = value;
+	/** Whether the built-in screens' waits and every transition are skipped (the run option quick=1 sets it). */
+	public var quick:Bool = false;
 
 	/** The scene on top, or null. */
-	public function getTop():Null<Scene>
+	public var top(get, never):Null<Scene>;
+
+	function get_top():Null<Scene>
 		return stack.length == 0 ? null : stack[stack.length - 1];
 
 	/** How many scenes are stacked. */
-	public function getCount():Int
+	public var count(get, never):Int;
+
+	function get_count():Int
 		return stack.length;
 
 	/** The scenes, bottom first. */
-	public function getAll():Array<Scene>
+	public var all(get, never):Array<Scene>;
+
+	function get_all():Array<Scene>
 		return stack.copy();
 
-	/** The input scenes read: Input.instance, or what setInput gave. */
-	public function getInput():IInput
-		return input;
-
-	/** What scenes read instead of Input.instance: an autopilot's. */
-	public function setInput(value:IInput):Void
-		input = value;
+	/** What scenes read: Input.instance, or what was assigned instead (an autopilot's). */
+	public var input:IInput;
 
 	/** The scene shown while the top one's loads are pending, or null for none (the scene shows itself loading). */
-	public function getLoadingScene():Null<LoadingScene>
-		return loading;
+	public var loadingScene(get, set):Null<LoadingScene>;
 
-	/** Sets the loading scene: the built-in Loading to start, any LoadingScene, or null to show none. */
-	public function setLoadingScene(value:Null<LoadingScene>):Void {
-		loading = value;
-		if (loading != null)
-			loading.scenes = this;
+	function get_loadingScene():Null<LoadingScene>
+		return waitScene;
+
+	function set_loadingScene(value:Null<LoadingScene>):Null<LoadingScene> {
+		waitScene = value;
+		if (waitScene != null)
+			waitScene.scenes = this;
+		return value;
 	}
 
 	/** Whether the window losing focus pauses the game's clock and the top scene. */
-	public function isPauseOnBlur():Bool
-		return pauseOnBlur;
-
-	/** Turns pausing on focus loss on or off. */
-	public function setPauseOnBlur(value:Bool):Void
-		pauseOnBlur = value;
+	public var pauseOnBlur:Bool = true;
 
 	/** Whether a transition is under way (input is still the scenes'). */
-	public function isTransitioning():Bool
+	public var transitioning(get, never):Bool;
+
+	function get_transitioning():Bool
 		return transition != null;
 
-	/** Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them (LoadingScene.isHolding). */
-	public function isLoading():Bool {
-		var top = getTop();
+	/** Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them
+		(LoadingScene.holding). */
+	public var loading(get, never):Bool;
+
+	function get_loading():Bool {
+		var top = this.top;
 		if (top == null)
 			return false;
 		var shown = loadingFor(top);
 		if (shown == null)
 			return false;
-		var loader = top.getLoader();
-		return loader != null && (!loader.isDone() || (waiting == top && shown.isHolding()));
+		var loader = top.loader;
+		return loader != null && (!loader.done || (waiting == top && shown.holding));
 	}
 
 	// The loading scene for scene: its own, else the stack's, else none.
 	function loadingFor(scene:Scene):Null<LoadingScene> {
-		var own = scene.getLoadingScene();
+		var own = scene.loadingScene;
 		if (own != null) {
 			own.scenes = this;
 			return own;
 		}
-		return loading;
+		return waitScene;
 	}
 
 	/** Puts scene on top: the one under pauses, scene enters. With transition, the swap comes at its middle. */
 	public function push(scene:Scene, ?transition:Transition):Void
 		change(transition, () -> {
-			var below = getTop();
+			var below = this.top;
 			if (below != null)
 				below.pause();
 			add(scene);
@@ -132,7 +127,7 @@ class Scenes {
 				return;
 			top.exit();
 			top.scenes = null;
-			var below = getTop();
+			var below = this.top;
 			if (below != null)
 				below.resume();
 		});
@@ -169,26 +164,26 @@ class Scenes {
 	public function update(dt:Float):Void {
 		if (transition != null) {
 			elapsed += Math.max(0, dt);
-			if (!swapped && elapsed >= transition.getSeconds() / 2) {
+			if (!swapped && elapsed >= transition.seconds / 2) {
 				swapped = true;
 				var f = swap;
 				swap = null;
 				if (f != null)
 					f();
 			}
-			if (elapsed >= transition.getSeconds())
+			if (elapsed >= transition.seconds)
 				transition = null;
 		}
 		if (Window.instance != null)
-			focus(Window.isFocused());
-		var top = getTop();
+			focus(Window.focused);
+		var top = this.top;
 		if (top == null)
 			return;
-		var loader = top.getLoader(), shown = loadingFor(top);
-		if (loader != null && shown != null && (!loader.isDone() || (waiting == top && shown.isHolding()))) {
+		var loader = top.loader, shown = loadingFor(top);
+		if (loader != null && shown != null && (!loader.done || (waiting == top && shown.holding))) {
 			if (waiting != top) {
 				waiting = top;
-				shown.setLoader(loader);
+				shown.shownLoader = loader;
 				shown.enter();
 			}
 			shown.update(dt);
@@ -206,22 +201,22 @@ class Scenes {
 
 	/** The frame's drawing: the top scene's (or its loading scene's), the transition over it, then the frame's end. */
 	public function draw():Void {
-		var top = getTop();
+		var top = this.top;
 		if (top == null)
 			return;
-		if (waiting == top && isLoading())
+		if (waiting == top && this.loading)
 			loadingFor(top).draw();
 		else
 			top.draw();
 		if (transition != null) {
-			var width = Window.getFramebufferWidth(),
-				height = Window.getFramebufferHeight();
+			var width = Window.framebufferWidth,
+				height = Window.framebufferHeight;
 			if (batch == null)
 				batch = new Batch2D(Graphics.instance);
 			camera.setViewport(width, height);
 			camera.pixels(1);
 			batch.begin(camera);
-			transition.draw(batch, width, height, Math.min(1, elapsed / transition.getSeconds()));
+			transition.draw(batch, width, height, Math.min(1, elapsed / transition.seconds));
 			batch.end();
 		}
 		Graphics.endFrame();
@@ -241,11 +236,11 @@ class Scenes {
 			focused = true;
 		if (!focused && !blurred) {
 			blurred = true;
-			if (Time.clock != null && !Time.clock.isPaused()) {
+			if (Time.clock != null && !Time.clock.paused) {
 				Time.clock.pause();
 				pausedClock = true;
 			}
-			var top = getTop();
+			var top = this.top;
 			if (top != null)
 				top.pause();
 		} else if (focused && blurred) {
@@ -253,7 +248,7 @@ class Scenes {
 			if (pausedClock && Time.clock != null)
 				Time.clock.resume();
 			pausedClock = false;
-			var top = getTop();
+			var top = this.top;
 			if (top != null)
 				top.resume();
 		}
@@ -266,7 +261,7 @@ class Scenes {
 	}
 
 	// A change now, or at the transition's middle. A change asked during a transition takes over: the new transition starts, its swap at its
-	// own middle, and the old one's swap, if it hadn't come, is dropped with it (a scene that mustn't be interrupted asks isTransitioning).
+	// own middle, and the old one's swap, if it hadn't come, is dropped with it (a scene that mustn't be interrupted asks transitioning).
 	function change(next:Null<Transition>, f:Void->Void):Void {
 		if (next == null || quick) {
 			f();

@@ -26,18 +26,9 @@ class InputState implements IInput {
 	var mouseFramePushes = [false, false, false];
 	var mouseFrameLifts = [false, false, false];
 	var pads:Array<Gamepad> = [for (_ in 0...4) new Gamepad()];
-	var pointerX = -1.;
-	var pointerY = -1.;
-	var pointerDown = false;
 	var pointerPushes = 0;
 	var pointerLifts = 0;
-	var pointerFramePressed = false;
-	var pointerFrameReleased = false;
-	var text = "";
-	var textEntry = false;
-	var wheelX = 0.;
-	var wheelY = 0.;
-	var touches:Array<TouchState> = [];
+	var touchStates:Array<TouchState> = [];
 
 	/** The gesture's pan x, y, log scale and rotation summed this frame, and since the last tick. */
 	var frameGesture = [0., 0., 0., 0.];
@@ -45,8 +36,6 @@ class InputState implements IInput {
 	var tickGesture = [0., 0., 0., 0.];
 
 	/** Nothing held, the pointer off the window, and four empty pad slots. */
-	var activated = false;
-
 	var anyFramePress = false;
 
 	/** Nothing down, nothing pressed, no pad connected, not activated. */
@@ -67,45 +56,71 @@ class InputState implements IInput {
 	public function isFrameReleased(key:Key):Bool
 		return frameLifts[key];
 
-	public function getPointerX():Float
+	@:isVar public var pointerX(get, null):Float = -1.;
+
+	function get_pointerX():Float
 		return pointerX;
 
-	public function getPointerY():Float
+	@:isVar public var pointerY(get, null):Float = -1.;
+
+	function get_pointerY():Float
 		return pointerY;
 
-	public function isPointerDown():Bool
+	@:isVar public var pointerDown(get, null):Bool = false;
+
+	function get_pointerDown():Bool
 		return pointerDown;
 
-	public function isPointerPressed():Bool
+	public var pointerPressed(get, never):Bool;
+
+	function get_pointerPressed():Bool
 		return pointerPushes > 0;
 
-	public function isPointerReleased():Bool
+	public var pointerReleased(get, never):Bool;
+
+	function get_pointerReleased():Bool
 		return pointerLifts > 0;
 
-	public function isPointerFramePressed():Bool
+	@:isVar public var pointerFramePressed(get, null):Bool = false;
+
+	function get_pointerFramePressed():Bool
 		return pointerFramePressed;
 
-	public function isPointerFrameReleased():Bool
+	@:isVar public var pointerFrameReleased(get, null):Bool = false;
+
+	function get_pointerFrameReleased():Bool
 		return pointerFrameReleased;
 
-	public function getWheelX():Float
+	@:isVar public var wheelX(get, null):Float = 0.;
+
+	function get_wheelX():Float
 		return wheelX;
 
-	public function getWheelY():Float
+	@:isVar public var wheelY(get, null):Float = 0.;
+
+	function get_wheelY():Float
 		return wheelY;
 
-	public function getText():String
+	@:isVar public var text(get, null):String = "";
+
+	function get_text():String
 		return text;
 
-	public function isTextEntry():Bool
+	@:isVar public var textEntry(get, set):Bool = false;
+
+	function get_textEntry():Bool
 		return textEntry;
 
-	public function setTextEntry(on:Bool):Void
+	function set_textEntry(on:Bool):Bool {
 		textEntry = on;
+		return on;
+	}
 
-	public function getTouches():Array<Touch>
+	public var touches(get, never):Array<Touch>;
+
+	function get_touches():Array<Touch>
 		return [
-			for (t in touches)
+			for (t in touchStates)
 				{
 					id: t.id,
 					x: t.x,
@@ -116,7 +131,9 @@ class InputState implements IInput {
 				}
 		];
 
-	public function getPadCount():Int
+	public var padCount(get, never):Int;
+
+	function get_padCount():Int
 		return pads.length;
 
 	public function getPad(index:Int):Null<Gamepad>
@@ -139,32 +156,36 @@ class InputState implements IInput {
 
 	public function isPadDown(button:PadButton):Bool {
 		for (pad in pads)
-			if (pad.isConnected() && pad.isDown(button))
+			if (pad.connected && pad.isDown(button))
 				return true;
 		return false;
 	}
 
 	public function isPadPressed(button:PadButton):Bool {
 		for (pad in pads)
-			if (pad.isConnected() && pad.isPressed(button))
+			if (pad.connected && pad.isPressed(button))
 				return true;
 		return false;
 	}
 
 	public function getPadAxis(axis:PadAxis):Float {
 		for (pad in pads)
-			if (pad.isConnected())
+			if (pad.connected)
 				return pad.getAxis(axis);
 		return 0;
 	}
 
-	public function isActivated():Bool
+	@:isVar public var activated(get, null):Bool = false;
+
+	function get_activated():Bool
 		return activated;
 
-	public function isAnyFramePressed():Bool
+	public var anyFramePressed(get, never):Bool;
+
+	function get_anyFramePressed():Bool
 		return anyFramePress;
 
-	/** A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. A down activates (isActivated). */
+	/** A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. A down activates (activated). */
 	public function keyEvent(key:Key, value:Bool):Void {
 		if (value)
 			activated = anyFramePress = true;
@@ -181,14 +202,14 @@ class InputState implements IInput {
 
 	/** Pad 0's button or axis, connecting it: for replay and tests. */
 	public function padEvent(button:PadButton, value:Bool):Void {
-		if (!pads[0].isConnected())
+		if (!pads[0].connected)
 			pads[0].connect(true, "replay");
 		pads[0].buttonEvent(button, value);
 	}
 
 	/** Pad 0's axis, connecting it: for replay and tests. */
 	public function axisEvent(axis:PadAxis, value:Float):Void {
-		if (!pads[0].isConnected())
+		if (!pads[0].connected)
 			pads[0].connect(true, "replay");
 		pads[0].axisEvent(axis, value);
 	}
@@ -249,13 +270,13 @@ class InputState implements IInput {
 			by = pair[1].y;
 		}
 		var touch = null;
-		for (t in touches)
+		for (t in touchStates)
 			if (t.id == id && t.down)
 				touch = t;
 		if (touch == null) {
 			if (!value)
 				return;
-			touches.push({
+			touchStates.push({
 				id: id,
 				x: x,
 				y: y,
@@ -300,19 +321,25 @@ class InputState implements IInput {
 
 	/** The two fingers down longest, which make the gesture; null with fewer than two down. */
 	function gesturePair():Null<Array<TouchState>> {
-		var down = [for (t in touches) if (t.down) t];
+		var down = [for (t in touchStates) if (t.down) t];
 		return down.length >= 2 ? [down[0], down[1]] : null;
 	}
 
-	public function isTouchGesture():Bool
+	public var touchGesture(get, never):Bool;
+
+	function get_touchGesture():Bool
 		return gesturePair() != null;
 
-	public function getTouchGestureCenterX():Float {
+	public var touchGestureCenterX(get, never):Float;
+
+	function get_touchGestureCenterX():Float {
 		var pair = gesturePair();
 		return pair == null ? 0 : (pair[0].x + pair[1].x) / 2;
 	}
 
-	public function getTouchGestureCenterY():Float {
+	public var touchGestureCenterY(get, never):Float;
+
+	function get_touchGestureCenterY():Float {
 		var pair = gesturePair();
 		return pair == null ? 0 : (pair[0].y + pair[1].y) / 2;
 	}
@@ -344,7 +371,7 @@ class InputState implements IInput {
 			pad.endFrame();
 		}
 		pointerEvent(-1, -1, false);
-		for (t in touches)
+		for (t in touchStates)
 			if (t.down)
 				touchEvent(t.id, t.x, t.y, false);
 		for (i in 0...pushes.length) {
@@ -404,8 +431,8 @@ class InputState implements IInput {
 		text = "";
 		wheelX = 0;
 		wheelY = 0;
-		touches = [for (t in touches) if (t.down) t];
-		for (t in touches)
+		touchStates = [for (t in touchStates) if (t.down) t];
+		for (t in touchStates)
 			t.pressed = false;
 	}
 }

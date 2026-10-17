@@ -129,20 +129,20 @@ class CollisionTests {
 		hash.query(0, 0, 10, 10, found);
 		var names = found.map(i -> i.name);
 		names.sort((x, y) -> x < y ? -1 : 1);
-		check(hash.getCount() == 3 && names.join(",") == "a,c", "A query gives the items in the cells it covers, each once");
+		check(hash.count == 3 && names.join(",") == "a,c", "A query gives the items in the cells it covers, each once");
 		hash.query(50, 50, 5, 5, found);
 		check(found.length == 0, "Nothing far away");
 		hash.update(a, 50, 50, 5, 5);
 		hash.query(50, 50, 5, 5, found);
-		check(found.length == 1 && found[0] == a && hash.getCount() == 3, "A moved item is found at its new place");
+		check(found.length == 1 && found[0] == a && hash.count == 3, "A moved item is found at its new place");
 		hash.query(0, 0, 5, 5, found);
 		check(found.indexOf(a) < 0, "and not at its old one");
-		check(hash.remove(b) && !hash.remove(b) && hash.getCount() == 2, "Removed once");
+		check(hash.remove(b) && !hash.remove(b) && hash.count == 2, "Removed once");
 		hash.query(0, 0, 100, 100, found);
 		check(found.length == 2, "A wide query finds each of the rest once");
 		hash.clear();
 		hash.query(0, 0, 100, 100, found);
-		check(found.length == 0 && hash.getCount() == 0, "Cleared");
+		check(found.length == 0 && hash.count == 0, "Cleared");
 		var threw = false;
 		try
 			new SpatialHash2D<{}>(0)

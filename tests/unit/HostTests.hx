@@ -19,31 +19,30 @@ class HostTests {
 			"Windows device names");
 		check(Identity.cleanName(" . ") == null && Identity.cleanName([for (_ in 0...128) "x"].join("")) == null, "Refused, never cut");
 		var identity = new Identity("blocks", "HeliX");
-		check(identity.getCompany() == "HeliX" && identity.getProduct() == "blocks", "Identity keeps its names");
+		check(identity.company == "HeliX" && identity.product == "blocks", "Identity keeps its names");
 		var threw = try {
 			new Identity("...");
 			false;
 		} catch (_:Dynamic)
 			true;
 		check(threw, "An identity that cleans to nothing throws");
-		var cache = helix.adapters.store.filesystem.FileSystemStoreAdapter.getCacheDirectory(identity.getCompany(), identity.getProduct());
+		var cache = helix.adapters.store.filesystem.FileSystemStoreAdapter.getCacheDirectory(identity.company, identity.product);
 		// Windows' is the program's own folder under %LOCALAPPDATA%, its cache inside it.
 		var ending = Sys.systemName() == "Windows" ? "HeliX/blocks/cache" : "HeliX/blocks";
 		check(cache != null && StringTools.endsWith(cache, ending), "A cache directory under the user's");
 		var clock = new FrameClock();
 		clock.frame(10);
-		check(Math.abs(clock.getDelta() - 1 / 60) < 1e-12 && clock.getElapsed() == 0, "The first frame: 1/60 and nothing elapsed");
+		check(Math.abs(clock.delta - 1 / 60) < 1e-12 && clock.elapsed == 0, "The first frame: 1/60 and nothing elapsed");
 		clock.frame(10.25);
-		check(clock.getDelta() == FrameClock.MAX_DELTA
-			&& Math.abs(clock.getElapsed() - .25) < 1e-12, "A stall: the delta held, the elapsed time whole");
+		check(clock.delta == FrameClock.MAX_DELTA && Math.abs(clock.elapsed - .25) < 1e-12, "A stall: the delta held, the elapsed time whole");
 		clock.frame(10.25);
-		check(clock.getDelta() == FrameClock.MIN_DELTA && clock.getElapsed() == 0, "No time passed: the least delta");
+		check(clock.delta == FrameClock.MIN_DELTA && clock.elapsed == 0, "No time passed: the least delta");
 		// The job pool: a cap, completion at a later poll, and every operation, queued or running, completing once at shutdown.
 		var jobs = new Jobs(1), results:Array<String> = [], aborted = false;
-		jobs.add(job -> job.setAbort(() -> aborted = true), r -> results.push("a:" + r), "cancelled");
+		jobs.add(job -> job.abort = () -> aborted = true, r -> results.push("a:" + r), "cancelled");
 		jobs.add(job -> job.finish("done"), r -> results.push("b:" + r), "cancelled");
 		jobs.poll();
-		check(results.length == 0 && jobs.getRunning().length == 1, "One at a time; nothing completes during the call");
+		check(results.length == 0 && jobs.running.length == 1, "One at a time; nothing completes during the call");
 		jobs.shutdown();
 		check(results.join(",") == "a:cancelled,b:cancelled"
 			&& aborted, "Shutdown completes the running and the queued, aborting the running");

@@ -22,7 +22,7 @@ class Node3D extends Node {
 	var local = new Mat4();
 	var world = new Mat4();
 	var localDirty = true;
-	// At a tree's top, counted up by every add and remove below it: a stage keeps its lists of kinds until its root's count moves.
+	// At a tree's top, counted up by every addChild and removeChild below it: a stage keeps its lists of kinds until its root's count moves.
 	@:allow(helix.render3d.Stage3D)
 	var structure = 0;
 
@@ -30,10 +30,12 @@ class Node3D extends Node {
 	public function new()
 		super();
 
-	/** Makes child its last child, taking it from any parent it had. False for itself or one of its own ancestors. */
-	public function add(child:Node3D):Bool {
-		var from:Null<Node3D> = cast child.parent;
-		if (!attach(child))
+	/** Makes child its last child, taking it from any parent it had, keeping child's local transform: it moves with this node as it sat
+		under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for
+		itself or one of its own ancestors. */
+	public function addChild(child:Node3D):Bool {
+		var from = child.parent;
+		if (!link(child))
 			return false;
 		if (from != null)
 			from.changed();
@@ -42,9 +44,34 @@ class Node3D extends Node {
 		return true;
 	}
 
+	/** Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped
+		sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two
+		transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or a zero scale on this or above
+		it. */
+	public function addChildInPlace(child:Node3D):Bool {
+		if (!canLink(child))
+			return false;
+		var world = new Mat4(), mine = new Mat4();
+		child.computeWorld(world);
+		computeWorld(mine);
+		if (!mine.makeInverse(mine))
+			return false;
+		world.makeProduct(mine, world);
+		var local = [for (i in 0...16) world.get(i)];
+		var from = child.parent;
+		if (!link(child))
+			return false;
+		if (from != null)
+			from.changed();
+		changed();
+		child.setMatrix(local);
+		child.localDirty = true;
+		return true;
+	}
+
 	/** Takes child from its children. False when it isn't one. */
-	public function remove(child:Node3D):Bool {
-		if (!detach(child))
+	public function removeChild(child:Node3D):Bool {
+		if (!unlink(child))
 			return false;
 		changed();
 		child.localDirty = true;
@@ -54,14 +81,26 @@ class Node3D extends Node {
 	// Its tree's shape changed: counted at the top.
 	function changed():Void {
 		var top:Node3D = this;
-		while (top.parent != null)
-			top = cast top.parent;
+		while (top.parentNode != null)
+			top = cast top.parentNode;
 		top.structure++;
 	}
 
-	/** Its parent, or null. */
-	override public function getParent():Null<Node3D>
-		return cast parent;
+	/** Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's
+		local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A
+		node under itself or one of its own descendants is refused, leaving the tree as it was. */
+	public var parent(get, set):Null<Node3D>;
+
+	function get_parent():Null<Node3D>
+		return cast parentNode;
+
+	function set_parent(value:Null<Node3D>):Null<Node3D> {
+		if (value != null)
+			value.addChild(this);
+		else if (parentNode != null)
+			get_parent().removeChild(this);
+		return get_parent();
+	}
 
 	/** Its child at index, in drawing order; null past the end. */
 	override public function getChild(index:Int):Null<Node3D>
@@ -72,12 +111,12 @@ class Node3D extends Node {
 	override public function find(name:String):Null<Node3D>
 		return cast super.find(name);
 
-	/** Turns it, and everything under it, on or off (isEnabled). */
-	override public function setEnabled(value:Bool):Void {
+	override function set_enabled(value:Bool):Bool {
 		// Off, it isn't brought up to date as its parent moves: on again, it is.
 		if (value && !enabled)
 			localDirty = true;
-		super.setEnabled(value);
+		super.set_enabled(value);
+		return value;
 	}
 
 	/** The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a
@@ -85,8 +124,8 @@ class Node3D extends Node {
 		models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit). */
 	public function collectModels(skinned:Array<Model>, rigid:Array<Model>):Void {
 		var model = Std.downcast(this, Model);
-		if (model != null && model.getMesh() != null) {
-			if (model.getMesh().isSkinned())
+		if (model != null && model.mesh != null) {
+			if (model.mesh.skinned)
 				skinned.push(model);
 			else {
 				rigid.push(model);
@@ -102,10 +141,10 @@ class Node3D extends Node {
 		model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the
 		node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this. */
 	public function findAttachment(model:Model, skeleton:Node3D):Null<Attachment> {
-		var piece:Node3D = model, above = model.getParent();
+		var piece:Node3D = model, above = model.parent;
 		while (above != null && above != this && jointOf(skeleton, above.name) == null) {
 			piece = above;
-			above = above.getParent();
+			above = above.parent;
 		}
 		if (above == null)
 			return null;
@@ -119,54 +158,74 @@ class Node3D extends Node {
 		(a camera's view is found so, wherever it is). */
 	public function computeWorld(out:Mat4):Void {
 		out.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
-		var at = getParent(), above = new Mat4(), product = new Mat4();
+		var at = parent, above = new Mat4(), product = new Mat4();
 		// Two scratch matrices a call: a chain of parents is short, and a camera asks once a draw.
 		while (at != null) {
 			above.makeTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
 			product.makeProduct(above, out);
 			out.copyFrom(product);
-			at = at.getParent();
+			at = at.parent;
 		}
 	}
 
 	/** Its position's x, relative to its parent. */
-	public function getX():Float
+	public var x(get, never):Float;
+
+	function get_x():Float
 		return px;
 
 	/** Its position's y. */
-	public function getY():Float
+	public var y(get, never):Float;
+
+	function get_y():Float
 		return py;
 
 	/** Its position's z. */
-	public function getZ():Float
+	public var z(get, never):Float;
+
+	function get_z():Float
 		return pz;
 
 	/** Its rotation's quaternion x, relative to its parent. */
-	public function getQuaternionX():Float
+	public var quaternionX(get, never):Float;
+
+	function get_quaternionX():Float
 		return qx;
 
 	/** Its rotation's quaternion y. */
-	public function getQuaternionY():Float
+	public var quaternionY(get, never):Float;
+
+	function get_quaternionY():Float
 		return qy;
 
 	/** Its rotation's quaternion z. */
-	public function getQuaternionZ():Float
+	public var quaternionZ(get, never):Float;
+
+	function get_quaternionZ():Float
 		return qz;
 
 	/** Its rotation's quaternion w. */
-	public function getQuaternionW():Float
+	public var quaternionW(get, never):Float;
+
+	function get_quaternionW():Float
 		return qw;
 
 	/** Its scale along its own x. */
-	public function getScaleX():Float
+	public var scaleX(get, never):Float;
+
+	function get_scaleX():Float
 		return sx;
 
 	/** Its scale along its own y. */
-	public function getScaleY():Float
+	public var scaleY(get, never):Float;
+
+	function get_scaleY():Float
 		return sy;
 
 	/** Its scale along its own z. */
-	public function getScaleZ():Float
+	public var scaleZ(get, never):Float;
+
+	function get_scaleZ():Float
 		return sz;
 
 	/** Places it at x, y, z, relative to its parent. */
@@ -177,17 +236,23 @@ class Node3D extends Node {
 		localDirty = true;
 	}
 
-	/** Its rotation as angles in radians about x, then y, then z (setRotation's), x of them: worked out from its quaternion, so an equal turn,
-		not always the angles set (y is kept within -pi/2..pi/2). */
-	public function getRotationX():Float
+	/** Its rotation as angles in radians about x, then y, then z (setRotation's), x of them: worked out from its quaternion, so an equal
+		turn, not always the angles set (y is kept within -pi/2..pi/2). */
+	public var rotationX(get, never):Float;
+
+	function get_rotationX():Float
 		return euler(0);
 
-	/** Its rotation's angle about y, radians, as getRotationX. */
-	public function getRotationY():Float
+	/** Its rotation's angle about y, radians, as rotationX. */
+	public var rotationY(get, never):Float;
+
+	function get_rotationY():Float
 		return euler(1);
 
-	/** Its rotation's angle about z, radians, as getRotationX. */
-	public function getRotationZ():Float
+	/** Its rotation's angle about z, radians, as rotationX. */
+	public var rotationZ(get, never):Float;
+
+	function get_rotationZ():Float
 		return euler(2);
 
 	// One of the x, then y, then z angles turning as its quaternion does (the rotation matrix taken apart, as three.js does for this order).
@@ -239,7 +304,9 @@ class Node3D extends Node {
 	}
 
 	/** Its matrix relative to its parent (16 floats, column-major): its place, turn and scale put together. */
-	public function getMatrix():Array<Float> {
+	public var matrix(get, never):Array<Float>;
+
+	function get_matrix():Array<Float> {
 		var m = new Mat4();
 		m.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
 		return [for (i in 0...16) m.get(i)];
@@ -354,7 +421,9 @@ class Node3D extends Node {
 	}
 
 	/** Its world matrix as the last update left it (Stage3D.draw updates it). */
-	public function getWorldMatrix():Mat4
+	public var worldMatrix(get, never):Mat4;
+
+	function get_worldMatrix():Mat4
 		return world;
 
 	/** Brings its world matrix up to date from parentWorld when it or its parent changed; whether it changed. A stage calls this as it walks. */

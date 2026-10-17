@@ -93,7 +93,9 @@ class ModelCache {
 		return waiting.exists(path);
 
 	/** How many files are loading. */
-	public function getLoadingCount():Int {
+	public var loadingCount(get, never):Int;
+
+	function get_loadingCount():Int {
 		var n = 0;
 		for (_ in waiting)
 			n++;
@@ -133,14 +135,13 @@ class ModelCache {
 				complete(Failed('$path: $message'));
 		assets.load(path, result -> switch result {
 			case Loaded(bytes):
-				if (request.isSettled())
+				if (request.settled)
 					return;
 				var gltf = try Gltf.read(bytes) catch (e:Dynamic) {
 					failed(Std.string(e));
 					return;
 				}
-				var missing = gltf.getMissingBuffers(),
-					waiting = missing.length;
+				var missing = gltf.missingBuffers, waiting = missing.length;
 				if (waiting == 0)
 					build(path, gltf, request, children, complete);
 				for (buffer in missing) {
@@ -151,7 +152,7 @@ class ModelCache {
 					}
 					assets.load(file, loaded -> switch loaded {
 						case Loaded(data):
-							if (request.isSettled())
+							if (request.settled)
 								return;
 							if (!gltf.setBuffer(buffer.index, data)) {
 								failed('$file is shorter than buffer ${buffer.index}\'s byteLength');
@@ -187,7 +188,7 @@ class ModelCache {
 			function done(result:TextureLoadResult):Void {
 				switch result {
 					case Ready(texture):
-						texture.setSampling(image.sampling);
+						texture.sampling = image.sampling;
 						for (set in image.set)
 							set(texture);
 					case Failed(message):
@@ -199,7 +200,7 @@ class ModelCache {
 				if (waiting == 0 && request.finish())
 					complete(Ready(file));
 			}
-			var linear = image.sampling.isLinear();
+			var linear = image.sampling.linear;
 			switch image.source {
 				case InView(view):
 					children.push(textures.decode(gltf.viewBytes(view), linear, done));

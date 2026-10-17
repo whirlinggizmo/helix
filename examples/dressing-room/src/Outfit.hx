@@ -10,21 +10,19 @@ import helix.render3d.Node3D;
 	loads is dropped, and a part that can't be worn leaves its slot empty, saying why. */
 class Outfit {
 	var models:ModelCache;
-	var skeleton:Null<Node3D>;
 	var chosen:Map<String, Choice> = [];
 	var worn:Map<String, Worn> = [];
 	var errors:Map<String, String> = [];
 
-	/** An outfit drawing its parts from models, for a skeleton given later (setSkeleton). */
+	/** An outfit drawing its parts from models, for a skeleton given later (skeleton). */
 	public function new(models:ModelCache)
 		this.models = models;
 
-	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given. */
-	public function getSkeleton():Null<Node3D>
-		return skeleton;
+	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given; assigning one wears
+		every slot's choice on it, taking them off the one before (null takes everything off). */
+	public var skeleton(default, set):Null<Node3D>;
 
-	/** Wears every slot's choice on skeleton, taking them off the one before (null takes everything off). */
-	public function setSkeleton(value:Null<Node3D>):Void {
+	function set_skeleton(value:Null<Node3D>):Null<Node3D> {
 		for (slot in [for (s in worn.keys()) s])
 			takeOff(slot);
 		skeleton = value;
@@ -32,6 +30,7 @@ class Outfit {
 		errors.clear();
 		for (slot in [for (s in chosen.keys()) s])
 			apply(slot);
+		return value;
 	}
 
 	/** Chooses path's part for slot (null leaves the slot empty): worn on the skeleton by joint name, its rigid models at their joints, or, with
@@ -68,7 +67,9 @@ class Outfit {
 	}
 
 	/** The slots chosen, in no order. */
-	public function getSlots():Array<String>
+	public var slots(get, never):Array<String>;
+
+	function get_slots():Array<String>
 		return [for (s in chosen.keys()) s];
 
 	/** Why slot's choice couldn't be worn, or null. */
@@ -76,7 +77,9 @@ class Outfit {
 		return errors[slot];
 
 	/** Whether a choice is waiting for its file (or for the skeleton). */
-	public function isPending():Bool {
+	public var pending(get, never):Bool;
+
+	function get_pending():Bool {
 		for (slot => choice in chosen)
 			if (getWorn(slot) != choice.path && !errors.exists(slot))
 				return true;
@@ -109,7 +112,7 @@ class Outfit {
 		}
 		for (model in skinned)
 			if (!model.bindSkeleton(skeleton)) {
-				fail(slot, '${choice.path}: ${model.getName()} names a joint the skeleton hasn\'t');
+				fail(slot, '${choice.path}: ${model.name} names a joint the skeleton hasn\'t');
 				return;
 			}
 		var socket = choice.joint == null ? null : joint(choice.joint);
@@ -125,7 +128,7 @@ class Outfit {
 				continue;
 			var target = socket != null ? socket : at.joint;
 			if (target == null) {
-				fail(slot, '${choice.path}: the skeleton has no joint to hang ${at.piece.getName()} from');
+				fail(slot, '${choice.path}: the skeleton has no joint to hang ${at.piece.name} from');
 				return;
 			}
 			pieces.push(at.piece);
@@ -133,14 +136,13 @@ class Outfit {
 		}
 		var nodes:Array<Node3D> = [];
 		for (model in skinned) {
-			model.getParent().remove(model);
-			skeleton.add(model);
+			model.parent = null;
+			skeleton.addChild(model);
 			nodes.push(model);
 		}
 		for (i in 0...pieces.length) {
-			if (pieces[i].getParent() != null)
-				pieces[i].getParent().remove(pieces[i]);
-			joints[i].add(pieces[i]);
+			pieces[i].parent = null;
+			joints[i].addChild(pieces[i]);
 			nodes.push(pieces[i]);
 		}
 		worn[slot] = new Worn(choice.path, choice.joint, nodes);
@@ -148,7 +150,7 @@ class Outfit {
 
 	// The skeleton's joint (or root) named name, or null.
 	function joint(name:String):Null<Node3D>
-		return name == "" ? null : skeleton.getName() == name ? skeleton : skeleton.find(name);
+		return name == "" ? null : skeleton.name == name ? skeleton : skeleton.find(name);
 
 	function fail(slot:String, message:String):Void {
 		takeOff(slot);
@@ -160,8 +162,7 @@ class Outfit {
 		if (w == null)
 			return;
 		for (node in w.nodes)
-			if (node.getParent() != null)
-				node.getParent().remove(node);
+			node.parent = null;
 		worn.remove(slot);
 	}
 }

@@ -29,20 +29,20 @@ class App extends BaseApp {
 	var angle = 0.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX meshes");
+		Window.title = "HeliX meshes";
 		Window.requestSize(1000, 600);
 		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .25);
 		// Framed for 16:9: the whole row across on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.setIntensity(3);
+		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 
 		var ground = new Material();
-		ground.setBaseColor(0x474a4dff);
-		ground.setRoughness(.9);
+		ground.baseColor = 0x474a4dff;
+		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(12, 12), ground));
 
 		// Each shape, how high its center sits (so it rests on the floor), and its color.
@@ -57,8 +57,8 @@ class App extends BaseApp {
 		];
 		for (i in 0...shapes.length) {
 			var material = new Material();
-			material.setBaseColor(shapes[i].color);
-			material.setRoughness(.45);
+			material.baseColor = shapes[i].color;
+			material.roughness = .45;
 			var node = new Model(shapes[i].mesh, material);
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
 			stage.add(node);
@@ -74,18 +74,17 @@ class App extends BaseApp {
 			orbit = !orbit;
 		if (orbit)
 			angle += dt * .2;
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 3.5, 9 * Math.cos(angle), 0, .4, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);

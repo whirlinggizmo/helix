@@ -5,35 +5,48 @@ import helix.host.IWindow;
 /** The desktop window of either native host (sokol_app's or SDL's), through the C each implements (window.h). Moves are refused where the
 	compositor places windows (Wayland, XWayland). */
 class NativeWindow implements IWindow {
-	var title = "HeliX Haxe";
-
 	/** The program's one native window. */
 	public function new() {}
 
-	public function getFramebufferWidth():Int
+	public var framebufferWidth(get, never):Int;
+
+	function get_framebufferWidth():Int
 		return WindowBridge.width();
 
-	public function getFramebufferHeight():Int
+	public var framebufferHeight(get, never):Int;
+
+	function get_framebufferHeight():Int
 		return WindowBridge.height();
 
-	public function getPixelRatio():Float
+	public var pixelRatio(get, never):Float;
+
+	function get_pixelRatio():Float
 		return WindowBridge.pixelRatio();
 
-	public function isFocused():Bool
+	public var focused(get, never):Bool;
+
+	function get_focused():Bool
 		return WindowBridge.focused() != 0;
 
-	public function getTitle():String
+	@:isVar public var title(get, set):String = "HeliX Haxe";
+
+	function get_title():String
 		return title;
 
-	public function setTitle(value:String):Void {
+	function set_title(value:String):String {
 		title = value;
 		WindowBridge.setTitle(value);
+		return value;
 	}
 
-	public function getWidth():Int
+	public var width(get, never):Int;
+
+	function get_width():Int
 		return WindowBridge.windowWidth();
 
-	public function getHeight():Int
+	public var height(get, never):Int;
+
+	function get_height():Int
 		return WindowBridge.windowHeight();
 
 	public function requestSize(width:Int, height:Int):Bool {
@@ -46,10 +59,14 @@ class NativeWindow implements IWindow {
 	public function canMove():Bool
 		return WindowBridge.canMove() != 0;
 
-	public function getX():Int
+	public var x(get, never):Int;
+
+	function get_x():Int
 		return canMove() ? WindowBridge.windowX() : 0;
 
-	public function getY():Int
+	public var y(get, never):Int;
+
+	function get_y():Int
 		return canMove() ? WindowBridge.windowY() : 0;
 
 	public function requestPosition(x:Int, y:Int):Bool {
@@ -62,7 +79,9 @@ class NativeWindow implements IWindow {
 	public function canFullscreen():Bool
 		return true;
 
-	public function isFullscreen():Bool
+	public var fullscreen(get, never):Bool;
+
+	function get_fullscreen():Bool
 		return WindowBridge.fullscreen() != 0;
 
 	public function requestFullscreen(enabled:Bool):Bool {
@@ -70,7 +89,9 @@ class NativeWindow implements IWindow {
 		return true;
 	}
 
-	public function isVisible():Bool
+	public var visible(get, never):Bool;
+
+	function get_visible():Bool
 		return WindowBridge.visible() != 0;
 
 	public function requestVisible(visible:Bool):Bool {
@@ -78,21 +99,25 @@ class NativeWindow implements IWindow {
 		return true;
 	}
 
-	public function getMonitorCount():Int
+	public var monitorCount(get, never):Int;
+
+	function get_monitorCount():Int
 		return WindowBridge.displayCount();
 
-	public function getMonitorIndex():Int
+	public var monitorIndex(get, never):Int;
+
+	function get_monitorIndex():Int
 		return WindowBridge.displayCurrent();
 
 	public function requestMonitorIndex(index:Int):Bool {
-		if (index < 0 || index >= getMonitorCount() || !canMove())
+		if (index < 0 || index >= this.monitorCount || !canMove())
 			return false;
 		WindowBridge.setDisplay(index);
 		return true;
 	}
 
 	function valid(index:Int):Bool
-		return index >= 0 && index < getMonitorCount();
+		return index >= 0 && index < this.monitorCount;
 
 	public function getMonitorName(index:Int):String
 		return valid(index) ? (WindowBridge.displayName(index) : String) : "";

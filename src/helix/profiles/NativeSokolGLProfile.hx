@@ -22,16 +22,16 @@ class NativeSokolGLProfile {
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
 	public static function run(identity:helix.host.Identity, assetFolder:String, makeApp:Void->IApp, ?options:helix.host.WindowOptions):Void {
-		var host = new SokolHostAdapter(options != null ? options.getMsaaSamples() : new helix.host.WindowOptions().getMsaaSamples());
+		var host = new SokolHostAdapter(options != null ? options.msaaSamples : new helix.host.WindowOptions().msaaSamples);
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
 			if (cache == null)
-				cache = FileSystemStoreAdapter.getCacheDirectory(identity.getCompany(), identity.getProduct());
+				cache = FileSystemStoreAdapter.getCacheDirectory(identity.company, identity.product);
 			if (cache == null)
 				cache = haxe.io.Path.join([root, "cache"]);
 			var exports = Sys.getEnv("HELIX_EXPORT");
 			if (exports == null)
-				exports = FileSystemExportAdapter.getPicturesDirectory(identity.getProduct());
+				exports = FileSystemExportAdapter.getPicturesDirectory(identity.product);
 			if (exports == null)
 				exports = haxe.io.Path.join([root, "exports"]);
 			return {
@@ -47,7 +47,7 @@ class NativeSokolGLProfile {
 				manifest: Sys.getEnv("HELIX_ASSET_MANIFEST"),
 				harness: new StdioTestHarnessAdapter(),
 				export: new FileSystemExportAdapter(exports),
-				name: identity.getProduct()
+				name: identity.product
 			};
 		});
 		runner.run(makeApp);

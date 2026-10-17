@@ -36,17 +36,17 @@ class StageBench {
 			stage.add(node);
 		}
 		var sun = new DirectionalLight();
-		sun.setShadowCasting(kind == "shadows");
+		sun.shadowCasting = kind == "shadows";
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
 		var lamps = kind == "lights" ? 64 : 4;
 		for (k in 0...lamps) {
 			var lamp = new PointLight();
-			lamp.setRange(8);
+			lamp.range = 8;
 			lamp.setPosition((k % 8 - 4) * side / 4, 2, (Std.int(k / 8) % 8 - 4) * side / 4);
 			stage.add(lamp);
 		}
-		stage.setCulling(kind != "away-nocull");
+		stage.culling = kind != "away-nocull";
 		var camera = new Camera3D();
 		camera.setViewport(1280, 720);
 		camera.setPerspective(Math.PI / 3, .1, side * 4.);
@@ -66,7 +66,7 @@ class StageBench {
 				stage.drawShadows(camera);
 			stage.draw(camera);
 		}
-		var line = '$kind $models $frames drawn ${stage.getDrawnNodeCount()} draws ${stage.getDrawCallCount()} picked $picked';
+		var line = '$kind $models $frames drawn ${stage.drawnNodeCount} draws ${stage.drawCallCount} picked $picked';
 		#if js js.Syntax.code("console.log({0})", line); #else Sys.println(line); #end
 	}
 
@@ -100,10 +100,14 @@ class NullGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function getMsaaSamples():Int
+	public var msaaSamples(get, never):Int;
+
+	function get_msaaSamples():Int
 		return 1;
 
-	public function getMaxMsaaSamples():Int
+	public var maxMsaaSamples(get, never):Int;
+
+	function get_maxMsaaSamples():Int
 		return 1;
 
 	public function createRenderTarget(width:Int, height:Int):Int

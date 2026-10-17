@@ -12,7 +12,7 @@ class Text2D {
 	/** How far text moves the pen at size: its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as
 		nothing. */
 	public static function measure(font:Font2D, text:String, size:Float):Float {
-		var unit = size / font.getSize(), width = 0.;
+		var unit = size / font.size, width = 0.;
 		for (i in 0...text.length) {
 			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
 			if (glyph != null)
@@ -61,7 +61,7 @@ class Text2D {
 		height its lines take, so what follows can go under them (a HUD's lines on a narrow screen). */
 	public static function drawWrapped(batch:Batch2D, text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left,
 			lineHeight = 1.25, ?font:Font2D):Float {
-		var f = font == null ? batch.getFont() : font, row = 0;
+		var f = font == null ? batch.font : font, row = 0;
 		for (line in wrap(f, text, size, width))
 			draw(batch, line, x, y + size * lineHeight * row++, size, color, align, font);
 		return size * lineHeight * row;
@@ -70,15 +70,14 @@ class Text2D {
 	/** Draws text into batch, tinted color (0xRRGGBBAA), in font or the batch's built-in font. Characters without a glyph are skipped. */
 	public static function draw(batch:Batch2D, text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
 		if (font == null)
-			font = batch.getFont();
-		var unit = size / font.getSize();
+			font = batch.font;
+		var unit = size / font.size;
 		if (align == Center)
 			x -= measure(font, text, size) / 2;
 		else if (align == Right)
 			x -= measure(font, text, size);
-		var baseline = y + font.getAscent() * unit,
-			field = font.isDistanceField();
-		batch.useTexture(font.getTexture());
+		var baseline = y + font.ascent * unit, field = font.distanceField;
+		batch.useTexture(font.texture);
 		for (i in 0...text.length) {
 			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
 			if (glyph != null) {

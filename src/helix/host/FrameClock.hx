@@ -11,13 +11,11 @@ class FrameClock {
 	public static inline var MAX_DELTA = .1;
 
 	var previous = -1.;
-	var delta = 1 / 60;
-	var elapsed = 0.;
 
 	/** A clock with no frame yet. */
 	public function new() {}
 
-	/** Starts a frame at now, seconds on the host's clock (IHost.getTime). */
+	/** Starts a frame at now, seconds on the host's clock (IHost.time). */
 	public function frame(now:Float):Void {
 		elapsed = previous < 0 ? 0 : Math.max(0, now - previous);
 		var dt = previous < 0 ? 1 / 60 : elapsed;
@@ -25,11 +23,10 @@ class FrameClock {
 		previous = now;
 	}
 
-	/** This frame's delta in seconds: the time since the last frame, held between MIN_DELTA and MAX_DELTA, and 1/60 on the first, which has nothing to measure from. */
-	public function getDelta():Float
-		return delta;
+	/** This frame's delta in seconds: the time since the last frame, held between MIN_DELTA and MAX_DELTA, and 1/60 on the first, which has
+		nothing to measure from. */
+	public var delta(default, null):Float = 1 / 60;
 
 	/** This frame's elapsed time in seconds: the time since the last frame, unheld, and 0 on the first. */
-	public function getElapsed():Float
-		return elapsed;
+	public var elapsed(default, null):Float = 0.;
 }

@@ -166,16 +166,16 @@ class EnvironmentTests {
 			rgba.setInt32(i * 4, i < 64 * 16 ? 0xffffffff : 0xff202020);
 		var bake = EnvironmentBake.fromRgba(64, 32, rgba);
 		while (!bake.run(1000)) {}
-		check(bake.getLightingLevels().length == EnvironmentBake.MIP_COUNT && bake.getLightingLevels()[0].length == 6 * 128 * 128 * 8,
-			"The lighting cube's levels");
-		check(bake.getBackgroundSize() == 64 && bake.getBackgroundLevels().length == 7 && bake.getBackgroundLevels()[6].length == 6 * 8,
+		check(bake.lightingLevels.length == EnvironmentBake.MIP_COUNT
+			&& bake.lightingLevels[0].length == 6 * 128 * 128 * 8, "The lighting cube's levels");
+		check(bake.backgroundSize == 64 && bake.backgroundLevels.length == 7 && bake.backgroundLevels[6].length == 6 * 8,
 			"The background cube's levels, down to 1");
-		EnvironmentBake.evalSh(bake.getIrradiance(), 0, 1, 0, out);
-		EnvironmentBake.evalSh(bake.getIrradiance(), 0, -1, 0, back);
+		EnvironmentBake.evalSh(bake.irradiance, 0, 1, 0, out);
+		EnvironmentBake.evalSh(bake.irradiance, 0, -1, 0, back);
 		check(out[0] > .7 && back[0] < .3, 'White above, dark below: up ${out[0]}, down ${back[0]}');
 
 		// The BRDF table: smooth is exactly Schlick's split; A + B never above 1; Unreal's (0.72, 0.02) at n.v 0.5, roughness 0.5.
-		var table = EnvironmentBake.getBrdfTable(),
+		var table = EnvironmentBake.brdfTable,
 			size = EnvironmentBake.BRDF_SIZE;
 		check(table != null && table.length == size * size * 4, "The BRDF table is made");
 		var nv = (40 + .5) / size, fc = Math.pow(1 - nv, 5);

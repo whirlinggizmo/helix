@@ -23,12 +23,12 @@ class BrowserWebGL2Profile {
 		if (options == null)
 			options = new helix.host.WindowOptions();
 		var host = new DomHostAdapter(),
-			cacheName = identity.getCompany() + "/" + identity.getProduct();
+			cacheName = identity.company + "/" + identity.product;
 		var runner = new Runner(host, () -> {
-			var graphics = new WebGL2GraphicsAdapter(host.getCanvas(), host.getOption("tick") != null, options.getMsaaSamples());
+			var graphics = new WebGL2GraphicsAdapter(host.canvas, host.getOption("tick") != null, options.msaaSamples);
 			return {
 				graphics: graphics,
-				input: new DomInputSourceAdapter(host.getCanvas()),
+				input: new DomInputSourceAdapter(host.canvas),
 				audio: new WebAudioAdapter(),
 				audioDecoder: new WebAudioDecoderAdapter(),
 				images: new CanvasImageDecoderAdapter(),
@@ -39,7 +39,7 @@ class BrowserWebGL2Profile {
 				manifest: assetManifest,
 				harness: new DomTestHarnessAdapter(),
 				export: new DownloadExportAdapter(),
-				name: identity.getProduct()
+				name: identity.product
 			};
 		});
 		#if hotreload new helix.adapters.host.dom.AssetWatcher(assetBase, runner.assetChanged); #end

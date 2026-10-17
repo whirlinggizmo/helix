@@ -12,34 +12,34 @@ A curve through or near points in 2D or 3D (a camera rail, a patrol path, a proj
 static function through(points:Array<Float>, ?dimensions:Int = 2, ?closed:Bool = false):Curve
 static function bezier(points:Array<Float>, ?dimensions:Int = 2):Curve
 static function polyline(points:Array<Float>, ?dimensions:Int = 2, ?closed:Bool = false):Curve
-function getKind():CurveKind
-function getDimensions():Int
-function isClosed():Bool
-function getPointCount():Int
+var kind(default, null):CurveKind
+var dimensions(default, null):Int
+var closed(default, null):Bool
+var pointCount(get, never):Int
 function getPoint(index:Int, axis:Int):Float
 function getX(t:Float):Float
 function getY(t:Float):Float
 function getZ(t:Float):Float
 function evaluate(t:Float, out:Array<Float>):Array<Float>
 function tangent(t:Float, out:Array<Float>):Array<Float>
-function getLength():Float
+var length(get, never):Float
 function getParameterAtDistance(distance:Float):Float
 ```
 
 - `through`: A curve through every point in order (Catmull-Rom, centripetal), closed back to the first when closed. Throws for fewer than 2 points or a count that doesn't divide by dimensions.
 - `bezier`: Cubic Bézier pieces: the first point, then three for each piece (two control points and the piece's end), the pieces joined. Throws for another count.
 - `polyline`: Straight from point to point, closed back to the first when closed. Throws for fewer than 2 points.
-- `getKind`: Its kind.
-- `getDimensions`: 2 or 3.
-- `isClosed`: Whether it comes back to its start.
-- `getPointCount`: How many points it was made with.
+- `kind`: Its kind.
+- `dimensions`: 2 or 3.
+- `closed`: Whether it comes back to its start.
+- `pointCount`: How many points it was made with.
 - `getPoint`: Point index's coordinate axis (0 x, 1 y, 2 z); 0 past them.
 - `getX`: X at t, 0 to 1 along the whole curve (held to it; around it when closed).
 - `getY`: Y at t.
 - `getZ`: Z at t; 0 in 2D.
 - `evaluate`: Where it is at t, all axes into out (x, y and z in 3D), which it returns.
 - `tangent`: Which way it heads at t, as a unit vector into out (x, y and z in 3D), which it returns; 0s where it doesn't move.
-- `getLength`: Its length, measured along it (SAMPLES straight pieces a segment).
+- `length`: Its length, measured along it (SAMPLES straight pieces a segment).
 - `getParameterAtDistance`: The t at distance along it from the start (held to its length; around it when closed), so steps of equal distance move at a steady speed where equal steps of t don't.
 
 ## CurveKind
@@ -86,14 +86,12 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 
 *class* in `src/helix/math/Random.hx`
 
-Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't matter (Asteroids keeps the title's as a state, setState).
+Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't matter (Asteroids keeps the title's state).
 
 ```haxe
 function new(?seed:Int = 12345)
-function getSeed():Int
-function setSeed(value:Int):Void
-function getState():Int
-function setState(value:Int):Void
+var seed(default, set):Int
+var state(default, set):Int
 function next():Int
 function nextInt(max:Int):Int
 function nextFloat():Float
@@ -105,10 +103,8 @@ function shuffle(items:Array<shuffle.T>):Array<shuffle.T>
 ```
 
 - `new`: A generator starting from seed (12345 unless given); 0 is taken as 1, as xorshift needs a state other than 0.
-- `getSeed`: The seed the sequence last started from.
-- `setSeed`: Starts the sequence again from value; 0 is taken as 1.
-- `getState`: Where the sequence is now (getSeed is where it started): kept and given back to setState, a sequence goes on from there.
-- `setState`: Goes on from a state getState gave (0 is taken as 1): one generator serving two streams in turn.
+- `seed`: The seed the sequence last started from; assigning one starts the sequence again from it (0 is taken as 1).
+- `state`: Where the sequence is now (seed is where it started): read and assigned back later, the sequence goes on from there (0 is taken as 1), one generator serving two streams in turn.
 - `next`: The next whole number, from 0 to 2147483647.
 - `nextInt`: The next whole number from 0 up to but not including max: next() % max, so 0 for a max of 1 or less.
 - `nextFloat`: The next number from 0 up to but not including 1, in 24 bits (exact in a float on every target).

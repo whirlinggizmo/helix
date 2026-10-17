@@ -51,25 +51,15 @@ enum BoxDirection {
 	its pivot) and, for a sprite or rectangle, its size, once a frame. Boxes only lay out; what's drawn is the nodes'. */
 class Box {
 	var direction:BoxDirection;
-	var node:Null<Node2D>;
-	var children:Array<Box> = [];
-	var width:Sizing = Fit;
-	var height:Sizing = Fit;
-	var paddingLeft = 0.;
-	var paddingTop = 0.;
-	var paddingRight = 0.;
-	var paddingBottom = 0.;
-	var gap = 0.;
-	var mainAlign:Alignment = Start;
-	var crossAlign:Alignment = Start;
+	var childBoxes:Array<Box> = [];
+	var widthRule:Sizing = Fit;
+	var heightRule:Sizing = Fit;
 	var selfX:Null<Alignment>;
 	var selfY:Null<Alignment>;
 	var offsetX = 0.;
 	var offsetY = 0.;
 	var fitWidth = 0.;
 	var fitHeight = 0.;
-	var x = 0.;
-	var y = 0.;
 	var w = 0.;
 	var h = 0.;
 
@@ -97,49 +87,50 @@ class Box {
 
 	/** Adds child as its last. */
 	public function add(child:Box):Void
-		children.push(child);
+		childBoxes.push(child);
 
 	/** Takes child out. */
 	public function remove(child:Box):Bool
-		return children.remove(child);
+		return childBoxes.remove(child);
 
 	/** Its children, in order. */
-	public function getChildren():Array<Box>
-		return children.copy();
+	public var children(get, never):Array<Box>;
+
+	function get_children():Array<Box>
+		return childBoxes.copy();
 
 	/** The node it places, or null. */
-	public function getNode():Null<Node2D>
-		return node;
+	public var node(default, null):Null<Node2D>;
 
 	/** How its width is decided. */
-	public function getWidthSizing():Sizing
-		return width;
+	public var widthSizing(get, never):Sizing;
+
+	function get_widthSizing():Sizing
+		return widthRule;
 
 	/** How its height is decided. */
-	public function getHeightSizing():Sizing
-		return height;
+	public var heightSizing(get, never):Sizing;
+
+	function get_heightSizing():Sizing
+		return heightRule;
 
 	/** How its width and height are decided (Fit both, to start). */
 	public function setSizing(width:Sizing, height:Sizing):Void {
-		this.width = width;
-		this.height = height;
+		this.widthRule = width;
+		this.heightRule = height;
 	}
 
 	/** Its padding inside its left edge. */
-	public function getPaddingLeft():Float
-		return paddingLeft;
+	public var paddingLeft(default, null):Float = 0.;
 
 	/** Its padding inside its top edge. */
-	public function getPaddingTop():Float
-		return paddingTop;
+	public var paddingTop(default, null):Float = 0.;
 
 	/** Its padding inside its right edge. */
-	public function getPaddingRight():Float
-		return paddingRight;
+	public var paddingRight(default, null):Float = 0.;
 
 	/** Its padding inside its bottom edge. */
-	public function getPaddingBottom():Float
-		return paddingBottom;
+	public var paddingBottom(default, null):Float = 0.;
 
 	/** Its padding inside its edges (none, to start). */
 	public function setPadding(left:Float, top:Float, right:Float, bottom:Float):Void {
@@ -150,20 +141,13 @@ class Box {
 	}
 
 	/** The room between its children in a row or column. */
-	public function getGap():Float
-		return gap;
-
-	/** Sets the room between its children in a row or column (none, to start). */
-	public function setGap(value:Float):Void
-		gap = value;
+	public var gap:Float = 0.;
 
 	/** Where its children go along its row or column. */
-	public function getMainAlign():Alignment
-		return mainAlign;
+	public var mainAlign(default, null):Alignment = Start;
 
 	/** Where its children go across its row or column. */
-	public function getCrossAlign():Alignment
-		return crossAlign;
+	public var crossAlign(default, null):Alignment = Start;
 
 	/** Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross, Stretch filling it);
 		Start both, to start. */
@@ -173,19 +157,27 @@ class Box {
 	}
 
 	/** Where it goes across a stack, or null for its stack's alignment. */
-	public function getAnchorX():Null<Alignment>
+	public var anchorX(get, never):Null<Alignment>;
+
+	function get_anchorX():Null<Alignment>
 		return selfX;
 
 	/** Where it goes down a stack, or null for its stack's alignment. */
-	public function getAnchorY():Null<Alignment>
+	public var anchorY(get, never):Null<Alignment>;
+
+	function get_anchorY():Null<Alignment>
 		return selfY;
 
 	/** How far it's moved right from its anchor. */
-	public function getAnchorOffsetX():Float
+	public var anchorOffsetX(get, never):Float;
+
+	function get_anchorOffsetX():Float
 		return offsetX;
 
 	/** How far it's moved down from its anchor. */
-	public function getAnchorOffsetY():Float
+	public var anchorOffsetY(get, never):Float;
+
+	function get_anchorOffsetY():Float
 		return offsetY;
 
 	/** Where it goes in a stack (horizontally, vertically; Stretch fills that way), moved by offsetX, offsetY: anchored to an edge, a corner
@@ -198,19 +190,21 @@ class Box {
 	}
 
 	/** Where the last arrange put it, x of its left edge. */
-	public function getX():Float
-		return x;
+	public var x(default, null):Float = 0.;
 
 	/** Its top edge as last arranged. */
-	public function getY():Float
-		return y;
+	public var y(default, null):Float = 0.;
 
 	/** Its width as last arranged. */
-	public function getWidth():Float
+	public var width(get, never):Float;
+
+	function get_width():Float
 		return w;
 
 	/** Its height as last arranged. */
-	public function getHeight():Float
+	public var height(get, never):Float;
+
+	function get_height():Float
 		return h;
 
 	/** Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's) and writes the nodes'
@@ -219,8 +213,8 @@ class Box {
 		root.measure(font);
 		root.x = x;
 		root.y = y;
-		root.w = sized(root.width, root.fitWidth, width);
-		root.h = sized(root.height, root.fitHeight, height);
+		root.w = sized(root.widthRule, root.fitWidth, width);
+		root.h = sized(root.heightRule, root.fitHeight, height);
 		root.place(font);
 	}
 
@@ -234,25 +228,25 @@ class Box {
 
 	// Its content's size, bottom up: its children's along and across its direction, or its node's.
 	function measure(font:Font2D):Void {
-		for (c in children)
+		for (c in childBoxes)
 			c.measure(font);
 		var cw = 0., ch = 0.;
-		if (children.length == 0 && node != null) {
-			switch node.getKind() {
+		if (childBoxes.length == 0 && node != null) {
+			switch node.kind {
 				case Text:
 					var f = node.getFont() != null ? node.getFont() : font;
-					cw = node.getWrapWidth() > 0 ? node.getWrapWidth() : Text2D.measure(f, node.getText(), node.getTextSize());
+					cw = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(f, node.getText(), node.getTextSize());
 					ch = node.getTextHeight(f);
 				case Circle:
 					cw = ch = node.getRadius() * 2;
 				case _:
-					cw = node.getWidth();
-					ch = node.getHeight();
+					cw = node.width;
+					ch = node.height;
 			}
 		} else
-			for (c in children) {
-				var fw = own(c.width, c.fitWidth),
-					fh = own(c.height, c.fitHeight);
+			for (c in childBoxes) {
+				var fw = own(c.widthRule, c.fitWidth),
+					fh = own(c.heightRule, c.fitHeight);
 				switch direction {
 					case Row:
 						cw += fw;
@@ -265,7 +259,7 @@ class Box {
 						ch = Math.max(ch, fh);
 				}
 			}
-		var gaps = children.length > 1 && direction != Stack ? gap * (children.length - 1) : 0;
+		var gaps = childBoxes.length > 1 && direction != Stack ? gap * (childBoxes.length - 1) : 0;
 		fitWidth = cw + paddingLeft + paddingRight + (direction == Row ? gaps : 0);
 		fitHeight = ch + paddingTop + paddingBottom + (direction == Column ? gaps : 0);
 	}
@@ -281,20 +275,20 @@ class Box {
 	// Places its node, then its children in its room, top down.
 	function place(font:Font2D):Void {
 		if (node != null) {
-			switch node.getKind() {
+			switch node.kind {
 				case Sprite | Rectangle:
 					node.setSize(w, h);
 				case _:
 			}
 			// Its position is its pivot's: a text's by its alignment, a circle's its center.
-			var px = switch node.getKind() {
+			var px = switch node.kind {
 				case Text: node.getAlign() == Center ? w / 2 : node.getAlign() == Right ? w : 0;
 				case Circle: w / 2;
-				case _: node.getPivotX() * w;
-			}, py = switch node.getKind() {
+				case _: node.pivotX * w;
+			}, py = switch node.kind {
 				case Text: 0;
 				case Circle: h / 2;
-				case _: node.getPivotY() * h;
+				case _: node.pivotY * h;
 			};
 			node.setPosition(x + px, y + py);
 		}
@@ -302,11 +296,11 @@ class Box {
 		var innerW = Math.max(0, w - paddingLeft - paddingRight),
 			innerH = Math.max(0, h - paddingTop - paddingBottom);
 		if (direction == Stack) {
-			for (c in children) {
+			for (c in childBoxes) {
 				var ax = c.selfX != null ? c.selfX : mainAlign,
 					ay = c.selfY != null ? c.selfY : crossAlign;
-				c.w = ax == Stretch ? innerW : sized(c.width, c.fitWidth, innerW);
-				c.h = ay == Stretch ? innerH : sized(c.height, c.fitHeight, innerH);
+				c.w = ax == Stretch ? innerW : sized(c.widthRule, c.fitWidth, innerW);
+				c.h = ay == Stretch ? innerH : sized(c.heightRule, c.fitHeight, innerH);
 				c.x = innerX + offset(ax, innerW, c.w) + c.offsetX;
 				c.y = innerY + offset(ay, innerH, c.h) + c.offsetY;
 				c.place(font);
@@ -317,9 +311,9 @@ class Box {
 			room = row ? innerW : innerH,
 			across = row ? innerH : innerW;
 		// The room left after the fixed, fitted and shared children and the gaps, shared by the growing ones by weight.
-		var used = children.length > 1 ? gap * (children.length - 1) : 0., weights = 0.;
-		for (c in children) {
-			var sizing = row ? c.width : c.height;
+		var used = childBoxes.length > 1 ? gap * (childBoxes.length - 1) : 0., weights = 0.;
+		for (c in childBoxes) {
+			var sizing = row ? c.widthRule : c.heightRule;
 			switch sizing {
 				case Grow(weight):
 					weights += weight;
@@ -331,9 +325,9 @@ class Box {
 		}
 		var left = Math.max(0, room - used),
 			at = (row ? innerX : innerY) + (weights > 0 ? 0 : offset(mainAlign, room, used));
-		for (c in children) {
-			var sizing = row ? c.width : c.height,
-				crossSizing = row ? c.height : c.width;
+		for (c in childBoxes) {
+			var sizing = row ? c.widthRule : c.heightRule,
+				crossSizing = row ? c.heightRule : c.widthRule;
 			var along = switch sizing {
 				case Grow(weight): weights > 0 ? left * weight / weights : 0;
 				case _: sized(sizing, row ? c.fitWidth : c.fitHeight, room);

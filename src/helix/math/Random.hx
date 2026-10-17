@@ -3,32 +3,29 @@ package helix.math;
 /** Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree
 	bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks
 	random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't
-	matter (Asteroids keeps the title's as a state, setState). */
+	matter (Asteroids keeps the title's state). */
 class Random {
-	var state:Int;
-	var seed:Int;
-
 	/** A generator starting from seed (12345 unless given); 0 is taken as 1, as xorshift needs a state other than 0. */
 	public function new(seed = 12345)
-		setSeed(seed);
+		this.seed = seed;
 
-	/** The seed the sequence last started from. */
-	public function getSeed():Int
-		return seed;
+	/** The seed the sequence last started from; assigning one starts the sequence again from it (0 is taken as 1). */
+	public var seed(default, set):Int;
 
-	/** Starts the sequence again from value; 0 is taken as 1. */
-	public function setSeed(value:Int):Void {
+	function set_seed(value:Int):Int {
 		seed = value == 0 ? 1 : value;
 		state = seed;
+		return value;
 	}
 
-	/** Where the sequence is now (getSeed is where it started): kept and given back to setState, a sequence goes on from there. */
-	public function getState():Int
-		return state;
+	/** Where the sequence is now (seed is where it started): read and assigned back later, the sequence goes on from there (0 is taken as
+		1), one generator serving two streams in turn. */
+	public var state(default, set):Int;
 
-	/** Goes on from a state getState gave (0 is taken as 1): one generator serving two streams in turn. */
-	public function setState(value:Int):Void
+	function set_state(value:Int):Int {
 		state = value == 0 ? 1 : value;
+		return value;
+	}
 
 	// The generator's step: the whole 32-bit state.
 	function step():Int {

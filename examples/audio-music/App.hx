@@ -26,7 +26,7 @@ class App extends BaseApp {
 	var click:Null<AudioClip>;
 
 	override public function init():Void {
-		Window.setTitle("HeliX audio");
+		Window.title = "HeliX audio";
 		Window.requestSize(720, 240);
 		batch = new Batch2D(Graphics.instance);
 		var audio = Audio.instance;
@@ -59,26 +59,26 @@ class App extends BaseApp {
 			Audio.play(click);
 		if (input.isFramePressed(Key.S)) {
 			// A deliberately slow frame.
-			var until = Time.getTime() + .3;
-			while (Time.getTime() < until) {}
+			var until = Time.time + .3;
+			while (Time.time < until) {}
 		}
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x12141cff);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
-		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : switch (music.getState()) {
+		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : switch (music.state) {
 			case Playing: "music: playing (mp3, streamed, looping)";
 			case Paused: "music: paused";
 			case Stopped: "music: couldn't start";

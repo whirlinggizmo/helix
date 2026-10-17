@@ -52,7 +52,9 @@ class Hdr {
 	}
 
 	/** Whether every row is read. */
-	public function isDone():Bool
+	public var done(get, never):Bool;
+
+	function get_done():Bool
 		return row == height;
 
 	/** Reads up to count more rows; true once every row is read. Throws for data that ends early or is broken. */

@@ -16,7 +16,9 @@ class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 	}
 
 	/** The backend SDL chose: "vulkan", "direct3d12" or "metal". */
-	public function getDriver():String
+	public var driver(get, never):String;
+
+	function get_driver():String
 		return (GraphicsBridge.driver() : String);
 
 	public function createShader(source:ShaderSource):Int {

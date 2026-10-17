@@ -39,12 +39,12 @@ interface IGraphics {
 
 	/** Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave,
 		which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled. */
-	public function getMsaaSamples():Int;
+	var msaaSamples(get, never):Int;
 
 	/** The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to
 		offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so
 		there it's the count the canvas has when on (4 where the GPU has 4, else 1). */
-	public function getMaxMsaaSamples():Int;
+	var maxMsaaSamples(get, never):Int;
 
 	/** Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first
 		like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less. */

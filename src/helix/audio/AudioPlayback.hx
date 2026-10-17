@@ -3,27 +3,20 @@ package helix.audio;
 /** One playback, playing or paused; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the
 	page's first key or pointer press) it waits, its pause and volume kept, and starts once audio runs. */
 class AudioPlayback {
-	var id = 0;
 	var waiting = true;
-	var finished = false;
 	var paused = false;
 	var stopped = false;
 	var resource:AudioResource;
-	var source:Int;
 	var loop:Bool;
-	var volume:Float;
 
 	/** The adapter's voice; 0 while it waits for audio to start, or when it couldn't start. */
-	public function getId():Int
-		return id;
+	public var id(default, null):Int = 0;
 
 	/** Whether it was stopped, played to its end, or never started; its resource reference is released then. */
-	public function isFinished():Bool
-		return finished;
+	public var finished(default, null):Bool = false;
 
 	/** The adapter's resource it plays, kept as it started: a reload may replace the resource's. */
-	public function getSource():Int
-		return source;
+	public var source(default, null):Int;
 
 	/** A playback of resource (whose playback reference the caller retained) at volume, looping if asked: it starts now if audio runs, waits if
 		audio is available but hasn't started, and finishes at once otherwise. AudioResources.play makes it. */
@@ -31,13 +24,13 @@ class AudioPlayback {
 		this.resource = resource;
 		this.loop = loop;
 		this.volume = volume;
-		source = resource.getId();
-		var backend = resource.getBackend();
-		if (!backend.isAvailable()) {
+		source = resource.id;
+		var backend = resource.backend;
+		if (!backend.available) {
 			waiting = false;
 			stopped = true;
 			end();
-		} else if (backend.isRunning())
+		} else if (backend.running)
 			begin();
 	}
 
@@ -49,7 +42,7 @@ class AudioPlayback {
 			stopped = true;
 			end();
 		} else if (paused)
-			resource.getBackend().pause(id, true);
+			resource.backend.pause(id, true);
 	}
 
 	function end():Void {
@@ -61,7 +54,9 @@ class AudioPlayback {
 
 	/** Playing or Paused while it lasts (waiting counts as playing); then Stopped (stop(), or it never started) or Complete (it played to its
 		end). */
-	public function getState():PlayState
+	public var state(get, never):PlayState;
+
+	function get_state():PlayState
 		return finished ? (stopped ? Stopped : Complete) : paused ? Paused : Playing;
 
 	/** Stops it and releases its resource reference. False once it has finished. */
@@ -69,7 +64,7 @@ class AudioPlayback {
 		if (finished)
 			return false;
 		if (id != 0)
-			resource.getBackend().stop(id);
+			resource.backend.stop(id);
 		stopped = true;
 		end();
 		return true;
@@ -80,7 +75,7 @@ class AudioPlayback {
 		if (finished || paused)
 			return false;
 		if (id != 0)
-			resource.getBackend().pause(id, true);
+			resource.backend.pause(id, true);
 		paused = true;
 		return true;
 	}
@@ -90,23 +85,20 @@ class AudioPlayback {
 		if (finished || !paused)
 			return false;
 		if (id != 0)
-			resource.getBackend().pause(id, false);
+			resource.backend.pause(id, false);
 		paused = false;
 		return true;
 	}
 
-	/** Its volume, 0 to 1. */
-	public function getVolume():Float
-		return volume;
+	/** Its volume, 0 to 1. Clamped to 0..1 (NaN is 0); once it has finished, kept but not heard. */
+	public var volume(default, set):Float;
 
-	/** Sets its volume, 0 to 1 (before it starts, it starts at it). False, changing nothing, for a volume outside 0 to 1, or once finished. */
-	public function setVolume(volume:Float):Bool {
-		if (finished || !Math.isFinite(volume) || volume < 0 || volume > 1)
-			return false;
+	function set_volume(volume:Float):Float {
+		volume = volume > 0 ? (volume < 1 ? volume : 1) : 0;
 		this.volume = volume;
 		if (id != 0)
-			resource.getBackend().setVolume(id, volume);
-		return true;
+			resource.backend.setVolume(id, volume);
+		return volume;
 	}
 
 	/** Starts it once audio runs, and finishes it, releasing its resource reference, once the adapter no longer plays it. AudioResources.poll
@@ -115,11 +107,11 @@ class AudioPlayback {
 		if (finished)
 			return;
 		if (waiting) {
-			if (resource.getBackend().isRunning())
+			if (resource.backend.running)
 				begin();
 			return;
 		}
-		if (!resource.getBackend().isPlaying(id))
+		if (!resource.backend.isPlaying(id))
 			end();
 	}
 }

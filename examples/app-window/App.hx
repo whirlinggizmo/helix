@@ -19,7 +19,7 @@ class App extends BaseApp {
 	var hiddenFor = 0.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX window");
+		Window.title = "HeliX window";
 		Window.requestSize(900, 400);
 		batch = new Batch2D(Graphics.instance);
 	}
@@ -28,12 +28,7 @@ class App extends BaseApp {
 		status = what + ": " + (ok ? "done" : "not supported here");
 
 	override public function frame(dt:Float):Void {
-		var input = Input.instance,
-			window = Window.instance,
-			width = window.getWidth(),
-			height = window.getHeight(),
-			x = window.getX(),
-			y = window.getY();
+		var input = Input.instance, window = Window.instance, width = window.width, height = window.height, x = window.x, y = window.y;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.Left))
@@ -50,7 +45,7 @@ class App extends BaseApp {
 			report("shrink", window.requestSize(Std.int(width / 1.1), Std.int(height / 1.1)));
 		// A request: fullscreen() answers on a later frame.
 		if (input.isFramePressed(Key.F)) {
-			status = "fullscreen: " + (window.requestFullscreen(!window.isFullscreen()) ? "asked for" : "not supported here");
+			status = "fullscreen: " + (window.requestFullscreen(!window.fullscreen) ? "asked for" : "not supported here");
 		}
 		if (input.isFramePressed(Key.H)) {
 			window.requestVisible(false);
@@ -62,15 +57,15 @@ class App extends BaseApp {
 			report("show", true);
 		}
 		if (input.isFramePressed(Key.M))
-			report("monitor", window.requestMonitorIndex((window.getMonitorIndex() + 1) % window.getMonitorCount()));
+			report("monitor", window.requestMonitorIndex((window.monitorIndex + 1) % window.monitorCount));
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		Graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x181c26ff);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		Graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x181c26ff);
 		batch.begin(camera);
 		var row = vy + 12;
 		row += Text2D.drawWrapped(batch,
@@ -83,17 +78,17 @@ class App extends BaseApp {
 			+ 12;
 		row += Text2D.drawWrapped(batch,
 			'window: $width x $height at ($x, $y)   fullscreen: '
-			+ (window.isFullscreen() ? "yes" : "no")
+			+ (window.fullscreen ? "yes" : "no")
 			+ "   focused: "
-			+ (Window.isFocused() ? "yes" : "no"),
+			+ (Window.focused ? "yes" : "no"),
 			vx
 			+ 12, row, 16, vw
 			- 24, 0xc8c8c8ff)
 			+ 4;
 		row += Text2D.drawWrapped(batch, status, vx + 12, row, 16, vw - 24, 0xffcb00ff) + 12;
-		for (m in 0...window.getMonitorCount()) {
+		for (m in 0...window.monitorCount) {
 			row += Text2D.drawWrapped(batch,
-				(m == window.getMonitorIndex() ? "> " : "  ")
+				(m == window.monitorIndex ? "> " : "  ")
 				+
 				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
 				vx

@@ -14,25 +14,20 @@ import helix.scene.Pointer;
 	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in
 	  two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before,
 	  wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list). Tab and
-	  Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (isBackPressed).
+	  Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed).
 	- The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or
 	  a pad, something always has focus (the first widget, if nothing did).
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
 	  first button.
-	- While a widget has the keys (isCapturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once.
+	- While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once.
 
-	The widgets' nodes are under one node (getRoot) on the stage, in the order made, the ring above them. The pointer must be looking at the
+	The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the
 	stage, through camera. */
 class Ui {
 	var stage:Stage2D;
-	var camera:Camera2D;
 	var pointer:Pointer;
-	var input:IInput;
-	var theme:Theme;
-	var root = Node2D.group();
 	var ring:Node2D;
 	var widgets:Array<Widget> = [];
-	var focused:Null<Widget>;
 	var textEntry = false;
 	var showFocus = false;
 	var keys = false;
@@ -49,39 +44,37 @@ class Ui {
 		this.pointer = pointer;
 		this.input = input;
 		this.theme = theme != null ? theme : new Theme();
-		ring = Node2D.rectangle(1, 1, this.theme.getFocusColor());
-		ring.setOutline(this.theme.getFocusWidth());
-		ring.setPickable(false);
-		ring.setVisible(false);
-		root.add(ring);
+		ring = Node2D.rectangle(1, 1, this.theme.focusColor);
+		ring.setOutline(this.theme.focusWidth);
+		ring.pickable = false;
+		ring.visible = false;
+		root.addChild(ring);
 		stage.add(root);
 	}
 
 	/** Its look. */
-	public function getTheme():Theme
-		return theme;
+	public var theme(default, null):Theme;
 
 	/** The node its widgets are under. */
-	public function getRoot():Node2D
-		return root;
+	public var root(default, null):Node2D = Node2D.group();
 
 	/** The font text is drawn in without the theme's: the stage's last (the batch's built-in), once drawn. */
-	public function getFont():Null<helix.render2d.Font2D>
-		return stage.getFont();
+	public var font(get, never):Null<helix.render2d.Font2D>;
+
+	function get_font():Null<helix.render2d.Font2D>
+		return stage.font;
 
 	/** The camera it's drawn through. */
-	public function getCamera():Camera2D
-		return camera;
+	public var camera(default, null):Camera2D;
 
 	/** The input it reads. */
-	public function getInput():IInput
-		return input;
+	public var input(default, null):IInput;
 
 	/** A line of text. */
 	public function label(text:String, ?name:String):Label
 		return adopt(new Label(this, name != null ? name : text, text));
 
-	/** A background holding a column of widgets (add their boxes to its getContent()). */
+	/** A background holding a column of widgets (add their boxes to its content). */
 	public function panel(?name:String):Panel
 		return adopt(new Panel(this, name != null ? name : "panel"));
 
@@ -115,24 +108,24 @@ class Ui {
 
 	function adopt<T:Widget>(widget:T):T {
 		widgets.push(widget);
-		root.remove(ring);
-		root.add(widget.getRoot());
-		root.add(ring);
+		root.removeChild(ring);
+		root.addChild(widget.root);
+		root.addChild(ring);
 		return widget;
 	}
 
 	/** Takes widget out, its nodes off the stage. */
 	public function remove(widget:Widget):Void {
 		widgets.remove(widget);
-		root.remove(widget.getRoot());
+		root.removeChild(widget.root);
 		if (focused == widget)
-			focused = null;
+			@:bypassAccessor focused = null;
 	}
 
-	/** The widget named name (Widget.getName), or null. */
+	/** The widget named name (Widget.name), or null. */
 	public function find(name:String):Null<Widget> {
 		for (w in widgets)
-			if (w.getName() == name)
+			if (w.name == name)
 				return w;
 		return null;
 	}
@@ -142,38 +135,43 @@ class Ui {
 		widget or it isn't usable now. */
 	public function press(name:String):Bool {
 		var w = find(name);
-		if (w == null || !w.isEnabled() || !w.isVisible() || !w.isFocusable())
+		if (w == null || !w.enabled || !w.visible || !w.focusable)
 			return false;
 		pressing = w;
 		return true;
 	}
 
 	/** The widget with focus, or null. */
-	public function getFocused():Null<Widget>
-		return focused;
+	public var focused(default, set):Null<Widget>;
 
-	/** The focused widget's name, or "" (for a check's probe). */
-	public function getFocusedName():String
-		return focused == null ? "" : focused.getName();
-
-	/** Gives widget focus (null: none), shown as keys would show it. */
-	public function setFocused(widget:Null<Widget>):Void {
+	function set_focused(widget:Null<Widget>):Null<Widget> {
 		focused = widget;
 		showFocus = widget != null;
 		syncTextEntry();
+		return widget;
 	}
 
+	/** The focused widget's name, or "" (for a check's probe). */
+	public var focusedName(get, never):String;
+
+	function get_focusedName():String
+		return focused == null ? "" : focused.name;
+
 	/** Whether a widget has the keys: a game should leave arrows, Enter and Space be. */
-	public function isCapturingKeys():Bool
+	public var capturingKeys(get, never):Bool;
+
+	function get_capturingKeys():Bool
 		return focused != null && (keys || focused.takesText());
 
 	/** Whether Escape or a pad's East was pressed this frame (not held over from before reset). */
-	public function isBackPressed():Bool
+	public var backPressed(get, never):Bool;
+
+	function get_backPressed():Bool
 		return back;
 
 	/** A new screen begins: no focus, and keys and buttons held now do nothing until they're let go. */
 	public function reset():Void {
-		focused = null;
+		@:bypassAccessor focused = null;
 		showFocus = false;
 		guarded = true;
 		syncTextEntry();
@@ -184,8 +182,8 @@ class Ui {
 		if (guarded && !anyHeld())
 			guarded = false;
 		// The pointer moving or pressing hides the ring and hands back the keys.
-		var x = input.getPointerX(), y = input.getPointerY();
-		if ((x != lastX || y != lastY) && x >= 0 || input.isPointerFramePressed()) {
+		var x = input.pointerX, y = input.pointerY;
+		if ((x != lastX || y != lastY) && x >= 0 || input.pointerFramePressed) {
 			showFocus = false;
 			keys = false;
 		}
@@ -229,14 +227,14 @@ class Ui {
 			keys = true;
 			showFocus = true;
 		}
-		if (focused != null && (!focused.isFocusable() || !focused.isEnabled() || !focused.isVisible()))
-			focused = null;
+		if (focused != null && (!focused.focusable || !focused.enabled || !focused.visible))
+			@:bypassAccessor focused = null;
 		if (move != 0) {
 			var toward = focused != null && (dx != 0 || dy != 0) ? nearest(focused, dx, dy) : null;
-			focused = toward != null ? toward : focused == null ? first() : next(focused, move);
+			@:bypassAccessor focused = toward != null ? toward : focused == null ? first() : next(focused, move);
 		} else if (keys && focused == null) {
 			// Keys or a pad in use and nothing focused (a new screen): the first widget, shown.
-			focused = first();
+			@:bypassAccessor focused = first();
 			showFocus = focused != null;
 		}
 		var activated = !guarded
@@ -249,48 +247,48 @@ class Ui {
 		back = !guarded && (input.isFramePressed(Key.Escape) || pad(PadButton.East));
 		for (w in widgets) {
 			var target = w.target(),
-				usable = w.isEnabled() && w.isVisible() && !guarded;
+				usable = w.enabled && w.visible && !guarded;
 			var hovered = target != null && pointer.isHovered(target),
 				held = target != null && pointer.isDown(target),
 				clicked = usable && target != null && pointer.isClicked(target);
 			// The pointer pressing a widget gives it focus, unshown.
-			if (usable && target != null && pointer.isPressed(target) && w.isFocusable())
-				focused = w;
+			if (usable && target != null && pointer.isPressed(target) && w.focusable)
+				@:bypassAccessor focused = w;
 			if (w == pressing && usable) {
 				clicked = true;
-				focused = w;
+				@:bypassAccessor focused = w;
 			}
 			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, w == stepped && usable ? step : 0);
 		}
 		pressing = null;
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
 		if (showFocus && focused != null) {
-			var b = focused.getBox(), out = theme.getFocusWidth() * 2;
-			ring.setSize(b.getWidth() + out * 2, b.getHeight() + out * 2);
+			var b = focused.box, out = theme.focusWidth * 2;
+			ring.setSize(b.width + out * 2, b.height + out * 2);
 			ring.setPivot(0, 0);
-			ring.setPosition(b.getX() - out, b.getY() - out);
+			ring.setPosition(b.x - out, b.y - out);
 			// Its corners round about the widgets' corners' centers.
-			ring.setCornerRadius(theme.getCornerRadius() > 0 ? theme.getCornerRadius() + out : 0);
-			ring.setVisible(true);
+			ring.setCornerRadius(theme.cornerRadius > 0 ? theme.cornerRadius + out : 0);
+			ring.visible = true;
 		} else
-			ring.setVisible(false);
+			ring.visible = false;
 		syncTextEntry();
 	}
 
-	// Typed text is asked for (IInput.setTextEntry) while the focused widget takes it, a text field, and let go when none does.
+	// Typed text is asked for (IInput.textEntry) while the focused widget takes it, a text field, and let go when none does.
 	function syncTextEntry():Void {
 		var want = focused != null && focused.takesText();
 		if (want != textEntry) {
 			textEntry = want;
-			input.setTextEntry(want);
+			input.textEntry = want;
 		}
 	}
 
 	// Whether a pad's button went down this frame, on any pad.
 	function pad(button:PadButton):Bool {
-		for (i in 0...input.getPadCount()) {
+		for (i in 0...input.padCount) {
 			var p = input.getPad(i);
-			if (p != null && p.isConnected() && p.isFramePressed(button))
+			if (p != null && p.connected && p.isFramePressed(button))
 				return true;
 		}
 		return false;
@@ -299,11 +297,11 @@ class Ui {
 	// Whether anything that activates or goes back is held.
 	function anyHeld():Bool
 		return input.isDown(Key.Enter) || input.isDown(Key.Space) || input.isDown(Key.Escape) || input.isPadDown(PadButton.South)
-			|| input.isPadDown(PadButton.East) || input.isPointerDown();
+			|| input.isPadDown(PadButton.East) || input.pointerDown;
 
 	function first():Null<Widget> {
 		for (w in widgets)
-			if (w.isFocusable() && w.isEnabled() && w.isVisible())
+			if (w.focusable && w.enabled && w.visible)
 				return w;
 		return null;
 	}
@@ -312,16 +310,12 @@ class Ui {
 	// along that axis, the closest by the distance along it plus twice the offset across it (so the next in a row or column beats a nearer
 	// one off to the side). Boxes not yet arranged (all at the origin) find none.
 	function nearest(from:Widget, dx:Int, dy:Int):Null<Widget> {
-		var b = from.getBox(),
-			cx = b.getX() + b.getWidth() / 2,
-			cy = b.getY() + b.getHeight() / 2;
+		var b = from.box, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
 		var best:Null<Widget> = null, bestScore = Math.POSITIVE_INFINITY;
 		for (w in widgets) {
-			if (w == from || !w.isFocusable() || !w.isEnabled() || !w.isVisible())
+			if (w == from || !w.focusable || !w.enabled || !w.visible)
 				continue;
-			var o = w.getBox(),
-				ox = o.getX() + o.getWidth() / 2 - cx,
-				oy = o.getY() + o.getHeight() / 2 - cy;
+			var o = w.box, ox = o.x + o.width / 2 - cx, oy = o.y + o.height / 2 - cy;
 			var along = dx != 0 ? ox * dx : oy * dy,
 				across = Math.abs(dx != 0 ? oy : ox);
 			if (along <= .5)
@@ -340,7 +334,7 @@ class Ui {
 		var n = widgets.length, at = widgets.indexOf(from);
 		for (k in 1...n + 1) {
 			var w = widgets[((at + direction * k) % n + n) % n];
-			if (w.isFocusable() && w.isEnabled() && w.isVisible())
+			if (w.focusable && w.enabled && w.visible)
 				return w;
 		}
 		return from;

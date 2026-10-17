@@ -53,12 +53,12 @@ class Sounds {
 				audio.play(clips[kind], false, kind == 1 ? 0.5 : 0.75);
 		var thrust = enabled && focused && game.state == "playing" && game.thrusting && game.respawnDelay == 0;
 		if (thrust) {
-			if (loop == null || loop.isFinished()) {
+			if (loop == null || loop.finished) {
 				thrustVolume = 0;
 				loop = audio.play(clips[7], true, 0);
 			}
 			thrustVolume = Math.min(.65, thrustVolume + .13);
-			loop.setVolume(thrustVolume);
+			loop.volume = thrustVolume;
 		} else if (loop != null) {
 			thrustVolume = enabled && focused ? thrustVolume * .35 : 0;
 			if (thrustVolume < .01) {
@@ -66,7 +66,7 @@ class Sounds {
 				loop = null;
 				thrustVolume = 0;
 			} else
-				loop.setVolume(thrustVolume);
+				loop.volume = thrustVolume;
 		}
 	}
 

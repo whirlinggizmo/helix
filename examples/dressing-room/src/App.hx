@@ -109,7 +109,7 @@ class App extends BaseApp {
 	var distance = 3.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX dressing room");
+		Window.title = "HeliX dressing room";
 		Window.requestSize(1280, 720);
 		var gpu = Graphics.instance;
 		stage = new Stage3D(gpu);
@@ -117,23 +117,23 @@ class App extends BaseApp {
 		for (s in [stage, studio]) {
 			s.setAmbient(0xd8e0ffff, .3);
 			var key = new DirectionalLight();
-			key.setIntensity(2.2);
+			key.intensity = 2.2;
 			key.lookAt(-.5, -.8, -.6);
 			if (s == stage) {
-				key.setShadowCasting(true);
-				key.setShadowDistance(5);
+				key.shadowCasting = true;
+				key.shadowDistance = 5;
 			}
 			s.add(key);
 		}
 		// The turntable: a low disc on a dark floor.
 		var floor = new Material();
-		floor.setBaseColor(0x22252eff);
-		floor.setRoughness(.95);
+		floor.baseColor = 0x22252eff;
+		floor.roughness = .95;
 		stage.add(new Model(Mesh.plane(30, 30), floor));
 		var plinth = new Material();
-		plinth.setBaseColor(0x8a8f9cff);
-		plinth.setRoughness(.4);
-		plinth.setMetallic(.2);
+		plinth.baseColor = 0x8a8f9cff;
+		plinth.roughness = .4;
+		plinth.metallic = .2;
 		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		stage.add(disc);
@@ -156,7 +156,7 @@ class App extends BaseApp {
 				character.setPosition(0, .06, 0);
 				stage.add(character);
 				animator = new Animator(character);
-				outfit.setSkeleton(character);
+				outfit.skeleton = character;
 				model = file.instantiate("model");
 				studio.add(model);
 				// The pictures' character holds still, in the idle pose's first frame.
@@ -166,7 +166,7 @@ class App extends BaseApp {
 					still.play(idle, false);
 					still.update(0);
 				}
-				modelOutfit.setSkeleton(model);
+				modelOutfit.skeleton = model;
 				pose("Idle");
 			case Failed(message): status = message;
 			case Cancelled:
@@ -183,55 +183,55 @@ class App extends BaseApp {
 		ui = new Ui(screen, camera2D, pointer, Input.instance);
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
-		title.getNode().setTextSize(26);
+		title.node.setTextSize(26);
 		panel.add(title);
 		var tabRow = Box.row();
-		tabRow.setGap(ui.getTheme().getGap());
+		tabRow.gap = ui.theme.gap;
 		for (s in SLOTS) {
 			var tab = ui.button(s, 'tab ${s.toLowerCase()}');
 			panel.adopt(tab);
-			tabRow.add(tab.getBox());
+			tabRow.add(tab.box);
 			tabs.push(tab);
 		}
-		panel.getContent().add(tabRow);
+		panel.content.add(tabRow);
 		var grid = Box.column();
-		grid.setGap(8);
+		grid.gap = 8;
 		for (r in 0...2) {
 			var row = Box.row();
-			row.setGap(8);
+			row.gap = 8;
 			for (c in 0...5) {
 				var tile = ui.tile(null, "", 72, 'tile ${r * 5 + c}');
 				panel.adopt(tile);
-				row.add(tile.getBox());
+				row.add(tile.box);
 				tiles.push(tile);
 			}
 			grid.add(row);
 		}
-		panel.getContent().add(grid);
+		panel.content.add(grid);
 		var poseLabel = ui.label("Pose");
 		panel.add(poseLabel);
 		var poseRow = Box.row();
-		poseRow.setGap(ui.getTheme().getGap());
+		poseRow.gap = ui.theme.gap;
 		for (i in 0...POSES.length) {
 			var button = ui.button(POSE_NAMES[i], 'pose ${POSES[i].toLowerCase()}');
 			panel.adopt(button);
-			poseRow.add(button.getBox());
+			poseRow.add(button.box);
 			poses.push(button);
 		}
-		panel.getContent().add(poseRow);
+		panel.content.add(poseRow);
 		var actions = Box.row();
-		actions.setGap(ui.getTheme().getGap());
+		actions.gap = ui.theme.gap;
 		random = ui.button("Random");
 		reset = ui.button("Reset");
 		for (b in [random, reset]) {
 			panel.adopt(b);
-			actions.add(b.getBox());
+			actions.add(b.box);
 		}
-		panel.getContent().add(actions);
+		panel.content.add(actions);
 		layout = Box.stack();
 		layout.setSizing(Grow(1), Grow(1));
 		layout.setPadding(12, 12, 12, 12);
-		layout.add(panel.getBox());
+		layout.add(panel.box);
 	}
 
 	// The panel for the window's shape (ScreenShape's designs): on the right, or upright along the bottom (five tiles still fit across the
@@ -239,7 +239,7 @@ class App extends BaseApp {
 	function shape(name:String):Void {
 		shaped = name;
 		portrait = name == "portrait";
-		var box = panel.getBox();
+		var box = panel.box;
 		if (portrait) {
 			box.setSizing(Grow(1), Fit);
 			box.setAnchor(Stretch, End);
@@ -276,23 +276,23 @@ class App extends BaseApp {
 			var tile = tiles[i],
 				look = i < offered.length ? offered[i] : null,
 				shown = i < offered.length;
-			tile.setVisible(shown);
+			tile.visible = shown;
 			if (!shown)
 				continue;
-			tile.setCaption(look == null ? "Empty" : look);
-			tile.setTexture(null);
+			tile.caption = look == null ? "Empty" : look;
+			tile.texture = null;
 			if (look == null)
 				continue;
 			var p = path(s, look);
 			if (thumbs.exists(p))
-				tile.setTexture(thumbs[p]);
+				tile.texture = thumbs[p];
 			else {
 				wanted.push({slot: s, path: p});
 				Models.load(p, _ -> {});
 			}
 		}
 		for (t in tabs)
-			t.setText(t.getText().split(" ")[0] + (t.getText().split(" ")[0] == s ? " *" : ""));
+			t.text = t.text.split(" ")[0] + (t.text.split(" ")[0] == s ? " *" : "");
 		ui.reset();
 	}
 
@@ -316,7 +316,7 @@ class App extends BaseApp {
 			modelOutfit.choose(w.slot, w.path);
 			var texture = Texture2D.renderTarget(Graphics.instance, THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
-			Graphics.beginTargetPass(texture.getHandle(), 0x2a2f3cff);
+			Graphics.beginTargetPass(texture.handle, 0x2a2f3cff);
 			studio.draw(shot);
 			Graphics.endTargetPass();
 			thumbs[w.path] = texture;
@@ -329,8 +329,8 @@ class App extends BaseApp {
 		for (i in 0...offered.length)
 			if (offered[i] != null) {
 				var t = thumbs[path(slot, offered[i])];
-				if (t != null && tiles[i].getTexture() != t)
-					tiles[i].setTexture(t);
+				if (t != null && tiles[i].texture != t)
+					tiles[i].texture = t;
 			}
 	}
 
@@ -350,12 +350,12 @@ class App extends BaseApp {
 		}
 		function walk(node:Node3D) {
 			var model = Std.downcast(node, Model);
-			var mesh = model != null ? model.getMesh() : null;
-			if (mesh != null && mesh.isSkinned()) {
+			var mesh = model != null ? model.mesh : null;
+			if (mesh != null && mesh.skinned) {
 				// Only the joints this part weights (its skin may name every joint of the skeleton), each padded by how far its vertices reach, at
 				// most a hand's breadth: a long bone's reach would frame far more than the part.
-				var reach = mesh.getJointReach(model.getSkin());
-				for (j in 0...model.getJointCount())
+				var reach = mesh.getJointReach(model.skin);
+				for (j in 0...model.jointCount)
 					if (reach != null && reach[j] >= 0) {
 						model.getJoint(j).computeWorld(world);
 						add(world.get(12), world.get(13), world.get(14), Math.min(reach[j] * .55, .12));
@@ -363,9 +363,9 @@ class App extends BaseApp {
 			} else if (mesh != null) {
 				node.computeWorld(world);
 				for (corner in 0...8) {
-					var x = (corner & 1) == 0 ? mesh.getMinX() : mesh.getMaxX(),
-						y = (corner & 2) == 0 ? mesh.getMinY() : mesh.getMaxY(),
-						z = (corner & 4) == 0 ? mesh.getMinZ() : mesh.getMaxZ();
+					var x = (corner & 1) == 0 ? mesh.minX : mesh.maxX,
+						y = (corner & 2) == 0 ? mesh.minY : mesh.maxY,
+						z = (corner & 4) == 0 ? mesh.minZ : mesh.maxZ;
 					add(world.get(0) * x
 						+ world.get(4) * y
 						+ world.get(8) * z
@@ -380,7 +380,7 @@ class App extends BaseApp {
 						+ world.get(14), 0);
 				}
 			}
-			for (i in 0...node.getChildCount())
+			for (i in 0...node.childCount)
 				walk(node.getChild(i));
 		}
 		for (node in nodes)
@@ -415,23 +415,22 @@ class App extends BaseApp {
 	override public function frame(dt:Float):Void {
 		var input = Input.instance;
 		var window = Window.instance, presentation = Screen.instance;
-		var width = window.getFramebufferWidth(),
-			height = window.getFramebufferHeight();
+		var width = window.framebufferWidth, height = window.framebufferHeight;
 		var wanted = ScreenShape.update();
 		if (wanted != shaped)
 			shape(wanted);
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth(),
-			vh = presentation.getVisibleHeight();
-		Box.arrange(layout, vx, vy, vw, vh, batch.getFont());
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth,
+			vh = presentation.visibleHeight;
+		Box.arrange(layout, vx, vy, vw, vh, batch.font);
 		pointer.update();
 		ui.update();
 		for (i in 0...tabs.length)
-			if (tabs[i].isClicked())
+			if (tabs[i].clicked)
 				open(SLOTS[i]);
-		if (!ui.isCapturingKeys() || ui.getFocused() == null) {
+		if (!ui.capturingKeys || ui.focused == null) {
 			if (input.isFramePressed(Key.Q))
 				step(-1);
 			if (input.isFramePressed(Key.E))
@@ -439,35 +438,35 @@ class App extends BaseApp {
 		}
 		var offered = choices(slot);
 		for (i in 0...offered.length)
-			if (tiles[i].isClicked())
+			if (tiles[i].clicked)
 				choose(slot, offered[i]);
 		for (i in 0...poses.length)
-			if (poses[i].isClicked())
+			if (poses[i].clicked)
 				pose(POSES[i]);
-		if (random.isClicked()) {
+		if (random.clicked) {
 			dress([for (_ in 0...4) deals.pick(LOOKS)], deals.nextBool(1 / 3) ? null : deals.pick(HELD));
 		}
-		if (reset.isClicked())
+		if (reset.clicked)
 			dress(["Casual", "Casual", "Casual", "Casual"], null);
-		if (Host.canQuit() && ui.isBackPressed())
+		if (Host.canQuit() && ui.backPressed)
 			Host.quit();
 		// Which tile shows what she wears in the open slot.
 		var worn = outfit.getChoice(slot);
 		for (i in 0...offered.length)
-			tiles[i].setSelected(offered[i] == null ? worn == null : worn == path(slot, offered[i]));
+			tiles[i].selected = offered[i] == null ? worn == null : worn == path(slot, offered[i]);
 		// The turntable: a drag on the room (beside the panel, or above it) turns her; the wheel or a pinch comes closer.
-		var box = panel.getBox(),
-			px = presentation.toUnitsX(input.getPointerX()),
-			py = presentation.toUnitsY(input.getPointerY());
-		if (input.isPointerFramePressed() && (portrait ? py < box.getY() : px < box.getX()))
-			dragFrom = input.getPointerX();
-		if (!input.isPointerDown())
+		var box = panel.box,
+			px = presentation.toUnitsX(input.pointerX),
+			py = presentation.toUnitsY(input.pointerY);
+		if (input.pointerFramePressed && (portrait ? py < box.y : px < box.x))
+			dragFrom = input.pointerX;
+		if (!input.pointerDown)
 			dragFrom = null;
 		if (dragFrom != null) {
-			turn += (input.getPointerX() - dragFrom) * .01;
-			dragFrom = input.getPointerX();
+			turn += (input.pointerX - dragFrom) * .01;
+			dragFrom = input.pointerX;
 		}
-		zoom = Interpolate.clamp(zoom - input.getWheelY() * .001 + (input.getTouchGestureScale(true) - 1) * -.5, .5, 1.6);
+		zoom = Interpolate.clamp(zoom - input.wheelY * .001 + (input.getTouchGestureScale(true) - 1) * -.5, .5, 1.6);
 		if (dragFrom == null)
 			turn += dt * .15;
 		// The camera eases toward the slot's framing.
@@ -478,20 +477,20 @@ class App extends BaseApp {
 		if (animator != null)
 			animator.update(dt);
 		takePictures();
-		var loading = Models.getLoadingCount();
+		var loading = Models.loadingCount;
 		status = character == null ? "Loading her" : loading > 0 ? 'Loading $loading part${loading == 1 ? "" : "s"}' : 'Dressing: $slot';
 		for (s in SLOTS) {
 			var error = outfit.getError(s);
 			if (error != null)
 				status = error;
 		}
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 
 		camera.setViewport(width, height);
 		camera.setPerspective(35, .05, 100);
 		if (portrait) {
 			// Her above the panel, in the framebuffer over it, centered.
-			var top = Std.int(Math.max(1, Math.min(height, (box.getY() - vy) * presentation.getScaleY() + presentation.getAreaY())));
+			var top = Std.int(Math.max(1, Math.min(height, (box.y - vy) * presentation.scaleY + presentation.areaY)));
 			camera.setViewportArea(0, 0, width, top);
 			camera.setView(0, focus + distance * .12, distance, 0, focus, 0);
 		} else {
@@ -504,14 +503,14 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
-		Text2D.draw(batch, status, vx + 24, portrait ? box.getY() - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
+		Text2D.draw(batch, status, vx + 24, portrait ? box.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
 		Text2D.draw(batch, portrait ? "drag: turn   pinch: closer" : "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", vx + 24, vy + 24,
 			16, 0x8a92a8ff);
 		batch.end();
 		hud.setViewport(width, height);
-		hud.pixels(Window.getPixelRatio());
+		hud.pixels(Window.pixelRatio);
 		batch.begin(hud);
-		fps.draw(batch, width / Window.getPixelRatio() - 130, 8);
+		fps.draw(batch, width / Window.pixelRatio - 130, 8);
 		batch.end();
 		Graphics.endFrame();
 	}

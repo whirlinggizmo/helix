@@ -14,10 +14,10 @@ enum StreamOpenResult {
 	audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens. */
 interface IAudio {
 	/** Whether there is an output at all: false natively without an audio device. */
-	public function isAvailable():Bool;
+	var available(get, never):Bool;
 
 	/** Whether voices start now: in a browser, once a key or pointer press has unlocked audio. */
-	public function isRunning():Bool;
+	var running(get, never):Bool;
 
 	/** Copies samples (mono 32-bit float PCM at 44100 Hz, checked) into a new clip and returns its id. Throws when there's no room for a clip. */
 	public function createClip(samples:Bytes):Int;

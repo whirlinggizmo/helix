@@ -20,12 +20,7 @@ typedef Glyph2D = {
 	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning;
 	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which Text2D scales to the size asked for. */
 class Font2D {
-	var texture:Texture2D;
 	var glyphs:Array<Null<Glyph2D>>;
-	var size:Float;
-	var ascent:Float;
-	var descent:Float;
-	var distanceField:Bool;
 	// A TrueType font's own: the file, kept for kerning pairs as they're asked for, and the scale from its units to font pixels.
 	var trueType:Null<TrueType>;
 	var unitScale = 0.;
@@ -41,24 +36,19 @@ class Font2D {
 	}
 
 	/** The texture holding every glyph, with a white texel for untextured shapes. */
-	public function getTexture():Texture2D
-		return texture;
+	public var texture(default, null):Texture2D;
 
 	/** The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this. */
-	public function getSize():Float
-		return size;
+	public var size(default, null):Float;
 
 	/** How far the tallest glyphs reach above the baseline, in font pixels. */
-	public function getAscent():Float
-		return ascent;
+	public var ascent(default, null):Float;
 
 	/** How far glyphs reach below the baseline, in font pixels; 0 or negative. */
-	public function getDescent():Float
-		return descent;
+	public var descent(default, null):Float;
 
 	/** Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage. */
-	public function isDistanceField():Bool
-		return distanceField;
+	public var distanceField(default, null):Bool;
 
 	/** A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size). */
 	public function getGlyph(code:Int):Null<Glyph2D>

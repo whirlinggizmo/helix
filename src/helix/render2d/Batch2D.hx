@@ -13,19 +13,21 @@ import haxe.io.Bytes;
 class Batch2D {
 	var vertices = 0;
 	var draws = 0;
-	var font:Font2D;
 
 	/** Vertices of the frame drawn last. */
-	public function getVertexCount():Int
+	public var vertexCount(get, never):Int;
+
+	function get_vertexCount():Int
 		return vertices;
 
 	/** Draws of the frame drawn last: one per run of a texture. */
-	public function getDrawCallCount():Int
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
 		return draws;
 
 	/** The built-in pixel font, whose texture also has the white texel shapes use. */
-	public function getFont():Font2D
-		return font;
+	public var font(default, null):Font2D;
 
 	var gpu:IGraphics;
 	var capacity:Int;
@@ -34,7 +36,6 @@ class Batch2D {
 	var pipelines:Pipelines;
 	// Block 0 of the sprite program, its clip scale, which the adapter writes.
 	var clip = Bytes.alloc(16);
-	var camera:Camera2D;
 	var texture:Texture2D;
 	var runStart = 0;
 	var runs:Array<Int> = [];
@@ -82,12 +83,12 @@ class Batch2D {
 		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
 		pipelines = Pipelines.of(gpu);
 		font = Font2D.builtIn(gpu);
-		texture = font.getTexture();
+		texture = font.texture;
 	}
 
 	/** Starts collecting a batch seen through camera, with no transform; later calls only fill it until end. */
 	public function begin(camera:Camera2D):Void {
-		this.camera = camera;
+		@:bypassAccessor this.camera = camera;
 		vertices = 0;
 		draws = 0;
 		runStart = 0;
@@ -98,44 +99,56 @@ class Batch2D {
 		runClips = [];
 		clips = [];
 		particleCount = 0;
-		texture = font.getTexture();
-		sampling = texture.getSampling();
+		texture = font.texture;
+		sampling = texture.sampling;
 		resetTransform();
 	}
 
-	/** The camera the batch is seen through. */
-	public function getCamera():Camera2D
-		return camera;
+	/** The camera what follows is seen through, in its viewport: a world and a HUD in one batch. */
+	public var camera(default, set):Camera2D;
 
-	/** What follows is seen through camera, in its viewport: a world and a HUD in one batch. */
-	public function setCamera(value:Camera2D):Void
+	function set_camera(value:Camera2D):Camera2D {
 		if (value != camera) {
 			closeRun();
 			camera = value;
 		}
+		return value;
+	}
 
 	/** The transform's a: x's share of a point's x. */
-	public function getTransformA():Float
+	public var transformA(get, never):Float;
+
+	function get_transformA():Float
 		return ta;
 
 	/** The transform's b: x's share of a point's y. */
-	public function getTransformB():Float
+	public var transformB(get, never):Float;
+
+	function get_transformB():Float
 		return tb;
 
 	/** The transform's c: y's share of a point's x. */
-	public function getTransformC():Float
+	public var transformC(get, never):Float;
+
+	function get_transformC():Float
 		return tc;
 
 	/** The transform's d: y's share of a point's y. */
-	public function getTransformD():Float
+	public var transformD(get, never):Float;
+
+	function get_transformD():Float
 		return td;
 
 	/** The transform's x offset, world units. */
-	public function getTransformX():Float
+	public var transformX(get, never):Float;
+
+	function get_transformX():Float
 		return tx;
 
 	/** The transform's y offset, world units. */
-	public function getTransformY():Float
+	public var transformY(get, never):Float;
+
+	function get_transformY():Float
 		return ty;
 
 	/** Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units. */
@@ -173,8 +186,7 @@ class Batch2D {
 			var run = Std.int(i / 3), c = runCameras[run];
 			if (c != viewport) {
 				viewport = c;
-				gpu.applyViewport(c.getViewportX(), c.getFramebufferHeight() - c.getViewportY() - c.getViewportHeight(), c.getViewportWidth(),
-					c.getViewportHeight());
+				gpu.applyViewport(c.viewportX, c.framebufferHeight - c.viewportY - c.viewportHeight, c.viewportWidth, c.viewportHeight);
 			}
 			// The run's clip, set when it changes (from the top-left here, the bottom-left for the GPU).
 			var at = run * 4, w = runClips[at + 2];
@@ -186,12 +198,12 @@ class Batch2D {
 				cy = runClips[at + 1];
 				cw = w;
 				ch = runClips[at + 3];
-				gpu.applyScissor(cx, c.getFramebufferHeight() - cy - ch, cw, ch);
+				gpu.applyScissor(cx, c.framebufferHeight - cy - ch, cw, ch);
 				clipped = true;
 			}
 			var e = runEmitters[run];
 			if (e != null) {
-				var phase = switch e.emitter.getAlphaMode() {
+				var phase = switch e.emitter.alphaMode {
 					case Blend: 1;
 					case Add: 2;
 					case _: 0;
@@ -255,17 +267,17 @@ class Batch2D {
 			runClips.push(n == 0 ? (k == 2 ? -1 : 0) : clips[n - 4 + k]);
 	}
 
-	/** Later quads sample this texture, as its sampling is now (Texture2D.setSampling). */
+	/** Later quads sample this texture, as its sampling is now (Texture2D.sampling). */
 	public function useTexture(value:Texture2D):Void
-		if (value != texture || value.getSampling() != sampling) {
+		if (value != texture || value.sampling != sampling) {
 			closeRun();
 			texture = value;
-			sampling = value.getSampling();
+			sampling = value.sampling;
 		}
 
 	function closeRun():Void {
 		if (vertices > runStart) {
-			runs.push(texture.getHandle());
+			runs.push(texture.handle);
 			runs.push(runStart);
 			runs.push(vertices - runStart);
 			runCameras.push(camera);
@@ -302,11 +314,11 @@ class Batch2D {
 
 	/** Untextured shapes need a white texel; switch back to the font's texture when the current one has none. */
 	inline function solid():Void
-		if (texture.getWhiteU() < 0)
-			useTexture(font.getTexture());
+		if (texture.whiteU < 0)
+			useTexture(font.texture);
 
 	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is
-		a distance from an outline (Font2D.isDistanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
+		a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
 	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
 		// The 2D shader reads an alpha over 1 as "the texture's alpha is a distance field", tinted by the alpha less 2.
@@ -349,7 +361,7 @@ class Batch2D {
 	public function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
 			sourceHeight = 0.):Void {
 		useTexture(texture);
-		var tw = texture.getWidth(), th = texture.getHeight();
+		var tw = texture.width, th = texture.height;
 		if (!(sourceWidth > 0 && sourceHeight > 0)) {
 			sourceX = sourceY = 0;
 			sourceWidth = tw;
@@ -365,7 +377,7 @@ class Batch2D {
 	public function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float,
 			tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0., sourceHeight = 0.):Void {
 		useTexture(texture);
-		var tw = texture.getWidth(), th = texture.getHeight();
+		var tw = texture.width, th = texture.height;
 		if (!(sourceWidth > 0 && sourceHeight > 0)) {
 			sourceX = sourceY = 0;
 			sourceWidth = tw;
@@ -390,7 +402,7 @@ class Batch2D {
 		are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An
 		emitter with nothing to draw draws nothing. */
 	public function emitter(emitter:helix.particles.Emitter):Void {
-		if (!emitter.isDrawable())
+		if (!emitter.drawable)
 			return;
 		closeRun();
 		if (!particlesReady) {
@@ -406,7 +418,7 @@ class Batch2D {
 				order.setInt32(k * 4, [0, 1, 2, 0, 2, 3][k]);
 			particleIndices = gpu.createStaticBuffer(order, 24, true);
 		}
-		var needed = (particleCount + emitter.getParticleCount()) * Particle3DLayout.instanceStride;
+		var needed = (particleCount + emitter.particleCount) * Particle3DLayout.instanceStride;
 		if (needed > particleRecords.length) {
 			var grown = Bytes.alloc(Std.int(Math.max(needed, particleRecords.length * 2)));
 			grown.blit(0, particleRecords, 0, particleCount * Particle3DLayout.instanceStride);
@@ -417,23 +429,23 @@ class Batch2D {
 		particleCount += count;
 		// The camera's mapping from the world to clip space as a matrix; z at the near plane, so nothing drawn before hides them.
 		var projection = new helix.render3d.Mat4();
-		var sx = camera.getZoom() * 2 / camera.getViewportWidth(),
-			sy = camera.getZoomY() * 2 / camera.getViewportHeight();
+		var sx = camera.zoom * 2 / camera.viewportWidth,
+			sy = camera.zoomY * 2 / camera.viewportHeight;
 		projection.set(0, sx);
 		projection.set(5, -sy);
 		projection.set(10, 0);
-		projection.set(12, -camera.getX() * sx);
-		projection.set(13, camera.getY() * sy);
+		projection.set(12, -camera.x * sx);
+		projection.set(13, camera.y * sy);
 		projection.set(14, -1);
 		var uniforms = Bytes.alloc(Particle3DLayout.vertexUniformBytes);
 		// Across the screen, and up it (y grows down in 2D).
 		emitter.writeUniforms(uniforms, projection, [1, 0, 0], [0, -1, 0]);
-		var texture = emitter.getTexture();
-		runs.push(texture.getHandle());
+		var texture = emitter.texture;
+		runs.push(texture.handle);
 		runs.push(first);
 		runs.push(count);
 		runCameras.push(camera);
-		runSamplings.push(texture.getSampling());
+		runSamplings.push(texture.sampling);
 		pushRunClip();
 		runEmitters.push({
 			emitter: emitter,
@@ -446,14 +458,14 @@ class Batch2D {
 	/** A filled rectangle in world units, top-left at x, y. */
 	public function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
 		solid();
-		var u = texture.getWhiteU(), v = texture.getWhiteV();
+		var u = texture.whiteU, v = texture.whiteV;
 		quad(x, y, w, h, u, v, u, v, tint);
 	}
 
 	/** A filled triangle through three world points. */
 	public function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void {
 		solid();
-		var u = texture.getWhiteU(), v = texture.getWhiteV();
+		var u = texture.whiteU, v = texture.whiteV;
 		color(tint);
 		vertex(x0, y0, u, v);
 		vertex(x1, y1, u, v);
@@ -536,8 +548,7 @@ class Batch2D {
 
 	/** Enough segments for the circle's size on screen: about one per 2.5 pixels of circumference, 12 at least. */
 	function segments(radius:Float):Int
-		return Std.int(Math.max(12,
-			Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * Math.max(camera.getZoom(), camera.getZoomY()) / 2.5)));
+		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * Math.max(camera.zoom, camera.zoomY) / 2.5)));
 
 	/** A filled circle in world units, centered on x, y, with segments for its size on screen. */
 	public function circle(x:Float, y:Float, radius:Float, tint:Int):Void {

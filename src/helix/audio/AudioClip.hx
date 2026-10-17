@@ -2,11 +2,8 @@ package helix.audio;
 
 /** Fully decoded, reusable audio resource. */
 class AudioClip extends AudioResource {
-	var path:Null<String>;
-
 	/** The asset it was loaded from, which a reload replaces in place. */
-	public function getPath():Null<String>
-		return path;
+	public var path(default, null):Null<String>;
 
 	/** Owns backend clip id, loaded from path when given; AudioResources.loadClip creates it. */
 	public function new(id:Int, backend:IAudio, ?path:String) {

@@ -4,27 +4,14 @@ package helix.render2d;
 	Presentation that stretches). Y grows downward. The viewport is the whole
 	framebuffer, or an area of it (setViewportArea). */
 class Camera2D {
-	var x = 0.;
-	var y = 0.;
-	var zoom = 1.;
-	var zoomY = 1.;
-	var framebufferWidth = 1;
-	var framebufferHeight = 1;
-	var viewportX = 0;
-	var viewportY = 0;
-	var viewportWidth = 1;
-	var viewportHeight = 1;
-
 	/** A camera at world 0, 0, zoom 1, on a 1 x 1 viewport. */
 	public function new() {}
 
 	/** The world X at the viewport's center. */
-	public function getX():Float
-		return x;
+	public var x(default, null):Float = 0.;
 
 	/** The world Y at the viewport's center. */
-	public function getY():Float
-		return y;
+	public var y(default, null):Float = 0.;
 
 	/** Puts the world point x, y at the viewport's center. */
 	public function setPosition(x:Float, y:Float):Void {
@@ -32,53 +19,42 @@ class Camera2D {
 		this.y = y;
 	}
 
-	/** Framebuffer pixels per world unit (across, where they differ: getZoomY). */
-	public function getZoom():Float
-		return zoom;
+	/** Framebuffer pixels per world unit across; assigning it sets the zoom down too (zoomY). At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	public var zoom(default, set):Float = 1.;
 
-	/** Sets the framebuffer pixels per world unit, across and down. False for a zoom of 0 or less. */
-	public function setZoom(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_zoom(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		zoom = zoomY = value;
-		return true;
+		return value;
 	}
 
-	/** Framebuffer pixels per world unit down: getZoom's, unless set apart. */
-	public function getZoomY():Float
-		return zoomY;
+	/** Framebuffer pixels per world unit down: zoom's, unless assigned apart after it (a stretched view: Presentation's Stretch). At least
+		1e-6 (0 or less, or NaN, is 1e-6). */
+	public var zoomY(default, set):Float = 1.;
 
-	/** Sets the framebuffer pixels per world unit down alone, after setZoom (a stretched view: Presentation's Stretch). False for a zoom of 0 or less. */
-	public function setZoomY(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_zoomY(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		zoomY = value;
-		return true;
+		return value;
 	}
 
 	/** The framebuffer width in pixels, from setViewport. */
-	public function getFramebufferWidth():Int
-		return framebufferWidth;
+	public var framebufferWidth(default, null):Int = 1;
 
 	/** The framebuffer height in pixels, from setViewport. */
-	public function getFramebufferHeight():Int
-		return framebufferHeight;
+	public var framebufferHeight(default, null):Int = 1;
 
 	/** The viewport's left edge in framebuffer pixels from the framebuffer's left. */
-	public function getViewportX():Int
-		return viewportX;
+	public var viewportX(default, null):Int = 0;
 
 	/** The viewport's top edge in framebuffer pixels from the framebuffer's top. */
-	public function getViewportY():Int
-		return viewportY;
+	public var viewportY(default, null):Int = 0;
 
 	/** The viewport width in framebuffer pixels. */
-	public function getViewportWidth():Int
-		return viewportWidth;
+	public var viewportWidth(default, null):Int = 1;
 
 	/** The viewport height in framebuffer pixels. */
-	public function getViewportHeight():Int
-		return viewportHeight;
+	public var viewportHeight(default, null):Int = 1;
 
 	/** The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. */
 	public function setViewport(width:Int, height:Int):Void {

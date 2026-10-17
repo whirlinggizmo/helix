@@ -68,7 +68,7 @@ class App extends BaseApp {
 	var caught = 0;
 
 	override public function init():Void {
-		Window.setTitle("HeliX motion");
+		Window.title = "HeliX motion";
 		Window.requestSize(1000, 600);
 		batch = new Batch2D(Graphics.instance);
 		// A square a row, each tweened from 0 to 300 across and back by its easing, for ever, a little apart in time.
@@ -95,7 +95,7 @@ class App extends BaseApp {
 		}
 		path = Node2D.polygon(samples);
 		path.setOutline(1);
-		path.setColor(0x3a4150ff);
+		path.color = 0x3a4150ff;
 		stage.add(path);
 		ball = Node2D.circle(12, 0x66bfffff);
 		stage.add(ball);
@@ -118,10 +118,10 @@ class App extends BaseApp {
 
 	// The squares' colors dealt from the seed: the same deal each time.
 	function deal():Void {
-		random.setSeed(7);
+		random.seed = 7;
 		var dealt = random.shuffle(COLORS.copy());
 		for (i in 0...squares.length)
-			squares[i].setColor(dealt[i]);
+			squares[i].color = dealt[i];
 	}
 
 	override public function frame(dt:Float):Void {
@@ -129,31 +129,31 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.Space))
-			if (clock.isPaused())
+			if (clock.paused)
 				clock.resume();
 			else
 				clock.pause();
 		if (input.isFramePressed(Key.Minus))
-			clock.setTimeScale(Math.max(.125, clock.getTimeScale() / 2));
+			clock.timeScale = Math.max(.125, clock.timeScale / 2);
 		if (input.isFramePressed(Key.Equal))
-			clock.setTimeScale(Math.min(4, clock.getTimeScale() * 2));
+			clock.timeScale = Math.min(4, clock.timeScale * 2);
 		if (input.isFramePressed(Key.R))
 			deal();
 		// Everything moves by the clock's delta: paused, it all stops.
-		tweens.update(clock.getDelta());
-		timers.update(clock.getDelta());
-		along += clock.getDelta() * 160;
+		tweens.update(clock.delta);
+		timers.update(clock.delta);
+		along += clock.delta * 160;
 		var t = curve.getParameterAtDistance(along);
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 
 		// Laid out in the design for the window's shape: the squares down the left, the path and the floor on the right (below, upright).
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		var upright = presentation.isPortrait();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		var upright = presentation.portrait;
 		var left = vx + 120, top = vy + 100;
 		for (i in 0...squares.length) {
 			var y = top + i * 40;
@@ -170,21 +170,20 @@ class App extends BaseApp {
 		caught = 0;
 		for (spark in sparks) {
 			spark.node.setPosition(floorX + spark.x, floorY - FLOOR_Y + spark.y);
-			spark.node.setColor(spark.color & 0xffffff00 | Math.round(spark.alpha * 255));
+			spark.node.color = spark.color & 0xffffff00 | Math.round(spark.alpha * 255);
 			// On the floor: a circle against the floor's rectangle.
-			if (Collide2D.rectCircle(floorX, floorY, FLOOR_WIDTH, 6, spark.node.getX(), spark.node.getY(), 5))
+			if (Collide2D.rectCircle(floorX, floorY, FLOOR_WIDTH, 6, spark.node.x, spark.node.y, 5))
 				caught++;
 		}
 
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		Graphics.beginFrame(width, height, 0x0c0e16ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		Text2D.drawWrapped(batch,
-			'Space: ${clock.isPaused() ? "resume" : "pause"}   - =: time x${clock.getTimeScale()}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.getTime() * 10) / 10} s',
+			'Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
 			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
@@ -216,6 +215,6 @@ private class Spark {
 	public function new(node:Node2D, x:Float) {
 		this.node = node;
 		this.x = x;
-		color = node.getColor();
+		color = node.color;
 	}
 }

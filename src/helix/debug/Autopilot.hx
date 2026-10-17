@@ -13,26 +13,22 @@ import helix.input.InputState;
 	  starts; a title screen's motion is dressing, not part of the game. Then a menu, a slow load or a frame's timing can delay a start without
 	  the game differing. */
 class Autopilot {
-	var done = false;
 	var ticks = 0;
-	var seed:Int;
-	var outcomes:Array<Dynamic> = [];
 
 	/** Whether every command has finished. */
-	public function isDone():Bool
-		return done;
+	public var done(default, null):Bool = false;
 
 	/** Ticks the commands have run so far. */
-	public function getTickCount():Int
+	public var tickCount(get, never):Int;
+
+	function get_tickCount():Int
 		return ticks;
 
 	/** The script's seed, 1 to 2147483647, for the app's random numbers. */
-	public function getSeed():Int
-		return seed;
+	public var seed(default, null):Int;
 
 	/** One record a finished command: its index, op, the tick it finished on and the probe's value. */
-	public function getOutcomes():Array<Dynamic>
-		return outcomes;
+	public var outcomes(default, null):Array<Dynamic> = [];
 
 	var commands:Array<Dynamic>;
 	var index = 0;
@@ -228,7 +224,9 @@ class Autopilot {
 	}
 
 	/** Progress as a record: completed, ticks, the current command index and the outcomes. */
-	public function getSnapshot():Dynamic
+	public var snapshot(get, never):Dynamic;
+
+	function get_snapshot():Dynamic
 		return {
 			completed: done,
 			ticks: ticks,

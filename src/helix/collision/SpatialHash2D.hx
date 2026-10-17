@@ -6,12 +6,10 @@ import haxe.ds.ObjectMap;
 	items in the cells it covers (each once), so a game tests a few pairs with Collide2D instead of every pair. Cells are about the size of
 	a common item; a moved item is updated with its new rectangle. */
 class SpatialHash2D<T:{}> {
-	var cellSize:Float;
 	var cells:Map<String, Array<T>> = [];
 	var entries = new ObjectMap<T, Array<String>>();
 	var stamps = new ObjectMap<T, Int>();
 	var stamp = 0;
-	var count = 0;
 
 	/** Cells cellSize across and down. Throws for a size of 0 or less. */
 	public function new(cellSize:Float) {
@@ -21,12 +19,10 @@ class SpatialHash2D<T:{}> {
 	}
 
 	/** Its cell size. */
-	public function getCellSize():Float
-		return cellSize;
+	public var cellSize(default, null):Float;
 
 	/** How many items it holds. */
-	public function getCount():Int
-		return count;
+	public var count(default, null):Int = 0;
 
 	/** Puts item in by its rectangle (an item already in is moved). */
 	public function insert(item:T, x:Float, y:Float, width:Float, height:Float):Void {

@@ -78,49 +78,49 @@ class TweenTests {
 		// A tween's values along the way.
 		var tweens = new Tweens(), seen = [];
 		var t = tweens.to(10, 20, 1, null, v -> seen.push(v));
-		check(t.getValue() == 10 && t.getProgress() == 0 && tweens.getCount() == 1, "A tween starts at from");
+		check(t.value == 10 && t.progress == 0 && tweens.count == 1, "A tween starts at from");
 		tweens.update(.25);
-		check(near(t.getValue(), 12.5) && near(t.getProgress(), .25) && seen.length == 1, "A quarter along, linear");
+		check(near(t.value, 12.5) && near(t.progress, .25) && seen.length == 1, "A quarter along, linear");
 		tweens.update(.5);
-		check(near(t.getValue(), 17.5), "Three quarters");
+		check(near(t.value, 17.5), "Three quarters");
 		var ended = false;
 		t.setComplete(() -> ended = true);
 		tweens.update(.5);
-		check(t.getValue() == 20 && t.isDone() && ended && seen[seen.length - 1] == 20 && tweens.getCount() == 0, "The end is exact, told once, then complete");
+		check(t.value == 20 && t.done && ended && seen[seen.length - 1] == 20 && tweens.count == 0, "The end is exact, told once, then complete");
 		// Eased.
 		var eased = tweens.to(0, 1, 1, Ease.quadIn);
 		tweens.update(.5);
-		check(near(eased.getValue(), .25), "Eased by quadIn");
+		check(near(eased.value, .25), "Eased by quadIn");
 		tweens.clear();
 		// A delay, then repeats with yoyo.
 		var yo = tweens.to(0, 1, 1);
-		check(yo.setDelay(.5) && yo.setRepeat(1, true) && !yo.setDelay(-1) && !yo.setRepeat(-2) && yo.getDelay() == .5 && yo.getRepeat() == 1 && yo.isYoyo(),
+		check(yo.setDelay(.5) && yo.setRepeat(1, true) && !yo.setDelay(-1) && !yo.setRepeat(-2) && yo.delay == .5 && yo.repeat == 1 && yo.yoyo,
 			"A delay and a repeat are set before the start");
 		tweens.update(.25);
-		check(yo.getValue() == 0 && yo.getProgress() == 0, "Waiting through the delay");
+		check(yo.value == 0 && yo.progress == 0, "Waiting through the delay");
 		tweens.update(.75);
-		check(near(yo.getValue(), .5), "The delay's remainder counts toward the first play");
+		check(near(yo.value, .5), "The delay's remainder counts toward the first play");
 		check(!yo.setDelay(1) && !yo.setRepeat(3), "Once started, the delay and repeats are fixed");
 		tweens.update(.5);
-		check(near(yo.getValue(), 1) && !yo.isDone(), "The first play ends at to; a repeat is left");
+		check(near(yo.value, 1) && !yo.done, "The first play ends at to; a repeat is left");
 		tweens.update(.5);
-		check(near(yo.getValue(), .5), "and yoyo goes back");
+		check(near(yo.value, .5), "and yoyo goes back");
 		var yoDone = false;
 		yo.setComplete(() -> yoDone = true);
 		tweens.update(.5);
-		check(near(yo.getValue(), 0) && yo.isDone() && yoDone, "Back at from, done");
+		check(near(yo.value, 0) && yo.done && yoDone, "Back at from, done");
 		// For ever, without yoyo: jumps back to from.
 		var ever = tweens.to(0, 1, 1);
 		ever.setRepeat(-1);
 		tweens.update(1.25);
-		check(near(ever.getValue(), .25) && !ever.isDone(), "A tween for ever starts over");
+		check(near(ever.value, .25) && !ever.done, "A tween for ever starts over");
 		tweens.update(10.5);
-		check(near(ever.getValue(), .75) && !ever.isDone(), "however far time jumps");
+		check(near(ever.value, .75) && !ever.done, "however far time jumps");
 		ever.cancel();
 		var cancelledTold = false;
 		ever.setComplete(() -> cancelledTold = true);
 		tweens.update(1);
-		check(ever.isDone() && !cancelledTold && tweens.getCount() == 0, "Cancelled: no completion, gone from the set");
+		check(ever.done && !cancelledTold && tweens.count == 0, "Cancelled: no completion, gone from the set");
 		// Zero seconds, and one made inside a callback.
 		var zero = tweens.to(3, 4, 0), zeroDone = false;
 		zero.setComplete(() -> zeroDone = true);
@@ -128,10 +128,10 @@ class TweenTests {
 		var first = tweens.to(0, 1, .5);
 		first.setComplete(() -> chained = tweens.to(1, 2, .5));
 		tweens.update(.5);
-		check(zero.getValue() == 4 && zeroDone && first.isDone() && chained != null && chained.getValue() == 1,
+		check(zero.value == 4 && zeroDone && first.done && chained != null && chained.value == 1,
 			"0 seconds ends at once; a chained tween waits for the next update");
 		tweens.update(.25);
-		check(near(chained.getValue(), 1.5), "and moves from then");
+		check(near(chained.value, 1.5), "and moves from then");
 		var threw = false;
 		try
 			tweens.to(0, 1, -1)

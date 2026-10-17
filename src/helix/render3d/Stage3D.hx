@@ -13,7 +13,7 @@ import helix.render2d.Texture2D;
 	them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as
 	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material).
 
-	Shadows: lights that cast them (Light.setShadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of
+	Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of
 	a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the
 	maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels
 	the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its
@@ -21,7 +21,7 @@ import helix.render2d.Texture2D;
 
 	Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and
 	reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes
-	into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites,
+	into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start); its sprites,
 	text and particles are display colors, untouched. */
 class Stage3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
@@ -49,7 +49,6 @@ class Stage3D {
 	static inline var LAYER_FLOATS = 30;
 
 	var gpu:IGraphics;
-	var root = new Node3D();
 	// The tree in drawing order (depth first, the root's children down) and each node's parent's place in it (-1 for the root's children),
 	// remade when the root's count of adds and removes moves; each kind's nodes with their places, in the same order. Every walk then goes
 	// down the order, and each pass reads its kinds' lists.
@@ -68,8 +67,6 @@ class Stage3D {
 	var flatTexts:Array<Null<Text3D>> = [];
 	var emitters:Array<Particles3D> = [];
 	var emitterAt:Array<Int> = [];
-	var ambientColor = 0xffffffff;
-	var ambientIntensity = 0.;
 	var pipelines:helix.graphics.Pipelines;
 	var white:Texture2D;
 	var flat:Texture2D;
@@ -92,7 +89,6 @@ class Stage3D {
 	var forwardZ = -1.;
 	var draws = 0;
 	var sprites:Sprites3D;
-	var time = 0.;
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
 	// Shadows: the walk gathering casters rather than drawing; the casters (every model that casts, in view or not) and those of one layer.
@@ -146,13 +142,6 @@ class Stage3D {
 	var lightPlanes = new Vector<Float>(24);
 	var depthUniforms = Bytes.alloc(Depth3DLayout.vertexUniformBytes);
 	// The environment lighting the models, and the one behind them, with their settings.
-	var environment:Null<Environment>;
-	var environmentIntensity = 1.;
-	var environmentRotation = 0.;
-	var background:Null<Environment>;
-	var backgroundBlur = 0.;
-	var tonemap = Tonemap.Neutral;
-	var exposure = 0.;
 	// A black cube that stands in when there's no environment, and the BRDF table, made with the first environment.
 	var noEnvironment:Int;
 	var brdf:Null<Texture2D>;
@@ -192,24 +181,21 @@ class Stage3D {
 	}
 
 	/** The node everything on the stage hangs from. */
-	public function getRoot():Node3D
-		return root;
+	public var root(default, null):Node3D = new Node3D();
 
 	/** Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself). */
 	public function add(node:Node3D):Bool
-		return root.add(node);
+		return root.addChild(node);
 
 	/** Takes node from the stage's root. False when it isn't one of the root's children. */
 	public function remove(node:Node3D):Bool
-		return root.remove(node);
+		return root.removeChild(node);
 
 	/** The ambient light's color, 0xRRGGBBAA (sRGB). */
-	public function getAmbientColor():Int
-		return ambientColor;
+	public var ambientColor(default, null):Int = 0xffffffff;
 
 	/** The ambient light's intensity. */
-	public function getAmbientIntensity():Float
-		return ambientIntensity;
+	public var ambientIntensity(default, null):Float = 0.;
 
 	/** The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0. */
 	public function setAmbient(color:Int, intensity:Float):Bool {
@@ -221,16 +207,13 @@ class Stage3D {
 	}
 
 	/** The environment lighting the lit models, or null. */
-	public function getEnvironment():Null<Environment>
-		return environment;
+	public var environment(default, null):Null<Environment>;
 
 	/** How strongly the environment lights them, and the background shows: 1 as its file has it. */
-	public function getEnvironmentIntensity():Float
-		return environmentIntensity;
+	public var environmentIntensity(default, null):Float = 1.;
 
 	/** How far the environment, and the background, turn about +y, in radians. */
-	public function getEnvironmentRotation():Float
-		return environmentRotation;
+	public var environmentRotation(default, null):Float = 0.;
 
 	/** Lights the lit models with environment (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it)
 		and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0. */
@@ -244,12 +227,10 @@ class Stage3D {
 	}
 
 	/** The environment drawn behind everything, or null. */
-	public function getBackground():Null<Environment>
-		return background;
+	public var background(default, null):Null<Environment>;
 
 	/** How blurred the background is: 0 sharp to 1 its blurriest. */
-	public function getBackgroundBlur():Float
-		return backgroundBlur;
+	public var backgroundBlur(default, null):Float = 0.;
 
 	/** Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a
 		few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside
@@ -263,42 +244,23 @@ class Stage3D {
 	}
 
 	/** How lit color comes into the screen's 0..1 after the exposure. */
-	public function getTonemap():Tonemap
-		return tonemap;
+	public var tonemap:Tonemap = Tonemap.Neutral;
 
-	/** Sets how lit color comes into the screen's 0..1 after the exposure. */
-	public function setTonemap(value:Tonemap):Void
-		tonemap = value;
+	/** The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is taken as 0. */
+	public var exposure(default, set):Float = 0.;
 
-	/** The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. */
-	public function getExposure():Float
-		return exposure;
-
-	/** Sets the exposure in stops. False for one that isn't finite. */
-	public function setExposure(value:Float):Bool {
-		if (!Math.isFinite(value))
-			return false;
+	function set_exposure(value:Float):Float {
+		value = Math.isFinite(value) ? value : 0;
 		exposure = value;
-		return true;
+		return value;
 	}
 
 	/** The seconds surface shaders see (helix_time): what the app last set. */
-	public function getTime():Float
-		return time;
+	public var time:Float = 0.;
 
-	/** Sets the seconds surface shaders see, for whatever moves with time in them; emitters advance by how far it moved since the last draw. */
-	public function setTime(seconds:Float):Void
-		time = seconds;
-
-	/** Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. */
-	public function isCulling():Bool
-		return culling;
-
-	/** Culls, or draws everything (to measure what culling saves). */
-	public function setCulling(value:Bool):Void
-		culling = value;
-
-	var culling = true;
+	/** Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. Culls, or
+		draws everything (to measure what culling saves). */
+	public var culling:Bool = true;
 
 	// m's view's planes into out; with culling off, planes everything is inside.
 	function viewPlanes(m:Mat4, out:Vector<Float>):Void {
@@ -313,19 +275,27 @@ class Stage3D {
 	}
 
 	/** Models' parts and sprites drawn by the last draw (in view). */
-	public function getDrawnNodeCount():Int
-		return count + sprites.getDrawnSpriteCount();
+	public var drawnNodeCount(get, never):Int;
+
+	function get_drawnNodeCount():Int
+		return count + sprites.drawnSpriteCount;
 
 	/** Draws of the last draw: one a run of alike models' parts, or of sprites of one texture. */
-	public function getDrawCallCount():Int
-		return draws + sprites.getDrawCallCount();
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
+		return draws + sprites.drawCallCount;
 
 	/** Draws into shadow maps by the last drawShadows: one a run of casting parts alike in mesh, in each light's layer. */
-	public function getShadowDrawCallCount():Int
+	public var shadowDrawCallCount(get, never):Int;
+
+	function get_shadowDrawCallCount():Int
 		return shadowDraws;
 
 	/** Casting parts drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
-	public function getShadowCasterCount():Int
+	public var shadowCasterCount(get, never):Int;
+
+	function get_shadowCasterCount():Int
 		return shadowCasters;
 
 	static inline function linear(channel:Int):Float {
@@ -333,17 +303,17 @@ class Stage3D {
 		return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
 	}
 
-	/** Draws the shadows of its casting lights (Light.setShadowCasting; the first four lights found) for what camera sees: each light's casters
+	/** Draws the shadows of its casting lights (Light.shadowCasting; the first four lights found) for what camera sees: each light's casters
 		into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move;
 		draws after use them. With no casting light or no caster, there are no shadows. */
 	public function drawShadows(camera:Camera3D):Void {
 		shadowDraws = 0;
 		shadowCasters = 0;
 		shadowLights.resize(0);
-		var viewProjection = camera.getViewProjection();
-		eyeX = camera.getEyeX();
-		eyeY = camera.getEyeY();
-		eyeZ = camera.getEyeZ();
+		var viewProjection = camera.viewProjection;
+		eyeX = camera.eyeX;
+		eyeY = camera.eyeY;
+		eyeZ = camera.eyeZ;
 		lights.resize(0);
 		casterCount = 0;
 		gathering = true;
@@ -356,9 +326,9 @@ class Stage3D {
 		palette.upload();
 		var size = 0;
 		for (light in lights)
-			if (light.isShadowCasting() && shadowLights.length < SHADOW_LIGHTS) {
+			if (light.shadowCasting && shadowLights.length < SHADOW_LIGHTS) {
 				shadowLights.push(light);
-				size = Std.int(Math.max(size, light.getShadowMapSize()));
+				size = Std.int(Math.max(size, light.shadowMapSize));
 			}
 		if (shadowLights.length == 0 || casterCount == 0) {
 			shadowLights.resize(0);
@@ -380,13 +350,13 @@ class Stage3D {
 				shadowLayers[at + i] = lightViewProjection.get(i);
 			shadowLayers[at + 16] = 1 / size;
 			shadowLayers[at + 17] = fit.texelWorld;
-			shadowLayers[at + 18] = light.getShadowBiasConstant();
-			shadowLayers[at + 19] = light.getShadowBiasSlope();
-			shadowLayers[at + 20] = light.getShadowStrength();
+			shadowLayers[at + 18] = light.shadowBiasConstant;
+			shadowLayers[at + 19] = light.shadowBiasSlope;
+			shadowLayers[at + 20] = light.shadowStrength;
 			shadowLayers[at + 21] = fit.near;
 			shadowLayers[at + 22] = fit.far;
 			shadowLayers[at + 23] = fit.perspective ? 1 : 0;
-			var tint = light.getShadowColor();
+			var tint = light.shadowColor;
 			shadowLayers[at + 24] = linear(tint >>> 24);
 			shadowLayers[at + 25] = linear((tint >>> 16) & 255);
 			shadowLayers[at + 26] = linear((tint >>> 8) & 255);
@@ -405,7 +375,7 @@ class Stage3D {
 		far:Float,
 		perspective:Bool
 	} {
-		var w = node.getWorldMatrix(), distance = node.getShadowDistance();
+		var w = node.worldMatrix, distance = node.shadowDistance;
 		var dx = -w.get(8),
 			dy = -w.get(9),
 			dz = -w.get(10),
@@ -419,10 +389,8 @@ class Stage3D {
 			dy = -1;
 		}
 		// The camera's frame: forward, right and up.
-		var fx = camera.getForwardX(),
-			fy = camera.getForwardY(),
-			fz = camera.getForwardZ();
-		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
+		var fx = camera.forwardX, fy = camera.forwardY, fz = camera.forwardZ;
+		var ux = camera.upX, uy = camera.upY, uz = camera.upZ;
 		var rx = fy * uz - fz * uy,
 			ry = fz * ux - fx * uz,
 			rz = fx * uy - fy * ux;
@@ -433,12 +401,12 @@ class Stage3D {
 		ux = ry * fz - rz * fy;
 		uy = rz * fx - rx * fz;
 		uz = rx * fy - ry * fx;
-		var aspect = camera.getViewportWidth() / camera.getViewportHeight(),
-			orthographic = camera.isOrthographic();
+		var aspect = camera.viewportWidth / camera.viewportHeight,
+			orthographic = camera.orthographic;
 		var corners = new Vector<Float>(24), cx = 0., cy = 0., cz = 0.;
 		for (p in 0...2) {
-			var z = p == 0 ? (orthographic ? 0 : camera.getNear()) : distance;
-			var halfHeight = orthographic ? camera.getDrawnHeight() / 2 : Math.tan(camera.getDrawnFovY() / 2) * z,
+			var z = p == 0 ? (orthographic ? 0 : camera.near) : distance;
+			var halfHeight = orthographic ? camera.drawnHeight / 2 : Math.tan(camera.drawnFovY / 2) * z,
 				halfWidth = halfHeight * aspect;
 			for (c in 0...4) {
 				var x = c & 1 != 0 ? halfWidth : -halfWidth,
@@ -490,7 +458,7 @@ class Stage3D {
 		far:Float,
 		perspective:Bool
 	} {
-		var w = light.getWorldMatrix();
+		var w = light.worldMatrix;
 		var dx = -w.get(8),
 			dy = -w.get(9),
 			dz = -w.get(10),
@@ -503,8 +471,8 @@ class Stage3D {
 			dx = dz = 0;
 			dy = -1;
 		}
-		var reach = light.getRange() > 0 ? Math.min(light.getRange(), light.getShadowDistance()) : light.getShadowDistance();
-		var cosOuter = Math.cos(light.getOuterCone());
+		var reach = light.range > 0 ? Math.min(light.range, light.shadowDistance) : light.shadowDistance;
+		var cosOuter = Math.cos(light.outerCone);
 		var fovY = 2 * Math.acos(cosOuter < -.99 ? -.99 : cosOuter > 1 ? 1 : cosOuter) * 1.1;
 		fovY = fovY > 2.8 ? 2.8 : fovY < .02 ? .02 : fovY;
 		var px = w.get(12),
@@ -550,7 +518,7 @@ class Stage3D {
 				casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
 			}
 			for (i in 0...n) {
-				var w = layerCasters[i].node.getWorldMatrix(),
+				var w = layerCasters[i].node.worldMatrix,
 					at = i * Depth3DLayout.instanceStride;
 				for (row in 0...3)
 					for (col in 0...4)
@@ -563,8 +531,8 @@ class Stage3D {
 				var last = i, mesh = layerCasters[i].mesh;
 				while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
 					last++;
-				gpu.draw(pipelines.depth3D(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.getIndexCount(), i, last - i + 1,
-					[], [], uniforms);
+				gpu.draw(pipelines.depth3D(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.indexCount, i, last - i + 1, [],
+					[], uniforms);
 				shadowDraws++;
 				i = last + 1;
 			}
@@ -587,7 +555,7 @@ class Stage3D {
 		}
 		for (i in 0...n) {
 			var c = layerCasters[first + i],
-				w = c.node.getWorldMatrix(),
+				w = c.node.worldMatrix,
 				at = i * Skinneddepth3DLayout.instanceStride;
 			for (row in 0...3)
 				for (col in 0...4)
@@ -602,7 +570,7 @@ class Stage3D {
 			while (last + 1 < n && layerCasters[first + last + 1].mesh == mesh)
 				last++;
 			gpu.draw(pipelines.skinnedDepth3D(), [mesh.getVertexBuffer(gpu), skinnedCasterBuffer, mesh.getSkinBuffer(gpu)], mesh.getIndexBuffer(gpu), 0,
-				mesh.getIndexCount(), i, last - i + 1, [palette.getTexture()], [Sampling.NEAREST], uniforms);
+				mesh.indexCount, i, last - i + 1, [palette.texture], [Sampling.NEAREST], uniforms);
 			shadowDraws++;
 			i = last + 1;
 		}
@@ -626,21 +594,21 @@ class Stage3D {
 		var result = hit != null ? hit : new PickHit();
 		result.clear();
 		if (ray != pickRay)
-			pickRay.set(ray.getOriginX(), ray.getOriginY(), ray.getOriginZ(), ray.getDirectionX(), ray.getDirectionY(), ray.getDirectionZ());
+			pickRay.set(ray.originX, ray.originY, ray.originZ, ray.directionX, ray.directionY, ray.directionZ);
 		pickHit = result;
 		pickBest = Math.POSITIVE_INFINITY;
 		picking = true;
 		walk();
 		picking = false;
-		return result.getNode() == null ? null : result;
+		return result.node == null ? null : result;
 	}
 
 	// Where the ray enters the box boxX..boxRZ (0 when it starts inside), or infinity when it misses.
 	function rayBox():Float {
 		var lo = 0., hi = Math.POSITIVE_INFINITY;
 		for (axis in 0...3) {
-			var o = axis == 0 ? pickRay.getOriginX() : axis == 1 ? pickRay.getOriginY() : pickRay.getOriginZ(),
-				d = axis == 0 ? pickRay.getDirectionX() : axis == 1 ? pickRay.getDirectionY() : pickRay.getDirectionZ(),
+			var o = axis == 0 ? pickRay.originX : axis == 1 ? pickRay.originY : pickRay.originZ,
+				d = axis == 0 ? pickRay.directionX : axis == 1 ? pickRay.directionY : pickRay.directionZ,
 				c = axis == 0 ? boxX : axis == 1 ? boxY : boxZ,
 				reach = axis == 0 ? boxRX : axis == 1 ? boxRY : boxRZ;
 			if (Math.abs(d) < 1e-12) {
@@ -664,29 +632,27 @@ class Stage3D {
 
 	// Tests a model's parts' triangles against the ray, each in the model's own space, keeping the nearest hit.
 	function pickModel(node:Model):Void
-		for (i in 0...node.getPartCount()) {
+		for (i in 0...node.partCount) {
 			var part = node.getPart(i);
-			if (part.getMesh() != null)
-				pickPart(node, part.getMesh(), part.getMaterial());
+			if (part.mesh != null)
+				pickPart(node, part.mesh, part.material);
 		}
 
 	// Tests one part's triangles against the ray, after its box, which must be nearer than the best.
 	function pickPart(node:Model, mesh:Mesh, material:Material):Void {
-		var alpha = (node.getTint() & 255) / 255;
-		if ((material.isBlended() || alpha < 1) && alpha * (material.getBaseColor() & 255) / 255 < .5)
+		var alpha = (node.tint & 255) / 255;
+		if ((material.blended || alpha < 1) && alpha * (material.baseColor & 255) / 255 < .5)
 			return;
 		placeBox(node, mesh);
 		if (rayBox() >= pickBest)
 			return;
-		var w = node.getWorldMatrix(), inv = pickInverse;
+		var w = node.worldMatrix, inv = pickInverse;
 		if (!inv.makeInverse(w))
 			return;
-		var ox = pickRay.getOriginX(),
-			oy = pickRay.getOriginY(),
-			oz = pickRay.getOriginZ();
-		var dx = pickRay.getDirectionX(),
-			dy = pickRay.getDirectionY(),
-			dz = pickRay.getDirectionZ();
+		var ox = pickRay.originX, oy = pickRay.originY, oz = pickRay.originZ;
+		var dx = pickRay.directionX,
+			dy = pickRay.directionY,
+			dz = pickRay.directionZ;
 		// The ray in the model's space: the same t reaches the same point, so distances stay the world's.
 		var lox = inv.get(0) * ox + inv.get(4) * oy + inv.get(8) * oz + inv.get(12),
 			loy = inv.get(1) * ox + inv.get(5) * oy + inv.get(9) * oz + inv.get(13),
@@ -694,9 +660,9 @@ class Stage3D {
 		var ldx = inv.get(0) * dx + inv.get(4) * dy + inv.get(8) * dz,
 			ldy = inv.get(1) * dx + inv.get(5) * dy + inv.get(9) * dz,
 			ldz = inv.get(2) * dx + inv.get(6) * dy + inv.get(10) * dz;
-		var count = mesh.getVertexCount(),
-			vertices = mesh.getVertices(),
-			indices = mesh.getIndices();
+		var count = mesh.vertexCount,
+			vertices = mesh.vertices,
+			indices = mesh.indices;
 		var positions = posedVertices;
 		if (positions.length < count * 3)
 			positions = posedVertices = new Vector<Float>(count * 3);
@@ -707,7 +673,7 @@ class Stage3D {
 				for (c in 0...3)
 					positions[i * 3 + c] = vertices.getFloat(i * Lit3DLayout.stride + Lit3DLayout.positionOffset + c * 4);
 		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0.;
-		var i = 0, n = mesh.getIndexCount();
+		var i = 0, n = mesh.indexCount;
 		while (i < n) {
 			var a = indices.getInt32(i * 4) * 3,
 				b = indices.getInt32(i * 4 + 4) * 3,
@@ -772,9 +738,9 @@ class Stage3D {
 	function pose(node:Model, mesh:Mesh, out:Vector<Float>):Void {
 		pickPalette.clear();
 		var base = pickPalette.add(node),
-			vertices = mesh.getVertices(),
-			skin = mesh.getSkinData();
-		for (i in 0...mesh.getVertexCount()) {
+			vertices = mesh.vertices,
+			skin = mesh.skinData;
+		for (i in 0...mesh.vertexCount) {
 			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset,
 				s = i * Skinned3DLayout.skinStride;
 			var x = vertices.getFloat(at),
@@ -801,14 +767,14 @@ class Stage3D {
 
 	/** Draws the stage in the open frame, through camera, in its viewport. */
 	public function draw(camera:Camera3D):Void {
-		var viewProjection = camera.getViewProjection();
+		var viewProjection = camera.viewProjection;
 		viewPlanes(viewProjection, planes);
-		eyeX = camera.getEyeX();
-		eyeY = camera.getEyeY();
-		eyeZ = camera.getEyeZ();
-		forwardX = camera.getForwardX();
-		forwardY = camera.getForwardY();
-		forwardZ = camera.getForwardZ();
+		eyeX = camera.eyeX;
+		eyeY = camera.eyeY;
+		eyeZ = camera.eyeZ;
+		forwardX = camera.forwardX;
+		forwardY = camera.forwardY;
+		forwardZ = camera.forwardZ;
 		count = 0;
 		draws = 0;
 		lights.resize(0);
@@ -835,8 +801,7 @@ class Stage3D {
 		for (i in 0...count)
 			writeRecord(i, drawn[i]);
 		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
-		gpu.applyViewport(camera.getViewportX(), camera.getFramebufferHeight() - camera.getViewportY() - camera.getViewportHeight(),
-			camera.getViewportWidth(), camera.getViewportHeight());
+		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		viewProjection.writeTo(vertexUniforms);
 		writeScene();
 		if (background != null)
@@ -871,12 +836,12 @@ class Stage3D {
 		for (i in 0...16)
 			u.setFloat(i * 4, inverse.get(i));
 		u.setFloat(64, environmentIntensity);
-		u.setFloat(68, backgroundBlur * (background.getBackgroundMipCount() - 1));
+		u.setFloat(68, backgroundBlur * (background.backgroundMipCount - 1));
 		u.setFloat(72, Math.cos(environmentRotation));
 		u.setFloat(76, Math.sin(environmentRotation));
 		u.setFloat(80, tonemap);
 		u.setFloat(84, Math.pow(2, exposure));
-		gpu.draw(pipelines.background3D(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
+		gpu.draw(pipelines.background3D(), [], 0, 0, 3, 0, 1, [background.backgroundTexture], [Sampling.LINEAR], backgroundUniforms);
 	}
 
 	// The tree in drawing order and each kind's lists, again: after an add or a remove anywhere under the root.
@@ -893,7 +858,7 @@ class Stage3D {
 		flatTexts.resize(0);
 		emitters.resize(0);
 		emitterAt.resize(0);
-		for (i in 0...root.getChildCount())
+		for (i in 0...root.childCount)
 			list(root.getChild(i), -1);
 		builtStructure = root.structure;
 	}
@@ -919,7 +884,7 @@ class Stage3D {
 			emitters.push(cast node);
 			emitterAt.push(at);
 		}
-		for (i in 0...node.getChildCount())
+		for (i in 0...node.childCount)
 			list(node.getChild(i), at);
 	}
 
@@ -936,18 +901,18 @@ class Stage3D {
 		var rootChanged = root.update(null, false);
 		for (i in 0...n) {
 			var node = order[i], p = parentOf[i];
-			if (!(p < 0 || reached[p]) || !node.isEnabled()) {
+			if (!(p < 0 || reached[p]) || !node.enabled) {
 				reached[i] = false;
 				continue;
 			}
 			reached[i] = true;
-			moved[i] = node.update(p < 0 ? root.getWorldMatrix() : order[p].getWorldMatrix(), p < 0 ? rootChanged : moved[p]);
+			moved[i] = node.update(p < 0 ? root.worldMatrix : order[p].worldMatrix, p < 0 ? rootChanged : moved[p]);
 		}
 		if (picking) {
 			for (k in 0...models.length) {
 				var model = models[k];
-				if (reached[modelAt[k]] && model.isPickable()) {
-					if (model.getJointCount() > 0)
+				if (reached[modelAt[k]] && model.pickable) {
+					if (model.jointCount > 0)
 						skinned.push(model);
 					else
 						pickModel(model);
@@ -955,26 +920,26 @@ class Stage3D {
 			}
 			if (pickCamera != null)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && flats[k].isPickable())
+					if (reached[flatAt[k]] && flats[k].pickable)
 						pickBest = flatSprites[k] != null ? sprites.pickSprite(flatSprites[k], pickRay, pickBest,
 							pickHit) : sprites.pickText(flatTexts[k], pickRay, pickBest, pickHit);
 		} else {
 			if (!gathering)
 				for (k in 0...emitters.length)
 					if (reached[emitterAt[k]]) {
-						if (emitters[k].isVisible())
+						if (emitters[k].visible)
 							sprites.visitEmitter(emitters[k], eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 						else
 							sprites.advanceEmitter(emitters[k]);
 					}
 			for (k in 0...treeLights.length)
-				if (reached[treeLightAt[k]] && treeLights[k].isVisible() && lights.length < GATHERED_LIGHTS)
+				if (reached[treeLightAt[k]] && treeLights[k].visible && lights.length < GATHERED_LIGHTS)
 					lights.push(treeLights[k]);
 			for (k in 0...models.length) {
 				var model = models[k];
-				if (!reached[modelAt[k]] || !model.isVisible())
+				if (!reached[modelAt[k]] || !model.visible)
 					continue;
-				if (model.getJointCount() > 0)
+				if (model.jointCount > 0)
 					skinned.push(model);
 				else if (gathering)
 					gatherCaster(model);
@@ -983,7 +948,7 @@ class Stage3D {
 			}
 			if (!gathering)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && flats[k].isVisible()) {
+					if (reached[flatAt[k]] && flats[k].visible) {
 						if (flatSprites[k] != null)
 							sprites.visit(flatSprites[k], planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 						else
@@ -1003,7 +968,7 @@ class Stage3D {
 
 	// A part whose mesh follows the joints its model is bound to (a skinned mesh not bound draws as bound, still).
 	static inline function isSkinned(node:Model, mesh:Mesh):Bool
-		return node.getJointCount() > 0 && mesh.isSkinned();
+		return node.jointCount > 0 && mesh.skinned;
 
 	// The six planes of m's view (Gribb and Hartmann), each ax + by + cz + d >= 0 inside, into out.
 	static function planesOf(m:Mat4, out:Vector<Float>):Void
@@ -1048,13 +1013,13 @@ class Stage3D {
 			boxRZ = posed[5];
 			return;
 		}
-		var w = node.getWorldMatrix();
-		var hx = (mesh.getMaxX() - mesh.getMinX()) / 2,
-			hy = (mesh.getMaxY() - mesh.getMinY()) / 2,
-			hz = (mesh.getMaxZ() - mesh.getMinZ()) / 2;
-		var mx = (mesh.getMaxX() + mesh.getMinX()) / 2,
-			my = (mesh.getMaxY() + mesh.getMinY()) / 2,
-			mz = (mesh.getMaxZ() + mesh.getMinZ()) / 2;
+		var w = node.worldMatrix;
+		var hx = (mesh.maxX - mesh.minX) / 2,
+			hy = (mesh.maxY - mesh.minY) / 2,
+			hz = (mesh.maxZ - mesh.minZ) / 2;
+		var mx = (mesh.maxX + mesh.minX) / 2,
+			my = (mesh.maxY + mesh.minY) / 2,
+			mz = (mesh.maxZ + mesh.minZ) / 2;
 		boxX = w.get(0) * mx + w.get(4) * my + w.get(8) * mz + w.get(12);
 		boxY = w.get(1) * mx + w.get(5) * my + w.get(9) * mz + w.get(13);
 		boxZ = w.get(2) * mx + w.get(6) * my + w.get(10) * mz + w.get(14);
@@ -1065,11 +1030,11 @@ class Stage3D {
 
 	// A model's parts that cast, in view or not (see-through ones don't).
 	function gatherCaster(node:Model):Void {
-		if (!node.isShadowCasting() || node.getTint() & 255 < 255)
+		if (!node.shadowCasting || node.tint & 255 < 255)
 			return;
-		for (i in 0...node.getPartCount()) {
-			var part = node.getPart(i), mesh = part.getMesh();
-			if (mesh != null && !part.getMaterial().isBlended())
+		for (i in 0...node.partCount) {
+			var part = node.getPart(i), mesh = part.mesh;
+			if (mesh != null && !part.material.blended)
 				gatherPart(node, mesh);
 		}
 	}
@@ -1092,14 +1057,14 @@ class Stage3D {
 
 	// A model's parts in view, each an item.
 	function visitModel(node:Model):Void
-		for (i in 0...node.getPartCount()) {
+		for (i in 0...node.partCount) {
 			var part = node.getPart(i);
-			if (part.getMesh() != null)
-				visitPart(node, part.getMesh(), part.getMaterial());
+			if (part.mesh != null)
+				visitPart(node, part.mesh, part.material);
 		}
 
 	function visitPart(node:Model, mesh:Mesh, material:Material):Void {
-		var w = node.getWorldMatrix();
+		var w = node.worldMatrix;
 		placeBox(node, mesh);
 		var cx = boxX, cy = boxY, cz = boxZ;
 		if (!inside(planes, cx, cy, cz, boxRX, boxRY, boxRZ))
@@ -1111,7 +1076,7 @@ class Stage3D {
 		item.mesh = mesh;
 		item.material = material;
 		item.skinned = isSkinned(node, mesh);
-		item.blended = item.material.isBlended() || node.getTint() & 255 < 255;
+		item.blended = item.material.blended || node.tint & 255 < 255;
 		// A placement that mirrors (its matrix's determinant below 0) turns the triangles' winding over.
 		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
 			+ w.get(8) * (w.get(1) * w.get(6) - w.get(5) * w.get(2)) < 0;
@@ -1148,7 +1113,7 @@ class Stage3D {
 	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the first's w the tangents' handedness, the
 	// second's whether shadows fall on it), the tint (linear).
 	function writeRecord(index:Int, item:Item):Void {
-		var w = item.node.getWorldMatrix(), r = inverse, at = index * Lit3DLayout.instanceStride;
+		var w = item.node.worldMatrix, r = inverse, at = index * Lit3DLayout.instanceStride;
 		inverse.makeInverse(w);
 		for (row in 0...3)
 			for (col in 0...4)
@@ -1160,10 +1125,10 @@ class Stage3D {
 			for (col in 0...4)
 				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
 					col < 3 ? r.get(row * 4 +
-						col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (item.node.isShadowReceiving() ? 1 : 0) : item.skinned ? item.jointBase : 0);
+						col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (item.node.shadowReceiving ? 1 : 0) : item.skinned ? item.jointBase : 0);
 		for (k in 0...MODEL_LIGHTS)
 			records.setFloat(at + (k < 4 ? Lit3DLayout.lights0Offset + k * 4 : Lit3DLayout.lights1Offset + (k - 4) * 4), item.lights[k]);
-		var tint = item.node.getTint();
+		var tint = item.node.tint;
 		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
 		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
 		records.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
@@ -1238,14 +1203,14 @@ class Stage3D {
 		if (lightData.length < n * 10)
 			lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
 		for (l in 0...n) {
-			var light = lights[l], color = light.getColor(), w = light.getWorldMatrix(), at = l * 10;
+			var light = lights[l], color = light.color, w = light.worldMatrix, at = l * 10;
 			var point = Std.downcast(light, PointLight),
 				spot = Std.downcast(light, SpotLight);
-			lightData[at] = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.getIntensity();
+			lightData[at] = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.intensity;
 			lightData[at + 1] = w.get(12);
 			lightData[at + 2] = w.get(13);
 			lightData[at + 3] = w.get(14);
-			lightData[at + 4] = point != null ? point.getRange() : spot != null ? spot.getRange() : 0;
+			lightData[at + 4] = point != null ? point.range : spot != null ? spot.range : 0;
 			lightData[at + 5] = spot != null ? 2 : point != null ? 1 : 0;
 			var dx = -w.get(8),
 				dy = -w.get(9),
@@ -1255,8 +1220,8 @@ class Stage3D {
 			lightData[at + 7] = dl > 0 ? dy / dl : -1;
 			lightData[at + 8] = dl > 0 ? dz / dl : 0;
 			lightData[at + 9] = 0;
-			cones[l * 2] = Math.cos(spot != null ? spot.getInnerCone() : 0);
-			cones[l * 2 + 1] = Math.cos(spot != null ? spot.getOuterCone() : 0);
+			cones[l * 2] = Math.cos(spot != null ? spot.innerCone : 0);
+			cones[l * 2 + 1] = Math.cos(spot != null ? spot.outerCone : 0);
 		}
 	}
 
@@ -1330,7 +1295,7 @@ class Stage3D {
 				continue;
 			}
 			var light = table[i],
-				w = light.getWorldMatrix(),
+				w = light.worldMatrix,
 				point = Std.downcast(light, PointLight),
 				spot = Std.downcast(light, SpotLight);
 			var dx = -w.get(8),
@@ -1340,17 +1305,17 @@ class Stage3D {
 			u.setFloat(position, w.get(12));
 			u.setFloat(position + 4, w.get(13));
 			u.setFloat(position + 8, w.get(14));
-			u.setFloat(position + 12, point != null ? point.getRange() : spot != null ? spot.getRange() : 0);
+			u.setFloat(position + 12, point != null ? point.range : spot != null ? spot.range : 0);
 			u.setFloat(direction, dl > 0 ? dx / dl : 0);
 			u.setFloat(direction + 4, dl > 0 ? dy / dl : -1);
 			u.setFloat(direction + 8, dl > 0 ? dz / dl : 0);
 			u.setFloat(direction + 12, spot != null ? 2 : point != null ? 1 : 0);
-			u.setFloat(cone, Math.cos(spot != null ? spot.getInnerCone() : 0));
-			u.setFloat(cone + 4, Math.cos(spot != null ? spot.getOuterCone() : 0));
+			u.setFloat(cone, Math.cos(spot != null ? spot.innerCone : 0));
+			u.setFloat(cone + 4, Math.cos(spot != null ? spot.outerCone : 0));
 			// Its shadow slot: its layer of the map the last drawShadows made, or -1.
 			u.setFloat(cone + 8, shadowLights.indexOf(light));
 			u.setFloat(cone + 12, 0);
-			var color = light.getColor(), intensity = light.getIntensity();
+			var color = light.color, intensity = light.intensity;
 			u.setFloat(radiance, linear(color >>> 24) * intensity);
 			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);
 			u.setFloat(radiance + 8, linear((color >>> 8) & 255) * intensity);
@@ -1376,51 +1341,51 @@ class Stage3D {
 		u.setFloat(ENVIRONMENT + 4, EnvironmentBake.MIP_COUNT - 1);
 		u.setFloat(ENVIRONMENT + 8, Math.cos(environmentRotation));
 		u.setFloat(ENVIRONMENT + 12, Math.sin(environmentRotation));
-		var irradiance = environment != null ? environment.getIrradiance() : null;
+		var irradiance = environment != null ? environment.irradiance : null;
 		for (k in 0...9)
 			for (c in 0...4)
 				u.setFloat(IRRADIANCE + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
 		if (environment != null && brdf == null)
-			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.getBrdfTable(), true);
+			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.brdfTable, true);
 	}
 
 	// A run of alike models: the material's uniforms, then one instanced draw.
 	function drawRun(first:Int, runCount:Int):Void {
 		var item = drawn[first],
 			material = item.material,
-			color = material.getBaseColor(),
+			color = material.baseColor,
 			u = fragmentUniforms;
 		u.setFloat(32, linear(color >>> 24));
 		u.setFloat(36, linear((color >>> 16) & 255));
 		u.setFloat(40, linear((color >>> 8) & 255));
 		u.setFloat(44, (color & 255) / 255);
-		u.setFloat(48, material.getMetallic());
-		u.setFloat(52, material.getRoughness());
-		u.setFloat(56, material.isLit() ? 1 : 0);
+		u.setFloat(48, material.metallic);
+		u.setFloat(52, material.roughness);
+		u.setFloat(56, material.lit ? 1 : 0);
 		u.setFloat(60, 0);
-		var emissive = material.getEmissive(),
-			strength = material.getEmissiveStrength(),
-			normal = material.getNormalTexture();
+		var emissive = material.emissive,
+			strength = material.emissiveStrength,
+			normal = material.normalTexture;
 		u.setFloat(64, linear(emissive >>> 24) * strength);
 		u.setFloat(68, linear((emissive >>> 16) & 255) * strength);
 		u.setFloat(72, linear((emissive >>> 8) & 255) * strength);
-		u.setFloat(76, normal == null ? 0 : material.getNormalScale());
-		var base = material.getTexture();
+		u.setFloat(76, normal == null ? 0 : material.normalScale);
+		var base = material.texture;
 		if (base == null)
 			base = white;
 		if (normal == null)
 			normal = flat;
-		var shader = material.getShader(),
+		var shader = material.shader,
 			shadows = shadowLights.length > 0 ? shadowMap : noShadows,
-			cube = environment != null ? environment.getLightingTexture() : noEnvironment,
-			table = brdf != null ? brdf.getHandle() : white.getHandle();
+			cube = environment != null ? environment.lightingTexture : noEnvironment,
+			table = brdf != null ? brdf.handle : white.handle;
 		// A skinned model draws through the skinned program, its joints from the palette; a surface shader isn't skinned yet, so it's ignored.
 		if (item.skinned) {
-			gpu.draw(pipelines.skinned3D(blendOf(item), item.material.isDoubleSided(), item.mirrored),
-				[item.mesh.getVertexBuffer(gpu), instanceBuffer, item.mesh.getSkinBuffer(gpu)], item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(),
-				first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table, palette.getTexture()], [
-					base.getSampling(),
-					normal.getSampling(),
+			gpu.draw(pipelines.skinned3D(blendOf(item), item.material.doubleSided, item.mirrored),
+				[item.mesh.getVertexBuffer(gpu), instanceBuffer, item.mesh.getSkinBuffer(gpu)], item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first,
+				runCount, [base.handle, normal.handle, shadows, cube, table, palette.texture], [
+					base.sampling,
+					normal.sampling,
 					Sampling.NEAREST,
 					Sampling.LINEAR,
 					Sampling.LINEAR,
@@ -1430,10 +1395,10 @@ class Stage3D {
 			return;
 		}
 		if (shader == null) {
-			gpu.draw(pipelines.lit3D(blendOf(item), item.material.isDoubleSided(), item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
-				item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, [base.getHandle(), normal.getHandle(), shadows, cube, table], [
-					base.getSampling(),
-					normal.getSampling(),
+			gpu.draw(pipelines.lit3D(blendOf(item), item.material.doubleSided, item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
+				item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first, runCount, [base.handle, normal.handle, shadows, cube, table], [
+					base.sampling,
+					normal.sampling,
 					Sampling.NEAREST,
 					Sampling.LINEAR,
 					Sampling.LINEAR
@@ -1442,7 +1407,7 @@ class Stage3D {
 			return;
 		}
 		// An app's surface shader: the stage's blocks with the time after them, the shader's own values, its own textures (white where unset).
-		var blocks = [for (size in shader.getBlockSizes()) size > 0 ? Bytes.alloc(size) : null];
+		var blocks = [for (size in shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
 		if (blocks.length > 0 && blocks[0] != null) {
 			blocks[0].blit(0, vertexUniforms, 0, vertexUniforms.length);
 			blocks[0].setFloat(vertexUniforms.length, time);
@@ -1451,10 +1416,10 @@ class Stage3D {
 			blocks[1].blit(0, u, 0, u.length);
 			blocks[1].setFloat(u.length, time);
 		}
-		var parameters = material.getShaderParameters();
+		var parameters = material.shaderParameters;
 		parameters.write(blocks);
-		var own = parameters.getTextureSlots(), textures = [], samplings = [];
-		for (slot in shader.getTextureSlots()) {
+		var own = parameters.textureSlots, textures = [], samplings = [];
+		for (slot in shader.textureSlots) {
 			while (textures.length < slot) {
 				textures.push(0);
 				samplings.push(Sampling.NEAREST);
@@ -1465,12 +1430,11 @@ class Stage3D {
 				continue;
 			}
 			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
-			textures.push(texture.getHandle());
-			samplings.push(texture.getSampling());
+			textures.push(texture.handle);
+			samplings.push(texture.sampling);
 		}
-		gpu.draw(pipelines.surface(shader.getHandle(), blendOf(item), item.material.isDoubleSided(), item.mirrored),
-			[item.mesh.getVertexBuffer(gpu), instanceBuffer], item.mesh.getIndexBuffer(gpu), 0, item.mesh.getIndexCount(), first, runCount, textures,
-			samplings, blocks);
+		gpu.draw(pipelines.surface(shader.handle, blendOf(item), item.material.doubleSided, item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
+			item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first, runCount, textures, samplings, blocks);
 		draws++;
 	}
 

@@ -136,8 +136,10 @@ class Facade {
 		function walk(c:ClassType):Void {
 			var name = c.pack.concat([c.name]).join(".");
 			if (c.isInterface) {
+				// A property's accessors (get_x, set_x) are the interface's fields too: the static property forwards through them.
 				for (field in c.fields.get())
-					add(typed(field));
+					if (!StringTools.startsWith(field.name, "get_") && !StringTools.startsWith(field.name, "set_"))
+						add(typed(field));
 				for (i in c.interfaces)
 					walk(i.t.get());
 			} else {

@@ -56,7 +56,6 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	// The target a target pass draws into, or null.
 	var drawing:Null<Target>;
 	// Multisampling samples a pixel of the canvas, as the browser gave them.
-	var msaaSamples = 1;
 	// Shadow maps, by texture handle: a framebuffer a layer, and their size.
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
@@ -67,7 +66,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var enabled:Array<Bool> = [];
 
 	/** Takes canvas's WebGL2 context, without alpha or stencil, with a depth buffer, antialiased (multisampled) when msaaSamples is over 1: the
-		browser chooses how many (getMsaaSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws GraphicsUnavailable
+		browser chooses how many (msaaSamples), nearly always 4. preserve keeps the drawing buffer between frames. Throws GraphicsUnavailable
 		without WebGL2. */
 	public function new(canvas:CanvasElement, preserve:Bool, msaaSamples:Int) {
 		gl = cast canvas.getContext("webgl2", {
@@ -82,11 +81,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		this.msaaSamples = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 	}
 
-	public function getMsaaSamples():Int
+	@:isVar public var msaaSamples(get, null):Int = 1;
+
+	function get_msaaSamples():Int
 		return msaaSamples;
 
 	// The canvas's own count when antialiased; otherwise the 4 browsers give, where the GPU has 4.
-	public function getMaxMsaaSamples():Int
+	public var maxMsaaSamples(get, never):Int;
+
+	function get_maxMsaaSamples():Int
 		return msaaSamples > 1 ? msaaSamples : gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES) >= 4 ? 4 : 1;
 
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
@@ -209,12 +212,12 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				WebGL2RenderingContext.REPEAT,
 				WebGL2RenderingContext.MIRRORED_REPEAT
 			];
-			var linear = sampling.isLinear(), made = gl.createSampler();
+			var linear = sampling.linear, made = gl.createSampler();
 			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MIN_FILTER,
 				linear ? WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR : WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST);
 			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_MAG_FILTER, linear ? WebGL2RenderingContext.LINEAR : WebGL2RenderingContext.NEAREST);
-			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_S, wraps[(sampling.getWrapU() : Int) % 3]);
-			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_T, wraps[(sampling.getWrapV() : Int) % 3]);
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_S, wraps[(sampling.wrapU : Int) % 3]);
+			gl.samplerParameteri(made, WebGL2RenderingContext.TEXTURE_WRAP_T, wraps[(sampling.wrapV : Int) % 3]);
 			samplers[index] = made;
 		}
 		return samplers[index];

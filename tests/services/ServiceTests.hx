@@ -185,9 +185,9 @@ class ServiceTests {
 						case Ready(value):
 							var playing = audio.play(value);
 							value.release();
-							check(playing.getId() > 0, "Browser remote stream starts without ensure");
+							check(playing.id > 0, "Browser remote stream starts without ensure");
 							wait(.6, () -> {
-								check(playing.isFinished() && value.isDisposed(), "Remote playback finishes");
+								check(playing.finished && value.disposed, "Remote playback finishes");
 								assets.streamSource("uncached.wav", source -> {
 									switch source {
 										case Located(Remote(_)): check(true, "Remote playback did not persist audio");
@@ -246,24 +246,23 @@ class ServiceTests {
 					case Ready(value):
 						clip = value;
 						playback = audio.play(clip, true, .5);
-						check(playback.getId() > 0, "Clip playback starts");
+						check(playback.id > 0, "Clip playback starts");
 						secondPlayback = audio.play(clip, true, .2);
-						check(secondPlayback.getId() > 0
-							&& secondPlayback.getId() != playback.getId(), "Shared clip supports independent playbacks");
+						check(secondPlayback.id > 0 && secondPlayback.id != playback.id, "Shared clip supports independent playbacks");
 						clip.release();
-						check(!clip.isDisposed(), "Active playback retains released resource");
+						check(!clip.disposed, "Active playback retains released resource");
 						playback.pause();
-						playback.setVolume(.25);
+						playback.volume = .25;
 					case _: fail(result);
 				}
 				wait(.1, () -> {
-					check(!playback.isFinished(), "Paused playback remains alive");
+					check(!playback.finished, "Paused playback remains alive");
 					playback.resume();
 					wait(.05, () -> {
 						playback.stop();
-						check(!clip.isDisposed() && !secondPlayback.isFinished(), "Stopping one playback retains shared resource");
+						check(!clip.disposed && !secondPlayback.finished, "Stopping one playback retains shared resource");
 						secondPlayback.stop();
-						check(clip.isDisposed(), "Stop releases final resource reference");
+						check(clip.disposed, "Stop releases final resource reference");
 						var rejected = false;
 						try {
 							audio.play(clip);
@@ -280,17 +279,17 @@ class ServiceTests {
 					case Ready(value):
 						stream = value;
 						playback = audio.play(stream, true, .4);
-						check(playback.getId() > 0, "Stored stream playback starts");
+						check(playback.id > 0, "Stored stream playback starts");
 						stream.release();
 						playback.pause();
-						check(!stream.isDisposed(), "Paused stream retains source lease");
+						check(!stream.disposed, "Paused stream retains source lease");
 					case _: fail(result);
 				}
 				wait(.1, () -> {
 					playback.resume();
 					wait(.1, () -> {
 						playback.stop();
-						check(stream.isDisposed(), "Stopped stream releases source lease");
+						check(stream.disposed, "Stopped stream releases source lease");
 						next();
 					});
 				});
@@ -304,7 +303,7 @@ class ServiceTests {
 					case _: fail(result);
 				}
 				wait(.6, () -> {
-					check(playback.isFinished() && stream.isDisposed(), "Natural stream finish releases resource");
+					check(playback.finished && stream.disposed, "Natural stream finish releases resource");
 					next();
 				});
 			}),
@@ -354,17 +353,17 @@ class ServiceTests {
 						case Ready(value):
 							clip = value;
 							playback = audio.play(clip, true, .4);
-							check(playback.getId() > 0, "Ogg clip plays: " + extension);
+							check(playback.id > 0, "Ogg clip plays: " + extension);
 							clip.release();
 							playback.pause();
 						case _: fail(result);
 					}
 					wait(.05, () -> {
-						check(!playback.isFinished() && !clip.isDisposed(), "Paused Ogg clip retains resource");
+						check(!playback.finished && !clip.disposed, "Paused Ogg clip retains resource");
 						playback.resume();
 						wait(.05, () -> {
 							playback.stop();
-							check(clip.isDisposed(), "Ogg clip final release");
+							check(clip.disposed, "Ogg clip final release");
 							next();
 						});
 					});
@@ -374,18 +373,18 @@ class ServiceTests {
 						case Ready(value):
 							stream = value;
 							playback = audio.play(stream, true, .3);
-							check(playback.getId() > 0, "Stored Ogg stream starts: " + extension);
+							check(playback.id > 0, "Stored Ogg stream starts: " + extension);
 							stream.release();
 							playback.pause();
 						case _: fail(result);
 					}
 					wait(.05, () -> {
-						check(!stream.isDisposed(), "Paused Ogg source lease");
+						check(!stream.disposed, "Paused Ogg source lease");
 						playback.resume();
 						wait(.2, () -> {
-							check(!playback.isFinished(), "Ogg stream loops beyond one duration");
+							check(!playback.finished, "Ogg stream loops beyond one duration");
 							playback.stop();
-							check(stream.isDisposed(), "Stopped Ogg source lease released");
+							check(stream.disposed, "Stopped Ogg source lease released");
 							next();
 						});
 					});
@@ -399,7 +398,7 @@ class ServiceTests {
 						case _: fail(result);
 					}
 					wait(.6, () -> {
-						check(playback.isFinished() && stream.isDisposed(), "Natural Ogg EOF releases resource: " + extension);
+						check(playback.finished && stream.disposed, "Natural Ogg EOF releases resource: " + extension);
 						next();
 					});
 				}),
@@ -409,9 +408,9 @@ class ServiceTests {
 							case Ready(value):
 								var playing = audio.play(value);
 								value.release();
-								check(playing.getId() > 0, "Remote Ogg starts: " + extension);
+								check(playing.id > 0, "Remote Ogg starts: " + extension);
 								wait(.6, () -> {
-									check(playing.isFinished() && value.isDisposed(), "Remote Ogg EOF");
+									check(playing.finished && value.disposed, "Remote Ogg EOF");
 									assets.streamSource("uncached." + extension, source -> {
 										switch source {
 											case Located(Remote(_)): check(true, "Remote Ogg did not persist");

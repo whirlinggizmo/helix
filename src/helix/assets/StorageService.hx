@@ -93,7 +93,7 @@ class StorageService {
 				job.finish(Failed("Invalid storage key"));
 				return;
 			}
-			store.lease(key, result -> if (job.isSettled()) switch result {
+			store.lease(key, result -> if (job.settled) switch result {
 				case Local(lease): lease.release();
 				case _:
 			} else job.finish(result));

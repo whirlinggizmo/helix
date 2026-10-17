@@ -89,7 +89,11 @@ def member_lines(member,known):
             args.append(f'{n}:{type_text(k,known)}'+(f' = {v}' if v else ''))
         sig=f'{static}function {name}({", ".join(args)})'+('' if name=='new' else f':{ret}')
     else:
+        # A property's access as its source declares it: accessor is get or set, and a read-only one with a getter (null or never alike
+        # from outside) reads (get, never).
         get=member.get('get','default');setter=member.get('set','default')
+        get={'accessor':'get'}.get(get,get);setter={'accessor':'set'}.get(setter,setter)
+        if get=='get' and setter=='null':setter='never'
         access='' if (get,setter)==('default','default') else f'({get}, {setter})'
         final_='final ' if member.get('final')=='1' else 'var '
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
@@ -117,7 +121,9 @@ def markdown(xmls):
             index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append(f'- **{header}** (`{node.get("file","")}`): {doc}' if doc else f'- **{header}** (`{node.get("file","")}`)')
             continue
         if node.tag=='class':
-            members=[m for m in (member_lines(c,known) for c in node) if m]
+            # A property's accessors (get_x, set_x; an interface's are public) are the property, listed once.
+            properties={c.tag for c in node if c.get('set')!='method' and c.get('get') is not None}
+            members=[m for m in (member_lines(c,known) for c in node if not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
             if members:
                 lines.append('```haxe')

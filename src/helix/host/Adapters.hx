@@ -48,6 +48,6 @@ typedef Adapters = {
 	/** Where files made for the user (screenshots) go. */
 	final export:IExport;
 
-	/** The program's name, beginning the names of the files it makes (Identity.getProduct). */
+	/** The program's name, beginning the names of the files it makes (Identity.product). */
 	final name:String;
 }

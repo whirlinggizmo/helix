@@ -53,7 +53,7 @@ class App extends BaseApp {
 	var globe:Model;
 
 	override public function init():Void {
-		Window.setTitle("HeliX render targets");
+		Window.title = "HeliX render targets";
 		Window.requestSize(1000, 560);
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
@@ -64,7 +64,7 @@ class App extends BaseApp {
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new DirectionalLight();
-		sun.setIntensity(3);
+		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		camera.setView(0, 6, 10, 0, .8, 0);
@@ -74,15 +74,15 @@ class App extends BaseApp {
 
 		// The ground: a flattened sphere.
 		var ground = new Material();
-		ground.setBaseColor(0x8a9689ff);
+		ground.baseColor = 0x8a9689ff;
 		var floor = new Model(Mesh.sphere(.5, 32, 64), ground);
 		floor.setPosition(0, -.05, 0);
 		floor.setScale(8, .1, 8);
 		stage.add(floor);
 		// The globe wears the label: drawn into each frame, used as any texture.
 		var wrap = new Material();
-		wrap.setLit(false);
-		wrap.setTexture(label);
+		wrap.lit = false;
+		wrap.texture = label;
 		globe = new Model(Mesh.sphere(.5, 32, 64), wrap);
 		globe.setPosition(-2.2, 1.2, 0);
 		globe.setScale(1.6, 1.6, 1.6);
@@ -118,8 +118,8 @@ class App extends BaseApp {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
-		fps.update(dt, Time.getFrameCpu());
+		var time = Time.clock.time;
+		fps.update(dt, Time.frameCpu);
 		if (car != null) {
 			// Drives in a circle.
 			car.setPosition(Math.cos(time * .6) * 2.5, 0, Math.sin(time * .6) * 2.5);
@@ -127,11 +127,11 @@ class App extends BaseApp {
 		}
 		globe.setRotation(0, time * .8, 0);
 		var gpu = Graphics.instance,
-			width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+			width = Window.framebufferWidth,
+			height = Window.framebufferHeight;
 
 		// 1. The label, first, so the views below use this frame's text.
-		gpu.beginTargetPass(label.getHandle(), 0x1e3c8cff);
+		gpu.beginTargetPass(label.handle, 0x1e3c8cff);
 		targetCamera.setViewport(LABEL_W, LABEL_H);
 		targetCamera.pixels(1);
 		batch.begin(targetCamera);
@@ -141,13 +141,13 @@ class App extends BaseApp {
 		gpu.endTargetPass();
 
 		// 2. A low-resolution view of the stage.
-		gpu.beginTargetPass(pixelView.getHandle(), BACKGROUND);
+		gpu.beginTargetPass(pixelView.handle, BACKGROUND);
 		camera.setViewport(PIXEL_W, PIXEL_H);
 		stage.draw(camera);
 		gpu.endTargetPass();
 
 		// 3. The minimap, from above.
-		gpu.beginTargetPass(minimap.getHandle(), 0x0c0e12ff);
+		gpu.beginTargetPass(minimap.handle, 0x0c0e12ff);
 		top.setViewport(MINIMAP, MINIMAP);
 		stage.draw(top);
 		gpu.endTargetPass();
@@ -155,9 +155,9 @@ class App extends BaseApp {
 		// The screen, in the design for the window's shape.
 		var shape = ScreenShape.update(), presentation = Screen.instance;
 		presentation.apply(screen);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		gpu.beginFrame(width, height, BACKGROUND);
 		batch.begin(screen);
 		var top = vy

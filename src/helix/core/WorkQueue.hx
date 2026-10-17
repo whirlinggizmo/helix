@@ -3,25 +3,23 @@ package helix.core;
 /** Cooperative host work. Individual operations can exceed the nominal budget. */
 class WorkQueue {
 	var pending:Array<Void->Void> = [];
-	var budgetMs = 2.;
 
-	/** Milliseconds poll may spend before it leaves the rest for the next poll; 2 to start. */
-	public function getBudgetMs():Float
-		return budgetMs;
+	/** Milliseconds poll may spend before it leaves the rest for the next poll; 2 to start. 0 or more (under 0, or NaN, is 0). */
+	public var budgetMs(default, set):Float = 2.;
 
-	/** False for a budget under 0. */
-	public function setBudgetMs(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_budgetMs(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		budgetMs = value;
-		return true;
+		return value;
 	}
 
 	/** An empty queue with a 2 ms budget. */
 	public function new() {}
 
 	/** Whether no work is queued. */
-	public function isEmpty():Bool
+	public var empty(get, never):Bool;
+
+	function get_empty():Bool
 		return pending.length == 0;
 
 	/** Queues work for a later poll, in order. */

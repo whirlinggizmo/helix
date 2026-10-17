@@ -55,22 +55,22 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX sprite3d");
+		Window.title = "HeliX sprite3d";
 		Window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
 		var sun = new DirectionalLight();
-		sun.setIntensity(2.5);
+		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.3);
 		stage.add(sun);
 		var stone = new Material();
-		stone.setBaseColor(0x8a8f99ff);
-		stone.setRoughness(.8);
+		stone.baseColor = 0x8a8f99ff;
+		stone.roughness = .8;
 		var pedestal = new Model(Mesh.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
 		stage.add(pedestal);
@@ -82,25 +82,25 @@ class App extends BaseApp {
 		for (i in 0...6) {
 			var a = i / 6 * Math.PI * 2 + .3;
 			var tree = tile([2, 22, 16, 32], Math.cos(a) * 4, Math.sin(a) * 4, 1.2, 2.4);
-			tree.setFacing(Upright);
+			tree.facing = Upright;
 			tree.setPivot(.5, 1);
 			tree.setAlphaMode(Mask, .5);
 			trees.push(tree);
 		}
 		// A flag on a post, turned as its node is: a sign.
 		sign = tile([22, 22, 16, 32], 2, -1.5, 1, 2);
-		sign.setFacing(Free);
+		sign.facing = Free;
 		sign.setPivot(.5, 1);
 		sign.setAlphaMode(Mask);
 		// A coin lying on the ground, and its glow added over it.
 		var coin = tile([42, 22, 16, 16], -2, 1.5, .8, .8);
-		coin.setFacing(Ground);
+		coin.facing = Ground;
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
 		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
-				logo.setTexture(texture);
-				logo.setTint(0x66bfffff);
+				logo.texture = texture;
+				logo.tint = 0x66bfffff;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -108,7 +108,7 @@ class App extends BaseApp {
 		Textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
 				for (sprite in tileSprites)
-					sprite.setTexture(texture);
+					sprite.texture = texture;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -121,7 +121,7 @@ class App extends BaseApp {
 					flame.setRegion(0, 0, 64, 64);
 					flame.setSpriteSize(.9, .9);
 					flame.setPivot(.5, 1);
-					flame.setFacing(Upright);
+					flame.facing = Upright;
 					flame.setAlphaMode(Mask, .4);
 					flame.setPosition(i * .8 - 1.6, 0, -2.5);
 					flames.push(flame);
@@ -147,23 +147,22 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch3D.begin(camera);
@@ -175,8 +174,8 @@ class App extends BaseApp {
 		y += Text2D.drawWrapped(batch, "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18,
 			vw - 24, 0xf5f5f5ff)
 			+ 4;
-		Text2D.drawWrapped(batch, '${stage.getDrawnNodeCount()} models and sprites in ${stage.getDrawCallCount()} draws   O: the camera', vx + 12, y, 16,
-			vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, '${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
+			0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

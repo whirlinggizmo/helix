@@ -17,19 +17,19 @@ import helix.render3d.AnimationClip.TrackPath;
 	color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and
 	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins
 	(each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models
-	bound to that copy's joints; animations as AnimationClips (getClips), their tracks targeting nodes by name, so a file of animations alone
+	bound to that copy's joints; animations as AnimationClips (clips), their tracks targeting nodes by name, so a file of animations alone
 	plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights),
 	metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate
 	set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints). */
 class ModelFile {
 	var gltf:Gltf;
 	var parts:Array<Array<{mesh:Mesh, material:Material}>> = [];
-	var materials:Array<Material> = [];
+	var materialList:Array<Material> = [];
 	var lights:Array<Dynamic>;
 	var roots:Array<Int> = [];
-	var warnings:Array<String> = [];
-	var skins:Array<Skin> = [];
-	var clips:Array<AnimationClip> = [];
+	var warningList:Array<String> = [];
+	var skinList:Array<Skin> = [];
+	var clipList:Array<AnimationClip> = [];
 
 	/** The file read, its images not yet decoded (ModelCache decodes them and sets them on its materials). Throws, saying why, for a file it can't
 		read. */
@@ -37,7 +37,7 @@ class ModelFile {
 	function new(gltf:Gltf) {
 		this.gltf = gltf;
 		for (m in gltf.list("materials"))
-			materials.push(material(m));
+			materialList.push(material(m));
 		var fallback = new Material();
 		for (m in gltf.list("meshes")) {
 			var list = [];
@@ -51,16 +51,16 @@ class ModelFile {
 				if (field(p, "targets") != null)
 					warn("morph targets are ignored");
 				var index:Null<Int> = field(p, "material");
-				list.push({mesh: mesh(p), material: index == null ? fallback : materials[index]});
+				list.push({mesh: mesh(p), material: index == null ? fallback : materialList[index]});
 			}
 			parts.push(list);
 		}
 		var nodes = gltf.list("nodes");
 		for (s in gltf.list("skins"))
-			skins.push(skin(s, nodes));
+			skinList.push(skin(s, nodes));
 		var index = 0;
 		for (a in gltf.list("animations"))
-			clips.push(clip(a, index++, nodes));
+			clipList.push(clip(a, index++, nodes));
 		lights = field(field(field(gltf.document, "extensions"), "KHR_lights_punctual"), "lights");
 		if (lights == null)
 			lights = [];
@@ -83,25 +83,31 @@ class ModelFile {
 	}
 
 	/** What the file used that isn't read yet, each once. */
-	public function getWarnings():Array<String>
-		return warnings.copy();
+	public var warnings(get, never):Array<String>;
+
+	function get_warnings():Array<String>
+		return warningList.copy();
 
 	/** Its skins, in the file's order: the joints its skinned meshes follow. */
-	public function getSkins():Array<Skin>
-		return skins.copy();
+	public var skins(get, never):Array<Skin>;
+
+	function get_skins():Array<Skin>
+		return skinList.copy();
 
 	/** Its animations, in the file's order. */
-	public function getClips():Array<AnimationClip>
-		return clips.copy();
+	public var clips(get, never):Array<AnimationClip>;
+
+	function get_clips():Array<AnimationClip>
+		return clipList.copy();
 
 	/** The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it);
 		null for none. */
 	public function getClip(name:String):Null<AnimationClip> {
-		for (clip in clips)
-			if (clip.getName() == name)
+		for (clip in clipList)
+			if (clip.name == name)
 				return clip;
-		for (clip in clips) {
-			var full = clip.getName();
+		for (clip in clipList) {
+			var full = clip.name;
 			if (full.substr(full.lastIndexOf("|") + 1) == name)
 				return clip;
 		}
@@ -109,8 +115,10 @@ class ModelFile {
 	}
 
 	/** Its materials, in the file's order: change one and every copy's parts with it change. */
-	public function getMaterials():Array<Material>
-		return materials.copy();
+	public var materials(get, never):Array<Material>;
+
+	function get_materials():Array<Material>
+		return materialList.copy();
 
 	/** A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and
 		children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a
@@ -118,20 +126,20 @@ class ModelFile {
 		empty). A node with both a mesh and a light is the model, the light its first child. */
 	public function instantiate(name = ""):Node3D {
 		var root = new Node3D();
-		root.setName(name);
+		root.name = name;
 		var skinned = [];
 		for (r in roots)
-			root.add(node(r, skinned));
+			root.addChild(node(r, skinned));
 		// Each copy's skinned models follow that copy's joints, found by name once the tree is whole.
 		for (s in skinned)
-			if (!s.model.bindSkeleton(root, skins[s.skin]))
+			if (!s.model.bindSkeleton(root, skinList[s.skin]))
 				throw 'A skinned model\'s joints aren\'t all in its file\'s scene';
 		return root;
 	}
 
 	function warn(message:String):Void
-		if (warnings.indexOf(message) < 0)
-			warnings.push(message);
+		if (warningList.indexOf(message) < 0)
+			warningList.push(message);
 
 	// 0..1 linear, as glTF's factors are, to the sRGB-encoded 0..255 of the convention's colors.
 	static function srgb(c:Float):Int {
@@ -146,11 +154,11 @@ class ModelFile {
 		var material = new Material(),
 			pbr:Dynamic = field(m, "pbrMetallicRoughness");
 		var base:Array<Float> = field(pbr, "baseColorFactor");
-		material.setBaseColor(base == null ? 0xffffffff : color(base));
+		material.baseColor = base == null ? 0xffffffff : color(base);
 		var metallic:Null<Float> = field(pbr, "metallicFactor"),
 			roughness:Null<Float> = field(pbr, "roughnessFactor");
-		material.setMetallic(metallic == null ? 1 : metallic);
-		material.setRoughness(roughness == null ? 1 : roughness);
+		material.metallic = metallic == null ? 1 : metallic;
+		material.roughness = roughness == null ? 1 : roughness;
 		var emissive:Array<Float> = field(m, "emissiveFactor");
 		if (emissive != null) {
 			var strength:Null<Float> = field(field(field(m, "extensions"), "KHR_materials_emissive_strength"), "emissiveStrength");
@@ -159,13 +167,13 @@ class ModelFile {
 		var normal:Dynamic = field(m, "normalTexture");
 		if (normal != null) {
 			var scale:Null<Float> = field(normal, "scale");
-			material.setNormalScale(scale == null ? 1 : scale);
+			material.normalScale = scale == null ? 1 : scale;
 		}
 		if (field(m, "alphaMode") == "BLEND")
-			material.setBlended(true);
+			material.blended = true;
 		else if (field(m, "alphaMode") == "MASK")
 			warn("alphaMode MASK draws opaque");
-		material.setDoubleSided(field(m, "doubleSided") == true);
+		material.doubleSided = field(m, "doubleSided") == true;
 		if (field(pbr, "metallicRoughnessTexture") != null || field(m, "occlusionTexture") != null || field(m, "emissiveTexture") != null)
 			warn("metallic-roughness, occlusion and emissive textures are ignored");
 		return material;
@@ -226,9 +234,9 @@ class ModelFile {
 		}
 		var list = gltf.list("materials");
 		for (i in 0...list.length) {
-			var target = materials[i];
-			image(field(field(list[i], "pbrMetallicRoughness"), "baseColorTexture"), t -> target.setTexture(t));
-			image(field(list[i], "normalTexture"), t -> target.setNormalTexture(t));
+			var target = materialList[i];
+			image(field(field(list[i], "pbrMetallicRoughness"), "baseColorTexture"), t -> target.texture = t);
+			image(field(list[i], "normalTexture"), t -> target.normalTexture = t);
 		}
 		return out;
 	}
@@ -309,18 +317,18 @@ class ModelFile {
 			var inner:Null<Float> = field(cone, "innerConeAngle"),
 				outer:Null<Float> = field(cone, "outerConeAngle");
 			spot.setCone(inner == null ? 0 : inner, outer == null ? Math.PI / 4 : outer);
-			spot.setRange(range == null ? 0 : range);
+			spot.range = range == null ? 0 : range;
 			light = spot;
 		} else if (type == "point") {
 			var point = new PointLight();
-			point.setRange(range == null ? 0 : range);
+			point.range = range == null ? 0 : range;
 			light = point;
 		} else
 			light = new DirectionalLight();
 		var c:Array<Float> = field(l, "color");
-		light.setColor(c == null ? 0xffffffff : color(c));
+		light.color = c == null ? 0xffffffff : color(c);
 		var intensity:Null<Float> = field(l, "intensity");
-		light.setIntensity(intensity == null ? 1 : intensity);
+		light.intensity = intensity == null ? 1 : intensity;
 		return light;
 	}
 
@@ -334,17 +342,17 @@ class ModelFile {
 			for (part in parts[meshIndex])
 				model.addPart(part.mesh, part.material);
 			var skin:Null<Int> = field(n, "skin");
-			if (skin != null && model.getMesh() != null && model.getMesh().isSkinned())
+			if (skin != null && model.mesh != null && model.mesh.skinned)
 				skinned.push({model: model, skin: skin});
 			if (lightIndex != null)
-				model.add(light(lightIndex));
+				model.addChild(light(lightIndex));
 			node = model;
 		} else if (lightIndex != null)
 			node = light(lightIndex);
 		else
 			node = new Node3D();
 		var name:String = field(n, "name");
-		node.setName(name == null ? "" : name);
+		node.name = name == null ? "" : name;
 		var matrix:Array<Float> = field(n, "matrix");
 		if (matrix != null)
 			node.setMatrix(matrix);
@@ -362,7 +370,7 @@ class ModelFile {
 		var children:Array<Int> = field(n, "children");
 		if (children != null)
 			for (c in children)
-				node.add(this.node(c, skinned));
+				node.addChild(this.node(c, skinned));
 		return node;
 	}
 }

@@ -76,8 +76,8 @@ class Renderer {
 
 	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units. */
 	public function render(game:Game, layout:Layout, camera:Camera2D, presentation:Presentation, tick:Int):Void {
-		least = READABLE * presentation.getScaleX() / camera.getZoom();
-		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x0a0e18ff);
+		least = READABLE * presentation.scaleX / camera.zoom;
+		gpu.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0x0a0e18ff);
 		batch.begin(camera);
 		var fx = layout.fieldX,
 			fy = layout.fieldY,

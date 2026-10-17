@@ -33,7 +33,7 @@ class Shaders implements IReloadable {
 		request = new Request(() -> complete(Cancelled));
 		assets.load(path, result -> switch result {
 			case Loaded(bytes):
-				if (request.isSettled())
+				if (request.settled)
 					return;
 				var shader = try Shader.fromText(gpu, bytes.toString()) catch (e:Dynamic) {
 					if (request.finish())

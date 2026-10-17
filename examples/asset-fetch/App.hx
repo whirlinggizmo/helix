@@ -32,10 +32,10 @@ class App extends BaseApp {
 	var waiting = false;
 
 	override public function init():Void {
-		Window.setTitle("HeliX asset fetch");
+		Window.title = "HeliX asset fetch";
 		Window.requestSize(800, 520);
 		batch = new Batch2D(Graphics.instance);
-		var assets = Assets.instance, url = assets.getHost();
+		var assets = Assets.instance, url = assets.host;
 		if (url == null) {
 			source = "the packaged files";
 			fetch();
@@ -74,7 +74,7 @@ class App extends BaseApp {
 					case Ready(texture):
 						logo = texture;
 						waiting = false;
-						state = Assets.getHost() == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
+						state = Assets.host == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
 					case Failed(message):
 						waiting = false;
 						state = message;
@@ -101,25 +101,25 @@ class App extends BaseApp {
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var from = "from: " + (asking ? "..." : source);
 		var titleY = vy + 40;
-		var fromY = titleY + Text2D.measureWrapped(batch.getFont(), "HeliX asset fetch", 24, vw - 24) + 10;
-		var stateY = fromY + Text2D.measureWrapped(batch.getFont(), from, 16, vw - 24) + 10;
-		var buttonY = stateY + Text2D.measureWrapped(batch.getFont(), state, 16, vw - 24) + 20;
-		var x = camera.screenToWorldX(input.getPointerX()),
-			y = camera.screenToWorldY(input.getPointerY());
-		var clicked = input.isPointerFramePressed();
+		var fromY = titleY + Text2D.measureWrapped(batch.font, "HeliX asset fetch", 24, vw - 24) + 10;
+		var stateY = fromY + Text2D.measureWrapped(batch.font, from, 16, vw - 24) + 10;
+		var buttonY = stateY + Text2D.measureWrapped(batch.font, state, 16, vw - 24) + 20;
+		var x = camera.screenToWorldX(input.pointerX),
+			y = camera.screenToWorldY(input.pointerY);
+		var clicked = input.pointerFramePressed;
 		if ((input.isFramePressed(Key.F) || clicked && inside(x, y, vx + 12, buttonY)) && !waiting && !asking)
 			fetch();
 		if (input.isFramePressed(Key.C) || clicked && inside(x, y, vx + 204, buttonY))
 			clearCache();
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x1c1e26ff);
+		fps.update(dt, Time.frameCpu);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x1c1e26ff);
 		batch.begin(camera);
 		Text2D.drawWrapped(batch, "HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
 		Text2D.drawWrapped(batch, from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);

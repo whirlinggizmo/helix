@@ -13,35 +13,35 @@ class ParticleTests {
 
 	// Its records now, 12 floats each.
 	static function records(e:Emitter):Array<Float> {
-		var out = Bytes.alloc(e.getParticleCount() * 48),
+		var out = Bytes.alloc(e.particleCount * 48),
 			n = e.writeRecords(out, 0);
 		return [for (i in 0...n * 12) out.getFloat(i * 4)];
 	}
 
 	static function main():Void {
 		var e = new Emitter(null, 1000);
-		e.setRate(100);
+		e.rate = 100;
 		e.setLife(10, 10);
 		for (_ in 0...10)
 			e.advance(.1, 0, 0, 0);
-		check(e.getParticleCount() == 100, "A rate of 100 a second makes 100 in a second");
+		check(e.particleCount == 100, "A rate of 100 a second makes 100 in a second");
 		e.setLife(.5, .5);
 		e.clear();
 		for (_ in 0...20)
 			e.advance(.1, 0, 0, 0);
-		check(e.getParticleCount() >= 49 && e.getParticleCount() <= 51, "Particles die after their life: about half a second's worth alive");
+		check(e.particleCount >= 49 && e.particleCount <= 51, "Particles die after their life: about half a second's worth alive");
 		var small = new Emitter(null, 8);
 		small.burst(20);
-		check(small.getParticleCount() == 8, "At most max alive: newer replace the oldest");
+		check(small.particleCount == 8, "At most max alive: newer replace the oldest");
 		var warm = new Emitter(null, 1000);
-		warm.setRate(50);
+		warm.rate = 50;
 		warm.setLife(1, 1);
 		warm.prewarm(5);
-		check(warm.getParticleCount() == 50, "Prewarming leaves those still alive: a second's worth of a 1-second life");
+		check(warm.particleCount == 50, "Prewarming leaves those still alive: a second's worth of a 1-second life");
 		// The same seed and settings give the same particles.
 		var a = new Emitter(null, 64), b = new Emitter(null, 64);
 		for (x in [a, b]) {
-			x.setSeed(42);
+			x.seed = 42;
 			x.setVelocity(1, 2, 3, .5, .3);
 			x.setSpawnSphere(2);
 			x.burst(10);
@@ -49,7 +49,7 @@ class ParticleTests {
 		check(records(a).join(",") == records(b).join(","), "A seed repeats its particles exactly");
 		// Spawns spread along a move: a rate's particles between where it was and where it is.
 		var trail = new Emitter(null, 1000);
-		trail.setRate(100);
+		trail.rate = 100;
 		trail.setLife(10, 10);
 		trail.advance(.1, 0, 0, 0);
 		trail.advance(.1, 10, 0, 0);
@@ -64,7 +64,9 @@ class ParticleTests {
 		for (i in 0...16)
 			plane = plane && f[i * 12 + 2] == 0 && f[i * 12 + 6] == 0;
 		check(plane, "A flat emitter's particles are born and move in the x-y plane");
-		check(!e.setLife(0, 1) && !e.setRate(-1) && !e.addSizeKey(2, 1), "Bad settings are refused");
+		check(!e.setLife(0, 1) && !e.addSizeKey(2, 1), "Bad settings are refused");
+		e.rate = -1;
+		check(e.rate == 0, "A rate under 0 is 0");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

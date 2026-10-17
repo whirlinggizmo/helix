@@ -43,8 +43,8 @@ class App extends BaseApp {
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
 	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model {
 		var material = new Material();
-		material.setBaseColor(color);
-		material.setRoughness(.5);
+		material.baseColor = color;
+		material.roughness = .5;
 		var model = new Model(mesh, material);
 		model.setPosition(x, y, z);
 		stage.add(model);
@@ -55,17 +55,17 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX text3d");
+		Window.title = "HeliX text3d";
 		Window.requestSize(1000, 600);
 		// Framed for 16:9: all three models and their labels on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		lines = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
 		var sun = new DirectionalLight();
-		sun.setIntensity(2.5);
+		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		cube = labelled(Mesh.cube(1, 1, 1), 0x3b82f6ff, -3, .5, 0, "cube", 1.6);
@@ -73,24 +73,24 @@ class App extends BaseApp {
 		labelled(Mesh.cube(1.4, .9, .1), 0x46a758ff, 3, .45, 0, "panel", 1.5);
 		// A sign: a post, a board, and text on the board's face that turns with it.
 		var wood = new Material();
-		wood.setBaseColor(0x8b5a2bff);
-		wood.setRoughness(.9);
+		wood.baseColor = 0x8b5a2bff;
+		wood.roughness = .9;
 		sign = new Node3D();
 		sign.setPosition(0, 0, -3);
 		var post = new Model(Mesh.cube(.12, 1.6, .12), wood);
 		post.setPosition(0, .8, 0);
-		sign.add(post);
+		sign.addChild(post);
 		var board = new Model(Mesh.cube(2.2, .8, .08), wood);
 		board.setPosition(0, 1.6, 0);
-		sign.add(board);
+		sign.addChild(board);
 		signText = new Text3D("HeliX text", .45, 0xffe68cff);
-		signText.setFacing(Free);
+		signText.facing = Free;
 		signText.setPosition(0, 1.6, .05);
-		sign.add(signText);
+		sign.addChild(signText);
 		stage.add(sign);
 		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
 			case Ready(font):
-				signText.setFont(font);
+				signText.font = font;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -104,23 +104,22 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		if (orbit)
 			angle += dt * .25;
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		cube.setRotation(0, time * .8, 0);
 		sign.setRotation(0, Math.sin(time * .7) * .9, 0);
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 9, 4, Math.cos(angle) * 9, 0, .8, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		lines.begin(camera);
@@ -143,8 +142,8 @@ class App extends BaseApp {
 		y += Text2D.drawWrapped(batch, "HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
 			0xf5f5f5ff)
 			+ 4;
-		Text2D.drawWrapped(batch, '${stage.getDrawnNodeCount()} models and glyphs in ${stage.getDrawCallCount()} draws   O: the camera', vx + 12, y, 16,
-			vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, '${stage.drawnNodeCount} models and glyphs in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
+			0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

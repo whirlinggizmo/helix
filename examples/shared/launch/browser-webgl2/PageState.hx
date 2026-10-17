@@ -2,7 +2,7 @@ import helix.app.IApp;
 import helix.host.Host;
 
 /** Around an example's app in a browser: says on the page's window whether its services are still loading (window.helixBusy, from
-	Host.isBusy) after each frame, and not once it has quit, for the tools that capture the page once it has settled (tools/pages_shots.cjs). */
+	Host.busy) after each frame, and not once it has quit, for the tools that capture the page once it has settled (tools/pages_shots.cjs). */
 class PageState implements IApp {
 	var app:IApp;
 
@@ -15,7 +15,7 @@ class PageState implements IApp {
 
 	public function frame(dt:Float):Void {
 		app.frame(dt);
-		Reflect.setField(js.Browser.window, "helixBusy", Host.isBusy());
+		Reflect.setField(js.Browser.window, "helixBusy", Host.busy);
 	}
 
 	// After a quit nothing loads (the shutdown cancelled it all), and no frame comes to say so.

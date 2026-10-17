@@ -9,11 +9,15 @@ class FpsOverlay {
 	var milliseconds = 0.;
 
 	/** Frames a second over the last half second. */
-	public function getFrameRate():Float
+	public var frameRate(get, never):Float;
+
+	function get_frameRate():Float
 		return rate;
 
 	/** The frame's average cost in milliseconds over the last half second. */
-	public function getFrameMs():Float
+	public var frameMs(get, never):Float;
+
+	function get_frameMs():Float
 		return milliseconds;
 
 	var frames = 0;
@@ -23,7 +27,7 @@ class FpsOverlay {
 	/** An overlay showing 0 until half a second of frames has been seen. */
 	public function new() {}
 
-	/** dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.getFrameCpu). */
+	/** dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.frameCpu). */
 	public function update(dt:Float, cpu:Float):Void {
 		frames++;
 		time += dt;

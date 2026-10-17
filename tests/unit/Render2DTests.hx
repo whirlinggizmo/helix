@@ -40,10 +40,14 @@ class CountingGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return format == Rgba8 || format == Astc4x4 || format == Rgba16f;
 
-	public function getMsaaSamples():Int
+	public var msaaSamples(get, never):Int;
+
+	function get_msaaSamples():Int
 		return 1;
 
-	public function getMaxMsaaSamples():Int
+	public var maxMsaaSamples(get, never):Int;
+
+	function get_maxMsaaSamples():Int
 		return 1;
 
 	public function createBuffer(capacityBytes:Int):Int
@@ -159,7 +163,9 @@ class HeldAssets implements helix.assets.IAssets {
 			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function getHost():Null<String>
+	public var host(get, never):Null<String>;
+
+	function get_host():Null<String>
 		return null;
 
 	public function setHost(host:Null<String>):Bool
@@ -171,16 +177,22 @@ class HeldAssets implements helix.assets.IAssets {
 	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function getManifest():Null<String>
+	public var manifest(get, never):Null<String>;
+
+	function get_manifest():Null<String>
 		return null;
 
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public function getCacheMode():helix.assets.IAssets.AssetCacheMode
+	public var cacheMode(get, set):helix.assets.IAssets.AssetCacheMode;
+
+	function get_cacheMode():helix.assets.IAssets.AssetCacheMode
 		return Revalidate;
 
-	public function setCacheMode(mode:helix.assets.IAssets.AssetCacheMode):Void {}
+	function set_cacheMode(mode:helix.assets.IAssets.AssetCacheMode):helix.assets.IAssets.AssetCacheMode {
+		return mode;
+	}
 
 	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
@@ -189,7 +201,9 @@ class HeldAssets implements helix.assets.IAssets {
 
 	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
 
-	public function isBusy():Bool
+	public var busy(get, never):Bool;
+
+	function get_busy():Bool
 		return held.length > 0;
 }
 
@@ -255,10 +269,10 @@ class Render2DTests {
 			parent = Node2D.group(),
 			child = Node2D.circle(1);
 		parent.setPosition(100, 50);
-		parent.setRotation(Math.PI / 2);
+		parent.rotation = Math.PI / 2;
 		parent.setScale(2, 2);
 		child.setPosition(10, 0);
-		parent.add(child);
+		parent.addChild(child);
 		stage.add(parent);
 		var gpu = new CountingGraphics(),
 			batch = new Batch2D(gpu),
@@ -280,14 +294,31 @@ class Render2DTests {
 		stage.draw(batch, camera);
 		batch.end();
 		check(near(child.toWorldY(0, 0), 20), "Moving the parent moves the child at the next draw");
-		check(!child.add(parent) && !parent.add(parent), "No node becomes its own ancestor");
+		check(!child.addChild(parent) && !parent.addChild(parent), "No node becomes its own ancestor");
+		// attach keeps a node's world place under a moved, turned, scaled parent; parent = keeps its local one.
+		var holder = Node2D.group(), held = Node2D.group();
+		holder.setPosition(100, 50);
+		holder.rotation = Math.PI / 2;
+		holder.setScale(2, 3);
+		held.setPosition(7, 9);
+		check(holder.addChildInPlace(held) && held.parent == holder, "attach makes it a child");
+		var w = @:privateAccess Node2D.worldOf(held);
+		check(near(w[4], 7) && near(w[5], 9) && near(w[0], 1) && near(w[3], 1), "An attached node keeps its world place");
+		check(!held.addChildInPlace(holder) && holder.parent == null, "attach refuses an ancestor as add does");
+		held.parent = null;
+		held.setPosition(1, 0);
+		held.parent = holder;
+		w = @:privateAccess Node2D.worldOf(held);
+		check(held.parent == holder && near(w[4], 100) && near(w[5], 52), "parent = keeps its local transform");
+		held.parent = null;
+		check(held.parent == null && holder.childCount == 0, "parent = null takes it from its parent");
 
 		// A mirrored sprite covers the same box; a sprite with no texture draws nothing.
 		var texture = Texture2D.fromRgba(gpu, 4, 2, Bytes.alloc(32));
 		var sprite = Node2D.sprite(texture);
-		check(sprite.getWidth() == 4 && sprite.getHeight() == 2, "A sprite with no size is its texture's size in texels");
+		check(sprite.width == 4 && sprite.height == 2, "A sprite with no size is its texture's size in texels");
 		sprite.setRegion(1, 0, 2, 2);
-		check(sprite.getWidth() == 2 && sprite.getRegionWidth() == 2, "A region gives it the region's size");
+		check(sprite.width == 2 && sprite.regionWidth == 2, "A region gives it the region's size");
 		check(!Node2D.circle(1).setRegion(0, 0, 1, 1) && !Node2D.circle(1).setTexture(texture), "Sprite calls refuse other kinds");
 
 		// Culling: of three circles, the one far outside the view isn't drawn; hidden nodes and their children aren't either.
@@ -298,26 +329,26 @@ class Render2DTests {
 			culled.add(c);
 		}
 		var hidden = Node2D.group();
-		hidden.add(Node2D.circle(5));
-		hidden.setVisible(false);
+		hidden.addChild(Node2D.circle(5));
+		hidden.visible = false;
 		culled.add(hidden);
 		gpu.beginFrame(400, 300, 0);
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnNodeCount() == 3, "Only nodes in view are drawn; a hidden group's child still is");
-		hidden.setEnabled(false);
+		check(culled.drawnNodeCount == 3, "Only nodes in view are drawn; a hidden group's child still is");
+		hidden.enabled = false;
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnNodeCount() == 2 && hidden.isVisible() == false && !hidden.isEnabled(), "A disabled group takes its children with it");
-		hidden.setEnabled(true);
-		hidden.getChild(0).setVisible(false);
-		hidden.setVisible(true);
+		check(culled.drawnNodeCount == 2 && hidden.visible == false && !hidden.enabled, "A disabled group takes its children with it");
+		hidden.enabled = true;
+		hidden.getChild(0).visible = false;
+		hidden.visible = true;
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.getDrawnNodeCount() == 2 && hidden.getChild(0).isPickable(), "A hidden node isn't drawn, still pickable by default");
+		check(culled.drawnNodeCount == 2 && hidden.getChild(0).pickable, "A hidden node isn't drawn, still pickable by default");
 
 		// Two cameras in one batch: a run each, each in its own viewport.
 		var left = new Camera2D(), right = new Camera2D();
@@ -345,21 +376,18 @@ class Render2DTests {
 		check(Math.abs(gpu.uploaded.getFloat(0) - camera.clipX(10)) < 1e-6, "setTransform places what follows");
 		// Sampling: its bits round-trip, and a change of a texture's sampling splits the batch's run, each part sampled as it was then.
 		var sampling = new Sampling(true, Repeat, Mirror);
-		check(sampling.isLinear()
-			&& sampling.getWrapU() == Repeat
-			&& sampling.getWrapV() == Mirror
-			&& (sampling : Int) < Sampling.COUNT,
+		check(sampling.linear && sampling.wrapU == Repeat && sampling.wrapV == Mirror && (sampling : Int) < Sampling.COUNT,
 			"Sampling keeps its filter and wraps");
-		check(!sampling.withLinear(false).isLinear() && sampling.withWrap(Clamp, Clamp).getWrapV() == Clamp, "with* change one part");
+		check(!sampling.withLinear(false).linear && sampling.withWrap(Clamp, Clamp).wrapV == Clamp, "with* change one part");
 		gpu.beginFrame(400, 300, 0);
 		batch.begin(camera);
-		texture.setSampling(Sampling.LINEAR);
+		texture.sampling = Sampling.LINEAR;
 		batch.image(texture, 0, 0, 4, 4);
-		texture.setSampling(Sampling.NEAREST);
+		texture.sampling = Sampling.NEAREST;
 		batch.image(texture, 4, 0, 4, 4);
 		batch.image(texture, 8, 0, 4, 4);
 		batch.end();
-		check(gpu.draws.length == 2 && gpu.draws[0].sampling.isLinear() && !gpu.draws[1].sampling.isLinear() && gpu.draws[1].vertices == 12,
+		check(gpu.draws.length == 2 && gpu.draws[0].sampling.linear && !gpu.draws[1].sampling.linear && gpu.draws[1].vertices == 12,
 			"A texture drawn smooth then sharp is two runs, sampled as each was drawn");
 
 		// KTX 1: a 5 x 3 ASTC 4x4 file with its mipmaps (2 x 1, 1 x 1): one block a level.
@@ -496,21 +524,21 @@ class Render2DTests {
 		});
 		var shader = helix.graphics.Shader.fromText(gpu, text),
 			effect = new helix.graphics.ScreenEffect(gpu, shader);
-		check(effect.getParameters().setFloat("strength", .5)
-			&& effect.getParameters().setValues("shift", [1, 2, 3])
-			&& effect.getParameters().setValues("weights", [0, 0, 0, 0, 7])
-			&& effect.getParameters().setValues("grade", [0, 0, 0, 0, 9]),
+		check(effect.parameters.setFloat("strength", .5)
+			&& effect.parameters.setValues("shift", [1, 2, 3])
+			&& effect.parameters.setValues("weights", [0, 0, 0, 0, 7])
+			&& effect.parameters.setValues("grade", [0, 0, 0, 0, 9]),
 			"Parameters are set by name");
-		check(!effect.getParameters().setFloat("missing", 1)
-			&& !effect.getParameters().setValues("strength", [1, 2])
-			&& !effect.getParameters().setTexture("helix_screen_texture", texture),
+		check(!effect.parameters.setFloat("missing", 1)
+			&& !effect.parameters.setValues("strength", [1, 2])
+			&& !effect.parameters.setTexture("helix_screen_texture", texture),
 			"Unknown parameters, too many values and the framework's texture are refused");
 		effect.draw(texture, 640, 480, 2.5);
 		var block = gpu.screen.uniforms[2], info = gpu.screen.uniforms[1];
 		check(block.getFloat(0) == .5 && block.getFloat(16) == 1 && block.getFloat(24) == 3 && block.getFloat(48) == 7 && block.getFloat(112) == 9,
 			"Values land at their std140 offsets");
 		check(info.getFloat(0) == 640 && info.getFloat(4) == 480 && info.getFloat(8) == 2.5, "Block 1 holds the frame's size and the time");
-		check(gpu.screen.textures.length == 2 && gpu.screen.textures[1] == texture.getHandle(), "An unset texture is drawn as the frame");
+		check(gpu.screen.textures.length == 2 && gpu.screen.textures[1] == texture.handle, "An unset texture is drawn as the frame");
 		var other = helix.graphics.Shader.fromText(gpu, StringTools.replace(text, '"screen"', '"surface"'));
 		var refused = false;
 		try
@@ -533,7 +561,7 @@ class Render2DTests {
 		view.setViewport(400, 300);
 		gpu.meshPipelines = [];
 		stage3D.draw(view);
-		check(stage3D.getDrawCallCount() == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
+		check(stage3D.drawCallCount == 2 && gpu.meshPipelines.length == 2 && gpu.meshPipelines[0] != gpu.meshPipelines[1],
 			"A mirrored model is its own run, through another pipeline");
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
@@ -548,7 +576,7 @@ class Render2DTests {
 		stage3D.draw(view);
 		var p = gpu.meshPipelines;
 		// Two models (plain and mirrored), then the sprites' three phases.
-		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.getDrawnNodeCount() == 7,
+		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.drawnNodeCount == 7,
 			"Sprites draw opaque, then blended, then added, each phase a draw through its own pipeline");
 		stage3D.destroy();
 		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
@@ -647,8 +675,8 @@ class Render2DTests {
 		stage.add(box);
 		stage.add(disc);
 		var label = Node2D.text("HELLO", 20);
-		check(!label.isPickable() && Node2D.rectangle(1, 1).isPickable(), "Text isn't pickable until asked; shapes are");
-		label.setPickable(true);
+		check(!label.pickable && Node2D.rectangle(1, 1).pickable, "Text isn't pickable until asked; shapes are");
+		label.pickable = true;
 		label.setPosition(250, 50);
 		stage.add(label);
 		gpu.beginFrame(400, 300, 0);
@@ -659,12 +687,12 @@ class Render2DTests {
 			&& stage.pick(camera, 105, 105) == box, "The topmost under the point: the disc over the box");
 		check(stage.pick(camera, 300, 250) == null && stage.pick(camera, -1, -1) == null, "Nothing, and off the viewport nothing");
 		check(stage.pick(camera, 260, 60) == label && stage.pick(camera, 260, 75) == null, "Text by its block");
-		disc.setPickable(false);
+		disc.pickable = false;
 		check(stage.pick(camera, 160, 160) == box, "Unpickable: the box under it");
-		disc.setPickable(true);
-		disc.setVisible(false);
+		disc.pickable = true;
+		disc.visible = false;
 		check(stage.pick(camera, 160, 160) == disc, "Hidden is still hit");
-		disc.setVisible(true);
+		disc.visible = true;
 		// A ring: its stroke, not its middle.
 		var ring = Node2D.circle(40);
 		ring.setOutline(4);
@@ -682,14 +710,14 @@ class Render2DTests {
 		// Turned a quarter (y down: clockwise on screen), a tall thin rectangle lies down, its length reaching left from its corner.
 		var bar = Node2D.rectangle(10, 80);
 		bar.setPosition(200, 200);
-		bar.setRotation(Math.PI / 2);
+		bar.rotation = Math.PI / 2;
 		stage.add(bar);
 		check(stage.pick(camera, 150, 205) == bar && stage.pick(camera, 205, 250) != bar, "A turned rectangle where it's turned to, not where it was");
 		// Through a zoomed camera: screen points are the camera's.
-		camera.setZoom(2);
+		camera.zoom = 2;
 		var at = [camera.worldToScreenX(150), camera.worldToScreenY(150)];
 		check(stage.pick(camera, at[0], at[1]) == disc, "Through a zoomed camera");
-		box.setEnabled(false);
+		box.enabled = false;
 		camera.pixels(1);
 		check(stage.pick(camera, 105, 105) == null, "A disabled node isn't hit");
 	}
@@ -719,12 +747,12 @@ class Render2DTests {
 		// A list's window: a group clipping its rows; a row scrolled out of it is neither drawn there nor picked.
 		var stage = new Stage2D(), list = Node2D.group();
 		list.setPosition(20, 20);
-		check(list.setClip(100, 50) && list.isClipping() && !list.setClip(-1, 5), "A clip, and a size below 0 refused");
+		check(list.setClip(100, 50) && list.clipping && !list.setClip(-1, 5), "A clip, and a size below 0 refused");
 		var inside = Node2D.rectangle(100, 20),
 			outside = Node2D.rectangle(100, 20);
 		outside.setPosition(0, 60);
-		list.add(inside);
-		list.add(outside);
+		list.addChild(inside);
+		list.addChild(outside);
 		stage.add(list);
 		gpu.scissors = [];
 		batch.begin(camera);
@@ -743,7 +771,7 @@ class Render2DTests {
 			camera = new Camera2D();
 		camera.setViewport(400, 300);
 		camera.pixels(1);
-		var font = batch.getFont();
+		var font = batch.font;
 		check(Text2D.measure(font, " ", 16) > 0, "A space has a width (wgrender-c's caa49dd)");
 		var lines = Text2D.wrap(font, "the quick brown fox jumps over the lazy dog", 16, 100);
 		check(lines.length > 1
@@ -763,14 +791,14 @@ class Render2DTests {
 		batch.begin(camera);
 		batch.nineSlice(texture, 10, 10, 200, 100, 4, 4, 4, 4);
 		batch.end();
-		var ninth = batch.getVertexCount();
+		var ninth = batch.vertexCount;
 		batch.begin(camera);
 		batch.image(texture, 10, 10, 200, 100);
 		batch.end();
-		check(ninth == batch.getVertexCount() * 9, "Nine quads for a frame");
+		check(ninth == batch.vertexCount * 9, "Nine quads for a frame");
 		var stage = new Stage2D(), panel = Node2D.sprite(texture);
 		check(panel.setNineSlice(4, 4, 4, 4)
-			&& panel.isNineSlice()
+			&& panel.nineSlice
 			&& !Node2D.rectangle(1, 1).setNineSlice(1, 1, 1, 1), "Nine-slice is a sprite's");
 		panel.setSize(200, 100);
 		panel.setPivot(0, 0);
@@ -778,7 +806,7 @@ class Render2DTests {
 		var note = Node2D.text("the quick brown fox jumps over the lazy dog", 16);
 		check(note.setWrapWidth(100) && !Node2D.circle(1).setWrapWidth(10), "Wrapping is a text's");
 		note.setPosition(250, 20);
-		note.setPickable(true);
+		note.pickable = true;
 		stage.add(note);
 		batch.begin(camera);
 		stage.draw(batch, camera);

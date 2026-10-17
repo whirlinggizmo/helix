@@ -100,7 +100,7 @@ class Game {
 	}
 
 	public function reset():Void {
-		rng.setSeed(seed);
+		rng.seed = seed;
 		board = [for (_ in 0...W * H) 0];
 		queue = [];
 		held = -1;

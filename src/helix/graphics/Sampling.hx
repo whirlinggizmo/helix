@@ -26,24 +26,30 @@ abstract Sampling(Int) to Int {
 		this = (linear ? 1 : 0) | (wrapU : Int) << 1 | (wrapV : Int) << 3;
 
 	/** Whether it filters linearly. */
-	public inline function isLinear():Bool
+	public var linear(get, never):Bool;
+
+	inline function get_linear():Bool
 		return this & 1 != 0;
 
 	/** How it wraps along u. */
-	public inline function getWrapU():Wrap
+	public var wrapU(get, never):Wrap;
+
+	inline function get_wrapU():Wrap
 		return cast(this >> 1) & 3;
 
 	/** How it wraps along v. */
-	public inline function getWrapV():Wrap
+	public var wrapV(get, never):Wrap;
+
+	inline function get_wrapV():Wrap
 		return cast(this >> 3) & 3;
 
 	/** The same with linear filtering or not. */
 	public inline function withLinear(value:Bool):Sampling
-		return new Sampling(value, getWrapU(), getWrapV());
+		return new Sampling(value, get_wrapU(), get_wrapV());
 
 	/** The same wrapping as wrapU and wrapV. */
 	public inline function withWrap(wrapU:Wrap, wrapV:Wrap):Sampling
-		return new Sampling(isLinear(), wrapU, wrapV);
+		return new Sampling(get_linear(), wrapU, wrapV);
 
 	/** Every value there is, 0 to COUNT - 1, for an adapter's table of samplers. */
 	public static inline var COUNT = 32;

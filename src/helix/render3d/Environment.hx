@@ -11,8 +11,6 @@ class Environment {
 	var lighting:Int;
 	var background:Int;
 	var backgroundMips:Int;
-	var irradiance:Vector<Float>;
-	var path:String;
 
 	function new(gpu:IGraphics, path:String, bake:EnvironmentBake) {
 		this.path = path;
@@ -25,35 +23,39 @@ class Environment {
 
 	// The bake's cubes uploaded and its irradiance kept.
 	function take(gpu:IGraphics, bake:EnvironmentBake):Void {
-		var made = gpu.createCubeTexture(EnvironmentBake.CUBE_SIZE, bake.getLightingLevels(), Rgba16f);
-		background = try gpu.createCubeTexture(bake.getBackgroundSize(), bake.getBackgroundLevels(), Rgba16f) catch (e:Dynamic) {
+		var made = gpu.createCubeTexture(EnvironmentBake.CUBE_SIZE, bake.lightingLevels, Rgba16f);
+		background = try gpu.createCubeTexture(bake.backgroundSize, bake.backgroundLevels, Rgba16f) catch (e:Dynamic) {
 			gpu.destroyTexture(made);
 			throw e;
 		};
 		lighting = made;
-		backgroundMips = bake.getBackgroundLevels().length;
-		irradiance = bake.getIrradiance();
+		backgroundMips = bake.backgroundLevels.length;
+		irradiance = bake.irradiance;
 	}
 
 	/** The file it was loaded from. */
-	public function getPath():String
-		return path;
+	public var path(default, null):String;
 
 	/** The prefiltered cube's handle: EnvironmentBake.MIP_COUNT mips, roughness 0 to 1. */
-	public function getLightingTexture():Int
+	public var lightingTexture(get, never):Int;
+
+	function get_lightingTexture():Int
 		return lighting;
 
 	/** The background cube's handle. */
-	public function getBackgroundTexture():Int
+	public var backgroundTexture(get, never):Int;
+
+	function get_backgroundTexture():Int
 		return background;
 
 	/** The background cube's mips: blur 1 is its last. */
-	public function getBackgroundMipCount():Int
+	public var backgroundMipCount(get, never):Int;
+
+	function get_backgroundMipCount():Int
 		return backgroundMips;
 
 	/** Its irradiance: 9 coefficients, RGB each (27 floats), over pi. */
-	public function getIrradiance():Vector<Float>
-		return irradiance;
+	public var irradiance(default, null):Vector<Float>;
 
 	// A new bake of its file: the new cubes made before the old are let go of, so a failure leaves it as it was.
 	function replace(gpu:IGraphics, bake:EnvironmentBake):Void {

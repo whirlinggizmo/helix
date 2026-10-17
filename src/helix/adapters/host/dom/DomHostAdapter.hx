@@ -8,8 +8,6 @@ import js.html.CanvasElement;
 /** The browser host: the page's canvas (id "canvas") and its window, a requestAnimationFrame loop, the page's clock, and options from the URL
 	query. An error the page doesn't catch, or a lost graphics context, stops the frames and says so in the element with id "status". */
 class DomHostAdapter implements IHost {
-	var canvas:CanvasElement;
-	var window:DomWindow;
 	var stopped = false;
 	var quitting = false;
 	var closed = false;
@@ -30,7 +28,9 @@ class DomHostAdapter implements IHost {
 	}
 
 	/** The canvas the program draws in, for the graphics and input adapters. */
-	public function getCanvas():CanvasElement
+	@:isVar public var canvas(get, null):CanvasElement;
+
+	function get_canvas():CanvasElement
 		return canvas;
 
 	/** Says on the page's window (graphicsUnavailable) that the platform can't draw, and why, for tools driving the page (tools/autopilot.cjs
@@ -71,10 +71,14 @@ class DomHostAdapter implements IHost {
 		Browser.window.addEventListener("pagehide", _ -> close());
 	}
 
-	public function getTime():Float
+	public var time(get, never):Float;
+
+	function get_time():Float
 		return Browser.window.performance.now() / 1000;
 
-	public function getWindow():IWindow
+	@:isVar public var window(get, null):IWindow;
+
+	function get_window():IWindow
 		return window;
 
 	public function canQuit():Bool

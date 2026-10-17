@@ -56,15 +56,15 @@ class Renderer {
 
 	/** The HUD's design is the field's, centered in the presentation's visible area: the menu's panel and buttons keep their places in it. */
 	public static function getHudX(presentation:Presentation):Float
-		return presentation.getVisibleX() + (presentation.getVisibleWidth() - Game.W) / 2;
+		return presentation.visibleX + (presentation.visibleWidth - Game.W) / 2;
 
 	public static function getHudY(presentation:Presentation):Float
-		return presentation.getVisibleY() + (presentation.getVisibleHeight() - Game.H) / 2;
+		return presentation.visibleY + (presentation.visibleHeight - Game.H) / 2;
 
 	/** Draws game seen through camera, then the score, the lives and the menu's panel through hudCamera (presentation applied to it), and over
 		them hud (the menu's buttons), when given. */
 	public function render(game:Game, camera:Camera2D, hudCamera:Camera2D, presentation:Presentation, ?hud:helix.render2d.Stage2D):Void {
-		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), BACKGROUND);
+		gpu.beginFrame(camera.framebufferWidth, camera.framebufferHeight, BACKGROUND);
 		batch.begin(camera);
 		setColor(.22, .27, .36);
 		for (i in 0...100)
@@ -90,10 +90,10 @@ class Renderer {
 			batch.line(x - c * 6, y - t * 6, x - c * 12 + t * 11, y - t * 12 - c * 11, 2, color);
 			batch.line(x - c * 12 + t * 11, y - t * 12 - c * 11, x + c * 18, y + t * 18, 2, color);
 		}
-		batch.setCamera(hudCamera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		batch.camera = hudCamera;
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var x = getHudX(presentation), y = getHudY(presentation);
 		if (game.state != "title") {
 			setColor(.9, .93, .97);

@@ -3,7 +3,7 @@ package helix.host;
 /** The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's
 	one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop,
 	the window (Window) and the clock (Time) are reached elsewhere. */
-@:build(helix.macro.Facade.build(helix.host.IHost, ["run", "getWindow", "getTime"]))
+@:build(helix.macro.Facade.build(helix.host.IHost, ["run", "window", "time"]))
 @:allow(helix.host.Runner)
 class Host {
 	/** The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the
@@ -13,17 +13,21 @@ class Host {
 	/** The game's settings from config.json among its assets (Config), or null without one. Kept across a hot reload (@:hot), as instance is. */
 	@:hot public static var config(default, null):Null<Config>;
 
-	// The runner, for isBusy; kept across a hot reload (@:hot), as instance is.
+	// The runner, for busy; kept across a hot reload (@:hot), as instance is.
 	@:hot static var runner:Runner;
 
 	/** Whether the runner is running the program: false in a test, which makes what it needs itself. */
-	public static function isRunning():Bool
+	public static var running(get, never):Bool;
+
+	static function get_running():Bool
 		return runner != null;
 
 	/** Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits
 		for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in. */
-	public static function isBusy():Bool
-		return runner != null && runner.isBusy();
+	public static var busy(get, never):Bool;
+
+	static function get_busy():Bool
+		return runner != null && runner.busy;
 
 	/** A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_
 		and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text. */

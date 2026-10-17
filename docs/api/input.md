@@ -10,10 +10,9 @@ One gamepad slot. Edges work as the keyboard's: tick edges until consume(), fram
 
 ```haxe
 function new()
-function isConnected():Bool
-function getName():String
-function getDeadzone():Float
-function setDeadzone(value:Float):Bool
+var connected(default, null):Bool
+var name(default, null):String
+var deadzone(default, set):Float
 function isDown(button:PadButton):Bool
 function isPressed(button:PadButton):Bool
 function isReleased(button:PadButton):Bool
@@ -29,10 +28,9 @@ function endFrame():Void
 ```
 
 - `new`: An empty slot.
-- `isConnected`: Whether a pad is in this slot. While the window is unfocused a pad stays connected, its buttons up and axes centred.
-- `getName`: The pad's name as the platform reports it; empty when the slot is empty.
-- `getDeadzone`: Fraction of a stick's reach that reads as centred.
-- `setDeadzone`: False for a value outside 0 (none) to just under 1.
+- `connected`: Whether a pad is in this slot. While the window is unfocused a pad stays connected, its buttons up and axes centred.
+- `name`: The pad's name as the platform reports it; empty when the slot is empty.
+- `deadzone`: Fraction of a stick's reach that reads as centred. Clamped to 0 (none) to 0.999 (NaN is 0).
 - `isDown`: Whether the button is held now.
 - `isPressed`: The button went down: a counted tick edge, as a key's, so two presses between ticks reach two ticks.
 - `isReleased`: The button came up: a counted tick edge.
@@ -58,35 +56,34 @@ function isPressed(key:Key):Bool
 function isReleased(key:Key):Bool
 function isFramePressed(key:Key):Bool
 function isFrameReleased(key:Key):Bool
-function getPointerX():Float
-function getPointerY():Float
-function isPointerDown():Bool
-function isPointerPressed():Bool
-function isPointerReleased():Bool
-function isPointerFramePressed():Bool
-function isPointerFrameReleased():Bool
+var pointerX(get, never):Float
+var pointerY(get, never):Float
+var pointerDown(get, never):Bool
+var pointerPressed(get, never):Bool
+var pointerReleased(get, never):Bool
+var pointerFramePressed(get, never):Bool
+var pointerFrameReleased(get, never):Bool
 function isMouseDown(button:MouseButton):Bool
 function isMousePressed(button:MouseButton):Bool
 function isMouseFramePressed(button:MouseButton):Bool
 function isMouseReleased(button:MouseButton):Bool
 function isMouseFrameReleased(button:MouseButton):Bool
-function getWheelX():Float
-function getWheelY():Float
-function getText():String
-function isTextEntry():Bool
-function setTextEntry(on:Bool):Void
-function getTouches():Array<Touch>
-function isTouchGesture():Bool
-function getTouchGestureCenterX():Float
-function getTouchGestureCenterY():Float
+var wheelX(get, never):Float
+var wheelY(get, never):Float
+var text(get, never):String
+var textEntry(get, set):Bool
+var touches(get, never):Array<Touch>
+var touchGesture(get, never):Bool
+var touchGestureCenterX(get, never):Float
+var touchGestureCenterY(get, never):Float
 function getTouchGesturePanX(?perTick:Bool = false):Float
 function getTouchGesturePanY(?perTick:Bool = false):Float
 function getTouchGestureScale(?perTick:Bool = false):Float
 function getTouchGestureRotation(?perTick:Bool = false):Float
-function getPadCount():Int
+var padCount(get, never):Int
 function getPad(index:Int):Null<Gamepad>
-function isActivated():Bool
-function isAnyFramePressed():Bool
+var activated(get, never):Bool
+var anyFramePressed(get, never):Bool
 function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
@@ -98,35 +95,34 @@ function consume():Void
 - `isReleased`: The key came up: a tick edge, counted until consume() takes it.
 - `isFramePressed`: The key went down this frame: a frame edge.
 - `isFrameReleased`: The key came up this frame: a frame edge.
-- `getPointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
-- `getPointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
-- `isPointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
-- `isPointerPressed`: The primary pointer went down: a tick edge, counted until consume() takes it.
-- `isPointerReleased`: The primary pointer came up: a tick edge, counted until consume() takes it.
-- `isPointerFramePressed`: The primary pointer went down this frame: a frame edge.
-- `isPointerFrameReleased`: The primary pointer came up this frame: a frame edge.
+- `pointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
+- `pointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
+- `pointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
+- `pointerPressed`: The primary pointer went down: a tick edge, counted until consume() takes it.
+- `pointerReleased`: The primary pointer came up: a tick edge, counted until consume() takes it.
+- `pointerFramePressed`: The primary pointer went down this frame: a frame edge.
+- `pointerFrameReleased`: The primary pointer came up this frame: a frame edge.
 - `isMouseDown`: Whether the mouse button is held now.
 - `isMousePressed`: The mouse button went down: a tick edge, counted until consume() takes it.
 - `isMouseFramePressed`: The mouse button went down this frame: a frame edge.
 - `isMouseReleased`: The button came up: a counted tick edge, as a key's.
 - `isMouseFrameReleased`: The button came up this frame: a frame edge.
-- `getWheelX`: Wheel notches this frame; up and right are positive.
-- `getWheelY`: Vertical wheel notches this frame; up is positive.
-- `getText`: Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry).
-- `isTextEntry`: Whether typed text is being taken (setTextEntry); off at start.
-- `setTextEntry`: Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while it types (a name entered, a chat line) and off after.
-- `getTouches`: Fingers down, and those lifted this frame.
-- `isTouchGesture`: Whether two fingers are down: the two down longest make the gesture.
-- `getTouchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
-- `getTouchGestureCenterY`: See getTouchGestureCenterX.
+- `wheelX`: Wheel notches this frame; up and right are positive.
+- `wheelY`: Vertical wheel notches this frame; up is positive.
+- `text`: Characters typed this frame, after the keyboard layout; only while text entry is on (textEntry).
+- `textEntry`: Whether typed text is being taken; off at start. On, text carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading text itself turns it on while it types (a name entered, a chat line) and off after.
+- `touches`: Fingers down, and those lifted this frame.
+- `touchGesture`: Whether two fingers are down: the two down longest make the gesture.
+- `touchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
+- `touchGestureCenterY`: See touchGestureCenterX.
 - `getTouchGesturePanX`: How far the point between the fingers moved, in framebuffer pixels: this frame, or since the last tick with perTick.
 - `getTouchGesturePanY`: See getTouchGesturePanX.
 - `getTouchGestureScale`: How much the fingers spread (over 1) or pinched (under 1), as a factor: this frame, or since the last tick with perTick; 1 without.
 - `getTouchGestureRotation`: How far the line between the fingers turned, in radians, clockwise on screen positive: this frame, or since the last tick with perTick.
-- `getPadCount`: Four slots, connected or not.
+- `padCount`: Four slots, connected or not.
 - `getPad`: null for an index out of range.
-- `isActivated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
-- `isAnyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as isActivated's doesn't.
+- `activated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
+- `anyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as activated's doesn't.
 - `isPadDown`: Any connected pad.
 - `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
@@ -191,35 +187,34 @@ static function isPressed(key:Key):Bool
 static function isReleased(key:Key):Bool
 static function isFramePressed(key:Key):Bool
 static function isFrameReleased(key:Key):Bool
-static function getPointerX():Float
-static function getPointerY():Float
-static function isPointerDown():Bool
-static function isPointerPressed():Bool
-static function isPointerReleased():Bool
-static function isPointerFramePressed():Bool
-static function isPointerFrameReleased():Bool
+static var pointerX(get, never):Float
+static var pointerY(get, never):Float
+static var pointerDown(get, never):Bool
+static var pointerPressed(get, never):Bool
+static var pointerReleased(get, never):Bool
+static var pointerFramePressed(get, never):Bool
+static var pointerFrameReleased(get, never):Bool
 static function isMouseDown(button:MouseButton):Bool
 static function isMousePressed(button:MouseButton):Bool
 static function isMouseFramePressed(button:MouseButton):Bool
 static function isMouseReleased(button:MouseButton):Bool
 static function isMouseFrameReleased(button:MouseButton):Bool
-static function getWheelX():Float
-static function getWheelY():Float
-static function getText():String
-static function isTextEntry():Bool
-static function setTextEntry(on:Bool):Void
-static function getTouches():Array<Touch>
-static function isTouchGesture():Bool
-static function getTouchGestureCenterX():Float
-static function getTouchGestureCenterY():Float
+static var wheelX(get, never):Float
+static var wheelY(get, never):Float
+static var text(get, never):String
+static var textEntry(get, set):Bool
+static var touches(get, never):Array<Touch>
+static var touchGesture(get, never):Bool
+static var touchGestureCenterX(get, never):Float
+static var touchGestureCenterY(get, never):Float
 static function getTouchGesturePanX(?perTick:Bool = false):Float
 static function getTouchGesturePanY(?perTick:Bool = false):Float
 static function getTouchGestureScale(?perTick:Bool = false):Float
 static function getTouchGestureRotation(?perTick:Bool = false):Float
-static function getPadCount():Int
+static var padCount(get, never):Int
 static function getPad(index:Int):Null<Gamepad>
-static function isActivated():Bool
-static function isAnyFramePressed():Bool
+static var activated(get, never):Bool
+static var anyFramePressed(get, never):Bool
 static function isPadDown(button:PadButton):Bool
 static function isPadPressed(button:PadButton):Bool
 static function getPadAxis(axis:PadAxis):Float
@@ -232,35 +227,34 @@ static function consume():Void
 - `isReleased`: The key came up: a tick edge, counted until consume() takes it.
 - `isFramePressed`: The key went down this frame: a frame edge.
 - `isFrameReleased`: The key came up this frame: a frame edge.
-- `getPointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
-- `getPointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
-- `isPointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
-- `isPointerPressed`: The primary pointer went down: a tick edge, counted until consume() takes it.
-- `isPointerReleased`: The primary pointer came up: a tick edge, counted until consume() takes it.
-- `isPointerFramePressed`: The primary pointer went down this frame: a frame edge.
-- `isPointerFrameReleased`: The primary pointer came up this frame: a frame edge.
+- `pointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
+- `pointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
+- `pointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
+- `pointerPressed`: The primary pointer went down: a tick edge, counted until consume() takes it.
+- `pointerReleased`: The primary pointer came up: a tick edge, counted until consume() takes it.
+- `pointerFramePressed`: The primary pointer went down this frame: a frame edge.
+- `pointerFrameReleased`: The primary pointer came up this frame: a frame edge.
 - `isMouseDown`: Whether the mouse button is held now.
 - `isMousePressed`: The mouse button went down: a tick edge, counted until consume() takes it.
 - `isMouseFramePressed`: The mouse button went down this frame: a frame edge.
 - `isMouseReleased`: The button came up: a counted tick edge, as a key's.
 - `isMouseFrameReleased`: The button came up this frame: a frame edge.
-- `getWheelX`: Wheel notches this frame; up and right are positive.
-- `getWheelY`: Vertical wheel notches this frame; up is positive.
-- `getText`: Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry).
-- `isTextEntry`: Whether typed text is being taken (setTextEntry); off at start.
-- `setTextEntry`: Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while it types (a name entered, a chat line) and off after.
-- `getTouches`: Fingers down, and those lifted this frame.
-- `isTouchGesture`: Whether two fingers are down: the two down longest make the gesture.
-- `getTouchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
-- `getTouchGestureCenterY`: See getTouchGestureCenterX.
+- `wheelX`: Wheel notches this frame; up and right are positive.
+- `wheelY`: Vertical wheel notches this frame; up is positive.
+- `text`: Characters typed this frame, after the keyboard layout; only while text entry is on (textEntry).
+- `textEntry`: Whether typed text is being taken; off at start. On, text carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading text itself turns it on while it types (a name entered, a chat line) and off after.
+- `touches`: Fingers down, and those lifted this frame.
+- `touchGesture`: Whether two fingers are down: the two down longest make the gesture.
+- `touchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
+- `touchGestureCenterY`: See touchGestureCenterX.
 - `getTouchGesturePanX`: How far the point between the fingers moved, in framebuffer pixels: this frame, or since the last tick with perTick.
 - `getTouchGesturePanY`: See getTouchGesturePanX.
 - `getTouchGestureScale`: How much the fingers spread (over 1) or pinched (under 1), as a factor: this frame, or since the last tick with perTick; 1 without.
 - `getTouchGestureRotation`: How far the line between the fingers turned, in radians, clockwise on screen positive: this frame, or since the last tick with perTick.
-- `getPadCount`: Four slots, connected or not.
+- `padCount`: Four slots, connected or not.
 - `getPad`: null for an index out of range.
-- `isActivated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
-- `isAnyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as isActivated's doesn't.
+- `activated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
+- `anyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as activated's doesn't.
 - `isPadDown`: Any connected pad.
 - `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
@@ -274,7 +268,7 @@ Makes the input an app reads (an InputState) from a platform's events, the same 
 
 ```haxe
 function new()
-function getInput():IInput
+var input(get, never):IInput
 function poll(source:IInputSource):Void
 function endFrame():Void
 function key(key:Key, down:Bool):Void
@@ -289,7 +283,7 @@ function pad(name:String, buttons:Array<Bool>, axes:Array<Float>):Void
 ```
 
 - `new`: Focused, with nothing held.
-- `getInput`: The input the app reads.
+- `input`: The input the app reads.
 - `poll`: Before the app's frame: tells source when the app's text entry changed, has it report what arrived, then empties the pad slots no connected pad reported into.
 - `endFrame`: After the app's frame: the frame's edges, text, wheel and lifted touches end.
 
@@ -306,20 +300,19 @@ function isPressed(key:Key):Bool
 function isReleased(key:Key):Bool
 function isFramePressed(key:Key):Bool
 function isFrameReleased(key:Key):Bool
-function getPointerX():Float
-function getPointerY():Float
-function isPointerDown():Bool
-function isPointerPressed():Bool
-function isPointerReleased():Bool
-function isPointerFramePressed():Bool
-function isPointerFrameReleased():Bool
-function getWheelX():Float
-function getWheelY():Float
-function getText():String
-function isTextEntry():Bool
-function setTextEntry(on:Bool):Void
-function getTouches():Array<Touch>
-function getPadCount():Int
+var pointerX(get, never):Float
+var pointerY(get, never):Float
+var pointerDown(get, never):Bool
+var pointerPressed(get, never):Bool
+var pointerReleased(get, never):Bool
+var pointerFramePressed(get, never):Bool
+var pointerFrameReleased(get, never):Bool
+var wheelX(get, never):Float
+var wheelY(get, never):Float
+var text(get, never):String
+var textEntry(get, set):Bool
+var touches(get, never):Array<Touch>
+var padCount(get, never):Int
 function getPad(index:Int):Null<Gamepad>
 function isMouseDown(button:MouseButton):Bool
 function isMousePressed(button:MouseButton):Bool
@@ -329,8 +322,8 @@ function isMouseFrameReleased(button:MouseButton):Bool
 function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
-function isActivated():Bool
-function isAnyFramePressed():Bool
+var activated(get, never):Bool
+var anyFramePressed(get, never):Bool
 function keyEvent(key:Key, value:Bool):Void
 function padEvent(button:PadButton, value:Bool):Void
 function axisEvent(axis:PadAxis, value:Float):Void
@@ -339,9 +332,9 @@ function pointerEvent(x:Float, y:Float, value:Bool):Void
 function textEvent(value:String):Void
 function wheelEvent(x:Float, y:Float):Void
 function touchEvent(id:Int, x:Float, y:Float, value:Bool):Void
-function isTouchGesture():Bool
-function getTouchGestureCenterX():Float
-function getTouchGestureCenterY():Float
+var touchGesture(get, never):Bool
+var touchGestureCenterX(get, never):Float
+var touchGestureCenterY(get, never):Float
 function getTouchGesturePanX(?perTick:Bool = false):Float
 function getTouchGesturePanY(?perTick:Bool = false):Float
 function getTouchGestureScale(?perTick:Bool = false):Float
@@ -352,7 +345,7 @@ function endFrame():Void
 ```
 
 - `new`: Nothing down, nothing pressed, no pad connected, not activated.
-- `keyEvent`: A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. A down activates (isActivated).
+- `keyEvent`: A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. A down activates (activated).
 - `padEvent`: Pad 0's button or axis, connecting it: for replay and tests.
 - `axisEvent`: Pad 0's axis, connecting it: for replay and tests.
 - `mouseEvent`: A mouse button down (true) or up (false); only a change of state counts an edge.
@@ -395,40 +388,36 @@ Taps, drags and flicks from IInput's pointer, in framebuffer pixels; touch and m
 
 ```haxe
 function new(?slop:Float = 12., ?tapSeconds:Float = .3)
-function getMaxTapDistance():Float
-function setMaxTapDistance(value:Float):Bool
-function getMaxTapDuration():Float
-function setMaxTapDuration(value:Float):Bool
-function isDown():Bool
-function isPressed():Bool
-function isReleased():Bool
-function isDragging():Bool
-function isTapped():Bool
-function getX():Float
-function getY():Float
-function getStartX():Float
-function getStartY():Float
-function getFlickVelocityX():Float
-function getFlickVelocityY():Float
+var maxTapDistance(get, set):Float
+var maxTapDuration(get, set):Float
+var down(default, null):Bool
+var pressed(default, null):Bool
+var released(default, null):Bool
+var dragging(default, null):Bool
+var tapped(default, null):Bool
+var x(default, null):Float
+var y(default, null):Float
+var startX(default, null):Float
+var startY(default, null):Float
+var flickVelocityX(get, never):Float
+var flickVelocityY(get, never):Float
 function update(input:IInput, now:Float):Void
 ```
 
-- `new`: Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds. Throws for a slop under 0 or tapSeconds of 0 or less, as the setters refuse.
-- `getMaxTapDistance`: How far a press may move and still be a tap, in pixels.
-- `setMaxTapDistance`: False for under 0.
-- `getMaxTapDuration`: How long a press may last and still be a tap, in seconds.
-- `setMaxTapDuration`: False for 0 or less.
-- `isDown`: Whether the pointer is down, as of the last update.
-- `isPressed`: The pointer went down at the last update.
-- `isReleased`: The pointer came up at the last update.
-- `isDragging`: Moved past the slop during this press.
-- `isTapped`: The press that ended at the last update was a tap: it stayed within the slop and the tap time.
-- `getX`: The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after release.
-- `getY`: The pointer's y in framebuffer pixels, held as getX is.
-- `getStartX`: Where the current or last press began, x in framebuffer pixels.
-- `getStartY`: Where the current or last press began, y in framebuffer pixels.
-- `getFlickVelocityX`: Velocity over the last tenth of a second before release, pixels per second.
-- `getFlickVelocityY`: Vertical velocity as getFlickVelocityX, down positive.
+- `new`: Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds, clamped as maxTapDistance and maxTapDuration are.
+- `maxTapDistance`: How far a press may move and still be a tap, in pixels. 0 or more (under 0, or NaN, is 0).
+- `maxTapDuration`: How long a press may last and still be a tap, in seconds. At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `down`: Whether the pointer is down, as of the last update.
+- `pressed`: The pointer went down at the last update.
+- `released`: The pointer came up at the last update.
+- `dragging`: Moved past the slop during this press.
+- `tapped`: The press that ended at the last update was a tap: it stayed within the slop and the tap time.
+- `x`: The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after release.
+- `y`: The pointer's y in framebuffer pixels, held as x is.
+- `startX`: Where the current or last press began, x in framebuffer pixels.
+- `startY`: Where the current or last press began, y in framebuffer pixels.
+- `flickVelocityX`: Velocity over the last tenth of a second before release, pixels per second.
+- `flickVelocityY`: Vertical velocity as flickVelocityX, down positive.
 - `update`: Reads the pointer once per tick, before the input is consumed; now is the time in seconds.
 
 ## Touch

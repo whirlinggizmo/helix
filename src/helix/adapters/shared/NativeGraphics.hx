@@ -67,10 +67,14 @@ abstract class NativeGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return GraphicsDeviceBridge.canSample(format) == 1;
 
-	public function getMsaaSamples():Int
+	public var msaaSamples(get, never):Int;
+
+	function get_msaaSamples():Int
 		return GraphicsDeviceBridge.msaaSamples();
 
-	public function getMaxMsaaSamples():Int
+	public var maxMsaaSamples(get, never):Int;
+
+	function get_maxMsaaSamples():Int
 		return GraphicsDeviceBridge.maxMsaaSamples();
 
 	public function createBuffer(capacityBytes:Int):Int

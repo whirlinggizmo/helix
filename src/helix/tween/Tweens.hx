@@ -2,7 +2,7 @@ package helix.tween;
 
 /** Tweens on a clock: a value moved from one number to another over seconds by an easing, told to the game each update (a node's x, an
 	alpha, a camera's zoom), with a delay before, repeats and a yoyo back, and a completion. update runs each frame with the clock's delta
-	(Clock.getDelta), so tweens pause and slow with the game. Each tween moves in the order made; one made inside a callback starts from the
+	(Clock.delta), so tweens pause and slow with the game. Each tween moves in the order made; one made inside a callback starts from the
 	next update. */
 class Tweens {
 	var tweens:Array<Tween> = [];
@@ -23,7 +23,9 @@ class Tweens {
 	}
 
 	/** How many are moving or waiting, done ones gone. */
-	public function getCount():Int
+	public var count(get, never):Int;
+
+	function get_count():Int
 		return tweens.length + pending.length;
 
 	/** Cancels every tween where it is. */
@@ -36,7 +38,7 @@ class Tweens {
 		pending = [];
 	}
 
-	/** Advances every tween by delta seconds (a clock's getDelta). Once a frame. */
+	/** Advances every tween by delta seconds (a clock's delta). Once a frame. */
 	public function update(delta:Float):Void {
 		if (delta < 0)
 			delta = 0;
@@ -46,10 +48,10 @@ class Tweens {
 		updating = false;
 		var kept = [];
 		for (t in tweens)
-			if (!t.isDone())
+			if (!t.done)
 				kept.push(t);
 		for (t in pending)
-			if (!t.isDone())
+			if (!t.done)
 				kept.push(t);
 		pending = [];
 		tweens = kept;
@@ -64,15 +66,10 @@ class Tween {
 	var ease:Float->Float;
 	var update:Null<Float->Void>;
 	var complete:Null<Void->Void>;
-	var delay = 0.;
-	var repeat = 0;
-	var yoyo = false;
 	var at = 0.;
 	var played = 0;
 	var forward = true;
 	var started = false;
-	var value:Float;
-	var done = false;
 
 	@:allow(helix.tween.Tweens)
 	function new(from:Float, to:Float, seconds:Float, ease:Float->Float, update:Null<Float->Void>) {
@@ -93,8 +90,7 @@ class Tween {
 	}
 
 	/** Seconds before it starts. */
-	public function getDelay():Float
-		return delay;
+	public var delay(default, null):Float = 0.;
 
 	/** Plays count more times after the first (-1: for ever), and with yoyo each repeat goes back the way it came rather than jumping to the
 		start. False, changing nothing, for a count under -1 or once it has started. */
@@ -107,28 +103,26 @@ class Tween {
 	}
 
 	/** How many more times it plays after the first; -1 for ever. */
-	public function getRepeat():Int
-		return repeat;
+	public var repeat(default, null):Int = 0;
 
 	/** Whether repeats go back the way they came. */
-	public function isYoyo():Bool
-		return yoyo;
+	public var yoyo(default, null):Bool = false;
 
 	/** Runs f once it ends (not when cancelled). */
 	public function setComplete(f:Null<Void->Void>):Void
 		complete = f;
 
 	/** The value now: from before it starts, to once it ends. */
-	public function getValue():Float
-		return value;
+	public var value(default, null):Float;
 
 	/** How far along the current play is, 0 to 1 (before easing). */
-	public function getProgress():Float
+	public var progress(get, never):Float;
+
+	function get_progress():Float
 		return seconds <= 0 ? (started ? 1 : 0) : at / seconds;
 
 	/** Whether it has ended or was cancelled. */
-	public function isDone():Bool
-		return done;
+	public var done(default, null):Bool = false;
 
 	/** Stops it where it is: no more updates, no completion. */
 	public function cancel():Void {

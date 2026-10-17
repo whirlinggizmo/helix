@@ -76,44 +76,44 @@ One tween of a Tweens set, made by Tweens.to: set its delay and repeats before i
 
 ```haxe
 function setDelay(value:Float):Bool
-function getDelay():Float
+var delay(default, null):Float
 function setRepeat(count:Int, ?yoyo:Bool = false):Bool
-function getRepeat():Int
-function isYoyo():Bool
+var repeat(default, null):Int
+var yoyo(default, null):Bool
 function setComplete(f:Null<() -> Void>):Void
-function getValue():Float
-function getProgress():Float
-function isDone():Bool
+var value(default, null):Float
+var progress(get, never):Float
+var done(default, null):Bool
 function cancel():Void
 ```
 
 - `setDelay`: Waits seconds before starting (the first update comes then). False, changing nothing, for under 0 or once it has started.
-- `getDelay`: Seconds before it starts.
+- `delay`: Seconds before it starts.
 - `setRepeat`: Plays count more times after the first (-1: for ever), and with yoyo each repeat goes back the way it came rather than jumping to the start. False, changing nothing, for a count under -1 or once it has started.
-- `getRepeat`: How many more times it plays after the first; -1 for ever.
-- `isYoyo`: Whether repeats go back the way they came.
+- `repeat`: How many more times it plays after the first; -1 for ever.
+- `yoyo`: Whether repeats go back the way they came.
 - `setComplete`: Runs f once it ends (not when cancelled).
-- `getValue`: The value now: from before it starts, to once it ends.
-- `getProgress`: How far along the current play is, 0 to 1 (before easing).
-- `isDone`: Whether it has ended or was cancelled.
+- `value`: The value now: from before it starts, to once it ends.
+- `progress`: How far along the current play is, 0 to 1 (before easing).
+- `done`: Whether it has ended or was cancelled.
 - `cancel`: Stops it where it is: no more updates, no completion.
 
 ## Tweens
 
 *class* in `src/helix/tween/Tweens.hx`
 
-Tweens on a clock: a value moved from one number to another over seconds by an easing, told to the game each update (a node's x, an alpha, a camera's zoom), with a delay before, repeats and a yoyo back, and a completion. update runs each frame with the clock's delta (Clock.getDelta), so tweens pause and slow with the game. Each tween moves in the order made; one made inside a callback starts from the next update.
+Tweens on a clock: a value moved from one number to another over seconds by an easing, told to the game each update (a node's x, an alpha, a camera's zoom), with a delay before, repeats and a yoyo back, and a completion. update runs each frame with the clock's delta (Clock.delta), so tweens pause and slow with the game. Each tween moves in the order made; one made inside a callback starts from the next update.
 
 ```haxe
 function new()
 function to(from:Float, to:Float, seconds:Float, ?ease:Float -> Float, ?update:Float -> Void):Tween
-function getCount():Int
+var count(get, never):Int
 function clear():Void
 function update(delta:Float):Void
 ```
 
 - `new`: No tweens yet.
 - `to`: Moves from from to to over seconds by ease (linear when not given), calling update with the value each frame, the first at the start and the last with to exactly. Throws for seconds under 0.
-- `getCount`: How many are moving or waiting, done ones gone.
+- `count`: How many are moving or waiting, done ones gone.
 - `clear`: Cancels every tween where it is.
-- `update`: Advances every tween by delta seconds (a clock's getDelta). Once a frame.
+- `update`: Advances every tween by delta seconds (a clock's delta). Once a frame.

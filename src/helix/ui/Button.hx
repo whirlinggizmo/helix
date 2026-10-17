@@ -3,52 +3,53 @@ package helix.ui;
 import helix.render2d.Node2D;
 
 /** A button reading a line of text: clicked by the pointer (released over it, as pressed), or activated with focus by Enter, Space or a pad's
-	South. Ask isClicked once a frame. */
+	South. Ask clicked once a frame. */
 class Button extends Widget {
 	var face:Node2D;
 	var label:Node2D;
-	var clicked = false;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
-		var theme = ui.getTheme();
-		face = Node2D.rectangle(1, 1, theme.getFaceColor());
+		var theme = ui.theme;
+		face = Node2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.getCornerRadius());
-		label = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Center, theme.getFont());
-		root.add(face);
-		root.add(label);
+		face.setCornerRadius(theme.cornerRadius);
+		label = Node2D.text(text, theme.textSize, theme.textColor, Center, theme.font);
+		root.addChild(face);
+		root.addChild(label);
 		box = Box.stack(face);
-		box.setSizing(Fit, Fixed(theme.getWidgetHeight()));
-		box.setPadding(theme.getPadding() * 2, 0, theme.getPadding() * 2, 0);
+		box.setSizing(Fit, Fixed(theme.widgetHeight));
+		box.setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
 		var text = Box.of(label);
 		text.setAnchor(Center, Center);
 		box.add(text);
 	}
 
 	/** Whether it was clicked or activated this frame. */
-	public function isClicked():Bool
-		return clicked;
+	public var clicked(default, null):Bool = false;
 
 	/** Its text. */
-	public function getText():String
+	public var text(get, set):String;
+
+	function get_text():String
 		return label.getText();
 
-	/** Reads text. */
-	public function setText(value:String):Void
+	function set_text(value:String):String {
 		label.setText(value);
+		return value;
+	}
 
-	override public function isFocusable():Bool
+	override function get_focusable():Bool
 		return true;
 
 	override function target():Null<Node2D>
 		return face;
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
-		var theme = ui.getTheme();
+		var theme = ui.theme;
 		this.clicked = enabled && (clicked || activated);
-		face.setColor(held ? theme.getPressedColor() : hovered ? theme.getHoveredColor() : theme.getFaceColor());
-		label.setColor(enabled ? theme.getTextColor() : theme.getDisabledTextColor());
+		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
+		label.color = enabled ? theme.textColor : theme.disabledTextColor;
 	}
 }

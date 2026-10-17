@@ -19,21 +19,23 @@ class InputRouter implements IInputEvents {
 	public function new() {}
 
 	/** The input the app reads. */
-	public function getInput():IInput
+	public var input(get, never):IInput;
+
+	function get_input():IInput
 		return state;
 
 	/** Before the app's frame: tells source when the app's text entry changed, has it report what arrived, then empties the pad slots no
 		connected pad reported into. */
 	public function poll(source:IInputSource):Void {
-		if (state.isTextEntry() != textEntryTold) {
-			textEntryTold = state.isTextEntry();
+		if (state.textEntry != textEntryTold) {
+			textEntryTold = state.textEntry;
 			source.setTextEntry(textEntryTold);
 		}
 		padSlot = 0;
 		source.poll();
-		for (i in padSlot...state.getPadCount()) {
+		for (i in padSlot...state.padCount) {
 			var pad = state.getPad(i);
-			if (pad.isConnected())
+			if (pad.connected)
 				pad.connect(false, "");
 		}
 	}
@@ -114,10 +116,10 @@ class InputRouter implements IInputEvents {
 	}
 
 	public function pad(name:String, buttons:Array<Bool>, axes:Array<Float>):Void {
-		if (padSlot >= state.getPadCount())
+		if (padSlot >= state.padCount)
 			return;
 		var slot = state.getPad(padSlot++);
-		if (!slot.isConnected() || slot.getName() != name)
+		if (!slot.connected || slot.name != name)
 			slot.connect(true, name);
 		for (button in PadButton.all) {
 			var b:Int = button;

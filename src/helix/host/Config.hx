@@ -9,7 +9,6 @@ import haxe.io.Bytes;
 	whether to show a splash, play music, where assets are. */
 class Config {
 	var root:Dynamic;
-	var profileName:String;
 	var profile:Dynamic;
 	var defaults:Dynamic;
 
@@ -36,11 +35,12 @@ class Config {
 	}
 
 	/** The profile in force. */
-	public function getProfileName():String
-		return profileName;
+	public var profileName(default, null):String;
 
 	/** The profiles the file has, in name order, "default" among them when it does. */
-	public function getProfileNames():Array<String> {
+	public var profileNames(get, never):Array<String>;
+
+	function get_profileNames():Array<String> {
 		var names = [
 			for (f in Reflect.fields(root))
 				if (f != "profile" && Reflect.isObject(Reflect.field(root, f)) && !Std.isOfType(Reflect.field(root, f), Array)) f

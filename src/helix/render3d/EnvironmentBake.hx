@@ -8,7 +8,7 @@ import haxe.io.FPHelper;
 	equirectangular image (a .hdr's linear light, or an 8-bit image's sRGB) it works out the light it casts on rough surfaces (irradiance, as 9
 	spherical-harmonic coefficients), a cubemap of the image at its own resolution (the background, its mips box-filtered for blur) and one
 	blurred for each roughness (GGX-prefiltered, CUBE_SIZE a face and MIP_COUNT mips, roughness 0 to 1 across them: what smooth to rough
-	surfaces reflect), both as half floats ready for the GPU; and once, shared by every environment, the split-sum BRDF table (getBrdfTable).
+	surfaces reflect), both as half floats ready for the GPU; and once, shared by every environment, the split-sum BRDF table (brdfTable).
 	Split-sum image-based lighting, as the glTF sample viewer, Filament and Unreal light with it.
 
 	Conventions: directions are world space, +y up. An equirectangular image's u runs around the horizon, 0.5 looking toward -z and growing
@@ -50,9 +50,6 @@ class EnvironmentBake {
 	var face = 0;
 	var mip = 0;
 	var row = 0;
-	var backgroundSize = 0;
-	var lightingLevels:Array<Bytes> = [];
-	var backgroundLevels:Array<Bytes> = [];
 	var scratch = new Vector<Float>(3);
 	var direction = new Vector<Float>(3);
 
@@ -91,7 +88,9 @@ class EnvironmentBake {
 	}
 
 	/** Whether it's finished. */
-	public function isDone():Bool
+	public var done(get, never):Bool;
+
+	function get_done():Bool
 		return stage == Done;
 
 	/** Works steps until it's done or budgetMs milliseconds have passed (at least one step); true once done. Throws for a .hdr that turns out
@@ -107,25 +106,27 @@ class EnvironmentBake {
 	}
 
 	/** Its irradiance once done: 9 coefficients, RGB each (27 floats), over pi. */
-	public function getIrradiance():Vector<Float>
+	public var irradiance(get, never):Vector<Float>;
+
+	function get_irradiance():Vector<Float>
 		return sh;
 
 	/** The prefiltered cube once done: MIP_COUNT levels from CUBE_SIZE, each its six faces one after another, RGBA half floats. */
-	public function getLightingLevels():Array<Bytes>
-		return lightingLevels;
+	public var lightingLevels(default, null):Array<Bytes> = [];
 
-	/** The background cube once done: from getBackgroundSize down to 1, each its six faces one after another, RGBA half floats. */
-	public function getBackgroundLevels():Array<Bytes>
-		return backgroundLevels;
+	/** The background cube once done: from backgroundSize down to 1, each its six faces one after another, RGBA half floats. */
+	public var backgroundLevels(default, null):Array<Bytes> = [];
 
-	/** The background cube's face size, once its size is known (0 before): the image's width over 4, rounded down to a power of two, 64 to 1024. */
-	public function getBackgroundSize():Int
-		return backgroundSize;
+	/** The background cube's face size, once its size is known (0 before): the image's width over 4, rounded down to a power of two, 64 to
+		1024. */
+	public var backgroundSize(default, null):Int = 0;
 
 	/** The split-sum BRDF table once a bake has made it (null before): BRDF_SIZE square, RGBA8, red the scale A and green the bias B on F0
 		(F0 * A + B, 0..1), by n.v across and perceptual roughness down, each at its texel's centre: integrated over 256 GGX importance samples
 		with Schlick-GGX geometry (k = alpha / 2) and Schlick's Fresnel (Karis' split sum). */
-	public static function getBrdfTable():Null<Bytes>
+	public static var brdfTable(get, never):Null<Bytes>;
+
+	static function get_brdfTable():Null<Bytes>
 		return brdfRows == BRDF_SIZE ? brdf : null;
 
 	// One step of work.

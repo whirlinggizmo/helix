@@ -54,40 +54,40 @@ class App extends BaseApp {
 	var spin = 0.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX scene3d");
+		Window.title = "HeliX scene3d";
 		Window.requestSize(1000, 600);
 		// Framed for 16:9: the whole ring on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new DirectionalLight();
-		sun.setIntensity(2.5);
+		sun.intensity = 2.5;
 		sun.lookAt(-.4, -1, -.3);
 		stage.add(sun);
 		var ground = new Material();
-		ground.setBaseColor(0x3a3f4aff);
+		ground.baseColor = 0x3a3f4aff;
 		// The ground isn't something to pick: the pointer passes it (an unpickable node).
 		var floor = new Model(Mesh.plane(16, 16), ground);
-		floor.setPickable(false);
+		floor.pickable = false;
 		stage.add(floor);
 		for (i in 0...8) {
 			var a = i / 8 * Math.PI * 2, material = new Material();
-			material.setBaseColor(COLORS[i]);
+			material.baseColor = COLORS[i];
 			var cube = new Model(Mesh.cube(1, 1, 1), material);
-			cube.setName('cube ${i + 1}');
+			cube.name = 'cube ${i + 1}';
 			cube.setPosition(4 * Math.cos(a), .5, 4 * Math.sin(a));
 			stage.add(cube);
 			shapes.push(cube);
 		}
 		var white = new Material();
-		white.setBaseColor(0xe8e8f0ff);
+		white.baseColor = 0xe8e8f0ff;
 		var sphere = new Model(Mesh.sphere(1), white);
-		sphere.setName("sphere");
+		sphere.name = "sphere";
 		sphere.setPosition(0, 1, 0);
 		stage.add(sphere);
 		shapes.push(sphere);
 		spinner = new Model(Mesh.cube(.8, .8, .8), white);
-		spinner.setName("spinner");
+		spinner.name = "spinner";
 		spinner.setPosition(0, 3, 0);
 		stage.add(spinner);
 		shapes.push(spinner);
@@ -106,18 +106,17 @@ class App extends BaseApp {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		// The HUD in the design for the window's shape; the button sits under the title, however many lines it wraps to.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hudCamera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var title = "HeliX scene3d: click shapes to select them";
-		var buttonY = vy + 36 + Text2D.measureWrapped(batch.getFont(), title, 20, vw - 24) + 6;
+		var buttonY = vy + 36 + Text2D.measureWrapped(batch.font, title, 20, vw - 24) + 6;
 		button.setPosition(vx + 12, buttonY);
 		label.setPosition(vx + 24, buttonY + 10);
 		camera.setView(10 * Math.sin(angle), 6, 10 * Math.cos(angle), 0, 1, 0);
@@ -133,26 +132,26 @@ class App extends BaseApp {
 					selected.push(shape);
 			}
 		for (shape in shapes)
-			shape.setTint(selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xc8c8c8ff : 0x8c8c8cff);
-		button.setColor(pointer.isDown(button) ? 0x56607aff : pointer.isHovered(button) ? 0x3c4458ff : 0x2a3040ff);
+			shape.tint = selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xc8c8c8ff : 0x8c8c8cff;
+		button.color = pointer.isDown(button) ? 0x56607aff : pointer.isHovered(button) ? 0x3c4458ff : 0x2a3040ff;
 		label.setText(orbit ? "stop the camera" : "start the camera");
 		if (orbit)
 			angle += dt * .25;
 		spin += dt;
 		spinner.setRotation(spin * .7, spin, 0);
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 
 		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
-		var hovered:Null<Node3D> = Std.isOfType(pointer.getHovered(), Node3D) ? cast pointer.getHovered() : null;
+		var hovered:Null<Node3D> = Std.isOfType(pointer.hovered, Node3D) ? cast pointer.hovered : null;
 		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
 		var y = buttonY + 36 + 10;
 		y += Text2D.drawWrapped(batch,
-			'under the pointer: ${hovered != null ? hovered.getName() : pointer.isHovered(button) ? "the button" : "nothing"}'
-			+ '   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.getName()].join(", ")}'
-			+ (pointer.isCaptured() ? "   (the HUD has the pointer)" : ""),
+			'under the pointer: ${hovered != null ? hovered.name : pointer.isHovered(button) ? "the button" : "nothing"}'
+			+ '   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.name].join(", ")}'
+			+ (pointer.captured ? "   (the HUD has the pointer)" : ""),
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)

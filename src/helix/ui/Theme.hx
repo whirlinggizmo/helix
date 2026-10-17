@@ -5,8 +5,6 @@ import helix.render2d.Font2D;
 /** How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change one before making widgets; widgets read it as they're made
 	and as they draw their states. */
 class Theme {
-	var font:Null<Font2D> = null;
-	var textSize:Float = 18.;
 	var text:Int = 0xf0f2f8ff;
 	var disabledText:Int = 0x80869aff;
 	var panel:Int = 0x1e2230e8;
@@ -15,156 +13,162 @@ class Theme {
 	var pressed:Int = 0x56607eff;
 	var accent:Int = 0x4c8ef0ff;
 	var focus:Int = 0xffd25aff;
-	var focusWidth:Float = 2.;
 	var corner:Float = 8.;
-	var padding:Float = 10.;
-	var gap:Float = 8.;
 	var height:Float = 40.;
 
 	/** The colors and sizes as each getter says to start. */
 	public function new() {}
 
 	/** The font text is drawn in, or null for the stage's (the batch's built-in one). */
-	public function getFont():Null<Font2D>
-		return font;
+	public var font:Null<Font2D> = null;
 
-	/** Sets it, as getFont says. */
-	public function setFont(value:Null<Font2D>):Void
-		font = value;
+	/** Text's height in units. (18 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	public var textSize(default, set):Float = 18.;
 
-	/** Text's height in units. (18 to start.) */
-	public function getTextSize():Float
-		return textSize;
-
-	/** Sets it, as getTextSize says. False, changing nothing, for 0 or less. */
-	public function setTextSize(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_textSize(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		textSize = value;
-		return true;
+		return value;
 	}
 
 	/** Text's color. (0xf0f2f8ff to start.) */
-	public function getTextColor():Int
+	public var textColor(get, set):Int;
+
+	function get_textColor():Int
 		return text;
 
-	/** Sets it, as getTextColor says. */
-	public function setTextColor(value:Int):Void
+	function set_textColor(value:Int):Int {
 		text = value;
+		return value;
+	}
 
 	/** The color of text on a widget that can't be used now. (0x80869aff to start.) */
-	public function getDisabledTextColor():Int
+	public var disabledTextColor(get, set):Int;
+
+	function get_disabledTextColor():Int
 		return disabledText;
 
-	/** Sets it, as getDisabledTextColor says. */
-	public function setDisabledTextColor(value:Int):Void
+	function set_disabledTextColor(value:Int):Int {
 		disabledText = value;
+		return value;
+	}
 
 	/** A panel's background color. (0x1e2230e8 to start.) */
-	public function getPanelColor():Int
+	public var panelColor(get, set):Int;
+
+	function get_panelColor():Int
 		return panel;
 
-	/** Sets it, as getPanelColor says. */
-	public function setPanelColor(value:Int):Void
+	function set_panelColor(value:Int):Int {
 		panel = value;
+		return value;
+	}
 
 	/** The color of a button's (and a toggle's box's, a track's) face at rest. (0x2e3448ff to start.) */
-	public function getFaceColor():Int
+	public var faceColor(get, set):Int;
+
+	function get_faceColor():Int
 		return face;
 
-	/** Sets it, as getFaceColor says. */
-	public function setFaceColor(value:Int):Void
+	function set_faceColor(value:Int):Int {
 		face = value;
+		return value;
+	}
 
 	/** The color of a face under the pointer. (0x3e4660ff to start.) */
-	public function getHoveredColor():Int
+	public var hoveredColor(get, set):Int;
+
+	function get_hoveredColor():Int
 		return hovered;
 
-	/** Sets it, as getHoveredColor says. */
-	public function setHoveredColor(value:Int):Void
+	function set_hoveredColor(value:Int):Int {
 		hovered = value;
+		return value;
+	}
 
 	/** The color of a face held down. (0x56607eff to start.) */
-	public function getPressedColor():Int
+	public var pressedColor(get, set):Int;
+
+	function get_pressedColor():Int
 		return pressed;
 
-	/** Sets it, as getPressedColor says. */
-	public function setPressedColor(value:Int):Void
+	function set_pressedColor(value:Int):Int {
 		pressed = value;
+		return value;
+	}
 
-	/** The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row. (0x4c8ef0ff to start.) */
-	public function getAccentColor():Int
+	/** The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row.
+		(0x4c8ef0ff to start.) */
+	public var accentColor(get, set):Int;
+
+	function get_accentColor():Int
 		return accent;
 
-	/** Sets it, as getAccentColor says. */
-	public function setAccentColor(value:Int):Void
+	function set_accentColor(value:Int):Int {
 		accent = value;
+		return value;
+	}
 
 	/** The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffd25aff to start.) */
-	public function getFocusColor():Int
+	public var focusColor(get, set):Int;
+
+	function get_focusColor():Int
 		return focus;
 
-	/** Sets it, as getFocusColor says. */
-	public function setFocusColor(value:Int):Void
+	function set_focusColor(value:Int):Int {
 		focus = value;
-
-	/** The focus ring's width in units. (2 to start.) */
-	public function getFocusWidth():Float
-		return focusWidth;
-
-	/** Sets it, as getFocusWidth says. False, changing nothing, for below 0. */
-	public function setFocusWidth(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
-		focusWidth = value;
-		return true;
+		return value;
 	}
 
-	/** The radius of a panel's, a button's, a field's and a list's corners in units (a track's, a bar's and a box's at most half their height); 0 for square. The focus ring follows them. (8 to start.) */
-	public function getCornerRadius():Float
+	/** The focus ring's width in units. (2 to start.) 0 or more (under 0, or NaN, is 0). */
+	public var focusWidth(default, set):Float = 2.;
+
+	function set_focusWidth(value:Float):Float {
+		value = value >= 0 ? value : 0;
+		focusWidth = value;
+		return value;
+	}
+
+	/** The radius of a panel's, a button's, a field's and a list's corners in units (a track's, a bar's and a box's at most half their
+		height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0). */
+	public var cornerRadius(get, set):Float;
+
+	function get_cornerRadius():Float
 		return corner;
 
-	/** Sets it, as getCornerRadius says. False, changing nothing, for below 0. */
-	public function setCornerRadius(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_cornerRadius(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		corner = value;
-		return true;
+		return value;
 	}
 
-	/** Room inside a button or panel, around its content, in units. (10 to start.) */
-	public function getPadding():Float
-		return padding;
+	/** Room inside a button or panel, around its content, in units. (10 to start.) 0 or more (under 0, or NaN, is 0). */
+	public var padding(default, set):Float = 10.;
 
-	/** Sets it, as getPadding says. False, changing nothing, for below 0. */
-	public function setPadding(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_padding(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		padding = value;
-		return true;
+		return value;
 	}
 
-	/** Room between widgets in a panel, in units. (8 to start.) */
-	public function getGap():Float
-		return gap;
+	/** Room between widgets in a panel, in units. (8 to start.) 0 or more (under 0, or NaN, is 0). */
+	public var gap(default, set):Float = 8.;
 
-	/** Sets it, as getGap says. False, changing nothing, for below 0. */
-	public function setGap(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
+	function set_gap(value:Float):Float {
+		value = value >= 0 ? value : 0;
 		gap = value;
-		return true;
+		return value;
 	}
 
-	/** A button's (and a list row's, a slider's) height in units. (40 to start.) */
-	public function getWidgetHeight():Float
+	/** A button's (and a list row's, a slider's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	public var widgetHeight(get, set):Float;
+
+	function get_widgetHeight():Float
 		return height;
 
-	/** Sets it, as getWidgetHeight says. False, changing nothing, for 0 or less. */
-	public function setWidgetHeight(value:Float):Bool {
-		if (!(value > 0))
-			return false;
+	function set_widgetHeight(value:Float):Float {
+		value = value > 1e-6 ? value : 1e-6;
 		height = value;
-		return true;
+		return value;
 	}
 }

@@ -50,22 +50,21 @@ class Controls {
 	}
 
 	function touch(input:IInput, tick:Int, game:Game, layout:Layout, camera:Camera2D):Void {
-		var g = gestures, a = actions, cell = camera.getZoom();
-		g.setMaxTapDistance(cell * .4);
+		var g = gestures, a = actions, cell = camera.zoom;
+		g.maxTapDistance = cell * .4;
 		g.update(input, tick / 60);
-		if (g.isPressed()) {
-			anchorX = g.getX();
-			anchorY = g.getY();
+		if (g.pressed) {
+			anchorX = g.x;
+			anchorY = g.y;
 		}
-		var wx = camera.screenToWorldX(g.getX()),
-			wy = camera.screenToWorldY(g.getY());
+		var wx = camera.screenToWorldX(g.x), wy = camera.screenToWorldY(g.y);
 		// Off the field, any tap starts, restarts or resumes.
 		if (game.state != "playing") {
-			if (g.isTapped())
+			if (g.tapped)
 				a.start = true;
 			return;
 		}
-		if (g.isTapped()) {
+		if (g.tapped) {
 			if (Layout.inside(layout.pauseBox, wx, wy))
 				a.pause = true;
 			else if (Layout.inside(layout.holdBox, wx, wy))
@@ -74,24 +73,24 @@ class Controls {
 				a.rotateClockwise = true;
 			return;
 		}
-		if (g.isDown() && g.isDragging()) {
-			var columns = Std.int((g.getX() - anchorX) / cell);
+		if (g.down && g.dragging) {
+			var columns = Std.int((g.x - anchorX) / cell);
 			if (columns > 0)
 				a.right += columns;
 			else if (columns < 0)
 				a.left -= columns;
 			anchorX += columns * cell;
-			var rows = Std.int((g.getY() - anchorY) / cell);
+			var rows = Std.int((g.y - anchorY) / cell);
 			if (rows > 0) {
 				a.dropRows += rows;
 				anchorY += rows * cell;
 			}
 		}
-		if (g.isReleased() && g.isDragging()) {
+		if (g.released && g.dragging) {
 			var fast = cell * 25;
-			if (g.getFlickVelocityY() > fast && g.getFlickVelocityY() > Math.abs(g.getFlickVelocityX()) * 2)
+			if (g.flickVelocityY > fast && g.flickVelocityY > Math.abs(g.flickVelocityX) * 2)
 				a.hardDrop = true;
-			else if (-g.getFlickVelocityY() > fast && -g.getFlickVelocityY() > Math.abs(g.getFlickVelocityX()) * 2)
+			else if (-g.flickVelocityY > fast && -g.flickVelocityY > Math.abs(g.flickVelocityX) * 2)
 				a.hold = true;
 		}
 	}

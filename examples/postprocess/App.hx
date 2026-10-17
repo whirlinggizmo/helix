@@ -51,7 +51,7 @@ class App extends BaseApp {
 	var status = "loading the effects";
 
 	override public function init():Void {
-		Window.setTitle("HeliX postprocess");
+		Window.title = "HeliX postprocess";
 		Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
@@ -59,25 +59,25 @@ class App extends BaseApp {
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.setIntensity(2);
+		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		lamp = new PointLight();
-		lamp.setColor(0xff9a4aff);
-		lamp.setIntensity(12);
+		lamp.color = 0xff9a4aff;
+		lamp.intensity = 12;
 		stage.add(lamp);
 		var floor = new Material();
-		floor.setBaseColor(0x5c6066ff);
-		floor.setRoughness(.9);
+		floor.baseColor = 0x5c6066ff;
+		floor.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), floor));
 		var shapes = [Mesh.sphere(.6), Mesh.cube(1, 1, 1), Mesh.torus(.5, .18), Mesh.cone(.5, 1.1)];
 		var colors = [0x3b82f6ff, 0xe5484dff, 0xf5b942ff, 0x46a758ff];
 		for (i in 0...shapes.length) {
 			var material = new Material();
-			material.setBaseColor(colors[i]);
-			material.setRoughness(.35);
+			material.baseColor = colors[i];
+			material.roughness = .35;
 			var model = new Model(shapes[i], material);
 			var a = i / shapes.length * Math.PI * 2 + .4;
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
@@ -97,8 +97,8 @@ class App extends BaseApp {
 		shaders.load("shaders/vignette.hxshader", result -> switch result {
 			case Ready(shader):
 				vignette = new ScreenEffect(gpu, shader);
-				vignette.getParameters().setFloat("radius", .35);
-				vignette.getParameters().setColor("tint", 0xfff2deff);
+				vignette.parameters.setFloat("radius", .35);
+				vignette.parameters.setColor("tint", 0xfff2deff);
 				status = "";
 			case Failed(message):
 				status = message;
@@ -107,10 +107,10 @@ class App extends BaseApp {
 		shaders.load("shaders/scanlines.hxshader", result -> switch result {
 			case Ready(shader):
 				scanlines = new ScreenEffect(gpu, shader);
-				scanlines.getParameters().setFloat("lines", 240);
-				scanlines.getParameters().setFloat("darkness", .35);
-				scanlines.getParameters().setFloat("offset", 1.5);
-				scanlines.getParameters().setFloat("flicker", 1);
+				scanlines.parameters.setFloat("lines", 240);
+				scanlines.parameters.setFloat("darkness", .35);
+				scanlines.parameters.setFloat("offset", 1.5);
+				scanlines.parameters.setFloat("flicker", 1);
 			case Failed(message):
 				status = message;
 			case Cancelled:
@@ -122,9 +122,9 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.Digit1) && vignette != null)
-			vignette.setEnabled(!vignette.isEnabled());
+			vignette.enabled = !vignette.enabled;
 		if (input.isFramePressed(Key.Digit2) && scanlines != null)
-			scanlines.setEnabled(!scanlines.isEnabled());
+			scanlines.enabled = !scanlines.enabled;
 		if (input.isFramePressed(Key.Space))
 			breathing = !breathing;
 		if (input.isFramePressed(Key.O))
@@ -134,25 +134,25 @@ class App extends BaseApp {
 		if (input.isDown(Key.Down))
 			strength = Math.max(0, strength - dt * .5);
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		if (orbit)
 			angle += dt * .2;
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
 		if (vignette != null)
-			vignette.getParameters().setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
+			vignette.parameters.setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
 		var gpu = Graphics.instance,
-			width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+			width = Window.framebufferWidth,
+			height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 4.5, 9 * Math.cos(angle), 0, .5, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		// The scene into a texture, the effects but the last through two more, then the screen.
 		post.beginScene(width, height, 0x14161cff);
@@ -164,7 +164,7 @@ class App extends BaseApp {
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX postprocess: screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		inline function onOff(e:Null<ScreenEffect>):String
-			return e == null ? "loading" : e.isEnabled() ? "on" : "off";
+			return e == null ? "loading" : e.enabled ? "on" : "off";
 		y += Text2D.drawWrapped(batch,
 			'[1] vignette ${onOff(vignette)}  [2] scanlines ${onOff(scanlines)}  [Up/Down] strength ${Math.round(strength * 100) / 100}  [Space] breathing ${breathing ? "on" : "off"}  [O] camera',
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff)
@@ -179,7 +179,7 @@ class App extends BaseApp {
 	override public function cleanup():Void {
 		for (e in [vignette, scanlines])
 			if (e != null)
-				shaders.release(e.getShader());
+				shaders.release(e.shader);
 		post.destroy();
 		stage.destroy();
 		batch.destroy();

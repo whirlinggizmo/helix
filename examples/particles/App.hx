@@ -59,17 +59,17 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX particles");
+		Window.title = "HeliX particles";
 		Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		grid = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
 		// Framed for 16:9: the fountain and the fire both in view on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 
 		fountain = new Emitter(null, 4096);
-		fountain.setRate(1200);
+		fountain.rate = 1200;
 		fountain.setLife(1.4, 1.9);
 		fountain.setSpawnBox(.15, 0, .15);
 		fountain.setVelocity(0, 9, 0, .22, .15);
@@ -81,19 +81,19 @@ class App extends BaseApp {
 		fountain.prewarm(2);
 
 		sparks = new Emitter(null, 2048);
-		sparks.setRate(600);
+		sparks.rate = 600;
 		sparks.setLife(.5, 1.2);
 		sparks.setVelocity(0, 4, 0, 1.2, .6);
 		sparks.setGravity(0, -6, 0);
-		sparks.setDrag(1.5);
-		sparks.setInheritVelocity(.4);
-		sparks.setStretch(.04);
+		sparks.drag = 1.5;
+		sparks.inheritVelocity = .4;
+		sparks.stretch = .04;
 		sparks.setSize(.08, .02, .5);
 		sparks.setColor(0xffdc78ff, 0xff3c0a00);
 		sparksNode = place(sparks, 3.5, 1.5, 0);
 
 		smoke = new Emitter(null, 512);
-		smoke.setRate(30);
+		smoke.rate = 30;
 		smoke.setLife(3, 4.5);
 		smoke.setSpawnSphere(.3);
 		smoke.setVelocity(0, 1.4, 0, .35, .3);
@@ -114,11 +114,11 @@ class App extends BaseApp {
 
 		flame = new Emitter(null, 1024);
 		flame.setFrames(4, 4);
-		flame.setRate(40);
+		flame.rate = 40;
 		flame.setLife(.7, 1.1);
 		flame.setSpawnSphere(.3);
 		flame.setVelocity(0, 1.8, 0, .2, .3);
-		flame.setDrag(.8);
+		flame.drag = .8;
 		flame.setSpin(-1.5, 1.5);
 		flame.clearSizeKeys();
 		flame.addSizeKey(0, .6);
@@ -139,7 +139,7 @@ class App extends BaseApp {
 		confetti.setLife(1.2, 2.2);
 		confetti.setVelocity(0, -420, 0, 1.3, .7);
 		confetti.setGravity(0, 700, 0);
-		confetti.setDrag(.8);
+		confetti.drag = .8;
 		confetti.setSize(12, 6, .5);
 		confetti.setSpin(-8, 8);
 		confetti.setColor(0xffffffff, 0xffffff00);
@@ -152,16 +152,16 @@ class App extends BaseApp {
 		Textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
 				for (e in [fountain, sparks, smoke, confetti])
-					e.setTexture(texture);
+					e.texture = texture;
 				var presentation = Screen.instance;
-				burst(presentation.getVisibleX() + presentation.getVisibleWidth() / 2, presentation.getVisibleY() + presentation.getVisibleHeight() / 3);
+				burst(presentation.visibleX + presentation.visibleWidth / 2, presentation.visibleY + presentation.visibleHeight / 3);
 			case Failed(message):
 				trace(message);
 			case Cancelled:
 		});
 		Textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
-				flame.setTexture(texture);
+				flame.texture = texture;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -182,32 +182,31 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Space)) {
 			paused = !paused;
 			for (e in [fountain, sparks, smoke, flame])
-				e.setEmitting(!paused);
+				e.emitting = !paused;
 		}
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		if (input.isPointerFramePressed())
-			burst(presentation.toUnitsX(input.getPointerX()), presentation.toUnitsY(input.getPointerY()));
+		if (input.pointerFramePressed)
+			burst(presentation.toUnitsX(input.pointerX), presentation.toUnitsY(input.pointerY));
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		if (orbit)
 			angle += dt * .15;
-		stage.setTime(time);
-		flat.setTime(time);
+		stage.time = time;
+		flat.time = time;
 		// The sparks' source circles the fountain; the sparks stay where they were born.
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x0e1018ff);
 		grid.begin(camera);
@@ -218,8 +217,8 @@ class App extends BaseApp {
 		flat.draw(batch, hud);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX particles", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.getDrawCallCount()} draws',
-			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.drawCallCount} draws', vx + 12, y,
+			16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

@@ -27,8 +27,8 @@ static function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:
 static function createDataTexture(width:Int, height:Int):Int
 static function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 static function canSample(format:TextureFormat):Bool
-static function getMsaaSamples():Int
-static function getMaxMsaaSamples():Int
+static var msaaSamples(get, never):Int
+static var maxMsaaSamples(get, never):Int
 static function createRenderTarget(width:Int, height:Int):Int
 static function createShadowMap(size:Int, layers:Int):Int
 static function destroyTexture(handle:Int):Void
@@ -58,8 +58,8 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
 - `updateDataTexture`: Replaces a data texture's whole contents with data's first width * height * 16 bytes (rows top first, little-endian floats), for the draws after it; any number of times a frame. Throws for a handle that isn't a data texture or data too short.
 - `canSample`: Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them.
-- `getMsaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
-- `getMaxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
+- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
+- `maxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
 - `createRenderTarget`: Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less.
 - `createShadowMap`: Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow texture. Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. Throws for a size or layer count of 0 or less, or past this GPU's.
 - `destroyTexture`: Frees a texture of any kind. Whoever created a handle destroys it, once. Throws for an unknown handle.
@@ -105,8 +105,8 @@ function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:Texture
 function createDataTexture(width:Int, height:Int):Int
 function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 function canSample(format:TextureFormat):Bool
-function getMsaaSamples():Int
-function getMaxMsaaSamples():Int
+var msaaSamples(get, never):Int
+var maxMsaaSamples(get, never):Int
 function createRenderTarget(width:Int, height:Int):Int
 function createShadowMap(size:Int, layers:Int):Int
 function destroyTexture(handle:Int):Void
@@ -136,8 +136,8 @@ function shutdown():Void
 - `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
 - `updateDataTexture`: Replaces a data texture's whole contents with data's first width * height * 16 bytes (rows top first, little-endian floats), for the draws after it; any number of times a frame. Throws for a handle that isn't a data texture or data too short.
 - `canSample`: Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them.
-- `getMsaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
-- `getMaxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
+- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
+- `maxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
 - `createRenderTarget`: Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less.
 - `createShadowMap`: Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow texture. Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. Throws for a size or layer count of 0 or less, or past this GPU's.
 - `destroyTexture`: Frees a texture of any kind. Whoever created a handle destroys it, once. Throws for an unknown handle.
@@ -194,14 +194,14 @@ Image decoding over a platform's IImageDecoder, the same on every platform: at m
 ```haxe
 function new(decoder:IImageDecoder)
 function decode(encoded:haxe.io.Bytes, complete:ImageDecodeResult -> Void):IRequest
-function isBusy():Bool
+var busy(get, never):Bool
 function poll():Void
 function shutdown():Void
 ```
 
 - `new`: Decodes with decoder.
 - `decode`: Decodes encoded; complete runs exactly once on the host thread at a later poll. Failed for no bytes, a closed service, or bytes the decoder can't read.
-- `isBusy`: Whether a decode is queued, under way, or its completion not yet run.
+- `busy`: Whether a decode is queued, under way, or its completion not yet run.
 - `poll`: Delivers finished decodes, starts queued ones and runs completions. Call once per frame.
 - `shutdown`: Cancels every pending decode (each completes Cancelled) and refuses later ones.
 
@@ -295,7 +295,7 @@ Screen effects over a finished frame: the scene is drawn into a texture the scre
 
 ```haxe
 function new(gpu:IGraphics)
-function getSceneTexture():Null<Texture2D>
+var sceneTexture(get, never):Null<Texture2D>
 function beginScene(width:Int, height:Int, clearColor:Int):Void
 function endScene(effects:Array<ScreenEffect>, time:Float):Void
 function present():Void
@@ -303,7 +303,7 @@ function destroy():Void
 ```
 
 - `new`: Effects drawn on gpu.
-- `getSceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
+- `sceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
 - `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size), cleared to clearColor. Draw it as the screen; endScene ends it. Throws inside another pass.
 - `endScene`: Ends the scene's pass and draws effects (each that is enabled, in order) but the last, each from the one before's result into a texture of its own, at time seconds; the last waits for present.
 - `present`: Draws the processed frame over the open screen pass's viewport: the last effect over the others' result, or the frame as it is.
@@ -334,22 +334,20 @@ How a draw samples a texture: its filter (linear, smooth and through its mipmaps
 
 *class* in `src/helix/graphics/ScreenEffect.hx`
 
-A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (getParameters), kept across the shader's reloads. PostProcess chains them; draw draws one into the open pass.
+A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (parameters), kept across the shader's reloads. PostProcess chains them; draw draws one into the open pass.
 
 ```haxe
 function new(gpu:IGraphics, shader:Shader, ?alpha:Bool = false)
-function getShader():Shader
-function getParameters():ShaderParameters
-function isEnabled():Bool
-function setEnabled(value:Bool):Void
+var shader(default, null):Shader
+var parameters(default, null):ShaderParameters
+var enabled:Bool
 function draw(source:Texture2D, width:Int, height:Int, time:Float):Void
 ```
 
 - `new`: An effect drawing with shader (kind screen) on gpu, blended over what's there when alpha, else replacing it. Throws for a shader of another kind.
-- `getShader`: Its shader.
-- `getParameters`: Its shader's own parameters and textures, set by name.
-- `isEnabled`: Whether PostProcess draws it.
-- `setEnabled`: Turns it on or off in a PostProcess chain.
+- `shader`: Its shader.
+- `parameters`: Its shader's own parameters and textures, set by name.
+- `enabled`: Whether PostProcess draws it.
 - `draw`: Draws the effect over the open pass's viewport, reading source (the frame it changes), width x height pixels, seconds since it began. A texture of its own that isn't set is drawn as source.
 
 ## ScreenshotResult
@@ -407,28 +405,28 @@ A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU bind
 
 *class* in `src/helix/graphics/Shader.hx`
 
-An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps getReloadCount; its pipelines (Pipelines) are made again over the new program as they're next asked for.
+An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps reloadCount; its pipelines (Pipelines) are made again over the new program as they're next asked for.
 
 ```haxe
 static function fromText(gpu:IGraphics, text:String):Shader
-function getHandle():Int
-function getKind():String
-function getReloadCount():Int
-function getBlockSizes():Array<Int>
+var handle(default, null):Int
+var kind(default, null):String
+var reloadCount(get, never):Int
+var blockSizes(get, never):Array<Int>
 function getParameter(name:String):Null<ShaderParameter>
 function getTextureSlot(name:String):Int
-function getTextureSlots():Array<Int>
+var textureSlots(get, never):Array<Int>
 function destroy():Void
 ```
 
 - `fromText`: Builds a shader from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
-- `getHandle`: The IGraphics shader handle.
-- `getKind`: Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's).
-- `getReloadCount`: How many times it has been replaced by a reload: a pipeline made before the latest is stale.
-- `getBlockSizes`: Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks.
+- `handle`: The IGraphics shader handle.
+- `kind`: Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's).
+- `reloadCount`: How many times it has been replaced by a reload: a pipeline made before the latest is stale.
+- `blockSizes`: Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks.
 - `getParameter`: One of its own parameters by name, or null.
 - `getTextureSlot`: One of its own textures' slot by name, or -1.
-- `getTextureSlots`: The texture slots it samples, the framework's and its own, in order (there may be gaps: a slot it doesn't use).
+- `textureSlots`: The texture slots it samples, the framework's and its own, in order (there may be gaps: a slot it doesn't use).
 - `destroy`: Frees the program and the pipelines made over it.
 
 ## ShaderBlock
@@ -479,7 +477,7 @@ function getValues(name:String):Null<Array<Float>>
 function setTexture(name:String, texture:Texture2D):Bool
 function getTexture(name:String):Null<Texture2D>
 function write(blocks:Array<Null<haxe.io.Bytes>>):Void
-function getTextureSlots():Map<Int, Texture2D>
+var textureSlots(get, never):Map<Int, Texture2D>
 ```
 
 - `new`: The parameters of shader.
@@ -490,7 +488,7 @@ function getTextureSlots():Map<Int, Texture2D>
 - `setTexture`: Binds texture to the shader's own texture name (sampled as the texture's sampling says). False when the shader has no such texture of its own.
 - `getTexture`: The texture bound to name, or null.
 - `write`: Writes the values set into blocks (the shader's uniform blocks' bytes by slot, null for one it lacks).
-- `getTextureSlots`: The textures set, by the shader's slot.
+- `textureSlots`: The textures set, by the shader's slot.
 
 ## ShaderSource
 

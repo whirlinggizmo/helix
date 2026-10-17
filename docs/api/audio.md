@@ -28,11 +28,11 @@ Fully decoded, reusable audio resource.
 
 ```haxe
 function new(id:Int, backend:IAudio, ?path:String)
-function getPath():Null<String>
+var path(default, null):Null<String>
 ```
 
 - `new`: Owns backend clip id, loaded from path when given; AudioResources.loadClip creates it.
-- `getPath`: The asset it was loaded from, which a reload replaces in place.
+- `path`: The asset it was loaded from, which a reload replaces in place.
 
 ## AudioDecodeResult
 
@@ -56,7 +56,7 @@ static var MAX_ENCODED(inline, null):Int
 static var MAX_FRAMES(inline, null):Int
 static function sniff(encoded:haxe.io.Bytes):Null<String>
 function decode(encoded:haxe.io.Bytes, complete:AudioDecodeResult -> Void):IRequest
-function isBusy():Bool
+var busy(get, never):Bool
 function poll():Void
 function shutdown():Void
 ```
@@ -66,7 +66,7 @@ function shutdown():Void
 - `MAX_FRAMES`: The most frames a decoded clip has.
 - `sniff`: What encoded is by its first bytes: "wav", "ogg", "mp3" (an ID3 tag or an MPEG frame's sync bits), or null.
 - `decode`: Decodes encoded whole; complete runs exactly once on the host thread at a later poll. Failed for a closed service, more than 8 MiB encoded, more than 2Mi frames decoded, or an unsupported or corrupt file.
-- `isBusy`: Whether a decode is queued, under way, or its completion not yet run.
+- `busy`: Whether a decode is queued, under way, or its completion not yet run.
 - `poll`: Delivers finished decodes, starts queued ones and runs completions. Call once per frame.
 - `shutdown`: Cancels every pending decode (each completes Cancelled) and refuses later ones.
 
@@ -88,28 +88,26 @@ One playback, playing or paused; holds its resource until stopped or played to i
 
 ```haxe
 function new(resource:AudioResource, loop:Bool, volume:Float)
-function getId():Int
-function isFinished():Bool
-function getSource():Int
-function getState():PlayState
+var id(default, null):Int
+var finished(default, null):Bool
+var source(default, null):Int
+var state(get, never):PlayState
 function stop():Bool
 function pause():Bool
 function resume():Bool
-function getVolume():Float
-function setVolume(volume:Float):Bool
+var volume(default, set):Float
 function poll():Void
 ```
 
 - `new`: A playback of resource (whose playback reference the caller retained) at volume, looping if asked: it starts now if audio runs, waits if audio is available but hasn't started, and finishes at once otherwise. AudioResources.play makes it.
-- `getId`: The adapter's voice; 0 while it waits for audio to start, or when it couldn't start.
-- `isFinished`: Whether it was stopped, played to its end, or never started; its resource reference is released then.
-- `getSource`: The adapter's resource it plays, kept as it started: a reload may replace the resource's.
-- `getState`: Playing or Paused while it lasts (waiting counts as playing); then Stopped (stop(), or it never started) or Complete (it played to its end).
+- `id`: The adapter's voice; 0 while it waits for audio to start, or when it couldn't start.
+- `finished`: Whether it was stopped, played to its end, or never started; its resource reference is released then.
+- `source`: The adapter's resource it plays, kept as it started: a reload may replace the resource's.
+- `state`: Playing or Paused while it lasts (waiting counts as playing); then Stopped (stop(), or it never started) or Complete (it played to its end).
 - `stop`: Stops it and releases its resource reference. False once it has finished.
 - `pause`: Pauses it where it is. False unless it's playing.
 - `resume`: Plays on from where it was paused. False unless it's paused.
-- `getVolume`: Its volume, 0 to 1.
-- `setVolume`: Sets its volume, 0 to 1 (before it starts, it starts at it). False, changing nothing, for a volume outside 0 to 1, or once finished.
+- `volume`: Its volume, 0 to 1. Clamped to 0..1 (NaN is 0); once it has finished, kept but not heard.
 - `poll`: Starts it once audio runs, and finishes it, releasing its resource reference, once the adapter no longer plays it. AudioResources.poll calls it.
 
 ## AudioResource
@@ -120,18 +118,18 @@ One owner plus active playback references. release() drops the owner's reference
 
 ```haxe
 function new(id:Int, backend:IAudio, destroy:() -> Void)
-function getId():Int
-function getBackend():IAudio
-function isDisposed():Bool
+var id(default, null):Int
+var backend(default, null):IAudio
+var disposed(default, null):Bool
 function retainPlayback():Void
 function releasePlayback():Void
 function release():Void
 ```
 
 - `new`: Owns backend resource id with the owner's reference; destroy runs when the last reference is released.
-- `getId`: The backend clip or stream id, which a reload may replace.
-- `getBackend`: The audio adapter that owns the backend resource.
-- `isDisposed`: Whether the owner and every playback have released it, so its backend resource is destroyed.
+- `id`: The backend clip or stream id, which a reload may replace.
+- `backend`: The audio adapter that owns the backend resource.
+- `disposed`: Whether the owner and every playback have released it, so its backend resource is destroyed.
 - `retainPlayback`: Adds a reference for a starting playback. Throws once the owner has released it.
 - `releasePlayback`: Drops a playback's reference; the last reference destroys the backend resource.
 - `release`: Drops the owner's reference, once; the backend resource is destroyed when no playback still holds it.
@@ -179,8 +177,8 @@ function new(id:Int, backend:IAudio, releaseSource:() -> Void)
 Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's; lifetimes, volume checks, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens.
 
 ```haxe
-function isAvailable():Bool
-function isRunning():Bool
+var available(get, never):Bool
+var running(get, never):Bool
 function createClip(samples:haxe.io.Bytes):Int
 function destroyClip(clip:Int):Void
 function openStream(source:AudioLocation, done:StreamOpenResult -> Void):() -> Void
@@ -195,8 +193,8 @@ function poll():Void
 function shutdown():Void
 ```
 
-- `isAvailable`: Whether there is an output at all: false natively without an audio device.
-- `isRunning`: Whether voices start now: in a browser, once a key or pointer press has unlocked audio.
+- `available`: Whether there is an output at all: false natively without an audio device.
+- `running`: Whether voices start now: in a browser, once a key or pointer press has unlocked audio.
 - `createClip`: Copies samples (mono 32-bit float PCM at 44100 Hz, checked) into a new clip and returns its id. Throws when there's no room for a clip.
 - `destroyClip`: Destroys clip and stops its voices. Throws for an unknown clip.
 - `openStream`: Opens source for playing as it's read; done runs once on the host thread, never during this call: Opened, or Failed for a source the platform can't open (natively a remote URL or a file its codec can't read; in a browser a load error or no metadata within 15 seconds). A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is closed.

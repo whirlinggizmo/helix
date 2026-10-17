@@ -58,14 +58,14 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX Asteroids");
+		Window.title = "HeliX Asteroids";
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
 		batch = new Batch2D(Graphics.instance);
 		renderer = new Renderer(Graphics.instance, batch);
 		menus();
 		ticker = new Ticker(Input.instance);
-		ticker.setMaxSteps(6);
+		ticker.maxSteps = 6;
 		var script = Host.getOption("autopilot", "");
 		pilotReady = script == "";
 		if (!pilotReady)
@@ -90,26 +90,26 @@ class App extends BaseApp {
 		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(hud, hudCamera);
 		var theme = new helix.ui.Theme();
-		theme.setFaceColor(0x1f293dff);
-		theme.setHoveredColor(0x303d57ff);
-		theme.setPressedColor(0x46587aff);
-		theme.setFocusColor(0x73d9ffff);
-		theme.setTextColor(0xd9e6f7ff);
-		theme.setTextSize(22);
-		theme.setWidgetHeight(52);
-		theme.setGap(12);
-		theme.setCornerRadius(12);
+		theme.faceColor = 0x1f293dff;
+		theme.hoveredColor = 0x303d57ff;
+		theme.pressedColor = 0x46587aff;
+		theme.focusColor = 0x73d9ffff;
+		theme.textColor = 0xd9e6f7ff;
+		theme.textSize = 22;
+		theme.widgetHeight = 52;
+		theme.gap = 12;
+		theme.cornerRadius = 12;
 		ui = new Ui(hud, hudCamera, pointer, Input.instance, theme);
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
 		var column = Box.column();
 		column.setSizing(Fixed(300), Fit);
-		column.setGap(theme.getGap());
+		column.gap = theme.gap;
 		column.setAlign(Start, Stretch);
 		column.setAnchor(Start, Start, 330, 390);
 		for (b in [play, again, toTitle])
-			column.add(b.getBox());
+			column.add(b.box);
 		layout = Box.stack();
 		layout.setSizing(Fixed(Game.W), Fixed(Game.H));
 		layout.add(column);
@@ -120,19 +120,19 @@ class App extends BaseApp {
 		var state = game.state == "playing" ? "" : game.state;
 		if (state != menuState) {
 			menuState = state;
-			play.setVisible(state == "title");
-			again.setVisible(state == "gameover");
-			toTitle.setVisible(state == "gameover");
+			play.visible = state == "title";
+			again.visible = state == "gameover";
+			toTitle.visible = state == "gameover";
 			ui.reset();
 		}
-		play.setText(ready ? "PLAY" : "LOADING");
-		play.setEnabled(ready);
-		Box.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.getFont());
+		play.text = ready ? "PLAY" : "LOADING";
+		play.enabled = ready;
+		Box.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.font);
 		pointer.update();
 		ui.update();
-		if (play.isClicked() || again.isClicked())
+		if (play.clicked || again.clicked)
 			wantStart = true;
-		if (toTitle.isClicked())
+		if (toTitle.clicked)
 			wantTitle = true;
 	}
 
@@ -140,7 +140,7 @@ class App extends BaseApp {
 		if (ready || !soundReady || !pilotReady)
 			return;
 		if (pilot != null)
-			game = new Game(pilot.getSeed());
+			game = new Game(pilot.seed);
 		ready = true;
 	}
 
@@ -148,13 +148,13 @@ class App extends BaseApp {
 		return {
 			ready: ready,
 			game: game.snapshot(),
-			menu: {focus: ui.getFocusedName()},
-			autopilot: pilot == null ? null : pilot.getSnapshot(),
-			vertices: batch.getVertexCount(),
-			draws: batch.getDrawCallCount(),
-			width: Window.getFramebufferWidth(),
-			height: Window.getFramebufferHeight(),
-			focused: Window.isFocused()
+			menu: {focus: ui.focusedName},
+			autopilot: pilot == null ? null : pilot.snapshot,
+			vertices: batch.vertexCount,
+			draws: batch.drawCallCount,
+			width: Window.framebufferWidth,
+			height: Window.framebufferHeight,
+			focused: Window.focused
 		};
 
 	/** One tick; false once the autopilot is done or the game quit. */
@@ -164,12 +164,12 @@ class App extends BaseApp {
 		var source:IInput = Input.instance;
 		if (pilot != null) {
 			source = pilot.advance(game.probe);
-			if (pilot.isDone())
+			if (pilot.done)
 				return false;
 		}
 		input.read(source);
 		// The UI decides the menu while it has the keys (Enter on Title isn't also a start); a click is taken here, by a tick.
-		if (ui.isCapturingKeys())
+		if (ui.capturingKeys)
 			input.start = false;
 		input.start = input.start || wantStart;
 		input.title = wantTitle;
@@ -181,14 +181,14 @@ class App extends BaseApp {
 		}
 		game.step(input);
 		source.consume();
-		sounds.play(game, audioEnabled, Window.isFocused());
+		sounds.play(game, audioEnabled, Window.focused);
 		return true;
 	}
 
 	override public function frame(dt:Float):Void {
-		if (stopped || Window.getFramebufferWidth() <= 0 || Window.getFramebufferHeight() <= 0)
+		if (stopped || Window.framebufferWidth <= 0 || Window.framebufferHeight <= 0)
 			return;
-		Field.view(camera, Window.getFramebufferWidth(), Window.getFramebufferHeight());
+		Field.view(camera, Window.framebufferWidth, Window.framebufferHeight);
 		ScreenShape.update();
 		Screen.apply(hudCamera);
 		if (ready) {
@@ -196,14 +196,14 @@ class App extends BaseApp {
 				for (_ in 0...120)
 					if (!step())
 						break;
-			} else if (Window.isFocused())
-				ticker.advance(Time.clock.getElapsed(), () -> step());
+			} else if (Window.focused)
+				ticker.advance(Time.clock.elapsed, () -> step());
 			else
 				sounds.play(game, false, false);
 		}
 		updateMenu();
 		renderer.render(game, camera, hudCamera, Screen.instance, hud);
-		if (pilot != null && pilot.isDone()) {
+		if (pilot != null && pilot.done) {
 			TestHarness.publish(inspect());
 			pilot = null;
 			if (Host.getOption("autoclose", "0") == "1") {

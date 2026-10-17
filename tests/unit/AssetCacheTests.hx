@@ -129,7 +129,7 @@ class AssetCacheTests {
 		if (manifest != null)
 			assets.setManifest(manifest);
 		if (mode != null)
-			assets.setCacheMode(mode);
+			assets.cacheMode = mode;
 		return assets;
 	}
 

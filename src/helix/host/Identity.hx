@@ -3,9 +3,6 @@ package helix.host;
 /** Who the program is, for what HeliX keeps for it: a company and a product, each one safe file name. Natively it names the cache directory
 	(<user cache>/<company>/<product>); in the browser, the page's cache database. */
 class Identity {
-	var company:String;
-	var product:String;
-
 	/** product and company, cleaned (cleanName). Throws for a name that cleans to nothing or is too long. */
 	public function new(product:String, company = "DefaultCompany") {
 		var p = cleanName(product), c = cleanName(company);
@@ -16,12 +13,10 @@ class Identity {
 	}
 
 	/** The company, cleaned; "DefaultCompany" unless given. */
-	public function getCompany():String
-		return company;
+	public var company(default, null):String;
 
 	/** The product, cleaned: the program's own name. */
-	public function getProduct():String
-		return product;
+	public var product(default, null):String;
 
 	/** name as one file name every desktop accepts: characters no file system takes (<>:"/\|? *, control characters) become _, leading and
 		trailing dots and spaces go, and a Windows device name (CON, PRN, AUX, NUL, COM1-9, LPT1-9, with any extension) gets a leading _.

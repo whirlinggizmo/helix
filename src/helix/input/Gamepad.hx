@@ -3,9 +3,6 @@ package helix.input;
 /** One gamepad slot. Edges work as the keyboard's: tick edges until consume(), frame edges until the frame ends.
 	Sticks read past a radial dead zone, rescaled so they still reach 1; getRawAxis reads them as the pad reports. */
 class Gamepad {
-	var connected = false;
-	var name = "";
-	var deadzone = .15;
 	var held = [for (_ in 0...PadButton.COUNT) false];
 	var pushes = [for (_ in 0...PadButton.COUNT) 0];
 	var lifts = [for (_ in 0...PadButton.COUNT) 0];
@@ -17,23 +14,18 @@ class Gamepad {
 	public function new() {}
 
 	/** Whether a pad is in this slot. While the window is unfocused a pad stays connected, its buttons up and axes centred. */
-	public function isConnected():Bool
-		return connected;
+	public var connected(default, null):Bool = false;
 
 	/** The pad's name as the platform reports it; empty when the slot is empty. */
-	public function getName():String
-		return name;
+	public var name(default, null):String = "";
 
-	/** Fraction of a stick's reach that reads as centred. */
-	public function getDeadzone():Float
-		return deadzone;
+	/** Fraction of a stick's reach that reads as centred. Clamped to 0 (none) to 0.999 (NaN is 0). */
+	public var deadzone(default, set):Float = .15;
 
-	/** False for a value outside 0 (none) to just under 1. */
-	public function setDeadzone(value:Float):Bool {
-		if (!(value >= 0 && value < 1))
-			return false;
+	function set_deadzone(value:Float):Float {
+		value = value > 0 ? (value < .999 ? value : .999) : 0;
 		deadzone = value;
-		return true;
+		return value;
 	}
 
 	/** Whether the button is held now. */

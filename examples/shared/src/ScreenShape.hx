@@ -9,10 +9,10 @@ class ScreenShape {
 		design changes only when the shape does. */
 	public static function update():String {
 		var window = Window.instance, presentation = Screen.instance;
-		var shape = window.getHeight() > window.getWidth() ? "portrait" : window.getHeight() < 600 ? "short" : "landscape";
+		var shape = window.height > window.width ? "portrait" : window.height < 600 ? "short" : "landscape";
 		var width = shape == "portrait" ? 560 : shape == "short" ? 1000 : 1280,
 			height = shape == "portrait" ? 960 : shape == "short" ? 560 : 720;
-		if (presentation.getMode() != Expand || presentation.getWidth() != width || presentation.getHeight() != height)
+		if (presentation.mode != Expand || presentation.width != width || presentation.height != height)
 			presentation.set(Expand, width, height);
 		return shape;
 	}

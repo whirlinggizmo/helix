@@ -28,25 +28,14 @@ enum PresentationMode {
 	design's at any window size, on a phone or in fullscreen, and what's visible of them (the visible area) is known each frame. The runner
 	refits it to the window before every frame. A 2D camera shows it (apply), a layout is arranged into the visible area (Box.arrange), and
 	the pointer comes back in units through the camera (Pointer), or through toUnitsX and toUnitsY. A 3D camera draws into the area it covers
-	(getAreaX and the rest, Camera3D.setViewportArea) to keep out of the bars. */
+	(areaX and the rest, Camera3D.setViewportArea) to keep out of the bars. */
 @:build(helix.macro.Facade.record())
 class Presentation {
-	var mode:PresentationMode = None;
 	var designWidth = 0.;
 	var designHeight = 0.;
 	var framebufferWidth = 1;
 	var framebufferHeight = 1;
 	var pixelRatio = 1.;
-	var scaleX = 1.;
-	var scaleY = 1.;
-	var visibleX = 0.;
-	var visibleY = 0.;
-	var visibleWidth = 1.;
-	var visibleHeight = 1.;
-	var areaX = 0;
-	var areaY = 0;
-	var areaWidth = 1;
-	var areaHeight = 1;
 
 	/** None, fitted to a 1 x 1 framebuffer until the runner's first refit. */
 	public function new() {}
@@ -64,61 +53,56 @@ class Presentation {
 	}
 
 	/** How the design is fitted. */
-	public function getMode():PresentationMode
-		return mode;
+	public var mode(default, null):PresentationMode = None;
 
 	/** The design's width in units: the window's logical width under None. */
-	public function getWidth():Float
+	public var width(get, never):Float;
+
+	function get_width():Float
 		return mode == None ? visibleWidth : designWidth;
 
 	/** The design's height in units: the window's logical height under None. */
-	public function getHeight():Float
+	public var height(get, never):Float;
+
+	function get_height():Float
 		return mode == None ? visibleHeight : designHeight;
 
 	/** Framebuffer pixels to a unit, across (under Stretch, each axis has its own). */
-	public function getScaleX():Float
-		return scaleX;
+	public var scaleX(default, null):Float = 1.;
 
 	/** Framebuffer pixels to a unit, down. */
-	public function getScaleY():Float
-		return scaleY;
+	public var scaleY(default, null):Float = 1.;
 
 	/** The visible area's left edge in units: 0 under None, Stretch, Fit and Integer; more under Fill, which crops; less under Expand, which
 		grows. A HUD anchored to an edge places itself from the visible area. */
-	public function getVisibleX():Float
-		return visibleX;
+	public var visibleX(default, null):Float = 0.;
 
 	/** The visible area's top edge in units. */
-	public function getVisibleY():Float
-		return visibleY;
+	public var visibleY(default, null):Float = 0.;
 
 	/** The visible area's width in units. */
-	public function getVisibleWidth():Float
-		return visibleWidth;
+	public var visibleWidth(default, null):Float = 1.;
 
 	/** The visible area's height in units. */
-	public function getVisibleHeight():Float
-		return visibleHeight;
+	public var visibleHeight(default, null):Float = 1.;
 
 	/** Whether the visible area is taller than wide: a phone held upright, for a game with a layout for each. */
-	public function isPortrait():Bool
+	public var portrait(get, never):Bool;
+
+	function get_portrait():Bool
 		return visibleHeight > visibleWidth;
 
 	/** The visible area's left edge in framebuffer pixels: past 0 where Fit and Integer have bars. */
-	public function getAreaX():Int
-		return areaX;
+	public var areaX(default, null):Int = 0;
 
 	/** The visible area's top edge in framebuffer pixels, from the framebuffer's top. */
-	public function getAreaY():Int
-		return areaY;
+	public var areaY(default, null):Int = 0;
 
 	/** The visible area's width in framebuffer pixels. */
-	public function getAreaWidth():Int
-		return areaWidth;
+	public var areaWidth(default, null):Int = 1;
 
 	/** The visible area's height in framebuffer pixels. */
-	public function getAreaHeight():Int
-		return areaHeight;
+	public var areaHeight(default, null):Int = 1;
 
 	/** The unit across at framebuffer pixel x (input's pointer and touches are framebuffer pixels). */
 	public function toUnitsX(x:Float):Float
@@ -132,8 +116,8 @@ class Presentation {
 	public function apply(camera:Camera2D):Void {
 		camera.setViewport(framebufferWidth, framebufferHeight);
 		camera.setViewportArea(areaX, areaY, areaWidth, areaHeight);
-		camera.setZoom(scaleX);
-		camera.setZoomY(scaleY);
+		camera.zoom = scaleX;
+		camera.zoomY = scaleY;
 		camera.setPosition(visibleX + visibleWidth / 2, visibleY + visibleHeight / 2);
 	}
 

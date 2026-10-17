@@ -40,7 +40,7 @@ class App extends BaseApp {
 	var lifted = [for (_ in 0...FINGERS) [0., 0., 0.]];
 
 	override public function init():Void {
-		Window.setTitle("HeliX touch");
+		Window.title = "HeliX touch";
 		Window.requestSize(900, 700);
 		batch = new Batch2D(Graphics.instance);
 		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
@@ -73,10 +73,10 @@ class App extends BaseApp {
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth(),
-			vh = presentation.getVisibleHeight();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth,
+			vh = presentation.visibleHeight;
 		if (shape != shaped) {
 			shaped = shape;
 			logoX = coinX = vx + vw / 2;
@@ -86,20 +86,20 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		// Two fingers move the logo; the wheel zooms it about the mouse.
-		if (input.isTouchGesture()) {
-			logoX += input.getTouchGesturePanX() / presentation.getScaleX();
-			logoY += input.getTouchGesturePanY() / presentation.getScaleY();
-			transformLogo(camera.screenToWorldX(input.getTouchGestureCenterX()), camera.screenToWorldY(input.getTouchGestureCenterY()),
-				input.getTouchGestureScale(), input.getTouchGestureRotation());
+		if (input.touchGesture) {
+			logoX += input.getTouchGesturePanX() / presentation.scaleX;
+			logoY += input.getTouchGesturePanY() / presentation.scaleY;
+			transformLogo(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), input.getTouchGestureScale(),
+				input.getTouchGestureRotation());
 		}
-		var mouseX = camera.screenToWorldX(input.getPointerX()),
-			mouseY = camera.screenToWorldY(input.getPointerY());
-		if (input.getWheelY() != 0)
-			transformLogo(mouseX, mouseY, Math.pow(1.1, input.getWheelY()), 0);
+		var mouseX = camera.screenToWorldX(input.pointerX),
+			mouseY = camera.screenToWorldY(input.pointerY);
+		if (input.wheelY != 0)
+			transformLogo(mouseX, mouseY, Math.pow(1.1, input.wheelY), 0);
 		// The pointer (the mouse, or one finger) drags the coin: picked where it was before this frame moved it.
-		if (input.isPointerFramePressed())
+		if (input.pointerFramePressed)
 			coinHeld = Math.abs(mouseX - coinX) < COIN / 2 && Math.abs(mouseY - coinY) < COIN / 2;
-		else if (!input.isPointerDown())
+		else if (!input.pointerDown)
 			coinHeld = false;
 		if (coinHeld) {
 			coinX = mouseX;
@@ -108,7 +108,7 @@ class App extends BaseApp {
 		// Where fingers lifted: a ring that fades.
 		for (ring in lifted)
 			ring[2] = Math.max(ring[2] - .033, 0);
-		for (touch in input.getTouches())
+		for (touch in input.touches)
 			if (touch.released && touch.id >= 0) {
 				var ring = lifted[touch.id % FINGERS];
 				ring[0] = camera.screenToWorldX(touch.x);
@@ -116,12 +116,12 @@ class App extends BaseApp {
 				ring[2] = 1;
 			}
 
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x161921ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x161921ff);
 		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
 		if (tiles != null) {
-			var w = tiles.getWidth(), h = tiles.getHeight();
+			var w = tiles.width, h = tiles.height;
 			// The coin: 16x16 texels at 42, 22 in the tile sheet.
 			batch.sprite(tiles, coinX, coinY, COIN, COIN, 0, coinHeld ? 0xffe696ff : 0xffffffff, 42 / w, 22 / h, 58 / w, 38 / h);
 		}
@@ -130,7 +130,7 @@ class App extends BaseApp {
 			if (ring[2] > 0)
 				batch.circleLines(ring[0], ring[1], RING * (2 - ring[2]), 1, color(i, Std.int(200 * ring[2])));
 		}
-		for (touch in input.getTouches()) {
+		for (touch in input.touches) {
 			if (!touch.down)
 				continue;
 			var x = camera.screenToWorldX(touch.x),
@@ -140,14 +140,14 @@ class App extends BaseApp {
 			batch.circleLines(x, y, RING, 1, color(id, 255));
 			Text2D.draw(batch, Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
 		}
-		if (input.isTouchGesture())
-			batch.circle(camera.screenToWorldX(input.getTouchGestureCenterX()), camera.screenToWorldY(input.getTouchGestureCenterY()), 6, 0xffffffff);
+		if (input.touchGesture)
+			batch.circle(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), 6, 0xffffffff);
 		var fingers = 0;
-		for (touch in input.getTouches())
+		for (touch in input.touches)
 			if (touch.down)
 				fingers++;
 		var y = vy + 16;
-		y += Text2D.drawWrapped(batch, 'fingers: $fingers   pointer: ' + (input.isPointerDown() ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
+		y += Text2D.drawWrapped(batch, 'fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
 		y += Text2D.drawWrapped(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y,
 			18, vw - 32, 0xffffffff)
 			+ 1.5;

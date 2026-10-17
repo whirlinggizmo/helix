@@ -40,7 +40,7 @@ class App extends BaseApp {
 	var hovered = -1;
 
 	override public function init():Void {
-		Window.setTitle("HeliX sprite2d");
+		Window.title = "HeliX sprite2d";
 		Window.requestSize(900, 520);
 		batch = new Batch2D(Graphics.instance);
 		// Colors are values, so cycle a palette.
@@ -52,7 +52,7 @@ class App extends BaseApp {
 		}
 		for (i in 0...NAMES.length) {
 			var sprite = Node2D.sprite(null);
-			sprite.setName(NAMES[i]);
+			sprite.name = NAMES[i];
 			sprite.setSize(128, 128);
 			sprites.push(sprite);
 			stage.add(sprite);
@@ -81,12 +81,12 @@ class App extends BaseApp {
 
 	// Whether world point x, y is on sprite i, as the last draw placed it: in its gear's disc, or the sheet's quarter in its rectangle.
 	function isOver(i:Int, x:Float, y:Float):Bool {
-		var sprite = sprites[i], w = sprite.getWidth(), h = sprite.getHeight();
+		var sprite = sprites[i], w = sprite.width, h = sprite.height;
 		if (w <= 0 || h <= 0)
 			return false;
 		// From its pivot to its center, in its own units.
-		var lx = sprite.toLocalX(x, y) - (.5 - sprite.getPivotX()) * w,
-			ly = sprite.toLocalY(x, y) - (.5 - sprite.getPivotY()) * h;
+		var lx = sprite.toLocalX(x, y) - (.5 - sprite.pivotX) * w,
+			ly = sprite.toLocalY(x, y) - (.5 - sprite.pivotY) * h;
 		if (i == 0)
 			return Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2;
 		return lx * lx + ly * ly <= w * w / 4;
@@ -97,18 +97,17 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var time = Time.clock.time;
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth(),
-			vh = presentation.getVisibleHeight();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth,
+			vh = presentation.visibleHeight;
 		var top = vy + (shape == "portrait" ? 140 : 90), tall = vy + vh - top;
 		inline function place(i:Int, across:Float, down:Float)
 			sprites[i].setPosition(vx + vw * across, top + tall * down);
@@ -129,15 +128,15 @@ class App extends BaseApp {
 		// The sheet: one quarter of the 256x256 texture an animation frame.
 		sheetFrame = Std.int(time * 2) % 4;
 		sprites[0].setRegion((sheetFrame % 2) * 128, Std.int(sheetFrame / 2) * 128, 128, 128);
-		sprites[1].setRotation(time);
-		sprites[2].setRotation(Math.sin(time * 1.5) * .8);
-		sprites[4].setColor(palette[Std.int(time * 6) % palette.length]);
+		sprites[1].rotation = time;
+		sprites[2].rotation = Math.sin(time * 1.5) * .8;
+		sprites[4].color = palette[Std.int(time * 6) % palette.length];
 
 		// Hover: the topmost sprite under the pointer, the last drawn first.
-		var x = camera.screenToWorldX(input.getPointerX()),
-			y = camera.screenToWorldY(input.getPointerY());
+		var x = camera.screenToWorldX(input.pointerX),
+			y = camera.screenToWorldY(input.pointerY);
 		hovered = -1;
-		if (input.getPointerX() >= 0) {
+		if (input.pointerX >= 0) {
 			var i = sprites.length;
 			while (i-- > 0 && hovered < 0)
 				if (isOver(i, x, y))

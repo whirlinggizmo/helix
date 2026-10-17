@@ -103,15 +103,15 @@ class Game {
 		bullets = [];
 		particles = [];
 		thrusting = false;
-		var gameState = rng.getState();
-		rng.setState(attractState);
+		var gameState = rng.state;
+		rng.state = attractState;
 		attract = [for (_ in 0...6) makeRock(3, rng.nextInt(W) * Q, rng.nextInt(H) * Q)];
-		attractState = rng.getState();
-		rng.setState(gameState);
+		attractState = rng.state;
+		rng.state = gameState;
 	}
 
 	public function reset():Void {
-		rng.setSeed(seed);
+		rng.seed = seed;
 		score = 0;
 		lives = 3;
 		wave = 0;

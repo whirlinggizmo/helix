@@ -45,7 +45,9 @@ class PostProcess {
 	}
 
 	/** The texture the scene is drawn into (the last beginScene's), or null before one. */
-	public function getSceneTexture():Null<Texture2D>
+	public var sceneTexture(get, never):Null<Texture2D>;
+
+	function get_sceneTexture():Null<Texture2D>
 		return targets[0];
 
 	/** Starts the frame's scene: a target pass into a width x height texture (the screen's size), cleared to clearColor. Draw it as the screen;
@@ -62,7 +64,7 @@ class PostProcess {
 		}
 		if (targets[0] == null)
 			targets[0] = Texture2D.renderTarget(gpu, width, height);
-		gpu.beginTargetPass(targets[0].getHandle(), clearColor);
+		gpu.beginTargetPass(targets[0].handle, clearColor);
 	}
 
 	/** Ends the scene's pass and draws effects (each that is enabled, in order) but the last, each from the one before's result into a texture
@@ -70,7 +72,7 @@ class PostProcess {
 	public function endScene(effects:Array<ScreenEffect>, time:Float):Void {
 		gpu.endTargetPass();
 		this.time = time;
-		var on = [for (e in effects) if (e.isEnabled()) e];
+		var on = [for (e in effects) if (e.enabled) e];
 		result = targets[0];
 		last = on.length > 0 ? on[on.length - 1] : null;
 		for (i in 0...on.length - 1) {
@@ -78,7 +80,7 @@ class PostProcess {
 			var into = 1 + i % 2;
 			if (targets[into] == null)
 				targets[into] = Texture2D.renderTarget(gpu, width, height);
-			gpu.beginTargetPass(targets[into].getHandle(), 0x000000ff);
+			gpu.beginTargetPass(targets[into].handle, 0x000000ff);
 			on[i].draw(result, width, height, time);
 			gpu.endTargetPass();
 			result = targets[into];
@@ -94,7 +96,7 @@ class PostProcess {
 			return;
 		}
 		gpu.updateBuffer(copyBuffer, quad, quad.length);
-		gpu.draw(Pipelines.of(gpu).sprite2D(Opaque), [copyBuffer], 0, 0, 6, 0, 1, [result.getHandle()], [Sampling.NEAREST], [clip]);
+		gpu.draw(Pipelines.of(gpu).sprite2D(Opaque), [copyBuffer], 0, 0, 6, 0, 1, [result.handle], [Sampling.NEAREST], [clip]);
 	}
 
 	/** Frees its textures and buffer; the effects stay their owner's. */

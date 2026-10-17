@@ -18,7 +18,7 @@ class PackageSmoke {
 			throw "Independent input consumer failed";
 		var pilot = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"assert","probe":"ready","equals":true}]}');
 		pilot.advance(_ -> true);
-		if (!pilot.isDone())
+		if (!pilot.done)
 			throw "Independent autopilot consumer failed";
 		var host:Null<IHost> = null,
 			graphics:Null<IGraphics> = null,

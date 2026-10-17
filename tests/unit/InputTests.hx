@@ -42,15 +42,15 @@ class InputTests {
 			"Key names");
 		// Text comes only while text entry is on (off at start); text, wheel and touches last one frame; a lifted touch stays until then.
 		input.textEvent("zz");
-		check(input.getText() == "" && !input.isTextEntry(), "Text is dropped while text entry is off");
-		input.setTextEntry(true);
+		check(input.text == "" && !input.textEntry, "Text is dropped while text entry is off");
+		input.textEntry = true;
 		input.textEvent("ab");
 		input.wheelEvent(0, 1);
 		input.touchEvent(7, 10, 20, true);
 		input.touchEvent(7, 12, 20, false);
-		check(input.getText() == "ab" && input.getWheelY() == 1 && input.getTouches().length == 1 && input.getTouches()[0].released, "Frame values");
+		check(input.text == "ab" && input.wheelY == 1 && input.touches.length == 1 && input.touches[0].released, "Frame values");
 		input.endFrame();
-		check(input.getText() == "" && input.getWheelY() == 0 && input.getTouches().length == 0, "Frame values end");
+		check(input.text == "" && input.wheelY == 0 && input.touches.length == 0, "Frame values end");
 		// Mouse buttons and the pointer count like keys.
 		input.mouseEvent(MouseButton.Right, true);
 		input.mouseEvent(MouseButton.Right, false);
@@ -60,9 +60,9 @@ class InputTests {
 		check(input.isMousePressed(MouseButton.Right), "Second click next tick");
 		input.pointerEvent(5, 5, true);
 		input.pointerEvent(5, 5, false);
-		check(input.isPointerPressed() && input.isPointerReleased(), "Pointer tap keeps both edges");
+		check(input.pointerPressed && input.pointerReleased, "Pointer tap keeps both edges");
 		input.consume();
-		check(!input.isPointerPressed(), "Pointer tap seen once");
+		check(!input.pointerPressed, "Pointer tap seen once");
 		// Pads: any-pad queries, and a stick's radial dead zone.
 		input.padEvent(PadButton.North, true);
 		input.axisEvent(PadAxis.LeftX, .1);
@@ -89,7 +89,7 @@ class InputTests {
 		input.endFrame();
 		input.touchEvent(1, 100, 100, true);
 		input.touchEvent(2, 200, 100, true);
-		check(input.isTouchGesture() && input.getTouchGestureCenterX() == 150, "Two fingers make a gesture");
+		check(input.touchGesture && input.touchGestureCenterX == 150, "Two fingers make a gesture");
 		input.touchEvent(2, 300, 100, true);
 		input.touchEvent(1, 100, 200, true);
 		check(Math.abs(input.getTouchGestureScale() - Math.sqrt(200 * 200 + 100 * 100) / 100) < 1e-9, "Scale multiplies");
@@ -99,28 +99,28 @@ class InputTests {
 		check(input.getTouchGestureScale() == 1 && input.getTouchGestureScale(true) != 1, "Frame sums end with the frame; tick sums wait for consume");
 		input.consume();
 		input.touchEvent(1, 100, 200, false);
-		check(!input.isTouchGesture() && input.getTouchGesturePanX(true) == 0, "One finger is no gesture");
+		check(!input.touchGesture && input.getTouchGesturePanX(true) == 0, "One finger is no gesture");
 		input.touchEvent(2, 300, 100, false);
 		input.endFrame();
 		// Activation: a key, mouse or finger press, once, not a pad's.
 		var fresh = new InputState();
-		check(!fresh.isActivated(), "Nothing pressed yet: not activated");
+		check(!fresh.activated, "Nothing pressed yet: not activated");
 		fresh.padEvent(PadButton.South, true);
 		fresh.padEvent(PadButton.South, false);
-		check(!fresh.isActivated(), "A pad's press doesn't activate (a browser can't unlock with one)");
+		check(!fresh.activated, "A pad's press doesn't activate (a browser can't unlock with one)");
 		fresh.keyEvent(Key.Space, true);
 		fresh.keyEvent(Key.Space, false);
 		fresh.endFrame();
-		check(fresh.isActivated(), "A key press activates, and it stays");
-		check(!fresh.isAnyFramePressed(), "The frame's any-press ended with the frame");
+		check(fresh.activated, "A key press activates, and it stays");
+		check(!fresh.anyFramePressed, "The frame's any-press ended with the frame");
 		fresh.mouseEvent(MouseButton.Left, true);
-		check(fresh.isAnyFramePressed(), "A mouse button down is a press this frame");
+		check(fresh.anyFramePressed, "A mouse button down is a press this frame");
 		fresh.endFrame();
 		fresh.padEvent(PadButton.South, true);
-		check(!fresh.isAnyFramePressed(), "and a pad's isn't");
+		check(!fresh.anyFramePressed, "and a pad's isn't");
 		var touched = new InputState();
 		touched.touchEvent(1, 5, 5, true);
-		check(touched.isActivated(), "A finger down activates");
+		check(touched.activated, "A finger down activates");
 
 		// Ticker: fixed steps, a pause, bounded catch-up, and input consumed per tick.
 		var ticker = new Ticker(input, 10), ticks = 0;
@@ -132,7 +132,7 @@ class InputTests {
 			if (input.isPressed(Key.A))
 				seen++;
 		});
-		check(ticks == 2 && seen == 1 && Math.abs(ticker.getFraction() - .5) < 1e-9, "Ticks and fraction");
+		check(ticks == 2 && seen == 1 && Math.abs(ticker.fraction - .5) < 1e-9, "Ticks and fraction");
 		ticker.advance(0, () -> ticks++);
 		check(ticks == 2, "Paused: a clock's 0 elapsed");
 		ticker.advance(.25, () -> ticks++);
@@ -146,8 +146,8 @@ class InputTests {
 	static function router():Void {
 		var source = new Source(),
 			router = new InputRouter(),
-			input = router.getInput();
-		input.setTextEntry(true);
+			input = router.input;
+		input.textEntry = true;
 		router.poll(source);
 		check(source.textEntry, "The source is told when text entry turns on");
 		source.start(router);
@@ -156,19 +156,19 @@ class InputTests {
 			e.mouseMove(10, 20);
 		};
 		router.poll(source);
-		check(input.getPointerX() == 10 && !input.isPointerDown() && input.isMouseDown(MouseButton.Right), "The mouse moves the pointer; only Left presses it");
+		check(input.pointerX == 10 && !input.pointerDown && input.isMouseDown(MouseButton.Right), "The mouse moves the pointer; only Left presses it");
 		source.report = e -> {
 			e.mouseButton(MouseButton.Right, false, 10, 20);
 			e.touch(4, 50, 60, true);
 		};
 		router.poll(source);
-		check(input.isPointerDown() && input.getPointerX() == 50, "The first finger is the pointer, natively as in a browser");
+		check(input.pointerDown && input.pointerX == 50, "The first finger is the pointer, natively as in a browser");
 		source.report = e -> {
 			e.touch(5, 90, 60, true);
 			e.mouseMove(1, 1);
 		};
 		router.poll(source);
-		check(!input.isPointerDown() && input.getPointerX() == -1 && input.isTouchGesture(), "A second finger lets the pointer go, and the mouse waits");
+		check(!input.pointerDown && input.pointerX == -1 && input.touchGesture, "A second finger lets the pointer go, and the mouse waits");
 		source.report = e -> {
 			e.touch(4, 50, 60, false);
 			e.touch(5, 90, 60, false);
@@ -178,17 +178,17 @@ class InputTests {
 			e.text("d");
 		};
 		router.poll(source);
-		check(input.getText() == "d", "Text is ignored while Control is held");
+		check(input.text == "d", "Text is ignored while Control is held");
 		router.endFrame();
 		source.report = e -> {
 			e.pad("first", [for (_ in 0...17) false], [for (_ in 0...6) 0.]);
 			e.pad("second", [true], [-1.]);
 		};
 		router.poll(source);
-		check(input.getPad(0).getName() == "first"
-			&& input.getPad(1).isConnected()
+		check(input.getPad(0).name == "first"
+			&& input.getPad(1).connected
 			&& input.getPad(1).isDown(PadButton.South)
-			&& !input.getPad(2).isConnected(),
+			&& !input.getPad(2).connected,
 			"Connected pads fill the slots in order");
 		source.report = e -> {
 			e.key(Key.A, true);
@@ -201,13 +201,12 @@ class InputTests {
 			e.pad("second", [true], [-1.]);
 		};
 		router.poll(source);
-		check(!input.isDown(Key.A) && !input.isDown(Key.B) && !input.isPointerDown() && input.getText() == "" && input.getWheelY() == 0
-			&& input.getTouches().length == 0,
+		check(!input.isDown(Key.A) && !input.isDown(Key.B) && !input.pointerDown && input.text == "" && input.wheelY == 0 && input.touches.length == 0,
 			"Unfocused: everything let go, presses ignored");
-		check(input.getPad(0).getName() == "second"
+		check(input.getPad(0).name == "second"
 			&& !input.getPad(0).isDown(PadButton.South)
 			&& input.getPad(0).getAxis(PadAxis.LeftX) == 0
-			&& !input.getPad(1).isConnected(),
+			&& !input.getPad(1).connected,
 			"Unfocused: pads stay connected, released and centred; a vanished pad's slot empties");
 		source.report = e -> {
 			e.focus(true);

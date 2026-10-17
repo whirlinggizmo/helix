@@ -34,7 +34,7 @@ class Fonts implements IReloadable {
 		request = new Request(() -> complete(Cancelled));
 		assets.load(path, result -> switch result {
 			case Loaded(bytes):
-				if (request.isSettled())
+				if (request.settled)
 					return;
 				var font = try Font2D.fromTrueType(gpu, bytes) catch (e:Dynamic) {
 					if (request.finish())

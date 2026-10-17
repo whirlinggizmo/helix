@@ -9,9 +9,6 @@ class Curve {
 	// Samples a segment for the length table.
 	static inline var SAMPLES = 16;
 
-	var kind:CurveKind;
-	var dimensions:Int;
-	var closed:Bool;
 	var points:Array<Float>;
 	var count:Int;
 	var segments:Int;
@@ -56,19 +53,18 @@ class Curve {
 		return new Curve(Polyline, points, dimensions, closed);
 
 	/** Its kind. */
-	public function getKind():CurveKind
-		return kind;
+	public var kind(default, null):CurveKind;
 
 	/** 2 or 3. */
-	public function getDimensions():Int
-		return dimensions;
+	public var dimensions(default, null):Int;
 
 	/** Whether it comes back to its start. */
-	public function isClosed():Bool
-		return closed;
+	public var closed(default, null):Bool;
 
 	/** How many points it was made with. */
-	public function getPointCount():Int
+	public var pointCount(get, never):Int;
+
+	function get_pointCount():Int
 		return count;
 
 	/** Point index's coordinate axis (0 x, 1 y, 2 z); 0 past them. */
@@ -110,7 +106,9 @@ class Curve {
 	}
 
 	/** Its length, measured along it (SAMPLES straight pieces a segment). */
-	public function getLength():Float {
+	public var length(get, never):Float;
+
+	function get_length():Float {
 		table();
 		return lengths[lengths.length - 1];
 	}

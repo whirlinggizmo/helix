@@ -69,11 +69,15 @@ class Sprites3D {
 	}
 
 	/** Sprites drawn by the last draw (in view). */
-	public function getDrawnSpriteCount():Int
+	public var drawnSpriteCount(get, never):Int;
+
+	function get_drawnSpriteCount():Int
 		return count;
 
 	/** Draws of the last draw: one a run of a texture. */
-	public function getDrawCallCount():Int
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
 		return draws;
 
 	/** Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet. */
@@ -87,15 +91,15 @@ class Sprites3D {
 	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has
 		particles to draw. Not culled: particles reach past where it is. */
 	public function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
-		var emitter = node.getEmitter(), w = node.getWorldMatrix();
+		var emitter = node.emitter, w = node.worldMatrix;
 		advanceEmitter(node);
-		if (!emitter.isDrawable())
+		if (!emitter.drawable)
 			return;
 		if (emitterCount == emitters.length)
 			emitters.push(new EmitterItem());
 		var it = emitters[emitterCount++];
 		it.emitter = emitter;
-		it.phase = switch emitter.getAlphaMode() {
+		it.phase = switch emitter.alphaMode {
 			case Blend: 1;
 			case Add: 2;
 			case _: 0;
@@ -106,8 +110,8 @@ class Sprites3D {
 
 	/** Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's). */
 	public function advanceEmitter(node:Particles3D):Void {
-		var w = node.getWorldMatrix();
-		node.getEmitter().advance(dt, w.get(12), w.get(13), w.get(14));
+		var w = node.worldMatrix;
+		node.emitter.advance(dt, w.get(12), w.get(13), w.get(14));
 	}
 
 	// The font a text without its own draws in: the built-in one, made when first needed.
@@ -128,14 +132,14 @@ class Sprites3D {
 
 	/** Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended. */
 	public function visitText(node:Text3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
-		var text = node.getText();
+		var text = node.text;
 		if (text.length == 0)
 			return;
-		var font = node.getFont() != null ? node.getFont() : builtIn(),
-			size = node.getTextSize();
-		var w = node.getWorldMatrix(), x = w.get(12), y = w.get(13), z = w.get(14);
+		var font = node.font != null ? node.font : builtIn(),
+			size = node.textSize;
+		var w = node.worldMatrix, x = w.get(12), y = w.get(13), z = w.get(14);
 		var width = helix.render2d.Text2D.measure(font, text, size),
-			unit = size / font.getSize();
+			unit = size / font.size;
 		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
 		var radius = Math.sqrt(width * width + size * size) * scale;
 		for (p in 0...6)
@@ -143,9 +147,9 @@ class Sprites3D {
 				return;
 		var depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
 		// From the block's top-left (the pivot's share of its size away), the pen on the baseline.
-		var penX = -node.getPivotX() * width,
-			top = -node.getPivotY() * size,
-			baseline = top + font.getAscent() * unit;
+		var penX = -node.pivotX * width,
+			top = -node.pivotY * size,
+			baseline = top + font.ascent * unit;
 		for (i in 0...text.length) {
 			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
 			if (glyph != null) {
@@ -153,13 +157,13 @@ class Sprites3D {
 					var it = item();
 					it.node = node;
 					it.sprite = null;
-					it.facing = node.getFacing();
-					it.tint = node.getColor();
-					it.texture = font.getTexture();
+					it.facing = node.facing;
+					it.tint = node.color;
+					it.texture = font.texture;
 					it.phase = 1;
 					it.depth = depth;
 					it.glyph = true;
-					it.distanceField = font.isDistanceField();
+					it.distanceField = font.distanceField;
 					it.u0 = glyph.u0;
 					it.v0 = glyph.v0;
 					it.u1 = glyph.u1;
@@ -179,15 +183,15 @@ class Sprites3D {
 	/** Adds a sprite (its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth
 		is along forward from the eye. */
 	public function visit(node:Sprite3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
-		var texture = node.getTexture();
+		var texture = node.texture;
 		if (texture == null)
 			return;
-		var w = node.getWorldMatrix();
+		var w = node.worldMatrix;
 		var x = w.get(12), y = w.get(13), z = w.get(14);
 		// The sphere the quad can reach about its pivot, as scaled.
 		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
-		var reachX = Math.max(node.getPivotX(), 1 - node.getPivotX()) * node.getSpriteWidth(),
-			reachY = Math.max(node.getPivotY(), 1 - node.getPivotY()) * node.getSpriteHeight();
+		var reachX = Math.max(node.pivotX, 1 - node.pivotX) * node.spriteWidth,
+			reachY = Math.max(node.pivotY, 1 - node.pivotY) * node.spriteHeight;
 		var radius = Math.sqrt(reachX * reachX + reachY * reachY) * scale;
 		for (p in 0...6)
 			if (planes[p * 4] * x + planes[p * 4 + 1] * y + planes[p * 4 + 2] * z + planes[p * 4 + 3] < -radius)
@@ -195,11 +199,11 @@ class Sprites3D {
 		var it = item();
 		it.node = node;
 		it.sprite = node;
-		it.facing = node.getFacing();
-		it.tint = node.getTint();
+		it.facing = node.facing;
+		it.tint = node.tint;
 		it.texture = texture;
 		it.glyph = false;
-		it.phase = switch node.getAlphaMode() {
+		it.phase = switch node.alphaMode {
 			case Blend: 1;
 			case Add: 2;
 			case _: 0;
@@ -209,32 +213,32 @@ class Sprites3D {
 
 	/** Takes camera's axes for the picks that follow (pickSprite, pickText), as it shows the sprites now. */
 	public function preparePick(camera:Camera3D):Void
-		cameraAxes(camera, camera.getForwardX(), camera.getForwardY(), camera.getForwardZ());
+		cameraAxes(camera, camera.forwardX, camera.forwardY, camera.forwardZ);
 
 	/** Tests a sprite against ray as the camera given to preparePick shows it (its quad, facing as drawn): the distance along the ray, recorded
 		in hit when nearer than best, else best. A sprite without a texture, or a see-through one (blended or added, its tint's alpha under a
 		half), isn't hit. */
 	public function pickSprite(node:Sprite3D, ray:Ray, best:Float, hit:PickHit):Float {
-		if (node.getTexture() == null)
+		if (node.texture == null)
 			return best;
-		if ((node.getAlphaMode() == Blend || node.getAlphaMode() == Add) && (node.getTint() & 255) < 128)
+		if ((node.alphaMode == Blend || node.alphaMode == Add) && (node.tint & 255) < 128)
 			return best;
-		return pickQuad(node, node.getFacing(), node.getPivotX(), node.getPivotY(), node.getSpriteWidth(), node.getSpriteHeight(), ray, best, hit);
+		return pickQuad(node, node.facing, node.pivotX, node.pivotY, node.spriteWidth, node.spriteHeight, ray, best, hit);
 	}
 
 	/** Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without
 		text, or a faint one (its color's alpha under a half), isn't hit. */
 	public function pickText(node:Text3D, ray:Ray, best:Float, hit:PickHit):Float {
-		if (node.getText().length == 0 || (node.getColor() & 255) < 128)
+		if (node.text.length == 0 || (node.color & 255) < 128)
 			return best;
-		var font = node.getFont() != null ? node.getFont() : builtIn();
-		return pickQuad(node, node.getFacing(), node.getPivotX(), node.getPivotY(), helix.render2d.Text2D.measure(font, node.getText(), node.getTextSize()),
-			node.getTextSize(), ray, best, hit);
+		var font = node.font != null ? node.font : builtIn();
+		return pickQuad(node, node.facing, node.pivotX, node.pivotY, helix.render2d.Text2D.measure(font, node.text, node.textSize), node.textSize, ray, best,
+			hit);
 	}
 
 	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.
 	function pickQuad(node:Node3D, facing:SpriteFacing, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray, best:Float, hit:PickHit):Float {
-		var w = node.getWorldMatrix();
+		var w = node.worldMatrix;
 		var sx = length(w, 0),
 			sy = length(w, 4),
 			sz = length(w, 8),
@@ -261,18 +265,16 @@ class Sprites3D {
 		var nx = right[1] * up[2] - right[2] * up[1],
 			ny = right[2] * up[0] - right[0] * up[2],
 			nz = right[0] * up[1] - right[1] * up[0];
-		var dx = ray.getDirectionX(),
-			dy = ray.getDirectionY(),
-			dz = ray.getDirectionZ();
+		var dx = ray.directionX, dy = ray.directionY, dz = ray.directionZ;
 		var facingRay = nx * dx + ny * dy + nz * dz;
 		if (Math.abs(facingRay) < 1e-9)
 			return best;
 		var px = w.get(12),
 			py = w.get(13),
 			pz = w.get(14),
-			ox = ray.getOriginX(),
-			oy = ray.getOriginY(),
-			oz = ray.getOriginZ();
+			ox = ray.originX,
+			oy = ray.originY,
+			oz = ray.originZ;
 		var t = ((px - ox) * nx + (py - oy) * ny + (pz - oz) * nz) / facingRay;
 		if (t < 0 || t >= best)
 			return best;
@@ -298,8 +300,8 @@ class Sprites3D {
 			return a.phase - b.phase;
 		if (a.phase == 1)
 			return a.depth > b.depth ? -1 : a.depth < b.depth ? 1 : a.order - b.order;
-		if (a.texture.getHandle() != b.texture.getHandle())
-			return a.texture.getHandle() - b.texture.getHandle();
+		if (a.texture.handle != b.texture.handle)
+			return a.texture.handle - b.texture.handle;
 		return a.order - b.order;
 	}
 
@@ -316,7 +318,7 @@ class Sprites3D {
 
 	// The camera's right is forward across its up; its up, right across forward; upright, the right flattened onto the ground.
 	function cameraAxes(camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
-		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
+		var ux = camera.upX, uy = camera.upY, uz = camera.upZ;
 		var rx = forwardY * uz - forwardZ * uy,
 			ry = forwardZ * ux - forwardX * uz,
 			rz = forwardX * uy - forwardY * ux;
@@ -375,7 +377,7 @@ class Sprites3D {
 			emitters[i] = list[i];
 		var total = 0;
 		for (i in 0...emitterCount)
-			total += emitters[i].emitter.getParticleCount();
+			total += emitters[i].emitter.particleCount;
 		if (total > particleCapacity) {
 			while (particleCapacity < total)
 				particleCapacity *= 2;
@@ -404,15 +406,15 @@ class Sprites3D {
 	}
 
 	function drawEmitter(it:EmitterItem):Void {
-		var texture = it.emitter.getTexture();
-		gpu.draw(pipelines.particle3D(cast it.phase), [corners, particleBuffer], indices, 0, 6, it.first, it.count, [texture.getHandle()],
-			[texture.getSampling()], [it.uniforms]);
+		var texture = it.emitter.texture;
+		gpu.draw(pipelines.particle3D(cast it.phase), [corners, particleBuffer], indices, 0, 6, it.first, it.count, [texture.handle], [texture.sampling],
+			[it.uniforms]);
 		draws++;
 	}
 
 	function write(index:Int, item:SpriteItem):Void {
 		var node = item.sprite,
-			w = item.node.getWorldMatrix(),
+			w = item.node.worldMatrix,
 			at = index * Sprite3DLayout.instanceStride,
 			texture = item.texture;
 		inline function put(offset:Int, a:Float, b:Float, c:Float, d:Float):Void {
@@ -430,21 +432,21 @@ class Sprites3D {
 		put(Sprite3DLayout.positionOffset, w.get(12), w.get(13), w.get(14), facing == Camera ? 0 : facing == Upright ? 1 : 2);
 		// Ground lies along the node's z, its texture's top toward -z; anything else along its y.
 		var height = facing == Ground ? sz : sy;
-		put(Sprite3DLayout.sizeOffset, node.getSpriteWidth() * sx, node.getSpriteHeight() * height, node.getPivotX(), node.getPivotY());
-		var rx = node.getRegionX(),
-			ry = node.getRegionY(),
-			rw = node.getRegionWidth(),
-			rh = node.getRegionHeight(),
-			tw = texture.getWidth(),
-			th = texture.getHeight();
+		put(Sprite3DLayout.sizeOffset, node.spriteWidth * sx, node.spriteHeight * height, node.pivotX, node.pivotY);
+		var rx = node.regionX,
+			ry = node.regionY,
+			rw = node.regionWidth,
+			rh = node.regionHeight,
+			tw = texture.width,
+			th = texture.height;
 		if (rw > 0 && rh > 0)
 			put(Sprite3DLayout.regionOffset, rx / tw, ry / th, (rx + rw) / tw, (ry + rh) / th);
 		else
 			put(Sprite3DLayout.regionOffset, 0, 0, 1, 1);
 		put(Sprite3DLayout.rightOffset, sx > 0 ? w.get(0) / sx : 1, sx > 0 ? w.get(1) / sx : 0, sx > 0 ? w.get(2) / sx : 0, 0);
-		var alpha = switch node.getAlphaMode() {
+		var alpha = switch node.alphaMode {
 			case Opaque: -1.;
-			case Mask: Math.max(node.getAlphaCutoff(), 1e-4);
+			case Mask: Math.max(node.alphaCutoff, 1e-4);
 			case _: 0.;
 		};
 		if (facing == Ground)
@@ -502,8 +504,8 @@ class Sprites3D {
 			var last = i, texture = drawn[i].texture;
 			while (last + 1 < to && drawn[last + 1].texture == texture)
 				last++;
-			gpu.draw(pipelines.sprite3D(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.getHandle()],
-				[texture.getSampling()], [uniforms]);
+			gpu.draw(pipelines.sprite3D(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.handle], [texture.sampling],
+				[uniforms]);
 			draws++;
 			i = last + 1;
 		}

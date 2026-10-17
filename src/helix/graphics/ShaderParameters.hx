@@ -81,7 +81,9 @@ class ShaderParameters {
 		}
 
 	/** The textures set, by the shader's slot. */
-	public function getTextureSlots():Map<Int, Texture2D> {
+	public var textureSlots(get, never):Map<Int, Texture2D>;
+
+	function get_textureSlots():Map<Int, Texture2D> {
 		var out = new Map<Int, Texture2D>();
 		for (name => texture in textures) {
 			var slot = shader.getTextureSlot(name);

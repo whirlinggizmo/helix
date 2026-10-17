@@ -43,15 +43,15 @@ class App extends BaseApp {
 	var published = false;
 
 	override public function init():Void {
-		Window.setTitle("HeliX scenes");
+		Window.title = "HeliX scenes";
 		Window.requestSize(960, 540);
 		batch = new Batch2D(Graphics.instance);
-		// The loading screen stays once loaded, for a press, with a caption and a tip (a level may bring its own: Scene.getLoadingScene),
+		// The loading screen stays once loaded, for a press, with a caption and a tip (a level may bring its own: Scene.loadingScene),
 		// as the config says.
-		var loading = cast(scenes.getLoadingScene(), helix.scene.Loading);
-		loading.setHoldForPress(Host.getOptionBool("clickToContinue", true));
-		loading.setText("Loading the field");
-		loading.setTip(Host.getOption("tip", ""));
+		var loading = cast(scenes.loadingScene, helix.scene.Loading);
+		loading.holdForPress = Host.getOptionBool("clickToContinue", true);
+		loading.text = "Loading the field";
+		loading.tip = Host.getOption("tip", "");
 		var script = Host.getOption("autopilot", "");
 		fast = Host.getOption("fast", "0") == "1";
 		if (script != "")
@@ -59,7 +59,7 @@ class App extends BaseApp {
 				case Loaded(bytes):
 					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
 					// The window of a headless run isn't focused: its ticks run regardless.
-					scenes.setPauseOnBlur(false);
+					scenes.pauseOnBlur = false;
 					start();
 				case Failed(message): throw 'Autopilot load failed: ' + message;
 				case Cancelled:
@@ -79,48 +79,47 @@ class App extends BaseApp {
 				case Ready(logo): logo;
 				case _: null;
 			}, Host.getOptionFloat("splashSeconds", 1), new Title());
-			splash.setMaxWait(Host.getOptionFloat("splashMaxWait", 0));
+			splash.maxWait = Host.getOptionFloat("splashMaxWait", 0);
 			scenes.push(splash, new Fade(.8));
 		});
 	}
 
 	function probe(name:String):Dynamic {
-		var top = scenes.getTop();
+		var top = scenes.top;
 		return switch name {
-			case "scene": top == null ? "" : top.getName();
-			case "count": scenes.getCount();
-			case "loaded": top != null && (top.getLoader() == null || top.getLoader().isDone());
-			case "loading": scenes.isLoading();
+			case "scene": top == null ? "" : top.name;
+			case "count": scenes.count;
+			case "loaded": top != null && (top.loader == null || top.loader.done);
+			case "loading": scenes.loading;
 			case "visited": visited.length;
-			case "activated": scenes.getInput().isActivated();
-			case "transitioning": scenes.isTransitioning();
+			case "activated": scenes.input.activated;
+			case "transitioning": scenes.transitioning;
 			default: throw 'Unknown probe ' + name;
 		}
 	}
 
 	override public function frame(dt:Float):Void {
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
-		if (pilot != null && !pilot.isDone() && scenes.getTop() != null) {
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
+		if (pilot != null && !pilot.done && scenes.top != null) {
 			// The script's ticks, each a sixtieth of a second to the scenes, many a frame when fast; none until the splash is up (its logo loads first).
 			for (_ in 0...(fast ? 120 : 1)) {
 				var source:IInput = pilot.advance(probe);
-				if (pilot.isDone())
+				if (pilot.done)
 					break;
-				scenes.setInput(source);
+				scenes.input = source;
 				scenes.update(1 / 60);
 				source.consume();
 			}
 		} else
 			scenes.update(dt);
-		if (scenes.getTop() == null) {
+		if (scenes.top == null) {
 			Graphics.beginFrame(width, height, 0x14161cff);
 			Graphics.endFrame();
 		} else
 			scenes.draw();
-		if (pilot != null && pilot.isDone() && !published) {
+		if (pilot != null && pilot.done && !published) {
 			published = true;
-			TestHarness.publish({game: {scene: probe("scene"), visited: visited}, autopilot: pilot.getSnapshot()});
+			TestHarness.publish({game: {scene: probe("scene"), visited: visited}, autopilot: pilot.snapshot});
 			if (Host.getOption("autoclose", "0") == "1")
 				Host.quit();
 		}
@@ -137,11 +136,11 @@ class Title extends Scene {
 	var camera = new Camera2D();
 
 	override public function enter():Void
-		App.visited.push(getName());
+		App.visited.push(this.name);
 
 	override public function update(dt:Float):Void {
-		var input = scenes.getInput();
-		if (input.isFramePressed(Key.Enter) || input.isPointerFramePressed())
+		var input = scenes.input;
+		if (input.isFramePressed(Key.Enter) || input.pointerFramePressed)
 			scenes.replace(new Play(), new Fade(.6));
 		else if (input.isFramePressed(Key.Escape) && Host.canQuit())
 			Host.quit();
@@ -154,40 +153,40 @@ class Title extends Scene {
 
 /** The level: its two textures load first, behind the loading scene; then the logo bounces about. Escape pushes the pause menu. */
 class Play extends Scene {
-	var loader:Null<Loader>;
+	var loads:Null<Loader>;
 	var logo:Null<Texture2D>;
 	var tiles:Null<Texture2D>;
 	var camera = new Camera2D();
 	var time = 0.;
 
 	override public function enter():Void {
-		App.visited.push(getName());
-		loader = new Loader();
-		loader.texture("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		App.visited.push(this.name);
+		loads = new Loader();
+		loads.texture("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture): logo = texture;
 			case _:
 		});
-		loader.texture("textures/tiles.png", false, result -> switch result {
+		loads.texture("textures/tiles.png", false, result -> switch result {
 			case Ready(texture): tiles = texture;
 			case _:
 		});
 	}
 
-	override public function getLoader():Null<Loader>
-		return loader;
+	override function get_loader():Null<Loader>
+		return loads;
 
 	override public function update(dt:Float):Void {
 		time += dt;
-		if (scenes.getInput().isFramePressed(Key.Escape))
+		if (scenes.input.isFramePressed(Key.Escape))
 			scenes.push(new Pause(), new Fade(.3, 0x00000080));
 	}
 
 	override public function draw():Void {
 		var p = Draw.screen(camera, 0x10281cff, "Playing", "Escape: pause");
-		var vx = p.getVisibleX(),
-			vy = p.getVisibleY(),
-			vw = p.getVisibleWidth(),
-			vh = p.getVisibleHeight();
+		var vx = p.visibleX,
+			vy = p.visibleY,
+			vw = p.visibleWidth,
+			vh = p.visibleHeight;
 		App.batch.begin(camera);
 		// The logo bouncing across, the tiles sheet in the corner.
 		var x = vx + 60 + (vw - 120 - 120) * (.5 + .5 * Math.sin(time * 1.2)),
@@ -205,10 +204,10 @@ class Pause extends Scene {
 	var camera = new Camera2D();
 
 	override public function enter():Void
-		App.visited.push(getName());
+		App.visited.push(this.name);
 
 	override public function update(dt:Float):Void {
-		var input = scenes.getInput();
+		var input = scenes.input;
 		if (input.isFramePressed(Key.Escape))
 			scenes.pop(new Fade(.3, 0x00000080));
 		else if (input.isFramePressed(Key.T)) {
@@ -229,10 +228,8 @@ class Draw {
 		ScreenShape.update();
 		var p = Screen.instance;
 		p.apply(camera);
-		var vx = p.getVisibleX(),
-			vy = p.getVisibleY(),
-			vw = p.getVisibleWidth();
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), color);
+		var vx = p.visibleX, vy = p.visibleY, vw = p.visibleWidth;
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, color);
 		App.batch.begin(camera);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(App.batch, title, vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 4;

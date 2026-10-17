@@ -29,7 +29,7 @@ class App extends BaseApp {
 	var state = 'ensuring $KEY from $SOURCE...';
 
 	override public function init():Void {
-		Window.setTitle("HeliX force fetch");
+		Window.title = "HeliX force fetch";
 		Window.requestSize(720, 240);
 		batch = new Batch2D(Graphics.instance);
 		Assets.ensure(KEY, result -> switch result {
@@ -56,19 +56,19 @@ class App extends BaseApp {
 			music.resume();
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x12141cff);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
-		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : music.getState() == Paused ? "music: paused" : "music: playing (mp3, looping)",
+		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : music.state == Paused ? "music: paused" : "music: playing (mp3, looping)",
 			vx + 24, y, 18, vw - 48, 0x66bfffff)
 			+ 7.5;
 		y += Text2D.drawWrapped(batch, state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;

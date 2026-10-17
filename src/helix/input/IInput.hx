@@ -21,25 +21,25 @@ interface IInput {
 	public function isFrameReleased(key:Key):Bool;
 
 	/** The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window. */
-	public function getPointerX():Float;
+	var pointerX(get, never):Float;
 
 	/** The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window. */
-	public function getPointerY():Float;
+	var pointerY(get, never):Float;
 
 	/** Whether the primary pointer is down: the left mouse button held, or the first finger touching. */
-	public function isPointerDown():Bool;
+	var pointerDown(get, never):Bool;
 
 	/** The primary pointer went down: a tick edge, counted until consume() takes it. */
-	public function isPointerPressed():Bool;
+	var pointerPressed(get, never):Bool;
 
 	/** The primary pointer came up: a tick edge, counted until consume() takes it. */
-	public function isPointerReleased():Bool;
+	var pointerReleased(get, never):Bool;
 
 	/** The primary pointer went down this frame: a frame edge. */
-	public function isPointerFramePressed():Bool;
+	var pointerFramePressed(get, never):Bool;
 
 	/** The primary pointer came up this frame: a frame edge. */
-	public function isPointerFrameReleased():Bool;
+	var pointerFrameReleased(get, never):Bool;
 
 	/** Whether the mouse button is held now. */
 	public function isMouseDown(button:MouseButton):Bool;
@@ -57,33 +57,30 @@ interface IInput {
 	public function isMouseFrameReleased(button:MouseButton):Bool;
 
 	/** Wheel notches this frame; up and right are positive. */
-	public function getWheelX():Float;
+	var wheelX(get, never):Float;
 
 	/** Vertical wheel notches this frame; up is positive. */
-	public function getWheelY():Float;
+	var wheelY(get, never):Float;
 
-	/** Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry). */
-	public function getText():String;
+	/** Characters typed this frame, after the keyboard layout; only while text entry is on (textEntry). */
+	var text(get, never):String;
 
-	/** Whether typed text is being taken (setTextEntry); off at start. */
-	public function isTextEntry():Bool;
-
-	/** Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are
-		only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while
-		it types (a name entered, a chat line) and off after. */
-	public function setTextEntry(on:Bool):Void;
+	/** Whether typed text is being taken; off at start. On, text carries the characters typed, and a platform with a soft keyboard shows it
+		for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading text
+		itself turns it on while it types (a name entered, a chat line) and off after. */
+	var textEntry(get, set):Bool;
 
 	/** Fingers down, and those lifted this frame. */
-	public function getTouches():Array<Touch>;
+	var touches(get, never):Array<Touch>;
 
 	/** Whether two fingers are down: the two down longest make the gesture. */
-	public function isTouchGesture():Bool;
+	var touchGesture(get, never):Bool;
 
 	/** The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture. */
-	public function getTouchGestureCenterX():Float;
+	var touchGestureCenterX(get, never):Float;
 
-	/** See getTouchGestureCenterX. */
-	public function getTouchGestureCenterY():Float;
+	/** See touchGestureCenterX. */
+	var touchGestureCenterY(get, never):Float;
 
 	/** How far the point between the fingers moved, in framebuffer pixels: this frame, or since the last tick with perTick. */
 	public function getTouchGesturePanX(perTick:Bool = false):Float;
@@ -98,20 +95,20 @@ interface IInput {
 	public function getTouchGestureRotation(perTick:Bool = false):Float;
 
 	/** Four slots, connected or not. */
-	public function getPadCount():Int;
+	var padCount(get, never):Int;
 
 	/** null for an index out of range. */
 	public function getPad(index:Int):Null<Gamepad>;
 
-	/** Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen
-		be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a
-		browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script
-		gated on it presses before it waits. */
-	public function isActivated():Bool;
+	/** Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and
+		fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't
+		count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts,
+		so a script gated on it presses before it waits. */
+	var activated(get, never):Bool;
 
 	/** Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as
-		isActivated's doesn't. */
-	public function isAnyFramePressed():Bool;
+		activated's doesn't. */
+	var anyFramePressed(get, never):Bool;
 
 	/** Any connected pad. */
 	public function isPadDown(button:PadButton):Bool;

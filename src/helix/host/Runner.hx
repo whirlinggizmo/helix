@@ -34,7 +34,6 @@ import helix.time.Time;
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
 class Runner {
-	var host:IHost;
 	var compose:Void->Adapters;
 	var adapters:Adapters;
 	var app:IApp;
@@ -52,9 +51,6 @@ class Runner {
 	var environments:EnvironmentCache;
 	var models:ModelCache;
 	var screenshots:ScreenshotService;
-	var clock = new FrameClock();
-	var frameCpu = 0.;
-	var frameInterval = 0.;
 	var previousFrame = Math.NaN;
 	var closed = false;
 
@@ -74,24 +70,22 @@ class Runner {
 	}
 
 	/** The host it runs on. */
-	public function getHost():IHost
-		return host;
+	public var host(default, null):IHost;
 
 	/** The frame clock. */
-	public function getClock():FrameClock
-		return clock;
+	public var clock(default, null):FrameClock = new FrameClock();
 
 	/** The last frame's CPU time in milliseconds. */
-	public function getFrameCpu():Float
-		return frameCpu;
+	public var frameCpu(default, null):Float = 0.;
 
 	/** Milliseconds between the last two frames' starts (0 for the first). */
-	public function getFrameInterval():Float
-		return frameInterval;
+	public var frameInterval(default, null):Float = 0.;
 
-	/** Whether the shared services are loading anything (Host.isBusy). */
-	public function isBusy():Bool
-		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || environments.isBusy());
+	/** Whether the shared services are loading anything (Host.busy). */
+	public var busy(get, never):Bool;
+
+	function get_busy():Bool
+		return resources != null && (resources.busy || decoding.busy || audioDecoding.busy || environments.busy);
 
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
@@ -117,10 +111,10 @@ class Runner {
 		models = new ModelCache(resources, textures);
 		screenshots = new ScreenshotService(a.graphics, a.export, a.name);
 		Graphics.bind(a.graphics);
-		Input.bind(input.getInput());
+		Input.bind(input.input);
 		Screen.bind(presentation);
 		Time.bind(this, gameClock);
-		Window.bind(host.getWindow());
+		Window.bind(host.window);
 		Fetch.bind(fetch);
 		Storage.bind(storage);
 		Assets.bind(resources);
@@ -143,7 +137,7 @@ class Runner {
 	}
 
 	function frame():Void {
-		var now = host.getTime();
+		var now = host.time;
 		clock.frame(now);
 		frameInterval = Math.isNaN(previousFrame) ? 0 : (now - previousFrame) * 1000;
 		previousFrame = now;
@@ -153,25 +147,25 @@ class Runner {
 		audioDecoding.poll();
 		environments.poll();
 		input.poll(adapters.input);
-		var window = host.getWindow();
-		presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
-		gameClock.update(clock.getElapsed());
+		var window = host.window;
+		presentation.refit(window.framebufferWidth, window.framebufferHeight, window.pixelRatio);
+		gameClock.update(clock.elapsed);
 		if (app == null) {
 			// Until the config has come: a blank frame, then the app built and begun.
 			if (configPending) {
-				adapters.graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x000000ff);
+				adapters.graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x000000ff);
 				adapters.graphics.endFrame();
 				input.endFrame();
-				frameCpu = (host.getTime() - now) * 1000;
+				frameCpu = (host.time - now) * 1000;
 				return;
 			}
 			app = makeApp();
 			app.init();
 		}
-		app.frame(clock.getDelta());
+		app.frame(clock.delta);
 		screenshots.frameEnded();
 		input.endFrame();
-		frameCpu = (host.getTime() - now) * 1000;
+		frameCpu = (host.time - now) * 1000;
 	}
 
 	function cleanup():Void {

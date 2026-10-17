@@ -52,7 +52,7 @@ class App extends BaseApp {
 	var compressed:Array<Slot> = [];
 
 	override public function init():Void {
-		Window.setTitle("HeliX textures");
+		Window.title = "HeliX textures";
 		Window.requestSize(1010, 610);
 		batch = new Batch2D(Graphics.instance);
 		for (path in PATHS)
@@ -62,11 +62,11 @@ class App extends BaseApp {
 	}
 
 	function load(path:String):Slot {
-		var slot = new Slot(path, Time.getTime());
+		var slot = new Slot(path, Time.time);
 		Textures.load(path, true, result -> switch result {
 			case Ready(texture):
 				slot.texture = texture;
-				slot.took = Time.getTime() - slot.asked;
+				slot.took = Time.time - slot.asked;
 				slot.chosen = Textures.getPath(texture);
 			case Failed(message):
 				slot.status = "failed";
@@ -87,7 +87,7 @@ class App extends BaseApp {
 		if (slot.chosen != "" && chosen != name)
 			y += Text2D.drawWrapped(batch, 'loaded $chosen', x, y, 14, width, 0x66bfffff) + 2;
 		var t = slot.texture;
-		var line = t == null ? slot.status : '${t.getWidth()} x ${t.getHeight()}, GPU ${Math.round(t.getByteCount() / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
+		var line = t == null ? slot.status : '${t.width} x ${t.height}, GPU ${Math.round(t.byteCount / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
 		return y + Text2D.drawWrapped(batch, line, x, y, 14, width, 0xc8c8c8ff) - top;
 	}
 
@@ -101,10 +101,10 @@ class App extends BaseApp {
 			if (texture != null) {
 				// Sampling is the texture's, read as each draw takes it: one texture, drawn smooth, then sharp.
 				if (both)
-					texture.setSampling(Sampling.LINEAR);
+					texture.sampling = Sampling.LINEAR;
 				drawOne(i, texture, left, y, size);
 				if (both) {
-					texture.setSampling(Sampling.NEAREST);
+					texture.sampling = Sampling.NEAREST;
 					drawOne(i, texture, left + size + 10, y, size);
 				}
 			}
@@ -130,16 +130,15 @@ class App extends BaseApp {
 	override public function frame(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape: three textures a row across, smaller and two a row upright, so it all fits a phone either way.
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var size = shape == "landscape" ? 150 : 120,
 			columns = shape == "portrait" ? 2 : 3,
 			pitch = 2 * size + 30;

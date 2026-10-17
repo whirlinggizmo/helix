@@ -146,11 +146,11 @@ class SimulationTests {
 			var wantTitle = false;
 			var pilot = new Autopilot(sys.io.File.getContent("examples/asteroids/autopilot/" + name + ".json"), null,
 				target -> target == "title" && g.state == "gameover" ? wantTitle = true : false);
-			g = new Game(pilot.getSeed());
+			g = new Game(pilot.seed);
 			c = new Controls();
 			for (_ in 0...15000) {
 				var source = pilot.advance(g.probe);
-				if (pilot.isDone())
+				if (pilot.done)
 					break;
 				c.read(source);
 				c.title = wantTitle;
@@ -158,7 +158,7 @@ class SimulationTests {
 				g.step(c);
 				source.consume();
 			}
-			check(pilot.isDone(), "Autopilot " + name + " completes");
+			check(pilot.done, "Autopilot " + name + " completes");
 			if (name == "playthrough")
 				check(g.state == "playing" && g.lives == 3 && g.score == 0, "Autopilot covers gameover/title/restart");
 		}
@@ -172,12 +172,12 @@ class SimulationTests {
 		var patient = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"wait","probe":"state","equals":"never","seconds":30}]}');
 		for (_ in 0...500)
 			patient.advance(g.probe);
-		check(!patient.isDone(), "A wait in seconds outlasts any tick count, until its seconds pass");
+		check(!patient.done, "A wait in seconds outlasts any tick count, until its seconds pass");
 		var shots:Array<Null<String>> = [];
 		var shooter = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"title.png"},{"op":"screenshot"},{"op":"press","key":"Enter"}]}',
 			name -> shots.push(name));
 		shooter.advance(g.probe);
-		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.getTickCount() == 1, "Screenshots take no tick, named or not");
+		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.tickCount == 1, "Screenshots take no tick, named or not");
 		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"../x.png"}]}'), "A screenshot name with a path rejected");
 		trace(haxe.Json.stringify({checks: checks, passed: true, replay: a.snapshot()}));
 	}

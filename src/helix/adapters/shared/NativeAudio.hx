@@ -22,7 +22,7 @@ abstract class NativeAudio implements IAudio {
 	var nextStream = 1;
 	var chunk = Bytes.alloc(CHUNK * 4);
 
-	/** Streams read through files; the adapter opens its output (isAvailable says whether it did). */
+	/** Streams read through files; the adapter opens its output (available says whether it did). */
 	function new(files:IPcmFiles) {
 		this.files = files;
 	}
@@ -30,11 +30,15 @@ abstract class NativeAudio implements IAudio {
 	/** Stops the output; no mixing happens after it returns, and the mixer's samples are freed. */
 	abstract function closeOutput():Void;
 
-	public function isAvailable():Bool
+	public var available(get, never):Bool;
+
+	function get_available():Bool
 		return MixerBridge.audioAvailable() != 0;
 
-	public function isRunning():Bool
-		return isAvailable();
+	public var running(get, never):Bool;
+
+	function get_running():Bool
+		return this.available;
 
 	public function createClip(samples:Bytes):Int {
 		var id = MixerBridge.audioClip(cpp.Pointer.arrayElem(samples.getData(), 0).raw, samples.length);

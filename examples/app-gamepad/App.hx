@@ -26,7 +26,7 @@ class App extends BaseApp {
 	var deadzone = 0;
 
 	override public function init():Void {
-		Window.setTitle("HeliX gamepad");
+		Window.title = "HeliX gamepad";
 		Window.requestSize(WIDTH, HEIGHT);
 		batch = new Batch2D(Graphics.instance);
 	}
@@ -35,21 +35,21 @@ class App extends BaseApp {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		for (i in 0...input.getPadCount())
+		for (i in 0...input.padCount)
 			if (input.getPad(i).isFramePressed(PadButton.South))
 				deadzone = (deadzone + 1) % DEADZONES.length;
 		// The design for the window's shape: the text wrapped to what's visible of it, and as many panels across as fit, the rest in rows below.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x181c26ff);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x181c26ff);
 		batch.begin(camera);
 		var connected = 0;
-		for (i in 0...input.getPadCount())
-			if (input.getPad(i).isConnected())
+		for (i in 0...input.padCount)
+			if (input.getPad(i).connected)
 				connected++;
 		var y = vy + 12;
 		y += Text2D.drawWrapped(batch, 'HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
@@ -58,11 +58,11 @@ class App extends BaseApp {
 		if (connected == 0)
 			Text2D.drawWrapped(batch, "No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		var columns = Std.int(Math.max(1, Math.floor((vw - 12) / 245))), placed = 0;
-		for (i in 0...input.getPadCount()) {
+		for (i in 0...input.padCount) {
 			var pad = input.getPad(i);
-			if (!pad.isConnected())
+			if (!pad.connected)
 				continue;
-			pad.setDeadzone(DEADZONES[deadzone]);
+			pad.deadzone = DEADZONES[deadzone];
 			drawPad(pad, i, vx + 12 + placed % columns * 245, y + Std.int(placed / columns) * 370);
 			placed++;
 		}
@@ -73,7 +73,7 @@ class App extends BaseApp {
 	/** One pad's panel, its top-left at x, y. */
 	function drawPad(pad:Gamepad, index:Int, x:Float, y:Float):Void {
 		batch.roundedRect(x, y, 235, 360, 8, 0x232a38ff);
-		var name = pad.getName();
+		var name = pad.name;
 		Text2D.draw(batch, 'pad $index: ' + (name.length > 26 ? name.substr(0, 25) + "~" : name), x + 10, y + 10, 13, 0xc8c8c8ff);
 		// Triggers as bars, filling upward.
 		trigger(pad.getAxis(PadAxis.LeftTrigger), x + 14, y + 40);

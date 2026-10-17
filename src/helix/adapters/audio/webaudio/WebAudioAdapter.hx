@@ -36,10 +36,14 @@ class WebAudioAdapter implements IAudio {
 			context.suspend();
 	}
 
-	public function isAvailable():Bool
+	public var available(get, never):Bool;
+
+	function get_available():Bool
 		return true;
 
-	public function isRunning():Bool
+	public var running(get, never):Bool;
+
+	function get_running():Bool
 		return context != null && context.state == "running";
 
 	public function createClip(samples:Bytes):Int {
@@ -117,7 +121,7 @@ class WebAudioAdapter implements IAudio {
 	public function playClip(clip:Int, loop:Bool, volume:Float):Int {
 		if (!clips.exists(clip))
 			throw "Invalid audio clip";
-		if (!isRunning())
+		if (!this.running)
 			return 0;
 		var id = nextPlayback++;
 		start(id, clip, loop, volume);
@@ -127,7 +131,7 @@ class WebAudioAdapter implements IAudio {
 	public function playStream(stream:Int, loop:Bool, volume:Float):Int {
 		if (!streams.exists(stream))
 			throw "Invalid audio stream";
-		if (!isRunning())
+		if (!this.running)
 			return 0;
 		var id = nextPlayback++;
 		start(id, stream, loop, volume);

@@ -69,9 +69,9 @@ class App extends BaseApp {
 
 	function sphere(mesh:Mesh, x:Float, y:Float, base:Int, metallic:Float, roughness:Float):Material {
 		var material = new Material();
-		material.setBaseColor(base);
-		material.setMetallic(metallic);
-		material.setRoughness(roughness);
+		material.baseColor = base;
+		material.metallic = metallic;
+		material.roughness = roughness;
 		var node = new Model(mesh, material);
 		node.setPosition(x, y, 0);
 		stage.add(node);
@@ -80,12 +80,12 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX environment");
+		Window.title = "HeliX environment";
 		Window.requestSize(1000, 700);
 		batch = new Batch2D(Graphics.instance);
 		stage = new Stage3D(Graphics.instance);
 		// Framed for 16:9: every column of spheres on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 		var ball = Mesh.sphere(.5, 32, 64);
 		for (c in 0...COLUMNS) {
 			var x = (c - (COLUMNS - 1) / 2) * SPACING,
@@ -95,7 +95,7 @@ class App extends BaseApp {
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
 		Textures.load("textures/tiles_normal.png", true, result -> switch result {
-			case Ready(texture): tiles.setNormalTexture(texture);
+			case Ready(texture): tiles.normalTexture = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
@@ -119,11 +119,11 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		for (i in 0...PATHS.length) {
-			var started = Time.getTime();
+			var started = Time.time;
 			Environments.load(PATHS[i], result -> switch result {
 				case Ready(environment):
 					environments[i] = environment;
-					loadMs[i] = (Time.getTime() - started) * 1000;
+					loadMs[i] = (Time.time - started) * 1000;
 					// Said in the log too, so a run without a screen shows how long the bake took.
 					trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 				case Failed(message):
@@ -154,38 +154,37 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		// The orbit starts once everything is in (both environments bake at the start): from the front, so a picture taken then (the site's,
 		// once nothing loads) sees the rows, not their ends.
-		if (orbit && !Host.isBusy())
+		if (orbit && !Host.busy)
 			angle += dt * .15;
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 
 		var environment = current < PATHS.length ? environments[current] : null;
 		stage.setEnvironment(environment, 1, rotation);
 		stage.setBackground(blur < BLURS.length ? environment : null, blur < BLURS.length ? BLURS[blur] : 0);
-		stage.setTonemap(TONEMAPS[tonemap]);
-		stage.setExposure(exposure);
+		stage.tonemap = TONEMAPS[tonemap];
+		stage.exposure = exposure;
 
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(hud);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var title = "HeliX environment: image-based light, a background and tone mapping";
 		var state = current == PATHS.length ? "" : environment == null ? " (preparing)" : ' (ready in ${Math.round(loadMs[current])} ms)';
 		var readout = '[E] ${NAMES[current]}$state   [B] background ${BLUR_NAMES[blur]}   [T] ${TONEMAP_NAMES[tonemap]}   '
 			+ 'UP/DOWN exposure ${exposure >= 0 ? "+" : ""}$exposure EV   LEFT/RIGHT turn   [O] camera';
 		// The band's height is the readout's, wrapped.
-		var wrap = vw - 24, font = batch.getFont();
+		var wrap = vw - 24, font = batch.font;
 		var readoutY = vy + 36 + Text2D.measureWrapped(font, title, 20, wrap) + 3,
 			bottom = readoutY + Text2D.measureWrapped(font, readout, 16, wrap) - 2;
 

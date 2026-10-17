@@ -5,22 +5,11 @@ package helix.render3d;
 	target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's.
 	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. */
 class Camera3D extends Node3D {
-	var fovY = Math.PI / 4;
-	var near = .1;
-	var far = 1000.;
 	// The orthographic view's height in world units; 0 for perspective.
-	var orthographicHeight = 0.;
 	// The narrowest shape the view keeps its width at; 0 for none.
-	var minAspect = 0.;
-	var framebufferWidth = 1;
-	var framebufferHeight = 1;
-	var viewportX = 0;
-	var viewportY = 0;
-	var viewportWidth = 1;
-	var viewportHeight = 1;
 	var view = new Mat4();
 	var projection = new Mat4();
-	var viewProjection = new Mat4();
+	var viewProjectionMatrix = new Mat4();
 	var placed = new Mat4();
 	// Where it is in the world and which way it looks, from placed: the eye, the unit forward (its -z) and up (its +y).
 	var eye = [0., 0, 0];
@@ -63,62 +52,79 @@ class Camera3D extends Node3D {
 	}
 
 	/** The eye's x: its world position. */
-	public function getEyeX():Float {
+	public var eyeX(get, never):Float;
+
+	function get_eyeX():Float {
 		place();
 		return eye[0];
 	}
 
 	/** The eye's y. */
-	public function getEyeY():Float {
+	public var eyeY(get, never):Float;
+
+	function get_eyeY():Float {
 		place();
 		return eye[1];
 	}
 
 	/** The eye's z. */
-	public function getEyeZ():Float {
+	public var eyeZ(get, never):Float;
+
+	function get_eyeZ():Float {
 		place();
 		return eye[2];
 	}
 
 	/** Which way it looks, in the world, x: its -z, a unit vector. */
-	public function getForwardX():Float {
+	public var forwardX(get, never):Float;
+
+	function get_forwardX():Float {
 		place();
 		return forward[0];
 	}
 
 	/** Which way it looks, y. */
-	public function getForwardY():Float {
+	public var forwardY(get, never):Float;
+
+	function get_forwardY():Float {
 		place();
 		return forward[1];
 	}
 
 	/** Which way it looks, z. */
-	public function getForwardZ():Float {
+	public var forwardZ(get, never):Float;
+
+	function get_forwardZ():Float {
 		place();
 		return forward[2];
 	}
 
 	/** Its up in the world, x: its +y, a unit vector square to the view. */
-	public function getUpX():Float {
+	public var upX(get, never):Float;
+
+	function get_upX():Float {
 		place();
 		return up[0];
 	}
 
 	/** Its up, y. */
-	public function getUpY():Float {
+	public var upY(get, never):Float;
+
+	function get_upY():Float {
 		place();
 		return up[1];
 	}
 
 	/** Its up, z. */
-	public function getUpZ():Float {
+	public var upZ(get, never):Float;
+
+	function get_upZ():Float {
 		place();
 		return up[2];
 	}
 
 	/** The vertical field of view in radians. */
-	public function getFovY():Float
-		return fovY;
+	public var fovY(default, null):Float = Math.PI / 4;
 
 	/** The projection: fovY radians of vertical view, near and far the clip planes' distances. False, changing nothing, unless 0 < fovY < pi and
 		0 < near < far. */
@@ -132,47 +138,47 @@ class Camera3D extends Node3D {
 		return true;
 	}
 
-	/** The narrowest viewport shape (width / height) the view keeps its width at: 0, the default, for none. */
-	public function getMinAspect():Float
-		return minAspect;
+	/** The narrowest viewport shape (width / height) the view keeps its width at: on a narrower viewport its vertical view
+		(setPerspective's fovY, or an orthographic height) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 /
+		9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0,
+		the default, for none; 0 or more (under 0, or NaN, is 0). */
+	public var minAspect(default, set):Float = 0.;
 
-	/** Keeps the view's width on a viewport narrower than aspect (width / height): its vertical view (setPerspective's fovY, or an orthographic
-		height) is as given at aspect and wider, and grows on a narrower viewport so it sees as far across as at aspect. A scene framed for 16:9
-		(16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0
-		turns it off. False, changing nothing, for less than 0. */
-	public function setMinAspect(aspect:Float):Bool {
-		if (!(aspect >= 0))
-			return false;
+	function set_minAspect(aspect:Float):Float {
+		aspect = aspect >= 0 ? aspect : 0;
 		minAspect = aspect;
-		return true;
+		return aspect;
 	}
 
-	/** The vertical field of view drawn, in radians: getFovY, widened on a viewport narrower than the minimum aspect (setMinAspect). */
-	public function getDrawnFovY():Float {
+	/** The vertical field of view drawn, in radians: fovY, widened on a viewport narrower than the minimum aspect (minAspect). */
+	public var drawnFovY(get, never):Float;
+
+	function get_drawnFovY():Float {
 		var aspect = viewportWidth / viewportHeight;
 		return aspect < minAspect ? 2 * Math.atan(Math.tan(fovY / 2) * minAspect / aspect) : fovY;
 	}
 
-	/** The orthographic height drawn, in world units: getOrthographicHeight, taller on a viewport narrower than the minimum aspect. */
-	public function getDrawnHeight():Float {
+	/** The orthographic height drawn, in world units: orthographicHeight, taller on a viewport narrower than the minimum aspect. */
+	public var drawnHeight(get, never):Float;
+
+	function get_drawnHeight():Float {
 		var aspect = viewportWidth / viewportHeight;
 		return aspect < minAspect ? orthographicHeight * minAspect / aspect : orthographicHeight;
 	}
 
 	/** The near clip plane's distance from the eye. */
-	public function getNear():Float
-		return near;
+	public var near(default, null):Float = .1;
 
 	/** The far clip plane's distance from the eye. */
-	public function getFar():Float
-		return far;
+	public var far(default, null):Float = 1000.;
 
 	/** An orthographic projection's height in world units; 0 for a perspective one. */
-	public function getOrthographicHeight():Float
-		return orthographicHeight;
+	public var orthographicHeight(default, null):Float = 0.;
 
 	/** Whether the projection is orthographic. */
-	public function isOrthographic():Bool
+	public var orthographic(get, never):Bool;
+
+	function get_orthographic():Bool
 		return orthographicHeight > 0;
 
 	/** An orthographic projection, with no perspective: height world units seen top to bottom (the width by the viewport's shape), near and far
@@ -188,28 +194,22 @@ class Camera3D extends Node3D {
 	}
 
 	/** The framebuffer width in pixels, from setViewport. */
-	public function getFramebufferWidth():Int
-		return framebufferWidth;
+	public var framebufferWidth(default, null):Int = 1;
 
 	/** The framebuffer height in pixels, from setViewport. */
-	public function getFramebufferHeight():Int
-		return framebufferHeight;
+	public var framebufferHeight(default, null):Int = 1;
 
 	/** The viewport's left edge in framebuffer pixels from the framebuffer's left. */
-	public function getViewportX():Int
-		return viewportX;
+	public var viewportX(default, null):Int = 0;
 
 	/** The viewport's top edge in framebuffer pixels from the framebuffer's top. */
-	public function getViewportY():Int
-		return viewportY;
+	public var viewportY(default, null):Int = 0;
 
 	/** The viewport width in framebuffer pixels. */
-	public function getViewportWidth():Int
-		return viewportWidth;
+	public var viewportWidth(default, null):Int = 1;
 
 	/** The viewport height in framebuffer pixels. */
-	public function getViewportHeight():Int
-		return viewportHeight;
+	public var viewportHeight(default, null):Int = 1;
 
 	/** The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. */
 	public function setViewport(width:Int, height:Int):Void {
@@ -232,15 +232,17 @@ class Camera3D extends Node3D {
 	}
 
 	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call, the view from where it is in the world now. */
-	public function getViewProjection():Mat4 {
+	public var viewProjection(get, never):Mat4;
+
+	function get_viewProjection():Mat4 {
 		place();
 		view.makeLookAt(eye[0], eye[1], eye[2], eye[0] + forward[0], eye[1] + forward[1], eye[2] + forward[2], up[0], up[1], up[2]);
 		if (orthographicHeight > 0)
-			projection.makeOrthographic(getDrawnHeight(), viewportWidth / viewportHeight, near, far);
+			projection.makeOrthographic(this.drawnHeight, viewportWidth / viewportHeight, near, far);
 		else
-			projection.makePerspective(getDrawnFovY(), viewportWidth / viewportHeight, near, far);
-		viewProjection.makeProduct(projection, view);
-		return viewProjection;
+			projection.makePerspective(this.drawnFovY, viewportWidth / viewportHeight, near, far);
+		viewProjectionMatrix.makeProduct(projection, view);
+		return viewProjectionMatrix;
 	}
 
 	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the
@@ -252,7 +254,7 @@ class Camera3D extends Node3D {
 		// Normalized device coordinates: -1 to 1 across the viewport, y up.
 		var nx = (x - viewportX) / viewportWidth * 2 - 1,
 			ny = 1 - (y - viewportY) / viewportHeight * 2;
-		if (!inverse.makeInverse(getViewProjection()))
+		if (!inverse.makeInverse(this.viewProjection))
 			return false;
 		var near = unproject(nx, ny, -1),
 			nearX = near[0],

@@ -47,18 +47,17 @@ Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphic
 
 ```haxe
 function new(gpu:IGraphics, ?maxVertices:Int = 32768)
-function getVertexCount():Int
-function getDrawCallCount():Int
-function getFont():Font2D
+var vertexCount(get, never):Int
+var drawCallCount(get, never):Int
+var font(default, null):Font2D
 function begin(camera:Camera2D):Void
-function getCamera():Camera2D
-function setCamera(value:Camera2D):Void
-function getTransformA():Float
-function getTransformB():Float
-function getTransformC():Float
-function getTransformD():Float
-function getTransformX():Float
-function getTransformY():Float
+var camera(default, set):Camera2D
+var transformA(get, never):Float
+var transformB(get, never):Float
+var transformC(get, never):Float
+var transformD(get, never):Float
+var transformX(get, never):Float
+var transformY(get, never):Float
 function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void
 function resetTransform():Void
 function end():Void
@@ -85,25 +84,24 @@ function destroy():Void
 ```
 
 - `new`: A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them.
-- `getVertexCount`: Vertices of the frame drawn last.
-- `getDrawCallCount`: Draws of the frame drawn last: one per run of a texture.
-- `getFont`: The built-in pixel font, whose texture also has the white texel shapes use.
+- `vertexCount`: Vertices of the frame drawn last.
+- `drawCallCount`: Draws of the frame drawn last: one per run of a texture.
+- `font`: The built-in pixel font, whose texture also has the white texel shapes use.
 - `begin`: Starts collecting a batch seen through camera, with no transform; later calls only fill it until end.
-- `getCamera`: The camera the batch is seen through.
-- `setCamera`: What follows is seen through camera, in its viewport: a world and a HUD in one batch.
-- `getTransformA`: The transform's a: x's share of a point's x.
-- `getTransformB`: The transform's b: x's share of a point's y.
-- `getTransformC`: The transform's c: y's share of a point's x.
-- `getTransformD`: The transform's d: y's share of a point's y.
-- `getTransformX`: The transform's x offset, world units.
-- `getTransformY`: The transform's y offset, world units.
+- `camera`: The camera what follows is seen through, in its viewport: a world and a HUD in one batch.
+- `transformA`: The transform's a: x's share of a point's x.
+- `transformB`: The transform's b: x's share of a point's y.
+- `transformC`: The transform's c: y's share of a point's x.
+- `transformD`: The transform's d: y's share of a point's y.
+- `transformX`: The transform's x offset, world units.
+- `transformY`: The transform's y offset, world units.
 - `setTransform`: Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units.
 - `resetTransform`: What follows is drawn where it is given, in world units.
 - `end`: Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture and camera, each in its camera's viewport. Once a frame.
 - `pushClip`: Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a turned one's bounds), within any clip already pushed, until popClip.
 - `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
-- `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.setSampling).
-- `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.isDistanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
+- `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
+- `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
 - `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xRRGGBBAA, white by default). Throws when the frame's vertices pass capacity.
 - `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
 - `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
@@ -129,19 +127,17 @@ A 2D view: the world point at the viewport's center and how many pixels a world 
 
 ```haxe
 function new()
-function getX():Float
-function getY():Float
+var x(default, null):Float
+var y(default, null):Float
 function setPosition(x:Float, y:Float):Void
-function getZoom():Float
-function setZoom(value:Float):Bool
-function getZoomY():Float
-function setZoomY(value:Float):Bool
-function getFramebufferWidth():Int
-function getFramebufferHeight():Int
-function getViewportX():Int
-function getViewportY():Int
-function getViewportWidth():Int
-function getViewportHeight():Int
+var zoom(default, set):Float
+var zoomY(default, set):Float
+var framebufferWidth(default, null):Int
+var framebufferHeight(default, null):Int
+var viewportX(default, null):Int
+var viewportY(default, null):Int
+var viewportWidth(default, null):Int
+var viewportHeight(default, null):Int
 function setViewport(width:Int, height:Int):Void
 function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool
 function fit(left:Float, top:Float, width:Float, height:Float):Bool
@@ -155,19 +151,17 @@ var clipY(inline, null):(wy:Float) -> Float
 ```
 
 - `new`: A camera at world 0, 0, zoom 1, on a 1 x 1 viewport.
-- `getX`: The world X at the viewport's center.
-- `getY`: The world Y at the viewport's center.
+- `x`: The world X at the viewport's center.
+- `y`: The world Y at the viewport's center.
 - `setPosition`: Puts the world point x, y at the viewport's center.
-- `getZoom`: Framebuffer pixels per world unit (across, where they differ: getZoomY).
-- `setZoom`: Sets the framebuffer pixels per world unit, across and down. False for a zoom of 0 or less.
-- `getZoomY`: Framebuffer pixels per world unit down: getZoom's, unless set apart.
-- `setZoomY`: Sets the framebuffer pixels per world unit down alone, after setZoom (a stretched view: Presentation's Stretch). False for a zoom of 0 or less.
-- `getFramebufferWidth`: The framebuffer width in pixels, from setViewport.
-- `getFramebufferHeight`: The framebuffer height in pixels, from setViewport.
-- `getViewportX`: The viewport's left edge in framebuffer pixels from the framebuffer's left.
-- `getViewportY`: The viewport's top edge in framebuffer pixels from the framebuffer's top.
-- `getViewportWidth`: The viewport width in framebuffer pixels.
-- `getViewportHeight`: The viewport height in framebuffer pixels.
+- `zoom`: Framebuffer pixels per world unit across; assigning it sets the zoom down too (zoomY). At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `zoomY`: Framebuffer pixels per world unit down: zoom's, unless assigned apart after it (a stretched view: Presentation's Stretch). At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `framebufferWidth`: The framebuffer width in pixels, from setViewport.
+- `framebufferHeight`: The framebuffer height in pixels, from setViewport.
+- `viewportX`: The viewport's left edge in framebuffer pixels from the framebuffer's left.
+- `viewportY`: The viewport's top edge in framebuffer pixels from the framebuffer's top.
+- `viewportWidth`: The viewport width in framebuffer pixels.
+- `viewportHeight`: The viewport height in framebuffer pixels.
 - `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
 - `fit`: Show a world rectangle whole and centered; the longer screen side shows extra world. False for a width or height of 0 or less.
@@ -189,11 +183,11 @@ A font for Text2D: its characters as glyphs in one texture. builtIn() is JetBrai
 static function fromTrueType(gpu:IGraphics, data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6):Font2D
 static function builtIn(gpu:IGraphics):Font2D
 static function pixel(gpu:IGraphics):Font2D
-function getTexture():Texture2D
-function getSize():Float
-function getAscent():Float
-function getDescent():Float
-function isDistanceField():Bool
+var texture(default, null):Texture2D
+var size(default, null):Float
+var ascent(default, null):Float
+var descent(default, null):Float
+var distanceField(default, null):Bool
 function getGlyph(code:Int):Null<Glyph2D>
 function getKerning(left:Int, right:Int):Float
 function destroy(gpu:IGraphics):Void
@@ -202,11 +196,11 @@ function destroy(gpu:IGraphics):Void
 - `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. The caller destroys it.
 - `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md).
 - `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes.
-- `getTexture`: The texture holding every glyph, with a white texel for untextured shapes.
-- `getSize`: The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this.
-- `getAscent`: How far the tallest glyphs reach above the baseline, in font pixels.
-- `getDescent`: How far glyphs reach below the baseline, in font pixels; 0 or negative.
-- `isDistanceField`: Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage.
+- `texture`: The texture holding every glyph, with a white texel for untextured shapes.
+- `size`: The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this.
+- `ascent`: How far the tallest glyphs reach above the baseline, in font pixels.
+- `descent`: How far glyphs reach below the baseline, in font pixels; 0 or negative.
+- `distanceField`: Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage.
 - `getGlyph`: A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size).
 - `getKerning`: How far the pen moves besides the advance between characters left and right, in font pixels: usually negative, closing a pair such as "AV". 0 for a font without kerning.
 - `destroy`: Frees the font's texture on gpu, the adapter that made it.
@@ -311,24 +305,22 @@ static function polygon(points:Array<Float>, ?color:Int = 0xffffffff):Null<Node2
 static function text(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font2D):Node2D
 static function emitter(emitter:Emitter):Node2D
 function getEmitter():Null<Emitter>
-function getKind():Node2DKind
-function getName():String
-function setName(value:String):Void
+var kind(default, null):Node2DKind
+var name:String
 function find(name:String):Null<Node2D>
-function getColor():Int
-function setColor(value:Int):Void
+var color:Int
 function getTexture():Null<Texture2D>
 function setTexture(value:Null<Texture2D>):Bool
 function setRegion(x:Float, y:Float, width:Float, height:Float):Bool
-function getRegionX():Float
-function getRegionY():Float
-function getRegionWidth():Float
-function getRegionHeight():Float
-function getWidth():Float
-function getHeight():Float
+var regionX(get, never):Float
+var regionY(get, never):Float
+var regionWidth(get, never):Float
+var regionHeight(get, never):Float
+var width(get, never):Float
+var height(get, never):Float
 function setSize(width:Float, height:Float):Bool
-function getPivotX():Float
-function getPivotY():Float
+var pivotX(default, null):Float
+var pivotY(default, null):Float
 function setPivot(x:Float, y:Float):Bool
 function getRadius():Float
 function setRadius(value:Float):Bool
@@ -347,38 +339,35 @@ function setFont(value:Null<Font2D>):Bool
 function getAlign():Align2D
 function setAlign(value:Align2D):Bool
 function setNineSlice(left:Float, top:Float, right:Float, bottom:Float):Bool
-function getNineSliceLeft():Float
-function getNineSliceTop():Float
-function getNineSliceRight():Float
-function getNineSliceBottom():Float
-function isNineSlice():Bool
-function getWrapWidth():Float
-function getLineHeight():Float
+var nineSliceLeft(get, never):Float
+var nineSliceTop(get, never):Float
+var nineSliceRight(get, never):Float
+var nineSliceBottom(get, never):Float
+var nineSlice(get, never):Bool
+var wrapWidth(default, null):Float
+var lineHeight(default, null):Float
 function setWrapWidth(width:Float, ?lineHeight:Float = 1.25):Bool
 function getTextHeight(font:Font2D):Float
-function isClipping():Bool
-function getClipWidth():Float
-function getClipHeight():Float
+var clipping(get, never):Bool
+var clipWidth(default, null):Float
+var clipHeight(default, null):Float
 function setClip(width:Float, height:Float):Bool
 function clearClip():Void
-function isEnabled():Bool
-function setEnabled(value:Bool):Void
-function isVisible():Bool
-function setVisible(value:Bool):Void
-function isPickable():Bool
-function setPickable(value:Bool):Void
-function getParent():Null<Node2D>
-function getChildCount():Int
+var enabled(default, set):Bool
+var visible:Bool
+var pickable:Bool
+var parent(get, set):Null<Node2D>
+var childCount(get, never):Int
 function getChild(index:Int):Null<Node2D>
-function add(child:Node2D):Bool
-function remove(child:Node2D):Bool
-function getX():Float
-function getY():Float
+function addChild(child:Node2D):Bool
+function addChildInPlace(child:Node2D):Bool
+function removeChild(child:Node2D):Bool
+var x(get, never):Float
+var y(get, never):Float
 function setPosition(x:Float, y:Float):Void
-function getRotation():Float
-function setRotation(radians:Float):Void
-function getScaleX():Float
-function getScaleY():Float
+var rotation(get, set):Float
+var scaleX(get, never):Float
+var scaleY(get, never):Float
 function setScale(x:Float, y:Float):Void
 function toWorldX(x:Float, y:Float):Float
 function toWorldY(x:Float, y:Float):Float
@@ -392,27 +381,25 @@ function toLocalY(x:Float, y:Float):Float
 - `circle`: A filled circle of radius, centered on its position.
 - `line`: A line from x0, y0 to x1, y1 in its own units, as wide as its outline (1 until setOutline).
 - `polygon`: A filled polygon through points in its own units (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). Null for fewer than 3 points or an odd count.
-- `text`: One line of text, size world units tall (ascent to descent), in font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Not pickable until setPickable(true): a label lets the pointer through to what it's on.
+- `text`: One line of text, size world units tall (ascent to descent), in font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Not pickable until pickable is set: a label lets the pointer through to what it's on.
 - `emitter`: An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Stage2D.setTime) each draw. Its particles draw at its place in the stage's order, through the GPU.
 - `getEmitter`: An emitter node's emitter; null for another kind.
-- `getKind`: Its kind.
-- `getName`: Its name, what the game gave it; "" for none.
-- `setName`: Names it.
+- `kind`: Its kind.
+- `name`: Its name, what the game gave it; "" for none.
 - `find`: The first node named name below it (depth first, in drawing order), or null: found once and kept, never a path.
-- `getColor`: Its color: what a sprite's texels are multiplied by (white leaves them as they are), a shape's or text's color.
-- `setColor`: Sets its color.
+- `color`: Its color: what a sprite's texels are multiplied by (white leaves them as they are), a shape's or text's color.
 - `getTexture`: A sprite's texture, or null.
 - `setTexture`: Gives a sprite a texture (null for none: it draws nothing). False for another kind.
 - `setRegion`: A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. False for another kind.
-- `getRegionX`: A sprite's region's left, in texels.
-- `getRegionY`: A sprite's region's top, in texels.
-- `getRegionWidth`: A sprite's region's width in texels: what was set, or else its texture's (0 without one).
-- `getRegionHeight`: A sprite's region's height in texels: what was set, or else its texture's (0 without one).
-- `getWidth`: The width it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
-- `getHeight`: The height it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
+- `regionX`: A sprite's region's left, in texels.
+- `regionY`: A sprite's region's top, in texels.
+- `regionWidth`: A sprite's region's width in texels: what was set, or else its texture's (0 without one).
+- `regionHeight`: A sprite's region's height in texels: what was set, or else its texture's (0 without one).
+- `width`: The width it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
+- `height`: The height it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
 - `setSize`: Sizes a sprite or a rectangle, in its own units; for a sprite, a width or height of 0 or less goes back to its region's size. False for another kind, or a rectangle's size below 0.
-- `getPivotX`: The point of a sprite or rectangle at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right.
-- `getPivotY`: The pivot's y fraction.
+- `pivotX`: The point of a sprite or rectangle at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right.
+- `pivotY`: The pivot's y fraction.
 - `setPivot`: Sets a sprite's or rectangle's pivot. False for another kind.
 - `getRadius`: A circle's radius; 0 for another kind.
 - `setRadius`: Sets a circle's radius. False for another kind or a radius below 0.
@@ -431,38 +418,35 @@ function toLocalY(x:Float, y:Float):Float
 - `getAlign`: A text node's alignment.
 - `setAlign`: Aligns a text node's text on its position: Left, Center or Right. False for another kind.
 - `setNineSlice`: Draws a sprite as a nine-slice frame (Batch2D.nineSlice): its region's corners left, top, right and bottom texels in from its edges keep their size as it's sized, its edges and middle stretch. All 0 (the start) draws it stretched whole. False for another kind or an inset below 0.
-- `getNineSliceLeft`: A nine-slice's left inset, texels.
-- `getNineSliceTop`: A nine-slice's top inset, texels.
-- `getNineSliceRight`: A nine-slice's right inset, texels.
-- `getNineSliceBottom`: A nine-slice's bottom inset, texels.
-- `isNineSlice`: Whether a sprite draws as a nine-slice frame.
-- `getWrapWidth`: A text's wrap width in its own units: 0 for one line.
-- `getLineHeight`: A wrapped text's lines apart, times its size.
+- `nineSliceLeft`: A nine-slice's left inset, texels.
+- `nineSliceTop`: A nine-slice's top inset, texels.
+- `nineSliceRight`: A nine-slice's right inset, texels.
+- `nineSliceBottom`: A nine-slice's bottom inset, texels.
+- `nineSlice`: Whether a sprite draws as a nine-slice frame.
+- `wrapWidth`: A text's wrap width in its own units: 0 for one line.
+- `lineHeight`: A wrapped text's lines apart, times its size.
 - `setWrapWidth`: Wraps a text to width in its own units (Text2D.wrap), its lines lineHeight times its size apart; 0 for one line. False for another kind, a width below 0 or a line height of 0 or less.
 - `getTextHeight`: A text's height in its own units as drawn: its size, or its wrapped lines' (with font, the font it's drawn in).
-- `isClipping`: Whether its children are clipped (setClip).
-- `getClipWidth`: The clip's width in its own units, or -1 without one.
-- `getClipHeight`: The clip's height in its own units, or -1 without one.
+- `clipping`: Whether its children are clipped (setClip).
+- `clipWidth`: The clip's width in its own units, or -1 without one.
+- `clipHeight`: The clip's height in its own units, or -1 without one.
 - `setClip`: Clips its children (drawn and picked) to the rectangle width x height from its own origin, in its own units: a scrolling list's window. A turned node clips to the turned rectangle's bounds. Its own output isn't clipped. False, changing nothing, for a size below 0.
 - `clearClip`: Stops clipping its children.
-- `isEnabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
-- `setEnabled`: Turns it, and everything under it, on or off (isEnabled).
-- `isVisible`: Whether its own output is drawn: off, a sprite, shape, text or emitter isn't drawn (an emitter still moves on) isn't drawn; it stays placed, and its children are as they are. On to start.
-- `setVisible`: Shows or hides its own output (isVisible).
-- `isPickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
-- `setPickable`: Lets picks hit its own output, or not (isPickable).
-- `getParent`: Its parent, or null.
-- `getChildCount`: How many children it has.
+- `enabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
+- `visible`: Whether its own output is drawn: off, a sprite, shape, text or emitter isn't drawn (an emitter still moves on); it stays placed, and its children are as they are. On to start.
+- `pickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
+- `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
+- `childCount`: How many children it has.
 - `getChild`: Its child at index, in drawing order; null past the end.
-- `add`: Makes child its last child (drawn over the others), taking it from any parent it had. False for itself or one of its own ancestors.
-- `remove`: Takes child from its children. False when it isn't one.
-- `getX`: Its position's x, relative to its parent.
-- `getY`: Its position's y.
+- `addChild`: Makes child its last child (drawn over the others), taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
+- `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or this scaled to nothing.
+- `removeChild`: Takes child from its children. False when it isn't one.
+- `x`: Its position's x, relative to its parent.
+- `y`: Its position's y.
 - `setPosition`: Places it at x, y, relative to its parent.
-- `getRotation`: Its rotation in radians, clockwise on screen, relative to its parent.
-- `setRotation`: Turns it to radians, clockwise on screen, relative to its parent.
-- `getScaleX`: Its scale along its own x.
-- `getScaleY`: Its scale along its own y.
+- `rotation`: Its rotation in radians, clockwise on screen, relative to its parent.
+- `scaleX`: Its scale along its own x.
+- `scaleY`: Its scale along its own y.
 - `setScale`: Scales it along its own x and y; a negative scale mirrors it.
 - `toWorldX`: The world x of its own point x, y, as the last draw placed it.
 - `toWorldY`: The world y of its own point x, y, as the last draw placed it.
@@ -497,25 +481,23 @@ A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, cam
 
 ```haxe
 function new()
-function getRoot():Node2D
+var root(default, null):Node2D
 function add(node:Node2D):Bool
 function remove(node:Node2D):Bool
-function getTime():Float
-function setTime(seconds:Float):Void
-function getFont():Null<Font2D>
-function getDrawnNodeCount():Int
+var time:Float
+var font(get, never):Null<Font2D>
+var drawnNodeCount(get, never):Int
 function draw(batch:Batch2D, camera:Camera2D):Void
 function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 ```
 
 - `new`: An empty stage.
-- `getRoot`: The node everything on the stage hangs from.
+- `root`: The node everything on the stage hangs from.
 - `add`: Adds node to the stage, as the root's last child: drawn over what is there.
 - `remove`: Takes node from the stage's root.
-- `getTime`: The stage's clock, seconds: what the app last set.
-- `setTime`: Sets the stage's clock; its emitters advance by how far it moved since the last draw.
-- `getFont`: The font a text without its own was last drawn in (the batch's), or null before a draw.
-- `getDrawnNodeCount`: Nodes drawn by the last draw (in view).
+- `time`: The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw.
+- `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
+- `drawnNodeCount`: Nodes drawn by the last draw (in view).
 - `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport; the batch is left seen through camera, with no transform. Node world transforms are up to date after it, for toLocalX and the like.
 - `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
@@ -543,38 +525,36 @@ static function draw(batch:Batch2D, text:String, x:Float, y:Float, size:Float, c
 
 *class* in `src/helix/render2d/Texture2D.hx`
 
-A GPU texture with its size, its format and how it is sampled (Sampling: linear or nearest, and its wrap), which a draw reads when it takes the texture, so one texture can be drawn smooth and then sharp. getWhiteU/getWhiteV name an opaque white texel, -1 when it has none, for untextured shapes.
+A GPU texture with its size, its format and how it is sampled (Sampling: linear or nearest, and its wrap), which a draw reads when it takes the texture, so one texture can be drawn smooth and then sharp. whiteU/whiteV name an opaque white texel, -1 when it has none, for untextured shapes.
 
 ```haxe
 static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:haxe.io.Bytes, ?linear:Bool = false, ?whiteX:Int = -1, ?whiteY:Int = -1, ?mipmaps:Bool = false):Texture2D
 static function fromLevels(gpu:IGraphics, width:Int, height:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat, sampling:Sampling):Texture2D
 static function renderTarget(gpu:IGraphics, width:Int, height:Int, ?linear:Bool = true):Texture2D
-function getHandle():Int
-function getWidth():Int
-function getHeight():Int
-function getFormat():TextureFormat
-function getLevelCount():Int
-function getByteCount():Int
-function getSampling():Sampling
-function setSampling(value:Sampling):Void
-function getWhiteU():Float
-function getWhiteV():Float
+var handle(default, null):Int
+var width(default, null):Int
+var height(default, null):Int
+var format(default, null):TextureFormat
+var levelCount(get, never):Int
+var byteCount(get, never):Int
+var sampling:Sampling
+var whiteU(default, null):Float
+var whiteV(default, null):Float
 function destroy(gpu:IGraphics):Void
 ```
 
 - `fromRgba`: Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without shimmering. The caller destroys it.
 - `fromLevels`: Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws when the GPU can't sample format (IGraphics.canSample). The caller destroys it.
 - `renderTarget`: A render target width x height: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger). The caller destroys it.
-- `getHandle`: The IGraphics handle, for draws.
-- `getWidth`: Width in texels.
-- `getHeight`: Height in texels.
-- `getFormat`: Its texels' format: RGBA8, or a compressed one.
-- `getLevelCount`: How many levels it has: 1, or the image and its mipmaps.
-- `getByteCount`: The GPU memory its levels take, in bytes.
-- `getSampling`: How draws sample it.
-- `setSampling`: Samples it as value from the next draw that takes it on.
-- `getWhiteU`: U of the center of an opaque white texel, or -1 when it has none.
-- `getWhiteV`: V of the center of an opaque white texel, or -1 when it has none.
+- `handle`: The IGraphics handle, for draws.
+- `width`: Width in texels.
+- `height`: Height in texels.
+- `format`: Its texels' format: RGBA8, or a compressed one.
+- `levelCount`: How many levels it has: 1, or the image and its mipmaps.
+- `byteCount`: The GPU memory its levels take, in bytes.
+- `sampling`: How draws sample it, from the next draw that takes it on.
+- `whiteU`: U of the center of an opaque white texel, or -1 when it has none.
+- `whiteV`: V of the center of an opaque white texel, or -1 when it has none.
 - `destroy`: Frees the GPU texture on gpu, the adapter that made it.
 
 ## TextureCache
@@ -597,7 +577,7 @@ function shutdown():Void
 - `new`: Loads through assets, decodes with images (shared, polled by its owner) and uploads to gpu; shutdown shuts nothing down but this service.
 - `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
 - `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
+- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
 - `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread.
 - `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 - `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
@@ -631,7 +611,7 @@ static function release(texture:Texture2D):Void
 - `instance`: The textures forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
 - `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
+- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
 - `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread.
 - `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 

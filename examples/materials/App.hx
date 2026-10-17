@@ -47,9 +47,9 @@ class App extends BaseApp {
 
 	static function pbr(base:Int, metallic:Float, roughness:Float):Material {
 		var material = new Material();
-		material.setBaseColor(base);
-		material.setMetallic(metallic);
-		material.setRoughness(roughness);
+		material.baseColor = base;
+		material.metallic = metallic;
+		material.roughness = roughness;
 		return material;
 	}
 
@@ -61,27 +61,27 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Window.setTitle("HeliX materials");
+		Window.title = "HeliX materials";
 		Window.requestSize(1000, 700);
 		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 		// Framed for 16:9: all five columns across on a phone held upright too.
-		camera.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
 
 		sun = new DirectionalLight();
-		sun.setColor(0xfff4e4ff);
-		sun.setIntensity(3);
+		sun.color = 0xfff4e4ff;
+		sun.intensity = 3;
 		sun.lookAt(-.4, -.7, -.6);
 		stage.add(sun);
 		lamp = new PointLight();
-		lamp.setColor(0x78beffff);
-		lamp.setIntensity(8);
-		lamp.setRange(10);
+		lamp.color = 0x78beffff;
+		lamp.intensity = 8;
+		lamp.range = 10;
 		stage.add(lamp);
 		var glow = new Material();
-		glow.setBaseColor(0x66bfffff);
-		glow.setLit(false);
+		glow.baseColor = 0x66bfffff;
+		glow.lit = false;
 		marker = new Model(Mesh.sphere(.06, 8, 16), glow);
 		stage.add(marker);
 
@@ -94,15 +94,15 @@ class App extends BaseApp {
 			sphere(ball, x, 1.35, pbr(color(1, .77, .34), 1, roughness));
 		}
 		var unlit = new Material();
-		unlit.setBaseColor(0x66bfffff);
-		unlit.setLit(false);
+		unlit.baseColor = 0x66bfffff;
+		unlit.lit = false;
 		bottom.push(sphere(ball, -2 * SPACING, 0, unlit));
 		var emissive = pbr(color(.05, .05, .05), 0, .6);
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
 		Textures.load("textures/tiles_normal.png", true, result -> switch result {
-			case Ready(texture): tiles.setNormalTexture(texture);
+			case Ready(texture): tiles.normalTexture = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
@@ -116,30 +116,29 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.Digit1))
-			sun.setVisible(!sun.isVisible());
+			sun.visible = !sun.visible;
 		if (input.isFramePressed(Key.Digit2))
-			lamp.setVisible(!lamp.isVisible());
+			lamp.visible = !lamp.visible;
 		// The game's clock: paused, the motion stops.
-		var time = Time.clock.getTime();
+		var time = Time.clock.time;
 		var lx = Math.cos(time * .7) * 4,
 			ly = 1.4 + Math.sin(time * .9) * 1.2,
 			lz = Math.sin(time * .7) * 1.5 + 2;
 		lamp.setPosition(lx, ly, lz);
 		marker.setPosition(lx, ly, lz);
-		marker.setVisible(lamp.isVisible());
+		marker.visible = lamp.visible;
 		for (node in bottom)
 			node.setRotation(0, time * .5, 0);
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
@@ -147,7 +146,7 @@ class App extends BaseApp {
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xf5f5f5ff) + 4;
 		Text2D.drawWrapped(batch,
-			'roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.isVisible() ? "on" : "off"}  [2] lamp ${lamp.isVisible() ? "on" : "off"}',
+			'roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
 			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();

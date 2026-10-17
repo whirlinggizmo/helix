@@ -7,7 +7,6 @@ import helix.render2d.Node2D.Node2DKind;
 	changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into
 	runs. A frame composes its stages in the order it draws them: a backdrop, the world, then a HUD, each through its own camera. */
 class Stage2D {
-	var root = Node2D.group();
 	var stack:Array<Node2D> = [];
 	var stackChanged:Array<Bool> = [];
 
@@ -21,7 +20,6 @@ class Stage2D {
 	var top = 0.;
 	var right = 0.;
 	var bottom = 0.;
-	var time = 0.;
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
 	var dt = 0.;
@@ -32,42 +30,40 @@ class Stage2D {
 	public function new() {}
 
 	/** The node everything on the stage hangs from. */
-	public function getRoot():Node2D
-		return root;
+	public var root(default, null):Node2D = Node2D.group();
 
 	/** Adds node to the stage, as the root's last child: drawn over what is there. */
 	public function add(node:Node2D):Bool
-		return root.add(node);
+		return root.addChild(node);
 
 	/** Takes node from the stage's root. */
 	public function remove(node:Node2D):Bool
-		return root.remove(node);
+		return root.removeChild(node);
 
-	/** The stage's clock, seconds: what the app last set. */
-	public function getTime():Float
-		return time;
-
-	/** Sets the stage's clock; its emitters advance by how far it moved since the last draw. */
-	public function setTime(seconds:Float):Void
-		time = seconds;
+	/** The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw. */
+	public var time:Float = 0.;
 
 	/** The font a text without its own was last drawn in (the batch's), or null before a draw. */
-	public function getFont():Null<Font2D>
+	public var font(get, never):Null<Font2D>;
+
+	function get_font():Null<Font2D>
 		return lastFont;
 
 	/** Nodes drawn by the last draw (in view). */
-	public function getDrawnNodeCount():Int
+	public var drawnNodeCount(get, never):Int;
+
+	function get_drawnNodeCount():Int
 		return count;
 
 	/** Draws the stage into batch (begun in this frame), through camera, in its viewport; the batch is left seen through camera, with no
 		transform. Node world transforms are up to date after it, for toLocalX and the like. */
 	public function draw(batch:Batch2D, camera:Camera2D):Void {
-		batch.setCamera(camera);
-		lastFont = batch.getFont();
-		var x0 = camera.screenToWorldX(camera.getViewportX()),
-			y0 = camera.screenToWorldY(camera.getViewportY()),
-			x1 = camera.screenToWorldX(camera.getViewportX() + camera.getViewportWidth()),
-			y1 = camera.screenToWorldY(camera.getViewportY() + camera.getViewportHeight());
+		batch.camera = camera;
+		lastFont = batch.font;
+		var x0 = camera.screenToWorldX(camera.viewportX),
+			y0 = camera.screenToWorldY(camera.viewportY),
+			x1 = camera.screenToWorldX(camera.viewportX + camera.viewportWidth),
+			y1 = camera.screenToWorldY(camera.viewportY + camera.viewportHeight);
 		left = Math.min(x0, x1);
 		right = Math.max(x0, x1);
 		top = Math.min(y0, y1);
@@ -119,8 +115,8 @@ class Stage2D {
 		var half = node.outline / 2, x = 0., y = 0., w = 0., h = 0.;
 		switch node.kind {
 			case Sprite | Rectangle:
-				w = node.getWidth();
-				h = node.getHeight();
+				w = node.width;
+				h = node.height;
 				x = -node.pivotX * w - half;
 				y = -node.pivotY * h - half;
 				w += half * 2;
@@ -147,7 +143,7 @@ class Stage2D {
 				w = maxX - minX + reach * 2;
 				h = maxY - minY + reach * 2;
 			case Text:
-				var font = node.font == null ? batch.getFont() : node.font;
+				var font = node.font == null ? batch.font : node.font;
 				w = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(font, node.content, node.textSize);
 				h = node.getTextHeight(font);
 				x = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
@@ -169,15 +165,15 @@ class Stage2D {
 		var o = node.outline;
 		switch node.kind {
 			case Sprite:
-				var t = node.texture, tw = t.getWidth(), th = t.getHeight();
+				var t = node.texture, tw = t.width, th = t.height;
 				var sx = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceX : 0.,
 					sy = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceY : 0.;
-				if (node.isNineSlice())
-					batch.nineSlice(t, x, y, w, h, node.sliceLeft, node.sliceTop, node.sliceRight, node.sliceBottom, node.color, sx, sy,
-						node.getRegionWidth(), node.getRegionHeight());
+				if (node.nineSlice)
+					batch.nineSlice(t, x, y, w, h, node.sliceLeft, node.sliceTop, node.sliceRight, node.sliceBottom, node.color, sx, sy, node.regionWidth,
+						node.regionHeight);
 				else {
 					batch.useTexture(t);
-					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.getRegionWidth()) / tw, (sy + node.getRegionHeight()) / th, node.color);
+					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.regionWidth) / tw, (sy + node.regionHeight) / th, node.color);
 				}
 			case Rectangle:
 				// Outlined, the corners' arcs are the outline's middle: their radius half the outline more outside.
@@ -226,10 +222,10 @@ class Stage2D {
 		passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the
 		node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)). */
 	public function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
-		if (!(x >= camera.getViewportX()
-			&& x < camera.getViewportX() + camera.getViewportWidth()
-			&& y >= camera.getViewportY()
-			&& y < camera.getViewportY() + camera.getViewportHeight()))
+		if (!(x >= camera.viewportX
+			&& x < camera.viewportX + camera.viewportWidth
+			&& y >= camera.viewportY
+			&& y < camera.viewportY + camera.viewportHeight))
 			return null;
 		var wx = camera.screenToWorldX(x),
 			wy = camera.screenToWorldY(y),
@@ -295,8 +291,8 @@ class Stage2D {
 			case Sprite | Rectangle:
 				if (node.kind == Sprite && node.texture == null)
 					return false;
-				var w = node.getWidth(),
-					h = node.getHeight(),
+				var w = node.width,
+					h = node.height,
 					left = -node.pivotX * w,
 					top = -node.pivotY * h,
 					r = Math.min(node.cornerRadius, Math.min(w, h) / 2);

@@ -43,23 +43,20 @@ class PickTests {
 
 	static function rays():Void {
 		var c = camera(), ray = new Ray();
-		check(c.computeRay(400, 300, ray)
-			&& near(ray.getDirectionZ(), -1)
-			&& near(ray.getOriginX(), 0)
-			&& near(ray.getOriginZ(), 10 - c.getNear()),
+		check(c.computeRay(400, 300, ray) && near(ray.directionZ, -1) && near(ray.originX, 0) && near(ray.originZ, 10 - c.near),
 			"The middle pixel looks straight ahead, from the near plane");
-		check(c.computeRay(800 - 1e-6, 300, ray) && ray.getDirectionX() > 0, "Right of the middle, to the right");
-		check(c.computeRay(400, 0, ray) && ray.getDirectionY() > 0, "The top row looks up: y is turned over");
+		check(c.computeRay(800 - 1e-6, 300, ray) && ray.directionX > 0, "Right of the middle, to the right");
+		check(c.computeRay(400, 0, ray) && ray.directionY > 0, "The top row looks up: y is turned over");
 		check(!c.computeRay(-1, -1, ray) && !c.computeRay(800, 300, ray), "Off the viewport: no ray");
 		// An orthographic camera's rays run parallel, each from its own place (wgrender-c's 526ff15: picks built a perspective and missed).
 		c.setOrthographic(6, .1, 100);
-		check(c.computeRay(400, 0, ray) && near(ray.getDirectionY(), 0) && near(ray.getOriginY(), 3), "Orthographic: parallel rays from the edge");
+		check(c.computeRay(400, 0, ray) && near(ray.directionY, 0) && near(ray.originY, 3), "Orthographic: parallel rays from the edge");
 		// A viewport area: its own middle looks straight ahead; outside it, nothing.
 		var area = camera();
 		check(area.setViewportArea(400, 0, 400, 300)
 			&& area.computeRay(600, 150, ray)
-			&& near(ray.getDirectionX(), 0)
-			&& near(ray.getDirectionY(), 0)
+			&& near(ray.directionX, 0)
+			&& near(ray.directionY, 0)
 			&& !area.computeRay(100, 150, ray),
 			"A viewport area's middle looks ahead; a point outside it has no ray");
 	}
@@ -73,30 +70,30 @@ class PickTests {
 		stage.add(back);
 		stage.add(front);
 		var hit = stage.pick(c, 400, 300);
-		check(hit != null && hit.getNode() == front && near(hit.getPoint(2), 3) && near(hit.getDistance(), 7 - c.getNear()),
+		check(hit != null && hit.node == front && near(hit.getPoint(2), 3) && near(hit.distance, 7 - c.near),
 			"The nearer cube, at its face, the distance from the near plane");
 		check(near(hit.getNormal(2), 1) && near(hit.getLocalPoint(2), 1), "The face's normal toward the camera; the point in the cube's space");
 		check(stage.pick(c, 10, 10) == null, "Nothing in a corner");
-		front.setVisible(false);
-		check(stage.pick(c, 400, 300).getNode() == front, "A hidden model is still hit");
-		front.setPickable(false);
-		check(stage.pick(c, 400, 300).getNode() == back, "An unpickable one lets the ray through");
-		front.setPickable(true);
+		front.visible = false;
+		check(stage.pick(c, 400, 300).node == front, "A hidden model is still hit");
+		front.pickable = false;
+		check(stage.pick(c, 400, 300).node == back, "An unpickable one lets the ray through");
+		front.pickable = true;
 		var child = new Model(Mesh.cube(1, 1, 1), new Material());
 		child.setPosition(0, 0, 3);
-		front.add(child);
-		front.setPickable(false);
-		check(stage.pick(c, 400, 300).getNode() == child, "An unpickable node's child is still hit");
-		front.setEnabled(false);
-		check(stage.pick(c, 400, 300).getNode() == back, "A disabled node takes its children with it");
-		front.setEnabled(true);
-		front.setPickable(true);
+		front.addChild(child);
+		front.pickable = false;
+		check(stage.pick(c, 400, 300).node == child, "An unpickable node's child is still hit");
+		front.enabled = false;
+		check(stage.pick(c, 400, 300).node == back, "A disabled node takes its children with it");
+		front.enabled = true;
+		front.pickable = true;
 		// See-through: hit only where its alpha reaches a half.
 		var glass = new Material();
-		glass.setBlended(true);
-		glass.setBaseColor(0xffffff40);
-		child.setMaterial(glass);
-		check(stage.pick(c, 400, 300).getNode() == front, "A faint see-through model isn't hit");
+		glass.blended = true;
+		glass.baseColor = 0xffffff40;
+		child.material = glass;
+		check(stage.pick(c, 400, 300).node == front, "A faint see-through model isn't hit");
 		// Stretched: a slanted face's normal goes by the inverse transpose (the plane x + z = 0, x stretched 4 times: x / 4 + z = 0), a unit
 		// vector toward the camera.
 		var slab = new Model(Mesh.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material());
@@ -117,7 +114,7 @@ class PickTests {
 		var fromInside = room.pick(inside, 400, 300);
 		check(fromInside != null && fromInside.getNormal(2) > 0, "From inside, the normal faces back along the ray");
 		var kept = new PickHit();
-		check(stage.pick(c, 400, 300, kept) == kept && stage.pick(c, 10, 10, kept) == null && kept.getNode() == null,
+		check(stage.pick(c, 400, 300, kept) == kept && stage.pick(c, 10, 10, kept) == null && kept.node == null,
 			"A given hit is filled in, and cleared on a miss");
 	}
 
@@ -129,13 +126,13 @@ class PickTests {
 			1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1
 		]);
 		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
-		hip.setName("hip");
-		knee.setName("knee");
+		hip.name = "hip";
+		knee.name = "knee";
 		knee.setPosition(1, 0, 0);
-		hip.add(knee);
-		character.add(hip);
+		hip.addChild(knee);
+		character.addChild(hip);
 		var model = new Model(mesh, new Material());
-		character.add(model);
+		character.addChild(model);
 		model.bindSkeleton(character, skin);
 		var stage = new Stage3D(new CountingGraphics());
 		stage.add(character);
@@ -144,35 +141,32 @@ class PickTests {
 		knee.setPosition(40, 0, 0);
 		c.setView(40.6, .3, 10, 40.6, .3, 0);
 		var hit = stage.pick(c, 400, 300);
-		check(hit != null && hit.getNode() == model && near(hit.getPoint(0), 40.6) && near(hit.getLocalPoint(0), 40.6),
+		check(hit != null && hit.node == model && near(hit.getPoint(0), 40.6) && near(hit.getLocalPoint(0), 40.6),
 			"A skinned model is hit where its joints put it");
 		c.setView(1.6, .3, 10, 1.6, .3, 0);
 		check(stage.pick(c, 400, 300) == null, "Not where it was bound (wgrender-c's 6e79587: ghost arms in the rest pose)");
 		// Gear swapped: the old part's model off the character, a new one (the strip a unit higher) bound to the same skeleton; the next pick
 		// tests the new one as posed, and the old is gone.
-		character.remove(model);
+		character.removeChild(model);
 		var gear = Mesh.fromArrays([0., 1, 0, 1, 1, 0, 0, 2, 0, 1, 1, 0, 2, 1, 0, 1, 2, 0], null, null, null, null,
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
 		var worn = new Model(gear, new Material());
 		check(worn.bindSkeleton(character, skin), "The new part binds to the same skeleton");
-		character.add(worn);
+		character.addChild(worn);
 		c.setView(40.6, .3, 10, 40.6, .3, 0);
 		check(stage.pick(c, 400, 300) == null, "Where the old part was posed: nothing now");
 		c.setView(40.6, 1.3, 10, 40.6, 1.3, 0);
 		var swapped = stage.pick(c, 400, 300);
-		check(swapped != null && swapped.getNode() == worn, "The new part, where the skeleton poses it");
+		check(swapped != null && swapped.node == worn, "The new part, where the skeleton poses it");
 	}
 
 	// The framebuffer pixel a world point is drawn at, through c.
 	static function pixel(c:Camera3D, x:Float, y:Float, z:Float):Array<Float> {
-		var m = c.getViewProjection();
+		var m = c.viewProjection;
 		var cx = m.get(0) * x + m.get(4) * y + m.get(8) * z + m.get(12),
 			cy = m.get(1) * x + m.get(5) * y + m.get(9) * z + m.get(13),
 			cw = m.get(3) * x + m.get(7) * y + m.get(11) * z + m.get(15);
-		return [
-			(cx / cw * .5 + .5) * c.getViewportWidth(),
-			(.5 - cy / cw * .5) * c.getViewportHeight()
-		];
+		return [(cx / cw * .5 + .5) * c.viewportWidth, (.5 - cy / cw * .5) * c.viewportHeight];
 	}
 
 	static function sprites():Void {
@@ -183,7 +177,7 @@ class PickTests {
 		logo.setPosition(3, 0, 0);
 		stage.add(logo);
 		var at = pixel(c, 3.8, .8, 0), hit = stage.pick(c, at[0], at[1]);
-		check(hit != null && hit.getNode() == logo, "A camera-facing sprite, near its corner");
+		check(hit != null && hit.node == logo, "A camera-facing sprite, near its corner");
 		at = pixel(c, 4.3, 0, 0);
 		check(stage.pick(c, at[0], at[1]) == null, "Past its edge: missed");
 		var label = new Text3D("PICK ME", 1);
@@ -191,18 +185,18 @@ class PickTests {
 		stage.add(label);
 		at = pixel(c, -3, 0, 0);
 		check(stage.pick(c, at[0], at[1]) == null, "A text isn't pickable until asked");
-		label.setPickable(true);
+		label.pickable = true;
 		hit = stage.pick(c, at[0], at[1]);
-		check(hit != null && hit.getNode() == label, "A text by its block");
+		check(hit != null && hit.node == label, "A text by its block");
 		// In front of a model, the sprite wins; behind it, the model does.
 		var box = new Model(Mesh.cube(1, 1, 1), new Material());
 		box.setPosition(3, 0, -2);
 		stage.add(box);
 		at = pixel(c, 3, 0, 0);
-		check(stage.pick(c, at[0], at[1]).getNode() == logo, "The sprite before the box");
+		check(stage.pick(c, at[0], at[1]).node == logo, "The sprite before the box");
 		logo.setPosition(3, 0, -4);
 		at = pixel(c, 3, 0, -2);
-		check(stage.pick(c, at[0], at[1]).getNode() == box, "The box before the sprite");
+		check(stage.pick(c, at[0], at[1]).node == box, "The box before the sprite");
 	}
 
 	// The pointer over a world and a HUD: hover, press, a click released over what was pressed, a drag released elsewhere, and capture.
@@ -226,25 +220,25 @@ class PickTests {
 			pointer.update();
 		}
 		frame(400, 300, false);
-		check(pointer.isHovered(cube) && pointer.getHit3D() != null && !pointer.isPressed(cube), "The cube under the pointer, its hit at hand");
+		check(pointer.isHovered(cube) && pointer.hit3D != null && !pointer.isPressed(cube), "The cube under the pointer, its hit at hand");
 		frame(400, 300, true);
-		check(pointer.isPressed(cube) && pointer.isDown(cube) && !pointer.isCaptured(), "Pressed on the cube; the world doesn't capture");
+		check(pointer.isPressed(cube) && pointer.isDown(cube) && !pointer.captured, "Pressed on the cube; the world doesn't capture");
 		frame(400, 300, false);
 		check(pointer.isClicked(cube) && !pointer.isDown(cube), "Released over it: a click");
 		frame(400, 300, true);
 		frame(10, 590, true);
 		check(pointer.isDown(cube) && !pointer.isHovered(cube), "Dragged off: still held");
 		frame(10, 590, false);
-		check(!pointer.isClicked(cube) && pointer.getHeld() == null, "Released elsewhere: no click");
+		check(!pointer.isClicked(cube) && pointer.held == null, "Released elsewhere: no click");
 		// The HUD over the world: its button first, and a press on it captures the pointer from the world.
 		frame(50, 30, false);
 		check(pointer.isHovered(button), "The HUD's button, drawn over the world, first");
 		frame(50, 30, true);
-		check(pointer.isCaptured() && pointer.isPressed(button), "A press on the HUD captures");
+		check(pointer.captured && pointer.isPressed(button), "A press on the HUD captures");
 		frame(400, 300, true);
-		check(pointer.getHovered() == null && pointer.isDown(button), "Captured: the world under the pointer sees nothing");
+		check(pointer.hovered == null && pointer.isDown(button), "Captured: the world under the pointer sees nothing");
 		frame(400, 300, false);
-		check(!pointer.isCaptured() && !pointer.isClicked(button), "Released off the button: no click, the capture let go");
+		check(!pointer.captured && !pointer.isClicked(button), "Released off the button: no click, the capture let go");
 		frame(400, 300, false);
 		check(pointer.isHovered(cube), "The world has the pointer again");
 	}

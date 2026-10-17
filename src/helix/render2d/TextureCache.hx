@@ -76,7 +76,7 @@ class TextureCache implements IReloadable {
 	}
 
 	/** Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest,
-		for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the
+		for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the
 		same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load
 		releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no
 		candidate loads and decodes. */
@@ -124,7 +124,7 @@ class TextureCache implements IReloadable {
 						path: file,
 						key: key,
 						texture: texture,
-						mipmaps: linear && texture.getFormat() == Rgba8,
+						mipmaps: linear && texture.format == Rgba8,
 						users: shared.waiting.length
 					});
 					assets.subscribe(file, this);
@@ -155,7 +155,7 @@ class TextureCache implements IReloadable {
 			}
 			assets.load(file, result -> switch result {
 				case Loaded(bytes):
-					if (request.isSettled())
+					if (request.settled)
 						return;
 					if (StringTools.endsWith(file, ".ktx")) {
 						var texture = try fromKtx(bytes, linear) catch (e:Dynamic) {
@@ -172,11 +172,11 @@ class TextureCache implements IReloadable {
 						case Decoded(width, height, rgba):
 							if (request.finish()) done(file, Ready(Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear)));
 						case Failed(message):
-							if (!request.isSettled()) fail(message);
+							if (!request.settled) fail(message);
 						case Cancelled:
 					});
 				case Failed(message):
-					if (!request.isSettled()) fail(message);
+					if (!request.settled) fail(message);
 				case Cancelled:
 			});
 		}

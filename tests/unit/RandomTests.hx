@@ -15,27 +15,27 @@ class RandomTests {
 		// Pinned: seed 12345's first values, computed apart from Haxe.
 		var r = new Random(12345);
 		check(r.next() == 1189442682 && r.next() == 1697253807 && r.next() == 669028256, "The sequence from 12345 is the pinned one");
-		r.setSeed(12345);
+		r.seed = 12345;
 		var third = 0;
 		for (_ in 0...3)
 			third = r.nextInt(100);
 		check(third == 56, "nextInt is next() % max");
-		r.setSeed(12345);
+		r.seed = 12345;
 		check(Math.abs(r.nextFloat() - 0.7769386768341064) < 1e-15 && Math.abs(r.nextFloat() - 0.395172655582428) < 1e-15,
 			"nextFloat is the state's top 24 bits over 2^24");
-		check(new Random(0).next() == 270369 && new Random(0).getSeed() == 1, "A seed of 0 is taken as 1");
-		check(new Random().getSeed() == 12345, "The default seed is 12345");
+		check(new Random(0).next() == 270369 && new Random(0).seed == 1, "A seed of 0 is taken as 1");
+		check(new Random().seed == 12345, "The default seed is 12345");
 
 		// Two generators from one seed agree; a state resumes a sequence.
 		var a = new Random(7), b = new Random(7);
 		for (_ in 0...10)
 			check(a.next() == b.next(), "The same seed gives the same sequence");
-		var kept = a.getState();
+		var kept = a.state;
 		var ahead = [for (_ in 0...5) a.next()];
-		b.setState(kept);
+		b.state = kept;
 		check([for (_ in 0...5) b.next()].join(",") == ahead.join(","), "setState goes on from where getState was");
-		a.setState(0);
-		check(a.getState() == 1, "A state of 0 is taken as 1");
+		a.state = 0;
+		check(a.state == 1, "A state of 0 is taken as 1");
 
 		// Ranges.
 		r = new Random(99);

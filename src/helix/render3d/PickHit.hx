@@ -3,8 +3,6 @@ package helix.render3d;
 /** What a pick hit (Stage3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's
 	normal there in the world, facing back along the ray. */
 class PickHit {
-	var node:Null<Node3D>;
-	var distance = 0.;
 	var point = [0., 0, 0];
 	var local = [0., 0, 0];
 	var normal = [0., 0, 0];
@@ -13,12 +11,10 @@ class PickHit {
 	public function new() {}
 
 	/** The node hit (a model, a sprite or a text), or null for no hit. */
-	public function getNode():Null<Node3D>
-		return node;
+	public var node(default, null):Null<Node3D>;
 
 	/** How far along the ray, in world units from its start (a camera's near plane). */
-	public function getDistance():Float
-		return distance;
+	public var distance(default, null):Float = 0.;
 
 	/** Where in the world, axis 0 (x), 1 (y) or 2 (z). */
 	public function getPoint(axis:Int):Float

@@ -31,7 +31,7 @@ class App extends BaseApp {
 	var useKomika = false;
 
 	override public function init():Void {
-		Window.setTitle("HeliX font");
+		Window.title = "HeliX font";
 		Window.requestSize(900, 500);
 		batch = new Batch2D(Graphics.instance);
 		fonts = new Fonts(Assets.instance, Graphics.instance);
@@ -59,18 +59,18 @@ class App extends BaseApp {
 			Host.quit();
 		if (input.isFramePressed(Key.D) && komika != null)
 			useKomika = !useKomika;
-		fps.update(dt, Time.getFrameCpu());
+		fps.update(dt, Time.frameCpu);
 		// The specimen in the design for the window's shape, its lines wrapped to what's visible of it; upright, the kerned line goes under the
 		// title instead of beside the specimen.
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 		var x = vx + 40, wrap = vw - 80, y = vy + (shape == "portrait" ? 220 : 200);
 
-		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0xf8f8faff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xf8f8faff);
 		batch.begin(camera);
 		// A centered title, measured.
 		if (komika != null)

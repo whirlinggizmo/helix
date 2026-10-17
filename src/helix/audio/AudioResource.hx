@@ -2,21 +2,15 @@ package helix.audio;
 
 /** One owner plus active playback references. release() drops the owner's reference. */
 class AudioResource {
-	@:allow(helix.audio.AudioResources) var id:Int;
-	var backend:IAudio;
-	var disposed = false;
-
 	/** The backend clip or stream id, which a reload may replace. */
-	public function getId():Int
-		return id;
+	@:allow(helix.audio.AudioResources)
+	public var id(default, null):Int;
 
 	/** The audio adapter that owns the backend resource. */
-	public function getBackend():IAudio
-		return backend;
+	public var backend(default, null):IAudio;
 
 	/** Whether the owner and every playback have released it, so its backend resource is destroyed. */
-	public function isDisposed():Bool
-		return disposed;
+	public var disposed(default, null):Bool = false;
 
 	var references = 1;
 	var ownerReleased = false;

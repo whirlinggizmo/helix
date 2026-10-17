@@ -4,26 +4,26 @@ import helix.render2d.Node2D;
 
 /** A line of text (wrapped, if given a width): shown, never focused. */
 class Label extends Widget {
-	var node:Node2D;
-
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
-		var theme = ui.getTheme();
-		node = Node2D.text(text, theme.getTextSize(), theme.getTextColor(), Left, theme.getFont());
-		root.add(node);
+		var theme = ui.theme;
+		node = Node2D.text(text, theme.textSize, theme.textColor, Left, theme.font);
+		root.addChild(node);
 		box = Box.of(node);
 	}
 
 	/** Its text. */
-	public function getText():String
+	public var text(get, set):String;
+
+	function get_text():String
 		return node.getText();
 
-	/** Shows text. */
-	public function setText(value:String):Void
+	function set_text(value:String):String {
 		node.setText(value);
+		return value;
+	}
 
 	/** Its text node: its color, size, alignment, wrap width. */
-	public function getNode():Node2D
-		return node;
+	public var node(default, null):Node2D;
 }

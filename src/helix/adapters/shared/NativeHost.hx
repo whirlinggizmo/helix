@@ -10,7 +10,7 @@ abstract class NativeHost implements IHost {
 	static var frame:Void->Void;
 	static var cleanup:Void->Void;
 
-	var window = new NativeWindow();
+	var nativeWindow = new NativeWindow();
 	var msaaSamples:Int;
 
 	/** The program's host; its window opens when run starts, asking for msaaSamples multisampling samples a pixel (1: none). */
@@ -37,11 +37,15 @@ abstract class NativeHost implements IHost {
 	static function onCleanup():Void
 		cleanup();
 
-	public function getTime():Float
+	public var time(get, never):Float;
+
+	function get_time():Float
 		return haxe.Timer.stamp();
 
-	public function getWindow():IWindow
-		return window;
+	public var window(get, never):IWindow;
+
+	function get_window():IWindow
+		return nativeWindow;
 
 	public function canQuit():Bool
 		return true;

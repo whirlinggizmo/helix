@@ -8,7 +8,6 @@ import js.html.CanvasElement;
 	or choose a monitor; it sees one screen. */
 class DomWindow implements IWindow {
 	var canvas:CanvasElement;
-	var focused = true;
 
 	/** The page's window, with canvas as what goes fullscreen or hides, and as the drawing surface: its pixels follow the viewport's size and
 		the pixel ratio. */
@@ -22,32 +21,48 @@ class DomWindow implements IWindow {
 	}
 
 	function resize():Void {
-		canvas.width = Std.int(Math.max(1, Browser.window.innerWidth * getPixelRatio()));
-		canvas.height = Std.int(Math.max(1, Browser.window.innerHeight * getPixelRatio()));
+		canvas.width = Std.int(Math.max(1, Browser.window.innerWidth * this.pixelRatio));
+		canvas.height = Std.int(Math.max(1, Browser.window.innerHeight * this.pixelRatio));
 	}
 
-	public function getFramebufferWidth():Int
+	public var framebufferWidth(get, never):Int;
+
+	function get_framebufferWidth():Int
 		return canvas.width;
 
-	public function getFramebufferHeight():Int
+	public var framebufferHeight(get, never):Int;
+
+	function get_framebufferHeight():Int
 		return canvas.height;
 
-	public function getPixelRatio():Float
+	public var pixelRatio(get, never):Float;
+
+	function get_pixelRatio():Float
 		return Browser.window.devicePixelRatio;
 
-	public function isFocused():Bool
+	@:isVar public var focused(get, null):Bool = true;
+
+	function get_focused():Bool
 		return focused;
 
-	public function getTitle():String
+	public var title(get, set):String;
+
+	function get_title():String
 		return Browser.document.title;
 
-	public function setTitle(title:String):Void
+	function set_title(title:String):String {
 		Browser.document.title = title;
+		return title;
+	}
 
-	public function getWidth():Int
+	public var width(get, never):Int;
+
+	function get_width():Int
 		return Browser.window.innerWidth;
 
-	public function getHeight():Int
+	public var height(get, never):Int;
+
+	function get_height():Int
 		return Browser.window.innerHeight;
 
 	public function requestSize(width:Int, height:Int):Bool
@@ -56,10 +71,14 @@ class DomWindow implements IWindow {
 	public function canMove():Bool
 		return false;
 
-	public function getX():Int
+	public var x(get, never):Int;
+
+	function get_x():Int
 		return Browser.window.screenX;
 
-	public function getY():Int
+	public var y(get, never):Int;
+
+	function get_y():Int
 		return Browser.window.screenY;
 
 	public function requestPosition(x:Int, y:Int):Bool
@@ -68,21 +87,25 @@ class DomWindow implements IWindow {
 	public function canFullscreen():Bool
 		return Browser.document.fullscreenEnabled;
 
-	public function isFullscreen():Bool
+	public var fullscreen(get, never):Bool;
+
+	function get_fullscreen():Bool
 		return Browser.document.fullscreenElement != null;
 
 	public function requestFullscreen(enabled:Bool):Bool {
 		if (!canFullscreen())
 			return false;
-		// The browser may refuse (no recent key press or click): the page stays as it was, and isFullscreen says so.
-		if (enabled && !isFullscreen())
+		// The browser may refuse (no recent key press or click): the page stays as it was, and fullscreen says so.
+		if (enabled && !this.fullscreen)
 			canvas.requestFullscreen().catchError(_ -> null);
-		else if (!enabled && isFullscreen())
+		else if (!enabled && this.fullscreen)
 			Browser.document.exitFullscreen().catchError(_ -> null);
 		return true;
 	}
 
-	public function isVisible():Bool
+	public var visible(get, never):Bool;
+
+	function get_visible():Bool
 		return canvas.style.visibility != "hidden";
 
 	public function requestVisible(visible:Bool):Bool {
@@ -90,10 +113,14 @@ class DomWindow implements IWindow {
 		return true;
 	}
 
-	public function getMonitorCount():Int
+	public var monitorCount(get, never):Int;
+
+	function get_monitorCount():Int
 		return 1;
 
-	public function getMonitorIndex():Int
+	public var monitorIndex(get, never):Int;
+
+	function get_monitorIndex():Int
 		return 0;
 
 	public function requestMonitorIndex(index:Int):Bool

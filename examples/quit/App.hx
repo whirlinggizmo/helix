@@ -24,10 +24,10 @@ class App extends BaseApp {
 	var quitting = false;
 
 	override public function init():Void {
-		Window.setTitle("HeliX quit");
+		Window.title = "HeliX quit";
 		Window.requestSize(640, 200);
 		batch = new Batch2D(Graphics.instance);
-		quitAt = Time.getTime() + 1;
+		quitAt = Time.time + 1;
 		Audio.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
 			case Ready(stream):
 				Audio.play(stream, true, .5);
@@ -41,30 +41,30 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Q) || Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The quit, before this frame is drawn: its text says so, and it's the frame the canvas keeps.
-		if (!quitting && Time.getTime() >= quitAt) {
+		if (!quitting && Time.time >= quitAt) {
 			quitting = true;
 			// Only in flight at the quit: loads begun and never used.
 			Textures.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
 			Textures.load("textures/tiles.png", false, _ -> {});
 			Audio.loadStream("audio/music/a_hero_is_born.mp3", _ -> {});
 			// A long synchronous frame.
-			var busyUntil = Time.getTime() + .5;
-			while (Time.getTime() < busyUntil) {}
+			var busyUntil = Time.time + .5;
+			while (Time.time < busyUntil) {}
 			Host.quit();
 		}
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
-		Graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
+		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0x1e2430ff);
 		batch.begin(camera);
 		var y = vy + 12;
 		y += Text2D.drawWrapped(batch, "HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
 		Text2D.drawWrapped(batch,
-			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.getTime()) * 10) / 10} s',
+			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		batch.end();
 		Graphics.endFrame();

@@ -36,7 +36,7 @@ private class Attempt {
 
 	/** Whether the load has ended (or was cancelled). */
 	public function settled():Bool
-		return request.isSettled();
+		return request.settled;
 }
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
@@ -49,11 +49,9 @@ class AssetService implements IAssets {
 	var live = true;
 	var requests:Array<IRequest> = [];
 	var subscribers:Map<String, Array<IReloadable>> = [];
-	var manifest:Null<String>;
 	// Each directory's manifest this run, by its path ("" the root's; null when there's none), and the loads waiting for one.
 	var manifests:Map<String, Null<AssetManifest>> = [];
 	var waiting:Map<String, Array<Null<AssetManifest>->Void>> = [];
-	var cacheMode = AssetCacheMode.Revalidate;
 	// With the cache Off, this run's downloads, by key: nothing persists, but a file loads once a run.
 	var session:Map<String, haxe.io.Bytes> = [];
 
@@ -82,10 +80,10 @@ class AssetService implements IAssets {
 			requests.remove(request);
 			queue.add(() -> complete(result));
 		},
-			(phase, received, total) -> if (progress != null && !request.isSettled()) progress({phase: phase, receivedBytes: received, totalBytes: total}));
+			(phase, received, total) -> if (progress != null && !request.settled) progress({phase: phase, receivedBytes: received, totalBytes: total}));
 		requests.push(request);
 		queue.add(() -> {
-			if (request.isSettled())
+			if (request.settled)
 				return;
 			if (!live || !AssetPath.isValid(path)) {
 				attempt.finish(Failed("Invalid asset path or closed service"));
@@ -94,7 +92,7 @@ class AssetService implements IAssets {
 			attempt.report("locating", 0, null);
 			if (base == null) {
 				attempt.child = packaged.read(source, result -> {
-					if (request.isSettled())
+					if (request.settled)
 						return;
 					switch result {
 						// The packaged files are already on this machine: read in place, not copied into the cache, unless they're
@@ -117,8 +115,7 @@ class AssetService implements IAssets {
 			else if (source != path)
 				obtain(path, url, null, Revalidate, attempt, attempt.finish);
 			else
-				hashOf(path,
-					(expected, unlisted) -> if (!request.isSettled()) obtain(path, url, expected, unlisted ? Ask : Revalidate, attempt, attempt.finish));
+				hashOf(path, (expected, unlisted) -> if (!request.settled) obtain(path, url, expected, unlisted ? Ask : Revalidate, attempt, attempt.finish));
 		});
 		return request;
 	}
@@ -331,7 +328,9 @@ class AssetService implements IAssets {
 			});
 	}
 
-	public function getManifest():Null<String>
+	@:isVar public var manifest(get, null):Null<String>;
+
+	function get_manifest():Null<String>
 		return manifest;
 
 	public function setManifest(path:Null<String>):Bool {
@@ -342,7 +341,9 @@ class AssetService implements IAssets {
 		return true;
 	}
 
-	public function getHost():Null<String>
+	public var host(get, never):Null<String>;
+
+	function get_host():Null<String>
 		return base;
 
 	public function setHost(host:Null<String>):Bool {
@@ -360,11 +361,15 @@ class AssetService implements IAssets {
 		}));
 	}
 
-	public function getCacheMode():AssetCacheMode
+	@:isVar public var cacheMode(get, set):AssetCacheMode = AssetCacheMode.Revalidate;
+
+	function get_cacheMode():AssetCacheMode
 		return cacheMode;
 
-	public function setCacheMode(mode:AssetCacheMode):Void
+	function set_cacheMode(mode:AssetCacheMode):AssetCacheMode {
 		cacheMode = mode;
+		return mode;
+	}
 
 	public function clearCache(complete:StorageWriteResult->Void):IRequest {
 		session.clear();
@@ -393,7 +398,7 @@ class AssetService implements IAssets {
 		});
 		requests.push(request);
 		function local(result:StorageSourceResult) {
-			if (request.isSettled()) {
+			if (request.settled) {
 				switch result {
 					case Local(value):
 						value.release();
@@ -421,7 +426,7 @@ class AssetService implements IAssets {
 			}
 		}
 		queue.add(() -> {
-			if (request.isSettled())
+			if (request.settled)
 				return;
 			if (!live || !AssetPath.isValid(path)) {
 				finish(Failed("Invalid asset path or closed service"));
@@ -434,14 +439,14 @@ class AssetService implements IAssets {
 			// A downloaded copy is streamed only while it's current (obtain's rules, without asking the host): the manifest's hash, else fresh.
 			// Otherwise the host's URL, where the platform's own HTTP cache decides.
 			hashOf(path, (expected, unlisted) -> {
-				if (request.isSettled())
+				if (request.settled)
 					return;
 				if (cacheMode == Off) {
 					finish(Located(Remote(base + path)));
 					return;
 				}
 				child = cache.read(recordKey(path), result -> {
-					if (request.isSettled())
+					if (request.settled)
 						return;
 					var record = switch result {
 						case Stored(bytes): CacheRecords.parse(bytes);
@@ -532,8 +537,10 @@ class AssetService implements IAssets {
 			});
 	}
 
-	public function isBusy():Bool
-		return requests.length > 0 || !queue.isEmpty();
+	public var busy(get, never):Bool;
+
+	function get_busy():Bool
+		return requests.length > 0 || !queue.empty;
 
 	/** Polls the fetcher, cache and packaged store, then runs queued work and completions within the work budget. Call once per frame on the host thread. */
 	public function poll():Void {

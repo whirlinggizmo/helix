@@ -10,16 +10,13 @@ import helix.render3d.Stage3D;
 /** The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The
 	stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once
 	a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's
-	released, the stages under it see nothing (isCaptured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame
+	released, the stages under it see nothing (captured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame
 	they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. */
 class Pointer {
 	var input:IInput;
 	var layers:Array<Layer> = [];
-	var hovered:Null<Any>;
-	var held:Null<Any>;
 	var pressedNow:Null<Any>;
 	var clickedNow:Null<Any>;
-	var captured = false;
 	var hit = new PickHit();
 	var hitLayer:Null<Layer>;
 
@@ -45,7 +42,7 @@ class Pointer {
 	/** Once a frame, after input is polled and before the stages' nodes are read: picks under the pointer, topmost stage first, and works out
 		the frame's press and click. */
 	public function update():Void {
-		var x = input.getPointerX(), y = input.getPointerY();
+		var x = input.pointerX, y = input.pointerY;
 		pressedNow = clickedNow = null;
 		hovered = null;
 		hitLayer = null;
@@ -56,15 +53,15 @@ class Pointer {
 			if (l.stage2D != null)
 				hovered = l.stage2D.pick(l.camera2D, x, y);
 			else if (!captured && l.stage3D.pick(l.camera3D, x, y, hit) != null)
-				hovered = hit.getNode();
+				hovered = hit.node;
 			if (hovered != null)
 				hitLayer = l;
 		}
-		if (input.isPointerFramePressed()) {
+		if (input.pointerFramePressed) {
 			held = pressedNow = hovered;
 			captured = hitLayer != null && hitLayer.stage2D != null;
 		}
-		if (input.isPointerFrameReleased()) {
+		if (input.pointerFrameReleased) {
 			if (held != null && held == hovered)
 				clickedNow = held;
 			held = null;
@@ -73,8 +70,7 @@ class Pointer {
 	}
 
 	/** The node under the pointer, topmost stage first, or null. */
-	public function getHovered():Null<Any>
-		return hovered;
+	public var hovered(default, null):Null<Any>;
 
 	/** Whether node is under the pointer. */
 	public function isHovered(node:Any):Bool
@@ -93,15 +89,15 @@ class Pointer {
 		return node != null && clickedNow == node;
 
 	/** The node held (isDown), or null. */
-	public function getHeld():Null<Any>
-		return held;
+	public var held(default, null):Null<Any>;
 
 	/** Whether a press on a 2D stage holds the pointer: the stages under it, and the app's own world controls, should leave it be. */
-	public function isCaptured():Bool
-		return captured;
+	public var captured(default, null):Bool = false;
 
 	/** The last hit in a 3D stage (its point, normal, distance), when the hovered node is a 3D stage's; null otherwise. */
-	public function getHit3D():Null<PickHit>
+	public var hit3D(get, never):Null<PickHit>;
+
+	function get_hit3D():Null<PickHit>
 		return hitLayer != null && hitLayer.stage3D != null ? hit : null;
 }
 

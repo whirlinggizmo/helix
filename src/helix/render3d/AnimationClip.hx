@@ -146,13 +146,11 @@ class Track {
 	}
 }
 
-/** A named animation: tracks moving nodes, by name, over its duration (its last key). Read from a glTF file (ModelFile.getClips), whether or
+/** A named animation: tracks moving nodes, by name, over its duration (its last key). Read from a glTF file (ModelFile.clips), whether or
 	not the file has meshes: a file of animations alone plays on any skeleton with the joint names its tracks target (Animator). Read, never
 	changed; shared by everything that plays it. */
 class AnimationClip {
-	var name:String;
 	var tracks:Array<Track>;
-	var duration = 0.;
 
 	/** A clip named name of tracks. */
 	public function new(name:String, tracks:Array<Track>) {
@@ -163,15 +161,15 @@ class AnimationClip {
 	}
 
 	/** Its name: its file's (a Blender export's is the armature's and the action's, "Armature|Walk"). */
-	public function getName():String
-		return name;
+	public var name(default, null):String;
 
 	/** Its length in seconds: its last key's time. */
-	public function getDuration():Float
-		return duration;
+	public var duration(default, null):Float = 0.;
 
 	/** How many tracks. */
-	public function getTrackCount():Int
+	public var trackCount(get, never):Int;
+
+	function get_trackCount():Int
 		return tracks.length;
 
 	/** Track index; null past them. */

@@ -102,8 +102,8 @@ Which things might touch, before asking which do: items kept by their rectangle 
 
 ```haxe
 function new(cellSize:Float)
-function getCellSize():Float
-function getCount():Int
+var cellSize(default, null):Float
+var count(default, null):Int
 function insert(item:T, x:Float, y:Float, width:Float, height:Float):Void
 function update(item:T, x:Float, y:Float, width:Float, height:Float):Void
 function remove(item:T):Bool
@@ -112,8 +112,8 @@ function query(x:Float, y:Float, width:Float, height:Float, out:Array<T>):Array<
 ```
 
 - `new`: Cells cellSize across and down. Throws for a size of 0 or less.
-- `getCellSize`: Its cell size.
-- `getCount`: How many items it holds.
+- `cellSize`: Its cell size.
+- `count`: How many items it holds.
 - `insert`: Puts item in by its rectangle (an item already in is moved).
 - `update`: Moves item to its new rectangle: insert again.
 - `remove`: Takes item out; false when it wasn't in.

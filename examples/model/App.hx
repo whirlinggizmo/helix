@@ -47,20 +47,20 @@ class App extends BaseApp {
 	var roll = 0.;
 
 	override public function init():Void {
-		Window.setTitle("HeliX model");
+		Window.title = "HeliX model";
 		Window.requestSize(1000, 600);
 		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
-		camera.setMinAspect(16 / 9);
-		chase.setMinAspect(16 / 9);
+		camera.minAspect = 16 / 9;
+		chase.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.setIntensity(2);
+		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
-		ground.setBaseColor(0x616164ff);
-		ground.setRoughness(.9);
+		ground.baseColor = 0x616164ff;
+		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), ground));
 
 		Models.load(MODEL, result -> switch result {
@@ -75,9 +75,9 @@ class App extends BaseApp {
 				// Behind and above it, looking ahead; in the car's own units.
 				chase.setPosition(0, 1.8, -4.5);
 				chase.lookAt(0, .4, 2);
-				car.add(chase);
+				car.addChild(chase);
 				status = MODEL;
-				for (warning in file.getWarnings())
+				for (warning in file.warnings)
 					trace('$MODEL: $warning');
 			case Failed(message):
 				status = message;
@@ -95,7 +95,7 @@ class App extends BaseApp {
 		if (car != null && input.isFramePressed(Key.H)) {
 			headlights = !headlights;
 			for (beam in beams)
-				beam.setVisible(headlights);
+				beam.visible = headlights;
 		}
 		if (car != null && input.isFramePressed(Key.D))
 			driving = !driving;
@@ -112,9 +112,8 @@ class App extends BaseApp {
 		roll += dt * 3;
 		for (wheel in wheels)
 			wheel.setRotation(roll, 0, 0);
-		fps.update(dt, Time.getFrameCpu());
-		var width = Window.getFramebufferWidth(),
-			height = Window.getFramebufferHeight();
+		fps.update(dt, Time.frameCpu);
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
 		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
 		chase.setViewport(width, height);
@@ -122,9 +121,9 @@ class App extends BaseApp {
 		ScreenShape.update();
 		var presentation = Screen.instance;
 		presentation.apply(camera2D);
-		var vx = presentation.getVisibleX(),
-			vy = presentation.getVisibleY(),
-			vw = presentation.getVisibleWidth();
+		var vx = presentation.visibleX,
+			vy = presentation.visibleY,
+			vw = presentation.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(chasing ? chase : camera);

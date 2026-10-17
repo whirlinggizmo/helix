@@ -1,9 +1,8 @@
 package helix.render3d;
 
 /** A point light's falloff out to its range, within a cone around its node's -z: full inside its inner cone, fading to nothing at its outer.
-	It may cast shadows (setShadowCasting), over its cone out to its range (or its shadow distance, the nearer). */
+	It may cast shadows (shadowCasting), over its cone out to its range (or its shadow distance, the nearer). */
 class SpotLight extends Light {
-	var range = 0.;
 	var inner = .3;
 	var outer = .4;
 
@@ -11,24 +10,23 @@ class SpotLight extends Light {
 	public function new()
 		super();
 
-	/** Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance). */
-	public function getRange():Float
-		return range;
+	/** Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance). 0 or more (under 0, or
+		NaN, is 0). */
+	public var range(default, set):Float = 0.;
 
-	/** Sets its range in world units (0 for unlimited). False for a range under 0. */
-	public function setRange(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
-		range = value;
-		return true;
-	}
+	function set_range(value:Float):Float
+		return range = value >= 0 ? value : 0;
 
 	/** Its inner cone, radians from its axis: full light inside it. */
-	public function getInnerCone():Float
+	public var innerCone(get, never):Float;
+
+	function get_innerCone():Float
 		return inner;
 
 	/** Its outer cone, radians from its axis: no light past it, fading from the inner one. */
-	public function getOuterCone():Float
+	public var outerCone(get, never):Float;
+
+	function get_outerCone():Float
 		return outer;
 
 	/** Sets its cones, radians from its axis. False, changing nothing, unless 0 <= inner <= outer < pi/2. */
