@@ -26,29 +26,29 @@ than inventing a way around it. Delete this file in the last phase; HISTORY reco
 
 ## Phase 1: kinds as classes, 3D
 
-**Goal:** `src/helix/render3d/Node.hx` becomes a transform with children and nothing else; each kind is a class holding only its data.
+**Goal:** `src/helix/render3d/Node.hx` becomes `Node3D.hx`, a transform with children and nothing else (Godot's name, beside `Node2D`); each kind is a class holding only its data.
 
 New classes in `src/helix/render3d/` (each with a doc comment saying what it is):
 
 ```haxe
-class Node            // transform (position, rotation, scale), parent, children, name, enabled, visible, pickable, local/world matrices,
-                      // add, remove, find, computeWorld, lookAt, setPosition, setRotation, setScale, setMatrix. A bare Node is a group.
-class Model extends Node       // parts:Array<Part>; mesh and material read and set parts[0]'s; tint; castsShadows, receivesShadows;
+class Node3D          // transform (position, rotation, scale), parent, children, name, enabled, visible, pickable, local/world matrices,
+                      // add, remove, find, computeWorld, lookAt, setPosition, setRotation, setScale, setMatrix. A bare Node3D is a group.
+class Model extends Node3D       // parts:Array<Part>; mesh and material read and set parts[0]'s; tint; castsShadows, receivesShadows;
                                // skin, joints, bindSkeleton; new(?mesh, ?material)
 class Part                     // mesh:Mesh, material:Material (a Material.white default when null)
-class Light extends Node       // color, intensity, shadow settings (shadowCasting, shadowDistance, shadowMapSize, shadowStrength,
+class Light extends Node3D       // color, intensity, shadow settings (shadowCasting, shadowDistance, shadowMapSize, shadowStrength,
                                // shadowColor, shadowBias). Abstract: a stage never holds a bare Light.
 class DirectionalLight extends Light   // direction: the node's forward
 class PointLight extends Light         // range
 class SpotLight extends Light          // range, cone (inner, outer)
-class Camera3D extends Node    // everything Camera3D has now; its view matrix from its world transform (see below)
-class Sprite3D extends Node    // texture, region, size, pivot, facing, alpha mode, tint
-class Text3D extends Node      // text, size, color, font
-class Particles3D extends Node // emitter
+class Camera3D extends Node3D    // everything Camera3D has now; its view matrix from its world transform (see below)
+class Sprite3D extends Node3D    // texture, region, size, pivot, facing, alpha mode, tint
+class Text3D extends Node3D      // text, size, color, font
+class Particles3D extends Node3D // emitter
 ```
 
 What goes: `NodeKind`, `Node.getKind`, every `Node.xxx(...)` static constructor, `lightOf`, `cameraOf`, `emitterOf`, the sprite and text
-fields on `Node`, `Node.setMaterial`/`getMesh`/`getMaterial` (now `Model`'s).
+fields on `Node3D`, `Node.setMaterial`/`getMesh`/`getMaterial` (now `Model`'s).
 
 **Camera3D as a node.** Today it holds an eye, a target and an up vector. After: `setView(eye..., target..., up...)` sets the node's position
 and rotation (a lookAt), and the view matrix is the inverse of the world matrix, so a camera under a moving node moves with it. `getEyeX` and
@@ -64,7 +64,7 @@ type. `Stage3D` keeps its records per part (a part is what it instanced per node
 once per node per walk, or keep typed lists (models, lights, sprites, texts, emitters) that `add`/`remove` maintain, which is faster and
 what the stage already does for lights. Prefer the typed lists.
 
-**Callers to change** (counts from `grep -rc 'Node\.\(group\|model\|light\|camera\|sprite\|text3D\|emitter\)('`): `tests/unit/Render3DTests.hx`
+**Callers to change** (counts from `grep -rc 'Node3D\.\(group\|model\|light\|camera\|sprite\|text3D\|emitter\)('`): `tests/unit/Render3DTests.hx`
 (27), `PickTests.hx` (12), `examples/text3d` (7), `sprite3d` (6), `shaders` (6), `pick` (6), `ModelFile.hx` (5), `scene3d` (5), `lights` (5),
 `OutfitTests.hx` (4), `shadows` (4), `postprocess` (4), `materials` (4), `instancing` (4), `Render2DTests.hx` (3), `AnimationTests.hx` (3),
 `tests/bench/StageBench.hx` (3), `render-target` (3), `model` (3), `meshes` (3), `dressing-room` (3), `animation` (2), `Stage3D.hx` (1),
