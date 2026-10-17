@@ -32,7 +32,7 @@ GROUPS=[
 # Milliseconds before an example's capture: long enough for its assets to load and it to settle, longer where it prepares more (environment's
 # lighting bake takes most of a minute on CI's software renderer, SwiftShader).
 WAIT=3000
-WAITS={'environment':45000,'dressing-room':15000,'animation':6000,'model':5000,'pick':5000,'instancing':5000}
+WAITS={'environment':45000,'dressing-room':45000,'animation':6000,'model':5000,'pick':5000,'instancing':5000}
 SOURCE='https://github.com/whirlinggizmo/helix/tree/main/examples/'
 
 def names():
