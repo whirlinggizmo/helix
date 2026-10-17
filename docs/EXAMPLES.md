@@ -35,6 +35,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `shadows` | a sun and a circling spot casting into one shadow map, a layer each; a ball that casts nothing and one nothing shadows; distance, bias, map size, strength and tint live |
 | `environment` | image-based light from two 1K Poly Haven HDRs, prepared a few milliseconds a frame: plastic and gold roughness steps, a mirror, a normal map, a pearl (a surface shader shaded by the stage) and a car, no lights; a background sharp to blurred, Neutral, ACES or no tone mapping, exposure and turn live |
 | `sprite2d` | sprites on a `Stage2D`: a sheet's regions, pivots, rotation, a mirror, a tint, hovering by `toLocalX` |
+| `motion` | the game's clock, tweens by every easing (yoyo, for ever), a timer dropping sparks that fall and fade by tweens, a ball along a closed curve at a steady speed, a floor by `Collide2D`, colors dealt by a seeded `Random`; the clock paused and slowed |
 | `stage2d` | a world stage through a zooming camera and a HUD stage, in one batch: shapes (a square box, a rounded one and a rounded outline among them), a sprite, text, a turning group, a trailing emitter |
 | `textures` | one texture drawn smooth then sharp (sampling per draw); `name.ktx` loading this GPU's compressed variant (BC7, ASTC, ETC2) or the PNG |
 | `font` | TrueType fonts loaded and baked into distance fields in Haxe: a measured, centered title, several sizes, kerning |
