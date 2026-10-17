@@ -99,6 +99,20 @@ class InputTests {
 		check(!input.isTouchGesture() && input.getTouchGesturePanX(true) == 0, "One finger is no gesture");
 		input.touchEvent(2, 300, 100, false);
 		input.endFrame();
+		// Activation: a key, mouse or finger press, once, not a pad's.
+		var fresh = new InputState();
+		check(!fresh.isActivated(), "Nothing pressed yet: not activated");
+		fresh.padEvent(PadButton.South, true);
+		fresh.padEvent(PadButton.South, false);
+		check(!fresh.isActivated(), "A pad's press doesn't activate (a browser can't unlock with one)");
+		fresh.keyEvent(Key.Space, true);
+		fresh.keyEvent(Key.Space, false);
+		fresh.endFrame();
+		check(fresh.isActivated(), "A key press activates, and it stays");
+		var touched = new InputState();
+		touched.touchEvent(1, 5, 5, true);
+		check(touched.isActivated(), "A finger down activates");
+
 		// Ticker: fixed steps, a pause, bounded catch-up, and input consumed per tick.
 		var ticker = new Ticker(input, 10), ticks = 0;
 		input.keyEvent(Key.A, true);

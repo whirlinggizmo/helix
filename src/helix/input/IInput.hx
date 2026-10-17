@@ -95,6 +95,12 @@ interface IInput {
 	/** null for an index out of range. */
 	public function getPad(index:Int):Null<Gamepad>;
 
+	/** Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen
+		be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a
+		browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script
+		gated on it presses before it waits. */
+	public function isActivated():Bool;
+
 	/** Any connected pad. */
 	public function isPadDown(button:PadButton):Bool;
 
