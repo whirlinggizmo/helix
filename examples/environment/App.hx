@@ -48,7 +48,6 @@ class App extends BaseApp {
 	var rotation = 0.;
 	var orbit = true;
 	var angle = 0.;
-	var time = 0.;
 	var turning:Array<Node> = [];
 	var shaders:Shaders;
 
@@ -145,7 +144,8 @@ class App extends BaseApp {
 			rotation += dt;
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		// The orbit starts once everything is in (both environments bake at the start): from the front, so a picture taken then (the site's,
 		// once nothing loads) sees the rows, not their ends.
 		if (orbit && !Services.isBusy())

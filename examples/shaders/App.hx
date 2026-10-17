@@ -43,7 +43,6 @@ class App extends BaseApp {
 	var car:Null<ModelFile>;
 	var toon:Null<Shader>;
 	var status = "loading the shaders";
-	var time = 0.;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX shaders");
@@ -176,7 +175,8 @@ class App extends BaseApp {
 			lamp.setVisible(!lamp.isVisible());
 			marker.setVisible(lamp.isVisible());
 		}
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		stage.setTime(time);
 		fps.update(dt, Services.getFrameCpu());
 		// Circling in front of the models, toward the camera: always in view, and far enough not to wash them out.

@@ -43,7 +43,6 @@ class App extends BaseApp {
 	var paused = false;
 	var orbit = true;
 	var angle = 0.;
-	var time = 0.;
 
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node {
 		var node = Node.emitter(emitter);
@@ -185,7 +184,8 @@ class App extends BaseApp {
 		var presentation = Services.presentation;
 		if (input.isPointerFramePressed())
 			burst(presentation.toUnitsX(input.getPointerX()), presentation.toUnitsY(input.getPointerY()));
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		if (orbit)
 			angle += dt * .15;
 		stage.setTime(time);

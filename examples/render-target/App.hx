@@ -44,7 +44,6 @@ class App extends BaseApp {
 	var font:Null<Font2D>;
 	var car:Null<Node>;
 	var globe:Node;
-	var time = 0.;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX render targets");
@@ -112,7 +111,8 @@ class App extends BaseApp {
 	override public function frame(dt:Float):Void {
 		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
 			Services.quit();
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		fps.update(dt, Services.getFrameCpu());
 		if (car != null) {
 			// Drives in a circle.

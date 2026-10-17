@@ -1,4 +1,5 @@
 import helix.app.BaseApp;
+import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
 import helix.graphics.Sampling;
 import helix.host.Services;
@@ -97,8 +98,7 @@ class App extends BaseApp {
 		var i = coins.length;
 		while (i-- > 0) {
 			var coin = coins[i], r = coin.getWidth() / 2;
-			var dx = x - coin.getX(), dy = y - (coin.getY() - r);
-			if (coin.isVisible() && dx * dx + dy * dy <= r * r)
+			if (coin.isVisible() && Collide2D.pointInCircle(x, y, coin.getX(), coin.getY() - r, r))
 				return coin;
 		}
 		return null;

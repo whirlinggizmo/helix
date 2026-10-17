@@ -32,7 +32,6 @@ class App extends BaseApp {
 	var sign:Node;
 	var orbit = true;
 	var angle = 0.;
-	var time = 0.;
 	var trees:Array<Node> = [];
 	var tileSprites:Array<Node> = [];
 	var flames:Array<Node> = [];
@@ -141,7 +140,8 @@ class App extends BaseApp {
 			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		if (orbit)
 			angle += dt * .3;
 		fps.update(dt, Services.getFrameCpu());

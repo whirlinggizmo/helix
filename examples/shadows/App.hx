@@ -44,7 +44,6 @@ class App extends BaseApp {
 	var size = 1;
 	var tint = 0;
 	var angle = 0.;
-	var time = 0.;
 
 	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
 	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Node {
@@ -143,7 +142,8 @@ class App extends BaseApp {
 			bias = Math.max(0, Math.min(bias + (input.isDown(Key.RightBracket) ? 4 : -4) * dt, 16));
 			sun.setShadowBias(bias, bias * 4);
 		}
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		fps.update(dt, Services.getFrameCpu());
 		// The spot circles overhead, aimed at the middle of the stage.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);

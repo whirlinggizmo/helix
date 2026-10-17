@@ -26,7 +26,6 @@ class App extends BaseApp {
 	var orbit:Node2D;
 	var sparks:Node2D;
 	var title:Node2D;
-	var time = 0.;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX stage2d");
@@ -104,7 +103,8 @@ class App extends BaseApp {
 	override public function frame(dt:Float):Void {
 		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
 			Services.quit();
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		fps.update(dt, Services.getFrameCpu());
 		rock.setRotation(time * .6);
 		box.setRotation(-time * .8);

@@ -10,6 +10,7 @@ import functools
 import gzip
 import html
 import json
+import shutil
 import http.server
 import re
 import subprocess
@@ -132,6 +133,11 @@ def main():
         text=re.sub(r'<style>#helix-pages.*?</nav>','',text,flags=re.S)
         page.write_text(text.replace('<script src="app.js">',bar(name,ordered[i-1],ordered[(i+1)%len(ordered)])+'<script src="app.js">'),encoding='utf-8')
     (ROOT/'build/web/favicon.png').write_bytes((example.SHARED/'favicon.png').read_bytes())
+    # The API reference beside the examples, at /api/ (tools/gen_apidoc.py, from the doc comments).
+    import gen_apidoc
+    gen_apidoc.main()
+    if (ROOT/'build/web/api').exists():shutil.rmtree(ROOT/'build/web/api')
+    shutil.copytree(ROOT/'build/api',ROOT/'build/web/api',ignore=shutil.ignore_patterns('xml','unused*'))
     weights=sizes(shots(a.browser,ordered))
     commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
     index(shows,commit,weights)

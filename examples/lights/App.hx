@@ -30,7 +30,6 @@ class App extends BaseApp {
 	var lamp:Node;
 	var marker:Node;
 	var spot:Node;
-	var time = 0.;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX lights");
@@ -93,7 +92,8 @@ class App extends BaseApp {
 			spot.setVisible(!spot.isVisible());
 		if (Services.canQuit() && input.isFramePressed(Key.Escape))
 			Services.quit();
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		// The point light orbits through the row; the spot sweeps left and right.
 		var lx = Math.sin(time * .6) * 5, lz = Math.cos(time * .6) * 2;
 		lamp.setPosition(lx, 1.2, lz);

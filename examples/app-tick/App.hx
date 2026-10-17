@@ -3,6 +3,7 @@ import helix.time.Ticker;
 import helix.debug.FpsOverlay;
 import helix.host.Services;
 import helix.input.Key;
+import helix.math.Interpolate;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
@@ -88,7 +89,7 @@ class App extends BaseApp {
 		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffa100ff);
 		y += SQUARE + 55;
 		y += Text2D.drawWrapped(batch, "between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
-		batch.rect(vx + LEFT + (previousX + (x - previousX) * t - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
+		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();
 		Services.graphics.endFrame();

@@ -31,7 +31,6 @@ class App extends BaseApp {
 	var cube:Node;
 	var orbit = true;
 	var angle = 0.;
-	var time = 0.;
 
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
 	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Node {
@@ -97,7 +96,8 @@ class App extends BaseApp {
 			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		if (orbit)
 			angle += dt * .25;
 		fps.update(dt, Services.getFrameCpu());

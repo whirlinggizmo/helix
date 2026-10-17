@@ -30,7 +30,6 @@ class App extends BaseApp {
 	var sprites:Array<Node2D> = [];
 	var logo:Null<Texture2D>;
 	var palette:Array<Int> = [];
-	var time = 0.;
 	var sheetFrame = 0;
 	var hovered = -1;
 
@@ -91,7 +90,8 @@ class App extends BaseApp {
 		var input = Services.input;
 		if (Services.canQuit() && input.isFramePressed(Key.Escape))
 			Services.quit();
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		fps.update(dt, Services.getFrameCpu());
 		var width = Services.window.getFramebufferWidth(),
 			height = Services.window.getFramebufferHeight();

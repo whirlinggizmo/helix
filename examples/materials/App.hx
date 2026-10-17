@@ -29,7 +29,6 @@ class App extends BaseApp {
 	var lamp:Node;
 	var marker:Node;
 	var bottom:Array<Node> = [];
-	var time = 0.;
 
 	// A linear color (as the earlier frameworks' examples give them) as 0xRRGGBBAA, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float, a = 1.):Int {
@@ -114,7 +113,8 @@ class App extends BaseApp {
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
 			lamp.setVisible(!lamp.isVisible());
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		var lx = Math.cos(time * .7) * 4,
 			ly = 1.4 + Math.sin(time * .9) * 1.2,
 			lz = Math.sin(time * .7) * 1.5 + 2;

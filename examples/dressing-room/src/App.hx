@@ -3,6 +3,7 @@ import helix.debug.FpsOverlay;
 import helix.host.Services;
 import helix.input.Key;
 import helix.math.Interpolate;
+import helix.math.Random;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Stage2D;
@@ -88,6 +89,8 @@ class App extends BaseApp {
 	var tiles:Array<Tile> = [];
 	var poses:Array<Button> = [];
 	var random:Button;
+	// The Random button's deals, from a seed, so a run deals the same looks again and a check can replay them.
+	var deals = new Random();
 	var reset:Button;
 	var title:Label;
 	var slot = "Body";
@@ -437,8 +440,7 @@ class App extends BaseApp {
 			if (poses[i].isClicked())
 				pose(POSES[i]);
 		if (random.isClicked()) {
-			var pick = () -> LOOKS[Std.random(LOOKS.length)];
-			dress([pick(), pick(), pick(), pick()], Std.random(3) == 0 ? null : HELD[Std.random(HELD.length)]);
+			dress([for (_ in 0...4) deals.pick(LOOKS)], deals.nextBool(1 / 3) ? null : deals.pick(HELD));
 		}
 		if (reset.isClicked())
 			dress(["Casual", "Casual", "Casual", "Casual"], null);
@@ -460,7 +462,7 @@ class App extends BaseApp {
 			turn += (input.getPointerX() - dragFrom) * .01;
 			dragFrom = input.getPointerX();
 		}
-		zoom = Math.max(.5, Math.min(1.6, zoom - input.getWheelY() * .001 + (input.getTouchGestureScale(true) - 1) * -.5));
+		zoom = Interpolate.clamp(zoom - input.getWheelY() * .001 + (input.getTouchGestureScale(true) - 1) * -.5, .5, 1.6);
 		if (dragFrom == null)
 			turn += dt * .15;
 		// The camera eases toward the slot's framing.

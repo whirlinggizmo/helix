@@ -12,8 +12,20 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/api'
-BROWSER_ONLY=['helix.adapters.host.dom','helix.adapters.graphics.webgl2','helix.adapters.inputsource.dom','helix.adapters.audio.webaudio','helix.adapters.http.fetchapi','helix.adapters.store.indexeddb','helix.profiles.BrowserWebGL2Profile']
-NATIVE_ONLY=['helix.adapters.host.sokol','helix.adapters.graphics.sokol','helix.adapters.inputsource.sokol','helix.adapters.audio.sokol','helix.adapters.audiodecoder.libsndfile','helix.adapters.http.haxehttp','helix.adapters.store.filesystem','helix.adapters.shared','helix.adapters.host.sdl3','helix.profiles.NativeSokolGLProfile','helix.profiles.NativeSdl3GLProfile']
+# The browser's adapters, by their API's name (the folder under each contract), and its profile; every other adapter and profile is native.
+BROWSER_APIS={'dom','webgl2','webaudio','fetchapi','indexeddb','canvas','download'}
+
+def targets():
+    """The packages each target's description leaves out: (the browser's, the native ones), read from the adapters' folders so a new adapter is placed by its API's name."""
+    browser=[];native=[]
+    for contract in sorted((ROOT/'src/helix/adapters').iterdir()):
+        if not contract.is_dir():continue
+        if contract.name=='shared':native.append('helix.adapters.shared');continue
+        for api in sorted(contract.iterdir()):
+            if api.is_dir():(browser if api.name in BROWSER_APIS else native).append(f'helix.adapters.{contract.name}.{api.name}')
+    for profile in sorted((ROOT/'src/helix/profiles').glob('*.hx')):
+        (browser if profile.stem.startswith('Browser') else native).append(f'helix.profiles.{profile.stem}')
+    return browser,native
 
 def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
@@ -31,7 +43,8 @@ def main():
     import bake_fonts
     bake_fonts.generate()
     if OUT.exists():shutil.rmtree(OUT)
-    describe('js',NATIVE_ONLY);describe('cpp',BROWSER_ONLY)
+    browser,native=targets()
+    describe('js',native);describe('cpp',browser)
     # No source links yet: dox could link each type to its source on GitHub.
     subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml'),'-o',str(OUT),'-in','^helix','--title','HeliX API',
         '-D','description','HeliX: a Haxe game framework over thin per-platform adapters.'],cwd=ROOT,env=env,check=True)

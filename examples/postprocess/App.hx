@@ -41,7 +41,6 @@ class App extends BaseApp {
 	var breathing = true;
 	var orbit = true;
 	var angle = 0.;
-	var time = 0.;
 	var status = "loading the effects";
 
 	override public function init():Void {
@@ -129,7 +128,8 @@ class App extends BaseApp {
 			strength = Math.min(1, strength + dt * .5);
 		if (input.isDown(Key.Down))
 			strength = Math.max(0, strength - dt * .5);
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		if (orbit)
 			angle += dt * .2;
 		fps.update(dt, Services.getFrameCpu());

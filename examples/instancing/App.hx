@@ -33,7 +33,6 @@ class App extends BaseApp {
 	var cubes:Array<Node> = [];
 	var cars:Array<Node> = [];
 	var ownMaterials = false;
-	var time = 0.;
 
 	// A colour around the hue circle for cube i.
 	static function tint(i:Int):Int {
@@ -114,7 +113,8 @@ class App extends BaseApp {
 			Services.quit();
 		if (input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
-		time += dt;
+		// The game's clock: paused, the motion stops.
+		var time = Services.clock.getTime();
 		fps.update(dt, Services.getFrameCpu());
 		var width = Services.window.getFramebufferWidth(),
 			height = Services.window.getFramebufferHeight();
