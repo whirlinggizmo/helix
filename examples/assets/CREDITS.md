@@ -4,7 +4,7 @@ The files under `examples/assets/` that HeliX didn't make, with each one's sourc
 
 | File | Work | Author | Source | License |
 | --- | --- | --- | --- | --- |
-| `music/a_hero_is_born.mp3` | "A Hero Is Born", its first 90 s | HoliznaCC0 | [Free Music Archive](https://freemusicarchive.org/music/holiznacc0/retro-gamer-soundtrack/a-hero-is-born/) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `audio/music/a_hero_is_born.mp3` | "A Hero Is Born", its first 90 s | HoliznaCC0 | [Free Music Archive](https://freemusicarchive.org/music/holiznacc0/retro-gamer-soundtrack/a-hero-is-born/) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `fonts/JetBrainsMono/JetBrainsMono-Regular.ttf` | JetBrains Mono | JetBrains | [jetbrains.com/mono](https://www.jetbrains.com/lp/mono/) | [SIL OFL 1.1](fonts/JetBrainsMono/OFL.txt) |
 | `fonts/Komika/KOMIKAH_.ttf` | Komika Hand | Apostrophic Laboratories | the font's [readme](fonts/Komika/readme.txt) | freeware, redistributed unmodified ([readme](fonts/Komika/readme.txt)) |
 | `models/car-kit/sedan-sports.glb`, `models/car-kit/Textures/colormap.png` | Car Kit 3.1, its sports car and the kit's shared texture | Kenney | [kenney.nl](https://kenney.nl/assets/car-kit) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
@@ -12,7 +12,7 @@ The files under `examples/assets/` that HeliX didn't make, with each one's sourc
 | `models/modular-women/*.glb` | Ultimate Modular Women: its animations, all ten outfits (Adventurer, Casual, Formal, Medieval, Punk, SciFi, Soldier, Suit, Witch, Worker: each a head, body, legs and feet), the sword and the gun, converted from FBX to GLB in Blender 5.1 (materials made opaque) | Quaternius | [quaternius.com](https://quaternius.com) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `environments/venice_sunset_1k.hdr` | Venice Sunset, 1K | Greg Zaal | [Poly Haven](https://polyhaven.com/a/venice_sunset) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `environments/studio_small_09_1k.hdr` | Studio Small 09, 1K | Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/studio_small_09) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
-| `sounds/click_004.ogg` | UI Audio | Kenney | [kenney.nl](https://kenney.nl) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `audio/sfx/click_004.ogg` | UI Audio | Kenney | [kenney.nl](https://kenney.nl) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 
 CC0 asks for no credit; they're credited anyway.
 

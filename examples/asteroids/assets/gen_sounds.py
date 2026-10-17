@@ -1,4 +1,4 @@
-"""Asteroids' eight original sounds, synthesized and encoded as Ogg/Vorbis into sounds/ beside this file, where they're committed (DECISIONS 117):
+"""Asteroids' eight original sounds, synthesized and encoded as Ogg/Vorbis into audio/sfx/ beside this file, where they're committed (DECISIONS 117):
 made only when one is missing (tools/example.py runs it before copying the example's assets), or anew with --regenerate, which needs FFmpeg."""
 import array
 import math
@@ -34,9 +34,9 @@ def thrust_loop(rate,frames):
             .15*math.sin(2*math.pi*266*i/rate) for i in range(frames)]
 
 def generate(regenerate=False):
-    """Writes the sounds as Ogg/Vorbis into sounds/ beside this file when any is missing (or regenerate), the WAV sources under
+    """Writes the sounds as Ogg/Vorbis into audio/sfx/ beside this file when any is missing (or regenerate), the WAV sources under
     build/generated/asteroids/wav, and returns the example's assets folder."""
-    out=Path(__file__).resolve().parent;sounds=out/'sounds';source=ROOT/'build/generated/asteroids/wav'
+    out=Path(__file__).resolve().parent;sounds=out/'audio/sfx';source=ROOT/'build/generated/asteroids/wav'
     if not regenerate and all((sounds/(name+'.ogg')).is_file() for name in NAMES):return out
     sounds.mkdir(parents=True,exist_ok=True);source.mkdir(parents=True,exist_ok=True)
     encoder=shutil.which('ffmpeg')

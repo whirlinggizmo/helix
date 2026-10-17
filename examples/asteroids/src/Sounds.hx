@@ -27,7 +27,7 @@ class Sounds {
 		this.audio = audio;
 		for (i in 0...names.length) {
 			var index = i;
-			audio.loadClip("sounds/" + names[i] + ".ogg", result -> {
+			audio.loadClip("audio/sfx/" + names[i] + ".ogg", result -> {
 				switch (result) {
 					case Ready(resource):
 						if (closed) {

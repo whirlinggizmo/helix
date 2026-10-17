@@ -24,7 +24,7 @@ class App extends BaseApp {
 		Services.window.requestSize(720, 240);
 		batch = new Batch2D(Services.graphics);
 		var audio = Services.audioResources;
-		audio.loadStream("music/a_hero_is_born.mp3", result -> switch result {
+		audio.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
 			case Ready(stream):
 				// The playback holds the stream; the program lets its own reference go.
 				music = audio.play(stream, true, .5);
@@ -32,7 +32,7 @@ class App extends BaseApp {
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
-		audio.loadClip("sounds/click_004.ogg", result -> switch result {
+		audio.loadClip("audio/sfx/click_004.ogg", result -> switch result {
 			case Ready(clip): click = clip;
 			case Failed(message): trace(message);
 			case Cancelled:

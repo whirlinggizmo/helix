@@ -20,7 +20,7 @@ class App extends BaseApp {
 		Services.window.requestSize(640, 200);
 		batch = new Batch2D(Services.graphics);
 		quitAt = Services.getTime() + 1;
-		Services.audioResources.loadStream("music/a_hero_is_born.mp3", result -> switch result {
+		Services.audioResources.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
 			case Ready(stream):
 				Services.audioResources.play(stream, true, .5);
 				stream.release();
@@ -38,7 +38,7 @@ class App extends BaseApp {
 			// Only in flight at the quit: loads begun and never used.
 			Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
 			Services.textures.load("textures/tiles.png", false, _ -> {});
-			Services.audioResources.loadStream("music/a_hero_is_born.mp3", _ -> {});
+			Services.audioResources.loadStream("audio/music/a_hero_is_born.mp3", _ -> {});
 			// A long synchronous frame.
 			var busyUntil = Services.getTime() + .5;
 			while (Services.getTime() < busyUntil) {}

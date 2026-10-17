@@ -12,8 +12,8 @@ import helix.render2d.Text2D;
 	browser reads a URL against a directory, so it's the same call on every target. The bytes are kept under the bogus path, and once the ensure
 	is done that path streams as looping music. M pauses and resumes it; Escape quits where quitting means anything. */
 class App extends BaseApp {
-	static inline var KEY = "music/invalid.mp3";
-	static inline var SOURCE = "music/a_hero_is_born.mp3";
+	static inline var KEY = "audio/music/invalid.mp3";
+	static inline var SOURCE = "audio/music/a_hero_is_born.mp3";
 
 	var batch:Batch2D;
 	var camera = new Camera2D();
