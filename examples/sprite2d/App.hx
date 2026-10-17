@@ -23,7 +23,6 @@ class App extends BaseApp {
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
 	static var NAMES = ["sheet", "spin", "swing", "flip", "tint"];
 
-	var services:Services;
 	var stage = new Stage2D();
 	var batch:Batch2D;
 	var camera = new Camera2D();
@@ -35,15 +34,10 @@ class App extends BaseApp {
 	var sheetFrame = 0;
 	var hovered = -1;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX sprite2d");
-		services.window.requestSize(900, 520);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX sprite2d");
+		Services.window.requestSize(900, 520);
+		batch = new Batch2D(Services.graphics);
 		// Colors are values, so cycle a palette.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;
@@ -62,7 +56,7 @@ class App extends BaseApp {
 		sprites[2].setPivot(0, 0);
 		sprites[2].setSize(96, 96);
 		sprites[4].setSize(96, 96);
-		services.textures.load(LOGO, true, result -> switch result {
+		Services.textures.load(LOGO, true, result -> switch result {
 			case Ready(texture):
 				logo = texture;
 				for (i in 0...4)
@@ -71,7 +65,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		services.textures.load(WHITE_LOGO, true, result -> switch result {
+		Services.textures.load(WHITE_LOGO, true, result -> switch result {
 			case Ready(texture):
 				sprites[4].setTexture(texture);
 			case Failed(message):
@@ -94,16 +88,16 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		time += dt;
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
-		var shape = ScreenShape.update(services);
-		var presentation = services.presentation;
+		var shape = ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -149,7 +143,7 @@ class App extends BaseApp {
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
 
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		if (logo != null)
@@ -161,7 +155,7 @@ class App extends BaseApp {
 			vx + 12, line, 16, vw - 96, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void

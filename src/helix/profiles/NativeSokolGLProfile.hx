@@ -13,16 +13,15 @@ import helix.adapters.export.filesystem.FileSystemExportAdapter;
 import helix.adapters.store.filesystem.FileSystemStoreAdapter;
 import helix.app.IApp;
 import helix.host.Runner;
-import helix.host.Services;
 
 /** Linux natively: a sokol_app window, sokol_gfx on GL 4.1, sokol_audio with libsndfile, evdev gamepads, haxe.Http and files, stb_image. */
 class NativeSokolGLProfile {
-	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
+	/** Runs the app makeApp builds once its Services are filled, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
-	public static function run(identity:helix.host.Identity, assetFolder:String, makeApp:Services->IApp, ?options:helix.host.WindowOptions):Void {
+	public static function run(identity:helix.host.Identity, assetFolder:String, makeApp:Void->IApp, ?options:helix.host.WindowOptions):Void {
 		var host = new SokolHostAdapter(options != null ? options.getMsaaSamples() : new helix.host.WindowOptions().getMsaaSamples());
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
@@ -51,6 +50,6 @@ class NativeSokolGLProfile {
 				name: identity.getProduct()
 			};
 		});
-		runner.run(makeApp(runner.services));
+		runner.run(makeApp());
 	}
 }

@@ -34,7 +34,6 @@ class App extends BaseApp {
 	static var TONEMAPS = [Tonemap.Neutral, Tonemap.Aces, Tonemap.None];
 	static var TONEMAP_NAMES = ["Neutral", "ACES", "none"];
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -52,11 +51,6 @@ class App extends BaseApp {
 	var time = 0.;
 	var turning:Array<Node> = [];
 	var shaders:Shaders;
-
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
 
 	// A linear color as 0xRRGGBBAA, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float):Int {
@@ -78,10 +72,10 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX environment");
-		services.window.requestSize(1000, 700);
-		batch = new Batch2D(services.graphics);
-		stage = new Stage3D(services.graphics);
+		Services.window.setTitle("HeliX environment");
+		Services.window.requestSize(1000, 700);
+		batch = new Batch2D(Services.graphics);
+		stage = new Stage3D(Services.graphics);
 		// Framed for 16:9: every column of spheres on a phone held upright too.
 		camera.setMinAspect(16 / 9);
 		var ball = Mesh.sphere(.5, 32, 64);
@@ -92,20 +86,20 @@ class App extends BaseApp {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		services.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		Services.textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
-		shaders = new Shaders(services.assets, services.graphics);
+		shaders = new Shaders(Services.assets, Services.graphics);
 		shaders.load("shaders/pearl.hxshader", result -> switch result {
 			case Ready(shader): pearl.setShader(shader);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
-		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setPosition(2.7, -.5, .2);
@@ -117,11 +111,11 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		for (i in 0...PATHS.length) {
-			var started = services.getTime();
-			services.environments.load(PATHS[i], result -> switch result {
+			var started = Services.getTime();
+			Services.environments.load(PATHS[i], result -> switch result {
 				case Ready(environment):
 					environments[i] = environment;
-					loadMs[i] = (services.getTime() - started) * 1000;
+					loadMs[i] = (Services.getTime() - started) * 1000;
 					// Said in the log too, so a run without a screen shows how long the bake took.
 					trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 				case Failed(message):
@@ -132,9 +126,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.E))
 			current = (current + 1) % NAMES.length;
 		if (input.isFramePressed(Key.B))
@@ -156,7 +150,7 @@ class App extends BaseApp {
 			angle += dt * .15;
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 
 		var environment = current < PATHS.length ? environments[current] : null;
 		stage.setEnvironment(environment, 1, rotation);
@@ -164,13 +158,13 @@ class App extends BaseApp {
 		stage.setTonemap(TONEMAPS[tonemap]);
 		stage.setExposure(exposure);
 
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -184,7 +178,7 @@ class App extends BaseApp {
 		var readoutY = vy + 36 + Text2D.measureWrapped(font, title, 20, wrap) + 3,
 			bottom = readoutY + Text2D.measureWrapped(font, readout, 16, wrap) - 2;
 
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
@@ -193,13 +187,13 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		for (environment in environments)
 			if (environment != null)
-				services.environments.release(environment);
+				Services.environments.release(environment);
 		stage.destroy();
 		batch.destroy();
 	}

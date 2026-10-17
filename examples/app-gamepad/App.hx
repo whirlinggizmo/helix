@@ -17,37 +17,31 @@ class App extends BaseApp {
 	static inline var HEIGHT = 420;
 	static final DEADZONES = [.1, .2, .3, 0.];
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var deadzone = 0;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX gamepad");
-		services.window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX gamepad");
+		Services.window.requestSize(WIDTH, HEIGHT);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		for (i in 0...input.getPadCount())
 			if (input.getPad(i).isFramePressed(PadButton.South))
 				deadzone = (deadzone + 1) % DEADZONES.length;
 		// The design for the window's shape: the text wrapped to what's visible of it, and as many panels across as fit, the rest in rows below.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x181c26ff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
 		var connected = 0;
 		for (i in 0...input.getPadCount())
@@ -69,7 +63,7 @@ class App extends BaseApp {
 			placed++;
 		}
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	/** One pad's panel, its top-left at x, y. */

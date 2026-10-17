@@ -10,67 +10,61 @@ import helix.render2d.Text2D;
 	In a browser quitting stops the frame loop and runs the shutdown, and the canvas keeps the last frame. Q quits now, everywhere; Escape where
 	quitting closes a window (in a browser Escape is the browser's: it leaves fullscreen). */
 class App extends BaseApp {
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var quitAt = 0.;
 	var quitting = false;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX quit");
-		services.window.requestSize(640, 200);
-		batch = new Batch2D(services.graphics);
-		quitAt = services.getTime() + 1;
-		services.audioResources.loadStream("music/a_hero_is_born.mp3", result -> switch result {
+		Services.window.setTitle("HeliX quit");
+		Services.window.requestSize(640, 200);
+		batch = new Batch2D(Services.graphics);
+		quitAt = Services.getTime() + 1;
+		Services.audioResources.loadStream("music/a_hero_is_born.mp3", result -> switch result {
 			case Ready(stream):
-				services.audioResources.play(stream, true, .5);
+				Services.audioResources.play(stream, true, .5);
 				stream.release();
 			case _:
 		});
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (input.isFramePressed(Key.Q) || services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (input.isFramePressed(Key.Q) || Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		// The quit, before this frame is drawn: its text says so, and it's the frame the canvas keeps.
-		if (!quitting && services.getTime() >= quitAt) {
+		if (!quitting && Services.getTime() >= quitAt) {
 			quitting = true;
 			// Only in flight at the quit: loads begun and never used.
-			services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
-			services.textures.load("textures/tiles.png", false, _ -> {});
-			services.audioResources.loadStream("music/a_hero_is_born.mp3", _ -> {});
+			Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
+			Services.textures.load("textures/tiles.png", false, _ -> {});
+			Services.audioResources.loadStream("music/a_hero_is_born.mp3", _ -> {});
 			// A long synchronous frame.
-			var busyUntil = services.getTime() + .5;
-			while (services.getTime() < busyUntil) {}
-			services.quit();
+			var busyUntil = Services.getTime() + .5;
+			while (Services.getTime() < busyUntil) {}
+			Services.quit();
 		}
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
+		Services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
 		batch.begin(camera);
 		var y = vy + 12;
 		y += Text2D.drawWrapped(batch, "HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
 		Text2D.drawWrapped(batch,
-			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - services.getTime()) * 10) / 10} s',
+			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Services.getTime()) * 10) / 10} s',
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		trace("quit: shutdown");
-		services.harness.publish({shutdown: true});
+		Services.harness.publish({shutdown: true});
 		batch.destroy();
 	}
 }

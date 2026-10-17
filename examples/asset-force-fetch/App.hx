@@ -15,28 +15,22 @@ class App extends BaseApp {
 	static inline var KEY = "music/invalid.mp3";
 	static inline var SOURCE = "music/a_hero_is_born.mp3";
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
 	var music:Null<AudioPlayback>;
 	var state = 'ensuring $KEY from $SOURCE...';
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX force fetch");
-		services.window.requestSize(720, 240);
-		batch = new Batch2D(services.graphics);
-		services.assets.ensure(KEY, result -> switch result {
+		Services.window.setTitle("HeliX force fetch");
+		Services.window.requestSize(720, 240);
+		batch = new Batch2D(Services.graphics);
+		Services.assets.ensure(KEY, result -> switch result {
 			case Loaded(_):
 				// The bytes are local now, under the key: stream the key.
-				services.audioResources.loadStream(KEY, loaded -> switch loaded {
+				Services.audioResources.loadStream(KEY, loaded -> switch loaded {
 					case Ready(stream):
-						music = services.audioResources.play(stream, true, .5);
+						music = Services.audioResources.play(stream, true, .5);
 						stream.release();
 						state = '$KEY played from the bytes of $SOURCE';
 					case Failed(message):
@@ -50,20 +44,20 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
+		var input = Services.input;
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
-		fps.update(dt, services.getFrameCpu());
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
+		fps.update(dt, Services.getFrameCpu());
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x12141cff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
@@ -71,9 +65,9 @@ class App extends BaseApp {
 			vx + 24, y, 18, vw - 48, 0x66bfffff)
 			+ 7.5;
 		y += Text2D.drawWrapped(batch, state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
-		Text2D.drawWrapped(batch, "[M] toggle music" + (services.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, "[M] toggle music" + (Services.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 }

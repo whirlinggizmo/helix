@@ -31,7 +31,6 @@ class App extends BaseApp {
 		["Adventurer_Body", "Adventurer_Legs", "Adventurer_Feet"]
 	];
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -48,16 +47,11 @@ class App extends BaseApp {
 	var orbit = true;
 	var angle = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX animation");
-		services.window.requestSize(1000, 600);
+		Services.window.setTitle("HeliX animation");
+		Services.window.requestSize(1000, 600);
 		camera.setMinAspect(16 / 9);
-		stage = new Stage3D(services.graphics);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xc8d2ffff, .35);
 		var sun = new Light(Directional);
 		sun.setIntensity(2.5);
@@ -70,7 +64,7 @@ class App extends BaseApp {
 		ground.setBaseColor(0x5a5f6aff);
 		ground.setRoughness(.9);
 		stage.add(Node.model(Mesh.plane(10, 10), ground));
-		var models = new Models(services.assets, services.textures);
+		var models = new Models(Services.assets, Services.textures);
 		// Her head and outfit chosen now, worn once her skeleton and their files are in.
 		outfit = new Outfit(new Wardrobe(models.load));
 		outfit.choose("head", DIR + "Casual_Head.glb");
@@ -88,7 +82,7 @@ class App extends BaseApp {
 				status = 'Animations: $message';
 			case Cancelled:
 		});
-		batch = new Batch2D(services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	// Body, legs and feet from OUTFITS[index].
@@ -109,9 +103,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (animator != null) {
@@ -132,21 +126,21 @@ class App extends BaseApp {
 		}
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(3 * Math.sin(angle), 1.6, 3 * Math.cos(angle), 0, .9, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
@@ -156,13 +150,13 @@ class App extends BaseApp {
 		y += Text2D.drawWrapped(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
 		Text2D.drawWrapped(batch,
 			'F: ${fade ? "crossfade" : "cut"}   G: outfit   S: sword   Space: ${paused ? "resume" : "pause"}   O: the camera'
-			+ (services.canQuit() ? "   ESC: quit" : ""),
+			+ (Services.canQuit() ? "   ESC: quit" : ""),
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

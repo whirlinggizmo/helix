@@ -21,7 +21,6 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var MODEL = "models/car-kit/sedan-sports-headlights.gltf";
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -42,15 +41,10 @@ class App extends BaseApp {
 	var angle = 0.;
 	var roll = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX model");
-		services.window.requestSize(1000, 600);
-		stage = new Stage3D(services.graphics);
+		Services.window.setTitle("HeliX model");
+		Services.window.requestSize(1000, 600);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
 		camera.setMinAspect(16 / 9);
@@ -65,7 +59,7 @@ class App extends BaseApp {
 		ground.setRoughness(.9);
 		stage.add(Node.model(Mesh.plane(14, 14), ground));
 
-		new Models(services.assets, services.textures).load(MODEL, result -> switch result {
+		new Models(Services.assets, Services.textures).load(MODEL, result -> switch result {
 			case Ready(file):
 				car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -86,13 +80,13 @@ class App extends BaseApp {
 				status = message;
 			case Cancelled:
 		});
-		batch = new Batch2D(services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (car != null && input.isFramePressed(Key.H)) {
@@ -115,33 +109,33 @@ class App extends BaseApp {
 		roll += dt * 3;
 		for (wheel in wheels)
 			wheel.setRotation(roll, 0, 0);
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
 		chase.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(chasing ? chase : camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, 'HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		Text2D.drawWrapped(batch, "D: drive   C: ride along   O: the camera   H: the headlights"
-			+ (services.canQuit() ? "   ESC: quit" : ""), vx
+			+ (Services.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y, 16,
 			vw
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

@@ -28,7 +28,6 @@ class App extends BaseApp {
 	// What a shadow keeps of the surface's color: nothing (physical), then two stylized tints.
 	static var TINTS = [0x000000ff, 0x1e3c64ff, 0x64321eff];
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -47,11 +46,6 @@ class App extends BaseApp {
 	var angle = 0.;
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
 	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Node {
 		var material = new Material();
@@ -64,11 +58,11 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX shadows");
-		services.window.requestSize(1000, 600);
+		Services.window.setTitle("HeliX shadows");
+		Services.window.requestSize(1000, 600);
 		// Framed for 16:9: the whole stage on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var gpu = services.graphics;
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0x8caae1ff, .25);
@@ -106,7 +100,7 @@ class App extends BaseApp {
 		// One that casts nothing, and one that nothing shadows.
 		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xf8ed95ff, .35).setShadowCasting(false);
 		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xf395bcff, .35).setShadowReceiving(false);
-		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -119,9 +113,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setShadowCasting(!sun.isShadowCasting());
 		if (input.isFramePressed(Key.Digit2))
@@ -150,7 +144,7 @@ class App extends BaseApp {
 			sun.setShadowBias(bias, bias * 4);
 		}
 		time += dt;
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		// The spot circles overhead, aimed at the middle of the stage.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);
 		spotNode.setPosition(sx, 6.5, sz);
@@ -158,20 +152,20 @@ class App extends BaseApp {
 		marker.setPosition(sx, 6.5, sz);
 		if (orbit)
 			angle += dt * .18;
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(11 * Math.sin(angle), 5, 11 * Math.cos(angle), 0, 1.2, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
-		services.graphics.beginFrame(width, height, 0x7896c8ff);
+		Services.graphics.beginFrame(width, height, 0x7896c8ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
@@ -193,7 +187,7 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, "left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

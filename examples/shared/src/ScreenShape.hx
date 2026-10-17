@@ -6,8 +6,8 @@ import helix.host.Services;
 class ScreenShape {
 	/** The window's shape now, the design set for it: "landscape", "short" or "portrait". Once a frame, before the presentation is used: the
 		design changes only when the shape does. */
-	public static function update(services:Services):String {
-		var window = services.window, presentation = services.presentation;
+	public static function update():String {
+		var window = Services.window, presentation = Services.presentation;
 		var shape = window.getHeight() > window.getWidth() ? "portrait" : window.getHeight() < 600 ? "short" : "landscape";
 		var width = shape == "portrait" ? 560 : shape == "short" ? 1000 : 1280,
 			height = shape == "portrait" ? 960 : shape == "short" ? 560 : 720;

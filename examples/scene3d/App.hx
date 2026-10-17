@@ -31,7 +31,6 @@ class App extends BaseApp {
 		0xd24ab4ff
 	];
 
-	var services:Services;
 	var stage:Stage3D;
 	var hud = new Stage2D();
 	var batch:Batch2D;
@@ -48,17 +47,12 @@ class App extends BaseApp {
 	var angle = 0.;
 	var spin = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX scene3d");
-		services.window.requestSize(1000, 600);
+		Services.window.setTitle("HeliX scene3d");
+		Services.window.requestSize(1000, 600);
 		// Framed for 16:9: the whole ring on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		stage = new Stage3D(services.graphics);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new Light(Directional);
 		sun.setIntensity(2.5);
@@ -97,22 +91,22 @@ class App extends BaseApp {
 		hud.add(button);
 		label = Node2D.text("", 16, 0xf5f5f5ff);
 		hud.add(label);
-		pointer = new Pointer(services.input);
+		pointer = new Pointer(Services.input);
 		pointer.addStage3D(stage, camera);
 		pointer.addStage2D(hud, hudCamera);
-		batch = new Batch2D(services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The HUD in the design for the window's shape; the button sits under the title, however many lines it wraps to.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hudCamera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -141,9 +135,9 @@ class App extends BaseApp {
 			angle += dt * .25;
 		spin += dt;
 		spinner.setRotation(spin * .7, spin, 0);
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
@@ -158,11 +152,11 @@ class App extends BaseApp {
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)
 			+ 4;
-		if (services.canQuit())
+		if (Services.canQuit())
 			Text2D.draw(batch, "ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

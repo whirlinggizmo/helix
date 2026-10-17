@@ -22,7 +22,6 @@ import helix.render3d.Stage3D;
 	point is marked, its normal drawn, and its node, distance and point shown. O stops the circling camera; Escape quits where quitting means
 	anything. */
 class App extends BaseApp {
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var batch3D:Batch3D;
@@ -35,15 +34,10 @@ class App extends BaseApp {
 	var orbit = true;
 	var angle = .3;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX pick");
-		services.window.requestSize(1000, 600);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX pick");
+		Services.window.requestSize(1000, 600);
+		var gpu = Services.graphics;
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
 		// Framed for 16:9: everything pickable in view on a phone held upright too.
@@ -76,7 +70,7 @@ class App extends BaseApp {
 		label.setPickable(true);
 		label.setPosition(1, 2.4, -2);
 		stage.add(label);
-		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				var logo = Node.sprite(texture, 0x7ab4ffff);
 				logo.setName("a sprite");
@@ -85,7 +79,7 @@ class App extends BaseApp {
 				stage.add(logo);
 			case _:
 		});
-		var models = new Models(services.assets, services.textures);
+		var models = new Models(Services.assets, Services.textures);
 		models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("a car");
@@ -140,30 +134,30 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (orbit)
 			angle += dt * .2;
 		if (animator != null)
 			animator.update(dt);
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 5, 9 * Math.cos(angle), 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 		picked = stage.pick(camera, input.getPointerX(), input.getPointerY(), hit);
 
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch3D.begin(camera);
 		if (picked != null) {
@@ -181,10 +175,10 @@ class App extends BaseApp {
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
 		y += Text2D.drawWrapped(batch, line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
-		Text2D.drawWrapped(batch, "O: the camera" + (services.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, "O: the camera" + (Services.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

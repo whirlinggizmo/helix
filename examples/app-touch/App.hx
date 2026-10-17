@@ -15,7 +15,6 @@ class App extends BaseApp {
 	static inline var COIN = 96.;
 	static inline var FINGERS = 8;
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var logo:Null<Texture2D>;
@@ -35,22 +34,17 @@ class App extends BaseApp {
 	/** Where each finger id last lifted, x and y, and how much of its ring is left to fade (1 down to 0). */
 	var lifted = [for (_ in 0...FINGERS) [0., 0., 0.]];
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX touch");
-		services.window.requestSize(900, 700);
-		batch = new Batch2D(services.graphics);
-		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		Services.window.setTitle("HeliX touch");
+		Services.window.requestSize(900, 700);
+		batch = new Batch2D(Services.graphics);
+		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture): logo = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		// Pixel art: nearest, no smoothing.
-		services.textures.load("textures/tiles.png", false, result -> switch result {
+		Services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture): tiles = texture;
 			case Failed(message): trace(message);
 			case Cancelled:
@@ -68,11 +62,11 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
+		var input = Services.input;
 		// The design for the window's shape; the logo and the coin start in the middle of what's visible of it, and go back there when
 		// the shape changes (a phone turned), as they might be past the new edges.
-		var shape = ScreenShape.update(services);
-		var presentation = services.presentation;
+		var shape = ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -84,8 +78,8 @@ class App extends BaseApp {
 			logoY = vy + vh * .45;
 			coinY = vy + vh * .8;
 		}
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		// Two fingers move the logo; the wheel zooms it about the mouse.
 		if (input.isTouchGesture()) {
 			logoX += input.getTouchGesturePanX() / presentation.getScaleX();
@@ -117,7 +111,7 @@ class App extends BaseApp {
 				ring[2] = 1;
 			}
 
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x161921ff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x161921ff);
 		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
@@ -154,7 +148,7 @@ class App extends BaseApp {
 			+ 1.5;
 		Text2D.drawWrapped(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0x969eafff);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	/** A finger's color, by its id, with alpha. */

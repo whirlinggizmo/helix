@@ -15,7 +15,6 @@ import helix.render3d.Stage3D;
 /** Shapes made in code on a Stage3D: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
 	sun and an ambient light, the camera turning around them. O stops and starts the camera; Escape quits where quitting means anything. */
 class App extends BaseApp {
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -24,15 +23,10 @@ class App extends BaseApp {
 	var orbit = true;
 	var angle = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX meshes");
-		services.window.requestSize(1000, 600);
-		stage = new Stage3D(services.graphics);
+		Services.window.setTitle("HeliX meshes");
+		Services.window.requestSize(1000, 600);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xffffffff, .25);
 		// Framed for 16:9: the whole row across on a phone held upright too.
 		camera.setMinAspect(16 / 9);
@@ -65,43 +59,43 @@ class App extends BaseApp {
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
 			stage.add(node);
 		}
-		batch = new Batch2D(services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (orbit)
 			angle += dt * .2;
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 3.5, 9 * Math.cos(angle), 0, .4, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, "HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		Text2D.drawWrapped(batch, (orbit ? "O: stop the camera" : "O: turn the camera")
-			+ (services.canQuit() ? "   ESC: quit" : ""), vx
+			+ (Services.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y, 16, vw
 			- 24,
 			0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

@@ -20,7 +20,6 @@ class App extends BaseApp {
 	static inline var COLUMNS = 5;
 	static inline var SPACING = 1.35;
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -31,11 +30,6 @@ class App extends BaseApp {
 	var marker:Node;
 	var bottom:Array<Node> = [];
 	var time = 0.;
-
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
 
 	// A linear color (as the earlier frameworks' examples give them) as 0xRRGGBBAA, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float, a = 1.):Int {
@@ -60,9 +54,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX materials");
-		services.window.requestSize(1000, 700);
-		stage = new Stage3D(services.graphics);
+		Services.window.setTitle("HeliX materials");
+		Services.window.requestSize(1000, 700);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 		// Framed for 16:9: all five columns across on a phone held upright too.
@@ -102,20 +96,20 @@ class App extends BaseApp {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		services.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		Services.textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
-		batch = new Batch2D(services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
@@ -129,19 +123,19 @@ class App extends BaseApp {
 		marker.setVisible(lamp.isVisible());
 		for (node in bottom)
 			node.setRotation(0, time * .5, 0);
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
@@ -151,7 +145,7 @@ class App extends BaseApp {
 			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

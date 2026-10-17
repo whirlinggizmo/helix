@@ -13,7 +13,6 @@ import helix.render2d.Text2D;
 	moons) turning as one, and a particle emitter circling and trailing (drawn by the GPU at its place in the stage's order); then immediate
 	text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
 class App extends BaseApp {
-	var services:Services;
 	var world = new Stage2D();
 	var hud = new Stage2D();
 	var batch:Batch2D;
@@ -29,15 +28,10 @@ class App extends BaseApp {
 	var title:Node2D;
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX stage2d");
-		services.window.requestSize(800, 450);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX stage2d");
+		Services.window.requestSize(800, 450);
+		batch = new Batch2D(Services.graphics);
 
 		rock = Node2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
 		rock.setOutline(2);
@@ -66,7 +60,7 @@ class App extends BaseApp {
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
 		world.add(sprite);
-		services.textures.load("textures/tiles.png", false, result -> switch result {
+		Services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
 				sprite.setTexture(texture);
 			case Failed(message):
@@ -95,7 +89,7 @@ class App extends BaseApp {
 		emitter.setColor(0xffcb00ff, 0xff3c0000);
 		sparks = Node2D.emitter(emitter);
 		world.add(sparks);
-		services.textures.load("textures/particle.png", true, result -> switch result {
+		Services.textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
 				emitter.setTexture(texture);
 			case Failed(message):
@@ -108,10 +102,10 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (services.canQuit() && services.input.isFramePressed(Key.Escape))
-			services.quit();
+		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
+			Services.quit();
 		time += dt;
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		rock.setRotation(time * .6);
 		box.setRotation(-time * .8);
 		card.setRotation(-time * .8);
@@ -119,11 +113,11 @@ class App extends BaseApp {
 		orbit.setRotation(time * 1.5);
 		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);
 		world.setTime(time);
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		// The HUD in the design for the window's shape; the world zooms at the design's scale, so it fits a phone held upright too.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hudCamera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -133,19 +127,19 @@ class App extends BaseApp {
 		worldCamera.setPosition(0, 0);
 		worldCamera.setZoom(presentation.getScaleX() * (1.25 + .25 * Math.sin(time * .5)));
 
-		services.graphics.beginFrame(width, height, 0x0c0e16ff);
+		Services.graphics.beginFrame(width, height, 0x0c0e16ff);
 		batch.begin(worldCamera);
 		world.draw(batch, worldCamera);
 		hud.draw(batch, hudCamera);
 		Text2D.drawWrapped(batch,
-			'immediate text, over the stages: ${world.getDrawnNodeCount()} world nodes drawn, ${services.graphics.getMsaaSamples()} of ${services.graphics.getMaxMsaaSamples()} MSAA samples a pixel',
+			'immediate text, over the stages: ${world.getDrawnNodeCount()} world nodes drawn, ${Services.graphics.getMsaaSamples()} of ${Services.graphics.getMaxMsaaSamples()} MSAA samples a pixel',
 			vx
 			+ 12, vy
 			+ 60, 14, vw
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void

@@ -29,7 +29,6 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var FLOOR_Y = -.5;
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -46,15 +45,10 @@ class App extends BaseApp {
 	var status = "loading the shaders";
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX shaders");
-		services.window.requestSize(1000, 600);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX shaders");
+		Services.window.requestSize(1000, 600);
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .15);
@@ -95,7 +89,7 @@ class App extends BaseApp {
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 
-		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file;
 				var node = file.instantiate("car");
@@ -108,7 +102,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		services.textures.load("textures/noise.png", true, result -> switch result {
+		Services.textures.load("textures/noise.png", true, result -> switch result {
 			case Ready(texture):
 				// The shader samples it twice across: it tiles.
 				texture.setSampling(new Sampling(true, Repeat, Repeat));
@@ -119,7 +113,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		shaders = new Shaders(services.assets, gpu);
+		shaders = new Shaders(Services.assets, gpu);
 		shaders.load("shaders/toon.hxshader", result -> switch result {
 			case Ready(shader):
 				toon = shader;
@@ -173,9 +167,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2)) {
@@ -184,20 +178,20 @@ class App extends BaseApp {
 		}
 		time += dt;
 		stage.setTime(time);
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		// Circling in front of the models, toward the camera: always in view, and far enough not to wash them out.
 		var lx = Math.cos(time * .7) * 2.2,
 			ly = .8 + Math.sin(time * .7),
 			lz = 1.6 + Math.sin(time * .7) * .4;
 		lamp.setPosition(lx, ly, lz);
 		marker.setPosition(lx, ly, lz);
-		var gpu = services.graphics,
-			width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var gpu = Services.graphics,
+			width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),

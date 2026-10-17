@@ -39,22 +39,16 @@ class App extends BaseApp {
 		[2, 22, 16, 32], [22, 22, 16, 32], [42, 22, 16, 16], [62, 22, 16, 16]
 	];
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
 	var slots:Array<Slot> = [];
 	var compressed:Array<Slot> = [];
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX textures");
-		services.window.requestSize(1010, 610);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX textures");
+		Services.window.requestSize(1010, 610);
+		batch = new Batch2D(Services.graphics);
 		for (path in PATHS)
 			slots.push(load(path));
 		for (path in KTX_PATHS)
@@ -62,12 +56,12 @@ class App extends BaseApp {
 	}
 
 	function load(path:String):Slot {
-		var slot = new Slot(path, services.getTime());
-		services.textures.load(path, true, result -> switch result {
+		var slot = new Slot(path, Services.getTime());
+		Services.textures.load(path, true, result -> switch result {
 			case Ready(texture):
 				slot.texture = texture;
-				slot.took = services.getTime() - slot.asked;
-				slot.chosen = services.textures.getPath(texture);
+				slot.took = Services.getTime() - slot.asked;
+				slot.chosen = Services.textures.getPath(texture);
 			case Failed(message):
 				slot.status = "failed";
 				trace(message);
@@ -128,14 +122,14 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (services.canQuit() && services.input.isFramePressed(Key.Escape))
-			services.quit();
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
+			Services.quit();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		// The design for the window's shape: three textures a row across, smaller and two a row upright, so it all fits a phone either way.
-		var shape = ScreenShape.update(services);
-		var presentation = services.presentation;
+		var shape = ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -144,7 +138,7 @@ class App extends BaseApp {
 			columns = shape == "portrait" ? 2 : 3,
 			pitch = 2 * size + 30;
 
-		services.graphics.beginFrame(width, height, 0x262a36ff);
+		Services.graphics.beginFrame(width, height, 0x262a36ff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
@@ -153,13 +147,13 @@ class App extends BaseApp {
 		grid(compressed, false, vx + 20, y, size, columns, pitch);
 		fps.draw(batch, vx + 12, vy + 6);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		for (slot in slots.concat(compressed))
 			if (slot.texture != null)
-				services.textures.release(slot.texture);
+				Services.textures.release(slot.texture);
 		batch.destroy();
 	}
 }

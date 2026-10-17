@@ -56,7 +56,6 @@ class App extends BaseApp {
 	static var FOCUS = ["Head" => 1.6, "Body" => 1.2, "Legs" => .62, "Feet" => .16, "Hand" => 1.0];
 	static var DISTANCE = ["Head" => 1.5, "Body" => 2.8, "Legs" => 2.8, "Feet" => 1.9, "Hand" => 2.4];
 
-	var services:Services;
 	var stage:Stage3D;
 	var camera = new Camera3D();
 	var models:Models;
@@ -101,15 +100,10 @@ class App extends BaseApp {
 	var focus = 1.;
 	var distance = 3.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX dressing room");
-		services.window.requestSize(1280, 720);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX dressing room");
+		Services.window.requestSize(1280, 720);
+		var gpu = Services.graphics;
 		stage = new Stage3D(gpu);
 		studio = new Stage3D(gpu);
 		for (s in [stage, studio]) {
@@ -136,11 +130,11 @@ class App extends BaseApp {
 		var disc = Node.model(Mesh.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		stage.add(disc);
-		models = new Models(services.assets, services.textures);
+		models = new Models(Services.assets, Services.textures);
 		wardrobe = new Wardrobe(models.load);
 		outfit = new Outfit(wardrobe);
 		modelOutfit = new Outfit(wardrobe);
-		services.environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
+		Services.environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
 			case Ready(value):
 				environment = value;
 				for (s in [stage, studio])
@@ -179,9 +173,9 @@ class App extends BaseApp {
 
 	// The panel on the right: the slots' tabs, a grid of ten tiles, the poses, and Random and Reset.
 	function buildScreen():Void {
-		pointer = new Pointer(services.input);
+		pointer = new Pointer(Services.input);
 		pointer.addStage2D(screen, camera2D);
-		ui = new Ui(screen, camera2D, pointer, services.input);
+		ui = new Ui(screen, camera2D, pointer, Services.input);
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
 		title.getNode().setTextSize(26);
@@ -315,11 +309,11 @@ class App extends BaseApp {
 			for (s in SLOTS)
 				modelOutfit.choose(s, null);
 			modelOutfit.choose(w.slot, w.path);
-			var texture = Texture2D.renderTarget(services.graphics, THUMB, THUMB);
+			var texture = Texture2D.renderTarget(Services.graphics, THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
-			services.graphics.beginTargetPass(texture.getHandle(), 0x2a2f3cff);
+			Services.graphics.beginTargetPass(texture.getHandle(), 0x2a2f3cff);
 			studio.draw(shot);
-			services.graphics.endTargetPass();
+			Services.graphics.endTargetPass();
 			thumbs[w.path] = texture;
 			taken++;
 		}
@@ -413,11 +407,11 @@ class App extends BaseApp {
 		open(SLOTS[(SLOTS.indexOf(slot) + direction + SLOTS.length) % SLOTS.length]);
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		var window = services.window, presentation = services.presentation;
+		var input = Services.input;
+		var window = Services.window, presentation = Services.presentation;
 		var width = window.getFramebufferWidth(),
 			height = window.getFramebufferHeight();
-		var wanted = ScreenShape.update(services);
+		var wanted = ScreenShape.update();
 		if (wanted != shaped)
 			shape(wanted);
 		presentation.apply(camera2D);
@@ -450,8 +444,8 @@ class App extends BaseApp {
 		}
 		if (reset.isClicked())
 			dress(["Casual", "Casual", "Casual", "Casual"], null);
-		if (services.canQuit() && ui.isBackPressed())
-			services.quit();
+		if (Services.canQuit() && ui.isBackPressed())
+			Services.quit();
 		// Which tile shows what she wears in the open slot.
 		var worn = outfit.getChoice(slot);
 		for (i in 0...offered.length)
@@ -487,7 +481,7 @@ class App extends BaseApp {
 			if (error != null)
 				status = error;
 		}
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 
 		camera.setViewport(width, height);
 		camera.setPerspective(35, .05, 100);
@@ -502,7 +496,7 @@ class App extends BaseApp {
 			camera.setView(side, focus + distance * .12, distance, side, focus, 0);
 		}
 		stage.drawShadows(camera);
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
@@ -511,11 +505,11 @@ class App extends BaseApp {
 			16, 0x8a92a8ff);
 		batch.end();
 		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		hud.pixels(Services.window.getPixelRatio());
 		batch.begin(hud);
-		fps.draw(batch, width / services.window.getPixelRatio() - 130, 8);
+		fps.draw(batch, width / Services.window.getPixelRatio() - 130, 8);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
@@ -523,7 +517,7 @@ class App extends BaseApp {
 		studio.destroy();
 		batch.destroy();
 		for (t in thumbs)
-			t.destroy(services.graphics);
+			t.destroy(Services.graphics);
 		wardrobe.close();
 	}
 }

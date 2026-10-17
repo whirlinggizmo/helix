@@ -31,7 +31,6 @@ class App extends BaseApp {
 	static inline var LABEL_H = 128;
 	static inline var BACKGROUND = 0x181a22ff;
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -47,15 +46,10 @@ class App extends BaseApp {
 	var globe:Node;
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX render targets");
-		services.window.requestSize(1000, 560);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX render targets");
+		Services.window.requestSize(1000, 560);
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		pixelView = Texture2D.renderTarget(gpu, PIXEL_W, PIXEL_H, false);
 		minimap = Texture2D.renderTarget(gpu, MINIMAP, MINIMAP);
@@ -89,7 +83,7 @@ class App extends BaseApp {
 		globe.setScale(1.6, 1.6, 1.6);
 		stage.add(globe);
 
-		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file.instantiate("car");
 				car.setScale(.9, .9, .9);
@@ -99,7 +93,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		// The built-in font until it has loaded.
-		new Fonts(services.assets, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
+		new Fonts(Services.assets, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
 			case Ready(loaded):
 				font = loaded;
 			case Failed(message):
@@ -116,19 +110,19 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (services.canQuit() && services.input.isFramePressed(Key.Escape))
-			services.quit();
+		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
+			Services.quit();
 		time += dt;
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		if (car != null) {
 			// Drives in a circle.
 			car.setPosition(Math.cos(time * .6) * 2.5, 0, Math.sin(time * .6) * 2.5);
 			car.setRotation(0, -time * .6, 0);
 		}
 		globe.setRotation(0, time * .8, 0);
-		var gpu = services.graphics,
-			width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var gpu = Services.graphics,
+			width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 
 		// 1. The label, first, so the views below use this frame's text.
 		gpu.beginTargetPass(label.getHandle(), 0x1e3c8cff);
@@ -153,8 +147,7 @@ class App extends BaseApp {
 		gpu.endTargetPass();
 
 		// The screen, in the design for the window's shape.
-		var shape = ScreenShape.update(services),
-			presentation = services.presentation;
+		var shape = ScreenShape.update(), presentation = Services.presentation;
 		presentation.apply(screen);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -179,7 +172,7 @@ class App extends BaseApp {
 
 	override public function cleanup():Void {
 		for (texture in [pixelView, minimap, label])
-			texture.destroy(services.graphics);
+			texture.destroy(Services.graphics);
 		stage.destroy();
 		batch.destroy();
 	}

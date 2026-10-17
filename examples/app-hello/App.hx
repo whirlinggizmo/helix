@@ -9,40 +9,34 @@ import helix.render2d.Text2D;
 /** 2D shapes, text and input: a marker follows the mouse, typing shows what was typed (Backspace takes the last character back),
 	and Escape quits where quitting means anything. The frame rate is drawn at the top. */
 class App extends BaseApp {
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
 	var typed = "";
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX hello");
-		services.window.requestSize(800, 600);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX hello");
+		Services.window.requestSize(800, 600);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Backspace) && typed.length > 0)
 			typed = typed.substr(0, typed.length - 1);
 		if (typed.length + input.getText().length < 64)
 			typed += input.getText();
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		// The drawing in the design for the window's shape, from the visible area's top-left corner.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var x = presentation.getVisibleX(),
 			y = presentation.getVisibleY(),
 			width = presentation.getVisibleWidth();
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0xf5f5f5ff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0xf5f5f5ff);
 		batch.begin(camera);
 		// filled and outlined rectangles
 		batch.rect(x + 40, y + 40, 200, 120, 0x66bfffff);
@@ -58,10 +52,10 @@ class App extends BaseApp {
 		// text
 		Text2D.draw(batch, "HeliX", x + 40, y + 360, 32, 0x505050ff);
 		var below = Text2D.drawWrapped(batch, typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);
-		if (services.canQuit())
+		if (Services.canQuit())
 			Text2D.draw(batch, "press Esc to quit", x + 40, y + 420 + below, 16, 0x828282ff);
 		fps.draw(batch, x + 40, y + 12);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 }

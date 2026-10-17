@@ -26,7 +26,6 @@ import helix.ui.Ui;
 	the example asks the widgets what happened. A progress bar fills; the status in the corner is anchored there. Escape on the main menu quits
 	where quitting means anything. */
 class App extends BaseApp {
-	var services:Services;
 	var stage = new Stage2D();
 	var batch:Batch2D;
 	var camera = new Camera2D();
@@ -56,18 +55,13 @@ class App extends BaseApp {
 	var bar:ProgressBar;
 	var corner:Label;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX ui");
-		services.window.requestSize(1000, 600);
-		batch = new Batch2D(services.graphics);
-		pointer = new Pointer(services.input);
+		Services.window.setTitle("HeliX ui");
+		Services.window.requestSize(1000, 600);
+		batch = new Batch2D(Services.graphics);
+		pointer = new Pointer(Services.input);
 		pointer.addStage2D(stage, camera);
-		ui = new Ui(stage, camera, pointer, services.input);
+		ui = new Ui(stage, camera, pointer, Services.input);
 		var frame = panelImage();
 		main = ui.panel("main");
 		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
@@ -77,7 +71,7 @@ class App extends BaseApp {
 		openSettings = ui.button("Settings");
 		openLevels = ui.button("Levels");
 		quit = ui.button("Quit");
-		quit.setEnabled(services.canQuit());
+		quit.setEnabled(Services.canQuit());
 		for (w in [title, play, openSettings, openLevels, quit])
 			main.add(w);
 		settings = ui.panel("settings");
@@ -136,7 +130,7 @@ class App extends BaseApp {
 				pixels.set(at + 2, value);
 				pixels.set(at + 3, cut ? 0 : 255);
 			}
-		return Texture2D.fromRgba(services.graphics, size, size, pixels);
+		return Texture2D.fromRgba(Services.graphics, size, size, pixels);
 	}
 
 	function show(which:String):Void {
@@ -148,12 +142,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var input = Services.input;
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -171,8 +165,8 @@ class App extends BaseApp {
 					show("settings");
 				if (openLevels.isClicked())
 					show("levels");
-				if (quit.isClicked() || ui.isBackPressed() && services.canQuit())
-					services.quit();
+				if (quit.isClicked() || ui.isBackPressed() && Services.canQuit())
+					Services.quit();
 			case "settings":
 				if (sound.isChanged())
 					status = 'Sound ${sound.isOn() ? "on" : "off"}';
@@ -194,20 +188,20 @@ class App extends BaseApp {
 		loading = (loading + dt * .2) % 1;
 		bar.setValue(loading);
 		corner.setText('focus: ${ui.getFocusedName() == "" ? "none" : ui.getFocusedName()}${ui.isCapturingKeys() ? " (keys)" : ""}');
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 
-		services.graphics.beginFrame(width, height, 0x14161cff);
+		Services.graphics.beginFrame(width, height, 0x14161cff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		Text2D.drawWrapped(batch, status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
 		Text2D.drawWrapped(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		hud.pixels(Services.window.getPixelRatio());
 		batch.setCamera(hud);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void

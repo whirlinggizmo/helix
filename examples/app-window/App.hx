@@ -9,35 +9,29 @@ import helix.render2d.Text2D;
 	window can be, M moves it to the next monitor, H hides it for two seconds (it keeps running), Esc quits where quitting means anything.
 	Where programs don't place their windows (the web, a Wayland desktop) moving and changing monitor say "not supported here". */
 class App extends BaseApp {
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var status = "press a key";
 	var hiddenFor = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX window");
-		services.window.requestSize(900, 400);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX window");
+		Services.window.requestSize(900, 400);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	function report(what:String, ok:Bool):Void
 		status = what + ": " + (ok ? "done" : "not supported here");
 
 	override public function frame(dt:Float):Void {
-		var input = services.input,
-			window = services.window,
+		var input = Services.input,
+			window = Services.window,
 			width = window.getWidth(),
 			height = window.getHeight(),
 			x = window.getX(),
 			y = window.getY();
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Left))
 			report("move", window.requestPosition(x - 50, y));
 		if (input.isFramePressed(Key.Right))
@@ -66,13 +60,13 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.M))
 			report("monitor", window.requestMonitorIndex((window.getMonitorIndex() + 1) % window.getMonitorCount()));
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		services.graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x181c26ff);
+		Services.graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
 		var row = vy + 12;
 		row += Text2D.drawWrapped(batch,
@@ -87,7 +81,7 @@ class App extends BaseApp {
 			'window: $width x $height at ($x, $y)   fullscreen: '
 			+ (window.isFullscreen() ? "yes" : "no")
 			+ "   focused: "
-			+ (services.window.isFocused() ? "yes" : "no"),
+			+ (Services.window.isFocused() ? "yes" : "no"),
 			vx
 			+ 12, row, 16, vw
 			- 24, 0xc8c8c8ff)
@@ -104,6 +98,6 @@ class App extends BaseApp {
 				+ 2;
 		}
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 }

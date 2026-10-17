@@ -15,9 +15,6 @@ import helix.input.InputRouter;
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
 class Runner {
-	/** What the app works with, filled at the host's init. */
-	public final services:Services;
-
 	var host:IHost;
 	var compose:Void->Adapters;
 	var adapters:Adapters;
@@ -36,7 +33,7 @@ class Runner {
 	public function new(host:IHost, compose:Void->Adapters) {
 		this.host = host;
 		this.compose = compose;
-		services = new Services(this);
+		Services.runner = this;
 	}
 
 	/** Runs app on the host: its init once the services are up, its frame once a display refresh, its cleanup at the end. Natively it returns
@@ -64,7 +61,7 @@ class Runner {
 
 	/** Whether the shared services are loading anything (Services.isBusy). */
 	public function isBusy():Bool
-		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || services.environments.isBusy());
+		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || Services.environments.isBusy());
 
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
@@ -73,26 +70,27 @@ class Runner {
 
 	function init():Void {
 		adapters = compose();
-		var a = adapters, s = services;
+		var a = adapters;
 		var fetch = new Fetch(a.http), storage = new Storage(a.storage);
 		decoding = new ImageDecoding(a.images);
 		audioDecoding = new AudioDecoding(a.audioDecoder);
 		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
 		resources.setManifest(a.manifest);
-		s.graphics = a.graphics;
+		Services.graphics = a.graphics;
 		input = new InputRouter();
 		a.input.start(input);
-		s.input = input.getInput();
-		s.audio = a.audio;
-		s.window = host.getWindow();
-		s.fetch = fetch;
-		s.storage = storage;
-		s.assets = resources;
-		s.audioResources = new AudioResources(resources, a.audio, audioDecoding);
-		s.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
-		s.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
-		s.harness = a.harness;
-		s.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
+		Services.input = input.getInput();
+		Services.presentation = new Presentation();
+		Services.audio = a.audio;
+		Services.window = host.getWindow();
+		Services.fetch = fetch;
+		Services.storage = storage;
+		Services.assets = resources;
+		Services.audioResources = new AudioResources(resources, a.audio, audioDecoding);
+		Services.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
+		Services.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
+		Services.harness = a.harness;
+		Services.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
 		app.init();
 	}
 
@@ -102,15 +100,15 @@ class Runner {
 		frameInterval = Math.isNaN(previousFrame) ? 0 : (now - previousFrame) * 1000;
 		previousFrame = now;
 		resources.poll();
-		services.audioResources.poll();
+		Services.audioResources.poll();
 		decoding.poll();
 		audioDecoding.poll();
-		services.environments.poll();
+		Services.environments.poll();
 		input.poll(adapters.input);
-		var window = services.window;
-		services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
+		var window = Services.window;
+		Services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
 		app.frame(clock.getDelta());
-		services.screenshots.frameEnded();
+		Services.screenshots.frameEnded();
 		input.endFrame();
 		frameCpu = (host.getTime() - now) * 1000;
 	}
@@ -119,10 +117,10 @@ class Runner {
 		if (closed || adapters == null)
 			return;
 		closed = true;
-		services.screenshots.shutdown();
-		services.audioResources.shutdown();
-		services.textures.shutdown();
-		services.environments.shutdown();
+		Services.screenshots.shutdown();
+		Services.audioResources.shutdown();
+		Services.textures.shutdown();
+		Services.environments.shutdown();
 		decoding.shutdown();
 		audioDecoding.shutdown();
 		resources.shutdown();
@@ -131,5 +129,20 @@ class Runner {
 		adapters.input.shutdown();
 		helix.graphics.Pipelines.release(adapters.graphics);
 		adapters.graphics.shutdown();
+		// Nothing to work with after the program's end: a read then fails plainly, on null.
+		Services.graphics = null;
+		Services.input = null;
+		Services.audio = null;
+		Services.window = null;
+		Services.presentation = null;
+		Services.assets = null;
+		Services.fetch = null;
+		Services.storage = null;
+		Services.audioResources = null;
+		Services.textures = null;
+		Services.environments = null;
+		Services.harness = null;
+		Services.screenshots = null;
+		Services.runner = null;
 	}
 }

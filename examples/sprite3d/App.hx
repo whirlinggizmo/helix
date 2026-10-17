@@ -22,7 +22,6 @@ import helix.render3d.Stage3D;
 	Sprites are unlit and instanced: alike ones (a texture, an alpha mode) are one draw, and the readout counts them.
 	O stops the camera; Escape quits where quitting means anything. */
 class App extends BaseApp {
-	var services:Services;
 	var stage:Stage3D;
 	var batch3D:Batch3D;
 	var batch:Batch2D;
@@ -38,11 +37,6 @@ class App extends BaseApp {
 	var tileSprites:Array<Node> = [];
 	var flames:Array<Node> = [];
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	// A sprite of the tile sheet's cell x, y, width x height texels, placed at x, z on the ground.
 	function tile(cell:Array<Int>, x:Float, z:Float, width:Float, height:Float):Node {
 		var sprite = Node.sprite(null);
@@ -55,11 +49,11 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX sprite3d");
-		services.window.requestSize(1000, 600);
+		Services.window.setTitle("HeliX sprite3d");
+		Services.window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var gpu = services.graphics;
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -98,7 +92,7 @@ class App extends BaseApp {
 		coin.setFacing(Ground);
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				logo.setTexture(texture);
 				logo.setTint(0x66bfffff);
@@ -106,7 +100,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		services.textures.load("textures/tiles.png", false, result -> switch result {
+		Services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
 				for (sprite in tileSprites)
 					sprite.setTexture(texture);
@@ -115,7 +109,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		// Masked flames, cut out where their soft edges fade: a row of them behind the pedestal.
-		services.textures.load("textures/flame.png", true, result -> switch result {
+		Services.textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				for (i in 0...5) {
 					var flame = Node.sprite(texture, 0xffa040ff);
@@ -142,30 +136,30 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		time += dt;
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch3D.begin(camera);
 		batch3D.grid(16, 1, 0x3c3f48ff);
 		batch3D.end();
@@ -179,7 +173,7 @@ class App extends BaseApp {
 			vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

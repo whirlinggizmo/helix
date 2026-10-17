@@ -7,7 +7,6 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 
 class App extends BaseApp {
-	var services:Services;
 	var game:Game;
 	var controls = new Controls();
 	var layout = new Layout();
@@ -19,24 +18,19 @@ class App extends BaseApp {
 	var ticks = 0;
 	var stopped = false;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		var seed = Std.parseInt(services.getOption("seed", "12345"));
+		var seed = Std.parseInt(Services.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
-		services.window.setTitle("HeliX Blocks");
-		batch = new Batch2D(services.graphics);
-		ticker = new Ticker(services.input);
+		Services.window.setTitle("HeliX Blocks");
+		batch = new Batch2D(Services.graphics);
+		ticker = new Ticker(Services.input);
 		ticker.setMaxSteps(6);
-		renderer = new Renderer(services.graphics, batch);
-		var script = services.getOption("autopilot", "");
+		renderer = new Renderer(Services.graphics, batch);
+		var script = Services.getOption("autopilot", "");
 		if (script != "")
-			services.assets.load(script, result -> switch result {
+			Services.assets.load(script, result -> switch result {
 				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> services.screenshots.take(name));
+					pilot = new Autopilot(bytes.toString(), name -> Services.screenshots.take(name));
 					game = new Game(pilot.getSeed());
 				case Failed(message): throw 'Autopilot load failed: ' + message;
 				case Cancelled:
@@ -52,20 +46,20 @@ class App extends BaseApp {
 			draws: batch.getDrawCallCount(),
 			portrait: layout.portrait,
 			zoom: camera.getZoom(),
-			width: services.window.getFramebufferWidth(),
-			height: services.window.getFramebufferHeight()
+			width: Services.window.getFramebufferWidth(),
+			height: Services.window.getFramebufferHeight()
 		};
 
 	function step():Void {
-		var source:IInput = services.input;
+		var source:IInput = Services.input;
 		if (pilot != null) {
 			source = pilot.advance(game.probe);
 			if (pilot.isDone()) {
-				services.harness.publish(inspect());
+				Services.harness.publish(inspect());
 				pilot = null;
-				stopped = services.getOption("autoclose", "0") == "1";
+				stopped = Services.getOption("autoclose", "0") == "1";
 				if (stopped)
-					services.quit();
+					Services.quit();
 				return;
 			}
 		}
@@ -75,17 +69,17 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (stopped || services.window.getFramebufferWidth() <= 0 || services.window.getFramebufferHeight() <= 0)
+		if (stopped || Services.window.getFramebufferWidth() <= 0 || Services.window.getFramebufferHeight() <= 0)
 			return;
-		layout.update(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		layout.update(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight());
+		camera.setViewport(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight());
 		camera.fit(0, 0, layout.worldWidth, layout.worldHeight);
-		if (!services.window.isFocused() && game.state == "playing")
+		if (!Services.window.isFocused() && game.state == "playing")
 			game.state = "paused";
-		ticker.advance(services.getFrameElapsed(), () -> if (!stopped) step());
+		ticker.advance(Services.getFrameElapsed(), () -> if (!stopped) step());
 		// The well's camera fits the layout; the presentation only sizes its text.
-		ScreenShape.update(services);
-		renderer.render(game, layout, camera, services.presentation, ticks);
+		ScreenShape.update();
+		renderer.render(game, layout, camera, Services.presentation, ticks);
 	}
 
 	override public function cleanup():Void {

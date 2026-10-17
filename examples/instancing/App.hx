@@ -24,7 +24,6 @@ class App extends BaseApp {
 	static inline var CARS = 6;
 	static inline var GLASS = 5;
 
-	var services:Services;
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
@@ -35,11 +34,6 @@ class App extends BaseApp {
 	var cars:Array<Node> = [];
 	var ownMaterials = false;
 	var time = 0.;
-
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
 
 	// A colour around the hue circle for cube i.
 	static function tint(i:Int):Int {
@@ -63,9 +57,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX instancing");
-		services.window.requestSize(1000, 600);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX instancing");
+		Services.window.requestSize(1000, 600);
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xa0b4dcff, .35);
@@ -99,7 +93,7 @@ class App extends BaseApp {
 			stage.add(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
-		new Models(services.assets, services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				for (i in 0...CARS) {
 					var car = file.instantiate('car $i');
@@ -115,15 +109,15 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
 		time += dt;
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(time * .15) * 22, 12, Math.cos(time * .15) * 22, 0, 1, 0);
 		for (i in 0...cubes.length) {
@@ -136,14 +130,14 @@ class App extends BaseApp {
 		for (i in 0...cars.length)
 			cars[i].setRotation(0, Math.PI + Math.sin(time + i * .35) * .6, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
@@ -153,7 +147,7 @@ class App extends BaseApp {
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

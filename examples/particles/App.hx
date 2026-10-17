@@ -26,7 +26,6 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var ORBIT = 14;
 
-	var services:Services;
 	var stage:Stage3D;
 	var flat = new Stage2D();
 	var grid:Batch3D;
@@ -46,11 +45,6 @@ class App extends BaseApp {
 	var angle = 0.;
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node {
 		var node = Node.emitter(emitter);
 		node.setPosition(x, y, z);
@@ -59,9 +53,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		services.window.setTitle("HeliX particles");
-		services.window.requestSize(1000, 600);
-		var gpu = services.graphics;
+		Services.window.setTitle("HeliX particles");
+		Services.window.requestSize(1000, 600);
+		var gpu = Services.graphics;
 		batch = new Batch2D(gpu);
 		grid = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -149,17 +143,17 @@ class App extends BaseApp {
 		confettiNode = Node2D.emitter(confetti);
 		flat.add(confettiNode);
 
-		services.textures.load("textures/particle.png", true, result -> switch result {
+		Services.textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
 				for (e in [fountain, sparks, smoke, confetti])
 					e.setTexture(texture);
-				var presentation = services.presentation;
+				var presentation = Services.presentation;
 				burst(presentation.getVisibleX() + presentation.getVisibleWidth() / 2, presentation.getVisibleY() + presentation.getVisibleHeight() / 3);
 			case Failed(message):
 				trace(message);
 			case Cancelled:
 		});
-		services.textures.load("textures/flame.png", true, result -> switch result {
+		Services.textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				flame.setTexture(texture);
 			case Failed(message):
@@ -176,9 +170,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.Space)) {
 			paused = !paused;
 			for (e in [fountain, sparks, smoke, flame])
@@ -187,8 +181,8 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		if (input.isPointerFramePressed())
 			burst(presentation.toUnitsX(input.getPointerX()), presentation.toUnitsY(input.getPointerY()));
 		time += dt;
@@ -198,9 +192,9 @@ class App extends BaseApp {
 		flat.setTime(time);
 		// The sparks' source circles the fountain; the sparks stay where they were born.
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
 		presentation.apply(hud);
@@ -208,7 +202,7 @@ class App extends BaseApp {
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x0e1018ff);
+		Services.graphics.beginFrame(width, height, 0x0e1018ff);
 		grid.begin(camera);
 		grid.grid(24, 1, 0x50505aff);
 		grid.end();
@@ -221,7 +215,7 @@ class App extends BaseApp {
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

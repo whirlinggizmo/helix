@@ -15,7 +15,6 @@ class App extends BaseApp {
 	static inline var MONO = "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf";
 	static inline var KOMIKA = "fonts/Komika/KOMIKAH_.ttf";
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -25,16 +24,11 @@ class App extends BaseApp {
 	var failed = false;
 	var useKomika = false;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX font");
-		services.window.requestSize(900, 500);
-		batch = new Batch2D(services.graphics);
-		fonts = new Fonts(services.assets, services.graphics);
+		Services.window.setTitle("HeliX font");
+		Services.window.requestSize(900, 500);
+		batch = new Batch2D(Services.graphics);
+		fonts = new Fonts(Services.assets, Services.graphics);
 		fonts.load(MONO, result -> switch result {
 			case Ready(font):
 				mono = font;
@@ -54,23 +48,23 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		if (input.isFramePressed(Key.D) && komika != null)
 			useKomika = !useKomika;
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		// The specimen in the design for the window's shape, its lines wrapped to what's visible of it; upright, the kerned line goes under the
 		// title instead of beside the specimen.
-		var shape = ScreenShape.update(services);
-		var presentation = services.presentation;
+		var shape = ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 		var x = vx + 40, wrap = vw - 80, y = vy + (shape == "portrait" ? 220 : 200);
 
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0xf8f8faff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0xf8f8faff);
 		batch.begin(camera);
 		// A centered title, measured.
 		if (komika != null)
@@ -88,7 +82,7 @@ class App extends BaseApp {
 			useKomika ? komika : null);
 		fps.draw(batch, vx + 12, vy + 12);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

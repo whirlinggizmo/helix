@@ -20,7 +20,6 @@ import helix.render3d.Stage3D;
 class App extends BaseApp {
 	static inline var FIGURES = 5;
 
-	var services:Services;
 	var stage:Stage3D;
 	var grid:Batch3D;
 	var batch:Batch2D;
@@ -33,15 +32,10 @@ class App extends BaseApp {
 	var spot:Node;
 	var time = 0.;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX lights");
-		services.window.requestSize(1000, 600);
-		stage = new Stage3D(services.graphics);
+		Services.window.setTitle("HeliX lights");
+		Services.window.requestSize(1000, 600);
+		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
 		// Framed for 16:9: all the row across on a phone held upright too.
@@ -82,23 +76,23 @@ class App extends BaseApp {
 		spot.setPosition(0, 6, 2);
 		stage.add(spot);
 
-		grid = new Batch3D(services.graphics);
-		batch = new Batch2D(services.graphics);
+		grid = new Batch3D(Services.graphics);
+		batch = new Batch2D(Services.graphics);
 	}
 
 	static function onOff(node:Node):String
 		return node.isVisible() ? "on " : "off";
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
+		var input = Services.input;
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
 			lamp.setVisible(!lamp.isVisible());
 		if (input.isFramePressed(Key.Digit3))
 			spot.setVisible(!spot.isVisible());
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
 		time += dt;
 		// The point light orbits through the row; the spot sweeps left and right.
 		var lx = Math.sin(time * .6) * 5, lz = Math.cos(time * .6) * 2;
@@ -106,19 +100,19 @@ class App extends BaseApp {
 		marker.setPosition(lx, 1.2, lz);
 		marker.setVisible(lamp.isVisible());
 		spot.lookAt(Math.sin(time * .8) * .7, 5, 1.7);
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		services.graphics.beginFrame(width, height, 0x0c0d12ff);
+		Services.graphics.beginFrame(width, height, 0x0c0d12ff);
 		grid.begin(camera);
 		grid.grid(20, 1, 0x282a32ff);
 		grid.end();
@@ -131,7 +125,7 @@ class App extends BaseApp {
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

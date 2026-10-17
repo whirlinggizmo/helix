@@ -40,7 +40,7 @@ As built today; what is still to change is under **Target shape** below.
 | Contract | Adapters | Platform part (theirs) |
 | --- | --- | --- |
 | `IGraphics` | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1), `graphics/sdl3gpu` + C (native, SDL_GPU on Vulkan, Direct3D 12 or Metal) | Textures (2D, cube, data, render targets, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back. |
-| `IHost` | `host/dom` (browser), `host/sokol` + C (native) | The loop, the clock, the window, quitting, run options. The `Runner` (engine) is what it pumps; the app gets `Services` (engine). |
+| `IHost` | `host/dom` (browser), `host/sokol` + C (native) | The loop, the clock, the window, quitting, run options. The `Runner` (engine) is what it pumps; the app reads `Services` (engine), filled by the runner. |
 | `IWindow` | `host/dom/DomWindow`, `host/sokol/SokolWindow` | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them. |
 | `ITestHarness` | `testharness/dom` (browser), `testharness/stdio` (native) | Hands a check the program's result. |
 | `IInputSource` | `inputsource/dom` (browser), `inputsource/sokol` + `inputsource/evdev` C (native) | Keyboard, text, mouse, wheel, touch and focus events as they arrive, each connected gamepad's state at poll, and the platform's key codes as a table. The shared `InputRouter` owns edges, the pointer, focus policy and pad slots; the app reads its `InputState` as `IInput`. |

@@ -19,7 +19,6 @@ class App extends BaseApp {
 	static inline var RIGHT = WIDTH - 80;
 	static inline var SPEED = 240.;
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -30,16 +29,11 @@ class App extends BaseApp {
 	var tickPresses = 0;
 	var framePresses = 0;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX tick");
-		services.window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D(services.graphics);
-		ticker = new Ticker(services.input, 10);
+		Services.window.setTitle("HeliX tick");
+		Services.window.requestSize(WIDTH, HEIGHT);
+		batch = new Batch2D(Services.graphics);
+		ticker = new Ticker(Services.input, 10);
 	}
 
 	function tick():Void {
@@ -50,32 +44,32 @@ class App extends BaseApp {
 			previousX = x;
 		} // not smoothed across the wrap
 		ticks++;
-		if (services.input.isPressed(Key.Enter))
+		if (Services.input.isPressed(Key.Enter))
 			tickPresses++;
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
+		var input = Services.input;
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;
 		if (input.isFramePressed(Key.Space))
 			ticker.setTimeScale(ticker.getTimeScale() > 0 ? 0 : 1);
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
-		ticker.advance(services.getFrameElapsed(), tick);
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
+		ticker.advance(Services.getFrameElapsed(), tick);
 		var t = ticker.getFraction();
-		fps.update(dt, services.getFrameCpu());
+		fps.update(dt, Services.getFrameCpu());
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
 		// (LEFT to RIGHT) drawn across the visible width.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth(),
 			vh = presentation.getVisibleHeight();
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x181a22ff);
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x181a22ff);
 		batch.begin(camera);
 		var y = vy + 20;
 		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
@@ -94,7 +88,7 @@ class App extends BaseApp {
 		batch.rect(vx + LEFT + (previousX + (x - previousX) * t - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	static function fixed(value:Float, places:Int):String {

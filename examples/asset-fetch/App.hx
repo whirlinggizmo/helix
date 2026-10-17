@@ -15,7 +15,6 @@ import helix.render2d.Texture2D;
 class App extends BaseApp {
 	static inline var TEXTURE = "sprites/logo/wg-logo-white-alpha.png";
 
-	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
@@ -25,16 +24,11 @@ class App extends BaseApp {
 	var asking = false;
 	var waiting = false;
 
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
-
 	override public function init():Void {
-		services.window.setTitle("HeliX asset fetch");
-		services.window.requestSize(800, 520);
-		batch = new Batch2D(services.graphics);
-		var assets = services.assets, url = assets.getHost();
+		Services.window.setTitle("HeliX asset fetch");
+		Services.window.requestSize(800, 520);
+		batch = new Batch2D(Services.graphics);
+		var assets = Services.assets, url = assets.getHost();
 		if (url == null) {
 			source = "the packaged files";
 			fetch();
@@ -61,19 +55,19 @@ class App extends BaseApp {
 	/** Loads the logo again, watching whether it's downloaded or read from the cache. */
 	function fetch():Void {
 		if (logo != null)
-			services.textures.release(logo);
+			Services.textures.release(logo);
 		logo = null;
 		waiting = true;
 		state = 'fetching $TEXTURE...';
 		var downloaded = false;
-		services.assets.ensure(TEXTURE, result -> switch result {
+		Services.assets.ensure(TEXTURE, result -> switch result {
 			case Loaded(_):
 				// Now cached: the texture reads it from there.
-				services.textures.load(TEXTURE, true, loaded -> switch loaded {
+				Services.textures.load(TEXTURE, true, loaded -> switch loaded {
 					case Ready(texture):
 						logo = texture;
 						waiting = false;
-						state = services.assets.getHost() == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
+						state = Services.assets.getHost() == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
 					case Failed(message):
 						waiting = false;
 						state = message;
@@ -87,18 +81,18 @@ class App extends BaseApp {
 	}
 
 	function clearCache():Void
-		services.assets.clearCache(result -> state = switch result {
+		Services.assets.clearCache(result -> state = switch result {
 			case Written: "cache cleared: the next fetch downloads";
 			case Failed(message): "cache not cleared: " + message;
 			case Cancelled: state;
 		});
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
+		var input = Services.input;
 		// The design for the window's shape: the text wrapped to what's visible of it, the buttons under it (laid out before the pointer is
 		// tested against them), the logo centered below.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -115,10 +109,10 @@ class App extends BaseApp {
 			fetch();
 		if (input.isFramePressed(Key.C) || clicked && inside(x, y, vx + 204, buttonY))
 			clearCache();
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
-		fps.update(dt, services.getFrameCpu());
-		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x1c1e26ff);
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
+		fps.update(dt, Services.getFrameCpu());
+		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x1c1e26ff);
 		batch.begin(camera);
 		Text2D.drawWrapped(batch, "HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
 		Text2D.drawWrapped(batch, from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);
@@ -129,7 +123,7 @@ class App extends BaseApp {
 			batch.sprite(logo, vx + vw / 2, buttonY + BUTTON_HEIGHT + 170, 220, 220);
 		fps.draw(batch, vx + 12, vy + 8);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	static inline var BUTTON_WIDTH = 180;

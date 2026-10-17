@@ -12,14 +12,13 @@ import helix.adapters.inputsource.dom.DomInputSourceAdapter;
 import helix.adapters.store.indexeddb.IndexedDbStoreAdapter;
 import helix.app.IApp;
 import helix.host.Runner;
-import helix.host.Services;
 
 /** The browser on WebGL2: the page's host and canvas, Web Audio, fetch, IndexedDB and the page's image decoder. */
 class BrowserWebGL2Profile {
-	/** Runs the app makeApp builds over its services, on the page's canvas, for identity: assets fetched from assetBase and cached in IndexedDB
+	/** Runs the app makeApp builds once its Services are filled, on the page's canvas, for identity: assets fetched from assetBase and cached in IndexedDB
 		as "<company>/<product>", following the manifest tree from assetManifest under it when given ("manifest.json"; tools/gen_manifest.py), the canvas made as options ask (the defaults when not given). The tick option keeps the drawing buffer between
 		frames, for checks that read it. */
-	public static function run(identity:helix.host.Identity, assetBase:String, assetManifest:Null<String>, makeApp:Services->IApp,
+	public static function run(identity:helix.host.Identity, assetBase:String, assetManifest:Null<String>, makeApp:Void->IApp,
 			?options:helix.host.WindowOptions):Void {
 		if (options == null)
 			options = new helix.host.WindowOptions();
@@ -44,6 +43,6 @@ class BrowserWebGL2Profile {
 			};
 		});
 		#if hotreload new helix.adapters.host.dom.AssetWatcher(assetBase, runner.assetChanged); #end
-		runner.run(makeApp(runner.services));
+		runner.run(makeApp());
 	}
 }

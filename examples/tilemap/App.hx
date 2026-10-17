@@ -31,7 +31,6 @@ class App extends BaseApp {
 	static var COIN = [42, 22, 16, 16];
 	static var ROCK = [62, 22, 16, 16];
 
-	var services:Services;
 	var stage = new Stage2D();
 	var batch:Batch2D;
 	var camera = new Camera2D();
@@ -47,11 +46,6 @@ class App extends BaseApp {
 	var seen = 12.;
 	var lastX = -1.;
 	var lastY = -1.;
-
-	public function new(services:Services) {
-		super();
-		this.services = services;
-	}
 
 	// A sprite of one cell, placed at x, y in world units by its pivot, size width x height.
 	function add(cell:Array<Int>, x:Float, y:Float, width:Float, height:Float, pivotX:Float, pivotY:Float):Node2D {
@@ -70,9 +64,9 @@ class App extends BaseApp {
 		return y >= WORLD_H - 2 ? WATER : y >= WORLD_H - 3 ? SAND : x == 8 || y == 6 ? STONE : GRASS;
 
 	override public function init():Void {
-		services.window.setTitle("HeliX tilemap");
-		services.window.requestSize(960, 600);
-		batch = new Batch2D(services.graphics);
+		Services.window.setTitle("HeliX tilemap");
+		Services.window.requestSize(960, 600);
+		batch = new Batch2D(Services.graphics);
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
 		for (y in 0...WORLD_H)
 			for (x in 0...WORLD_W)
@@ -85,7 +79,7 @@ class App extends BaseApp {
 			add(ROCK, 4.5 + i * 3.5, 12 - (i % 2) * 2, 1, 1, .5, 1);
 		for (i in 0...8)
 			coins.push(add(COIN, 3.5 + i * 2.5, 9 - i % 3, .8, .8, .5, 1));
-		services.textures.load("textures/tiles.png", false, result -> switch result {
+		Services.textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(loaded):
 				// Pixel art: crisp texels when zoomed in.
 				loaded.setSampling(Sampling.NEAREST);
@@ -111,12 +105,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = services.input;
-		if (services.canQuit() && input.isFramePressed(Key.Escape))
-			services.quit();
-		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
+		var input = Services.input;
+		if (Services.canQuit() && input.isFramePressed(Key.Escape))
+			Services.quit();
+		fps.update(dt, Services.getFrameCpu());
+		var width = Services.window.getFramebufferWidth(),
+			height = Services.window.getFramebufferHeight();
 		var unitsPerPixel = seen / height;
 
 		// Scroll: drag, or the arrow keys.
@@ -144,8 +138,8 @@ class App extends BaseApp {
 		camera.setZoom(height / seen);
 		camera.setPosition(centerX, centerY);
 		// The HUD in the design for the window's shape, along the top of what's visible of it; the world keeps its own camera.
-		ScreenShape.update(services);
-		var presentation = services.presentation;
+		ScreenShape.update();
+		var presentation = Services.presentation;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -166,7 +160,7 @@ class App extends BaseApp {
 		for (coin in coins)
 			coin.setColor(coin == hovered ? 0xffe68cff : 0xffffffff);
 
-		services.graphics.beginFrame(width, height, 0x181c26ff);
+		Services.graphics.beginFrame(width, height, 0x181c26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.setCamera(hud);
@@ -183,7 +177,7 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, help, vx + 20, y, 15, vw - 40, 0x8c929eff);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
-		services.graphics.endFrame();
+		Services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void
