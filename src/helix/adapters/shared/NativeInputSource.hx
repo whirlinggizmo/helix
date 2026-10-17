@@ -20,6 +20,9 @@ abstract class NativeInputSource implements IInputSource {
 	/** Moves the source on before the queue is read: its gamepads, and whatever it watches. */
 	abstract function pollSource():Void;
 
+	/** Nothing unless the source overrides it: a sokol window sends a typed character whenever a key makes one. */
+	public function setTextEntry(on:Bool):Void {}
+
 	public function poll():Void {
 		pollSource();
 		while (InputQueueBridge.next() != 0) {

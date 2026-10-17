@@ -40,7 +40,10 @@ class InputTests {
 			&& Key.named("menu") == Key.Menu
 			&& Key.named("keypadequal") == Key.KeypadEqual,
 			"Key names");
-		// Text, wheel and touches last one frame; a lifted touch stays until then.
+		// Text comes only while text entry is on (off at start); text, wheel and touches last one frame; a lifted touch stays until then.
+		input.textEvent("zz");
+		check(input.getText() == "" && !input.isTextEntry(), "Text is dropped while text entry is off");
+		input.setTextEntry(true);
 		input.textEvent("ab");
 		input.wheelEvent(0, 1);
 		input.touchEvent(7, 10, 20, true);
@@ -144,6 +147,9 @@ class InputTests {
 		var source = new Source(),
 			router = new InputRouter(),
 			input = router.getInput();
+		input.setTextEntry(true);
+		router.poll(source);
+		check(source.textEntry, "The source is told when text entry turns on");
 		source.start(router);
 		source.report = e -> {
 			e.mouseButton(MouseButton.Right, true, 5, 5);
@@ -214,6 +220,11 @@ class InputTests {
 
 /** A source whose poll reports what a test sets. */
 class Source implements IInputSource {
+	public var textEntry = false;
+
+	public function setTextEntry(on:Bool):Void
+		textEntry = on;
+
 	public var report:IInputEvents->Void = _ -> {};
 
 	var events:IInputEvents;

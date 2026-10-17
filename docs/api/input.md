@@ -73,6 +73,8 @@ function isMouseFrameReleased(button:MouseButton):Bool
 function getWheelX():Float
 function getWheelY():Float
 function getText():String
+function isTextEntry():Bool
+function setTextEntry(on:Bool):Void
 function getTouches():Array<Touch>
 function isTouchGesture():Bool
 function getTouchGestureCenterX():Float
@@ -110,7 +112,9 @@ function consume():Void
 - `isMouseFrameReleased`: The button came up this frame: a frame edge.
 - `getWheelX`: Wheel notches this frame; up and right are positive.
 - `getWheelY`: Vertical wheel notches this frame; up is positive.
-- `getText`: Characters typed this frame, after the keyboard layout.
+- `getText`: Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry).
+- `isTextEntry`: Whether typed text is being taken (setTextEntry); off at start.
+- `setTextEntry`: Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while it types (a name entered, a chat line) and off after.
 - `getTouches`: Fingers down, and those lifted this frame.
 - `isTouchGesture`: Whether two fingers are down: the two down longest make the gesture.
 - `getTouchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
@@ -165,11 +169,13 @@ A platform's input: its keyboard, mouse, touch, focus and gamepad events reporte
 ```haxe
 function start(events:IInputEvents):Void
 function poll():Void
+function setTextEntry(on:Bool):Void
 function shutdown():Void
 ```
 
 - `start`: Reports to events from now on, on the host thread: as the platform's events arrive, or at poll. Called once, before the first poll.
 - `poll`: Before the app's frame: reports what arrived since the last poll, then every connected gamepad's state, in the platform's order.
+- `setTextEntry`: Asks the platform for typed text while on (SDL3's text input; a soft keyboard where the platform has one), and no longer when off. The router calls it before a poll, as the app's text entry (IInput.setTextEntry) changes; off until then.
 - `shutdown`: Releases the platform's input, after the app's cleanup.
 
 ## InputRouter
@@ -196,7 +202,7 @@ function pad(name:String, buttons:Array<Bool>, axes:Array<Float>):Void
 
 - `new`: Focused, with nothing held.
 - `getInput`: The input the app reads.
-- `poll`: Before the app's frame: has source report what arrived, then empties the pad slots no connected pad reported into.
+- `poll`: Before the app's frame: tells source when the app's text entry changed, has it report what arrived, then empties the pad slots no connected pad reported into.
 - `endFrame`: After the app's frame: the frame's edges, text, wheel and lifted touches end.
 
 ## InputState
@@ -222,6 +228,8 @@ function isPointerFrameReleased():Bool
 function getWheelX():Float
 function getWheelY():Float
 function getText():String
+function isTextEntry():Bool
+function setTextEntry(on:Bool):Void
 function getTouches():Array<Touch>
 function getPadCount():Int
 function getPad(index:Int):Null<Gamepad>
@@ -261,7 +269,7 @@ function endFrame():Void
 - `axisEvent`: Pad 0's axis, connecting it: for replay and tests.
 - `mouseEvent`: A mouse button down (true) or up (false); only a change of state counts an edge.
 - `pointerEvent`: The primary pointer at x, y in framebuffer pixels (-1, -1 off the window), down or up; only a change of down counts an edge.
-- `textEvent`: Typed characters, appended to this frame's text.
+- `textEvent`: Typed characters, appended to this frame's text while text entry is on; dropped while it's off.
 - `wheelEvent`: Wheel notches, added to this frame's; up and right are positive.
 - `touchEvent`: A finger down, moved or lifted. A lifted one stays in touches, not down, until the frame ends.
 - `clear`: Lets go of everything held, as when focus is lost: the releases are edges; presses not yet consumed, typed text and the wheel are dropped.

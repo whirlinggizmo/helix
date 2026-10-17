@@ -19,4 +19,5 @@ extern class InputBridge {
 	@:native("helix_input_setup") static function setup():Void;
 	@:native("helix_input_shutdown") static function shutdown():Void;
 	@:native("helix_input_poll") static function poll():Void;
+	@:native("helix_input_set_text") static function setText(on:Int):Void;
 }

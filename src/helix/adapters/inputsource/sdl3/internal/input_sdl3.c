@@ -37,7 +37,7 @@ static const short keys[SDL_SCANCODE_COUNT]={
 };
 
 static helix_lock_t lock=HELIX_LOCK_INIT;
-static int pads_changed=1,text_started;
+static int pads_changed=1,text_wanted,text_started;
 
 /* The event's window's framebuffer pixels per window unit (1 unless the window has a high pixel density). */
 static float density(SDL_WindowID id){
@@ -112,11 +112,17 @@ void helix_input_shutdown(void){
  helix_gamepad_shutdown();
  SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
-/* Text arrives once the window asks for it (SDL3 doesn't send it by default), asked once the window exists. */
+/* Typed text comes only while the window's text input is started (SDL3's design: on a phone that shows the keyboard, and Windows with a
+   pad plugged in pops its touch keyboard for a started one), so it's started while the app takes text and stopped when it doesn't,
+   once the window exists. */
+void helix_input_set_text(int on){text_wanted=on!=0;}
 void helix_input_poll(void){
- if(!text_started){
+ if(text_wanted!=text_started){
   int n=0;SDL_Window **windows=SDL_GetWindows(&n);
-  if(windows&&n>0)text_started=SDL_StartTextInput(windows[0]);
+  if(windows&&n>0){
+   if(text_wanted)text_started=SDL_StartTextInput(windows[0]);
+   else{SDL_StopTextInput(windows[0]);text_started=0;}
+  }
   SDL_free(windows);
  }
  helix_gamepad_poll();

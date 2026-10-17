@@ -62,8 +62,16 @@ interface IInput {
 	/** Vertical wheel notches this frame; up is positive. */
 	public function getWheelY():Float;
 
-	/** Characters typed this frame, after the keyboard layout. */
+	/** Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry). */
 	public function getText():String;
+
+	/** Whether typed text is being taken (setTextEntry); off at start. */
+	public function isTextEntry():Bool;
+
+	/** Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are
+		only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while
+		it types (a name entered, a chat line) and off after. */
+	public function setTextEntry(on:Bool):Void;
 
 	/** Fingers down, and those lifted this frame. */
 	public function getTouches():Array<Touch>;

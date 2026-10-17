@@ -219,7 +219,7 @@ function isFocusable():Bool
 
 *class* in `src/helix/ui/TextField.hx`
 
-A line of text typed in: with focus, the characters typed (after the keyboard layout) are added, Backspace takes the last off and Enter submits; the caret is at its end. While it has focus the UI has the keys (Ui.isCapturingKeys), however it got focus, so a game doesn't act on letters typed. Ask getText, isChanged and isSubmitted once a frame. No input method (IME) composition yet.
+A line of text typed in: with focus, the characters typed (after the keyboard layout) are added, Backspace takes the last off and Enter submits; the caret is at its end. While it has focus the UI has the keys (Ui.isCapturingKeys) and asks for typed text (IInput.setTextEntry, so a platform's keyboard shows for it), however it got focus, so a game doesn't act on letters typed. Ask getText, isChanged and isSubmitted once a frame. No input method (IME) composition yet.
 
 ```haxe
 function getText():String

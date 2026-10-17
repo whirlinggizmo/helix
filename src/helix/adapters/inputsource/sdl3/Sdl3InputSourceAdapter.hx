@@ -13,6 +13,11 @@ class Sdl3InputSourceAdapter extends NativeInputSource implements IInputSource {
 	function pollSource():Void
 		InputBridge.poll();
 
+	/** SDL's text input, started on the window while on (it sends typed text only then, and on a platform with a soft keyboard shows it) and
+		stopped when off. */
+	override public function setTextEntry(on:Bool):Void
+		InputBridge.setText(on ? 1 : 0);
+
 	/** Releases the native input bridge. */
 	public function shutdown():Void
 		InputBridge.shutdown();

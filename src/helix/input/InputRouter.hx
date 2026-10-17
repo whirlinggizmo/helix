@@ -13,6 +13,7 @@ class InputRouter implements IInputEvents {
 	var pointerFinger = -1;
 	var gesture = false;
 	var padSlot = 0;
+	var textEntryTold = false;
 
 	/** Focused, with nothing held. */
 	public function new() {}
@@ -21,8 +22,13 @@ class InputRouter implements IInputEvents {
 	public function getInput():IInput
 		return state;
 
-	/** Before the app's frame: has source report what arrived, then empties the pad slots no connected pad reported into. */
+	/** Before the app's frame: tells source when the app's text entry changed, has it report what arrived, then empties the pad slots no
+		connected pad reported into. */
 	public function poll(source:IInputSource):Void {
+		if (state.isTextEntry() != textEntryTold) {
+			textEntryTold = state.isTextEntry();
+			source.setTextEntry(textEntryTold);
+		}
 		padSlot = 0;
 		source.poll();
 		for (i in padSlot...state.getPadCount()) {

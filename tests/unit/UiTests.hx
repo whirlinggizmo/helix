@@ -326,6 +326,7 @@ class UiTests {
 		frame(20, 10, true);
 		frame(20, 10, false);
 		check(ui.getFocused() == name && ui.isCapturingKeys(), "A click focuses the field; the UI has the keys though the pointer gave focus");
+		check(input.isTextEntry(), "Typed text is asked for while the field has focus");
 		frame("ab c");
 		check(name.getText() == "ab c" && name.isChanged(), "Typed, a space among it");
 		frame(" ", Space);
@@ -335,5 +336,7 @@ class UiTests {
 		check(name.getText() == "ab cdefg", "Backspace takes one off; typing stops at the limit: " + name.getText());
 		frame(Enter);
 		check(name.isSubmitted(), "Enter submits");
+		ui.reset();
+		check(!input.isTextEntry(), "A new screen lets typed text go");
 	}
 }

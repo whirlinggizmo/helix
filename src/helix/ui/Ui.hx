@@ -33,6 +33,7 @@ class Ui {
 	var ring:Node2D;
 	var widgets:Array<Widget> = [];
 	var focused:Null<Widget>;
+	var textEntry = false;
 	var showFocus = false;
 	var keys = false;
 	var guarded = false;
@@ -159,6 +160,7 @@ class Ui {
 	public function setFocused(widget:Null<Widget>):Void {
 		focused = widget;
 		showFocus = widget != null;
+		syncTextEntry();
 	}
 
 	/** Whether a widget has the keys: a game should leave arrows, Enter and Space be. */
@@ -174,6 +176,7 @@ class Ui {
 		focused = null;
 		showFocus = false;
 		guarded = true;
+		syncTextEntry();
 	}
 
 	/** Once a frame, after the pointer's update and before reading the widgets: moves focus, activates, and brings each widget up to date. */
@@ -271,6 +274,16 @@ class Ui {
 			ring.setVisible(true);
 		} else
 			ring.setVisible(false);
+		syncTextEntry();
+	}
+
+	// Typed text is asked for (IInput.setTextEntry) while the focused widget takes it, a text field, and let go when none does.
+	function syncTextEntry():Void {
+		var want = focused != null && focused.takesText();
+		if (want != textEntry) {
+			textEntry = want;
+			input.setTextEntry(want);
+		}
 	}
 
 	// Whether a pad's button went down this frame, on any pad.

@@ -34,6 +34,7 @@ class InputState implements IInput {
 	var pointerFramePressed = false;
 	var pointerFrameReleased = false;
 	var text = "";
+	var textEntry = false;
 	var wheelX = 0.;
 	var wheelY = 0.;
 	var touches:Array<TouchState> = [];
@@ -95,6 +96,12 @@ class InputState implements IInput {
 
 	public function getText():String
 		return text;
+
+	public function isTextEntry():Bool
+		return textEntry;
+
+	public function setTextEntry(on:Bool):Void
+		textEntry = on;
 
 	public function getTouches():Array<Touch>
 		return [
@@ -218,9 +225,10 @@ class InputState implements IInput {
 		pointerDown = value;
 	}
 
-	/** Typed characters, appended to this frame's text. */
+	/** Typed characters, appended to this frame's text while text entry is on; dropped while it's off. */
 	public function textEvent(value:String):Void
-		text += value;
+		if (textEntry)
+			text += value;
 
 	/** Wheel notches, added to this frame's; up and right are positive. */
 	public function wheelEvent(x:Float, y:Float):Void {

@@ -94,6 +94,10 @@ class DomInputSourceAdapter implements IInputSource {
 		events.mouseMove(p.x, p.y);
 	}
 
+	/** Nothing yet: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element, which waits for
+		a game typing on one. */
+	public function setTextEntry(on:Bool):Void {}
+
 	/** Reports the first pads the page sees (a page sees a pad only after a button press on it), each in the W3C standard layout. */
 	public function poll():Void {
 		var list:Dynamic = Browser.navigator.getGamepads();

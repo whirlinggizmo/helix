@@ -99,6 +99,16 @@ int main(void) {
     SDL_CloseJoystick(stick); SDL_DetachVirtualJoystick(id); SDL_PumpEvents(); helix_input_poll();
     CHECK(virtual_slot() < 0 && !helix_pad_connected(pad) && !helix_pad_button(pad, 0) && helix_pad_axis(pad, 1) == 0 && helix_pad_name(pad)[0] == 0);
 
+    /* Text input is started on the window only while text entry is on (asked before the window exists, it starts once there is one). */
+    CHECK(SDL_InitSubSystem(SDL_INIT_VIDEO));
+    helix_input_set_text(1);
+    SDL_Window *window = SDL_CreateWindow("text", 64, 64, SDL_WINDOW_HIDDEN); CHECK(window != NULL);
+    CHECK(!SDL_TextInputActive(window));
+    helix_input_poll(); CHECK(SDL_TextInputActive(window));
+    helix_input_set_text(0); helix_input_poll(); CHECK(!SDL_TextInputActive(window));
+    helix_input_set_text(1); helix_input_poll(); CHECK(SDL_TextInputActive(window));
+    SDL_DestroyWindow(window);
+
     helix_input_shutdown();
     SDL_Quit();
     printf("{\"passed\":true,\"checks\":%d,\"controller\":\"SDL virtual gamepad through SDL's identity mapping; no controller-database or physical-controller claim\"}\n", checks);

@@ -9,6 +9,10 @@ interface IInputSource {
 	/** Before the app's frame: reports what arrived since the last poll, then every connected gamepad's state, in the platform's order. */
 	public function poll():Void;
 
+	/** Asks the platform for typed text while on (SDL3's text input; a soft keyboard where the platform has one), and no longer when off.
+		The router calls it before a poll, as the app's text entry (IInput.setTextEntry) changes; off until then. */
+	public function setTextEntry(on:Bool):Void;
+
 	/** Releases the platform's input, after the app's cleanup. */
 	public function shutdown():Void;
 }
