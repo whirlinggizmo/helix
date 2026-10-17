@@ -13,12 +13,15 @@ import helix.render3d.Mesh;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node;
+import helix.render3d.Outfit;
 import helix.render3d.Stage3D;
+import helix.render3d.Wardrobe;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and an outfit from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
-	names. 1 to 8 play a clip, crossfading from the one before over a quarter second (F: cut instead); G swaps the outfit at run time; S puts
-	a sword in her right hand, parented to a joint (a socket); Space pauses. O stops the circling camera; Escape quits where quitting means
+	names (an Outfit: the dressing-room example dresses her slot by slot). 1 to 8 play a clip, crossfading from the one before over a quarter
+	second (F: cut instead); G swaps the outfit at run time; S puts a sword in her right hand, hung from the joint its file hangs it from (a
+	socket); Space pauses. O stops the circling camera; Escape quits where quitting means
 	anything. */
 class App extends BaseApp {
 	static inline var DIR = "models/modular-women/";
@@ -34,14 +37,11 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var files = new Map<String, ModelFile>();
-	var waiting = 0;
 	var character:Null<Node>;
+	var outfit:Outfit;
 	var animator:Null<Animator>;
 	var animations:Null<ModelFile>;
-	var outfit = 0;
-	var worn:Array<Node> = [];
-	var sword:Null<Node>;
+	var look = 0;
 	var status = "loading";
 	var fade = true;
 	var paused = false;
@@ -70,59 +70,31 @@ class App extends BaseApp {
 		ground.setRoughness(.9);
 		stage.add(Node.model(Mesh.plane(10, 10), ground));
 		var models = new Models(services.assets, services.textures);
-		var names = ["Animations", "Casual_Head", "Sword"];
-		for (outfit in OUTFITS)
-			names = names.concat(outfit);
-		for (name in names) {
-			waiting++;
-			models.load(DIR + name + ".glb", result -> switch result {
-				case Ready(file):
-					files[name] = file;
-					for (warning in file.getWarnings())
-						trace('$name: $warning');
-					if (--waiting == 0) assemble();
-				case Failed(message):
-					status = '$name: $message';
-				case Cancelled:
-			});
-		}
+		// Her head and outfit chosen now, worn once her skeleton and their files are in.
+		outfit = new Outfit(new Wardrobe(models.load));
+		outfit.choose("head", DIR + "Casual_Head.glb");
+		dress(0);
+		// The skeleton: the animations file's, which has no meshes.
+		models.load(DIR + "Animations.glb", result -> switch result {
+			case Ready(file):
+				animations = file;
+				character = file.instantiate("character");
+				stage.add(character);
+				animator = new Animator(character);
+				outfit.setSkeleton(character);
+				play(0);
+			case Failed(message):
+				status = 'Animations: $message';
+			case Cancelled:
+		});
 		batch = new Batch2D(services.graphics);
 	}
 
-	// Everything loaded: the skeleton (the animations file's, which has no meshes), the head and an outfit on it, the sword ready for her hand.
-	function assemble():Void {
-		animations = files["Animations"];
-		character = animations.instantiate("character");
-		stage.add(character);
-		animator = new Animator(character);
-		wear(files["Casual_Head"]);
-		dress(0);
-		var held = files["Sword"].instantiate();
-		sword = held.find("Sword");
-		sword.getParent().remove(sword);
-		play(0);
-	}
-
-	// Binds each skinned model of file's to the character's skeleton by joint name and adds it; one whose joints aren't all there is refused.
-	function wear(file:ModelFile):Array<Node> {
-		var added = [], copy = file.instantiate();
-		for (model in models(copy))
-			if (model.bindSkeleton(character)) {
-				model.getParent().remove(model);
-				character.add(model);
-				added.push(model);
-			} else
-				status = "a part whose joints the skeleton hasn't was refused";
-		return added;
-	}
-
+	// Body, legs and feet from OUTFITS[index].
 	function dress(index:Int):Void {
-		for (model in worn)
-			character.remove(model);
-		worn = [];
-		outfit = index;
-		for (part in OUTFITS[index])
-			worn = worn.concat(wear(files[part]));
+		look = index;
+		for (i in 0...3)
+			outfit.choose(["body", "legs", "feet"][i], DIR + OUTFITS[index][i] + ".glb");
 	}
 
 	function play(index:Int):Void {
@@ -133,13 +105,6 @@ class App extends BaseApp {
 			status = '${clip.getName()} moves nodes the skeleton hasn\'t';
 		else
 			status = clip.getName();
-	}
-
-	static function models(node:Node):Array<Node> {
-		var out = node.getKind() == Model && node.getMesh().isSkinned() ? [node] : [];
-		for (i in 0...node.getChildCount())
-			out = out.concat(models(node.getChild(i)));
-		return out;
 	}
 
 	override public function frame(dt:Float):Void {
@@ -159,13 +124,9 @@ class App extends BaseApp {
 				animator.setSpeed(paused ? 0 : 1);
 			}
 			if (input.isFramePressed(Key.G))
-				dress(1 - outfit);
-			if (input.isFramePressed(Key.S)) {
-				if (sword.getParent() == null)
-					character.find("Middle1.R").add(sword);
-				else
-					sword.getParent().remove(sword);
-			}
+				dress(1 - look);
+			if (input.isFramePressed(Key.S))
+				outfit.choose("hand", outfit.getChoice("hand") == null ? DIR + "Sword.glb" : null);
 			animator.update(dt);
 		}
 		if (orbit)

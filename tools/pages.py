@@ -25,13 +25,14 @@ import example
 GROUPS=[
     ('Games',['asteroids','blocks']),
     ('3D',['hello3d','meshes','materials','lights','environment','shadows','model','animation','instancing','pick','scene3d','sprite3d','text3d',
-           'particles','shaders','postprocess','render-target']),
+           'particles','shaders','postprocess','render-target','dressing-room']),
     ('2D',['app-hello','sprite2d','stage2d','tilemap','font','textures','ui']),
     ('App and services',['app-skeleton','app-tick','app-window','app-gamepad','app-touch','audio-music','asset-fetch','asset-force-fetch','quit']),
 ]
-# Milliseconds before an example's capture: long enough for its assets to load and it to settle, longer where it prepares more.
+# Milliseconds before an example's capture: long enough for its assets to load and it to settle, longer where it prepares more (environment's
+# lighting bake takes most of a minute on CI's software renderer, SwiftShader).
 WAIT=3000
-WAITS={'environment':12000,'animation':6000,'model':5000,'pick':5000,'instancing':5000}
+WAITS={'environment':45000,'dressing-room':15000,'animation':6000,'model':5000,'pick':5000,'instancing':5000}
 SOURCE='https://github.com/whirlinggizmo/helix/tree/main/examples/'
 
 def names():

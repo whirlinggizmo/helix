@@ -25,7 +25,84 @@ class UiTests {
 		layout(font);
 		widgets(font);
 		typing(font);
+		tiles(font);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// Tiles in a grid (rows of a column), with a button under them: arrows and the D-pad move focus across and down the grid on screen, Tab in
+	// the order made; a tile is clicked or activated, marked selected, and its picture arrives later.
+	static function tiles(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var grid = Box.column(), cells = [];
+		grid.setGap(8);
+		for (r in 0...2) {
+			var row = Box.row();
+			row.setGap(8);
+			for (c in 0...3) {
+				var tile = ui.tile(null, 'Part ${r * 3 + c}', 64);
+				cells.push(tile);
+				row.add(tile.getBox());
+			}
+			grid.add(row);
+		}
+		var done = ui.button("Done");
+		grid.add(done.getBox());
+		var layout = holding(sized(Grow(1), Grow(1)), [grid]);
+		grid.setAnchor(Center, Center);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			Box.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		frame();
+		frame([Down]);
+		check(ui.getFocused() == cells[0], "Down: the first tile");
+		frame([Right]);
+		frame([Down]);
+		check(ui.getFocused() == cells[4], "Right then Down: across the row, then down the column, on screen");
+		frame([Left]);
+		frame([Up]);
+		check(ui.getFocused() == cells[0], "Left then Up: back");
+		frame([Down]);
+		frame([Down]);
+		check(ui.getFocused() == done, "Down from the grid's bottom row: the button under it");
+		frame([Up]);
+		check(ui.getFocused() == cells[3] || ui.getFocused() == cells[4], "Up from the button: back into the grid's bottom row");
+		frame([Tab]);
+		check(ui.getFocused() == cells[4] || ui.getFocused() == cells[5], "Tab: the next in the order made");
+		var middle = cells[1].getBox();
+		frame(middle.getX() + middle.getWidth() / 2, middle.getY() + middle.getHeight() / 2, true);
+		frame(middle.getX() + middle.getWidth() / 2, middle.getY() + middle.getHeight() / 2, false);
+		check(cells[1].isClicked() && ui.getFocused() == cells[1], "A tile is clicked, focus with it");
+		for (t in cells)
+			t.setSelected(t == cells[1]);
+		frame();
+		check(cells[1].isSelected() && !cells[0].isSelected() && !cells[1].isClicked(), "The game marks the chosen tile selected; a click lasts a frame");
+		frame([Enter]);
+		check(cells[1].isClicked(), "Enter activates the focused tile");
+		check(cells[2].getTexture() == null, "A tile without its picture yet");
+		var picture = helix.render2d.Texture2D.fromRgba(new CountingGraphics(), 2, 2, haxe.io.Bytes.alloc(16));
+		cells[2].setTexture(picture);
+		check(cells[2].getTexture() == picture && cells[2].getCaption() == "Part 2", "shows it once it comes");
 	}
 
 	// A box laid out direction's way (a stack when not given), sized width x height.

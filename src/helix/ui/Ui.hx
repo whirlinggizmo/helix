@@ -11,8 +11,10 @@ import helix.scene.Pointer;
 /** A screen's widgets on a Stage2D, used by the pointer, keys and pads alike (libwgf's focus, wgrender-c's widgets of nodes): made here,
 	placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's:
 
-	- Focus moves in the order widgets were made: Down, Tab or a pad's Down to the next; Up, Shift+Tab or Up to the one before; Left and Right
-	  too, unless the focused widget uses them (a slider). Enter, Space or a pad's South activates it; Escape or East is back (isBackPressed).
+	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in
+	  two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before,
+	  wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list). Tab and
+	  Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (isBackPressed).
 	- The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or
 	  a pad, something always has focus (the first widget, if nothing did).
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
@@ -102,6 +104,10 @@ class Ui {
 	public function textField(value:String, hint = "", maxLength = 64, ?name:String):TextField
 		return adopt(new TextField(this, name != null ? name : "text", value, hint, maxLength));
 
+	/** A picture with a caption (a texture still to come: null), in a frame whose picture is side units square. */
+	public function tile(texture:Null<helix.render2d.Texture2D>, caption:String, side:Float, ?name:String):Tile
+		return adopt(new Tile(this, name == null ? caption : name, texture, caption, side));
+
 	/** A list of items rows tall, scrolled by the wheel or a drag, an item chosen by the pointer or Up and Down. */
 	public function list(items:Array<String>, rows:Int, ?name:String):ListView
 		return adopt(new ListView(this, name != null ? name : "list", items, rows));
@@ -185,21 +191,29 @@ class Ui {
 		var shift = input.isDown(Key.Shift),
 			sideways = focused != null && focused.takesSideways(),
 			vertical = focused != null && focused.takesUpDown();
-		var step = 0, move = 0;
+		// move: along the order (1 or -1); dx, dy: the direction on screen an arrow or the D-pad asked for (0, 0 for Tab).
+		var step = 0, move = 0, dx = 0, dy = 0;
 		if (input.isFramePressed(Key.Tab))
 			move = shift ? -1 : 1;
 		if (!vertical) {
-			if (input.isFramePressed(Key.Down) || pad(PadButton.Down))
+			if (input.isFramePressed(Key.Down) || pad(PadButton.Down)) {
 				move = 1;
-			if (input.isFramePressed(Key.Up) || pad(PadButton.Up))
+				dy = 1;
+			}
+			if (input.isFramePressed(Key.Up) || pad(PadButton.Up)) {
 				move = -1;
+				dy = -1;
+			}
 		}
 		var left = input.isFramePressed(Key.Left) || pad(PadButton.Left),
 			right = input.isFramePressed(Key.Right) || pad(PadButton.Right);
 		if (sideways)
 			step = right ? 1 : left ? -1 : 0;
-		else if (left || right)
+		else if (left || right) {
 			move = right ? 1 : -1;
+			dx = right ? 1 : -1;
+			dy = 0;
+		}
 		if (vertical) {
 			var up = input.isFramePressed(Key.Up) || pad(PadButton.Up),
 				down = input.isFramePressed(Key.Down) || pad(PadButton.Down);
@@ -214,9 +228,10 @@ class Ui {
 		}
 		if (focused != null && (!focused.isFocusable() || !focused.isEnabled() || !focused.isVisible()))
 			focused = null;
-		if (move != 0)
-			focused = focused == null ? first() : next(focused, move);
-		else if (keys && focused == null) {
+		if (move != 0) {
+			var toward = focused != null && (dx != 0 || dy != 0) ? nearest(focused, dx, dy) : null;
+			focused = toward != null ? toward : focused == null ? first() : next(focused, move);
+		} else if (keys && focused == null) {
 			// Keys or a pad in use and nothing focused (a new screen): the first widget, shown.
 			focused = first();
 			showFocus = focused != null;
@@ -278,6 +293,33 @@ class Ui {
 			if (w.isFocusable() && w.isEnabled() && w.isVisible())
 				return w;
 		return null;
+	}
+
+	// The focusable widget nearest from on screen in direction (dx, dy), or null when none lies that way: one whose box's center is past from's
+	// along that axis, the closest by the distance along it plus twice the offset across it (so the next in a row or column beats a nearer
+	// one off to the side). Boxes not yet arranged (all at the origin) find none.
+	function nearest(from:Widget, dx:Int, dy:Int):Null<Widget> {
+		var b = from.getBox(),
+			cx = b.getX() + b.getWidth() / 2,
+			cy = b.getY() + b.getHeight() / 2;
+		var best:Null<Widget> = null, bestScore = Math.POSITIVE_INFINITY;
+		for (w in widgets) {
+			if (w == from || !w.isFocusable() || !w.isEnabled() || !w.isVisible())
+				continue;
+			var o = w.getBox(),
+				ox = o.getX() + o.getWidth() / 2 - cx,
+				oy = o.getY() + o.getHeight() / 2 - cy;
+			var along = dx != 0 ? ox * dx : oy * dy,
+				across = Math.abs(dx != 0 ? oy : ox);
+			if (along <= .5)
+				continue;
+			var score = along + across * 2;
+			if (score < bestScore) {
+				bestScore = score;
+				best = w;
+			}
+		}
+		return best;
 	}
 
 	// The focusable widget after from (direction 1) or before it (-1), wrapping.
