@@ -1,13 +1,13 @@
-package helix.app;
+package helix.time;
 
 import helix.input.IInput;
 
-/** A fixed-rate simulation inside the frame callback. Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick.
-	getFraction is how far the frame is between the last tick and the next, for drawing between them. */
+/** A fixed-rate simulation inside the frame callback, fed a clock's elapsed time (Clock.getElapsed: paused or scaled there, so the ticks are
+	too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. getFraction is how far the frame is
+	between the last tick and the next, for drawing between them. */
 class Ticker {
 	var rate = 60.;
 	var delta = 1 / 60;
-	var timeScale = 1.;
 	var fraction = 0.;
 	var maxSteps = 8;
 	var input:IInput;
@@ -37,18 +37,6 @@ class Ticker {
 	public function getDelta():Float
 		return delta;
 
-	/** Scales simulated time: 0 pauses the ticks while frames go on. */
-	public function getTimeScale():Float
-		return timeScale;
-
-	/** False for a scale under 0. */
-	public function setTimeScale(value:Float):Bool {
-		if (!(value >= 0))
-			return false;
-		timeScale = value;
-		return true;
-	}
-
 	/** How far the frame is from the last tick to the next, from 0 to under 1. */
 	public function getFraction():Float
 		return fraction;
@@ -65,9 +53,10 @@ class Ticker {
 		return true;
 	}
 
-	/** Runs tick for each step due after elapsed seconds (Services.getFrameElapsed), at most getMaxSteps of them; returns how many ran. */
+	/** Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Services.clock's for the game's time), at most getMaxSteps of
+		them; returns how many ran. */
 	public function advance(elapsed:Float, tick:Void->Void):Int {
-		accumulator += Math.max(0, elapsed) * timeScale;
+		accumulator += Math.max(0, elapsed);
 		var steps = 0;
 		while (accumulator >= delta && steps < maxSteps) {
 			tick();

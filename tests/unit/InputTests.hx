@@ -6,7 +6,7 @@ import helix.input.Key;
 import helix.input.MouseButton;
 import helix.input.PadButton;
 import helix.input.PadAxis;
-import helix.app.Ticker;
+import helix.time.Ticker;
 
 class InputTests {
 	static var checks = 0;
@@ -110,10 +110,8 @@ class InputTests {
 				seen++;
 		});
 		check(ticks == 2 && seen == 1 && Math.abs(ticker.getFraction() - .5) < 1e-9, "Ticks and fraction");
-		ticker.setTimeScale(0);
-		ticker.advance(1, () -> ticks++);
-		check(ticks == 2, "Paused");
-		ticker.setTimeScale(1);
+		ticker.advance(0, () -> ticks++);
+		check(ticks == 2, "Paused: a clock's 0 elapsed");
 		ticker.advance(.25, () -> ticks++);
 		ticker.advance(.25, () -> ticks++);
 		check(ticks == 7, "Accumulates");

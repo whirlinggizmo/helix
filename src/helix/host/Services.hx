@@ -34,6 +34,10 @@ class Services {
 		the app sets a mode). */
 	public static var presentation(default, null):Presentation;
 
+	/** The game's time: the frames' time scaled and paused as a whole (helix.time.Clock), updated before each frame; what tickers, tweens,
+		timers, animators and emitters are fed. */
+	public static var clock(default, null):helix.time.Clock;
+
 	/** Assets: the packaged files or downloads, cached. */
 	public static var assets(default, null):IAssets;
 

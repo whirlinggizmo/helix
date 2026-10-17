@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.app.Ticker;
+import helix.time.Ticker;
 import helix.host.Services;
 import helix.input.IInput;
 import helix.debug.Autopilot;
@@ -76,7 +76,7 @@ class App extends BaseApp {
 		camera.fit(0, 0, layout.worldWidth, layout.worldHeight);
 		if (!Services.window.isFocused() && game.state == "playing")
 			game.state = "paused";
-		ticker.advance(Services.getFrameElapsed(), () -> if (!stopped) step());
+		ticker.advance(Services.clock.getElapsed(), () -> if (!stopped) step());
 		// The well's camera fits the layout; the presentation only sizes its text.
 		ScreenShape.update();
 		renderer.render(game, layout, camera, Services.presentation, ticks);

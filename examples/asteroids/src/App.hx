@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.app.Ticker;
+import helix.time.Ticker;
 import helix.debug.Autopilot;
 import helix.host.Services;
 import helix.input.IInput;
@@ -188,7 +188,7 @@ class App extends BaseApp {
 					if (!step())
 						break;
 			} else if (Services.window.isFocused())
-				ticker.advance(Services.getFrameElapsed(), () -> step());
+				ticker.advance(Services.clock.getElapsed(), () -> step());
 			else
 				sounds.play(game, false, false);
 		}

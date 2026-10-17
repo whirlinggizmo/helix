@@ -10,7 +10,7 @@ import helix.audio.AudioResources;
 import helix.input.InputRouter;
 
 /** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
-	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window, the app's frame, input's frame end) with the clock and timings,
+	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's frame, input's frame end) with the clock and timings,
 	and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU): the
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
@@ -81,6 +81,7 @@ class Runner {
 		a.input.start(input);
 		Services.input = input.getInput();
 		Services.presentation = new Presentation();
+		Services.clock = new helix.time.Clock();
 		Services.audio = a.audio;
 		Services.window = host.getWindow();
 		Services.fetch = fetch;
@@ -107,6 +108,7 @@ class Runner {
 		input.poll(adapters.input);
 		var window = Services.window;
 		Services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
+		Services.clock.update(clock.getElapsed());
 		app.frame(clock.getDelta());
 		Services.screenshots.frameEnded();
 		input.endFrame();
@@ -135,6 +137,7 @@ class Runner {
 		Services.audio = null;
 		Services.window = null;
 		Services.presentation = null;
+		Services.clock = null;
 		Services.assets = null;
 		Services.fetch = null;
 		Services.storage = null;

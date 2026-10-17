@@ -1,5 +1,5 @@
 import helix.app.BaseApp;
-import helix.app.Ticker;
+import helix.time.Ticker;
 import helix.debug.FpsOverlay;
 import helix.host.Services;
 import helix.input.Key;
@@ -9,7 +9,7 @@ import helix.render2d.Text2D;
 
 /** Fixed-rate simulation (ticks) against drawing (frames). A deliberately slow 10 Hz tick moves two squares at the same speed: the top one is drawn
 	where the latest tick left it, so it steps; the bottom one between its last two ticks, by the tick fraction, so it moves smoothly at any frame rate.
-	Space pauses the ticks (the time scale) while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
+	Space pauses the game's clock (Services.clock), and so the ticks, while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
 	seen by exactly one tick. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var WIDTH = 800;
@@ -53,10 +53,13 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;
 		if (input.isFramePressed(Key.Space))
-			ticker.setTimeScale(ticker.getTimeScale() > 0 ? 0 : 1);
+			if (Services.clock.isPaused())
+				Services.clock.resume();
+			else
+				Services.clock.pause();
 		if (Services.canQuit() && input.isFramePressed(Key.Escape))
 			Services.quit();
-		ticker.advance(Services.getFrameElapsed(), tick);
+		ticker.advance(Services.clock.getElapsed(), tick);
 		var t = ticker.getFraction();
 		fps.update(dt, Services.getFrameCpu());
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
@@ -75,7 +78,7 @@ class App extends BaseApp {
 		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
 		y += Text2D.drawWrapped(batch,
 			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
-			+ (ticker.getTimeScale() > 0 ? "running (Space pauses)" : "paused (Space resumes)"),
+			+ (Services.clock.isPaused() ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
 			- 40, 0xc8c8c8ff)
