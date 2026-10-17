@@ -1,6 +1,6 @@
 """The test fixtures: a short tone as WAV, Ogg/Vorbis and Ogg/Opus, in tests/fixtures (the unit and services tests read them), and
 encoder.json beside them, how they were encoded (the services report includes it). They're committed, so every system decodes the same
-bytes and no build needs FFmpeg (DECISIONS 117); generate() makes them only when one is missing, and --regenerate makes them anew.
+bytes and no build needs FFmpeg (DECISIONS 117); generate() makes them only when one is missing, and --regenerate makes them anew (both need FFmpeg).
 
 The WAV is 16-bit mono 44,100 Hz, 0.12 s; the Opus copy is stereo 48 kHz, to exercise channel and rate handling. FFmpeg encodes them, bit-exact."""
 import array

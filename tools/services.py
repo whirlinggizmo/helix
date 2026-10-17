@@ -23,7 +23,7 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true')
  p.add_argument('--native-profile',choices=['sokol','sdl3'],default='sokol',help='the native audio output: sokol_audio, or SDL3 (its dummy driver)');a=p.parse_args()
  build_dir=None
- from fixtures import generate as fixtures_generate
+ from gen_fixtures import generate as fixtures_generate
  fixtures=fixtures_generate()
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if a.native:

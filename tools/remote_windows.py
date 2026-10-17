@@ -39,7 +39,7 @@ def working_tree():
     for generated in GENERATED:
         path = ROOT / generated
         if not path.exists():
-            raise SystemExit(f'remote_windows: {generated} is missing; run python3 tools/fixtures.py here first')
+            raise SystemExit(f'remote_windows: {generated} is missing; make it here first')
         names += [p.relative_to(ROOT).as_posix() for p in ([path] if path.is_file() else path.rglob('*')) if p.is_file()]
     for pattern in OPTIONAL:
         for folder in ROOT.glob(pattern):

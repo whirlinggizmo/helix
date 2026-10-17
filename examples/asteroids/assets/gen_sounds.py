@@ -1,4 +1,5 @@
-"""Asteroids' eight original sounds, synthesized and encoded as Ogg/Vorbis; tools/example.py serves them with the example."""
+"""Asteroids' eight original sounds, synthesized and encoded as Ogg/Vorbis into sounds/ beside this file, where they're committed (DECISIONS 117):
+made only when one is missing (tools/example.py runs it before copying the example's assets), or anew with --regenerate, which needs FFmpeg."""
 import array
 import math
 from pathlib import Path
@@ -32,10 +33,11 @@ def thrust_loop(rate,frames):
     return [loop[i]+.25*math.sin(2*math.pi*133*i/rate)+
             .15*math.sin(2*math.pi*266*i/rate) for i in range(frames)]
 
-def generate():
-    """Writes the sounds as Ogg/Vorbis under build/generated/asteroids/assets/sounds, and returns that assets folder."""
-    out=ROOT/'build/generated/asteroids/assets';sounds=out/'sounds';source=ROOT/'build/generated/asteroids/wav'
-    if all((sounds/(name+'.ogg')).is_file() for name in NAMES):return out
+def generate(regenerate=False):
+    """Writes the sounds as Ogg/Vorbis into sounds/ beside this file when any is missing (or regenerate), the WAV sources under
+    build/generated/asteroids/wav, and returns the example's assets folder."""
+    out=Path(__file__).resolve().parent;sounds=out/'sounds';source=ROOT/'build/generated/asteroids/wav'
+    if not regenerate and all((sounds/(name+'.ogg')).is_file() for name in NAMES):return out
     sounds.mkdir(parents=True,exist_ok=True);source.mkdir(parents=True,exist_ok=True)
     encoder=shutil.which('ffmpeg')
     if not encoder:raise RuntimeError('Install FFmpeg with the libvorbis encoder to make the Asteroids sounds')
@@ -57,3 +59,5 @@ def generate():
             wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(data.tobytes())
         subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source/(name+'.wav')),'-map_metadata','-1','-c:a','libvorbis','-q:a','3','-fflags','+bitexact',str(sounds/(name+'.ogg'))],check=True)
     return out
+
+if __name__=='__main__':print(generate('--regenerate' in sys.argv[1:]))

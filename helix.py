@@ -17,7 +17,7 @@ def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check
 def test(native,audio_device):
     """The adapter rule's check, the shader tool tests, the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
     sys.path.insert(0,str(ROOT/'tools'))
-    from fixtures import generate
+    from gen_fixtures import generate
     import example,fontbake
     generate()
     # The generated shader and font code the unit tests compile against, made when missing or stale.

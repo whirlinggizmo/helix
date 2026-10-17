@@ -4,7 +4,7 @@ of them).
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
 and page in examples/shared. Each target's examples share one assets folder beside them, build/<target>/assets, which each loads as ../assets:
 the files in examples/assets, and each example's own, which may not claim a path the shared files or another example has. A larger example
-adds its autopilot/ scripts (as autopilot/<name>/) and the files its assets/generate.py makes; the web target's folder carries manifests (tools/gen_manifest.py), which the
+adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py there makes what's missing first); the web target's folder carries manifests (tools/gen_manifest.py), which the
 page's asset cache follows. An example's shaders/*.glsl are packed
 (tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page.
 
@@ -83,7 +83,7 @@ def prepare(name):
 
 def assets(name,target):
     """build/<target>/assets, which the target's examples share: the shared files, then the example's own (its autopilot scripts as
-    autopilot/<name>/, what its assets/generate.py makes and its shaders, with SDL_GPU's dialects for native-sdl3-gpu). The example's own
+    autopilot/<name>/, its own assets/ folder (a gen_*.py there first) and its shaders, with SDL_GPU's dialects for native-sdl3-gpu). The example's own
     files may not claim a path the shared files or another example has. A copy of its own left from before (build/<target>/<name>/assets)
     is removed."""
     out=ROOT/f'build/{target}/assets'
@@ -94,13 +94,18 @@ def assets(name,target):
     pilots=ROOT/f'examples/{name}/autopilot'
     if (out/'autopilot'/name).exists():shutil.rmtree(out/'autopilot'/name)
     if pilots.is_dir():shutil.copytree(pilots,out/'autopilot'/name)
-    recipe=ROOT/f'examples/{name}/assets/generate.py'
-    if recipe.is_file():
+    # The example's own assets (examples/<name>/assets), copied in over the shared ones: a gen_*.py beside them makes what's missing first
+    # (Asteroids' sounds are committed, so it makes nothing unless one is gone); the recipes themselves aren't assets.
+    own=ROOT/f'examples/{name}/assets'
+    if own.is_dir():
         import importlib.util
-        spec=importlib.util.spec_from_file_location(f'{name}_assets',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-        made=Path(module.generate())
-        claim(target,name,[p.relative_to(made).as_posix() for p in made.rglob('*') if p.is_file()])
-        shutil.copytree(made,out,dirs_exist_ok=True)
+        for recipe in sorted(own.glob('gen_*.py')):
+            spec=importlib.util.spec_from_file_location(f'{name}_{recipe.stem}',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+            module.generate()
+        files=[p for p in own.rglob('*') if p.is_file() and p.suffix!='.py' and '__pycache__' not in p.parts]
+        claim(target,name,[p.relative_to(own).as_posix() for p in files])
+        for p in files:
+            dest=out/p.relative_to(own);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,dest)
     pack_shaders(name,out,sdl_gpu=target=='native-sdl3-gpu',target=target)
     # The browser's manifests (tools/gen_manifest.py), so a returning page re-fetches exactly what changed; native builds read in place.
     if target=='web':gen_manifest.write(out)
