@@ -174,7 +174,14 @@ def main():
     if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
         extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
-        if stale or extra:sys.exit('gen_apidoc: docs/api is stale ('+', '.join(stale+extra)+'); run python3 tools/gen_apidoc.py and commit it')
+        if stale or extra:
+            # The first differing lines of each stale page, so a check failing on another system says what differs there.
+            import difflib
+            for name in stale:
+                if (DOCS/name).is_file():
+                    diff=list(difflib.unified_diff((DOCS/name).read_text(encoding='utf-8').splitlines(),pages[name].splitlines(),'committed '+name,'generated '+name,lineterm='',n=1))
+                    print('\n'.join(diff[:40]),flush=True)
+            sys.exit('gen_apidoc: docs/api is stale ('+', '.join(stale+extra)+'); run python3 tools/gen_apidoc.py and commit it')
         print('gen_apidoc: docs/api is current');return
     DOCS.mkdir(parents=True,exist_ok=True)
     for p in DOCS.glob('*.md'):
