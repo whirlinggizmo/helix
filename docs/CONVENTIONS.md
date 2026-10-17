@@ -8,37 +8,40 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 
 ## Names
 
+HeliX is Haxe through and through, and its API uses what Haxe gives: properties for values, classes for kinds, static classes for the program's one set of services. The earlier C frameworks' rules (a method for everything, so a binding could be made of it; a type field instead of a class) were theirs, not Haxe's, and were dropped (DECISIONS 130).
+
 | Kind | Form | Example |
 | --- | --- | --- |
-| Read a value | `getX()` | `window.getWidth()` |
-| Change a value, done when it returns | `setX(...)` | `window.setTitle("Asteroids")`, `node.setSize(64, 32)` |
-| A state now (a bool) | `isX()` | `window.isFullscreen()`, `input.isDown(Key.A)` |
-| Whether something exists | `hasX()` | |
-| Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `host.canQuit()` |
-| Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
-| An action | a verb | `host.quit()`, `batch.rect(...)` |
+| A value | a property, read and assigned | `Window.title = "Asteroids"`, `light.intensity = 2`, `node.visible = false` |
+| Several values set at once | `setX(...)` | `node.setPosition(x, y, z)`, `camera.setView(eye..., target...)` |
+| A state now (a bool) | an adjective property | `node.visible`, `clock.paused`, `pad.connected` |
+| A state asked with an argument | `isX(...)` | `Input.isDown(Key.A)`, `Input.isFramePressed(Key.Space)` |
+| Whether an action is possible here, so whether to offer it | `canX()` | `Window.canMove()`, `Services.canQuit()` |
+| Ask for what the platform may refuse or grant later | `requestX(...)` | `Window.requestFullscreen(true)`, `Window.requestSize(800, 600)` |
+| An action | a verb | `Services.quit()`, `stage.add(node)`, `Models.load(path, done)` |
+| A count or a limit | a property naming what it counts; the limit first | `Input.padCount`, `Graphics.msaaSamples`, `Graphics.maxMsaaSamples`, `ticker.maxSteps` |
+| Fill what it's given | a verb, not a property | `camera.computeRay(x, y, ray)`, `node.computeWorld(out)` |
+| A command for what follows in a pass | `applyX(...)` (sokol's word) | `Graphics.applyViewport(...)`, `Graphics.applyScissor(...)` |
 
-- **A static survives a hot reload only if it says `@:hot`, on both targets.** In the project's own code (its class paths, `src/` and `examples/`, less the main class; the standard library and haxelibs keep theirs), a plain static starts over from its first value at every reload (hotreload-hx b9aa033), so an edited initializer takes effect; a static holding state that must outlive the swap (`Services`' fields, an id counter, a cache the reload's hook rebuilds from) carries `@:hot`, with a comment saying why. A closure or a bound method kept in a static runs the code it came from (DECISIONS 123).
-- **Methods, not Haxe properties.** Public state is read and changed through `get`/`set`/`is` methods, never public `var`s or `get_`/`set_` properties, so a setter can return whether it acted. The exceptions are composition (an app's `Services`: `services.graphics`, `services.input`) and records built once: a type made whole and never changed after (a parsed file's header, `Touch`, a progress report, `Hdr`'s size) may show `final` fields, since a field nothing can assign has no set to refuse. Anything that can change goes through methods; something kept and changed in place inside (InputState's touches) is handed out as a fresh record.
-- **Every setter has a getter:** `setX` with `getX`, or `isX` for a bool. A setter of several values (`node.setSize`) has a getter per value.
-- **Say clamp or refuse.** A setter clamps when every value in range is the same request at another fidelity; it refuses, returning `false`, when the value would change what was asked or has no meaning here. Its comment says which, and a "False for ..." sentence names every refusal. A setter that can never refuse returns `Void`.
-- **`set` or `request`: whether the result is known when the call returns.** A `set` that returns true has happened: its getter answers the new value at once. When the platform decides later or may give something else (a window manager sizing or placing a window, a browser granting fullscreen, a driver granting multisampling), it's a `request`. Both return false, changing nothing, for a value that's invalid or impossible here.
-- **`request` returns whether it asked, never whether it was granted.** The answer is read back later with `is`, `get` or `can`: `requestFullscreen` returns whether the request was made; `isFullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
-- **A count names what it counts:** `getMsaaSamples()`, `getPadCount()`, never a bare `getSamples()`. **A limit comes first:** `getMaxMsaaSamples()`, `getMaxSteps()`, `getMinX()`.
-- **A call that fills what it's given is a verb, not `get` or `set`:** `camera.computeRay(x, y, ray)`, `node.computeWorld(out)`, `matrix.makePerspective(...)` (the whole matrix overwritten). A `get` only reads; a `set` changes one value its getter answers.
-- **A command for what follows in a pass is `apply`** (sokol's word): `graphics.applyViewport(...)`, `graphics.applyScissor(...)`. It's an instruction to the GPU's stream, not a value kept to read back.
-- **No chaining.** Setters return `Void`, or `Bool` when they can refuse; none returns its object, which would make a call read like a property. Building something takes one call a line.
-- **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`setRegion`, `getRegionX`), not a region here and a source there.
+- **A value is a property.** One that must act when assigned (a node's `x` dirties its matrix, a material's `baseColor` marks a GPU update) has a `set_` accessor; one read back from somewhere else has a `get_`; one nothing may assign is `(default, null)`. A record made whole and never changed after (`Touch`, a parsed header, a progress report) shows `final` fields. Nothing public is a bare `var` that something else keeps in step by hand.
+- **A property clamps; a method may refuse.** Assigning can't answer, so a property takes what it's given, held to its range (an intensity under 0 is 0, a cone past its outer is the outer), and its doc comment says the range. Whatever can be refused or decided later is a method returning `Bool`: `requestSize`, `add`, `load`'s result.
+- **`request` returns whether it asked, never whether it was granted.** The answer is read back later from a property: `requestFullscreen` returns whether the request was made; `fullscreen` says, on a later frame, whether it was granted. `can` says whether to offer the request at all.
+- **No chaining.** A method that changes something returns `Void`, or `Bool` when it can refuse; none returns its object. Building something takes one statement a line.
+- **A completion takes a lambda per outcome, success first:** `Models.load(path, file -> place(file))`, with the failure's lambda optional (`Models.load(path, place, message -> caption = message)`): one left out is logged with the path, so nothing fails silently, and a cancelled request calls nothing, as its caller cancelled it. No result enum to switch on. A lambda made before a reload runs the code it came from (hotreload-hx), so a completion's lambda calls a method by name, `file -> place(file)`, never passes the method itself (`place` binds the old code when it's passed). In the browser the method it reaches is then the new one, and only the lambda's line is old for the frames a load takes. Natively an old lambda runs its old module through and through, and the `this` it captured is a copy the new code has left behind, so a load in flight across a native reload lands in the old world; the browser loop is where reloads happen, and a native reload mid-load means loading again. A callback registered once for the program's life (a frame, a resize, an input) is registered by the main class or again from `@:afterHotReload`, never kept from before.
+- **Kinds are classes.** What a stage holds is a `Node` (a transform with children) and the framework's kinds on it: `Model`, `DirectionalLight`, `PointLight`, `SpotLight`, `Camera3D`, `Sprite3D`, `Text3D`, `Particles3D`, and on `Node2D`: `Sprite2D`, `Shape2D`, `Text2D`, `Particles2D`. A class holds only its kind's data. A game never subclasses a node; behaviors, if they come, are a list on it (DECISIONS 61).
+- **The program's services are static classes:** `Window`, `Input`, `Graphics`, `Audio`, `Assets`, `Storage`, `Fetch`, `Textures`, `Models`, `Environments`, `Time` (the program's clock), `Presentation`, each one instance for the one program (a singleton), forwarding to the adapter the runner gave it; the forwarders are generated from the service's interface by a build macro, so nothing is written twice, and the interface stays the adapters' and the tests' side. A thing a game makes for itself (a `Clock`, a `Ticker`, a `Stage3D`, a `Tweens`) is an ordinary class with instances.
+- **A static survives a hot reload only if it says `@:hot`, on both targets.** In the project's own code (its class paths, `src/` and `examples/`, less the main class; the standard library and haxelibs keep theirs), a plain static starts over from its first value at every reload (hotreload-hx b9aa033), so an edited initializer takes effect; a static holding state that must outlive the swap (a service's instance, an id counter, a cache the reload's hook rebuilds from) carries `@:hot`, with a comment saying why. A closure or a bound method kept in a static runs the code it came from (DECISIONS 123).
+- **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`regionX`, `regionWidth`), not a region here and a source there.
 - **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/check_adapters.py` checks both.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.
-- **Capitals:** `2D` and `3D` keep a capital D. Acronyms are written as words, as in Haxe's standard library (`Json`, `Xml`, `Http`): `getId`, `Url`, `IndexedDb`. Product names keep their own spelling (`WebGL2`, `Sokol`).
+- **Capitals:** `2D` and `3D` keep a capital D. Acronyms are written as words, as in Haxe's standard library (`Json`, `Xml`, `Http`): `id`, `Url`, `IndexedDb`. Product names keep their own spelling (`WebGL2`, `Sokol`).
 
 ## Units
 
 One unit per kind of value across the API, so nothing has to be converted at a call:
 
 - **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. 3D is right-handed with +y up.
-- **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.getBudgetMs`) or, where the name can't, in its doc comment (`Services.getFrameCpu` and `getFrameInterval` are milliseconds).
+- **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.budgetMs`) or, where the name can't, in its doc comment (`Time.frameCpu` and `frameInterval` are milliseconds).
 - **Colors are `0xRRGGBBAA`** integers.
 - **A simulation that must play alike on every target** (an autopilot's replay, lockstep, physics) takes its trigonometry from `helix.math.Trig`, never `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `acos`, `exp` or `log`, which differ in the last bit between the browser and native. Arithmetic, `sqrt`, `floor` and `pow` agree. Drawing may use `Math`.
 - **Positions and sizes name their space** in the doc comment: framebuffer pixels (`IWindow`'s framebuffer size, the pointer), logical pixels (the window), or world units (a camera's).
