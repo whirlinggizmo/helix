@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.particles.Emitter;
 import helix.render2d.Batch2D;
@@ -9,11 +13,13 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render2d.Textures;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. On a 3D stage: a fountain
 	(blended drops under gravity), sparks (added, from a point circling the fountain: they trail behind it, are thrown along by it, slowed by
@@ -53,9 +59,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX particles");
-		Services.window.requestSize(1000, 600);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX particles");
+		Window.requestSize(1000, 600);
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		grid = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -143,17 +149,17 @@ class App extends BaseApp {
 		confettiNode = Node2D.emitter(confetti);
 		flat.add(confettiNode);
 
-		Services.textures.load("textures/particle.png", true, result -> switch result {
+		Textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
 				for (e in [fountain, sparks, smoke, confetti])
 					e.setTexture(texture);
-				var presentation = Services.presentation;
+				var presentation = Screen.instance;
 				burst(presentation.getVisibleX() + presentation.getVisibleWidth() / 2, presentation.getVisibleY() + presentation.getVisibleHeight() / 3);
 			case Failed(message):
 				trace(message);
 			case Cancelled:
 		});
-		Services.textures.load("textures/flame.png", true, result -> switch result {
+		Textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				flame.setTexture(texture);
 			case Failed(message):
@@ -170,9 +176,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Space)) {
 			paused = !paused;
 			for (e in [fountain, sparks, smoke, flame])
@@ -182,20 +188,20 @@ class App extends BaseApp {
 			orbit = !orbit;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		if (input.isPointerFramePressed())
 			burst(presentation.toUnitsX(input.getPointerX()), presentation.toUnitsY(input.getPointerY()));
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		if (orbit)
 			angle += dt * .15;
 		stage.setTime(time);
 		flat.setTime(time);
 		// The sparks' source circles the fountain; the sparks stay where they were born.
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
 		presentation.apply(hud);
@@ -203,7 +209,7 @@ class App extends BaseApp {
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x0e1018ff);
+		Graphics.beginFrame(width, height, 0x0e1018ff);
 		grid.begin(camera);
 		grid.grid(24, 1, 0x50505aff);
 		grid.end();
@@ -216,7 +222,7 @@ class App extends BaseApp {
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

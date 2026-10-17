@@ -1,8 +1,8 @@
 package helix.assets;
 
 import haxe.io.Bytes;
-import helix.assets.Storage.Lease;
-import helix.assets.Storage.StorageWriteResult;
+import helix.assets.StorageService.Lease;
+import helix.assets.StorageService.StorageWriteResult;
 
 /** How an asset load ended: its bytes, a failure message, or cancellation. */
 enum AssetResult {
@@ -106,6 +106,6 @@ interface IAssets {
 	/** Stops telling target about path's changes; does nothing if it was not subscribed. */
 	function unsubscribe(path:String, target:IReloadable):Void;
 
-	/** Whether a load is under way or its completion not yet run (Services.isBusy asks it, with the decoders). */
+	/** Whether a load is under way or its completion not yet run (Host.isBusy asks it, with the decoders). */
 	function isBusy():Bool;
 }

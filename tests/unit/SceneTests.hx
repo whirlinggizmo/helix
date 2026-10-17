@@ -5,6 +5,9 @@ import helix.scene.Scene;
 import helix.scene.Scenes;
 import helix.scene.Transition;
 import helix.scene.Transition.Fade;
+import helix.assets.Assets;
+import helix.input.Input;
+import helix.time.Time;
 
 /** A game's scenes (helix.scene.Scenes): push, pop and replace with their enter, exit, pause and resume; a scene with a loader shown the
 	loading scene until its loads end; transitions swapping at their middle; focus lost and back; and the Loader's counting, progress and
@@ -27,9 +30,10 @@ class SceneTests {
 	}
 
 	static function main():Void {
-		@:privateAccess helix.host.Services.assets = new Held();
-		@:privateAccess helix.host.Services.input = new helix.input.InputState();
-		@:privateAccess helix.host.Services.clock = new helix.time.Clock();
+		// What Scenes and the Loader read, bound as the runner would.
+		@:privateAccess Assets.bind(new Held());
+		@:privateAccess Input.bind(new helix.input.InputState());
+		@:privateAccess Time.bind(null, new helix.time.Clock());
 		var scenes = new Scenes();
 		scenes.setPauseOnBlur(false);
 		check(scenes.getTop() == null && scenes.getCount() == 0 && !scenes.isTransitioning(), "An empty stack");
@@ -107,16 +111,16 @@ class SceneTests {
 		// Focus lost and back.
 		scenes.setPauseOnBlur(true);
 		@:privateAccess scenes.focus(false);
-		check(took() == "b.pause" && helix.host.Services.clock.isPaused(), "Focus lost pauses the top scene and the clock");
+		check(took() == "b.pause" && Time.clock.isPaused(), "Focus lost pauses the top scene and the clock");
 		scenes.update(1 / 60);
 		check(took() == "", "and nothing updates meanwhile");
 		@:privateAccess scenes.focus(true);
-		check(took() == "b.resume" && !helix.host.Services.clock.isPaused(), "Focus back resumes both");
-		helix.host.Services.clock.pause();
+		check(took() == "b.resume" && !Time.clock.isPaused(), "Focus back resumes both");
+		Time.clock.pause();
 		@:privateAccess scenes.focus(false);
 		@:privateAccess scenes.focus(true);
-		check(helix.host.Services.clock.isPaused(), "A clock the game paused itself stays paused");
-		helix.host.Services.clock.resume();
+		check(Time.clock.isPaused(), "A clock the game paused itself stays paused");
+		Time.clock.resume();
 		scenes.setPauseOnBlur(false);
 		@:privateAccess scenes.focus(false);
 		check(took() == "b.pause,b.resume" || took() == "", "Pause on blur off: focus does nothing");
@@ -266,7 +270,7 @@ private class Held implements IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
+	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function getManifest():Null<String>

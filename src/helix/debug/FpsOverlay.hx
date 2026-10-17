@@ -23,7 +23,7 @@ class FpsOverlay {
 	/** An overlay showing 0 until half a second of frames has been seen. */
 	public function new() {}
 
-	/** dt: the frame's interval; cpu: what the frame cost, in milliseconds (Services.getFrameCpu). */
+	/** dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.getFrameCpu). */
 	public function update(dt:Float, cpu:Float):Void {
 		frames++;
 		time += dt;

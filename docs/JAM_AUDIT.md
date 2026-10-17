@@ -6,9 +6,9 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 
 | Item | Status | What exists | What's lacking |
 |---|---|---|---|
-| Saves | **missing** | `Services.storage` is the asset cache (`Storage` over `IStore`), wiped by `clearCache`; the dressing room can't save a look (DECISIONS 112) | A store of the game's own, apart from the cache: keys to bytes or JSON, slots, a version for migration; IndexedDB in a browser, the user's data directory natively (as `Identity` already places the cache) |
+| Saves | **missing** | `Storage` is the asset cache (`StorageService` over `IStore`), wiped by `clearCache`; the dressing room can't save a look (DECISIONS 112) | A store of the game's own, apart from the cache: keys to bytes or JSON, slots, a version for migration; IndexedDB in a browser, the user's data directory natively (as `Identity` already places the cache) |
 | Input actions and remapping | **missing** | Raw keys, mouse buttons, pointer, touches, pad buttons and axes, with tick and frame edges; a round dead zone on pads | An action map ("jump" = Space, pad South, a touch button), queried as keys are, rebindable at run time and saved; the names a settings screen shows |
-| Pause and time | present | `Services.clock` (`helix.time.Clock`): scaled and paused as a whole, feeding tickers, tweens, timers and whatever takes its delta (milestone 9); `Scenes` pauses it on focus loss (milestone 10) | |
+| Pause and time | present | `Time.clock` (`helix.time.Clock`): scaled and paused as a whole, feeding tickers, tweens, timers and whatever takes its delta (milestone 9); `Scenes` pauses it on focus loss (milestone 10) | |
 | Audio control | partial | Clips and streams, play, pause, resume, stop, volume per playback, MP3 and WAV, reload in place | Groups or buses (master, music, effects) with their own volumes, saved; fades (music cross-fade); pitch and pan; ducking |
 | Scenes and flow | present | `helix.scene.Scenes`: push, pop, replace with enter, exit, pause and resume, a `Fade` between, pause on focus loss (milestone 10) | Wipes and other transitions |
 | Splash and loading | present | `Loader` (one progress, failures by name), the built-in `Loading` shown by the stack (replaceable, or none), the built-in `Splash` holding until a press (milestone 10) | Progress by bytes |
@@ -24,7 +24,7 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 | Window | present | Size, fullscreen, monitors, title, focus, pixel ratio, presentation | Orientation lock on phones (the browser only allows it fullscreen) |
 | Debug | present | FPS overlay, `Batch3D` lines and grid, screenshots, autopilot probes and clicks | A debug text console on the page (libwgf's page had one: logs and errors a phone can't show otherwise) |
 | Hot reload | present | Code and assets in the browser, assets natively | |
-| Settings and flags | present | `config.json` with profiles, fetched at start; `Services.getOption` and the typed readers (milestone 10) | A settings screen saving over it (milestone 12) |
+| Settings and flags | present | `config.json` with profiles, fetched at start; `Host.getOption` and the typed readers (milestone 10) | A settings screen saving over it (milestone 12) |
 | Packaging | partial | A web folder per example; a native binary beside its assets; manifests | One command that makes an itch.io-ready zip (web) and a named folder or archive (native), with the manifest written; an icon and a title |
 
 ## 1b. The scene file and the editor

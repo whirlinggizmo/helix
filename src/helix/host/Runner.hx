@@ -2,16 +2,35 @@ package helix.host;
 
 import helix.app.IApp;
 import helix.assets.AssetService;
+import helix.assets.Assets;
 import helix.assets.Fetch;
+import helix.assets.FetchService;
 import helix.assets.Storage;
-import helix.graphics.ImageDecoding;
+import helix.assets.StorageService;
+import helix.audio.Audio;
 import helix.audio.AudioDecoding;
 import helix.audio.AudioResources;
+import helix.debug.TestHarness;
+import helix.graphics.Graphics;
+import helix.graphics.ImageDecoding;
+import helix.graphics.ScreenshotService;
+import helix.graphics.Screenshots;
+import helix.input.Input;
 import helix.input.InputRouter;
+import helix.render2d.TextureCache;
+import helix.render2d.Textures;
+import helix.render3d.EnvironmentCache;
+import helix.render3d.Environments;
+import helix.render3d.ModelCache;
+import helix.render3d.Models;
+import helix.time.Clock;
+import helix.time.Time;
 
-/** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
+/** What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and
+	binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each
 	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's frame, input's frame end) with the clock and timings,
-	and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU): the
+	and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and
+	unbinds the statics: the
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
 class Runner {
@@ -26,6 +45,13 @@ class Runner {
 	var decoding:ImageDecoding;
 	var audioDecoding:AudioDecoding;
 	var input:InputRouter;
+	var presentation:Presentation;
+	var gameClock:Clock;
+	var sounds:AudioResources;
+	var textures:TextureCache;
+	var environments:EnvironmentCache;
+	var models:ModelCache;
+	var screenshots:ScreenshotService;
 	var clock = new FrameClock();
 	var frameCpu = 0.;
 	var frameInterval = 0.;
@@ -36,7 +62,8 @@ class Runner {
 	public function new(host:IHost, compose:Void->Adapters) {
 		this.host = host;
 		this.compose = compose;
-		Services.runner = this;
+		Host.bind(host);
+		Host.runner = this;
 	}
 
 	/** Runs the app makeApp builds on the host: built once the services are filled (so its field initializers may read them), its init then,
@@ -62,9 +89,9 @@ class Runner {
 	public function getFrameInterval():Float
 		return frameInterval;
 
-	/** Whether the shared services are loading anything (Services.isBusy). */
+	/** Whether the shared services are loading anything (Host.isBusy). */
 	public function isBusy():Bool
-		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || Services.environments.isBusy());
+		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || environments.isBusy());
 
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
@@ -74,33 +101,41 @@ class Runner {
 	function init():Void {
 		adapters = compose();
 		var a = adapters;
-		var fetch = new Fetch(a.http), storage = new Storage(a.storage);
+		var fetch = new FetchService(a.http),
+			storage = new StorageService(a.storage);
 		decoding = new ImageDecoding(a.images);
 		audioDecoding = new AudioDecoding(a.audioDecoder);
-		resources = new AssetService(fetch, storage, new Storage(a.packaged, true), a.base);
+		resources = new AssetService(fetch, storage, new StorageService(a.packaged, true), a.base);
 		resources.setManifest(a.manifest);
-		Services.graphics = a.graphics;
 		input = new InputRouter();
 		a.input.start(input);
-		Services.input = input.getInput();
-		Services.presentation = new Presentation();
-		Services.clock = new helix.time.Clock();
-		Services.audio = a.audio;
-		Services.window = host.getWindow();
-		Services.fetch = fetch;
-		Services.storage = storage;
-		Services.assets = resources;
-		Services.audioResources = new AudioResources(resources, a.audio, audioDecoding);
-		Services.textures = new helix.render2d.Textures(resources, decoding, a.graphics);
-		Services.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
-		Services.harness = a.harness;
-		Services.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
+		presentation = new Presentation();
+		gameClock = new Clock();
+		sounds = new AudioResources(resources, a.audio, audioDecoding);
+		textures = new TextureCache(resources, decoding, a.graphics);
+		environments = new EnvironmentCache(resources, decoding, a.graphics);
+		models = new ModelCache(resources, textures);
+		screenshots = new ScreenshotService(a.graphics, a.export, a.name);
+		Graphics.bind(a.graphics);
+		Input.bind(input.getInput());
+		Screen.bind(presentation);
+		Time.bind(this, gameClock);
+		Window.bind(host.getWindow());
+		Fetch.bind(fetch);
+		Storage.bind(storage);
+		Assets.bind(resources);
+		Audio.bind(sounds);
+		Textures.bind(textures);
+		Environments.bind(environments);
+		Models.bind(models);
+		TestHarness.bind(a.harness);
+		Screenshots.bind(screenshots);
 		// config.json, fetched now so a deployed game's settings change without a build; the app waits for it (a frame or two, blank).
 		configPending = true;
 		resources.ensure("config.json", result -> {
 			switch result {
 				case Loaded(bytes):
-					Services.config = helix.host.Config.parse(bytes, host.getOption("config"));
+					Host.config = Config.parse(bytes, host.getOption("config"));
 				case _:
 			}
 			configPending = false;
@@ -113,14 +148,14 @@ class Runner {
 		frameInterval = Math.isNaN(previousFrame) ? 0 : (now - previousFrame) * 1000;
 		previousFrame = now;
 		resources.poll();
-		Services.audioResources.poll();
+		sounds.poll();
 		decoding.poll();
 		audioDecoding.poll();
-		Services.environments.poll();
+		environments.poll();
 		input.poll(adapters.input);
-		var window = Services.window;
-		Services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
-		Services.clock.update(clock.getElapsed());
+		var window = host.getWindow();
+		presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
+		gameClock.update(clock.getElapsed());
 		if (app == null) {
 			// Until the config has come: a blank frame, then the app built and begun.
 			if (configPending) {
@@ -134,7 +169,7 @@ class Runner {
 			app.init();
 		}
 		app.frame(clock.getDelta());
-		Services.screenshots.frameEnded();
+		screenshots.frameEnded();
 		input.endFrame();
 		frameCpu = (host.getTime() - now) * 1000;
 	}
@@ -143,10 +178,11 @@ class Runner {
 		if (closed || adapters == null)
 			return;
 		closed = true;
-		Services.screenshots.shutdown();
-		Services.audioResources.shutdown();
-		Services.textures.shutdown();
-		Services.environments.shutdown();
+		screenshots.shutdown();
+		sounds.shutdown();
+		models.shutdown();
+		textures.shutdown();
+		environments.shutdown();
 		decoding.shutdown();
 		audioDecoding.shutdown();
 		resources.shutdown();
@@ -157,21 +193,22 @@ class Runner {
 		helix.graphics.Pipelines.release(adapters.graphics);
 		adapters.graphics.shutdown();
 		// Nothing to work with after the program's end: a read then fails plainly, on null.
-		Services.graphics = null;
-		Services.input = null;
-		Services.audio = null;
-		Services.window = null;
-		Services.presentation = null;
-		Services.clock = null;
-		Services.assets = null;
-		Services.fetch = null;
-		Services.storage = null;
-		Services.audioResources = null;
-		Services.textures = null;
-		Services.environments = null;
-		Services.harness = null;
-		Services.screenshots = null;
-		Services.config = null;
-		Services.runner = null;
+		Graphics.bind(null);
+		Input.bind(null);
+		Screen.bind(null);
+		Time.bind(null, null);
+		Window.bind(null);
+		Fetch.bind(null);
+		Storage.bind(null);
+		Assets.bind(null);
+		Audio.bind(null);
+		Textures.bind(null);
+		Environments.bind(null);
+		Models.bind(null);
+		TestHarness.bind(null);
+		Screenshots.bind(null);
+		Host.bind(null);
+		Host.config = null;
+		Host.runner = null;
 	}
 }

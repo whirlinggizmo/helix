@@ -17,7 +17,7 @@ import helix.host.Runner;
 /** The desktop through SDL3: an SDL window, its input and gamepads, SDL_GPU (Vulkan, Direct3D 12 or Metal) presenting to it; built with -D helix_sdl3_gpu, so the
 	framework's programs carry SDL_GPU's dialects; an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
 class NativeSdl3GpuProfile {
-	/** Runs the app makeApp builds once its Services are filled, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
+	/** Runs the app makeApp builds once its services are bound, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product

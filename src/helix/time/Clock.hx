@@ -3,7 +3,7 @@ package helix.time;
 import helix.host.FrameClock;
 
 /** A game's time, from the frames' (FrameClock): scaled and paused as a whole, so everything fed by it (a Ticker's steps, tweens, timers,
-	animators, emitters) slows, stops and resumes together, with nothing else to flag. Services.clock is the program's, updated by the runner
+	animators, emitters) slows, stops and resumes together, with nothing else to flag. Time.clock is the program's, updated by the runner
 	before each frame; a game keeps more where times differ: a menu's clock running while the world's is paused (Unity's unscaled time). Each
 	frame has two measures, as FrameClock's: the delta, held at MAX_DELTA (a stall moves animation on by that much), and the elapsed time,
 	unheld, for a Ticker, which bounds its own catch-up. Both are 0 while paused. */
@@ -17,7 +17,7 @@ class Clock {
 	/** A clock at 0, running at the frames' pace. */
 	public function new() {}
 
-	/** Advances by frameElapsed seconds of the frames' time (Services.getFrameElapsed), scaled; nothing while paused. Once a frame. */
+	/** Advances by frameElapsed seconds of the frames' time (Time.getFrameElapsed), scaled; nothing while paused. Once a frame. */
 	public function update(frameElapsed:Float):Void {
 		elapsed = paused ? 0 : Math.max(0, frameElapsed) * timeScale;
 		delta = elapsed > FrameClock.MAX_DELTA ? FrameClock.MAX_DELTA : elapsed;

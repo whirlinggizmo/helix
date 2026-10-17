@@ -4,11 +4,11 @@ import helix.render3d.Gltf;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelCache;
 import helix.render3d.ModelFile;
-import helix.render3d.Models;
 import helix.render3d.Node3D;
 
-/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through Models, over the framework's queries
+/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through a ModelCache, over the framework's queries
 	(Node3D.collectModels, Model.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
 	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
 	shared by many characters. */
@@ -31,8 +31,8 @@ class OutfitTests {
 		return @:privateAccess new ModelFile(Gltf.read(bytes(name)));
 
 	// Models over assets that answer only when the test releases a path (the part files carry no images, so no textures are needed).
-	static function models():Models
-		return new Models(new Held(), null);
+	static function models():ModelCache
+		return new ModelCache(new Held(), null);
 
 	static function release(path:String, result:helix.assets.IAssets.AssetResult):Void {
 		var complete = held[path];
@@ -202,7 +202,7 @@ private class Held implements IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
+	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function getManifest():Null<String>

@@ -1,13 +1,19 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.FpsOverlay;
+import helix.graphics.Graphics;
 import helix.graphics.Sampling;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
-import helix.host.Services;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -18,6 +24,7 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Materials drawn by shaders of the example's own (shaders/*.glsl, surface shaders packed into .hxshader assets and loaded at run time):
 	- left: toon shading (the lights in flat bands, a rim light) on every material of the Kenney sports car
@@ -47,9 +54,9 @@ class App extends BaseApp {
 	var status = "loading the shaders";
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX shaders");
-		Services.window.requestSize(1000, 600);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX shaders");
+		Window.requestSize(1000, 600);
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .15);
@@ -88,7 +95,7 @@ class App extends BaseApp {
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file;
 				var node = file.instantiate("car");
@@ -101,7 +108,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		Services.textures.load("textures/noise.png", true, result -> switch result {
+		Textures.load("textures/noise.png", true, result -> switch result {
 			case Ready(texture):
 				// The shader samples it twice across: it tiles.
 				texture.setSampling(new Sampling(true, Repeat, Repeat));
@@ -112,7 +119,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		shaders = new Shaders(Services.assets, gpu);
+		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/toon.hxshader", result -> switch result {
 			case Ready(shader):
 				toon = shader;
@@ -166,9 +173,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2)) {
@@ -176,22 +183,22 @@ class App extends BaseApp {
 			marker.setVisible(lamp.isVisible());
 		}
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		stage.setTime(time);
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		// Circling in front of the models, toward the camera: always in view, and far enough not to wash them out.
 		var lx = Math.cos(time * .7) * 2.2,
 			ly = .8 + Math.sin(time * .7),
 			lz = 1.6 + Math.sin(time * .7) * .4;
 		lamp.setPosition(lx, ly, lz);
 		marker.setPosition(lx, ly, lz);
-		var gpu = Services.graphics,
-			width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var gpu = Graphics.instance,
+			width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),

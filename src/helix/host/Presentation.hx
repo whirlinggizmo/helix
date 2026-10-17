@@ -29,6 +29,7 @@ enum PresentationMode {
 	refits it to the window before every frame. A 2D camera shows it (apply), a layout is arranged into the visible area (Box.arrange), and
 	the pointer comes back in units through the camera (Pointer), or through toUnitsX and toUnitsY. A 3D camera draws into the area it covers
 	(getAreaX and the rest, Camera3D.setViewportArea) to keep out of the bars. */
+@:build(helix.macro.Facade.record())
 class Presentation {
 	var mode:PresentationMode = None;
 	var designWidth = 0.;

@@ -1,11 +1,11 @@
 import haxe.io.Bytes;
 import helix.assets.AssetManifest;
 import helix.assets.AssetService;
-import helix.assets.Fetch;
+import helix.assets.FetchService;
 import helix.assets.IAssets;
 import helix.assets.IHttp;
 import helix.assets.IStore;
-import helix.assets.Storage;
+import helix.assets.StorageService;
 
 /** A host in memory: files by path, each with its headers, answering as a server does (304 to a matching If-None-Match), or not at all while
 	offline. It counts the requests for each path and keeps the headers each was sent with. */
@@ -125,7 +125,7 @@ class AssetCacheTests {
 
 	// A new visit: a service over the host and the kept store, with the manifest given.
 	static function visit(?manifest:String, ?mode:AssetCacheMode):AssetService {
-		var assets = new AssetService(new Fetch(host), new Storage(store), new Storage(new Memory(), true), "http://host/");
+		var assets = new AssetService(new FetchService(host), new StorageService(store), new StorageService(new Memory(), true), "http://host/");
 		if (manifest != null)
 			assets.setManifest(manifest);
 		if (mode != null)

@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -13,6 +17,7 @@ import helix.render3d.Model;
 import helix.render3d.Models;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Lights casting shadows. The sun casts (DirectionalLight.setShadowCasting): each frame, before the frame's own pass, drawShadows draws everything that
 	casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The stage is a floor, a wall, some
@@ -57,11 +62,11 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX shadows");
-		Services.window.requestSize(1000, 600);
+		Window.setTitle("HeliX shadows");
+		Window.requestSize(1000, 600);
 		// Framed for 16:9: the whole stage on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var gpu = Services.graphics;
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0x8caae1ff, .25);
@@ -97,7 +102,7 @@ class App extends BaseApp {
 		// One that casts nothing, and one that nothing shadows.
 		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xf8ed95ff, .35).setShadowCasting(false);
 		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xf395bcff, .35).setShadowReceiving(false);
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -110,9 +115,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setShadowCasting(!sun.isShadowCasting());
 		if (input.isFramePressed(Key.Digit2))
@@ -141,8 +146,8 @@ class App extends BaseApp {
 			sun.setShadowBias(bias, bias * 4);
 		}
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
-		fps.update(dt, Services.getFrameCpu());
+		var time = Time.clock.getTime();
+		fps.update(dt, Time.getFrameCpu());
 		// The spot circles overhead, aimed at the middle of the stage.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);
 		spot.setPosition(sx, 6.5, sz);
@@ -150,20 +155,20 @@ class App extends BaseApp {
 		marker.setPosition(sx, 6.5, sz);
 		if (orbit)
 			angle += dt * .18;
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(11 * Math.sin(angle), 5, 11 * Math.cos(angle), 0, 1.2, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
-		Services.graphics.beginFrame(width, height, 0x7896c8ff);
+		Graphics.beginFrame(width, height, 0x7896c8ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
@@ -185,7 +190,7 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, "left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

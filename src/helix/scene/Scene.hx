@@ -4,7 +4,7 @@ package helix.scene;
 	so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is
 	pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its
 	Loader (getLoader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame
-	(Services.graphics.beginFrame) and draws; the stack ends it, after any transition it draws over. */
+	(Graphics.beginFrame) and draws; the stack ends it, after any transition it draws over. */
 class Scene {
 	@:allow(helix.scene.Scenes)
 	var scenes:Null<Scenes>;

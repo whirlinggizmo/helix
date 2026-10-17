@@ -1,7 +1,12 @@
 import helix.app.BaseApp;
 import helix.time.Ticker;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
+import helix.time.Time;
 import helix.input.Key;
 import helix.math.Interpolate;
 import helix.render2d.Batch2D;
@@ -10,7 +15,7 @@ import helix.render2d.Text2D;
 
 /** Fixed-rate simulation (ticks) against drawing (frames). A deliberately slow 10 Hz tick moves two squares at the same speed: the top one is drawn
 	where the latest tick left it, so it steps; the bottom one between its last two ticks, by the tick fraction, so it moves smoothly at any frame rate.
-	Space pauses the game's clock (Services.clock), and so the ticks, while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
+	Space pauses the game's clock (Time.clock), and so the ticks, while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
 	seen by exactly one tick. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var WIDTH = 800;
@@ -31,10 +36,10 @@ class App extends BaseApp {
 	var framePresses = 0;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX tick");
-		Services.window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D(Services.graphics);
-		ticker = new Ticker(Services.input, 10);
+		Window.setTitle("HeliX tick");
+		Window.requestSize(WIDTH, HEIGHT);
+		batch = new Batch2D(Graphics.instance);
+		ticker = new Ticker(Input.instance, 10);
 	}
 
 	function tick():Void {
@@ -45,41 +50,41 @@ class App extends BaseApp {
 			previousX = x;
 		} // not smoothed across the wrap
 		ticks++;
-		if (Services.input.isPressed(Key.Enter))
+		if (Input.isPressed(Key.Enter))
 			tickPresses++;
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
+		var input = Input.instance;
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;
 		if (input.isFramePressed(Key.Space))
-			if (Services.clock.isPaused())
-				Services.clock.resume();
+			if (Time.clock.isPaused())
+				Time.clock.resume();
 			else
-				Services.clock.pause();
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
-		ticker.advance(Services.clock.getElapsed(), tick);
+				Time.clock.pause();
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
+		ticker.advance(Time.clock.getElapsed(), tick);
 		var t = ticker.getFraction();
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
 		// (LEFT to RIGHT) drawn across the visible width.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth(),
 			vh = presentation.getVisibleHeight();
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
-		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x181a22ff);
+		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x181a22ff);
 		batch.begin(camera);
 		var y = vy + 20;
 		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
 		y += Text2D.drawWrapped(batch,
 			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
-			+ (Services.clock.isPaused() ? "paused (Space resumes)" : "running (Space pauses)"),
+			+ (Time.clock.isPaused() ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
 			- 40, 0xc8c8c8ff)
@@ -92,7 +97,7 @@ class App extends BaseApp {
 		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	static function fixed(value:Float, places:Int):String {

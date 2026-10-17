@@ -2,7 +2,7 @@ package helix.host;
 
 /** The host: what runs the program on a platform (a browser page's frame callbacks, a native process's app loop). It owns the loop, the
 	clock, quitting, the window and where run options come from, and nothing else: the Runner it pumps builds and runs everything the app
-	sees (Services). */
+	sees (the static classes it binds: Window, Input, Graphics and the others). */
 interface IHost {
 	/** Runs the program: init once, when the window and the GPU exist; frame once a display refresh; cleanup once, when it closes (the window
 		closed, quit, or a browser page going away). Natively it returns only after the window closes. */

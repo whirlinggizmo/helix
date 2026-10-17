@@ -1,7 +1,16 @@
 import helix.app.BaseApp;
 import helix.time.Ticker;
 import helix.debug.Autopilot;
-import helix.host.Services;
+import helix.assets.Assets;
+import helix.audio.Audio;
+import helix.debug.TestHarness;
+import helix.graphics.Graphics;
+import helix.graphics.Screenshots;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
+import helix.time.Time;
 import helix.input.IInput;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -44,31 +53,31 @@ class App extends BaseApp {
 
 	public function new() {
 		super();
-		audioEnabled = Services.getOption("audio", "1") == "1";
-		fast = Services.getOption("fast", "0") == "1";
+		audioEnabled = Host.getOption("audio", "1") == "1";
+		fast = Host.getOption("fast", "0") == "1";
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX Asteroids");
-		var seed = Std.parseInt(Services.getOption("seed", "12345"));
+		Window.setTitle("HeliX Asteroids");
+		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
-		batch = new Batch2D(Services.graphics);
-		renderer = new Renderer(Services.graphics, batch);
+		batch = new Batch2D(Graphics.instance);
+		renderer = new Renderer(Graphics.instance, batch);
 		menus();
-		ticker = new Ticker(Services.input);
+		ticker = new Ticker(Input.instance);
 		ticker.setMaxSteps(6);
-		var script = Services.getOption("autopilot", "");
+		var script = Host.getOption("autopilot", "");
 		pilotReady = script == "";
 		if (!pilotReady)
-			Services.assets.load(script, result -> switch result {
+			Assets.load(script, result -> switch result {
 				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> Services.screenshots.take(name), name -> ui.press(name));
+					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name));
 					pilotReady = true;
 					prepare();
 				case Failed(message): throw 'Autopilot load failed: ' + message;
 				case Cancelled:
 			});
-		sounds = new Sounds(Services.audioResources, error -> {
+		sounds = new Sounds(Audio.instance, error -> {
 			if (error != null)
 				throw 'Sound load failed: ' + error;
 			soundReady = true;
@@ -78,7 +87,7 @@ class App extends BaseApp {
 
 	// The title's Play, and game over's Play again and Title, in the HUD's units, as the renderer's panel has them.
 	function menus():Void {
-		pointer = new Pointer(Services.input);
+		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(hud, hudCamera);
 		var theme = new helix.ui.Theme();
 		theme.setFaceColor(0x1f293dff);
@@ -90,7 +99,7 @@ class App extends BaseApp {
 		theme.setWidgetHeight(52);
 		theme.setGap(12);
 		theme.setCornerRadius(12);
-		ui = new Ui(hud, hudCamera, pointer, Services.input, theme);
+		ui = new Ui(hud, hudCamera, pointer, Input.instance, theme);
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
@@ -118,7 +127,7 @@ class App extends BaseApp {
 		}
 		play.setText(ready ? "PLAY" : "LOADING");
 		play.setEnabled(ready);
-		Box.arrange(layout, Renderer.getHudX(Services.presentation), Renderer.getHudY(Services.presentation), Game.W, Game.H, batch.getFont());
+		Box.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.getFont());
 		pointer.update();
 		ui.update();
 		if (play.isClicked() || again.isClicked())
@@ -143,16 +152,16 @@ class App extends BaseApp {
 			autopilot: pilot == null ? null : pilot.getSnapshot(),
 			vertices: batch.getVertexCount(),
 			draws: batch.getDrawCallCount(),
-			width: Services.window.getFramebufferWidth(),
-			height: Services.window.getFramebufferHeight(),
-			focused: Services.window.isFocused()
+			width: Window.getFramebufferWidth(),
+			height: Window.getFramebufferHeight(),
+			focused: Window.isFocused()
 		};
 
 	/** One tick; false once the autopilot is done or the game quit. */
 	function step():Bool {
 		if (stopped)
 			return false;
-		var source:IInput = Services.input;
+		var source:IInput = Input.instance;
 		if (pilot != null) {
 			source = pilot.advance(game.probe);
 			if (pilot.isDone())
@@ -165,41 +174,41 @@ class App extends BaseApp {
 		input.start = input.start || wantStart;
 		input.title = wantTitle;
 		wantStart = wantTitle = false;
-		if (input.quit && Services.canQuit()) {
-			Services.quit();
+		if (input.quit && Host.canQuit()) {
+			Host.quit();
 			stopped = true;
 			return false;
 		}
 		game.step(input);
 		source.consume();
-		sounds.play(game, audioEnabled, Services.window.isFocused());
+		sounds.play(game, audioEnabled, Window.isFocused());
 		return true;
 	}
 
 	override public function frame(dt:Float):Void {
-		if (stopped || Services.window.getFramebufferWidth() <= 0 || Services.window.getFramebufferHeight() <= 0)
+		if (stopped || Window.getFramebufferWidth() <= 0 || Window.getFramebufferHeight() <= 0)
 			return;
-		Field.view(camera, Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight());
+		Field.view(camera, Window.getFramebufferWidth(), Window.getFramebufferHeight());
 		ScreenShape.update();
-		Services.presentation.apply(hudCamera);
+		Screen.apply(hudCamera);
 		if (ready) {
 			if (pilot != null && fast) {
 				for (_ in 0...120)
 					if (!step())
 						break;
-			} else if (Services.window.isFocused())
-				ticker.advance(Services.clock.getElapsed(), () -> step());
+			} else if (Window.isFocused())
+				ticker.advance(Time.clock.getElapsed(), () -> step());
 			else
 				sounds.play(game, false, false);
 		}
 		updateMenu();
-		renderer.render(game, camera, hudCamera, Services.presentation, hud);
+		renderer.render(game, camera, hudCamera, Screen.instance, hud);
 		if (pilot != null && pilot.isDone()) {
-			Services.harness.publish(inspect());
+			TestHarness.publish(inspect());
 			pilot = null;
-			if (Services.getOption("autoclose", "0") == "1") {
+			if (Host.getOption("autoclose", "0") == "1") {
 				stopped = true;
-				Services.quit();
+				Host.quit();
 			}
 		}
 	}

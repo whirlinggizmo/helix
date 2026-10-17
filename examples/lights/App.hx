@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,6 +19,7 @@ import helix.render3d.Node3D;
 import helix.render3d.PointLight;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Directional, point and spot lights on a Stage3D: five standing figures (capsules) on a grid, a dim warm sun, a cyan point light orbiting
 	through them and fading with its range (its marker an unlit sphere), and a white spotlight sweeping across them from above. The stage starts
@@ -35,9 +40,9 @@ class App extends BaseApp {
 	var spot:SpotLight;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX lights");
-		Services.window.requestSize(1000, 600);
-		stage = new Stage3D(Services.graphics);
+		Window.setTitle("HeliX lights");
+		Window.requestSize(1000, 600);
+		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
 		// Framed for 16:9: all the row across on a phone held upright too.
@@ -75,44 +80,44 @@ class App extends BaseApp {
 		spot.setPosition(0, 6, 2);
 		stage.add(spot);
 
-		grid = new Batch3D(Services.graphics);
-		batch = new Batch2D(Services.graphics);
+		grid = new Batch3D(Graphics.instance);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	static function onOff(node:Node3D):String
 		return node.isVisible() ? "on " : "off";
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
+		var input = Input.instance;
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
 			lamp.setVisible(!lamp.isVisible());
 		if (input.isFramePressed(Key.Digit3))
 			spot.setVisible(!spot.isVisible());
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		// The point light orbits through the row; the spot sweeps left and right.
 		var lx = Math.sin(time * .6) * 5, lz = Math.cos(time * .6) * 2;
 		lamp.setPosition(lx, 1.2, lz);
 		marker.setPosition(lx, 1.2, lz);
 		marker.setVisible(lamp.isVisible());
 		spot.lookAt(Math.sin(time * .8) * .7, 5, 1.7);
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x0c0d12ff);
+		Graphics.beginFrame(width, height, 0x0c0d12ff);
 		grid.begin(camera);
 		grid.grid(20, 1, 0x282a32ff);
 		grid.end();
@@ -125,7 +130,7 @@ class App extends BaseApp {
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

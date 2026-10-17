@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.math.Interpolate;
 import helix.math.Random;
@@ -13,6 +17,7 @@ import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Environment;
+import helix.render3d.Environments;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -21,6 +26,7 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
+import helix.time.Time;
 import helix.ui.Box;
 import helix.ui.Button;
 import helix.ui.Label;
@@ -30,8 +36,8 @@ import helix.ui.Ui;
 
 /** A character creator's dressing room: a character on a turntable in a studio's light, dressed slot by slot (head, body, legs, feet, and
 	what she holds) from Quaternius's Ultimate Modular Women, ten outfits whose parts mix freely. Each slot's parts are tiles, their pictures
-	rendered from the parts themselves (render targets) as their files load; a slot's files load only when its tab is opened, through a
-	Models every character shares (here the one on the stage and the one the pictures are taken of), and an Outfit (this example's, over the
+	rendered from the parts themselves (render targets) as their files load; a slot's files load only when its tab is opened, through the
+	Models the program shares (here the one on the stage and the one the pictures are taken of), and an Outfit (this example's, over the
 	framework's binding and attachment queries) wears each choice on
 	the skeleton by joint name, a held part at a joint. Drag to turn her, the wheel to come closer; the camera frames the slot being dressed.
 	Poses play her animations; Random and Reset dress her at once. Pointer, keys (arrows, Tab, Enter; Q and E change slot) or a pad. */
@@ -60,7 +66,6 @@ class App extends BaseApp {
 
 	var stage:Stage3D;
 	var camera = new Camera3D();
-	var models:Models;
 	var animations:Null<ModelFile>;
 	var character:Null<Node3D>;
 	var animator:Null<Animator>;
@@ -104,9 +109,9 @@ class App extends BaseApp {
 	var distance = 3.;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX dressing room");
-		Services.window.requestSize(1280, 720);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX dressing room");
+		Window.requestSize(1280, 720);
+		var gpu = Graphics.instance;
 		stage = new Stage3D(gpu);
 		studio = new Stage3D(gpu);
 		for (s in [stage, studio]) {
@@ -132,10 +137,9 @@ class App extends BaseApp {
 		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		stage.add(disc);
-		models = new Models(Services.assets, Services.textures);
-		outfit = new Outfit(models);
-		modelOutfit = new Outfit(models);
-		Services.environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
+		outfit = new Outfit(Models.instance);
+		modelOutfit = new Outfit(Models.instance);
+		Environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
 			case Ready(value):
 				environment = value;
 				for (s in [stage, studio])
@@ -145,7 +149,7 @@ class App extends BaseApp {
 		});
 		// Her look before she's here: the Outfit wears it once the skeleton arrives.
 		dress(["Casual", "Casual", "Casual", "Casual"], null);
-		models.load(DIR + "Animations.glb", result -> switch result {
+		Models.load(DIR + "Animations.glb", result -> switch result {
 			case Ready(file):
 				animations = file;
 				character = file.instantiate("character");
@@ -174,9 +178,9 @@ class App extends BaseApp {
 
 	// The panel on the right: the slots' tabs, a grid of ten tiles, the poses, and Random and Reset.
 	function buildScreen():Void {
-		pointer = new Pointer(Services.input);
+		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(screen, camera2D);
-		ui = new Ui(screen, camera2D, pointer, Services.input);
+		ui = new Ui(screen, camera2D, pointer, Input.instance);
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
 		title.getNode().setTextSize(26);
@@ -284,7 +288,7 @@ class App extends BaseApp {
 				tile.setTexture(thumbs[p]);
 			else {
 				wanted.push({slot: s, path: p});
-				models.load(p, _ -> {});
+				Models.load(p, _ -> {});
 			}
 		}
 		for (t in tabs)
@@ -301,8 +305,8 @@ class App extends BaseApp {
 		for (w in wanted.copy()) {
 			if (taken >= 2)
 				break;
-			if (!models.isLoaded(w.path)) {
-				if (!models.isLoading(w.path))
+			if (!Models.isLoaded(w.path)) {
+				if (!Models.isLoading(w.path))
 					wanted.remove(w);
 				continue;
 			}
@@ -310,11 +314,11 @@ class App extends BaseApp {
 			for (s in SLOTS)
 				modelOutfit.choose(s, null);
 			modelOutfit.choose(w.slot, w.path);
-			var texture = Texture2D.renderTarget(Services.graphics, THUMB, THUMB);
+			var texture = Texture2D.renderTarget(Graphics.instance, THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
-			Services.graphics.beginTargetPass(texture.getHandle(), 0x2a2f3cff);
+			Graphics.beginTargetPass(texture.getHandle(), 0x2a2f3cff);
 			studio.draw(shot);
-			Services.graphics.endTargetPass();
+			Graphics.endTargetPass();
 			thumbs[w.path] = texture;
 			taken++;
 		}
@@ -409,8 +413,8 @@ class App extends BaseApp {
 		open(SLOTS[(SLOTS.indexOf(slot) + direction + SLOTS.length) % SLOTS.length]);
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		var window = Services.window, presentation = Services.presentation;
+		var input = Input.instance;
+		var window = Window.instance, presentation = Screen.instance;
 		var width = window.getFramebufferWidth(),
 			height = window.getFramebufferHeight();
 		var wanted = ScreenShape.update();
@@ -445,8 +449,8 @@ class App extends BaseApp {
 		}
 		if (reset.isClicked())
 			dress(["Casual", "Casual", "Casual", "Casual"], null);
-		if (Services.canQuit() && ui.isBackPressed())
-			Services.quit();
+		if (Host.canQuit() && ui.isBackPressed())
+			Host.quit();
 		// Which tile shows what she wears in the open slot.
 		var worn = outfit.getChoice(slot);
 		for (i in 0...offered.length)
@@ -474,14 +478,14 @@ class App extends BaseApp {
 		if (animator != null)
 			animator.update(dt);
 		takePictures();
-		var loading = models.getLoadingCount();
+		var loading = Models.getLoadingCount();
 		status = character == null ? "Loading her" : loading > 0 ? 'Loading $loading part${loading == 1 ? "" : "s"}' : 'Dressing: $slot';
 		for (s in SLOTS) {
 			var error = outfit.getError(s);
 			if (error != null)
 				status = error;
 		}
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 
 		camera.setViewport(width, height);
 		camera.setPerspective(35, .05, 100);
@@ -496,7 +500,7 @@ class App extends BaseApp {
 			camera.setView(side, focus + distance * .12, distance, side, focus, 0);
 		}
 		stage.drawShadows(camera);
-		Services.graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
@@ -505,11 +509,11 @@ class App extends BaseApp {
 			16, 0x8a92a8ff);
 		batch.end();
 		hud.setViewport(width, height);
-		hud.pixels(Services.window.getPixelRatio());
+		hud.pixels(Window.getPixelRatio());
 		batch.begin(hud);
-		fps.draw(batch, width / Services.window.getPixelRatio() - 130, 8);
+		fps.draw(batch, width / Window.getPixelRatio() - 130, 8);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
@@ -517,7 +521,6 @@ class App extends BaseApp {
 		studio.destroy();
 		batch.destroy();
 		for (t in thumbs)
-			t.destroy(Services.graphics);
-		models.shutdown();
+			t.destroy(Graphics.instance);
 	}
 }

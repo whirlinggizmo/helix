@@ -1,13 +1,20 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.FpsOverlay;
+import helix.graphics.Graphics;
 import helix.graphics.Shaders;
-import helix.host.Services;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.Environment;
+import helix.render3d.Environments;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -15,6 +22,7 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Tonemap;
+import helix.time.Time;
 
 /** Image-based light, a background and tone mapping: the material spheres (red plastic above, gold below, roughness 0 to 1 left to right), a
 	normal-mapped sphere, a pearl (a surface shader of the example's own that lets the stage shade it) and a car, lit by an environment alone,
@@ -72,10 +80,10 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX environment");
-		Services.window.requestSize(1000, 700);
-		batch = new Batch2D(Services.graphics);
-		stage = new Stage3D(Services.graphics);
+		Window.setTitle("HeliX environment");
+		Window.requestSize(1000, 700);
+		batch = new Batch2D(Graphics.instance);
+		stage = new Stage3D(Graphics.instance);
 		// Framed for 16:9: every column of spheres on a phone held upright too.
 		camera.setMinAspect(16 / 9);
 		var ball = Mesh.sphere(.5, 32, 64);
@@ -86,20 +94,20 @@ class App extends BaseApp {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		Services.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		Textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
-		shaders = new Shaders(Services.assets, Services.graphics);
+		shaders = new Shaders(Assets.instance, Graphics.instance);
 		shaders.load("shaders/pearl.hxshader", result -> switch result {
 			case Ready(shader): pearl.setShader(shader);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setPosition(2.7, -.5, .2);
@@ -111,11 +119,11 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		for (i in 0...PATHS.length) {
-			var started = Services.getTime();
-			Services.environments.load(PATHS[i], result -> switch result {
+			var started = Time.getTime();
+			Environments.load(PATHS[i], result -> switch result {
 				case Ready(environment):
 					environments[i] = environment;
-					loadMs[i] = (Services.getTime() - started) * 1000;
+					loadMs[i] = (Time.getTime() - started) * 1000;
 					// Said in the log too, so a run without a screen shows how long the bake took.
 					trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 				case Failed(message):
@@ -126,9 +134,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.E))
 			current = (current + 1) % NAMES.length;
 		if (input.isFramePressed(Key.B))
@@ -146,14 +154,14 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		// The orbit starts once everything is in (both environments bake at the start): from the front, so a picture taken then (the site's,
 		// once nothing loads) sees the rows, not their ends.
-		if (orbit && !Services.isBusy())
+		if (orbit && !Host.isBusy())
 			angle += dt * .15;
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 
 		var environment = current < PATHS.length ? environments[current] : null;
 		stage.setEnvironment(environment, 1, rotation);
@@ -161,13 +169,13 @@ class App extends BaseApp {
 		stage.setTonemap(TONEMAPS[tonemap]);
 		stage.setExposure(exposure);
 
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -181,7 +189,7 @@ class App extends BaseApp {
 		var readoutY = vy + 36 + Text2D.measureWrapped(font, title, 20, wrap) + 3,
 			bottom = readoutY + Text2D.measureWrapped(font, readout, 16, wrap) - 2;
 
-		Services.graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
@@ -190,13 +198,13 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		for (environment in environments)
 			if (environment != null)
-				Services.environments.release(environment);
+				Environments.release(environment);
 		stage.destroy();
 		batch.destroy();
 	}

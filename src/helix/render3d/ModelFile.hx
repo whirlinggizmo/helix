@@ -8,8 +8,8 @@ import helix.render3d.AnimationClip.TrackInterpolation;
 import helix.render3d.AnimationClip.TrackPath;
 
 /** A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
-	(Models loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
-	together; each copy has lights of its own. Made by Models; read, never changed after.
+	(ModelCache loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
+	together; each copy has lights of its own. Made by ModelCache; read, never changed after.
 
 	Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline
 	or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked
@@ -31,9 +31,9 @@ class ModelFile {
 	var skins:Array<Skin> = [];
 	var clips:Array<AnimationClip> = [];
 
-	/** The file read, its images not yet decoded (Models decodes them and sets them on its materials). Throws, saying why, for a file it can't
+	/** The file read, its images not yet decoded (ModelCache decodes them and sets them on its materials). Throws, saying why, for a file it can't
 		read. */
-	@:allow(helix.render3d.Models)
+	@:allow(helix.render3d.ModelCache)
 	function new(gltf:Gltf) {
 		this.gltf = gltf;
 		for (m in gltf.list("materials"))
@@ -178,7 +178,7 @@ class ModelFile {
 	/** The images materials use, each once (an image two materials share is decoded once): where its file is (in a buffer view, inline, or a
 		file of its own named by a uri relative to the model), how its texture samples (its sampler's filter, linear unless its magnification
 		filter is nearest, and wrap), and what to set once it's decoded. */
-	@:allow(helix.render3d.Models)
+	@:allow(helix.render3d.ModelCache)
 	function images():Array<{source:ImageSource, sampling:Sampling, set:Array<Texture2D->Void>}> {
 		var out:Array<{source:ImageSource, sampling:Sampling, set:Array<Texture2D->Void>}> = [],
 			byKey = new Map<String, Int>();
@@ -233,7 +233,7 @@ class ModelFile {
 		return out;
 	}
 
-	@:allow(helix.render3d.Models)
+	@:allow(helix.render3d.ModelCache)
 	function gltfFile():Gltf
 		return gltf;
 

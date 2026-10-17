@@ -297,21 +297,11 @@ function getBackgroundSize():Int
 - `getBackgroundLevels`: The background cube once done: from getBackgroundSize down to 1, each its six faces one after another, RGBA half floats.
 - `getBackgroundSize`: The background cube's face size, once its size is known (0 before): the image's width over 4, rounded down to a power of two, 64 to 1024.
 
-## EnvironmentLoadResult
+## EnvironmentCache
 
-*enum* in `src/helix/render3d/Environments.hx`
+*class* in `src/helix/render3d/EnvironmentCache.hx`
 
-How an environment load ended.
-
-- `Ready(environment:Environment)`
-- `Failed(message:String)`
-- `Cancelled`
-
-## Environments
-
-*class* in `src/helix/render3d/Environments.hx`
-
-Environment maps from equirectangular images (2:1, latitude-longitude): a Radiance .hdr (true high dynamic range, recommended) or a PNG or JPEG (sRGB, low dynamic range). Loaded through the assets, prepared on the CPU a step at a time within a budget each frame (poll), one at a time, so a load spreads over frames rather than stalling one (a 1K image takes a few hundred milliseconds of steps natively), uploaded, and prepared again and replaced in place when a file changes during development. The host's environments service; the caller releases what it loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does.
+Environment maps from equirectangular images (2:1, latitude-longitude): a Radiance .hdr (true high dynamic range, recommended) or a PNG or JPEG (sRGB, low dynamic range). Loaded through the assets, prepared on the CPU a step at a time within a budget each frame (poll), one at a time, so a load spreads over frames rather than stalling one (a 1K image takes a few hundred milliseconds of steps natively), uploaded, and prepared again and replaced in place when a file changes during development. The runner's is what the Environments static forwards to; the caller releases what it loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does.
 
 ```haxe
 function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
@@ -334,6 +324,38 @@ function shutdown():Void
 - `reloaded`: The file behind a loaded environment changed: it's prepared again and its cubes replaced, keeping its Environment object, so the stages using it show the new one once that's done. A file that no longer reads leaves it as it was.
 - `poll`: Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the Runner calls it once a frame.
 - `shutdown`: Refuses new loads and drops the bakes under way; the environments already loaded stay until released.
+
+## EnvironmentLoadResult
+
+*enum* in `src/helix/render3d/EnvironmentCache.hx`
+
+How an environment load ended.
+
+- `Ready(environment:Environment)`
+- `Failed(message:String)`
+- `Cancelled`
+
+## Environments
+
+*class* in `src/helix/render3d/Environments.hx`
+
+Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from EnvironmentCache's public members with their doc comments.
+
+```haxe
+static var instance(default, null):EnvironmentCache
+static function getBudgetMs():Float
+static function setBudgetMs(value:Float):Bool
+static function isBusy():Bool
+static function load(path:String, complete:EnvironmentLoadResult -> Void):IRequest
+static function release(environment:Environment):Void
+```
+
+- `instance`: The environments forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `getBudgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it.
+- `setBudgetMs`: False for a budget of 0 or less.
+- `isBusy`: Whether anything is still loading or being prepared.
+- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. complete runs exactly once on the host thread: Failed for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
+- `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 
 ## Gltf
 
@@ -683,46 +705,14 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
 - `getJoint`: The node its joint index follows; null past them or unbound.
 - `bindSkeleton`: Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
 
-## ModelFile
+## ModelCache
 
-*class* in `src/helix/render3d/ModelFile.hx`
+*class* in `src/helix/render3d/ModelCache.hx`
 
-A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file (Models loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw together; each copy has lights of its own. Made by Models; read, never changed after. Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins (each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models bound to that copy's joints; animations as AnimationClips (getClips), their tracks targeting nodes by name, so a file of animations alone plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights), metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints).
-
-```haxe
-function getWarnings():Array<String>
-function getSkins():Array<Skin>
-function getClips():Array<AnimationClip>
-function getClip(name:String):Null<AnimationClip>
-function getMaterials():Array<Material>
-function instantiate(?name:String = ""):Node3D
-```
-
-- `getWarnings`: What the file used that isn't read yet, each once.
-- `getSkins`: Its skins, in the file's order: the joints its skinned meshes follow.
-- `getClips`: Its animations, in the file's order.
-- `getClip`: The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it); null for none.
-- `getMaterials`: Its materials, in the file's order: change one and every copy's parts with it change.
-- `instantiate`: A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an empty). A node with both a mesh and a light is the model, the light its first child.
-
-## ModelLoadResult
-
-*enum* in `src/helix/render3d/Models.hx`
-
-How a model load ended.
-
-- `Ready(file:ModelFile)`
-- `Failed(message:String)`
-- `Cancelled`
-
-## Models
-
-*class* in `src/helix/render3d/Models.hx`
-
-Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through Textures. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures.
+Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through a TextureCache. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models static forwards to.
 
 ```haxe
-function new(assets:IAssets, textures:Textures)
+function new(assets:IAssets, textures:TextureCache)
 function load(path:String, complete:ModelLoadResult -> Void):IRequest
 function find(path:String):Null<ModelFile>
 function isLoaded(path:String):Bool
@@ -742,6 +732,64 @@ function shutdown():Void
 - `put`: Adds a file loaded some other way under path, as if loaded from there (a test's, a generated one).
 - `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
 - `shutdown`: Cancels every load (each caller waiting gets Cancelled) and forgets every file.
+
+## ModelFile
+
+*class* in `src/helix/render3d/ModelFile.hx`
+
+A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file (ModelCache loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw together; each copy has lights of its own. Made by ModelCache; read, never changed after. Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins (each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models bound to that copy's joints; animations as AnimationClips (getClips), their tracks targeting nodes by name, so a file of animations alone plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights), metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints).
+
+```haxe
+function getWarnings():Array<String>
+function getSkins():Array<Skin>
+function getClips():Array<AnimationClip>
+function getClip(name:String):Null<AnimationClip>
+function getMaterials():Array<Material>
+function instantiate(?name:String = ""):Node3D
+```
+
+- `getWarnings`: What the file used that isn't read yet, each once.
+- `getSkins`: Its skins, in the file's order: the joints its skinned meshes follow.
+- `getClips`: Its animations, in the file's order.
+- `getClip`: The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it); null for none.
+- `getMaterials`: Its materials, in the file's order: change one and every copy's parts with it change.
+- `instantiate`: A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an empty). A node with both a mesh and a light is the model, the light its first child.
+
+## ModelLoadResult
+
+*enum* in `src/helix/render3d/ModelCache.hx`
+
+How a model load ended.
+
+- `Ready(file:ModelFile)`
+- `Failed(message:String)`
+- `Cancelled`
+
+## Models
+
+*class* in `src/helix/render3d/Models.hx`
+
+Model files (glTF 2.0), loaded once and shared by path (ModelCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ModelCache's public members with their doc comments.
+
+```haxe
+static var instance(default, null):ModelCache
+static function load(path:String, complete:ModelLoadResult -> Void):IRequest
+static function find(path:String):Null<ModelFile>
+static function isLoaded(path:String):Bool
+static function isLoading(path:String):Bool
+static function getLoadingCount():Int
+static function put(path:String, file:ModelFile):Void
+static function forget(path:String):Void
+```
+
+- `instance`: The models forwarded to, for what takes a ModelCache (a Loader, an outfit): the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). complete runs exactly once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: Ready once its images are in (one that fails leaves its material untextured, with a warning), Failed for a load failure, a buffer that won't load, or a file it can't read, Cancelled when the request is (the shared load goes on for the others) or the service shuts down.
+- `find`: The file at path if it's loaded, else null.
+- `isLoaded`: Whether path is loaded.
+- `isLoading`: Whether path is loading.
+- `getLoadingCount`: How many files are loading.
+- `put`: Adds a file loaded some other way under path, as if loaded from there (a test's, a generated one).
+- `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
 
 ## Node3D
 

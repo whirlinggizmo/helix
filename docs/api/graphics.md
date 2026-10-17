@@ -14,6 +14,74 @@ How a pipeline's colors meet what the framebuffer has: replacing it, blended ove
 
 What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major, its first 64 bytes) whose y row it negates in such a pass.
 
+## Graphics
+
+*class* in `src/helix/graphics/Graphics.hx`
+
+The GPU: textures, buffers, shaders, pipelines, passes and draws. Shutting it down is the runner's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IGraphics's public members with their doc comments.
+
+```haxe
+static var instance(default, null):IGraphics
+static function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = helix.graphics.TextureFormat.Rgba8):Int
+static function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
+static function createDataTexture(width:Int, height:Int):Int
+static function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
+static function canSample(format:TextureFormat):Bool
+static function getMsaaSamples():Int
+static function getMaxMsaaSamples():Int
+static function createRenderTarget(width:Int, height:Int):Int
+static function createShadowMap(size:Int, layers:Int):Int
+static function destroyTexture(handle:Int):Void
+static function createBuffer(capacityBytes:Int):Int
+static function createStaticBuffer(data:haxe.io.Bytes, bytes:Int, index:Bool):Int
+static function updateBuffer(handle:Int, data:haxe.io.Bytes, usedBytes:Int):Void
+static function destroyBuffer(handle:Int):Void
+static function createShader(source:ShaderSource):Int
+static function destroyShader(handle:Int):Void
+static function createPipeline(desc:PipelineDesc):Int
+static function destroyPipeline(handle:Int):Void
+static function beginShadowPass(map:Int, layer:Int):Void
+static function beginTargetPass(target:Int, clearColor:Int):Void
+static function endTargetPass():Void
+static function beginFrame(width:Int, height:Int, clearColor:Int):Void
+static function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
+static function applyScissor(x:Int, y:Int, w:Int, h:Int):Void
+static function resetScissor():Void
+static function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<haxe.io.Bytes>>):Void
+static function endFrame():Void
+static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
+```
+
+- `instance`: The GPU forwarded to: the profile's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `createTexture`: Uploads an image, rows top first, and returns its handle. levels is the image then, optionally, its mipmaps, each half the size of the last (at least 1; Mipmaps.build makes them for RGBA8), each format.levelBytes of its size. How it is sampled is each draw's (Sampling). Throws for a size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample.
+- `createCubeTexture`: Uploads a cubemap, each face size x size, and returns its handle, sampled at a texture slot like any texture (the samplings' filter applies, their wrap doesn't: a cube's faces meet). levels is mip 0 then, optionally, its mips, each half the size of the last (at least 1), each its six faces one after another (+X, -X, +Y, -Y, +Z, -Z, in GL's cube orientation: a face's first row is its t = 0), each face format.levelBytes of its size. Throws for a size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample.
+- `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
+- `updateDataTexture`: Replaces a data texture's whole contents with data's first width * height * 16 bytes (rows top first, little-endian floats), for the draws after it; any number of times a frame. Throws for a handle that isn't a data texture or data too short.
+- `canSample`: Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them.
+- `getMsaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
+- `getMaxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
+- `createRenderTarget`: Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less.
+- `createShadowMap`: Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow texture. Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. Throws for a size or layer count of 0 or less, or past this GPU's.
+- `destroyTexture`: Frees a texture of any kind. Whoever created a handle destroys it, once. Throws for an unknown handle.
+- `createBuffer`: Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle. Throws for another size.
+- `createStaticBuffer`: Makes an immutable buffer of the first bytes of data (a positive multiple of 4) and returns its handle: vertices, or with index true uint32 indices (little-endian). Throws for a bad size.
+- `updateBuffer`: Replaces a stream buffer's contents with the first usedBytes of data, for the draws after it; inside a pass, any number of times a frame (a buffer drawn into a target and then the screen is uploaded twice). Throws outside a pass, for an unknown handle or a size out of range.
+- `destroyBuffer`: Frees a buffer. Whoever created a handle destroys it, once. Throws for an unknown handle.
+- `createShader`: Builds a program from source (the dialect this adapter compiles, its attributes by slot, its uniform blocks and its textures, each declared as a plain, cube, shadow or data texture) and returns its handle, for pipelines. Throws, with the compiler's log, for one that doesn't build.
+- `destroyShader`: Frees a program; the pipelines made with it are destroyed first. Throws for an unknown handle.
+- `createPipeline`: Makes a pipeline as desc says (PipelineDesc) and returns its handle. Throws for an unknown shader or a description it can't make.
+- `destroyPipeline`: Frees a pipeline. Whoever created a handle destroys it, once. Throws for an unknown handle.
+- `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
+- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
+- `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
+- `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
+- `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
+- `applyScissor`: Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as applyViewport), until resetScissor or the pass ends; a pass begins unclipped. Throws outside a pass or for a size below 0.
+- `resetScissor`: Draws everywhere in the pass again. Throws outside a pass.
+- `draw`: Draws through pipeline: count vertices from first of its buffers (or, for an indexed pipeline, count indices from first of indices, a static index buffer), whole primitives, as instanceCount instances whose records start at record firstInstance of its instanced buffers. buffers[i] is the buffer (createBuffer's, as this frame's upload left it, or createStaticBuffer's) for the pipeline's buffer i (0 for a gap); textures[i] is bound at the program's texture slot i (0 for a slot it doesn't sample), sampled as samplings[i] says (a shadow map or data texture as its kind is); uniforms[i] is the bytes of its uniform block at slot i (its declared size; null for a slot it lacks), block 0 flipped as the pipeline's clip flip says. A pipeline without buffers draws count vertices from nothing (one triangle over the viewport: three). Throws for anything invalid, before drawing.
+- `endFrame`: Ends the screen's pass and with it the frame, presenting it. Throws when no screen pass is open.
+- `readPixels`: Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and checks, not every frame. Throws inside a pass or for a handle that isn't a render target.
+
 ## GraphicsUnavailable
 
 *class* in `src/helix/graphics/GraphicsUnavailable.hx`
@@ -286,18 +354,18 @@ function draw(source:Texture2D, width:Int, height:Int, time:Float):Void
 
 ## ScreenshotResult
 
-*enum* in `src/helix/graphics/Screenshots.hx`
+*enum* in `src/helix/graphics/ScreenshotService.hx`
 
 How a screenshot ended: where it was saved and its PNG file, or why it wasn't.
 
 - `Saved(where:String, png:haxe.io.Bytes)`
 - `Failed(message:String)`
 
-## Screenshots
+## ScreenshotService
 
-*class* in `src/helix/graphics/Screenshots.hx`
+*class* in `src/helix/graphics/ScreenshotService.hx`
 
-Screenshots, the same on every platform: the next frame the app ends is read back (IGraphics.readPixels), encoded as PNG (Png) and handed to the user (IExport: a download in a browser, a file natively). The Runner calls frameEnded after each of the app's frames. Encoding runs on the host thread, so the frame it's taken in is slower.
+Screenshots, the same on every platform: the next frame the app ends is read back (IGraphics.readPixels), encoded as PNG (Png) and handed to the user (IExport: a download in a browser, a file natively). The Runner calls frameEnded after each of the app's frames. Encoding runs on the host thread, so the frame it's taken in is slower. The runner's is what the Screenshots static forwards to.
 
 ```haxe
 function new(graphics:IGraphics, export:IExport, prefix:String)
@@ -310,6 +378,20 @@ function shutdown():Void
 - `take`: Takes a screenshot of the next frame the app ends, saved as name (a plain file name ending .png; by default prefix, the date and time, and a count, as "asteroids-2026-10-14-153012-1.png"). done, when given, runs once on the host thread after that frame. Failed after shutdown. Throws for a name that isn't a plain .png file name.
 - `frameEnded`: After the app's frame: takes the screenshots asked for, from the frame it just ended. Nothing when none were asked for.
 - `shutdown`: Fails what was asked for and refuses more.
+
+## Screenshots
+
+*class* in `src/helix/graphics/Screenshots.hx`
+
+Screenshots of the frame, saved for the user (a download in a browser, a file natively; ScreenshotService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ScreenshotService's public members with their doc comments.
+
+```haxe
+static var instance(default, null):ScreenshotService
+static function take(?name:String, ?done:ScreenshotResult -> Void):Void
+```
+
+- `instance`: The screenshots forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `take`: Takes a screenshot of the next frame the app ends, saved as name (a plain file name ending .png; by default prefix, the date and time, and a count, as "asteroids-2026-10-14-153012-1.png"). done, when given, runs once on the host thread after that frame. Failed after shutdown. Throws for a name that isn't a plain .png file name.
 
 ## SdlGpuStages
 

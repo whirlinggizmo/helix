@@ -1,6 +1,11 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -16,6 +21,7 @@ import helix.render3d.Model;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Drawing into textures (Texture2D.renderTarget, IGraphics.beginTargetPass):
 	- "pixel view": the stage drawn into a 160x100 texture and shown 4x larger with nearest sampling, a low-resolution pixel-art look
@@ -47,9 +53,9 @@ class App extends BaseApp {
 	var globe:Model;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX render targets");
-		Services.window.requestSize(1000, 560);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX render targets");
+		Window.requestSize(1000, 560);
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		pixelView = Texture2D.renderTarget(gpu, PIXEL_W, PIXEL_H, false);
 		minimap = Texture2D.renderTarget(gpu, MINIMAP, MINIMAP);
@@ -82,7 +88,7 @@ class App extends BaseApp {
 		globe.setScale(1.6, 1.6, 1.6);
 		stage.add(globe);
 
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				car = file.instantiate("car");
 				car.setScale(.9, .9, .9);
@@ -92,7 +98,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		// The built-in font until it has loaded.
-		new Fonts(Services.assets, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
+		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
 			case Ready(loaded):
 				font = loaded;
 			case Failed(message):
@@ -109,20 +115,20 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
-			Services.quit();
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
+			Host.quit();
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
-		fps.update(dt, Services.getFrameCpu());
+		var time = Time.clock.getTime();
+		fps.update(dt, Time.getFrameCpu());
 		if (car != null) {
 			// Drives in a circle.
 			car.setPosition(Math.cos(time * .6) * 2.5, 0, Math.sin(time * .6) * 2.5);
 			car.setRotation(0, -time * .6, 0);
 		}
 		globe.setRotation(0, time * .8, 0);
-		var gpu = Services.graphics,
-			width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var gpu = Graphics.instance,
+			width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 
 		// 1. The label, first, so the views below use this frame's text.
 		gpu.beginTargetPass(label.getHandle(), 0x1e3c8cff);
@@ -147,7 +153,7 @@ class App extends BaseApp {
 		gpu.endTargetPass();
 
 		// The screen, in the design for the window's shape.
-		var shape = ScreenShape.update(), presentation = Services.presentation;
+		var shape = ScreenShape.update(), presentation = Screen.instance;
 		presentation.apply(screen);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -172,7 +178,7 @@ class App extends BaseApp {
 
 	override public function cleanup():Void {
 		for (texture in [pixelView, minimap, label])
-			texture.destroy(Services.graphics);
+			texture.destroy(Graphics.instance);
 		stage.destroy();
 		batch.destroy();
 	}

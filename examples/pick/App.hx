@@ -1,10 +1,15 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.render2d.Textures;
 import helix.render3d.Animator;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
@@ -19,6 +24,7 @@ import helix.render3d.PickHit;
 import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Text3D;
+import helix.time.Time;
 
 /** Every kind a Stage3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
 	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). The hit's
@@ -38,9 +44,9 @@ class App extends BaseApp {
 	var angle = .3;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX pick");
-		Services.window.requestSize(1000, 600);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX pick");
+		Window.requestSize(1000, 600);
+		var gpu = Graphics.instance;
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
 		// Framed for 16:9: everything pickable in view on a phone held upright too.
@@ -72,7 +78,7 @@ class App extends BaseApp {
 		label.setPickable(true);
 		label.setPosition(1, 2.4, -2);
 		stage.add(label);
-		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				var logo = new Sprite3D(texture, 0x7ab4ffff);
 				logo.setName("a sprite");
@@ -81,8 +87,7 @@ class App extends BaseApp {
 				stage.add(logo);
 			case _:
 		});
-		var models = new Models(Services.assets, Services.textures);
-		models.load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("a car");
 				car.setPosition(3, 0, 1);
@@ -94,7 +99,7 @@ class App extends BaseApp {
 		var files = new Map<String, ModelFile>(),
 			names = ["Animations", "Casual_Body", "Casual_Head", "Casual_Legs", "Casual_Feet"];
 		for (name in names)
-			models.load('models/modular-women/$name.glb', result -> switch result {
+			Models.load('models/modular-women/$name.glb', result -> switch result {
 				case Ready(file):
 					files[name] = file;
 					if (Lambda.count(files) == names.length) dress(files);
@@ -137,30 +142,30 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (orbit)
 			angle += dt * .2;
 		if (animator != null)
 			animator.update(dt);
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 5, 9 * Math.cos(angle), 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 		picked = stage.pick(camera, input.getPointerX(), input.getPointerY(), hit);
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch3D.begin(camera);
 		if (picked != null) {
@@ -178,10 +183,10 @@ class App extends BaseApp {
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
 		y += Text2D.drawWrapped(batch, line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
-		Text2D.drawWrapped(batch, "O: the camera" + (Services.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, "O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

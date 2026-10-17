@@ -1,7 +1,11 @@
 import haxe.io.Bytes;
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -9,6 +13,7 @@ import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.scene.Pointer;
+import helix.time.Time;
 import helix.ui.Box;
 import helix.ui.Button;
 import helix.ui.Label;
@@ -56,12 +61,12 @@ class App extends BaseApp {
 	var corner:Label;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX ui");
-		Services.window.requestSize(1000, 600);
-		batch = new Batch2D(Services.graphics);
-		pointer = new Pointer(Services.input);
+		Window.setTitle("HeliX ui");
+		Window.requestSize(1000, 600);
+		batch = new Batch2D(Graphics.instance);
+		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(stage, camera);
-		ui = new Ui(stage, camera, pointer, Services.input);
+		ui = new Ui(stage, camera, pointer, Input.instance);
 		var frame = panelImage();
 		main = ui.panel("main");
 		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
@@ -71,7 +76,7 @@ class App extends BaseApp {
 		openSettings = ui.button("Settings");
 		openLevels = ui.button("Levels");
 		quit = ui.button("Quit");
-		quit.setEnabled(Services.canQuit());
+		quit.setEnabled(Host.canQuit());
 		for (w in [title, play, openSettings, openLevels, quit])
 			main.add(w);
 		settings = ui.panel("settings");
@@ -130,7 +135,7 @@ class App extends BaseApp {
 				pixels.set(at + 2, value);
 				pixels.set(at + 3, cut ? 0 : 255);
 			}
-		return Texture2D.fromRgba(Services.graphics, size, size, pixels);
+		return Texture2D.fromRgba(Graphics.instance, size, size, pixels);
 	}
 
 	function show(which:String):Void {
@@ -142,12 +147,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var input = Input.instance;
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -165,8 +170,8 @@ class App extends BaseApp {
 					show("settings");
 				if (openLevels.isClicked())
 					show("levels");
-				if (quit.isClicked() || ui.isBackPressed() && Services.canQuit())
-					Services.quit();
+				if (quit.isClicked() || ui.isBackPressed() && Host.canQuit())
+					Host.quit();
 			case "settings":
 				if (sound.isChanged())
 					status = 'Sound ${sound.isOn() ? "on" : "off"}';
@@ -188,20 +193,20 @@ class App extends BaseApp {
 		loading = (loading + dt * .2) % 1;
 		bar.setValue(loading);
 		corner.setText('focus: ${ui.getFocusedName() == "" ? "none" : ui.getFocusedName()}${ui.isCapturingKeys() ? " (keys)" : ""}');
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 
-		Services.graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0x14161cff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		Text2D.drawWrapped(batch, status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
 		Text2D.drawWrapped(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
-		hud.pixels(Services.window.getPixelRatio());
+		hud.pixels(Window.getPixelRatio());
 		batch.setCamera(hud);
 		fps.draw(batch, 12, 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void

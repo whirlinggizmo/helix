@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -8,6 +12,8 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render2d.Textures;
+import helix.time.Time;
 
 /** Sprites on a Stage2D, in the design for the window's shape and spread over what's visible of it:
 	- "sheet": the 256x256 logo as a 2x2 sprite sheet, its region stepping through the quarters like animation frames
@@ -34,9 +40,9 @@ class App extends BaseApp {
 	var hovered = -1;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX sprite2d");
-		Services.window.requestSize(900, 520);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX sprite2d");
+		Window.requestSize(900, 520);
+		batch = new Batch2D(Graphics.instance);
 		// Colors are values, so cycle a palette.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;
@@ -55,7 +61,7 @@ class App extends BaseApp {
 		sprites[2].setPivot(0, 0);
 		sprites[2].setSize(96, 96);
 		sprites[4].setSize(96, 96);
-		Services.textures.load(LOGO, true, result -> switch result {
+		Textures.load(LOGO, true, result -> switch result {
 			case Ready(texture):
 				logo = texture;
 				for (i in 0...4)
@@ -64,7 +70,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		Services.textures.load(WHITE_LOGO, true, result -> switch result {
+		Textures.load(WHITE_LOGO, true, result -> switch result {
 			case Ready(texture):
 				sprites[4].setTexture(texture);
 			case Failed(message):
@@ -87,17 +93,17 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var time = Time.clock.getTime();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
 		var shape = ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -143,7 +149,7 @@ class App extends BaseApp {
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		if (logo != null)
@@ -155,7 +161,7 @@ class App extends BaseApp {
 			vx + 12, line, 16, vw - 96, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void

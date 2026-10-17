@@ -1,11 +1,16 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render2d.Textures;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -14,6 +19,7 @@ import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Textured sprites on a 3D stage, under a circling camera, over a grid (Batch3D) and a lit pedestal:
 	- the logo, facing the camera as it circles, bobbing over the pedestal (blended by its alpha)
@@ -49,11 +55,11 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX sprite3d");
-		Services.window.requestSize(1000, 600);
+		Window.setTitle("HeliX sprite3d");
+		Window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var gpu = Services.graphics;
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -91,7 +97,7 @@ class App extends BaseApp {
 		coin.setFacing(Ground);
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
 				logo.setTexture(texture);
 				logo.setTint(0x66bfffff);
@@ -99,7 +105,7 @@ class App extends BaseApp {
 				trace(message);
 			case Cancelled:
 		});
-		Services.textures.load("textures/tiles.png", false, result -> switch result {
+		Textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
 				for (sprite in tileSprites)
 					sprite.setTexture(texture);
@@ -108,7 +114,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 		// Masked flames, cut out where their soft edges fade: a row of them behind the pedestal.
-		Services.textures.load("textures/flame.png", true, result -> switch result {
+		Textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				for (i in 0...5) {
 					var flame = new Sprite3D(texture, 0xffa040ff);
@@ -135,31 +141,31 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch3D.begin(camera);
 		batch3D.grid(16, 1, 0x3c3f48ff);
 		batch3D.end();
@@ -173,7 +179,7 @@ class App extends BaseApp {
 			vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

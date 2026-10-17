@@ -1,5 +1,6 @@
 import helix.app.BaseApp;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Window;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 
@@ -9,16 +10,16 @@ class App extends BaseApp {
 	var camera = new Camera2D();
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX skeleton");
-		Services.window.requestSize(800, 600);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX skeleton");
+		Window.requestSize(800, 600);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	override public function frame(dt:Float):Void {
-		camera.setViewport(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight());
-		Services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0xf5f5f5ff);
+		camera.setViewport(Window.getFramebufferWidth(), Window.getFramebufferHeight());
+		Graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0xf5f5f5ff);
 		batch.begin(camera);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 }

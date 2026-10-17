@@ -577,21 +577,11 @@ function destroy(gpu:IGraphics):Void
 - `getWhiteV`: V of the center of an opaque white texel, or -1 when it has none.
 - `destroy`: Frees the GPU texture on gpu, the adapter that made it.
 
-## TextureLoadResult
+## TextureCache
 
-*enum* in `src/helix/render2d/Textures.hx`
+*class* in `src/helix/render2d/TextureCache.hx`
 
-How a texture load ended.
-
-- `Ready(texture:Texture2D)`
-- `Failed(message:String)`
-- `Cancelled`
-
-## Textures
-
-*class* in `src/helix/render2d/Textures.hx`
-
-Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The host's textures service; the caller releases what it loads.
+Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures static forwards to; the caller releases what it loads.
 
 ```haxe
 function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
@@ -612,6 +602,38 @@ function shutdown():Void
 - `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 - `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
 - `shutdown`: Refuses new loads; the textures already loaded stay until released.
+
+## TextureLoadResult
+
+*enum* in `src/helix/render2d/TextureCache.hx`
+
+How a texture load ended.
+
+- `Ready(texture:Texture2D)`
+- `Failed(message:String)`
+- `Cancelled`
+
+## Textures
+
+*class* in `src/helix/render2d/Textures.hx`
+
+Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache's public members with their doc comments.
+
+```haxe
+static var instance(default, null):TextureCache
+static function getCandidates(path:String):Array<String>
+static function getPath(texture:Texture2D):Null<String>
+static function load(path:String, linear:Bool, complete:TextureLoadResult -> Void):IRequest
+static function decode(encoded:haxe.io.Bytes, linear:Bool, complete:TextureLoadResult -> Void):IRequest
+static function release(texture:Texture2D):Void
+```
+
+- `instance`: The textures forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
+- `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
+- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.setSampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
+- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread.
+- `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 
 ## TrueType
 

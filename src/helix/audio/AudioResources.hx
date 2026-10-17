@@ -17,6 +17,7 @@ enum AudioLoadResult<T> {
 /** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or
 	packaged copy (or a remote URL where the platform plays one), their lifetimes counted, and playbacks, which wait while audio hasn't
 	started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it. */
+@:build(helix.macro.Facade.record())
 class AudioResources implements IReloadable {
 	var assets:IAssets;
 	var backend:IAudio;

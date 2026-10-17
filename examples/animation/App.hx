@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,6 +19,7 @@ import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and her parts from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
@@ -42,10 +47,10 @@ class App extends BaseApp {
 	var angle = 0.;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX animation");
-		Services.window.requestSize(1000, 600);
+		Window.setTitle("HeliX animation");
+		Window.requestSize(1000, 600);
 		camera.setMinAspect(16 / 9);
-		stage = new Stage3D(Services.graphics);
+		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xc8d2ffff, .35);
 		var sun = new DirectionalLight();
 		sun.setIntensity(2.5);
@@ -57,10 +62,9 @@ class App extends BaseApp {
 		ground.setBaseColor(0x5a5f6aff);
 		ground.setRoughness(.9);
 		stage.add(new Model(Mesh.plane(10, 10), ground));
-		var models = new Models(Services.assets, Services.textures);
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)
-			models.load(DIR + name + ".glb", result -> switch result {
+			Models.load(DIR + name + ".glb", result -> switch result {
 				case Ready(file):
 					parts.push(file);
 					wear(file);
@@ -69,7 +73,7 @@ class App extends BaseApp {
 				case Cancelled:
 			});
 		// The skeleton: the animations file's, which has no meshes.
-		models.load(DIR + "Animations.glb", result -> switch result {
+		Models.load(DIR + "Animations.glb", result -> switch result {
 			case Ready(file):
 				animations = file;
 				character = file.instantiate("character");
@@ -82,7 +86,7 @@ class App extends BaseApp {
 				status = 'Animations: $message';
 			case Cancelled:
 		});
-		batch = new Batch2D(Services.graphics);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her, so they follow her clips.
@@ -110,9 +114,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (animator != null) {
@@ -129,21 +133,21 @@ class App extends BaseApp {
 		}
 		if (orbit)
 			angle += dt * .3;
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(3 * Math.sin(angle), 1.6, 3 * Math.cos(angle), 0, .9, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
@@ -153,13 +157,13 @@ class App extends BaseApp {
 		y += Text2D.drawWrapped(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
 		Text2D.drawWrapped(batch,
 			'F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
-			+ (Services.canQuit() ? "   ESC: quit" : ""), vx
-			+ 12,
-			y, 16, vw
+			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
+			+ 12, y,
+			16, vw
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

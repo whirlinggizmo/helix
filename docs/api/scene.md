@@ -36,7 +36,7 @@ function texture(path:String, linear:Bool, complete:TextureLoadResult -> Void):I
 function clip(path:String, complete:AudioLoadResult<AudioClip> -> Void):IRequest
 function stream(path:String, complete:AudioLoadResult<AudioStream> -> Void):IRequest
 function environment(path:String, complete:EnvironmentLoadResult -> Void):IRequest
-function model(models:Models, path:String, complete:ModelLoadResult -> Void):IRequest
+function model(models:ModelCache, path:String, complete:ModelLoadResult -> Void):IRequest
 ```
 
 - `new`: No loads yet: done, at progress 1.
@@ -46,12 +46,12 @@ function model(models:Models, path:String, complete:ModelLoadResult -> Void):IRe
 - `isDone`: Whether every load has ended.
 - `getFailures`: What failed, each as its name and the reason.
 - `wrap`: Counts a load the game makes itself: wrap its completion, naming it; failed gives the reason for a result that failed, or null.
-- `asset`: An asset's bytes through Services.assets.
-- `texture`: A texture through Services.textures (linear: not sRGB, for data such as normal maps).
-- `clip`: A sound clip through Services.audioResources.
-- `stream`: A sound stream through Services.audioResources.
-- `environment`: An environment through Services.environments (ready once it's prepared).
-- `model`: A model file through models (a game's Models over the services).
+- `asset`: An asset's bytes through Assets.
+- `texture`: A texture through Textures (linear: not sRGB, for data such as normal maps).
+- `clip`: A sound clip through Audio.
+- `stream`: A sound stream through Audio.
+- `environment`: An environment through Environments (ready once it's prepared).
+- `model`: A model file through models (Models.instance, or a ModelCache of the test's).
 
 ## Loading
 
@@ -186,7 +186,7 @@ function getHit3D():Null<PickHit>
 
 *class* in `src/helix/scene/Scene.hx`
 
-One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides, so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its Loader (getLoader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame (Services.graphics.beginFrame) and draws; the stack ends it, after any transition it draws over.
+One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides, so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its Loader (getLoader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame (Graphics.beginFrame) and draws; the stack ends it, after any transition it draws over.
 
 ```haxe
 function new()
@@ -218,7 +218,7 @@ function draw():Void
 
 *class* in `src/helix/scene/Scenes.hx`
 
-A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur, on unless turned off); focus resumes them. Scenes read input through getInput (Services.input, or what an autopilot gives through setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
+A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur, on unless turned off); focus resumes them. Scenes read input through getInput (Input.instance, or what an autopilot gives through setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
 
 ```haxe
 function new()
@@ -251,8 +251,8 @@ function destroy():Void
 - `getTop`: The scene on top, or null.
 - `getCount`: How many scenes are stacked.
 - `getAll`: The scenes, bottom first.
-- `getInput`: The input scenes read: Services.input, or what setInput gave.
-- `setInput`: What scenes read instead of Services.input: an autopilot's.
+- `getInput`: The input scenes read: Input.instance, or what setInput gave.
+- `setInput`: What scenes read instead of Input.instance: an autopilot's.
 - `getLoadingScene`: The scene shown while the top one's loads are pending, or null for none (the scene shows itself loading).
 - `setLoadingScene`: Sets the loading scene: the built-in Loading to start, any LoadingScene, or null to show none.
 - `isPauseOnBlur`: Whether the window losing focus pauses the game's clock and the top scene.

@@ -1,12 +1,17 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
+import helix.time.Time;
 
 /** 3D with a 2D overlay: a camera orbiting the origin over a grid and the axes, a solid cube in its wire frame and two spheres, depth-tested, then
 	text drawn over them. Escape quits where quitting means anything. */
@@ -18,33 +23,33 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX hello3d");
-		Services.window.requestSize(900, 700);
-		batch3D = new Batch3D(Services.graphics);
-		batch2D = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX hello3d");
+		Window.requestSize(900, 700);
+		batch3D = new Batch3D(Graphics.instance);
+		batch2D = new Batch2D(Graphics.instance);
 		// Framed for 16:9: the spheres either side stay in view on a phone held upright too.
 		camera3D.setMinAspect(16 / 9);
 	}
 
 	override public function frame(dt:Float):Void {
-		if (Services.canQuit() && Services.input.isFramePressed(Key.Escape))
-			Services.quit();
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
+			Host.quit();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second.
-		var angle = Services.getTime() * .4;
+		var angle = Time.getTime() * .4;
 		camera3D.setViewport(width, height);
 		camera3D.setView(Math.cos(angle) * 16, 9, Math.sin(angle) * 16, 0, 1, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x1c1c26ff);
+		Graphics.beginFrame(width, height, 0x1c1c26ff);
 		batch3D.begin(camera3D);
 		batch3D.grid(20, 1, 0x505050ff);
 		batch3D.line(0, 0, 0, 5, 0, 0, 0xe62937ff);
@@ -62,7 +67,7 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch2D, "orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch2D, vx + 12, vy + 10);
 		batch2D.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

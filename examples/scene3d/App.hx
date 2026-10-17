@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -15,6 +19,7 @@ import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
+import helix.time.Time;
 
 /** A scene under the pointer (the earlier frameworks' scene3d): eight shapes in a ring about a sphere, a cube turning above them, under a
 	circling camera. The shape under the pointer lightens; a click selects it or lets it go. A HUD over the world (a Stage2D) has a button that
@@ -49,11 +54,11 @@ class App extends BaseApp {
 	var spin = 0.;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX scene3d");
-		Services.window.requestSize(1000, 600);
+		Window.setTitle("HeliX scene3d");
+		Window.requestSize(1000, 600);
 		// Framed for 16:9: the whole ring on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		stage = new Stage3D(Services.graphics);
+		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new DirectionalLight();
 		sun.setIntensity(2.5);
@@ -91,22 +96,22 @@ class App extends BaseApp {
 		hud.add(button);
 		label = Node2D.text("", 16, 0xf5f5f5ff);
 		hud.add(label);
-		pointer = new Pointer(Services.input);
+		pointer = new Pointer(Input.instance);
 		pointer.addStage3D(stage, camera);
 		pointer.addStage2D(hud, hudCamera);
-		batch = new Batch2D(Services.graphics);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The HUD in the design for the window's shape; the button sits under the title, however many lines it wraps to.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hudCamera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -135,9 +140,9 @@ class App extends BaseApp {
 			angle += dt * .25;
 		spin += dt;
 		spinner.setRotation(spin * .7, spin, 0);
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
@@ -152,11 +157,11 @@ class App extends BaseApp {
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)
 			+ 4;
-		if (Services.canQuit())
+		if (Host.canQuit())
 			Text2D.draw(batch, "ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

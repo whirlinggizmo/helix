@@ -53,7 +53,7 @@ class Ticker {
 		return true;
 	}
 
-	/** Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Services.clock's for the game's time), at most getMaxSteps of
+	/** Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Time.clock's for the game's time), at most getMaxSteps of
 		them; returns how many ran. */
 	public function advance(elapsed:Float, tick:Void->Void):Int {
 		accumulator += Math.max(0, elapsed);

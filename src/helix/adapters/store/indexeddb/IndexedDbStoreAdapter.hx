@@ -2,9 +2,9 @@ package helix.adapters.store.indexeddb;
 
 import haxe.io.Bytes;
 import helix.assets.IStore;
-import helix.assets.Storage.StorageResult;
-import helix.assets.Storage.StorageSourceResult;
-import helix.assets.Storage.StorageWriteResult;
+import helix.assets.StorageService.StorageResult;
+import helix.assets.StorageService.StorageSourceResult;
+import helix.assets.StorageService.StorageWriteResult;
 
 /** IStore in a browser: Blobs in an IndexedDB database, a lease a Blob URL (released by revoking it). Operations asked before the database
 	opens wait for it. */

@@ -2,8 +2,8 @@ package helix.assets;
 
 import helix.core.WorkQueue;
 import helix.assets.IAssets;
-import helix.assets.Storage;
-import helix.assets.Fetch;
+import helix.assets.StorageService;
+import helix.assets.FetchService;
 import helix.assets.AssetManifest;
 
 /** How obtain treats a cached copy: Revalidate uses a fresh one and asks about a stale one; Ask always asks; Force downloads past it. */
@@ -41,9 +41,9 @@ private class Attempt {
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
 class AssetService implements IAssets {
-	var fetcher:Fetch;
-	var cache:Storage;
-	var packaged:Storage;
+	var fetcher:FetchService;
+	var cache:StorageService;
+	var packaged:StorageService;
 	var base:Null<String>;
 	var queue = new WorkQueue();
 	var live = true;
@@ -58,7 +58,7 @@ class AssetService implements IAssets {
 	var session:Map<String, haxe.io.Bytes> = [];
 
 	/** Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three. */
-	public function new(fetcher:Fetch, cache:Storage, packaged:Storage, base:Null<String>) {
+	public function new(fetcher:FetchService, cache:StorageService, packaged:StorageService, base:Null<String>) {
 		this.fetcher = fetcher;
 		this.cache = cache;
 		this.packaged = packaged;

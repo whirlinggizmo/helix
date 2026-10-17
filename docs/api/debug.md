@@ -43,7 +43,7 @@ function draw(batch:Batch2D, x:Float, y:Float, ?size:Float = 16., ?color:Int = 0
 - `new`: An overlay showing 0 until half a second of frames has been seen.
 - `getFrameRate`: Frames a second over the last half second.
 - `getFrameMs`: The frame's average cost in milliseconds over the last half second.
-- `update`: dt: the frame's interval; cpu: what the frame cost, in milliseconds (Services.getFrameCpu).
+- `update`: dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.getFrameCpu).
 - `draw`: Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xRRGGBBAA.
 
 ## ITestHarness
@@ -56,4 +56,18 @@ How a program hands its result to the check that launched it (an autopilot's fin
 function publish(value:Dynamic):Void
 ```
 
+- `publish`: Hands value (JSON-able) to the check: window.result in a browser; natively a JSON line on stdout, also written to the file HELIX_RESULT names.
+
+## TestHarness
+
+*class* in `src/helix/debug/TestHarness.hx`
+
+Where results go for the check that launched the program (an autopilot's final state, a test's checks). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ITestHarness's public members with their doc comments.
+
+```haxe
+static var instance(default, null):ITestHarness
+static function publish(value:Dynamic):Void
+```
+
+- `instance`: The harness forwarded to: the profile's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `publish`: Hands value (JSON-able) to the check: window.result in a browser; natively a JSON line on stdout, also written to the file HELIX_RESULT names.

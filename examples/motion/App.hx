@@ -1,7 +1,11 @@
 import helix.app.BaseApp;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.math.Curve;
 import helix.math.Random;
@@ -10,11 +14,12 @@ import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
+import helix.time.Time;
 import helix.time.Timers;
 import helix.tween.Ease;
 import helix.tween.Tweens;
 
-/** Motion from the game's clock (Services.clock): a column of squares each tweened across by one easing and back (yoyo, for ever); a ball
+/** Motion from the game's clock (Time.clock): a column of squares each tweened across by one easing and back (yoyo, for ever); a ball
 	following a closed curve through points at a steady speed (Curve, by distance); a timer dropping a spark every half second that falls and
 	fades by two tweens onto a floor (counted there by Collide2D); and the squares' colors dealt by a seeded Random. Space pauses the clock,
 	which stops all of it at once; - and = slow and quicken it; R deals the colors again from the seed. Escape quits where quitting means
@@ -63,9 +68,9 @@ class App extends BaseApp {
 	var caught = 0;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX motion");
-		Services.window.requestSize(1000, 600);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX motion");
+		Window.requestSize(1000, 600);
+		batch = new Batch2D(Graphics.instance);
 		// A square a row, each tweened from 0 to 300 across and back by its easing, for ever, a little apart in time.
 		for (i in 0...EASES.length) {
 			var square = Node2D.rectangle(24, 24, COLORS[i]);
@@ -120,9 +125,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input, clock = Services.clock;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance, clock = Time.clock;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Space))
 			if (clock.isPaused())
 				clock.resume();
@@ -139,11 +144,11 @@ class App extends BaseApp {
 		timers.update(clock.getDelta());
 		along += clock.getDelta() * 160;
 		var t = curve.getParameterAtDistance(along);
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 
 		// Laid out in the design for the window's shape: the squares down the left, the path and the floor on the right (below, upright).
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -171,9 +176,9 @@ class App extends BaseApp {
 				caught++;
 		}
 
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
-		Services.graphics.beginFrame(width, height, 0x0c0e16ff);
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
+		Graphics.beginFrame(width, height, 0x0c0e16ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		var y = vy + 36;
@@ -183,7 +188,7 @@ class App extends BaseApp {
 			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void

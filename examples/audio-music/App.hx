@@ -1,13 +1,19 @@
 import helix.app.BaseApp;
+import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
 import helix.audio.AudioStream;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.time.Time;
 
 /** Looping music and a one-shot click. The music is streamed (decoded as it plays), the click decoded as it loads. The sound plays off the frame's
 	thread on both targets (natively the mixer's, on the web the browser's), so it plays on through a slow frame: S stalls one for 300 ms.
@@ -20,10 +26,10 @@ class App extends BaseApp {
 	var click:Null<AudioClip>;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX audio");
-		Services.window.requestSize(720, 240);
-		batch = new Batch2D(Services.graphics);
-		var audio = Services.audioResources;
+		Window.setTitle("HeliX audio");
+		Window.requestSize(720, 240);
+		batch = new Batch2D(Graphics.instance);
+		var audio = Audio.instance;
 		audio.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
 			case Ready(stream):
 				// The playback holds the stream; the program lets its own reference go.
@@ -48,27 +54,27 @@ class App extends BaseApp {
 		};
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
+		var input = Input.instance;
 		if (input.isFramePressed(Key.Space) && click != null)
-			Services.audioResources.play(click);
+			Audio.play(click);
 		if (input.isFramePressed(Key.S)) {
 			// A deliberately slow frame.
-			var until = Services.getTime() + .3;
-			while (Services.getTime() < until) {}
+			var until = Time.getTime() + .3;
+			while (Time.getTime() < until) {}
 		}
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
-		fps.update(dt, Services.getFrameCpu());
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
+		fps.update(dt, Time.getFrameCpu());
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x12141cff);
+		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
@@ -80,12 +86,12 @@ class App extends BaseApp {
 		}, vx + 24, y, 18, vw - 48, 0x66bfffff) + 7.5;
 		y += Text2D.drawWrapped(batch, click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0x00e430ff) + 17.5;
 		Text2D.drawWrapped(batch, "[SPACE] play click   [M] pause music   [S] stall 300 ms"
-			+ (Services.canQuit() ? "   [ESC] quit" : ""), vx
+			+ (Host.canQuit() ? "   [ESC] quit" : ""), vx
 			+ 24, y, 16,
 			vw
 			- 48, 0xc8c8c8ff);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 }

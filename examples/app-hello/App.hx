@@ -1,10 +1,15 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.time.Time;
 
 /** 2D shapes, text and input: a marker follows the mouse, typing shows what was typed (Backspace takes the last character back),
 	and Escape quits where quitting means anything. The frame rate is drawn at the top. */
@@ -15,28 +20,28 @@ class App extends BaseApp {
 	var typed = "";
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX hello");
-		Services.window.requestSize(800, 600);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX hello");
+		Window.requestSize(800, 600);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Backspace) && typed.length > 0)
 			typed = typed.substr(0, typed.length - 1);
 		if (typed.length + input.getText().length < 64)
 			typed += input.getText();
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		// The drawing in the design for the window's shape, from the visible area's top-left corner.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var x = presentation.getVisibleX(),
 			y = presentation.getVisibleY(),
 			width = presentation.getVisibleWidth();
-		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0xf5f5f5ff);
+		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0xf5f5f5ff);
 		batch.begin(camera);
 		// filled and outlined rectangles
 		batch.rect(x + 40, y + 40, 200, 120, 0x66bfffff);
@@ -52,10 +57,10 @@ class App extends BaseApp {
 		// text
 		Text2D.draw(batch, "HeliX", x + 40, y + 360, 32, 0x505050ff);
 		var below = Text2D.drawWrapped(batch, typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);
-		if (Services.canQuit())
+		if (Host.canQuit())
 			Text2D.draw(batch, "press Esc to quit", x + 40, y + 420 + below, 16, 0x828282ff);
 		fps.draw(batch, x + 40, y + 12);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 }

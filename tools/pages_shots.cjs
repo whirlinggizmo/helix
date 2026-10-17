@@ -1,7 +1,7 @@
 // The Pages site's thumbnails (tools/pages.py): opens each served example in a headless browser at 1280 x 720, waits, captures the page and
 // writes a 640 x 360 WebP, scaled and encoded by the browser itself. First on the GPU; once a page says the platform can't draw
 // (window.graphicsUnavailable), the rest on SwiftShader, the browser's software renderer, as CI's machines have no GPU (tools/autopilot.cjs).
-// A page is captured once it has settled: its services loading nothing (window.helixBusy false, from Services.isBusy) for SETTLE ms on end,
+// A page is captured once it has settled: its services loading nothing (window.helixBusy false, from Host.isBusy) for SETTLE ms on end,
 // so what it loads is in and drawn, or at its wait's end, whichever comes first.
 // Arguments: the browser, the site's URL, the output folder, a file for what each page requested (its paths on the site, as JSON by example:
 // what it loaded before its capture), then name=milliseconds for each example, the longest wait before its capture.

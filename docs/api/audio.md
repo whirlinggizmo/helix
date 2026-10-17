@@ -2,6 +2,24 @@
 
 [Back to the index](README.md)
 
+## Audio
+
+*class* in `src/helix/audio/Audio.hx`
+
+Sounds: clips and streams loaded through the assets, decoded and played (AudioResources). The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments.
+
+```haxe
+static var instance(default, null):AudioResources
+static function loadClip(path:String, complete:AudioLoadResult<AudioClip> -> Void):IRequest
+static function loadStream(path:String, complete:AudioLoadResult<AudioStream> -> Void):IRequest
+static function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
+```
+
+- `instance`: The sounds forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
+- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
+- `play`: Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1.
+
 ## AudioClip
 
 *class* in `src/helix/audio/AudioClip.hx`

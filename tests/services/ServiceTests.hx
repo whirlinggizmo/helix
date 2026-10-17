@@ -1,5 +1,5 @@
-import helix.assets.Fetch;
-import helix.assets.Storage;
+import helix.assets.FetchService;
+import helix.assets.StorageService;
 import helix.assets.IAssets;
 import helix.assets.AssetService;
 import helix.audio.AudioResources;
@@ -13,8 +13,8 @@ import haxe.io.Bytes;
 class ServiceTests {
 	static var checks = 0;
 	static var env:ServiceEnvironment;
-	static var fetcher:Fetch;
-	static var storage:Storage;
+	static var fetcher:FetchService;
+	static var storage:StorageService;
 	static var assets:AssetService;
 	static var audio:AudioResources;
 	static var decoding:helix.audio.AudioDecoding;
@@ -53,9 +53,9 @@ class ServiceTests {
 
 	static function main():Void {
 		env = new ServiceEnvironment();
-		fetcher = new Fetch(env.fetcher);
-		storage = new Storage(env.storage);
-		assets = new AssetService(fetcher, storage, new Storage(env.packaged, true), env.base + "/assets/");
+		fetcher = new FetchService(env.fetcher);
+		storage = new StorageService(env.storage);
+		assets = new AssetService(fetcher, storage, new StorageService(env.packaged, true), env.base + "/assets/");
 		decoding = new helix.audio.AudioDecoding(env.decoder);
 		audio = new AudioResources(assets, env.audio, decoding);
 		steps = [

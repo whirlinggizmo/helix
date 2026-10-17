@@ -178,6 +178,94 @@ function shutdown():Void
 - `setTextEntry`: Asks the platform for typed text while on (SDL3's text input; a soft keyboard where the platform has one), and no longer when off. The router calls it before a poll, as the app's text entry (IInput.setTextEntry) changes; off until then.
 - `shutdown`: Releases the platform's input, after the app's cleanup.
 
+## Input
+
+*class* in `src/helix/input/Input.hx`
+
+Keyboard, mouse, touch and gamepads, as this frame and tick see them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IInput's public members with their doc comments.
+
+```haxe
+static var instance(default, null):IInput
+static function isDown(key:Key):Bool
+static function isPressed(key:Key):Bool
+static function isReleased(key:Key):Bool
+static function isFramePressed(key:Key):Bool
+static function isFrameReleased(key:Key):Bool
+static function getPointerX():Float
+static function getPointerY():Float
+static function isPointerDown():Bool
+static function isPointerPressed():Bool
+static function isPointerReleased():Bool
+static function isPointerFramePressed():Bool
+static function isPointerFrameReleased():Bool
+static function isMouseDown(button:MouseButton):Bool
+static function isMousePressed(button:MouseButton):Bool
+static function isMouseFramePressed(button:MouseButton):Bool
+static function isMouseReleased(button:MouseButton):Bool
+static function isMouseFrameReleased(button:MouseButton):Bool
+static function getWheelX():Float
+static function getWheelY():Float
+static function getText():String
+static function isTextEntry():Bool
+static function setTextEntry(on:Bool):Void
+static function getTouches():Array<Touch>
+static function isTouchGesture():Bool
+static function getTouchGestureCenterX():Float
+static function getTouchGestureCenterY():Float
+static function getTouchGesturePanX(?perTick:Bool = false):Float
+static function getTouchGesturePanY(?perTick:Bool = false):Float
+static function getTouchGestureScale(?perTick:Bool = false):Float
+static function getTouchGestureRotation(?perTick:Bool = false):Float
+static function getPadCount():Int
+static function getPad(index:Int):Null<Gamepad>
+static function isActivated():Bool
+static function isAnyFramePressed():Bool
+static function isPadDown(button:PadButton):Bool
+static function isPadPressed(button:PadButton):Bool
+static function getPadAxis(axis:PadAxis):Float
+static function consume():Void
+```
+
+- `instance`: The input forwarded to: the runner's router's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `isDown`: Whether the key is held now.
+- `isPressed`: The key went down: a tick edge, counted until consume() takes it.
+- `isReleased`: The key came up: a tick edge, counted until consume() takes it.
+- `isFramePressed`: The key went down this frame: a frame edge.
+- `isFrameReleased`: The key came up this frame: a frame edge.
+- `getPointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
+- `getPointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
+- `isPointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
+- `isPointerPressed`: The primary pointer went down: a tick edge, counted until consume() takes it.
+- `isPointerReleased`: The primary pointer came up: a tick edge, counted until consume() takes it.
+- `isPointerFramePressed`: The primary pointer went down this frame: a frame edge.
+- `isPointerFrameReleased`: The primary pointer came up this frame: a frame edge.
+- `isMouseDown`: Whether the mouse button is held now.
+- `isMousePressed`: The mouse button went down: a tick edge, counted until consume() takes it.
+- `isMouseFramePressed`: The mouse button went down this frame: a frame edge.
+- `isMouseReleased`: The button came up: a counted tick edge, as a key's.
+- `isMouseFrameReleased`: The button came up this frame: a frame edge.
+- `getWheelX`: Wheel notches this frame; up and right are positive.
+- `getWheelY`: Vertical wheel notches this frame; up is positive.
+- `getText`: Characters typed this frame, after the keyboard layout; only while text entry is on (setTextEntry).
+- `isTextEntry`: Whether typed text is being taken (setTextEntry); off at start.
+- `setTextEntry`: Takes typed text or stops: on, getText carries the characters typed, and a platform with a soft keyboard shows it for them; off, keys are only keys and the keyboard stays down. The UI turns it on while a text field has focus; a game reading getText itself turns it on while it types (a name entered, a chat line) and off after.
+- `getTouches`: Fingers down, and those lifted this frame.
+- `isTouchGesture`: Whether two fingers are down: the two down longest make the gesture.
+- `getTouchGestureCenterX`: The point between the gesture's fingers now, in framebuffer pixels; 0 without a gesture.
+- `getTouchGestureCenterY`: See getTouchGestureCenterX.
+- `getTouchGesturePanX`: How far the point between the fingers moved, in framebuffer pixels: this frame, or since the last tick with perTick.
+- `getTouchGesturePanY`: See getTouchGesturePanX.
+- `getTouchGestureScale`: How much the fingers spread (over 1) or pinched (under 1), as a factor: this frame, or since the last tick with perTick; 1 without.
+- `getTouchGestureRotation`: How far the line between the fingers turned, in radians, clockwise on screen positive: this frame, or since the last tick with perTick.
+- `getPadCount`: Four slots, connected or not.
+- `getPad`: null for an index out of range.
+- `isActivated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
+- `isAnyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as isActivated's doesn't.
+- `isPadDown`: Any connected pad.
+- `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
+- `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
+- `consume`: Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges.
+
 ## InputRouter
 
 *class* in `src/helix/input/InputRouter.hx`

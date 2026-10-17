@@ -1,6 +1,8 @@
 package helix.scene;
 
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Screen;
+import helix.host.Window;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
@@ -95,17 +97,17 @@ class Loading extends LoadingScene {
 	}
 
 	override public function draw():Void {
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		if (batch == null)
-			batch = new Batch2D(Services.graphics);
-		Services.presentation.apply(camera);
-		var p = Services.presentation;
+			batch = new Batch2D(Graphics.instance);
+		Screen.apply(camera);
+		var p = Screen.instance;
 		var vx = p.getVisibleX(),
 			vy = p.getVisibleY(),
 			vw = p.getVisibleWidth(),
 			vh = p.getVisibleHeight();
-		Services.graphics.beginFrame(width, height, theme.getPanelColor());
+		Graphics.beginFrame(width, height, theme.getPanelColor());
 		batch.begin(camera);
 		if (image != null) {
 			// Covering: scaled to fill the visible area, its middle kept; else whole, centered, as large as fits.

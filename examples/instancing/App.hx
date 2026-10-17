@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -13,6 +17,7 @@ import helix.render3d.Model;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a Stage3D does when models agree on everything
 	but where they stand and their tint. A field of 400 cubes shares one mesh and one material, so it is one draw; six cars share one file, so
@@ -57,9 +62,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX instancing");
-		Services.window.requestSize(1000, 600);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX instancing");
+		Window.requestSize(1000, 600);
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xa0b4dcff, .35);
@@ -94,7 +99,7 @@ class App extends BaseApp {
 			stage.add(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				for (i in 0...CARS) {
 					var car = file.instantiate('car $i');
@@ -110,16 +115,16 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var time = Time.clock.getTime();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(time * .15) * 22, 12, Math.cos(time * .15) * 22, 0, 1, 0);
 		for (i in 0...cubes.length) {
@@ -133,13 +138,13 @@ class App extends BaseApp {
 			cars[i].setRotation(0, Math.PI + Math.sin(time + i * .35) * .6, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
@@ -149,7 +154,7 @@ class App extends BaseApp {
 			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

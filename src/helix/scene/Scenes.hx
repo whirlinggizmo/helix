@@ -1,15 +1,19 @@
 package helix.scene;
 
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Window;
 import helix.input.IInput;
+import helix.input.Input;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.time.Time;
 
 /** A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off
 	(the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the
 	scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in
 	Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur,
-	on unless turned off); focus resumes them. Scenes read input through getInput (Services.input, or what an autopilot gives through
+	on unless turned off); focus resumes them. Scenes read input through getInput (Input.instance, or what an autopilot gives through
 	setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option
 	quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded. */
 class Scenes {
@@ -34,8 +38,8 @@ class Scenes {
 	public function new() {
 		loading = new Loading();
 		loading.scenes = this;
-		input = Services.input;
-		quick = Services.isRunning() && Services.getOption("quick", "0") == "1";
+		input = Input.instance;
+		quick = Host.isRunning() && Host.getOption("quick", "0") == "1";
 	}
 
 	/** Whether the built-in screens' waits and the transitions are skipped (the run option quick=1, or setQuick). */
@@ -58,11 +62,11 @@ class Scenes {
 	public function getAll():Array<Scene>
 		return stack.copy();
 
-	/** The input scenes read: Services.input, or what setInput gave. */
+	/** The input scenes read: Input.instance, or what setInput gave. */
 	public function getInput():IInput
 		return input;
 
-	/** What scenes read instead of Services.input: an autopilot's. */
+	/** What scenes read instead of Input.instance: an autopilot's. */
 	public function setInput(value:IInput):Void
 		input = value;
 
@@ -175,8 +179,8 @@ class Scenes {
 			if (elapsed >= transition.getSeconds())
 				transition = null;
 		}
-		if (Services.window != null)
-			focus(Services.window.isFocused());
+		if (Window.instance != null)
+			focus(Window.isFocused());
 		var top = getTop();
 		if (top == null)
 			return;
@@ -210,17 +214,17 @@ class Scenes {
 		else
 			top.draw();
 		if (transition != null) {
-			var width = Services.window.getFramebufferWidth(),
-				height = Services.window.getFramebufferHeight();
+			var width = Window.getFramebufferWidth(),
+				height = Window.getFramebufferHeight();
 			if (batch == null)
-				batch = new Batch2D(Services.graphics);
+				batch = new Batch2D(Graphics.instance);
 			camera.setViewport(width, height);
 			camera.pixels(1);
 			batch.begin(camera);
 			transition.draw(batch, width, height, Math.min(1, elapsed / transition.getSeconds()));
 			batch.end();
 		}
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	/** Frees what it made (the transition batch); the scenes are cleared first. */
@@ -237,8 +241,8 @@ class Scenes {
 			focused = true;
 		if (!focused && !blurred) {
 			blurred = true;
-			if (Services.clock != null && !Services.clock.isPaused()) {
-				Services.clock.pause();
+			if (Time.clock != null && !Time.clock.isPaused()) {
+				Time.clock.pause();
 				pausedClock = true;
 			}
 			var top = getTop();
@@ -246,8 +250,8 @@ class Scenes {
 				top.pause();
 		} else if (focused && blurred) {
 			blurred = false;
-			if (pausedClock && Services.clock != null)
-				Services.clock.resume();
+			if (pausedClock && Time.clock != null)
+				Time.clock.resume();
 			pausedClock = false;
 			var top = getTop();
 			if (top != null)

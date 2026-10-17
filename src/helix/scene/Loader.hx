@@ -4,12 +4,15 @@ import helix.assets.IRequest;
 import helix.audio.AudioClip;
 import helix.audio.AudioResources.AudioLoadResult;
 import helix.audio.AudioStream;
-import helix.host.Services;
-import helix.render2d.Textures.TextureLoadResult;
-import helix.render3d.Environments.EnvironmentLoadResult;
+import helix.assets.Assets;
+import helix.audio.Audio;
+import helix.render2d.Textures;
+import helix.render3d.Environments;
+import helix.render2d.TextureCache.TextureLoadResult;
+import helix.render3d.EnvironmentCache.EnvironmentLoadResult;
 import helix.render3d.ModelFile;
-import helix.render3d.Models;
-import helix.render3d.Models.ModelLoadResult;
+import helix.render3d.ModelCache;
+import helix.render3d.ModelCache.ModelLoadResult;
 
 /** A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (getProgress, from how many
 	have ended) and the scene starts once they're done (isDone), with what failed by name (getFailures). Each load goes through the service
@@ -55,48 +58,48 @@ class Loader {
 		};
 	}
 
-	/** An asset's bytes through Services.assets. */
+	/** An asset's bytes through Assets. */
 	public function asset(path:String, complete:helix.assets.IAssets.AssetResult->Void):IRequest
-		return Services.assets.ensure(path, wrap(path, complete, r -> switch r {
+		return Assets.ensure(path, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";
 			case _: null;
 		}));
 
-	/** A texture through Services.textures (linear: not sRGB, for data such as normal maps). */
+	/** A texture through Textures (linear: not sRGB, for data such as normal maps). */
 	public function texture(path:String, linear:Bool, complete:TextureLoadResult->Void):IRequest
-		return Services.textures.load(path, linear, wrap(path, complete, r -> switch r {
+		return Textures.load(path, linear, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";
 			case _: null;
 		}));
 
-	/** A sound clip through Services.audioResources. */
+	/** A sound clip through Audio. */
 	public function clip(path:String, complete:AudioLoadResult<AudioClip>->Void):IRequest
-		return Services.audioResources.loadClip(path, wrap(path, complete, r -> switch r {
+		return Audio.loadClip(path, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";
 			case _: null;
 		}));
 
-	/** A sound stream through Services.audioResources. */
+	/** A sound stream through Audio. */
 	public function stream(path:String, complete:AudioLoadResult<AudioStream>->Void):IRequest
-		return Services.audioResources.loadStream(path, wrap(path, complete, r -> switch r {
+		return Audio.loadStream(path, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";
 			case _: null;
 		}));
 
-	/** An environment through Services.environments (ready once it's prepared). */
+	/** An environment through Environments (ready once it's prepared). */
 	public function environment(path:String, complete:EnvironmentLoadResult->Void):IRequest
-		return Services.environments.load(path, wrap(path, complete, r -> switch r {
+		return Environments.load(path, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";
 			case _: null;
 		}));
 
-	/** A model file through models (a game's Models over the services). */
-	public function model(models:Models, path:String, complete:ModelLoadResult->Void):IRequest
+	/** A model file through models (Models.instance, or a ModelCache of the test's). */
+	public function model(models:ModelCache, path:String, complete:ModelLoadResult->Void):IRequest
 		return models.load(path, wrap(path, complete, r -> switch r {
 			case Failed(message): message;
 			case Cancelled: "cancelled";

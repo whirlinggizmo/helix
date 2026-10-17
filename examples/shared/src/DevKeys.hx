@@ -1,5 +1,6 @@
 import helix.app.IApp;
-import helix.host.Services;
+import helix.graphics.Screenshots;
+import helix.input.Input;
 import helix.input.Key;
 
 /** The examples' development keys, around any example's app: F9 saves a screenshot of the frame (a download in a browser, a file in the
@@ -15,8 +16,8 @@ class DevKeys implements IApp {
 		app.init();
 
 	public function frame(dt:Float):Void {
-		if (Services.input.isFramePressed(Key.F9))
-			Services.screenshots.take(null, result -> switch result {
+		if (Input.isFramePressed(Key.F9))
+			Screenshots.take(null, result -> switch result {
 				case Saved(where, _): trace('Screenshot saved: $where');
 				case Failed(message): trace('Screenshot failed: $message');
 			});

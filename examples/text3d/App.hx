@@ -1,6 +1,11 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -16,6 +21,7 @@ import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Text3D;
+import helix.time.Time;
 
 /** Text in the world, and 3D lines: labels facing the camera above a cube, a sphere and a panel (the built-in font), a sign whose text turns
 	with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground with Batch3D's lines. Text is sharp at any distance
@@ -49,11 +55,11 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX text3d");
-		Services.window.requestSize(1000, 600);
+		Window.setTitle("HeliX text3d");
+		Window.requestSize(1000, 600);
 		// Framed for 16:9: all three models and their labels on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var gpu = Services.graphics;
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		lines = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
@@ -82,7 +88,7 @@ class App extends BaseApp {
 		signText.setPosition(0, 1.6, .05);
 		sign.add(signText);
 		stage.add(sign);
-		new Fonts(Services.assets, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
+		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
 			case Ready(font):
 				signText.setFont(font);
 			case Failed(message):
@@ -92,31 +98,31 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		if (orbit)
 			angle += dt * .25;
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		cube.setRotation(0, time * .8, 0);
 		sign.setRotation(0, Math.sin(time * .7) * .9, 0);
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 9, 4, Math.cos(angle) * 9, 0, .8, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0x1c1e26ff);
 		lines.begin(camera);
 		lines.grid(16, 1, 0x34373fff);
 		// Circles on the ground under each model, and a spiral around them all.
@@ -141,7 +147,7 @@ class App extends BaseApp {
 			vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

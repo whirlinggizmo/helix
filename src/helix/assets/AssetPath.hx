@@ -1,6 +1,6 @@
 package helix.assets;
 
-/** Validates asset and storage keys, for the asset service, the shared Storage and model files. */
+/** Validates asset and storage keys, for the asset service, the shared StorageService and model files. */
 class AssetPath {
 	/** Whether path is a safe relative path: 1 to 256 characters of A-Z, a-z, 0-9, '_', '.', '-' and '/', with no empty, "." or ".." segment (so no leading slash and no URL). */
 	public static function isValid(path:String):Bool {

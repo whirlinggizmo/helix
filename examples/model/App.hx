@@ -1,6 +1,10 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -13,6 +17,7 @@ import helix.render3d.Model;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
 	under its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its parts are found by name
@@ -42,9 +47,9 @@ class App extends BaseApp {
 	var roll = 0.;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX model");
-		Services.window.requestSize(1000, 600);
-		stage = new Stage3D(Services.graphics);
+		Window.setTitle("HeliX model");
+		Window.requestSize(1000, 600);
+		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
 		camera.setMinAspect(16 / 9);
@@ -58,7 +63,7 @@ class App extends BaseApp {
 		ground.setRoughness(.9);
 		stage.add(new Model(Mesh.plane(14, 14), ground));
 
-		new Models(Services.assets, Services.textures).load(MODEL, result -> switch result {
+		Models.load(MODEL, result -> switch result {
 			case Ready(file):
 				car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -78,13 +83,13 @@ class App extends BaseApp {
 				status = message;
 			case Cancelled:
 		});
-		batch = new Batch2D(Services.graphics);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		if (car != null && input.isFramePressed(Key.H)) {
@@ -107,33 +112,33 @@ class App extends BaseApp {
 		roll += dt * 3;
 		for (wheel in wheels)
 			wheel.setRotation(roll, 0, 0);
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
 		chase.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(chasing ? chase : camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(batch, 'HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		Text2D.drawWrapped(batch, "D: drive   C: ride along   O: the camera   H: the headlights"
-			+ (Services.canQuit() ? "   ESC: quit" : ""), vx
+			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y, 16,
 			vw
 			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

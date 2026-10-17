@@ -4,9 +4,9 @@ import haxe.io.Bytes;
 import haxe.io.Path;
 import helix.adapters.shared.Mailbox;
 import helix.assets.IStore;
-import helix.assets.Storage.StorageResult;
-import helix.assets.Storage.StorageSourceResult;
-import helix.assets.Storage.StorageWriteResult;
+import helix.assets.StorageService.StorageResult;
+import helix.assets.StorageService.StorageSourceResult;
+import helix.assets.StorageService.StorageWriteResult;
 import helix.adapters.shared.ReplaceBridge;
 import sys.thread.Thread;
 

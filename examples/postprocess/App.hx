@@ -1,9 +1,14 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.FpsOverlay;
+import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
 import helix.graphics.Shaders;
-import helix.host.Services;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -16,6 +21,7 @@ import helix.render3d.Model;
 import helix.render3d.Models;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor, generated
 	shapes, a circling point light. The effects are the example's own shaders (shaders/vignette.glsl and scanlines.glsl, packed into
@@ -45,9 +51,9 @@ class App extends BaseApp {
 	var status = "loading the effects";
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX postprocess");
-		Services.window.requestSize(1000, 600);
-		var gpu = Services.graphics;
+		Window.setTitle("HeliX postprocess");
+		Window.requestSize(1000, 600);
+		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		post = new PostProcess(gpu);
 		stage = new Stage3D(gpu);
@@ -77,7 +83,7 @@ class App extends BaseApp {
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			stage.add(model);
 		}
-		new Models(Services.assets, Services.textures).load("models/car-kit/sedan-sports.glb", result -> switch result {
+		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
 			case Ready(file):
 				var car = file.instantiate("car");
 				car.setScale(1.5, 1.5, 1.5);
@@ -87,7 +93,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 
-		shaders = new Shaders(Services.assets, gpu);
+		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/vignette.hxshader", result -> switch result {
 			case Ready(shader):
 				vignette = new ScreenEffect(gpu, shader);
@@ -112,9 +118,9 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Digit1) && vignette != null)
 			vignette.setEnabled(!vignette.isEnabled());
 		if (input.isFramePressed(Key.Digit2) && scanlines != null)
@@ -128,21 +134,21 @@ class App extends BaseApp {
 		if (input.isDown(Key.Down))
 			strength = Math.max(0, strength - dt * .5);
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		if (orbit)
 			angle += dt * .2;
-		fps.update(dt, Services.getFrameCpu());
+		fps.update(dt, Time.getFrameCpu());
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
 		if (vignette != null)
 			vignette.getParameters().setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
-		var gpu = Services.graphics,
-			width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var gpu = Graphics.instance,
+			width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 4.5, 9 * Math.cos(angle), 0, .5, 0);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),

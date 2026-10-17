@@ -1,8 +1,12 @@
 import helix.app.BaseApp;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
+import helix.graphics.Graphics;
 import helix.graphics.Sampling;
-import helix.host.Services;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
@@ -10,6 +14,8 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render2d.Textures;
+import helix.time.Time;
 
 /** A scrolling tile map: one sprite sheet (textures/tiles.png), one Node2D sprite a cell cut out by its source region, on a Stage2D seen
 	through a Camera2D in world units (a cell is 1 x 1, y down).
@@ -65,9 +71,9 @@ class App extends BaseApp {
 		return y >= WORLD_H - 2 ? WATER : y >= WORLD_H - 3 ? SAND : x == 8 || y == 6 ? STONE : GRASS;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX tilemap");
-		Services.window.requestSize(960, 600);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX tilemap");
+		Window.requestSize(960, 600);
+		batch = new Batch2D(Graphics.instance);
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
 		for (y in 0...WORLD_H)
 			for (x in 0...WORLD_W)
@@ -80,7 +86,7 @@ class App extends BaseApp {
 			add(ROCK, 4.5 + i * 3.5, 12 - (i % 2) * 2, 1, 1, .5, 1);
 		for (i in 0...8)
 			coins.push(add(COIN, 3.5 + i * 2.5, 9 - i % 3, .8, .8, .5, 1));
-		Services.textures.load("textures/tiles.png", false, result -> switch result {
+		Textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(loaded):
 				// Pixel art: crisp texels when zoomed in.
 				loaded.setSampling(Sampling.NEAREST);
@@ -105,12 +111,12 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		var unitsPerPixel = seen / height;
 
 		// Scroll: drag, or the arrow keys.
@@ -139,7 +145,7 @@ class App extends BaseApp {
 		camera.setPosition(centerX, centerY);
 		// The HUD in the design for the window's shape, along the top of what's visible of it; the world keeps its own camera.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(hud);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
@@ -160,7 +166,7 @@ class App extends BaseApp {
 		for (coin in coins)
 			coin.setColor(coin == hovered ? 0xffe68cff : 0xffffffff);
 
-		Services.graphics.beginFrame(width, height, 0x181c26ff);
+		Graphics.beginFrame(width, height, 0x181c26ff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.setCamera(hud);
@@ -177,7 +183,7 @@ class App extends BaseApp {
 		Text2D.drawWrapped(batch, help, vx + 20, y, 15, vw - 40, 0x8c929eff);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void

@@ -1,11 +1,18 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
+import helix.audio.Audio;
 import helix.audio.AudioPlayback;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.time.Time;
 
 /** Both of ensure's options at once: a source (where this call's bytes come from) and forceFetch (past the cache). The asset's path is a bogus
 	one, with nothing at the host under it, so a plain ensure would fail; the source names where the bytes really are, relative to the host as a
@@ -22,15 +29,15 @@ class App extends BaseApp {
 	var state = 'ensuring $KEY from $SOURCE...';
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX force fetch");
-		Services.window.requestSize(720, 240);
-		batch = new Batch2D(Services.graphics);
-		Services.assets.ensure(KEY, result -> switch result {
+		Window.setTitle("HeliX force fetch");
+		Window.requestSize(720, 240);
+		batch = new Batch2D(Graphics.instance);
+		Assets.ensure(KEY, result -> switch result {
 			case Loaded(_):
 				// The bytes are local now, under the key: stream the key.
-				Services.audioResources.loadStream(KEY, loaded -> switch loaded {
+				Audio.loadStream(KEY, loaded -> switch loaded {
 					case Ready(stream):
-						music = Services.audioResources.play(stream, true, .5);
+						music = Audio.play(stream, true, .5);
 						stream.release();
 						state = '$KEY played from the bytes of $SOURCE';
 					case Failed(message):
@@ -44,20 +51,20 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
+		var input = Input.instance;
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
-		fps.update(dt, Services.getFrameCpu());
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
+		fps.update(dt, Time.getFrameCpu());
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
-		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), 0x12141cff);
+		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
 		y += Text2D.drawWrapped(batch, "HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
@@ -65,9 +72,9 @@ class App extends BaseApp {
 			vx + 24, y, 18, vw - 48, 0x66bfffff)
 			+ 7.5;
 		y += Text2D.drawWrapped(batch, state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
-		Text2D.drawWrapped(batch, "[M] toggle music" + (Services.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, "[M] toggle music" + (Host.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 }

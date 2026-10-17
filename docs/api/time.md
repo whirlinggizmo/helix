@@ -6,7 +6,7 @@
 
 *class* in `src/helix/time/Clock.hx`
 
-A game's time, from the frames' (FrameClock): scaled and paused as a whole, so everything fed by it (a Ticker's steps, tweens, timers, animators, emitters) slows, stops and resumes together, with nothing else to flag. Services.clock is the program's, updated by the runner before each frame; a game keeps more where times differ: a menu's clock running while the world's is paused (Unity's unscaled time). Each frame has two measures, as FrameClock's: the delta, held at MAX_DELTA (a stall moves animation on by that much), and the elapsed time, unheld, for a Ticker, which bounds its own catch-up. Both are 0 while paused.
+A game's time, from the frames' (FrameClock): scaled and paused as a whole, so everything fed by it (a Ticker's steps, tweens, timers, animators, emitters) slows, stops and resumes together, with nothing else to flag. Time.clock is the program's, updated by the runner before each frame; a game keeps more where times differ: a menu's clock running while the world's is paused (Unity's unscaled time). Each frame has two measures, as FrameClock's: the delta, held at MAX_DELTA (a stall moves animation on by that much), and the elapsed time, unheld, for a Ticker, which bounds its own catch-up. Both are 0 while paused.
 
 ```haxe
 function new()
@@ -22,7 +22,7 @@ function resume():Void
 ```
 
 - `new`: A clock at 0, running at the frames' pace.
-- `update`: Advances by frameElapsed seconds of the frames' time (Services.getFrameElapsed), scaled; nothing while paused. Once a frame.
+- `update`: Advances by frameElapsed seconds of the frames' time (Time.getFrameElapsed), scaled; nothing while paused. Once a frame.
 - `getDelta`: This frame's delta in its seconds: the elapsed time held at FrameClock.MAX_DELTA, for animation; 0 while paused.
 - `getElapsed`: This frame's elapsed time in its seconds, unheld, for a Ticker; 0 while paused.
 - `getTime`: Its seconds so far: the deltas summed (what animation has seen), not moving while paused.
@@ -56,7 +56,27 @@ function advance(elapsed:Float, tick:() -> Void):Int
 - `getFraction`: How far the frame is from the last tick to the next, from 0 to under 1.
 - `getMaxSteps`: Ticks run in one frame at most; a longer stall loses the rest rather than spiralling.
 - `setMaxSteps`: False for fewer than 1.
-- `advance`: Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Services.clock's for the game's time), at most getMaxSteps of them; returns how many ran.
+- `advance`: Runs tick for each step due after elapsed seconds (a Clock's getElapsed, Time.clock's for the game's time), at most getMaxSteps of them; returns how many ran.
+
+## Time
+
+*class* in `src/helix/time/Time.hx`
+
+The program's time: the host's clock, the frames' timings and the game's clock (clock), which tickers, tweens, timers, animators and emitters are fed. The program's one, a static class over the runner's frame clock, bound by the runner from its init to its cleanup.
+
+```haxe
+static var clock(default, null):Clock
+static function getTime():Float
+static function getFrameElapsed():Float
+static function getFrameCpu():Float
+static function getFrameInterval():Float
+```
+
+- `clock`: The game's time: the frames' time scaled and paused as a whole (Clock), updated before each frame; what tickers, tweens, timers, animators and emitters are fed. Null outside the runner's init and cleanup. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `getTime`: Seconds on the host's monotonic clock.
+- `getFrameElapsed`: The seconds since the last frame, unheld (the app's frame dt is held at 0.1), and 0 on the first: what a fixed-rate simulation (Ticker.advance) is fed, so a slow frame is caught up in ticks instead of lost.
+- `getFrameCpu`: The last frame's CPU time in milliseconds, its services' polls included.
+- `getFrameInterval`: Milliseconds between the last two frames' starts (0 for the first).
 
 ## Timer
 

@@ -29,6 +29,6 @@ function frame(dt:Float):Void
 function cleanup():Void
 ```
 
-- `init`: Once, before the first frame, with the app's Services filled in.
-- `frame`: Once a display refresh; dt is the measured seconds since the last frame, held between 1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes Services.getFrameElapsed instead (helix.host.FrameClock).
+- `init`: Once, before the first frame, with the app's services bound (Window, Input, Graphics and the others).
+- `frame`: Once a display refresh; dt is the measured seconds since the last frame, held between 1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes Time.getFrameElapsed instead (helix.host.FrameClock).
 - `cleanup`: Once, when the window closes (on the web, at the page's pagehide).

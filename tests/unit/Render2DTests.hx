@@ -168,7 +168,7 @@ class HeldAssets implements helix.assets.IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
+	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function getManifest():Null<String>
@@ -388,7 +388,7 @@ class Render2DTests {
 			"Level sizes: blocks of 4x4, or 4 bytes a texel");
 
 		// "name.ktx" tries the variants this GPU samples (here ASTC only), then the PNG; a variant named outright is tried alone.
-		var textures = new helix.render2d.Textures(null, null, gpu);
+		var textures = new helix.render2d.TextureCache(null, null, gpu);
 		check(textures.getCandidates("a/b.ktx").join(",") == "a/b.astc.ktx,a/b.png", "name.ktx: this GPU's variants, then name.png");
 		check(textures.getCandidates("a/b.bc7.ktx").join(",") == "a/b.bc7.ktx" && textures.getCandidates("a/b.png").join(",") == "a/b.png",
 			"Other paths are themselves");
@@ -556,9 +556,9 @@ class Render2DTests {
 		var heldAssets = new HeldAssets(),
 			images = new WhiteImages(),
 			decoding = new helix.graphics.ImageDecoding(images),
-			shared = new helix.render2d.Textures(heldAssets, decoding, gpu);
+			shared = new helix.render2d.TextureCache(heldAssets, decoding, gpu);
 		var got:Array<Texture2D> = [];
-		function keep(result:helix.render2d.Textures.TextureLoadResult):Void
+		function keep(result:helix.render2d.TextureCache.TextureLoadResult):Void
 			switch result {
 				case Ready(texture):
 					got.push(texture);

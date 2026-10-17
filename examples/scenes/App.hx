@@ -1,12 +1,19 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
 import helix.debug.Autopilot;
-import helix.host.Services;
+import helix.debug.TestHarness;
+import helix.graphics.Graphics;
+import helix.graphics.Screenshots;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
+import helix.render2d.Textures;
 import helix.scene.Loader;
 import helix.scene.Scene;
 import helix.scene.Scenes;
@@ -18,7 +25,7 @@ import helix.tween.Ease;
 	until a press unlocks audio, or three seconds for the impatient), a title, a level whose files load behind the built-in Loading scene,
 	which holds once loaded until a press ("loaded, go"), a pause menu pushed over the level (Escape; the level pauses under it) and popped,
 	and back to the title; a fade between the screens. The window losing focus pauses the game's clock and the top scene. Its settings come
-	from assets/config.json (Services.config, fetched as the program starts): showSplash, splashSeconds, splashMaxWait, clickToContinue (the
+	from assets/config.json (Host.config, fetched as the program starts): showSplash, splashSeconds, splashMaxWait, clickToContinue (the
 	loading screen's hold) and tip, with a "development" profile that skips the splash and the hold (the run option config=development, or the
 	file's "profile"), and the run option quick=1 skips every wait and transition. Options: autopilot (a script under assets/), fast (1: up
 	to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done); the probes are scene, count, loaded, loading,
@@ -36,21 +43,21 @@ class App extends BaseApp {
 	var published = false;
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX scenes");
-		Services.window.requestSize(960, 540);
-		batch = new Batch2D(Services.graphics);
+		Window.setTitle("HeliX scenes");
+		Window.requestSize(960, 540);
+		batch = new Batch2D(Graphics.instance);
 		// The loading screen stays once loaded, for a press, with a caption and a tip (a level may bring its own: Scene.getLoadingScene),
 		// as the config says.
 		var loading = cast(scenes.getLoadingScene(), helix.scene.Loading);
-		loading.setHoldForPress(Services.getOptionBool("clickToContinue", true));
+		loading.setHoldForPress(Host.getOptionBool("clickToContinue", true));
 		loading.setText("Loading the field");
-		loading.setTip(Services.getOption("tip", ""));
-		var script = Services.getOption("autopilot", "");
-		fast = Services.getOption("fast", "0") == "1";
+		loading.setTip(Host.getOption("tip", ""));
+		var script = Host.getOption("autopilot", "");
+		fast = Host.getOption("fast", "0") == "1";
 		if (script != "")
-			Services.assets.load(script, result -> switch result {
+			Assets.load(script, result -> switch result {
 				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> Services.screenshots.take(name));
+					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
 					// The window of a headless run isn't focused: its ticks run regardless.
 					scenes.setPauseOnBlur(false);
 					start();
@@ -63,16 +70,16 @@ class App extends BaseApp {
 
 	// The splash first, with the logo once it's in (or without it), unless the config skips it.
 	function start():Void {
-		if (!Services.getOptionBool("showSplash", true)) {
+		if (!Host.getOptionBool("showSplash", true)) {
 			scenes.push(new Title());
 			return;
 		}
-		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> {
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> {
 			var splash = new Splash(switch result {
 				case Ready(logo): logo;
 				case _: null;
-			}, Services.getOptionFloat("splashSeconds", 1), new Title());
-			splash.setMaxWait(Services.getOptionFloat("splashMaxWait", 0));
+			}, Host.getOptionFloat("splashSeconds", 1), new Title());
+			splash.setMaxWait(Host.getOptionFloat("splashMaxWait", 0));
 			scenes.push(splash, new Fade(.8));
 		});
 	}
@@ -92,8 +99,8 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		if (pilot != null && !pilot.isDone() && scenes.getTop() != null) {
 			// The script's ticks, each a sixtieth of a second to the scenes, many a frame when fast; none until the splash is up (its logo loads first).
 			for (_ in 0...(fast ? 120 : 1)) {
@@ -107,15 +114,15 @@ class App extends BaseApp {
 		} else
 			scenes.update(dt);
 		if (scenes.getTop() == null) {
-			Services.graphics.beginFrame(width, height, 0x14161cff);
-			Services.graphics.endFrame();
+			Graphics.beginFrame(width, height, 0x14161cff);
+			Graphics.endFrame();
 		} else
 			scenes.draw();
 		if (pilot != null && pilot.isDone() && !published) {
 			published = true;
-			Services.harness.publish({game: {scene: probe("scene"), visited: visited}, autopilot: pilot.getSnapshot()});
-			if (Services.getOption("autoclose", "0") == "1")
-				Services.quit();
+			TestHarness.publish({game: {scene: probe("scene"), visited: visited}, autopilot: pilot.getSnapshot()});
+			if (Host.getOption("autoclose", "0") == "1")
+				Host.quit();
 		}
 	}
 
@@ -136,12 +143,12 @@ class Title extends Scene {
 		var input = scenes.getInput();
 		if (input.isFramePressed(Key.Enter) || input.isPointerFramePressed())
 			scenes.replace(new Play(), new Fade(.6));
-		else if (input.isFramePressed(Key.Escape) && Services.canQuit())
-			Services.quit();
+		else if (input.isFramePressed(Key.Escape) && Host.canQuit())
+			Host.quit();
 	}
 
 	override public function draw():Void {
-		Draw.screen(camera, 0x1c1e26ff, "HeliX scenes", "Enter or tap: play" + (Services.canQuit() ? "   Escape: quit" : ""));
+		Draw.screen(camera, 0x1c1e26ff, "HeliX scenes", "Enter or tap: play" + (Host.canQuit() ? "   Escape: quit" : ""));
 	}
 }
 
@@ -220,12 +227,12 @@ class Draw {
 	/** Begins the frame in color and draws title and help; returns the presentation, for drawing more in the visible area. */
 	public static function screen(camera:Camera2D, color:Int, title:String, help:String):helix.host.Presentation {
 		ScreenShape.update();
-		var p = Services.presentation;
+		var p = Screen.instance;
 		p.apply(camera);
 		var vx = p.getVisibleX(),
 			vy = p.getVisibleY(),
 			vw = p.getVisibleWidth();
-		Services.graphics.beginFrame(Services.window.getFramebufferWidth(), Services.window.getFramebufferHeight(), color);
+		Graphics.beginFrame(Window.getFramebufferWidth(), Window.getFramebufferHeight(), color);
 		App.batch.begin(camera);
 		var y = vy + 36;
 		y += Text2D.drawWrapped(App.batch, title, vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 4;

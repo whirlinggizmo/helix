@@ -1,10 +1,15 @@
 import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
-import helix.host.Services;
+import helix.graphics.Graphics;
+import helix.host.Host;
+import helix.host.Screen;
+import helix.host.Window;
+import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
+import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -13,6 +18,7 @@ import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
+import helix.time.Time;
 
 /** glTF metallic-roughness materials made in code, one sphere mesh under them all. Top row: plastic (metallic 0), roughness 0 to 1 left to
 	right; middle row: gold (metallic 1), the same steps; bottom row: unlit, emissive, normal mapped and see-through, turning so the normal map
@@ -55,9 +61,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
-		Services.window.setTitle("HeliX materials");
-		Services.window.requestSize(1000, 700);
-		stage = new Stage3D(Services.graphics);
+		Window.setTitle("HeliX materials");
+		Window.requestSize(1000, 700);
+		stage = new Stage3D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 		// Framed for 16:9: all five columns across on a phone held upright too.
@@ -95,26 +101,26 @@ class App extends BaseApp {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		Services.textures.load("textures/tiles_normal.png", true, result -> switch result {
+		Textures.load("textures/tiles_normal.png", true, result -> switch result {
 			case Ready(texture): tiles.setNormalTexture(texture);
 			case Failed(message): trace(message);
 			case Cancelled:
 		});
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
-		batch = new Batch2D(Services.graphics);
+		batch = new Batch2D(Graphics.instance);
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Services.input;
-		if (Services.canQuit() && input.isFramePressed(Key.Escape))
-			Services.quit();
+		var input = Input.instance;
+		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+			Host.quit();
 		if (input.isFramePressed(Key.Digit1))
 			sun.setVisible(!sun.isVisible());
 		if (input.isFramePressed(Key.Digit2))
 			lamp.setVisible(!lamp.isVisible());
 		// The game's clock: paused, the motion stops.
-		var time = Services.clock.getTime();
+		var time = Time.clock.getTime();
 		var lx = Math.cos(time * .7) * 4,
 			ly = 1.4 + Math.sin(time * .9) * 1.2,
 			lz = Math.sin(time * .7) * 1.5 + 2;
@@ -123,19 +129,19 @@ class App extends BaseApp {
 		marker.setVisible(lamp.isVisible());
 		for (node in bottom)
 			node.setRotation(0, time * .5, 0);
-		fps.update(dt, Services.getFrameCpu());
-		var width = Services.window.getFramebufferWidth(),
-			height = Services.window.getFramebufferHeight();
+		fps.update(dt, Time.getFrameCpu());
+		var width = Window.getFramebufferWidth(),
+			height = Window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Services.presentation;
+		var presentation = Screen.instance;
 		presentation.apply(camera2D);
 		var vx = presentation.getVisibleX(),
 			vy = presentation.getVisibleY(),
 			vw = presentation.getVisibleWidth();
 
-		Services.graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
@@ -145,7 +151,7 @@ class App extends BaseApp {
 			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
-		Services.graphics.endFrame();
+		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
