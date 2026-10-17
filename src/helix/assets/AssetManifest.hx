@@ -58,6 +58,10 @@ typedef CacheRecord = {
 	@:optional final lastModified:String;
 	final freshUntil:Float;
 	final hash:String;
+
+	/** The URL the bytes came from when it isn't the path's own (an ensure with a source): the copy is asked about there, and streamed from
+		there when it's stale, as the host has nothing at the path. */
+	@:optional final source:String;
 }
 
 /** Reading and writing CacheRecords. */
@@ -71,17 +75,20 @@ class CacheRecords {
 			etag: Std.isOfType(value.etag, String) ? value.etag : null,
 			lastModified: Std.isOfType(value.lastModified, String) ? value.lastModified : null,
 			freshUntil: value.freshUntil,
-			hash: value.hash
+			hash: value.hash,
+			source: Std.isOfType(value.source, String) ? value.source : null
 		};
 	}
 
-	/** The record for a response's headers (lower-case names) at now (seconds since 1970), for bytes of hash. */
-	public static function of(headers:Map<String, String>, hash:String, now:Float):CacheRecord
+	/** The record for a response's headers (lower-case names) at now (seconds since 1970), for bytes of hash, from source when that isn't
+		the path's own URL. */
+	public static function of(headers:Map<String, String>, hash:String, now:Float, ?source:String):CacheRecord
 		return {
 			etag: headers["etag"],
 			lastModified: headers["last-modified"],
 			freshUntil: now + freshSeconds(headers["cache-control"]),
-			hash: hash
+			hash: hash,
+			source: source
 		};
 
 	/** How long a response stays fresh by its Cache-Control, in seconds: its max-age, a year for immutable without one, none when it says

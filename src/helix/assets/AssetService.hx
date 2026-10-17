@@ -156,9 +156,15 @@ class AssetService implements IAssets {
 					return;
 				case _: null;
 			}
+			// A copy brought from elsewhere (ensure's source) is asked about there, not at the path, where the host has nothing.
+			var from = url, how = mode;
+			if (record != null && record.source != null && expected == null && url == base + path) {
+				from = record.source;
+				how = Revalidate;
+			}
 			function fetch()
-				download(path, url, expected, expected == null ? record : null, mode, attempt, done);
-			if (expected != null ? record != null && record.hash == expected : mode == Revalidate
+				download(path, from, expected, expected == null ? record : null, how, attempt, done);
+			if (expected != null ? record != null && record.hash == expected : how == Revalidate
 				&& (cacheMode == Trust || record != null && now() < record.freshUntil))
 				copy(path, attempt, done, fetch);
 			else
@@ -191,14 +197,15 @@ class AssetService implements IAssets {
 								etag: renewed.etag != null ? renewed.etag : record.etag,
 								lastModified: renewed.lastModified != null ? renewed.lastModified : record.lastModified,
 								freshUntil: renewed.freshUntil,
-								hash: record.hash
+								hash: record.hash,
+								source: record.source
 							}), _ -> {});
 						}); else if (value.status >= 200 && value.status < 300) {
 						var hash = AssetManifest.hash(value.bytes);
 						if (expected != null && hash != expected)
 							done(Failed('Asset does not match its manifest (a deploy still arriving?): $path'));
 						else
-							store(path, value.bytes, value.headers, hash, attempt, done);
+							store(path, value.bytes, value.headers, hash, attempt, done, url == base + path ? null : url);
 						} else if (value.status >= 400 && value.status < 500) {
 						// The host says it's gone: so is the copy.
 						if (cacheMode == Off)
@@ -243,8 +250,9 @@ class AssetService implements IAssets {
 		});
 	}
 
-	// Keeps bytes (of hash) as path's copy, then their record from the response's headers; with the cache Off, for this run alone.
-	function store(path:String, bytes:haxe.io.Bytes, headers:Map<String, String>, hash:String, attempt:Attempt, done:AssetResult->Void):Void {
+	// Keeps bytes (of hash) as path's copy, then their record from the response's headers (and source, the URL they came from when not the
+	// path's); with the cache Off, for this run alone.
+	function store(path:String, bytes:haxe.io.Bytes, headers:Map<String, String>, hash:String, attempt:Attempt, done:AssetResult->Void, ?source:String):Void {
 		attempt.report("storing", bytes.length, bytes.length);
 		if (cacheMode == Off) {
 			session[key(path)] = bytes;
@@ -257,7 +265,7 @@ class AssetService implements IAssets {
 				return;
 			switch result {
 				case Written:
-					attempt.child = cache.write(recordKey(path), CacheRecords.encode(CacheRecords.of(headers, hash, now())), _ -> {
+					attempt.child = cache.write(recordKey(path), CacheRecords.encode(CacheRecords.of(headers, hash, now(), source)), _ -> {
 						if (attempt.settled())
 							return;
 						attempt.report("ready", bytes.length, bytes.length);
@@ -438,6 +446,14 @@ class AssetService implements IAssets {
 					var record = switch result {
 						case Stored(bytes): CacheRecords.parse(bytes);
 						case _: null;
+					}
+					// A copy brought from elsewhere streams from the cache while fresh, else from where it came: the host has nothing at the path.
+					if (record != null && record.source != null && expected == null) {
+						if (cacheMode == Trust || now() < record.freshUntil)
+							child = cache.source(key(path), local);
+						else
+							finish(Located(Remote(record.source)));
+						return;
 					}
 					if (expected != null ? record != null && record.hash == expected : !unlisted
 						&& (cacheMode == Trust || record != null && now() < record.freshUntil))

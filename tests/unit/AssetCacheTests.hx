@@ -324,6 +324,45 @@ class AssetCacheTests {
 			&& load(assets, "listed/a.txt") == "new a"
 			&& host.count("manifest.json") == asked + 1, "Clearing the cache forgets the manifests too");
 
+		// A copy brought from elsewhere (ensure's source) remembers where: asked about there, streamed from there, as the host has nothing
+		// at its path (the force-fetch example, which the manifests' Ask rule broke: its path is one its directory's manifest leaves out).
+		host.put("listed/song.txt", "song");
+		manifests(["listed", ""]);
+		var sourced = visit("manifest.json"), got:Null<String> = null;
+		sourced.ensure("listed/bogus.txt", result -> got = switch result {
+			case Loaded(bytes): bytes.toString();
+			case Failed(message): "failed: " + message;
+			case Cancelled: "cancelled";
+		}, null, {source: "listed/song.txt", forceFetch: true});
+		for (_ in 0...200) {
+			if (got != null)
+				break;
+			sourced.poll();
+		}
+		check(got == "song" && host.count("listed/bogus.txt") == 0, "A load with a source brings the bytes from there, kept under the path");
+		var before = host.count("listed/song.txt");
+		check(load(visit("manifest.json"), "listed/bogus.txt") == "song"
+			&& host.count("listed/bogus.txt") == 0
+			&& host.count("listed/song.txt") == before + 1
+			&& host.sent["listed/song.txt"]["If-None-Match"] != null,
+			"A plain load of the path later asks about the stale copy at its source, with its ETag");
+		var from:Null<String> = null;
+		sourced = visit("manifest.json");
+		sourced.streamSource("listed/bogus.txt", result -> from = switch result {
+			case Located(Remote(url)): url;
+			case _: "not remote";
+		});
+		for (_ in 0...200)
+			sourced.poll();
+		check(from == "http://host/listed/song.txt", "and a stale sourced copy streams from its source");
+		host.put("listed/song.txt", "song", "max-age=600");
+		var renewing = visit("manifest.json");
+		check(load(renewing, "listed/bogus.txt") == "song", "A stale sourced copy is renewed at its source");
+		// Its record's renewal lands at a later poll.
+		for (_ in 0...20)
+			renewing.poll();
+		check(stream(visit("manifest.json"), "listed/bogus.txt") == "cached", "and fresh, it streams from the cache");
+
 		// Manifests that aren't one are trusted nowhere.
 		check(AssetManifest.parse(Bytes.ofString('{"manifest":1,"files":{"a":"sha256:00"},"dirs":{}}')) == null, "A bad hash spoils a manifest");
 		check(AssetManifest.parse(Bytes.ofString('{"manifest":1,"files":{"a/b":"' + AssetManifest.hash(Bytes.ofString("")) + '"},"dirs":{}}')) == null,
