@@ -132,8 +132,10 @@ class Node3D extends Node {
 				return;
 			}
 		}
-		for (i in 0...children.length)
-			getChild(i).collectModels(skinned, rigid);
+		// Cast from children, not through getChild: hxcpp declares an override's return as the overridden one's (Node), which has no
+		// collectModels.
+		for (child in children)
+			(cast child : Node3D).collectModels(skinned, rigid);
 	}
 
 	/** Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's
