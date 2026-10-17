@@ -10,7 +10,8 @@ import helix.render2d.Texture2D;
 	whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw
 	together. */
 class Material {
-	static var nextId = 1;
+	// Kept across a hot reload: ids made after one mustn't repeat those of materials still drawn.
+	@:hot static var nextId = 1;
 
 	// Which one it is, for sorting alike draws together.
 	@:allow(helix.render3d.Stage3D) var id = nextId++;

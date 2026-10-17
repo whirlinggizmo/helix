@@ -8,7 +8,8 @@ import helix.graphics.IGraphics;
 	(Skinned3DLayout's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
 	counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes. */
 class Mesh {
-	static var nextId = 1;
+	// Kept across a hot reload: ids made after one mustn't repeat those of meshes still drawn.
+	@:hot static var nextId = 1;
 
 	// Which one it is, for sorting alike draws together.
 	@:allow(helix.render3d.Stage3D) var id = nextId++;

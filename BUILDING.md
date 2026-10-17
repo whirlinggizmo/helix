@@ -13,7 +13,7 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
   ```console
   npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
   ```
-- **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `f591b94` or later (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
+- **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `b9aa033` or later (a static survives a reload only if it says `@:hot`, on both targets) (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
 - **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `tools/shdc.py` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`) and checks its SHA-256 every time it's used; nothing is installed globally.
 - **SDL_GPU's shader translators:** glslang 16.6.0 (its official release for the system: Linux x86_64, Windows x64, macOS universal) and SPIRV-Cross `vulkan-sdk-1.4.363.0` (its source, built once by hxcpp with the system's compiler, as it publishes no programs), pinned in `dependencies.json` (`gpuShaders`), fetched into `build/deps` and hash-checked by `tools/gpu_shaders.py` the first time shaders are generated. Only SDL_GPU builds (`native-sdl3-gpu`) run them; other builds, the browser's included, never fetch or build them. There's no Linux arm64 glslang release.
 - **Native builds:** no CMake: hxcpp compiles the adapters' C with each app, from the build XML on each adapter's extern bridge (`internal/*Bridge.hx`).

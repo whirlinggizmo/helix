@@ -8,7 +8,8 @@ import helix.graphics.PipelineDesc;
 	again (an app's shader reloaded, or in development a framework program whose source changed) has its pipelines made again behind it.
 	This is the framework's knowledge of its pipelines; an adapter knows none of it. */
 class Pipelines {
-	static var all = new haxe.ds.ObjectMap<IGraphics, Pipelines>();
+	// Kept across a hot reload, so the reload's rebuild finds every GPU's pipelines.
+	@:hot static var all = new haxe.ds.ObjectMap<IGraphics, Pipelines>();
 
 	var gpu:IGraphics;
 	// The framework programs built, by name: their handle and the source they were built from.

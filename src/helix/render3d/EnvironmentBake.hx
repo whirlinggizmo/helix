@@ -32,8 +32,9 @@ class EnvironmentBake {
 	static inline var STEP_PIXELS = 32768;
 	static inline var STEP_SAMPLES = 16384;
 
-	static var brdf:Null<Bytes>;
-	static var brdfRows = 0;
+	// Kept across a hot reload: the table takes a while to make.
+	@:hot static var brdf:Null<Bytes>;
+	@:hot static var brdfRows = 0;
 
 	var stage = Brdf;
 	var hdr:Null<Hdr>;

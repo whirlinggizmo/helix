@@ -291,7 +291,8 @@ class Font2D {
 	}
 
 	/** Pixel fonts in use, so a hot reload that changes the glyphs can bake their textures again. */
-	static var live:Array<{font:Font2D, gpu:IGraphics}> = [];
+	// Kept across a hot reload, so the reload's rebake finds every font.
+	@:hot static var live:Array<{font:Font2D, gpu:IGraphics}> = [];
 
 	@:afterHotReload static function rebake():Void
 		for (entry in live) {

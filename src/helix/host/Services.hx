@@ -14,55 +14,56 @@ import helix.input.IInput;
 	the earlier frameworks' and Godot's are (DECISIONS 114): any class reads `Services.window` without being handed it. The Runner fills them
 	as the program starts and clears them at its end: an app reads them from its init on (a profile builds the app after they're filled, so
 	a field initializer may read them too), and the framework's own classes in src/ never read them, taking what they use instead, so they
-	stay testable apart. A test fills what it needs (`@:privateAccess`) and clears it after. hotreload-hx keeps every static's value across a
-	reload, so a swap keeps them. */
+	stay testable apart. A test fills what it needs (`@:privateAccess`) and clears it after. Each field is `@:hot`, kept across a hot reload
+	(DECISIONS 126), as nothing would set it again. */
 @:allow(helix.host.Runner)
 class Services {
 	/** The GPU. */
-	public static var graphics(default, null):IGraphics;
+	@:hot public static var graphics(default, null):IGraphics;
 
 	/** Keyboard, mouse, touch and gamepads. */
-	public static var input(default, null):IInput;
+	@:hot public static var input(default, null):IInput;
 
 	/** Sound output. */
-	public static var audio(default, null):IAudio;
+	@:hot public static var audio(default, null):IAudio;
 
 	/** The window the app draws in (the page, on the web): its drawing surface's size, pixel ratio and focus too. */
-	public static var window(default, null):IWindow;
+	@:hot public static var window(default, null):IWindow;
 
 	/** The app's design fitted to the window: its units, what's visible of them, and a 2D camera to show them (None, logical pixels, until
 		the app sets a mode). */
-	public static var presentation(default, null):Presentation;
+	@:hot public static var presentation(default, null):Presentation;
 
 	/** The game's time: the frames' time scaled and paused as a whole (helix.time.Clock), updated before each frame; what tickers, tweens,
 		timers, animators and emitters are fed. */
-	public static var clock(default, null):helix.time.Clock;
+	@:hot public static var clock(default, null):helix.time.Clock;
 
 	/** Assets: the packaged files or downloads, cached. */
-	public static var assets(default, null):IAssets;
+	@:hot public static var assets(default, null):IAssets;
 
 	/** Downloads. */
-	public static var fetch(default, null):Fetch;
+	@:hot public static var fetch(default, null):Fetch;
 
 	/** The writable cache. */
-	public static var storage(default, null):Storage;
+	@:hot public static var storage(default, null):Storage;
 
 	/** Sounds loaded through the assets and decoded for audio. */
-	public static var audioResources(default, null):AudioResources;
+	@:hot public static var audioResources(default, null):AudioResources;
 
 	/** Textures from image files, reloading in place when a file changes during development. */
-	public static var textures(default, null):helix.render2d.Textures;
+	@:hot public static var textures(default, null):helix.render2d.Textures;
 
 	/** Environment maps from equirectangular images, prepared a little each frame. */
-	public static var environments(default, null):helix.render3d.Environments;
+	@:hot public static var environments(default, null):helix.render3d.Environments;
 
 	/** Where results go for the check that launched the program. */
-	public static var harness(default, null):ITestHarness;
+	@:hot public static var harness(default, null):ITestHarness;
 
 	/** Screenshots of the frame, saved for the user (a download in a browser, a file natively). */
-	public static var screenshots(default, null):helix.graphics.Screenshots;
+	@:hot public static var screenshots(default, null):helix.graphics.Screenshots;
 
-	static var runner:Runner;
+	// The runner and every field above are kept across a hot reload (@:hot): set once by the runner, nothing would set them again.
+	@:hot static var runner:Runner;
 
 	/** Whether the runner has filled the services: false in a test that fills what it needs itself. */
 	public static function isRunning():Bool
@@ -91,7 +92,7 @@ class Services {
 		return runner.getFrameInterval();
 
 	/** The game's settings from config.json among its assets (Config), or null without one. */
-	public static var config(default, null):Null<Config>;
+	@:hot public static var config(default, null):Null<Config>;
 
 	/** A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_
 		and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text. */

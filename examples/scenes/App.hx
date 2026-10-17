@@ -24,11 +24,11 @@ import helix.tween.Ease;
 	to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done); the probes are scene, count, loaded, loading,
 	visited and activated. Escape on the title quits where quitting means anything. */
 class App extends BaseApp {
-	/** Every scene entered, in order: what the autopilot's run is judged by. */
-	public static var visited:Array<String> = [];
+	/** Every scene entered, in order: what the autopilot's run is judged by. Kept across a hot reload (@:hot). */
+	@:hot public static var visited:Array<String> = [];
 
-	/** The one batch the scenes draw with. */
-	public static var batch:Batch2D;
+	/** The one batch the scenes draw with, kept across a hot reload. */
+	@:hot public static var batch:Batch2D;
 
 	var scenes = new Scenes();
 	var pilot:Null<Autopilot>;

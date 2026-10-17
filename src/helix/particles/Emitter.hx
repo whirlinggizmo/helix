@@ -15,7 +15,8 @@ class Emitter {
 	static inline var RECORD = 48;
 	static inline var MAX_KEYS = 8;
 	static inline var REBASE = 4096.;
-	static var seeds = 1;
+	// Kept across a hot reload (@:hot), so emitters made after one don't repeat the seeds of those before.
+	@:hot static var seeds = 1;
 
 	var texture:Null<Texture2D>;
 	var regionX = 0.;
