@@ -8,7 +8,7 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
 - **Haxe 4.3.7.**
 - **hxcpp 4.3.2.** Installed on the first native build into the repository's own `build/haxelib`, so the global haxelib is untouched. `tools/pins.py` stops a native build that would resolve another version.
 - **Python 3.12** with PyYAML (`python3 -m pip install -r requirements-build.txt`).
-- **FFmpeg** with the libvorbis and libopus encoders, for the test fixtures and Asteroids' sounds.
+- **FFmpeg** with the libvorbis and libopus encoders, only to make Asteroids' sounds or the test fixtures anew (both are committed).
 - **Node 26**, with Terser, Playwright and pngjs for release builds and browser checks:
   ```console
   npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
@@ -19,7 +19,7 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
 - **Native builds:** no CMake: hxcpp compiles the adapters' C with each app, from the build XML on each adapter's extern bridge (`internal/*Bridge.hx`).
   - Linux: GCC/G++ 13 and ALSA headers; X11/Xrandr/Xi/Xcursor and GL libraries; the libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - Windows: Visual Studio's C++ tools (MSVC, which hxcpp finds itself; MinGW isn't supported). libsndfile's official 1.2.2 win64 release is downloaded and hash-checked into the user's cache, and its DLL copied beside each program.
-  - macOS: Xcode's command-line tools and Homebrew's `libsndfile`; for FFmpeg, Homebrew's `ffmpeg-full` (its `ffmpeg` has no Vorbis encoder). Apple silicon builds arm64.
+  - macOS: Xcode's command-line tools and Homebrew's `libsndfile` (for FFmpeg, if ever, Homebrew's `ffmpeg-full`: its `ffmpeg` has no Vorbis encoder). Apple silicon builds arm64.
   - **The SDL3 profiles** (`native-sdl3`, sokol_gfx drawing GL in SDL's window; `native-sdl3-gpu`, SDL_GPU on Vulkan, Direct3D 12 or Metal): SDL 3.4.18, found or fetched by `tools/sdl3.py` into `build/deps` on its first build. On Linux, the system's SDL3 when pkg-config finds 3.4.18 or newer; else the pinned source release, checked and built once with **CMake** (needed for that build alone) against the X11, Wayland and audio development headers it finds. Missing CMake, or headers enough to open a window, it stops and prints the install command (Debian/Ubuntu's, CI's list; Fedora's, after SDL's `docs/README-linux.md`); missing only optional parts (Wayland, PipeWire, PulseAudio), it builds and says which, and what would add them. On Windows and macOS, SDL's official release, checked, its DLL or framework copied beside each program. The headers are vendored (`vendor/sdl3`).
   - `python3 tools/remote_windows.py HOST` builds and checks this checkout on a Windows machine over ssh; `--desktop` runs in its logged-in session, where windows can open.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**

@@ -1,0 +1,94 @@
+# Jam-readiness audit
+
+What a game jam would stall on, checked against what HeliX has (October 2026, after milestone 8's SDL3 work). The test isn't "an example needs it" but "a game written in a weekend would stop to build it" (DECISIONS 111's rule, the completeness memory). Each item is **present**, **partial** or **missing**, with what exists, what's lacking, and where the earlier frameworks (wgrender-c, libwgf, the libwgf racer's FRICTION.md) or the engines HeliX takes from have an answer. The ranking is the user's; a proposed order is at the end.
+
+## 1. Jam basics
+
+| Item | Status | What exists | What's lacking |
+|---|---|---|---|
+| Saves | **missing** | `Services.storage` is the asset cache (`Storage` over `IStore`), wiped by `clearCache`; the dressing room can't save a look (DECISIONS 112) | A store of the game's own, apart from the cache: keys to bytes or JSON, slots, a version for migration; IndexedDB in a browser, the user's data directory natively (as `Identity` already places the cache) |
+| Input actions and remapping | **missing** | Raw keys, mouse buttons, pointer, touches, pad buttons and axes, with tick and frame edges; a round dead zone on pads | An action map ("jump" = Space, pad South, a touch button), queried as keys are, rebindable at run time and saved; the names a settings screen shows |
+| Pause and time | partial | `Ticker` (fixed rate), `Animator.setSpeed`, `Services.getFrameElapsed` | A game clock with a time scale and pause that tickers, animators, tweens and emitters follow; pause on focus loss (`IWindow.isFocused` exists) |
+| Audio control | partial | Clips and streams, play, pause, resume, stop, volume per playback, MP3 and WAV, reload in place | Groups or buses (master, music, effects) with their own volumes, saved; fades (music cross-fade); pitch and pan; ducking |
+| Scenes and flow | **missing** | Examples switch on a string (`ui`'s `screen`) | A scene stack: push, pop, replace, with enter and exit, a transition (fade, wipe) between, and each scene's loads with a loading screen in front (Phaser's scene manager is the model the user named) |
+| Splash and loading | partial | `Services.isBusy`, `ensure`'s progress per load, the Pages capture waits on it | A loading flow: a group of loads with one progress (bytes or count), a minimum splash time, the first scene after; a built-in plain loading screen a jam can keep |
+| Tweens, timers, sequences | **missing** | Ad hoc `exp` eases in examples | `Tween` with the standard easings, delays, sequences and callbacks, on the game clock; `Timer` (after, every); both cheap to write, stalled on in every jam |
+| Seeded random | **missing** | `helix.math.Trig` is deterministic; `Std.random` elsewhere | A seeded generator (xorshift or PCG) with the usual helpers (range, pick, shuffle, weighted), the same on every target: replays and autopilots depend on it |
+| 2D collision | **missing** | Asteroids and blocks did their own | Rect, circle and polygon overlap and sweep, a spatial hash or grid; a platformer's "move and slide" over tiles |
+| Camera helpers | partial | `Camera2D` fit and pixels, `Presentation`, `Camera3D.setMinAspect` | Follow with lag, bounds, shake, zoom tween; a third-person follow for 3D |
+| Text and localization | partial | TrueType, baking, wrapping, `measureWrapped`, kerning | String tables with a language switch, plural forms; glyph fallback (CJK, emoji); number and time formatting |
+| UI | present (basics) | Button, label, list, panel (nine-slice), progress, slider, text field, toggle, tile, focus by pointer, keys and pad, themes, boxes with anchors | A scroll view, dropdown, tabs, tooltip, modal dialog; a wrapping row (Godot's flow container); the phone's keyboard for a text field; text scaling as a setting |
+| Sprites and sheets | partial | Textures, sprites with flips and tints, KTX | A sprite sheet (atlas) with named frames and frame animation; a packer tool |
+| Tilemaps | partial | The tilemap example draws tiles as sprites through a camera | A Tiled (JSON) loader with layers, objects and collision; a chunked tile stage drawn as one batch |
+| Particles | present | `Emitter` in 2D and 3D | A few presets (burst, trail, smoke) a jam can start from |
+| Window | present | Size, fullscreen, monitors, title, focus, pixel ratio, presentation | Orientation lock on phones (the browser only allows it fullscreen) |
+| Debug | present | FPS overlay, `Batch3D` lines and grid, screenshots, autopilot probes and clicks | A debug text console on the page (libwgf's page had one: logs and errors a phone can't show otherwise) |
+| Hot reload | present | Code and assets in the browser, assets natively | |
+| Packaging | partial | A web folder per example; a native binary beside its assets; manifests | One command that makes an itch.io-ready zip (web) and a named folder or archive (native), with the manifest written; an icon and a title |
+
+## 1b. The scene file and the editor
+
+| Item | Status | Notes |
+|---|---|---|
+| A scene file | **missing** | Stages are built in code; a glTF file is the nearest thing (a Blender scene loaded whole). libwgf had scene files of blocks (the racer's track: bodies, shadows, checkpoints; FRICTION part 4), whose lessons are the rules: lights live in the file, game data lives in the file, overriding a file's node doesn't mean re-declaring its parents, and load, save, load gives the same bytes. A `.scene` of HeliX's own: JSON, a tree of nodes (group, a model from a file by path, light, camera, a nested scene as the prefab), overrides on a file's nodes by path, and `props` per node |
+| Behaviors | **missing** | The game model is open (DECISIONS 61). A behavior as Unity's: a class with lifecycle hooks (init, update, an event, teardown) attached to a node with its props. The file names it by a string, so a registry is forced: a build macro collecting every `@:behavior` class, as Haxe has no reflection by type name and hand registration stalls a jam. Vignette Studio (`experiments-ts-vfstudio`) left the same question open: a hardcoded event-handler registry, scripts' lifecycle and dispatch in its TODO |
+| Property schemas | **missing** | What an inspector reads: a node kind's editable properties, as Vignette Studio's `object_schema.ts` drove its inspector |
+| Blender as a way in | **missing** | `tools/gltf2scene.py`: an exported `.glb` into a `.scene`, Blender's custom properties as props |
+| The editor | **missing** | A separate package (`helix-editor`), a web app over HeliX's JS build as the viewport with the browser's DOM for panels, tree, property grid and dialogs, as three.js's editor and PlayCanvas are; not in the framework, which would then carry selection, undo, gizmos and an editing mode. Vignette Studio is the prior art for its model: objects with property tracks and event tracks, keys by frame, a live preview at the playhead, Move, Rotate and Scale modes, explicit keying; timelines and events come to the file as a `timeline` block with a player, once the format has carried a real level |
+
+## 2. Standard shaders
+
+| Item | Status | Notes |
+|---|---|---|
+| Surface: toon, dissolve, water | partial | The `shaders` example's own `.glsl`, not a library a game can take |
+| Surface: outline, silhouette, rim light, flash or hit tint | **missing** | Outline by inverted hull or by depth and normal edges; silhouette through walls by depth test; rim by view angle; tint for hits |
+| Screen: bloom and glow | **missing** | `PostProcess` chains full-size effects; bloom needs a threshold, down-sampled blurs and an add, so half-size intermediate targets |
+| Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | **missing** | Each a small screen shader with parameters; the `postprocess` example has a few of its own |
+| 2D: sprite outline, flash, dissolve, palette swap | **missing** | Sprite shaders through `Batch2D`'s custom shader path (exists: the sprite path is a `Shader`) |
+
+Proposal: `helix.shaders`, a library of ready surface and screen shaders with parameters by name, each with a one-line way to attach it (a material's surface shader, a `ScreenEffect`), and `PostProcess` growing scaled intermediates for bloom.
+
+## 3. Networking and multiplayer
+
+| Item | Status | Notes |
+|---|---|---|
+| HTTP | present | `Fetch` with headers, progress, timeouts, cache control |
+| WebSockets | **missing** | `ISocket` (open, send, receive, close) with a browser adapter over `WebSocket` and a native one (TLS is the hard part natively: SDL3 has no TLS; a small client over mbedTLS or the platform's) and a shared service for reconnecting and queuing (ROADMAP's `IWebSocket`) |
+| Netcode | **missing** | Lockstep or snapshot sync, prediction, a lobby: a separate package over `ISocket`, with the final example (an ARPG-like, the user's) deciding its shape; determinism (Trig, a seeded random, fixed ticks) already points at lockstep. Prior art of the user's: `experiments-ts-vfcore`, a deterministic fixed-step module host with multi-peer sessions (provisioning, join and leave, reconnect with grace, a host-owned lifetime) over Web Workers or WebSockets, its conformance suite proving a TypeScript and a WASM module behave identically |
+
+## 4. Physics
+
+| Item | Status | Notes |
+|---|---|---|
+| 2D arcade physics | **missing** | Most jam games: AABB and circle bodies, gravity, move-and-slide against tiles and slopes; pure Haxe, deterministic |
+| Box2D | **missing** | The physics study showed Box2D and Jolt through wasm with bulk reads (work off the frame, ROADMAP's open design); a 2D rigid-body game (a racer top-down, a physics puzzle) wants it |
+| Jolt (3D) | **missing** | libwgf's physics3d on Jolt carried the racer: its FRICTION part 2 lessons to keep: lower the center of mass or a car rolls; wheel slip 1/60 rolling, 1 driving; driver aids on keys; grass as grip, not drag; a track of 500 scaled planes as a static mesh just worked; sensors centered on their actor; the web size budget; determinism held with Jolt; settings take effect "made again, at rest" |
+| The drawn transform | **missing** | The racer's first friction: nothing gave a simulated body's interpolated transform for the camera; HeliX's `Ticker.getFraction` is the half, a body's previous and current the other |
+
+## 5. Pathfinding
+
+| Item | Status | Notes |
+|---|---|---|
+| Grid A* | **missing** | Small, pure Haxe, with a flow field for many agents; most 2D jams |
+| Navmesh | **missing** | Recast and Detour through wasm and a native library (bake from the stage's meshes, query), or hxDaedalus (pure Haxe, never benchmarked here); steering (seek, arrive, avoid) beside it |
+
+## 6. Found on the way (earlier sessions)
+
+- A public posed bounds for a skinned model (picking poses one on the CPU already; the dressing room framed by joint reach instead).
+- `Text2D.measureWrapped` (done), a wrapping box (not done).
+- An orientation preference for phones.
+- The `tilemap` example's world camera upright shows 5 tiles across.
+
+## The order (the user's)
+
+Smallest stalls first, where a weekend is lost on something an afternoon builds; saves after pathfinding, the user's call:
+
+1. The small utilities: tweens and timers, a seeded random, 2D collision, a game clock with pause. One milestone, all pure Haxe with unit tests.
+2. Scenes and flow, with loading and splash over `isBusy` and progress.
+3. The scene file: the format, load and save, behaviors by name, property schemas; the editor as a separate package after.
+4. Input actions and remapping; audio buses and fades (the settings screen needs both).
+5. The shader library, surface then screen, with bloom's intermediates.
+6. 2D arcade physics; then Box2D and Jolt through the work-off-the-frame module.
+7. Grid A*; then a navmesh.
+8. Saves.
+9. `ISocket`, then netcode with the final example.

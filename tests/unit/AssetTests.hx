@@ -1,7 +1,7 @@
 import helix.assets.AssetPath;
 import helix.audio.Wav;
 
-/** WAV decoding and asset paths. Reads build/fixtures/tone.wav (tools/fixtures.py). */
+/** WAV decoding and asset paths. Reads tests/fixtures/tone.wav (tools/fixtures.py). */
 class AssetTests {
 	static var checks = 0;
 
@@ -22,7 +22,7 @@ class AssetTests {
 	}
 
 	static function main():Void {
-		var wav = sys.io.File.getBytes("build/fixtures/tone.wav"),
+		var wav = sys.io.File.getBytes("tests/fixtures/tone.wav"),
 			pcm = Wav.decode(wav);
 		check(pcm.length == (wav.length - 44) * 2, "WAV decoding produces float32 PCM");
 		var invalid = wav.sub(0, wav.length);

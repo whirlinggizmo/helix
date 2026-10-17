@@ -3,7 +3,7 @@
 
     python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--desktop] [--keep]
 
-Packs the working tree (tracked files and new ones git doesn't ignore) with what FFmpeg and npm made here: the test fixtures
+Packs the working tree (tracked files and new ones git doesn't ignore) with what npm made here
 (build/fixtures), the examples' generated sounds (build/generated/*/assets) and the node tools (build/tools/node_modules, plain JavaScript).
 The Windows machine needn't have FFmpeg. It copies the archive with scp into a scratch folder in the remote user's profile and runs each
 --then there as `python TOOL ARGS` in the copied tree (default: the hello example's native build). The scratch folder and the archive are
@@ -26,13 +26,13 @@ import tarfile
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATED = ('build/fixtures',)
+GENERATED = ()
 OPTIONAL = ('build/generated/*/assets', 'build/tools/node_modules')
 DEFAULT = ['tools/example.py app-hello build native']
 
 
 def working_tree():
-    """Every file to send: tracked, new ones not ignored, and the fixtures."""
+    """Every file to send: tracked, new ones not ignored, and what GENERATED names (nothing today: the fixtures are tracked)."""
     listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=ROOT, check=True,
                             stdout=subprocess.PIPE).stdout.decode()
     names = [name for name in listed.split('\0') if name and (ROOT / name).is_file()]
