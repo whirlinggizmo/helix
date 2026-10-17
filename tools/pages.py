@@ -28,7 +28,7 @@ GROUPS=[
     ('3D',['hello3d','meshes','materials','lights','environment','shadows','model','animation','instancing','pick','scene3d','sprite3d','text3d',
            'particles','shaders','postprocess','render-target','dressing-room']),
     ('2D',['app-hello','sprite2d','stage2d','motion','tilemap','font','textures','ui']),
-    ('App and services',['app-skeleton','app-tick','app-window','app-gamepad','app-touch','audio-music','asset-fetch','asset-force-fetch','quit']),
+    ('App and services',['app-skeleton','app-tick','app-window','app-gamepad','app-touch','scenes','audio-music','asset-fetch','asset-force-fetch','quit']),
 ]
 # The most milliseconds an example's capture waits for it to settle (tools/pages_shots.cjs captures once nothing has loaded for a moment):
 # longer where it prepares more (environment's lighting bake takes most of a minute on CI's software renderer, SwiftShader).

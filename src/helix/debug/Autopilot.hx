@@ -158,7 +158,9 @@ class Autopilot {
 
 	/** Once a tick: runs commands until one needs this tick, asking probe for named values, and returns the input to play it with. Throws when a wait times out or an assert fails. */
 	public function advance(probe:String->Dynamic):IInput {
+		// A tick is the script's frame too: its tick edges and frame edges both end here.
 		input.consume();
+		input.endFrame();
 		while (!done) {
 			if (index == commands.length) {
 				done = true;

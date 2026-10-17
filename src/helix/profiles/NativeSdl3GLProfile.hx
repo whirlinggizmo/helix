@@ -50,6 +50,6 @@ class NativeSdl3GLProfile {
 				name: identity.getProduct()
 			};
 		});
-		runner.run(makeApp());
+		runner.run(makeApp);
 	}
 }

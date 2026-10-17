@@ -43,6 +43,6 @@ class BrowserWebGL2Profile {
 			};
 		});
 		#if hotreload new helix.adapters.host.dom.AssetWatcher(assetBase, runner.assetChanged); #end
-		runner.run(makeApp());
+		runner.run(makeApp);
 	}
 }

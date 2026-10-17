@@ -16,7 +16,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.particles`](particles.md): Emitter
 - [`helix.render2d`](render2d.md): Align2D, BakedFont, BakedGlyph, Batch2D, Camera2D, Font2D, FontBaker, FontLoadResult, Fonts, Glyph2D, GlyphOutline, Ktx, Node2D, Node2DKind, Polygon2D, Stage2D, Text2D, Texture2D, TextureLoadResult, Textures, TrueType
 - [`helix.render3d`](render3d.md): AnimationClip, Animator, Attachment, Batch3D, Camera3D, Cube, Environment, EnvironmentBake, EnvironmentLoadResult, Environments, Gltf, Hdr, ImageSource, JointPalette, Light, LightKind, Mat4, Material, Mesh, ModelFile, ModelLoadResult, Models, Node, NodeKind, PickHit, Ray, Skin, SpriteAlpha, SpriteFacing, Sprites3D, Stage3D, Tonemap, Track, TrackInterpolation, TrackPath
-- [`helix.scene`](scene.md): Pointer
+- [`helix.scene`](scene.md): Fade, Loader, Loading, LoadingScene, Pointer, Scene, Scenes, Splash, Transition
 - [`helix.time`](time.md): Clock, Ticker, Timer, Timers
 - [`helix.tween`](tween.md): Ease, Tween, Tweens
 - [`helix.ui`](ui.md): Alignment, Box, BoxDirection, Button, Label, ListView, Panel, ProgressBar, Sizing, Slider, TextField, Theme, Tile, Toggle, Ui, Widget

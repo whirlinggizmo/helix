@@ -215,7 +215,7 @@ What a host pumps: at its init it builds the app's Services over a profile's ada
 
 ```haxe
 function new(host:IHost, compose:() -> Adapters)
-function run(app:IApp):Void
+function run(makeApp:() -> IApp):Void
 function getHost():IHost
 function getClock():FrameClock
 function getFrameCpu():Float
@@ -225,7 +225,7 @@ function assetChanged(path:String):Void
 ```
 
 - `new`: A runner for host, building its services from compose's adapters when the host starts (natively the GPU exists only then).
-- `run`: Runs app on the host: its init once the services are up, its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes.
+- `run`: Runs the app makeApp builds on the host: built once the services are filled (so its field initializers may read them), its init then, its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes.
 - `getHost`: The host it runs on.
 - `getClock`: The frame clock.
 - `getFrameCpu`: The last frame's CPU time in milliseconds.

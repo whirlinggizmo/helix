@@ -17,6 +17,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `audio-music` | streamed music and decoded clips, with play state |
 | `asset-fetch` | assets from a host, the cache, and asking whether a host answers |
 | `asset-force-fetch` | ensure with a source and past the cache |
+| `scenes` | a game's flow on a scene stack: the built-in splash ("press any key" until a press unlocks audio), a title, a level loading behind the built-in loading scene, a pause menu pushed over it and popped, fades between; its autopilot runs the flow on both targets |
 | `quit` | quitting mid-load: shutdown runs after the frame |
 | `hello3d` | an orbiting 3D camera, depth-tested shapes and lines, a 2D overlay |
 | `meshes` | generated meshes on a `Stage3D`: lit, instanced models with glTF materials |

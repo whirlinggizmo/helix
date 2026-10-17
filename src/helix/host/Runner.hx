@@ -19,6 +19,7 @@ class Runner {
 	var compose:Void->Adapters;
 	var adapters:Adapters;
 	var app:IApp;
+	var makeApp:Void->IApp;
 	var resources:AssetService;
 	var decoding:ImageDecoding;
 	var audioDecoding:AudioDecoding;
@@ -36,10 +37,10 @@ class Runner {
 		Services.runner = this;
 	}
 
-	/** Runs app on the host: its init once the services are up, its frame once a display refresh, its cleanup at the end. Natively it returns
-		only after the window closes. */
-	public function run(app:IApp):Void {
-		this.app = app;
+	/** Runs the app makeApp builds on the host: built once the services are filled (so its field initializers may read them), its init then,
+		its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes. */
+	public function run(makeApp:Void->IApp):Void {
+		this.makeApp = makeApp;
 		host.run(init, frame, cleanup);
 	}
 
@@ -92,6 +93,7 @@ class Runner {
 		Services.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
 		Services.harness = a.harness;
 		Services.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
+		app = makeApp();
 		app.init();
 	}
 
@@ -126,7 +128,8 @@ class Runner {
 		decoding.shutdown();
 		audioDecoding.shutdown();
 		resources.shutdown();
-		app.cleanup();
+		if (app != null)
+			app.cleanup();
 		adapters.audio.shutdown();
 		adapters.input.shutdown();
 		helix.graphics.Pipelines.release(adapters.graphics);
