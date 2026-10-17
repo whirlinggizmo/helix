@@ -31,8 +31,10 @@ than inventing a way around it. Delete this file in the last phase; HISTORY reco
 New classes in `src/helix/render3d/` (each with a doc comment saying what it is):
 
 ```haxe
-class Node3D          // transform (position, rotation, scale), parent, children, name, enabled, visible, pickable, local/world matrices,
-                      // add, remove, find, computeWorld, lookAt, setPosition, setRotation, setScale, setMatrix. A bare Node3D is a group.
+class Node            // src/helix/scene/Node.hx: name, enabled, visible, pickable, parent, children:Array<Node>, find, the walk;
+                      // no transform. add/remove are the subclasses', typed. Shared by Node2D (phase 4) and Node3D.
+class Node3D extends Node   // transform (position, rotation, scale), local/world matrices, add(Node3D), remove, computeWorld, lookAt,
+                            // setPosition, setRotation, setScale, setMatrix. A bare Node3D is a group.
 class Model extends Node3D       // parts:Array<Part>; mesh and material read and set parts[0]'s; tint; castsShadows, receivesShadows;
                                // skin, joints, bindSkeleton; new(?mesh, ?material)
 class Part                     // mesh:Mesh, material:Material (a Material.white default when null)
@@ -154,6 +156,7 @@ moves to `Batch2D` and measuring to `Font2D`.
 
 - Today's `helix.render2d.Text2D` (static `draw`, `drawWrapped`, `measure`) → `Batch2D.drawText(...)`, `Batch2D.drawTextWrapped(...)`,
   `Font2D.measure(...)`; 47 files use `Text2D.`.
+- `Node2D extends Node` (the base from phase 1): its own transform and `add(Node2D)`; name, flags, children and `find` come from `Node`.
 - `Node2D.rectangle/circle/line/polygon` → `Shape2D.rectangle(...)` etc. (static constructors on `Shape2D`, which holds the shape's
   geometry and color); `Node2D.sprite` → `new Sprite2D(texture)`; `Node2D.text` → `new Text2D(value, size, color, align, ?font)`;
   `Node2D.emitter` → `new Particles2D(emitter)`; `Node2D.group()` → `new Node2D()`.
