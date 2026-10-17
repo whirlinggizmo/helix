@@ -60,29 +60,33 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.D) && komika != null)
 			useKomika = !useKomika;
 		fps.update(dt, services.getFrameCpu());
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight(),
-			ratio = services.window.getPixelRatio();
-		camera.setViewport(width, height);
-		camera.pixels(ratio);
+		// The specimen in the design for the window's shape, its lines wrapped to what's visible of it; upright, the kerned line goes under the
+		// title instead of beside the specimen.
+		var shape = ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var x = vx + 40, wrap = vw - 80, y = vy + (shape == "portrait" ? 220 : 200);
 
-		services.graphics.beginFrame(width, height, 0xf8f8faff);
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0xf8f8faff);
 		batch.begin(camera);
 		// A centered title, measured.
 		if (komika != null)
-			Text2D.draw(batch, "HeliX + TrueType", width / ratio / 2, 90, 56, 0x0052acff, Center, komika);
+			Text2D.drawWrapped(batch, "HeliX + TrueType", vx + vw / 2, vy + 90, 56, vw - 48, 0x0052acff, Center, komika);
 		// A few sizes.
 		if (mono != null) {
-			Text2D.draw(batch, "The quick brown fox jumps over the lazy dog.", 40, 200, 28, 0x000000ff, Left, mono);
-			Text2D.draw(batch, "scalable, anti-aliased TrueType glyphs", 40, 250, 20, 0x505050ff, Left, mono);
-			Text2D.draw(batch, "0123456789  !@#$%^&*()  +-*/=", 40, 290, 24, 0xbe2137ff, Left, mono);
+			y += Text2D.drawWrapped(batch, "The quick brown fox jumps over the lazy dog.", x, y, 28, wrap, 0x000000ff, Left, mono) + 15;
+			y += Text2D.drawWrapped(batch, "scalable, anti-aliased TrueType glyphs", x, y, 20, wrap, 0x505050ff, Left, mono) + 15;
+			y += Text2D.drawWrapped(batch, "0123456789  !@#$%^&*()  +-*/=", x, y, 24, wrap, 0xbe2137ff, Left, mono) + 40;
 		} else
-			Text2D.draw(batch, failed ? "a font failed to load" : "loading fonts...", 40, 200, 20, 0x828282ff);
+			y += Text2D.drawWrapped(batch, failed ? "a font failed to load" : "loading fonts...", x, y, 20, wrap, 0x828282ff) + 135;
 		if (komika != null)
-			Text2D.draw(batch, "AVATAR, TALL: kerned", 520, 160, 28, 0x00752cff, Left, komika);
-		Text2D.draw(batch, useKomika ? "[D] font: Komika   {a|b} ~ \\ ^_`" : "[D] font: built in   {a|b} ~ \\ ^_`", 40, 360, 16, 0x00752cff, Left,
+			Text2D.draw(batch, "AVATAR, TALL: kerned", shape == "portrait" ? x : vx + 520, vy + 160, 28, 0x00752cff, Left, komika);
+		Text2D.drawWrapped(batch, useKomika ? "[D] font: Komika   {a|b} ~ \\ ^_`" : "[D] font: built in   {a|b} ~ \\ ^_`", x, y, 16, wrap, 0x00752cff, Left,
 			useKomika ? komika : null);
-		fps.draw(batch, 12, 12);
+		fps.draw(batch, vx + 12, vy + 12);
 		batch.end();
 		services.graphics.endFrame();
 	}

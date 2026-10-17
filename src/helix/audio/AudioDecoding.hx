@@ -61,6 +61,10 @@ class AudioDecoding {
 				}));
 		}, complete, Cancelled, Failed("Closed audio decoder"));
 
+	/** Whether a decode is queued, under way, or its completion not yet run. */
+	public function isBusy():Bool
+		return jobs.isBusy();
+
 	/** Delivers finished decodes, starts queued ones and runs completions. Call once per frame. */
 	public function poll():Void {
 		decoder.poll();

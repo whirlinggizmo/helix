@@ -66,6 +66,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		services.window.setTitle("HeliX shadows");
 		services.window.requestSize(1000, 600);
+		// Framed for 16:9: the whole stage on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
@@ -160,24 +162,36 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(11 * Math.sin(angle), 5, 11 * Math.cos(angle), 0, 1.2, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
 		services.graphics.beginFrame(width, height, 0x7896c8ff);
 		stage.draw(camera);
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX shadows: lights casting into a depth map", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch,
-			'[1] sun ${sun.isShadowCasting() ? "on" : "off"}   [2] spot ${spot.isShadowCasting() ? "on" : "off"}   ' +
-			'[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
-			12, 64, 16, 0xc8c8c8ff);
-		Text2D.draw(batch,
-			'UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   ' +
-			'${stage.getShadowCasterCount()} casters in ${stage.getShadowDrawCallCount()} draws',
-			12, 86, 16, 0x9a9a9aff);
-		Text2D.draw(batch, "left ball casts nothing; right ball receives nothing", 12, 108, 16, 0x9a9a9aff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += Text2D.drawWrapped(batch,
+			'[1] sun ${sun.isShadowCasting() ? "on" : "off"}   [2] spot ${spot.isShadowCasting() ? "on" : "off"}   '
+			+ '[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff)
+			+ 2;
+		y += Text2D.drawWrapped(batch,
+			'UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   '
+			+ '${stage.getShadowCasterCount()} casters in ${stage.getShadowDrawCallCount()} draws',
+			vx
+			+ 12, y, 16, vw
+			- 24, 0x9a9a9aff)
+			+ 2;
+		Text2D.drawWrapped(batch, "left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

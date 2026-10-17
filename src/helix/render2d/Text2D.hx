@@ -52,12 +52,19 @@ class Text2D {
 		return lines;
 	}
 
-	/** Draws text wrapped to width (wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x. */
+	/** The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what drawWrapped returns, known before
+		drawing, for what's laid out under it (a button below a title that may wrap). */
+	public static function measureWrapped(font:Font2D, text:String, size:Float, width:Float, lineHeight = 1.25):Float
+		return wrap(font, text, size, width).length * size * lineHeight;
+
+	/** Draws text wrapped to width (wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x. Returns the
+		height its lines take, so what follows can go under them (a HUD's lines on a narrow screen). */
 	public static function drawWrapped(batch:Batch2D, text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left,
-			lineHeight = 1.25, ?font:Font2D):Void {
+			lineHeight = 1.25, ?font:Font2D):Float {
 		var f = font == null ? batch.getFont() : font, row = 0;
 		for (line in wrap(f, text, size, width))
 			draw(batch, line, x, y + size * lineHeight * row++, size, color, align, font);
+		return size * lineHeight * row;
 	}
 
 	/** Draws text into batch, tinted color (0xRRGGBBAA), in font or the batch's built-in font. Characters without a glyph are skipped. */

@@ -58,6 +58,8 @@ class App extends BaseApp {
 		post = new PostProcess(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .2);
+		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var sunLight = new Light(Directional);
 		sunLight.setIntensity(2);
 		var sun = Node.light(sunLight);
@@ -145,8 +147,13 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 4.5, 9 * Math.cos(angle), 0, .5, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		// The scene into a texture, the effects but the last through two more, then the screen.
 		post.beginScene(width, height, 0x14161cff);
@@ -155,15 +162,17 @@ class App extends BaseApp {
 		gpu.beginFrame(width, height, 0x000000ff);
 		post.present();
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX postprocess: screen effects over the finished frame", 12, 36, 20, 0xf5f5f5ff);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX postprocess: screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		inline function onOff(e:Null<ScreenEffect>):String
 			return e == null ? "loading" : e.isEnabled() ? "on" : "off";
-		Text2D.draw(batch,
+		y += Text2D.drawWrapped(batch,
 			'[1] vignette ${onOff(vignette)}  [2] scanlines ${onOff(scanlines)}  [Up/Down] strength ${Math.round(strength * 100) / 100}  [Space] breathing ${breathing ? "on" : "off"}  [O] camera',
-			12, 64, 16, 0xc8c8c8ff);
+			vx + 12, y, 16, vw - 24, 0xc8c8c8ff)
+			+ 4;
 		if (status != "")
-			Text2D.draw(batch, status, 12, 88, 16, 0xff8080ff);
-		fps.draw(batch, 12, 10);
+			Text2D.drawWrapped(batch, status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();
 	}

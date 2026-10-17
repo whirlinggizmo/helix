@@ -52,6 +52,9 @@ class App extends BaseApp {
 		services.window.requestSize(1000, 600);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .2);
+		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
+		camera.setMinAspect(16 / 9);
+		chase.setMinAspect(16 / 9);
 		var sunLight = new Light(Directional);
 		sunLight.setIntensity(2);
 		var sun = Node.light(sunLight);
@@ -118,16 +121,25 @@ class App extends BaseApp {
 		camera.setViewport(width, height);
 		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
 		chase.setViewport(width, height);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(chasing ? chase : camera);
 		batch.begin(camera2D);
-		Text2D.draw(batch, 'HeliX glTF model: $status', 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, "D: drive   C: ride along   O: the camera   H: the headlights"
-			+ (services.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, 'HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		Text2D.drawWrapped(batch, "D: drive   C: ride along   O: the camera   H: the headlights"
+			+ (services.canQuit() ? "   ESC: quit" : ""), vx
+			+ 12, y, 16,
+			vw
+			- 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

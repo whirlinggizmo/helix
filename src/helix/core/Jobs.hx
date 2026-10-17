@@ -49,6 +49,10 @@ class Jobs {
 		return request;
 	}
 
+	/** Whether an operation is waiting, running, or its completion not yet run. */
+	public function isBusy():Bool
+		return active > 0 || waiting.length > 0 || !queue.isEmpty();
+
 	/** Runs f on the host thread at the next poll, in order with the completions: a running operation's progress, for one. */
 	public function post(f:Void->Void):Void
 		queue.add(f);

@@ -8,7 +8,7 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 
-/** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in logical pixels: a polygon rock turning in outline, a ring,
+/** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in the design for the window's shape: a polygon rock turning in outline, a ring,
 	a box turning about its center, a rounded one turning with it and a rounded outline, a sprite of a loaded texture, a group (a hub with two
 	moons) turning as one, and a particle emitter circling and trailing (drawn by the GPU at its place in the stage's order); then immediate
 	text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
@@ -26,6 +26,7 @@ class App extends BaseApp {
 	var sprite:Node2D;
 	var orbit:Node2D;
 	var sparks:Node2D;
+	var title:Node2D;
 	var time = 0.;
 
 	public function new(services:Services) {
@@ -102,8 +103,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 
-		var title = Node2D.text("HeliX stage2d", 20, 0xf5f5f5ff);
-		title.setPosition(12, 32);
+		title = Node2D.text("HeliX stage2d", 20, 0xf5f5f5ff);
 		hud.add(title);
 	}
 
@@ -120,22 +120,30 @@ class App extends BaseApp {
 		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);
 		world.setTime(time);
 		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight(),
-			ratio = services.window.getPixelRatio();
+			height = services.window.getFramebufferHeight();
+		// The HUD in the design for the window's shape; the world zooms at the design's scale, so it fits a phone held upright too.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hudCamera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		title.setPosition(vx + 12, vy + 32);
 		worldCamera.setViewport(width, height);
 		worldCamera.setPosition(0, 0);
-		worldCamera.setZoom(ratio * (1.25 + .25 * Math.sin(time * .5)));
-		hudCamera.setViewport(width, height);
-		hudCamera.pixels(ratio);
+		worldCamera.setZoom(presentation.getScaleX() * (1.25 + .25 * Math.sin(time * .5)));
 
 		services.graphics.beginFrame(width, height, 0x0c0e16ff);
 		batch.begin(worldCamera);
 		world.draw(batch, worldCamera);
 		hud.draw(batch, hudCamera);
-		Text2D.draw(batch,
+		Text2D.drawWrapped(batch,
 			'immediate text, over the stages: ${world.getDrawnNodeCount()} world nodes drawn, ${services.graphics.getMsaaSamples()} of ${services.graphics.getMaxMsaaSamples()} MSAA samples a pixel',
-			12, 60, 14, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+			vx
+			+ 12, vy
+			+ 60, 14, vw
+			- 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

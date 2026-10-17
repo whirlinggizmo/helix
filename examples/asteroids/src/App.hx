@@ -17,6 +17,8 @@ class App extends BaseApp {
 	var services:Services;
 	var batch:Batch2D;
 	var camera = new Camera2D();
+	// The score, the lives and the menus, in the presentation's units.
+	var hudCamera = new Camera2D();
 	var renderer:Renderer;
 	var ticker:Ticker;
 	var game:Game;
@@ -76,10 +78,10 @@ class App extends BaseApp {
 		});
 	}
 
-	// The title's Play, and game over's Play again and Title, in the field's units, as the renderer's panel has them.
+	// The title's Play, and game over's Play again and Title, in the HUD's units, as the renderer's panel has them.
 	function menus():Void {
 		pointer = new Pointer(services.input);
-		pointer.addStage2D(hud, camera);
+		pointer.addStage2D(hud, hudCamera);
 		var theme = new helix.ui.Theme();
 		theme.setFaceColor(0x1f293dff);
 		theme.setHoveredColor(0x303d57ff);
@@ -90,7 +92,7 @@ class App extends BaseApp {
 		theme.setWidgetHeight(52);
 		theme.setGap(12);
 		theme.setCornerRadius(12);
-		ui = new Ui(hud, camera, pointer, services.input, theme);
+		ui = new Ui(hud, hudCamera, pointer, services.input, theme);
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
@@ -118,7 +120,7 @@ class App extends BaseApp {
 		}
 		play.setText(ready ? "PLAY" : "LOADING");
 		play.setEnabled(ready);
-		Box.arrange(layout, 0, 0, Game.W, Game.H, batch.getFont());
+		Box.arrange(layout, Renderer.getHudX(services.presentation), Renderer.getHudY(services.presentation), Game.W, Game.H, batch.getFont());
 		pointer.update();
 		ui.update();
 		if (play.isClicked() || again.isClicked())
@@ -180,6 +182,8 @@ class App extends BaseApp {
 		if (stopped || services.window.getFramebufferWidth() <= 0 || services.window.getFramebufferHeight() <= 0)
 			return;
 		Field.view(camera, services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
+		ScreenShape.update(services);
+		services.presentation.apply(hudCamera);
 		if (ready) {
 			if (pilot != null && fast) {
 				for (_ in 0...120)
@@ -191,7 +195,7 @@ class App extends BaseApp {
 				sounds.play(game, false, false);
 		}
 		updateMenu();
-		renderer.render(game, camera, hud);
+		renderer.render(game, camera, hudCamera, services.presentation, hud);
 		if (pilot != null && pilot.isDone()) {
 			services.harness.publish(inspect());
 			pilot = null;

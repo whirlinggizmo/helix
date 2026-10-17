@@ -28,6 +28,8 @@ class App extends BaseApp {
 		services.window.requestSize(900, 700);
 		batch3D = new Batch3D(services.graphics);
 		batch2D = new Batch2D(services.graphics);
+		// Framed for 16:9: the spheres either side stay in view on a phone held upright too.
+		camera3D.setMinAspect(16 / 9);
 	}
 
 	override public function frame(dt:Float):Void {
@@ -40,8 +42,13 @@ class App extends BaseApp {
 		var angle = services.getTime() * .4;
 		camera3D.setViewport(width, height);
 		camera3D.setView(Math.cos(angle) * 16, 9, Math.sin(angle) * 16, 0, 1, 0);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x1c1c26ff);
 		batch3D.begin(camera3D);
@@ -56,9 +63,10 @@ class App extends BaseApp {
 		batch3D.end();
 
 		batch2D.begin(camera2D);
-		Text2D.draw(batch2D, "HeliX 3D", 12, 36, 24, 0xf5f5f5ff);
-		Text2D.draw(batch2D, "orbiting Camera3D, depth-tested Batch3D", 12, 70, 16, 0xc8c8c8ff);
-		fps.draw(batch2D, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch2D, "HeliX 3D", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
+		Text2D.drawWrapped(batch2D, "orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		fps.draw(batch2D, vx + 12, vy + 10);
 		batch2D.end();
 		services.graphics.endFrame();
 	}

@@ -427,7 +427,7 @@ class Stage3D {
 		var corners = new Vector<Float>(24), cx = 0., cy = 0., cz = 0.;
 		for (p in 0...2) {
 			var z = p == 0 ? (orthographic ? 0 : camera.getNear()) : distance;
-			var halfHeight = orthographic ? camera.getOrthographicHeight() / 2 : Math.tan(camera.getFovY() / 2) * z,
+			var halfHeight = orthographic ? camera.getDrawnHeight() / 2 : Math.tan(camera.getDrawnFovY() / 2) * z,
 				halfWidth = halfHeight * aspect;
 			for (c in 0...4) {
 				var x = c & 1 != 0 ? halfWidth : -halfWidth,

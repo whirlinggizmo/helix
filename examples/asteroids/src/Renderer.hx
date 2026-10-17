@@ -1,11 +1,13 @@
 import Game.Body;
 import helix.graphics.IGraphics;
+import helix.host.Presentation;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render2d.Text2D.Align2D;
 
-/** Draws a Game through Batch2D in world units: the Game.W x Game.H field, letterboxed in the framebuffer. */
+/** Draws a Game through Batch2D in world units: the Game.W x Game.H field, letterboxed in the framebuffer; then the score, the lives and
+	the menu's panel over it in the presentation's units, so they stay readable on a phone. */
 class Renderer {
 	/** The clear color, 0xRRGGBBAA, of the field and the bars around it. */
 	public static inline var BACKGROUND = 0x04060bff;
@@ -29,8 +31,8 @@ class Renderer {
 	function text(value:String, x:Float, y:Float, scale:Float = 3, align:Align2D = Left):Void
 		Text2D.draw(batch, value, x, y - 3 * scale, 13 * scale, color, align);
 
-	function centered(value:String, y:Float, scale:Float = 3):Void
-		text(value, Game.W / 2, y, scale, Center);
+	function centered(value:String, x:Float, y:Float, scale:Float = 3):Void
+		text(value, x, y, scale, Center);
 
 	function rock(body:Body):Void {
 		var x = body.x / 256.,
@@ -52,8 +54,16 @@ class Renderer {
 		batch.line(x - 8, y + 10, x, y - 12, 2, color);
 	}
 
-	/** Draws game seen through camera, and over its menu's panel hud (the menu's buttons), when given. */
-	public function render(game:Game, camera:Camera2D, ?hud:helix.render2d.Stage2D):Void {
+	/** The HUD's design is the field's, centered in the presentation's visible area: the menu's panel and buttons keep their places in it. */
+	public static function getHudX(presentation:Presentation):Float
+		return presentation.getVisibleX() + (presentation.getVisibleWidth() - Game.W) / 2;
+
+	public static function getHudY(presentation:Presentation):Float
+		return presentation.getVisibleY() + (presentation.getVisibleHeight() - Game.H) / 2;
+
+	/** Draws game seen through camera, then the score, the lives and the menu's panel through hudCamera (presentation applied to it), and over
+		them hud (the menu's buttons), when given. */
+	public function render(game:Game, camera:Camera2D, hudCamera:Camera2D, presentation:Presentation, ?hud:helix.render2d.Stage2D):Void {
 		gpu.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), BACKGROUND);
 		batch.begin(camera);
 		setColor(.22, .27, .36);
@@ -80,29 +90,35 @@ class Renderer {
 			batch.line(x - c * 6, y - t * 6, x - c * 12 + t * 11, y - t * 12 - c * 11, 2, color);
 			batch.line(x - c * 12 + t * 11, y - t * 12 - c * 11, x + c * 18, y + t * 18, 2, color);
 		}
+		batch.setCamera(hudCamera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var x = getHudX(presentation), y = getHudY(presentation);
 		if (game.state != "title") {
 			setColor(.9, .93, .97);
-			text(Std.string(game.score), 24, 20, 3);
+			text(Std.string(game.score), vx + 24, vy + 20, 3);
 			setColor(.5, .83, 1);
 			for (i in 0...game.lives)
-				shipIcon(32 + i * 26, 72);
+				shipIcon(vx + 32 + i * 26, vy + 72);
 			setColor(.7, .75, .8);
-			text("WAVE " + game.wave, Game.W - 150, 24, 2);
+			text("WAVE " + game.wave, vx + vw - 150, vy + 24, 2);
 		}
 		if (game.state != "playing") {
 			var over = game.state == "gameover";
-			batch.roundedRect(245, over ? 205 : 235, 470, over ? 330 : 240, 8, rgba(.055, .07, .12, .94));
+			batch.roundedRect(x + 245, y + (over ? 205 : 235), 470, over ? 330 : 240, 8, rgba(.055, .07, .12, .94));
 			setColor(.85, .9, .97);
-			centered(over ? "GAME OVER" : "ASTEROIDS", over ? 245 : 275, 6);
+			centered(over ? "GAME OVER" : "ASTEROIDS", x + Game.W / 2, y + (over ? 245 : 275), 6);
 			setColor(.65, .72, .8);
-			centered(over ? "SCORE " + game.score + "   BEST " + game.best : "TURN: ARROWS   THRUST: UP   FIRE: SPACE", over ? 325 : 345, over ? 2 : 1.5);
+			centered(over ? "SCORE " + game.score + "   BEST " + game.best : "TURN: ARROWS   THRUST: UP   FIRE: SPACE", x + Game.W / 2,
+				y + (over ? 325 : 345), over ? 2 : 1.5);
 			if (!over && game.best > 0) {
 				setColor(.65, .72, .8);
-				centered("BEST " + game.best, 490, 2);
+				centered("BEST " + game.best, x + Game.W / 2, y + 490, 2);
 			}
 		}
 		if (hud != null)
-			hud.draw(batch, camera);
+			hud.draw(batch, hudCamera);
 		batch.end();
 		gpu.endFrame();
 	}

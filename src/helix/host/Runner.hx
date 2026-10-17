@@ -10,7 +10,7 @@ import helix.audio.AudioResources;
 import helix.input.InputRouter;
 
 /** What a host pumps: at its init it builds the app's Services over a profile's adapters (and the engine's shared services over those), each
-	frame it runs them in their order (the shared services' polls, input's, the app's frame, input's frame end) with the clock and timings,
+	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window, the app's frame, input's frame end) with the clock and timings,
 	and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU): the
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
@@ -62,6 +62,10 @@ class Runner {
 	public function getFrameInterval():Float
 		return frameInterval;
 
+	/** Whether the shared services are loading anything (Services.isBusy). */
+	public function isBusy():Bool
+		return resources != null && (resources.isBusy() || decoding.isBusy() || audioDecoding.isBusy() || services.environments.isBusy());
+
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
 		if (resources != null)
@@ -103,6 +107,8 @@ class Runner {
 		audioDecoding.poll();
 		services.environments.poll();
 		input.poll(adapters.input);
+		var window = services.window;
+		services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
 		app.frame(clock.getDelta());
 		services.screenshots.frameEnded();
 		input.endFrame();

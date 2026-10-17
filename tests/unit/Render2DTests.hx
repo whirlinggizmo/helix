@@ -187,6 +187,9 @@ class HeldAssets implements helix.assets.IAssets {
 	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
 
 	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+
+	public function isBusy():Bool
+		return held.length > 0;
 }
 
 /** A decoder answering at once with one white texel, counting decodes. */

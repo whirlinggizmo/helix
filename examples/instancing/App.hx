@@ -69,6 +69,8 @@ class App extends BaseApp {
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xa0b4dcff, .35);
+		// Framed for 16:9: the whole field across on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var sunLight = new Light(Directional);
 		sunLight.setIntensity(3);
 		var sun = Node.light(sunLight);
@@ -133,17 +135,23 @@ class App extends BaseApp {
 		// One file, each its own turn.
 		for (i in 0...cars.length)
 			cars[i].setRotation(0, Math.PI + Math.sin(time + i * .35) * .6, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The readout in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch,
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		Text2D.drawWrapped(batch,
 			'${stage.getDrawnNodeCount()} models in ${stage.getDrawCallCount()} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
-			12, 64, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

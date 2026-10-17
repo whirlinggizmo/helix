@@ -82,6 +82,10 @@ class App extends BaseApp {
 	var batch:Batch2D;
 	var fps = new FpsOverlay();
 	var layout:Box;
+	var panel:Panel;
+	// The window's shape, as the layout was last arranged for it (shape), and whether it's upright: a phone held so, the panel under her.
+	var shaped = "";
+	var portrait = false;
 	var tabs:Array<Button> = [];
 	var tiles:Array<Tile> = [];
 	var poses:Array<Button> = [];
@@ -178,7 +182,7 @@ class App extends BaseApp {
 		pointer = new Pointer(services.input);
 		pointer.addStage2D(screen, camera2D);
 		ui = new Ui(screen, camera2D, pointer, services.input);
-		var panel = ui.panel("wardrobe");
+		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
 		title.getNode().setTextSize(26);
 		panel.add(title);
@@ -225,11 +229,25 @@ class App extends BaseApp {
 			actions.add(b.getBox());
 		}
 		panel.getContent().add(actions);
-		panel.getBox().setSizing(Fixed(600), Fit);
-		panel.getBox().setAnchor(End, Center, -24, 0);
 		layout = Box.stack();
 		layout.setSizing(Grow(1), Grow(1));
+		layout.setPadding(12, 12, 12, 12);
 		layout.add(panel.getBox());
+	}
+
+	// The panel for the window's shape (ScreenShape's designs): on the right, or upright along the bottom (five tiles still fit across the
+	// upright design's 560 units). The layout is arranged into all that's visible.
+	function shape(name:String):Void {
+		shaped = name;
+		portrait = name == "portrait";
+		var box = panel.getBox();
+		if (portrait) {
+			box.setSizing(Grow(1), Fit);
+			box.setAnchor(Stretch, End);
+		} else {
+			box.setSizing(Fixed(600), Fit);
+			box.setAnchor(End, Center, -12, 0);
+		}
 	}
 
 	// The part file for slot in look (a held part's own name for the hand).
@@ -396,11 +414,18 @@ class App extends BaseApp {
 
 	override public function frame(dt:Float):Void {
 		var input = services.input;
-		var width = services.window.getFramebufferWidth(),
-			height = services.window.getFramebufferHeight();
-		camera2D.setViewport(width, height);
-		camera2D.fit(0, 0, 1280, 720);
-		Box.arrange(layout, 0, 0, 1280, 720, batch.getFont());
+		var window = services.window, presentation = services.presentation;
+		var width = window.getFramebufferWidth(),
+			height = window.getFramebufferHeight();
+		var wanted = ScreenShape.update(services);
+		if (wanted != shaped)
+			shape(wanted);
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth(),
+			vh = presentation.getVisibleHeight();
+		Box.arrange(layout, vx, vy, vw, vh, batch.getFont());
 		pointer.update();
 		ui.update();
 		for (i in 0...tabs.length)
@@ -431,9 +456,11 @@ class App extends BaseApp {
 		var worn = outfit.getChoice(slot);
 		for (i in 0...offered.length)
 			tiles[i].setSelected(offered[i] == null ? worn == null : worn == path(slot, offered[i]));
-		// The turntable: a drag on the room (left of the panel) turns her; the wheel or a pinch comes closer.
-		var x = input.getPointerX() / Math.max(1, width) * 1280;
-		if (input.isPointerFramePressed() && x < 700)
+		// The turntable: a drag on the room (beside the panel, or above it) turns her; the wheel or a pinch comes closer.
+		var box = panel.getBox(),
+			px = presentation.toUnitsX(input.getPointerX()),
+			py = presentation.toUnitsY(input.getPointerY());
+		if (input.isPointerFramePressed() && (portrait ? py < box.getY() : px < box.getX()))
 			dragFrom = input.getPointerX();
 		if (!input.isPointerDown())
 			dragFrom = null;
@@ -464,16 +491,24 @@ class App extends BaseApp {
 
 		camera.setViewport(width, height);
 		camera.setPerspective(35, .05, 100);
-		// Her on the left of the room, the panel on the right: the camera looks a little right of her.
-		var side = distance * .42;
-		camera.setView(side, focus + distance * .12, distance, side, focus, 0);
+		if (portrait) {
+			// Her above the panel, in the framebuffer over it, centered.
+			var top = Std.int(Math.max(1, Math.min(height, (box.getY() - vy) * presentation.getScaleY() + presentation.getAreaY())));
+			camera.setViewportArea(0, 0, width, top);
+			camera.setView(0, focus + distance * .12, distance, 0, focus, 0);
+		} else {
+			// Her on the left of the room, the panel on the right: the camera looks a little right of her.
+			var side = distance * .42;
+			camera.setView(side, focus + distance * .12, distance, side, focus, 0);
+		}
 		stage.drawShadows(camera);
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
-		Text2D.draw(batch, status, 24, 680, 18, 0xc8d0e8ff);
-		Text2D.draw(batch, "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", 24, 24, 16, 0x8a92a8ff);
+		Text2D.draw(batch, status, vx + 24, portrait ? box.getY() - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
+		Text2D.draw(batch, portrait ? "drag: turn   pinch: closer" : "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", vx + 24, vy + 24,
+			16, 0x8a92a8ff);
 		batch.end();
 		hud.setViewport(width, height);
 		hud.pixels(services.window.getPixelRatio());

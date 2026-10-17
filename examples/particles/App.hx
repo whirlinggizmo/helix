@@ -65,6 +65,8 @@ class App extends BaseApp {
 		batch = new Batch2D(gpu);
 		grid = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
+		// Framed for 16:9: the fountain and the fire both in view on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 
 		fountain = new Emitter(null, 4096);
 		fountain.setRate(1200);
@@ -131,7 +133,7 @@ class App extends BaseApp {
 		place(flame, -5, .3, -2);
 		flame.prewarm(1);
 
-		// The confetti, flat: on the 2D stage, in logical pixels.
+		// The confetti, flat: on the 2D stage, in the presentation's units.
 		confetti = new Emitter(null, 4096, true);
 		confetti.setRegion(24, 24, 16, 16);
 		confetti.setLife(1.2, 2.2);
@@ -151,7 +153,8 @@ class App extends BaseApp {
 			case Ready(texture):
 				for (e in [fountain, sparks, smoke, confetti])
 					e.setTexture(texture);
-				burst(500, 240);
+				var presentation = services.presentation;
+				burst(presentation.getVisibleX() + presentation.getVisibleWidth() / 2, presentation.getVisibleY() + presentation.getVisibleHeight() / 3);
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -165,7 +168,7 @@ class App extends BaseApp {
 		});
 	}
 
-	// A burst of confetti at x, y logical pixels: no trail from where the last one was.
+	// A burst of confetti at x, y units: no trail from where the last one was.
 	function burst(x:Float, y:Float):Void {
 		confettiNode.setPosition(x, y);
 		confetti.jump(x, y, 0);
@@ -183,9 +186,11 @@ class App extends BaseApp {
 		}
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
-		var ratio = services.window.getPixelRatio();
+		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
 		if (input.isPointerFramePressed())
-			burst(input.getPointerX() / ratio, input.getPointerY() / ratio);
+			burst(presentation.toUnitsX(input.getPointerX()), presentation.toUnitsY(input.getPointerY()));
 		time += dt;
 		if (orbit)
 			angle += dt * .15;
@@ -198,8 +203,10 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
-		hud.setViewport(width, height);
-		hud.pixels(ratio);
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x0e1018ff);
 		grid.begin(camera);
@@ -208,10 +215,11 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		flat.draw(batch, hud);
-		Text2D.draw(batch, "HeliX particles", 12, 36, 24, 0xf5f5f5ff);
-		Text2D.draw(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.getDrawCallCount()} draws', 12, 70, 16,
-			0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX particles", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
+		Text2D.drawWrapped(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.getDrawCallCount()} draws',
+			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

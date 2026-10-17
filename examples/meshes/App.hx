@@ -34,6 +34,8 @@ class App extends BaseApp {
 		services.window.requestSize(1000, 600);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .25);
+		// Framed for 16:9: the whole row across on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var sun = new Light(Directional);
 		sun.setIntensity(3);
 		var sunNode = Node.light(sun);
@@ -79,15 +81,25 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 3.5, 9 * Math.cos(angle), 0, .4, 0);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
-		Text2D.draw(batch, "HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, (orbit ? "O: stop the camera" : "O: turn the camera") + (services.canQuit() ? "   ESC: quit" : ""), 12, 64, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		Text2D.drawWrapped(batch, (orbit ? "O: stop the camera" : "O: turn the camera")
+			+ (services.canQuit() ? "   ESC: quit" : ""), vx
+			+ 12, y, 16, vw
+			- 24,
+			0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

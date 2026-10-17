@@ -9,7 +9,7 @@ import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 
-/** Sprites on a Stage2D, in logical pixels:
+/** Sprites on a Stage2D, in the design for the window's shape and spread over what's visible of it:
 	- "sheet": the 256x256 logo as a 2x2 sprite sheet, its region stepping through the quarters like animation frames
 	- "spin": turns about its center (the default pivot)
 	- "swing": turns about its top-left corner (pivot 0, 0)
@@ -58,13 +58,9 @@ class App extends BaseApp {
 			sprites.push(sprite);
 			stage.add(sprite);
 		}
-		sprites[0].setPosition(140, 170);
-		sprites[1].setPosition(140, 380);
+		// Placed each frame, in what's visible.
 		sprites[2].setPivot(0, 0);
-		sprites[2].setPosition(700, 110);
 		sprites[2].setSize(96, 96);
-		sprites[3].setPosition(760, 400);
-		sprites[4].setPosition(450, 110);
 		sprites[4].setSize(96, 96);
 		services.textures.load(LOGO, true, result -> switch result {
 			case Ready(texture):
@@ -105,8 +101,30 @@ class App extends BaseApp {
 		fps.update(dt, services.getFrameCpu());
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
-		camera.setViewport(width, height);
-		camera.pixels(services.window.getPixelRatio());
+		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
+		var shape = ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth(),
+			vh = presentation.getVisibleHeight();
+		var top = vy + (shape == "portrait" ? 140 : 90), tall = vy + vh - top;
+		inline function place(i:Int, across:Float, down:Float)
+			sprites[i].setPosition(vx + vw * across, top + tall * down);
+		if (shape == "portrait") {
+			place(0, .28, .15);
+			place(4, .72, .15);
+			place(1, .28, .5);
+			place(2, .62, .4);
+			place(3, .5, .82);
+		} else {
+			place(0, .16, .25);
+			place(1, .16, .72);
+			place(4, .5, .25);
+			place(2, .74, .12);
+			place(3, .82, .72);
+		}
 
 		// The sheet: one quarter of the 256x256 texture an animation frame.
 		sheetFrame = Std.int(time * 2) % 4;
@@ -135,11 +153,13 @@ class App extends BaseApp {
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		if (logo != null)
-			batch.sprite(logo, width / services.window.getPixelRatio() - 42, 42, 64, 64);
-		Text2D.draw(batch, "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", 12, 36, 16, 0xf5f5f5ff);
-		Text2D.draw(batch, 'pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', 12, 60, 16,
-			0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+			batch.sprite(logo, vx + vw - 42, vy + 42, 64, 64);
+		// Wrapped short of the corner sprite.
+		var line = vy + 36;
+		line += Text2D.drawWrapped(batch, "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", vx + 12, line, 16, vw - 96, 0xf5f5f5ff) + 4;
+		Text2D.drawWrapped(batch, 'pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame',
+			vx + 12, line, 16, vw - 96, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

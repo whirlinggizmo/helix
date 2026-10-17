@@ -79,17 +79,38 @@ class App extends BaseApp {
 	static function fileName(path:String):String
 		return path.substr(path.lastIndexOf("/") + 1);
 
-	// Under a texture: its file's name (and the file chosen for a .ktx, under it), then its size, the GPU memory it takes, and how long it took.
-	function caption(slot:Slot, x:Float, y:Float):Void {
-		var name = fileName(slot.path), chosen = fileName(slot.chosen);
-		Text2D.draw(batch, name, x, y, 16, 0xc8c8c8ff);
-		if (slot.chosen != "" && chosen != name) {
-			y += 22;
-			Text2D.draw(batch, 'loaded $chosen', x, y, 14, 0x66bfffff);
-		}
+	// Under a texture, wrapped to width: its file's name (and the file chosen for a .ktx, under it), then its size, the GPU memory it takes,
+	// and how long it took. Returns the height drawn.
+	function caption(slot:Slot, x:Float, y:Float, width:Float):Float {
+		var name = fileName(slot.path), chosen = fileName(slot.chosen), top = y;
+		y += Text2D.drawWrapped(batch, name, x, y, 16, width, 0xc8c8c8ff) + 2;
+		if (slot.chosen != "" && chosen != name)
+			y += Text2D.drawWrapped(batch, 'loaded $chosen', x, y, 14, width, 0x66bfffff) + 2;
 		var t = slot.texture;
 		var line = t == null ? slot.status : '${t.getWidth()} x ${t.getHeight()}, GPU ${Math.round(t.getByteCount() / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
-		Text2D.draw(batch, line, x, y + 22, 14, 0xc8c8c8ff);
+		return y + Text2D.drawWrapped(batch, line, x, y, 14, width, 0xc8c8c8ff) - top;
+	}
+
+	// The slots in rows of columns from x, y, each size wide (twice, smooth then sharp, when both) and captioned under. Returns the bottom.
+	function grid(list:Array<Slot>, both:Bool, x:Float, y:Float, size:Float, columns:Int, pitch:Float):Float {
+		var bottom = y;
+		for (i in 0...list.length) {
+			if (i > 0 && i % columns == 0)
+				y = bottom + 20;
+			var left = x + (i % columns) * pitch, texture = list[i].texture;
+			if (texture != null) {
+				// Sampling is the texture's, read as each draw takes it: one texture, drawn smooth, then sharp.
+				if (both)
+					texture.setSampling(Sampling.LINEAR);
+				drawOne(i, texture, left, y, size);
+				if (both) {
+					texture.setSampling(Sampling.NEAREST);
+					drawOne(i, texture, left + size + 10, y, size);
+				}
+			}
+			bottom = Math.max(bottom, y + size + 16 + caption(list[i], left, y + size + 16, pitch - 20));
+		}
+		return bottom;
 	}
 
 	// One texture width wide at x, y: the tile sheet as its cells set edge to edge, anything else whole.
@@ -112,31 +133,25 @@ class App extends BaseApp {
 		fps.update(dt, services.getFrameCpu());
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
-		camera.setViewport(width, height);
-		camera.pixels(services.window.getPixelRatio());
+		// The design for the window's shape: three textures a row across, smaller and two a row upright, so it all fits a phone either way.
+		var shape = ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var size = shape == "landscape" ? 150 : 120,
+			columns = shape == "portrait" ? 2 : 3,
+			pitch = 2 * size + 30;
 
 		services.graphics.beginFrame(width, height, 0x262a36ff);
 		batch.begin(camera);
-		Text2D.draw(batch, "HeliX textures: smooth (linear) and sharp (nearest) sampling", 12, 30, 22, 0xf5f5f5ff);
-		for (i in 0...slots.length) {
-			var x = 20 + i * 330, y = 80, texture = slots[i].texture;
-			if (texture != null) {
-				// Sampling is the texture's, read as each draw takes it: one texture, drawn smooth, then sharp.
-				texture.setSampling(Sampling.LINEAR);
-				drawOne(i, texture, x, y, 150);
-				texture.setSampling(Sampling.NEAREST);
-				drawOne(i, texture, x + 160, y, 150);
-			}
-			caption(slots[i], x, y + 166);
-		}
-		Text2D.draw(batch, "compressed: as name.ktx, this GPU's variant or else the PNG", 12, 310, 22, 0xf5f5f5ff);
-		for (i in 0...compressed.length) {
-			var x = 20 + i * 330, y = 360, texture = compressed[i].texture;
-			if (texture != null)
-				drawOne(i, texture, x, y, 150);
-			caption(compressed[i], x, y + 166);
-		}
-		fps.draw(batch, 12, 6);
+		var y = vy + 30;
+		y += Text2D.drawWrapped(batch, "HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		y = grid(slots, true, vx + 20, y, size, columns, pitch) + 24;
+		y += Text2D.drawWrapped(batch, "compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		grid(compressed, false, vx + 20, y, size, columns, pitch);
+		fps.draw(batch, vx + 12, vy + 6);
 		batch.end();
 		services.graphics.endFrame();
 	}

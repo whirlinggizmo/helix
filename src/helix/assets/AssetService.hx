@@ -516,6 +516,9 @@ class AssetService implements IAssets {
 			});
 	}
 
+	public function isBusy():Bool
+		return requests.length > 0 || !queue.isEmpty();
+
 	/** Polls the fetcher, cache and packaged store, then runs queued work and completions within the work budget. Call once per frame on the host thread. */
 	public function poll():Void {
 		fetcher.poll();

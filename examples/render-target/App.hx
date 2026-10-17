@@ -108,7 +108,7 @@ class App extends BaseApp {
 		});
 	}
 
-	// A texture with a 2 pixel frame and a caption above it, in logical pixels.
+	// A texture with a 2 unit frame and a caption above it, in the presentation's units.
 	function panel(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, caption:String):Void {
 		batch.rect(x - 2, y - 2, w + 4, h + 4, 0x5a606eff);
 		batch.image(texture, x, y, w, h);
@@ -152,16 +152,27 @@ class App extends BaseApp {
 		stage.draw(top);
 		gpu.endTargetPass();
 
-		// The screen.
-		screen.setViewport(width, height);
-		screen.pixels(services.window.getPixelRatio());
+		// The screen, in the design for the window's shape.
+		var shape = ScreenShape.update(services),
+			presentation = services.presentation;
+		presentation.apply(screen);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 		gpu.beginFrame(width, height, BACKGROUND);
 		batch.begin(screen);
-		panel(pixelView, 24, 92, PIXEL_W * PIXEL_SCALE, PIXEL_H * PIXEL_SCALE, "pixel view (160x100, nearest)");
-		panel(minimap, 700, 92, MINIMAP, MINIMAP, "minimap (orthographic, from above)");
-		panel(label, 700, 400, LABEL_W, LABEL_H, "label (text drawn into a texture)");
-		Text2D.draw(batch, "HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", 12, 36, 16, 0xf5f5f5ff);
-		fps.draw(batch, 12, 10);
+		var top = vy
+			+ 36
+			+ Text2D.drawWrapped(batch, "HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xf5f5f5ff)
+			+ 36;
+		// The pixel view on the left and the other two in a column beside it; upright, all three in a column, the pixel view as wide as fits.
+		var x = vx + 24, pixelWidth = Math.min(PIXEL_W * PIXEL_SCALE, vw - 48), pixelHeight = pixelWidth * PIXEL_H / PIXEL_W;
+		panel(pixelView, x, top, pixelWidth, pixelHeight, "pixel view (160x100, nearest)");
+		var column = shape == "portrait" ? x : x + pixelWidth + 36,
+			below = shape == "portrait" ? top + pixelHeight + 48 : top;
+		panel(minimap, column, below, MINIMAP, MINIMAP, "minimap (orthographic, from above)");
+		panel(label, column, below + MINIMAP + 52, LABEL_W, LABEL_H, "label (text drawn into a texture)");
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();
 	}

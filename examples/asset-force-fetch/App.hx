@@ -56,16 +56,23 @@ class App extends BaseApp {
 		if (services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
 		fps.update(dt, services.getFrameCpu());
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x12141cff);
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
-		Text2D.draw(batch, "HeliX audio + force fetch", 24, 30, 28, 0xf5f5f5ff);
-		Text2D.draw(batch, music == null ? "music: loading..." : music.getState() == Paused ? "music: paused" : "music: playing (mp3, looping)", 24, 80, 18,
-			0x66bfffff);
-		Text2D.draw(batch, state, 24, 110, 14, 0xc8c8c8ff);
-		Text2D.draw(batch, "[M] toggle music" + (services.canQuit() ? "   [ESC] quit" : ""), 24, 150, 16, 0xc8c8c8ff);
-		fps.draw(batch, 24, 8);
+		var y = vy + 30;
+		y += Text2D.drawWrapped(batch, "HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : music.getState() == Paused ? "music: paused" : "music: playing (mp3, looping)",
+			vx + 24, y, 18, vw - 48, 0x66bfffff)
+			+ 7.5;
+		y += Text2D.drawWrapped(batch, state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
+		Text2D.drawWrapped(batch, "[M] toggle music" + (services.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
+		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		services.graphics.endFrame();
 	}

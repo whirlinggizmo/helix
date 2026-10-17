@@ -40,25 +40,33 @@ class App extends BaseApp {
 		for (i in 0...input.getPadCount())
 			if (input.getPad(i).isFramePressed(PadButton.South))
 				deadzone = (deadzone + 1) % DEADZONES.length;
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		// The design for the window's shape: the text wrapped to what's visible of it, and as many panels across as fit, the rest in rows below.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
 		var connected = 0;
 		for (i in 0...input.getPadCount())
 			if (input.getPad(i).isConnected())
 				connected++;
-		Text2D.draw(batch, 'HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', 12, 12, 16, 0xf5f5f5ff);
+		var y = vy + 12;
+		y += Text2D.drawWrapped(batch, 'HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
+			0xf5f5f5ff)
+			+ 12;
 		if (connected == 0)
-			Text2D.draw(batch, "No gamepad: connect one, then press a button on it.", 12, 44, 16, 0xc8c8c8ff);
-		var column = 0;
+			Text2D.drawWrapped(batch, "No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		var columns = Std.int(Math.max(1, Math.floor((vw - 12) / 245))), placed = 0;
 		for (i in 0...input.getPadCount()) {
 			var pad = input.getPad(i);
 			if (!pad.isConnected())
 				continue;
 			pad.setDeadzone(DEADZONES[deadzone]);
-			drawPad(pad, i, 12 + column * 245, 44);
-			column++;
+			drawPad(pad, i, vx + 12 + placed % columns * 245, y + Std.int(placed / columns) * 370);
+			placed++;
 		}
 		batch.end();
 		services.graphics.endFrame();

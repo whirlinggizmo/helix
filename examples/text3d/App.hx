@@ -56,6 +56,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		services.window.setTitle("HeliX text3d");
 		services.window.requestSize(1000, 600);
+		// Framed for 16:9: all three models and their labels on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		lines = new Batch3D(gpu);
@@ -111,8 +113,13 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 9, 4, Math.cos(angle) * 9, 0, .8, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		lines.begin(camera);
@@ -131,9 +138,13 @@ class App extends BaseApp {
 		lines.end();
 		stage.draw(camera);
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", 12, 36, 18, 0xf5f5f5ff);
-		Text2D.draw(batch, '${stage.getDrawnNodeCount()} models and glyphs in ${stage.getDrawCallCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
+			0xf5f5f5ff)
+			+ 4;
+		Text2D.drawWrapped(batch, '${stage.getDrawnNodeCount()} models and glyphs in ${stage.getDrawCallCount()} draws   O: the camera', vx + 12, y, 16,
+			vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

@@ -26,6 +26,10 @@ class Services {
 	/** The window the app draws in (the page, on the web): its drawing surface's size, pixel ratio and focus too. */
 	public var window(default, null):IWindow;
 
+	/** The app's design fitted to the window: its units, what's visible of them, and a 2D camera to show them (None, logical pixels, until
+		the app sets a mode). */
+	public var presentation(default, null) = new Presentation();
+
 	/** Assets: the packaged files or downloads, cached. */
 	public var assets(default, null):IAssets;
 
@@ -54,6 +58,11 @@ class Services {
 
 	function new(runner:Runner)
 		this.runner = runner;
+
+	/** Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits
+		for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in. */
+	public function isBusy():Bool
+		return runner.isBusy();
 
 	/** Seconds on the host's monotonic clock. */
 	public function getTime():Float

@@ -104,4 +104,7 @@ interface IAssets {
 
 	/** Stops telling target about path's changes; does nothing if it was not subscribed. */
 	function unsubscribe(path:String, target:IReloadable):Void;
+
+	/** Whether a load is under way or its completion not yet run (Services.isBusy asks it, with the decoders). */
+	function isBusy():Bool;
 }

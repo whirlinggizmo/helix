@@ -65,6 +65,8 @@ class App extends BaseApp {
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
+		// Framed for 16:9: all five columns across on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 
 		var sunLight = new Light(Directional);
 		sunLight.setColor(0xfff4e4ff);
@@ -131,17 +133,23 @@ class App extends BaseApp {
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(camera2D);
-		Text2D.draw(batch, "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", 12, 36, 18, 0xf5f5f5ff);
-		Text2D.draw(batch,
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xf5f5f5ff) + 4;
+		Text2D.drawWrapped(batch,
 			'roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.isVisible() ? "on" : "off"}  [2] lamp ${lamp.isVisible() ? "on" : "off"}',
-			12, 62, 15, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

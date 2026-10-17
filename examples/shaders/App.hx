@@ -59,6 +59,8 @@ class App extends BaseApp {
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .15);
 		camera.setView(0, 1.2, 5, 0, .3, 0);
+		// Framed for 16:9: all three models on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var sunLight = new Light(Directional);
 		sunLight.setColor(0xfff4e4ff);
 		sunLight.setIntensity(1.5);
@@ -193,19 +195,26 @@ class App extends BaseApp {
 			width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		gpu.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX shaders: materials drawn by the example's own surface shaders", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch,
-			'toon      dissolve      water        [1] sun ${sun.isVisible() ? "on" : "off"}  [2] point light ${lamp.isVisible() ? "on" : "off"}', 12, 64, 16,
-			0xc8c8c8ff);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX shaders: materials drawn by the example's own surface shaders", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += Text2D.drawWrapped(batch,
+			'left to right: toon, dissolve, water   [1] sun ${sun.isVisible() ? "on" : "off"}  [2] point light ${lamp.isVisible() ? "on" : "off"}', vx + 12,
+			y, 16, vw - 24, 0xc8c8c8ff)
+			+ 4;
 		if (status != "")
-			Text2D.draw(batch, status, 12, 88, 16, 0xff8080ff);
-		fps.draw(batch, 12, 10);
+			Text2D.drawWrapped(batch, status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();
 	}

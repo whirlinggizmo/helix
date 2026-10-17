@@ -38,16 +38,7 @@ class App extends BaseApp {
 		var input = services.input;
 		if (input.isFramePressed(Key.Q) || services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
-		batch.begin(camera);
-		Text2D.draw(batch, "HeliX quit   Q: quit now", 12, 12, 16, 0xf5f5f5ff);
-		Text2D.draw(batch,
-			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - services.getTime()) * 10) / 10} s',
-			12, 40, 16, 0xc8c8c8ff);
-		batch.end();
-		services.graphics.endFrame();
+		// The quit, before this frame is drawn: its text says so, and it's the frame the canvas keeps.
 		if (!quitting && services.getTime() >= quitAt) {
 			quitting = true;
 			// Only in flight at the quit: loads begun and never used.
@@ -59,6 +50,22 @@ class App extends BaseApp {
 			while (services.getTime() < busyUntil) {}
 			services.quit();
 		}
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1e2430ff);
+		batch.begin(camera);
+		var y = vy + 12;
+		y += Text2D.drawWrapped(batch, "HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
+		Text2D.drawWrapped(batch,
+			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - services.getTime()) * 10) / 10} s',
+			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		batch.end();
+		services.graphics.endFrame();
 	}
 
 	override public function cleanup():Void {

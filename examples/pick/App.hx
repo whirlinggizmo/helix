@@ -46,6 +46,8 @@ class App extends BaseApp {
 		var gpu = services.graphics;
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
+		// Framed for 16:9: everything pickable in view on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var sun = new Light(Directional);
 		sun.setIntensity(2.5);
 		var sunNode = Node.light(sun);
@@ -152,8 +154,13 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(9 * Math.sin(angle), 5, 9 * Math.cos(angle), 0, 1, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 		picked = stage.pick(camera, input.getPointerX(), input.getPointerY(), hit);
 
 		services.graphics.beginFrame(width, height, 0x1c1e26ff);
@@ -168,13 +175,14 @@ class App extends BaseApp {
 		}
 		batch3D.end();
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX pick: move the pointer over anything", 12, 36, 20, 0xf5f5f5ff);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		var line = picked == null ? "nothing under the pointer" : '${nameOf(picked.getNode())}   ${Math.round(picked.getDistance() * 100) / 100} away   at '
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
-		Text2D.draw(batch, line, 12, 64, 16, 0xc8c8c8ff);
-		Text2D.draw(batch, "O: the camera" + (services.canQuit() ? "   ESC: quit" : ""), 12, 88, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		y += Text2D.drawWrapped(batch, line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
+		Text2D.drawWrapped(batch, "O: the camera" + (services.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

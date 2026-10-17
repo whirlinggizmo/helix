@@ -1,11 +1,13 @@
 package helix.render2d;
 
-/** A 2D view: the world point at the viewport's center and how many pixels a world unit covers. Y grows downward. The viewport is the whole
+/** A 2D view: the world point at the viewport's center and how many pixels a world unit covers (across and down alike, but under a
+	Presentation that stretches). Y grows downward. The viewport is the whole
 	framebuffer, or an area of it (setViewportArea). */
 class Camera2D {
 	var x = 0.;
 	var y = 0.;
 	var zoom = 1.;
+	var zoomY = 1.;
 	var framebufferWidth = 1;
 	var framebufferHeight = 1;
 	var viewportX = 0;
@@ -30,15 +32,27 @@ class Camera2D {
 		this.y = y;
 	}
 
-	/** Framebuffer pixels per world unit. */
+	/** Framebuffer pixels per world unit (across, where they differ: getZoomY). */
 	public function getZoom():Float
 		return zoom;
 
-	/** False for a zoom of 0 or less. */
+	/** Sets the framebuffer pixels per world unit, across and down. False for a zoom of 0 or less. */
 	public function setZoom(value:Float):Bool {
 		if (!(value > 0))
 			return false;
-		zoom = value;
+		zoom = zoomY = value;
+		return true;
+	}
+
+	/** Framebuffer pixels per world unit down: getZoom's, unless set apart. */
+	public function getZoomY():Float
+		return zoomY;
+
+	/** Sets the framebuffer pixels per world unit down alone, after setZoom (a stretched view: Presentation's Stretch). False for a zoom of 0 or less. */
+	public function setZoomY(value:Float):Bool {
+		if (!(value > 0))
+			return false;
+		zoomY = value;
 		return true;
 	}
 
@@ -90,7 +104,7 @@ class Camera2D {
 	public function fit(left:Float, top:Float, width:Float, height:Float):Bool {
 		if (!(width > 0 && height > 0))
 			return false;
-		zoom = Math.min(viewportWidth / width, viewportHeight / height);
+		zoom = zoomY = Math.min(viewportWidth / width, viewportHeight / height);
 		x = left + width / 2;
 		y = top + height / 2;
 		return true;
@@ -100,7 +114,7 @@ class Camera2D {
 	public function pixels(scale:Float):Bool {
 		if (!(scale > 0))
 			return false;
-		zoom = scale;
+		zoom = zoomY = scale;
 		x = viewportWidth / 2 / scale;
 		y = viewportHeight / 2 / scale;
 		return true;
@@ -112,7 +126,7 @@ class Camera2D {
 
 	/** The world Y under framebuffer pixel Y py, from the framebuffer's top edge. */
 	public function screenToWorldY(py:Float):Float
-		return y + (py - viewportY - viewportHeight / 2) / zoom;
+		return y + (py - viewportY - viewportHeight / 2) / zoomY;
 
 	/** The framebuffer pixel X, from the framebuffer's left edge, of world X wx. */
 	public function worldToScreenX(wx:Float):Float
@@ -120,7 +134,7 @@ class Camera2D {
 
 	/** The framebuffer pixel Y, from the framebuffer's top edge, of world Y wy. */
 	public function worldToScreenY(wy:Float):Float
-		return (wy - y) * zoom + viewportY + viewportHeight / 2;
+		return (wy - y) * zoomY + viewportY + viewportHeight / 2;
 
 	/** Clip-space X (-1 left to 1 right) of world X wx. */
 	public inline function clipX(wx:Float):Float
@@ -128,5 +142,5 @@ class Camera2D {
 
 	/** Clip-space Y (1 top to -1 bottom) of world Y wy; the flip makes world Y grow downward. */
 	public inline function clipY(wy:Float):Float
-		return -(wy - y) * zoom * 2 / viewportHeight;
+		return -(wy - y) * zoomY * 2 / viewportHeight;
 }

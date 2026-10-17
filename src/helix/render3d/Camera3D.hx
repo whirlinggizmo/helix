@@ -17,6 +17,8 @@ class Camera3D {
 	var far = 1000.;
 	// The orthographic view's height in world units; 0 for perspective.
 	var orthographicHeight = 0.;
+	// The narrowest shape the view keeps its width at; 0 for none.
+	var minAspect = 0.;
 	var framebufferWidth = 1;
 	var framebufferHeight = 1;
 	var viewportX = 0;
@@ -103,6 +105,33 @@ class Camera3D {
 		this.far = far;
 		orthographicHeight = 0;
 		return true;
+	}
+
+	/** The narrowest viewport shape (width / height) the view keeps its width at: 0, the default, for none. */
+	public function getMinAspect():Float
+		return minAspect;
+
+	/** Keeps the view's width on a viewport narrower than aspect (width / height): its vertical view (setPerspective's fovY, or an orthographic
+		height) is as given at aspect and wider, and grows on a narrower viewport so it sees as far across as at aspect. A scene framed for 16:9
+		(16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0
+		turns it off. False, changing nothing, for less than 0. */
+	public function setMinAspect(aspect:Float):Bool {
+		if (!(aspect >= 0))
+			return false;
+		minAspect = aspect;
+		return true;
+	}
+
+	/** The vertical field of view drawn, in radians: getFovY, widened on a viewport narrower than the minimum aspect (setMinAspect). */
+	public function getDrawnFovY():Float {
+		var aspect = viewportWidth / viewportHeight;
+		return aspect < minAspect ? 2 * Math.atan(Math.tan(fovY / 2) * minAspect / aspect) : fovY;
+	}
+
+	/** The orthographic height drawn, in world units: getOrthographicHeight, taller on a viewport narrower than the minimum aspect. */
+	public function getDrawnHeight():Float {
+		var aspect = viewportWidth / viewportHeight;
+		return aspect < minAspect ? orthographicHeight * minAspect / aspect : orthographicHeight;
 	}
 
 	/** The near clip plane's distance from the eye. */
@@ -196,9 +225,9 @@ class Camera3D {
 				setView(ex, ey, ez, ex + fx / fl, ey + fy / fl, ez + fz / fl, placed.get(4), placed.get(5), placed.get(6));
 		}
 		if (orthographicHeight > 0)
-			projection.makeOrthographic(orthographicHeight, viewportWidth / viewportHeight, near, far);
+			projection.makeOrthographic(getDrawnHeight(), viewportWidth / viewportHeight, near, far);
 		else
-			projection.makePerspective(fovY, viewportWidth / viewportHeight, near, far);
+			projection.makePerspective(getDrawnFovY(), viewportWidth / viewportHeight, near, far);
 		viewProjection.makeProduct(projection, view);
 		return viewProjection;
 	}

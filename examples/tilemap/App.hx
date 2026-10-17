@@ -143,8 +143,13 @@ class App extends BaseApp {
 		camera.setViewport(width, height);
 		camera.setZoom(height / seen);
 		camera.setPosition(centerX, centerY);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The HUD in the design for the window's shape, along the top of what's visible of it; the world keeps its own camera.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		// Coins: hover lights them up, a click collects them.
 		var hovered = px >= 0 ? coinAt(camera.screenToWorldX(px), camera.screenToWorldY(py)) : null;
@@ -165,14 +170,18 @@ class App extends BaseApp {
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.setCamera(hud);
-		batch.rect(0, 0, width / services.window.getPixelRatio(), 88, 0x121418be);
-		Text2D.draw(batch, "HeliX tilemap: a 2D camera over sprite tiles", 20, 20, 20, 0xebeef5ff);
-		Text2D.draw(batch,
-			'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
-			20, 46, 15, 0x8c929eff);
-		Text2D.draw(batch, 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnNodeCount()} of ${sprites.length} drawn)', 20, 68, 15,
-			0x8c929eff);
-		fps.draw(batch, width / services.window.getPixelRatio() - 150, 4);
+		// The text wrapped to what's visible, the band behind it as tall as it wraps to.
+		var title = "HeliX tilemap: a 2D camera over sprite tiles",
+			status = 'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
+			help = 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.getDrawnNodeCount()} of ${sprites.length} drawn)';
+		inline function tall(text:String, size:Float):Float
+			return Text2D.measureWrapped(batch.getFont(), text, size, vw - 40);
+		batch.rect(vx, vy, vw, 20 + tall(title, 20) + 1 + tall(status, 15) + 3 + tall(help, 15) + 1, 0x121418be);
+		var y = vy + 20;
+		y += Text2D.drawWrapped(batch, title, vx + 20, y, 20, vw - 40, 0xebeef5ff) + 1;
+		y += Text2D.drawWrapped(batch, status, vx + 20, y, 15, vw - 40, 0x8c929eff) + 3;
+		Text2D.drawWrapped(batch, help, vx + 20, y, 15, vw - 40, 0x8c929eff);
+		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
 		services.graphics.endFrame();
 	}

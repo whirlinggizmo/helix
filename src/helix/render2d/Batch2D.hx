@@ -416,9 +416,9 @@ class Batch2D {
 			count = emitter.writeRecords(particleRecords, first * Particle3DLayout.instanceStride);
 		particleCount += count;
 		// The camera's mapping from the world to clip space as a matrix; z at the near plane, so nothing drawn before hides them.
-		var projection = new helix.render3d.Mat4(), zoom = camera.getZoom();
-		var sx = zoom * 2 / camera.getViewportWidth(),
-			sy = zoom * 2 / camera.getViewportHeight();
+		var projection = new helix.render3d.Mat4();
+		var sx = camera.getZoom() * 2 / camera.getViewportWidth(),
+			sy = camera.getZoomY() * 2 / camera.getViewportHeight();
 		projection.set(0, sx);
 		projection.set(5, -sy);
 		projection.set(10, 0);
@@ -536,7 +536,8 @@ class Batch2D {
 
 	/** Enough segments for the circle's size on screen: about one per 2.5 pixels of circumference, 12 at least. */
 	function segments(radius:Float):Int
-		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * camera.getZoom() / 2.5)));
+		return Std.int(Math.max(12,
+			Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * Math.max(camera.getZoom(), camera.getZoomY()) / 2.5)));
 
 	/** A filled circle in world units, centered on x, y, with segments for its size on screen. */
 	public function circle(x:Float, y:Float, radius:Float, tint:Int):Void {

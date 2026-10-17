@@ -56,6 +56,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		services.window.setTitle("HeliX animation");
 		services.window.requestSize(1000, 600);
+		camera.setMinAspect(16 / 9);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xc8d2ffff, .35);
 		var sun = new Light(Directional);
@@ -136,20 +137,30 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(3 * Math.sin(angle), 1.6, 3 * Math.cos(angle), 0, .9, 0);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		stage.drawShadows(camera);
 		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		stage.draw(camera);
 		batch.begin(camera2D);
-		Text2D.draw(batch, 'HeliX animation: $status${animator != null && animator.isFading() ? "  (fading)" : ""}', 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), 12, 64, 16, 0xc8c8c8ff);
-		Text2D.draw(batch,
-			'F: ${fade ? "crossfade" : "cut"}   G: outfit   S: sword   Space: ${paused ? "resume" : "pause"}   O: the camera' +
-			(services.canQuit() ? "   ESC: quit" : ""),
-			12, 88, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, 'HeliX animation: $status${animator != null && animator.isFading() ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24,
+			0xf5f5f5ff)
+			+ 3;
+		y += Text2D.drawWrapped(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
+		Text2D.drawWrapped(batch,
+			'F: ${fade ? "crossfade" : "cut"}   G: outfit   S: sword   Space: ${paused ? "resume" : "pause"}   O: the camera'
+			+ (services.canQuit() ? "   ESC: quit" : ""),
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

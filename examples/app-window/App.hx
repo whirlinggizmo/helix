@@ -65,30 +65,43 @@ class App extends BaseApp {
 		}
 		if (input.isFramePressed(Key.M))
 			report("monitor", window.requestMonitorIndex((window.getMonitorIndex() + 1) % window.getMonitorCount()));
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181c26ff);
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		services.graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x181c26ff);
 		batch.begin(camera);
-		var row = 12.;
-		Text2D.draw(batch,
-			"HeliX window   arrows: move   =/-: size   " + (window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)") + "   M: next monitor   H: hide",
-			12, row, 16, 0xf5f5f5ff);
-		row += 32;
-		Text2D.draw(batch,
+		var row = vy + 12;
+		row += Text2D.drawWrapped(batch,
+			"HeliX window   arrows: move   =/-: size   "
+			+ (window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)")
+			+ "   M: next monitor   H: hide",
+			vx
+			+ 12, row, 16, vw
+			- 24, 0xf5f5f5ff)
+			+ 12;
+		row += Text2D.drawWrapped(batch,
 			'window: $width x $height at ($x, $y)   fullscreen: '
 			+ (window.isFullscreen() ? "yes" : "no")
 			+ "   focused: "
 			+ (services.window.isFocused() ? "yes" : "no"),
-			12, row, 16, 0xc8c8c8ff);
-		row += 24;
-		Text2D.draw(batch, status, 12, row, 16, 0xffcb00ff);
-		row += 32;
+			vx
+			+ 12, row, 16, vw
+			- 24, 0xc8c8c8ff)
+			+ 4;
+		row += Text2D.drawWrapped(batch, status, vx + 12, row, 16, vw - 24, 0xffcb00ff) + 12;
 		for (m in 0...window.getMonitorCount()) {
-			Text2D.draw(batch,
-				(m == window.getMonitorIndex() ? "> " : "  ") +
+			row += Text2D.drawWrapped(batch,
+				(m == window.getMonitorIndex() ? "> " : "  ")
+				+
 				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
-				12, row, 16, 0xc8c8c8ff);
-			row += 22;
+				vx
+				+ 12, row, 16, vw
+				- 24, 0xc8c8c8ff)
+				+ 2;
 		}
 		batch.end();
 		services.graphics.endFrame();

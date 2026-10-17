@@ -56,6 +56,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		services.window.setTitle("HeliX scene3d");
 		services.window.requestSize(1000, 600);
+		// Framed for 16:9: the whole ring on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new Light(Directional);
@@ -90,12 +92,10 @@ class App extends BaseApp {
 		spinner.setPosition(0, 3, 0);
 		stage.add(spinner);
 		shapes.push(spinner);
-		// The HUD: a button over the world, and what's selected.
+		// The HUD: a button over the world (placed each frame, under the title), and what's selected.
 		button = Node2D.rectangle(170, 36, 0x2a3040ff);
-		button.setPosition(12, 92);
 		hud.add(button);
 		label = Node2D.text("", 16, 0xf5f5f5ff);
-		label.setPosition(24, 102);
 		hud.add(label);
 		pointer = new Pointer(services.input);
 		pointer.addStage3D(stage, camera);
@@ -110,8 +110,17 @@ class App extends BaseApp {
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		hudCamera.setViewport(width, height);
-		hudCamera.pixels(services.window.getPixelRatio());
+		// The HUD in the design for the window's shape; the button sits under the title, however many lines it wraps to.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hudCamera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var title = "HeliX scene3d: click shapes to select them";
+		var buttonY = vy + 36 + Text2D.measureWrapped(batch.getFont(), title, 20, vw - 24) + 6;
+		button.setPosition(vx + 12, buttonY);
+		label.setPosition(vx + 24, buttonY + 10);
 		camera.setView(10 * Math.sin(angle), 6, 10 * Math.cos(angle), 0, 1, 0);
 		// Asked once a frame, after input and with the cameras placed: what's under the pointer, pressed and clicked.
 		pointer.update();
@@ -139,15 +148,19 @@ class App extends BaseApp {
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
 		var hovered:Null<Node> = Std.isOfType(pointer.getHovered(), Node) ? cast pointer.getHovered() : null;
-		Text2D.draw(batch, "HeliX scene3d: click shapes to select them", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch,
-			'under the pointer: ${hovered != null ? hovered.getName() : pointer.isHovered(button) ? "the button" : "nothing"}' +
-			'   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.getName()].join(", ")}' +
-			(pointer.isCaptured() ? "   (the HUD has the pointer)" : ""),
-			12, 64, 16, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
+		var y = buttonY + 36 + 10;
+		y += Text2D.drawWrapped(batch,
+			'under the pointer: ${hovered != null ? hovered.getName() : pointer.isHovered(button) ? "the button" : "nothing"}'
+			+ '   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.getName()].join(", ")}'
+			+ (pointer.isCaptured() ? "   (the HUD has the pointer)" : ""),
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff)
+			+ 4;
 		if (services.canQuit())
-			Text2D.draw(batch, "ESC: quit", 12, 140, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+			Text2D.draw(batch, "ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

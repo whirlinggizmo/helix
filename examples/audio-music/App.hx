@@ -67,20 +67,30 @@ class App extends BaseApp {
 		if (services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
 		fps.update(dt, services.getFrameCpu());
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x12141cff);
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x12141cff);
 		batch.begin(camera);
-		Text2D.draw(batch, "HeliX audio", 24, 30, 28, 0xf5f5f5ff);
-		Text2D.draw(batch, music == null ? "music: loading..." : switch (music.getState()) {
+		var y = vy + 30;
+		y += Text2D.drawWrapped(batch, "HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : switch (music.getState()) {
 			case Playing: "music: playing (mp3, streamed, looping)";
 			case Paused: "music: paused";
 			case Stopped: "music: couldn't start";
 			case Complete: "music: ended";
-		}, 24, 80, 18, 0x66bfffff);
-		Text2D.draw(batch, click != null ? "click: ready (ogg)" : "click: loading...", 24, 110, 18, 0x00e430ff);
-		Text2D.draw(batch, "[SPACE] play click   [M] pause music   [S] stall 300 ms" + (services.canQuit() ? "   [ESC] quit" : ""), 24, 150, 16, 0xc8c8c8ff);
-		fps.draw(batch, 24, 8);
+		}, vx + 24, y, 18, vw - 48, 0x66bfffff) + 7.5;
+		y += Text2D.drawWrapped(batch, click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0x00e430ff) + 17.5;
+		Text2D.drawWrapped(batch, "[SPACE] play click   [M] pause music   [S] stall 300 ms"
+			+ (services.canQuit() ? "   [ESC] quit" : ""), vx
+			+ 24, y, 16,
+			vw
+			- 48, 0xc8c8c8ff);
+		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		services.graphics.endFrame();
 	}

@@ -20,12 +20,16 @@ class App extends BaseApp {
 	var camera = new Camera2D();
 	var logo:Null<Texture2D>;
 	var tiles:Null<Texture2D>;
-	var logoX = 450.;
-	var logoY = 315.;
+
+	/** The window's shape the logo and the coin were placed for: they go back to the middle when it changes. */
+	var shaped = "";
+
+	var logoX = 0.;
+	var logoY = 0.;
 	var logoScale = 1.;
 	var logoRotation = 0.;
-	var coinX = 450.;
-	var coinY = 560.;
+	var coinX = 0.;
+	var coinY = 0.;
 	var coinHeld = false;
 
 	/** Where each finger id last lifted, x and y, and how much of its ring is left to fade (1 down to 0). */
@@ -65,15 +69,27 @@ class App extends BaseApp {
 
 	override public function frame(dt:Float):Void {
 		var input = services.input;
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		var ratio = services.window.getPixelRatio();
+		// The design for the window's shape; the logo and the coin start in the middle of what's visible of it, and go back there when
+		// the shape changes (a phone turned), as they might be past the new edges.
+		var shape = ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth(),
+			vh = presentation.getVisibleHeight();
+		if (shape != shaped) {
+			shaped = shape;
+			logoX = coinX = vx + vw / 2;
+			logoY = vy + vh * .45;
+			coinY = vy + vh * .8;
+		}
 		if (services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
 		// Two fingers move the logo; the wheel zooms it about the mouse.
 		if (input.isTouchGesture()) {
-			logoX += input.getTouchGesturePanX() / ratio;
-			logoY += input.getTouchGesturePanY() / ratio;
+			logoX += input.getTouchGesturePanX() / presentation.getScaleX();
+			logoY += input.getTouchGesturePanY() / presentation.getScaleY();
 			transformLogo(camera.screenToWorldX(input.getTouchGestureCenterX()), camera.screenToWorldY(input.getTouchGestureCenterY()),
 				input.getTouchGestureScale(), input.getTouchGestureRotation());
 		}
@@ -101,7 +117,7 @@ class App extends BaseApp {
 				ring[2] = 1;
 			}
 
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x161921ff);
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x161921ff);
 		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
@@ -131,9 +147,12 @@ class App extends BaseApp {
 		for (touch in input.getTouches())
 			if (touch.down)
 				fingers++;
-		Text2D.draw(batch, 'fingers: $fingers   pointer: ' + (input.isPointerDown() ? "down" : "up"), 16, 16, 18, 0xffffffff);
-		Text2D.draw(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', 16, 40, 18, 0xffffffff);
-		Text2D.draw(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", 16, 64, 16, 0x969eafff);
+		var y = vy + 16;
+		y += Text2D.drawWrapped(batch, 'fingers: $fingers   pointer: ' + (input.isPointerDown() ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
+		y += Text2D.drawWrapped(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y,
+			18, vw - 32, 0xffffffff)
+			+ 1.5;
+		Text2D.drawWrapped(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0x969eafff);
 		batch.end();
 		services.graphics.endFrame();
 	}

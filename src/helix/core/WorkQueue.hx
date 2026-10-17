@@ -20,6 +20,10 @@ class WorkQueue {
 	/** An empty queue with a 2 ms budget. */
 	public function new() {}
 
+	/** Whether no work is queued. */
+	public function isEmpty():Bool
+		return pending.length == 0;
+
 	/** Queues work for a later poll, in order. */
 	public function add(work:Void->Void):Void
 		pending.push(work);

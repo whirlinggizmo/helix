@@ -83,7 +83,9 @@ class App extends BaseApp {
 		if (!services.window.isFocused() && game.state == "playing")
 			game.state = "paused";
 		ticker.advance(services.getFrameElapsed(), () -> if (!stopped) step());
-		renderer.render(game, layout, camera, ticks);
+		// The well's camera fits the layout; the presentation only sizes its text.
+		ScreenShape.update(services);
+		renderer.render(game, layout, camera, services.presentation, ticks);
 	}
 
 	override public function cleanup():Void {

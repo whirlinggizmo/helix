@@ -95,28 +95,39 @@ class App extends BaseApp {
 
 	override public function frame(dt:Float):Void {
 		var input = services.input;
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
+		// The design for the window's shape: the text wrapped to what's visible of it, the buttons under it (laid out before the pointer is
+		// tested against them), the logo centered below.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var from = "from: " + (asking ? "..." : source);
+		var titleY = vy + 40;
+		var fromY = titleY + Text2D.measureWrapped(batch.getFont(), "HeliX asset fetch", 24, vw - 24) + 10;
+		var stateY = fromY + Text2D.measureWrapped(batch.getFont(), from, 16, vw - 24) + 10;
+		var buttonY = stateY + Text2D.measureWrapped(batch.getFont(), state, 16, vw - 24) + 20;
 		var x = camera.screenToWorldX(input.getPointerX()),
 			y = camera.screenToWorldY(input.getPointerY());
 		var clicked = input.isPointerFramePressed();
-		if ((input.isFramePressed(Key.F) || clicked && inside(x, y, 12, 150)) && !waiting && !asking)
+		if ((input.isFramePressed(Key.F) || clicked && inside(x, y, vx + 12, buttonY)) && !waiting && !asking)
 			fetch();
-		if (input.isFramePressed(Key.C) || clicked && inside(x, y, 204, 150))
+		if (input.isFramePressed(Key.C) || clicked && inside(x, y, vx + 204, buttonY))
 			clearCache();
 		if (services.canQuit() && input.isFramePressed(Key.Escape))
 			services.quit();
 		fps.update(dt, services.getFrameCpu());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x1c1e26ff);
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x1c1e26ff);
 		batch.begin(camera);
-		Text2D.draw(batch, "HeliX asset fetch", 12, 40, 24, 0xf5f5f5ff);
-		Text2D.draw(batch, "from: " + (asking ? "..." : source), 12, 80, 16, 0xc8c8c8ff);
-		Text2D.draw(batch, state, 12, 110, 16, 0xffcb00ff);
-		button("Fetch asset", 12, 150, inside(x, y, 12, 150));
-		button("Clear cache", 204, 150, inside(x, y, 204, 150));
+		Text2D.drawWrapped(batch, "HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
+		Text2D.drawWrapped(batch, from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);
+		Text2D.drawWrapped(batch, state, vx + 12, stateY, 16, vw - 24, 0xffcb00ff);
+		button("Fetch asset", vx + 12, buttonY, inside(x, y, vx + 12, buttonY));
+		button("Clear cache", vx + 204, buttonY, inside(x, y, vx + 204, buttonY));
 		if (logo != null)
-			batch.sprite(logo, 400, 360, 220, 220);
-		fps.draw(batch, 12, 8);
+			batch.sprite(logo, vx + vw / 2, buttonY + BUTTON_HEIGHT + 170, 220, 220);
+		fps.draw(batch, vx + 12, vy + 8);
 		batch.end();
 		services.graphics.endFrame();
 	}

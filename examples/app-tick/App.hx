@@ -65,21 +65,34 @@ class App extends BaseApp {
 		ticker.advance(services.getFrameElapsed(), tick);
 		var t = ticker.getFraction();
 		fps.update(dt, services.getFrameCpu());
-		camera.setViewport(services.window.getFramebufferWidth(), services.window.getFramebufferHeight());
-		camera.pixels(services.window.getPixelRatio());
-		services.graphics.beginFrame(camera.getFramebufferWidth(), camera.getFramebufferHeight(), 0x181a22ff);
+		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
+		// (LEFT to RIGHT) drawn across the visible width.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth(),
+			vh = presentation.getVisibleHeight();
+		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
+		services.graphics.beginFrame(services.window.getFramebufferWidth(), services.window.getFramebufferHeight(), 0x181a22ff);
 		batch.begin(camera);
-		Text2D.draw(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", 20, 20, 20, 0xf5f5f5ff);
-		Text2D.draw(batch,
-			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   ' +
-			(ticker.getTimeScale() > 0 ? "running (Space pauses)" : "paused (Space resumes)"),
-			20, 50, 16, 0xc8c8c8ff);
-		Text2D.draw(batch, 'Enter presses: tick $tickPresses, frame $framePresses', 20, 74, 16, 0xc8c8c8ff);
-		Text2D.draw(batch, "where the latest tick left it", 20, 130, 16, 0x828282ff);
-		batch.rect(x, 155, SQUARE, SQUARE, 0xffa100ff);
-		Text2D.draw(batch, "between the last two ticks, by the tick fraction", 20, 250, 16, 0x828282ff);
-		batch.rect(previousX + (x - previousX) * t, 275, SQUARE, SQUARE, 0x66bfffff);
-		fps.draw(batch, 20, HEIGHT - 30);
+		var y = vy + 20;
+		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
+		y += Text2D.drawWrapped(batch,
+			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
+			+ (ticker.getTimeScale() > 0 ? "running (Space pauses)" : "paused (Space resumes)"),
+			vx
+			+ 20, y, 16, vw
+			- 40, 0xc8c8c8ff)
+			+ 4;
+		y += Text2D.drawWrapped(batch, 'Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xc8c8c8ff) + 36;
+		y += Text2D.drawWrapped(batch, "where the latest tick left it", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
+		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffa100ff);
+		y += SQUARE + 55;
+		y += Text2D.drawWrapped(batch, "between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
+		batch.rect(vx + LEFT + (previousX + (x - previousX) * t - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
+		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();
 		services.graphics.endFrame();
 	}

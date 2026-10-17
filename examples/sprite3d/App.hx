@@ -57,6 +57,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		services.window.setTitle("HeliX sprite3d");
 		services.window.requestSize(1000, 600);
+		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var gpu = services.graphics;
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
@@ -155,8 +157,13 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x1c1e26ff);
 		batch3D.begin(camera);
@@ -164,9 +171,13 @@ class App extends BaseApp {
 		batch3D.end();
 		stage.draw(camera);
 		batch.begin(hud);
-		Text2D.draw(batch, "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", 12, 36, 18, 0xf5f5f5ff);
-		Text2D.draw(batch, '${stage.getDrawnNodeCount()} models and sprites in ${stage.getDrawCallCount()} draws   O: the camera', 12, 62, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18,
+			vw - 24, 0xf5f5f5ff)
+			+ 4;
+		Text2D.drawWrapped(batch, '${stage.getDrawnNodeCount()} models and sprites in ${stage.getDrawCallCount()} draws   O: the camera', vx + 12, y, 16,
+			vw - 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

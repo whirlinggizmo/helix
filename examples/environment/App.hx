@@ -82,6 +82,8 @@ class App extends BaseApp {
 		services.window.requestSize(1000, 700);
 		batch = new Batch2D(services.graphics);
 		stage = new Stage3D(services.graphics);
+		// Framed for 16:9: every column of spheres on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 		var ball = Mesh.sphere(.5, 32, 64);
 		for (c in 0...COLUMNS) {
 			var x = (c - (COLUMNS - 1) / 2) * SPACING,
@@ -166,21 +168,30 @@ class App extends BaseApp {
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
 		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
-		hud.setViewport(width, height);
-		hud.pixels(services.window.getPixelRatio());
+		// The readout in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(hud);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
+		var title = "HeliX environment: image-based light, a background and tone mapping";
+		var state = current == PATHS.length ? "" : environment == null ? " (preparing)" : ' (ready in ${Math.round(loadMs[current])} ms)';
+		var readout = '[E] ${NAMES[current]}$state   [B] background ${BLUR_NAMES[blur]}   [T] ${TONEMAP_NAMES[tonemap]}   '
+			+ 'UP/DOWN exposure ${exposure >= 0 ? "+" : ""}$exposure EV   LEFT/RIGHT turn   [O] camera';
+		// The band's height is the readout's, wrapped.
+		var wrap = vw - 24, font = batch.getFont();
+		var readoutY = vy + 36 + Text2D.measureWrapped(font, title, 20, wrap) + 3,
+			bottom = readoutY + Text2D.measureWrapped(font, readout, 16, wrap) - 2;
 
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
-		batch.rect(0, 0, width / services.window.getPixelRatio(), 82, 0x0000008c);
-		Text2D.draw(batch, "HeliX environment: image-based light, a background and tone mapping", 12, 36, 20, 0xf5f5f5ff);
-		var state = current == PATHS.length ? "" : environment == null ? " (preparing)" : ' (ready in ${Math.round(loadMs[current])} ms)';
-		Text2D.draw(batch,
-			'[E] ${NAMES[current]}$state   [B] background ${BLUR_NAMES[blur]}   [T] ${TONEMAP_NAMES[tonemap]}   ' +
-			'UP/DOWN exposure ${exposure >= 0 ? "+" : ""}$exposure EV   LEFT/RIGHT turn   [O] camera',
-			12, 64, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		batch.rect(vx, vy, vw, bottom - vy, 0x0000008c);
+		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, wrap, 0xf5f5f5ff);
+		Text2D.drawWrapped(batch, readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

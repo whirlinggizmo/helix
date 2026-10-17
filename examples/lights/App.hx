@@ -44,6 +44,8 @@ class App extends BaseApp {
 		stage = new Stage3D(services.graphics);
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
+		// Framed for 16:9: all the row across on a phone held upright too.
+		camera.setMinAspect(16 / 9);
 
 		var figure = Mesh.capsule(.3, 1.7, 16, 32), skin = new Material();
 		skin.setBaseColor(0xd8d8d8ff);
@@ -108,8 +110,13 @@ class App extends BaseApp {
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
 		camera.setViewport(width, height);
-		camera2D.setViewport(width, height);
-		camera2D.pixels(services.window.getPixelRatio());
+		// The text in the design for the window's shape, wrapped to what's visible of it.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera2D);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth();
 
 		services.graphics.beginFrame(width, height, 0x0c0d12ff);
 		grid.begin(camera);
@@ -117,9 +124,12 @@ class App extends BaseApp {
 		grid.end();
 		stage.draw(camera);
 		batch.begin(camera2D);
-		Text2D.draw(batch, "HeliX lights: directional, point, spot", 12, 36, 20, 0xf5f5f5ff);
-		Text2D.draw(batch, '[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', 12, 64, 16, 0xc8c8c8ff);
-		fps.draw(batch, 12, 10);
+		var y = vy + 36;
+		y += Text2D.drawWrapped(batch, "HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		Text2D.drawWrapped(batch, '[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff);
+		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		services.graphics.endFrame();
 	}

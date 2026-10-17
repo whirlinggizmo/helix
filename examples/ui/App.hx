@@ -151,10 +151,15 @@ class App extends BaseApp {
 		var input = services.input;
 		var width = services.window.getFramebufferWidth(),
 			height = services.window.getFramebufferHeight();
-		camera.setViewport(width, height);
-		// The 1280 x 720 design, fitted into the window.
-		camera.fit(0, 0, 1280, 720);
-		Box.arrange(layout, 0, 0, 1280, 720, batch.getFont());
+		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
+		ScreenShape.update(services);
+		var presentation = services.presentation;
+		presentation.apply(camera);
+		var vx = presentation.getVisibleX(),
+			vy = presentation.getVisibleY(),
+			vw = presentation.getVisibleWidth(),
+			vh = presentation.getVisibleHeight();
+		Box.arrange(layout, vx, vy, vw, vh, batch.getFont());
 		pointer.update();
 		ui.update();
 		// Asked, never told: what happened this frame.
@@ -194,8 +199,8 @@ class App extends BaseApp {
 		services.graphics.beginFrame(width, height, 0x14161cff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
-		Text2D.draw(batch, status, 640, 650, 18, 0xc8d0e8ff, Center);
-		Text2D.draw(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", 640, 24, 16, 0x7a8298ff, Center);
+		Text2D.drawWrapped(batch, status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
+		Text2D.drawWrapped(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
 		hud.pixels(services.window.getPixelRatio());
