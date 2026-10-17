@@ -163,7 +163,7 @@ class App extends BaseApp {
 			return false;
 		var source:IInput = Input.instance;
 		if (pilot != null) {
-			source = pilot.advance(game.probe);
+			source = pilot.advance(name -> game.probe(name));
 			if (pilot.done)
 				return false;
 		}

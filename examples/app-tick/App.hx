@@ -64,7 +64,7 @@ class App extends BaseApp {
 				Time.clock.pause();
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		ticker.advance(Time.clock.elapsed, tick);
+		ticker.advance(Time.clock.elapsed, () -> tick());
 		var t = ticker.fraction;
 		fps.update(dt, Time.frameCpu);
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track

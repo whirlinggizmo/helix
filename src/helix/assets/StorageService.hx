@@ -53,7 +53,7 @@ class StorageService {
 			if (!AssetPath.isValid(key))
 				job.finish(Failed("Invalid storage key"));
 			else
-				store.read(key, MAX_BYTES, job.finish);
+				store.read(key, MAX_BYTES, result -> job.finish(result));
 		}, complete, StorageResult.Cancelled, StorageResult.Failed("Closed storage"));
 
 	/** Stores a copy of bytes under key, replacing what is there. Failed for an invalid key, more than 8 MiB, a read-only store, a closed store,
@@ -68,7 +68,7 @@ class StorageService {
 			else if (copy.length > MAX_BYTES)
 				job.finish(Failed("Stored file exceeds byte limit"));
 			else
-				store.write(key, copy, job.finish);
+				store.write(key, copy, result -> job.finish(result));
 		}, complete, StorageWriteResult.Cancelled,
 			StorageWriteResult.Failed("Closed storage"));
 	}
@@ -81,7 +81,7 @@ class StorageService {
 			else if (readOnly)
 				job.finish(Failed("Read-only storage"));
 			else
-				store.remove(key, job.finish);
+				store.remove(key, result -> job.finish(result));
 		}, complete, StorageWriteResult.Cancelled,
 			StorageWriteResult.Failed("Closed storage"));
 
@@ -106,7 +106,7 @@ class StorageService {
 			if (readOnly)
 				job.finish(Failed("Read-only storage"));
 			else
-				store.clear(job.finish);
+				store.clear(result -> job.finish(result));
 		}, complete, StorageWriteResult.Cancelled,
 			StorageWriteResult.Failed("Closed storage"));
 

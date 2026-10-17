@@ -30,7 +30,7 @@ class ImageDecoding {
 			if (encoded.length == 0)
 				job.finish(Failed("No image bytes"));
 			else
-				decoder.decode(encoded, job.finish);
+				decoder.decode(encoded, result -> job.finish(result));
 		}, complete, Cancelled, Failed("The image decoder is shut down"));
 
 	/** Whether a decode is queued, under way, or its completion not yet run. */

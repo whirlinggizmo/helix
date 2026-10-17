@@ -66,7 +66,7 @@ class Runner {
 		its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes. */
 	public function run(makeApp:Void->IApp):Void {
 		this.makeApp = makeApp;
-		host.run(init, frame, cleanup);
+		host.run(() -> init(), () -> frame(), () -> cleanup());
 	}
 
 	/** The host it runs on. */

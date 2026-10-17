@@ -340,7 +340,7 @@ class Sprites3D {
 		drawn.resize(count);
 		for (i in 0...count)
 			drawn[i] = items[i];
-		drawn.sort(compare);
+		drawn.sort((a, b) -> compare(a, b));
 		blendStart = addStart = count;
 		for (i in 0...count) {
 			if (drawn[i].phase >= 1 && blendStart == count)

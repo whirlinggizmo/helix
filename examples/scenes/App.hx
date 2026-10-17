@@ -102,7 +102,7 @@ class App extends BaseApp {
 		if (pilot != null && !pilot.done && scenes.top != null) {
 			// The script's ticks, each a sixtieth of a second to the scenes, many a frame when fast; none until the splash is up (its logo loads first).
 			for (_ in 0...(fast ? 120 : 1)) {
-				var source:IInput = pilot.advance(probe);
+				var source:IInput = pilot.advance(name -> probe(name));
 				if (pilot.done)
 					break;
 				scenes.input = source;
