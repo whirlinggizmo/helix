@@ -17,6 +17,22 @@ enum AudioLocation {
 	Remote(url:String);
 }
 
+/** How the cache treats a downloaded copy no manifest lists (IAssets.setCacheMode); a listed one follows its manifest in every mode, and
+	ensure's forceFetch downloads past the cache in every mode.
+
+	- Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other
+	  is asked about first: 304, the copy is used (and fresh again); 200, the new file replaces it; 4xx, the copy is deleted and the load
+	  fails; no answer (offline, a timeout) or a 5xx, the copy is used. no-cache and no-store make a copy never fresh, but it's kept, for the
+	  next check and for starting offline.
+	- Trust: a copy is used without asking, however old: offline-first play, files that never change, or a game that evicts by itself.
+	- Off: nothing is kept between runs, and what earlier runs kept is neither used nor deleted (development); this run's downloads are held
+	  in memory, so a file loads once a run. */
+enum AssetCacheMode {
+	Revalidate;
+	Trust;
+	Off;
+}
+
 /** How locating a streamed asset ended: its location, a failure message, or cancellation. */
 enum AssetSourceResult {
 	Located(value:AudioLocation);
@@ -65,11 +81,18 @@ interface IAssets {
 
 	/** Uses the manifest tree under the host from path (tools/gen_manifest.py writes one): the root asked about once a run (its cached copy
 		used offline), a directory's manifest loaded only when an asset under it is, and again only when its hash changes; a file it lists is
-		used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are revalidated as ensure
-		says; a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path. */
+		used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are treated as the cache mode
+		says (setCacheMode); a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path. */
 	function setManifest(path:Null<String>):Bool;
 
-	/** Forgets every downloaded file, so the next load downloads it again. complete runs once, on the host thread. */
+	/** How downloaded copies no manifest lists are treated (AssetCacheMode); Revalidate by default. */
+	function getCacheMode():AssetCacheMode;
+
+	/** Treats every copy checked from now on as mode says. */
+	function setCacheMode(mode:AssetCacheMode):Void;
+
+	/** Forgets every downloaded file, so the next load downloads it again, and what was read of the manifests, so the root is asked about
+		again. complete runs once, on the host thread. */
 	function clearCache(complete:StorageWriteResult->Void):IRequest;
 
 	/** Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host),

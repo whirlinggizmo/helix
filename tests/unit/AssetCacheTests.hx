@@ -124,10 +124,12 @@ class AssetCacheTests {
 	}
 
 	// A new visit: a service over the host and the kept store, with the manifest given.
-	static function visit(?manifest:String):AssetService {
+	static function visit(?manifest:String, ?mode:AssetCacheMode):AssetService {
 		var assets = new AssetService(new Fetch(host), new Storage(store), new Storage(new Memory(), true), "http://host/");
 		if (manifest != null)
 			assets.setManifest(manifest);
+		if (mode != null)
+			assets.setCacheMode(mode);
 		return assets;
 	}
 
@@ -279,6 +281,49 @@ class AssetCacheTests {
 		check(stream(visit("manifest.json"), "models/car.glb") == "cached", "A current listed copy streams from the cache");
 		host.files.remove("manifest.json");
 		check(load(visit("manifest.json"), "models/car.glb") == "new car", "Without a root manifest, files are revalidated");
+		// Trust: a copy is used however old; a listed file still follows its manifest.
+		host = new Host();
+		store = new Memory();
+		host.put("old.txt", "old");
+		host.put("listed/a.txt", "a");
+		manifests(["", "listed"]);
+		load(visit(), "old.txt");
+		load(visit("manifest.json"), "listed/a.txt");
+		host.put("old.txt", "new");
+		host.put("listed/a.txt", "new a");
+		manifests(["", "listed"]);
+		check(load(visit(null, Trust), "old.txt") == "old" && host.count("old.txt") == 1, "Trust uses a stale copy without asking");
+		check(load(visit("manifest.json", Trust), "listed/a.txt") == "new a", "Trust still follows a manifest");
+		check(stream(visit(null, Trust), "old.txt") == "cached", "Trust streams a stale copy from the cache");
+		// Off: earlier copies neither used nor deleted; a file loads once a run; nothing kept.
+		var kept = Lambda.count(store.files);
+		assets = visit(null, Off);
+		check(load(assets, "old.txt") == "new" && load(assets, "old.txt") == "new" && host.count("old.txt") == 2,
+			"Off ignores earlier copies, and loads a file once a run");
+		host.put("off.txt", "off");
+		check(load(assets, "off.txt") == "off" && Lambda.count(store.files) == kept, "Off keeps nothing");
+		check(stream(visit(null, Off), "old.txt") == "remote", "Off streams from the host");
+		host.offline = true;
+		check(load(visit(), "old.txt") == "old", "and leaves earlier copies as they were");
+		check(StringTools.startsWith(load(visit(null, Off), "old.txt"), "failed"), "Off has no copy to fall back on");
+		host.offline = false;
+		var offCleared = false;
+		assets.clearCache(_ -> offCleared = true);
+		for (_ in 0...50)
+			assets.poll();
+		check(offCleared && load(assets, "off.txt") == "off" && host.count("off.txt") == 2, "Clearing forgets this run's copies too");
+		// Clearing forgets the manifests read, so the root is asked about again.
+		assets = visit("manifest.json");
+		load(assets, "listed/a.txt");
+		var asked = host.count("manifest.json");
+		var cleared = false;
+		assets.clearCache(_ -> cleared = true);
+		for (_ in 0...50)
+			assets.poll();
+		check(cleared
+			&& load(assets, "listed/a.txt") == "new a"
+			&& host.count("manifest.json") == asked + 1, "Clearing the cache forgets the manifests too");
+
 		// Manifests that aren't one are trusted nowhere.
 		check(AssetManifest.parse(Bytes.ofString('{"manifest":1,"files":{"a":"sha256:00"},"dirs":{}}')) == null, "A bad hash spoils a manifest");
 		check(AssetManifest.parse(Bytes.ofString('{"manifest":1,"files":{"a/b":"' + AssetManifest.hash(Bytes.ofString("")) + '"},"dirs":{}}')) == null,

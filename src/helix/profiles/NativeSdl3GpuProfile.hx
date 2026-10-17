@@ -18,7 +18,8 @@ import helix.host.Services;
 /** The desktop through SDL3: an SDL window, its input and gamepads, SDL_GPU (Vulkan, Direct3D 12 or Metal) presenting to it; built with -D helix_sdl3_gpu, so the
 	framework's programs carry SDL_GPU's dialects; an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
 class NativeSdl3GpuProfile {
-	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set, else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
+	/** Runs the app makeApp builds over its services, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
+		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
@@ -45,8 +46,7 @@ class NativeSdl3GpuProfile {
 				storage: new FileSystemStoreAdapter(cache),
 				packaged: new FileSystemStoreAdapter(haxe.io.Path.normalize(haxe.io.Path.join([root, assetFolder]))),
 				base: Sys.getEnv("HELIX_ASSET_HOST"),
-				// A host given by HELIX_ASSET_HOST is revalidated by its headers; a manifest is the browser builds' (tools/example.py).
-				manifest: null,
+				manifest: Sys.getEnv("HELIX_ASSET_MANIFEST"),
 				harness: new StdioTestHarnessAdapter(),
 				export: new FileSystemExportAdapter(exports),
 				name: identity.getProduct()

@@ -43,7 +43,7 @@ python3 tools/example.py app-hello build native   # build/native/app-hello/Main,
 python3 tools/example.py app-hello build native-sdl3   # build/native-sdl3/app-hello/Main, the SDL3 profile on GL
 python3 tools/example.py app-hello build native-sdl3-gpu   # build/native-sdl3-gpu/app-hello/Main, the SDL3 profile on SDL_GPU
 python3 tools/pages.py --browser /path/to/chromium   # the examples' site in build/web: every example, thumbnails, the index
-python3 tools/cachecheck.py --browser /path/to/chromium   # the browser asset cache across visits (after sprite2d's web build)
+python3 tools/cachecheck.py --browser /path/to/chromium [--native]   # the asset cache across visits (after sprite2d's builds)
 ```
 
 The examples' site is built and deployed to GitHub Pages on every push to main (CI's `pages` job): <https://whirlinggizmo.github.io/helix/>.

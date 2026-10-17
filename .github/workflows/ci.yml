@@ -188,7 +188,8 @@ jobs:
       - name: The browser asset cache across visits (revalidation and manifests)
         run: |
           python tools/example.py sprite2d build web
-          python tools/cachecheck.py --browser "$CHROME"
+          python tools/example.py sprite2d build native
+          python tools/cachecheck.py --native --browser "$CHROME"
       - name: The autopilots under SDL_GPU, on Vulkan through Mesa's software driver (lavapipe)
         env:
           HELIX_AUDIO: "0"
