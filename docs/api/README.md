@@ -1,0 +1,22 @@
+# HeliX API reference
+
+Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it's stale. A file a package, each type with its public members.
+
+- [`helix.adapters and helix.profiles`](adapters.md): 52 adapters and profiles, the platform code
+- [`helix.app`](app.md): BaseApp, IApp
+- [`helix.assets`](assets.md): AssetCacheMode, AssetManifest, AssetPath, AssetProgress, AssetResult, AssetService, AssetSourceResult, AudioLocation, CacheRecord, CacheRecords, EnsureOptions, ExportResult, Fetch, FetchProgress, FetchRequest, FetchResponse, FetchResult, IAssets, IExport, IHttp, IReloadable, IRequest, IStore, Lease, Request, Storage, StorageResult, StorageSourceResult, StorageWriteResult
+- [`helix.audio`](audio.md): AudioClip, AudioDecodeResult, AudioDecoding, AudioLoadResult, AudioPlayback, AudioResource, AudioResources, AudioStream, IAudio, IAudioDecoder, Pcm, PlayState, StreamOpenResult, Wav
+- [`helix.collision`](collision.md): Collide2D, Hit2D, Move2D, SpatialHash2D
+- [`helix.core`](core.md): Job, JobRequest, Jobs, WorkQueue
+- [`helix.debug`](debug.md): Autopilot, FpsOverlay, ITestHarness
+- [`helix.graphics`](graphics.md): BlendMode, ClipFlip, GraphicsUnavailable, IGraphics, IImageDecoder, ImageDecodeResult, ImageDecoding, Mipmaps, PipelineDesc, Pipelines, Png, PostProcess, Primitive, ReadPixelsResult, Sampling, ScreenEffect, ScreenshotResult, Screenshots, SdlGpuStages, Shader, ShaderBlock, ShaderLoadResult, ShaderParameter, ShaderParameters, ShaderSource, ShaderStages, ShaderTexture, Shaders, TextureFormat, VertexAttribute, VertexBuffer, Wrap
+- [`helix.host`](host.md): Adapters, FrameClock, IHost, IWindow, Identity, Presentation, PresentationMode, Runner, Services, WindowOptions
+- [`helix.input`](input.md): Gamepad, IInput, IInputEvents, IInputSource, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
+- [`helix.math`](math.md): Curve, CurveKind, Interpolate, Random, Trig
+- [`helix.particles`](particles.md): Emitter
+- [`helix.render2d`](render2d.md): Align2D, BakedFont, BakedGlyph, Batch2D, Camera2D, Font2D, FontBaker, FontLoadResult, Fonts, Glyph2D, GlyphOutline, Ktx, Node2D, Node2DKind, Polygon2D, Stage2D, Text2D, Texture2D, TextureLoadResult, Textures, TrueType
+- [`helix.render3d`](render3d.md): AnimationClip, Animator, Attachment, Batch3D, Camera3D, Cube, Environment, EnvironmentBake, EnvironmentLoadResult, Environments, Gltf, Hdr, ImageSource, JointPalette, Light, LightKind, Mat4, Material, Mesh, ModelFile, ModelLoadResult, Models, Node, NodeKind, PickHit, Ray, Skin, SpriteAlpha, SpriteFacing, Sprites3D, Stage3D, Tonemap, Track, TrackInterpolation, TrackPath
+- [`helix.scene`](scene.md): Pointer
+- [`helix.time`](time.md): Clock, Ticker, Timer, Timers
+- [`helix.tween`](tween.md): Ease, Tween, Tweens
+- [`helix.ui`](ui.md): Alignment, Box, BoxDirection, Button, Label, ListView, Panel, ProgressBar, Sizing, Slider, TextField, Theme, Tile, Toggle, Ui, Widget

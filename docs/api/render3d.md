@@ -1,0 +1,1132 @@
+# helix.render3d
+
+[Back to the index](README.md)
+
+## AnimationClip
+
+*class* in `src/helix/render3d/AnimationClip.hx`
+
+A named animation: tracks moving nodes, by name, over its duration (its last key). Read from a glTF file (ModelFile.getClips), whether or not the file has meshes: a file of animations alone plays on any skeleton with the joint names its tracks target (Animator). Read, never changed; shared by everything that plays it.
+
+```haxe
+function new(name:String, tracks:Array<Track>)
+function getName():String
+function getDuration():Float
+function getTrackCount():Int
+function getTrack(index:Int):Null<Track>
+```
+
+- `new`: A clip named name of tracks.
+- `getName`: Its name: its file's (a Blender export's is the armature's and the action's, "Armature|Walk").
+- `getDuration`: Its length in seconds: its last key's time.
+- `getTrackCount`: How many tracks.
+- `getTrack`: Track index; null past them.
+
+## Animator
+
+*class* in `src/helix/render3d/Animator.hx`
+
+Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play() crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the Animator first moved it). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time (layers, playing an upper body's clip over a lower body's, aren't here yet).
+
+```haxe
+function new(root:Node)
+function getClip():Null<AnimationClip>
+function getTime():Float
+function setTime(seconds:Float):Bool
+function getSpeed():Float
+function setSpeed(value:Float):Bool
+function isFinished():Bool
+function isFading():Bool
+function play(clip:AnimationClip, ?loop:Bool = true, ?fade:Float = 0.):Bool
+function stop():Void
+function update(seconds:Float):Void
+```
+
+- `new`: Plays on the nodes at and under root.
+- `getClip`: The clip playing, or null.
+- `getTime`: Where the clip playing is, in seconds from its start (within its duration).
+- `setTime`: Moves the clip playing to seconds (wrapped into its duration when it loops, held between 0 and its end when not). False, changing nothing, with no clip playing or for a time that isn't finite.
+- `getSpeed`: How fast time runs: 1 as the clip was made, 0 held, below 0 backwards.
+- `setSpeed`: Sets how fast time runs. False for one that isn't finite.
+- `isFinished`: Whether a clip that doesn't loop has reached its end (false while one loops, or with none).
+- `isFading`: Whether a crossfade is under way.
+- `play`: Plays clip from its start, looping or not, crossfading from the clip playing over fade seconds (0: at once); playing the clip already playing does nothing. False, changing nothing, for a clip a track of which moves a node not at or under the root, or a fade below 0.
+- `stop`: Stops playing: the nodes stay as the last update left them.
+- `update`: Advances time by seconds (times the speed) and poses the nodes: call once a frame, before drawing.
+
+## Attachment
+
+*typedef* in `src/helix/render3d/Node.hx`
+
+Where a rigid piece attaches to a skeleton (Node.findAttachment): the piece, and the joint it hangs from, null for none.
+
+- `piece:Node`
+- `joint:Null<Node>`
+
+## Batch3D
+
+*class* in `src/helix/render3d/Batch3D.hx`
+
+Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xRRGGBBAA. Solid shapes are shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader.
+
+```haxe
+function new(gpu:IGraphics, ?maxVertices:Int = 65536)
+function getVertexCount():Int
+function getDrawCallCount():Int
+function getLightX():Float
+function getLightY():Float
+function getLightZ():Float
+function getAmbient():Float
+function setLight(x:Float, y:Float, z:Float, ambient:Float):Bool
+function begin(camera:Camera3D):Void
+function end():Void
+function line(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void
+function triangle(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, x2:Float, y2:Float, z2:Float, color:Int):Void
+function cube(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void
+function cubeWires(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void
+function sphere(x:Float, y:Float, z:Float, radius:Float, color:Int, ?rings:Int = 16, ?slices:Int = 24):Void
+function grid(slices:Int, spacing:Float, color:Int):Void
+function destroy():Void
+```
+
+- `new`: A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.
+- `getVertexCount`: Vertices of the frame drawn last, triangles' and lines'.
+- `getDrawCallCount`: Draws of the frame drawn last: up to two.
+- `getLightX`: The direction toward the light, x (normalized).
+- `getLightY`: The direction toward the light, y (normalized).
+- `getLightZ`: The direction toward the light, z (normalized).
+- `getAmbient`: The brightness of a face turned away from the light, 0 to 1.
+- `setLight`: The light solid shapes are shaded by: from the direction x, y, z (toward the light, normalized here), with ambient the brightness of a face turned away (0 to 1). False, changing nothing, for a zero direction or an ambient outside 0 to 1.
+- `begin`: Starts collecting a batch seen through camera; later calls only fill it until end.
+- `end`: Draws the batch in the open frame, in the camera's viewport: its triangles, then its lines. Once a frame.
+- `line`: A segment between two world points.
+- `triangle`: A filled triangle through three world points, unshaded.
+- `cube`: A solid box centered on x, y, z, width along x, height along y, depth along z, each face shaded by the light.
+- `cubeWires`: A box's twelve edges, centered on x, y, z, as cube's.
+- `sphere`: A solid sphere centered on x, y, z, of rings bands from pole to pole and slices around, each vertex shaded by its normal.
+- `grid`: A square grid on the y = 0 plane centered on the origin: slices cells a side, each spacing world units.
+- `destroy`: Frees the buffers made by new; the batch is unusable after.
+
+## Camera3D
+
+*class* in `src/helix/render3d/Camera3D.hx`
+
+A 3D view, perspective or orthographic (setOrthographic): an eye looking at a target, right-handed with +y up by default, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Distances are world units; angles radians.
+
+```haxe
+function new()
+function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Bool
+function getEyeX():Float
+function getEyeY():Float
+function getEyeZ():Float
+function getTargetX():Float
+function getTargetY():Float
+function getTargetZ():Float
+function getUpX():Float
+function getUpY():Float
+function getUpZ():Float
+function getFovY():Float
+function setPerspective(fovY:Float, near:Float, far:Float):Bool
+function getMinAspect():Float
+function setMinAspect(aspect:Float):Bool
+function getDrawnFovY():Float
+function getDrawnHeight():Float
+function getNear():Float
+function getFar():Float
+function getOrthographicHeight():Float
+function isOrthographic():Bool
+function setOrthographic(height:Float, near:Float, far:Float):Bool
+function getFramebufferWidth():Int
+function getFramebufferHeight():Int
+function getViewportX():Int
+function getViewportY():Int
+function getViewportWidth():Int
+function getViewportHeight():Int
+function setViewport(width:Int, height:Int):Void
+function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool
+function getNode():Null<Node>
+function getViewProjection():Mat4
+function computeRay(x:Float, y:Float, ray:Ray):Bool
+```
+
+- `new`: A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport.
+- `setView`: Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. On a node, the node's place replaces it at the next draw.
+- `getEyeX`: The eye's X.
+- `getEyeY`: The eye's Y.
+- `getEyeZ`: The eye's Z.
+- `getTargetX`: The target's X.
+- `getTargetY`: The target's Y.
+- `getTargetZ`: The target's Z.
+- `getUpX`: The up direction setView was given (the roll), x.
+- `getUpY`: The up direction's y.
+- `getUpZ`: The up direction's z.
+- `getFovY`: The vertical field of view in radians.
+- `setPerspective`: The projection: fovY radians of vertical view, near and far the clip planes' distances. False, changing nothing, unless 0 < fovY < pi and 0 < near < far.
+- `getMinAspect`: The narrowest viewport shape (width / height) the view keeps its width at: 0, the default, for none.
+- `setMinAspect`: Keeps the view's width on a viewport narrower than aspect (width / height): its vertical view (setPerspective's fovY, or an orthographic height) is as given at aspect and wider, and grows on a narrower viewport so it sees as far across as at aspect. A scene framed for 16:9 (16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0 turns it off. False, changing nothing, for less than 0.
+- `getDrawnFovY`: The vertical field of view drawn, in radians: getFovY, widened on a viewport narrower than the minimum aspect (setMinAspect).
+- `getDrawnHeight`: The orthographic height drawn, in world units: getOrthographicHeight, taller on a viewport narrower than the minimum aspect.
+- `getNear`: The near clip plane's distance from the eye.
+- `getFar`: The far clip plane's distance from the eye.
+- `getOrthographicHeight`: An orthographic projection's height in world units; 0 for a perspective one.
+- `isOrthographic`: Whether the projection is orthographic.
+- `setOrthographic`: An orthographic projection, with no perspective: height world units seen top to bottom (the width by the viewport's shape), near and far the clip planes' distances from the eye (near may be 0 or less). setPerspective goes back. False, changing nothing, unless height > 0 and near < far.
+- `getFramebufferWidth`: The framebuffer width in pixels, from setViewport.
+- `getFramebufferHeight`: The framebuffer height in pixels, from setViewport.
+- `getViewportX`: The viewport's left edge in framebuffer pixels from the framebuffer's left.
+- `getViewportY`: The viewport's top edge in framebuffer pixels from the framebuffer's top.
+- `getViewportWidth`: The viewport width in framebuffer pixels.
+- `getViewportHeight`: The viewport height in framebuffer pixels.
+- `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
+- `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
+- `getNode`: The node placing it, or null.
+- `getViewProjection`: World to clip space, for the viewport's shape: projection * view, recomputed by each call (on a node, the view from where the node is now).
+- `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
+
+## Cube
+
+*class* in `src/helix/render3d/EnvironmentBake.hx`
+
+A cubemap of linear RGB floats with its mips: mips[m] holds the six faces of (size >> m) squared texels each, three floats a texel.
+
+```haxe
+function new(size:Int, mipCount:Int)
+final size:Int
+final mipCount:Int
+final mips:Array<haxe.ds.Vector<Float>>
+```
+
+- `new`: An all-black cube of size with mipCount mips.
+- `size`: Its face size at mip 0.
+- `mipCount`: How many mips.
+- `mips`: Each mip's texels, zero to start.
+
+## Environment
+
+*class* in `src/helix/render3d/Environment.hx`
+
+An environment map, ready to light a stage and stand behind it (Stage3D.setEnvironment, setBackground): its irradiance (the light it casts on rough surfaces, 9 spherical-harmonic coefficients), its prefiltered cube (what smooth to rough surfaces reflect) and its background cube (the image at its own resolution, blurred mips below), both half floats on the GPU. From Environments.load, which prepares it (EnvironmentBake) and replaces its cubes in place when its file changes during development.
+
+```haxe
+static function fromBake(gpu:IGraphics, path:String, bake:EnvironmentBake):Environment
+function getPath():String
+function getLightingTexture():Int
+function getBackgroundTexture():Int
+function getBackgroundMipCount():Int
+function getIrradiance():haxe.ds.Vector<Float>
+function destroy(gpu:IGraphics):Void
+```
+
+- `fromBake`: An environment of a finished bake, its cubes uploaded to gpu: the file it came from is path. Throws where gpu can't sample half floats.
+- `getPath`: The file it was loaded from.
+- `getLightingTexture`: The prefiltered cube's handle: EnvironmentBake.MIP_COUNT mips, roughness 0 to 1.
+- `getBackgroundTexture`: The background cube's handle.
+- `getBackgroundMipCount`: The background cube's mips: blur 1 is its last.
+- `getIrradiance`: Its irradiance: 9 coefficients, RGB each (27 floats), over pi.
+- `destroy`: Frees its cubes. Environments.release does it for one it loaded.
+
+## EnvironmentBake
+
+*class* in `src/helix/render3d/EnvironmentBake.hx`
+
+Prepares an environment map on the CPU, a step at a time (run, under a time budget), so that it spreads over frames: from an equirectangular image (a .hdr's linear light, or an 8-bit image's sRGB) it works out the light it casts on rough surfaces (irradiance, as 9 spherical-harmonic coefficients), a cubemap of the image at its own resolution (the background, its mips box-filtered for blur) and one blurred for each roughness (GGX-prefiltered, CUBE_SIZE a face and MIP_COUNT mips, roughness 0 to 1 across them: what smooth to rough surfaces reflect), both as half floats ready for the GPU; and once, shared by every environment, the split-sum BRDF table (getBrdfTable). Split-sum image-based lighting, as the glTF sample viewer, Filament and Unreal light with it. Conventions: directions are world space, +y up. An equirectangular image's u runs around the horizon, 0.5 looking toward -z and growing toward +x; v = 0 is straight up. Cubemap faces are +X, -X, +Y, -Y, +Z, -Z in GL's orientation (s, t from 0 to 1, t = 0 the face's first row). The coefficients are convolved for Lambert's diffuse and divided by pi: evaluated at a normal, they give irradiance over pi.
+
+```haxe
+static var CUBE_SIZE(inline, null):Int
+static var MIP_COUNT(inline, null):Int
+static var BRDF_SIZE(inline, null):Int
+static function fromHdr(encoded:haxe.io.Bytes):EnvironmentBake
+static function fromRgba(width:Int, height:Int, rgba:haxe.io.Bytes):EnvironmentBake
+static function getBrdfTable():Null<haxe.io.Bytes>
+static function equirectDirection(u:Float, v:Float, out:haxe.ds.Vector<Float>):Void
+static function directionEquirect(x:Float, y:Float, z:Float, out:haxe.ds.Vector<Float>):Void
+static function cubeDirection(face:Int, s:Float, t:Float, out:haxe.ds.Vector<Float>):Void
+static function directionCube(x:Float, y:Float, z:Float, out:haxe.ds.Vector<Float>):Void
+static function sampleEquirect(rgb:haxe.ds.Vector<Float>, width:Int, height:Int, x:Float, y:Float, z:Float, out:haxe.ds.Vector<Float>):Void
+static function sampleCube(cube:Cube, x:Float, y:Float, z:Float, lod:Float, out:haxe.ds.Vector<Float>):Void
+static function projectRows(rgb:haxe.ds.Vector<Float>, width:Int, height:Int, y0:Int, y1:Int, sums:haxe.ds.Vector<Float>):Void
+static function shFromSums(sums:haxe.ds.Vector<Float>, out:haxe.ds.Vector<Float>):Void
+static function evalSh(sh:haxe.ds.Vector<Float>, x:Float, y:Float, z:Float, out:haxe.ds.Vector<Float>):Void
+static function cubeRows(rgb:haxe.ds.Vector<Float>, width:Int, height:Int, cube:Cube, face:Int, y0:Int, y1:Int):Void
+static function boxMips(cube:Cube):Void
+static function prefilterSamples(source:Cube, mip:Int, mipCount:Int, n:Int, out:haxe.ds.Vector<Float>):Int
+static function prefilterRows(source:Cube, out:Cube, mip:Int, face:Int, y0:Int, y1:Int, samples:haxe.ds.Vector<Float>, count:Int):Void
+static function halfOf(value:Float):Int
+function isDone():Bool
+function run(budgetMs:Float):Bool
+function getIrradiance():haxe.ds.Vector<Float>
+function getLightingLevels():Array<haxe.io.Bytes>
+function getBackgroundLevels():Array<haxe.io.Bytes>
+function getBackgroundSize():Int
+```
+
+- `CUBE_SIZE`: The prefiltered cube's face size, at mip 0.
+- `MIP_COUNT`: The prefiltered cube's mips: 128 down to 4, roughness 0, 0.2, ... 1.
+- `BRDF_SIZE`: The BRDF table's size: n.v across, roughness down.
+- `fromHdr`: A bake of encoded, a .hdr's bytes, decoded in its steps. Throws for one that isn't a .hdr.
+- `fromRgba`: A bake of an 8-bit image (rows top first, RGBA, its colors sRGB), as linear light. Throws for a size of 0 or less, or rgba too short.
+- `getBrdfTable`: The split-sum BRDF table once a bake has made it (null before): BRDF_SIZE square, RGBA8, red the scale A and green the bias B on F0 (F0 * A + B, 0..1), by n.v across and perceptual roughness down, each at its texel's centre: integrated over 256 GGX importance samples with Schlick-GGX geometry (k = alpha / 2) and Schlick's Fresnel (Karis' split sum).
+- `equirectDirection`: The direction of equirectangular u, v (0..1 each), into out (x, y, z).
+- `directionEquirect`: Where direction x, y, z (any length but 0) is in an equirectangular image, into out (u, v).
+- `cubeDirection`: The direction through face's s, t (0..1 each), normalized, into out (x, y, z).
+- `directionCube`: Where direction x, y, z is on a cube, into out (face, s, t).
+- `sampleEquirect`: The equirectangular image (width x height, linear RGB) in direction x, y, z, filtered, into out (r, g, b).
+- `sampleCube`: cube in direction x, y, z at mip lod (between mips, both blended), into out (r, g, b).
+- `projectRows`: Rows y0 to y1 of an equirectangular image's projection onto the basis, added to sums (27: 9 coefficients, RGB each).
+- `shFromSums`: The coefficients from a whole image's sums: each band's Lambert convolution (Ramamoorthi and Hanrahan), over pi; into out.
+- `evalSh`: The irradiance over pi that coefficients sh (27) give at unit normal x, y, z, into out (r, g, b).
+- `cubeRows`: Rows y0 to y1 of face of cube's mip 0 from an equirectangular image, each texel 2x2 samples.
+- `boxMips`: cube's mips from 1 on, each its last box-filtered.
+- `prefilterSamples`: Mip mip's prefilter samples, the same for every texel of the mip: n Hammersley points through GGX at roughness mip / (mipCount - 1), those below the horizon left out, into out (four floats each: the light direction about +z, its z its weight n.l, and the source mip it reads, blurrier where samples are sparse: filtered importance sampling); how many are kept.
+- `prefilterRows`: Rows y0 to y1 of face of out's mip mip, from source through count samples (prefilterSamples'); mip 0 is source as it is, at out's size.
+- `halfOf`: value as an IEEE half float's bits, rounded to nearest; past the largest finite half, the largest.
+- `isDone`: Whether it's finished.
+- `run`: Works steps until it's done or budgetMs milliseconds have passed (at least one step); true once done. Throws for a .hdr that turns out broken.
+- `getIrradiance`: Its irradiance once done: 9 coefficients, RGB each (27 floats), over pi.
+- `getLightingLevels`: The prefiltered cube once done: MIP_COUNT levels from CUBE_SIZE, each its six faces one after another, RGBA half floats.
+- `getBackgroundLevels`: The background cube once done: from getBackgroundSize down to 1, each its six faces one after another, RGBA half floats.
+- `getBackgroundSize`: The background cube's face size, once its size is known (0 before): the image's width over 4, rounded down to a power of two, 64 to 1024.
+
+## EnvironmentLoadResult
+
+*enum* in `src/helix/render3d/Environments.hx`
+
+How an environment load ended.
+
+- `Ready(environment:Environment)`
+- `Failed(message:String)`
+- `Cancelled`
+
+## Environments
+
+*class* in `src/helix/render3d/Environments.hx`
+
+Environment maps from equirectangular images (2:1, latitude-longitude): a Radiance .hdr (true high dynamic range, recommended) or a PNG or JPEG (sRGB, low dynamic range). Loaded through the assets, prepared on the CPU a step at a time within a budget each frame (poll), one at a time, so a load spreads over frames rather than stalling one (a 1K image takes a few hundred milliseconds of steps natively), uploaded, and prepared again and replaced in place when a file changes during development. The host's environments service; the caller releases what it loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does.
+
+```haxe
+function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
+function getBudgetMs():Float
+function setBudgetMs(value:Float):Bool
+function isBusy():Bool
+function load(path:String, complete:EnvironmentLoadResult -> Void):IRequest
+function release(environment:Environment):Void
+function reloaded(path:String, bytes:haxe.io.Bytes):Void
+function poll():Void
+function shutdown():Void
+```
+
+- `new`: Loads through assets, decodes 8-bit images with images and uploads to gpu.
+- `getBudgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it.
+- `setBudgetMs`: False for a budget of 0 or less.
+- `isBusy`: Whether anything is still loading or being prepared.
+- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. complete runs exactly once on the host thread: Failed for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
+- `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
+- `reloaded`: The file behind a loaded environment changed: it's prepared again and its cubes replaced, keeping its Environment object, so the stages using it show the new one once that's done. A file that no longer reads leaves it as it was.
+- `poll`: Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the Runner calls it once a frame.
+- `shutdown`: Refuses new loads and drops the bakes under way; the environments already loaded stay until released.
+
+## Gltf
+
+*class* in `src/helix/render3d/Gltf.hx`
+
+A glTF 2.0 file as read: its JSON document and its buffers, from a GLB (the binary container: a JSON chunk and a BIN chunk, its first buffer) or a .gltf (the JSON alone), with the reading of its accessors. A buffer inside the file (the GLB's, or a base64 data: URI) is read here; one in a file of its own (a uri beside the model) is the loader's to fetch and set (getMissingBuffers, setBuffer). Only what a ModelFile needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read.
+
+```haxe
+static function read(bytes:haxe.io.Bytes):Gltf
+static function readGlb(bytes:haxe.io.Bytes):Gltf
+static function dataUri(uri:String):Null<haxe.io.Bytes>
+static function resolve(path:String, uri:String):Null<String>
+static function field(object:Dynamic, name:String):Dynamic
+final document:Dynamic
+function getMissingBuffers():Array<{uri:String, index:Int}>
+function getBuffer(index:Int):Null<haxe.io.Bytes>
+function setBuffer(index:Int, bytes:haxe.io.Bytes):Bool
+function list(name:String):Array<Dynamic>
+function viewBytes(index:Int):haxe.io.Bytes
+function floats(index:Int):Array<Float>
+function ints(index:Int):Array<Int>
+```
+
+- `read`: Reads a GLB, or a .gltf (its JSON, as UTF-8 bytes): by its first bytes.
+- `readGlb`: Reads a GLB file.
+- `dataUri`: The bytes of a base64 data: URI, or null for any other uri (a file's). Throws for a data: URI that isn't base64.
+- `resolve`: The asset path of uri (a file the model names, relative to it) beside the model at path: its %-escapes decoded and its "." and ".." segments followed. Null for one that isn't a relative path inside the assets (a URL, an absolute path, one climbing above them).
+- `field`: A field of a JSON object, or null.
+- `document`: The document: glTF's JSON, as parsed.
+- `getMissingBuffers`: The buffers that are files of their own, not read yet: each its index and uri.
+- `getBuffer`: Buffer index's bytes, or null while it waits for its file (or for an index out of range).
+- `setBuffer`: Sets buffer index to bytes, the file its uri names. False, changing nothing, for an index out of range or bytes shorter than its byteLength.
+- `list`: The array named name in the document, or an empty one.
+- `viewBytes`: The bytes of buffer view index, copied: an embedded image's file.
+- `floats`: Accessor index's values, every component of every element in order, as floats: normalized integers scaled to 0..1 (unsigned) or -1..1 (signed), others as they are. Throws for a sparse accessor, an unknown type, or one running past its view.
+- `ints`: Accessor index's values as integers: indices (unsigned 8, 16 or 32 bits).
+
+## Hdr
+
+*class* in `src/helix/render3d/Hdr.hx`
+
+A Radiance .hdr image (RGBE, "#?RADIANCE" or "#?RGBE", 32-bit_rle_rgbe, flat or run-length encoded scanlines, "-Y height +X width": the orientation every .hdr environment uses) read into linear RGB floats, three a pixel, rows top first, a band of rows at a time (readRows), so a large one can be read across frames.
+
+```haxe
+static function isHdr(bytes:haxe.io.Bytes):Bool
+static function begin(bytes:haxe.io.Bytes):Hdr
+static function read(bytes:haxe.io.Bytes):Hdr
+final width:Int
+final height:Int
+final rgb:haxe.ds.Vector<Float>
+function isDone():Bool
+function readRows(count:Int):Bool
+```
+
+- `isHdr`: Whether bytes start as a .hdr this reads.
+- `begin`: Starts reading a .hdr: its size known, its rows read by readRows. Throws for bytes that aren't one it reads.
+- `read`: A whole .hdr read at once. Throws for one that isn't, or is broken.
+- `width`: Its width in pixels.
+- `height`: Its height in pixels.
+- `rgb`: Its pixels: linear RGB, three floats each, rows top first; complete once every row is read.
+- `isDone`: Whether every row is read.
+- `readRows`: Reads up to count more rows; true once every row is read. Throws for data that ends early or is broken.
+
+## ImageSource
+
+*enum* in `src/helix/render3d/ModelFile.hx`
+
+Where a model's image file is.
+
+- `InView(view:Int)`: In a buffer view.
+- `Inline(bytes:haxe.io.Bytes)`: Inline: a data: URI's bytes.
+- `File(uri:String)`: A file of its own: a uri relative to the model.
+
+## JointPalette
+
+*class* in `src/helix/render3d/JointPalette.hx`
+
+The joints of a draw's skinned models, one data texture for them all (as skinning.glsl reads it: 1024 texels a row, three a joint, each joint's matrix's top three rows): a model's joints from its base, each the model's own space moved by the joint as posed, its inverse bind matrix applied (inverse(model world) × joint world × inverse bind). Stage3D fills it once a pass and uploads it; also, a posed model's box.
+
+```haxe
+function new(gpu:IGraphics)
+static function computePosedBox(model:Node, out:haxe.ds.Vector<Float>):Bool
+function getTexture():Int
+function getJointCount():Int
+function clear():Void
+function add(model:Node):Int
+var getMatrix(inline, null):(index:Int, row:Int, col:Int) -> Float
+function upload():Void
+function destroy():Void
+```
+
+- `new`: A palette uploading to gpu.
+- `computePosedBox`: A skinned model's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where they are, each padded by how far its vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2% of the box's diagonal (at least 0.01). False when no joint weights a vertex (use its mesh's box).
+- `getTexture`: The data texture (0 before the first upload).
+- `getJointCount`: How many joints since the last clear.
+- `clear`: Empties it, for a pass.
+- `add`: Adds model's joints as posed now (its world matrix and its joints' up to date) and returns its base: the joint its first is.
+- `getMatrix`: Element row (0 to 2), col (0 to 3) of joint index's matrix as added (from a model's base): what the GPU skins with, for skinning on the CPU (a pick).
+- `upload`: Uploads what was added, making the texture taller when it must.
+- `destroy`: Destroys the texture.
+
+## Light
+
+*class* in `src/helix/render3d/Light.hx`
+
+What a light is: directional (the sun: everything lit from one direction, the light's node's -z), a point (from its node's position in every direction, fading with distance, out to its range) or a spot (a point light's falloff, within a cone around its node's -z). Its color is 0xRRGGBBAA (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. A light shines once a node holds it on a stage (Node.light). A directional light or a spot may cast shadows (setShadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast them onto those that receive them (Node.setShadowCasting, setShadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
+
+```haxe
+function new(kind:LightKind)
+function getKind():LightKind
+function getColor():Int
+function setColor(value:Int):Void
+function getIntensity():Float
+function setIntensity(value:Float):Bool
+function getInnerCone():Float
+function getOuterCone():Float
+function setCone(inner:Float, outer:Float):Bool
+function getRange():Float
+function setRange(value:Float):Bool
+function isShadowCasting():Bool
+function setShadowCasting(value:Bool):Bool
+function getShadowDistance():Float
+function setShadowDistance(distance:Float):Bool
+function getShadowMapSize():Int
+function setShadowMapSize(size:Int):Bool
+function getShadowStrength():Float
+function setShadowStrength(strength:Float):Bool
+function getShadowColor():Int
+function setShadowColor(color:Int):Void
+function getShadowBiasConstant():Float
+function getShadowBiasSlope():Float
+function setShadowBias(constant:Float, slope:Float):Bool
+```
+
+- `new`: A white light of intensity 1 of kind; a point light of unlimited range.
+- `getKind`: Its kind.
+- `getColor`: Its color, 0xRRGGBBAA.
+- `setColor`: Sets its color, 0xRRGGBBAA.
+- `getIntensity`: Its intensity.
+- `setIntensity`: False for an intensity under 0.
+- `getInnerCone`: A spot's inner cone, radians from its axis: full light inside it.
+- `getOuterCone`: A spot's outer cone, radians from its axis: no light past it, fading from the inner one.
+- `setCone`: Sets a spot's cones, radians from its axis. False, changing nothing, unless 0 <= inner <= outer < pi/2.
+- `getRange`: A point light's or a spot's range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance).
+- `setRange`: False for a range under 0.
+- `isShadowCasting`: Whether it casts shadows.
+- `setShadowCasting`: Makes it cast shadows or stop. False, changing nothing, for a point light casting: it would need a map each way.
+- `getShadowDistance`: How far from the camera a directional light's shadows reach, in world units (50 by default); a spot's reach no further.
+- `setShadowDistance`: False, changing nothing, unless distance is above 0 and finite. Shorter is sharper: the map covers less.
+- `getShadowMapSize`: Its shadow map's side in texels (2048 by default).
+- `setShadowMapSize`: Sets its shadow map's side: a power of two from 256 to 4096, size rounded down to one (and into that range). A stage's casting lights share the largest asked for. False for a size under 1.
+- `getShadowStrength`: How much of its light a shadow takes away, 0..1 (1 by default).
+- `setShadowStrength`: Sets how much of its light a shadow takes away, clamped to 0..1. False for NaN.
+- `getShadowColor`: What its shadows leave of the surface's own color, 0xRRGGBBAA (sRGB, alpha ignored; black by default: nothing).
+- `setShadowColor`: Sets what its shadows leave of the surface's own color, 0xRRGGBBAA: a cold blue for a sunny day's shade.
+- `getShadowBiasConstant`: Its shadows' depth bias, constant part, in shadow-map texels (1 by default).
+- `getShadowBiasSlope`: Its shadows' depth bias, slope part: texels more where the light grazes a surface (4 by default).
+- `setShadowBias`: Sets its shadows' depth bias in texels: constant everywhere, plus slope where the light grazes. More stops a surface shadowing itself in stripes ("acne"); too much lifts a shadow off its caster's foot. False, changing nothing, for a negative or infinite one.
+
+## LightKind
+
+*abstract* in `src/helix/render3d/Light.hx`
+
+A light's kind.
+
+## Mat4
+
+*class* in `src/helix/render3d/Mat4.hx`
+
+A 4x4 matrix of floats, column-major (element column * 4 + row), as shaders take it. Setters overwrite the whole matrix.
+
+```haxe
+function new()
+var get(inline, null):(index:Int) -> Float
+var set(inline, null):(index:Int, value:Float) -> Void
+function makeIdentity():Void
+function makePerspective(fovY:Float, aspect:Float, near:Float, far:Float):Bool
+function makeOrthographic(height:Float, aspect:Float, near:Float, far:Float):Bool
+function makeOrthographicBox(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float):Bool
+function makeLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float):Bool
+function makeTransform(px:Float, py:Float, pz:Float, qx:Float, qy:Float, qz:Float, qw:Float, sx:Float, sy:Float, sz:Float):Void
+function copyFrom(other:Mat4):Void
+function makeProduct(a:Mat4, b:Mat4):Void
+function makeInverse(of:Mat4):Bool
+function writeTo(bytes:haxe.io.Bytes, ?offset:Int = 0):Void
+```
+
+- `new`: The identity.
+- `get`: Element column * 4 + row.
+- `set`: Sets element column * 4 + row to value.
+- `makeIdentity`: The identity.
+- `makePerspective`: A perspective projection: fovY radians of vertical view, aspect width / height, near and far the clip planes' distances, GL clip depth (-1 near to 1 far). False, changing nothing, unless 0 < fovY < pi, aspect > 0 and 0 < near < far.
+- `makeOrthographic`: An orthographic projection: height world units of vertical view (width by aspect, width / height) centered on the view's axis, near and far the clip planes' distances, GL clip depth (-1 near to 1 far). False, changing nothing, unless height > 0, aspect > 0 and near < far.
+- `makeOrthographicBox`: An orthographic projection of the box left..right, bottom..top (in view space's x and y), near..far its depth: GL clip depth (-1 near to 1 far). False, changing nothing, unless left < right, bottom < top and near < far.
+- `makeLookAt`: A view from eye looking at target, up giving the roll: right-handed, the eye looking down its -z. False, changing nothing, when the eye is at the target or up is parallel to the view.
+- `makeTransform`: Scale, then rotation (the unit quaternion qx, qy, qz, qw), then translation: a placement's matrix.
+- `copyFrom`: Copies other into this matrix.
+- `makeProduct`: a * b: b applied first, then a. Either may be this matrix.
+- `makeInverse`: The inverse of of (by its adjugate), which may be this matrix. False, setting all zeros, for a singular one.
+- `writeTo`: Writes the 16 floats, column-major, little-endian float32, into bytes at offset: the 64 bytes a shader's matrix uniform takes.
+
+## Material
+
+*class* in `src/helix/render3d/Material.hx`
+
+How a model's surface looks: glTF's metallic-roughness model. A base color (0xRRGGBBAA, its color sRGB-encoded as the convention's colors are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how rough (0..1) it is, an optional normal map (linear, tangent space, green up) and its strength, light it gives off (emissive), and whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw together.
+
+```haxe
+function new()
+function getBaseColor():Int
+function setBaseColor(color:Int):Void
+function getTexture():Null<Texture2D>
+function setTexture(value:Null<Texture2D>):Void
+function getMetallic():Float
+function setMetallic(value:Float):Bool
+function getRoughness():Float
+function setRoughness(value:Float):Bool
+function isLit():Bool
+function setLit(value:Bool):Void
+function getNormalTexture():Null<Texture2D>
+function setNormalTexture(value:Null<Texture2D>):Void
+function getNormalScale():Float
+function setNormalScale(value:Float):Bool
+function getEmissive():Int
+function getEmissiveStrength():Float
+function setEmissive(color:Int, ?strength:Float = 1.):Bool
+function isDoubleSided():Bool
+function setDoubleSided(value:Bool):Void
+function getShader():Null<Shader>
+function setShader(value:Null<Shader>):Bool
+function getShaderParameters():Null<ShaderParameters>
+function isBlended():Bool
+function setBlended(value:Bool):Void
+```
+
+- `new`: White, not metallic, roughness 0.5, lit, untextured, giving off no light.
+- `getBaseColor`: The base color, 0xRRGGBBAA.
+- `setBaseColor`: Sets the base color, 0xRRGGBBAA.
+- `getTexture`: The base color texture, or null for none (white).
+- `setTexture`: Sets the base color texture; null for none.
+- `getMetallic`: How metallic, 0..1.
+- `setMetallic`: False for a value outside 0..1.
+- `getRoughness`: How rough, 0..1.
+- `setRoughness`: False for a value outside 0..1.
+- `isLit`: Whether lights shade it; unlit, it shows its color as it is.
+- `setLit`: Lights shade it, or not.
+- `getNormalTexture`: The normal map (linear, tangent space, green up), or null for none.
+- `setNormalTexture`: Sets the normal map; null for none. Load it linear (not sRGB), with mipmaps.
+- `getNormalScale`: How strongly the normal map bends the surface: 1 as it is, 0 flat.
+- `setNormalScale`: False for a scale under 0.
+- `getEmissive`: The light it gives off, 0xRRGGBBAA (sRGB, alpha ignored); black for none.
+- `getEmissiveStrength`: How bright its emissive light is: the color times this.
+- `setEmissive`: Gives it light of its own, color (0xRRGGBBAA, sRGB) times strength, lit or not. False for a strength under 0.
+- `isDoubleSided`: Whether both sides of its triangles draw (the back with its normal turned toward the viewer); otherwise back faces are culled.
+- `setDoubleSided`: Draws both sides of its triangles, or only the front: for open surfaces, leaves, cloth, or a surface a shader cuts holes in.
+- `getShader`: The app's surface shader it draws with, or null for the stage's own shading.
+- `setShader`: Draws it with an app's surface shader (a .hxshader of kind surface: its own fragment stage, and maybe a vertex hook), which gets the material's values and textures and the stage's lights; null goes back to the stage's own shading. False, changing nothing, for a shader of another kind. Its parameters (getShaderParameters) start empty when the shader changes.
+- `getShaderParameters`: Its surface shader's own parameters and textures, set by name; null without a shader.
+- `isBlended`: Whether it is see-through: drawn blended, back to front after the opaque, when set so or when its base color's alpha is below 255.
+- `setBlended`: Draws it blended even at full alpha, as glTF's alphaMode BLEND says (its texture's alpha then shows through).
+
+## Mesh
+
+*class* in `src/helix/render3d/Mesh.hx`
+
+Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DLayout's packing; the tangent's w its bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights (Skinned3DLayout's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up, counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes.
+
+```haxe
+function new(vertices:haxe.io.Bytes, vertexCount:Int, indices:haxe.io.Bytes, indexCount:Int)
+static function fromArrays(positions:Array<Float>, normals:Null<Array<Float>>, uvs:Null<Array<Float>>, tangents:Null<Array<Float>>, indices:Null<Array<Int>>, ?joints:Array<Float>, ?weights:Array<Float>):Mesh
+static function plane(width:Float, length:Float, ?subdivisions:Int = 0):Mesh
+static function cube(width:Float, height:Float, length:Float):Mesh
+static function sphere(radius:Float, ?rings:Int = 16, ?segments:Int = 32):Mesh
+static function cylinder(radius:Float, height:Float, ?segments:Int = 32):Mesh
+static function cone(radius:Float, height:Float, ?segments:Int = 32):Mesh
+static function capsule(radius:Float, height:Float, ?rings:Int = 16, ?segments:Int = 32):Mesh
+static function torus(radius:Float, thickness:Float, ?rings:Int = 32, ?segments:Int = 16):Mesh
+function getVertexCount():Int
+function getIndexCount():Int
+function getVertices():haxe.io.Bytes
+function getIndices():haxe.io.Bytes
+function getMinX():Float
+function getMinY():Float
+function getMinZ():Float
+function getMaxX():Float
+function getMaxY():Float
+function getMaxZ():Float
+function isSkinned():Bool
+function getSkinData():Null<haxe.io.Bytes>
+function getJointReach(skin:Skin):Null<haxe.ds.Vector<Float>>
+function getSkinBuffer(gpu:IGraphics):Int
+function getVertexBuffer(gpu:IGraphics):Int
+function getIndexBuffer(gpu:IGraphics):Int
+function destroy():Void
+```
+
+- `new`: A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices. Throws for a count of 0 or less, too few bytes, or an index past the vertices.
+- `fromArrays`: A mesh from arrays: positions (x, y, z each), normals (one a position, unit length; null to work them out from the triangles), texture coordinates (u, v each; null for zeros), tangents (x, y, z, w each, w the bitangent's sign; null to work them out) and indices (whole triangles; null for each three positions a triangle, in order); skinned when joints (four joint indices a vertex) and weights (their four weights, normalized here) are given. Throws for arrays that don't agree.
+- `plane`: Flat in x and z, facing +y, width along x and length along z, subdivisions (0..256) more cells each way; texture coordinates span it once.
+- `cube`: A box width along x, height along y and length along z, each face its own vertices (sharp edges), textured 0..1 a face.
+- `sphere`: A sphere of radius, rings (2..256) from pole to pole and segments (3..512) around; u around, v from the top pole to the bottom.
+- `cylinder`: A capped cylinder along y, of radius and height, segments (3..512) around.
+- `cone`: A cone along y, tip up, of base radius and height, its base capped, segments (3..512) around.
+- `capsule`: A capsule along y: height from end to end (at least twice the radius; less is a sphere), rings (2..256) across both round ends, segments (3..512) around.
+- `torus`: A ring around y: radius to the middle of the tube, thickness the tube's radius, rings (3..512) around the ring and segments (3..512) around the tube.
+- `getVertexCount`: Its vertices.
+- `getIndexCount`: Its indices: three a triangle.
+- `getVertices`: The vertex data, Lit3DLayout.stride bytes a vertex.
+- `getIndices`: The indices, uint32 each.
+- `getMinX`: The box around it: its smallest x.
+- `getMinY`: Its smallest y.
+- `getMinZ`: Its smallest z.
+- `getMaxX`: Its largest x.
+- `getMaxY`: Its largest y.
+- `getMaxZ`: Its largest z.
+- `isSkinned`: Whether its vertices follow joints (a skin's): Model nodes showing it need one (Node.getSkin).
+- `getSkinData`: A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
+- `getJointReach`: How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position (Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model. Null for a mesh that isn't skinned.
+- `getSkinBuffer`: A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned.
+- `getVertexBuffer`: Its static vertex buffer on gpu, made the first time it's asked for.
+- `getIndexBuffer`: Its static index buffer on gpu, made the first time it's asked for.
+- `destroy`: Frees its buffers, if it was uploaded; drawing it again uploads it again.
+
+## ModelFile
+
+*class* in `src/helix/render3d/ModelFile.hx`
+
+A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file (Models loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw together; each copy has lights of its own. Made by Models; read, never changed after. Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins (each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models bound to that copy's joints; animations as AnimationClips (getClips), their tracks targeting nodes by name, so a file of animations alone plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights), metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints).
+
+```haxe
+function getWarnings():Array<String>
+function getSkins():Array<Skin>
+function getClips():Array<AnimationClip>
+function getClip(name:String):Null<AnimationClip>
+function getMaterials():Array<Material>
+function instantiate(?name:String = ""):Node
+```
+
+- `getWarnings`: What the file used that isn't read yet, each once.
+- `getSkins`: Its skins, in the file's order: the joints its skinned meshes follow.
+- `getClips`: Its animations, in the file's order.
+- `getClip`: The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it); null for none.
+- `getMaterials`: Its materials, in the file's order: change one and every copy's parts with it change.
+- `instantiate`: A new node tree of the file's default scene, under a group named name: its nodes' names, transforms and children, models sharing the file's meshes and materials, and lights of their own.
+
+## ModelLoadResult
+
+*enum* in `src/helix/render3d/Models.hx`
+
+How a model load ended.
+
+- `Ready(file:ModelFile)`
+- `Failed(message:String)`
+- `Cancelled`
+
+## Models
+
+*class* in `src/helix/render3d/Models.hx`
+
+Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through Textures. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures.
+
+```haxe
+function new(assets:IAssets, textures:Textures)
+function load(path:String, complete:ModelLoadResult -> Void):IRequest
+function find(path:String):Null<ModelFile>
+function isLoaded(path:String):Bool
+function isLoading(path:String):Bool
+function getLoadingCount():Int
+function put(path:String, file:ModelFile):Void
+function forget(path:String):Void
+function shutdown():Void
+```
+
+- `new`: Loads through assets, decoding images with textures.
+- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). complete runs exactly once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: Ready once its images are in (one that fails leaves its material untextured, with a warning), Failed for a load failure, a buffer that won't load, or a file it can't read, Cancelled when the request is (the shared load goes on for the others) or the service shuts down.
+- `find`: The file at path if it's loaded, else null.
+- `isLoaded`: Whether path is loaded.
+- `isLoading`: Whether path is loading.
+- `getLoadingCount`: How many files are loading.
+- `put`: Adds a file loaded some other way under path, as if loaded from there (a test's, a generated one).
+- `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
+- `shutdown`: Cancels every load (each caller waiting gets Cancelled) and forgets every file.
+
+## Node
+
+*class* in `src/helix/render3d/Node.hx`
+
+What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a sprite's texture, region, size, facing and alpha mode; a light; a camera). Made by the static constructors and never subclassed; a node only draws or lights, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed.
+
+```haxe
+static function group():Node
+static function model(mesh:Mesh, material:Material, ?tint:Int = 0xffffffff):Node
+static function light(light:Light):Node
+static function camera(camera:Camera3D):Node
+static function sprite(texture:Null<Texture2D>, ?tint:Int = 0xffffffff):Node
+static function text3D(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font2D):Node
+static function emitter(emitter:Emitter):Node
+function getEmitter():Null<Emitter>
+function getText():String
+function setText(value:String):Bool
+function getTextSize():Float
+function setTextSize(value:Float):Bool
+function getFont():Null<Font2D>
+function setFont(value:Null<Font2D>):Bool
+function getTexture():Null<Texture2D>
+function setTexture(value:Null<Texture2D>):Bool
+function setRegion(x:Float, y:Float, width:Float, height:Float):Bool
+function getRegionX():Float
+function getRegionY():Float
+function getRegionWidth():Float
+function getRegionHeight():Float
+function getSpriteWidth():Float
+function getSpriteHeight():Float
+function setSpriteSize(width:Float, height:Float):Bool
+function setPivot(x:Float, y:Float):Bool
+function getPivotX():Float
+function getPivotY():Float
+function getFacing():SpriteFacing
+function setFacing(value:SpriteFacing):Bool
+function getAlphaMode():SpriteAlpha
+function getAlphaCutoff():Float
+function setAlphaMode(mode:SpriteAlpha, ?cutoff:Float = .5):Bool
+function getKind():NodeKind
+function getName():String
+function setName(value:String):Void
+function find(name:String):Null<Node>
+function collectModels(skinned:Array<Node>, rigid:Array<Node>):Void
+function findAttachment(model:Node, skeleton:Node):Null<Attachment>
+function getSkin():Null<Skin>
+function getJointCount():Int
+function getJoint(index:Int):Null<Node>
+function bindSkeleton(skeleton:Node, ?skin:Skin):Bool
+function getMesh():Null<Mesh>
+function getMaterial():Null<Material>
+function setMaterial(value:Material):Bool
+function getTint():Int
+function setTint(value:Int):Void
+function isShadowCasting():Bool
+function setShadowCasting(value:Bool):Bool
+function isShadowReceiving():Bool
+function setShadowReceiving(value:Bool):Bool
+function getLight():Null<Light>
+function getCamera():Null<Camera3D>
+function computeWorld(out:Mat4):Void
+function isEnabled():Bool
+function setEnabled(value:Bool):Void
+function isVisible():Bool
+function setVisible(value:Bool):Void
+function isPickable():Bool
+function setPickable(value:Bool):Void
+function getParent():Null<Node>
+function getChildCount():Int
+function getChild(index:Int):Null<Node>
+function add(child:Node):Bool
+function remove(child:Node):Bool
+function getX():Float
+function getY():Float
+function getZ():Float
+function getQuaternionX():Float
+function getQuaternionY():Float
+function getQuaternionZ():Float
+function getQuaternionW():Float
+function getScaleX():Float
+function getScaleY():Float
+function getScaleZ():Float
+function setPosition(x:Float, y:Float, z:Float):Void
+function getRotationX():Float
+function getRotationY():Float
+function getRotationZ():Float
+function setRotation(x:Float, y:Float, z:Float):Void
+function setQuaternion(x:Float, y:Float, z:Float, w:Float):Void
+function getMatrix():Array<Float>
+function setMatrix(m:Array<Float>):Bool
+function setScale(x:Float, y:Float, z:Float):Void
+function lookAt(x:Float, y:Float, z:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Bool
+function getWorldMatrix():Mat4
+```
+
+- `group`: A group: a node that draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D). Any node can have children; use a group when the parent shouldn't itself be a model or a light: a handle that moves or hides a set of things together, or a pivot to turn them about.
+- `model`: A model: mesh drawn with material, tinted (0xRRGGBBAA, white for none; its alpha below 255 makes it see-through).
+- `light`: A light, shining from this node's place and orientation.
+- `camera`: A camera, seeing from this node's place down its -z, its +y up (its scale ignored): parent it to what it should follow, or aim it with lookAt. The camera is drawn through as any (Stage3D.draw, Batch3D.begin), and while it is on this node its view is the node's; a camera on another node moves here.
+- `sprite`: A sprite: texture (null for none yet: it draws nothing) on a quad 1 x 1 world units, centered on its position, facing the camera, blended by its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
+- `text3D`: A line of text: value, size world units tall (ascent to descent), in font (null: the stage's built-in one), its block centered on its position (its pivot), facing the camera, tinted color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Sized, pivoted and faced as a sprite. Not pickable until setPickable(true): a label lets a pick through to what it's on.
+- `emitter`: An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Stage3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
+- `getEmitter`: An emitter node's emitter; null for another kind.
+- `getText`: A text node's text; "" for another kind.
+- `setText`: Sets a text node's text. False for another kind.
+- `getTextSize`: A text node's size, world units tall.
+- `setTextSize`: Sets a text node's size. False for another kind or a size of 0 or less.
+- `getFont`: A text node's font, or null for the stage's built-in one.
+- `setFont`: Sets a text node's font (null: the stage's built-in one). False for another kind.
+- `getTexture`: A sprite's texture, or null.
+- `setTexture`: Gives a sprite a texture (null for none: it draws nothing). False for another kind.
+- `setRegion`: A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. False for another kind.
+- `getRegionX`: A sprite's region's left, in texels.
+- `getRegionY`: A sprite's region's top, in texels.
+- `getRegionWidth`: A sprite's region's width in texels (0 or less: the whole texture).
+- `getRegionHeight`: A sprite's region's height in texels (0 or less: the whole texture).
+- `getSpriteWidth`: A sprite's size in world units, before its scale (1 x 1 by default).
+- `getSpriteHeight`: A sprite's height in world units, before its scale.
+- `setSpriteSize`: Sizes a sprite, in world units before its scale. False for another kind, or a size below 0.
+- `setPivot`: The point of a sprite (or a text's block) at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default). False for another kind.
+- `getPivotX`: A sprite's pivot's x fraction.
+- `getPivotY`: A sprite's pivot's y fraction.
+- `getFacing`: How a sprite faces.
+- `setFacing`: Sets how a sprite or text faces. False for another kind.
+- `getAlphaMode`: How a sprite's texels' alpha is used.
+- `getAlphaCutoff`: The alpha below which a Mask sprite's texels are cut out (0..1).
+- `setAlphaMode`: Sets how a sprite uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False for another kind or a cutoff outside 0..1.
+- `getKind`: Its kind.
+- `getName`: Its name: a model file's node name, or what the game gave it; "" for none.
+- `setName`: Names it.
+- `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
+- `collectModels`: The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit).
+- `findAttachment`: Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this.
+- `getSkin`: A skinned model's skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
+- `getJointCount`: How many joints a skinned model follows: its skin's, once bound; 0 otherwise.
+- `getJoint`: The node a skinned model's joint index follows; null past them or unbound.
+- `bindSkeleton`: Binds a model of a skinned mesh to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for another kind, a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
+- `getMesh`: A model's mesh; null for another kind.
+- `getMaterial`: A model's material; null for another kind.
+- `setMaterial`: Gives a model another material. False for another kind.
+- `getTint`: A model's tint, 0xRRGGBBAA.
+- `setTint`: Sets a model's tint, 0xRRGGBBAA.
+- `isShadowCasting`: Whether a model casts shadows (from the lights that cast them; see-through models never do). True by default.
+- `setShadowCasting`: Makes a model cast shadows or not. False for another kind.
+- `isShadowReceiving`: Whether shadows fall on a model. True by default.
+- `setShadowReceiving`: Lets shadows fall on a model or not. False for another kind.
+- `getLight`: A light node's light; null for another kind.
+- `getCamera`: A camera node's camera; null for another kind, or a camera since moved to another node.
+- `computeWorld`: Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps (a camera node's view is found so before the stage's walk).
+- `isEnabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
+- `setEnabled`: Turns it, and everything under it, on or off (isEnabled).
+- `isVisible`: Whether its own output is drawn: off, a model, sprite, text or emitter isn't drawn and a light doesn't shine or cast isn't drawn; it stays placed, and its children are as they are. On to start.
+- `setVisible`: Shows or hides its own output (isVisible).
+- `isPickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
+- `setPickable`: Lets picks hit its own output, or not (isPickable).
+- `getParent`: Its parent, or null.
+- `getChildCount`: How many children it has.
+- `getChild`: Its child at index, in drawing order; null past the end.
+- `add`: Makes child its last child, taking it from any parent it had. False for itself or one of its own ancestors.
+- `remove`: Takes child from its children. False when it isn't one.
+- `getX`: Its position's x, relative to its parent.
+- `getY`: Its position's y.
+- `getZ`: Its position's z.
+- `getQuaternionX`: Its rotation's quaternion x, relative to its parent.
+- `getQuaternionY`: Its rotation's quaternion y.
+- `getQuaternionZ`: Its rotation's quaternion z.
+- `getQuaternionW`: Its rotation's quaternion w.
+- `getScaleX`: Its scale along its own x.
+- `getScaleY`: Its scale along its own y.
+- `getScaleZ`: Its scale along its own z.
+- `setPosition`: Places it at x, y, z, relative to its parent.
+- `getRotationX`: Its rotation as angles in radians about x, then y, then z (setRotation's), x of them: worked out from its quaternion, so an equal turn, not always the angles set (y is kept within -pi/2..pi/2).
+- `getRotationY`: Its rotation's angle about y, radians, as getRotationX.
+- `getRotationZ`: Its rotation's angle about z, radians, as getRotationX.
+- `setRotation`: Turns it by angles in radians about x, then y, then z, relative to its parent.
+- `setQuaternion`: Turns it by the unit quaternion x, y, z, w, relative to its parent (normalized here; the identity for a zero one).
+- `getMatrix`: Its matrix relative to its parent (16 floats, column-major): its place, turn and scale put together.
+- `setMatrix`: Places, turns and scales it by a matrix (16 floats, column-major) relative to its parent, taken apart into translation, rotation and scale; a shear is lost. False, changing nothing, for one of the wrong length or with a zero scale.
+- `setScale`: Scales it along its own x, y and z.
+- `lookAt`: Turns it so its -z looks from its position at x, y, z, up (0, 1, 0 by default) giving the roll; positions relative to its parent. False, changing nothing, when the point is its position or up is along the view.
+- `getWorldMatrix`: Its world matrix as the last update left it (Stage3D.draw updates it).
+
+## NodeKind
+
+*abstract* in `src/helix/render3d/Node.hx`
+
+What a node is.
+
+## PickHit
+
+*class* in `src/helix/render3d/PickHit.hx`
+
+What a pick hit (Stage3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's normal there in the world, facing back along the ray.
+
+```haxe
+function new()
+function getNode():Null<Node>
+function getDistance():Float
+function getPoint(axis:Int):Float
+function getLocalPoint(axis:Int):Float
+function getNormal(axis:Int):Float
+```
+
+- `new`: No hit yet.
+- `getNode`: The node hit (a model, a sprite or a text), or null for no hit.
+- `getDistance`: How far along the ray, in world units from its start (a camera's near plane).
+- `getPoint`: Where in the world, axis 0 (x), 1 (y) or 2 (z).
+- `getLocalPoint`: Where in the node's own space (a skinned model's as posed), axis 0, 1 or 2.
+- `getNormal`: The surface's normal in the world, a unit vector facing back along the ray, axis 0, 1 or 2.
+
+## Ray
+
+*class* in `src/helix/render3d/Ray.hx`
+
+A ray in the world: where it starts and the way it goes (a unit vector). Camera3D.computeRay makes one through a pixel; Stage3D.pick follows one.
+
+```haxe
+function new()
+function getOriginX():Float
+function getOriginY():Float
+function getOriginZ():Float
+function getDirectionX():Float
+function getDirectionY():Float
+function getDirectionZ():Float
+function set(x:Float, y:Float, z:Float, dx:Float, dy:Float, dz:Float):Bool
+function at(distance:Float, axis:Int):Float
+```
+
+- `new`: A ray from the origin down -z.
+- `getOriginX`: Where it starts, x.
+- `getOriginY`: Where it starts, y.
+- `getOriginZ`: Where it starts, z.
+- `getDirectionX`: The way it goes, x (a unit vector's).
+- `getDirectionY`: The way it goes, y.
+- `getDirectionZ`: The way it goes, z.
+- `set`: Starts it at x, y, z going along dx, dy, dz (made a unit vector). False, changing nothing, for a direction of length 0 or one that isn't finite.
+- `at`: The point distance along it, axis 0 (x), 1 (y) or 2 (z).
+
+## Skin
+
+*class* in `src/helix/render3d/Skin.hx`
+
+A skin: the joints a skinned mesh's vertices follow, by name, and each joint's inverse bind matrix (the mesh's space into the joint's, as it was bound). Shared by every model of a file showing it; a Model node binds its joints to nodes by these names (Node.bindSkeleton), so a mesh skinned in one file can follow a skeleton from another with the same joint names. Read, never changed.
+
+```haxe
+function new(names:Array<String>, ?inverseBind:Array<Float>)
+function getJointCount():Int
+function getJointName(index:Int):String
+var getBindPosition(inline, null):(index:Int, axis:Int) -> Float
+var getInverseBind(inline, null):(index:Int, i:Int) -> Float
+```
+
+- `new`: A skin of joints named names, inverseBind their inverse bind matrices one after another (16 floats each, column-major; null for identities). Throws for matrices that don't match the names.
+- `getJointCount`: How many joints.
+- `getJointName`: Joint index's name.
+- `getBindPosition`: Joint index's place in its mesh's space as bound, axis 0 (x), 1 (y) or 2 (z).
+- `getInverseBind`: Joint index's inverse bind matrix's element at (column-major) i.
+
+## SpriteAlpha
+
+*abstract* in `src/helix/render3d/Node.hx`
+
+How a 3D sprite uses its texels' alpha.
+
+## SpriteFacing
+
+*abstract* in `src/helix/render3d/Node.hx`
+
+How a 3D sprite faces.
+
+## Sprites3D
+
+*class* in `src/helix/render3d/Sprites3D.hx`
+
+A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can reach), sorts them (opaque and masked ones by texture; blended ones back to front; added ones by texture), writes their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and draws each run of a texture as one instanced draw: the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones last. A camera-facing sprite's axes are the camera's, uniforms of the draw.
+
+```haxe
+function new(gpu:IGraphics)
+function getDrawnSpriteCount():Int
+function getDrawCallCount():Int
+function begin(dt:Float):Void
+function visitEmitter(node:Node, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function advanceEmitter(node:Node):Void
+function visitText(node:Node, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function visit(node:Node, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function pick(node:Node, camera:Camera3D, ray:Ray, best:Float, hit:PickHit):Float
+function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function drawOpaque():Void
+function drawBlendedBeyond(depth:Float):Void
+function drawRest():Void
+function destroy():Void
+```
+
+- `new`: Sprites on gpu: their quad and instance buffer.
+- `getDrawnSpriteCount`: Sprites drawn by the last draw (in view).
+- `getDrawCallCount`: Draws of the last draw: one a run of a texture.
+- `begin`: Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet.
+- `visitEmitter`: Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is.
+- `advanceEmitter`: Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's).
+- `visitText`: Adds a text node's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended.
+- `visit`: Adds node (a sprite, its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth is along forward from the eye.
+- `pick`: Tests a sprite or text node against ray as camera shows it (its quad, or a text's whole block, facing as drawn): the distance along the ray, recorded in hit when nearer than best, else best. A sprite without a texture, a text without text, or a see-through one (blended, its tint's alpha under a half) isn't hit.
+- `prepare`: Sorts the sprites collected, writes their records into one upload and the draw's uniforms: viewProjection, and the camera's right and up (from forward and its up), and the upright facing's right.
+- `drawOpaque`: Draws the opaque and masked sprites, then emitters.
+- `drawBlendedBeyond`: Draws the blended sprites and emitters farther than depth along the view not yet drawn, back to front together: called before each see-through model run.
+- `drawRest`: Draws the blended sprites and emitters left, then the added ones.
+- `destroy`: Frees its buffers and built-in font.
+
+## Stage3D
+
+*class* in `src/helix/render3d/Stage3D.hx`
+
+A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the first four lights it finds, places each model's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.setShadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites, text and particles are display colors, untouched.
+
+```haxe
+function new(gpu:IGraphics)
+function getRoot():Node
+function add(node:Node):Bool
+function remove(node:Node):Bool
+function getAmbientColor():Int
+function getAmbientIntensity():Float
+function setAmbient(color:Int, intensity:Float):Bool
+function getEnvironment():Null<Environment>
+function getEnvironmentIntensity():Float
+function getEnvironmentRotation():Float
+function setEnvironment(environment:Null<Environment>, ?intensity:Float = 1., ?rotation:Float = 0.):Bool
+function getBackground():Null<Environment>
+function getBackgroundBlur():Float
+function setBackground(environment:Null<Environment>, ?blur:Float = 0.):Bool
+function getTonemap():Tonemap
+function setTonemap(value:Tonemap):Void
+function getExposure():Float
+function setExposure(value:Float):Bool
+function getTime():Float
+function setTime(seconds:Float):Void
+function isCulling():Bool
+function setCulling(value:Bool):Void
+function getDrawnNodeCount():Int
+function getDrawCallCount():Int
+function getShadowDrawCallCount():Int
+function getShadowCasterCount():Int
+function drawShadows(camera:Camera3D):Void
+function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit):Null<PickHit>
+function pickAlong(ray:Ray, ?camera:Camera3D, ?hit:PickHit):Null<PickHit>
+function draw(camera:Camera3D):Void
+function destroy():Void
+```
+
+- `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.
+- `getRoot`: The node everything on the stage hangs from.
+- `add`: Adds node to the stage, as the root's last child.
+- `remove`: Takes node from the stage's root.
+- `getAmbientColor`: The ambient light's color, 0xRRGGBBAA (sRGB).
+- `getAmbientIntensity`: The ambient light's intensity.
+- `setAmbient`: The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0.
+- `getEnvironment`: The environment lighting the lit models, or null.
+- `getEnvironmentIntensity`: How strongly the environment lights them, and the background shows: 1 as its file has it.
+- `getEnvironmentRotation`: How far the environment, and the background, turn about +y, in radians.
+- `setEnvironment`: Lights the lit models with environment (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it) and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0.
+- `getBackground`: The environment drawn behind everything, or null.
+- `getBackgroundBlur`: How blurred the background is: 0 sharp to 1 its blurriest.
+- `setBackground`: Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside 0..1.
+- `getTonemap`: How lit color comes into the screen's 0..1 after the exposure.
+- `setTonemap`: Sets how lit color comes into the screen's 0..1 after the exposure.
+- `getExposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start.
+- `setExposure`: Sets the exposure in stops. False for one that isn't finite.
+- `getTime`: The seconds surface shaders see (helix_time): what the app last set.
+- `setTime`: Sets the seconds surface shaders see, for whatever moves with time in them; emitters advance by how far it moved since the last draw.
+- `isCulling`: Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start.
+- `setCulling`: Culls, or draws everything (to measure what culling saves).
+- `getDrawnNodeCount`: Models and sprites drawn by the last draw (in view).
+- `getDrawCallCount`: Draws of the last draw: one a run of alike models, or of sprites of one texture.
+- `getShadowDrawCallCount`: Draws into shadow maps by the last drawShadows: one a run of casters alike in mesh, in each light's layer.
+- `getShadowCasterCount`: Casters drawn into shadow maps by the last drawShadows, counted in each light's layer they reach.
+- `drawShadows`: Draws the shadows of its casting lights (Light.setShadowCasting; the first four lights found) for what camera sees: each light's casters into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move; draws after use them. With no casting light or no caster, there are no shadows.
+- `pick`: What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does.
+- `pickAlong`: The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as camera shows them: without a camera, only models are hit.
+- `draw`: Draws the stage in the open frame, through camera, in its viewport.
+- `destroy`: Frees the stage's own GPU objects (its instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and environments are their owners' to free, and the pipelines the GPU's (Pipelines).
+
+## Tonemap
+
+*abstract* in `src/helix/render3d/Tonemap.hx`
+
+How a stage brings lit color, which can run past 1 (bright lights, an HDR environment), into the 0..1 a screen shows, after its exposure.
+
+## Track
+
+*class* in `src/helix/render3d/AnimationClip.hx`
+
+One node's motion along one path in a clip: the node by name, its keys' times (seconds, rising) and values.
+
+```haxe
+function new(target:String, path:TrackPath, interpolation:TrackInterpolation, times:Array<Float>, values:Array<Float>)
+static function slerp(ax:Float, ay:Float, az:Float, aw:Float, bx:Float, by:Float, bz:Float, bw:Float, t:Float, out:haxe.ds.Vector<Float>):Void
+final target:String
+final path:TrackPath
+final interpolation:TrackInterpolation
+final times:haxe.ds.Vector<Float>
+final values:haxe.ds.Vector<Float>
+function sample(seconds:Float, out:haxe.ds.Vector<Float>):Void
+```
+
+- `new`: A track moving target's path through times and values. Throws for values that don't match the times, or times that fall.
+- `slerp`: The rotation t of the way from quaternion a to b along the shorter arc, into out (normalized).
+- `target`: The node it moves, by name: bound under whatever an Animator plays it on.
+- `path`: What it moves.
+- `interpolation`: How it runs between keys.
+- `times`: Its keys' times, seconds, rising.
+- `values`: Its keys' values, one after another (3 floats a key, or 4 for a rotation; for a cubic spline, the in-tangent, value and out-tangent of each key).
+- `sample`: Its value at seconds (held before its first key and after its last), into out (3 floats, or 4 for a rotation, normalized).
+
+## TrackInterpolation
+
+*abstract* in `src/helix/render3d/AnimationClip.hx`
+
+How a track's keys run between them, glTF's three.
+
+## TrackPath
+
+*abstract* in `src/helix/render3d/AnimationClip.hx`
+
+What a track moves: its node's position, rotation (a quaternion) or scale.

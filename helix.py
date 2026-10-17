@@ -23,6 +23,7 @@ def test(native,audio_device):
     # The generated shader and font code the unit tests compile against, made when missing or stale.
     example.shader();bake_fonts.generate()
     run([sys.executable,'tools/check_adapters.py'])
+    run([sys.executable,'tools/gen_apidoc.py','--check'])
     for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)

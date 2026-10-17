@@ -54,7 +54,7 @@ Code is written to be read, by people and agents, not packed.
 python3 tools/format.py         # lay out the Haxe source; --check only checks
 python3 tools/check_docs.py     # list public API without a doc comment
 python3 tools/check_types.py    # every entry point, both targets, in seconds
-python3 tools/gen_apidoc.py     # the API reference, build/api/index.html
+python3 tools/gen_apidoc.py     # the API reference: docs/api (committed; --check in the tests) and build/api/index.html
 ```
 
 - **Tools are named verb_noun, words apart by underscores:** `check_types.py`, `gen_manifest.py`, `bake_fonts.py`, `pack_shader.py`; a `check_` tool only reports, a `gen_` tool makes files (committed ones, remade with `--regenerate`), the rest do what they say. The same for the Node scripts beside them (`check_cache.cjs`). Front doors keep their noun (`helix.py`, `tools/example.py`, `tools/services.py`, `tools/pages.py`).
