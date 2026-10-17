@@ -275,7 +275,7 @@ The asset service games load through (AssetService): assets by relative path thr
 
 ```haxe
 function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
-function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:Null<EnsureOptions>):IRequest
+function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
 var host(get, never):Null<String>
 function setHost(host:Null<String>):Bool
 function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool -> Void):IRequest

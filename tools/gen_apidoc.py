@@ -86,7 +86,10 @@ def member_lines(member,known):
         args=[]
         for i,(n,k) in enumerate(zip(names,parts[:-1])):
             v=values[i] if i<len(values) else ''
-            args.append(f'{n}:{type_text(k,known)}'+(f' = {v}' if v else ''))
+            ty=type_text(k,known)
+            # An optional argument is nullable as written; the compiler's XML wraps a typedef's in Null<> on Windows and not elsewhere.
+            if n.startswith('?') and ty.startswith('Null<') and ty.endswith('>'):ty=ty[5:-1]
+            args.append(f'{n}:{ty}'+(f' = {v}' if v else ''))
         sig=f'{static}function {name}({", ".join(args)})'+('' if name=='new' else f':{ret}')
     else:
         # A property's access as its source declares it: accessor is get or set, and a read-only one with a getter (null or never alike
