@@ -15,7 +15,7 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 | Tweens, timers, sequences | present | `helix.tween.Tweens` (Penner's easings, delay, repeats, yoyo, completion), `helix.time.Timers` (after, every), on the clock's delta (milestone 9) | Sequences beyond chaining completions |
 | Seeded random | present | `helix.math.Random` (xorshift32, an instance per stream, states, pick, shuffle, weighted), the same bits on every target (milestone 9) | |
 | 2D collision | present | `helix.collision`: rectangles, circles, convex polygons, points, segments, rays, sweeps, move-and-slide over tiles, a spatial hash (milestone 9) | Slopes and one-way platforms; layers and masks |
-| Camera helpers | partial | `Camera2D` fit and pixels, `Presentation`, `Camera3D.setMinAspect`; `Interpolate.damp` and `Curve` for rails (milestone 9) | Follow with lag, bounds, shake, zoom tween; a third-person follow for 3D |
+| Camera helpers | partial | `Camera2D` fit and pixels, `Presentation`, `Camera3D.minAspect`; `Interpolate.damp` and `Curve` for rails (milestone 9) | Follow with lag, bounds, shake, zoom tween; a third-person follow for 3D |
 | Text and localization | partial | TrueType, baking, wrapping, `measureWrapped`, kerning | String tables with a language switch, plural forms; glyph fallback (CJK, emoji); number and time formatting |
 | UI | present (basics) | Button, label, list, panel (nine-slice), progress, slider, text field, toggle, tile, focus by pointer, keys and pad, themes, boxes with anchors | A scroll view, dropdown, tabs, tooltip, modal dialog; a wrapping row (Godot's flow container); the phone's keyboard for a text field; text scaling as a setting |
 | Sprites and sheets | partial | Textures, sprites with flips and tints, KTX | A sprite sheet (atlas) with named frames and frame animation; a packer tool |
@@ -64,7 +64,7 @@ Proposal: `helix.shaders`, a library of ready surface and screen shaders with pa
 | 2D arcade physics | **missing** | Most jam games: AABB and circle bodies, gravity, move-and-slide against tiles and slopes; pure Haxe, deterministic |
 | Box2D | **missing** | The physics study showed Box2D and Jolt through wasm with bulk reads (work off the frame, ROADMAP's open design); a 2D rigid-body game (a racer top-down, a physics puzzle) wants it |
 | Jolt (3D) | **missing** | libwgf's physics3d on Jolt carried the racer: its FRICTION part 2 lessons to keep: lower the center of mass or a car rolls; wheel slip 1/60 rolling, 1 driving; driver aids on keys; grass as grip, not drag; a track of 500 scaled planes as a static mesh just worked; sensors centered on their actor; the web size budget; determinism held with Jolt; settings take effect "made again, at rest" |
-| The drawn transform | **missing** | The racer's first friction: nothing gave a simulated body's interpolated transform for the camera; HeliX's `Ticker.getFraction` is the half, a body's previous and current the other |
+| The drawn transform | **missing** | The racer's first friction: nothing gave a simulated body's interpolated transform for the camera; HeliX's `Ticker.fraction` is the half, a body's previous and current the other |
 
 ## 5. Pathfinding
 
@@ -85,7 +85,7 @@ Proposal: `helix.shaders`, a library of ready surface and screen shaders with pa
 Smallest stalls first, where a weekend is lost on something an afternoon builds; saves after pathfinding, the user's call:
 
 1. The small utilities: tweens and timers, a seeded random, 2D collision, a game clock with pause. One milestone, all pure Haxe with unit tests.
-2. Scenes and flow, with loading and splash over `isBusy` and progress.
+2. Scenes and flow, with loading and splash over `Host.busy` and progress.
 3. The scene file: the format, load and save, behaviors by name, property schemas; the editor as a separate package after.
 4. Input actions and remapping; audio buses and fades (the settings screen needs both).
 5. The shader library, surface then screen, with bloom's intermediates.

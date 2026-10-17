@@ -11,7 +11,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `app-skeleton` | a window cleared each frame |
 | `app-hello` | shapes and text |
 | `app-tick` | a fixed-rate simulation, time scale and the tick fraction |
-| `app-window` | window size, position, fullscreen and displays (get/set/can/request) |
+| `app-window` | window size, position, fullscreen and displays (properties, `can` and `request`) |
 | `app-gamepad` | four pads in the W3C standard layout |
 | `app-touch` | two-finger pan, pinch and twist; images and mipmaps |
 | `audio-music` | streamed music and decoded clips, with play state |
@@ -28,7 +28,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `ui` | menus (helix.ui): a main menu, settings (toggle, slider, a name typed in) and a scrolling list of levels, the main menu in a nine-slice panel and the others in rounded ones, laid out in a fitted 1280 x 720 design, used by the pointer, keys or a pad |
 | `scene3d` | the pointer over a scene: shapes in a ring hovered and clicked to select, a HUD button over the world that captures the pointer, an unpickable ground and label (helix.scene.Pointer) |
 | `pick` | every kind a Stage3D picks: a cube, a sphere, a sprite, a text, a glTF car and a walking skinned character, the hit's point, normal and distance shown |
-| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded into nodes: models and lights found by name, a chase camera parented to the car |
+| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded in one line into a tree of the file's nodes: its wheels (models) and headlights (spot lights) found by name; D drives it, C rides along through a `Camera3D` under the car, H the headlights; the circling camera the examples share (`Orbit`) |
 | `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
 | `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture |
 | `text3d` | text in the world: labels facing the camera, a sign's text (a TrueType font) turning with its node; lines on the ground |

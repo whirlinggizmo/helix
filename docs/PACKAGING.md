@@ -39,7 +39,7 @@ haxe --run Run test
 
 ## Autopilot
 
-Autopilot loads a packaged JSON file through `IAssets`, supplies normal named input through `IInput` (its presses activate `IInput.isActivated` as a user's would, so a game gated on it is pressed before the script waits; real browser audio stays locked, as synthetic events carry no activation, and `AudioResources` waits as it does for any early start), and observes only an explicit `String -> Dynamic` probe callback provided by the app. It drives the same `Controls`, menu and simulation as interactive play. It does not edit game state, inspect private fields or scrape source files. Ordinary `haxe.Json` parsing and `Reflect` field validation are used for the JSON schema; shader reflection remains an unrelated offline build step.
+Autopilot loads a packaged JSON file through `IAssets`, supplies normal named input through `IInput` (its presses activate `IInput.activated` as a user's would, so a game gated on it is pressed before the script waits; real browser audio stays locked, as synthetic events carry no activation, and `AudioResources` waits as it does for any early start), and observes only an explicit `String -> Dynamic` probe callback provided by the app. It drives the same `Controls`, menu and simulation as interactive play. It does not edit game state, inspect private fields or scrape source files. Ordinary `haxe.Json` parsing and `Reflect` field validation are used for the JSON schema; shader reflection remains an unrelated offline build step.
 
 The schema is version 1, with a deterministic seed and up to 128 commands:
 
