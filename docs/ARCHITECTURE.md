@@ -22,7 +22,7 @@ An adapter holds only what differs because of its platform or API.
 
 ### Enforced
 
-`tools/adaptercheck.py` runs first in `tools/typecheck.py` and `helix.py test`, and fails on:
+`tools/check_adapters.py` runs first in `tools/check_types.py` and `helix.py test`, and fails on:
 
 1. an adapter naming engine code (rendering, engine services, generated layouts or framework programs, shared decoders, the runner);
 2. engine code using a platform API (`js.html`, `js.Browser`, `js.Syntax`, `js.lib`, `sys.`, `cpp.`) or a target conditional;

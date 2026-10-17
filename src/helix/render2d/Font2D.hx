@@ -135,7 +135,7 @@ class Font2D {
 		kerning = new Map();
 	}
 
-	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/fontbake.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). */
+	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). */
 	public static function builtIn(gpu:IGraphics):Font2D {
 		var field = haxe.zip.InflateImpl.run(new haxe.io.BytesInput(haxe.crypto.Base64.decode(GeneratedFont.atlas)));
 		var width = GeneratedFont.width, height = GeneratedFont.height;

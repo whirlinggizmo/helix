@@ -12,7 +12,7 @@ With --native, the same visits by sprite2d's native build (the sokol profile), d
 HELIX_ASSET_MANIFEST) into a cache directory of its own, on a private display: the requests are the same, offline is a host that doesn't
 answer, and the program's output says whether a load failed.
 
-  python3 tools/cachecheck.py --browser /path/to/chromium [--native]   (after tools/example.py sprite2d build web [and native])"""
+  python3 tools/check_cache.py --browser /path/to/chromium [--native]   (after tools/example.py sprite2d build web [and native])"""
 import argparse
 import collections
 import email.utils
@@ -65,7 +65,7 @@ def main():
     p.add_argument('--native',action='store_true',help="also sprite2d's native build, downloading from the host");a=p.parse_args()
     built=ROOT/'build/web'
     if not (built/EXAMPLE/'app.js').is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build web')
-    work=ROOT/'build/cachecheck'
+    work=ROOT/'build/check_cache'
     if work.exists():shutil.rmtree(work)
     site=work/'site';profile=work/'profile'
     shutil.copytree(built/EXAMPLE,site/EXAMPLE);shutil.copytree(built/'assets',site/'assets')
@@ -83,7 +83,7 @@ def main():
         return dict(counts),[line for line in output.splitlines() if 'rror' in line or 'HTTP' in line or 'ailed' in line],None
     def visit(n,network='online'):
         counts.clear()
-        out=subprocess.run(['node',str(ROOT/'tools/cachecheck.cjs'),a.browser,url,str(profile),str(work/f'visit{n}.png'),network],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
+        out=subprocess.run(['node',str(ROOT/'tools/check_cache.cjs'),a.browser,url,str(profile),str(work/f'visit{n}.png'),network],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
         if out.returncode:sys.exit(out.stderr)
         report=json.loads(out.stdout.strip().splitlines()[-1])
         return dict(counts),report['errors'],(report['light'],report['dark'])
@@ -101,9 +101,9 @@ def main():
                 display.update(environment)
                 run_visits(visit_native,site,expect)
     finally:
-        server.shutdown();print(f'cachecheck: visits and screenshots in {work}',flush=True)
-    if failures:sys.exit(f'cachecheck: {len(failures)} failed')
-    print('cachecheck: ok',flush=True)
+        server.shutdown();print(f'check_cache: visits and screenshots in {work}',flush=True)
+    if failures:sys.exit(f'check_cache: {len(failures)} failed')
+    print('check_cache: ok',flush=True)
 
 def closed_port():
     """A local port nothing listens on: bound, then let go."""

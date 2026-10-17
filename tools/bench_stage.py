@@ -5,7 +5,7 @@
 Measured in user-mode CPU cycles (perf stat, pinned to one core), since this machine's clock is clamped and milliseconds mean nothing; each
 case's setup (the same program run for 0 frames) is taken away, leaving cycles a frame. Compare rows and targets as ratios.
 
-    python3 tools/stagebench.py [--models 100,1000,4000] [--frames 200] [--cases look,away,...] [--core 2]"""
+    python3 tools/bench_stage.py [--models 100,1000,4000] [--frames 200] [--cases look,away,...] [--core 2]"""
 import argparse
 import os
 import subprocess
@@ -20,12 +20,12 @@ BASE = ['-cp', 'src', '-cp', 'tests/bench', '-cp', 'build/generated/shaders', '-
 
 def build():
     """The bench for Node and for hxcpp, as release builds are made."""
-    subprocess.run(['haxe', *BASE, '-js', 'build/bench/stagebench.js'], cwd=ROOT, check=True)
+    subprocess.run(['haxe', *BASE, '-js', 'build/bench/bench_stage.js'], cwd=ROOT, check=True)
     sys.path.insert(0, str(ROOT / 'tools'))
     from pins import check_hxcpp
     from native_build import ARCH
     check_hxcpp()
-    subprocess.run(['haxe', *BASE, '-cpp', 'build/bench/stagebench-cpp', '-D', ARCH], cwd=ROOT, check=True, stdout=subprocess.DEVNULL,
+    subprocess.run(['haxe', *BASE, '-cpp', 'build/bench/bench_stage-cpp', '-D', ARCH], cwd=ROOT, check=True, stdout=subprocess.DEVNULL,
                    env={**os.environ, 'HAXELIB_PATH': str(ROOT / 'build/haxelib')})
 
 
@@ -48,7 +48,7 @@ def main():
     p.add_argument('--core', type=int, default=2)
     a = p.parse_args()
     build()
-    targets = {'hxcpp': [str(ROOT / 'build/bench/stagebench-cpp/StageBench')], 'V8': ['node', 'build/bench/stagebench.js']}
+    targets = {'hxcpp': [str(ROOT / 'build/bench/bench_stage-cpp/StageBench')], 'V8': ['node', 'build/bench/bench_stage.js']}
     counts = [int(n) for n in a.models.split(',')]
     print(f'Mega-cycles a frame (user mode, setup taken away), {a.frames} frames a run\n')
     print('| case | ' + ' | '.join(f'{t} {n}' for t in targets for n in counts) + ' |')

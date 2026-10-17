@@ -18,11 +18,11 @@ def test(native,audio_device):
     """The adapter rule's check, the shader tool tests, the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
-    import example,fontbake
+    import example,bake_fonts
     generate()
     # The generated shader and font code the unit tests compile against, made when missing or stale.
-    example.shader();fontbake.generate()
-    run([sys.executable,'tools/adaptercheck.py'])
+    example.shader();bake_fonts.generate()
+    run([sys.executable,'tools/check_adapters.py'])
     for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)

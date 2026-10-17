@@ -12,7 +12,7 @@ import helix.render3d.Node;
 import helix.render3d.Stage3D;
 
 /** A Stage3D's work on the CPU, frame after frame, against a GPU that does nothing (after libwgf's shadowbench): `StageBench <case> <models>
-	<frames>`. tools/stagebench.py runs each case under perf and takes its setup's run (0 frames) away. Cases:
+	<frames>`. tools/bench_stage.py runs each case under perf and takes its setup's run (0 frames) away. Cases:
 	look        models on a grid in view, sharing a mesh and a material; a sun and four lamps
 	away        the same, the camera turned away from them
 	away-nocull the same, culling off

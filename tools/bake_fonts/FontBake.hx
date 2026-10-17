@@ -3,9 +3,9 @@ import helix.render2d.TrueType;
 import sys.io.File;
 
 /** Bakes a TrueType font's printable ASCII into a signed distance field atlas with helix.render2d.FontBaker, for the built-in font; run under
-	the interpreter by tools/fontbake.py.
+	the interpreter by tools/bake_fonts.py.
 
-	usage: haxe -cp src -cp tools/fontbake -main FontBake --run FontBake <font.ttf> <pixel height> <padding> <atlas width> <out.r8> <out.json>
+	usage: haxe -cp src -cp tools/bake_fonts -main FontBake --run FontBake <font.ttf> <pixel height> <padding> <atlas width> <out.r8> <out.json>
 
 	out.r8 holds one byte a texel, row by row (its last texel fully inside: the white texel); out.json the atlas size and, per glyph, its place
 	in the atlas, its offset from the pen on the baseline, and its advance, in pixels at the baked height. */

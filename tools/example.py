@@ -24,7 +24,7 @@ import urllib.request
 from shader_metadata import generate,generate_sdl_gpu,manifest
 import pack_shader
 import gen_manifest
-import fontbake
+import bake_fonts
 from native_build import ARCH
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -74,7 +74,7 @@ def hxml(name,target):
 
 def prepare(name):
     """The generated shader and font, and the served folder: the page, and the example's files in the web target's shared assets."""
-    shader();fontbake.generate()
+    shader();bake_fonts.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
     (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name))
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')

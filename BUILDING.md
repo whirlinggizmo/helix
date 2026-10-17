@@ -27,7 +27,7 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
   - [whirlinggizmo/sokol_utils](https://github.com/whirlinggizmo/sokol_utils) at `8e85d19` (window position, size, displays, style and visibility)
   - stb_image
   - SDL 3.4.18's headers (`vendor/sdl3`)
-  - JetBrains Mono, baked into the built-in distance-field font by `tools/fontbake.py` (HeliX's own TrueType reader and baker, under the Haxe interpreter)
+  - JetBrains Mono, baked into the built-in distance-field font by `tools/bake_fonts.py` (HeliX's own TrueType reader and baker, under the Haxe interpreter)
 
 Third-party licenses, and what builds ship with: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Example asset credits: [examples/assets/CREDITS.md](examples/assets/CREDITS.md).
 
@@ -43,7 +43,7 @@ python3 tools/example.py app-hello build native   # build/native/app-hello/Main,
 python3 tools/example.py app-hello build native-sdl3   # build/native-sdl3/app-hello/Main, the SDL3 profile on GL
 python3 tools/example.py app-hello build native-sdl3-gpu   # build/native-sdl3-gpu/app-hello/Main, the SDL3 profile on SDL_GPU
 python3 tools/pages.py --browser /path/to/chromium   # the examples' site in build/web: every example, thumbnails, the index
-python3 tools/cachecheck.py --browser /path/to/chromium [--native]   # the asset cache across visits (after sprite2d's builds)
+python3 tools/check_cache.py --browser /path/to/chromium [--native]   # the asset cache across visits (after sprite2d's builds)
 ```
 
 The examples' site is built and deployed to GitHub Pages on every push to main (CI's `pages` job): <https://whirlinggizmo.github.io/helix/>.
@@ -58,10 +58,10 @@ Examples, their files and how each one is run: [docs/EXAMPLES.md](docs/EXAMPLES.
 
 
 ```console
-python3 tools/typecheck.py --no-output    # every entry point, both targets, in seconds
+python3 tools/check_types.py --no-output    # every entry point, both targets, in seconds
 python3 tools/format.py --check           # haxe-formatter, pinned
-python3 tools/doccheck.py                 # public API without a doc comment
-python3 tools/apidoc.py                   # the API reference, build/api/index.html
+python3 tools/check_docs.py                 # public API without a doc comment
+python3 tools/gen_apidoc.py                   # the API reference, build/api/index.html
 python3 helix.py test --native
 python3 helix.py services --browser /path/to/chromium --native
 ```

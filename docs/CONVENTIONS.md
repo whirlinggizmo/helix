@@ -28,7 +28,7 @@ HeliX has no users to protect. When an API changes, every caller changes with it
 - **A command for what follows in a pass is `apply`** (sokol's word): `graphics.applyViewport(...)`, `graphics.applyScissor(...)`. It's an instruction to the GPU's stream, not a value kept to read back.
 - **No chaining.** Setters return `Void`, or `Bool` when they can refuse; none returns its object, which would make a call read like a property. Building something takes one call a line.
 - **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`setRegion`, `getRegionX`), not a region here and a source there.
-- **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/adaptercheck.py` checks both.
+- **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/check_adapters.py` checks both.
 - **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.
 - **Capitals:** `2D` and `3D` keep a capital D. Acronyms are written as words, as in Haxe's standard library (`Json`, `Xml`, `Http`): `getId`, `Url`, `IndexedDb`. Product names keep their own spelling (`WebGL2`, `Sokol`).
 
@@ -51,11 +51,13 @@ Code is written to be read, by people and agents, not packed.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what a developer or an agent reads is what the code says.
 
 ```console
-python3 tools/format.py            # lay out the Haxe source; --check only checks
-python3 tools/doccheck.py          # list public API without a doc comment
-python3 tools/typecheck.py         # every entry point, both targets, in seconds
-python3 tools/apidoc.py            # the API reference, build/api/index.html
+python3 tools/format.py         # lay out the Haxe source; --check only checks
+python3 tools/check_docs.py     # list public API without a doc comment
+python3 tools/check_types.py    # every entry point, both targets, in seconds
+python3 tools/gen_apidoc.py     # the API reference, build/api/index.html
 ```
+
+- **Tools are named verb_noun, words apart by underscores:** `check_types.py`, `gen_manifest.py`, `bake_fonts.py`, `pack_shader.py`; a `check_` tool only reports, a `gen_` tool makes files (committed ones, remade with `--regenerate`), the rest do what they say. The same for the Node scripts beside them (`check_cache.cjs`). Front doors keep their noun (`helix.py`, `tools/example.py`, `tools/services.py`, `tools/pages.py`).
 
 The formatter and dox are pinned in `dependencies.json` and installed into the repository's own haxelib (`build/haxelib`), as hxcpp is.
 

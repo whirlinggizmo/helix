@@ -19,7 +19,7 @@
 Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
 landed); one that has gone must be taken off, so the list only shrinks. Exits 1 on any other violation.
 
-    python3 tools/adaptercheck.py"""
+    python3 tools/check_adapters.py"""
 import re
 import sys
 from pathlib import Path
@@ -149,9 +149,9 @@ def main():
     for rule, file, step in KNOWN:
         if (rule, SRC / file) not in seen:
             failed = True
-            print(f'{file}: known {rule} violation is gone ({step}): take it off KNOWN in tools/adaptercheck.py')
+            print(f'{file}: known {rule} violation is gone ({step}): take it off KNOWN in tools/check_adapters.py')
     pending = len(seen)
-    print(f'adaptercheck: {"FAILED" if failed else "ok"}; {pending} known violation(s) left, each removed by an audit step')
+    print(f'check_adapters: {"FAILED" if failed else "ok"}; {pending} known violation(s) left, each removed by an audit step')
     return 1 if failed else 0
 
 
