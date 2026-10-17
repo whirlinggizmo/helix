@@ -146,8 +146,9 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.O))
 			orbit = !orbit;
 		time += dt;
-		// The orbit starts once the environment is in: from the front, so a picture taken then (the site's) sees the rows, not their ends.
-		if (orbit && (current >= PATHS.length || environments[current] != null))
+		// The orbit starts once everything is in (both environments bake at the start): from the front, so a picture taken then (the site's,
+		// once nothing loads) sees the rows, not their ends.
+		if (orbit && !Services.isBusy())
 			angle += dt * .15;
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
