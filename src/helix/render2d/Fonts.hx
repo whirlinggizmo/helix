@@ -42,7 +42,7 @@ class Fonts implements IReloadable {
 			assets.subscribe(path, this);
 			loaded(font);
 		},
-			message -> if (request.finish()) Failure.report(path, '$path: $message', failed));
+			message -> if (request.finish()) Failure.report(path, Failure.named(path, message), failed));
 		return request;
 	}
 

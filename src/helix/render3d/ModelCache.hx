@@ -129,7 +129,7 @@ class ModelCache {
 		});
 		function failed(message:String):Void
 			if (request.finish())
-				done(null, '$path: $message');
+				done(null, Failure.named(path, message));
 		children.push(assets.load(path, bytes -> {
 			if (request.settled)
 				return;
@@ -155,7 +155,7 @@ class ModelCache {
 					}
 					if (--waiting == 0)
 						build(path, gltf, request, children, done);
-				}, message -> failed('$file: $message')));
+				}, message -> failed(Failure.named(file, message))));
 			}
 		}, message -> failed(message)));
 		return request;

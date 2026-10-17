@@ -188,9 +188,11 @@ Where a load's failure goes: to the caller's failed lambda, or, when it gave non
 
 ```haxe
 static function report(path:String, message:String, failed:Null<String -> Void>):Void
+static function named(path:String, message:String):String
 ```
 
-- `report`: Calls failed with message, or, when failed is null, traces "Load failed: path: message" (the path once when message begins with it).
+- `report`: Calls failed with message, or, when failed is null, traces "Load failed: " and the message named by its path (named).
+- `named`: message led by "path: ", or message as it is when it names path already (an HTTP status's does), so the path is said once.
 
 ## Fetch
 
