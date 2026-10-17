@@ -41,7 +41,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX lights";
 		Window.requestSize(1000, 600);
-		stage = new Stage3D(Graphics.instance);
+		stage = new Stage3D();
 		stage.setAmbient(0x5a6ea0ff, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
 		// Framed for 16:9: all the row across on a phone held upright too.
@@ -79,8 +79,8 @@ class App extends BaseApp {
 		spot.setPosition(0, 6, 2);
 		stage.add(spot);
 
-		grid = new Batch3D(Graphics.instance);
-		batch = new Batch2D(Graphics.instance);
+		grid = new Batch3D();
+		batch = new Batch2D();
 	}
 
 	static function onOff(node:Node3D):String

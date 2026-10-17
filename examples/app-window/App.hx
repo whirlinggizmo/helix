@@ -20,7 +20,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX window";
 		Window.requestSize(900, 400);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	function report(what:String, ok:Bool):Void

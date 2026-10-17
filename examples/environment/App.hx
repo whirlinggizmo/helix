@@ -56,7 +56,7 @@ class App extends BaseApp {
 	var exposure = 0.;
 	var rotation = 0.;
 	// The camera, circling.
-	var orbit = new Orbit(7.5, 1.8, 0, 1.2, 0, .15);
+	var orbit = new Orbit(7.5, 1.8, .15, 1.2);
 	var turning:Array<Node3D> = [];
 	var shaders:Shaders;
 
@@ -82,8 +82,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX environment";
 		Window.requestSize(1000, 700);
-		batch = new Batch2D(Graphics.instance);
-		stage = new Stage3D(Graphics.instance);
+		batch = new Batch2D();
+		stage = new Stage3D();
 		// Framed for 16:9: every column of spheres on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var ball = Mesh.sphere(.5, 32, 64);

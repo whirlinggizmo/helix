@@ -41,7 +41,7 @@ class App extends BaseApp {
 	var picked:Null<PickHit>;
 	var animator:Null<Animator>;
 	// The camera, circling.
-	var orbit = new Orbit(9, 5, 0, 1, 0, .2, .3);
+	var orbit = new Orbit(9, 5, .2, 1, .3);
 
 	override public function init():Void {
 		Window.title = "HeliX pick";

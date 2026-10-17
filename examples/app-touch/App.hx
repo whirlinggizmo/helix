@@ -41,7 +41,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX touch";
 		Window.requestSize(900, 700);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo = texture);
 		// Pixel art: nearest, no smoothing.
 		Textures.load("textures/tiles.png", false, texture -> tiles = texture);

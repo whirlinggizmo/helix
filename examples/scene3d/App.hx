@@ -50,7 +50,7 @@ class App extends BaseApp {
 	var button:Shape2D;
 	var label:Text2D;
 	// The camera, circling.
-	var orbit = new Orbit(10, 6, 0, 1, 0, .25);
+	var orbit = new Orbit(10, 6, .25, 1);
 	var spin = 0.;
 
 	override public function init():Void {
@@ -58,7 +58,7 @@ class App extends BaseApp {
 		Window.requestSize(1000, 600);
 		// Framed for 16:9: the whole ring on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		stage = new Stage3D(Graphics.instance);
+		stage = new Stage3D();
 		stage.setAmbient(0xffffffff, .25);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
@@ -99,7 +99,7 @@ class App extends BaseApp {
 		pointer = new Pointer(Input.instance);
 		pointer.addStage3D(stage, camera);
 		pointer.addStage2D(hud, hudCamera);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	override public function frame(dt:Float):Void {

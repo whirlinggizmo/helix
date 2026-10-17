@@ -75,7 +75,7 @@ class Loading extends LoadingScene {
 	override public function draw():Void {
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		if (batch == null)
-			batch = new Batch2D(Graphics.instance);
+			batch = new Batch2D();
 		Screen.apply(camera);
 		var p = Screen.instance;
 		var vx = p.visibleX,

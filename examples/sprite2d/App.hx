@@ -41,7 +41,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX sprite2d";
 		Window.requestSize(900, 520);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		// Colors are values, so cycle a palette.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;

@@ -37,7 +37,7 @@ class App extends BaseApp {
 	var signText:Text3D;
 	var cube:Model;
 	// The camera, circling.
-	var orbit = new Orbit(9, 4, 0, .8, 0, .25);
+	var orbit = new Orbit(9, 4, .25, .8);
 
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
 	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model {

@@ -48,7 +48,7 @@ class App extends BaseApp {
 	var strength = .8;
 	var breathing = true;
 	// The camera, circling.
-	var orbit = new Orbit(9, 4.5, 0, .5, 0, .2);
+	var orbit = new Orbit(9, 4.5, .2, .5);
 	var status = "loading the effects";
 
 	override public function init():Void {

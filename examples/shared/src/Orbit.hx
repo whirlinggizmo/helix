@@ -28,14 +28,15 @@ class Orbit {
 	/** Whether `update` goes round; false holds the camera where it is. */
 	public var running = true;
 
-	/** A circle of radius at height round the point (targetX, targetY, targetZ), going round at speed radians a second from angle. */
-	public function new(radius:Float, height:Float, targetX:Float, targetY:Float, targetZ:Float, speed:Float, angle = 0.) {
+	/** A circle of radius at height, going round at speed radians a second from angle, looking at (0, targetY, 0); targetX and targetZ move
+		the point looked at. */
+	public function new(radius:Float, height:Float, speed = .25, targetY = 0., angle = 0.) {
 		this.radius = radius;
 		this.height = height;
-		this.targetX = targetX;
-		this.targetY = targetY;
-		this.targetZ = targetZ;
 		this.speed = speed;
+		targetX = 0;
+		this.targetY = targetY;
+		targetZ = 0;
 		this.angle = angle;
 	}
 

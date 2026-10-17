@@ -39,7 +39,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX stage2d";
 		Window.requestSize(800, 450);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 
 		rock = Shape2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
 		rock.outline = 2;

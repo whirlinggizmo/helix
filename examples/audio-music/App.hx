@@ -27,7 +27,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX audio";
 		Window.requestSize(720, 240);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		var audio = Audio.instance;
 		audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> play(stream));
 		audio.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);

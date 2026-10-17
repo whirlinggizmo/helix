@@ -37,7 +37,7 @@ class App extends BaseApp {
 	var logo:Sprite3D;
 	var sign:Sprite3D;
 	// The camera, circling.
-	var orbit = new Orbit(8, 3.5, 0, 1, 0, .3);
+	var orbit = new Orbit(8, 3.5, .3, 1);
 	var trees:Array<Sprite3D> = [];
 	var tileSprites:Array<Sprite3D> = [];
 	var flames:Array<Sprite3D> = [];

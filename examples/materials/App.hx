@@ -62,7 +62,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX materials";
 		Window.requestSize(1000, 700);
-		stage = new Stage3D(Graphics.instance);
+		stage = new Stage3D();
 		stage.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 		// Framed for 16:9: all five columns across on a phone held upright too.
@@ -103,7 +103,7 @@ class App extends BaseApp {
 		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	override public function frame(dt:Float):Void {

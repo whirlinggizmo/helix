@@ -68,7 +68,7 @@ class App extends BaseApp {
 		Window.title = "HeliX Asteroids";
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		renderer = new Renderer(Graphics.instance, batch);
 		menus();
 		ticker = new Ticker(Input.instance);

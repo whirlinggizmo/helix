@@ -21,13 +21,13 @@ class App extends BaseApp {
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
 	// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second, starting on the +x side.
-	var orbit = new Orbit(16, 9, 0, 1, 0, .4, Math.PI / 2);
+	var orbit = new Orbit(16, 9, .4, 1, Math.PI / 2);
 
 	override public function init():Void {
 		Window.title = "HeliX hello3d";
 		Window.requestSize(900, 700);
-		batch3D = new Batch3D(Graphics.instance);
-		batch2D = new Batch2D(Graphics.instance);
+		batch3D = new Batch3D();
+		batch2D = new Batch2D();
 		// Framed for 16:9: the spheres either side stay in view on a phone held upright too.
 		camera3D.minAspect = 16 / 9;
 	}

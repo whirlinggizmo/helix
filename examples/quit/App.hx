@@ -26,7 +26,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX quit";
 		Window.requestSize(640, 200);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		quitAt = Time.time + 1;
 		Audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> play(stream));
 	}

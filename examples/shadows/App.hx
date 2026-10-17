@@ -43,7 +43,7 @@ class App extends BaseApp {
 	var spot = new SpotLight();
 	var marker:Model;
 	// The camera, circling.
-	var orbit = new Orbit(11, 5, 0, 1.2, 0, .18);
+	var orbit = new Orbit(11, 5, .18, 1.2);
 	var distance = 30.;
 	var bias = 1.;
 	var strength = 1.;

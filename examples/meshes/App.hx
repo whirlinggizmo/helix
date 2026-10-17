@@ -25,12 +25,12 @@ class App extends BaseApp {
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
 	// The camera, circling.
-	var orbit = new Orbit(9, 3.5, 0, .4, 0, .2);
+	var orbit = new Orbit(9, 3.5, .2, .4);
 
 	override public function init():Void {
 		Window.title = "HeliX meshes";
 		Window.requestSize(1000, 600);
-		stage = new Stage3D(Graphics.instance);
+		stage = new Stage3D();
 		stage.setAmbient(0xffffffff, .25);
 		// Framed for 16:9: the whole row across on a phone held upright too.
 		camera.minAspect = 16 / 9;
@@ -62,7 +62,7 @@ class App extends BaseApp {
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
 			stage.add(node);
 		}
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	override public function frame(dt:Float):Void {

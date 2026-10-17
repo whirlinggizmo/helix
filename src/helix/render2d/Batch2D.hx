@@ -75,8 +75,10 @@ class Batch2D {
 	var b = 1.;
 	var a = 1.;
 
-	/** A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. */
-	public function new(gpu:IGraphics, maxVertices = 32768) {
+	/** A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them.  Without gpu, the program's (Graphics.instance). */
+	public function new(?gpu:IGraphics, maxVertices = 32768) {
+		if (gpu == null)
+			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
 		capacity = maxVertices;
 		data = Bytes.alloc(capacity * Sprite2DLayout.stride);

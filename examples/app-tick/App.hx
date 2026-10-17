@@ -37,7 +37,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX tick";
 		Window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		ticker = new Ticker(Input.instance, 10);
 	}
 

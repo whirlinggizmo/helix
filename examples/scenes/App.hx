@@ -44,7 +44,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX scenes";
 		Window.requestSize(960, 540);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		// The loading screen stays once loaded, for a press, with a caption and a tip (a level may bring its own: Scene.loadingScene),
 		// as the config says.
 		var loading = cast(scenes.loadingScene, helix.scene.Loading);

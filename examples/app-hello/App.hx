@@ -21,7 +21,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX hello";
 		Window.requestSize(800, 600);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	override public function frame(dt:Float):Void {

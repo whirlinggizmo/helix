@@ -72,7 +72,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX tilemap";
 		Window.requestSize(960, 600);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		// Tiles at whole units with their top-left as pivot: neighbours share their edges exactly, so no seam shows between them.
 		for (y in 0...WORLD_H)
 			for (x in 0...WORLD_W)

@@ -71,7 +71,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX motion";
 		Window.requestSize(1000, 600);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		// A square a row, each tweened from 0 to 300 across and back by its easing, for ever, a little apart in time.
 		for (i in 0...EASES.length) {
 			var square = Shape2D.rectangle(24, 24, COLORS[i]);

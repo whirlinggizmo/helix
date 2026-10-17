@@ -31,7 +31,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX force fetch";
 		Window.requestSize(720, 240);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		// The bytes are local once ensured, under the key: stream the key.
 		Assets.ensure(KEY, _ -> Audio.loadStream(KEY, stream -> play(stream), message -> state = message), message -> state = 'ensure failed: $message', null,
 			{source: SOURCE, forceFetch: true});

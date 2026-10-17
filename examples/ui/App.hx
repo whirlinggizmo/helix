@@ -62,7 +62,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX ui";
 		Window.requestSize(1000, 600);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(stage, camera);
 		ui = new Ui(stage, camera, pointer, Input.instance);

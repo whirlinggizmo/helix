@@ -32,7 +32,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX font";
 		Window.requestSize(900, 500);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		fonts = new Fonts(Assets.instance, Graphics.instance);
 		fonts.load(MONO, font -> mono = font, message -> fail(message));
 		fonts.load(KOMIKA, font -> komika = font, message -> fail(message));

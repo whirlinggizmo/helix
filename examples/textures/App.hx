@@ -53,7 +53,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX textures";
 		Window.requestSize(1010, 610);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		for (path in PATHS)
 			slots.push(load(path));
 		for (path in KTX_PATHS)

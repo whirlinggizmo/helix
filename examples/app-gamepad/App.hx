@@ -27,7 +27,7 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX gamepad";
 		Window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	override public function frame(dt:Float):Void {

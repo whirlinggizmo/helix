@@ -68,7 +68,7 @@ Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, a
 Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xRRGGBBAA. Solid shapes are shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader.
 
 ```haxe
-function new(gpu:IGraphics, ?maxVertices:Int = 65536)
+function new(?gpu:IGraphics, ?maxVertices:Int = 65536)
 var vertexCount(get, never):Int
 var drawCallCount(get, never):Int
 var lightX(default, null):Float
@@ -87,7 +87,7 @@ function grid(slices:Int, spacing:Float, color:Int):Void
 function destroy():Void
 ```
 
-- `new`: A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.
+- `new`: A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them. Without gpu, the program's (Graphics.instance).
 - `vertexCount`: Vertices of the frame drawn last, triangles' and lines'.
 - `drawCallCount`: Draws of the frame drawn last: up to two.
 - `lightX`: The direction toward the light, x (normalized).
@@ -1034,7 +1034,7 @@ function destroy():Void
 A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start); its sprites, text and particles are display colors, untouched.
 
 ```haxe
-function new(gpu:IGraphics)
+function new(?gpu:IGraphics)
 var root(default, null):Node3D
 function add(node:Node3D):Bool
 function remove(node:Node3D):Bool
@@ -1063,7 +1063,7 @@ function draw(camera:Camera3D):Void
 function destroy():Void
 ```
 
-- `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.
+- `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. Without gpu, the program's (Graphics.instance).
 - `root`: The node everything on the stage hangs from.
 - `add`: Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself).
 - `remove`: Takes node from the stage's root. False when it isn't one of the root's children.

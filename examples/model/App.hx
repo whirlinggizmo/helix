@@ -33,7 +33,7 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 	// The camera going round the stage, and where it goes.
 	var orbitCamera = new Camera3D();
-	var orbit = new Orbit(7, 3, 0, .5, 0, .25);
+	var orbit = new Orbit(7, 3, .25, .5);
 	// The camera riding along: under the car once it's in, so it goes where the car goes.
 	var rideCamera = new Camera3D();
 	var riding = false;
@@ -49,8 +49,8 @@ class App extends BaseApp {
 	override public function init():Void {
 		Window.title = "HeliX model";
 		Window.requestSize(1000, 600);
-		stage = new Stage3D(Graphics.instance);
-		batch = new Batch2D(Graphics.instance);
+		stage = new Stage3D();
+		batch = new Batch2D();
 		stage.setAmbient(0xffffffff, .2);
 		var sun = new DirectionalLight();
 		sun.intensity = 2;

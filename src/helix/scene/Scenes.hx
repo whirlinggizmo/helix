@@ -212,7 +212,7 @@ class Scenes {
 			var width = Window.framebufferWidth,
 				height = Window.framebufferHeight;
 			if (batch == null)
-				batch = new Batch2D(Graphics.instance);
+				batch = new Batch2D();
 			camera.setViewport(width, height);
 			camera.pixels(1);
 			batch.begin(camera);

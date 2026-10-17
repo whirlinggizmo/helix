@@ -46,7 +46,7 @@ A baked glyph: its place in the atlas, its box's offset from the pen on the base
 Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture and camera, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so.
 
 ```haxe
-function new(gpu:IGraphics, ?maxVertices:Int = 32768)
+function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
 var vertexCount(get, never):Int
 var drawCallCount(get, never):Int
 var font(default, null):Font2D
@@ -85,7 +85,7 @@ function polygonLines(points:Array<Float>, width:Float, tint:Int):Void
 function destroy():Void
 ```
 
-- `new`: A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them.
+- `new`: A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. Without gpu, the program's (Graphics.instance).
 - `vertexCount`: Vertices of the frame drawn last.
 - `drawCallCount`: Draws of the frame drawn last: one per run of a texture.
 - `font`: The built-in pixel font, whose texture also has the white texel shapes use.

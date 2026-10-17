@@ -43,13 +43,13 @@ class App extends BaseApp {
 	var fade = true;
 	var paused = false;
 	// The camera, circling.
-	var orbit = new Orbit(3, 1.6, 0, .9, 0, .3);
+	var orbit = new Orbit(3, 1.6, .3, .9);
 
 	override public function init():Void {
 		Window.title = "HeliX animation";
 		Window.requestSize(1000, 600);
 		camera.minAspect = 16 / 9;
-		stage = new Stage3D(Graphics.instance);
+		stage = new Stage3D();
 		stage.setAmbient(0xc8d2ffff, .35);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
@@ -66,7 +66,7 @@ class App extends BaseApp {
 			Models.load(DIR + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
 		// The skeleton: the animations file's, which has no meshes.
 		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = 'Animations: $message');
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her, so they follow her clips.

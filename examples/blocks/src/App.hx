@@ -30,7 +30,7 @@ class App extends BaseApp {
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
 		Window.title = "HeliX Blocks";
-		batch = new Batch2D(Graphics.instance);
+		batch = new Batch2D();
 		ticker = new Ticker(Input.instance);
 		ticker.maxSteps = 6;
 		renderer = new Renderer(Graphics.instance, batch);

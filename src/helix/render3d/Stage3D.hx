@@ -150,8 +150,10 @@ class Stage3D {
 		Bytes.alloc(Background3DLayout.fragmentUniformBytes)
 	];
 
-	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. */
-	public function new(gpu:IGraphics) {
+	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.  Without gpu, the program's (Graphics.instance). */
+	public function new(?gpu:IGraphics) {
+		if (gpu == null)
+			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
 		pipelines = helix.graphics.Pipelines.of(gpu);
 		var pixel = Bytes.alloc(4);

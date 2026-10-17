@@ -40,7 +40,7 @@ class App extends BaseApp {
 	var cars:Array<Node3D> = [];
 	var ownMaterials = false;
 	// The camera, circling on the game's clock.
-	var orbit = new Orbit(22, 12, 0, 1, 0, .15);
+	var orbit = new Orbit(22, 12, .15, 1);
 
 	// A colour around the hue circle for cube i.
 	static function tint(i:Int):Int {

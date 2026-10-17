@@ -20,8 +20,10 @@ class Batch3D {
 	var lineVertices = 0;
 	var draws = 0;
 
-	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them. */
-	public function new(gpu:IGraphics, maxVertices = 65536) {
+	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.  Without gpu, the program's (Graphics.instance). */
+	public function new(?gpu:IGraphics, maxVertices = 65536) {
+		if (gpu == null)
+			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
 		capacity = maxVertices;
 		triangles = Bytes.alloc(capacity * Color3DLayout.stride);

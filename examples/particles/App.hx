@@ -48,7 +48,7 @@ class App extends BaseApp {
 	var confettiNode:Particles2D;
 	var paused = false;
 	// The camera, circling.
-	var orbit = new Orbit(ORBIT, 6, 0, 3, 0, .15);
+	var orbit = new Orbit(ORBIT, 6, .15, 3);
 
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node3D {
 		var node = new Particles3D(emitter);
