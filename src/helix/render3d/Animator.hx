@@ -11,9 +11,9 @@ import helix.render3d.AnimationClip.TrackPath;
 	Animator first moved it). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time
 	(layers, playing an upper body's clip over a lower body's, aren't here yet). */
 class Animator {
-	var root:Node;
-	var bindings = new ObjectMap<AnimationClip, Array<Node>>();
-	var rests = new ObjectMap<Node, Vector<Float>>();
+	var root:Node3D;
+	var bindings = new ObjectMap<AnimationClip, Array<Node3D>>();
+	var rests = new ObjectMap<Node3D, Vector<Float>>();
 	var current:Null<Playing>;
 	var previous:Null<Playing>;
 	var fade = 0.;
@@ -24,7 +24,7 @@ class Animator {
 	var other = new Vector<Float>(4);
 
 	/** Plays on the nodes at and under root. */
-	public function new(root:Node)
+	public function new(root:Node3D)
 		this.root = root;
 
 	/** The clip playing, or null. */
@@ -134,7 +134,7 @@ class Animator {
 	}
 
 	// The nodes clip's tracks move, in track order, each remembered at rest the first time; null when one isn't at or under the root.
-	function bind(clip:AnimationClip):Null<Array<Node>> {
+	function bind(clip:AnimationClip):Null<Array<Node3D>> {
 		var nodes = bindings.get(clip);
 		if (nodes != null)
 			return nodes;
@@ -202,7 +202,7 @@ private class Playing {
 	public var clip:AnimationClip;
 
 	/** The node each of its tracks moves. */
-	public var nodes:Array<Node>;
+	public var nodes:Array<Node3D>;
 
 	/** Whether it loops. */
 	public var loop:Bool;
@@ -211,7 +211,7 @@ private class Playing {
 	public var time = 0.;
 
 	/** clip playing on nodes, from its start. */
-	public function new(clip:AnimationClip, nodes:Array<Node>, loop:Bool) {
+	public function new(clip:AnimationClip, nodes:Array<Node3D>, loop:Bool) {
 		this.clip = clip;
 		this.nodes = nodes;
 		this.loop = loop;
@@ -232,7 +232,7 @@ private class Playing {
 /** One node's path, and the tracks moving it: the clip playing's and the one before's (null where a clip doesn't move it). */
 private class Channel {
 	/** The node. */
-	public var node:Node;
+	public var node:Node3D;
 
 	/** What of it moves. */
 	public var path:TrackPath;
@@ -244,7 +244,7 @@ private class Channel {
 	public var previousTrack:Null<Track>;
 
 	/** No tracks yet for node's path. */
-	public function new(node:Node, path:TrackPath) {
+	public function new(node:Node3D, path:TrackPath) {
 		this.node = node;
 		this.path = path;
 	}

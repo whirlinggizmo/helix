@@ -6,18 +6,19 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 
-/** Lights casting shadows. The sun casts (Light.setShadowCasting): each frame, before the frame's own pass, drawShadows draws everything that
+/** Lights casting shadows. The sun casts (DirectionalLight.setShadowCasting): each frame, before the frame's own pass, drawShadows draws everything that
 	casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The stage is a floor, a wall, some
 	generated shapes and a car, so the shadows fall across each other and across themselves. A spot circling overhead casts through its own
-	cone: two lights casting at once, a layer of the map each. The ball on the left casts nothing (Node.setShadowCasting), so it floats; the one
-	on the right receives nothing (Node.setShadowReceiving), so the wall's shadow passes over it; the spot's marker casts nothing either.
+	cone: two lights casting at once, a layer of the map each. The ball on the left casts nothing (Model.setShadowCasting), so it floats; the one
+	on the right receives nothing (Model.setShadowReceiving), so the wall's shadow passes over it; the spot's marker casts nothing either.
 
 	1 / 2: the sun's / the spot's shadows on and off; UP / DOWN: the sun's shadow distance (less covers less with the same map, so the shadows
 	sharpen); [ / ]: depth bias (too little stripes lit surfaces, "acne"; too much lifts a shadow off its caster); M: map size (512 to 4096);
@@ -33,10 +34,9 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
-	var sun = new Light(Directional);
-	var spot = new Light(Spot);
-	var spotNode:Node;
-	var marker:Node;
+	var sun = new DirectionalLight();
+	var spot = new SpotLight();
+	var marker:Model;
 	var orbit = true;
 	var distance = 30.;
 	var bias = 1.;
@@ -46,11 +46,11 @@ class App extends BaseApp {
 	var angle = 0.;
 
 	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
-	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Node {
+	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model {
 		var material = new Material();
 		material.setBaseColor(color);
 		material.setRoughness(roughness);
-		var node = Node.model(mesh, material);
+		var node = new Model(mesh, material);
 		node.setPosition(x, y, z);
 		stage.add(node);
 		return node;
@@ -70,9 +70,8 @@ class App extends BaseApp {
 		sun.setShadowCasting(true);
 		sun.setShadowDistance(distance);
 		sun.setShadowMapSize(SIZES[size]);
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.75, -.85, -.35);
-		stage.add(sunNode);
+		sun.lookAt(-.75, -.85, -.35);
+		stage.add(sun);
 		// A second caster, circling: both share the map, so both use the same size.
 		spot.setColor(0x96d2ffff);
 		spot.setIntensity(260);
@@ -81,12 +80,11 @@ class App extends BaseApp {
 		spot.setShadowCasting(true);
 		spot.setShadowMapSize(SIZES[size]);
 		spot.setShadowDistance(24);
-		spotNode = Node.light(spot);
-		stage.add(spotNode);
+		stage.add(spot);
 		var glow = new Material();
 		glow.setBaseColor(0x96d2ffff);
 		glow.setLit(false);
-		marker = Node.model(Mesh.sphere(.16, 8, 16), glow);
+		marker = new Model(Mesh.sphere(.16, 8, 16), glow);
 		marker.setShadowCasting(false);
 		stage.add(marker);
 
@@ -147,8 +145,8 @@ class App extends BaseApp {
 		fps.update(dt, Services.getFrameCpu());
 		// The spot circles overhead, aimed at the middle of the stage.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);
-		spotNode.setPosition(sx, 6.5, sz);
-		spotNode.lookAt(0, 0, 0);
+		spot.setPosition(sx, 6.5, sz);
+		spot.lookAt(0, 0, 0);
 		marker.setPosition(sx, 6.5, sz);
 		if (orbit)
 			angle += dt * .18;

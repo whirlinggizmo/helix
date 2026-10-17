@@ -5,10 +5,11 @@ import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
 
 /** A Stage3D's work on the CPU, frame after frame, against a GPU that does nothing (after libwgf's shadowbench): `StageBench <case> <models>
@@ -30,20 +31,18 @@ class StageBench {
 			side = Math.ceil(Math.sqrt(models));
 		var shared = Mesh.cube(1, 1, 1), material = new Material();
 		for (i in 0...models) {
-			var node = Node.model(kind == "each" ? Mesh.cube(1, 1, 1) : shared, material);
+			var node = new Model(kind == "each" ? Mesh.cube(1, 1, 1) : shared, material);
 			node.setPosition((i % side - side / 2) * 2, 0, (Std.int(i / side) - side / 2) * 2);
 			stage.add(node);
 		}
-		var sun = new Light(Directional);
+		var sun = new DirectionalLight();
 		sun.setShadowCasting(kind == "shadows");
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.3, -1, -.2);
-		stage.add(sunNode);
+		sun.lookAt(-.3, -1, -.2);
+		stage.add(sun);
 		var lamps = kind == "lights" ? 64 : 4;
 		for (k in 0...lamps) {
-			var light = new Light(Point);
-			light.setRange(8);
-			var lamp = Node.light(light);
+			var lamp = new PointLight();
+			lamp.setRange(8);
 			lamp.setPosition((k % 8 - 4) * side / 4, 2, (Std.int(k / 8) % 8 - 4) * side / 4);
 			stage.add(lamp);
 		}
@@ -67,11 +66,11 @@ class StageBench {
 				stage.drawShadows(camera);
 			stage.draw(camera);
 		}
-		var line = '$kind $models $frames drawn ${stage.getDrawnCount()} draws ${stage.getDrawCallCount()} picked $picked';
+		var line = '$kind $models $frames drawn ${stage.getDrawnNodeCount()} draws ${stage.getDrawCallCount()} picked $picked';
 		#if js js.Syntax.code("console.log({0})", line); #else Sys.println(line); #end
 	}
 
-	// The command line's arguments, under Node or natively.
+	// The command line's arguments, under Node3D or natively.
 	static function commandLine():Array<String> {
 		#if js
 		return js.Syntax.code("process.argv.slice(2)");

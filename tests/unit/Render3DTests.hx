@@ -1,11 +1,14 @@
 import helix.render3d.Camera3D;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Light;
 import helix.render3d.Mat4;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile.ImageSource;
-import helix.render3d.Node;
-import helix.render3d.Node.NodeKind;
+import helix.render3d.Node3D;
+import helix.render3d.PointLight;
+import helix.render3d.SpotLight;
 
 /** Mat4 and Camera3D: projection, view and their product, checked by where they put known points. */
 class Render3DTests {
@@ -109,7 +112,7 @@ class Render3DTests {
 		check(Math.abs(capsule.getMaxY() - .6) < 1e-6
 			&& Math.abs(capsule.getMinY() + .6) < 1e-6, "A capsule is its height from end to end");
 		// Nodes: a child's world is its parent's times its own, recomputed when the parent moves.
-		var parent = Node.group(), child = Node.model(box, new Material());
+		var parent = new Node3D(), child = new Model(box, new Material());
 		parent.add(child);
 		parent.setPosition(1, 2, 3);
 		child.setPosition(0, 1, 0);
@@ -121,56 +124,55 @@ class Render3DTests {
 		@:privateAccess child.update(parent.getWorldMatrix(), changed);
 		check(changed && near(child.getWorldMatrix().get(13), 1), "A parent's move reaches its child");
 		check(! @:privateAccess child.update(parent.getWorldMatrix(), false), "Nothing changed: nothing recomputed");
-		var looker = Node.group();
+		var looker = new Node3D();
 		check(looker.lookAt(0, 0, -5) && @:privateAccess looker.update(null, false), "lookAt turns a node");
 		check(near(looker.getWorldMatrix().get(10), 1), "Looking down -z leaves z as it was");
 		looker.lookAt(5, 0, 0);
 		@:privateAccess looker.update(null, false);
 		check(near(-looker.getWorldMatrix().get(8), 1) && near(looker.getWorldMatrix().get(5), 1), "lookAt points -z at the target, y up");
 		check(!parent.add(parent) && !child.add(parent), "A node can't hold itself or its ancestor");
-		var spot = new Light(Spot);
+		var spot = new SpotLight();
 		check(spot.setCone(.1, .2) && !spot.setCone(.3, .2) && !spot.setCone(.1, Math.PI / 2) && spot.getOuterCone() == .2,
 			"A spot's cones: inner <= outer < pi/2");
-		check(!spot.setIntensity(-1) && !spot.setRange(-1) && spot.getKind() == Spot, "A light refuses negative intensity and range");
+		check(!spot.setIntensity(-1) && !spot.setRange(-1), "A light refuses negative intensity and range");
 		// A glTF file read whole: the toy car (examples/assets/models/toy_car.glb).
 		var file = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.read(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
 		var car = file.instantiate("car");
-		var wheel = car.find("wheel_rl"),
-			beam = car.find("headlight_l_beam"),
-			cabin = car.find("cabin");
-		check(wheel != null && wheel.getKind() == Model && wheel.getMesh().getIndexCount() > 0, "A model file's parts are found by name");
-		check(beam != null
-			&& beam.getKind() == LightNode
-			&& beam.getLight().getKind() == Spot
-			&& near(beam.getLight().getOuterCone(), .5),
-			"KHR_lights_punctual becomes lights");
-		check(cabin.getMaterial().isBlended() && file.getWarnings().length == 0, "alphaMode BLEND, and nothing the file uses is unread");
+		var wheel = Std.downcast(car.find("wheel_rl"), Model),
+			beam = Std.downcast(car.find("headlight_l_beam"), SpotLight),
+			cabin = Std.downcast(car.find("cabin"), Model);
+		check(wheel != null && wheel.getMesh().getIndexCount() > 0, "A model file's models are found by name");
+		check(beam != null && near(beam.getOuterCone(), .5), "KHR_lights_punctual becomes lights of their kinds");
+		check(cabin != null && cabin.getMaterial().isBlended() && file.getWarnings().length == 0, "alphaMode BLEND, and nothing the file uses is unread");
 		check(@:privateAccess file.images().length == 1, "One embedded image, the paint's");
 		var again = file.instantiate();
-		check(again.find("wheel_rl").getMesh() == wheel.getMesh() && again.find("headlight_l_beam").getLight() != beam.getLight(),
+		check(Std.downcast(again.find("wheel_rl"), Model).getMesh() == wheel.getMesh() && again.find("headlight_l_beam") != beam,
 			"Copies share meshes and materials, not lights");
-		check(!Node.group().setMatrix([1, 0, 0, 0])
+		check(!new Node3D().setMatrix([1, 0, 0, 0])
 			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).getVertices().getFloat(Lit3DLayout.normalOffset + 8), 1),
 			"Missing normals are worked out (a triangle in x, y faces +z)");
 		var sided = new Material();
 		check(!sided.isDoubleSided(), "Materials draw one side by default");
 		sided.setDoubleSided(true);
 		check(sided.isDoubleSided(), "A material can draw both sides");
-		// A camera node: under a parent turned a quarter about y and moved, it sees from the parent's point down the turned -z (toward -x).
-		var rig = Node.group(),
-			lens = new Camera3D(),
-			mount = Node.camera(lens);
+		// A camera is a node: under a parent turned a quarter about y and moved, it sees from the parent's point down the turned -z (toward -x).
+		var rig = new Node3D(), lens = new Camera3D();
+		check(near(lens.getEyeZ(), 10) && near(lens.getForwardZ(), -1), "A camera starts at 0, 0, 10 looking at the origin");
+		lens.setPosition(0, 0, 0);
 		rig.setPosition(5, 1, 0);
 		rig.setRotation(0, Math.PI / 2, 0);
-		rig.add(mount);
-		lens.getViewProjection();
-		check(near(lens.getEyeX(), 5) && near(lens.getEyeY(), 1) && near(lens.getEyeZ(), 0), "A camera node's eye is its world position");
-		check(Math.abs(lens.getTargetX() - lens.getEyeX() + 1) < 1e-9
-			&& Math.abs(lens.getTargetZ() - lens.getEyeZ()) < 1e-9, "It looks down its turned -z");
-		check(mount.getKind() == CameraNode && mount.getCamera() == lens && lens.getNode() == mount, "The node and its camera know each other");
-		var other = Node.camera(lens);
-		check(mount.getCamera() == null && lens.getNode() == other, "A camera on another node moves there");
-		var turned = Node.group();
+		rig.add(lens);
+		check(near(lens.getEyeX(), 5) && near(lens.getEyeY(), 1) && near(lens.getEyeZ(), 0), "A camera's eye is its world position");
+		check(Math.abs(lens.getForwardX() + 1) < 1e-9 && Math.abs(lens.getForwardZ()) < 1e-9, "It looks down its turned -z");
+		check(lens.setView(0, 0, 2, 0, 0, 0) && near(lens.getEyeX(), 7) && Math.abs(lens.getForwardX() + 1) < 1e-9, "setView places it relative to its parent");
+		check(!lens.setView(1, 1, 1, 1, 1, 1) && near(lens.getEyeX(), 7), "A view from the target refused, the camera left where it was");
+		rig.setPosition(0, 0, 0);
+		// The origin, 2 ahead of the camera now at x 2: in the middle of its view.
+		var seen = lens.getViewProjection();
+		check(near(seen.get(12) / seen.get(15), 0)
+			&& near(seen.get(13) / seen.get(15), 0)
+			&& near(lens.getEyeX(), 2), "Its view follows its parent's move");
+		var turned = new Node3D();
 		turned.setRotation(.3, -.5, 1.2);
 		check(near(turned.getRotationX(), .3) && near(turned.getRotationY(), -.5) && near(turned.getRotationZ(), 1.2),
 			"Its rotation's angles read back as set (y within -pi/2..pi/2)");
@@ -228,29 +230,31 @@ class Render3DTests {
 	// Shadows: which lights cast and how their settings take, which models cast into a layer, what the lit shader is told, and a sun's map holding
 	// its texels in place as the camera moves.
 	static function shadows():Void {
-		check(!new Light(Point).setShadowCasting(true) && new Light(Spot).setShadowCasting(true), "A point light doesn't cast; a spot does");
-		var sunLight = new Light(Directional);
-		check(sunLight.setShadowCasting(true) && sunLight.isShadowCasting(), "The sun casts when asked");
-		check(sunLight.setShadowMapSize(3000) && sunLight.getShadowMapSize() == 2048 && sunLight.setShadowMapSize(9999)
-			&& sunLight.getShadowMapSize() == 4096 && sunLight.setShadowMapSize(1) && sunLight.getShadowMapSize() == 256 && !sunLight.setShadowMapSize(0),
+		check(!new PointLight().setShadowCasting(true) && new SpotLight().setShadowCasting(true), "A point light doesn't cast; a spot does");
+		var sun = new DirectionalLight();
+		check(sun.setShadowCasting(true) && sun.isShadowCasting(), "The sun casts when asked");
+		check(sun.setShadowMapSize(3000) && sun.getShadowMapSize() == 2048 && sun.setShadowMapSize(9999) && sun.getShadowMapSize() == 4096
+			&& sun.setShadowMapSize(1) && sun.getShadowMapSize() == 256 && !sun.setShadowMapSize(0),
 			"Map sizes round down to a power of two, 256 to 4096");
-		check(!sunLight.setShadowBias(-1, 0) && !sunLight.setShadowDistance(0) && sunLight.setShadowStrength(3) && sunLight.getShadowStrength() == 1,
+		check(!sun.setShadowBias(-1, 0) && !sun.setShadowDistance(0) && sun.setShadowStrength(3) && sun.getShadowStrength() == 1,
 			"Bad settings are refused; strength is clamped");
-		sunLight.setShadowMapSize(1024);
+		sun.setShadowMapSize(1024);
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Stage3D(gpu);
-		var sun = Node.light(sunLight);
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
-		stage.add(Node.model(Mesh.plane(20, 20), new Material()));
-		var pillar = Node.model(Mesh.cube(.5, 2, .5), new Material());
+		stage.add(new Model(Mesh.plane(20, 20), new Material()));
+		var pillar = new Model(Mesh.cube(.5, 2, .5), new Material());
 		pillar.setPosition(0, 1, 0);
 		stage.add(pillar);
-		var glass = Node.model(Mesh.cube(1, 1, 1), new Material(), 0xffffff80);
+		var glass = new Model(Mesh.cube(1, 1, 1), new Material());
+		glass.setTint(0xffffff80);
 		glass.setPosition(3, 1, 0);
 		stage.add(glass);
-		var kept = Node.model(Mesh.cube(1, 1, 1), new Material());
-		check(kept.setShadowCasting(false) && !kept.isShadowCasting() && !Node.group().setShadowCasting(true), "Only a model casts, unless told not to");
+		var kept = new Model(Mesh.cube(1, 1, 1), new Material());
+		check(kept.isShadowCasting(), "A model casts by default");
+		kept.setShadowCasting(false);
+		check(!kept.isShadowCasting(), "A model told not to doesn't");
 		stage.add(kept);
 		var view = new Camera3D();
 		view.setViewport(800, 600);
@@ -284,7 +288,7 @@ class Render3DTests {
 			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 64) == 1
 			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 76) == 0,
 			"A texel in uv, full strength, an orthographic map");
-		sunLight.setShadowCasting(false);
+		sun.setShadowCasting(false);
 		gpu.shadowPasses = [];
 		stage.drawShadows(view);
 		gpu.beginFrame(800, 600, 0);
@@ -293,11 +297,10 @@ class Render3DTests {
 		check(gpu.shadowPasses.length == 0 && fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 8) == -1,
 			"With no casting light, no passes and no shadows");
 		// A spot: a perspective map whose cone holds what it points at.
-		var spotLight = new Light(Spot);
-		spotLight.setCone(.3, .5);
-		spotLight.setRange(30);
-		spotLight.setShadowCasting(true);
-		var spot = Node.light(spotLight);
+		var spot = new SpotLight();
+		spot.setCone(.3, .5);
+		spot.setRange(30);
+		spot.setShadowCasting(true);
 		spot.setPosition(0, 8, 4);
 		spot.lookAt(0, 0, 0);
 		stage.add(spot);
@@ -313,12 +316,12 @@ class Render3DTests {
 	static function flags():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Stage3D(gpu);
-		var group = Node.model(Mesh.cube(1, 1, 1), new Material()),
-			child = Node.model(Mesh.cube(1, 1, 1), new Material());
+		var group = new Model(Mesh.cube(1, 1, 1), new Material()),
+			child = new Model(Mesh.cube(1, 1, 1), new Material());
 		child.setPosition(2, 0, 0);
 		group.add(child);
 		stage.add(group);
-		var lamp = Node.light(new Light(Point));
+		var lamp = new PointLight();
 		stage.add(lamp);
 		var view = new Camera3D();
 		view.setViewport(800, 600);
@@ -337,14 +340,29 @@ class Render3DTests {
 		check(draw() == 0 && child.isEnabled(), "A disabled model takes its child with it; the child's own flag kept");
 		group.setEnabled(true);
 		check(draw() == 2 && group.isPickable(), "Enabled again, both drawn");
+		// The stage's lists of kinds follow the tree: a model of two parts added under a node already on it draws both; taken off, or under a
+		// node off the stage, nothing; moved back, both again.
+		var two = new Model(Mesh.cube(1, 1, 1), new Material()),
+			holder = new Node3D(),
+			aside = new Node3D();
+		two.addPart(Mesh.sphere(.5), new Material());
+		child.add(holder);
+		holder.add(two);
+		check(two.getPartCount() == 2 && draw() == 4, "A model's parts draw each, added under a node on the stage");
+		aside.add(two);
+		check(draw() == 2 && two.getParent() == aside, "Moved under a node off the stage, it isn't drawn");
+		holder.add(two);
+		check(draw() == 4, "Moved back, it is");
+		group.remove(child);
+		check(draw() == 1, "Taking a node off takes what's under it");
 	}
 
 	// Lights chosen per model: a table of the 16 that reach the drawn models most, each model lit by the 8 of those that reach it most.
 	static function lightChoice():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Stage3D(gpu);
-		var left = Node.model(Mesh.cube(1, 1, 1), new Material()),
-			right = Node.model(Mesh.cube(1, 1, 1), new Material());
+		var left = new Model(Mesh.cube(1, 1, 1), new Material()),
+			right = new Model(Mesh.cube(1, 1, 1), new Material());
 		left.setPosition(-10, 0, 0);
 		right.setPosition(10, 0, 0);
 		stage.add(left);
@@ -352,9 +370,8 @@ class Render3DTests {
 		// Twenty lamps of range 3: ten by the right model, then ten by the left, the left's nearest last.
 		var lamps = [];
 		for (k in 0...20) {
-			var light = new Light(Point);
-			light.setRange(3);
-			var lamp = Node.light(light);
+			var lamp = new PointLight();
+			lamp.setRange(3);
 			lamp.setPosition(k < 10 ? 10 : -10, 1 + (k % 10) * .1, 0);
 			if (k == 19)
 				lamp.setPosition(-10, .6, 0);
@@ -366,10 +383,10 @@ class Render3DTests {
 		view.setView(0, 5, 30, 0, 0, 0);
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
-		var table:Array<Node> = @:privateAccess stage.table;
+		var table:Array<Light> = @:privateAccess stage.table;
 		check(table.length == 16, "Twenty lamps reaching the models: a table of 16");
 		var items:Array<Dynamic> = @:privateAccess stage.drawn;
-		function lightsOf(model:Node):Array<Node> {
+		function lightsOf(model:Model):Array<Light> {
 			for (item in items)
 				if (item.node == model)
 					return [for (t in (item.lights : Array<Int>)) if (t >= 0) table[t]];
@@ -381,24 +398,23 @@ class Render3DTests {
 		check([for (l in lightsOf(right)) if (l.getX() != 10) l].length == 0, "The right model: only lamps that reach it");
 		// The old limit: the first four found lit everything, so a model by the fifth lamp went dark.
 		var stage2 = new helix.render3d.Stage3D(gpu),
-			far = Node.model(Mesh.cube(1, 1, 1), new Material());
+			far = new Model(Mesh.cube(1, 1, 1), new Material());
 		far.setPosition(50, 0, 0);
 		stage2.add(far);
 		for (k in 0...5) {
-			var light = new Light(Point);
-			light.setRange(2);
-			var lamp = Node.light(light);
+			var lamp = new PointLight();
+			lamp.setRange(2);
 			lamp.setPosition(k < 4 ? -50 : 50, 1, 0);
 			stage2.add(lamp);
 		}
-		var sun = new Light(Directional);
-		stage2.add(Node.light(sun));
+		var sun = new DirectionalLight();
+		stage2.add(sun);
 		view.setView(50, 5, 20, 50, 0, 0);
 		stage2.draw(view);
 		var only:Array<Dynamic> = @:privateAccess stage2.drawn,
-			t2:Array<Node> = @:privateAccess stage2.table;
+			t2:Array<Light> = @:privateAccess stage2.table;
 		var lit = [for (t in (only[0].lights : Array<Int>)) if (t >= 0) t2[t]];
-		check(lit.length == 2 && lit[0].getX() == 50 && lit[1].getLight().getKind() == Directional,
+		check(lit.length == 2 && lit[0].getX() == 50 && lit[1] == sun,
 			"The fifth lamp lights the model beside it, the sun everything; lamps out of range don't");
 		var u = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
 		check(u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION) == 50
@@ -410,17 +426,16 @@ class Render3DTests {
 	static function cullingAndCasters():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Stage3D(gpu);
-		var floor = Node.model(Mesh.plane(10, 10), new Material()),
-			high = Node.model(Mesh.cube(1, 1, 1), new Material()),
-			aside = Node.model(Mesh.cube(1, 1, 1), new Material());
+		var floor = new Model(Mesh.plane(10, 10), new Material()),
+			high = new Model(Mesh.cube(1, 1, 1), new Material()),
+			aside = new Model(Mesh.cube(1, 1, 1), new Material());
 		high.setPosition(0, 40, 0);
 		aside.setPosition(200, 1, 0);
 		stage.add(floor);
 		stage.add(high);
 		stage.add(aside);
-		var sunLight = new Light(Directional);
-		sunLight.setShadowCasting(true);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setShadowCasting(true);
 		// Straight down: up can't be +y then (lookAt would refuse), so it's -z.
 		check(sun.lookAt(0, -1, 0, 0, 0, -1), "A sun aimed straight down");
 		stage.add(sun);

@@ -6,10 +6,10 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
 import helix.render3d.Stage3D;
 
 /** Shapes made in code on a Stage3D: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
@@ -30,16 +30,15 @@ class App extends BaseApp {
 		stage.setAmbient(0xffffffff, .25);
 		// Framed for 16:9: the whole row across on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var sun = new Light(Directional);
+		var sun = new DirectionalLight();
 		sun.setIntensity(3);
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.5, -1, -.4);
-		stage.add(sunNode);
+		sun.lookAt(-.5, -1, -.4);
+		stage.add(sun);
 
 		var ground = new Material();
 		ground.setBaseColor(0x474a4dff);
 		ground.setRoughness(.9);
-		stage.add(Node.model(Mesh.plane(12, 12), ground));
+		stage.add(new Model(Mesh.plane(12, 12), ground));
 
 		// Each shape, how high its center sits (so it rests on the floor), and its color.
 		var shapes:Array<{mesh:Mesh, y:Float, color:Int}> = [
@@ -55,7 +54,7 @@ class App extends BaseApp {
 			var material = new Material();
 			material.setBaseColor(shapes[i].color);
 			material.setRoughness(.45);
-			var node = Node.model(shapes[i].mesh, material);
+			var node = new Model(shapes[i].mesh, material);
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
 			stage.add(node);
 		}

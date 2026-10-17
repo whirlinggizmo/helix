@@ -1,0 +1,381 @@
+package helix.render3d;
+
+import helix.scene.Node;
+
+/** What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing,
+	only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of
+	things together, or a pivot to turn them about. The framework's kinds are its classes (Model, DirectionalLight, PointLight, SpotLight,
+	Camera3D, Sprite3D, Text3D, Particles3D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the
+	node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and
+	a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed. */
+class Node3D extends Node {
+	var px = 0.;
+	var py = 0.;
+	var pz = 0.;
+	var qx = 0.;
+	var qy = 0.;
+	var qz = 0.;
+	var qw = 1.;
+	var sx = 1.;
+	var sy = 1.;
+	var sz = 1.;
+	var local = new Mat4();
+	var world = new Mat4();
+	var localDirty = true;
+	// At a tree's top, counted up by every add and remove below it: a stage keeps its lists of kinds until its root's count moves.
+	@:allow(helix.render3d.Stage3D)
+	var structure = 0;
+
+	/** A group at the origin, unturned and unscaled, with no children. */
+	public function new()
+		super();
+
+	/** Makes child its last child, taking it from any parent it had. False for itself or one of its own ancestors. */
+	public function add(child:Node3D):Bool {
+		var from:Null<Node3D> = cast child.parent;
+		if (!attach(child))
+			return false;
+		if (from != null)
+			from.changed();
+		changed();
+		child.localDirty = true;
+		return true;
+	}
+
+	/** Takes child from its children. False when it isn't one. */
+	public function remove(child:Node3D):Bool {
+		if (!detach(child))
+			return false;
+		changed();
+		child.localDirty = true;
+		return true;
+	}
+
+	// Its tree's shape changed: counted at the top.
+	function changed():Void {
+		var top:Node3D = this;
+		while (top.parent != null)
+			top = cast top.parent;
+		top.structure++;
+	}
+
+	/** Its parent, or null. */
+	override public function getParent():Null<Node3D>
+		return cast parent;
+
+	/** Its child at index, in drawing order; null past the end. */
+	override public function getChild(index:Int):Null<Node3D>
+		return cast super.getChild(index);
+
+	/** The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a
+		lamp), once, and keeping the node. Never a path. */
+	override public function find(name:String):Null<Node3D>
+		return cast super.find(name);
+
+	/** Turns it, and everything under it, on or off (isEnabled). */
+	override public function setEnabled(value:Bool):Void {
+		// Off, it isn't brought up to date as its parent moves: on again, it is.
+		if (value && !enabled)
+			localDirty = true;
+		super.setEnabled(value);
+	}
+
+	/** The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a
+		rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only
+		models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit). */
+	public function collectModels(skinned:Array<Model>, rigid:Array<Model>):Void {
+		var model = Std.downcast(this, Model);
+		if (model != null && model.getMesh() != null) {
+			if (model.getMesh().isSkinned())
+				skinned.push(model);
+			else {
+				rigid.push(model);
+				return;
+			}
+		}
+		for (i in 0...children.length)
+			getChild(i).collectModels(skinned, rigid);
+	}
+
+	/** Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's
+		nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above
+		model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the
+		node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this. */
+	public function findAttachment(model:Model, skeleton:Node3D):Null<Attachment> {
+		var piece:Node3D = model, above = model.getParent();
+		while (above != null && above != this && jointOf(skeleton, above.name) == null) {
+			piece = above;
+			above = above.getParent();
+		}
+		if (above == null)
+			return null;
+		return {piece: piece, joint: above == this ? null : jointOf(skeleton, above.name)};
+	}
+
+	static function jointOf(skeleton:Node3D, name:String):Null<Node3D>
+		return name == "" ? null : skeleton.name == name ? skeleton : skeleton.find(name);
+
+	/** Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps
+		(a camera's view is found so, wherever it is). */
+	public function computeWorld(out:Mat4):Void {
+		out.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+		var at = getParent(), above = new Mat4(), product = new Mat4();
+		// Two scratch matrices a call: a chain of parents is short, and a camera asks once a draw.
+		while (at != null) {
+			above.makeTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
+			product.makeProduct(above, out);
+			out.copyFrom(product);
+			at = at.getParent();
+		}
+	}
+
+	/** Its position's x, relative to its parent. */
+	public function getX():Float
+		return px;
+
+	/** Its position's y. */
+	public function getY():Float
+		return py;
+
+	/** Its position's z. */
+	public function getZ():Float
+		return pz;
+
+	/** Its rotation's quaternion x, relative to its parent. */
+	public function getQuaternionX():Float
+		return qx;
+
+	/** Its rotation's quaternion y. */
+	public function getQuaternionY():Float
+		return qy;
+
+	/** Its rotation's quaternion z. */
+	public function getQuaternionZ():Float
+		return qz;
+
+	/** Its rotation's quaternion w. */
+	public function getQuaternionW():Float
+		return qw;
+
+	/** Its scale along its own x. */
+	public function getScaleX():Float
+		return sx;
+
+	/** Its scale along its own y. */
+	public function getScaleY():Float
+		return sy;
+
+	/** Its scale along its own z. */
+	public function getScaleZ():Float
+		return sz;
+
+	/** Places it at x, y, z, relative to its parent. */
+	public function setPosition(x:Float, y:Float, z:Float):Void {
+		px = x;
+		py = y;
+		pz = z;
+		localDirty = true;
+	}
+
+	/** Its rotation as angles in radians about x, then y, then z (setRotation's), x of them: worked out from its quaternion, so an equal turn,
+		not always the angles set (y is kept within -pi/2..pi/2). */
+	public function getRotationX():Float
+		return euler(0);
+
+	/** Its rotation's angle about y, radians, as getRotationX. */
+	public function getRotationY():Float
+		return euler(1);
+
+	/** Its rotation's angle about z, radians, as getRotationX. */
+	public function getRotationZ():Float
+		return euler(2);
+
+	// One of the x, then y, then z angles turning as its quaternion does (the rotation matrix taken apart, as three.js does for this order).
+	function euler(axis:Int):Float {
+		var m11 = 1 - 2 * (qy * qy + qz * qz),
+			m12 = 2 * (qx * qy - qz * qw),
+			m21 = 2 * (qx * qy + qz * qw),
+			m22 = 1 - 2 * (qx * qx + qz * qz),
+			m31 = 2 * (qx * qz - qy * qw),
+			m32 = 2 * (qy * qz + qx * qw),
+			m33 = 1 - 2 * (qx * qx + qy * qy);
+		var s = m31 < -1 ? -1 : m31 > 1 ? 1 : m31;
+		var gimbal = Math.abs(s) >= .9999999;
+		return switch axis {
+			case 0: gimbal ? 0 : Math.atan2(m32, m33);
+			case 1: Math.asin(-s);
+			case _: gimbal ? Math.atan2(-m12, m22) : Math.atan2(m21, m11);
+		}
+	}
+
+	/** Turns it by angles in radians about x, then y, then z, relative to its parent. */
+	public function setRotation(x:Float, y:Float, z:Float):Void {
+		var cx = Math.cos(x / 2),
+			sx = Math.sin(x / 2),
+			cy = Math.cos(y / 2),
+			sy = Math.sin(y / 2),
+			cz = Math.cos(z / 2),
+			sz = Math.sin(z / 2);
+		qx = sx * cy * cz - cx * sy * sz;
+		qy = cx * sy * cz + sx * cy * sz;
+		qz = cx * cy * sz - sx * sy * cz;
+		qw = cx * cy * cz + sx * sy * sz;
+		localDirty = true;
+	}
+
+	/** Turns it by the unit quaternion x, y, z, w, relative to its parent (normalized here; the identity for a zero one). */
+	public function setQuaternion(x:Float, y:Float, z:Float, w:Float):Void {
+		var length = Math.sqrt(x * x + y * y + z * z + w * w);
+		if (length == 0) {
+			qx = qy = qz = 0;
+			qw = 1;
+		} else {
+			qx = x / length;
+			qy = y / length;
+			qz = z / length;
+			qw = w / length;
+		}
+		localDirty = true;
+	}
+
+	/** Its matrix relative to its parent (16 floats, column-major): its place, turn and scale put together. */
+	public function getMatrix():Array<Float> {
+		var m = new Mat4();
+		m.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+		return [for (i in 0...16) m.get(i)];
+	}
+
+	/** Places, turns and scales it by a matrix (16 floats, column-major) relative to its parent, taken apart into translation, rotation and
+		scale; a shear is lost. False, changing nothing, for one of the wrong length or with a zero scale. */
+	public function setMatrix(m:Array<Float>):Bool {
+		if (m.length != 16)
+			return false;
+		var ax = Math.sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2]),
+			ay = Math.sqrt(m[4] * m[4] + m[5] * m[5] + m[6] * m[6]),
+			az = Math.sqrt(m[8] * m[8] + m[9] * m[9] + m[10] * m[10]);
+		if (ax == 0 || ay == 0 || az == 0)
+			return false;
+		// A mirroring matrix: one axis negated.
+		var det = m[0] * (m[5] * m[10] - m[9] * m[6]) - m[4] * (m[1] * m[10] - m[9] * m[2]) + m[8] * (m[1] * m[6] - m[5] * m[2]);
+		if (det < 0)
+			ax = -ax;
+		px = m[12];
+		py = m[13];
+		pz = m[14];
+		sx = ax;
+		sy = ay;
+		sz = az;
+		// The rotation's columns are the axes over their scales: its quaternion (Shepperd's method).
+		var xx = m[0] / ax,
+			xy = m[1] / ax,
+			xz = m[2] / ax,
+			yx = m[4] / ay,
+			yy = m[5] / ay,
+			yz = m[6] / ay,
+			zx = m[8] / az,
+			zy = m[9] / az,
+			zz = m[10] / az;
+		var trace = xx + yy + zz;
+		if (trace > 0) {
+			var s = Math.sqrt(trace + 1) * 2;
+			setQuaternion((yz - zy) / s, (zx - xz) / s, (xy - yx) / s, s / 4);
+		} else if (xx > yy && xx > zz) {
+			var s = Math.sqrt(1 + xx - yy - zz) * 2;
+			setQuaternion(s / 4, (yx + xy) / s, (zx + xz) / s, (yz - zy) / s);
+		} else if (yy > zz) {
+			var s = Math.sqrt(1 + yy - xx - zz) * 2;
+			setQuaternion((yx + xy) / s, s / 4, (zy + yz) / s, (zx - xz) / s);
+		} else {
+			var s = Math.sqrt(1 + zz - xx - yy) * 2;
+			setQuaternion((zx + xz) / s, (zy + yz) / s, s / 4, (xy - yx) / s);
+		}
+		return true;
+	}
+
+	/** Scales it along its own x, y and z. */
+	public function setScale(x:Float, y:Float, z:Float):Void {
+		sx = x;
+		sy = y;
+		sz = z;
+		localDirty = true;
+	}
+
+	/** Turns it so its -z looks from its position at x, y, z, up (0, 1, 0 by default) giving the roll; positions relative to its parent. False,
+		changing nothing, when the point is its position or up is along the view. */
+	public function lookAt(x:Float, y:Float, z:Float, upX = 0., upY = 1., upZ = 0.):Bool {
+		// Its z axis points away from the target; x is up across z; y is z across x.
+		var zx = px - x, zy = py - y, zz = pz - z, zl = Math.sqrt(zx * zx + zy * zy + zz * zz);
+		if (zl == 0)
+			return false;
+		zx /= zl;
+		zy /= zl;
+		zz /= zl;
+		var xx = upY * zz - upZ * zy,
+			xy = upZ * zx - upX * zz,
+			xz = upX * zy - upY * zx,
+			xl = Math.sqrt(xx * xx + xy * xy + xz * xz);
+		if (xl < 1e-12)
+			return false;
+		xx /= xl;
+		xy /= xl;
+		xz /= xl;
+		var yx = zy * xz - zz * xy,
+			yy = zz * xx - zx * xz,
+			yz = zx * xy - zy * xx;
+		// The rotation matrix's columns are x, y and z: its quaternion (Shepperd's method).
+		var trace = xx + yy + zz;
+		if (trace > 0) {
+			var s = Math.sqrt(trace + 1) * 2;
+			qw = s / 4;
+			qx = (yz - zy) / s;
+			qy = (zx - xz) / s;
+			qz = (xy - yx) / s;
+		} else if (xx > yy && xx > zz) {
+			var s = Math.sqrt(1 + xx - yy - zz) * 2;
+			qw = (yz - zy) / s;
+			qx = s / 4;
+			qy = (yx + xy) / s;
+			qz = (zx + xz) / s;
+		} else if (yy > zz) {
+			var s = Math.sqrt(1 + yy - xx - zz) * 2;
+			qw = (zx - xz) / s;
+			qx = (yx + xy) / s;
+			qy = s / 4;
+			qz = (zy + yz) / s;
+		} else {
+			var s = Math.sqrt(1 + zz - xx - yy) * 2;
+			qw = (xy - yx) / s;
+			qx = (zx + xz) / s;
+			qy = (zy + yz) / s;
+			qz = s / 4;
+		}
+		localDirty = true;
+		return true;
+	}
+
+	/** Its world matrix as the last update left it (Stage3D.draw updates it). */
+	public function getWorldMatrix():Mat4
+		return world;
+
+	/** Brings its world matrix up to date from parentWorld when it or its parent changed; whether it changed. A stage calls this as it walks. */
+	@:allow(helix.render3d.Stage3D)
+	function update(parentWorld:Null<Mat4>, parentChanged:Bool):Bool {
+		if (!localDirty && !parentChanged)
+			return false;
+		if (localDirty) {
+			local.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
+			localDirty = false;
+		}
+		if (parentWorld == null)
+			world.copyFrom(local);
+		else
+			world.makeProduct(parentWorld, local);
+		return true;
+	}
+}
+
+/** Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none. */
+typedef Attachment = {
+	final piece:Node3D;
+	final joint:Null<Node3D>;
+}

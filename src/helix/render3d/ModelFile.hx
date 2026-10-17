@@ -6,7 +6,6 @@ import helix.render3d.Gltf.field;
 import helix.render3d.AnimationClip.Track;
 import helix.render3d.AnimationClip.TrackInterpolation;
 import helix.render3d.AnimationClip.TrackPath;
-import helix.render3d.Light.LightKind;
 
 /** A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
 	(Models loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
@@ -113,10 +112,12 @@ class ModelFile {
 	public function getMaterials():Array<Material>
 		return materials.copy();
 
-	/** A new node tree of the file's default scene, under a group named name: its nodes' names, transforms and children, models sharing the
-		file's meshes and materials, and lights of their own. */
-	public function instantiate(name = ""):Node {
-		var root = Node.group();
+	/** A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and
+		children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a
+		DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an
+		empty). A node with both a mesh and a light is the model, the light its first child. */
+	public function instantiate(name = ""):Node3D {
+		var root = new Node3D();
 		root.setName(name);
 		var skinned = [];
 		for (r in roots)
@@ -301,37 +302,47 @@ class ModelFile {
 
 	function light(index:Int):Light {
 		var l = lights[index], type:String = field(l, "type");
-		var light = new Light(type == "spot" ? Spot : type == "point" ? Point : Directional);
+		var range:Null<Float> = field(l, "range");
+		var light:Light;
+		if (type == "spot") {
+			var spot = new SpotLight(), cone:Dynamic = field(l, "spot");
+			var inner:Null<Float> = field(cone, "innerConeAngle"),
+				outer:Null<Float> = field(cone, "outerConeAngle");
+			spot.setCone(inner == null ? 0 : inner, outer == null ? Math.PI / 4 : outer);
+			spot.setRange(range == null ? 0 : range);
+			light = spot;
+		} else if (type == "point") {
+			var point = new PointLight();
+			point.setRange(range == null ? 0 : range);
+			light = point;
+		} else
+			light = new DirectionalLight();
 		var c:Array<Float> = field(l, "color");
 		light.setColor(c == null ? 0xffffffff : color(c));
-		var intensity:Null<Float> = field(l, "intensity"),
-			range:Null<Float> = field(l, "range");
+		var intensity:Null<Float> = field(l, "intensity");
 		light.setIntensity(intensity == null ? 1 : intensity);
-		light.setRange(range == null ? 0 : range);
-		var spot:Dynamic = field(l, "spot");
-		if (spot != null) {
-			var inner:Null<Float> = field(spot, "innerConeAngle"),
-				outer:Null<Float> = field(spot, "outerConeAngle");
-			light.setCone(inner == null ? 0 : inner, outer == null ? Math.PI / 4 : outer);
-		}
 		return light;
 	}
 
-	function node(index:Int, skinned:Array<{model:Node, skin:Int}>):Node {
+	function node(index:Int, skinned:Array<{model:Model, skin:Int}>):Node3D {
 		var n = gltf.list("nodes")[index],
 			meshIndex:Null<Int> = field(n, "mesh");
 		var lightIndex:Null<Int> = field(field(field(n, "extensions"), "KHR_lights_punctual"), "light");
-		var list = meshIndex == null ? [] : parts[meshIndex];
-		// One part and nothing else: the node is the model; otherwise a group holding its parts and its light.
-		var node = list.length == 1
-			&& lightIndex == null ? Node.model(list[0].mesh,
-				list[0].material) : lightIndex != null && list.length == 0 ? Node.light(light(lightIndex)) : Node.group();
-		if (node.getKind() == Group) {
-			for (part in list)
-				node.add(Node.model(part.mesh, part.material));
+		var node:Node3D;
+		if (meshIndex != null) {
+			var model = new Model();
+			for (part in parts[meshIndex])
+				model.addPart(part.mesh, part.material);
+			var skin:Null<Int> = field(n, "skin");
+			if (skin != null && model.getMesh() != null && model.getMesh().isSkinned())
+				skinned.push({model: model, skin: skin});
 			if (lightIndex != null)
-				node.add(Node.light(light(lightIndex)));
-		}
+				model.add(light(lightIndex));
+			node = model;
+		} else if (lightIndex != null)
+			node = light(lightIndex);
+		else
+			node = new Node3D();
 		var name:String = field(n, "name");
 		node.setName(name == null ? "" : name);
 		var matrix:Array<Float> = field(n, "matrix");
@@ -347,13 +358,6 @@ class ModelFile {
 				node.setQuaternion(r[0], r[1], r[2], r[3]);
 			if (s != null)
 				node.setScale(s[0], s[1], s[2]);
-		}
-		var skin:Null<Int> = field(n, "skin");
-		if (skin != null) {
-			var models = node.getKind() == Model ? [node] : [for (i in 0...node.getChildCount()) node.getChild(i)];
-			for (model in models)
-				if (model.getKind() == Model && model.getMesh().isSkinned())
-					skinned.push({model: model, skin: skin});
 		}
 		var children:Array<Int> = field(n, "children");
 		if (children != null)

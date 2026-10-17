@@ -102,7 +102,7 @@ class Mesh {
 	public function getMaxZ():Float
 		return hiZ;
 
-	/** Whether its vertices follow joints (a skin's): Model nodes showing it need one (Node.getSkin). */
+	/** Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.getSkin). */
 	public function isSkinned():Bool
 		return skinData != null;
 

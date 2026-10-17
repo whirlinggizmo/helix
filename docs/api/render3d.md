@@ -29,7 +29,7 @@ function getTrack(index:Int):Null<Track>
 Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play() crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the Animator first moved it). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time (layers, playing an upper body's clip over a lower body's, aren't here yet).
 
 ```haxe
-function new(root:Node)
+function new(root:Node3D)
 function getClip():Null<AnimationClip>
 function getTime():Float
 function setTime(seconds:Float):Bool
@@ -56,12 +56,12 @@ function update(seconds:Float):Void
 
 ## Attachment
 
-*typedef* in `src/helix/render3d/Node.hx`
+*typedef* in `src/helix/render3d/Node3D.hx`
 
-Where a rigid piece attaches to a skeleton (Node.findAttachment): the piece, and the joint it hangs from, null for none.
+Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none.
 
-- `piece:Node`
-- `joint:Null<Node>`
+- `piece:Node3D`
+- `joint:Null<Node3D>`
 
 ## Batch3D
 
@@ -111,7 +111,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Camera3D.hx`
 
-A 3D view, perspective or orthographic (setOrthographic): an eye looking at a target, right-handed with +y up by default, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Distances are world units; angles radians.
+A 3D view, perspective or orthographic (setOrthographic), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians.
 
 ```haxe
 function new()
@@ -119,9 +119,9 @@ function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Floa
 function getEyeX():Float
 function getEyeY():Float
 function getEyeZ():Float
-function getTargetX():Float
-function getTargetY():Float
-function getTargetZ():Float
+function getForwardX():Float
+function getForwardY():Float
+function getForwardZ():Float
 function getUpX():Float
 function getUpY():Float
 function getUpZ():Float
@@ -144,22 +144,21 @@ function getViewportWidth():Int
 function getViewportHeight():Int
 function setViewport(width:Int, height:Int):Void
 function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool
-function getNode():Null<Node>
 function getViewProjection():Mat4
 function computeRay(x:Float, y:Float, ray:Ray):Bool
 ```
 
 - `new`: A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport.
-- `setView`: Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. On a node, the node's place replaces it at the next draw.
-- `getEyeX`: The eye's X.
-- `getEyeY`: The eye's Y.
-- `getEyeZ`: The eye's Z.
-- `getTargetX`: The target's X.
-- `getTargetY`: The target's Y.
-- `getTargetZ`: The target's Z.
-- `getUpX`: The up direction setView was given (the roll), x.
-- `getUpY`: The up direction's y.
-- `getUpZ`: The up direction's z.
+- `setView`: Places it at eye and turns it to look at target, up giving the roll: positions relative to its parent (the world's, at the top). False, changing nothing, when the eye is at the target or up is along the view.
+- `getEyeX`: The eye's x: its world position.
+- `getEyeY`: The eye's y.
+- `getEyeZ`: The eye's z.
+- `getForwardX`: Which way it looks, in the world, x: its -z, a unit vector.
+- `getForwardY`: Which way it looks, y.
+- `getForwardZ`: Which way it looks, z.
+- `getUpX`: Its up in the world, x: its +y, a unit vector square to the view.
+- `getUpY`: Its up, y.
+- `getUpZ`: Its up, z.
 - `getFovY`: The vertical field of view in radians.
 - `setPerspective`: The projection: fovY radians of vertical view, near and far the clip planes' distances. False, changing nothing, unless 0 < fovY < pi and 0 < near < far.
 - `getMinAspect`: The narrowest viewport shape (width / height) the view keeps its width at: 0, the default, for none.
@@ -179,8 +178,7 @@ function computeRay(x:Float, y:Float, ray:Ray):Bool
 - `getViewportHeight`: The viewport height in framebuffer pixels.
 - `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
-- `getNode`: The node placing it, or null.
-- `getViewProjection`: World to clip space, for the viewport's shape: projection * view, recomputed by each call (on a node, the view from where the node is now).
+- `getViewProjection`: World to clip space, for the viewport's shape: projection * view, recomputed by each call, the view from where it is in the world now.
 - `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
 
 ## Cube
@@ -200,6 +198,18 @@ final mips:Array<haxe.ds.Vector<Float>>
 - `size`: Its face size at mip 0.
 - `mipCount`: How many mips.
 - `mips`: Each mip's texels, zero to start.
+
+## DirectionalLight
+
+*class* in `src/helix/render3d/DirectionalLight.hx`
+
+The sun: everything lit from one direction, its node's -z (aim it with lookAt or setRotation), wherever it is. It may cast shadows (setShadowCasting), over what the camera sees out to its shadow distance.
+
+```haxe
+function new()
+```
+
+- `new`: A white directional light of intensity 1 shining down its -z.
 
 ## Environment
 
@@ -405,18 +415,18 @@ The joints of a draw's skinned models, one data texture for them all (as skinnin
 
 ```haxe
 function new(gpu:IGraphics)
-static function computePosedBox(model:Node, out:haxe.ds.Vector<Float>):Bool
+static function computePosedBox(model:Model, mesh:Mesh, out:haxe.ds.Vector<Float>):Bool
 function getTexture():Int
 function getJointCount():Int
 function clear():Void
-function add(model:Node):Int
+function add(model:Model):Int
 var getMatrix(inline, null):(index:Int, row:Int, col:Int) -> Float
 function upload():Void
 function destroy():Void
 ```
 
 - `new`: A palette uploading to gpu.
-- `computePosedBox`: A skinned model's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where they are, each padded by how far its vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2% of the box's diagonal (at least 0.01). False when no joint weights a vertex (use its mesh's box).
+- `computePosedBox`: A skinned model's part's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where they are, each padded by how far mesh's vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2% of the box's diagonal (at least 0.01). False when no joint weights a vertex (use mesh's box).
 - `getTexture`: The data texture (0 before the first upload).
 - `getJointCount`: How many joints since the last clear.
 - `clear`: Empties it, for a pass.
@@ -429,20 +439,13 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Light.hx`
 
-What a light is: directional (the sun: everything lit from one direction, the light's node's -z), a point (from its node's position in every direction, fading with distance, out to its range) or a spot (a point light's falloff, within a cone around its node's -z). Its color is 0xRRGGBBAA (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. A light shines once a node holds it on a stage (Node.light). A directional light or a spot may cast shadows (setShadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast them onto those that receive them (Node.setShadowCasting, setShadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
+A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight, a PointLight or a SpotLight (a stage never holds a bare Light). Its color is 0xRRGGBBAA (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (setShadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast them onto those that receive them (Model.setShadowCasting, setShadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
 
 ```haxe
-function new(kind:LightKind)
-function getKind():LightKind
 function getColor():Int
 function setColor(value:Int):Void
 function getIntensity():Float
 function setIntensity(value:Float):Bool
-function getInnerCone():Float
-function getOuterCone():Float
-function setCone(inner:Float, outer:Float):Bool
-function getRange():Float
-function setRange(value:Float):Bool
 function isShadowCasting():Bool
 function setShadowCasting(value:Bool):Bool
 function getShadowDistance():Float
@@ -458,17 +461,10 @@ function getShadowBiasSlope():Float
 function setShadowBias(constant:Float, slope:Float):Bool
 ```
 
-- `new`: A white light of intensity 1 of kind; a point light of unlimited range.
-- `getKind`: Its kind.
 - `getColor`: Its color, 0xRRGGBBAA.
 - `setColor`: Sets its color, 0xRRGGBBAA.
 - `getIntensity`: Its intensity.
 - `setIntensity`: False for an intensity under 0.
-- `getInnerCone`: A spot's inner cone, radians from its axis: full light inside it.
-- `getOuterCone`: A spot's outer cone, radians from its axis: no light past it, fading from the inner one.
-- `setCone`: Sets a spot's cones, radians from its axis. False, changing nothing, unless 0 <= inner <= outer < pi/2.
-- `getRange`: A point light's or a spot's range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance).
-- `setRange`: False for a range under 0.
 - `isShadowCasting`: Whether it casts shadows.
 - `setShadowCasting`: Makes it cast shadows or stop. False, changing nothing, for a point light casting: it would need a map each way.
 - `getShadowDistance`: How far from the camera a directional light's shadows reach, in world units (50 by default); a spot's reach no further.
@@ -482,12 +478,6 @@ function setShadowBias(constant:Float, slope:Float):Bool
 - `getShadowBiasConstant`: Its shadows' depth bias, constant part, in shadow-map texels (1 by default).
 - `getShadowBiasSlope`: Its shadows' depth bias, slope part: texels more where the light grazes a surface (4 by default).
 - `setShadowBias`: Sets its shadows' depth bias in texels: constant everywhere, plus slope where the light grazes. More stops a surface shadowing itself in stripes ("acne"); too much lifts a shadow off its caster's foot. False, changing nothing, for a negative or infinite one.
-
-## LightKind
-
-*abstract* in `src/helix/render3d/Light.hx`
-
-A light's kind.
 
 ## Mat4
 
@@ -639,13 +629,59 @@ function destroy():Void
 - `getMaxX`: Its largest x.
 - `getMaxY`: Its largest y.
 - `getMaxZ`: Its largest z.
-- `isSkinned`: Whether its vertices follow joints (a skin's): Model nodes showing it need one (Node.getSkin).
+- `isSkinned`: Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.getSkin).
 - `getSkinData`: A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
 - `getJointReach`: How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position (Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model. Null for a mesh that isn't skinned.
 - `getSkinBuffer`: A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned.
 - `getVertexBuffer`: Its static vertex buffer on gpu, made the first time it's asked for.
 - `getIndexBuffer`: Its static index buffer on gpu, made the first time it's asked for.
 - `destroy`: Frees its buffers, if it was uploaded; drawing it again uploads it again.
+
+## Model
+
+*class* in `src/helix/render3d/Model.hx`
+
+A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted (0xRRGGBBAA, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows the joints it's bound to (bindSkeleton). Its mesh and material are its first part's.
+
+```haxe
+function new(?mesh:Mesh, ?material:Material)
+function getPartCount():Int
+function getPart(index:Int):Null<Part>
+function addPart(mesh:Mesh, ?material:Material):Void
+function getMesh():Null<Mesh>
+function setMesh(value:Mesh):Void
+function getMaterial():Null<Material>
+function setMaterial(value:Material):Bool
+function getTint():Int
+function setTint(value:Int):Void
+function isShadowCasting():Bool
+function setShadowCasting(value:Bool):Void
+function isShadowReceiving():Bool
+function setShadowReceiving(value:Bool):Void
+function getSkin():Null<Skin>
+function getJointCount():Int
+function getJoint(index:Int):Null<Node3D>
+function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
+```
+
+- `new`: A model of one part, mesh drawn with material (a new white one when null); with no mesh, a model of no parts until setMesh.
+- `getPartCount`: How many parts it has.
+- `getPart`: Its part at index, in the file's order; null past the end.
+- `addPart`: Adds a part, mesh drawn with material (a new white one when null), after the others.
+- `getMesh`: Its first part's mesh, or null with no parts.
+- `setMesh`: Gives its first part another mesh, making that part (white) when it has none.
+- `getMaterial`: Its first part's material, or null with no parts.
+- `setMaterial`: Gives its first part another material. False, changing nothing, with no parts.
+- `getTint`: Its tint, 0xRRGGBBAA.
+- `setTint`: Sets its tint, 0xRRGGBBAA: white for none, an alpha below 255 makes it see-through.
+- `isShadowCasting`: Whether it casts shadows (from the lights that cast them; see-through models never do). True by default.
+- `setShadowCasting`: Makes it cast shadows or not.
+- `isShadowReceiving`: Whether shadows fall on it. True by default.
+- `setShadowReceiving`: Lets shadows fall on it or not.
+- `getSkin`: Its skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
+- `getJointCount`: How many joints it follows: its skin's, once bound; 0 otherwise.
+- `getJoint`: The node its joint index follows; null past them or unbound.
+- `bindSkeleton`: Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
 
 ## ModelFile
 
@@ -659,7 +695,7 @@ function getSkins():Array<Skin>
 function getClips():Array<AnimationClip>
 function getClip(name:String):Null<AnimationClip>
 function getMaterials():Array<Material>
-function instantiate(?name:String = ""):Node
+function instantiate(?name:String = ""):Node3D
 ```
 
 - `getWarnings`: What the file used that isn't read yet, each once.
@@ -667,7 +703,7 @@ function instantiate(?name:String = ""):Node
 - `getClips`: Its animations, in the file's order.
 - `getClip`: The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it); null for none.
 - `getMaterials`: Its materials, in the file's order: change one and every copy's parts with it change.
-- `instantiate`: A new node tree of the file's default scene, under a group named name: its nodes' names, transforms and children, models sharing the file's meshes and materials, and lights of their own.
+- `instantiate`: A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an empty). A node with both a mesh and a light is the model, the light its first child.
 
 ## ModelLoadResult
 
@@ -707,78 +743,23 @@ function shutdown():Void
 - `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
 - `shutdown`: Cancels every load (each caller waiting gets Cancelled) and forgets every file.
 
-## Node
+## Node3D
 
-*class* in `src/helix/render3d/Node.hx`
+*class* in `src/helix/render3d/Node3D.hx`
 
-What a stage holds: a transform in a tree, and its kind's data (a model's mesh, material and tint; a sprite's texture, region, size, facing and alpha mode; a light; a camera). Made by the static constructors and never subclassed; a node only draws or lights, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed.
+What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Model, DirectionalLight, PointLight, SpotLight, Camera3D, Sprite3D, Text3D, Particles3D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed.
 
 ```haxe
-static function group():Node
-static function model(mesh:Mesh, material:Material, ?tint:Int = 0xffffffff):Node
-static function light(light:Light):Node
-static function camera(camera:Camera3D):Node
-static function sprite(texture:Null<Texture2D>, ?tint:Int = 0xffffffff):Node
-static function text3D(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font2D):Node
-static function emitter(emitter:Emitter):Node
-function getEmitter():Null<Emitter>
-function getText():String
-function setText(value:String):Bool
-function getTextSize():Float
-function setTextSize(value:Float):Bool
-function getFont():Null<Font2D>
-function setFont(value:Null<Font2D>):Bool
-function getTexture():Null<Texture2D>
-function setTexture(value:Null<Texture2D>):Bool
-function setRegion(x:Float, y:Float, width:Float, height:Float):Bool
-function getRegionX():Float
-function getRegionY():Float
-function getRegionWidth():Float
-function getRegionHeight():Float
-function getSpriteWidth():Float
-function getSpriteHeight():Float
-function setSpriteSize(width:Float, height:Float):Bool
-function setPivot(x:Float, y:Float):Bool
-function getPivotX():Float
-function getPivotY():Float
-function getFacing():SpriteFacing
-function setFacing(value:SpriteFacing):Bool
-function getAlphaMode():SpriteAlpha
-function getAlphaCutoff():Float
-function setAlphaMode(mode:SpriteAlpha, ?cutoff:Float = .5):Bool
-function getKind():NodeKind
-function getName():String
-function setName(value:String):Void
-function find(name:String):Null<Node>
-function collectModels(skinned:Array<Node>, rigid:Array<Node>):Void
-function findAttachment(model:Node, skeleton:Node):Null<Attachment>
-function getSkin():Null<Skin>
-function getJointCount():Int
-function getJoint(index:Int):Null<Node>
-function bindSkeleton(skeleton:Node, ?skin:Skin):Bool
-function getMesh():Null<Mesh>
-function getMaterial():Null<Material>
-function setMaterial(value:Material):Bool
-function getTint():Int
-function setTint(value:Int):Void
-function isShadowCasting():Bool
-function setShadowCasting(value:Bool):Bool
-function isShadowReceiving():Bool
-function setShadowReceiving(value:Bool):Bool
-function getLight():Null<Light>
-function getCamera():Null<Camera3D>
-function computeWorld(out:Mat4):Void
-function isEnabled():Bool
+function new()
+function add(child:Node3D):Bool
+function remove(child:Node3D):Bool
+function getParent():Null<Node3D>
+function getChild(index:Int):Null<Node3D>
+function find(name:String):Null<Node3D>
 function setEnabled(value:Bool):Void
-function isVisible():Bool
-function setVisible(value:Bool):Void
-function isPickable():Bool
-function setPickable(value:Bool):Void
-function getParent():Null<Node>
-function getChildCount():Int
-function getChild(index:Int):Null<Node>
-function add(child:Node):Bool
-function remove(child:Node):Bool
+function collectModels(skinned:Array<Model>, rigid:Array<Model>):Void
+function findAttachment(model:Model, skeleton:Node3D):Null<Attachment>
+function computeWorld(out:Mat4):Void
 function getX():Float
 function getY():Float
 function getZ():Float
@@ -802,71 +783,16 @@ function lookAt(x:Float, y:Float, z:Float, ?upX:Float = 0., ?upY:Float = 1., ?up
 function getWorldMatrix():Mat4
 ```
 
-- `group`: A group: a node that draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D). Any node can have children; use a group when the parent shouldn't itself be a model or a light: a handle that moves or hides a set of things together, or a pivot to turn them about.
-- `model`: A model: mesh drawn with material, tinted (0xRRGGBBAA, white for none; its alpha below 255 makes it see-through).
-- `light`: A light, shining from this node's place and orientation.
-- `camera`: A camera, seeing from this node's place down its -z, its +y up (its scale ignored): parent it to what it should follow, or aim it with lookAt. The camera is drawn through as any (Stage3D.draw, Batch3D.begin), and while it is on this node its view is the node's; a camera on another node moves here.
-- `sprite`: A sprite: texture (null for none yet: it draws nothing) on a quad 1 x 1 world units, centered on its position, facing the camera, blended by its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
-- `text3D`: A line of text: value, size world units tall (ascent to descent), in font (null: the stage's built-in one), its block centered on its position (its pivot), facing the camera, tinted color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Sized, pivoted and faced as a sprite. Not pickable until setPickable(true): a label lets a pick through to what it's on.
-- `emitter`: An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Stage3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
-- `getEmitter`: An emitter node's emitter; null for another kind.
-- `getText`: A text node's text; "" for another kind.
-- `setText`: Sets a text node's text. False for another kind.
-- `getTextSize`: A text node's size, world units tall.
-- `setTextSize`: Sets a text node's size. False for another kind or a size of 0 or less.
-- `getFont`: A text node's font, or null for the stage's built-in one.
-- `setFont`: Sets a text node's font (null: the stage's built-in one). False for another kind.
-- `getTexture`: A sprite's texture, or null.
-- `setTexture`: Gives a sprite a texture (null for none: it draws nothing). False for another kind.
-- `setRegion`: A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. False for another kind.
-- `getRegionX`: A sprite's region's left, in texels.
-- `getRegionY`: A sprite's region's top, in texels.
-- `getRegionWidth`: A sprite's region's width in texels (0 or less: the whole texture).
-- `getRegionHeight`: A sprite's region's height in texels (0 or less: the whole texture).
-- `getSpriteWidth`: A sprite's size in world units, before its scale (1 x 1 by default).
-- `getSpriteHeight`: A sprite's height in world units, before its scale.
-- `setSpriteSize`: Sizes a sprite, in world units before its scale. False for another kind, or a size below 0.
-- `setPivot`: The point of a sprite (or a text's block) at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default). False for another kind.
-- `getPivotX`: A sprite's pivot's x fraction.
-- `getPivotY`: A sprite's pivot's y fraction.
-- `getFacing`: How a sprite faces.
-- `setFacing`: Sets how a sprite or text faces. False for another kind.
-- `getAlphaMode`: How a sprite's texels' alpha is used.
-- `getAlphaCutoff`: The alpha below which a Mask sprite's texels are cut out (0..1).
-- `setAlphaMode`: Sets how a sprite uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False for another kind or a cutoff outside 0..1.
-- `getKind`: Its kind.
-- `getName`: Its name: a model file's node name, or what the game gave it; "" for none.
-- `setName`: Names it.
-- `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
-- `collectModels`: The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit).
-- `findAttachment`: Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this.
-- `getSkin`: A skinned model's skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
-- `getJointCount`: How many joints a skinned model follows: its skin's, once bound; 0 otherwise.
-- `getJoint`: The node a skinned model's joint index follows; null past them or unbound.
-- `bindSkeleton`: Binds a model of a skinned mesh to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for another kind, a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
-- `getMesh`: A model's mesh; null for another kind.
-- `getMaterial`: A model's material; null for another kind.
-- `setMaterial`: Gives a model another material. False for another kind.
-- `getTint`: A model's tint, 0xRRGGBBAA.
-- `setTint`: Sets a model's tint, 0xRRGGBBAA.
-- `isShadowCasting`: Whether a model casts shadows (from the lights that cast them; see-through models never do). True by default.
-- `setShadowCasting`: Makes a model cast shadows or not. False for another kind.
-- `isShadowReceiving`: Whether shadows fall on a model. True by default.
-- `setShadowReceiving`: Lets shadows fall on a model or not. False for another kind.
-- `getLight`: A light node's light; null for another kind.
-- `getCamera`: A camera node's camera; null for another kind, or a camera since moved to another node.
-- `computeWorld`: Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps (a camera node's view is found so before the stage's walk).
-- `isEnabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
-- `setEnabled`: Turns it, and everything under it, on or off (isEnabled).
-- `isVisible`: Whether its own output is drawn: off, a model, sprite, text or emitter isn't drawn and a light doesn't shine or cast isn't drawn; it stays placed, and its children are as they are. On to start.
-- `setVisible`: Shows or hides its own output (isVisible).
-- `isPickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
-- `setPickable`: Lets picks hit its own output, or not (isPickable).
-- `getParent`: Its parent, or null.
-- `getChildCount`: How many children it has.
-- `getChild`: Its child at index, in drawing order; null past the end.
+- `new`: A group at the origin, unturned and unscaled, with no children.
 - `add`: Makes child its last child, taking it from any parent it had. False for itself or one of its own ancestors.
 - `remove`: Takes child from its children. False when it isn't one.
+- `getParent`: Its parent, or null.
+- `getChild`: Its child at index, in drawing order; null past the end.
+- `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
+- `setEnabled`: Turns it, and everything under it, on or off (isEnabled).
+- `collectModels`: The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit).
+- `findAttachment`: Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this.
+- `computeWorld`: Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps (a camera's view is found so, wherever it is).
 - `getX`: Its position's x, relative to its parent.
 - `getY`: Its position's y.
 - `getZ`: Its position's z.
@@ -889,11 +815,39 @@ function getWorldMatrix():Mat4
 - `lookAt`: Turns it so its -z looks from its position at x, y, z, up (0, 1, 0 by default) giving the roll; positions relative to its parent. False, changing nothing, when the point is its position or up is along the view.
 - `getWorldMatrix`: Its world matrix as the last update left it (Stage3D.draw updates it).
 
-## NodeKind
+## Part
 
-*abstract* in `src/helix/render3d/Node.hx`
+*class* in `src/helix/render3d/Part.hx`
 
-What a node is.
+One piece of a Model: a mesh drawn with a material (a glTF primitive). A model's parts move together, as its node; each draws with the models alike in mesh and material.
+
+```haxe
+function new(mesh:Null<Mesh>, ?material:Material)
+function getMesh():Null<Mesh>
+function setMesh(value:Null<Mesh>):Void
+function getMaterial():Material
+function setMaterial(value:Material):Void
+```
+
+- `new`: mesh (null for none yet: it draws nothing) drawn with material (a new white one when null).
+- `getMesh`: Its mesh, or null for none.
+- `setMesh`: Gives it another mesh (null: it draws nothing).
+- `getMaterial`: Its material.
+- `setMaterial`: Gives it another material.
+
+## Particles3D
+
+*class* in `src/helix/render3d/Particles3D.hx`
+
+An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Stage3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
+
+```haxe
+function new(emitter:Emitter)
+function getEmitter():Emitter
+```
+
+- `new`: emitter, placed here.
+- `getEmitter`: Its emitter.
 
 ## PickHit
 
@@ -903,7 +857,7 @@ What a pick hit (Stage3D.pick): the node, how far along the ray, the point in th
 
 ```haxe
 function new()
-function getNode():Null<Node>
+function getNode():Null<Node3D>
 function getDistance():Float
 function getPoint(axis:Int):Float
 function getLocalPoint(axis:Int):Float
@@ -916,6 +870,24 @@ function getNormal(axis:Int):Float
 - `getPoint`: Where in the world, axis 0 (x), 1 (y) or 2 (z).
 - `getLocalPoint`: Where in the node's own space (a skinned model's as posed), axis 0, 1 or 2.
 - `getNormal`: The surface's normal in the world, a unit vector facing back along the ray, axis 0, 1 or 2.
+
+## PointLight
+
+*class* in `src/helix/render3d/PointLight.hx`
+
+A light from its node's position in every direction, fading with distance, out to its range. It casts no shadows: it would need a map each way.
+
+```haxe
+function new()
+function getRange():Float
+function setRange(value:Float):Bool
+function setShadowCasting(value:Bool):Bool
+```
+
+- `new`: A white point light of intensity 1 and unlimited range.
+- `getRange`: Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance).
+- `setRange`: Sets its range in world units (0 for unlimited). False for a range under 0.
+- `setShadowCasting`: Makes it cast shadows or stop: false, changing nothing, for casting, which a point light can't.
 
 ## Ray
 
@@ -949,7 +921,7 @@ function at(distance:Float, axis:Int):Float
 
 *class* in `src/helix/render3d/Skin.hx`
 
-A skin: the joints a skinned mesh's vertices follow, by name, and each joint's inverse bind matrix (the mesh's space into the joint's, as it was bound). Shared by every model of a file showing it; a Model node binds its joints to nodes by these names (Node.bindSkeleton), so a mesh skinned in one file can follow a skeleton from another with the same joint names. Read, never changed.
+A skin: the joints a skinned mesh's vertices follow, by name, and each joint's inverse bind matrix (the mesh's space into the joint's, as it was bound). Shared by every model of a file showing it; a Model binds its joints to nodes by these names (Model.bindSkeleton), so a mesh skinned in one file can follow a skeleton from another with the same joint names. Read, never changed.
 
 ```haxe
 function new(names:Array<String>, ?inverseBind:Array<Float>)
@@ -965,17 +937,91 @@ var getInverseBind(inline, null):(index:Int, i:Int) -> Float
 - `getBindPosition`: Joint index's place in its mesh's space as bound, axis 0 (x), 1 (y) or 2 (z).
 - `getInverseBind`: Joint index's inverse bind matrix's element at (column-major) i.
 
+## SpotLight
+
+*class* in `src/helix/render3d/SpotLight.hx`
+
+A point light's falloff out to its range, within a cone around its node's -z: full inside its inner cone, fading to nothing at its outer. It may cast shadows (setShadowCasting), over its cone out to its range (or its shadow distance, the nearer).
+
+```haxe
+function new()
+function getRange():Float
+function setRange(value:Float):Bool
+function getInnerCone():Float
+function getOuterCone():Float
+function setCone(inner:Float, outer:Float):Bool
+```
+
+- `new`: A white spot of intensity 1 and unlimited range, its cones 0.3 and 0.4 radians from its axis.
+- `getRange`: Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance).
+- `setRange`: Sets its range in world units (0 for unlimited). False for a range under 0.
+- `getInnerCone`: Its inner cone, radians from its axis: full light inside it.
+- `getOuterCone`: Its outer cone, radians from its axis: no light past it, fading from the inner one.
+- `setCone`: Sets its cones, radians from its axis. False, changing nothing, unless 0 <= inner <= outer < pi/2.
+
+## Sprite3D
+
+*class* in `src/helix/render3d/Sprite3D.hx`
+
+A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
+
+```haxe
+function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
+function getTexture():Null<Texture2D>
+function setTexture(value:Null<Texture2D>):Void
+function getTint():Int
+function setTint(value:Int):Void
+function setRegion(x:Float, y:Float, width:Float, height:Float):Void
+function getRegionX():Float
+function getRegionY():Float
+function getRegionWidth():Float
+function getRegionHeight():Float
+function getSpriteWidth():Float
+function getSpriteHeight():Float
+function setSpriteSize(width:Float, height:Float):Bool
+function setPivot(x:Float, y:Float):Void
+function getPivotX():Float
+function getPivotY():Float
+function getFacing():SpriteFacing
+function setFacing(value:SpriteFacing):Void
+function getAlphaMode():SpriteAlpha
+function getAlphaCutoff():Float
+function setAlphaMode(mode:SpriteAlpha, ?cutoff:Float = .5):Bool
+```
+
+- `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xRRGGBBAA, white for none).
+- `getTexture`: Its texture, or null.
+- `setTexture`: Gives it a texture (null for none: it draws nothing).
+- `getTint`: Its tint, 0xRRGGBBAA (sRGB).
+- `setTint`: Sets its tint, 0xRRGGBBAA (sRGB): white for none.
+- `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
+- `getRegionX`: Its region's left, in texels.
+- `getRegionY`: Its region's top, in texels.
+- `getRegionWidth`: Its region's width in texels (0 or less: the whole texture).
+- `getRegionHeight`: Its region's height in texels (0 or less: the whole texture).
+- `getSpriteWidth`: Its width in world units, before its scale (1 by default).
+- `getSpriteHeight`: Its height in world units, before its scale (1 by default).
+- `setSpriteSize`: Sizes it, in world units before its scale. False, changing nothing, for a size below 0.
+- `setPivot`: Sets the point at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default).
+- `getPivotX`: Its pivot's x fraction.
+- `getPivotY`: Its pivot's y fraction.
+- `getFacing`: How it faces.
+- `setFacing`: Sets how it faces.
+- `getAlphaMode`: How its texels' alpha is used.
+- `getAlphaCutoff`: The alpha below which a Mask sprite's texels are cut out (0..1).
+- `setAlphaMode`: Sets how it uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False, changing nothing, for a cutoff outside 0..1.
+
 ## SpriteAlpha
 
-*abstract* in `src/helix/render3d/Node.hx`
+*abstract* in `src/helix/render3d/SpriteAlpha.hx`
 
-How a 3D sprite uses its texels' alpha.
+How a sprite (3D or 2D) or a particle uses its texels' alpha.
 
 ## SpriteFacing
 
-*abstract* in `src/helix/render3d/Node.hx`
+*abstract* in `src/helix/render3d/SpriteFacing.hx`
 
-How a 3D sprite faces.
+How a 3D sprite or text faces.
 
 ## Sprites3D
 
@@ -988,11 +1034,13 @@ function new(gpu:IGraphics)
 function getDrawnSpriteCount():Int
 function getDrawCallCount():Int
 function begin(dt:Float):Void
-function visitEmitter(node:Node, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
-function advanceEmitter(node:Node):Void
-function visitText(node:Node, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
-function visit(node:Node, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
-function pick(node:Node, camera:Camera3D, ray:Ray, best:Float, hit:PickHit):Float
+function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function advanceEmitter(node:Particles3D):Void
+function visitText(node:Text3D, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function visit(node:Sprite3D, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function preparePick(camera:Camera3D):Void
+function pickSprite(node:Sprite3D, ray:Ray, best:Float, hit:PickHit):Float
+function pickText(node:Text3D, ray:Ray, best:Float, hit:PickHit):Float
 function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void
 function drawOpaque():Void
 function drawBlendedBeyond(depth:Float):Void
@@ -1006,9 +1054,11 @@ function destroy():Void
 - `begin`: Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet.
 - `visitEmitter`: Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is.
 - `advanceEmitter`: Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's).
-- `visitText`: Adds a text node's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended.
-- `visit`: Adds node (a sprite, its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth is along forward from the eye.
-- `pick`: Tests a sprite or text node against ray as camera shows it (its quad, or a text's whole block, facing as drawn): the distance along the ray, recorded in hit when nearer than best, else best. A sprite without a texture, a text without text, or a see-through one (blended, its tint's alpha under a half) isn't hit.
+- `visitText`: Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended.
+- `visit`: Adds a sprite (its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth is along forward from the eye.
+- `preparePick`: Takes camera's axes for the picks that follow (pickSprite, pickText), as it shows the sprites now.
+- `pickSprite`: Tests a sprite against ray as the camera given to preparePick shows it (its quad, facing as drawn): the distance along the ray, recorded in hit when nearer than best, else best. A sprite without a texture, or a see-through one (blended or added, its tint's alpha under a half), isn't hit.
+- `pickText`: Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without text, or a faint one (its color's alpha under a half), isn't hit.
 - `prepare`: Sorts the sprites collected, writes their records into one upload and the draw's uniforms: viewProjection, and the camera's right and up (from forward and its up), and the upright facing's right.
 - `drawOpaque`: Draws the opaque and masked sprites, then emitters.
 - `drawBlendedBeyond`: Draws the blended sprites and emitters farther than depth along the view not yet drawn, back to front together: called before each see-through model run.
@@ -1019,13 +1069,13 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Stage3D.hx`
 
-A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the first four lights it finds, places each model's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.setShadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites, text and particles are display colors, untouched.
+A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.setShadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (setExposure, setTonemap: Khronos PBR Neutral at 0 EV to start); its sprites, text and particles are display colors, untouched.
 
 ```haxe
 function new(gpu:IGraphics)
-function getRoot():Node
-function add(node:Node):Bool
-function remove(node:Node):Bool
+function getRoot():Node3D
+function add(node:Node3D):Bool
+function remove(node:Node3D):Bool
 function getAmbientColor():Int
 function getAmbientIntensity():Float
 function setAmbient(color:Int, intensity:Float):Bool
@@ -1057,8 +1107,8 @@ function destroy():Void
 
 - `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.
 - `getRoot`: The node everything on the stage hangs from.
-- `add`: Adds node to the stage, as the root's last child.
-- `remove`: Takes node from the stage's root.
+- `add`: Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself).
+- `remove`: Takes node from the stage's root. False when it isn't one of the root's children.
 - `getAmbientColor`: The ambient light's color, 0xRRGGBBAA (sRGB).
 - `getAmbientIntensity`: The ambient light's intensity.
 - `setAmbient`: The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0.
@@ -1077,15 +1127,53 @@ function destroy():Void
 - `setTime`: Sets the seconds surface shaders see, for whatever moves with time in them; emitters advance by how far it moved since the last draw.
 - `isCulling`: Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start.
 - `setCulling`: Culls, or draws everything (to measure what culling saves).
-- `getDrawnNodeCount`: Models and sprites drawn by the last draw (in view).
-- `getDrawCallCount`: Draws of the last draw: one a run of alike models, or of sprites of one texture.
-- `getShadowDrawCallCount`: Draws into shadow maps by the last drawShadows: one a run of casters alike in mesh, in each light's layer.
-- `getShadowCasterCount`: Casters drawn into shadow maps by the last drawShadows, counted in each light's layer they reach.
+- `getDrawnNodeCount`: Models' parts and sprites drawn by the last draw (in view).
+- `getDrawCallCount`: Draws of the last draw: one a run of alike models' parts, or of sprites of one texture.
+- `getShadowDrawCallCount`: Draws into shadow maps by the last drawShadows: one a run of casting parts alike in mesh, in each light's layer.
+- `getShadowCasterCount`: Casting parts drawn into shadow maps by the last drawShadows, counted in each light's layer they reach.
 - `drawShadows`: Draws the shadows of its casting lights (Light.setShadowCasting; the first four lights found) for what camera sees: each light's casters into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move; draws after use them. With no casting light or no caster, there are no shadows.
 - `pick`: What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does.
 - `pickAlong`: The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as camera shows them: without a camera, only models are hit.
 - `draw`: Draws the stage in the open frame, through camera, in its viewport.
 - `destroy`: Frees the stage's own GPU objects (its instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and environments are their owners' to free, and the pipelines the GPU's (Pipelines).
+
+## Text3D
+
+*class* in `src/helix/render3d/Text3D.hx`
+
+A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's pivot at its position (its center by default), facing the camera, in a color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until setPickable(true): a label lets a pick through to what it's on.
+
+```haxe
+function new(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font2D)
+function getText():String
+function setText(value:String):Void
+function getTextSize():Float
+function setTextSize(value:Float):Bool
+function getColor():Int
+function setColor(value:Int):Void
+function getFont():Null<Font2D>
+function setFont(value:Null<Font2D>):Void
+function setPivot(x:Float, y:Float):Void
+function getPivotX():Float
+function getPivotY():Float
+function getFacing():SpriteFacing
+function setFacing(value:SpriteFacing):Void
+```
+
+- `new`: value, size world units tall (a size of 0 or less is 0.5), in color, in font (null: the stage's built-in one).
+- `getText`: Its text.
+- `setText`: Sets its text.
+- `getTextSize`: Its size, world units tall.
+- `setTextSize`: Sets its size, world units tall. False, changing nothing, for a size of 0 or less.
+- `getColor`: Its color, 0xRRGGBBAA (sRGB).
+- `setColor`: Sets its color, 0xRRGGBBAA (sRGB).
+- `getFont`: Its font, or null for the stage's built-in one.
+- `setFont`: Sets its font (null: the stage's built-in one).
+- `setPivot`: Sets the point of its block at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default).
+- `getPivotX`: Its pivot's x fraction.
+- `getPivotY`: Its pivot's y fraction.
+- `getFacing`: How it faces.
+- `setFacing`: Sets how it faces.
 
 ## Tonemap
 

@@ -6,10 +6,12 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
+import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
 
 /** glTF metallic-roughness materials made in code, one sphere mesh under them all. Top row: plastic (metallic 0), roughness 0 to 1 left to
@@ -25,10 +27,10 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var sun:Node;
-	var lamp:Node;
-	var marker:Node;
-	var bottom:Array<Node> = [];
+	var sun:DirectionalLight;
+	var lamp:PointLight;
+	var marker:Model;
+	var bottom:Array<Node3D> = [];
 
 	// A linear color (as the earlier frameworks' examples give them) as 0xRRGGBBAA, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float, a = 1.):Int {
@@ -45,8 +47,8 @@ class App extends BaseApp {
 		return material;
 	}
 
-	function sphere(mesh:Mesh, x:Float, y:Float, material:Material):Node {
-		var node = Node.model(mesh, material);
+	function sphere(mesh:Mesh, x:Float, y:Float, material:Material):Model {
+		var node = new Model(mesh, material);
 		node.setPosition(x, y, 0);
 		stage.add(node);
 		return node;
@@ -61,22 +63,20 @@ class App extends BaseApp {
 		// Framed for 16:9: all five columns across on a phone held upright too.
 		camera.setMinAspect(16 / 9);
 
-		var sunLight = new Light(Directional);
-		sunLight.setColor(0xfff4e4ff);
-		sunLight.setIntensity(3);
-		sun = Node.light(sunLight);
+		sun = new DirectionalLight();
+		sun.setColor(0xfff4e4ff);
+		sun.setIntensity(3);
 		sun.lookAt(-.4, -.7, -.6);
 		stage.add(sun);
-		var lampLight = new Light(Point);
-		lampLight.setColor(0x78beffff);
-		lampLight.setIntensity(8);
-		lampLight.setRange(10);
-		lamp = Node.light(lampLight);
+		lamp = new PointLight();
+		lamp.setColor(0x78beffff);
+		lamp.setIntensity(8);
+		lamp.setRange(10);
 		stage.add(lamp);
 		var glow = new Material();
 		glow.setBaseColor(0x66bfffff);
 		glow.setLit(false);
-		marker = Node.model(Mesh.sphere(.06, 8, 16), glow);
+		marker = new Model(Mesh.sphere(.06, 8, 16), glow);
 		stage.add(marker);
 
 		// Rows of roughness steps: red plastic, then gold.

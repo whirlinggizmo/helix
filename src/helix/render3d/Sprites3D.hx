@@ -5,8 +5,6 @@ import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
-import helix.render3d.Node.SpriteAlpha;
-import helix.render3d.Node.SpriteFacing;
 
 /** A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
 	drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
@@ -88,7 +86,7 @@ class Sprites3D {
 
 	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has
 		particles to draw. Not culled: particles reach past where it is. */
-	public function visitEmitter(node:Node, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	public function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var emitter = node.getEmitter(), w = node.getWorldMatrix();
 		advanceEmitter(node);
 		if (!emitter.isDrawable())
@@ -107,7 +105,7 @@ class Sprites3D {
 	}
 
 	/** Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's). */
-	public function advanceEmitter(node:Node):Void {
+	public function advanceEmitter(node:Particles3D):Void {
 		var w = node.getWorldMatrix();
 		node.getEmitter().advance(dt, w.get(12), w.get(13), w.get(14));
 	}
@@ -128,8 +126,8 @@ class Sprites3D {
 		return it;
 	}
 
-	/** Adds a text node's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended. */
-	public function visitText(node:Node, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	/** Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended. */
+	public function visitText(node:Text3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var text = node.getText();
 		if (text.length == 0)
 			return;
@@ -154,6 +152,9 @@ class Sprites3D {
 				if (glyph.width > 0) {
 					var it = item();
 					it.node = node;
+					it.sprite = null;
+					it.facing = node.getFacing();
+					it.tint = node.getColor();
 					it.texture = font.getTexture();
 					it.phase = 1;
 					it.depth = depth;
@@ -175,9 +176,9 @@ class Sprites3D {
 		}
 	}
 
-	/** Adds node (a sprite, its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth
+	/** Adds a sprite (its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth
 		is along forward from the eye. */
-	public function visit(node:Node, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	public function visit(node:Sprite3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var texture = node.getTexture();
 		if (texture == null)
 			return;
@@ -193,6 +194,9 @@ class Sprites3D {
 				return;
 		var it = item();
 		it.node = node;
+		it.sprite = node;
+		it.facing = node.getFacing();
+		it.tint = node.getTint();
 		it.texture = texture;
 		it.glyph = false;
 		it.phase = switch node.getAlphaMode() {
@@ -203,38 +207,41 @@ class Sprites3D {
 		it.depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
 	}
 
-	/** Tests a sprite or text node against ray as camera shows it (its quad, or a text's whole block, facing as drawn): the distance along the
-		ray, recorded in hit when nearer than best, else best. A sprite without a texture, a text without text, or a see-through one (blended,
-		its tint's alpha under a half) isn't hit. */
-	public function pick(node:Node, camera:Camera3D, ray:Ray, best:Float, hit:PickHit):Float {
-		var w = node.getWorldMatrix(),
-			facing = node.getFacing(),
-			text = node.getKind() == TextNode;
-		if (text ? node.getText().length == 0 : node.getTexture() == null)
+	/** Takes camera's axes for the picks that follow (pickSprite, pickText), as it shows the sprites now. */
+	public function preparePick(camera:Camera3D):Void
+		cameraAxes(camera, camera.getForwardX(), camera.getForwardY(), camera.getForwardZ());
+
+	/** Tests a sprite against ray as the camera given to preparePick shows it (its quad, facing as drawn): the distance along the ray, recorded
+		in hit when nearer than best, else best. A sprite without a texture, or a see-through one (blended or added, its tint's alpha under a
+		half), isn't hit. */
+	public function pickSprite(node:Sprite3D, ray:Ray, best:Float, hit:PickHit):Float {
+		if (node.getTexture() == null)
 			return best;
-		if ((text || node.getAlphaMode() == Blend || node.getAlphaMode() == Add) && (node.getTint() & 255) < 128)
+		if ((node.getAlphaMode() == Blend || node.getAlphaMode() == Add) && (node.getTint() & 255) < 128)
 			return best;
+		return pickQuad(node, node.getFacing(), node.getPivotX(), node.getPivotY(), node.getSpriteWidth(), node.getSpriteHeight(), ray, best, hit);
+	}
+
+	/** Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without
+		text, or a faint one (its color's alpha under a half), isn't hit. */
+	public function pickText(node:Text3D, ray:Ray, best:Float, hit:PickHit):Float {
+		if (node.getText().length == 0 || (node.getColor() & 255) < 128)
+			return best;
+		var font = node.getFont() != null ? node.getFont() : builtIn();
+		return pickQuad(node, node.getFacing(), node.getPivotX(), node.getPivotY(), helix.render2d.Text2D.measure(font, node.getText(), node.getTextSize()),
+			node.getTextSize(), ray, best, hit);
+	}
+
+	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.
+	function pickQuad(node:Node3D, facing:SpriteFacing, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray, best:Float, hit:PickHit):Float {
+		var w = node.getWorldMatrix();
 		var sx = length(w, 0),
 			sy = length(w, 4),
 			sz = length(w, 8),
 			height = facing == Ground ? sz : sy;
-		var width:Float, tall:Float;
-		if (text) {
-			var font = node.getFont() != null ? node.getFont() : builtIn();
-			width = helix.render2d.Text2D.measure(font, node.getText(), node.getTextSize());
-			tall = node.getTextSize();
-		} else {
-			width = node.getSpriteWidth();
-			tall = node.getSpriteHeight();
-		}
 		width *= sx;
 		tall *= height;
 		// The quad's axes as its facing draws it.
-		var fx = camera.getTargetX() - camera.getEyeX(),
-			fy = camera.getTargetY() - camera.getEyeY(),
-			fz = camera.getTargetZ() - camera.getEyeZ();
-		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
-		cameraAxes(camera, fx / fl, fy / fl, fz / fl);
 		var right:Array<Float>, up:Array<Float>;
 		switch facing {
 			case Camera:
@@ -274,7 +281,6 @@ class Sprites3D {
 			hz = oz + dz * t - pz;
 		var a = hx * right[0] + hy * right[1] + hz * right[2],
 			b = hx * up[0] + hy * up[1] + hz * up[2];
-		var pivotX = node.getPivotX(), pivotY = node.getPivotY();
 		if (a < -pivotX * width || a > (1 - pivotX) * width || b < (pivotY - 1) * tall || b > pivotY * tall)
 			return best;
 		var nl = Math.sqrt(nx * nx + ny * ny + nz * nz),
@@ -405,8 +411,8 @@ class Sprites3D {
 	}
 
 	function write(index:Int, item:SpriteItem):Void {
-		var node = item.node,
-			w = node.getWorldMatrix(),
+		var node = item.sprite,
+			w = item.node.getWorldMatrix(),
 			at = index * Sprite3DLayout.instanceStride,
 			texture = item.texture;
 		inline function put(offset:Int, a:Float, b:Float, c:Float, d:Float):Void {
@@ -415,7 +421,7 @@ class Sprites3D {
 			records.setFloat(at + offset + 8, c);
 			records.setFloat(at + offset + 12, d);
 		}
-		var facing = node.getFacing();
+		var facing = item.facing;
 		var sx = length(w, 0), sy = length(w, 4), sz = length(w, 8);
 		if (item.glyph) {
 			writeGlyph(at, item, w, facing, sx, sy, sz);
@@ -445,7 +451,7 @@ class Sprites3D {
 			put(Sprite3DLayout.upOffset, sz > 0 ? -w.get(8) / sz : 0, sz > 0 ? -w.get(9) / sz : 0, sz > 0 ? -w.get(10) / sz : -1, alpha);
 		else
 			put(Sprite3DLayout.upOffset, sy > 0 ? w.get(4) / sy : 0, sy > 0 ? w.get(5) / sy : 1, sy > 0 ? w.get(6) / sy : 0, alpha);
-		var tint = node.getTint();
+		var tint = item.tint;
 		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255, (tint & 255) / 255);
 	}
 
@@ -484,7 +490,7 @@ class Sprites3D {
 		put(Sprite3DLayout.regionOffset, item.u0, item.v0, item.u1, item.v1);
 		put(Sprite3DLayout.rightOffset, right[0], right[1], right[2], 0);
 		put(Sprite3DLayout.upOffset, up[0], up[1], up[2], 0);
-		var tint = item.node.getTint();
+		var tint = item.tint;
 		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255,
 			(tint & 255) / 255 + (item.distanceField ? 2 : 0));
 	}
@@ -550,8 +556,17 @@ class Sprites3D {
 
 /** A sprite in view this draw. Pooled. */
 private class SpriteItem {
-	/** Its node. */
-	public var node:Node;
+	/** Its node: a sprite, or the text the glyph is of. */
+	public var node:Node3D;
+
+	/** Its node as a sprite; null for a glyph. */
+	public var sprite:Null<Sprite3D>;
+
+	/** How it faces: its sprite's or text's. */
+	public var facing:SpriteFacing = Camera;
+
+	/** Its tint, 0xRRGGBBAA: its sprite's, or its text's color. */
+	public var tint = 0xffffffff;
 
 	/** Its texture. */
 	public var texture:Texture2D;

@@ -6,11 +6,9 @@ import helix.graphics.BlendMode;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
-import helix.render3d.Light.LightKind;
-import helix.render3d.Node.NodeKind;
 
 /** A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix
-	worked out only where something changed), gathers the first four lights it finds, places each model's box and culls it against the
+	worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the
 	camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after
 	them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as
 	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material).
@@ -51,7 +49,25 @@ class Stage3D {
 	static inline var LAYER_FLOATS = 30;
 
 	var gpu:IGraphics;
-	var root = Node.group();
+	var root = new Node3D();
+	// The tree in drawing order (depth first, the root's children down) and each node's parent's place in it (-1 for the root's children),
+	// remade when the root's count of adds and removes moves; each kind's nodes with their places, in the same order. Every walk then goes
+	// down the order, and each pass reads its kinds' lists.
+	var builtStructure = -1;
+	var order:Array<Node3D> = [];
+	var parentOf:Array<Int> = [];
+	var reached:Array<Bool> = [];
+	var moved:Array<Bool> = [];
+	var models:Array<Model> = [];
+	var modelAt:Array<Int> = [];
+	var treeLights:Array<Light> = [];
+	var treeLightAt:Array<Int> = [];
+	var flats:Array<Node3D> = [];
+	var flatAt:Array<Int> = [];
+	var flatSprites:Array<Null<Sprite3D>> = [];
+	var flatTexts:Array<Null<Text3D>> = [];
+	var emitters:Array<Particles3D> = [];
+	var emitterAt:Array<Int> = [];
 	var ambientColor = 0xffffffff;
 	var ambientIntensity = 0.;
 	var pipelines:helix.graphics.Pipelines;
@@ -65,7 +81,7 @@ class Stage3D {
 	var items:Array<Item> = [];
 	var drawn:Array<Item> = [];
 	var count = 0;
-	var lights:Array<Node> = [];
+	var lights:Array<Light> = [];
 	var planes = new Vector<Float>(24);
 	var inverse = new Mat4();
 	var eyeX = 0.;
@@ -75,12 +91,10 @@ class Stage3D {
 	var forwardY = 0.;
 	var forwardZ = -1.;
 	var draws = 0;
-	var stack:Array<Node> = [];
 	var sprites:Sprites3D;
 	var time = 0.;
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
-	var stackChanged:Array<Bool> = [];
 	// Shadows: the walk gathering casters rather than drawing; the casters (every model that casts, in view or not) and those of one layer.
 	var gathering = false;
 	var casters:Array<Caster> = [];
@@ -104,7 +118,8 @@ class Stage3D {
 	var pickInverse = new Mat4();
 	var pickPalette:JointPalette;
 	var posedVertices = new Vector<Float>(0);
-	var skinned:Array<Node> = [];
+	var skinned:Array<Model> = [];
+	var skinnedParts:Array<Part> = [];
 	var posed = new Vector<Float>(6);
 	// The shadow map (layers of the size the last drawShadows needed), and a map of one texel that stands in when there are none.
 	var shadowMap = 0;
@@ -112,11 +127,11 @@ class Stage3D {
 	var shadowMapLayers = 0;
 	var noShadows:Int;
 	// The lights the last drawShadows gave a layer, in layer order, and what each layer's readers need.
-	var shadowLights:Array<Node> = [];
+	var shadowLights:Array<Light> = [];
 	var shadowLayers = new Vector<Float>(SHADOW_LIGHTS * LAYER_FLOATS);
 	// The table this draw's shaders read; for choosing it, each gathered light's constants, its best score, its place in the table, each
 	// model's scores, and a model's best eight so far.
-	var table:Array<Node> = [];
+	var table:Array<Light> = [];
 	var lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
 	var cones = new Vector<Float>(GATHERED_LIGHTS * 2);
 	var best = new Vector<Float>(GATHERED_LIGHTS);
@@ -177,15 +192,15 @@ class Stage3D {
 	}
 
 	/** The node everything on the stage hangs from. */
-	public function getRoot():Node
+	public function getRoot():Node3D
 		return root;
 
-	/** Adds node to the stage, as the root's last child. */
-	public function add(node:Node):Bool
+	/** Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself). */
+	public function add(node:Node3D):Bool
 		return root.add(node);
 
-	/** Takes node from the stage's root. */
-	public function remove(node:Node):Bool
+	/** Takes node from the stage's root. False when it isn't one of the root's children. */
+	public function remove(node:Node3D):Bool
 		return root.remove(node);
 
 	/** The ambient light's color, 0xRRGGBBAA (sRGB). */
@@ -297,19 +312,19 @@ class Stage3D {
 		}
 	}
 
-	/** Models and sprites drawn by the last draw (in view). */
+	/** Models' parts and sprites drawn by the last draw (in view). */
 	public function getDrawnNodeCount():Int
 		return count + sprites.getDrawnSpriteCount();
 
-	/** Draws of the last draw: one a run of alike models, or of sprites of one texture. */
+	/** Draws of the last draw: one a run of alike models' parts, or of sprites of one texture. */
 	public function getDrawCallCount():Int
 		return draws + sprites.getDrawCallCount();
 
-	/** Draws into shadow maps by the last drawShadows: one a run of casters alike in mesh, in each light's layer. */
+	/** Draws into shadow maps by the last drawShadows: one a run of casting parts alike in mesh, in each light's layer. */
 	public function getShadowDrawCallCount():Int
 		return shadowDraws;
 
-	/** Casters drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
+	/** Casting parts drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
 	public function getShadowCasterCount():Int
 		return shadowCasters;
 
@@ -340,10 +355,10 @@ class Stage3D {
 				casters[i].jointBase = palette.add(casters[i].node);
 		palette.upload();
 		var size = 0;
-		for (node in lights)
-			if (node.getLight().isShadowCasting() && shadowLights.length < SHADOW_LIGHTS) {
-				shadowLights.push(node);
-				size = Std.int(Math.max(size, node.getLight().getShadowMapSize()));
+		for (light in lights)
+			if (light.isShadowCasting() && shadowLights.length < SHADOW_LIGHTS) {
+				shadowLights.push(light);
+				size = Std.int(Math.max(size, light.getShadowMapSize()));
 			}
 		if (shadowLights.length == 0 || casterCount == 0) {
 			shadowLights.resize(0);
@@ -357,9 +372,10 @@ class Stage3D {
 			shadowMapLayers = shadowLights.length;
 		}
 		for (layer in 0...shadowLights.length) {
-			var light = shadowLights[layer].getLight(),
-				at = layer * LAYER_FLOATS;
-			var fit = light.getKind() == Spot ? fitSpot(shadowLights[layer], size) : fitDirectional(shadowLights[layer], camera, size);
+			var light = shadowLights[layer],
+				at = layer * LAYER_FLOATS,
+				spot = Std.downcast(light, SpotLight);
+			var fit = spot != null ? fitSpot(spot, size) : fitDirectional(light, camera, size);
 			for (i in 0...16)
 				shadowLayers[at + i] = lightViewProjection.get(i);
 			shadowLayers[at + 16] = 1 / size;
@@ -383,14 +399,13 @@ class Stage3D {
 	// Fits a directional light's map to what camera sees out to its shadow distance, into lightViewProjection: a square around the view's slice
 	// from the near plane, as wide as the slice's bounding sphere (so its texels keep their size as the camera turns), its corner snapped to
 	// whole texels of a light space fixed to the world (so its shadows don't crawl as the camera moves), from SHADOW_PULLBACK behind the slice.
-	function fitDirectional(node:Node, camera:Camera3D, size:Int):{
+	function fitDirectional(node:Light, camera:Camera3D, size:Int):{
 		texelWorld:Float,
 		near:Float,
 		far:Float,
 		perspective:Bool
 	} {
-		var w = node.getWorldMatrix(),
-			distance = node.getLight().getShadowDistance();
+		var w = node.getWorldMatrix(), distance = node.getShadowDistance();
 		var dx = -w.get(8),
 			dy = -w.get(9),
 			dz = -w.get(10),
@@ -404,13 +419,9 @@ class Stage3D {
 			dy = -1;
 		}
 		// The camera's frame: forward, right and up.
-		var fx = camera.getTargetX() - eyeX,
-			fy = camera.getTargetY() - eyeY,
-			fz = camera.getTargetZ() - eyeZ;
-		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
-		fx /= fl;
-		fy /= fl;
-		fz /= fl;
+		var fx = camera.getForwardX(),
+			fy = camera.getForwardY(),
+			fz = camera.getForwardZ();
 		var ux = camera.getUpX(), uy = camera.getUpY(), uz = camera.getUpZ();
 		var rx = fy * uz - fz * uy,
 			ry = fz * ux - fx * uz,
@@ -473,13 +484,13 @@ class Stage3D {
 
 	// Fits a spot's map to its cone into lightViewProjection: a perspective from its position down its axis, a little wider than the cone, out to
 	// its range (or its shadow distance, the nearer).
-	function fitSpot(node:Node, size:Int):{
+	function fitSpot(light:SpotLight, size:Int):{
 		texelWorld:Float,
 		near:Float,
 		far:Float,
 		perspective:Bool
 	} {
-		var light = node.getLight(), w = node.getWorldMatrix();
+		var w = light.getWorldMatrix();
 		var dx = -w.get(8),
 			dy = -w.get(9),
 			dz = -w.get(10),
@@ -610,6 +621,8 @@ class Stage3D {
 		camera shows them: without a camera, only models are hit. */
 	public function pickAlong(ray:Ray, ?camera:Camera3D, ?hit:PickHit):Null<PickHit> {
 		pickCamera = camera;
+		if (camera != null)
+			sprites.preparePick(camera);
 		var result = hit != null ? hit : new PickHit();
 		result.clear();
 		if (ray != pickRay)
@@ -649,18 +662,23 @@ class Stage3D {
 		return lo;
 	}
 
-	// Tests a model's triangles against the ray, in its own space, keeping the nearest hit: after its box, which must be nearer than the best.
-	function pickModel(node:Node):Void {
-		var material = node.getMaterial(),
-			alpha = (node.getTint() & 255) / 255;
+	// Tests a model's parts' triangles against the ray, each in the model's own space, keeping the nearest hit.
+	function pickModel(node:Model):Void
+		for (i in 0...node.getPartCount()) {
+			var part = node.getPart(i);
+			if (part.getMesh() != null)
+				pickPart(node, part.getMesh(), part.getMaterial());
+		}
+
+	// Tests one part's triangles against the ray, after its box, which must be nearer than the best.
+	function pickPart(node:Model, mesh:Mesh, material:Material):Void {
+		var alpha = (node.getTint() & 255) / 255;
 		if ((material.isBlended() || alpha < 1) && alpha * (material.getBaseColor() & 255) / 255 < .5)
 			return;
-		placeBox(node);
+		placeBox(node, mesh);
 		if (rayBox() >= pickBest)
 			return;
-		var mesh = node.getMesh(),
-			w = node.getWorldMatrix(),
-			inv = pickInverse;
+		var w = node.getWorldMatrix(), inv = pickInverse;
 		if (!inv.makeInverse(w))
 			return;
 		var ox = pickRay.getOriginX(),
@@ -682,7 +700,7 @@ class Stage3D {
 		var positions = posedVertices;
 		if (positions.length < count * 3)
 			positions = posedVertices = new Vector<Float>(count * 3);
-		if (isSkinned(node))
+		if (isSkinned(node, mesh))
 			pose(node, mesh, positions);
 		else
 			for (i in 0...count)
@@ -751,7 +769,7 @@ class Stage3D {
 	}
 
 	// A skinned model's vertices as posed now, in its own space, into out: each moved by its joints' matrices as the GPU blends them.
-	function pose(node:Node, mesh:Mesh, out:Vector<Float>):Void {
+	function pose(node:Model, mesh:Mesh, out:Vector<Float>):Void {
 		pickPalette.clear();
 		var base = pickPalette.add(node),
 			vertices = mesh.getVertices(),
@@ -788,13 +806,9 @@ class Stage3D {
 		eyeX = camera.getEyeX();
 		eyeY = camera.getEyeY();
 		eyeZ = camera.getEyeZ();
-		var fx = camera.getTargetX() - eyeX,
-			fy = camera.getTargetY() - eyeY,
-			fz = camera.getTargetZ() - eyeZ;
-		var fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
-		forwardX = fx / fl;
-		forwardY = fy / fl;
-		forwardZ = fz / fl;
+		forwardX = camera.getForwardX();
+		forwardY = camera.getForwardY();
+		forwardZ = camera.getForwardZ();
 		count = 0;
 		draws = 0;
 		lights.resize(0);
@@ -865,59 +879,118 @@ class Stage3D {
 		gpu.draw(pipelines.background3D(), [], 0, 0, 3, 0, 1, [background.getBackgroundTexture()], [Sampling.LINEAR], backgroundUniforms);
 	}
 
-	// The tree depth first, each node's world matrix brought up to date on the way down; disabled nodes skip their children.
+	// The tree in drawing order and each kind's lists, again: after an add or a remove anywhere under the root.
+	function rebuild():Void {
+		order.resize(0);
+		parentOf.resize(0);
+		models.resize(0);
+		modelAt.resize(0);
+		treeLights.resize(0);
+		treeLightAt.resize(0);
+		flats.resize(0);
+		flatAt.resize(0);
+		flatSprites.resize(0);
+		flatTexts.resize(0);
+		emitters.resize(0);
+		emitterAt.resize(0);
+		for (i in 0...root.getChildCount())
+			list(root.getChild(i), -1);
+		builtStructure = root.structure;
+	}
+
+	// node and what's under it into the order, after its parent at parent, each kind into its list (its class asked once here, not each walk).
+	function list(node:Node3D, parent:Int):Void {
+		var at = order.length;
+		order.push(node);
+		parentOf.push(parent);
+		var model = Std.downcast(node, Model);
+		if (model != null) {
+			models.push(model);
+			modelAt.push(at);
+		} else if (Std.isOfType(node, Light)) {
+			treeLights.push(cast node);
+			treeLightAt.push(at);
+		} else if (Std.isOfType(node, Sprite3D) || Std.isOfType(node, Text3D)) {
+			flats.push(node);
+			flatAt.push(at);
+			flatSprites.push(Std.downcast(node, Sprite3D));
+			flatTexts.push(Std.downcast(node, Text3D));
+		} else if (Std.isOfType(node, Particles3D)) {
+			emitters.push(cast node);
+			emitterAt.push(at);
+		}
+		for (i in 0...node.getChildCount())
+			list(node.getChild(i), at);
+	}
+
+	// The tree in drawing order, each node reached (enabled, and every node above it) brought up to date from its parent; then the pass's kinds:
+	// picking the models, sprites and texts, gathering the casters and lights for shadows, or the models, lights, sprites, texts and emitters
+	// to draw. Hidden, a node's own output is skipped (an emitter still moves on); it stays placed, and its children are walked.
 	function walk():Void {
-		stack.resize(0);
-		stackChanged.resize(0);
+		if (builtStructure != root.structure)
+			rebuild();
+		var n = order.length;
+		reached.resize(n);
+		moved.resize(n);
 		// The root's own transform places everything on the stage.
 		var rootChanged = root.update(null, false);
-		for (i in 0...root.getChildCount()) {
-			stack.push(root.getChild(root.getChildCount() - 1 - i));
-			stackChanged.push(rootChanged);
-		}
-		while (stack.length > 0) {
-			var node = stack.pop(), parentChanged = stackChanged.pop();
-			if (!node.isEnabled())
+		for (i in 0...n) {
+			var node = order[i], p = parentOf[i];
+			if (!(p < 0 || reached[p]) || !node.isEnabled()) {
+				reached[i] = false;
 				continue;
-			var parent = node.getParent();
-			var changed = node.update(parent.getWorldMatrix(), parentChanged);
-			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are walked.
-			var shown = node.isVisible();
-			switch (node.getKind()) {
-				case Model if (picking && node.isPickable() && isSkinned(node)):
-					skinned.push(node);
-				case Model if (picking && node.isPickable()):
-					pickModel(node);
-				case SpriteNode | TextNode if (picking && node.isPickable() && pickCamera != null):
-					pickBest = sprites.pick(node, pickCamera, pickRay, pickBest, pickHit);
-				case _ if (picking):
-				case EmitterNode if (!gathering && !shown):
-					sprites.advanceEmitter(node);
-				case _ if (!shown):
-				case Model if (isSkinned(node)):
-					skinned.push(node);
-				case Model if (gathering):
-					gatherCaster(node);
-				case Model:
-					visitModel(node);
-				case LightNode:
-					if (lights.length < GATHERED_LIGHTS)
-						lights.push(node);
-				case _ if (gathering):
-				case SpriteNode:
-					sprites.visit(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-				case TextNode:
-					sprites.visitText(node, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-				case EmitterNode:
-					sprites.visitEmitter(node, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-				case Group | CameraNode:
 			}
-			for (i in 0...node.getChildCount()) {
-				stack.push(node.getChild(node.getChildCount() - 1 - i));
-				stackChanged.push(changed);
-			}
+			reached[i] = true;
+			moved[i] = node.update(p < 0 ? root.getWorldMatrix() : order[p].getWorldMatrix(), p < 0 ? rootChanged : moved[p]);
 		}
-		// Skinned models once every joint is where this frame has it: their boxes are their joints'.
+		if (picking) {
+			for (k in 0...models.length) {
+				var model = models[k];
+				if (reached[modelAt[k]] && model.isPickable()) {
+					if (model.getJointCount() > 0)
+						skinned.push(model);
+					else
+						pickModel(model);
+				}
+			}
+			if (pickCamera != null)
+				for (k in 0...flats.length)
+					if (reached[flatAt[k]] && flats[k].isPickable())
+						pickBest = flatSprites[k] != null ? sprites.pickSprite(flatSprites[k], pickRay, pickBest,
+							pickHit) : sprites.pickText(flatTexts[k], pickRay, pickBest, pickHit);
+		} else {
+			if (!gathering)
+				for (k in 0...emitters.length)
+					if (reached[emitterAt[k]]) {
+						if (emitters[k].isVisible())
+							sprites.visitEmitter(emitters[k], eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+						else
+							sprites.advanceEmitter(emitters[k]);
+					}
+			for (k in 0...treeLights.length)
+				if (reached[treeLightAt[k]] && treeLights[k].isVisible() && lights.length < GATHERED_LIGHTS)
+					lights.push(treeLights[k]);
+			for (k in 0...models.length) {
+				var model = models[k];
+				if (!reached[modelAt[k]] || !model.isVisible())
+					continue;
+				if (model.getJointCount() > 0)
+					skinned.push(model);
+				else if (gathering)
+					gatherCaster(model);
+				else
+					visitModel(model);
+			}
+			if (!gathering)
+				for (k in 0...flats.length)
+					if (reached[flatAt[k]] && flats[k].isVisible()) {
+						if (flatSprites[k] != null)
+							sprites.visit(flatSprites[k], planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+						else
+							sprites.visitText(flatTexts[k], planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+					}
+		}
+		// Skinned models after the others, every joint where this frame has it: their boxes are their joints'.
 		for (node in skinned)
 			if (picking)
 				pickModel(node);
@@ -928,9 +1001,9 @@ class Stage3D {
 		skinned.resize(0);
 	}
 
-	// A model whose mesh follows joints it's bound to (a skinned mesh not bound draws as bound, still).
-	static inline function isSkinned(node:Node):Bool
-		return node.getJointCount() > 0 && node.getMesh().isSkinned();
+	// A part whose mesh follows the joints its model is bound to (a skinned mesh not bound draws as bound, still).
+	static inline function isSkinned(node:Model, mesh:Mesh):Bool
+		return node.getJointCount() > 0 && mesh.isSkinned();
 
 	// The six planes of m's view (Gribb and Hartmann), each ax + by + cz + d >= 0 inside, into out.
 	static function planesOf(m:Mat4, out:Vector<Float>):Void
@@ -965,8 +1038,8 @@ class Stage3D {
 	var boxRY = 0.;
 	var boxRZ = 0.;
 
-	function placeBox(node:Node):Void {
-		if (isSkinned(node) && JointPalette.computePosedBox(node, posed)) {
+	function placeBox(node:Model, mesh:Mesh):Void {
+		if (isSkinned(node, mesh) && JointPalette.computePosedBox(node, mesh, posed)) {
 			boxX = posed[0];
 			boxY = posed[1];
 			boxZ = posed[2];
@@ -975,7 +1048,7 @@ class Stage3D {
 			boxRZ = posed[5];
 			return;
 		}
-		var mesh = node.getMesh(), w = node.getWorldMatrix();
+		var w = node.getWorldMatrix();
 		var hx = (mesh.getMaxX() - mesh.getMinX()) / 2,
 			hy = (mesh.getMaxY() - mesh.getMinY()) / 2,
 			hz = (mesh.getMaxZ() - mesh.getMinZ()) / 2;
@@ -990,17 +1063,25 @@ class Stage3D {
 		boxRZ = Math.abs(w.get(2)) * hx + Math.abs(w.get(6)) * hy + Math.abs(w.get(10)) * hz;
 	}
 
-	// A model that casts, in view or not (see-through ones don't).
-	function gatherCaster(node:Node):Void {
-		if (!node.isShadowCasting() || node.getMaterial().isBlended() || node.getTint() & 255 < 255)
+	// A model's parts that cast, in view or not (see-through ones don't).
+	function gatherCaster(node:Model):Void {
+		if (!node.isShadowCasting() || node.getTint() & 255 < 255)
 			return;
-		placeBox(node);
+		for (i in 0...node.getPartCount()) {
+			var part = node.getPart(i), mesh = part.getMesh();
+			if (mesh != null && !part.getMaterial().isBlended())
+				gatherPart(node, mesh);
+		}
+	}
+
+	function gatherPart(node:Model, mesh:Mesh):Void {
+		placeBox(node, mesh);
 		if (casterCount == casters.length)
 			casters.push(new Caster());
 		var c = casters[casterCount++];
 		c.node = node;
-		c.mesh = node.getMesh();
-		c.skinned = isSkinned(node);
+		c.mesh = mesh;
+		c.skinned = isSkinned(node, mesh);
 		c.cx = boxX;
 		c.cy = boxY;
 		c.cz = boxZ;
@@ -1009,9 +1090,17 @@ class Stage3D {
 		c.rz = boxRZ;
 	}
 
-	function visitModel(node:Node):Void {
-		var mesh = node.getMesh(), w = node.getWorldMatrix();
-		placeBox(node);
+	// A model's parts in view, each an item.
+	function visitModel(node:Model):Void
+		for (i in 0...node.getPartCount()) {
+			var part = node.getPart(i);
+			if (part.getMesh() != null)
+				visitPart(node, part.getMesh(), part.getMaterial());
+		}
+
+	function visitPart(node:Model, mesh:Mesh, material:Material):Void {
+		var w = node.getWorldMatrix();
+		placeBox(node, mesh);
 		var cx = boxX, cy = boxY, cz = boxZ;
 		if (!inside(planes, cx, cy, cz, boxRX, boxRY, boxRZ))
 			return;
@@ -1020,8 +1109,8 @@ class Stage3D {
 		var item = items[count];
 		item.node = node;
 		item.mesh = mesh;
-		item.material = node.getMaterial();
-		item.skinned = isSkinned(node);
+		item.material = material;
+		item.skinned = isSkinned(node, mesh);
 		item.blended = item.material.isBlended() || node.getTint() & 255 < 255;
 		// A placement that mirrors (its matrix's determinant below 0) turns the triangles' winding over.
 		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
@@ -1149,13 +1238,15 @@ class Stage3D {
 		if (lightData.length < n * 10)
 			lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
 		for (l in 0...n) {
-			var light = lights[l].getLight(), color = light.getColor(), w = lights[l].getWorldMatrix(), at = l * 10;
+			var light = lights[l], color = light.getColor(), w = light.getWorldMatrix(), at = l * 10;
+			var point = Std.downcast(light, PointLight),
+				spot = Std.downcast(light, SpotLight);
 			lightData[at] = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.getIntensity();
 			lightData[at + 1] = w.get(12);
 			lightData[at + 2] = w.get(13);
 			lightData[at + 3] = w.get(14);
-			lightData[at + 4] = light.getRange();
-			lightData[at + 5] = light.getKind() == Directional ? 0 : light.getKind() == Point ? 1 : 2;
+			lightData[at + 4] = point != null ? point.getRange() : spot != null ? spot.getRange() : 0;
+			lightData[at + 5] = spot != null ? 2 : point != null ? 1 : 0;
 			var dx = -w.get(8),
 				dy = -w.get(9),
 				dz = -w.get(10),
@@ -1164,8 +1255,8 @@ class Stage3D {
 			lightData[at + 7] = dl > 0 ? dy / dl : -1;
 			lightData[at + 8] = dl > 0 ? dz / dl : 0;
 			lightData[at + 9] = 0;
-			cones[l * 2] = Math.cos(light.getInnerCone());
-			cones[l * 2 + 1] = Math.cos(light.getOuterCone());
+			cones[l * 2] = Math.cos(spot != null ? spot.getInnerCone() : 0);
+			cones[l * 2 + 1] = Math.cos(spot != null ? spot.getOuterCone() : 0);
 		}
 	}
 
@@ -1228,19 +1319,20 @@ class Stage3D {
 			var position = LIGHT_POSITION + i * 16,
 				direction = LIGHT_DIRECTION + i * 16,
 				radiance = LIGHT_RADIANCE + i * 16,
-				spot = LIGHT_SPOT + i * 16;
+				cone = LIGHT_SPOT + i * 16;
 			if (i >= table.length) {
 				for (k in 0...4) {
 					u.setFloat(position + k * 4, 0);
 					u.setFloat(direction + k * 4, 0);
 					u.setFloat(radiance + k * 4, 0);
-					u.setFloat(spot + k * 4, k == 2 ? -1 : 0);
+					u.setFloat(cone + k * 4, k == 2 ? -1 : 0);
 				}
 				continue;
 			}
-			var node = table[i],
-				light = node.getLight(),
-				w = node.getWorldMatrix();
+			var light = table[i],
+				w = light.getWorldMatrix(),
+				point = Std.downcast(light, PointLight),
+				spot = Std.downcast(light, SpotLight);
 			var dx = -w.get(8),
 				dy = -w.get(9),
 				dz = -w.get(10),
@@ -1248,16 +1340,16 @@ class Stage3D {
 			u.setFloat(position, w.get(12));
 			u.setFloat(position + 4, w.get(13));
 			u.setFloat(position + 8, w.get(14));
-			u.setFloat(position + 12, light.getRange());
+			u.setFloat(position + 12, point != null ? point.getRange() : spot != null ? spot.getRange() : 0);
 			u.setFloat(direction, dl > 0 ? dx / dl : 0);
 			u.setFloat(direction + 4, dl > 0 ? dy / dl : -1);
 			u.setFloat(direction + 8, dl > 0 ? dz / dl : 0);
-			u.setFloat(direction + 12, light.getKind() == Spot ? 2 : light.getKind() == Point ? 1 : 0);
-			u.setFloat(spot, Math.cos(light.getInnerCone()));
-			u.setFloat(spot + 4, Math.cos(light.getOuterCone()));
+			u.setFloat(direction + 12, spot != null ? 2 : point != null ? 1 : 0);
+			u.setFloat(cone, Math.cos(spot != null ? spot.getInnerCone() : 0));
+			u.setFloat(cone + 4, Math.cos(spot != null ? spot.getOuterCone() : 0));
 			// Its shadow slot: its layer of the map the last drawShadows made, or -1.
-			u.setFloat(spot + 8, shadowLights.indexOf(node));
-			u.setFloat(spot + 12, 0);
+			u.setFloat(cone + 8, shadowLights.indexOf(light));
+			u.setFloat(cone + 12, 0);
 			var color = light.getColor(), intensity = light.getIntensity();
 			u.setFloat(radiance, linear(color >>> 24) * intensity);
 			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);
@@ -1403,15 +1495,15 @@ class Stage3D {
 	}
 }
 
-/** A model in view this draw. Pooled. */
+/** A model's part in view this draw. Pooled. */
 private class Item {
-	/** The model's node. */
-	public var node:Node;
+	/** The model. */
+	public var node:Model;
 
-	/** Its mesh. */
+	/** Its part's mesh. */
 	public var mesh:Mesh;
 
-	/** Its material. */
+	/** Its part's material. */
 	public var material:Material;
 
 	/** Whether it is see-through (its material's or its tint's alpha). */
@@ -1457,12 +1549,12 @@ private class Item {
 	public function new() {}
 }
 
-/** A model that casts shadows, gathered by drawShadows. Pooled. */
+/** A model's part that casts shadows, gathered by drawShadows. Pooled. */
 private class Caster {
-	/** The model's node. */
-	public var node:Node;
+	/** The model. */
+	public var node:Model;
 
-	/** Its mesh. */
+	/** Its part's mesh. */
 	public var mesh:Mesh;
 
 	/** Whether it follows joints. */

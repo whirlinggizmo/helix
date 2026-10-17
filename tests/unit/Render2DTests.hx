@@ -11,7 +11,8 @@ import helix.render2d.Polygon2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
-import helix.render3d.Node.SpriteAlpha;
+import helix.render3d.Model;
+import helix.render3d.Sprite3D;
 
 /** Graphics that only counts: handles, and the draws and viewports of a frame, sorted by what their pipeline draws: a 2D batch's
 	(unindexed, with buffers), a screen effect's or background's (no buffers), or a mesh's (indexed). */
@@ -521,8 +522,8 @@ class Render2DTests {
 		var stage3D = new helix.render3d.Stage3D(gpu),
 			cube = helix.render3d.Mesh.cube(1, 1, 1),
 			material = new helix.render3d.Material();
-		var plain = helix.render3d.Node.model(cube, material),
-			mirrored = helix.render3d.Node.model(cube, material);
+		var plain = new Model(cube, material),
+			mirrored = new Model(cube, material);
 		plain.setPosition(-2, 0, 0);
 		mirrored.setPosition(2, 0, 0);
 		mirrored.setScale(-1, 1, 1);
@@ -537,9 +538,9 @@ class Render2DTests {
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
 		var spriteTexture = Texture2D.fromRgba(gpu, 1, 1, Bytes.alloc(4));
-		var modes:Array<helix.render3d.Node.SpriteAlpha> = [Add, Blend, Opaque, Blend, Add];
+		var modes:Array<helix.render3d.SpriteAlpha> = [Add, Blend, Opaque, Blend, Add];
 		for (mode in modes) {
-			var s3 = helix.render3d.Node.sprite(spriteTexture);
+			var s3 = new Sprite3D(spriteTexture);
 			s3.setAlphaMode(mode);
 			stage3D.add(s3);
 		}

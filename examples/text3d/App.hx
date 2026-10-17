@@ -9,11 +9,13 @@ import helix.render2d.Fonts;
 import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
+import helix.render3d.Text3D;
 
 /** Text in the world, and 3D lines: labels facing the camera above a cube, a sphere and a panel (the built-in font), a sign whose text turns
 	with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground with Batch3D's lines. Text is sharp at any distance
@@ -26,21 +28,21 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
-	var sign:Node;
-	var signText:Node;
-	var cube:Node;
+	var sign:Node3D;
+	var signText:Text3D;
+	var cube:Model;
 	var orbit = true;
 	var angle = 0.;
 
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
-	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Node {
+	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model {
 		var material = new Material();
 		material.setBaseColor(color);
 		material.setRoughness(.5);
-		var model = Node.model(mesh, material);
+		var model = new Model(mesh, material);
 		model.setPosition(x, y, z);
 		stage.add(model);
-		var text = Node.text3D(label, .4, 0xf5f5f5ff);
+		var text = new Text3D(label, .4, 0xf5f5f5ff);
 		text.setPosition(x, labelHeight, z);
 		stage.add(text);
 		return model;
@@ -56,9 +58,8 @@ class App extends BaseApp {
 		lines = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(2.5);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(2.5);
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		cube = labelled(Mesh.cube(1, 1, 1), 0x3b82f6ff, -3, .5, 0, "cube", 1.6);
@@ -68,15 +69,15 @@ class App extends BaseApp {
 		var wood = new Material();
 		wood.setBaseColor(0x8b5a2bff);
 		wood.setRoughness(.9);
-		sign = Node.group();
+		sign = new Node3D();
 		sign.setPosition(0, 0, -3);
-		var post = Node.model(Mesh.cube(.12, 1.6, .12), wood);
+		var post = new Model(Mesh.cube(.12, 1.6, .12), wood);
 		post.setPosition(0, .8, 0);
 		sign.add(post);
-		var board = Node.model(Mesh.cube(2.2, .8, .08), wood);
+		var board = new Model(Mesh.cube(2.2, .8, .08), wood);
 		board.setPosition(0, 1.6, 0);
 		sign.add(board);
-		signText = Node.text3D("HeliX text", .45, 0xffe68cff);
+		signText = new Text3D("HeliX text", .45, 0xffe68cff);
 		signText.setFacing(Free);
 		signText.setPosition(0, 1.6, .05);
 		sign.add(signText);

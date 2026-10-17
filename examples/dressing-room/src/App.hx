@@ -11,13 +11,14 @@ import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Environment;
-import helix.render3d.Light;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
 import helix.ui.Box;
@@ -61,13 +62,13 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var models:Models;
 	var animations:Null<ModelFile>;
-	var character:Null<Node>;
+	var character:Null<Node3D>;
 	var animator:Null<Animator>;
 	var outfit:Outfit;
 	var environment:Null<Environment>;
 	// The pictures: a stage of its own with a second character, dressed in one part at a time, drawn into each tile's texture.
 	var studio:Stage3D;
-	var model:Null<Node>;
+	var model:Null<Node3D>;
 	var modelOutfit:Outfit;
 	var shot = new Camera3D();
 	var thumbs:Map<String, Texture2D> = [];
@@ -110,26 +111,25 @@ class App extends BaseApp {
 		studio = new Stage3D(gpu);
 		for (s in [stage, studio]) {
 			s.setAmbient(0xd8e0ffff, .3);
-			var key = new Light(Directional);
+			var key = new DirectionalLight();
 			key.setIntensity(2.2);
-			var keyNode = Node.light(key);
-			keyNode.lookAt(-.5, -.8, -.6);
+			key.lookAt(-.5, -.8, -.6);
 			if (s == stage) {
 				key.setShadowCasting(true);
 				key.setShadowDistance(5);
 			}
-			s.add(keyNode);
+			s.add(key);
 		}
 		// The turntable: a low disc on a dark floor.
 		var floor = new Material();
 		floor.setBaseColor(0x22252eff);
 		floor.setRoughness(.95);
-		stage.add(Node.model(Mesh.plane(30, 30), floor));
+		stage.add(new Model(Mesh.plane(30, 30), floor));
 		var plinth = new Material();
 		plinth.setBaseColor(0x8a8f9cff);
 		plinth.setRoughness(.4);
 		plinth.setMetallic(.2);
-		var disc = Node.model(Mesh.cylinder(.8, .06, 64), plinth);
+		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		stage.add(disc);
 		models = new Models(Services.assets, Services.textures);
@@ -333,7 +333,7 @@ class App extends BaseApp {
 	// Points the pictures' camera at nodes, fitted to where they are in the still pose: a rigid mesh's bounds in the world, a skinned one's
 	// joints as posed (its bounds are its bind pose's, arms out), padded by how far their vertices reach. From the front a little to the side,
 	// or for a held part from her right, its length across the picture.
-	function aim(nodes:Array<Node>, held:Bool):Void {
+	function aim(nodes:Array<Node3D>, held:Bool):Void {
 		var min = [1e9, 1e9, 1e9],
 			max = [-1e9, -1e9, -1e9],
 			world = new helix.render3d.Mat4();
@@ -344,15 +344,16 @@ class App extends BaseApp {
 				max[a] = Math.max(max[a], p[a] + pad);
 			}
 		}
-		function walk(node:Node) {
-			var mesh = node.getMesh();
+		function walk(node:Node3D) {
+			var model = Std.downcast(node, Model);
+			var mesh = model != null ? model.getMesh() : null;
 			if (mesh != null && mesh.isSkinned()) {
 				// Only the joints this part weights (its skin may name every joint of the skeleton), each padded by how far its vertices reach, at
 				// most a hand's breadth: a long bone's reach would frame far more than the part.
-				var reach = mesh.getJointReach(node.getSkin());
-				for (j in 0...node.getJointCount())
+				var reach = mesh.getJointReach(model.getSkin());
+				for (j in 0...model.getJointCount())
 					if (reach != null && reach[j] >= 0) {
-						node.getJoint(j).computeWorld(world);
+						model.getJoint(j).computeWorld(world);
 						add(world.get(12), world.get(13), world.get(14), Math.min(reach[j] * .55, .12));
 					}
 			} else if (mesh != null) {

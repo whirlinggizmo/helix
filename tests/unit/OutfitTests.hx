@@ -3,12 +3,13 @@ import helix.assets.IAssets;
 import helix.render3d.Gltf;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 
 /** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through Models, over the framework's queries
-	(Node.collectModels, bindSkeleton and findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
+	(Node3D.collectModels, Model.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
 	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
 	shared by many characters. */
 class OutfitTests {
@@ -40,7 +41,7 @@ class OutfitTests {
 	}
 
 	// Whether node is character or under it.
-	static function under(node:Null<Node>, character:Node):Bool {
+	static function under(node:Null<Node3D>, character:Node3D):Bool {
 		while (node != null) {
 			if (node == character)
 				return true;
@@ -63,7 +64,8 @@ class OutfitTests {
 		outfit.setSkeleton(character);
 		var head = outfit.getNodes("head");
 		check(outfit.getWorn("head") == "Casual_Head" && head.length > 0 && !outfit.isPending(), "and is worn once it's given");
-		check(head[0].getParent() == character && under(head[0].getJoint(0), character), "Its models are bound to the character's joints");
+		var headModel:Model = cast head[0];
+		check(head[0].getParent() == character && under(headModel.getJoint(0), character), "Its models are bound to the character's joints");
 
 		// Swapped: the old part comes off.
 		outfit.choose("head", "Witch_Head");
@@ -111,7 +113,7 @@ class OutfitTests {
 		}
 		check(asked["Shared_Feet"] == 1, "Characters asking for one part share its load");
 		release("Shared_Feet", Loaded(bytes("Casual_Feet")));
-		var feet = [for (o in others) o.getNodes("feet")[0]];
+		var feet = [for (o in others) (cast o.getNodes("feet")[0] : Model)];
 		check(feet[0] != feet[1] && feet[1] != feet[2] && feet[0].getMesh() == feet[1].getMesh(), "and each wears its own nodes over the same meshes");
 		check(under(feet[2].getJoint(0), skeletons[2]) && !under(feet[2].getJoint(0), skeletons[0]), "each bound to its own skeleton");
 
@@ -122,7 +124,7 @@ class OutfitTests {
 			&& outfit.getWorn("body") == "Adventurer_Body"
 			&& !under(outfit.getNodes("body")[0], character),
 			"Choices move to a new skeleton, off the old one");
-		outfit.setSkeleton(Node.group());
+		outfit.setSkeleton(new Node3D());
 		check(outfit.getWorn("head") == null && outfit.getError("head") != null, "A skeleton without the joints refuses a part");
 		outfit.setSkeleton(null);
 		check(outfit.getNodes("body").length == 0 && outfit.getChoice("head") == "Witch_Head" && outfit.isPending(),
@@ -153,16 +155,16 @@ class OutfitTests {
 		check(refused.length == 0, 'Every part of the ten outfits is worn: $refused');
 
 		// A file whose models sit under no joint: the piece is the whole file, hung at a socket.
-		var loose = Node.group(),
-			gem = Node.model(Mesh.plane(.1, .1), new Material());
+		var loose = new Node3D(),
+			gem = new Model(Mesh.plane(.1, .1), new Material());
 		gem.setName("gem");
-		var holder = Node.group();
+		var holder = new Node3D();
 		holder.setName("holder");
 		holder.add(gem);
 		loose.add(holder);
 		var at = loose.findAttachment(gem, character);
 		check(at != null && at.piece == holder && at.joint == null, "A model under no joint of the skeleton's is a piece at the file's top, with no joint");
-		check(loose.findAttachment(character, character) == null, "A node not under the file has no attachment");
+		check(loose.findAttachment(new Model(), character) == null, "A model not under the file has no attachment");
 
 		// Shutting the models down cancels what's still loading.
 		var cancelled = false;

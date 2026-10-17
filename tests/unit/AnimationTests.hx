@@ -7,8 +7,9 @@ import helix.render3d.Gltf;
 import helix.render3d.JointPalette;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Skin;
 import helix.render3d.Stage3D;
 
@@ -88,12 +89,12 @@ class AnimationTests {
 		var body = file("Casual_Body");
 		check(body.getWarnings().length == 0, "Skins read without warnings: " + body.getWarnings().join("; "));
 		var a = body.instantiate("a"), b = body.instantiate("b");
-		var modelA = a.find("Casual_Body"), modelB = b.find("Casual_Body");
-		// The node may be a group of parts; its first skinned model.
-		if (modelA.getKind() != Model)
-			modelA = modelA.getChild(0);
-		if (modelB.getKind() != Model)
-			modelB = modelB.getChild(0);
+		// A node with a mesh is one model, its primitives its parts.
+		var modelA = Std.downcast(a.find("Casual_Body"), Model),
+			modelB = Std.downcast(b.find("Casual_Body"), Model);
+		check(modelA != null && modelB != null && modelA.getPartCount() > 0, "The file's skinned node is a model");
+		if (modelA == null || modelB == null)
+			return;
 		check(modelA.getJointCount() == 62 && modelA.getSkin().getJointName(0) != "", "Each copy's skinned model bound to its 62 joints");
 		check(modelA.getJoint(0) != modelB.getJoint(0)
 			&& modelA.getJoint(5) == a.find(modelA.getSkin().getJointName(5)), "Each copy follows its own skeleton");
@@ -107,7 +108,7 @@ class AnimationTests {
 
 	static function animator():Void {
 		// A root "a" holding "b": clip one puts b at x 0, clip two at x 10; clip three moves only a.
-		var a = Node.group(), b = Node.group();
+		var a = new Node3D(), b = new Node3D();
 		a.setName("a");
 		b.setName("b");
 		a.add(b);
@@ -150,13 +151,13 @@ class AnimationTests {
 		var reach = mesh.getJointReach(skin);
 		check(near(reach[0], 1) && near(reach[1], 1), "Each joint reaches as far as the vertices it weights");
 		var gpu = new CountingGraphics(), stage = new Stage3D(gpu);
-		var character = Node.group(), hip = Node.group(), knee = Node.group();
+		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
 		hip.setName("hip");
 		knee.setName("knee");
 		knee.setPosition(1, 0, 0);
 		hip.add(knee);
 		character.add(hip);
-		var model = Node.model(mesh, new Material());
+		var model = new Model(mesh, new Material());
 		character.add(model);
 		check(model.bindSkeleton(character, skin) && model.getJointCount() == 2, "Bound to its joints");
 		stage.add(character);
@@ -179,9 +180,8 @@ class AnimationTests {
 		var record = @:privateAccess stage.records;
 		check(record.getFloat(Lit3DLayout.normal2Offset + 12) == 0, "The model's first joint in its record");
 		var box = new Vector<Float>(6);
-		check(JointPalette.computePosedBox(model, box)
-			&& box[0] + box[3] > 41
-			&& box[0] - box[3] < 0, "The posed box holds both joints' reach");
+		check(JointPalette.computePosedBox(model, model.getMesh(), box) && box[0] + box[3] > 41 && box[0] - box[3] < 0,
+			"The posed box holds both joints' reach");
 		// The model moved far off while its joints stay: it draws where its joints are, so nothing is drawn there.
 		knee.setPosition(1, 0, 0);
 		model.setPosition(500, 0, 0);

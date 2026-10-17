@@ -9,12 +9,14 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
+import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
 
 /** Materials drawn by shaders of the example's own (shaders/*.glsl, surface shaders packed into .hxshader assets and loaded at run time):
@@ -35,9 +37,9 @@ class App extends BaseApp {
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
 	var shaders:Shaders;
-	var sun:Node;
-	var lamp:Node;
-	var marker:Node;
+	var sun:DirectionalLight;
+	var lamp:PointLight;
+	var marker:Model;
 	var dissolve = new Material();
 	var water = new Material();
 	var car:Null<ModelFile>;
@@ -54,37 +56,35 @@ class App extends BaseApp {
 		camera.setView(0, 1.2, 5, 0, .3, 0);
 		// Framed for 16:9: all three models on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var sunLight = new Light(Directional);
-		sunLight.setColor(0xfff4e4ff);
-		sunLight.setIntensity(1.5);
-		sun = Node.light(sunLight);
+		sun = new DirectionalLight();
+		sun.setColor(0xfff4e4ff);
+		sun.setIntensity(1.5);
 		sun.lookAt(-.4, -.7, -.6);
 		stage.add(sun);
-		var lampLight = new Light(Point);
-		lampLight.setColor(0x78beffff);
-		lampLight.setIntensity(9);
-		lampLight.setRange(8);
-		lamp = Node.light(lampLight);
+		lamp = new PointLight();
+		lamp.setColor(0x78beffff);
+		lamp.setIntensity(9);
+		lamp.setRange(8);
 		stage.add(lamp);
 		var glow = new Material();
 		glow.setLit(false);
 		glow.setBaseColor(0x87ceebff);
-		marker = Node.model(Mesh.sphere(.05), glow);
+		marker = new Model(Mesh.sphere(.05), glow);
 		stage.add(marker);
 		// A floor, dark so the lights show on it.
 		var floor = new Material();
 		floor.setBaseColor(0x383839ff);
 		floor.setRoughness(.8);
-		var plane = Node.model(Mesh.plane(6, 6), floor);
+		var plane = new Model(Mesh.plane(6, 6), floor);
 		plane.setPosition(0, FLOOR_Y, 0);
 		stage.add(plane);
 		// Both sides: the inside shows through the holes.
 		dissolve.setDoubleSided(true);
-		var sphere = Node.model(Mesh.sphere(.5, 32, 64), dissolve);
+		var sphere = new Model(Mesh.sphere(.5, 32, 64), dissolve);
 		sphere.setPosition(0, .1, 0);
 		stage.add(sphere);
 		// Finely divided, so its waves are smooth.
-		var rippling = Node.model(Mesh.sphere(.5, 96, 192), water);
+		var rippling = new Model(Mesh.sphere(.5, 96, 192), water);
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 

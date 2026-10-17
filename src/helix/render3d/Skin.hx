@@ -3,7 +3,7 @@ package helix.render3d;
 import haxe.ds.Vector;
 
 /** A skin: the joints a skinned mesh's vertices follow, by name, and each joint's inverse bind matrix (the mesh's space into the joint's, as it
-	was bound). Shared by every model of a file showing it; a Model node binds its joints to nodes by these names (Node.bindSkeleton), so a
+	was bound). Shared by every model of a file showing it; a Model binds its joints to nodes by these names (Model.bindSkeleton), so a
 	mesh skinned in one file can follow a skeleton from another with the same joint names. Read, never changed. */
 class Skin {
 	var names:Array<String>;

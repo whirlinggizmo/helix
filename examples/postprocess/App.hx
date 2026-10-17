@@ -9,11 +9,12 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
 
 /** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor, generated
@@ -36,7 +37,7 @@ class App extends BaseApp {
 	var shaders:Shaders;
 	var vignette:Null<ScreenEffect>;
 	var scanlines:Null<ScreenEffect>;
-	var lamp:Node;
+	var lamp:PointLight;
 	var strength = .8;
 	var breathing = true;
 	var orbit = true;
@@ -53,27 +54,25 @@ class App extends BaseApp {
 		stage.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(2);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(2);
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
-		var lampLight = new Light(Point);
-		lampLight.setColor(0xff9a4aff);
-		lampLight.setIntensity(12);
-		lamp = Node.light(lampLight);
+		lamp = new PointLight();
+		lamp.setColor(0xff9a4aff);
+		lamp.setIntensity(12);
 		stage.add(lamp);
 		var floor = new Material();
 		floor.setBaseColor(0x5c6066ff);
 		floor.setRoughness(.9);
-		stage.add(Node.model(Mesh.plane(14, 14), floor));
+		stage.add(new Model(Mesh.plane(14, 14), floor));
 		var shapes = [Mesh.sphere(.6), Mesh.cube(1, 1, 1), Mesh.torus(.5, .18), Mesh.cone(.5, 1.1)];
 		var colors = [0x3b82f6ff, 0xe5484dff, 0xf5b942ff, 0x46a758ff];
 		for (i in 0...shapes.length) {
 			var material = new Material();
 			material.setBaseColor(colors[i]);
 			material.setRoughness(.35);
-			var model = Node.model(shapes[i], material);
+			var model = new Model(shapes[i], material);
 			var a = i / shapes.length * Math.PI * 2 + .4;
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			stage.add(model);

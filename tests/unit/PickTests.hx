@@ -2,11 +2,14 @@ import Render2DTests.CountingGraphics;
 import helix.render3d.Camera3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
 import helix.render3d.PickHit;
 import helix.render3d.Ray;
 import helix.render3d.Skin;
+import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
+import helix.render3d.Text3D;
 
 /** Picking: the ray through a pixel (perspective, orthographic, a viewport area), the nearest model along it, its point, distance and
 	normal, the three flags, a see-through model, and a skinned one picked where it's posed, not at rest. */
@@ -63,8 +66,8 @@ class PickTests {
 
 	static function models():Void {
 		var stage = new Stage3D(new CountingGraphics()), c = camera();
-		var front = Node.model(Mesh.cube(2, 2, 2), new Material()),
-			back = Node.model(Mesh.cube(2, 2, 2), new Material());
+		var front = new Model(Mesh.cube(2, 2, 2), new Material()),
+			back = new Model(Mesh.cube(2, 2, 2), new Material());
 		front.setPosition(0, 0, 2);
 		back.setPosition(0, 0, -2);
 		stage.add(back);
@@ -79,7 +82,7 @@ class PickTests {
 		front.setPickable(false);
 		check(stage.pick(c, 400, 300).getNode() == back, "An unpickable one lets the ray through");
 		front.setPickable(true);
-		var child = Node.model(Mesh.cube(1, 1, 1), new Material());
+		var child = new Model(Mesh.cube(1, 1, 1), new Material());
 		child.setPosition(0, 0, 3);
 		front.add(child);
 		front.setPickable(false);
@@ -96,7 +99,7 @@ class PickTests {
 		check(stage.pick(c, 400, 300).getNode() == front, "A faint see-through model isn't hit");
 		// Stretched: a slanted face's normal goes by the inverse transpose (the plane x + z = 0, x stretched 4 times: x / 4 + z = 0), a unit
 		// vector toward the camera.
-		var slab = Node.model(Mesh.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material());
+		var slab = new Model(Mesh.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material());
 		slab.setScale(4, 1, 1);
 		var side = new Stage3D(new CountingGraphics());
 		side.add(slab);
@@ -110,7 +113,7 @@ class PickTests {
 		inside.setViewport(800, 600);
 		inside.setView(0, 0, 0, 0, 0, -1);
 		var room = new Stage3D(new CountingGraphics());
-		room.add(Node.model(Mesh.cube(2, 2, 2), new Material()));
+		room.add(new Model(Mesh.cube(2, 2, 2), new Material()));
 		var fromInside = room.pick(inside, 400, 300);
 		check(fromInside != null && fromInside.getNormal(2) > 0, "From inside, the normal faces back along the ray");
 		var kept = new PickHit();
@@ -125,13 +128,13 @@ class PickTests {
 		var skin = new Skin(["hip", "knee"], [
 			1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1
 		]);
-		var character = Node.group(), hip = Node.group(), knee = Node.group();
+		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
 		hip.setName("hip");
 		knee.setName("knee");
 		knee.setPosition(1, 0, 0);
 		hip.add(knee);
 		character.add(hip);
-		var model = Node.model(mesh, new Material());
+		var model = new Model(mesh, new Material());
 		character.add(model);
 		model.bindSkeleton(character, skin);
 		var stage = new Stage3D(new CountingGraphics());
@@ -150,7 +153,7 @@ class PickTests {
 		character.remove(model);
 		var gear = Mesh.fromArrays([0., 1, 0, 1, 1, 0, 0, 2, 0, 1, 1, 0, 2, 1, 0, 1, 2, 0], null, null, null, null,
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
-		var worn = Node.model(gear, new Material());
+		var worn = new Model(gear, new Material());
 		check(worn.bindSkeleton(character, skin), "The new part binds to the same skeleton");
 		character.add(worn);
 		c.setView(40.6, .3, 10, 40.6, .3, 0);
@@ -175,7 +178,7 @@ class PickTests {
 	static function sprites():Void {
 		var gpu = new CountingGraphics(), stage = new Stage3D(gpu), c = camera();
 		c.setView(0, 4, 10, 0, 0, 0);
-		var logo = Node.sprite(helix.render2d.Texture2D.fromRgba(gpu, 2, 2, haxe.io.Bytes.alloc(16)));
+		var logo = new Sprite3D(helix.render2d.Texture2D.fromRgba(gpu, 2, 2, haxe.io.Bytes.alloc(16)));
 		logo.setSpriteSize(2, 2);
 		logo.setPosition(3, 0, 0);
 		stage.add(logo);
@@ -183,7 +186,7 @@ class PickTests {
 		check(hit != null && hit.getNode() == logo, "A camera-facing sprite, near its corner");
 		at = pixel(c, 4.3, 0, 0);
 		check(stage.pick(c, at[0], at[1]) == null, "Past its edge: missed");
-		var label = Node.text3D("PICK ME", 1);
+		var label = new Text3D("PICK ME", 1);
 		label.setPosition(-3, 0, 0);
 		stage.add(label);
 		at = pixel(c, -3, 0, 0);
@@ -192,7 +195,7 @@ class PickTests {
 		hit = stage.pick(c, at[0], at[1]);
 		check(hit != null && hit.getNode() == label, "A text by its block");
 		// In front of a model, the sprite wins; behind it, the model does.
-		var box = Node.model(Mesh.cube(1, 1, 1), new Material());
+		var box = new Model(Mesh.cube(1, 1, 1), new Material());
 		box.setPosition(3, 0, -2);
 		stage.add(box);
 		at = pixel(c, 3, 0, 0);
@@ -205,7 +208,7 @@ class PickTests {
 	// The pointer over a world and a HUD: hover, press, a click released over what was pressed, a drag released elsewhere, and capture.
 	static function pointer():Void {
 		var gpu = new CountingGraphics(), world = new Stage3D(gpu), c = camera(), input = new helix.input.InputState();
-		var cube = Node.model(Mesh.cube(2, 2, 2), new Material());
+		var cube = new Model(Mesh.cube(2, 2, 2), new Material());
 		world.add(cube);
 		var hud = new helix.render2d.Stage2D(),
 			hudCamera = new helix.render2d.Camera2D();

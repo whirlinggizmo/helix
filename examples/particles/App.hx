@@ -11,7 +11,8 @@ import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
+import helix.render3d.Particles3D;
 import helix.render3d.Stage3D;
 
 /** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. On a 3D stage: a fountain
@@ -38,14 +39,14 @@ class App extends BaseApp {
 	var smoke:Emitter;
 	var flame:Emitter;
 	var confetti:Emitter;
-	var sparksNode:Node;
+	var sparksNode:Node3D;
 	var confettiNode:Node2D;
 	var paused = false;
 	var orbit = true;
 	var angle = 0.;
 
-	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node {
-		var node = Node.emitter(emitter);
+	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node3D {
+		var node = new Particles3D(emitter);
 		node.setPosition(x, y, z);
 		stage.add(node);
 		return node;

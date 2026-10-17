@@ -7,17 +7,18 @@ import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and her parts from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
-	names (Node.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's). 1 to 8 play a clip, crossfading from
+	names (Model.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's). 1 to 8 play a clip, crossfading from
 	the one before over a quarter second (F: cut instead); Space pauses. O stops the circling camera; Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var DIR = "models/modular-women/";
@@ -29,7 +30,7 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var character:Null<Node>;
+	var character:Null<Node3D>;
 	// Her parts' files as they land, bound to her skeleton once both are in.
 	var parts:Array<ModelFile> = [];
 	var animator:Null<Animator>;
@@ -46,17 +47,16 @@ class App extends BaseApp {
 		camera.setMinAspect(16 / 9);
 		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xc8d2ffff, .35);
-		var sun = new Light(Directional);
+		var sun = new DirectionalLight();
 		sun.setIntensity(2.5);
 		sun.setShadowCasting(true);
 		sun.setShadowDistance(8);
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.4, -1, -.6);
-		stage.add(sunNode);
+		sun.lookAt(-.4, -1, -.6);
+		stage.add(sun);
 		var ground = new Material();
 		ground.setBaseColor(0x5a5f6aff);
 		ground.setRoughness(.9);
-		stage.add(Node.model(Mesh.plane(10, 10), ground));
+		stage.add(new Model(Mesh.plane(10, 10), ground));
 		var models = new Models(Services.assets, Services.textures);
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)

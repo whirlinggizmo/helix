@@ -11,7 +11,7 @@ import helix.render3d.Stage3D;
 	stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once
 	a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's
 	released, the stages under it see nothing (isCaptured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame
-	they happen in. Nodes are compared by identity: a 3D stage's are Nodes, a 2D stage's Node2Ds. */
+	they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. */
 class Pointer {
 	var input:IInput;
 	var layers:Array<Layer> = [];

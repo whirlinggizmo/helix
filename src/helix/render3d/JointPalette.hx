@@ -35,7 +35,7 @@ class JointPalette {
 		count = 0;
 
 	/** Adds model's joints as posed now (its world matrix and its joints' up to date) and returns its base: the joint its first is. */
-	public function add(model:Node):Int {
+	public function add(model:Model):Int {
 		var base = count, joints = model.getJointCount(), skin = model.getSkin();
 		var needed = Std.int(Math.ceil((count + joints) * 3 / ROW)) * ROW * 16;
 		if (data == null || data.length < needed) {
@@ -99,12 +99,11 @@ class JointPalette {
 		texture = rows = 0;
 	}
 
-	/** A skinned model's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where they are,
-		each padded by how far its vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2% of the box's
-		diagonal (at least 0.01). False when no joint weights a vertex (use its mesh's box). */
-	public static function computePosedBox(model:Node, out:Vector<Float>):Bool {
-		var skin = model.getSkin(),
-			reach = model.getMesh().getJointReach(skin);
+	/** A skinned model's part's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where
+		they are, each padded by how far mesh's vertices reach from it (Mesh.getJointReach, scaled as the joint scales them), padded again by 2%
+		of the box's diagonal (at least 0.01). False when no joint weights a vertex (use mesh's box). */
+	public static function computePosedBox(model:Model, mesh:Mesh, out:Vector<Float>):Bool {
+		var skin = model.getSkin(), reach = mesh.getJointReach(skin);
 		var loX = Math.POSITIVE_INFINITY,
 			loY = Math.POSITIVE_INFINITY,
 			loZ = Math.POSITIVE_INFINITY;

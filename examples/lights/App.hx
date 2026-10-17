@@ -7,10 +7,13 @@ import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
+import helix.render3d.PointLight;
+import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 
 /** Directional, point and spot lights on a Stage3D: five standing figures (capsules) on a grid, a dim warm sun, a cyan point light orbiting
@@ -26,10 +29,10 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var sun:Node;
-	var lamp:Node;
-	var marker:Node;
-	var spot:Node;
+	var sun:DirectionalLight;
+	var lamp:PointLight;
+	var marker:Model;
+	var spot:SpotLight;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX lights");
@@ -44,34 +47,31 @@ class App extends BaseApp {
 		skin.setBaseColor(0xd8d8d8ff);
 		skin.setRoughness(.6);
 		for (i in 0...FIGURES) {
-			var node = Node.model(figure, skin);
+			var node = new Model(figure, skin);
 			node.setPosition(-4 + 2 * i, .85, i % 2 == 1 ? -.8 : .8);
 			stage.add(node);
 		}
 
-		var sunLight = new Light(Directional);
-		sunLight.setColor(0xffd2a0ff);
-		sunLight.setIntensity(1.1);
-		sun = Node.light(sunLight);
+		sun = new DirectionalLight();
+		sun.setColor(0xffd2a0ff);
+		sun.setIntensity(1.1);
 		sun.lookAt(-.4, -1, -.6);
 		stage.add(sun);
 
-		var lampLight = new Light(Point);
-		lampLight.setColor(0x3cdcffff);
-		lampLight.setIntensity(20);
-		lampLight.setRange(5);
-		lamp = Node.light(lampLight);
+		lamp = new PointLight();
+		lamp.setColor(0x3cdcffff);
+		lamp.setIntensity(20);
+		lamp.setRange(5);
 		stage.add(lamp);
 		var glow = new Material();
 		glow.setBaseColor(0x3cdcffff);
 		glow.setLit(false);
-		marker = Node.model(Mesh.sphere(.12, 8, 16), glow);
+		marker = new Model(Mesh.sphere(.12, 8, 16), glow);
 		stage.add(marker);
 
-		var spotLight = new Light(Spot);
-		spotLight.setCone(.14, .28);
-		spotLight.setIntensity(125);
-		spot = Node.light(spotLight);
+		spot = new SpotLight();
+		spot.setCone(.14, .28);
+		spot.setIntensity(125);
 		spot.setPosition(0, 6, 2);
 		stage.add(spot);
 
@@ -79,7 +79,7 @@ class App extends BaseApp {
 		batch = new Batch2D(Services.graphics);
 	}
 
-	static function onOff(node:Node):String
+	static function onOff(node:Node3D):String
 		return node.isVisible() ? "on " : "off";
 
 	override public function frame(dt:Float):Void {

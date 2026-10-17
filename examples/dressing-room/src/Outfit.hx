@@ -1,16 +1,16 @@
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 
 /** What a character wears, by slot ("head", "body", "hand" ... the game names them): a part file for each, from the Models every character
-	shares. The dressing room's own, game code over the framework's pieces, as a Babylon playground's Actor is over its engine: Models (a file loaded once), Node.collectModels and bindSkeleton (a part's skinned models follow the character's joints by name),
-	and Node.findAttachment (its rigid models, a sword, a gun, a hat, hang from the character's joint named as the one their file hangs them from,
+	shares. The dressing room's own, game code over the framework's pieces, as a Babylon playground's Actor is over its engine: Models (a file loaded once), Node3D.collectModels and Model.bindSkeleton (a part's skinned models follow the character's joints by name),
+	and Node3D.findAttachment (its rigid models, a sword, a gun, a hat, hang from the character's joint named as the one their file hangs them from,
 	keeping their offset, or from a joint the choice names, a socket). The policy is this class's: choices may come before the skeleton, and in
 	any order while files load; each slot wears its latest choice once both its file and the skeleton are in, a choice overtaken while its file
 	loads is dropped, and a part that can't be worn leaves its slot empty, saying why. */
 class Outfit {
 	var models:Models;
-	var skeleton:Null<Node>;
+	var skeleton:Null<Node3D>;
 	var chosen:Map<String, Choice> = [];
 	var worn:Map<String, Worn> = [];
 	var errors:Map<String, String> = [];
@@ -20,11 +20,11 @@ class Outfit {
 		this.models = models;
 
 	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given. */
-	public function getSkeleton():Null<Node>
+	public function getSkeleton():Null<Node3D>
 		return skeleton;
 
 	/** Wears every slot's choice on skeleton, taking them off the one before (null takes everything off). */
-	public function setSkeleton(value:Null<Node>):Void {
+	public function setSkeleton(value:Null<Node3D>):Void {
 		for (slot in [for (s in worn.keys()) s])
 			takeOff(slot);
 		skeleton = value;
@@ -62,7 +62,7 @@ class Outfit {
 	}
 
 	/** The nodes slot's part added to the character, empty for none. */
-	public function getNodes(slot:String):Array<Node> {
+	public function getNodes(slot:String):Array<Node3D> {
 		var w = worn[slot];
 		return w == null ? [] : w.nodes.copy();
 	}
@@ -118,7 +118,7 @@ class Outfit {
 			return;
 		}
 		// The rigid models in pieces, each hung from the socket chosen, or else from the joint its file hangs it from.
-		var pieces:Array<Node> = [], joints:Array<Node> = [];
+		var pieces:Array<Node3D> = [], joints:Array<Node3D> = [];
 		for (model in rigid) {
 			var at = copy.findAttachment(model, skeleton);
 			if (at == null || pieces.indexOf(at.piece) >= 0)
@@ -131,7 +131,7 @@ class Outfit {
 			pieces.push(at.piece);
 			joints.push(target);
 		}
-		var nodes = [];
+		var nodes:Array<Node3D> = [];
 		for (model in skinned) {
 			model.getParent().remove(model);
 			skeleton.add(model);
@@ -147,7 +147,7 @@ class Outfit {
 	}
 
 	// The skeleton's joint (or root) named name, or null.
-	function joint(name:String):Null<Node>
+	function joint(name:String):Null<Node3D>
 		return name == "" ? null : skeleton.getName() == name ? skeleton : skeleton.find(name);
 
 	function fail(slot:String, message:String):Void {
@@ -190,10 +190,10 @@ private class Worn {
 	public final joint:Null<String>;
 
 	/** The nodes added to the character: skinned models under the skeleton, rigid pieces under their joints. */
-	public final nodes:Array<Node>;
+	public final nodes:Array<Node3D>;
 
 	/** What path, held at joint, added: nodes. */
-	public function new(path:String, joint:Null<String>, nodes:Array<Node>) {
+	public function new(path:String, joint:Null<String>, nodes:Array<Node3D>) {
 		this.path = path;
 		this.joint = joint;
 		this.nodes = nodes;

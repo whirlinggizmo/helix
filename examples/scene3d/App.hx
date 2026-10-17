@@ -8,10 +8,11 @@ import helix.render2d.Node2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
 
@@ -38,9 +39,9 @@ class App extends BaseApp {
 	var hudCamera = new Camera2D();
 	var pointer:Pointer;
 	var fps = new FpsOverlay();
-	var shapes:Array<Node> = [];
-	var selected:Array<Node> = [];
-	var spinner:Node;
+	var shapes:Array<Model> = [];
+	var selected:Array<Model> = [];
+	var spinner:Model;
 	var button:Node2D;
 	var label:Node2D;
 	var orbit = true;
@@ -54,21 +55,20 @@ class App extends BaseApp {
 		camera.setMinAspect(16 / 9);
 		stage = new Stage3D(Services.graphics);
 		stage.setAmbient(0xffffffff, .25);
-		var sun = new Light(Directional);
+		var sun = new DirectionalLight();
 		sun.setIntensity(2.5);
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.4, -1, -.3);
-		stage.add(sunNode);
+		sun.lookAt(-.4, -1, -.3);
+		stage.add(sun);
 		var ground = new Material();
 		ground.setBaseColor(0x3a3f4aff);
 		// The ground isn't something to pick: the pointer passes it (an unpickable node).
-		var floor = Node.model(Mesh.plane(16, 16), ground);
+		var floor = new Model(Mesh.plane(16, 16), ground);
 		floor.setPickable(false);
 		stage.add(floor);
 		for (i in 0...8) {
 			var a = i / 8 * Math.PI * 2, material = new Material();
 			material.setBaseColor(COLORS[i]);
-			var cube = Node.model(Mesh.cube(1, 1, 1), material);
+			var cube = new Model(Mesh.cube(1, 1, 1), material);
 			cube.setName('cube ${i + 1}');
 			cube.setPosition(4 * Math.cos(a), .5, 4 * Math.sin(a));
 			stage.add(cube);
@@ -76,12 +76,12 @@ class App extends BaseApp {
 		}
 		var white = new Material();
 		white.setBaseColor(0xe8e8f0ff);
-		var sphere = Node.model(Mesh.sphere(1), white);
+		var sphere = new Model(Mesh.sphere(1), white);
 		sphere.setName("sphere");
 		sphere.setPosition(0, 1, 0);
 		stage.add(sphere);
 		shapes.push(sphere);
-		spinner = Node.model(Mesh.cube(.8, .8, .8), white);
+		spinner = new Model(Mesh.cube(.8, .8, .8), white);
 		spinner.setName("spinner");
 		spinner.setPosition(0, 3, 0);
 		stage.add(spinner);
@@ -141,7 +141,7 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
-		var hovered:Null<Node> = Std.isOfType(pointer.getHovered(), Node) ? cast pointer.getHovered() : null;
+		var hovered:Null<Node3D> = Std.isOfType(pointer.getHovered(), Node3D) ? cast pointer.getHovered() : null;
 		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
 		var y = buttonY + 36 + 10;
 		y += Text2D.drawWrapped(batch,

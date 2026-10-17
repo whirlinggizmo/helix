@@ -6,16 +6,17 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 
 /** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
 	under its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its parts are found by name
-	once and kept: the wheels turn, and H switches the headlights. D drives the car around a circle and parks it; C rides along, through a camera node
+	once and kept: the wheels turn, and H switches the headlights. D drives the car around a circle and parks it; C rides along, through a camera
 	parented to the car (behind it and above, looking ahead), and back to the circling camera. O stops the circling camera; Escape quits where
 	quitting means anything. */
 class App extends BaseApp {
@@ -24,17 +25,16 @@ class App extends BaseApp {
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();
-	// The chase camera: on a node of the car's, so it follows it.
+	// The chase camera: under the car once it's loaded, so it follows it.
 	var chase = new Camera3D();
-	var chaseNode:Node;
 	var chasing = false;
 	var driving = false;
 	var travel = 0.;
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var car:Null<Node>;
-	var wheels:Array<Node> = [];
-	var beams:Array<Node> = [];
+	var car:Null<Node3D>;
+	var wheels:Array<Node3D> = [];
+	var beams:Array<Node3D> = [];
 	var status = 'loading $MODEL';
 	var orbit = true;
 	var headlights = true;
@@ -49,15 +49,14 @@ class App extends BaseApp {
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
 		camera.setMinAspect(16 / 9);
 		chase.setMinAspect(16 / 9);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(2);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(2);
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
 		ground.setBaseColor(0x616164ff);
 		ground.setRoughness(.9);
-		stage.add(Node.model(Mesh.plane(14, 14), ground));
+		stage.add(new Model(Mesh.plane(14, 14), ground));
 
 		new Models(Services.assets, Services.textures).load(MODEL, result -> switch result {
 			case Ready(file):
@@ -69,10 +68,9 @@ class App extends BaseApp {
 					beams.push(car.find(name));
 				stage.add(car);
 				// Behind and above it, looking ahead; in the car's own units.
-				chaseNode = Node.camera(chase);
-				chaseNode.setPosition(0, 1.8, -4.5);
-				chaseNode.lookAt(0, .4, 2);
-				car.add(chaseNode);
+				chase.setPosition(0, 1.8, -4.5);
+				chase.lookAt(0, .4, 2);
+				car.add(chase);
 				status = MODEL;
 				for (warning in file.getWarnings())
 					trace('$MODEL: $warning');

@@ -8,14 +8,17 @@ import helix.render2d.Text2D;
 import helix.render3d.Animator;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.PickHit;
+import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
+import helix.render3d.Text3D;
 
 /** Every kind a Stage3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
 	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). The hit's
@@ -42,29 +45,28 @@ class App extends BaseApp {
 		stage.setAmbient(0xffffffff, .3);
 		// Framed for 16:9: everything pickable in view on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var sun = new Light(Directional);
+		var sun = new DirectionalLight();
 		sun.setIntensity(2.5);
-		var sunNode = Node.light(sun);
-		sunNode.lookAt(-.4, -1, -.5);
-		stage.add(sunNode);
+		sun.lookAt(-.4, -1, -.5);
+		stage.add(sun);
 		var ground = new Material();
 		ground.setBaseColor(0x3a3f4aff);
-		var floor = Node.model(Mesh.plane(14, 14), ground);
+		var floor = new Model(Mesh.plane(14, 14), ground);
 		floor.setName("the ground");
 		stage.add(floor);
 		var red = new Material(), blue = new Material();
 		red.setBaseColor(0xd2503cff);
 		blue.setBaseColor(0x3c78d2ff);
-		var cube = Node.model(Mesh.cube(1.2, 1.2, 1.2), red);
+		var cube = new Model(Mesh.cube(1.2, 1.2, 1.2), red);
 		cube.setName("a cube");
 		cube.setPosition(-3, .6, 1);
 		cube.setRotation(0, .6, 0);
 		stage.add(cube);
-		var sphere = Node.model(Mesh.sphere(.8), blue);
+		var sphere = new Model(Mesh.sphere(.8), blue);
 		sphere.setName("a sphere");
 		sphere.setPosition(-1, .8, -1.5);
 		stage.add(sphere);
-		var label = Node.text3D("PICK ME", .5, 0xf5d25aff);
+		var label = new Text3D("PICK ME", .5, 0xf5d25aff);
 		label.setName("a text");
 		// Text lets picks through unless asked.
 		label.setPickable(true);
@@ -72,7 +74,7 @@ class App extends BaseApp {
 		stage.add(label);
 		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
 			case Ready(texture):
-				var logo = Node.sprite(texture, 0x7ab4ffff);
+				var logo = new Sprite3D(texture, 0x7ab4ffff);
 				logo.setName("a sprite");
 				logo.setSpriteSize(1.4, 1.4);
 				logo.setPosition(-3, 2.6, -1);
@@ -118,15 +120,16 @@ class App extends BaseApp {
 		animator.play(animations.getClip("Walk"));
 	}
 
-	static function skinned(node:Node):Array<Node> {
-		var out = node.getKind() == Model && node.getMesh().isSkinned() ? [node] : [];
+	static function skinned(node:Node3D):Array<Model> {
+		var model = Std.downcast(node, Model);
+		var out = model != null && model.getMesh().isSkinned() ? [model] : [];
 		for (i in 0...node.getChildCount())
 			out = out.concat(skinned(node.getChild(i)));
 		return out;
 	}
 
 	// The node's name, or its parent's (a file's parts are named for the node holding them).
-	static function nameOf(node:Node):String {
+	static function nameOf(node:Node3D):String {
 		var at = node;
 		while (at != null && at.getName() == "")
 			at = at.getParent();

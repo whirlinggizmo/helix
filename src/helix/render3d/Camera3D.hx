@@ -1,17 +1,10 @@
 package helix.render3d;
 
-/** A 3D view, perspective or orthographic (setOrthographic): an eye looking at a target, right-handed with +y up by default, seen in a viewport that is the whole framebuffer or an
-	area of it (setViewportArea), as Camera2D's. Distances are world units; angles radians. */
-class Camera3D {
-	var eyeX = 0.;
-	var eyeY = 0.;
-	var eyeZ = 10.;
-	var targetX = 0.;
-	var targetY = 0.;
-	var targetZ = 0.;
-	var upX = 0.;
-	var upY = 1.;
-	var upZ = 0.;
+/** A 3D view, perspective or orthographic (setOrthographic), as a node: it sees from its world position down its -z, its +y up (its scale
+	ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a
+	target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's.
+	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. */
+class Camera3D extends Node3D {
 	var fovY = Math.PI / 4;
 	var near = .1;
 	var far = 1000.;
@@ -29,67 +22,99 @@ class Camera3D {
 	var projection = new Mat4();
 	var viewProjection = new Mat4();
 	var placed = new Mat4();
-
-	/** The node placing it (Node.camera), or null: then its view is setView's. */
-	@:allow(helix.render3d.Node)
-	var node(default, null):Null<Node>;
+	// Where it is in the world and which way it looks, from placed: the eye, the unit forward (its -z) and up (its +y).
+	var eye = [0., 0, 0];
+	var forward = [0., 0, -1];
+	var up = [0., 1, 0];
 
 	/** A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport. */
-	public function new()
+	public function new() {
+		super();
 		setView(0, 0, 10, 0, 0, 0);
-
-	/** Looks from eye at target; up gives the roll. False, changing nothing, when the eye is at the target or up is parallel to the view. On a
-		node, the node's place replaces it at the next draw. */
-	public function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX = 0., upY = 1., upZ = 0.):Bool {
-		if (!view.makeLookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ))
-			return false;
-		this.eyeX = eyeX;
-		this.eyeY = eyeY;
-		this.eyeZ = eyeZ;
-		this.targetX = targetX;
-		this.targetY = targetY;
-		this.targetZ = targetZ;
-		this.upX = upX;
-		this.upY = upY;
-		this.upZ = upZ;
-		return true;
 	}
 
-	/** The eye's X. */
-	public function getEyeX():Float
-		return eyeX;
+	/** Places it at eye and turns it to look at target, up giving the roll: positions relative to its parent (the world's, at the top). False,
+		changing nothing, when the eye is at the target or up is along the view. */
+	public function setView(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX = 0., upY = 1., upZ = 0.):Bool {
+		var x = px, y = py, z = pz;
+		setPosition(eyeX, eyeY, eyeZ);
+		if (lookAt(targetX, targetY, targetZ, upX, upY, upZ))
+			return true;
+		setPosition(x, y, z);
+		return false;
+	}
 
-	/** The eye's Y. */
-	public function getEyeY():Float
-		return eyeY;
+	// Its world matrix as it is now, and from it the eye, forward and up.
+	function place():Void {
+		computeWorld(placed);
+		eye[0] = placed.get(12);
+		eye[1] = placed.get(13);
+		eye[2] = placed.get(14);
+		unit(forward, -placed.get(8), -placed.get(9), -placed.get(10), 0, 0, -1);
+		unit(up, placed.get(4), placed.get(5), placed.get(6), 0, 1, 0);
+	}
 
-	/** The eye's Z. */
-	public function getEyeZ():Float
-		return eyeZ;
+	// x, y, z made a unit vector into out; the fallback for a zero one.
+	static function unit(out:Array<Float>, x:Float, y:Float, z:Float, fx:Float, fy:Float, fz:Float):Void {
+		var l = Math.sqrt(x * x + y * y + z * z);
+		out[0] = l > 0 ? x / l : fx;
+		out[1] = l > 0 ? y / l : fy;
+		out[2] = l > 0 ? z / l : fz;
+	}
 
-	/** The target's X. */
-	public function getTargetX():Float
-		return targetX;
+	/** The eye's x: its world position. */
+	public function getEyeX():Float {
+		place();
+		return eye[0];
+	}
 
-	/** The target's Y. */
-	public function getTargetY():Float
-		return targetY;
+	/** The eye's y. */
+	public function getEyeY():Float {
+		place();
+		return eye[1];
+	}
 
-	/** The target's Z. */
-	public function getTargetZ():Float
-		return targetZ;
+	/** The eye's z. */
+	public function getEyeZ():Float {
+		place();
+		return eye[2];
+	}
 
-	/** The up direction setView was given (the roll), x. */
-	public function getUpX():Float
-		return upX;
+	/** Which way it looks, in the world, x: its -z, a unit vector. */
+	public function getForwardX():Float {
+		place();
+		return forward[0];
+	}
 
-	/** The up direction's y. */
-	public function getUpY():Float
-		return upY;
+	/** Which way it looks, y. */
+	public function getForwardY():Float {
+		place();
+		return forward[1];
+	}
 
-	/** The up direction's z. */
-	public function getUpZ():Float
-		return upZ;
+	/** Which way it looks, z. */
+	public function getForwardZ():Float {
+		place();
+		return forward[2];
+	}
+
+	/** Its up in the world, x: its +y, a unit vector square to the view. */
+	public function getUpX():Float {
+		place();
+		return up[0];
+	}
+
+	/** Its up, y. */
+	public function getUpY():Float {
+		place();
+		return up[1];
+	}
+
+	/** Its up, z. */
+	public function getUpZ():Float {
+		place();
+		return up[2];
+	}
 
 	/** The vertical field of view in radians. */
 	public function getFovY():Float
@@ -206,24 +231,10 @@ class Camera3D {
 		return true;
 	}
 
-	/** The node placing it, or null. */
-	public function getNode():Null<Node>
-		return node;
-
-	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call (on a node, the view from where the node is
-		now). */
+	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call, the view from where it is in the world now. */
 	public function getViewProjection():Mat4 {
-		if (node != null && node.getCamera() == this) {
-			// Seeing from the node, down its -z, its +y up; its scale ignored.
-			node.computeWorld(placed);
-			var fx = -placed.get(8),
-				fy = -placed.get(9),
-				fz = -placed.get(10),
-				fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
-			var ex = placed.get(12), ey = placed.get(13), ez = placed.get(14);
-			if (fl > 0)
-				setView(ex, ey, ez, ex + fx / fl, ey + fy / fl, ez + fz / fl, placed.get(4), placed.get(5), placed.get(6));
-		}
+		place();
+		view.makeLookAt(eye[0], eye[1], eye[2], eye[0] + forward[0], eye[1] + forward[1], eye[2] + forward[2], up[0], up[1], up[2]);
 		if (orthographicHeight > 0)
 			projection.makeOrthographic(getDrawnHeight(), viewportWidth / viewportHeight, near, far);
 		else

@@ -6,11 +6,12 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 
 /** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a Stage3D does when models agree on everything
@@ -30,8 +31,8 @@ class App extends BaseApp {
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
 	var shared = new Material();
-	var cubes:Array<Node> = [];
-	var cars:Array<Node> = [];
+	var cubes:Array<Model> = [];
+	var cars:Array<Node3D> = [];
 	var ownMaterials = false;
 
 	// A colour around the hue circle for cube i.
@@ -64,15 +65,14 @@ class App extends BaseApp {
 		stage.setAmbient(0xa0b4dcff, .35);
 		// Framed for 16:9: the whole field across on a phone held upright too.
 		camera.setMinAspect(16 / 9);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(3);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(3);
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
 		ground.setBaseColor(0xb4b8bfff);
 		ground.setRoughness(.9);
-		var floor = Node.model(Mesh.plane(60, 60), ground);
+		var floor = new Model(Mesh.plane(60, 60), ground);
 		floor.setPosition(0, -.6, 0);
 		stage.add(floor);
 
@@ -80,13 +80,15 @@ class App extends BaseApp {
 		var cube = Mesh.cube(.6, .6, .6);
 		shared.setRoughness(.5);
 		for (i in 0...SIDE * SIDE) {
-			var node = Node.model(cube, shared, tint(i));
+			var node = new Model(cube, shared);
+			node.setTint(tint(i));
 			cubes.push(node);
 			stage.add(node);
 		}
 		// See-through copies of the same cube: same mesh, same material, alpha in the tint.
 		for (i in 0...GLASS) {
-			var glass = Node.model(cube, shared, 0xffffff6e);
+			var glass = new Model(cube, shared);
+			glass.setTint(0xffffff6e);
 			glass.setPosition(i * 2 - 4, 5.2, 5);
 			glass.setScale(2, 2, 2);
 			stage.add(glass);

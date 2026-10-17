@@ -10,8 +10,9 @@ import helix.render3d.Camera3D;
 import helix.render3d.Environment;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Tonemap;
 
@@ -48,7 +49,7 @@ class App extends BaseApp {
 	var rotation = 0.;
 	var orbit = true;
 	var angle = 0.;
-	var turning:Array<Node> = [];
+	var turning:Array<Node3D> = [];
 	var shaders:Shaders;
 
 	// A linear color as 0xRRGGBBAA, sRGB-encoded.
@@ -63,7 +64,7 @@ class App extends BaseApp {
 		material.setBaseColor(base);
 		material.setMetallic(metallic);
 		material.setRoughness(roughness);
-		var node = Node.model(mesh, material);
+		var node = new Model(mesh, material);
 		node.setPosition(x, y, 0);
 		stage.add(node);
 		turning.push(node);

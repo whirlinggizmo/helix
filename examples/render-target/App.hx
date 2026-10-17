@@ -9,11 +9,12 @@ import helix.render2d.Fonts;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
+import helix.render3d.Model;
 import helix.render3d.Models;
-import helix.render3d.Node;
+import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 
 /** Drawing into textures (Texture2D.renderTarget, IGraphics.beginTargetPass):
@@ -42,8 +43,8 @@ class App extends BaseApp {
 	var minimap:Texture2D;
 	var label:Texture2D;
 	var font:Null<Font2D>;
-	var car:Null<Node>;
-	var globe:Node;
+	var car:Null<Node3D>;
+	var globe:Model;
 
 	override public function init():Void {
 		Services.window.setTitle("HeliX render targets");
@@ -56,9 +57,8 @@ class App extends BaseApp {
 
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .25);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(3);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(3);
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		camera.setView(0, 6, 10, 0, .8, 0);
@@ -69,7 +69,7 @@ class App extends BaseApp {
 		// The ground: a flattened sphere.
 		var ground = new Material();
 		ground.setBaseColor(0x8a9689ff);
-		var floor = Node.model(Mesh.sphere(.5, 32, 64), ground);
+		var floor = new Model(Mesh.sphere(.5, 32, 64), ground);
 		floor.setPosition(0, -.05, 0);
 		floor.setScale(8, .1, 8);
 		stage.add(floor);
@@ -77,7 +77,7 @@ class App extends BaseApp {
 		var wrap = new Material();
 		wrap.setLit(false);
 		wrap.setTexture(label);
-		globe = Node.model(Mesh.sphere(.5, 32, 64), wrap);
+		globe = new Model(Mesh.sphere(.5, 32, 64), wrap);
 		globe.setPosition(-2.2, 1.2, 0);
 		globe.setScale(1.6, 1.6, 1.6);
 		stage.add(globe);

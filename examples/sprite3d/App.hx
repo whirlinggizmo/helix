@@ -8,10 +8,11 @@ import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
-import helix.render3d.Node;
+import helix.render3d.Model;
+import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
 
 /** Textured sprites on a 3D stage, under a circling camera, over a grid (Batch3D) and a lit pedestal:
@@ -28,17 +29,17 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
-	var logo:Node;
-	var sign:Node;
+	var logo:Sprite3D;
+	var sign:Sprite3D;
 	var orbit = true;
 	var angle = 0.;
-	var trees:Array<Node> = [];
-	var tileSprites:Array<Node> = [];
-	var flames:Array<Node> = [];
+	var trees:Array<Sprite3D> = [];
+	var tileSprites:Array<Sprite3D> = [];
+	var flames:Array<Sprite3D> = [];
 
 	// A sprite of the tile sheet's cell x, y, width x height texels, placed at x, z on the ground.
-	function tile(cell:Array<Int>, x:Float, z:Float, width:Float, height:Float):Node {
-		var sprite = Node.sprite(null);
+	function tile(cell:Array<Int>, x:Float, z:Float, width:Float, height:Float):Sprite3D {
+		var sprite = new Sprite3D(null);
 		sprite.setRegion(cell[0], cell[1], cell[2], cell[3]);
 		sprite.setSpriteSize(width, height);
 		sprite.setPosition(x, 0, z);
@@ -57,19 +58,18 @@ class App extends BaseApp {
 		batch3D = new Batch3D(gpu);
 		stage = new Stage3D(gpu);
 		stage.setAmbient(0xffffffff, .3);
-		var sunLight = new Light(Directional);
-		sunLight.setIntensity(2.5);
-		var sun = Node.light(sunLight);
+		var sun = new DirectionalLight();
+		sun.setIntensity(2.5);
 		sun.lookAt(-.5, -1, -.3);
 		stage.add(sun);
 		var stone = new Material();
 		stone.setBaseColor(0x8a8f99ff);
 		stone.setRoughness(.8);
-		var pedestal = Node.model(Mesh.cylinder(.6, 1), stone);
+		var pedestal = new Model(Mesh.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
 		stage.add(pedestal);
 
-		logo = Node.sprite(null);
+		logo = new Sprite3D(null);
 		logo.setSpriteSize(1.6, 1.6);
 		stage.add(logo);
 		// Trees: upright, standing on their bottom edge.
@@ -111,7 +111,7 @@ class App extends BaseApp {
 		Services.textures.load("textures/flame.png", true, result -> switch result {
 			case Ready(texture):
 				for (i in 0...5) {
-					var flame = Node.sprite(texture, 0xffa040ff);
+					var flame = new Sprite3D(texture, 0xffa040ff);
 					flame.setRegion(0, 0, 64, 64);
 					flame.setSpriteSize(.9, .9);
 					flame.setPivot(.5, 1);
@@ -122,7 +122,7 @@ class App extends BaseApp {
 					stage.add(flame);
 				}
 				// The coin's glow: a soft puff of the same sheet, gold, added over everything.
-				var glow = Node.sprite(texture, 0xffd25aff);
+				var glow = new Sprite3D(texture, 0xffd25aff);
 				glow.setRegion(0, 0, 64, 64);
 				glow.setSpriteSize(1.4, 1.4);
 				glow.setPosition(-2, .5, 1.5);

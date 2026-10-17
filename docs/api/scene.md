@@ -112,11 +112,45 @@ function isHolding():Bool
 - `setLoader`: The loader to show: set by the stack as the wait begins.
 - `isHolding`: Whether to stay shown once the loads are done (a "loaded, press to go" screen): the stack keeps it until this is false. False unless overridden.
 
+## Node
+
+*class* in `src/helix/scene/Node.hx`
+
+What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and find. It has no transform: Node3D adds its own, and takes children of its own kind only (its add and remove). Never made bare and never subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130).
+
+```haxe
+function getName():String
+function setName(value:String):Void
+function find(name:String):Null<Node>
+function isEnabled():Bool
+function setEnabled(value:Bool):Void
+function isVisible():Bool
+function setVisible(value:Bool):Void
+function isPickable():Bool
+function setPickable(value:Bool):Void
+function getParent():Null<Node>
+function getChildCount():Int
+function getChild(index:Int):Null<Node>
+```
+
+- `getName`: Its name: a model file's node name, or what the game gave it; "" for none.
+- `setName`: Names it.
+- `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
+- `isEnabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
+- `setEnabled`: Turns it, and everything under it, on or off (isEnabled).
+- `isVisible`: Whether its own output is drawn: off, a model, sprite, text or emitter isn't drawn and a light doesn't shine or cast; it stays placed, and its children are as they are. On to start.
+- `setVisible`: Shows or hides its own output (isVisible).
+- `isPickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
+- `setPickable`: Lets picks hit its own output, or not (isPickable).
+- `getParent`: Its parent, or null.
+- `getChildCount`: How many children it has.
+- `getChild`: Its child at index, in drawing order; null past the end.
+
 ## Pointer
 
 *class* in `src/helix/scene/Pointer.hx`
 
-The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's released, the stages under it see nothing (isCaptured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame they happen in. Nodes are compared by identity: a 3D stage's are Nodes, a 2D stage's Node2Ds.
+The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's released, the stages under it see nothing (isCaptured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds.
 
 ```haxe
 function new(input:IInput)
