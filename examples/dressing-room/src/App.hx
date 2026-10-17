@@ -2,6 +2,7 @@ import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.host.Services;
 import helix.input.Key;
+import helix.math.Interpolate;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Stage2D;
@@ -463,9 +464,8 @@ class App extends BaseApp {
 		if (dragFrom == null)
 			turn += dt * .15;
 		// The camera eases toward the slot's framing.
-		var ease = 1 - Math.exp(-dt * 6);
-		focus += (FOCUS[slot] - focus) * ease;
-		distance += (DISTANCE[slot] * zoom - distance) * ease;
+		focus = Interpolate.damp(focus, FOCUS[slot], 6, dt);
+		distance = Interpolate.damp(distance, DISTANCE[slot] * zoom, 6, dt);
 		if (character != null)
 			character.setRotation(0, turn, 0);
 		if (animator != null)
