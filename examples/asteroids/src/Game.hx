@@ -1,3 +1,5 @@
+import helix.math.Random;
+
 class Body {
 	public var x:Int;
 	public var y:Int;
@@ -39,7 +41,8 @@ class Game {
 	// The title screen's drifting rocks: dressing only, from a generator of their own, never part of a game (play starts from a fresh field).
 	public var attract:Array<Body> = [];
 
-	var attractRng = 0x2545f491;
+	// The title's dressing has its own stream, kept as a state: the game's isn't touched, so when play starts doesn't matter.
+	var attractState = 0x2545f491;
 
 	public var bullets:Array<Body> = [];
 	public var particles:Array<Body> = [];
@@ -54,22 +57,15 @@ class Game {
 	public var waveDelay = 0;
 	public var thrusting = false;
 
-	var rng:Int;
+	var rng:Random;
 	var seed:Int;
 	var startDown = false;
 	var turnFraction = 0;
 
 	public function new(seed:Int = 12345) {
 		this.seed = seed;
-		rng = seed == 0 ? 1 : seed;
+		rng = new Random(seed);
 		titleField();
-	}
-
-	public function random(max:Int):Int {
-		rng ^= rng << 13;
-		rng ^= rng >>> 17;
-		rng ^= rng << 5;
-		return (rng & 0x7fffffff) % max;
 	}
 
 	public static inline function wrap(value:Int, size:Int):Int {
@@ -93,12 +89,12 @@ class Game {
 
 	function makeRock(size:Int, x:Int, y:Int, angle:Int = -1):Body {
 		if (angle < 0)
-			angle = random(256);
-		var speed = (size == 3 ? 50 : size == 2 ? 90 : 140) * (70 + random(61)) / 100.,
+			angle = rng.nextInt(256);
+		var speed = (size == 3 ? 50 : size == 2 ? 90 : 140) * (70 + rng.nextInt(61)) / 100.,
 			velocity = Std.int(speed * Q / 60);
-		var rock = new Body(x, y, Std.int(Trig.cos[angle] * velocity / 1024), Std.int(Trig.sin[angle] * velocity / 1024), size, 0, random(256));
+		var rock = new Body(x, y, Std.int(Trig.cos[angle] * velocity / 1024), Std.int(Trig.sin[angle] * velocity / 1024), size, 0, rng.nextInt(256));
 		for (i in 0...10)
-			rock.shape.push(74 + random(35));
+			rock.shape.push(74 + rng.nextInt(35));
 		return rock;
 	}
 
@@ -107,16 +103,15 @@ class Game {
 		bullets = [];
 		particles = [];
 		thrusting = false;
-		// The dressing's own generator: the game's isn't touched, so when play starts doesn't matter.
-		var gameRng = rng;
-		rng = attractRng;
-		attract = [for (_ in 0...6) makeRock(3, random(W) * Q, random(H) * Q)];
-		attractRng = rng;
-		rng = gameRng;
+		var gameState = rng.getState();
+		rng.setState(attractState);
+		attract = [for (_ in 0...6) makeRock(3, rng.nextInt(W) * Q, rng.nextInt(H) * Q)];
+		attractState = rng.getState();
+		rng.setState(gameState);
 	}
 
 	public function reset():Void {
-		rng = seed == 0 ? 1 : seed;
+		rng.setSeed(seed);
 		score = 0;
 		lives = 3;
 		wave = 0;
@@ -152,9 +147,9 @@ class Game {
 		wave++;
 		waveDelay = 0;
 		for (_ in 0...3 + wave) {
-			var side = random(4),
-				x = side == 0 ? 0 : side == 1 ? W * Q : random(W) * Q,
-				y = side == 2 ? 0 : side == 3 ? H * Q : random(H) * Q;
+			var side = rng.nextInt(4),
+				x = side == 0 ? 0 : side == 1 ? W * Q : rng.nextInt(W) * Q,
+				y = side == 2 ? 0 : side == 3 ? H * Q : rng.nextInt(H) * Q;
 			rocks.push(makeRock(3, wrap(x, W * Q), wrap(y, H * Q)));
 		}
 	}
@@ -170,10 +165,10 @@ class Game {
 
 	public function burst(x:Int, y:Int, n:Int, flame:Bool = false):Void {
 		for (_ in 0...n) {
-			var angle = flame ? wrap(ship.angle + 128 + random(25) - 12, 256) : random(256),
-				velocity = flame ? 500 + random(250) : 200 + random(550);
+			var angle = flame ? wrap(ship.angle + 128 + rng.nextInt(25) - 12, 256) : rng.nextInt(256),
+				velocity = flame ? 500 + rng.nextInt(250) : 200 + rng.nextInt(550);
 			var particle = new Body(x, y, Std.int(Trig.cos[angle] * velocity / 1024), Std.int(Trig.sin[angle] * velocity / 1024), flame ? 0 : 1,
-				flame ? 7 + random(12) : 24 + random(37));
+				flame ? 7 + rng.nextInt(12) : 24 + rng.nextInt(37));
 			particles.push(particle);
 		}
 	}
@@ -192,9 +187,9 @@ class Game {
 		sounds.push(rock.size == 3 ? 2 : rock.size == 2 ? 3 : 4);
 		if (rock.size > 1) {
 			splits++;
-			var angle = random(256);
+			var angle = rng.nextInt(256);
 			rocks.push(makeRock(rock.size - 1, rock.x, rock.y, angle));
-			rocks.push(makeRock(rock.size - 1, rock.x, rock.y, wrap(angle + 77 + random(103), 256)));
+			rocks.push(makeRock(rock.size - 1, rock.x, rock.y, wrap(angle + 77 + rng.nextInt(103), 256)));
 		}
 	}
 

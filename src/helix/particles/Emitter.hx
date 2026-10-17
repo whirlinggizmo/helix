@@ -1,5 +1,6 @@
 package helix.particles;
 
+import helix.math.Random;
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
 import helix.render3d.Node.SpriteAlpha;
@@ -56,8 +57,7 @@ class Emitter {
 	var stretch = 0.;
 	var alphaMode:SpriteAlpha = Add;
 	var cutoff = .5;
-	var random:Int;
-	var seed:Int;
+	var random:Random;
 	var flat:Bool;
 	// The ring of birth records, newest at next - 1; live of them (the newest) may still be alive.
 	var ring:Bytes;
@@ -82,10 +82,7 @@ class Emitter {
 		max = maxParticles < 1 ? 1 : maxParticles > 65536 ? 65536 : maxParticles;
 		this.flat = flat;
 		ring = Bytes.alloc(this.max * RECORD);
-		random = seeds++ * 0x9E3779B1;
-		if (random == 0)
-			random = 1;
-		seed = random;
+		random = new Random(seeds++ * 0x9E3779B1);
 	}
 
 	/** Its texture, or null. */
@@ -442,14 +439,12 @@ class Emitter {
 
 	/** The seed it was last given (or its own, unseeded). */
 	public function getSeed():Int
-		return seed;
+		return random.getSeed();
 
 	/** Where its random numbers start: the same seed and settings give the same particles. 0 is taken as 1 (the generator needs a seed other
 		than 0). */
-	public function setSeed(seed:Int):Void {
-		this.seed = seed == 0 ? 1 : seed;
-		random = this.seed;
-	}
+	public function setSeed(seed:Int):Void
+		random.setSeed(seed);
 
 	/** Particles that may still be alive. */
 	public function getParticleCount():Int
@@ -461,16 +456,8 @@ class Emitter {
 		owed = 0;
 	}
 
-	// xorshift32: 0..1.
-	function next01():Float {
-		random ^= random << 13;
-		random ^= random >>> 17;
-		random ^= random << 5;
-		return (random >>> 8) / 16777216;
-	}
-
 	inline function signed():Float
-		return next01() * 2 - 1;
+		return random.nextFloat() * 2 - 1;
 
 	/** Bursts count particles at once, where it is now. False below 0. */
 	public function burst(count:Int):Bool {
@@ -556,12 +543,13 @@ class Emitter {
 		var ox = 0., oy = 0., oz = 0.;
 		if (sphere > 0) {
 			if (flat) {
-				var a = next01() * Math.PI * 2,
-					r = Math.sqrt(next01()) * sphere;
+				var a = random.nextFloat() * Math.PI * 2,
+					r = Math.sqrt(random.nextFloat()) * sphere;
 				ox = Math.cos(a) * r;
 				oy = Math.sin(a) * r;
 			} else {
-				var zz = signed(), ring = Math.sqrt(Math.max(0, 1 - zz * zz)), phi = next01() * Math.PI * 2, r = Math.pow(next01(), 1 / 3) * sphere;
+				var zz = signed(), ring = Math.sqrt(Math.max(0, 1 - zz * zz)), phi = random.nextFloat() * Math.PI * 2,
+					r = Math.pow(random.nextFloat(), 1 / 3) * sphere;
 				ox = Math.cos(phi) * ring * r;
 				oy = Math.sin(phi) * ring * r;
 				oz = zz * r;
@@ -593,8 +581,8 @@ class Emitter {
 				var qx = dy * pz - dz * py,
 					qy = dz * px - dx * pz,
 					qz = dx * py - dy * px;
-				var around = next01() * Math.PI * 2,
-					off = Math.acos(1 - next01() * (1 - Math.cos(spread)));
+				var around = random.nextFloat() * Math.PI * 2,
+					off = Math.acos(1 - random.nextFloat() * (1 - Math.cos(spread)));
 				var ca = Math.cos(around),
 					sa = Math.sin(around),
 					so = Math.sin(off),
@@ -619,11 +607,11 @@ class Emitter {
 		ring.setFloat(at + 16, vx);
 		ring.setFloat(at + 20, vy);
 		ring.setFloat(at + 24, flat ? 0 : vz);
-		ring.setFloat(at + 28, lifeMin + (lifeMax - lifeMin) * next01());
+		ring.setFloat(at + 28, lifeMin + (lifeMax - lifeMin) * random.nextFloat());
 		ring.setFloat(at + 32, 1 + signed() * sizeVariance);
-		ring.setFloat(at + 36, spinMin + (spinMax - spinMin) * next01());
-		ring.setFloat(at + 40, next01() * Math.PI * 2);
-		ring.setFloat(at + 44, next01());
+		ring.setFloat(at + 36, spinMin + (spinMax - spinMin) * random.nextFloat());
+		ring.setFloat(at + 40, random.nextFloat() * Math.PI * 2);
+		ring.setFloat(at + 44, random.nextFloat());
 		next = (next + 1) % max;
 		if (live < max)
 			live++;

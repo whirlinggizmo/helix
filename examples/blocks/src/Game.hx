@@ -1,3 +1,5 @@
+import helix.math.Random;
+
 /** One tick's requests, from keyboard, touch or a script. */
 class Actions {
 	public var start = false;
@@ -63,32 +65,17 @@ class Game {
 	/** Sound events this tick: move, rotate, lock, drop, clear, four, level, over, hold, start. */
 	public var events:Array<String> = [];
 
-	var rng:Int;
+	var rng:Random;
 	var seed:Int;
 
 	public function new(seed = 12345) {
 		this.seed = seed;
-		rng = seed;
-	}
-
-	function random(max:Int):Int {
-		rng ^= rng << 13;
-		rng ^= rng >>> 17;
-		rng ^= rng << 5;
-		return (rng & 0x7fffffff) % max;
+		rng = new Random(seed);
 	}
 
 	function refill():Void {
 		while (queue.length < 7) {
-			var bag = [0, 1, 2, 3, 4, 5, 6];
-			var i = 6;
-			while (i > 0) {
-				var j = random(i + 1), t = bag[i];
-				bag[i] = bag[j];
-				bag[j] = t;
-				i--;
-			}
-			queue = queue.concat(bag);
+			queue = queue.concat(rng.shuffle([0, 1, 2, 3, 4, 5, 6]));
 		}
 	}
 
@@ -113,7 +100,7 @@ class Game {
 	}
 
 	public function reset():Void {
-		rng = seed;
+		rng.setSeed(seed);
 		board = [for (_ in 0...W * H) 0];
 		queue = [];
 		held = -1;
