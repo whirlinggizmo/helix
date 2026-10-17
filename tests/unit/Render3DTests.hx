@@ -123,6 +123,24 @@ class Render3DTests {
 		@:privateAccess child.update(parent.worldMatrix, changed);
 		check(changed && near(child.worldMatrix.get(13), 1), "A parent's move reaches its child");
 		check(! @:privateAccess child.update(parent.worldMatrix, false), "Nothing changed: nothing recomputed");
+		parent.x = 4;
+		changed = @:privateAccess parent.update(null, false);
+		@:privateAccess child.update(parent.worldMatrix, changed);
+		check(changed && parent.x == 4 && near(child.worldMatrix.get(12), 4), "Assigning x moves the node in the world");
+		parent.y = 2;
+		parent.z = -1;
+		parent.scaleX = 2;
+		parent.scaleY = 3;
+		parent.scaleZ = 4;
+		changed = @:privateAccess parent.update(null, false);
+		@:privateAccess child.update(parent.worldMatrix, changed);
+		check(changed && near(child.worldMatrix.get(13), 5) && near(child.worldMatrix.get(14), -1) && near(child.worldMatrix.get(0), 2)
+			&& near(child.worldMatrix.get(10), 4),
+			"Assigning y, z and the scales move it too");
+		parent.setPosition(0, 0, 0);
+		parent.setScale(1, 1, 1);
+		@:privateAccess parent.update(null, false);
+		@:privateAccess child.update(parent.worldMatrix, true);
 		var looker = new Node3D();
 		check(looker.lookAt(0, 0, -5) && @:privateAccess looker.update(null, false), "lookAt turns a node");
 		check(near(looker.worldMatrix.get(10), 1), "Looking down -z leaves z as it was");

@@ -1,6 +1,6 @@
 package helix.ui;
 
-import helix.render2d.Node2D;
+import helix.render2d.Text2D;
 
 /** A line of text (wrapped, if given a width): shown, never focused. */
 class Label extends Widget {
@@ -8,7 +8,7 @@ class Label extends Widget {
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
 		var theme = ui.theme;
-		node = Node2D.text(text, theme.textSize, theme.textColor, Left, theme.font);
+		node = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
 		root.addChild(node);
 		box = Box.of(node);
 	}
@@ -17,13 +17,13 @@ class Label extends Widget {
 	public var text(get, set):String;
 
 	function get_text():String
-		return node.getText();
+		return node.text;
 
 	function set_text(value:String):String {
-		node.setText(value);
+		node.text = value;
 		return value;
 	}
 
 	/** Its text node: its color, size, alignment, wrap width. */
-	public var node(default, null):Node2D;
+	public var node(default, null):Text2D;
 }

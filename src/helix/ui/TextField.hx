@@ -2,6 +2,7 @@ package helix.ui;
 
 import helix.input.Key;
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
 
 /** A line of text typed in: with focus, the characters typed (after the keyboard layout) are added, Backspace takes the last off and Enter
@@ -9,10 +10,10 @@ import helix.render2d.Text2D;
 	so a platform's keyboard shows for it), however it got focus, so a game doesn't act on
 	letters typed. Ask text, changed and submitted once a frame. No input method (IME) composition yet. */
 class TextField extends Widget {
-	var face:Node2D;
-	var textNode:Node2D;
-	var caret:Node2D;
-	var hint:Node2D;
+	var face:Shape2D;
+	var textNode:Text2D;
+	var caret:Shape2D;
+	var hint:Text2D;
 	var maxLength:Int;
 
 	@:allow(helix.ui.Ui)
@@ -20,12 +21,12 @@ class TextField extends Widget {
 		super(ui, name);
 		this.maxLength = maxLength;
 		var theme = ui.theme;
-		face = Node2D.rectangle(1, 1, theme.faceColor);
+		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.cornerRadius);
-		textNode = Node2D.text(value.substr(0, maxLength), theme.textSize, theme.textColor, Left, theme.font);
-		hint = Node2D.text(hintText, theme.textSize, theme.disabledTextColor, Left, theme.font);
-		caret = Node2D.rectangle(2, theme.textSize + 4, theme.focusColor);
+		face.cornerRadius = theme.cornerRadius;
+		textNode = new Text2D(value.substr(0, maxLength), theme.textSize, theme.textColor, Left, theme.font);
+		hint = new Text2D(hintText, theme.textSize, theme.disabledTextColor, Left, theme.font);
+		caret = Shape2D.rectangle(2, theme.textSize + 4, theme.focusColor);
 		caret.setPivot(0, 0);
 		caret.pickable = false;
 		for (n in [face, hint, textNode, caret])
@@ -44,10 +45,10 @@ class TextField extends Widget {
 	public var text(get, set):String;
 
 	function get_text():String
-		return textNode.getText();
+		return textNode.text;
 
 	function set_text(value:String):String {
-		textNode.setText(value.substr(0, maxLength));
+		textNode.text = value.substr(0, maxLength);
 		return value;
 	}
 
@@ -70,7 +71,7 @@ class TextField extends Widget {
 		return face;
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
-		var theme = ui.theme, input = ui.input, value = textNode.getText(), was = value;
+		var theme = ui.theme, input = ui.input, value = textNode.text, was = value;
 		submitted = false;
 		if (enabled && focused) {
 			for (i in 0...input.text.length) {
@@ -82,7 +83,7 @@ class TextField extends Widget {
 				value = value.substr(0, value.length - 1);
 			submitted = input.isFramePressed(Key.Enter);
 		}
-		textNode.setText(value);
+		textNode.text = value;
 		changed = value != was;
 		hint.visible = value.length == 0;
 		face.color = focused ? theme.hoveredColor : hovered ? theme.hoveredColor : theme.faceColor;
@@ -92,9 +93,8 @@ class TextField extends Widget {
 		caret.visible = enabled && focused;
 		caret.setPosition(box.x
 			+ theme.padding
-			+ (font != null ? Text2D.measure(font, value, theme.textSize) : 0)
-			+ 1,
-			box.y
+			+ (font != null ? font.measure(value, theme.textSize) : 0)
+			+ 1, box.y
 			+ (box.height - theme.textSize - 4) / 2);
 	}
 }

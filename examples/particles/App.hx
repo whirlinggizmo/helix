@@ -9,9 +9,8 @@ import helix.input.Key;
 import helix.particles.Emitter;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Node2D;
+import helix.render2d.Particles2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.render3d.Batch3D;
@@ -46,7 +45,7 @@ class App extends BaseApp {
 	var flame:Emitter;
 	var confetti:Emitter;
 	var sparksNode:Node3D;
-	var confettiNode:Node2D;
+	var confettiNode:Particles2D;
 	var paused = false;
 	var orbit = true;
 	var angle = 0.;
@@ -146,7 +145,7 @@ class App extends BaseApp {
 		for (c in [0xe62937ff, 0xffcb00ff, 0x00e430ff, 0x66bfffff, 0x873cbeff])
 			confetti.addPaletteColor(c);
 		confetti.setAlphaMode(Blend);
-		confettiNode = Node2D.emitter(confetti);
+		confettiNode = new Particles2D(confetti);
 		flat.add(confettiNode);
 
 		Textures.load("textures/particle.png", true, result -> switch result {
@@ -216,9 +215,9 @@ class App extends BaseApp {
 		batch.begin(hud);
 		flat.draw(batch, hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX particles", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(batch, 'click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.drawCallCount} draws', vx + 12, y,
-			16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX particles", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
+		batch.drawTextWrapped('click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.drawCallCount} draws', vx + 12, y, 16,
+			vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

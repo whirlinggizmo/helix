@@ -8,9 +8,9 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Node2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
+import helix.render2d.Stage2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -47,8 +47,8 @@ class App extends BaseApp {
 	var shapes:Array<Model> = [];
 	var selected:Array<Model> = [];
 	var spinner:Model;
-	var button:Node2D;
-	var label:Node2D;
+	var button:Shape2D;
+	var label:Text2D;
 	var orbit = true;
 	var angle = 0.;
 	var spin = 0.;
@@ -92,9 +92,9 @@ class App extends BaseApp {
 		stage.add(spinner);
 		shapes.push(spinner);
 		// The HUD: a button over the world (placed each frame, under the title), and what's selected.
-		button = Node2D.rectangle(170, 36, 0x2a3040ff);
+		button = Shape2D.rectangle(170, 36, 0x2a3040ff);
 		hud.add(button);
-		label = Node2D.text("", 16, 0xf5f5f5ff);
+		label = new Text2D("", 16, 0xf5f5f5ff);
 		hud.add(label);
 		pointer = new Pointer(Input.instance);
 		pointer.addStage3D(stage, camera);
@@ -116,7 +116,7 @@ class App extends BaseApp {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 		var title = "HeliX scene3d: click shapes to select them";
-		var buttonY = vy + 36 + Text2D.measureWrapped(batch.font, title, 20, vw - 24) + 6;
+		var buttonY = vy + 36 + batch.font.measureWrapped(title, 20, vw - 24) + 6;
 		button.setPosition(vx + 12, buttonY);
 		label.setPosition(vx + 24, buttonY + 10);
 		camera.setView(10 * Math.sin(angle), 6, 10 * Math.cos(angle), 0, 1, 0);
@@ -134,7 +134,7 @@ class App extends BaseApp {
 		for (shape in shapes)
 			shape.tint = selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xc8c8c8ff : 0x8c8c8cff;
 		button.color = pointer.isDown(button) ? 0x56607aff : pointer.isHovered(button) ? 0x3c4458ff : 0x2a3040ff;
-		label.setText(orbit ? "stop the camera" : "start the camera");
+		label.text = orbit ? "stop the camera" : "start the camera";
 		if (orbit)
 			angle += dt * .25;
 		spin += dt;
@@ -146,10 +146,9 @@ class App extends BaseApp {
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
 		var hovered:Null<Node3D> = Std.isOfType(pointer.hovered, Node3D) ? cast pointer.hovered : null;
-		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
+		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
 		var y = buttonY + 36 + 10;
-		y += Text2D.drawWrapped(batch,
-			'under the pointer: ${hovered != null ? hovered.name : pointer.isHovered(button) ? "the button" : "nothing"}'
+		y += batch.drawTextWrapped('under the pointer: ${hovered != null ? hovered.name : pointer.isHovered(button) ? "the button" : "nothing"}'
 			+ '   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.name].join(", ")}'
 			+ (pointer.captured ? "   (the HUD has the pointer)" : ""),
 			vx
@@ -157,7 +156,7 @@ class App extends BaseApp {
 			- 24, 0xc8c8c8ff)
 			+ 4;
 		if (Host.canQuit())
-			Text2D.draw(batch, "ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
+			batch.drawText("ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

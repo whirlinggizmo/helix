@@ -169,22 +169,40 @@ class Node3D extends Node {
 	}
 
 	/** Its position's x, relative to its parent. */
-	public var x(get, never):Float;
+	public var x(get, set):Float;
 
 	function get_x():Float
 		return px;
 
+	function set_x(value:Float):Float {
+		px = value;
+		localDirty = true;
+		return value;
+	}
+
 	/** Its position's y. */
-	public var y(get, never):Float;
+	public var y(get, set):Float;
 
 	function get_y():Float
 		return py;
 
+	function set_y(value:Float):Float {
+		py = value;
+		localDirty = true;
+		return value;
+	}
+
 	/** Its position's z. */
-	public var z(get, never):Float;
+	public var z(get, set):Float;
 
 	function get_z():Float
 		return pz;
+
+	function set_z(value:Float):Float {
+		pz = value;
+		localDirty = true;
+		return value;
+	}
 
 	/** Its rotation's quaternion x, relative to its parent. */
 	public var quaternionX(get, never):Float;
@@ -211,22 +229,40 @@ class Node3D extends Node {
 		return qw;
 
 	/** Its scale along its own x. */
-	public var scaleX(get, never):Float;
+	public var scaleX(get, set):Float;
 
 	function get_scaleX():Float
 		return sx;
 
+	function set_scaleX(value:Float):Float {
+		sx = value;
+		localDirty = true;
+		return value;
+	}
+
 	/** Its scale along its own y. */
-	public var scaleY(get, never):Float;
+	public var scaleY(get, set):Float;
 
 	function get_scaleY():Float
 		return sy;
 
+	function set_scaleY(value:Float):Float {
+		sy = value;
+		localDirty = true;
+		return value;
+	}
+
 	/** Its scale along its own z. */
-	public var scaleZ(get, never):Float;
+	public var scaleZ(get, set):Float;
 
 	function get_scaleZ():Float
 		return sz;
+
+	function set_scaleZ(value:Float):Float {
+		sz = value;
+		localDirty = true;
+		return value;
+	}
 
 	/** Places it at x, y, z, relative to its parent. */
 	public function setPosition(x:Float, y:Float, z:Float):Void {

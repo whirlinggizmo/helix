@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Textures;
 import helix.render3d.Animator;
 import helix.render3d.Batch3D;
@@ -177,12 +176,12 @@ class App extends BaseApp {
 		batch3D.end();
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		var line = picked == null ? "nothing under the pointer" : '${nameOf(picked.node)}   ${Math.round(picked.distance * 100) / 100} away   at '
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
-		y += Text2D.drawWrapped(batch, line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
-		Text2D.drawWrapped(batch, "O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped(line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
+		batch.drawTextWrapped("O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

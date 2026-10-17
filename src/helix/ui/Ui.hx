@@ -5,6 +5,7 @@ import helix.input.Key;
 import helix.input.PadButton;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Stage2D;
 import helix.scene.Pointer;
 
@@ -26,7 +27,7 @@ import helix.scene.Pointer;
 class Ui {
 	var stage:Stage2D;
 	var pointer:Pointer;
-	var ring:Node2D;
+	var ring:Shape2D;
 	var widgets:Array<Widget> = [];
 	var textEntry = false;
 	var showFocus = false;
@@ -44,8 +45,8 @@ class Ui {
 		this.pointer = pointer;
 		this.input = input;
 		this.theme = theme != null ? theme : new Theme();
-		ring = Node2D.rectangle(1, 1, this.theme.focusColor);
-		ring.setOutline(this.theme.focusWidth);
+		ring = Shape2D.rectangle(1, 1, this.theme.focusColor);
+		ring.outline = this.theme.focusWidth;
 		ring.pickable = false;
 		ring.visible = false;
 		root.addChild(ring);
@@ -56,7 +57,7 @@ class Ui {
 	public var theme(default, null):Theme;
 
 	/** The node its widgets are under. */
-	public var root(default, null):Node2D = Node2D.group();
+	public var root(default, null):Node2D = new Node2D();
 
 	/** The font text is drawn in without the theme's: the stage's last (the batch's built-in), once drawn. */
 	public var font(get, never):Null<helix.render2d.Font2D>;
@@ -268,7 +269,7 @@ class Ui {
 			ring.setPivot(0, 0);
 			ring.setPosition(b.x - out, b.y - out);
 			// Its corners round about the widgets' corners' centers.
-			ring.setCornerRadius(theme.cornerRadius > 0 ? theme.cornerRadius + out : 0);
+			ring.cornerRadius = theme.cornerRadius > 0 ? theme.cornerRadius + out : 0;
 			ring.visible = true;
 		} else
 			ring.visible = false;

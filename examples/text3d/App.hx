@@ -11,7 +11,6 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
-import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -139,11 +138,12 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
+		y += batch.drawTextWrapped("HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
 			0xf5f5f5ff)
 			+ 4;
-		Text2D.drawWrapped(batch, '${stage.drawnNodeCount} models and glyphs in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
-			0xc8c8c8ff);
+		batch.drawTextWrapped('${stage.drawnNodeCount} models and glyphs in ${stage.drawCallCount} draws   O: the camera', vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

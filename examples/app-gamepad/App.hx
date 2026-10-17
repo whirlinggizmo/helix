@@ -10,7 +10,6 @@ import helix.input.PadAxis;
 import helix.input.PadButton;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 
 /** Every connected gamepad, live: up to four side by side, each with its name, both sticks (the dot is where the stick points, past the dead
 	zone; the ring is its reach), the triggers as bars, and the buttons laid out as on an Xbox-style pad, lit while held and flashed the frame
@@ -52,11 +51,11 @@ class App extends BaseApp {
 			if (input.getPad(i).connected)
 				connected++;
 		var y = vy + 12;
-		y += Text2D.drawWrapped(batch, 'HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
+		y += batch.drawTextWrapped('HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
 			0xf5f5f5ff)
 			+ 12;
 		if (connected == 0)
-			Text2D.drawWrapped(batch, "No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+			batch.drawTextWrapped("No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		var columns = Std.int(Math.max(1, Math.floor((vw - 12) / 245))), placed = 0;
 		for (i in 0...input.padCount) {
 			var pad = input.getPad(i);
@@ -74,7 +73,7 @@ class App extends BaseApp {
 	function drawPad(pad:Gamepad, index:Int, x:Float, y:Float):Void {
 		batch.roundedRect(x, y, 235, 360, 8, 0x232a38ff);
 		var name = pad.name;
-		Text2D.draw(batch, 'pad $index: ' + (name.length > 26 ? name.substr(0, 25) + "~" : name), x + 10, y + 10, 13, 0xc8c8c8ff);
+		batch.drawText('pad $index: ' + (name.length > 26 ? name.substr(0, 25) + "~" : name), x + 10, y + 10, 13, 0xc8c8c8ff);
 		// Triggers as bars, filling upward.
 		trigger(pad.getAxis(PadAxis.LeftTrigger), x + 14, y + 40);
 		trigger(pad.getAxis(PadAxis.RightTrigger), x + 207, y + 40);
@@ -97,7 +96,7 @@ class App extends BaseApp {
 		// The raw axes, for checking a mapping.
 		var row = y + 260.;
 		for (axis in PadAxis.all) {
-			Text2D.draw(batch, axisName(axis) + ' ${fixed(pad.getRawAxis(axis))}', x + 10, row, 12, 0x8a93a6ff);
+			batch.drawText(axisName(axis) + ' ${fixed(pad.getRawAxis(axis))}', x + 10, row, 12, 0x8a93a6ff);
 			row += 15;
 		}
 	}

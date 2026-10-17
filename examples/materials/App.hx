@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -144,10 +143,11 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(batch,
-			'roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
-			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xf5f5f5ff) + 4;
+		batch.drawTextWrapped('roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
+			vx
+			+ 12, y, 15, vw
+			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

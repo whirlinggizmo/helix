@@ -11,7 +11,6 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
-import helix.render2d.Text2D;
 import helix.time.Time;
 
 /** TrueType fonts loaded from files and baked into distance fields in Haxe (Fonts): a measured, centered title in Komika, JetBrains Mono at
@@ -74,17 +73,17 @@ class App extends BaseApp {
 		batch.begin(camera);
 		// A centered title, measured.
 		if (komika != null)
-			Text2D.drawWrapped(batch, "HeliX + TrueType", vx + vw / 2, vy + 90, 56, vw - 48, 0x0052acff, Center, komika);
+			batch.drawTextWrapped("HeliX + TrueType", vx + vw / 2, vy + 90, 56, vw - 48, 0x0052acff, Center, komika);
 		// A few sizes.
 		if (mono != null) {
-			y += Text2D.drawWrapped(batch, "The quick brown fox jumps over the lazy dog.", x, y, 28, wrap, 0x000000ff, Left, mono) + 15;
-			y += Text2D.drawWrapped(batch, "scalable, anti-aliased TrueType glyphs", x, y, 20, wrap, 0x505050ff, Left, mono) + 15;
-			y += Text2D.drawWrapped(batch, "0123456789  !@#$%^&*()  +-*/=", x, y, 24, wrap, 0xbe2137ff, Left, mono) + 40;
+			y += batch.drawTextWrapped("The quick brown fox jumps over the lazy dog.", x, y, 28, wrap, 0x000000ff, Left, mono) + 15;
+			y += batch.drawTextWrapped("scalable, anti-aliased TrueType glyphs", x, y, 20, wrap, 0x505050ff, Left, mono) + 15;
+			y += batch.drawTextWrapped("0123456789  !@#$%^&*()  +-*/=", x, y, 24, wrap, 0xbe2137ff, Left, mono) + 40;
 		} else
-			y += Text2D.drawWrapped(batch, failed ? "a font failed to load" : "loading fonts...", x, y, 20, wrap, 0x828282ff) + 135;
+			y += batch.drawTextWrapped(failed ? "a font failed to load" : "loading fonts...", x, y, 20, wrap, 0x828282ff) + 135;
 		if (komika != null)
-			Text2D.draw(batch, "AVATAR, TALL: kerned", shape == "portrait" ? x : vx + 520, vy + 160, 28, 0x00752cff, Left, komika);
-		Text2D.drawWrapped(batch, useKomika ? "[D] font: Komika   {a|b} ~ \\ ^_`" : "[D] font: built in   {a|b} ~ \\ ^_`", x, y, 16, wrap, 0x00752cff, Left,
+			batch.drawText("AVATAR, TALL: kerned", shape == "portrait" ? x : vx + 520, vy + 160, 28, 0x00752cff, Left, komika);
+		batch.drawTextWrapped(useKomika ? "[D] font: Komika   {a|b} ~ \\ ^_`" : "[D] font: built in   {a|b} ~ \\ ^_`", x, y, 16, wrap, 0x00752cff, Left,
 			useKomika ? komika : null);
 		fps.draw(batch, vx + 12, vy + 12);
 		batch.end();

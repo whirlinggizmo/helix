@@ -1,7 +1,7 @@
 package helix.scene;
 
 /** What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and
-	find. It has no transform: Node3D adds its own, and takes children of its own kind only (its addChild and removeChild). Never made bare and never
+	find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never
 	subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and
 	130). */
 class Node {
@@ -40,7 +40,8 @@ class Node {
 		return value;
 	}
 
-	/** Whether its own output is drawn: off, a model, sprite, text or emitter isn't drawn and a light doesn't shine or cast; it stays placed,
+	/** Whether its own output is drawn: off, a model, sprite, shape, text or emitter isn't drawn (an emitter still moves on) and a light doesn't
+		shine or cast; it stays placed,
 		and its children are as they are. On to start. */
 	public var visible:Bool = true;
 

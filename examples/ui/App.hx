@@ -10,7 +10,6 @@ import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.scene.Pointer;
 import helix.time.Time;
@@ -71,7 +70,7 @@ class App extends BaseApp {
 		main = ui.panel("main");
 		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		var title = ui.label("HeliX ui");
-		title.node.setTextSize(32);
+		title.node.textSize = 32;
 		play = ui.button("Play");
 		openSettings = ui.button("Settings");
 		openLevels = ui.button("Levels");
@@ -85,7 +84,7 @@ class App extends BaseApp {
 		name = ui.textField("", "your name", 16);
 		back = ui.button("Back");
 		var heading = ui.label("Settings");
-		heading.node.setTextSize(26);
+		heading.node.textSize = 26;
 		for (w in [heading, sound, volume, name, back])
 			settings.add(w);
 		levels = ui.panel("levels");
@@ -196,8 +195,8 @@ class App extends BaseApp {
 		Graphics.beginFrame(width, height, 0x14161cff);
 		batch.begin(camera);
 		stage.draw(batch, camera);
-		Text2D.drawWrapped(batch, status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
-		Text2D.drawWrapped(batch, "pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
+		batch.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
+		batch.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
 		hud.pixels(Window.pixelRatio);

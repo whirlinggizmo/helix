@@ -11,7 +11,6 @@ import helix.input.IInput;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.scene.Loader;
@@ -232,8 +231,8 @@ class Draw {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, color);
 		App.batch.begin(camera);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(App.batch, title, vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(App.batch, help, vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
+		y += App.batch.drawTextWrapped(title, vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 4;
+		App.batch.drawTextWrapped(help, vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
 		App.batch.end();
 		return p;
 	}

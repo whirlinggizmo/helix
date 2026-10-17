@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -150,12 +149,10 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, 'HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24,
-			0xf5f5f5ff)
+		y += batch.drawTextWrapped('HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24, 0xf5f5f5ff)
 			+ 3;
-		y += Text2D.drawWrapped(batch, [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
-		Text2D.drawWrapped(batch,
-			'F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
+		y += batch.drawTextWrapped([for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
+		batch.drawTextWrapped('F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
 			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y,
 			16, vw

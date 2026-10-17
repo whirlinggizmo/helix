@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -129,8 +128,8 @@ class App extends BaseApp {
 		stage.draw(chasing ? chase : camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, 'HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		Text2D.drawWrapped(batch, "D: drive   C: ride along   O: the camera   H: the headlights"
+		y += batch.drawTextWrapped('HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		batch.drawTextWrapped("D: drive   C: ride along   O: the camera   H: the headlights"
 			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y, 16,
 			vw

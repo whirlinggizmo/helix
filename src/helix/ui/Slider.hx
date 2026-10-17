@@ -1,15 +1,17 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 
 /** A value from min to max in steps (0: any), beside a line of text: dragged along its track by the pointer, or stepped by Left and Right
 	with focus (a tenth of the way without steps). Ask value, and changed once a frame. */
 class Slider extends Widget {
-	var face:Node2D;
-	var track:Node2D;
-	var fill:Node2D;
-	var knob:Node2D;
-	var label:Node2D;
+	var face:Shape2D;
+	var track:Shape2D;
+	var fill:Shape2D;
+	var knob:Shape2D;
+	var label:Text2D;
 	var trackBox:Box;
 	var min:Float;
 	var max:Float;
@@ -23,20 +25,20 @@ class Slider extends Widget {
 		this.step = step;
 		this.value = snap(value);
 		var theme = ui.theme;
-		face = Node2D.rectangle(1, 1, 0);
+		face = Shape2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
-		label = Node2D.text(text, theme.textSize, theme.textColor, Left, theme.font);
-		track = Node2D.rectangle(1, 6, theme.faceColor);
+		label = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
+		track = Shape2D.rectangle(1, 6, theme.faceColor);
 		track.setPivot(0, 0);
-		track.setCornerRadius(theme.cornerRadius);
+		track.cornerRadius = theme.cornerRadius;
 		track.pickable = false;
-		fill = Node2D.rectangle(1, 6, theme.accentColor);
+		fill = Shape2D.rectangle(1, 6, theme.accentColor);
 		fill.setPivot(0, 0);
-		fill.setCornerRadius(theme.cornerRadius);
+		fill.cornerRadius = theme.cornerRadius;
 		fill.pickable = false;
-		knob = Node2D.rectangle(10, theme.textSize + 4, theme.accentColor);
+		knob = Shape2D.rectangle(10, theme.textSize + 4, theme.accentColor);
 		knob.setPivot(.5, .5);
-		knob.setCornerRadius(theme.cornerRadius);
+		knob.cornerRadius = theme.cornerRadius;
 		knob.pickable = false;
 		for (n in [face, track, fill, knob, label])
 			root.addChild(n);

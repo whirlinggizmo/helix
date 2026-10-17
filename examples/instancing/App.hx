@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -147,10 +146,12 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		Text2D.drawWrapped(batch,
-			'${stage.drawnNodeCount} models in ${stage.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}', vx + 12,
-			y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		batch.drawTextWrapped('${stage.drawnNodeCount} models in ${stage.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
+			vx
+			+ 12,
+			y, 16, vw
+			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

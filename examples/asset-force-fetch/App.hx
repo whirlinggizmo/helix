@@ -11,7 +11,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.time.Time;
 
 /** Both of ensure's options at once: a source (where this call's bytes come from) and forceFetch (past the cache). The asset's path is a bogus
@@ -67,12 +66,12 @@ class App extends BaseApp {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += Text2D.drawWrapped(batch, "HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
-		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : music.state == Paused ? "music: paused" : "music: playing (mp3, looping)",
-			vx + 24, y, 18, vw - 48, 0x66bfffff)
+		y += batch.drawTextWrapped("HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += batch.drawTextWrapped(music == null ? "music: loading..." : music.state == Paused ? "music: paused" : "music: playing (mp3, looping)", vx + 24,
+			y, 18, vw - 48, 0x66bfffff)
 			+ 7.5;
-		y += Text2D.drawWrapped(batch, state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
-		Text2D.drawWrapped(batch, "[M] toggle music" + (Host.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
+		y += batch.drawTextWrapped(state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
+		batch.drawTextWrapped("[M] toggle music" + (Host.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		Graphics.endFrame();

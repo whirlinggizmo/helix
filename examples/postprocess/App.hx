@@ -12,7 +12,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -162,15 +161,16 @@ class App extends BaseApp {
 		post.present();
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX postprocess: screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX postprocess: screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
 		inline function onOff(e:Null<ScreenEffect>):String
 			return e == null ? "loading" : e.enabled ? "on" : "off";
-		y += Text2D.drawWrapped(batch,
-			'[1] vignette ${onOff(vignette)}  [2] scanlines ${onOff(scanlines)}  [Up/Down] strength ${Math.round(strength * 100) / 100}  [Space] breathing ${breathing ? "on" : "off"}  [O] camera',
-			vx + 12, y, 16, vw - 24, 0xc8c8c8ff)
+		y += batch.drawTextWrapped('[1] vignette ${onOff(vignette)}  [2] scanlines ${onOff(scanlines)}  [Up/Down] strength ${Math.round(strength * 100) / 100}  [Space] breathing ${breathing ? "on" : "off"}  [O] camera',
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff)
 			+ 4;
 		if (status != "")
-			Text2D.drawWrapped(batch, status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xff8080ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();

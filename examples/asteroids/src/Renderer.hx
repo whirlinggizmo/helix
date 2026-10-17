@@ -3,8 +3,7 @@ import helix.graphics.IGraphics;
 import helix.host.Presentation;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
-import helix.render2d.Text2D.Align2D;
+import helix.render2d.Align2D;
 
 /** Draws a Game through Batch2D in world units: the Game.W x Game.H field, letterboxed in the framebuffer; then the score, the lives and
 	the menu's panel over it in the presentation's units, so they stay readable on a phone. */
@@ -29,7 +28,7 @@ class Renderer {
 
 	/** The old bitmap alphabet's metrics at scale: 7 * scale tall capitals, 6 * scale apart. */
 	function text(value:String, x:Float, y:Float, scale:Float = 3, align:Align2D = Left):Void
-		Text2D.draw(batch, value, x, y - 3 * scale, 13 * scale, color, align);
+		batch.drawText(value, x, y - 3 * scale, 13 * scale, color, align);
 
 	function centered(value:String, x:Float, y:Float, scale:Float = 3):Void
 		text(value, x, y, scale, Center);

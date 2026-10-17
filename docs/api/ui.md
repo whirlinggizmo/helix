@@ -117,7 +117,7 @@ A line of text (wrapped, if given a width): shown, never focused.
 
 ```haxe
 var text(get, set):String
-var node(default, null):Node2D
+var node(default, null):Text2D
 ```
 
 - `text`: Its text.
@@ -151,7 +151,7 @@ A background holding a column of widgets (add): hidden, they're hidden with it. 
 function add(widget:Widget):Void
 var content(default, null):Box
 function adopt(widget:Widget):Void
-var frame(default, null):Null<Node2D>
+var frame(default, null):Null<Sprite2D>
 function setFrame(texture:Null<Texture2D>, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff):Bool
 ```
 

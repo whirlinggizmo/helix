@@ -12,7 +12,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.time.Time;
 
 /** Looping music and a one-shot click. The music is streamed (decoded as it plays), the click decoded as it loads. The sound plays off the frame's
@@ -77,19 +76,19 @@ class App extends BaseApp {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += Text2D.drawWrapped(batch, "HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
-		y += Text2D.drawWrapped(batch, music == null ? "music: loading..." : switch (music.state) {
+		y += batch.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += batch.drawTextWrapped(music == null ? "music: loading..." : switch (music.state) {
 			case Playing: "music: playing (mp3, streamed, looping)";
 			case Paused: "music: paused";
 			case Stopped: "music: couldn't start";
 			case Complete: "music: ended";
 		}, vx + 24, y, 18, vw - 48, 0x66bfffff) + 7.5;
-		y += Text2D.drawWrapped(batch, click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0x00e430ff) + 17.5;
-		Text2D.drawWrapped(batch, "[SPACE] play click   [M] pause music   [S] stall 300 ms"
+		y += batch.drawTextWrapped(click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0x00e430ff) + 17.5;
+		batch.drawTextWrapped("[SPACE] play click   [M] pause music   [S] stall 300 ms"
 			+ (Host.canQuit() ? "   [ESC] quit" : ""), vx
-			+ 24, y, 16,
-			vw
-			- 48, 0xc8c8c8ff);
+			+ 24, y, 16, vw
+			- 48,
+			0xc8c8c8ff);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		Graphics.endFrame();

@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -123,10 +122,8 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		Text2D.drawWrapped(batch, '[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', vx
-			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		batch.drawTextWrapped('[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

@@ -9,8 +9,11 @@ import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Particles2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
+import helix.render2d.Stage2D;
 import helix.render2d.Textures;
 import helix.time.Time;
 
@@ -25,63 +28,63 @@ class App extends BaseApp {
 	var worldCamera = new Camera2D();
 	var hudCamera = new Camera2D();
 	var fps = new FpsOverlay();
-	var rock:Node2D;
-	var box:Node2D;
-	var card:Node2D;
-	var sprite:Node2D;
+	var rock:Shape2D;
+	var box:Shape2D;
+	var card:Shape2D;
+	var sprite:Sprite2D;
 	var orbit:Node2D;
-	var sparks:Node2D;
-	var title:Node2D;
+	var sparks:Particles2D;
+	var title:Text2D;
 
 	override public function init():Void {
 		Window.title = "HeliX stage2d";
 		Window.requestSize(800, 450);
 		batch = new Batch2D(Graphics.instance);
 
-		rock = Node2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
-		rock.setOutline(2);
+		rock = Shape2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
+		rock.outline = 2;
 		world.add(rock);
-		var ring = Node2D.circle(30, 0x66bfffff);
-		ring.setOutline(3);
+		var ring = Shape2D.circle(30, 0x66bfffff);
+		ring.outline = 3;
 		ring.setPosition(-120, 0);
 		world.add(ring);
-		box = Node2D.rectangle(50, 30, 0xbe2137ff);
+		box = Shape2D.rectangle(50, 30, 0xbe2137ff);
 		box.setPivot(.5, .5);
 		box.setPosition(120, 0);
 		world.add(box);
 		// Rounded, filled and outlined.
-		card = Node2D.rectangle(50, 30, 0x2fa36bff);
-		card.setCornerRadius(10);
+		card = Shape2D.rectangle(50, 30, 0x2fa36bff);
+		card.cornerRadius = 10;
 		card.setPivot(.5, .5);
 		card.setPosition(120, 75);
 		world.add(card);
-		var frame = Node2D.rectangle(60, 40, 0xe8a33cff);
-		frame.setCornerRadius(12);
-		frame.setOutline(3);
+		var frame = Shape2D.rectangle(60, 40, 0xe8a33cff);
+		frame.cornerRadius = 12;
+		frame.outline = 3;
 		frame.setPivot(.5, .5);
 		frame.setPosition(-120, 75);
 		world.add(frame);
-		sprite = Node2D.sprite(null);
+		sprite = new Sprite2D(null);
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
 		world.add(sprite);
 		Textures.load("textures/tiles.png", false, result -> switch result {
 			case Ready(texture):
-				sprite.setTexture(texture);
+				sprite.texture = texture;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
 		});
 		// A group: its children turn with it.
-		orbit = Node2D.group();
+		orbit = new Node2D();
 		orbit.setPosition(0, -110);
-		orbit.addChild(Node2D.circle(10, 0xffcb00ff));
+		orbit.addChild(Shape2D.circle(10, 0xffcb00ff));
 		for (side in [-1, 1]) {
-			var moon = Node2D.circle(5, 0xc8c8c8ff);
+			var moon = Shape2D.circle(5, 0xc8c8c8ff);
 			moon.setPosition(side * 30, 0);
 			orbit.addChild(moon);
 		}
-		var spoke = Node2D.line(-30, 0, 30, 0, 0x808080ff);
+		var spoke = Shape2D.line(-30, 0, 30, 0, 0x808080ff);
 		orbit.getChild(0).addChild(spoke);
 		world.add(orbit);
 
@@ -92,7 +95,7 @@ class App extends BaseApp {
 		emitter.setVelocity(25, 0, 0, Math.PI, .6);
 		emitter.setSize(4, 0);
 		emitter.setColor(0xffcb00ff, 0xff3c0000);
-		sparks = Node2D.emitter(emitter);
+		sparks = new Particles2D(emitter);
 		world.add(sparks);
 		Textures.load("textures/particle.png", true, result -> switch result {
 			case Ready(texture):
@@ -102,7 +105,7 @@ class App extends BaseApp {
 			case Cancelled:
 		});
 
-		title = Node2D.text("HeliX stage2d", 20, 0xf5f5f5ff);
+		title = new Text2D("HeliX stage2d", 20, 0xf5f5f5ff);
 		hud.add(title);
 	}
 
@@ -136,8 +139,7 @@ class App extends BaseApp {
 		batch.begin(worldCamera);
 		world.draw(batch, worldCamera);
 		hud.draw(batch, hudCamera);
-		Text2D.drawWrapped(batch,
-			'immediate text, over the stages: ${world.drawnNodeCount} world nodes drawn, ${Graphics.msaaSamples} of ${Graphics.maxMsaaSamples} MSAA samples a pixel',
+		batch.drawTextWrapped('immediate text, over the stages: ${world.drawnNodeCount} world nodes drawn, ${Graphics.msaaSamples} of ${Graphics.maxMsaaSamples} MSAA samples a pixel',
 			vx
 			+ 12, vy
 			+ 60, 14, vw

@@ -16,9 +16,9 @@ typedef Glyph2D = {
 	final advance:Float;
 }
 
-/** A font for Text2D: its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any
+/** A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any
 	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning;
-	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which Text2D scales to the size asked for. */
+	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for. */
 class Font2D {
 	var glyphs:Array<Null<Glyph2D>>;
 	// A TrueType font's own: the file, kept for kerning pairs as they're asked for, and the scale from its units to font pixels.
@@ -38,7 +38,7 @@ class Font2D {
 	/** The texture holding every glyph, with a white texel for untextured shapes. */
 	public var texture(default, null):Texture2D;
 
-	/** The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this. */
+	/** The height the font was made at, ascent to descent, in font pixels: a text's size scales this. */
 	public var size(default, null):Float;
 
 	/** How far the tallest glyphs reach above the baseline, in font pixels. */
@@ -66,6 +66,54 @@ class Font2D {
 		}
 		return known;
 	}
+
+	/** How far text moves the pen at size (world units, ascent to descent): its width, by its glyphs' advances and the kerning between them.
+		Characters without a glyph count as nothing. */
+	public function measure(text:String, size:Float):Float {
+		var unit = size / this.size, width = 0.;
+		for (i in 0...text.length) {
+			var code = text.charCodeAt(i), glyph = getGlyph(code);
+			if (glyph != null)
+				width += glyph.advance * unit;
+			if (i + 1 < text.length)
+				width += getKerning(code, text.charCodeAt(i + 1)) * unit;
+		}
+		return width;
+	}
+
+	/** text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its
+		letters; a line break ("\n") always breaks. Lines keep no trailing spaces. */
+	public function wrap(text:String, size:Float, width:Float):Array<String> {
+		var lines = [];
+		for (paragraph in text.split("\n")) {
+			var line = "";
+			for (word in paragraph.split(" ")) {
+				var tried = line == "" ? word : line + " " + word;
+				if (measure(tried, size) <= width) {
+					line = tried;
+					continue;
+				}
+				if (line != "")
+					lines.push(line);
+				// A word wider than a line: as many of its letters as fit, line after line.
+				line = word;
+				while (line.length > 1 && measure(line, size) > width) {
+					var fit = 1;
+					while (fit < line.length && measure(line.substr(0, fit + 1), size) <= width)
+						fit++;
+					lines.push(line.substr(0, fit));
+					line = line.substr(fit);
+				}
+			}
+			lines.push(line);
+		}
+		return lines;
+	}
+
+	/** The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns,
+		known before drawing, for what's laid out under it (a button below a title that may wrap). */
+	public function measureWrapped(text:String, size:Float, width:Float, lineHeight = 1.25):Float
+		return wrap(text, size, width).length * size * lineHeight;
 
 	/** The characters fromTrueType bakes: printable ASCII and Latin-1. */
 	static function bakedCodes():Array<Int>

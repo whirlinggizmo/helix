@@ -2,7 +2,6 @@ import helix.graphics.IGraphics;
 import helix.host.Presentation;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 
 /** Draws a Game through Batch2D in cell units. Its text is never smaller than READABLE of the presentation's units, so the labels stay
 	readable where cells are small (a phone on its side). */
@@ -66,12 +65,12 @@ class Renderer {
 
 	function panel(box:Array<Float>, label:String):Void {
 		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0x141b2bff);
-		Text2D.draw(batch, label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0x8090a8ff, Center);
+		batch.drawText(label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0x8090a8ff, Center);
 	}
 
 	function button(box:Array<Float>, label:String, size:Float):Void {
 		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0x22304aff);
-		Text2D.draw(batch, label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xe0e8f4ff, Center);
+		batch.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xe0e8f4ff, Center);
 	}
 
 	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units. */
@@ -126,9 +125,9 @@ class Renderer {
 				preview(game.queue[i], [layout.nextBox[0], layout.nextBox[1] + .5 + i * slot, layout.nextBox[2], slot],
 					i == 0 ? (layout.portrait ? 0.6 : .8) : .6);
 		var sx = layout.scoreX, sy = layout.scoreY;
-		Text2D.draw(batch, Std.string(game.score), sx, sy, 1, 0xf0f4faff, Center);
-		Text2D.draw(batch, "LEVEL " + game.level, sx, sy + 1.3, size(.4), 0x8090a8ff, Center);
-		Text2D.draw(batch, "LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0x8090a8ff, Center);
+		batch.drawText(Std.string(game.score), sx, sy, 1, 0xf0f4faff, Center);
+		batch.drawText("LEVEL " + game.level, sx, sy + 1.3, size(.4), 0x8090a8ff, Center);
+		batch.drawText("LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0x8090a8ff, Center);
 		if (game.state == "playing")
 			button(layout.pauseBox, "II", .7);
 		if (game.state != "playing") {
@@ -139,11 +138,11 @@ class Renderer {
 				case "over": "GAME OVER";
 				default: "BLOCKS";
 			};
-			Text2D.draw(batch, title, fx + Game.W / 2, cy, 1.2, 0xf0f4faff, Center);
+			batch.drawText(title, fx + Game.W / 2, cy, 1.2, 0xf0f4faff, Center);
 			if (game.best > 0)
-				Text2D.draw(batch, "BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0x8090a8ff, Center);
+				batch.drawText("BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0x8090a8ff, Center);
 			if (tick % 60 < 40)
-				Text2D.drawWrapped(batch, game.state == "paused" ? "TAP OR ENTER TO RESUME" : "TAP OR ENTER TO PLAY", fx
+				batch.drawTextWrapped(game.state == "paused" ? "TAP OR ENTER TO RESUME" : "TAP OR ENTER TO PLAY", fx
 					+ Game.W / 2, cy
 					+ 3.5, size(.4),
 					Game.W
@@ -157,7 +156,7 @@ class Renderer {
 				// Wrapped to the well, stacked by the lines' heights.
 				var y = cy + 6;
 				for (line in help)
-					y += Math.max(.8, Text2D.drawWrapped(batch, line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0x8090a8ff, Center));
+					y += Math.max(.8, batch.drawTextWrapped(line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0x8090a8ff, Center));
 			}
 		}
 		batch.end();

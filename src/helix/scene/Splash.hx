@@ -5,7 +5,6 @@ import helix.host.Screen;
 import helix.host.Window;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.scene.Transition.Fade;
 import helix.ui.Theme;
@@ -84,7 +83,7 @@ class Splash extends Scene {
 			batch.sprite(logo, vx + (vw - side) / 2, vy + (vh - side) / 2 - 20, side, side);
 		}
 		if (!scenes.input.activated)
-			Text2D.draw(batch, prompt, vx + vw / 2, vy + vh * .8, theme.textSize, theme.disabledTextColor, Center, theme.font);
+			batch.drawText(prompt, vx + vw / 2, vy + vh * .8, theme.textSize, theme.disabledTextColor, Center, theme.font);
 		batch.end();
 	}
 }

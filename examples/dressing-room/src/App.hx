@@ -11,7 +11,6 @@ import helix.math.Random;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
@@ -183,7 +182,7 @@ class App extends BaseApp {
 		ui = new Ui(screen, camera2D, pointer, Input.instance);
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
-		title.node.setTextSize(26);
+		title.node.textSize = 26;
 		panel.add(title);
 		var tabRow = Box.row();
 		tabRow.gap = ui.theme.gap;
@@ -503,9 +502,9 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
-		Text2D.draw(batch, status, vx + 24, portrait ? box.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
-		Text2D.draw(batch, portrait ? "drag: turn   pinch: closer" : "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", vx + 24, vy + 24,
-			16, 0x8a92a8ff);
+		batch.drawText(status, vx + 24, portrait ? box.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
+		batch.drawText(portrait ? "drag: turn   pinch: closer" : "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", vx + 24, vy + 24, 16,
+			0x8a92a8ff);
 		batch.end();
 		hud.setViewport(width, height);
 		hud.pixels(Window.pixelRatio);

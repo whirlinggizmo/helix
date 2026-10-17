@@ -10,14 +10,13 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Node2D;
+import helix.render2d.Sprite2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
 
-/** A scrolling tile map: one sprite sheet (textures/tiles.png), one Node2D sprite a cell cut out by its source region, on a Stage2D seen
+/** A scrolling tile map: one sprite sheet (textures/tiles.png), one Sprite2D a cell cut out by its source region, on a Stage2D seen
 	through a Camera2D in world units (a cell is 1 x 1, y down).
 	- ground first, then props over it, in the order they were added
 	- trees and flags are 16x32 in the sheet, drawn 1 x 2, and stand on their cell: their pivot is their bottom edge (0.5, 1)
@@ -44,10 +43,10 @@ class App extends BaseApp {
 	var hud = new Camera2D();
 	var fps = new FpsOverlay();
 	var texture:Null<Texture2D>;
-	var sprites:Array<Node2D> = [];
-	var coins:Array<Node2D> = [];
+	var sprites:Array<Sprite2D> = [];
+	var coins:Array<Sprite2D> = [];
 	var collected = 0;
-	var pressed:Null<Node2D>;
+	var pressed:Null<Sprite2D>;
 	var centerX = WORLD_W / 2;
 	var centerY = WORLD_H / 2;
 	var seen = 12.;
@@ -55,8 +54,8 @@ class App extends BaseApp {
 	var lastY = -1.;
 
 	// A sprite of one cell, placed at x, y in world units by its pivot, size width x height.
-	function add(cell:Array<Int>, x:Float, y:Float, width:Float, height:Float, pivotX:Float, pivotY:Float):Node2D {
-		var sprite = Node2D.sprite(texture);
+	function add(cell:Array<Int>, x:Float, y:Float, width:Float, height:Float, pivotX:Float, pivotY:Float):Sprite2D {
+		var sprite = new Sprite2D(texture);
 		sprite.setRegion(cell[0], cell[1], cell[2], cell[3]);
 		sprite.setSize(width, height);
 		sprite.setPivot(pivotX, pivotY);
@@ -92,7 +91,7 @@ class App extends BaseApp {
 				loaded.sampling = Sampling.NEAREST;
 				texture = loaded;
 				for (sprite in sprites)
-					sprite.setTexture(loaded);
+					sprite.texture = loaded;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -100,7 +99,7 @@ class App extends BaseApp {
 	}
 
 	// The coin under world point x, y, the topmost (the last added) first, inside its disc; null for none.
-	function coinAt(x:Float, y:Float):Null<Node2D> {
+	function coinAt(x:Float, y:Float):Null<Sprite2D> {
 		var i = coins.length;
 		while (i-- > 0) {
 			var coin = coins[i], r = coin.width / 2;
@@ -163,7 +162,7 @@ class App extends BaseApp {
 			pressed = null;
 		}
 		for (coin in coins)
-			coin.color = coin == hovered ? 0xffe68cff : 0xffffffff;
+			coin.tint = coin == hovered ? 0xffe68cff : 0xffffffff;
 
 		Graphics.beginFrame(width, height, 0x181c26ff);
 		batch.begin(camera);
@@ -174,12 +173,12 @@ class App extends BaseApp {
 			status = 'coins: $collected of 8   zoom: ${Math.round(seen * 10) / 10} units   center: ${Math.round(centerX * 10) / 10}, ${Math.round(centerY * 10) / 10}${texture == null ? "   (loading)" : ""}',
 			help = 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.drawnNodeCount} of ${sprites.length} drawn)';
 		inline function tall(text:String, size:Float):Float
-			return Text2D.measureWrapped(batch.font, text, size, vw - 40);
+			return batch.font.measureWrapped(text, size, vw - 40);
 		batch.rect(vx, vy, vw, 20 + tall(title, 20) + 1 + tall(status, 15) + 3 + tall(help, 15) + 1, 0x121418be);
 		var y = vy + 20;
-		y += Text2D.drawWrapped(batch, title, vx + 20, y, 20, vw - 40, 0xebeef5ff) + 1;
-		y += Text2D.drawWrapped(batch, status, vx + 20, y, 15, vw - 40, 0x8c929eff) + 3;
-		Text2D.drawWrapped(batch, help, vx + 20, y, 15, vw - 40, 0x8c929eff);
+		y += batch.drawTextWrapped(title, vx + 20, y, 20, vw - 40, 0xebeef5ff) + 1;
+		y += batch.drawTextWrapped(status, vx + 20, y, 15, vw - 40, 0x8c929eff) + 3;
+		batch.drawTextWrapped(help, vx + 20, y, 15, vw - 40, 0x8c929eff);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
 		Graphics.endFrame();

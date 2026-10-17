@@ -7,9 +7,11 @@ import helix.graphics.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Sprite2D;
+import helix.render2d.Text2D;
 import helix.render2d.Polygon2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Model;
 import helix.render3d.Sprite3D;
@@ -223,7 +225,7 @@ class WhiteImages implements helix.graphics.IImageDecoder {
 	public function poll():Void {}
 }
 
-/** Polygon2D, Node2D's transforms, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
+/** Polygon2D, Node2D's transforms and kinds, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
 class Render2DTests {
 	static var checks = 0;
 
@@ -261,13 +263,13 @@ class Render2DTests {
 			check(near(covered(points, triangles), Math.abs(Polygon2D.doubleArea(points)) / 2), "The triangles cover the polygon exactly");
 		}
 		check(Polygon2D.doubleArea(square) > 0, "Clockwise on screen (y down) is a positive area");
-		check(Node2D.polygon([0, 0, 1, 1]) == null
-			&& Node2D.polygon([0, 0, 1, 1, 2]) == null, "A polygon needs 3 points, x and y in pairs");
+		check(Shape2D.polygon([0, 0, 1, 1]) == null
+			&& Shape2D.polygon([0, 0, 1, 1, 2]) == null, "A polygon needs 3 points, x and y in pairs");
 
 		// Transforms: a child of a turned, scaled, placed parent; toLocal undoes toWorld.
 		var stage = new Stage2D(),
-			parent = Node2D.group(),
-			child = Node2D.circle(1);
+			parent = new Node2D(),
+			child = Shape2D.circle(1);
 		parent.setPosition(100, 50);
 		parent.rotation = Math.PI / 2;
 		parent.setScale(2, 2);
@@ -295,8 +297,24 @@ class Render2DTests {
 		batch.end();
 		check(near(child.toWorldY(0, 0), 20), "Moving the parent moves the child at the next draw");
 		check(!child.addChild(parent) && !parent.addChild(parent), "No node becomes its own ancestor");
+		// Assigning x, y, rotation or a scale marks it moved, as setPosition does.
+		parent.x = 30;
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(near(child.toWorldX(0, 0), 30) && near(child.toWorldY(0, 0), 20) && parent.x == 30, "Assigning x moves the node in the world");
+		parent.scaleX = 1;
+		parent.scaleY = 1;
+		parent.rotation = 0;
+		parent.y = 5;
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		stage.draw(batch, camera);
+		batch.end();
+		check(near(child.toWorldX(0, 0), 40) && near(child.toWorldY(0, 0), 5), "Assigning y, rotation and the scales move it too");
 		// attach keeps a node's world place under a moved, turned, scaled parent; parent = keeps its local one.
-		var holder = Node2D.group(), held = Node2D.group();
+		var holder = new Node2D(), held = new Node2D();
 		holder.setPosition(100, 50);
 		holder.rotation = Math.PI / 2;
 		holder.setScale(2, 3);
@@ -315,21 +333,24 @@ class Render2DTests {
 
 		// A mirrored sprite covers the same box; a sprite with no texture draws nothing.
 		var texture = Texture2D.fromRgba(gpu, 4, 2, Bytes.alloc(32));
-		var sprite = Node2D.sprite(texture);
+		var sprite = new Sprite2D(texture);
 		check(sprite.width == 4 && sprite.height == 2, "A sprite with no size is its texture's size in texels");
 		sprite.setRegion(1, 0, 2, 2);
 		check(sprite.width == 2 && sprite.regionWidth == 2, "A region gives it the region's size");
-		check(!Node2D.circle(1).setRegion(0, 0, 1, 1) && !Node2D.circle(1).setTexture(texture), "Sprite calls refuse other kinds");
+		sprite.setSize(8, 6);
+		check(sprite.width == 8 && sprite.height == 6 && sprite.regionWidth == 2, "A size is drawn at, the region kept");
+		sprite.setSize(0, 0);
+		check(sprite.width == 2, "A size of 0 goes back to the region's");
 
 		// Culling: of three circles, the one far outside the view isn't drawn; hidden nodes and their children aren't either.
 		var culled = new Stage2D();
 		for (x in [10., 390, 5000]) {
-			var c = Node2D.circle(5);
+			var c = Shape2D.circle(5);
 			c.setPosition(x, 150);
 			culled.add(c);
 		}
-		var hidden = Node2D.group();
-		hidden.addChild(Node2D.circle(5));
+		var hidden = new Node2D();
+		hidden.addChild(Shape2D.circle(5));
 		hidden.visible = false;
 		culled.add(hidden);
 		gpu.beginFrame(400, 300, 0);
@@ -439,7 +460,7 @@ class Render2DTests {
 		var font = helix.render2d.Font2D.fromTrueType(gpu, sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
 		check(font.getGlyph(0xE9) != null && font.getGlyph(0x7F) == null && font.getKerning("A".code, "V".code) < 0,
 			"A loaded font has Latin-1 and kerning in font pixels");
-		check(Text2D.measure(font, "AV", 32) < Text2D.measure(font, "A", 32) + Text2D.measure(font, "V", 32), "Kerning narrows a measured pair");
+		check(font.measure("AV", 32) < font.measure("A", 32) + font.measure("V", 32), "Kerning narrows a measured pair");
 		var cff = false;
 		try
 			new helix.render2d.TrueType(Bytes.ofString("OTTO and twelve"))
@@ -627,10 +648,12 @@ class Render2DTests {
 			camera = new Camera2D();
 		camera.setViewport(400, 300);
 		camera.pixels(1);
-		check(!Node2D.circle(5).setCornerRadius(2)
-			&& !Node2D.rectangle(5, 5).setCornerRadius(-1), "Only a rectangle rounds, by a radius of 0 or more");
-		var card = Node2D.rectangle(100, 60);
-		card.setCornerRadius(20);
+		var clamped = Shape2D.rectangle(5, 5);
+		clamped.cornerRadius = -1;
+		clamped.outline = -2;
+		check(clamped.cornerRadius == 0 && clamped.outline == 0 && Shape2D.circle(-3).radius == 0, "A radius or outline below 0 is 0");
+		var card = Shape2D.rectangle(100, 60);
+		card.cornerRadius = 20;
 		card.setPosition(100, 100);
 		stage.add(card);
 		gpu.beginFrame(400, 300, 0);
@@ -640,18 +663,18 @@ class Render2DTests {
 		var roundedVertices = gpu.draws[0].vertices;
 		check(stage.pick(camera, 102, 102) == null && stage.pick(camera, 120, 102) == card && stage.pick(camera, 150, 130) == card,
 			"A rounded rectangle is picked by its shape: not in a corner cut off");
-		card.setCornerRadius(100);
+		card.cornerRadius = 100;
 		check(stage.pick(camera, 101, 130) == card
 			&& stage.pick(camera, 105, 105) == null, "A radius past half the shorter side is half of it");
-		card.setCornerRadius(20);
-		card.setOutline(4);
+		card.cornerRadius = 20;
+		card.outline = 4;
 		check(stage.pick(camera, 100, 130) == card
 			&& stage.pick(camera, 150, 130) == null
 			&& stage.pick(camera, 106, 106) == card
 			&& stage.pick(camera, 102, 102) == null,
 			"Outlined, it's the stroke along its rounded edge");
-		card.setOutline(0);
-		card.setCornerRadius(0);
+		card.outline = 0;
+		card.cornerRadius = 0;
 		gpu.beginFrame(400, 300, 0);
 		batch.begin(camera);
 		stage.draw(batch, camera);
@@ -669,13 +692,13 @@ class Render2DTests {
 		camera.setViewport(400, 300);
 		// World units as screen pixels, from the top-left, as a HUD's.
 		camera.pixels(1);
-		var box = Node2D.rectangle(100, 100), disc = Node2D.circle(30);
+		var box = Shape2D.rectangle(100, 100), disc = Shape2D.circle(30);
 		box.setPosition(100, 100);
 		disc.setPosition(150, 150);
 		stage.add(box);
 		stage.add(disc);
-		var label = Node2D.text("HELLO", 20);
-		check(!label.pickable && Node2D.rectangle(1, 1).pickable, "Text isn't pickable until asked; shapes are");
+		var label = new Text2D("HELLO", 20);
+		check(!label.pickable && Shape2D.rectangle(1, 1).pickable, "Text isn't pickable until asked; shapes are");
 		label.pickable = true;
 		label.setPosition(250, 50);
 		stage.add(label);
@@ -694,21 +717,21 @@ class Render2DTests {
 		check(stage.pick(camera, 160, 160) == disc, "Hidden is still hit");
 		disc.visible = true;
 		// A ring: its stroke, not its middle.
-		var ring = Node2D.circle(40);
-		ring.setOutline(4);
+		var ring = Shape2D.circle(40);
+		ring.outline = 4;
 		ring.setPosition(300, 200);
 		stage.add(ring);
 		check(stage.pick(camera, 342, 200) == ring && stage.pick(camera, 300, 200) == null, "An outlined circle is its stroke");
-		var slash = Node2D.line(0, 0, 50, 50);
+		var slash = Shape2D.line(0, 0, 50, 50);
 		slash.setPosition(20, 220);
 		stage.add(slash);
 		check(stage.pick(camera, 45, 245) == slash && stage.pick(camera, 60, 230) == null, "A line by its stroke");
-		var wedge = Node2D.polygon([0., 0, 60, 0, 0, 60]);
+		var wedge = Shape2D.polygon([0., 0, 60, 0, 0, 60]);
 		wedge.setPosition(330, 10);
 		stage.add(wedge);
 		check(stage.pick(camera, 340, 20) == wedge && stage.pick(camera, 385, 65) == null, "A filled polygon by its inside");
 		// Turned a quarter (y down: clockwise on screen), a tall thin rectangle lies down, its length reaching left from its corner.
-		var bar = Node2D.rectangle(10, 80);
+		var bar = Shape2D.rectangle(10, 80);
 		bar.setPosition(200, 200);
 		bar.rotation = Math.PI / 2;
 		stage.add(bar);
@@ -745,11 +768,11 @@ class Render2DTests {
 			"Nested clips: the outer, then within it, as the GPU's bottom-left rectangles; reset after: " + s.map(x -> x == null ? "-" : x.join(","))
 			.join(" "));
 		// A list's window: a group clipping its rows; a row scrolled out of it is neither drawn there nor picked.
-		var stage = new Stage2D(), list = Node2D.group();
+		var stage = new Stage2D(), list = new Node2D();
 		list.setPosition(20, 20);
 		check(list.setClip(100, 50) && list.clipping && !list.setClip(-1, 5), "A clip, and a size below 0 refused");
-		var inside = Node2D.rectangle(100, 20),
-			outside = Node2D.rectangle(100, 20);
+		var inside = Shape2D.rectangle(100, 20),
+			outside = Shape2D.rectangle(100, 20);
 		outside.setPosition(0, 60);
 		list.addChild(inside);
 		list.addChild(outside);
@@ -772,19 +795,19 @@ class Render2DTests {
 		camera.setViewport(400, 300);
 		camera.pixels(1);
 		var font = batch.font;
-		check(Text2D.measure(font, " ", 16) > 0, "A space has a width (wgrender-c's caa49dd)");
-		var lines = Text2D.wrap(font, "the quick brown fox jumps over the lazy dog", 16, 100);
+		check(font.measure(" ", 16) > 0, "A space has a width (wgrender-c's caa49dd)");
+		var lines = font.wrap("the quick brown fox jumps over the lazy dog", 16, 100);
 		check(lines.length > 1
-			&& [for (l in lines) if (Text2D.measure(font, l, 16) > 100) l].length == 0
+			&& [for (l in lines) if (font.measure(l, 16) > 100) l].length == 0
 			&& lines.join(" ") == "the quick brown fox jumps over the lazy dog",
 			"Wrapped at spaces, no line wider than the width, nothing lost: "
 			+ lines.join("|"));
-		var long = Text2D.wrap(font, "abcdefghijklmnopqrstuvwxyz", 16, 60);
+		var long = font.wrap("abcdefghijklmnopqrstuvwxyz", 16, 60);
 		check(long.length > 1
 			&& long.join("") == "abcdefghijklmnopqrstuvwxyz"
-			&& [for (l in long) if (Text2D.measure(font, l, 16) > 60) l].length == 0,
+			&& [for (l in long) if (font.measure(l, 16) > 60) l].length == 0,
 			"A word wider than a line, broken between its letters");
-		check(Text2D.wrap(font, "one\ntwo", 16, 1000).join("|") == "one|two", "A line break breaks");
+		check(font.wrap("one\ntwo", 16, 1000).join("|") == "one|two", "A line break breaks");
 		// Nine quads, the corners keeping their texels' size; a frame too small shrinks them alike.
 		var texture = Texture2D.fromRgba(gpu, 16, 16, haxe.io.Bytes.alloc(16 * 16 * 4));
 		gpu.beginFrame(400, 300, 0);
@@ -796,21 +819,20 @@ class Render2DTests {
 		batch.image(texture, 10, 10, 200, 100);
 		batch.end();
 		check(ninth == batch.vertexCount * 9, "Nine quads for a frame");
-		var stage = new Stage2D(), panel = Node2D.sprite(texture);
-		check(panel.setNineSlice(4, 4, 4, 4)
-			&& panel.nineSlice
-			&& !Node2D.rectangle(1, 1).setNineSlice(1, 1, 1, 1), "Nine-slice is a sprite's");
+		var stage = new Stage2D(), panel = new Sprite2D(texture);
+		check(panel.setNineSlice(4, 4, 4, 4) && panel.nineSlice && !panel.setNineSlice(-1, 1, 1, 1) && panel.nineSliceLeft == 4,
+			"Nine-slice insets of 0 or more");
 		panel.setSize(200, 100);
 		panel.setPivot(0, 0);
 		stage.add(panel);
-		var note = Node2D.text("the quick brown fox jumps over the lazy dog", 16);
-		check(note.setWrapWidth(100) && !Node2D.circle(1).setWrapWidth(10), "Wrapping is a text's");
+		var note = new Text2D("the quick brown fox jumps over the lazy dog", 16);
+		check(note.setWrapWidth(100) && !note.setWrapWidth(-1) && note.wrapWidth == 100, "Wrapping to a width of 0 or more");
 		note.setPosition(250, 20);
 		note.pickable = true;
 		stage.add(note);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.end();
-		check(stage.pick(camera, 260, 50) == note && note.getTextHeight(font) > 40, "A wrapped text picked by its whole block, lines below the first");
+		check(stage.pick(camera, 260, 50) == note && note.measureHeight(font) > 40, "A wrapped text picked by its whole block, lines below the first");
 	}
 }

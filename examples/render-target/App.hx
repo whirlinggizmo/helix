@@ -11,7 +11,6 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -111,7 +110,7 @@ class App extends BaseApp {
 	function panel(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, caption:String):Void {
 		batch.rect(x - 2, y - 2, w + 4, h + 4, 0x5a606eff);
 		batch.image(texture, x, y, w, h);
-		Text2D.draw(batch, caption, x, y - 22, 16, 0xc8c8c8ff);
+		batch.drawText(caption, x, y - 22, 16, 0xc8c8c8ff);
 	}
 
 	override public function frame(dt:Float):Void {
@@ -135,8 +134,8 @@ class App extends BaseApp {
 		targetCamera.setViewport(LABEL_W, LABEL_H);
 		targetCamera.pixels(1);
 		batch.begin(targetCamera);
-		Text2D.draw(batch, "HeliX", 20, 14, 64, 0xf5f5f5ff, Left, font);
-		Text2D.draw(batch, 't = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffcb00ff);
+		batch.drawText("HeliX", 20, 14, 64, 0xf5f5f5ff, Left, font);
+		batch.drawText('t = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffcb00ff);
 		batch.end();
 		gpu.endTargetPass();
 
@@ -162,7 +161,7 @@ class App extends BaseApp {
 		batch.begin(screen);
 		var top = vy
 			+ 36
-			+ Text2D.drawWrapped(batch, "HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xf5f5f5ff)
+			+ batch.drawTextWrapped("HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xf5f5f5ff)
 			+ 36;
 		// The pixel view on the left and the other two in a column beside it; upright, all three in a column, the pixel view as wide as fits.
 		var x = vx + 24, pixelWidth = Math.min(PIXEL_W * PIXEL_SCALE, vw - 48), pixelHeight = pixelWidth * PIXEL_H / PIXEL_W;

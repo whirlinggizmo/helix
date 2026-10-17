@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -171,22 +170,20 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		y += Text2D.drawWrapped(batch,
-			'[1] sun ${sun.shadowCasting ? "on" : "off"}   [2] spot ${spot.shadowCasting ? "on" : "off"}   '
+		y += batch.drawTextWrapped("HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped('[1] sun ${sun.shadowCasting ? "on" : "off"}   [2] spot ${spot.shadowCasting ? "on" : "off"}   '
 			+ '[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)
 			+ 2;
-		y += Text2D.drawWrapped(batch,
-			'UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   '
+		y += batch.drawTextWrapped('UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   '
 			+ '${stage.shadowCasterCount} casters in ${stage.shadowDrawCallCount} draws',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0x9a9a9aff)
 			+ 2;
-		Text2D.drawWrapped(batch, "left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
+		batch.drawTextWrapped("left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.time.Time;
@@ -62,8 +61,8 @@ class App extends BaseApp {
 
 		batch2D.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch2D, "HeliX 3D", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(batch2D, "orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch2D.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
+		batch2D.drawTextWrapped("orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch2D, vx + 12, vy + 10);
 		batch2D.end();
 		Graphics.endFrame();

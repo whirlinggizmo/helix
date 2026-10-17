@@ -14,7 +14,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.input`](input.md): Gamepad, IInput, IInputEvents, IInputSource, Input, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.math`](math.md): Curve, CurveKind, Interpolate, Random, Trig
 - [`helix.particles`](particles.md): Emitter
-- [`helix.render2d`](render2d.md): Align2D, BakedFont, BakedGlyph, Batch2D, Camera2D, Font2D, FontBaker, FontLoadResult, Fonts, Glyph2D, GlyphOutline, Ktx, Node2D, Node2DKind, Polygon2D, Stage2D, Text2D, Texture2D, TextureCache, TextureLoadResult, Textures, TrueType
+- [`helix.render2d`](render2d.md): Align2D, BakedFont, BakedGlyph, Batch2D, Camera2D, Font2D, FontBaker, FontLoadResult, Fonts, Glyph2D, GlyphOutline, Ktx, Node2D, Particles2D, Polygon2D, Shape2D, ShapeForm, Sprite2D, Stage2D, Text2D, Texture2D, TextureCache, TextureLoadResult, Textures, TrueType
 - [`helix.render3d`](render3d.md): AnimationClip, Animator, Attachment, Batch3D, Camera3D, Cube, DirectionalLight, Environment, EnvironmentBake, EnvironmentCache, EnvironmentLoadResult, Environments, Gltf, Hdr, ImageSource, JointPalette, Light, Mat4, Material, Mesh, Model, ModelCache, ModelFile, ModelLoadResult, Models, Node3D, Part, Particles3D, PickHit, PointLight, Ray, Skin, SpotLight, Sprite3D, SpriteAlpha, SpriteFacing, Sprites3D, Stage3D, Text3D, Tonemap, Track, TrackInterpolation, TrackPath
 - [`helix.scene`](scene.md): Fade, Loader, Loading, LoadingScene, Node, Pointer, Scene, Scenes, Splash, Transition
 - [`helix.time`](time.md): Clock, Ticker, Time, Timer, Timers

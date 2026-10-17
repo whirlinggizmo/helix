@@ -138,8 +138,7 @@ class Sprites3D {
 		var font = node.font != null ? node.font : builtIn(),
 			size = node.textSize;
 		var w = node.worldMatrix, x = w.get(12), y = w.get(13), z = w.get(14);
-		var width = helix.render2d.Text2D.measure(font, text, size),
-			unit = size / font.size;
+		var width = font.measure(text, size), unit = size / font.size;
 		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
 		var radius = Math.sqrt(width * width + size * size) * scale;
 		for (p in 0...6)
@@ -232,8 +231,7 @@ class Sprites3D {
 		if (node.text.length == 0 || (node.color & 255) < 128)
 			return best;
 		var font = node.font != null ? node.font : builtIn();
-		return pickQuad(node, node.facing, node.pivotX, node.pivotY, helix.render2d.Text2D.measure(font, node.text, node.textSize), node.textSize, ray, best,
-			hit);
+		return pickQuad(node, node.facing, node.pivotX, node.pivotY, font.measure(node.text, node.textSize), node.textSize, ray, best, hit);
 	}
 
 	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.

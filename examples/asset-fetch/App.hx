@@ -9,7 +9,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
@@ -106,9 +105,9 @@ class App extends BaseApp {
 			vw = presentation.visibleWidth;
 		var from = "from: " + (asking ? "..." : source);
 		var titleY = vy + 40;
-		var fromY = titleY + Text2D.measureWrapped(batch.font, "HeliX asset fetch", 24, vw - 24) + 10;
-		var stateY = fromY + Text2D.measureWrapped(batch.font, from, 16, vw - 24) + 10;
-		var buttonY = stateY + Text2D.measureWrapped(batch.font, state, 16, vw - 24) + 20;
+		var fromY = titleY + batch.font.measureWrapped("HeliX asset fetch", 24, vw - 24) + 10;
+		var stateY = fromY + batch.font.measureWrapped(from, 16, vw - 24) + 10;
+		var buttonY = stateY + batch.font.measureWrapped(state, 16, vw - 24) + 20;
 		var x = camera.screenToWorldX(input.pointerX),
 			y = camera.screenToWorldY(input.pointerY);
 		var clicked = input.pointerFramePressed;
@@ -121,9 +120,9 @@ class App extends BaseApp {
 		fps.update(dt, Time.frameCpu);
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x1c1e26ff);
 		batch.begin(camera);
-		Text2D.drawWrapped(batch, "HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
-		Text2D.drawWrapped(batch, from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);
-		Text2D.drawWrapped(batch, state, vx + 12, stateY, 16, vw - 24, 0xffcb00ff);
+		batch.drawTextWrapped("HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
+		batch.drawTextWrapped(from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);
+		batch.drawTextWrapped(state, vx + 12, stateY, 16, vw - 24, 0xffcb00ff);
 		button("Fetch asset", vx + 12, buttonY, inside(x, y, vx + 12, buttonY));
 		button("Clear cache", vx + 204, buttonY, inside(x, y, vx + 204, buttonY));
 		if (logo != null)
@@ -141,6 +140,6 @@ class App extends BaseApp {
 
 	function button(label:String, x:Float, y:Float, hover:Bool):Void {
 		batch.roundedRect(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, 6, hover ? 0x3d4a66ff : 0x2b3448ff);
-		Text2D.draw(batch, label, x + BUTTON_WIDTH / 2, y + 11, 17, 0xf5f5f5ff, Center);
+		batch.drawText(label, x + BUTTON_WIDTH / 2, y + 11, 17, 0xf5f5f5ff, Center);
 	}
 }

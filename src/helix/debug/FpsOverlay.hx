@@ -1,7 +1,6 @@
 package helix.debug;
 
 import helix.render2d.Batch2D;
-import helix.render2d.Text2D;
 
 /** The frame rate and the frame's cost, averaged over half a second, drawn in a corner in screen units (a Camera2D at zoom 1). */
 class FpsOverlay {
@@ -43,5 +42,5 @@ class FpsOverlay {
 
 	/** Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xRRGGBBAA. */
 	public function draw(batch:Batch2D, x:Float, y:Float, size = 16., color = 0x7fe07fff):Void
-		Text2D.draw(batch, Std.int(rate + .5) + ' FPS  ' + (Math.round(milliseconds * 10) / 10) + ' ms', x, y, size, color);
+		batch.drawText(Std.int(rate + .5) + ' FPS  ' + (Math.round(milliseconds * 10) / 10) + ' ms', x, y, size, color);
 }

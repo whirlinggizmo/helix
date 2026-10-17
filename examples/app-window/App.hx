@@ -7,7 +7,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 
 /** The window: its size, place, fullscreen, and monitors. Arrows move it 50 pixels, = and - grow and shrink it by 10%, F toggles fullscreen where the
 	window can be, M moves it to the next monitor, H hides it for two seconds (it keeps running), Esc quits where quitting means anything.
@@ -68,27 +67,20 @@ class App extends BaseApp {
 		Graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x181c26ff);
 		batch.begin(camera);
 		var row = vy + 12;
-		row += Text2D.drawWrapped(batch,
-			"HeliX window   arrows: move   =/-: size   "
+		row += batch.drawTextWrapped("HeliX window   arrows: move   =/-: size   "
 			+ (window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)")
 			+ "   M: next monitor   H: hide",
 			vx
 			+ 12, row, 16, vw
 			- 24, 0xf5f5f5ff)
 			+ 12;
-		row += Text2D.drawWrapped(batch,
-			'window: $width x $height at ($x, $y)   fullscreen: '
-			+ (window.fullscreen ? "yes" : "no")
-			+ "   focused: "
+		row += batch.drawTextWrapped('window: $width x $height at ($x, $y)   fullscreen: ' + (window.fullscreen ? "yes" : "no") + "   focused: "
 			+ (Window.focused ? "yes" : "no"),
-			vx
-			+ 12, row, 16, vw
-			- 24, 0xc8c8c8ff)
+			vx + 12, row, 16, vw - 24, 0xc8c8c8ff)
 			+ 4;
-		row += Text2D.drawWrapped(batch, status, vx + 12, row, 16, vw - 24, 0xffcb00ff) + 12;
+		row += batch.drawTextWrapped(status, vx + 12, row, 16, vw - 24, 0xffcb00ff) + 12;
 		for (m in 0...window.monitorCount) {
-			row += Text2D.drawWrapped(batch,
-				(m == window.monitorIndex ? "> " : "  ")
+			row += batch.drawTextWrapped((m == window.monitorIndex ? "> " : "  ")
 				+
 				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
 				vx

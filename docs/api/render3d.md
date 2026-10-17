@@ -758,16 +758,16 @@ function find(name:String):Null<Node3D>
 function collectModels(skinned:Array<Model>, rigid:Array<Model>):Void
 function findAttachment(model:Model, skeleton:Node3D):Null<Attachment>
 function computeWorld(out:Mat4):Void
-var x(get, never):Float
-var y(get, never):Float
-var z(get, never):Float
+var x(get, set):Float
+var y(get, set):Float
+var z(get, set):Float
 var quaternionX(get, never):Float
 var quaternionY(get, never):Float
 var quaternionZ(get, never):Float
 var quaternionW(get, never):Float
-var scaleX(get, never):Float
-var scaleY(get, never):Float
-var scaleZ(get, never):Float
+var scaleX(get, set):Float
+var scaleY(get, set):Float
+var scaleZ(get, set):Float
 function setPosition(x:Float, y:Float, z:Float):Void
 var rotationX(get, never):Float
 var rotationY(get, never):Float

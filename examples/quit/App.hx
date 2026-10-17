@@ -9,7 +9,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Textures;
 import helix.time.Time;
 
@@ -62,10 +61,11 @@ class App extends BaseApp {
 		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0x1e2430ff);
 		batch.begin(camera);
 		var y = vy + 12;
-		y += Text2D.drawWrapped(batch, "HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
-		Text2D.drawWrapped(batch,
-			quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
-			vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
+		batch.drawTextWrapped(quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff);
 		batch.end();
 		Graphics.endFrame();
 	}

@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -90,11 +89,8 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		Text2D.drawWrapped(batch, (orbit ? "O: stop the camera" : "O: turn the camera")
-			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
-			+ 12, y, 16, vw
-			- 24,
+		y += batch.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		batch.drawTextWrapped((orbit ? "O: stop the camera" : "O: turn the camera") + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24,
 			0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();

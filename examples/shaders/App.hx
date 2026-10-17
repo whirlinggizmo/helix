@@ -12,7 +12,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -208,13 +207,15 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX shaders: materials drawn by the example's own surface shaders", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		y += Text2D.drawWrapped(batch,
-			'left to right: toon, dissolve, water   [1] sun ${sun.visible ? "on" : "off"}  [2] point light ${lamp.visible ? "on" : "off"}', vx + 12, y, 16,
-			vw - 24, 0xc8c8c8ff)
+		y += batch.drawTextWrapped("HeliX shaders: materials drawn by the example's own surface shaders", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped('left to right: toon, dissolve, water   [1] sun ${sun.visible ? "on" : "off"}  [2] point light ${lamp.visible ? "on" : "off"}',
+			vx
+			+ 12, y, 16,
+			vw
+			- 24, 0xc8c8c8ff)
 			+ 4;
 		if (status != "")
-			Text2D.drawWrapped(batch, status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xff8080ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();

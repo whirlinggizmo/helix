@@ -7,7 +7,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 
@@ -138,7 +137,7 @@ class App extends BaseApp {
 				id = touch.id % FINGERS;
 			batch.circle(x, y, RING, color(id, 90));
 			batch.circleLines(x, y, RING, 1, color(id, 255));
-			Text2D.draw(batch, Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
+			batch.drawText(Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
 		}
 		if (input.touchGesture)
 			batch.circle(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), 6, 0xffffffff);
@@ -147,11 +146,11 @@ class App extends BaseApp {
 			if (touch.down)
 				fingers++;
 		var y = vy + 16;
-		y += Text2D.drawWrapped(batch, 'fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
-		y += Text2D.drawWrapped(batch, 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y,
-			18, vw - 32, 0xffffffff)
+		y += batch.drawTextWrapped('fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
+		y += batch.drawTextWrapped('logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y, 18,
+			vw - 32, 0xffffffff)
 			+ 1.5;
-		Text2D.drawWrapped(batch, "two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0x969eafff);
+		batch.drawTextWrapped("two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0x969eafff);
 		batch.end();
 		Graphics.endFrame();
 	}

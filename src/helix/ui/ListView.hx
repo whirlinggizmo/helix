@@ -1,15 +1,17 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 
 /** A list of items in a window rows tall: scrolled by the wheel over it or a drag, an item chosen by a click or, with focus, by Up and Down
 	(scrolled into view), and activated by a click on the chosen one or Enter, Space or a pad's South. Ask selectedIndex, changed and
 	activated once a frame. */
 class ListView extends Widget {
-	var face:Node2D;
+	var face:Shape2D;
 	var window:Node2D;
 	var content:Node2D;
-	var rows:Array<{face:Node2D, text:Node2D}> = [];
+	var rows:Array<{face:Shape2D, text:Text2D}> = [];
 	var itemList:Array<String> = [];
 	var visibleRows:Int;
 	var selected = -1;
@@ -22,11 +24,11 @@ class ListView extends Widget {
 		super(ui, name);
 		visibleRows = rows < 1 ? 1 : rows;
 		var theme = ui.theme;
-		face = Node2D.rectangle(1, 1, theme.faceColor);
+		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.cornerRadius);
-		window = Node2D.group();
-		content = Node2D.group();
+		face.cornerRadius = theme.cornerRadius;
+		window = new Node2D();
+		content = new Node2D();
 		window.addChild(content);
 		root.addChild(face);
 		root.addChild(window);
@@ -50,11 +52,11 @@ class ListView extends Widget {
 		}
 		rows = [];
 		for (i in 0...itemList.length) {
-			var rowFace = Node2D.rectangle(1, theme.widgetHeight, 0);
+			var rowFace = Shape2D.rectangle(1, theme.widgetHeight, 0);
 			rowFace.setPivot(0, 0);
-			rowFace.setCornerRadius(theme.cornerRadius);
+			rowFace.cornerRadius = theme.cornerRadius;
 			rowFace.pickable = false;
-			var text = Node2D.text(itemList[i], theme.textSize, theme.textColor, Left, theme.font);
+			var text = new Text2D(itemList[i], theme.textSize, theme.textColor, Left, theme.font);
 			content.addChild(rowFace);
 			content.addChild(text);
 			rows.push({face: rowFace, text: text});

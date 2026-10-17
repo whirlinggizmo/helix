@@ -12,8 +12,9 @@ import helix.math.Random;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
+import helix.render2d.Stage2D;
 import helix.time.Time;
 import helix.time.Timers;
 import helix.tween.Ease;
@@ -55,13 +56,13 @@ class App extends BaseApp {
 	var tweens = new Tweens();
 	var timers = new Timers();
 	var random = new Random(7);
-	var squares:Array<Node2D> = [];
-	var labels:Array<Node2D> = [];
+	var squares:Array<Shape2D> = [];
+	var labels:Array<Text2D> = [];
 	// Each square's tweened offset across, 0 to 300, placed from the column's left each frame.
 	var offsets:Array<Float> = [];
-	var ball:Node2D;
-	var path:Node2D;
-	var floor:Node2D;
+	var ball:Shape2D;
+	var path:Shape2D;
+	var floor:Shape2D;
 	var curve:Curve;
 	var along = 0.;
 	var sparks:Array<Spark> = [];
@@ -73,13 +74,13 @@ class App extends BaseApp {
 		batch = new Batch2D(Graphics.instance);
 		// A square a row, each tweened from 0 to 300 across and back by its easing, for ever, a little apart in time.
 		for (i in 0...EASES.length) {
-			var square = Node2D.rectangle(24, 24, COLORS[i]);
+			var square = Shape2D.rectangle(24, 24, COLORS[i]);
 			square.setPivot(.5, .5);
-			square.setCornerRadius(4);
+			square.cornerRadius = 4;
 			stage.add(square);
 			squares.push(square);
 			offsets.push(0);
-			var label = Node2D.text(EASES[i].name, 13, 0x8a92a8ff);
+			var label = new Text2D(EASES[i].name, 13, 0x8a92a8ff);
 			stage.add(label);
 			labels.push(label);
 			var tween = tweens.to(0, 300, 1.6, EASES[i].f, x -> offsets[i] = x);
@@ -93,17 +94,17 @@ class App extends BaseApp {
 			samples.push(curve.getX(i / 80));
 			samples.push(curve.getY(i / 80));
 		}
-		path = Node2D.polygon(samples);
-		path.setOutline(1);
+		path = Shape2D.polygon(samples);
+		path.outline = 1;
 		path.color = 0x3a4150ff;
 		stage.add(path);
-		ball = Node2D.circle(12, 0x66bfffff);
+		ball = Shape2D.circle(12, 0x66bfffff);
 		stage.add(ball);
-		floor = Node2D.rectangle(FLOOR_WIDTH, 6, 0x3a4150ff);
+		floor = Shape2D.rectangle(FLOOR_WIDTH, 6, 0x3a4150ff);
 		stage.add(floor);
 		// Every half second, a spark: it falls by a tween (bounceOut onto the floor) and fades by another, gone when faded.
 		timers.every(.5, () -> {
-			var spark = new Spark(Node2D.circle(5, random.pick(COLORS)), random.nextRange(10, FLOOR_WIDTH - 10));
+			var spark = new Spark(Shape2D.circle(5, random.pick(COLORS)), random.nextRange(10, FLOOR_WIDTH - 10));
 			stage.add(spark.node);
 			sparks.push(spark);
 			tweens.to(0, FLOOR_Y - 4, 1.2, Ease.bounceOut, y -> spark.y = y);
@@ -181,10 +182,11 @@ class App extends BaseApp {
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		Text2D.drawWrapped(batch,
-			'Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
-			vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		batch.drawTextWrapped('Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
+			vx
+			+ 12, y, 15, vw
+			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();
@@ -197,7 +199,7 @@ class App extends BaseApp {
 /** A falling spark: its node, where it is from the floor's left and top, and how faded. */
 private class Spark {
 	/** Its circle. */
-	public final node:Node2D;
+	public final node:Shape2D;
 
 	/** Across the floor. */
 	public final x:Float;
@@ -212,7 +214,7 @@ private class Spark {
 	public final color:Int;
 
 	/** A spark drawn by node at x across. */
-	public function new(node:Node2D, x:Float) {
+	public function new(node:Shape2D, x:Float) {
 		this.node = node;
 		this.x = x;
 		color = node.color;

@@ -1,6 +1,8 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Sprite2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Texture2D;
 
 /** A background holding a column of widgets (add): hidden, they're hidden with it. A plain rectangle in the theme's panel color, or a nine-slice
@@ -12,9 +14,10 @@ class Panel extends Widget {
 	function new(ui:Ui, name:String) {
 		super(ui, name);
 		var theme = ui.theme;
-		background = Node2D.rectangle(1, 1, theme.panelColor);
-		background.setPivot(0, 0);
-		background.setCornerRadius(theme.cornerRadius);
+		var rectangle = Shape2D.rectangle(1, 1, theme.panelColor);
+		rectangle.setPivot(0, 0);
+		rectangle.cornerRadius = theme.cornerRadius;
+		background = rectangle;
 		root.addChild(background);
 		content = Box.column();
 		content.setPadding(theme.padding, theme.padding, theme.padding, theme.padding);
@@ -43,14 +46,14 @@ class Panel extends Widget {
 	}
 
 	/** Its nine-slice frame, a sprite (its texture, insets and tint read from it), or null for the theme's rectangle. */
-	public var frame(default, null):Null<Node2D>;
+	public var frame(default, null):Null<Sprite2D>;
 
 	/** Draws it as texture's nine-slice frame, its corners left, top, right and bottom texels in, tinted tint. False, changing nothing, for no texture. */
 	public function setFrame(texture:Null<Texture2D>, left:Float, top:Float, right:Float, bottom:Float, tint = 0xffffffff):Bool {
 		if (texture == null)
 			return false;
-		frame = Node2D.sprite(texture);
-		frame.color = tint;
+		frame = new Sprite2D(texture);
+		frame.tint = tint;
 		frame.setPivot(0, 0);
 		frame.setNineSlice(left, top, right, bottom);
 		// In the background's place, first: under its widgets.

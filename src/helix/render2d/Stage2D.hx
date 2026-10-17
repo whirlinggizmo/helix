@@ -1,19 +1,24 @@
 package helix.render2d;
 
-import helix.render2d.Node2D.Node2DKind;
-
 /** A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, camera). A draw walks the tree as it is now, depth first, a
 	parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something
 	changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into
 	runs. A frame composes its stages in the order it draws them: a backdrop, the world, then a HUD, each through its own camera. */
 class Stage2D {
-	var stack:Array<Node2D> = [];
-	var stackChanged:Array<Bool> = [];
-
-	// On the walk's stack after a clipping node's children: its clip ends there.
-	static final clipEnd = Node2D.group();
-
-	// The clipping nodes a pick is inside, outermost first.
+	// The tree in drawing order (depth first, the root's children down), each node's parent's place in it (-1 for the root's children) and the
+	// place just past its last descendant, remade when the root's count of adds and removes moves; beside each, the node as its kind (null
+	// for another), its class asked once here, not each walk. Every walk then goes down the order.
+	var builtStructure = -1;
+	var order:Array<Node2D> = [];
+	var parentOf:Array<Int> = [];
+	var endOf:Array<Int> = [];
+	var moved:Array<Bool> = [];
+	var sprites:Array<Null<Sprite2D>> = [];
+	var shapes:Array<Null<Shape2D>> = [];
+	var texts:Array<Null<Text2D>> = [];
+	var emitters:Array<Null<Particles2D>> = [];
+	// The places where the clips a walk is inside end, innermost last; and for a pick, the clipping nodes, outermost first.
+	var clipEnds:Array<Int> = [];
 	var pickClips:Array<Node2D> = [];
 	var count = 0;
 	var left = 0.;
@@ -30,7 +35,7 @@ class Stage2D {
 	public function new() {}
 
 	/** The node everything on the stage hangs from. */
-	public var root(default, null):Node2D = Node2D.group();
+	public var root(default, null):Node2D = new Node2D();
 
 	/** Adds node to the stage, as the root's last child: drawn over what is there. */
 	public function add(node:Node2D):Bool
@@ -71,136 +76,179 @@ class Stage2D {
 		count = 0;
 		dt = Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime);
 		drawnTime = time;
-		var rootChanged = root.update(false);
-		// Children are pushed last first, so they pop in order.
-		stack.resize(0);
-		stackChanged.resize(0);
-		var i = root.children.length;
-		while (i-- > 0) {
-			stack.push(root.children[i]);
-			stackChanged.push(rootChanged);
-		}
-		while (stack.length > 0) {
-			var node = stack.pop(), parentChanged = stackChanged.pop();
-			if (node == clipEnd) {
+		var rootChanged = walkStart();
+		var n = order.length, i = 0;
+		while (i < n) {
+			while (clipEnds.length > 0 && clipEnds[clipEnds.length - 1] <= i) {
+				clipEnds.pop();
 				batch.popClip();
+			}
+			var node = order[i], p = parentOf[i];
+			if (!node.enabled) {
+				i = endOf[i];
 				continue;
 			}
-			if (!node.enabled)
-				continue;
-			var changed = node.update(parentChanged);
+			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
 			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
-			if (!node.visible) {
-				if (node.kind == Emitter)
-					node.emitterOf.advance(dt, node.wx, node.wy, 0);
-			} else if (node.kind != Group)
-				drawNode(batch, node);
+			if (node.visible)
+				drawNode(batch, i);
+			else if (emitters[i] != null)
+				emitters[i].emitter.advance(dt, node.wx, node.wy, 0);
 			if (node.clipWidth >= 0) {
 				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
-				stack.push(clipEnd);
-				stackChanged.push(false);
+				clipEnds.push(endOf[i]);
 			}
-			var j = node.children.length;
-			while (j-- > 0) {
-				stack.push(node.children[j]);
-				stackChanged.push(changed);
-			}
+			i++;
+		}
+		while (clipEnds.length > 0) {
+			clipEnds.pop();
+			batch.popClip();
 		}
 		batch.resetTransform();
 	}
 
-	// Draws node in its own units through its world transform, unless its bounds are out of view.
-	function drawNode(batch:Batch2D, node:Node2D):Void {
-		var half = node.outline / 2, x = 0., y = 0., w = 0., h = 0.;
-		switch node.kind {
-			case Sprite | Rectangle:
-				w = node.width;
-				h = node.height;
-				x = -node.pivotX * w - half;
-				y = -node.pivotY * h - half;
-				w += half * 2;
-				h += half * 2;
-				if (node.kind == Sprite && (node.texture == null || w <= 0 || h <= 0))
-					return;
-			case Circle:
-				x = y = -node.radius - half;
-				w = h = (node.radius + half) * 2;
-			case Line | Polygon:
-				var p = node.points;
-				var minX = p[0], minY = p[1], maxX = p[0], maxY = p[1], k = 2;
-				while (k < p.length) {
-					minX = Math.min(minX, p[k]);
-					maxX = Math.max(maxX, p[k]);
-					minY = Math.min(minY, p[k + 1]);
-					maxY = Math.max(maxY, p[k + 1]);
-					k += 2;
-				}
-				// A miter can reach twice the width past a corner.
-				var reach = node.kind == Polygon ? node.outline * 2 : half;
-				x = minX - reach;
-				y = minY - reach;
-				w = maxX - minX + reach * 2;
-				h = maxY - minY + reach * 2;
-			case Text:
-				var font = node.font == null ? batch.font : node.font;
-				w = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(font, node.content, node.textSize);
-				h = node.getTextHeight(font);
-				x = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
-			case Emitter:
-				// Not culled: particles reach past where it is.
-				var e = node.emitterOf;
-				e.advance(dt, node.wx, node.wy, 0);
-				count++;
-				batch.resetTransform();
-				batch.emitter(e);
+	// Before a walk: the order remade if the tree's shape changed, and the root brought up to date; whether it moved.
+	function walkStart():Bool {
+		if (builtStructure != root.structure)
+			rebuild();
+		moved.resize(order.length);
+		clipEnds.resize(0);
+		return root.update(false);
+	}
+
+	// The tree in drawing order and each node as its kind, again: after an add or a remove anywhere under the root.
+	function rebuild():Void {
+		order.resize(0);
+		parentOf.resize(0);
+		endOf.resize(0);
+		sprites.resize(0);
+		shapes.resize(0);
+		texts.resize(0);
+		emitters.resize(0);
+		for (i in 0...root.childCount)
+			list(root.getChild(i), -1);
+		builtStructure = root.structure;
+	}
+
+	// node and what's under it into the order, after its parent at parent.
+	function list(node:Node2D, parent:Int):Void {
+		var at = order.length;
+		order.push(node);
+		parentOf.push(parent);
+		endOf.push(0);
+		sprites.push(Std.downcast(node, Sprite2D));
+		shapes.push(Std.downcast(node, Shape2D));
+		texts.push(Std.downcast(node, Text2D));
+		emitters.push(Std.downcast(node, Particles2D));
+		for (i in 0...node.childCount)
+			list(node.getChild(i), at);
+		endOf[at] = order.length;
+	}
+
+	// Draws the node at place i in its own units through its world transform, unless its bounds are out of view.
+	function drawNode(batch:Batch2D, i:Int):Void {
+		var node = order[i],
+			sprite = sprites[i],
+			shape = shapes[i],
+			text = texts[i];
+		var x = 0., y = 0., w = 0., h = 0.;
+		if (sprite != null) {
+			w = sprite.width;
+			h = sprite.height;
+			x = -sprite.pivotX * w;
+			y = -sprite.pivotY * h;
+			if (sprite.texture == null || w <= 0 || h <= 0)
 				return;
-			case Group:
-				return;
-		}
+		} else if (shape != null) {
+			var half = shape.outlineWidth / 2;
+			switch shape.form {
+				case Rectangle:
+					w = shape.givenWidth;
+					h = shape.givenHeight;
+					x = -shape.pivotX * w - half;
+					y = -shape.pivotY * h - half;
+					w += half * 2;
+					h += half * 2;
+				case Circle:
+					x = y = -shape.circleRadius - half;
+					w = h = (shape.circleRadius + half) * 2;
+				case Line | Polygon:
+					var p = shape.pointList;
+					var minX = p[0], minY = p[1], maxX = p[0], maxY = p[1], k = 2;
+					while (k < p.length) {
+						minX = Math.min(minX, p[k]);
+						maxX = Math.max(maxX, p[k]);
+						minY = Math.min(minY, p[k + 1]);
+						maxY = Math.max(maxY, p[k + 1]);
+						k += 2;
+					}
+					// A miter can reach twice the width past a corner.
+					var reach = shape.form == Polygon ? shape.outlineWidth * 2 : half;
+					x = minX - reach;
+					y = minY - reach;
+					w = maxX - minX + reach * 2;
+					h = maxY - minY + reach * 2;
+			}
+		} else if (text != null) {
+			var font = text.font == null ? batch.font : text.font;
+			w = text.measureWidth(font);
+			h = text.measureHeight(font);
+			x = text.align == Center ? -w / 2 : text.align == Right ? -w : 0;
+		} else if (emitters[i] != null) {
+			// Not culled: particles reach past where it is.
+			var e = emitters[i].emitter;
+			e.advance(dt, node.wx, node.wy, 0);
+			count++;
+			batch.resetTransform();
+			batch.emitter(e);
+			return;
+		} else
+			return;
 		if (!inView(node, x, y, w, h))
 			return;
 		count++;
 		batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
-		var o = node.outline;
-		switch node.kind {
-			case Sprite:
-				var t = node.texture, tw = t.width, th = t.height;
-				var sx = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceX : 0.,
-					sy = node.sourceWidth > 0 && node.sourceHeight > 0 ? node.sourceY : 0.;
-				if (node.nineSlice)
-					batch.nineSlice(t, x, y, w, h, node.sliceLeft, node.sliceTop, node.sliceRight, node.sliceBottom, node.color, sx, sy, node.regionWidth,
-						node.regionHeight);
-				else {
-					batch.useTexture(t);
-					batch.quad(x, y, w, h, sx / tw, sy / th, (sx + node.regionWidth) / tw, (sy + node.regionHeight) / th, node.color);
-				}
-			case Rectangle:
-				// Outlined, the corners' arcs are the outline's middle: their radius half the outline more outside.
-				var r = Math.min(node.cornerRadius, Math.min(node.width, node.height) / 2);
-				if (o > 0)
-					batch.roundedFrame(x, y, w, h, r > 0 ? r + o / 2 : 0, o, node.color);
-				else
-					batch.roundedRect(x, y, w, h, r, node.color);
-			case Circle:
-				if (o > 0)
-					batch.circleLines(0, 0, node.radius + o / 2, o, node.color);
-				else
-					batch.circle(0, 0, node.radius, node.color);
-			case Line:
-				var p = node.points;
-				batch.line(p[0], p[1], p[2], p[3], o, node.color);
-			case Polygon:
-				if (o > 0)
-					batch.polygonLines(node.points, o, node.color);
-				else
-					batch.polygon(node.points, node.color, node.triangles);
-			case Text:
-				if (node.wrapWidth > 0)
-					Text2D.drawWrapped(batch, node.content, 0, 0, node.textSize, node.wrapWidth, node.color, node.align, node.lineHeight, node.font);
-				else
-					Text2D.draw(batch, node.content, 0, 0, node.textSize, node.color, node.align, node.font);
-			case Group | Emitter:
+		if (sprite != null) {
+			var t = sprite.texture, tw = t.width, th = t.height;
+			var sx = sprite.drawnRegionX(), sy = sprite.drawnRegionY();
+			if (sprite.nineSlice)
+				batch.nineSlice(t, x, y, w, h, sprite.sliceLeft, sprite.sliceTop, sprite.sliceRight, sprite.sliceBottom, sprite.tint, sx, sy,
+					sprite.regionWidth, sprite.regionHeight);
+			else {
+				batch.useTexture(t);
+				batch.quad(x, y, w, h, sx / tw, sy / th, (sx + sprite.regionWidth) / tw, (sy + sprite.regionHeight) / th, sprite.tint);
+			}
+		} else if (shape != null) {
+			var o = shape.outlineWidth;
+			switch shape.form {
+				case Rectangle:
+					// Outlined, the corners' arcs are the outline's middle: their radius half the outline more outside.
+					var r = Math.min(shape.corners, Math.min(shape.givenWidth, shape.givenHeight) / 2);
+					if (o > 0)
+						batch.roundedFrame(x, y, w, h, r > 0 ? r + o / 2 : 0, o, shape.color);
+					else
+						batch.roundedRect(x, y, w, h, r, shape.color);
+				case Circle:
+					if (o > 0)
+						batch.circleLines(0, 0, shape.circleRadius + o / 2, o, shape.color);
+					else
+						batch.circle(0, 0, shape.circleRadius, shape.color);
+				case Line:
+					var p = shape.pointList;
+					if (o > 0)
+						batch.line(p[0], p[1], p[2], p[3], o, shape.color);
+				case Polygon:
+					if (o > 0)
+						batch.polygonLines(shape.pointList, o, shape.color);
+					else
+						batch.polygon(shape.pointList, shape.color, shape.triangles);
+			}
+		} else if (text != null) {
+			if (text.wrapWidth > 0)
+				batch.drawTextWrapped(text.text, 0, 0, text.textSize, text.wrapWidth, text.color, text.align, text.lineHeight, text.font);
+			else
+				batch.drawText(text.text, 0, 0, text.textSize, text.color, text.align, text.font);
 		}
 	}
 
@@ -230,36 +278,27 @@ class Stage2D {
 		var wx = camera.screenToWorldX(x),
 			wy = camera.screenToWorldY(y),
 			hit:Null<Node2D> = null;
-		var rootChanged = root.update(false);
-		stack.resize(0);
-		stackChanged.resize(0);
-		var i = root.children.length;
-		while (i-- > 0) {
-			stack.push(root.children[i]);
-			stackChanged.push(rootChanged);
-		}
+		var rootChanged = walkStart();
 		pickClips.resize(0);
-		while (stack.length > 0) {
-			var node = stack.pop(), parentChanged = stackChanged.pop();
-			if (node == clipEnd) {
+		var n = order.length, i = 0;
+		while (i < n) {
+			while (clipEnds.length > 0 && clipEnds[clipEnds.length - 1] <= i) {
+				clipEnds.pop();
 				pickClips.pop();
+			}
+			var node = order[i], p = parentOf[i];
+			if (!node.enabled) {
+				i = endOf[i];
 				continue;
 			}
-			if (!node.enabled)
-				continue;
-			var changed = node.update(parentChanged);
-			if (node.pickable && insideClips(wx, wy) && hits(node, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
+			if (node.pickable && insideClips(wx, wy) && hits(i, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
 				hit = node;
 			if (node.clipWidth >= 0) {
 				pickClips.push(node);
-				stack.push(clipEnd);
-				stackChanged.push(false);
+				clipEnds.push(endOf[i]);
 			}
-			var j = node.children.length;
-			while (j-- > 0) {
-				stack.push(node.children[j]);
-				stackChanged.push(changed);
-			}
+			i++;
 		}
 		return hit;
 	}
@@ -284,30 +323,45 @@ class Stage2D {
 		return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius;
 	}
 
-	// Whether node's own point x, y is on what it draws.
-	function hits(node:Node2D, x:Float, y:Float):Bool {
-		var o = node.outline, half = o / 2;
-		switch node.kind {
-			case Sprite | Rectangle:
-				if (node.kind == Sprite && node.texture == null)
-					return false;
-				var w = node.width,
-					h = node.height,
-					left = -node.pivotX * w,
-					top = -node.pivotY * h,
-					r = Math.min(node.cornerRadius, Math.min(w, h) / 2);
+	// Whether the own point x, y of the node at place i is on what it draws.
+	function hits(i:Int, x:Float, y:Float):Bool {
+		var sprite = sprites[i], shape = shapes[i], text = texts[i];
+		if (sprite != null) {
+			if (sprite.texture == null)
+				return false;
+			var w = sprite.width, h = sprite.height;
+			return insideRounded(x, y, -sprite.pivotX * w, -sprite.pivotY * h, w, h, 0);
+		}
+		if (text != null) {
+			var font = text.font != null ? text.font : lastFont;
+			if (font == null)
+				return false;
+			var w = text.measureWidth(font),
+				left = text.align == Center ? -w / 2 : text.align == Right ? -w : 0;
+			return x >= left && x <= left + w && y >= 0 && y <= text.measureHeight(font);
+		}
+		if (shape == null)
+			return false;
+		var o = shape.outlineWidth, half = o / 2;
+		switch shape.form {
+			case Rectangle:
+				var w = shape.givenWidth,
+					h = shape.givenHeight,
+					left = -shape.pivotX * w,
+					top = -shape.pivotY * h,
+					r = Math.min(shape.corners, Math.min(w, h) / 2);
 				if (!insideRounded(x, y, left - half, top - half, w + o, h + o, r > 0 ? r + half : 0))
 					return false;
 				// An outlined rectangle is its frame: not inside it.
-				return node.kind == Sprite || o <= 0 || !insideRounded(x, y, left + half, top + half, w - o, h - o, Math.max(0, r - half));
+				return o <= 0 || !insideRounded(x, y, left + half, top + half, w - o, h - o, Math.max(0, r - half));
 			case Circle:
 				var d = Math.sqrt(x * x + y * y);
-				return o > 0 ? Math.abs(d - node.radius - half) <= half : d <= node.radius;
+				return o > 0 ? Math.abs(d - shape.circleRadius - half) <= half : d <= shape.circleRadius;
 			case Line:
-				var p = node.points;
+				var p = shape.pointList;
 				return segment(x, y, p[0], p[1], p[2], p[3]) <= Math.max(half, .5);
 			case Polygon:
-				var p = node.points, n = p.length >> 1;
+				var p = shape.pointList, n = p.length >> 1;
 				if (o > 0) {
 					for (k in 0...n)
 						if (segment(x, y, p[k * 2], p[k * 2 + 1], p[((k + 1) % n) * 2], p[((k + 1) % n) * 2 + 1]) <= half)
@@ -323,15 +377,6 @@ class Stage2D {
 					j = k;
 				}
 				return inside;
-			case Text:
-				var font = node.font != null ? node.font : lastFont;
-				if (font == null)
-					return false;
-				var w = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(font, node.content, node.textSize),
-					left = node.align == Center ? -w / 2 : node.align == Right ? -w : 0;
-				return x >= left && x <= left + w && y >= 0 && y <= node.getTextHeight(font);
-			case Emitter | Group:
-				return false;
 		}
 	}
 

@@ -1,21 +1,23 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 
 /** A button reading a line of text: clicked by the pointer (released over it, as pressed), or activated with focus by Enter, Space or a pad's
 	South. Ask clicked once a frame. */
 class Button extends Widget {
-	var face:Node2D;
-	var label:Node2D;
+	var face:Shape2D;
+	var label:Text2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, text:String) {
 		super(ui, name);
 		var theme = ui.theme;
-		face = Node2D.rectangle(1, 1, theme.faceColor);
+		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.cornerRadius);
-		label = Node2D.text(text, theme.textSize, theme.textColor, Center, theme.font);
+		face.cornerRadius = theme.cornerRadius;
+		label = new Text2D(text, theme.textSize, theme.textColor, Center, theme.font);
 		root.addChild(face);
 		root.addChild(label);
 		box = Box.stack(face);
@@ -33,10 +35,10 @@ class Button extends Widget {
 	public var text(get, set):String;
 
 	function get_text():String
-		return label.getText();
+		return label.text;
 
 	function set_text(value:String):String {
-		label.setText(value);
+		label.text = value;
 		return value;
 	}
 

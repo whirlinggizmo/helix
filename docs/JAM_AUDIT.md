@@ -76,7 +76,7 @@ Proposal: `helix.shaders`, a library of ready surface and screen shaders with pa
 ## 6. Found on the way (earlier sessions)
 
 - A public posed bounds for a skinned model (picking poses one on the CPU already; the dressing room framed by joint reach instead).
-- `Text2D.measureWrapped` (done), a wrapping box (not done).
+- `Font2D.measureWrapped` (done), a wrapping box (not done).
 - An orientation preference for phones.
 - The `tilemap` example's world camera upright shows 5 tiles across.
 

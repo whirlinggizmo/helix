@@ -1,6 +1,6 @@
 import Render2DTests.CountingGraphics;
 import helix.render2d.Font2D;
-import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
 import helix.ui.Box;
 import helix.ui.Box.BoxDirection;
@@ -157,9 +157,9 @@ class UiTests {
 		check(corner.x == 750 && corner.y == 570 && middle.x == 380 && middle.y == 290, "Anchored to a corner and the middle");
 		check(corner.anchorX == End && corner.anchorOffsetY == -10 && screen.gap == 0 && column.crossAlign == Stretch, "A box answers what it was set to");
 		// Nodes placed by their pivots, sprites and rectangles sized; a text fitted to its measure.
-		var panel = Node2D.rectangle(1, 1),
-			dot = Node2D.circle(5),
-			label = Node2D.text("PLAY", 20, -1, Center);
+		var panel = Shape2D.rectangle(1, 1),
+			dot = Shape2D.circle(5),
+			label = new Text2D("PLAY", 20, -1, Center);
 		var panelBox = Box.of(panel),
 			dotBox = Box.of(dot),
 			labelBox = Box.of(label);
@@ -171,9 +171,9 @@ class UiTests {
 		check(panel.x == 10 && panel.y == 10 && panel.width == 200 && panel.height == 30, "A rectangle at its corner, sized");
 		check(dot.x == 110 && dot.y == 49 && dotBox.height == 10, "A circle at its center (stretched across: the column's middle)");
 		check(labelBox.height == 20 && label.x == 110 && label.y == 58, "A centred text at its middle, as tall as its size");
-		var fitted = holding(Box.row(), [Box.of(Node2D.text("PLAY", 20))]);
+		var fitted = holding(Box.row(), [Box.of(new Text2D("PLAY", 20))]);
 		Box.arrange(fitted, 0, 0, 1000, 1000, font);
-		check(near(fitted.width, Text2D.measure(font, "PLAY", 20)), "A text fits its measure");
+		check(near(fitted.width, font.measure("PLAY", 20)), "A text fits its measure");
 	}
 
 	// The widgets used by keys, the pointer and a pad's absence: focus order, the ring, activation, the held-key guard, back, a toggle, a

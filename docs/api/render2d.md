@@ -4,9 +4,9 @@
 
 ## Align2D
 
-*abstract* in `src/helix/render2d/Text2D.hx`
+*abstract* in `src/helix/render2d/Align2D.hx`
 
-Which point of the text x names: its left edge, center or right edge.
+Which point of a line of text its x names: its left edge, center or right edge.
 
 ## BakedFont
 
@@ -69,6 +69,8 @@ function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, 
 function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function emitter(emitter:Emitter):Void
+function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
+function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font2D):Float
 function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void
 function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void
 function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void
@@ -106,6 +108,8 @@ function destroy():Void
 - `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
 - `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
 - `emitter`: Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An emitter with nothing to draw draws nothing.
+- `drawText`: Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted color (0xRRGGBBAA), in font or the batch's built-in one. Characters without a glyph are skipped.
+- `drawTextWrapped`: Draws text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
 - `rect`: A filled rectangle in world units, top-left at x, y.
 - `triangle`: A filled triangle through three world points.
 - `line`: A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0.
@@ -177,7 +181,7 @@ var clipY(inline, null):(wy:Float) -> Float
 
 *class* in `src/helix/render2d/Font2D.hx`
 
-A font for Text2D: its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which Text2D scales to the size asked for.
+A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
 
 ```haxe
 static function fromTrueType(gpu:IGraphics, data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6):Font2D
@@ -190,6 +194,9 @@ var descent(default, null):Float
 var distanceField(default, null):Bool
 function getGlyph(code:Int):Null<Glyph2D>
 function getKerning(left:Int, right:Int):Float
+function measure(text:String, size:Float):Float
+function wrap(text:String, size:Float, width:Float):Array<String>
+function measureWrapped(text:String, size:Float, width:Float, ?lineHeight:Float = 1.25):Float
 function destroy(gpu:IGraphics):Void
 ```
 
@@ -197,12 +204,15 @@ function destroy(gpu:IGraphics):Void
 - `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md).
 - `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes.
 - `texture`: The texture holding every glyph, with a white texel for untextured shapes.
-- `size`: The height the font was made at, ascent to descent, in font pixels: Text2D's size scales this.
+- `size`: The height the font was made at, ascent to descent, in font pixels: a text's size scales this.
 - `ascent`: How far the tallest glyphs reach above the baseline, in font pixels.
 - `descent`: How far glyphs reach below the baseline, in font pixels; 0 or negative.
 - `distanceField`: Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage.
 - `getGlyph`: A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size).
 - `getKerning`: How far the pen moves besides the advance between characters left and right, in font pixels: usually negative, closing a pair such as "AV". 0 for a font without kerning.
+- `measure`: How far text moves the pen at size (world units, ascent to descent): its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as nothing.
+- `wrap`: text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its letters; a line break ("\n") always breaks. Lines keep no trailing spaces.
+- `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
 - `destroy`: Frees the font's texture on gpu, the adapter that made it.
 
 ## FontBaker
@@ -293,81 +303,27 @@ final levels:Array<haxe.io.Bytes>
 
 *class* in `src/helix/render2d/Node2D.hx`
 
-What a Stage2D holds: a transform in a tree, and its kind's data (a sprite's texture and region, a shape, a line of text). Made by the static constructors and never subclassed; a node only draws, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61). Its transform is a position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked out when a stage draws it, only after it or a node above it changed. Colors are 0xRRGGBBAA.
+What a Stage2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Sprite2D, Shape2D, Text2D, Particles2D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked out when a stage draws it, only after it or a node above it changed. Any node can clip its children (setClip).
 
 ```haxe
-static function group():Node2D
-static function sprite(texture:Null<Texture2D>):Node2D
-static function rectangle(width:Float, height:Float, ?color:Int = 0xffffffff):Node2D
-static function circle(radius:Float, ?color:Int = 0xffffffff):Node2D
-static function line(x0:Float, y0:Float, x1:Float, y1:Float, ?color:Int = 0xffffffff):Node2D
-static function polygon(points:Array<Float>, ?color:Int = 0xffffffff):Null<Node2D>
-static function text(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font2D):Node2D
-static function emitter(emitter:Emitter):Node2D
-function getEmitter():Null<Emitter>
-var kind(default, null):Node2DKind
-var name:String
+function new()
+var parent(get, set):Null<Node2D>
+function getChild(index:Int):Null<Node2D>
 function find(name:String):Null<Node2D>
-var color:Int
-function getTexture():Null<Texture2D>
-function setTexture(value:Null<Texture2D>):Bool
-function setRegion(x:Float, y:Float, width:Float, height:Float):Bool
-var regionX(get, never):Float
-var regionY(get, never):Float
-var regionWidth(get, never):Float
-var regionHeight(get, never):Float
-var width(get, never):Float
-var height(get, never):Float
-function setSize(width:Float, height:Float):Bool
-var pivotX(default, null):Float
-var pivotY(default, null):Float
-function setPivot(x:Float, y:Float):Bool
-function getRadius():Float
-function setRadius(value:Float):Bool
-function getPoints():Array<Float>
-function setPoints(value:Array<Float>):Bool
-function getCornerRadius():Float
-function setCornerRadius(radius:Float):Bool
-function getOutline():Float
-function setOutline(width:Float):Bool
-function getText():String
-function setText(value:String):Bool
-function getTextSize():Float
-function setTextSize(value:Float):Bool
-function getFont():Null<Font2D>
-function setFont(value:Null<Font2D>):Bool
-function getAlign():Align2D
-function setAlign(value:Align2D):Bool
-function setNineSlice(left:Float, top:Float, right:Float, bottom:Float):Bool
-var nineSliceLeft(get, never):Float
-var nineSliceTop(get, never):Float
-var nineSliceRight(get, never):Float
-var nineSliceBottom(get, never):Float
-var nineSlice(get, never):Bool
-var wrapWidth(default, null):Float
-var lineHeight(default, null):Float
-function setWrapWidth(width:Float, ?lineHeight:Float = 1.25):Bool
-function getTextHeight(font:Font2D):Float
+function addChild(child:Node2D):Bool
+function addChildInPlace(child:Node2D):Bool
+function removeChild(child:Node2D):Bool
 var clipping(get, never):Bool
 var clipWidth(default, null):Float
 var clipHeight(default, null):Float
 function setClip(width:Float, height:Float):Bool
 function clearClip():Void
-var enabled(default, set):Bool
-var visible:Bool
-var pickable:Bool
-var parent(get, set):Null<Node2D>
-var childCount(get, never):Int
-function getChild(index:Int):Null<Node2D>
-function addChild(child:Node2D):Bool
-function addChildInPlace(child:Node2D):Bool
-function removeChild(child:Node2D):Bool
-var x(get, never):Float
-var y(get, never):Float
+var x(get, set):Float
+var y(get, set):Float
 function setPosition(x:Float, y:Float):Void
 var rotation(get, set):Float
-var scaleX(get, never):Float
-var scaleY(get, never):Float
+var scaleX(get, set):Float
+var scaleY(get, set):Float
 function setScale(x:Float, y:Float):Void
 function toWorldX(x:Float, y:Float):Float
 function toWorldY(x:Float, y:Float):Float
@@ -375,89 +331,43 @@ function toLocalX(x:Float, y:Float):Float
 function toLocalY(x:Float, y:Float):Float
 ```
 
-- `group`: A group: a node that draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D). Any node can have children; use a group when the parent shouldn't itself be a sprite, a shape or text: a handle that moves or hides a set of things together, or a pivot to turn them about.
-- `sprite`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center.
-- `rectangle`: A filled rectangle width x height, its top-left at its position (pivot 0, 0).
-- `circle`: A filled circle of radius, centered on its position.
-- `line`: A line from x0, y0 to x1, y1 in its own units, as wide as its outline (1 until setOutline).
-- `polygon`: A filled polygon through points in its own units (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). Null for fewer than 3 points or an odd count.
-- `text`: One line of text, size world units tall (ascent to descent), in font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Not pickable until pickable is set: a label lets the pointer through to what it's on.
-- `emitter`: An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Stage2D.setTime) each draw. Its particles draw at its place in the stage's order, through the GPU.
-- `getEmitter`: An emitter node's emitter; null for another kind.
-- `kind`: Its kind.
-- `name`: Its name, what the game gave it; "" for none.
+- `new`: A group at the origin, unturned and unscaled, with no children.
+- `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
+- `getChild`: Its child at index, in drawing order; null past the end.
 - `find`: The first node named name below it (depth first, in drawing order), or null: found once and kept, never a path.
-- `color`: Its color: what a sprite's texels are multiplied by (white leaves them as they are), a shape's or text's color.
-- `getTexture`: A sprite's texture, or null.
-- `setTexture`: Gives a sprite a texture (null for none: it draws nothing). False for another kind.
-- `setRegion`: A sprite's region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. False for another kind.
-- `regionX`: A sprite's region's left, in texels.
-- `regionY`: A sprite's region's top, in texels.
-- `regionWidth`: A sprite's region's width in texels: what was set, or else its texture's (0 without one).
-- `regionHeight`: A sprite's region's height in texels: what was set, or else its texture's (0 without one).
-- `width`: The width it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
-- `height`: The height it draws at, in its own units: a rectangle's, or a sprite's as set, else its region's in texels.
-- `setSize`: Sizes a sprite or a rectangle, in its own units; for a sprite, a width or height of 0 or less goes back to its region's size. False for another kind, or a rectangle's size below 0.
-- `pivotX`: The point of a sprite or rectangle at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right.
-- `pivotY`: The pivot's y fraction.
-- `setPivot`: Sets a sprite's or rectangle's pivot. False for another kind.
-- `getRadius`: A circle's radius; 0 for another kind.
-- `setRadius`: Sets a circle's radius. False for another kind or a radius below 0.
-- `getPoints`: A polygon's points or a line's ends, x and y in turn (a copy); empty for another kind.
-- `setPoints`: Gives a polygon new points (as polygon() takes them) or a line new ends (4 floats). False for another kind or a wrong count.
-- `getCornerRadius`: A rectangle's corners' radius, in its own units; 0 for square (and for another kind).
-- `setCornerRadius`: Rounds a rectangle's corners to radius (drawn at most half its shorter side; outlined, the outline's middle follows the corners), and picks it by its rounded shape. False for another kind or a radius below 0.
-- `getOutline`: A shape's outline width, in its own units; 0 for filled.
-- `setOutline`: Draws a rectangle, circle or polygon as its outline, width wide centered on its edge, or filled for 0; a line's width. False for another kind or a width below 0 (0 for a line).
-- `getText`: A text node's text; "" for another kind.
-- `setText`: Sets a text node's text. False for another kind.
-- `getTextSize`: A text node's size, world units tall.
-- `setTextSize`: Sets a text node's size. False for another kind or a size of 0 or less.
-- `getFont`: A text node's font, or null for the drawing batch's built-in one.
-- `setFont`: Sets a text node's font (null: the batch's built-in one). False for another kind.
-- `getAlign`: A text node's alignment.
-- `setAlign`: Aligns a text node's text on its position: Left, Center or Right. False for another kind.
-- `setNineSlice`: Draws a sprite as a nine-slice frame (Batch2D.nineSlice): its region's corners left, top, right and bottom texels in from its edges keep their size as it's sized, its edges and middle stretch. All 0 (the start) draws it stretched whole. False for another kind or an inset below 0.
-- `nineSliceLeft`: A nine-slice's left inset, texels.
-- `nineSliceTop`: A nine-slice's top inset, texels.
-- `nineSliceRight`: A nine-slice's right inset, texels.
-- `nineSliceBottom`: A nine-slice's bottom inset, texels.
-- `nineSlice`: Whether a sprite draws as a nine-slice frame.
-- `wrapWidth`: A text's wrap width in its own units: 0 for one line.
-- `lineHeight`: A wrapped text's lines apart, times its size.
-- `setWrapWidth`: Wraps a text to width in its own units (Text2D.wrap), its lines lineHeight times its size apart; 0 for one line. False for another kind, a width below 0 or a line height of 0 or less.
-- `getTextHeight`: A text's height in its own units as drawn: its size, or its wrapped lines' (with font, the font it's drawn in).
+- `addChild`: Makes child its last child (drawn over the others), taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
+- `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or this scaled to nothing.
+- `removeChild`: Takes child from its children. False when it isn't one.
 - `clipping`: Whether its children are clipped (setClip).
 - `clipWidth`: The clip's width in its own units, or -1 without one.
 - `clipHeight`: The clip's height in its own units, or -1 without one.
 - `setClip`: Clips its children (drawn and picked) to the rectangle width x height from its own origin, in its own units: a scrolling list's window. A turned node clips to the turned rectangle's bounds. Its own output isn't clipped. False, changing nothing, for a size below 0.
 - `clearClip`: Stops clipping its children.
-- `enabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
-- `visible`: Whether its own output is drawn: off, a sprite, shape, text or emitter isn't drawn (an emitter still moves on); it stays placed, and its children are as they are. On to start.
-- `pickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
-- `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
-- `childCount`: How many children it has.
-- `getChild`: Its child at index, in drawing order; null past the end.
-- `addChild`: Makes child its last child (drawn over the others), taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
-- `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or this scaled to nothing.
-- `removeChild`: Takes child from its children. False when it isn't one.
 - `x`: Its position's x, relative to its parent.
-- `y`: Its position's y.
+- `y`: Its position's y, relative to its parent (down the screen).
 - `setPosition`: Places it at x, y, relative to its parent.
 - `rotation`: Its rotation in radians, clockwise on screen, relative to its parent.
-- `scaleX`: Its scale along its own x.
-- `scaleY`: Its scale along its own y.
+- `scaleX`: Its scale along its own x; a negative scale mirrors it.
+- `scaleY`: Its scale along its own y; a negative scale mirrors it.
 - `setScale`: Scales it along its own x and y; a negative scale mirrors it.
 - `toWorldX`: The world x of its own point x, y, as the last draw placed it.
 - `toWorldY`: The world y of its own point x, y, as the last draw placed it.
 - `toLocalX`: The x in its own units of world point x, y, as the last draw placed it; NaN when it is scaled to nothing.
 - `toLocalY`: The y in its own units of world point x, y, as the last draw placed it; NaN when it is scaled to nothing.
 
-## Node2DKind
+## Particles2D
 
-*abstract* in `src/helix/render2d/Node2D.hx`
+*class* in `src/helix/render2d/Particles2D.hx`
 
-What a 2D node is.
+An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Stage2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
+
+```haxe
+function new(emitter:Emitter)
+var emitter(default, null):Emitter
+```
+
+- `new`: emitter, placed here.
+- `emitter`: Its emitter.
 
 ## Polygon2D
 
@@ -472,6 +382,106 @@ static function triangulate(points:Array<Float>):Array<Int>
 
 - `doubleArea`: Twice the signed area of the polygon through points: above 0 when its points go clockwise on screen (y down).
 - `triangulate`: The triangles filling the simple polygon through points (at least 3, not crossing itself), as indices of points, three a triangle, by ear clipping; either winding. A polygon that crosses itself is filled as far as clipping gets.
+
+## Shape2D
+
+*class* in `src/helix/render2d/Shape2D.hx`
+
+A flat shape in a color (0xRRGGBBAA), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size, pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn.
+
+```haxe
+static function rectangle(width:Float, height:Float, ?color:Int = 0xffffffff):Shape2D
+static function circle(radius:Float, ?color:Int = 0xffffffff):Shape2D
+static function line(x0:Float, y0:Float, x1:Float, y1:Float, ?color:Int = 0xffffffff):Shape2D
+static function polygon(points:Array<Float>, ?color:Int = 0xffffffff):Null<Shape2D>
+var form(default, null):ShapeForm
+var color:Int
+var width(get, never):Float
+var height(get, never):Float
+function setSize(width:Float, height:Float):Void
+function setPivot(x:Float, y:Float):Void
+var pivotX(default, null):Float
+var pivotY(default, null):Float
+var radius(get, set):Float
+var cornerRadius(get, set):Float
+var outline(get, set):Float
+var points(get, never):Array<Float>
+function setPoints(value:Array<Float>):Bool
+```
+
+- `rectangle`: A filled rectangle width x height (below 0 is 0), its top-left at its position (pivot 0, 0).
+- `circle`: A filled circle of radius (below 0 is 0), centered on its position.
+- `line`: A line from x0, y0 to x1, y1 in its own units, as wide as its outline (1 to start).
+- `polygon`: A filled polygon through points in its own units (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). Null for fewer than 3 points or an odd count.
+- `form`: Which shape it is.
+- `color`: Its color, 0xRRGGBBAA.
+- `width`: A rectangle's width, in its own units.
+- `height`: A rectangle's height, in its own units.
+- `setSize`: Sizes a rectangle, in its own units; below 0 is 0.
+- `setPivot`: Sets the point of a rectangle at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left (the start), 1, 1 its bottom-right.
+- `pivotX`: A rectangle's pivot's x fraction.
+- `pivotY`: A rectangle's pivot's y fraction.
+- `radius`: A circle's radius, in its own units. At least 0 (below 0, or NaN, is 0).
+- `cornerRadius`: A rectangle's corners' radius, in its own units, 0 for square (the start): drawn at most half its shorter side; outlined, the outline's middle follows the corners; picked by its rounded shape. At least 0 (below 0, or NaN, is 0).
+- `outline`: Its outline's width, in its own units, centered on its edge: 0 draws a rectangle, circle or polygon filled (the start), and is a line's width (1 to start; 0 draws nothing). At least 0 (below 0, or NaN, is 0).
+- `points`: A polygon's points or a line's ends, x and y in turn (a copy); empty for a rectangle or circle.
+- `setPoints`: Gives a polygon new points (as polygon() takes them, copied) or a line new ends (4 floats). False, changing nothing, for a rectangle or circle or a wrong count.
+
+## ShapeForm
+
+*abstract* in `src/helix/render2d/Shape2D.hx`
+
+Which shape a Shape2D is.
+
+## Sprite2D
+
+*class* in `src/helix/render2d/Sprite2D.hx`
+
+A sprite: a texture (or a region of it) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice).
+
+```haxe
+function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
+var texture:Null<Texture2D>
+var tint:Int
+function setRegion(x:Float, y:Float, width:Float, height:Float):Void
+var regionX(get, never):Float
+var regionY(get, never):Float
+var regionWidth(get, never):Float
+var regionHeight(get, never):Float
+var width(get, never):Float
+var height(get, never):Float
+function setSize(width:Float, height:Float):Void
+function setPivot(x:Float, y:Float):Void
+var pivotX(default, null):Float
+var pivotY(default, null):Float
+function setNineSlice(left:Float, top:Float, right:Float, bottom:Float):Bool
+var nineSliceLeft(get, never):Float
+var nineSliceTop(get, never):Float
+var nineSliceRight(get, never):Float
+var nineSliceBottom(get, never):Float
+var nineSlice(get, never):Bool
+```
+
+- `new`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted (0xRRGGBBAA, white for none).
+- `texture`: Its texture, or null: it draws nothing.
+- `tint`: What its texels are multiplied by, 0xRRGGBBAA: white leaves them as they are.
+- `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
+- `regionX`: Its region's left, in texels.
+- `regionY`: Its region's top, in texels.
+- `regionWidth`: Its region's width in texels: what was set, or else its texture's (0 without one).
+- `regionHeight`: Its region's height in texels: what was set, or else its texture's (0 without one).
+- `width`: The width it draws at, in its own units: as sized, else its region's in texels.
+- `height`: The height it draws at, in its own units: as sized, else its region's in texels.
+- `setSize`: Sizes it, in its own units; a width or height of 0 or less goes back to its region's size.
+- `setPivot`: Sets the point at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default).
+- `pivotX`: Its pivot's x fraction.
+- `pivotY`: Its pivot's y fraction.
+- `setNineSlice`: Draws it as a nine-slice frame (Batch2D.nineSlice): its region's corners left, top, right and bottom texels in from its edges keep their size as it's sized, its edges and middle stretch. All 0 (the start) draws it stretched whole. False, changing nothing, for an inset below 0.
+- `nineSliceLeft`: Its nine-slice's left inset, texels.
+- `nineSliceTop`: Its nine-slice's top inset, texels.
+- `nineSliceRight`: Its nine-slice's right inset, texels.
+- `nineSliceBottom`: Its nine-slice's bottom inset, texels.
+- `nineSlice`: Whether it draws as a nine-slice frame.
 
 ## Stage2D
 
@@ -505,21 +515,33 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 
 *class* in `src/helix/render2d/Text2D.hx`
 
-One line of text in world units: size is the font's height, ascent to descent; x is the left edge, center or right edge by align; y is the top.
+A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xRRGGBBAA) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font2D.measure measures it.
 
 ```haxe
-static function measure(font:Font2D, text:String, size:Float):Float
-static function wrap(font:Font2D, text:String, size:Float, width:Float):Array<String>
-static function measureWrapped(font:Font2D, text:String, size:Float, width:Float, ?lineHeight:Float = 1.25):Float
-static function drawWrapped(batch:Batch2D, text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font2D):Float
-static function draw(batch:Batch2D, text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
+function new(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font2D)
+var text:String
+var textSize(get, set):Float
+var color:Int
+var align:Align2D
+var font:Null<Font2D>
+var wrapWidth(default, null):Float
+var lineHeight(default, null):Float
+function setWrapWidth(width:Float, ?lineHeight:Float = 1.25):Bool
+function measureWidth(font:Font2D):Float
+function measureHeight(font:Font2D):Float
 ```
 
-- `measure`: How far text moves the pen at size: its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as nothing.
-- `wrap`: text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its letters; a line break ("\n") always breaks. Lines keep no trailing spaces.
-- `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what drawWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
-- `drawWrapped`: Draws text wrapped to width (wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
-- `draw`: Draws text into batch, tinted color (0xRRGGBBAA), in font or the batch's built-in font. Characters without a glyph are skipped.
+- `new`: value, size units tall (0 or less, or NaN, is 1e-6), in color, aligned on its position by align, in font (null: the batch's built-in one).
+- `text`: Its text.
+- `textSize`: Its size, units tall (ascent to descent). At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `color`: Its color, 0xRRGGBBAA.
+- `align`: Which point of it its position's x is: its left edge, center or right edge.
+- `font`: Its font, or null for the drawing batch's built-in one.
+- `wrapWidth`: Its wrap width in its own units: 0 for one line.
+- `lineHeight`: Its wrapped lines apart, times its size.
+- `setWrapWidth`: Wraps it to width in its own units (Font2D.wrap), its lines lineHeight times its size apart; 0 for one line. False, changing nothing, for a width below 0 or a line height of 0 or less.
+- `measureWidth`: Its width in its own units as drawn in font (its own, if it has one): its wrap width, or its one line's.
+- `measureHeight`: Its height in its own units as drawn in font (its own, if it has one): its size, or its wrapped lines'.
 
 ## Texture2D
 

@@ -8,9 +8,8 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Node2D;
+import helix.render2d.Sprite2D;
 import helix.render2d.Stage2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
@@ -23,7 +22,7 @@ import helix.time.Time;
 	- "tint": a white copy of the logo cycling through colors (a tint multiplies the texels, so it can't show on the black logo)
 	- a one-off Batch2D.sprite in the corner, no node
 	Hovering enlarges the sprite under the pointer, the topmost (the last drawn) first: the pointer taken into each sprite's own units
-	(Node2D.toLocalX), then inside its gear's disc, or the sheet's quarter inside its rectangle. Escape quits where quitting means anything. */
+	(Sprite2D.toLocalX), then inside its gear's disc, or the sheet's quarter inside its rectangle. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var LOGO = "sprites/logo/wg-logo-bw-alpha.png";
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
@@ -33,7 +32,7 @@ class App extends BaseApp {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
-	var sprites:Array<Node2D> = [];
+	var sprites:Array<Sprite2D> = [];
 	var logo:Null<Texture2D>;
 	var palette:Array<Int> = [];
 	var sheetFrame = 0;
@@ -51,7 +50,7 @@ class App extends BaseApp {
 			palette.push(channel(0) << 24 | channel(2.1) << 16 | channel(4.2) << 8 | 255);
 		}
 		for (i in 0...NAMES.length) {
-			var sprite = Node2D.sprite(null);
+			var sprite = new Sprite2D(null);
 			sprite.name = NAMES[i];
 			sprite.setSize(128, 128);
 			sprites.push(sprite);
@@ -65,14 +64,14 @@ class App extends BaseApp {
 			case Ready(texture):
 				logo = texture;
 				for (i in 0...4)
-					sprites[i].setTexture(texture);
+					sprites[i].texture = texture;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
 		});
 		Textures.load(WHITE_LOGO, true, result -> switch result {
 			case Ready(texture):
-				sprites[4].setTexture(texture);
+				sprites[4].texture = texture;
 			case Failed(message):
 				trace(message);
 			case Cancelled:
@@ -130,7 +129,7 @@ class App extends BaseApp {
 		sprites[0].setRegion((sheetFrame % 2) * 128, Std.int(sheetFrame / 2) * 128, 128, 128);
 		sprites[1].rotation = time;
 		sprites[2].rotation = Math.sin(time * 1.5) * .8;
-		sprites[4].color = palette[Std.int(time * 6) % palette.length];
+		sprites[4].tint = palette[Std.int(time * 6) % palette.length];
 
 		// Hover: the topmost sprite under the pointer, the last drawn first.
 		var x = camera.screenToWorldX(input.pointerX),
@@ -155,9 +154,9 @@ class App extends BaseApp {
 			batch.sprite(logo, vx + vw - 42, vy + 42, 64, 64);
 		// Wrapped short of the corner sprite.
 		var line = vy + 36;
-		line += Text2D.drawWrapped(batch, "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", vx + 12, line, 16, vw - 96, 0xf5f5f5ff) + 4;
-		Text2D.drawWrapped(batch, 'pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame',
-			vx + 12, line, 16, vw - 96, 0xc8c8c8ff);
+		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", vx + 12, line, 16, vw - 96, 0xf5f5f5ff) + 4;
+		batch.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', vx + 12,
+			line, 16, vw - 96, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

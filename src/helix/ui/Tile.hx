@@ -1,6 +1,9 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Sprite2D;
+import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 
 /** A picture with a caption under it, in a frame: an inventory's item, a character creator's choice, a level to pick. Clicked by the pointer,
@@ -8,28 +11,28 @@ import helix.render2d.Texture2D;
 	then selected). Its picture can come later (a thumbnail still being made): until then, and with none, the frame shows the theme's face
 	color. Ask clicked once a frame. */
 class Tile extends Widget {
-	var face:Node2D;
-	var picture:Node2D;
-	var label:Node2D;
-	var edge:Node2D;
+	var face:Shape2D;
+	var picture:Sprite2D;
+	var label:Text2D;
+	var edge:Shape2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, texture:Null<Texture2D>, caption:String, side:Float) {
 		super(ui, name);
 		this.side = side;
 		var theme = ui.theme, pad = theme.padding;
-		face = Node2D.rectangle(1, 1, theme.faceColor);
+		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.setCornerRadius(theme.cornerRadius);
-		edge = Node2D.rectangle(1, 1, theme.accentColor);
+		face.cornerRadius = theme.cornerRadius;
+		edge = Shape2D.rectangle(1, 1, theme.accentColor);
 		edge.setPivot(0, 0);
-		edge.setCornerRadius(theme.cornerRadius + 2);
+		edge.cornerRadius = theme.cornerRadius + 2;
 		edge.pickable = false;
 		edge.visible = false;
-		picture = Node2D.sprite(texture);
+		picture = new Sprite2D(texture);
 		picture.setPivot(0, 0);
 		picture.pickable = false;
-		label = Node2D.text(caption, theme.textSize * .8, theme.textColor, Center, theme.font);
+		label = new Text2D(caption, theme.textSize * .8, theme.textColor, Center, theme.font);
 		label.pickable = false;
 		for (n in [edge, face, picture, label])
 			root.addChild(n);
@@ -58,10 +61,10 @@ class Tile extends Widget {
 	public var texture(get, set):Null<Texture2D>;
 
 	function get_texture():Null<Texture2D>
-		return picture.getTexture();
+		return picture.texture;
 
 	function set_texture(texture:Null<Texture2D>):Null<Texture2D> {
-		picture.setTexture(texture);
+		picture.texture = texture;
 		picture.visible = texture != null;
 		return texture;
 	}
@@ -70,10 +73,10 @@ class Tile extends Widget {
 	public var caption(get, set):String;
 
 	function get_caption():String
-		return label.getText();
+		return label.text;
 
 	function set_caption(value:String):String {
-		label.setText(value);
+		label.text = value;
 		return value;
 	}
 
@@ -91,7 +94,7 @@ class Tile extends Widget {
 		this.clicked = enabled && (clicked || activated);
 		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
 		edge.visible = selected;
-		picture.color = enabled ? 0xffffffff : 0x808080ff;
+		picture.tint = enabled ? 0xffffffff : 0x808080ff;
 		label.color = enabled ? theme.textColor : theme.disabledTextColor;
 	}
 }

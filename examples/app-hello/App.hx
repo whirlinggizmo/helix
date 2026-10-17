@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.time.Time;
 
 /** 2D shapes, text and input: a marker follows the mouse, typing shows what was typed (Backspace takes the last character back),
@@ -55,10 +54,10 @@ class App extends BaseApp {
 		if (input.pointerX >= 0)
 			batch.circle(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY), 8, 0xbe2137ff);
 		// text
-		Text2D.draw(batch, "HeliX", x + 40, y + 360, 32, 0x505050ff);
-		var below = Text2D.drawWrapped(batch, typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);
+		batch.drawText("HeliX", x + 40, y + 360, 32, 0x505050ff);
+		var below = batch.drawTextWrapped(typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);
 		if (Host.canQuit())
-			Text2D.draw(batch, "press Esc to quit", x + 40, y + 420 + below, 16, 0x828282ff);
+			batch.drawText("press Esc to quit", x + 40, y + 420 + below, 16, 0x828282ff);
 		fps.draw(batch, x + 40, y + 12);
 		batch.end();
 		Graphics.endFrame();

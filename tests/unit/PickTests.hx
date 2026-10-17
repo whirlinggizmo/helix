@@ -208,7 +208,7 @@ class PickTests {
 			hudCamera = new helix.render2d.Camera2D();
 		hudCamera.setViewport(800, 600);
 		hudCamera.pixels(1);
-		var button = helix.render2d.Node2D.rectangle(100, 40);
+		var button = helix.render2d.Shape2D.rectangle(100, 40);
 		button.setPosition(10, 10);
 		hud.add(button);
 		var pointer = new helix.scene.Pointer(input);

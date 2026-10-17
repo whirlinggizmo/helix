@@ -9,7 +9,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
@@ -83,12 +82,12 @@ class App extends BaseApp {
 	// and how long it took. Returns the height drawn.
 	function caption(slot:Slot, x:Float, y:Float, width:Float):Float {
 		var name = fileName(slot.path), chosen = fileName(slot.chosen), top = y;
-		y += Text2D.drawWrapped(batch, name, x, y, 16, width, 0xc8c8c8ff) + 2;
+		y += batch.drawTextWrapped(name, x, y, 16, width, 0xc8c8c8ff) + 2;
 		if (slot.chosen != "" && chosen != name)
-			y += Text2D.drawWrapped(batch, 'loaded $chosen', x, y, 14, width, 0x66bfffff) + 2;
+			y += batch.drawTextWrapped('loaded $chosen', x, y, 14, width, 0x66bfffff) + 2;
 		var t = slot.texture;
 		var line = t == null ? slot.status : '${t.width} x ${t.height}, GPU ${Math.round(t.byteCount / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
-		return y + Text2D.drawWrapped(batch, line, x, y, 14, width, 0xc8c8c8ff) - top;
+		return y + batch.drawTextWrapped(line, x, y, 14, width, 0xc8c8c8ff) - top;
 	}
 
 	// The slots in rows of columns from x, y, each size wide (twice, smooth then sharp, when both) and captioned under. Returns the bottom.
@@ -146,9 +145,9 @@ class App extends BaseApp {
 		Graphics.beginFrame(width, height, 0x262a36ff);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += Text2D.drawWrapped(batch, "HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		y += batch.drawTextWrapped("HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
 		y = grid(slots, true, vx + 20, y, size, columns, pitch) + 24;
-		y += Text2D.drawWrapped(batch, "compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		y += batch.drawTextWrapped("compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
 		grid(compressed, false, vx + 20, y, size, columns, pitch);
 		fps.draw(batch, vx + 12, vy + 6);
 		batch.end();

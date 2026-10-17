@@ -8,7 +8,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.render3d.Batch3D;
@@ -171,10 +170,10 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += Text2D.drawWrapped(batch, "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18,
-			vw - 24, 0xf5f5f5ff)
+		y += batch.drawTextWrapped("HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18, vw - 24,
+			0xf5f5f5ff)
 			+ 4;
-		Text2D.drawWrapped(batch, '${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
+		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
 			0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();

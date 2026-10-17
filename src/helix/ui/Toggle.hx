@@ -1,14 +1,16 @@
 package helix.ui;
 
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 
 /** A box that's on or off, beside a line of text: switched by a click or by activating it with focus. Ask on, and changed once a
 	frame. */
 class Toggle extends Widget {
-	var face:Node2D;
-	var check:Node2D;
-	var mark:Node2D;
-	var label:Node2D;
+	var face:Shape2D;
+	var check:Shape2D;
+	var mark:Shape2D;
+	var label:Text2D;
 	var value:Bool;
 
 	@:allow(helix.ui.Ui)
@@ -16,17 +18,17 @@ class Toggle extends Widget {
 		super(ui, name);
 		this.value = value;
 		var theme = ui.theme, side = theme.textSize + 4;
-		face = Node2D.rectangle(1, 1, 0);
+		face = Shape2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
-		check = Node2D.rectangle(side, side, theme.faceColor);
+		check = Shape2D.rectangle(side, side, theme.faceColor);
 		check.setPivot(0, 0);
-		check.setCornerRadius(theme.cornerRadius / 2);
+		check.cornerRadius = theme.cornerRadius / 2;
 		check.pickable = false;
-		mark = Node2D.rectangle(side - 8, side - 8, theme.accentColor);
+		mark = Shape2D.rectangle(side - 8, side - 8, theme.accentColor);
 		mark.setPivot(0, 0);
-		mark.setCornerRadius(theme.cornerRadius / 4);
+		mark.cornerRadius = theme.cornerRadius / 4;
 		mark.pickable = false;
-		label = Node2D.text(text, theme.textSize, theme.textColor, Left, theme.font);
+		label = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
 		for (n in [face, check, mark, label])
 			root.addChild(n);
 		var tick = Box.of(mark), square = Box.of(check), row = Box.row();

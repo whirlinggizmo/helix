@@ -10,7 +10,6 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.Environment;
@@ -185,16 +184,16 @@ class App extends BaseApp {
 			+ 'UP/DOWN exposure ${exposure >= 0 ? "+" : ""}$exposure EV   LEFT/RIGHT turn   [O] camera';
 		// The band's height is the readout's, wrapped.
 		var wrap = vw - 24, font = batch.font;
-		var readoutY = vy + 36 + Text2D.measureWrapped(font, title, 20, wrap) + 3,
-			bottom = readoutY + Text2D.measureWrapped(font, readout, 16, wrap) - 2;
+		var readoutY = vy + 36 + font.measureWrapped(title, 20, wrap) + 3,
+			bottom = readoutY + font.measureWrapped(readout, 16, wrap) - 2;
 
 		Graphics.beginFrame(width, height, 0x14161cff);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
 		batch.rect(vx, vy, vw, bottom - vy, 0x0000008c);
-		Text2D.drawWrapped(batch, title, vx + 12, vy + 36, 20, wrap, 0xf5f5f5ff);
-		Text2D.drawWrapped(batch, readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
+		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, wrap, 0xf5f5f5ff);
+		batch.drawTextWrapped(readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

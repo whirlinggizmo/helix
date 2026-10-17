@@ -1,24 +1,24 @@
 package helix.ui;
 
-import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
 
 /** How far along something is: a track filled from its left by a value, 0 to 1. Never focused. */
 class ProgressBar extends Widget {
-	var track:Node2D;
-	var fill:Node2D;
+	var track:Shape2D;
+	var fill:Shape2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, value:Float) {
 		super(ui, name);
 		this.value = Math.max(0, Math.min(1, value));
 		var theme = ui.theme;
-		track = Node2D.rectangle(1, 1, theme.faceColor);
+		track = Shape2D.rectangle(1, 1, theme.faceColor);
 		track.setPivot(0, 0);
-		track.setCornerRadius(theme.cornerRadius);
+		track.cornerRadius = theme.cornerRadius;
 		track.pickable = false;
-		fill = Node2D.rectangle(1, 1, theme.accentColor);
+		fill = Shape2D.rectangle(1, 1, theme.accentColor);
 		fill.setPivot(0, 0);
-		fill.setCornerRadius(theme.cornerRadius);
+		fill.cornerRadius = theme.cornerRadius;
 		fill.pickable = false;
 		root.addChild(track);
 		root.addChild(fill);

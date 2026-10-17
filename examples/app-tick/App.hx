@@ -11,7 +11,6 @@ import helix.input.Key;
 import helix.math.Interpolate;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 
 /** Fixed-rate simulation (ticks) against drawing (frames). A deliberately slow 10 Hz tick moves two squares at the same speed: the top one is drawn
 	where the latest tick left it, so it steps; the bottom one between its last two ticks, by the tick fraction, so it moves smoothly at any frame rate.
@@ -81,19 +80,18 @@ class App extends BaseApp {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x181a22ff);
 		batch.begin(camera);
 		var y = vy + 20;
-		y += Text2D.drawWrapped(batch, "HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
-		y += Text2D.drawWrapped(batch,
-			'frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
+		y += batch.drawTextWrapped("HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
+		y += batch.drawTextWrapped('frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
 			+ (Time.clock.paused ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
 			- 40, 0xc8c8c8ff)
 			+ 4;
-		y += Text2D.drawWrapped(batch, 'Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xc8c8c8ff) + 36;
-		y += Text2D.drawWrapped(batch, "where the latest tick left it", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
+		y += batch.drawTextWrapped('Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xc8c8c8ff) + 36;
+		y += batch.drawTextWrapped("where the latest tick left it", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
 		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffa100ff);
 		y += SQUARE + 55;
-		y += Text2D.drawWrapped(batch, "between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
+		y += batch.drawTextWrapped("between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
 		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
 		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();

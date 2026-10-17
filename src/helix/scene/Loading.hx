@@ -5,7 +5,6 @@ import helix.host.Screen;
 import helix.host.Window;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.ui.Theme;
 
@@ -96,18 +95,18 @@ class Loading extends LoadingScene {
 		var barWidth = Math.min(360, vw - 80),
 			x = vx + (vw - barWidth) / 2,
 			y = vy + vh / 2;
-		Text2D.draw(batch, shownLoader != null && shownLoader.done && hold ? "Loaded" : text, vx + vw / 2, y - 40, theme.textSize * 1.2, theme.textColor,
-			Center, theme.font);
+		batch.drawText(shownLoader != null && shownLoader.done && hold ? "Loaded" : text, vx + vw / 2, y - 40, theme.textSize * 1.2, theme.textColor, Center,
+			theme.font);
 		batch.rect(x, y, barWidth, 10, theme.faceColor);
 		batch.rect(x, y, barWidth * progress, 10, theme.accentColor);
 		var count = shownLoader == null ? "" : shownLoader.done && hold ? prompt : '${shownLoader.doneCount} of ${shownLoader.count}';
-		Text2D.draw(batch, count, vx + vw / 2, y + 24, theme.textSize * .8, theme.disabledTextColor, Center, theme.font);
+		batch.drawText(count, vx + vw / 2, y + 24, theme.textSize * .8, theme.disabledTextColor, Center, theme.font);
 		if (tip != "")
-			Text2D.drawWrapped(batch, tip, vx + vw / 2, vy + vh - 60, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
+			batch.drawTextWrapped(tip, vx + vw / 2, vy + vh - 60, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
 		if (shownLoader != null) {
 			var line = y + 56;
 			for (failure in shownLoader.failures) {
-				line += Text2D.drawWrapped(batch, failure, vx + vw / 2, line, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
+				line += batch.drawTextWrapped(failure, vx + vw / 2, line, theme.textSize * .8, vw - 80, theme.disabledTextColor, Center, 1.25, theme.font);
 			}
 		}
 		batch.end();

@@ -11,7 +11,7 @@ class Widget {
 	function new(ui:Ui, name:String) {
 		this.ui = ui;
 		this.name = name;
-		root = Node2D.group();
+		root = new Node2D();
 	}
 
 	/** Its name: what the focus is published as (Ui.focusedName), for checks. */

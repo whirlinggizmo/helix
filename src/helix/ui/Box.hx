@@ -2,6 +2,8 @@ package helix.ui;
 
 import helix.render2d.Font2D;
 import helix.render2d.Node2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 
 /** How a box's width or height is decided. */
@@ -232,16 +234,20 @@ class Box {
 			c.measure(font);
 		var cw = 0., ch = 0.;
 		if (childBoxes.length == 0 && node != null) {
-			switch node.kind {
-				case Text:
-					var f = node.getFont() != null ? node.getFont() : font;
-					cw = node.wrapWidth > 0 ? node.wrapWidth : Text2D.measure(f, node.getText(), node.getTextSize());
-					ch = node.getTextHeight(f);
-				case Circle:
-					cw = ch = node.getRadius() * 2;
-				case _:
-					cw = node.width;
-					ch = node.height;
+			var text = Std.downcast(node, Text2D),
+				shape = Std.downcast(node, Shape2D),
+				sprite = Std.downcast(node, Sprite2D);
+			if (text != null) {
+				cw = text.measureWidth(font);
+				ch = text.measureHeight(font);
+			} else if (shape != null && shape.form == Circle)
+				cw = ch = shape.radius * 2;
+			else if (shape != null) {
+				cw = shape.width;
+				ch = shape.height;
+			} else if (sprite != null) {
+				cw = sprite.width;
+				ch = sprite.height;
 			}
 		} else
 			for (c in childBoxes) {
@@ -275,21 +281,25 @@ class Box {
 	// Places its node, then its children in its room, top down.
 	function place(font:Font2D):Void {
 		if (node != null) {
-			switch node.kind {
-				case Sprite | Rectangle:
-					node.setSize(w, h);
-				case _:
+			// Its position is its pivot's: a text's by its alignment, a circle's its center; a sprite or rectangle sized to it.
+			var text = Std.downcast(node, Text2D),
+				shape = Std.downcast(node, Shape2D),
+				sprite = Std.downcast(node, Sprite2D);
+			var px = 0., py = 0.;
+			if (text != null)
+				px = text.align == Center ? w / 2 : text.align == Right ? w : 0;
+			else if (shape != null && shape.form == Circle) {
+				px = w / 2;
+				py = h / 2;
+			} else if (shape != null) {
+				shape.setSize(w, h);
+				px = shape.pivotX * w;
+				py = shape.pivotY * h;
+			} else if (sprite != null) {
+				sprite.setSize(w, h);
+				px = sprite.pivotX * w;
+				py = sprite.pivotY * h;
 			}
-			// Its position is its pivot's: a text's by its alignment, a circle's its center.
-			var px = switch node.kind {
-				case Text: node.getAlign() == Center ? w / 2 : node.getAlign() == Right ? w : 0;
-				case Circle: w / 2;
-				case _: node.pivotX * w;
-			}, py = switch node.kind {
-				case Text: 0;
-				case Circle: h / 2;
-				case _: node.pivotY * h;
-			};
 			node.setPosition(x + px, y + py);
 		}
 		var innerX = x + paddingLeft, innerY = y + paddingTop;

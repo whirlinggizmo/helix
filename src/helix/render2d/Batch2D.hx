@@ -455,6 +455,41 @@ class Batch2D {
 		});
 	}
 
+	/** Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted
+		color (0xRRGGBBAA), in font or the batch's built-in one. Characters without a glyph are skipped. */
+	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
+		if (font == null)
+			font = this.font;
+		var unit = size / font.size;
+		if (align == Center)
+			x -= font.measure(text, size) / 2;
+		else if (align == Right)
+			x -= font.measure(text, size);
+		var baseline = y + font.ascent * unit, field = font.distanceField;
+		useTexture(font.texture);
+		for (i in 0...text.length) {
+			var code = text.charCodeAt(i), glyph = font.getGlyph(code);
+			if (glyph != null) {
+				if (glyph.width > 0)
+					quad(x + glyph.x * unit, baseline + glyph.y * unit, glyph.width * unit, glyph.height * unit, glyph.u0, glyph.v0, glyph.u1, glyph.v1,
+						color, field);
+				x += glyph.advance * unit;
+			}
+			if (i + 1 < text.length)
+				x += font.getKerning(code, text.charCodeAt(i + 1)) * unit;
+		}
+	}
+
+	/** Draws text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as
+		drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen). */
+	public function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25,
+			?font:Font2D):Float {
+		var f = font == null ? this.font : font, row = 0;
+		for (line in f.wrap(text, size, width))
+			drawText(line, x, y + size * lineHeight * row++, size, color, align, font);
+		return size * lineHeight * row;
+	}
+
 	/** A filled rectangle in world units, top-left at x, y. */
 	public function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
 		solid();
