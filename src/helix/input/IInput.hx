@@ -101,6 +101,10 @@ interface IInput {
 		gated on it presses before it waits. */
 	public function isActivated():Bool;
 
+	/** Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as
+		isActivated's doesn't. */
+	public function isAnyFramePressed():Bool;
+
 	/** Any connected pad. */
 	public function isPadDown(button:PadButton):Bool;
 

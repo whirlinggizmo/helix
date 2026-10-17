@@ -7,9 +7,13 @@ import helix.render2d.Text2D;
 import helix.ui.Theme;
 
 /** The built-in loading scene: the theme's panel color, "Loading", a bar of the loader's progress and the count, and what failed in the
-	disabled text color. Its theme is its own (setTheme), the default unless given. */
+	disabled text color. With setHoldForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening);
+	else the scene runs as soon as its loads are in. Its theme is its own (setTheme), the default unless given. */
 class Loading extends LoadingScene {
 	var theme = new Theme();
+	var hold = false;
+	var prompt = "press any key";
+	var went = false;
 	var batch:Null<Batch2D>;
 	var camera = new Camera2D();
 
@@ -24,6 +28,32 @@ class Loading extends LoadingScene {
 	/** The theme it draws with. */
 	public function setTheme(value:Theme):Void
 		theme = value;
+
+	/** Whether it stays once loaded, until a press. */
+	public function isHoldForPress():Bool
+		return hold;
+
+	/** Stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed. */
+	public function setHoldForPress(value:Bool):Void
+		hold = value;
+
+	/** The line shown once loaded, while holding for a press. */
+	public function getPrompt():String
+		return prompt;
+
+	/** Sets the line shown while holding. */
+	public function setPrompt(value:String):Void
+		prompt = value;
+
+	override public function enter():Void
+		went = false;
+
+	override public function isHolding():Bool
+		return hold && !went && !(scenes != null && scenes.isQuick());
+
+	override public function update(dt:Float):Void
+		if (hold && loader != null && loader.isDone() && scenes.getInput().isAnyFramePressed())
+			went = true;
 
 	override public function exit():Void {
 		if (batch != null)
@@ -48,10 +78,11 @@ class Loading extends LoadingScene {
 		var barWidth = Math.min(360, vw - 80),
 			x = vx + (vw - barWidth) / 2,
 			y = vy + vh / 2;
-		Text2D.draw(batch, "Loading", vx + vw / 2, y - 40, theme.getTextSize() * 1.2, theme.getTextColor(), Center, theme.getFont());
+		Text2D.draw(batch, loader != null && loader.isDone() && hold ? "Loaded" : "Loading", vx + vw / 2, y - 40, theme.getTextSize() * 1.2,
+			theme.getTextColor(), Center, theme.getFont());
 		batch.rect(x, y, barWidth, 10, theme.getFaceColor());
 		batch.rect(x, y, barWidth * progress, 10, theme.getAccentColor());
-		var count = loader == null ? "" : '${loader.getDoneCount()} of ${loader.getCount()}';
+		var count = loader == null ? "" : loader.isDone() && hold ? prompt : '${loader.getDoneCount()} of ${loader.getCount()}';
 		Text2D.draw(batch, count, vx + vw / 2, y + 24, theme.getTextSize() * .8, theme.getDisabledTextColor(), Center, theme.getFont());
 		if (loader != null) {
 			var line = y + 56;

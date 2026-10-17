@@ -16,4 +16,9 @@ class LoadingScene extends Scene {
 	/** The loader to show: set by the stack as the wait begins. */
 	public function setLoader(value:Null<Loader>):Void
 		loader = value;
+
+	/** Whether to stay shown once the loads are done (a "loaded, press to go" screen): the stack keeps it until this is false. False unless
+		overridden. */
+	public function isHolding():Bool
+		return false;
 }

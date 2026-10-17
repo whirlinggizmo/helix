@@ -10,12 +10,14 @@ import helix.render2d.Camera2D;
 	scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in
 	Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur,
 	on unless turned off); focus resumes them. Scenes read input through getInput (Services.input, or what an autopilot gives through
-	setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. */
+	setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option
+	quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded. */
 class Scenes {
 	var stack:Array<Scene> = [];
 	var loading:Null<LoadingScene>;
 	var input:IInput;
 	var pauseOnBlur = true;
+	var quick = false;
 	var blurred = false;
 	var pausedClock = false;
 	// The transition under way: what it covers, how far, and the swap to make at its middle.
@@ -31,8 +33,18 @@ class Scenes {
 	/** An empty stack with the built-in loading scene and the program's input. */
 	public function new() {
 		loading = new Loading();
+		loading.scenes = this;
 		input = Services.input;
+		quick = Services.isRunning() && Services.getOption("quick", "0") == "1";
 	}
+
+	/** Whether the built-in screens' waits and the transitions are skipped (the run option quick=1, or setQuick). */
+	public function isQuick():Bool
+		return quick;
+
+	/** Skips, or not, the built-in screens' waits and every transition. */
+	public function setQuick(value:Bool):Void
+		quick = value;
 
 	/** The scene on top, or null. */
 	public function getTop():Null<Scene>
@@ -76,6 +88,15 @@ class Scenes {
 	/** Whether a transition is under way (input is still the scenes'). */
 	public function isTransitioning():Bool
 		return transition != null;
+
+	/** Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them (LoadingScene.isHolding). */
+	public function isLoading():Bool {
+		var top = getTop();
+		if (top == null || loading == null)
+			return false;
+		var loader = top.getLoader();
+		return loader != null && (!loader.isDone() || (waiting == top && loading.isHolding()));
+	}
 
 	/** Puts scene on top: the one under pauses, scene enters. With transition, the swap comes at its middle. */
 	public function push(scene:Scene, ?transition:Transition):Void
@@ -147,17 +168,16 @@ class Scenes {
 		if (top == null)
 			return;
 		var loader = top.getLoader();
-		if (loader != null && !loader.isDone()) {
-			if (loading != null) {
-				if (waiting != top) {
-					waiting = top;
-					loading.setLoader(loader);
-					loading.enter();
-				}
-				loading.update(dt);
-				return;
+		if (loader != null && loading != null && (!loader.isDone() || (waiting == top && loading.isHolding()))) {
+			if (waiting != top) {
+				waiting = top;
+				loading.setLoader(loader);
+				loading.enter();
 			}
-		} else if (waiting != null) {
+			loading.update(dt);
+			return;
+		}
+		if (waiting != null) {
 			if (loading != null)
 				loading.exit();
 			waiting = null;
@@ -171,8 +191,7 @@ class Scenes {
 		var top = getTop();
 		if (top == null)
 			return;
-		var loader = top.getLoader();
-		if (waiting == top && loader != null && !loader.isDone() && loading != null)
+		if (waiting == top && isLoading())
 			loading.draw();
 		else
 			top.draw();
@@ -231,7 +250,7 @@ class Scenes {
 	// A change now, or at the transition's middle. A change asked during a transition takes over: the new transition starts, its swap at its
 	// own middle, and the old one's swap, if it hadn't come, is dropped with it (a scene that mustn't be interrupted asks isTransitioning).
 	function change(next:Null<Transition>, f:Void->Void):Void {
-		if (next == null) {
+		if (next == null || quick) {
 			f();
 			return;
 		}

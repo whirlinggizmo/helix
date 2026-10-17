@@ -109,6 +109,12 @@ class InputTests {
 		fresh.keyEvent(Key.Space, false);
 		fresh.endFrame();
 		check(fresh.isActivated(), "A key press activates, and it stays");
+		check(!fresh.isAnyFramePressed(), "The frame's any-press ended with the frame");
+		fresh.mouseEvent(MouseButton.Left, true);
+		check(fresh.isAnyFramePressed(), "A mouse button down is a press this frame");
+		fresh.endFrame();
+		fresh.padEvent(PadButton.South, true);
+		check(!fresh.isAnyFramePressed(), "and a pad's isn't");
 		var touched = new InputState();
 		touched.touchEvent(1, 5, 5, true);
 		check(touched.isActivated(), "A finger down activates");

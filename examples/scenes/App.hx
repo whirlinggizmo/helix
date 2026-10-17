@@ -14,11 +14,13 @@ import helix.scene.Splash;
 import helix.scene.Transition.Fade;
 import helix.tween.Ease;
 
-/** A game's flow on a scene stack (helix.scene.Scenes): the built-in Splash (the logo, "press any key" until a press unlocks audio), a
-	title, a level whose files load behind the built-in Loading scene, a pause menu pushed over the level (Escape; the level pauses under it)
-	and popped, and back to the title; a fade between the screens. The window losing focus pauses the game's clock and the top scene. Options:
-	autopilot (a script under assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done);
-	the probes are scene, count, loaded, visited and activated. Escape on the title quits where quitting means anything. */
+/** A game's flow on a scene stack (helix.scene.Scenes), a movie-like opening: the built-in Splash fading in (the logo, "press any key"
+	until a press unlocks audio, or three seconds for the impatient), a title, a level whose files load behind the built-in Loading scene,
+	which holds once loaded until a press ("loaded, go"), a pause menu pushed over the level (Escape; the level pauses under it) and popped,
+	and back to the title; a fade between the screens. The window losing focus pauses the game's clock and the top scene. The run option
+	quick=1 skips every wait and transition, for development. Options: autopilot (a script under assets/), fast (1: up to 120 ticks a frame
+	under autopilot) and autoclose (1: quit once the script is done); the probes are scene, count, loaded, loading, visited and activated.
+	Escape on the title quits where quitting means anything. */
 class App extends BaseApp {
 	/** Every scene entered, in order: what the autopilot's run is judged by. */
 	public static var visited:Array<String> = [];
@@ -35,6 +37,8 @@ class App extends BaseApp {
 		Services.window.setTitle("HeliX scenes");
 		Services.window.requestSize(960, 540);
 		batch = new Batch2D(Services.graphics);
+		// The loading screen stays once loaded, for a press.
+		cast(scenes.getLoadingScene(), helix.scene.Loading).setHoldForPress(true);
 		var script = Services.getOption("autopilot", "");
 		fast = Services.getOption("fast", "0") == "1";
 		if (script != "")
@@ -53,9 +57,13 @@ class App extends BaseApp {
 
 	// The splash first, with the logo once it's in (or without it).
 	function start():Void {
-		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
-			case Ready(logo): scenes.push(new Splash(logo, 1, new Title()));
-			case _: scenes.push(new Splash(null, 1, new Title()));
+		Services.textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> {
+			var splash = new Splash(switch result {
+				case Ready(logo): logo;
+				case _: null;
+			}, 1, new Title());
+			splash.setMaxWait(3);
+			scenes.push(splash, new Fade(.8));
 		});
 	}
 
@@ -65,6 +73,7 @@ class App extends BaseApp {
 			case "scene": top == null ? "" : top.getName();
 			case "count": scenes.getCount();
 			case "loaded": top != null && (top.getLoader() == null || top.getLoader().isDone());
+			case "loading": scenes.isLoading();
 			case "visited": visited.length;
 			case "activated": scenes.getInput().isActivated();
 			case "transitioning": scenes.isTransitioning();

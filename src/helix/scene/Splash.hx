@@ -10,8 +10,9 @@ import helix.ui.Theme;
 
 /** The built-in splash: a logo (or none) centered on the theme's panel color for at least its seconds, then the next scene, once the user
 	has pressed a key, a button or a finger (IInput.isActivated: a browser lets audio start and fullscreen be asked for only after that; the
-	same rule everywhere): "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser
-	can't unlock with one), so the line stays for a tap. Extend it for another look; setTheme for its colors and font. */
+	same rule everywhere), or after setMaxWait's seconds without one: "press any key" shows until then, or, where a press came already,
+	nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. Pushed with a Fade, it fades in from
+	the color. Extend it for another look; setTheme for its colors and font, setPrompt for the line. */
 class Splash extends Scene {
 	var logo:Null<Texture2D>;
 	var seconds:Float;
@@ -20,6 +21,7 @@ class Splash extends Scene {
 	var theme = new Theme();
 	var prompt = "press any key";
 	var shown = 0.;
+	var maxWait = 0.;
 	var batch:Null<Batch2D>;
 	var camera = new Camera2D();
 	var left = false;
@@ -53,6 +55,19 @@ class Splash extends Scene {
 	public function getShown():Float
 		return shown;
 
+	/** The most seconds it waits for a press before going on without one; 0 for as long as it takes. */
+	public function getMaxWait():Float
+		return maxWait;
+
+	/** Goes on after seconds even without a press (a game that needs no audio unlock, or one that unlocks later), 0 to wait for one. False,
+		changing nothing, for under 0. */
+	public function setMaxWait(seconds:Float):Bool {
+		if (!(seconds >= 0))
+			return false;
+		maxWait = seconds;
+		return true;
+	}
+
 	override public function exit():Void {
 		if (batch != null)
 			batch.destroy();
@@ -61,7 +76,8 @@ class Splash extends Scene {
 
 	override public function update(dt:Float):Void {
 		shown += Math.max(0, dt);
-		if (!left && shown >= seconds && scenes.getInput().isActivated() && !scenes.isTransitioning()) {
+		var pressed = scenes.getInput().isActivated() || (maxWait > 0 && shown >= maxWait);
+		if (!left && (scenes.isQuick() || (shown >= seconds && pressed && !scenes.isTransitioning()))) {
 			left = true;
 			scenes.replace(next, transition);
 		}

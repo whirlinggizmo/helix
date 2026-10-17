@@ -64,6 +64,10 @@ class Services {
 
 	static var runner:Runner;
 
+	/** Whether the runner has filled the services: false in a test that fills what it needs itself. */
+	public static function isRunning():Bool
+		return runner != null;
+
 	/** Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits
 		for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in. */
 	public static function isBusy():Bool

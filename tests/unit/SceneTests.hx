@@ -122,6 +122,51 @@ class SceneTests {
 		check(took() == "b.pause,b.resume" || took() == "", "Pause on blur off: focus does nothing");
 		scenes.clear();
 
+		// A loading scene that holds after the loads, until it says go; quick skips it and the transitions.
+		took();
+		scenes.setLoadingScene(new Holder());
+		var held2 = new Loading2("held");
+		scenes.push(held2);
+		scenes.update(1 / 60);
+		held["a.txt"](Loaded(haxe.io.Bytes.alloc(1)));
+		held["b.txt"](Loaded(haxe.io.Bytes.alloc(1)));
+		scenes.update(1 / 60);
+		check(took() == "held.enter,loading.enter,loading.update,loading.update"
+			&& scenes.isLoading(), "Loaded, the loading scene holds on");
+		Holder.go = true;
+		scenes.update(1 / 60);
+		check(took() == "loading.exit,held.update" && !scenes.isLoading(), "until it says go");
+		scenes.clear();
+		took();
+		scenes.setQuick(true);
+		var q = new Logged("q");
+		scenes.push(q, new Fade(1));
+		check(took() == "q.enter" && !scenes.isTransitioning(), "Quick: a transition is skipped, the change at once");
+		scenes.setQuick(false);
+		scenes.clear();
+		took();
+		// A splash goes on after its most wait without a press, or at once when quick.
+		var after = new Logged("after");
+		var splash = new helix.scene.Splash(null, 1, after, new Fade(1));
+		check(splash.setMaxWait(2) && !splash.setMaxWait(-1) && splash.getMaxWait() == 2, "The most wait is set, not under 0");
+		scenes.push(splash);
+		took();
+		scenes.update(1.5);
+		check(scenes.getTop() == splash && !scenes.isTransitioning() && took() == "", "Shown its seconds, it waits for a press");
+		scenes.update(.6);
+		check(scenes.isTransitioning(), "past its most wait it goes on without one");
+		scenes.update(.5);
+		check(scenes.getTop() == after && took() == "after.enter,after.update", "to the next scene");
+		scenes.clear();
+		took();
+		scenes.setQuick(true);
+		scenes.push(new helix.scene.Splash(null, 5, new Logged("now")));
+		scenes.update(1 / 60);
+		check(scenes.getTop().getName() == "now", "Quick: the splash goes on at the first update");
+		scenes.setQuick(false);
+		scenes.clear();
+		took();
+
 		// The loader by itself.
 		var loader = new Loader();
 		check(loader.isDone() && loader.getProgress() == 1 && loader.getCount() == 0, "An empty loader is done");
@@ -177,6 +222,14 @@ private class Loading2 extends Logged {
 
 	override public function getLoader():Null<Loader>
 		return loader;
+}
+
+/** A loading scene holding after the loads until told to go. */
+private class Holder extends Quiet {
+	public static var go = false;
+
+	override public function isHolding():Bool
+		return !go;
 }
 
 /** A loading scene logging its hooks. */

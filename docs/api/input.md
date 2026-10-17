@@ -84,6 +84,7 @@ function getTouchGestureRotation(?perTick:Bool = false):Float
 function getPadCount():Int
 function getPad(index:Int):Null<Gamepad>
 function isActivated():Bool
+function isAnyFramePressed():Bool
 function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
@@ -121,6 +122,7 @@ function consume():Void
 - `getPadCount`: Four slots, connected or not.
 - `getPad`: null for an index out of range.
 - `isActivated`: Whether the user has pressed a key, a mouse button or a finger yet (the browser's user activation, which lets audio start and fullscreen be asked for; the same rule everywhere, so a game's flow is one flow): a title screen's "press any key". A pad's press doesn't count, as a browser can't unlock with one, so a game on a pad alone asks for a tap or key once. Stays true. An autopilot's press counts, so a script gated on it presses before it waits.
+- `isAnyFramePressed`: Whether a key, a mouse button or a finger went down this frame, whichever: a "press any key" screen's press. A pad's doesn't count, as isActivated's doesn't.
 - `isPadDown`: Any connected pad.
 - `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
@@ -232,6 +234,7 @@ function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
 function isActivated():Bool
+function isAnyFramePressed():Bool
 function keyEvent(key:Key, value:Bool):Void
 function padEvent(button:PadButton, value:Bool):Void
 function axisEvent(axis:PadAxis, value:Float):Void

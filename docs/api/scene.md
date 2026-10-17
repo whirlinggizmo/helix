@@ -57,12 +57,19 @@ function model(models:Models, path:String, complete:ModelLoadResult -> Void):IRe
 
 *class* in `src/helix/scene/Loading.hx`
 
-The built-in loading scene: the theme's panel color, "Loading", a bar of the loader's progress and the count, and what failed in the disabled text color. Its theme is its own (setTheme), the default unless given.
+The built-in loading scene: the theme's panel color, "Loading", a bar of the loader's progress and the count, and what failed in the disabled text color. With setHoldForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening); else the scene runs as soon as its loads are in. Its theme is its own (setTheme), the default unless given.
 
 ```haxe
 function new()
 function getTheme():Theme
 function setTheme(value:Theme):Void
+function isHoldForPress():Bool
+function setHoldForPress(value:Bool):Void
+function getPrompt():String
+function setPrompt(value:String):Void
+function enter():Void
+function isHolding():Bool
+function update(dt:Float):Void
 function exit():Void
 function draw():Void
 ```
@@ -70,6 +77,10 @@ function draw():Void
 - `new`: The built-in loading scene with the default theme.
 - `getTheme`: Its theme.
 - `setTheme`: The theme it draws with.
+- `isHoldForPress`: Whether it stays once loaded, until a press.
+- `setHoldForPress`: Stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed.
+- `getPrompt`: The line shown once loaded, while holding for a press.
+- `setPrompt`: Sets the line shown while holding.
 
 ## LoadingScene
 
@@ -81,11 +92,13 @@ A scene shown while another's loads are pending (Scenes.setLoadingScene): the st
 function new()
 function getShownLoader():Null<Loader>
 function setLoader(value:Null<Loader>):Void
+function isHolding():Bool
 ```
 
 - `new`: Not showing a loader yet.
 - `getShownLoader`: The loader it shows, or null (its own getLoader stays empty: a loading scene loads nothing first).
 - `setLoader`: The loader to show: set by the stack as the wait begins.
+- `isHolding`: Whether to stay shown once the loads are done (a "loaded, press to go" screen): the stack keeps it until this is false. False unless overridden.
 
 ## Pointer
 
@@ -157,10 +170,12 @@ function draw():Void
 
 *class* in `src/helix/scene/Scenes.hx`
 
-A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur, on unless turned off); focus resumes them. Scenes read input through getInput (Services.input, or what an autopilot gives through setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw.
+A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.getLoader) is shown the loading scene until its loads are done: the built-in Loading unless setLoadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (setPauseOnBlur, on unless turned off); focus resumes them. Scenes read input through getInput (Services.input, or what an autopilot gives through setInput). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (setQuick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
 
 ```haxe
 function new()
+function isQuick():Bool
+function setQuick(value:Bool):Void
 function getTop():Null<Scene>
 function getCount():Int
 function getAll():Array<Scene>
@@ -171,6 +186,7 @@ function setLoadingScene(value:Null<LoadingScene>):Void
 function isPauseOnBlur():Bool
 function setPauseOnBlur(value:Bool):Void
 function isTransitioning():Bool
+function isLoading():Bool
 function push(scene:Scene, ?transition:Transition):Void
 function pop(?transition:Transition):Void
 function replace(scene:Scene, ?transition:Transition):Void
@@ -182,6 +198,8 @@ function destroy():Void
 ```
 
 - `new`: An empty stack with the built-in loading scene and the program's input.
+- `isQuick`: Whether the built-in screens' waits and the transitions are skipped (the run option quick=1, or setQuick).
+- `setQuick`: Skips, or not, the built-in screens' waits and every transition.
 - `getTop`: The scene on top, or null.
 - `getCount`: How many scenes are stacked.
 - `getAll`: The scenes, bottom first.
@@ -192,6 +210,7 @@ function destroy():Void
 - `isPauseOnBlur`: Whether the window losing focus pauses the game's clock and the top scene.
 - `setPauseOnBlur`: Turns pausing on focus loss on or off.
 - `isTransitioning`: Whether a transition is under way (input is still the scenes').
+- `isLoading`: Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them (LoadingScene.isHolding).
 - `push`: Puts scene on top: the one under pauses, scene enters. With transition, the swap comes at its middle.
 - `pop`: Takes the top scene off: it exits, the one under resumes. Nothing with an empty stack.
 - `replace`: Swaps the top scene for scene: the top exits, scene enters; the one under stays paused.
@@ -205,7 +224,7 @@ function destroy():Void
 
 *class* in `src/helix/scene/Splash.hx`
 
-The built-in splash: a logo (or none) centered on the theme's panel color for at least its seconds, then the next scene, once the user has pressed a key, a button or a finger (IInput.isActivated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere): "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. Extend it for another look; setTheme for its colors and font.
+The built-in splash: a logo (or none) centered on the theme's panel color for at least its seconds, then the next scene, once the user has pressed a key, a button or a finger (IInput.isActivated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere), or after setMaxWait's seconds without one: "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. Pushed with a Fade, it fades in from the color. Extend it for another look; setTheme for its colors and font, setPrompt for the line.
 
 ```haxe
 function new(logo:Null<Texture2D>, seconds:Float, next:Scene, ?transition:Transition)
@@ -214,6 +233,8 @@ function setTheme(value:Theme):Void
 function getPrompt():String
 function setPrompt(value:String):Void
 function getShown():Float
+function getMaxWait():Float
+function setMaxWait(seconds:Float):Bool
 function exit():Void
 function update(dt:Float):Void
 function draw():Void
@@ -225,6 +246,8 @@ function draw():Void
 - `getPrompt`: What it asks for the press with.
 - `setPrompt`: The line shown until a press comes ("press any key" to start).
 - `getShown`: Seconds shown so far.
+- `getMaxWait`: The most seconds it waits for a press before going on without one; 0 for as long as it takes.
+- `setMaxWait`: Goes on after seconds even without a press (a game that needs no audio unlock, or one that unlocks later), 0 to wait for one. False, changing nothing, for under 0.
 
 ## Transition
 

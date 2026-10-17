@@ -46,6 +46,8 @@ class InputState implements IInput {
 	/** Nothing held, the pointer off the window, and four empty pad slots. */
 	var activated = false;
 
+	var anyFramePress = false;
+
 	/** Nothing down, nothing pressed, no pad connected, not activated. */
 	public function new() {}
 
@@ -152,10 +154,13 @@ class InputState implements IInput {
 	public function isActivated():Bool
 		return activated;
 
+	public function isAnyFramePressed():Bool
+		return anyFramePress;
+
 	/** A key down (true) or up (false); only a change of state counts an edge, so key repeat doesn't. A down activates (isActivated). */
 	public function keyEvent(key:Key, value:Bool):Void {
 		if (value)
-			activated = true;
+			activated = anyFramePress = true;
 		if (value && !held[key]) {
 			pushes[key]++;
 			framePushes[key] = true;
@@ -184,7 +189,7 @@ class InputState implements IInput {
 	/** A mouse button down (true) or up (false); only a change of state counts an edge. */
 	public function mouseEvent(button:MouseButton, value:Bool):Void {
 		if (value)
-			activated = true;
+			activated = anyFramePress = true;
 		if (value && !mouseHeld[button]) {
 			mousePushes[button]++;
 			mouseFramePushes[button] = true;
@@ -199,7 +204,7 @@ class InputState implements IInput {
 	/** The primary pointer at x, y in framebuffer pixels (-1, -1 off the window), down or up; only a change of down counts an edge. */
 	public function pointerEvent(x:Float, y:Float, value:Bool):Void {
 		if (value)
-			activated = true;
+			activated = anyFramePress = true;
 		pointerX = x;
 		pointerY = y;
 		if (value && !pointerDown) {
@@ -226,7 +231,7 @@ class InputState implements IInput {
 	/** A finger down, moved or lifted. A lifted one stays in touches, not down, until the frame ends. */
 	public function touchEvent(id:Int, x:Float, y:Float, value:Bool):Void {
 		if (value)
-			activated = true;
+			activated = anyFramePress = true;
 		var pair = gesturePair();
 		var ax = 0., ay = 0., bx = 0., by = 0.;
 		if (pair != null) {
@@ -374,6 +379,7 @@ class InputState implements IInput {
 
 	/** Ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame. */
 	public function endFrame():Void {
+		anyFramePress = false;
 		frameGesture = [0., 0., 0., 0.];
 		for (i in 0...framePushes.length) {
 			framePushes[i] = false;

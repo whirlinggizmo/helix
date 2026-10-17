@@ -254,6 +254,7 @@ static var textures(default, null):Textures
 static var environments(default, null):Environments
 static var harness(default, null):ITestHarness
 static var screenshots(default, null):Screenshots
+static function isRunning():Bool
 static function isBusy():Bool
 static function getTime():Float
 static function getFrameElapsed():Float
@@ -278,6 +279,7 @@ static function quit():Void
 - `environments`: Environment maps from equirectangular images, prepared a little each frame.
 - `harness`: Where results go for the check that launched the program.
 - `screenshots`: Screenshots of the frame, saved for the user (a download in a browser, a file natively).
+- `isRunning`: Whether the runner has filled the services: false in a test that fills what it needs itself.
 - `isBusy`: Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in.
 - `getTime`: Seconds on the host's monotonic clock.
 - `getFrameElapsed`: The seconds since the last frame, unheld (the app's frame dt is held at 0.1), and 0 on the first: what a fixed-rate simulation (Ticker.advance) is fed, so a slow frame is caught up in ticks instead of lost.
