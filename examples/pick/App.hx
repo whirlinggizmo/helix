@@ -8,6 +8,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.render3d.Animator;
 import helix.render3d.Batch3D;
@@ -77,35 +78,39 @@ class App extends BaseApp {
 		label.pickable = true;
 		label.setPosition(1, 2.4, -2);
 		stage.add(label);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
-			case Ready(texture):
-				var logo = new Sprite3D(texture, 0x7ab4ffff);
-				logo.name = "a sprite";
-				logo.setSpriteSize(1.4, 1.4);
-				logo.setPosition(-3, 2.6, -1);
-				stage.add(logo);
-			case _:
-		});
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				var car = file.instantiate("a car");
-				car.setPosition(3, 0, 1);
-				car.setRotation(0, -.8, 0);
-				stage.add(car);
-			case _:
-		});
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> placeLogo(texture));
+		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		// The character: a skeleton and its clips, her outfit bound to it by joint name, walking in place.
 		var files = new Map<String, ModelFile>(),
 			names = ["Animations", "Casual_Body", "Casual_Head", "Casual_Legs", "Casual_Feet"];
 		for (name in names)
-			Models.load('models/modular-women/$name.glb', result -> switch result {
-				case Ready(file):
-					files[name] = file;
-					if (Lambda.count(files) == names.length) dress(files);
-				case _:
-			});
+			Models.load('models/modular-women/$name.glb', file -> gather(files, name, file, names.length));
 		batch = new Batch2D(gpu);
 		batch3D = new Batch3D(gpu);
+	}
+
+	// The logo's texture in: a sprite of it, pickable.
+	function placeLogo(texture:Texture2D):Void {
+		var logo = new Sprite3D(texture, 0x7ab4ffff);
+		logo.name = "a sprite";
+		logo.setSpriteSize(1.4, 1.4);
+		logo.setPosition(-3, 2.6, -1);
+		stage.add(logo);
+	}
+
+	// The car's file in: a copy of it, turned a little.
+	function placeCar(file:ModelFile):Void {
+		var car = file.instantiate("a car");
+		car.setPosition(3, 0, 1);
+		car.setRotation(0, -.8, 0);
+		stage.add(car);
+	}
+
+	// One of the character's files in, kept by name: she's dressed once all count of them are.
+	function gather(files:Map<String, ModelFile>, name:String, file:ModelFile, count:Int):Void {
+		files[name] = file;
+		if (Lambda.count(files) == count)
+			dress(files);
 	}
 
 	function dress(files:Map<String, ModelFile>):Void {

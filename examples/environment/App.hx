@@ -17,6 +17,7 @@ import helix.render3d.Environments;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
@@ -93,43 +94,33 @@ class App extends BaseApp {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		Textures.load("textures/tiles_normal.png", true, result -> switch result {
-			case Ready(texture): tiles.normalTexture = texture;
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
 		shaders = new Shaders(Assets.instance, Graphics.instance);
-		shaders.load("shaders/pearl.hxshader", result -> switch result {
-			case Ready(shader): pearl.setShader(shader);
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				var car = file.instantiate("car");
-				car.setPosition(2.7, -.5, .2);
-				car.setScale(1.1, 1.1, 1.1);
-				stage.add(car);
-				turning.push(car);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		shaders.load("shaders/pearl.hxshader", shader -> pearl.setShader(shader));
+		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		for (i in 0...PATHS.length) {
 			var started = Time.time;
-			Environments.load(PATHS[i], result -> switch result {
-				case Ready(environment):
-					environments[i] = environment;
-					loadMs[i] = (Time.time - started) * 1000;
-					// Said in the log too, so a run without a screen shows how long the bake took.
-					trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
-				case Failed(message):
-					trace(message);
-				case Cancelled:
-			});
+			Environments.load(PATHS[i], environment -> prepared(i, environment, started));
 		}
+	}
+
+	// The car's file in: a copy of it turning beside the spheres.
+	function place(file:ModelFile):Void {
+		var car = file.instantiate("car");
+		car.setPosition(2.7, -.5, .2);
+		car.setScale(1.1, 1.1, 1.1);
+		stage.add(car);
+		turning.push(car);
+	}
+
+	// Environment i prepared, its load begun at started: kept, with how long it took.
+	function prepared(i:Int, environment:Environment, started:Float):Void {
+		environments[i] = environment;
+		loadMs[i] = (Time.time - started) * 1000;
+		// Said in the log too, so a run without a screen shows how long the bake took.
+		trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 	}
 
 	override public function frame(dt:Float):Void {

@@ -2,6 +2,7 @@ import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.audio.Audio;
 import helix.audio.AudioPlayback;
+import helix.audio.AudioStream;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -31,22 +32,16 @@ class App extends BaseApp {
 		Window.title = "HeliX force fetch";
 		Window.requestSize(720, 240);
 		batch = new Batch2D(Graphics.instance);
-		Assets.ensure(KEY, result -> switch result {
-			case Loaded(_):
-				// The bytes are local now, under the key: stream the key.
-				Audio.loadStream(KEY, loaded -> switch loaded {
-					case Ready(stream):
-						music = Audio.play(stream, true, .5);
-						stream.release();
-						state = '$KEY played from the bytes of $SOURCE';
-					case Failed(message):
-						state = message;
-					case Cancelled:
-				});
-			case Failed(message):
-				state = 'ensure failed: $message';
-			case Cancelled:
-		}, null, {source: SOURCE, forceFetch: true});
+		// The bytes are local once ensured, under the key: stream the key.
+		Assets.ensure(KEY, _ -> Audio.loadStream(KEY, stream -> play(stream), message -> state = message), message -> state = 'ensure failed: $message', null,
+			{source: SOURCE, forceFetch: true});
+	}
+
+	// The stream opened: played, the playback holding it.
+	function play(stream:AudioStream):Void {
+		music = Audio.play(stream, true, .5);
+		stream.release();
+		state = '$KEY played from the bytes of $SOURCE';
 	}
 
 	override public function frame(dt:Float):Void {

@@ -63,32 +63,30 @@ class App extends BaseApp {
 		stage.add(new Model(Mesh.plane(10, 10), ground));
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)
-			Models.load(DIR + name + ".glb", result -> switch result {
-				case Ready(file):
-					parts.push(file);
-					wear(file);
-				case Failed(message):
-					status = '$name: $message';
-				case Cancelled:
-			});
+			Models.load(DIR + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
 		// The skeleton: the animations file's, which has no meshes.
-		Models.load(DIR + "Animations.glb", result -> switch result {
-			case Ready(file):
-				animations = file;
-				character = file.instantiate("character");
-				stage.add(character);
-				animator = new Animator(character);
-				for (file in parts)
-					wear(file);
-				play(0);
-			case Failed(message):
-				status = 'Animations: $message';
-			case Cancelled:
-		});
+		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = 'Animations: $message');
 		batch = new Batch2D(Graphics.instance);
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her, so they follow her clips.
+	// A part's file in: kept, and worn if she's here.
+	function addPart(file:ModelFile):Void {
+		parts.push(file);
+		wear(file);
+	}
+
+	// The skeleton's file in: her copy of it on the stage, animated, wearing the parts already in.
+	function place(file:ModelFile):Void {
+		animations = file;
+		character = file.instantiate("character");
+		stage.add(character);
+		animator = new Animator(character);
+		for (file in parts)
+			wear(file);
+		play(0);
+	}
+
 	function wear(file:ModelFile):Void {
 		if (character == null)
 			return;

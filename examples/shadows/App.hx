@@ -13,6 +13,7 @@ import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
@@ -101,16 +102,15 @@ class App extends BaseApp {
 		// One that casts nothing, and one that nothing shadows.
 		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xf8ed95ff, .35).shadowCasting = false;
 		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xf395bcff, .35).shadowReceiving = false;
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				var car = file.instantiate("car");
-				car.setScale(1.5, 1.5, 1.5);
-				car.setRotation(0, .6, 0);
-				stage.add(car);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+	}
+
+	// The car's file in: a copy of it among the shapes, turned a little.
+	function placeCar(file:ModelFile):Void {
+		var car = file.instantiate("car");
+		car.setScale(1.5, 1.5, 1.5);
+		car.setRotation(0, .6, 0);
+		stage.add(car);
 	}
 
 	override public function frame(dt:Float):Void {

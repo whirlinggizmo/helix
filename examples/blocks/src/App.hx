@@ -36,13 +36,13 @@ class App extends BaseApp {
 		renderer = new Renderer(Graphics.instance, batch);
 		var script = Host.getOption("autopilot", "");
 		if (script != "")
-			Assets.load(script, result -> switch result {
-				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
-					game = new Game(pilot.seed);
-				case Failed(message): throw 'Autopilot load failed: ' + message;
-				case Cancelled:
-			});
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
+	}
+
+	// The autopilot's script in: the pilot made, and a game of its seed.
+	function startPilot(bytes:haxe.io.Bytes):Void {
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
+		game = new Game(pilot.seed);
 	}
 
 	function inspect():Dynamic

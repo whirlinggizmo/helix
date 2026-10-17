@@ -227,16 +227,6 @@ static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding
 
 - `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
 
-## FontLoadResult
-
-*enum* in `src/helix/render2d/Fonts.hx`
-
-How a font load ended.
-
-- `Ready(font:Font2D)`
-- `Failed(message:String)`
-- `Cancelled`
-
 ## Fonts
 
 *class* in `src/helix/render2d/Fonts.hx`
@@ -245,13 +235,13 @@ TrueType fonts loaded through the assets into Font2Ds: read and baked into a dis
 
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)
-function load(path:String, complete:FontLoadResult -> Void):IRequest
+function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
 function release(font:Font2D):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 ```
 
 - `new`: Loads through assets and uploads to gpu.
-- `load`: Loads path (a .ttf) into a font. complete runs exactly once on the host thread: Ready once it is baked, Failed for a load failure or a file it can't read.
+- `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
 - `release`: Frees a font this service loaded, and stops reloading it.
 - `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font2D objects. A file that no longer reads leaves them as they were.
 
@@ -589,8 +579,8 @@ Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1:
 function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
 function getCandidates(path:String):Array<String>
 function getPath(texture:Texture2D):Null<String>
-function load(path:String, linear:Bool, complete:TextureLoadResult -> Void):IRequest
-function decode(encoded:haxe.io.Bytes, linear:Bool, complete:TextureLoadResult -> Void):IRequest
+function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
+function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> Void, ?failed:String -> Void):IRequest
 function release(texture:Texture2D):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 function shutdown():Void
@@ -599,21 +589,11 @@ function shutdown():Void
 - `new`: Loads through assets, decodes with images (shared, polled by its owner) and uploads to gpu; shutdown shuts nothing down but this service.
 - `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
 - `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
-- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread.
+- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.
+- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. One of decoded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log) for a closed service or bytes that don't decode.
 - `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 - `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
 - `shutdown`: Refuses new loads; the textures already loaded stay until released.
-
-## TextureLoadResult
-
-*enum* in `src/helix/render2d/TextureCache.hx`
-
-How a texture load ended.
-
-- `Ready(texture:Texture2D)`
-- `Failed(message:String)`
-- `Cancelled`
 
 ## Textures
 
@@ -625,16 +605,16 @@ Textures from image files, shared by path and reloading in place when a file cha
 static var instance(default, null):TextureCache
 static function getCandidates(path:String):Array<String>
 static function getPath(texture:Texture2D):Null<String>
-static function load(path:String, linear:Bool, complete:TextureLoadResult -> Void):IRequest
-static function decode(encoded:haxe.io.Bytes, linear:Bool, complete:TextureLoadResult -> Void):IRequest
+static function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
+static function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> Void, ?failed:String -> Void):IRequest
 static function release(texture:Texture2D):Void
 ```
 
 - `instance`: The textures forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
 - `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. complete runs exactly once on the host thread; Failed for a closed service, or when no candidate loads and decodes.
-- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. complete runs exactly once on the host thread.
+- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.
+- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. One of decoded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log) for a closed service or bytes that don't decode.
 - `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 
 ## TrueType

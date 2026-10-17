@@ -17,6 +17,7 @@ import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
@@ -87,23 +88,16 @@ class App extends BaseApp {
 		globe.setScale(1.6, 1.6, 1.6);
 		stage.add(globe);
 
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				car = file.instantiate("car");
-				car.setScale(.9, .9, .9);
-				stage.add(car);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		// The built-in font until it has loaded.
-		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", result -> switch result {
-			case Ready(loaded):
-				font = loaded;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
+	}
+
+	// The car's file in: a copy of it on the stage the target draws.
+	function place(file:ModelFile):Void {
+		car = file.instantiate("car");
+		car.setScale(.9, .9, .9);
+		stage.add(car);
 	}
 
 	// A texture with a 2 unit frame and a caption above it, in the presentation's units.

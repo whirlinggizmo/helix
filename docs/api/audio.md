@@ -10,14 +10,14 @@ Sounds: clips and streams loaded through the assets, decoded and played (AudioRe
 
 ```haxe
 static var instance(default, null):AudioResources
-static function loadClip(path:String, complete:AudioLoadResult<AudioClip> -> Void):IRequest
-static function loadStream(path:String, complete:AudioLoadResult<AudioStream> -> Void):IRequest
+static function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
+static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
 static function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
 ```
 
 - `instance`: The sounds forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
-- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
+- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
+- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
 - `play`: Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1.
 
 ## AudioClip
@@ -69,16 +69,6 @@ function shutdown():Void
 - `busy`: Whether a decode is queued, under way, or its completion not yet run.
 - `poll`: Delivers finished decodes, starts queued ones and runs completions. Call once per frame.
 - `shutdown`: Cancels every pending decode (each completes Cancelled) and refuses later ones.
-
-## AudioLoadResult<T>
-
-*enum* in `src/helix/audio/AudioResources.hx`
-
-How an audio load ended: the resource, which the caller owns and releases, a failure message, or cancellation.
-
-- `Ready(resource:T)`
-- `Failed(message:String)`
-- `Cancelled`
 
 ## AudioPlayback
 
@@ -142,8 +132,8 @@ Sounds, the same on every platform: clips loaded through the assets and decoded 
 
 ```haxe
 function new(assets:IAssets, backend:IAudio, decoding:AudioDecoding)
-function loadClip(path:String, complete:AudioLoadResult<AudioClip> -> Void):IRequest
-function loadStream(path:String, complete:AudioLoadResult<AudioStream> -> Void):IRequest
+function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
+function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
 function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 function poll():Void
@@ -151,12 +141,12 @@ function shutdown():Void
 ```
 
 - `new`: Loads through assets, decodes with decoding (polled by its owner) and plays on backend (polled here).
-- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
-- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
+- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
+- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
 - `play`: Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1.
 - `reloaded`: A clip's file changed: decode it, then give each clip from that path a new backend clip in place.
 - `poll`: Polls the backend, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread.
-- `shutdown`: Cancels pending loads (each completes Cancelled), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays.
+- `shutdown`: Cancels pending loads (telling none of their callers), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays.
 
 ## AudioStream
 

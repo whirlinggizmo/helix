@@ -85,17 +85,16 @@ class App extends BaseApp {
 			add(ROCK, 4.5 + i * 3.5, 12 - (i % 2) * 2, 1, 1, .5, 1);
 		for (i in 0...8)
 			coins.push(add(COIN, 3.5 + i * 2.5, 9 - i % 3, .8, .8, .5, 1));
-		Textures.load("textures/tiles.png", false, result -> switch result {
-			case Ready(loaded):
-				// Pixel art: crisp texels when zoomed in.
-				loaded.sampling = Sampling.NEAREST;
-				texture = loaded;
-				for (sprite in sprites)
-					sprite.texture = loaded;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/tiles.png", false, loaded -> useTiles(loaded));
+	}
+
+	// The tile sheet in: every sprite draws its cell of it, crisp.
+	function useTiles(loaded:Texture2D):Void {
+		// Pixel art: crisp texels when zoomed in.
+		loaded.sampling = Sampling.NEAREST;
+		texture = loaded;
+		for (sprite in sprites)
+			sprite.texture = loaded;
 	}
 
 	// The coin under world point x, y, the topmost (the last added) first, inside its disc; null for none.

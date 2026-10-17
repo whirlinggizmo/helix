@@ -62,17 +62,21 @@ class App extends BaseApp {
 
 	function load(path:String):Slot {
 		var slot = new Slot(path, Time.time);
-		Textures.load(path, true, result -> switch result {
-			case Ready(texture):
-				slot.texture = texture;
-				slot.took = Time.time - slot.asked;
-				slot.chosen = Textures.getPath(texture);
-			case Failed(message):
-				slot.status = "failed";
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load(path, true, texture -> loaded(slot, texture), message -> failed(slot, message));
 		return slot;
+	}
+
+	// slot's texture in: how long it took, and which file it came from.
+	function loaded(slot:Slot, texture:Texture2D):Void {
+		slot.texture = texture;
+		slot.took = Time.time - slot.asked;
+		slot.chosen = Textures.getPath(texture);
+	}
+
+	// slot's texture failed: said beside it, and why in the log.
+	function failed(slot:Slot, message:String):Void {
+		slot.status = "failed";
+		trace(message);
 	}
 
 	static function fileName(path:String):String

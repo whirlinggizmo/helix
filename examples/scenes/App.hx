@@ -54,17 +54,17 @@ class App extends BaseApp {
 		var script = Host.getOption("autopilot", "");
 		fast = Host.getOption("fast", "0") == "1";
 		if (script != "")
-			Assets.load(script, result -> switch result {
-				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
-					// The window of a headless run isn't focused: its ticks run regardless.
-					scenes.pauseOnBlur = false;
-					start();
-				case Failed(message): throw 'Autopilot load failed: ' + message;
-				case Cancelled:
-			});
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		else
 			start();
+	}
+
+	// The autopilot's script in: the pilot made, then the game started.
+	function startPilot(bytes:haxe.io.Bytes):Void {
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
+		// The window of a headless run isn't focused: its ticks run regardless.
+		scenes.pauseOnBlur = false;
+		start();
 	}
 
 	// The splash first, with the logo once it's in (or without it), unless the config skips it.
@@ -73,14 +73,14 @@ class App extends BaseApp {
 			scenes.push(new Title());
 			return;
 		}
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> {
-			var splash = new Splash(switch result {
-				case Ready(logo): logo;
-				case _: null;
-			}, Host.getOptionFloat("splashSeconds", 1), new Title());
-			splash.maxWait = Host.getOptionFloat("splashMaxWait", 0);
-			scenes.push(splash, new Fade(.8));
-		});
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, logo -> splash(logo), _ -> splash(null));
+	}
+
+	// The splash, showing logo (or nothing, when it didn't load), then the title.
+	function splash(logo:Null<Texture2D>):Void {
+		var shown = new Splash(logo, Host.getOptionFloat("splashSeconds", 1), new Title());
+		shown.maxWait = Host.getOptionFloat("splashMaxWait", 0);
+		scenes.push(shown, new Fade(.8));
 	}
 
 	function probe(name:String):Dynamic {
@@ -161,14 +161,8 @@ class Play extends Scene {
 	override public function enter():Void {
 		App.visited.push(this.name);
 		loads = new Loader();
-		loads.texture("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
-			case Ready(texture): logo = texture;
-			case _:
-		});
-		loads.texture("textures/tiles.png", false, result -> switch result {
-			case Ready(texture): tiles = texture;
-			case _:
-		});
+		loads.texture("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo = texture);
+		loads.texture("textures/tiles.png", false, texture -> tiles = texture);
 	}
 
 	override function get_loader():Null<Loader>

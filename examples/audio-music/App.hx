@@ -29,19 +29,14 @@ class App extends BaseApp {
 		Window.requestSize(720, 240);
 		batch = new Batch2D(Graphics.instance);
 		var audio = Audio.instance;
-		audio.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
-			case Ready(stream):
-				// The playback holds the stream; the program lets its own reference go.
-				music = audio.play(stream, true, .5);
-				stream.release();
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
-		audio.loadClip("audio/sfx/click_004.ogg", result -> switch result {
-			case Ready(clip): click = clip;
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> play(stream));
+		audio.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
+	}
+
+	// The music opened: the playback holds the stream; the program lets its own reference go.
+	function play(stream:AudioStream):Void {
+		music = Audio.play(stream, true, .5);
+		stream.release();
 	}
 
 	static function stateName(state:helix.audio.PlayState):String

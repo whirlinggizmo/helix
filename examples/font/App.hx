@@ -34,22 +34,14 @@ class App extends BaseApp {
 		Window.requestSize(900, 500);
 		batch = new Batch2D(Graphics.instance);
 		fonts = new Fonts(Assets.instance, Graphics.instance);
-		fonts.load(MONO, result -> switch result {
-			case Ready(font):
-				mono = font;
-			case Failed(message):
-				failed = true;
-				trace(message);
-			case Cancelled:
-		});
-		fonts.load(KOMIKA, result -> switch result {
-			case Ready(font):
-				komika = font;
-			case Failed(message):
-				failed = true;
-				trace(message);
-			case Cancelled:
-		});
+		fonts.load(MONO, font -> mono = font, message -> fail(message));
+		fonts.load(KOMIKA, font -> komika = font, message -> fail(message));
+	}
+
+	// A font failed to load: said on the screen, and why in the log.
+	function fail(message:String):Void {
+		failed = true;
+		trace(message);
 	}
 
 	override public function frame(dt:Float):Void {

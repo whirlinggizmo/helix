@@ -42,17 +42,9 @@ class App extends BaseApp {
 		Window.title = "HeliX touch";
 		Window.requestSize(900, 700);
 		batch = new Batch2D(Graphics.instance);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
-			case Ready(texture): logo = texture;
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo = texture);
 		// Pixel art: nearest, no smoothing.
-		Textures.load("textures/tiles.png", false, result -> switch result {
-			case Ready(texture): tiles = texture;
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/tiles.png", false, texture -> tiles = texture);
 	}
 
 	/** Scales and turns the logo about x, y, so the point under the fingers stays put. */

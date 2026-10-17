@@ -136,11 +136,7 @@ class AssetCacheTests {
 	// Loads path on assets to the end: its bytes as text, or "failed: <why>".
 	static function load(assets:AssetService, path:String):String {
 		var outcome:Null<String> = null;
-		assets.ensure(path, result -> outcome = switch result {
-			case Loaded(bytes): bytes.toString();
-			case Failed(message): "failed: " + message;
-			case Cancelled: "cancelled";
-		});
+		assets.ensure(path, bytes -> outcome = bytes.toString(), message -> outcome = "failed: " + message);
 		for (_ in 0...200) {
 			if (outcome != null)
 				break;
@@ -152,12 +148,10 @@ class AssetCacheTests {
 
 	static function stream(assets:AssetService, path:String):String {
 		var outcome:Null<String> = null;
-		assets.streamSource(path, result -> outcome = switch result {
-			case Located(Stored(lease)): "cached";
-			case Located(Remote(url)): "remote";
-			case Failed(message): "failed: " + message;
-			case Cancelled: "cancelled";
-		});
+		assets.streamSource(path, location -> outcome = switch location {
+			case Stored(lease): "cached";
+			case Remote(url): "remote";
+		}, message -> outcome = "failed: " + message);
 		for (_ in 0...200) {
 			if (outcome != null)
 				break;
@@ -329,11 +323,8 @@ class AssetCacheTests {
 		host.put("listed/song.txt", "song");
 		manifests(["listed", ""]);
 		var sourced = visit("manifest.json"), got:Null<String> = null;
-		sourced.ensure("listed/bogus.txt", result -> got = switch result {
-			case Loaded(bytes): bytes.toString();
-			case Failed(message): "failed: " + message;
-			case Cancelled: "cancelled";
-		}, null, {source: "listed/song.txt", forceFetch: true});
+		sourced.ensure("listed/bogus.txt", bytes -> got = bytes.toString(), message -> got = "failed: " + message, null,
+			{source: "listed/song.txt", forceFetch: true});
 		for (_ in 0...200) {
 			if (got != null)
 				break;
@@ -348,10 +339,10 @@ class AssetCacheTests {
 			"A plain load of the path later asks about the stale copy at its source, with its ETag");
 		var from:Null<String> = null;
 		sourced = visit("manifest.json");
-		sourced.streamSource("listed/bogus.txt", result -> from = switch result {
-			case Located(Remote(url)): url;
+		sourced.streamSource("listed/bogus.txt", location -> from = switch location {
+			case Remote(url): url;
 			case _: "not remote";
-		});
+		}, _ -> from = "not remote");
 		for (_ in 0...200)
 			sourced.poll();
 		check(from == "http://host/listed/song.txt", "and a stale sourced copy streams from its source");

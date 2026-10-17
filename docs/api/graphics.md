@@ -441,16 +441,6 @@ A uniform block a program declares: its binding slot, its stage ("vertex" or "fr
 - `size:Int`
 - `glslName:String`
 
-## ShaderLoadResult
-
-*enum* in `src/helix/graphics/Shaders.hx`
-
-How a shader load ended.
-
-- `Ready(shader:Shader)`
-- `Failed(message:String)`
-- `Cancelled`
-
 ## ShaderParameter
 
 *typedef* in `src/helix/graphics/Shader.hx`
@@ -533,13 +523,13 @@ Apps' shaders (.hxshader files, packed from GLSL by tools/pack_shader.py) loaded
 
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)
-function load(path:String, complete:ShaderLoadResult -> Void):IRequest
+function load(path:String, loaded:Shader -> Void, ?failed:String -> Void):IRequest
 function release(shader:Shader):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 ```
 
 - `new`: Loads through assets and builds on gpu.
-- `load`: Loads path (a .hxshader) into a shader. complete runs exactly once on the host thread: Ready once its program is built, Failed for a load failure, a file it can't read or a program that doesn't build (with the compiler's log).
+- `load`: Loads path (a .hxshader) into a shader. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once its program is built; failed (else the log, with the path) for a load failure, a file it can't read or a program that doesn't build (with the compiler's log).
 - `release`: Frees a shader this service loaded (after the pipelines made with it), and stops reloading it.
 - `reloaded`: The file behind loaded shaders changed: they're built again in place. One that no longer builds stays as it was, its log traced.
 

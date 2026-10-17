@@ -13,6 +13,14 @@ private enum Obtain {
 	Force;
 }
 
+/** How a step of a load ended, inside the service: the bytes, a failure, or a cancellation (from a store or the fetcher shutting down), which
+	ends the load telling no one. */
+private enum Outcome {
+	Loaded(bytes:haxe.io.Bytes);
+	Failed(message:String);
+	Cancelled;
+}
+
 /** One load's state: its request, the step it waits on (cancelled with it), how it ends and how it reports progress. */
 private class Attempt {
 	/** The load's request. */
@@ -22,13 +30,13 @@ private class Attempt {
 	public var child:Null<IRequest> = null;
 
 	/** Ends the load. */
-	public final finish:AssetResult->Void;
+	public final finish:Outcome->Void;
 
 	/** Reports a phase of it. */
 	public final report:(String, Int, Null<Int>) -> Void;
 
 	/** A load of request, ending with finish and reporting through report. */
-	public function new(request:Request, finish:AssetResult->Void, report:(String, Int, Null<Int>) -> Void) {
+	public function new(request:Request, finish:Outcome->Void, report:(String, Int, Null<Int>) -> Void) {
 		this.request = request;
 		this.finish = finish;
 		this.report = report;
@@ -63,18 +71,25 @@ class AssetService implements IAssets {
 		this.base = base;
 	}
 
-	public function load(path:String, complete:AssetResult->Void):Void
-		ensure(path, complete);
+	public function load(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):IRequest
+		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest {
+	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest {
 		var source = options != null && options.source != null ? options.source : path,
 			force = options != null && options.forceFetch == true;
+		function complete(result:Outcome):Void
+			switch result {
+				case Loaded(bytes):
+					loaded(bytes);
+				case Failed(message):
+					Failure.report(path, message, failed);
+				case Cancelled:
+			}
 		var attempt:Attempt = null, request:Request = null;
 		request = new Request(() -> {
 			if (attempt.child != null)
 				attempt.child.cancel();
 			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
 		});
 		attempt = new Attempt(request, result -> if (request.finish()) {
 			requests.remove(request);
@@ -135,7 +150,7 @@ class AssetService implements IAssets {
 		with no request, and a stale one is asked about (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no
 		answer (offline, a 5xx) uses it. Ask always asks (a manifest's root once a run, and a file its directory's manifest leaves out); Force
 		downloads past every cache. */
-	function obtain(path:String, url:String, expected:Null<String>, mode:Obtain, attempt:Attempt, done:AssetResult->Void):Void {
+	function obtain(path:String, url:String, expected:Null<String>, mode:Obtain, attempt:Attempt, done:Outcome->Void):Void {
 		if (mode == Force || cacheMode == Off) {
 			if (mode != Force && session.exists(key(path)))
 				copy(path, attempt, done, () -> {});
@@ -170,7 +185,7 @@ class AssetService implements IAssets {
 	}
 
 	// Downloads path from url, conditionally when record is the copy's; the answer decides (obtain).
-	function download(path:String, url:String, expected:Null<String>, record:Null<CacheRecord>, mode:Obtain, attempt:Attempt, done:AssetResult->Void):Void {
+	function download(path:String, url:String, expected:Null<String>, record:Null<CacheRecord>, mode:Obtain, attempt:Attempt, done:Outcome->Void):Void {
 		var headers:Map<String, String> = [];
 		if (record != null && record.etag != null)
 			headers["If-None-Match"] = record.etag;
@@ -220,7 +235,7 @@ class AssetService implements IAssets {
 	}
 
 	// The cached copy of path (this run's, with the cache Off), or missing() when there's none; kept() once it's read.
-	function copy(path:String, attempt:Attempt, done:AssetResult->Void, missing:Void->Void, ?kept:Void->Void):Void {
+	function copy(path:String, attempt:Attempt, done:Outcome->Void, missing:Void->Void, ?kept:Void->Void):Void {
 		if (cacheMode == Off) {
 			var bytes = session[key(path)];
 			if (bytes == null)
@@ -249,7 +264,7 @@ class AssetService implements IAssets {
 
 	// Keeps bytes (of hash) as path's copy, then their record from the response's headers (and source, the URL they came from when not the
 	// path's); with the cache Off, for this run alone.
-	function store(path:String, bytes:haxe.io.Bytes, headers:Map<String, String>, hash:String, attempt:Attempt, done:AssetResult->Void, ?source:String):Void {
+	function store(path:String, bytes:haxe.io.Bytes, headers:Map<String, String>, hash:String, attempt:Attempt, done:Outcome->Void, ?source:String):Void {
 		attempt.report("storing", bytes.length, bytes.length);
 		if (cacheMode == Off) {
 			session[key(path)] = bytes;
@@ -309,7 +324,7 @@ class AssetService implements IAssets {
 			for (caller in callers)
 				caller(found);
 		}
-		function loaded(result:AssetResult)
+		function loaded(result:Outcome)
 			settle(switch result {
 				case Loaded(bytes): AssetManifest.parse(bytes);
 				case _: null;
@@ -377,24 +392,28 @@ class AssetService implements IAssets {
 		return cache.clear(complete);
 	}
 
-	public function streamSource(path:String, complete:AssetSourceResult->Void):IRequest {
+	public function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void):IRequest {
 		var child:IRequest = null, request:Request = null;
-		function finish(result:AssetSourceResult) {
+		// Ends the request with a location, or a failure for null; a stored location that arrives too late is released.
+		function finish(location:Null<AudioLocation>, ?message:String) {
 			if (request.finish()) {
 				requests.remove(request);
-				queue.add(() -> complete(result));
-			} else
-				switch result {
-					case Located(Stored(value)):
+				queue.add(() -> if (location != null) located(location) else Failure.report(path, message, failed));
+			} else if (location != null)
+				switch location {
+					case Stored(value):
 						value.release();
 					case _:
 				}
 		}
+		// A store's cancellation (it shut down) ends the request telling no one.
+		function stop()
+			if (request.finish())
+				requests.remove(request);
 		request = new Request(() -> {
 			if (child != null)
 				child.cancel();
 			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
 		});
 		requests.push(request);
 		function local(result:StorageSourceResult) {
@@ -408,20 +427,20 @@ class AssetService implements IAssets {
 			}
 			switch result {
 				case Local(value):
-					finish(Located(Stored(value)));
+					finish(Stored(value));
 				case Failed(message):
-					finish(Failed(message));
+					finish(null, message);
 				case Cancelled:
-					finish(Cancelled);
+					stop();
 				case Missing:
 					if (base != null)
-						finish(Located(Remote(base + path)));
+						finish(Remote(base + path));
 					else
 						child = packaged.source(path, result -> switch result {
-							case Local(value): finish(Located(Stored(value)));
-							case Missing: finish(Failed("Missing streamed asset: " + path));
-							case Failed(message): finish(Failed(message));
-							case Cancelled: finish(Cancelled);
+							case Local(value): finish(Stored(value));
+							case Missing: finish(null, "Missing streamed asset: " + path);
+							case Failed(message): finish(null, message);
+							case Cancelled: stop();
 						});
 			}
 		}
@@ -429,7 +448,7 @@ class AssetService implements IAssets {
 			if (request.settled)
 				return;
 			if (!live || !AssetPath.isValid(path)) {
-				finish(Failed("Invalid asset path or closed service"));
+				finish(null, "Invalid asset path or closed service");
 				return;
 			}
 			if (base == null) {
@@ -442,7 +461,7 @@ class AssetService implements IAssets {
 				if (request.settled)
 					return;
 				if (cacheMode == Off) {
-					finish(Located(Remote(base + path)));
+					finish(Remote(base + path));
 					return;
 				}
 				child = cache.read(recordKey(path), result -> {
@@ -457,14 +476,14 @@ class AssetService implements IAssets {
 						if (cacheMode == Trust || now() < record.freshUntil)
 							child = cache.source(key(path), local);
 						else
-							finish(Located(Remote(record.source)));
+							finish(Remote(record.source));
 						return;
 					}
 					if (expected != null ? record != null && record.hash == expected : !unlisted
 						&& (cacheMode == Trust || record != null && now() < record.freshUntil))
 						child = cache.source(key(path), local);
 					else
-						finish(Located(Remote(base + path)));
+						finish(Remote(base + path));
 				});
 			});
 		});
@@ -550,7 +569,7 @@ class AssetService implements IAssets {
 		queue.poll();
 	}
 
-	/** Cancels every pending request (each completes Cancelled), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail. */
+	/** Cancels every pending request (each telling no one), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail. */
 	public function shutdown():Void {
 		live = false;
 		for (request in requests.copy())

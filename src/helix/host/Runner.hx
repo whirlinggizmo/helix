@@ -126,14 +126,11 @@ class Runner {
 		Screenshots.bind(screenshots);
 		// config.json, fetched now so a deployed game's settings change without a build; the app waits for it (a frame or two, blank).
 		configPending = true;
-		resources.ensure("config.json", result -> {
-			switch result {
-				case Loaded(bytes):
-					Host.config = Config.parse(bytes, host.getOption("config"));
-				case _:
-			}
+		// None is no failure: the defaults stand.
+		resources.ensure("config.json", bytes -> {
+			Host.config = Config.parse(bytes, host.getOption("config"));
 			configPending = false;
-		});
+		}, _ -> configPending = false);
 	}
 
 	function frame():Void {

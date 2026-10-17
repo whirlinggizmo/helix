@@ -149,9 +149,10 @@ class HeldAssets implements helix.assets.IAssets {
 
 	public function new() {}
 
-	public function load(path:String, complete:helix.assets.IAssets.AssetResult->Void):Void {
+	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.assets.IRequest {
 		loads++;
-		held.push(() -> complete(Loaded(Bytes.alloc(4))));
+		held.push(() -> loaded(Bytes.alloc(4)));
+		return new helix.assets.Request(() -> {});
 	}
 
 	public function flush():Void {
@@ -161,7 +162,7 @@ class HeldAssets implements helix.assets.IAssets {
 			f();
 	}
 
-	public function ensure(path:String, complete:helix.assets.IAssets.AssetResult->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
 			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
@@ -196,7 +197,7 @@ class HeldAssets implements helix.assets.IAssets {
 		return mode;
 	}
 
-	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
+	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
@@ -607,22 +608,16 @@ class Render2DTests {
 			decoding = new helix.graphics.ImageDecoding(images),
 			shared = new helix.render2d.TextureCache(heldAssets, decoding, gpu);
 		var got:Array<Texture2D> = [];
-		function keep(result:helix.render2d.TextureCache.TextureLoadResult):Void
-			switch result {
-				case Ready(texture):
-					got.push(texture);
-				case _:
-			}
-		shared.load("a.png", true, keep);
-		var given = shared.load("a.png", true, keep);
-		shared.load("a.png", true, keep);
+		shared.load("a.png", true, texture -> got.push(texture));
+		var given = shared.load("a.png", true, texture -> got.push(texture));
+		shared.load("a.png", true, texture -> got.push(texture));
 		given.cancel();
 		heldAssets.flush();
 		decoding.poll();
 		check(heldAssets.loads == 1 && images.decodes == 1 && got.length == 2 && got[0] == got[1], "Loads under way of one file share one fetch and texture");
-		shared.load("a.png", true, keep);
+		shared.load("a.png", true, texture -> got.push(texture));
 		check(heldAssets.loads == 1 && got.length == 3 && got[2] == got[0], "A later load of it is given the same texture");
-		shared.load("a.png", false, keep);
+		shared.load("a.png", false, texture -> got.push(texture));
 		heldAssets.flush();
 		decoding.poll();
 		check(heldAssets.loads == 2 && got.length == 4 && got[3] != got[0], "Another filter is another texture");

@@ -13,6 +13,7 @@ import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
@@ -62,27 +63,26 @@ class App extends BaseApp {
 		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), ground));
 
-		Models.load(MODEL, result -> switch result {
-			case Ready(file):
-				car = file.instantiate("car");
-				car.setScale(1.5, 1.5, 1.5);
-				for (name in ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"])
-					wheels.push(car.find(name));
-				for (name in ["headlight-left", "headlight-right"])
-					beams.push(car.find(name));
-				stage.add(car);
-				// Behind and above it, looking ahead; in the car's own units.
-				chase.setPosition(0, 1.8, -4.5);
-				chase.lookAt(0, .4, 2);
-				car.addChild(chase);
-				status = MODEL;
-				for (warning in file.warnings)
-					trace('$MODEL: $warning');
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
+		Models.load(MODEL, file -> place(file), message -> status = message);
 		batch = new Batch2D(Graphics.instance);
+	}
+
+	// The car's file in: a copy of it on the stage, its wheels and headlights found by name, the chase camera riding behind it.
+	function place(file:ModelFile):Void {
+		car = file.instantiate("car");
+		car.setScale(1.5, 1.5, 1.5);
+		for (name in ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"])
+			wheels.push(car.find(name));
+		for (name in ["headlight-left", "headlight-right"])
+			beams.push(car.find(name));
+		stage.add(car);
+		// Behind and above it, looking ahead; in the car's own units.
+		chase.setPosition(0, 1.8, -4.5);
+		chase.lookAt(0, .4, 2);
+		car.addChild(chase);
+		status = MODEL;
+		for (warning in file.warnings)
+			trace('$MODEL: $warning');
 	}
 
 	override public function frame(dt:Float):Void {

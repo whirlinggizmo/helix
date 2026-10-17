@@ -12,6 +12,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
@@ -94,68 +95,63 @@ class App extends BaseApp {
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
 
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				car = file;
-				var node = file.instantiate("car");
-				node.setPosition(-1.9, FLOOR_Y, 0);
-				node.setRotation(0, .4, 0);
-				node.setScale(.75, .75, .75);
-				stage.add(node);
-				toonCar();
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
-		Textures.load("textures/noise.png", true, result -> switch result {
-			case Ready(texture):
-				// The shader samples it twice across: it tiles.
-				texture.sampling = new Sampling(true, Repeat, Repeat);
-				if (dissolve.shaderParameters != null)
-					dissolve.shaderParameters.setTexture("noise_texture", texture);
-				noise = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
+		Textures.load("textures/noise.png", true, texture -> useNoise(texture));
 		shaders = new Shaders(Assets.instance, gpu);
-		shaders.load("shaders/toon.hxshader", result -> switch result {
-			case Ready(shader):
-				toon = shader;
-				toonCar();
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
-		shaders.load("shaders/dissolve.hxshader", result -> switch result {
-			case Ready(shader):
-				dissolve.setShader(shader);
-				var p = dissolve.shaderParameters;
-				p.setValues("color", [.55, .6, .7, 1]);
-				p.setValues("edge_color", [4, 1.2, .2]);
-				p.setFloat("speed", .15);
-				if (noise != null)
-					p.setTexture("noise_texture", noise);
-				status = "";
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
-		shaders.load("shaders/water.hxshader", result -> switch result {
-			case Ready(shader):
-				water.setShader(shader);
-				var p = water.shaderParameters;
-				p.setFloat("amplitude", .03);
-				p.setFloat("frequency", 2.5);
-				p.setFloat("wave_speed", 3);
-				p.setValues("low_color", [0, .03, .1, 1]);
-				p.setValues("high_color", [.05, .3, .35, 1]);
-				p.setValues("sky_color", [.35, .45, .6, 1]);
-				p.setFloat("shininess", 120);
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
+		shaders.load("shaders/toon.hxshader", shader -> useToon(shader), message -> status = message);
+		shaders.load("shaders/dissolve.hxshader", shader -> useDissolve(shader), message -> status = message);
+		shaders.load("shaders/water.hxshader", shader -> useWater(shader), message -> status = message);
+	}
+
+	// The car's file in: a copy of it on the left, toon shaded once that shader is in.
+	function place(file:ModelFile):Void {
+		car = file;
+		var node = file.instantiate("car");
+		node.setPosition(-1.9, FLOOR_Y, 0);
+		node.setRotation(0, .4, 0);
+		node.setScale(.75, .75, .75);
+		stage.add(node);
+		toonCar();
+	}
+
+	// The noise texture in: the dissolve's, tiling.
+	function useNoise(texture:Texture2D):Void {
+		// The shader samples it twice across: it tiles.
+		texture.sampling = new Sampling(true, Repeat, Repeat);
+		if (dissolve.shaderParameters != null)
+			dissolve.shaderParameters.setTexture("noise_texture", texture);
+		noise = texture;
+	}
+
+	// The toon shader in: the car's, once it's in too.
+	function useToon(shader:Shader):Void {
+		toon = shader;
+		toonCar();
+	}
+
+	// The dissolve shader in: the middle sphere's, with the noise once that's in.
+	function useDissolve(shader:Shader):Void {
+		dissolve.setShader(shader);
+		var p = dissolve.shaderParameters;
+		p.setValues("color", [.55, .6, .7, 1]);
+		p.setValues("edge_color", [4, 1.2, .2]);
+		p.setFloat("speed", .15);
+		if (noise != null)
+			p.setTexture("noise_texture", noise);
+		status = "";
+	}
+
+	// The water shader in: the right sphere's, its waves and colors.
+	function useWater(shader:Shader):Void {
+		water.setShader(shader);
+		var p = water.shaderParameters;
+		p.setFloat("amplitude", .03);
+		p.setFloat("frequency", 2.5);
+		p.setFloat("wave_speed", 3);
+		p.setValues("low_color", [0, .03, .1, 1]);
+		p.setValues("high_color", [.05, .3, .35, 1]);
+		p.setValues("sky_color", [.35, .45, .6, 1]);
+		p.setFloat("shininess", 120);
 	}
 
 	var noise:Null<helix.render2d.Texture2D>;

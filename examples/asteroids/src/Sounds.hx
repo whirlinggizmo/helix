@@ -1,7 +1,6 @@
 import helix.audio.AudioResources;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
-import helix.audio.AudioResources.AudioLoadResult;
 
 class Sounds {
 	public static final names = [
@@ -22,29 +21,35 @@ class Sounds {
 	var loop:AudioPlayback;
 	var thrustVolume = 0.;
 	var closed = false;
+	var complete:Null<String>->Void;
 
 	public function new(audio:AudioResources, complete:Null<String>->Void) {
 		this.audio = audio;
+		this.complete = complete;
 		for (i in 0...names.length) {
 			var index = i;
-			audio.loadClip("audio/sfx/" + names[i] + ".ogg", result -> {
-				switch (result) {
-					case Ready(resource):
-						if (closed) {
-							resource.release();
-							return;
-						}
-						clips[index] = resource;
-						loaded++;
-						if (loaded == 8) complete(null);
-					case Failed(message): if (!closed) {
-							cleanup();
-							complete(message);
-						}
-					case Cancelled:
-				}
-			});
+			audio.loadClip("audio/sfx/" + names[i] + ".ogg", clip -> add(index, clip), message -> fail(message));
 		}
+	}
+
+	// A clip in: kept, and the game told once all are.
+	function add(index:Int, clip:AudioClip):Void {
+		if (closed) {
+			clip.release();
+			return;
+		}
+		clips[index] = clip;
+		loaded++;
+		if (loaded == 8)
+			complete(null);
+	}
+
+	// A clip failed: the others let go, and the game told why.
+	function fail(message:String):Void {
+		if (closed)
+			return;
+		cleanup();
+		complete(message);
 	}
 
 	public function play(game:Game, enabled:Bool, focused:Bool = true):Void {

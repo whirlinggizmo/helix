@@ -1,5 +1,6 @@
 import helix.app.BaseApp;
 import helix.audio.Audio;
+import helix.audio.AudioStream;
 import helix.debug.TestHarness;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -27,12 +28,13 @@ class App extends BaseApp {
 		Window.requestSize(640, 200);
 		batch = new Batch2D(Graphics.instance);
 		quitAt = Time.time + 1;
-		Audio.loadStream("audio/music/a_hero_is_born.mp3", result -> switch result {
-			case Ready(stream):
-				Audio.play(stream, true, .5);
-				stream.release();
-			case _:
-		});
+		Audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> play(stream));
+	}
+
+	// The music opened: played, the playback holding the stream.
+	function play(stream:AudioStream):Void {
+		Audio.play(stream, true, .5);
+		stream.release();
 	}
 
 	override public function frame(dt:Float):Void {

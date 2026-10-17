@@ -68,13 +68,7 @@ class App extends BaseApp {
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
 		world.add(sprite);
-		Textures.load("textures/tiles.png", false, result -> switch result {
-			case Ready(texture):
-				sprite.texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/tiles.png", false, texture -> sprite.texture = texture);
 		// A group: its children turn with it.
 		orbit = new Node2D();
 		orbit.setPosition(0, -110);
@@ -97,13 +91,7 @@ class App extends BaseApp {
 		emitter.setColor(0xffcb00ff, 0xff3c0000);
 		sparks = new Particles2D(emitter);
 		world.add(sparks);
-		Textures.load("textures/particle.png", true, result -> switch result {
-			case Ready(texture):
-				emitter.texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/particle.png", true, texture -> emitter.texture = texture);
 
 		title = new Text2D("HeliX stage2d", 20, 0xf5f5f5ff);
 		hud.add(title);

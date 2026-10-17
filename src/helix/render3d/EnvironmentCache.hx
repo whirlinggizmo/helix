@@ -1,19 +1,13 @@
 package helix.render3d;
 
 import haxe.io.Bytes;
+import helix.assets.Failure;
 import helix.assets.IAssets;
 import helix.assets.IReloadable;
 import helix.assets.IRequest;
 import helix.assets.Request;
 import helix.graphics.IGraphics;
 import helix.graphics.ImageDecoding;
-
-/** How an environment load ended. */
-enum EnvironmentLoadResult {
-	Ready(environment:Environment);
-	Failed(message:String);
-	Cancelled;
-}
 
 /** Environment maps from equirectangular images (2:1, latitude-longitude): a Radiance .hdr (true high dynamic range, recommended) or a PNG or
 	JPEG (sRGB, low dynamic range). Loaded through the assets, prepared on the CPU a step at a time within a budget each frame (poll), one at a
@@ -27,7 +21,7 @@ class EnvironmentCache implements IReloadable {
 	var gpu:IGraphics;
 	var live = true;
 	// Environments loaded: each with how many loads hold it.
-	var loaded:Array<{environment:Environment, users:Int}> = [];
+	var entries:Array<{environment:Environment, users:Int}> = [];
 	// Loads under way, by path: those waiting on each, and its bake once its file is read.
 	var pending = new Map<String, Pending>();
 	// Bakes waiting their turn, the first running: each its path and what to do when it's done or fails.
@@ -59,9 +53,9 @@ class EnvironmentCache implements IReloadable {
 		return pending.iterator().hasNext() || queue.length > 0;
 
 	/** Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release),
-		and the last frees it. complete runs exactly once on the host thread: Failed for a closed service, a file that won't load or isn't an
-		image, or a GPU without filtered half floats. */
-	public function load(path:String, complete:EnvironmentLoadResult->Void):IRequest {
+		and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the
+		log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats. */
+	public function load(path:String, loaded:Environment->Void, ?failed:String->Void):IRequest {
 		var request:Request = null, waiter = null;
 		request = new Request(() -> {
 			var shared = pending[path];
@@ -70,19 +64,18 @@ class EnvironmentCache implements IReloadable {
 				if (shared.waiting.length == 0)
 					abandon(path, shared);
 			}
-			complete(Cancelled);
 		});
-		waiter = {request: request, complete: complete};
+		waiter = {request: request, loaded: loaded, failed: failed};
 		if (!live || !gpu.canSample(Rgba16f)) {
 			request.finish();
-			complete(Failed(live ? "This GPU doesn't filter half floats" : "Closed environment service"));
+			Failure.report(path, live ? "This GPU doesn't filter half floats" : "Closed environment service", failed);
 			return request;
 		}
-		for (entry in loaded)
+		for (entry in entries)
 			if (entry.environment.path == path) {
 				entry.users++;
 				request.finish();
-				complete(Ready(entry.environment));
+				loaded(entry.environment);
 				return request;
 			}
 		var shared = pending[path];
@@ -97,19 +90,23 @@ class EnvironmentCache implements IReloadable {
 			if (pending[path] != shared)
 				return;
 			pending.remove(path);
-			var result = if (error != null) Failed(error) else {
-				var made = try Ready(Environment.fromBake(gpu, path, bake)) catch (e:Dynamic) Failed(Std.string(e));
-				switch made {
-					case Ready(environment):
-						loaded.push({environment: environment, users: shared.waiting.length});
-						assets.subscribe(path, this);
-					case _:
+			var environment = null;
+			if (error == null) {
+				environment = try Environment.fromBake(gpu, path, bake) catch (e:Dynamic) {
+					error = Std.string(e);
+					null;
 				}
-				made;
+				if (environment != null) {
+					entries.push({environment: environment, users: shared.waiting.length});
+					assets.subscribe(path, this);
+				}
 			}
 			for (w in shared.waiting)
 				if (w.request.finish())
-					w.complete(result);
+					if (environment != null)
+						w.loaded(environment);
+					else
+						Failure.report(path, error, w.failed);
 		});
 		return request;
 	}
@@ -138,35 +135,33 @@ class EnvironmentCache implements IReloadable {
 			};
 			queue.push(entry);
 		}
-		assets.load(path, result -> switch result {
-			case Loaded(bytes):
-				if (request.settled)
-					return;
-				if (Hdr.isHdr(bytes)) {
-					bake(EnvironmentBake.fromHdr(bytes));
-					return;
-				}
-				child = images.decode(bytes, decoded -> switch decoded {
-					case Decoded(width, height, rgba):
-						if (!request.settled) bake(EnvironmentBake.fromRgba(width, height, rgba));
-					case Failed(message):
-						if (request.finish()) done(null, '$path: $message');
-					case Cancelled:
-				});
-			case Failed(message):
-				if (request.finish()) done(null, '$path: $message');
-			case Cancelled:
-		});
+		var loading = assets.load(path, bytes -> {
+			if (request.settled)
+				return;
+			if (Hdr.isHdr(bytes)) {
+				bake(EnvironmentBake.fromHdr(bytes));
+				return;
+			}
+			child = images.decode(bytes, decoded -> switch decoded {
+				case Decoded(width, height, rgba):
+					if (!request.settled) bake(EnvironmentBake.fromRgba(width, height, rgba));
+				case Failed(message):
+					if (request.finish()) done(null, '$path: $message');
+				case Cancelled:
+			});
+		}, message -> if (request.finish()) done(null, '$path: $message'));
+		if (child == null)
+			child = loading;
 		return request;
 	}
 
 	/** Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it. */
 	public function release(environment:Environment):Void
-		for (entry in loaded)
+		for (entry in entries)
 			if (entry.environment == environment) {
 				if (--entry.users > 0)
 					return;
-				loaded.remove(entry);
+				entries.remove(entry);
 				environment.destroy(gpu);
 				assets.unsubscribe(environment.path, this);
 				return;
@@ -179,7 +174,7 @@ class EnvironmentCache implements IReloadable {
 			queue.push({
 				path: path,
 				bake: bake,
-				done: error -> if (error == null) for (entry in loaded)
+				done: error -> if (error == null) for (entry in entries)
 					if (entry.environment.path == path)
 						try
 							@:privateAccess entry.environment.replace(gpu, bake)
@@ -222,7 +217,7 @@ class EnvironmentCache implements IReloadable {
 /** A load under way: those waiting on it, and the request reading and preparing its file. */
 private class Pending {
 	/** The loads waiting for it. */
-	public var waiting:Array<{request:Request, complete:EnvironmentLoadResult->Void}> = [];
+	public var waiting:Array<{request:Request, loaded:Environment->Void, failed:Null<String->Void>}> = [];
 
 	/** Reading and preparing its file. */
 	public var request:IRequest;

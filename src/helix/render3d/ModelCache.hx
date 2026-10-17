@@ -1,17 +1,11 @@
 package helix.render3d;
 
+import helix.assets.Failure;
 import helix.assets.IAssets;
 import helix.assets.IRequest;
 import helix.assets.Request;
 import helix.render2d.TextureCache;
 import helix.render3d.ModelFile.ImageSource;
-
-/** How a model load ended. */
-enum ModelLoadResult {
-	Ready(file:ModelFile);
-	Failed(message:String);
-	Cancelled;
-}
 
 /** Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images
 	decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode
@@ -23,7 +17,7 @@ class ModelCache {
 	var textures:TextureCache;
 	var files:Map<String, ModelFile> = [];
 	var failures:Map<String, String> = [];
-	var waiting:Map<String, Array<{request:Request, complete:ModelLoadResult->Void}>> = [];
+	var waiting:Map<String, Array<{request:Request, loaded:ModelFile->Void, failed:Null<String->Void>}>> = [];
 	var loads:Map<String, IRequest> = [];
 
 	/** Loads through assets, decoding images with textures. */
@@ -33,20 +27,21 @@ class ModelCache {
 	}
 
 	/** Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the
-		file, or loaded from files beside it through the textures, which reload them when they change). complete runs exactly once: during this
-		call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: Ready once its
-		images are in (one that fails leaves its material untextured, with a warning), Failed for a load failure, a buffer that won't load, or a
-		file it can't read, Cancelled when the request is (the shared load goes on for the others) or the service shuts down. */
-	public function load(path:String, complete:ModelLoadResult->Void):IRequest {
+		file, or loaded from files beside it through the textures, which reload them when they change). One of loaded or failed runs once: during
+		this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: loaded
+		once its images are in (one that fails leaves its material untextured, with a warning), failed (else the log, with the path) for a load
+		failure, a buffer that won't load, or a file it can't read. Neither runs once the request is cancelled (the shared load goes on for the
+		others) or the service shuts down. */
+	public function load(path:String, loaded:ModelFile->Void, ?failed:String->Void):IRequest {
 		var settled = new Request(() -> {});
 		if (files.exists(path)) {
 			settled.finish();
-			complete(Ready(files[path]));
+			loaded(files[path]);
 			return settled;
 		}
 		if (failures.exists(path)) {
 			settled.finish();
-			complete(Failed(failures[path]));
+			Failure.report(path, failures[path], failed);
 			return settled;
 		}
 		var request:Request = null;
@@ -56,26 +51,28 @@ class ModelCache {
 				for (caller in callers.copy())
 					if (caller.request == request)
 						callers.remove(caller);
-			complete(Cancelled);
 		});
+		var caller = {request: request, loaded: loaded, failed: failed};
 		if (waiting.exists(path)) {
-			waiting[path].push({request: request, complete: complete});
+			waiting[path].push(caller);
 			return request;
 		}
-		waiting[path] = [{request: request, complete: complete}];
-		loads[path] = read(path, result -> {
+		waiting[path] = [caller];
+		loads[path] = read(path, (file, message) -> {
 			loads.remove(path);
-			switch result {
-				case Ready(file): files[path] = file;
-				case Failed(message): failures[path] = message;
-				case Cancelled:
-			}
+			if (file != null)
+				files[path] = file;
+			else if (message != null)
+				failures[path] = message;
 			var callers = waiting[path];
 			waiting.remove(path);
 			if (callers != null)
 				for (caller in callers)
 					if (caller.request.finish())
-						caller.complete(result);
+						if (file != null)
+							caller.loaded(file);
+						else if (message != null)
+							Failure.report(path, message, caller.failed);
 		});
 		return request;
 	}
@@ -114,7 +111,7 @@ class ModelCache {
 		failures.remove(path);
 	}
 
-	/** Cancels every load (each caller waiting gets Cancelled) and forgets every file. */
+	/** Cancels every load (telling none of its callers) and forgets every file. */
 	public function shutdown():Void {
 		for (load in [for (l in loads) l])
 			load.cancel();
@@ -122,96 +119,89 @@ class ModelCache {
 		failures.clear();
 	}
 
-	// One load of path, unshared: the file, its buffers, its images.
-	function read(path:String, complete:ModelLoadResult->Void):IRequest {
+	// One load of path, unshared: the file, its buffers, its images. done gets the file, or else why it failed, or neither when it was cancelled.
+	function read(path:String, done:(Null<ModelFile>, Null<String>) -> Void):IRequest {
 		var children:Array<IRequest> = [], request:Request = null;
 		request = new Request(() -> {
 			for (child in children)
 				child.cancel();
-			complete(Cancelled);
+			done(null, null);
 		});
 		function failed(message:String):Void
 			if (request.finish())
-				complete(Failed('$path: $message'));
-		assets.load(path, result -> switch result {
-			case Loaded(bytes):
-				if (request.settled)
-					return;
-				var gltf = try Gltf.read(bytes) catch (e:Dynamic) {
-					failed(Std.string(e));
+				done(null, '$path: $message');
+		children.push(assets.load(path, bytes -> {
+			if (request.settled)
+				return;
+			var gltf = try Gltf.read(bytes) catch (e:Dynamic) {
+				failed(Std.string(e));
+				return;
+			}
+			var missing = gltf.missingBuffers, waiting = missing.length;
+			if (waiting == 0)
+				build(path, gltf, request, children, done);
+			for (buffer in missing) {
+				var file = Gltf.resolve(path, buffer.uri);
+				if (file == null) {
+					failed('buffer ${buffer.index}\'s uri ${buffer.uri} isn\'t a file beside the model');
 					return;
 				}
-				var missing = gltf.missingBuffers, waiting = missing.length;
-				if (waiting == 0)
-					build(path, gltf, request, children, complete);
-				for (buffer in missing) {
-					var file = Gltf.resolve(path, buffer.uri);
-					if (file == null) {
-						failed('buffer ${buffer.index}\'s uri ${buffer.uri} isn\'t a file beside the model');
+				children.push(assets.load(file, data -> {
+					if (request.settled)
+						return;
+					if (!gltf.setBuffer(buffer.index, data)) {
+						failed('$file is shorter than buffer ${buffer.index}\'s byteLength');
 						return;
 					}
-					assets.load(file, loaded -> switch loaded {
-						case Loaded(data):
-							if (request.settled)
-								return;
-							if (!gltf.setBuffer(buffer.index, data)) {
-								failed('$file is shorter than buffer ${buffer.index}\'s byteLength');
-								return;
-							}
-							if (--waiting == 0) build(path, gltf, request, children, complete);
-						case Failed(message):
-							failed('$file: $message');
-						case Cancelled:
-					});
-				}
-			case Failed(message):
-				failed(message);
-			case Cancelled:
-		});
+					if (--waiting == 0)
+						build(path, gltf, request, children, done);
+				}, message -> failed('$file: $message')));
+			}
+		}, message -> failed(message)));
 		return request;
 	}
 
 	// The file read, its buffers all in: the ModelFile, then its images.
-	function build(path:String, gltf:Gltf, request:Request, children:Array<IRequest>, complete:ModelLoadResult->Void):Void {
+	function build(path:String, gltf:Gltf, request:Request, children:Array<IRequest>, done:(Null<ModelFile>, Null<String>) -> Void):Void {
 		var file = try new ModelFile(gltf) catch (e:Dynamic) {
 			if (request.finish())
-				complete(Failed('$path: $e'));
+				done(null, '$path: $e');
 			return;
 		}
 		var images = file.images(), waiting = images.length;
 		if (waiting == 0) {
 			if (request.finish())
-				complete(Ready(file));
+				done(file, null);
 			return;
 		}
 		for (image in images) {
-			function done(result:TextureLoadResult):Void {
-				switch result {
-					case Ready(texture):
-						texture.sampling = image.sampling;
-						for (set in image.set)
-							set(texture);
-					case Failed(message):
-						@:privateAccess file.warn('an image failed to load: $message');
-					case Cancelled:
-						return;
-				}
+			function next():Void {
 				waiting--;
 				if (waiting == 0 && request.finish())
-					complete(Ready(file));
+					done(file, null);
+			}
+			function loaded(texture:helix.render2d.Texture2D):Void {
+				texture.sampling = image.sampling;
+				for (set in image.set)
+					set(texture);
+				next();
+			}
+			function failed(message:String):Void {
+				@:privateAccess file.warn('an image failed to load: $message');
+				next();
 			}
 			var linear = image.sampling.linear;
 			switch image.source {
 				case InView(view):
-					children.push(textures.decode(gltf.viewBytes(view), linear, done));
+					children.push(textures.decode(gltf.viewBytes(view), linear, texture -> loaded(texture), message -> failed(message)));
 				case Inline(bytes):
-					children.push(textures.decode(bytes, linear, done));
+					children.push(textures.decode(bytes, linear, texture -> loaded(texture), message -> failed(message)));
 				case File(uri):
 					var resolved = Gltf.resolve(path, uri);
 					if (resolved == null)
-						done(Failed('its uri $uri isn\'t a file beside the model'));
+						failed('its uri $uri isn\'t a file beside the model');
 					else
-						children.push(textures.load(resolved, linear, done));
+						children.push(textures.load(resolved, linear, texture -> loaded(texture), message -> failed(message)));
 			}
 		}
 	}

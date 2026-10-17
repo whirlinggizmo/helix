@@ -100,11 +100,7 @@ class App extends BaseApp {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		Textures.load("textures/tiles_normal.png", true, result -> switch result {
-			case Ready(texture): tiles.normalTexture = texture;
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
 		batch = new Batch2D(Graphics.instance);

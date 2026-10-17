@@ -148,23 +148,16 @@ class App extends BaseApp {
 		confettiNode = new Particles2D(confetti);
 		flat.add(confettiNode);
 
-		Textures.load("textures/particle.png", true, result -> switch result {
-			case Ready(texture):
-				for (e in [fountain, sparks, smoke, confetti])
-					e.texture = texture;
-				var presentation = Screen.instance;
-				burst(presentation.visibleX + presentation.visibleWidth / 2, presentation.visibleY + presentation.visibleHeight / 3);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
-		Textures.load("textures/flame.png", true, result -> switch result {
-			case Ready(texture):
-				flame.texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load("textures/particle.png", true, texture -> dot(texture));
+		Textures.load("textures/flame.png", true, texture -> flame.texture = texture);
+	}
+
+	// The particle texture in: every emitter but the flame draws it, and a first burst of confetti shows it.
+	function dot(texture:Texture2D):Void {
+		for (e in [fountain, sparks, smoke, confetti])
+			e.texture = texture;
+		var presentation = Screen.instance;
+		burst(presentation.visibleX + presentation.visibleWidth / 2, presentation.visibleY + presentation.visibleHeight / 3);
 	}
 
 	// A burst of confetti at x, y units: no trail from where the last one was.

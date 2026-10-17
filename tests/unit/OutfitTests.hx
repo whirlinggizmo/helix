@@ -15,7 +15,7 @@ import helix.render3d.Node3D;
 class OutfitTests {
 	static var checks = 0;
 	// The loads the test's assets hold until released, by path, and how many each was asked for.
-	static var held:Map<String, helix.assets.IAssets.AssetResult->Void> = [];
+	static var held:Map<String, {loaded:Bytes->Void, failed:String->Void}> = [];
 	static var asked:Map<String, Int> = [];
 
 	static function check(value:Bool, message:String):Void {
@@ -34,10 +34,18 @@ class OutfitTests {
 	static function models():ModelCache
 		return new ModelCache(new Held(), null);
 
-	static function release(path:String, result:helix.assets.IAssets.AssetResult):Void {
-		var complete = held[path];
+	// Lets path's held load end with bytes.
+	static function release(path:String, bytes:Bytes):Void {
+		var load = held[path];
 		held.remove(path);
-		complete(result);
+		load.loaded(bytes);
+	}
+
+	// Lets path's held load fail with message.
+	static function refuse(path:String, message:String):Void {
+		var load = held[path];
+		held.remove(path);
+		load.failed(message);
 	}
 
 	// Whether node is character or under it.
@@ -95,13 +103,13 @@ class OutfitTests {
 		shared.put("Casual_Legs", file("Casual_Legs"));
 		outfit.choose("legs", "Casual_Legs");
 		check(outfit.getWorn("legs") == "Casual_Legs", "A later choice already loaded is worn at once");
-		release("Slow_Legs", Loaded(bytes("Adventurer_Legs")));
+		release("Slow_Legs", bytes("Adventurer_Legs"));
 		check(outfit.getWorn("legs") == "Casual_Legs" && !outfit.pending, "and the overtaken one, landing after, is dropped");
 		check(shared.isLoaded("Slow_Legs"), "though the models keep its file");
 
 		// A file that fails.
 		outfit.choose("feet", "Missing_Feet");
-		release("Missing_Feet", Failed("not found"));
+		refuse("Missing_Feet", "not found");
 		check(outfit.getWorn("feet") == null && outfit.getError("feet") != null && !outfit.pending, "A part whose file fails empties its slot");
 
 		// Many characters, one load.
@@ -112,7 +120,7 @@ class OutfitTests {
 			others[i].choose("feet", "Shared_Feet");
 		}
 		check(asked["Shared_Feet"] == 1, "Characters asking for one part share its load");
-		release("Shared_Feet", Loaded(bytes("Casual_Feet")));
+		release("Shared_Feet", bytes("Casual_Feet"));
 		var feet = [for (o in others) (cast o.getNodes("feet")[0] : Model)];
 		check(feet[0] != feet[1] && feet[1] != feet[2] && feet[0].mesh == feet[1].mesh, "and each wears its own nodes over the same meshes");
 		check(under(feet[2].getJoint(0), skeletons[2]) && !under(feet[2].getJoint(0), skeletons[0]), "each bound to its own skeleton");
@@ -166,11 +174,12 @@ class OutfitTests {
 		check(at != null && at.piece == holder && at.joint == null, "A model under no joint of the skeleton's is a piece at the file's top, with no joint");
 		check(loose.findAttachment(new Model(), character) == null, "A model not under the file has no attachment");
 
-		// Shutting the models down cancels what's still loading.
-		var cancelled = false;
-		shared.load("Never", result -> cancelled = result.match(Cancelled));
+		// Shutting the models down cancels what's still loading, telling no one.
+		var told = false;
+		shared.load("Never", _ -> told = true, _ -> told = true);
 		shared.shutdown();
-		check(cancelled && !shared.isLoaded("Casual_Head"), "Shutting down cancels loads and forgets files");
+		check(!told && !shared.isLoading("Never") && !held.exists("Never") && !shared.isLoaded("Casual_Head"),
+			"Shutting down cancels loads, calling nothing, and forgets files");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }
@@ -179,18 +188,14 @@ class OutfitTests {
 private class Held implements IAssets {
 	public function new() {}
 
-	public function load(path:String, complete:helix.assets.IAssets.AssetResult->Void):Void {
-		@:privateAccess OutfitTests.asked[path] = (OutfitTests.asked.exists(path) ? OutfitTests.asked[path] : 0) + 1;
-		@:privateAccess OutfitTests.held[path] = complete;
-	}
+	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.assets.IRequest
+		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, complete:helix.assets.IAssets.AssetResult->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
 			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest {
-		load(path, complete);
-		return new helix.assets.Request(() -> {
-			@:privateAccess OutfitTests.held.remove(path);
-			complete(Cancelled);
-		});
+		@:privateAccess OutfitTests.asked[path] = (OutfitTests.asked.exists(path) ? OutfitTests.asked[path] : 0) + 1;
+		@:privateAccess OutfitTests.held[path] = {loaded: loaded, failed: message -> helix.assets.Failure.report(path, message, failed)};
+		return new helix.assets.Request(() -> @:privateAccess OutfitTests.held.remove(path));
 	}
 
 	public var host(get, never):Null<String>;
@@ -224,7 +229,7 @@ private class Held implements IAssets {
 		return mode;
 	}
 
-	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
+	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}

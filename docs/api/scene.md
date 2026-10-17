@@ -21,7 +21,7 @@ function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
 
 *class* in `src/helix/scene/Loader.hx`
 
-A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (progress, from how many have ended) and the scene starts once they're done (done), with what failed by name (failures). Each load goes through the service it always did, its own callback kept; the loader only counts. wrap counts any other load the game makes. Nothing here cancels: a scene that exits early cancels its own requests.
+A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (progress, from how many have ended) and the scene starts once they're done (done), with what failed by name (failures). Each load goes through the service it always did, its own lambdas kept (a failure with no failed lambda logged with its path, as the service would); the loader only counts. wrap counts any other load the game makes. Nothing here cancels: a scene that exits early cancels its own requests, and a cancelled load is never counted as ended.
 
 ```haxe
 function new()
@@ -31,12 +31,12 @@ var progress(get, never):Float
 var done(get, never):Bool
 var failures(get, never):Array<String>
 function wrap(name:String, complete:wrap.T -> Void, failed:wrap.T -> Null<String>):wrap.T -> Void
-function asset(path:String, complete:AssetResult -> Void):IRequest
-function texture(path:String, linear:Bool, complete:TextureLoadResult -> Void):IRequest
-function clip(path:String, complete:AudioLoadResult<AudioClip> -> Void):IRequest
-function stream(path:String, complete:AudioLoadResult<AudioStream> -> Void):IRequest
-function environment(path:String, complete:EnvironmentLoadResult -> Void):IRequest
-function model(models:ModelCache, path:String, complete:ModelLoadResult -> Void):IRequest
+function asset(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
+function texture(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
+function clip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
+function stream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
+function environment(path:String, loaded:Environment -> Void, ?failed:String -> Void):IRequest
+function model(models:ModelCache, path:String, loaded:ModelFile -> Void, ?failed:String -> Void):IRequest
 ```
 
 - `new`: No loads yet: done, at progress 1.
@@ -50,7 +50,7 @@ function model(models:ModelCache, path:String, complete:ModelLoadResult -> Void)
 - `texture`: A texture through Textures (linear: not sRGB, for data such as normal maps).
 - `clip`: A sound clip through Audio.
 - `stream`: A sound stream through Audio.
-- `environment`: An environment through Environments (ready once it's prepared).
+- `environment`: An environment through Environments (loaded once it's prepared).
 - `model`: A model file through models (Models.instance, or a ModelCache of the test's).
 
 ## Loading

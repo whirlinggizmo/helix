@@ -57,6 +57,13 @@ class App extends BaseApp {
 		fast = Host.getOption("fast", "0") == "1";
 	}
 
+	// The autopilot's script in: the pilot made, and the game prepared once the sounds are in too.
+	function startPilot(bytes:haxe.io.Bytes):Void {
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name));
+		pilotReady = true;
+		prepare();
+	}
+
 	override public function init():Void {
 		Window.title = "HeliX Asteroids";
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
@@ -69,14 +76,7 @@ class App extends BaseApp {
 		var script = Host.getOption("autopilot", "");
 		pilotReady = script == "";
 		if (!pilotReady)
-			Assets.load(script, result -> switch result {
-				case Loaded(bytes):
-					pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name));
-					pilotReady = true;
-					prepare();
-				case Failed(message): throw 'Autopilot load failed: ' + message;
-				case Cancelled:
-			});
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		sounds = new Sounds(Audio.instance, error -> {
 			if (error != null)
 				throw 'Sound load failed: ' + error;

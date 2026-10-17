@@ -96,47 +96,42 @@ class App extends BaseApp {
 		coin.facing = Ground;
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, result -> switch result {
-			case Ready(texture):
-				logo.texture = texture;
-				logo.tint = 0x66bfffff;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
-		Textures.load("textures/tiles.png", false, result -> switch result {
-			case Ready(texture):
-				for (sprite in tileSprites)
-					sprite.texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
-		// Masked flames, cut out where their soft edges fade: a row of them behind the pedestal.
-		Textures.load("textures/flame.png", true, result -> switch result {
-			case Ready(texture):
-				for (i in 0...5) {
-					var flame = new Sprite3D(texture, 0xffa040ff);
-					flame.setRegion(0, 0, 64, 64);
-					flame.setSpriteSize(.9, .9);
-					flame.setPivot(.5, 1);
-					flame.facing = Upright;
-					flame.setAlphaMode(Mask, .4);
-					flame.setPosition(i * .8 - 1.6, 0, -2.5);
-					flames.push(flame);
-					stage.add(flame);
-				}
-				// The coin's glow: a soft puff of the same sheet, gold, added over everything.
-				var glow = new Sprite3D(texture, 0xffd25aff);
-				glow.setRegion(0, 0, 64, 64);
-				glow.setSpriteSize(1.4, 1.4);
-				glow.setPosition(-2, .5, 1.5);
-				glow.setAlphaMode(Add);
-				stage.add(glow);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
+		Textures.load("textures/tiles.png", false, texture -> useTiles(texture));
+		Textures.load("textures/flame.png", true, texture -> light(texture));
+	}
+
+	// The logo's texture in: the billboard draws it, tinted blue.
+	function useLogo(texture:Texture2D):Void {
+		logo.texture = texture;
+		logo.tint = 0x66bfffff;
+	}
+
+	// The tile sheet in: every tile sprite draws its cell of it.
+	function useTiles(texture:Texture2D):Void
+		for (sprite in tileSprites)
+			sprite.texture = texture;
+
+	// The flame sheet in: masked flames, cut out where their soft edges fade, a row of them behind the pedestal, and the coin's glow.
+	function light(texture:Texture2D):Void {
+		for (i in 0...5) {
+			var flame = new Sprite3D(texture, 0xffa040ff);
+			flame.setRegion(0, 0, 64, 64);
+			flame.setSpriteSize(.9, .9);
+			flame.setPivot(.5, 1);
+			flame.facing = Upright;
+			flame.setAlphaMode(Mask, .4);
+			flame.setPosition(i * .8 - 1.6, 0, -2.5);
+			flames.push(flame);
+			stage.add(flame);
+		}
+		// The coin's glow: a soft puff of the same sheet, gold, added over everything.
+		var glow = new Sprite3D(texture, 0xffd25aff);
+		glow.setRegion(0, 0, 64, 64);
+		glow.setSpriteSize(1.4, 1.4);
+		glow.setPosition(-2, .5, 1.5);
+		glow.setAlphaMode(Add);
+		stage.add(glow);
 	}
 
 	override public function frame(dt:Float):Void {

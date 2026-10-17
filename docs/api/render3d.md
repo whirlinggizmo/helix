@@ -303,7 +303,7 @@ Environment maps from equirectangular images (2:1, latitude-longitude): a Radian
 function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
 var budgetMs(get, set):Float
 var busy(get, never):Bool
-function load(path:String, complete:EnvironmentLoadResult -> Void):IRequest
+function load(path:String, loaded:Environment -> Void, ?failed:String -> Void):IRequest
 function release(environment:Environment):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 function poll():Void
@@ -313,21 +313,11 @@ function shutdown():Void
 - `new`: Loads through assets, decodes 8-bit images with images and uploads to gpu.
 - `budgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `busy`: Whether anything is still loading or being prepared.
-- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. complete runs exactly once on the host thread: Failed for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
+- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
 - `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 - `reloaded`: The file behind a loaded environment changed: it's prepared again and its cubes replaced, keeping its Environment object, so the stages using it show the new one once that's done. A file that no longer reads leaves it as it was.
 - `poll`: Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the Runner calls it once a frame.
 - `shutdown`: Refuses new loads and drops the bakes under way; the environments already loaded stay until released.
-
-## EnvironmentLoadResult
-
-*enum* in `src/helix/render3d/EnvironmentCache.hx`
-
-How an environment load ended.
-
-- `Ready(environment:Environment)`
-- `Failed(message:String)`
-- `Cancelled`
 
 ## Environments
 
@@ -339,14 +329,14 @@ Environment maps from equirectangular images, prepared a little each frame (Envi
 static var instance(default, null):EnvironmentCache
 static var budgetMs(get, set):Float
 static var busy(get, never):Bool
-static function load(path:String, complete:EnvironmentLoadResult -> Void):IRequest
+static function load(path:String, loaded:Environment -> Void, ?failed:String -> Void):IRequest
 static function release(environment:Environment):Void
 ```
 
 - `instance`: The environments forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `budgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `busy`: Whether anything is still loading or being prepared.
-- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. complete runs exactly once on the host thread: Failed for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
+- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
 - `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 
 ## Gltf
@@ -663,7 +653,7 @@ Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: 
 
 ```haxe
 function new(assets:IAssets, textures:TextureCache)
-function load(path:String, complete:ModelLoadResult -> Void):IRequest
+function load(path:String, loaded:ModelFile -> Void, ?failed:String -> Void):IRequest
 function find(path:String):Null<ModelFile>
 function isLoaded(path:String):Bool
 function isLoading(path:String):Bool
@@ -674,14 +664,14 @@ function shutdown():Void
 ```
 
 - `new`: Loads through assets, decoding images with textures.
-- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). complete runs exactly once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: Ready once its images are in (one that fails leaves its material untextured, with a warning), Failed for a load failure, a buffer that won't load, or a file it can't read, Cancelled when the request is (the shared load goes on for the others) or the service shuts down.
+- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: loaded once its images are in (one that fails leaves its material untextured, with a warning), failed (else the log, with the path) for a load failure, a buffer that won't load, or a file it can't read. Neither runs once the request is cancelled (the shared load goes on for the others) or the service shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.
 - `isLoading`: Whether path is loading.
 - `loadingCount`: How many files are loading.
 - `put`: Adds a file loaded some other way under path, as if loaded from there (a test's, a generated one).
 - `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
-- `shutdown`: Cancels every load (each caller waiting gets Cancelled) and forgets every file.
+- `shutdown`: Cancels every load (telling none of its callers) and forgets every file.
 
 ## ModelFile
 
@@ -705,16 +695,6 @@ function instantiate(?name:String = ""):Node3D
 - `materials`: Its materials, in the file's order: change one and every copy's parts with it change.
 - `instantiate`: A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an empty). A node with both a mesh and a light is the model, the light its first child.
 
-## ModelLoadResult
-
-*enum* in `src/helix/render3d/ModelCache.hx`
-
-How a model load ended.
-
-- `Ready(file:ModelFile)`
-- `Failed(message:String)`
-- `Cancelled`
-
 ## Models
 
 *class* in `src/helix/render3d/Models.hx`
@@ -723,7 +703,7 @@ Model files (glTF 2.0), loaded once and shared by path (ModelCache). The program
 
 ```haxe
 static var instance(default, null):ModelCache
-static function load(path:String, complete:ModelLoadResult -> Void):IRequest
+static function load(path:String, loaded:ModelFile -> Void, ?failed:String -> Void):IRequest
 static function find(path:String):Null<ModelFile>
 static function isLoaded(path:String):Bool
 static function isLoading(path:String):Bool
@@ -733,7 +713,7 @@ static function forget(path:String):Void
 ```
 
 - `instance`: The models forwarded to, for what takes a ModelCache (a Loader, an outfit): the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). complete runs exactly once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: Ready once its images are in (one that fails leaves its material untextured, with a warning), Failed for a load failure, a buffer that won't load, or a file it can't read, Cancelled when the request is (the shared load goes on for the others) or the service shuts down.
+- `load`: Loads path (a .glb or .gltf) into a ModelFile: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: loaded once its images are in (one that fails leaves its material untextured, with a warning), failed (else the log, with the path) for a load failure, a buffer that won't load, or a file it can't read. Neither runs once the request is cancelled (the shared load goes on for the others) or the service shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.
 - `isLoading`: Whether path is loading.

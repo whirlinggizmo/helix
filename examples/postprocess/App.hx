@@ -4,6 +4,7 @@ import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
+import helix.graphics.Shader;
 import helix.graphics.Shaders;
 import helix.host.Host;
 import helix.host.Screen;
@@ -17,6 +18,7 @@ import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
@@ -82,38 +84,35 @@ class App extends BaseApp {
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			stage.add(model);
 		}
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				var car = file.instantiate("car");
-				car.setScale(1.5, 1.5, 1.5);
-				stage.add(car);
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 
 		shaders = new Shaders(Assets.instance, gpu);
-		shaders.load("shaders/vignette.hxshader", result -> switch result {
-			case Ready(shader):
-				vignette = new ScreenEffect(gpu, shader);
-				vignette.parameters.setFloat("radius", .35);
-				vignette.parameters.setColor("tint", 0xfff2deff);
-				status = "";
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
-		shaders.load("shaders/scanlines.hxshader", result -> switch result {
-			case Ready(shader):
-				scanlines = new ScreenEffect(gpu, shader);
-				scanlines.parameters.setFloat("lines", 240);
-				scanlines.parameters.setFloat("darkness", .35);
-				scanlines.parameters.setFloat("offset", 1.5);
-				scanlines.parameters.setFloat("flicker", 1);
-			case Failed(message):
-				status = message;
-			case Cancelled:
-		});
+		shaders.load("shaders/vignette.hxshader", shader -> makeVignette(shader), message -> status = message);
+		shaders.load("shaders/scanlines.hxshader", shader -> makeScanlines(shader), message -> status = message);
+	}
+
+	// The car's file in: a copy of it in the middle.
+	function place(file:ModelFile):Void {
+		var car = file.instantiate("car");
+		car.setScale(1.5, 1.5, 1.5);
+		stage.add(car);
+	}
+
+	// The vignette's shader in: its effect, warm at the edges.
+	function makeVignette(shader:Shader):Void {
+		vignette = new ScreenEffect(Graphics.instance, shader);
+		vignette.parameters.setFloat("radius", .35);
+		vignette.parameters.setColor("tint", 0xfff2deff);
+		status = "";
+	}
+
+	// The scanlines' shader in: its effect, 240 lines flickering.
+	function makeScanlines(shader:Shader):Void {
+		scanlines = new ScreenEffect(Graphics.instance, shader);
+		scanlines.parameters.setFloat("lines", 240);
+		scanlines.parameters.setFloat("darkness", .35);
+		scanlines.parameters.setFloat("offset", 1.5);
+		scanlines.parameters.setFloat("flicker", 1);
 	}
 
 	override public function frame(dt:Float):Void {

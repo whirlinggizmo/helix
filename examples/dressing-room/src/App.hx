@@ -138,44 +138,44 @@ class App extends BaseApp {
 		stage.add(disc);
 		outfit = new Outfit(Models.instance);
 		modelOutfit = new Outfit(Models.instance);
-		Environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
-			case Ready(value):
-				environment = value;
-				for (s in [stage, studio])
-					s.setEnvironment(value, .9);
-			case Failed(message): trace(message);
-			case Cancelled:
-		});
+		Environments.load("environments/studio_small_09_1k.hdr", value -> light(value));
 		// Her look before she's here: the Outfit wears it once the skeleton arrives.
 		dress(["Casual", "Casual", "Casual", "Casual"], null);
-		Models.load(DIR + "Animations.glb", result -> switch result {
-			case Ready(file):
-				animations = file;
-				character = file.instantiate("character");
-				character.setPosition(0, .06, 0);
-				stage.add(character);
-				animator = new Animator(character);
-				outfit.skeleton = character;
-				model = file.instantiate("model");
-				studio.add(model);
-				// The pictures' character holds still, in the idle pose's first frame.
-				var still = new Animator(model);
-				var idle = file.getClip("Idle");
-				if (idle != null) {
-					still.play(idle, false);
-					still.update(0);
-				}
-				modelOutfit.skeleton = model;
-				pose("Idle");
-			case Failed(message): status = message;
-			case Cancelled:
-		});
+		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = message);
 		batch = new Batch2D(gpu);
 		buildScreen();
 		open("Body");
 	}
 
 	// The panel on the right: the slots' tabs, a grid of ten tiles, the poses, and Random and Reset.
+	// The studio's environment in: it lights both stages.
+	function light(value:Environment):Void {
+		environment = value;
+		for (s in [stage, studio])
+			s.setEnvironment(value, .9);
+	}
+
+	// The skeleton's file in: her copy on the stage, animated and wearing her outfit, and the pictures' copy in the studio.
+	function place(file:ModelFile):Void {
+		animations = file;
+		character = file.instantiate("character");
+		character.setPosition(0, .06, 0);
+		stage.add(character);
+		animator = new Animator(character);
+		outfit.skeleton = character;
+		model = file.instantiate("model");
+		studio.add(model);
+		// The pictures' character holds still, in the idle pose's first frame.
+		var still = new Animator(model);
+		var idle = file.getClip("Idle");
+		if (idle != null) {
+			still.play(idle, false);
+			still.update(0);
+		}
+		modelOutfit.skeleton = model;
+		pose("Idle");
+	}
+
 	function buildScreen():Void {
 		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(screen, camera2D);

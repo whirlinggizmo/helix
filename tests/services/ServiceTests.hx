@@ -3,7 +3,6 @@ import helix.assets.StorageService;
 import helix.assets.IAssets;
 import helix.assets.AssetService;
 import helix.audio.AudioResources;
-import helix.audio.AudioResources.AudioLoadResult;
 import helix.audio.AudioClip;
 import helix.audio.AudioStream;
 import helix.audio.AudioPlayback;
@@ -172,89 +171,72 @@ class ServiceTests {
 					case _: fail(result);
 				}
 			}),
-			() -> assets.streamSource("uncached.wav", result -> {
-				switch result {
-					case Located(Remote(url)): check(url == env.base + "/assets/uncached.wav", "Uncached stream resolves remotely without ensuring");
-					case _: fail(result);
+			() -> assets.streamSource("uncached.wav", location -> {
+				switch location {
+					case Remote(url): check(url == env.base + "/assets/uncached.wav", "Uncached stream resolves remotely without ensuring");
+					case _: fail(location);
 				}
 				next();
-			}),
-			() -> audio.loadStream("uncached.wav", result -> {
-				if (env.remoteStreams) {
-					switch result {
-						case Ready(value):
-							var playing = audio.play(value);
-							value.release();
-							check(playing.id > 0, "Browser remote stream starts without ensure");
-							wait(.6, () -> {
-								check(playing.finished && value.disposed, "Remote playback finishes");
-								assets.streamSource("uncached.wav", source -> {
-									switch source {
-										case Located(Remote(_)): check(true, "Remote playback did not persist audio");
-										case _: fail(source);
-									}
-									next();
-								});
-							});
-						case _: fail(result);
-					}
-				} else {
-					switch result {
-						case Failed(message): check(message.indexOf("ensure") >= 0, "Native remote stream capability is explicit");
-						case _: fail(result);
-					}
-					next();
-				}
-			}),
-			() -> assets.ensure("fixture.wav", result -> {
-				switch result {
-					case Loaded(bytes): check(bytes.getString(0, 4) == "RIFF", "Ensured encoded audio asset");
-					case _: fail(result);
-				}
+			}, message -> fail(message)),
+			() -> audio.loadStream("uncached.wav", value -> {
+				if (!env.remoteStreams)
+					fail("A remote stream opened natively");
+				var playing = audio.play(value);
+				value.release();
+				check(playing.id > 0, "Browser remote stream starts without ensure");
+				wait(.6, () -> {
+					check(playing.finished && value.disposed, "Remote playback finishes");
+					assets.streamSource("uncached.wav", source -> {
+						switch source {
+							case Remote(_): check(true, "Remote playback did not persist audio");
+							case _: fail(source);
+						}
+						next();
+					}, message -> fail(message));
+				});
+			}, message -> {
+				if (env.remoteStreams)
+					fail(message);
+				check(message.indexOf("ensure") >= 0, "Native remote stream capability is explicit");
 				next();
 			}),
-			() -> assets.ensure("fixture.wav", result -> {
-				switch result {
-					case Loaded(bytes): check(bytes.getString(0, 4) == "RIFF" && bytes.getInt32(4) == bytes.length - 8,
-							"Second ensure reads stored copy: "
-							+ bytes.length
-							+ "/"
-							+ bytes.getInt32(4));
-					case _: fail(result);
-				}
+			() -> assets.ensure("fixture.wav", bytes -> {
+				check(bytes.getString(0, 4) == "RIFF", "Ensured encoded audio asset");
 				next();
-			}),
+			}, message -> fail(message)),
+			() -> assets.ensure("fixture.wav", bytes -> {
+				check(bytes.getString(0, 4) == "RIFF" && bytes.getInt32(4) == bytes.length - 8,
+					"Second ensure reads stored copy: "
+					+ bytes.length
+					+ "/"
+					+ bytes.getInt32(4));
+				next();
+			},
+				message -> fail(message)),
 			// The host answers this one's ETag with 304 on the second visit (tools/services.py counts it): the copy kept.
-			() -> assets.ensure("revalidated.wav", result -> {
-				switch result {
-					case Loaded(bytes): check(bytes.getString(0, 4) == "RIFF", "A revalidated asset loads, kept or downloaded");
-					case _: fail(result);
-				}
+			() -> assets.ensure("revalidated.wav", bytes -> {
+				check(bytes.getString(0, 4) == "RIFF", "A revalidated asset loads, kept or downloaded");
 				next();
-			}),
-			() -> assets.streamSource("fixture.wav", result -> {
-				switch result {
-					case Located(Stored(value)):
+			}, message -> fail(message)),
+			() -> assets.streamSource("fixture.wav", location -> {
+				switch location {
+					case Stored(value):
 						check(value.location != env.base + "/assets/fixture.wav", "Stream prefers stored copy");
 						value.release();
-					case _: fail(result);
+					case _: fail(location);
 				}
 				next();
-			}),
-			() -> audio.loadClip("fixture.wav", result -> {
-				switch result {
-					case Ready(value):
-						clip = value;
-						playback = audio.play(clip, true, .5);
-						check(playback.id > 0, "Clip playback starts");
-						secondPlayback = audio.play(clip, true, .2);
-						check(secondPlayback.id > 0 && secondPlayback.id != playback.id, "Shared clip supports independent playbacks");
-						clip.release();
-						check(!clip.disposed, "Active playback retains released resource");
-						playback.pause();
-						playback.volume = .25;
-					case _: fail(result);
-				}
+			}, message -> fail(message)),
+			() -> audio.loadClip("fixture.wav", value -> {
+				clip = value;
+				playback = audio.play(clip, true, .5);
+				check(playback.id > 0, "Clip playback starts");
+				secondPlayback = audio.play(clip, true, .2);
+				check(secondPlayback.id > 0 && secondPlayback.id != playback.id, "Shared clip supports independent playbacks");
+				clip.release();
+				check(!clip.disposed, "Active playback retains released resource");
+				playback.pause();
+				playback.volume = .25;
 				wait(.1, () -> {
 					check(!playback.finished, "Paused playback remains alive");
 					playback.resume();
@@ -273,18 +255,14 @@ class ServiceTests {
 						next();
 					});
 				});
-			}),
-			() -> audio.loadStream("fixture.wav", result -> {
-				switch result {
-					case Ready(value):
-						stream = value;
-						playback = audio.play(stream, true, .4);
-						check(playback.id > 0, "Stored stream playback starts");
-						stream.release();
-						playback.pause();
-						check(!stream.disposed, "Paused stream retains source lease");
-					case _: fail(result);
-				}
+			}, message -> fail(message)),
+			() -> audio.loadStream("fixture.wav", value -> {
+				stream = value;
+				playback = audio.play(stream, true, .4);
+				check(playback.id > 0, "Stored stream playback starts");
+				stream.release();
+				playback.pause();
+				check(!stream.disposed, "Paused stream retains source lease");
 				wait(.1, () -> {
 					playback.resume();
 					wait(.1, () -> {
@@ -293,20 +271,16 @@ class ServiceTests {
 						next();
 					});
 				});
-			}),
-			() -> audio.loadStream("fixture.wav", result -> {
-				switch result {
-					case Ready(value):
-						stream = value;
-						playback = audio.play(stream);
-						stream.release();
-					case _: fail(result);
-				}
+			}, message -> fail(message)),
+			() -> audio.loadStream("fixture.wav", value -> {
+				stream = value;
+				playback = audio.play(stream);
+				stream.release();
 				wait(.6, () -> {
 					check(playback.finished && stream.disposed, "Natural stream finish releases resource");
 					next();
 				});
-			}),
+			}, message -> fail(message)),
 			() -> {
 				var callbacks = 0;
 				var request = fetcher.fetch({url: env.base + "/stall"}, result -> {
@@ -330,34 +304,25 @@ class ServiceTests {
 		for (format in ["ogg", "opus"]) {
 			var extension = format, path = "fixture." + format;
 			var codecSteps:Array<Void->Void> = [
-				() -> assets.ensure(path, result -> {
+				() -> assets.ensure(path, bytes -> decoding.decode(bytes, result -> {
 					switch result {
-						case Loaded(bytes): decoding.decode(bytes, result -> {
-								switch result {
-									case Decoded(samples):
-										helix.audio.Pcm.validate(samples);
-										check(samples.length > 4000 * 4 && samples.length < 7000 * 4, "Ogg duration/rate normalization: " + extension);
-										var peak = 0.;
-										for (i in 0...Std.int(samples.length / 4))
-											peak = Math.max(peak, Math.abs(samples.getFloat(i * 4)));
-										check(peak > .02, "Ogg decode contains signal: " + extension);
-										next();
-									case _: fail(result);
-								}
-							});
+						case Decoded(samples):
+							helix.audio.Pcm.validate(samples);
+							check(samples.length > 4000 * 4 && samples.length < 7000 * 4, "Ogg duration/rate normalization: " + extension);
+							var peak = 0.;
+							for (i in 0...Std.int(samples.length / 4))
+								peak = Math.max(peak, Math.abs(samples.getFloat(i * 4)));
+							check(peak > .02, "Ogg decode contains signal: " + extension);
+							next();
 						case _: fail(result);
 					}
-				}),
-				() -> audio.loadClip(path, result -> {
-					switch result {
-						case Ready(value):
-							clip = value;
-							playback = audio.play(clip, true, .4);
-							check(playback.id > 0, "Ogg clip plays: " + extension);
-							clip.release();
-							playback.pause();
-						case _: fail(result);
-					}
+				}), message -> fail(message)),
+				() -> audio.loadClip(path, value -> {
+					clip = value;
+					playback = audio.play(clip, true, .4);
+					check(playback.id > 0, "Ogg clip plays: " + extension);
+					clip.release();
+					playback.pause();
 					wait(.05, () -> {
 						check(!playback.finished && !clip.disposed, "Paused Ogg clip retains resource");
 						playback.resume();
@@ -367,17 +332,13 @@ class ServiceTests {
 							next();
 						});
 					});
-				}),
-				() -> audio.loadStream(path, result -> {
-					switch result {
-						case Ready(value):
-							stream = value;
-							playback = audio.play(stream, true, .3);
-							check(playback.id > 0, "Stored Ogg stream starts: " + extension);
-							stream.release();
-							playback.pause();
-						case _: fail(result);
-					}
+				}, message -> fail(message)),
+				() -> audio.loadStream(path, value -> {
+					stream = value;
+					playback = audio.play(stream, true, .3);
+					check(playback.id > 0, "Stored Ogg stream starts: " + extension);
+					stream.release();
+					playback.pause();
 					wait(.05, () -> {
 						check(!stream.disposed, "Paused Ogg source lease");
 						playback.resume();
@@ -388,56 +349,44 @@ class ServiceTests {
 							next();
 						});
 					});
-				}),
-				() -> audio.loadStream(path, result -> {
-					switch result {
-						case Ready(value):
-							stream = value;
-							playback = audio.play(stream);
-							stream.release();
-						case _: fail(result);
-					}
+				}, message -> fail(message)),
+				() -> audio.loadStream(path, value -> {
+					stream = value;
+					playback = audio.play(stream);
+					stream.release();
 					wait(.6, () -> {
 						check(playback.finished && stream.disposed, "Natural Ogg EOF releases resource: " + extension);
 						next();
 					});
-				}),
-				() -> audio.loadStream("uncached." + extension, result -> {
-					if (env.remoteStreams) {
-						switch result {
-							case Ready(value):
-								var playing = audio.play(value);
-								value.release();
-								check(playing.id > 0, "Remote Ogg starts: " + extension);
-								wait(.6, () -> {
-									check(playing.finished && value.disposed, "Remote Ogg EOF");
-									assets.streamSource("uncached." + extension, source -> {
-										switch source {
-											case Located(Remote(_)): check(true, "Remote Ogg did not persist");
-											case _: fail(source);
-										}
-										next();
-									});
-								});
-							case _: fail(result);
-						}
-					} else {
-						switch result {
-							case Failed(message): check(message.indexOf("ensure") >= 0, "Native remote Ogg capability explicit");
-							case _: fail(result);
-						}
-						next();
-					}
+				}, message -> fail(message)),
+				() -> audio.loadStream("uncached." + extension, value -> {
+					if (!env.remoteStreams)
+						fail("A remote Ogg stream opened natively");
+					var playing = audio.play(value);
+					value.release();
+					check(playing.id > 0, "Remote Ogg starts: " + extension);
+					wait(.6, () -> {
+						check(playing.finished && value.disposed, "Remote Ogg EOF");
+						assets.streamSource("uncached." + extension, source -> {
+							switch source {
+								case Remote(_): check(true, "Remote Ogg did not persist");
+								case _: fail(source);
+							}
+							next();
+						}, message -> fail(message));
+					});
+				}, message -> {
+					if (env.remoteStreams)
+						fail(message);
+					check(message.indexOf("ensure") >= 0, "Native remote Ogg capability explicit");
+					next();
 				})
 			];
 			for (step in codecSteps)
 				steps.insert(steps.length - 1, step);
 		}
-		steps.insert(steps.length - 1, () -> audio.loadClip("broken.ogg", result -> {
-			switch result {
-				case Failed(_): check(true, "Malformed Ogg fails explicitly");
-				case _: fail(result);
-			}
+		steps.insert(steps.length - 1, () -> audio.loadClip("broken.ogg", clip -> fail(clip), _ -> {
+			check(true, "Malformed Ogg fails explicitly");
 			next();
 		}));
 		steps.insert(steps.length - 1, () -> decoding.decode(Bytes.alloc(0), result -> {
@@ -447,25 +396,21 @@ class ServiceTests {
 			}
 			next();
 		}));
-		steps.insert(steps.length - 1, () -> assets.ensure("fixture.opus", result -> {
-			switch result {
-				case Loaded(bytes):
-					var callbacks = 0, request = decoding.decode(bytes, result -> {
-						callbacks++;
-						switch result {
-							case Cancelled: check(true, "Encoded decode cancellation");
-							case _: fail(result);
-						}
-					});
-					decoding.poll();
-					request.cancel();
-					wait(.15, () -> {
-						check(callbacks == 1, "Late codec completion suppressed");
-						next();
-					});
-				case _: fail(result);
-			}
-		}));
+		steps.insert(steps.length - 1, () -> assets.ensure("fixture.opus", bytes -> {
+			var callbacks = 0, request = decoding.decode(bytes, result -> {
+				callbacks++;
+				switch result {
+					case Cancelled: check(true, "Encoded decode cancellation");
+					case _: fail(result);
+				}
+			});
+			decoding.poll();
+			request.cancel();
+			wait(.15, () -> {
+				check(callbacks == 1, "Late codec completion suppressed");
+				next();
+			});
+		}, message -> fail(message)));
 		next();
 		env.start(() -> {
 			assets.poll();

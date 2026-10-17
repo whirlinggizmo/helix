@@ -54,16 +54,6 @@ Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes re
 - `receivedBytes:Int`
 - `phase:String`
 
-## AssetResult
-
-*enum* in `src/helix/assets/IAssets.hx`
-
-How an asset load ended: its bytes, a failure message, or cancellation.
-
-- `Loaded(bytes:haxe.io.Bytes)`
-- `Failed(message:String)`
-- `Cancelled`
-
 ## AssetService
 
 *class* in `src/helix/assets/AssetService.hx`
@@ -72,8 +62,8 @@ Asset identity/cache policy stays shared. No target conditionals.
 
 ```haxe
 function new(fetcher:FetchService, cache:StorageService, packaged:StorageService, base:Null<String>)
-function load(path:String, complete:AssetResult -> Void):Void
-function ensure(path:String, complete:AssetResult -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
+function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
+function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
 var manifest(get, never):Null<String>
 function setManifest(path:Null<String>):Bool
 var host(get, never):Null<String>
@@ -81,7 +71,7 @@ function setHost(host:Null<String>):Bool
 function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool -> Void):IRequest
 var cacheMode(get, set):AssetCacheMode
 function clearCache(complete:StorageWriteResult -> Void):IRequest
-function streamSource(path:String, complete:AssetSourceResult -> Void):IRequest
+function streamSource(path:String, located:AudioLocation -> Void, ?failed:String -> Void):IRequest
 function subscribe(path:String, target:IReloadable):Void
 function unsubscribe(path:String, target:IReloadable):Void
 function changed(path:String):Void
@@ -93,17 +83,7 @@ function shutdown():Void
 - `new`: Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three.
 - `changed`: A file changed: load it again past every cache, keep the new copy, and tell the path's subscribers. A failure keeps what they have.
 - `poll`: Polls the fetcher, cache and packaged store, then runs queued work and completions within the work budget. Call once per frame on the host thread.
-- `shutdown`: Cancels every pending request (each completes Cancelled), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail.
-
-## AssetSourceResult
-
-*enum* in `src/helix/assets/IAssets.hx`
-
-How locating a streamed asset ended: its location, a failure message, or cancellation.
-
-- `Located(value:AudioLocation)`
-- `Failed(message:String)`
-- `Cancelled`
+- `shutdown`: Cancels every pending request (each telling no one), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail.
 
 ## Assets
 
@@ -113,8 +93,8 @@ Assets: the packaged files or downloads, cached. The program's one, a static cla
 
 ```haxe
 static var instance(default, null):IAssets
-static function load(path:String, complete:AssetResult -> Void):Void
-static function ensure(path:String, complete:AssetResult -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
+static function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
+static function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
 static var host(get, never):Null<String>
 static function setHost(host:Null<String>):Bool
 static function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool -> Void):IRequest
@@ -122,15 +102,15 @@ static var manifest(get, never):Null<String>
 static function setManifest(path:Null<String>):Bool
 static var cacheMode(get, set):AssetCacheMode
 static function clearCache(complete:StorageWriteResult -> Void):IRequest
-static function streamSource(path:String, complete:AssetSourceResult -> Void):IRequest
+static function streamSource(path:String, located:AudioLocation -> Void, ?failed:String -> Void):IRequest
 static function subscribe(path:String, target:IReloadable):Void
 static function unsubscribe(path:String, target:IReloadable):Void
 static var busy(get, never):Bool
 ```
 
 - `instance`: The assets forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `load`: Loads path's bytes as ensure does, without progress or a way to cancel.
-- `ensure`: Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx) uses it. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles.
+- `load`: Loads path's bytes as ensure does, without progress or options.
+- `ensure`: Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx) uses it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles.
 - `host`: What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host).
 - `setHost`: Downloads from host from now on (a "/" is added if it has none), or reads the packaged files with null. The cache keeps each host's files apart. False for an empty host.
 - `pingHost`: Whether host answers: it serves probePath (an asset it should have) within timeoutSeconds. complete runs once, on the host thread.
@@ -138,7 +118,7 @@ static var busy(get, never):Bool
 - `setManifest`: Uses the manifest tree under the host from path (tools/gen_manifest.py writes one): the root asked about once a run (its cached copy used offline), a directory's manifest loaded only when an asset under it is, and again only when its hash changes; a file it lists is used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are treated as the cache mode says (cacheMode); a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path.
 - `cacheMode`: How downloaded copies no manifest lists are treated (AssetCacheMode); Revalidate by default.
 - `clearCache`: Forgets every downloaded file, so the next load downloads it again, and what was read of the manifests, so the root is asked about again. complete runs once, on the host thread.
-- `streamSource`: Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host), else the remote URL (a base URL is set) or a leased packaged copy. complete runs exactly once on the host thread; the caller releases a Located(Stored) lease, and one that arrives after cancellation is released for it. Failed for an invalid path, a closed service, a missing packaged asset, or a storage error.
+- `streamSource`: Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host), else the remote URL (a base URL is set) or a leased packaged copy. One of located or failed runs once on the host thread, and neither once the request is cancelled; the caller releases a Stored lease, and one that arrives after cancellation is released for it. failed (else the log, with the path) for an invalid path, a closed service, a missing packaged asset, or a storage error.
 - `subscribe`: Tell target when path's file changes and has loaded again (development hot reload). One target per path once.
 - `unsubscribe`: Stops telling target about path's changes; does nothing if it was not subscribed.
 - `busy`: Whether a load is under way or its completion not yet run (Host.busy asks it, with the decoders).
@@ -199,6 +179,18 @@ Where an exported file went: a path natively, the downloaded file's name in a br
 
 - `Exported(where:String)`
 - `Failed(message:String)`
+
+## Failure
+
+*class* in `src/helix/assets/Failure.hx`
+
+Where a load's failure goes: to the caller's failed lambda, or, when it gave none, to the log with the path, so nothing fails silently. Every load taking (loaded, ?failed) reports through it.
+
+```haxe
+static function report(path:String, message:String, failed:Null<String -> Void>):Void
+```
+
+- `report`: Calls failed with message, or, when failed is null, traces "Load failed: path: message" (the path once when message begins with it).
 
 ## Fetch
 
@@ -280,8 +272,8 @@ function shutdown():Void
 The asset service games load through (AssetService): assets by relative path through the cache, streamed audio locations, and hot reload subscriptions. Completions run on the host thread.
 
 ```haxe
-function load(path:String, complete:AssetResult -> Void):Void
-function ensure(path:String, complete:AssetResult -> Void, ?progress:AssetProgress -> Void, ?options:Null<EnsureOptions>):IRequest
+function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
+function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:Null<EnsureOptions>):IRequest
 var host(get, never):Null<String>
 function setHost(host:Null<String>):Bool
 function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool -> Void):IRequest
@@ -289,14 +281,14 @@ var manifest(get, never):Null<String>
 function setManifest(path:Null<String>):Bool
 var cacheMode(get, set):AssetCacheMode
 function clearCache(complete:StorageWriteResult -> Void):IRequest
-function streamSource(path:String, complete:AssetSourceResult -> Void):IRequest
+function streamSource(path:String, located:AudioLocation -> Void, ?failed:String -> Void):IRequest
 function subscribe(path:String, target:IReloadable):Void
 function unsubscribe(path:String, target:IReloadable):Void
 var busy(get, never):Bool
 ```
 
-- `load`: Loads path's bytes as ensure does, without progress or a way to cancel.
-- `ensure`: Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx) uses it. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles.
+- `load`: Loads path's bytes as ensure does, without progress or options.
+- `ensure`: Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx) uses it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles.
 - `host`: What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host).
 - `setHost`: Downloads from host from now on (a "/" is added if it has none), or reads the packaged files with null. The cache keeps each host's files apart. False for an empty host.
 - `pingHost`: Whether host answers: it serves probePath (an asset it should have) within timeoutSeconds. complete runs once, on the host thread.
@@ -304,7 +296,7 @@ var busy(get, never):Bool
 - `setManifest`: Uses the manifest tree under the host from path (tools/gen_manifest.py writes one): the root asked about once a run (its cached copy used offline), a directory's manifest loaded only when an asset under it is, and again only when its hash changes; a file it lists is used from the cache with no request while the copy has its hash. A host without one, and a file none lists, are treated as the cache mode says (cacheMode); a file its directory's manifest leaves out is asked about however fresh, as it has changed or gone. Null for none. False for a path that isn't a valid asset path.
 - `cacheMode`: How downloaded copies no manifest lists are treated (AssetCacheMode); Revalidate by default.
 - `clearCache`: Forgets every downloaded file, so the next load downloads it again, and what was read of the manifests, so the root is asked about again. complete runs once, on the host thread.
-- `streamSource`: Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host), else the remote URL (a base URL is set) or a leased packaged copy. complete runs exactly once on the host thread; the caller releases a Located(Stored) lease, and one that arrives after cancellation is released for it. Failed for an invalid path, a closed service, a missing packaged asset, or a storage error.
+- `streamSource`: Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host), else the remote URL (a base URL is set) or a leased packaged copy. One of located or failed runs once on the host thread, and neither once the request is cancelled; the caller releases a Stored lease, and one that arrives after cancellation is released for it. failed (else the log, with the path) for an invalid path, a closed service, a missing packaged asset, or a storage error.
 - `subscribe`: Tell target when path's file changes and has loaded again (development hot reload). One target per path once.
 - `unsubscribe`: Stops telling target about path's changes; does nothing if it was not subscribed.
 - `busy`: Whether a load is under way or its completion not yet run (Host.busy asks it, with the decoders).
@@ -359,7 +351,7 @@ Host-thread cancellation. Completion is asynchronous and exactly once.
 function cancel():Void
 ```
 
-- `cancel`: Cancels the operation if it has not settled, so its completion reports Cancelled; does nothing once settled.
+- `cancel`: Cancels the operation if it has not settled: a load's lambdas aren't called (an operation with a result enum reports Cancelled); does nothing once settled.
 
 ## IStore
 

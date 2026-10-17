@@ -96,11 +96,7 @@ class Outfit {
 			return;
 		var file = models.find(choice.path);
 		if (file == null) {
-			models.load(choice.path, result -> if (chosen[slot] == choice) switch result {
-				case Ready(_): apply(slot);
-				case Failed(message): fail(slot, message);
-				case Cancelled:
-			});
+			models.load(choice.path, _ -> if (chosen[slot] == choice) apply(slot), message -> if (chosen[slot] == choice) fail(slot, message));
 			return;
 		}
 		takeOff(slot);

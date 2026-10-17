@@ -1,18 +1,12 @@
 package helix.audio;
 
+import helix.assets.Failure;
 import helix.assets.IRequest;
 import helix.assets.Request;
 import helix.core.WorkQueue;
 import helix.assets.IAssets;
 import helix.audio.IAudio;
 import helix.assets.IReloadable;
-
-/** How an audio load ended: the resource, which the caller owns and releases, a failure message, or cancellation. */
-enum AudioLoadResult<T> {
-	Ready(resource:T);
-	Failed(message:String);
-	Cancelled;
-}
 
 /** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or
 	packaged copy (or a remote URL where the platform plays one), their lifetimes counted, and playbacks, which wait while audio hasn't
@@ -38,72 +32,72 @@ class AudioResources implements IReloadable {
 		this.decoding = decoding;
 	}
 
-	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes. complete runs exactly once on the host thread with a clip the caller owns and releases; Failed for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released. */
-	public function loadClip(path:String, complete:AudioLoadResult<AudioClip>->Void):IRequest {
+	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host
+		thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path)
+		for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released. */
+	public function loadClip(path:String, loaded:AudioClip->Void, ?failed:String->Void):IRequest {
 		var child:IRequest = null, request:Request = null;
-		function finish(result:AudioLoadResult<AudioClip>) {
+		// Ends the request with a clip, or a failure for null; a clip that arrives too late is released.
+		function finish(clip:Null<AudioClip>, ?message:String) {
 			if (request.finish()) {
 				requests.remove(request);
-				queue.add(() -> complete(result));
-			} else
-				switch result {
-					case Ready(resource):
-						resource.release();
-					case _:
-				}
+				queue.add(() -> if (clip != null) loaded(clip) else Failure.report(path, message, failed));
+			} else if (clip != null)
+				clip.release();
 		}
+		// A cancellation from below (a service shutting down) ends the request telling no one.
+		function stop()
+			if (request.finish())
+				requests.remove(request);
 		request = new Request(() -> {
 			if (child != null)
 				child.cancel();
 			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
 		});
 		requests.push(request);
 		if (!live) {
-			queue.add(() -> finish(Failed("Closed audio resource service")));
+			queue.add(() -> finish(null, "Closed audio resource service"));
 			return request;
 		}
-		child = assets.ensure(path, result -> {
+		var loading = assets.ensure(path, bytes -> {
 			if (request.settled)
 				return;
-			switch result {
-				case Loaded(bytes): child = decoding.decode(bytes, result -> {
-						if (request.settled)
-							return;
-						switch result {
-							case Decoded(samples): try {
-									var resource = new AudioClip(backend.createClip(samples), backend, path);
-									resources.push(resource);
-									assets.subscribe(path, this);
-									finish(Ready(resource));
-								} catch (error:Dynamic)
-									finish(Failed(Std.string(error)));
-							case Failed(message): finish(Failed(message));
-							case Cancelled: finish(Cancelled);
-						}
-					});
-				case Failed(message): finish(Failed(message));
-				case Cancelled: finish(Cancelled);
-			}
-		});
+			child = decoding.decode(bytes, result -> {
+				if (request.settled)
+					return;
+				switch result {
+					case Decoded(samples): try {
+							var resource = new AudioClip(backend.createClip(samples), backend, path);
+							resources.push(resource);
+							assets.subscribe(path, this);
+							finish(resource);
+						} catch (error:Dynamic)
+							finish(null, Std.string(error));
+					case Failed(message): finish(null, message);
+					case Cancelled: stop();
+				}
+			});
+		}, message -> if (!request.settled) finish(null, message));
+		if (child == null)
+			child = loading;
 		return request;
 	}
 
-	/** Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. complete runs exactly once on the host thread with a stream the caller owns and releases (its stored copy's lease ends with it); Failed for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively. */
-	public function loadStream(path:String, complete:AudioLoadResult<AudioStream>->Void):IRequest {
+	/** Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or
+		failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its
+		stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend
+		cannot open, such as a remote URL natively. */
+	public function loadStream(path:String, loaded:AudioStream->Void, ?failed:String->Void):IRequest {
 		var child:IRequest = null,
 			request:Request = null,
 			abort:Null<Void->Void> = null;
-		function finish(result:AudioLoadResult<AudioStream>) {
+		// Ends the request with a stream, or a failure for null; a stream that arrives too late is released.
+		function finish(stream:Null<AudioStream>, ?message:String) {
 			if (request.finish()) {
 				requests.remove(request);
-				queue.add(() -> complete(result));
-			} else
-				switch result {
-					case Ready(resource):
-						resource.release();
-					case _:
-				}
+				queue.add(() -> if (stream != null) loaded(stream) else Failure.report(path, message, failed));
+			} else if (stream != null)
+				stream.release();
 		}
 		request = new Request(() -> {
 			if (child != null)
@@ -111,44 +105,38 @@ class AudioResources implements IReloadable {
 			if (abort != null)
 				abort();
 			requests.remove(request);
-			queue.add(() -> complete(Cancelled));
 		});
 		requests.push(request);
 		if (!live) {
-			queue.add(() -> finish(Failed("Closed audio resource service")));
+			queue.add(() -> finish(null, "Closed audio resource service"));
 			return request;
 		}
-		child = assets.streamSource(path, result -> {
+		child = assets.streamSource(path, source -> {
 			if (request.settled) {
-				switch result {
-					case Located(Stored(value)): value.release();
+				switch source {
+					case Stored(value): value.release();
 					case _:
 				}
 				return;
 			}
-			switch result {
-				case Located(source):
-					var release = switch source {
-						case Stored(value): value.release;
-						case Remote(_): () -> {};
-					}
-					child = null;
-					abort = backend.openStream(source, result -> {
-						abort = null;
-						switch result {
-							case Opened(id):
-								var resource = new AudioStream(id, backend, release);
-								resources.push(resource);
-								finish(Ready(resource));
-							case Failed(message):
-								release();
-								finish(Failed(message));
-						}
-					});
-				case Failed(message): finish(Failed(message));
-				case Cancelled: finish(Cancelled);
+			var release = switch source {
+				case Stored(value): value.release;
+				case Remote(_): () -> {};
 			}
-		});
+			child = null;
+			abort = backend.openStream(source, result -> {
+				abort = null;
+				switch result {
+					case Opened(id):
+						var resource = new AudioStream(id, backend, release);
+						resources.push(resource);
+						finish(resource);
+					case Failed(message):
+						release();
+						finish(null, message);
+				}
+			});
+		}, message -> if (!request.settled) finish(null, message));
 		return request;
 	}
 
@@ -204,7 +192,7 @@ class AudioResources implements IReloadable {
 		queue.poll();
 	}
 
-	/** Cancels pending loads (each completes Cancelled), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays. */
+	/** Cancels pending loads (telling none of their callers), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays. */
 	public function shutdown():Void {
 		live = false;
 		for (request in requests.copy())

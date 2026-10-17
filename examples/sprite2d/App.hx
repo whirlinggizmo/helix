@@ -60,22 +60,15 @@ class App extends BaseApp {
 		sprites[2].setPivot(0, 0);
 		sprites[2].setSize(96, 96);
 		sprites[4].setSize(96, 96);
-		Textures.load(LOGO, true, result -> switch result {
-			case Ready(texture):
-				logo = texture;
-				for (i in 0...4)
-					sprites[i].texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
-		Textures.load(WHITE_LOGO, true, result -> switch result {
-			case Ready(texture):
-				sprites[4].texture = texture;
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Textures.load(LOGO, true, texture -> useLogo(texture));
+		Textures.load(WHITE_LOGO, true, texture -> sprites[4].texture = texture);
+	}
+
+	// The logo's sheet in: the first four sprites draw it.
+	function useLogo(texture:Texture2D):Void {
+		logo = texture;
+		for (i in 0...4)
+			sprites[i].texture = texture;
 	}
 
 	// Whether world point x, y is on sprite i, as the last draw placed it: in its gear's disc, or the sheet's quarter in its rectangle.

@@ -66,24 +66,22 @@ class App extends BaseApp {
 		waiting = true;
 		state = 'fetching $TEXTURE...';
 		var downloaded = false;
-		Assets.ensure(TEXTURE, result -> switch result {
-			case Loaded(_):
-				// Now cached: the texture reads it from there.
-				Textures.load(TEXTURE, true, loaded -> switch loaded {
-					case Ready(texture):
-						logo = texture;
-						waiting = false;
-						state = Assets.host == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
-					case Failed(message):
-						waiting = false;
-						state = message;
-					case Cancelled:
-				});
-			case Failed(message):
-				waiting = false;
-				state = message;
-			case Cancelled:
-		}, progress -> if (progress.phase == "downloading") downloaded = true);
+		// Now cached: the texture reads it from there.
+		Assets.ensure(TEXTURE, _ -> Textures.load(TEXTURE, true, texture -> show(texture, downloaded), message -> fail(message)), message -> fail(message),
+			progress -> if (progress.phase == "downloading") downloaded = true);
+	}
+
+	// The logo in, from where it came.
+	function show(texture:Texture2D, downloaded:Bool):Void {
+		logo = texture;
+		waiting = false;
+		state = Assets.host == null ? 'read $TEXTURE from the packaged files' : downloaded ? 'downloaded $TEXTURE into the cache' : 'loaded $TEXTURE from the cache';
+	}
+
+	// The fetch failed: said on the screen.
+	function fail(message:String):Void {
+		waiting = false;
+		state = message;
 	}
 
 	function clearCache():Void

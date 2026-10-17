@@ -15,7 +15,8 @@ import helix.time.Time;
 class SceneTests {
 	static var checks = 0;
 	public static var log:Array<String> = [];
-	public static var held:Map<String, helix.assets.IAssets.AssetResult->Void> = [];
+	// The loads the test's assets hold, by path: what each does when it loads and when it fails.
+	public static var held:Map<String, {loaded:haxe.io.Bytes->Void, failed:String->Void}> = [];
 
 	static function check(value:Bool, message:String):Void {
 		if (!value)
@@ -68,9 +69,9 @@ class SceneTests {
 		check(took() == "loading.enter,loading.update" && scenes.top == level, "Its loading scene is shown meanwhile, entered once");
 		scenes.update(1 / 60);
 		check(took() == "loading.update", "and updated each frame");
-		held["a.txt"](Loaded(haxe.io.Bytes.alloc(1)));
+		held["a.txt"].loaded(haxe.io.Bytes.alloc(1));
 		check(level.loader.progress == .5 && !level.loader.done, "Half the loads in");
-		held["b.txt"](Failed("gone"));
+		held["b.txt"].failed("gone");
 		check(level.loader.done && level.loader.failures.join(",") == "b.txt: gone", "All ended, a failure named");
 		scenes.update(1 / 60);
 		check(took() == "loading.exit,level.update", "Done: the loading scene exits, the scene runs");
@@ -132,8 +133,8 @@ class SceneTests {
 		var held2 = new Loading2("held");
 		scenes.push(held2);
 		scenes.update(1 / 60);
-		held["a.txt"](Loaded(haxe.io.Bytes.alloc(1)));
-		held["b.txt"](Loaded(haxe.io.Bytes.alloc(1)));
+		held["a.txt"].loaded(haxe.io.Bytes.alloc(1));
+		held["b.txt"].loaded(haxe.io.Bytes.alloc(1));
 		scenes.update(1 / 60);
 		check(took() == "held.enter,loading.enter,loading.update,loading.update" && scenes.loading, "Loaded, the loading scene holds on");
 		Holder.go = true;
@@ -251,12 +252,12 @@ private class Quiet extends LoadingScene {
 private class Held implements IAssets {
 	public function new() {}
 
-	public function load(path:String, complete:helix.assets.IAssets.AssetResult->Void):Void
-		@:privateAccess SceneTests.held[path] = complete;
+	public function load(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):helix.assets.IRequest
+		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, complete:helix.assets.IAssets.AssetResult->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
+	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
 			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest {
-		load(path, complete);
+		@:privateAccess SceneTests.held[path] = {loaded: loaded, failed: message -> helix.assets.Failure.report(path, message, failed)};
 		return new helix.assets.Request(() -> {});
 	}
 
@@ -291,7 +292,7 @@ private class Held implements IAssets {
 		return mode;
 	}
 
-	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
+	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}

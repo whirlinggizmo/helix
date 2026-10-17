@@ -4,13 +4,6 @@ import haxe.io.Bytes;
 import helix.assets.StorageService.Lease;
 import helix.assets.StorageService.StorageWriteResult;
 
-/** How an asset load ended: its bytes, a failure message, or cancellation. */
-enum AssetResult {
-	Loaded(bytes:Bytes);
-	Failed(message:String);
-	Cancelled;
-}
-
 /** Where a streamed audio asset is read from: a leased local copy, which its holder releases, or a remote URL. */
 enum AudioLocation {
 	Stored(value:Lease);
@@ -33,13 +26,6 @@ enum AssetCacheMode {
 	Off;
 }
 
-/** How locating a streamed asset ended: its location, a failure message, or cancellation. */
-enum AssetSourceResult {
-	Located(value:AudioLocation);
-	Failed(message:String);
-	Cancelled;
-}
-
 /** Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown. */
 typedef AssetProgress = {final phase:String; final receivedBytes:Int; final totalBytes:Null<Int>;}
 
@@ -54,17 +40,17 @@ typedef EnsureOptions = {
 
 /** The asset service games load through (AssetService): assets by relative path through the cache, streamed audio locations, and hot reload subscriptions. Completions run on the host thread. */
 interface IAssets {
-	/** Loads path's bytes as ensure does, without progress or a way to cancel. */
-	function load(path:String, complete:AssetResult->Void):Void;
+	/** Loads path's bytes as ensure does, without progress or options. */
+	function load(path:String, loaded:Bytes->Void, ?failed:String->Void):IRequest;
 
 	/** Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A
 		cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else
 		the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then
 		after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx)
-		uses it. complete runs exactly once on the host thread; Failed for an invalid path, a closed service, a missing asset, an HTTP status
-		outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given,
-		reports each phase until the request settles. */
-	function ensure(path:String, complete:AssetResult->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
+		uses it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with
+		the path) for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that
+		doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles. */
+	function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
 
 	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null
 		when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host). */
@@ -94,8 +80,8 @@ interface IAssets {
 	function clearCache(complete:StorageWriteResult->Void):IRequest;
 
 	/** Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host),
-		else the remote URL (a base URL is set) or a leased packaged copy. complete runs exactly once on the host thread; the caller releases a Located(Stored) lease, and one that arrives after cancellation is released for it. Failed for an invalid path, a closed service, a missing packaged asset, or a storage error. */
-	function streamSource(path:String, complete:AssetSourceResult->Void):IRequest;
+		else the remote URL (a base URL is set) or a leased packaged copy. One of located or failed runs once on the host thread, and neither once the request is cancelled; the caller releases a Stored lease, and one that arrives after cancellation is released for it. failed (else the log, with the path) for an invalid path, a closed service, a missing packaged asset, or a storage error. */
+	function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void):IRequest;
 
 	/** Tell target when path's file changes and has loaded again (development hot reload). One target per path once. */
 	function subscribe(path:String, target:IReloadable):Void;

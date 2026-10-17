@@ -13,6 +13,7 @@ import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
+import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
@@ -98,20 +99,18 @@ class App extends BaseApp {
 			stage.add(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
-		Models.load("models/car-kit/sedan-sports.glb", result -> switch result {
-			case Ready(file):
-				for (i in 0...CARS) {
-					var car = file.instantiate('car $i');
-					car.setPosition(i * 2.4 - 6, -.6, -2);
-					car.setScale(1.5, 1.5, 1.5);
-					cars.push(car);
-					stage.add(car);
-				}
-			case Failed(message):
-				trace(message);
-			case Cancelled:
-		});
+		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 	}
+
+	// The car's file in: six copies of it in a row.
+	function place(file:ModelFile):Void
+		for (i in 0...CARS) {
+			var car = file.instantiate('car $i');
+			car.setPosition(i * 2.4 - 6, -.6, -2);
+			car.setScale(1.5, 1.5, 1.5);
+			cars.push(car);
+			stage.add(car);
+		}
 
 	override public function frame(dt:Float):Void {
 		var input = Input.instance;
