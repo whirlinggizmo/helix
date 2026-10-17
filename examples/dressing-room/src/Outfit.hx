@@ -1,22 +1,23 @@
-package helix.render3d;
+import helix.render3d.ModelFile;
+import helix.render3d.Models;
+import helix.render3d.Node;
 
-/** What a character wears, by slot ("head", "body", "hand" ... the game names them): a part file for each, from a Wardrobe shared by every
-	character. A part's skinned models are bound to the character's skeleton by joint name (Node.bindSkeleton), so gear from files of its own
-	follows the character's animation; its rigid models (a sword, a gun, a hat) hang from the character's joint named as the one the file
-	hangs them from, keeping their offset from it, or from a joint the choice names (a socket). A part's file may carry a whole copy of the
-	skeleton (an exporter's armature): only its models are taken. Choices may come
-	before the skeleton does, and in any order while files load: each slot wears its latest choice once both its file and the skeleton are in,
-	and a choice overtaken while its file loads is dropped. */
+/** What a character wears, by slot ("head", "body", "hand" ... the game names them): a part file for each, from the Models every character
+	shares. The dressing room's own, game code over the framework's pieces, as a Babylon playground's Actor is over its engine: Models (a file loaded once), Node.collectModels and bindSkeleton (a part's skinned models follow the character's joints by name),
+	and Node.findAttachment (its rigid models, a sword, a gun, a hat, hang from the character's joint named as the one their file hangs them from,
+	keeping their offset, or from a joint the choice names, a socket). The policy is this class's: choices may come before the skeleton, and in
+	any order while files load; each slot wears its latest choice once both its file and the skeleton are in, a choice overtaken while its file
+	loads is dropped, and a part that can't be worn leaves its slot empty, saying why. */
 class Outfit {
-	var wardrobe:Wardrobe;
+	var models:Models;
 	var skeleton:Null<Node>;
 	var chosen:Map<String, Choice> = [];
 	var worn:Map<String, Worn> = [];
 	var errors:Map<String, String> = [];
 
-	/** An outfit drawing its parts from wardrobe, for a skeleton given later (setSkeleton). */
-	public function new(wardrobe:Wardrobe)
-		this.wardrobe = wardrobe;
+	/** An outfit drawing its parts from models, for a skeleton given later (setSkeleton). */
+	public function new(models:Models)
+		this.models = models;
 
 	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given. */
 	public function getSkeleton():Null<Node>
@@ -34,8 +35,9 @@ class Outfit {
 	}
 
 	/** Chooses path's part for slot (null leaves the slot empty): worn on the skeleton by joint name, its rigid models at their joints, or, with
-		joint, at that one (a socket). It's worn once its file has loaded (at once when it has, and the skeleton is given); a later choice for the slot overtakes it.
-		A part that can't be worn (its file fails, its skeleton lacks a joint it names) leaves the slot empty, with getError saying why. */
+		joint, at that one (a socket). It's worn once its file has loaded (at once when it has, and the skeleton is given); a later choice for the
+		slot overtakes it. A part that can't be worn (its file fails, its skeleton lacks a joint it names) leaves the slot empty, with getError
+		saying why. */
 	public function choose(slot:String, path:Null<String>, ?joint:String):Void {
 		errors.remove(slot);
 		if (path == null) {
@@ -43,8 +45,7 @@ class Outfit {
 			takeOff(slot);
 			return;
 		}
-		var choice = new Choice(path, joint);
-		chosen[slot] = choice;
+		chosen[slot] = new Choice(path, joint);
 		apply(slot);
 	}
 
@@ -82,7 +83,7 @@ class Outfit {
 		return false;
 	}
 
-	// Wears slot's choice when its file and the skeleton are in; asks the wardrobe for the file otherwise.
+	// Wears slot's choice when its file and the skeleton are in; asks the models for the file otherwise.
 	function apply(slot:String):Void {
 		var choice = chosen[slot];
 		if (choice == null || skeleton == null)
@@ -90,9 +91,9 @@ class Outfit {
 		var w = worn[slot];
 		if (w != null && w.path == choice.path && w.joint == choice.joint)
 			return;
-		var file = wardrobe.find(choice.path);
+		var file = models.find(choice.path);
 		if (file == null) {
-			wardrobe.get(choice.path, result -> if (chosen[slot] == choice) switch result {
+			models.load(choice.path, result -> if (chosen[slot] == choice) switch result {
 				case Ready(_): apply(slot);
 				case Failed(message): fail(slot, message);
 				case Cancelled:
@@ -100,39 +101,38 @@ class Outfit {
 			return;
 		}
 		takeOff(slot);
-		var copy = file.instantiate(slot), models = [], rigid = [];
-		collect(copy, models, rigid);
-		if (models.length == 0 && rigid.length == 0) {
+		var copy = file.instantiate(slot), skinned = [], rigid = [];
+		copy.collectModels(skinned, rigid);
+		if (skinned.length == 0 && rigid.length == 0) {
 			fail(slot, '${choice.path}: no model to wear');
 			return;
 		}
-		for (model in models)
+		for (model in skinned)
 			if (!model.bindSkeleton(skeleton)) {
 				fail(slot, '${choice.path}: ${model.getName()} names a joint the skeleton hasn\'t');
 				return;
 			}
-		// The rigid models in pieces: each the node just under the nearest of its ancestors the skeleton has a joint of that name for (an
-		// importer may split one mesh into several models under it), hung from that joint, or from the socket chosen.
-		var pieces:Array<Node> = [], sockets = [];
+		var socket = choice.joint == null ? null : joint(choice.joint);
+		if (choice.joint != null && socket == null) {
+			fail(slot, '${choice.path}: the skeleton has no joint ${choice.joint}');
+			return;
+		}
+		// The rigid models in pieces, each hung from the socket chosen, or else from the joint its file hangs it from.
+		var pieces:Array<Node> = [], joints:Array<Node> = [];
 		for (model in rigid) {
-			var piece = model, above = model.getParent();
-			while (above != null && above != copy && joint(above.getName()) == null) {
-				piece = above;
-				above = above.getParent();
-			}
-			if (pieces.indexOf(piece) >= 0)
+			var at = copy.findAttachment(model, skeleton);
+			if (at == null || pieces.indexOf(at.piece) >= 0)
 				continue;
-			var name = choice.joint != null ? choice.joint : above != null && above != copy ? above.getName() : null;
-			var socket = name == null ? null : joint(name);
-			if (socket == null) {
-				fail(slot, '${choice.path}: the skeleton has no joint ${name == null ? "to hang " + piece.getName() + " from" : name}');
+			var target = socket != null ? socket : at.joint;
+			if (target == null) {
+				fail(slot, '${choice.path}: the skeleton has no joint to hang ${at.piece.getName()} from');
 				return;
 			}
-			pieces.push(piece);
-			sockets.push(socket);
+			pieces.push(at.piece);
+			joints.push(target);
 		}
 		var nodes = [];
-		for (model in models) {
+		for (model in skinned) {
 			model.getParent().remove(model);
 			skeleton.add(model);
 			nodes.push(model);
@@ -140,7 +140,7 @@ class Outfit {
 		for (i in 0...pieces.length) {
 			if (pieces[i].getParent() != null)
 				pieces[i].getParent().remove(pieces[i]);
-			sockets[i].add(pieces[i]);
+			joints[i].add(pieces[i]);
 			nodes.push(pieces[i]);
 		}
 		worn[slot] = new Worn(choice.path, choice.joint, nodes);
@@ -163,20 +163,6 @@ class Outfit {
 			if (node.getParent() != null)
 				node.getParent().remove(node);
 		worn.remove(slot);
-	}
-
-	// The models under node: skinned ones into models, rigid ones into rigid (a rigid one's own children go with it).
-	static function collect(node:Node, models:Array<Node>, rigid:Array<Node>):Void {
-		if (node.getKind() == Model && node.getMesh() != null) {
-			if (node.getMesh().isSkinned())
-				models.push(node);
-			else {
-				rigid.push(node);
-				return;
-			}
-		}
-		for (i in 0...node.getChildCount())
-			collect(node.getChild(i), models, rigid);
 	}
 }
 

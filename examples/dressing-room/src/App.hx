@@ -16,9 +16,7 @@ import helix.render3d.Mesh;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node;
-import helix.render3d.Outfit;
 import helix.render3d.Stage3D;
-import helix.render3d.Wardrobe;
 import helix.scene.Pointer;
 import helix.ui.Box;
 import helix.ui.Button;
@@ -30,7 +28,8 @@ import helix.ui.Ui;
 /** A character creator's dressing room: a character on a turntable in a studio's light, dressed slot by slot (head, body, legs, feet, and
 	what she holds) from Quaternius's Ultimate Modular Women, ten outfits whose parts mix freely. Each slot's parts are tiles, their pictures
 	rendered from the parts themselves (render targets) as their files load; a slot's files load only when its tab is opened, through a
-	Wardrobe every character shares (here the one on the stage and the one the pictures are taken of), and an Outfit wears each choice on
+	Models every character shares (here the one on the stage and the one the pictures are taken of), and an Outfit (this example's, over the
+	framework's binding and attachment queries) wears each choice on
 	the skeleton by joint name, a held part at a joint. Drag to turn her, the wheel to come closer; the camera frames the slot being dressed.
 	Poses play her animations; Random and Reset dress her at once. Pointer, keys (arrows, Tab, Enter; Q and E change slot) or a pad. */
 class App extends BaseApp {
@@ -59,7 +58,6 @@ class App extends BaseApp {
 	var stage:Stage3D;
 	var camera = new Camera3D();
 	var models:Models;
-	var wardrobe:Wardrobe;
 	var animations:Null<ModelFile>;
 	var character:Null<Node>;
 	var animator:Null<Animator>;
@@ -131,9 +129,8 @@ class App extends BaseApp {
 		disc.setPosition(0, .03, 0);
 		stage.add(disc);
 		models = new Models(Services.assets, Services.textures);
-		wardrobe = new Wardrobe(models.load);
-		outfit = new Outfit(wardrobe);
-		modelOutfit = new Outfit(wardrobe);
+		outfit = new Outfit(models);
+		modelOutfit = new Outfit(models);
 		Services.environments.load("environments/studio_small_09_1k.hdr", result -> switch result {
 			case Ready(value):
 				environment = value;
@@ -283,7 +280,7 @@ class App extends BaseApp {
 				tile.setTexture(thumbs[p]);
 			else {
 				wanted.push({slot: s, path: p});
-				wardrobe.get(p, _ -> {});
+				models.load(p, _ -> {});
 			}
 		}
 		for (t in tabs)
@@ -300,8 +297,8 @@ class App extends BaseApp {
 		for (w in wanted.copy()) {
 			if (taken >= 2)
 				break;
-			if (!wardrobe.isLoaded(w.path)) {
-				if (!wardrobe.isLoading(w.path))
+			if (!models.isLoaded(w.path)) {
+				if (!models.isLoading(w.path))
 					wanted.remove(w);
 				continue;
 			}
@@ -474,7 +471,7 @@ class App extends BaseApp {
 		if (animator != null)
 			animator.update(dt);
 		takePictures();
-		var loading = wardrobe.getLoadingCount();
+		var loading = models.getLoadingCount();
 		status = character == null ? "Loading her" : loading > 0 ? 'Loading $loading part${loading == 1 ? "" : "s"}' : 'Dressing: $slot';
 		for (s in SLOTS) {
 			var error = outfit.getError(s);
@@ -518,6 +515,6 @@ class App extends BaseApp {
 		batch.destroy();
 		for (t in thumbs)
 			t.destroy(Services.graphics);
-		wardrobe.close();
+		models.shutdown();
 	}
 }

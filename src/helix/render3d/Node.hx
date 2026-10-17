@@ -292,6 +292,40 @@ class Node {
 		return null;
 	}
 
+	/** The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a
+		rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only
+		models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit). */
+	public function collectModels(skinned:Array<Node>, rigid:Array<Node>):Void {
+		if (kind == Model && mesh != null) {
+			if (mesh.isSkinned())
+				skinned.push(this);
+			else {
+				rigid.push(this);
+				return;
+			}
+		}
+		for (child in children)
+			child.collectModels(skinned, rigid);
+	}
+
+	/** Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's
+		nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above
+		model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the
+		node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this. */
+	public function findAttachment(model:Node, skeleton:Node):Null<Attachment> {
+		var piece = model, above = model.getParent();
+		while (above != null && above != this && jointOf(skeleton, above.name) == null) {
+			piece = above;
+			above = above.getParent();
+		}
+		if (above == null)
+			return null;
+		return {piece: piece, joint: above == this ? null : jointOf(skeleton, above.name)};
+	}
+
+	static function jointOf(skeleton:Node, name:String):Null<Node>
+		return name == "" ? null : skeleton.name == name ? skeleton : skeleton.find(name);
+
 	/** A skinned model's skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose. */
 	public function getSkin():Null<Skin>
 		return skin;
@@ -761,4 +795,10 @@ enum abstract SpriteAlpha(Int) to Int {
 
 	/** Added, times it, after everything else: light, fire, glows. */
 	var Add = 3;
+}
+
+/** Where a rigid piece attaches to a skeleton (Node.findAttachment): the piece, and the joint it hangs from, null for none. */
+typedef Attachment = {
+	final piece:Node;
+	final joint:Null<Node>;
 }

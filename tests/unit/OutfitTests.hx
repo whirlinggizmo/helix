@@ -1,19 +1,20 @@
-import helix.assets.IRequest;
-import helix.assets.Request;
+import haxe.io.Bytes;
+import helix.assets.IAssets;
 import helix.render3d.Gltf;
+import helix.render3d.Material;
+import helix.render3d.Mesh;
 import helix.render3d.ModelFile;
-import helix.render3d.Models.ModelLoadResult;
+import helix.render3d.Models;
 import helix.render3d.Node;
-import helix.render3d.Outfit;
-import helix.render3d.Wardrobe;
 
-/** Characters dressed by slot (Outfit) from shared part files (Wardrobe), with Quaternius's modular women (the dressing-room and animation
-	examples'): parts bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading,
-	failures, and one load shared by many characters. */
+/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through Models, over the framework's queries
+	(Node.collectModels, bindSkeleton and findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
+	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
+	shared by many characters. */
 class OutfitTests {
 	static var checks = 0;
-	// The loads the test's loader holds until released, by path, and how many it was asked for.
-	static var held:Map<String, ModelLoadResult->Void> = [];
+	// The loads the test's assets hold until released, by path, and how many each was asked for.
+	static var held:Map<String, helix.assets.IAssets.AssetResult->Void> = [];
 	static var asked:Map<String, Int> = [];
 
 	static function check(value:Bool, message:String):Void {
@@ -22,20 +23,17 @@ class OutfitTests {
 		checks++;
 	}
 
+	static function bytes(name:String):Bytes
+		return sys.io.File.getBytes('examples/assets/models/modular-women/$name.glb');
+
 	static function file(name:String):ModelFile
-		return @:privateAccess new ModelFile(Gltf.read(sys.io.File.getBytes('examples/assets/models/modular-women/$name.glb')));
+		return @:privateAccess new ModelFile(Gltf.read(bytes(name)));
 
-	// A loader that answers only when the test releases a path.
-	static function load(path:String, complete:ModelLoadResult->Void):IRequest {
-		asked[path] = (asked.exists(path) ? asked[path] : 0) + 1;
-		held[path] = complete;
-		return new Request(() -> {
-			held.remove(path);
-			complete(Cancelled);
-		});
-	}
+	// Models over assets that answer only when the test releases a path (the part files carry no images, so no textures are needed).
+	static function models():Models
+		return new Models(new Held(), null);
 
-	static function release(path:String, result:ModelLoadResult):Void {
+	static function release(path:String, result:helix.assets.IAssets.AssetResult):Void {
 		var complete = held[path];
 		held.remove(path);
 		complete(result);
@@ -52,12 +50,12 @@ class OutfitTests {
 	}
 
 	static function main():Void {
-		var wardrobe = new Wardrobe(load);
+		var shared = models();
 		for (name in ["Casual_Head", "Witch_Head", "Adventurer_Body", "Sword"])
-			wardrobe.put(name, file(name));
+			shared.put(name, file(name));
 		var animations = file("Animations");
 		var character = animations.instantiate("character");
-		var outfit = new Outfit(wardrobe);
+		var outfit = new Outfit(shared);
 
 		// Chosen before the skeleton: waits, then is worn on it.
 		outfit.choose("head", "Casual_Head");
@@ -92,13 +90,12 @@ class OutfitTests {
 		// A choice overtaken while its file loads is dropped.
 		outfit.choose("legs", "Slow_Legs");
 		check(outfit.isPending() && held.exists("Slow_Legs"), "A part not yet loaded is asked for");
-		var legs = file("Casual_Legs");
-		wardrobe.put("Casual_Legs", legs);
+		shared.put("Casual_Legs", file("Casual_Legs"));
 		outfit.choose("legs", "Casual_Legs");
 		check(outfit.getWorn("legs") == "Casual_Legs", "A later choice already loaded is worn at once");
-		release("Slow_Legs", Ready(file("Adventurer_Legs")));
+		release("Slow_Legs", Loaded(bytes("Adventurer_Legs")));
 		check(outfit.getWorn("legs") == "Casual_Legs" && !outfit.isPending(), "and the overtaken one, landing after, is dropped");
-		check(wardrobe.isLoaded("Slow_Legs"), "though the wardrobe keeps its file");
+		check(shared.isLoaded("Slow_Legs"), "though the models keep its file");
 
 		// A file that fails.
 		outfit.choose("feet", "Missing_Feet");
@@ -106,14 +103,14 @@ class OutfitTests {
 		check(outfit.getWorn("feet") == null && outfit.getError("feet") != null && !outfit.isPending(), "A part whose file fails empties its slot");
 
 		// Many characters, one load.
-		var others = [for (i in 0...3) new Outfit(wardrobe)];
+		var others = [for (i in 0...3) new Outfit(shared)];
 		var skeletons = [for (i in 0...3) animations.instantiate('other$i')];
 		for (i in 0...3) {
 			others[i].setSkeleton(skeletons[i]);
 			others[i].choose("feet", "Shared_Feet");
 		}
 		check(asked["Shared_Feet"] == 1, "Characters asking for one part share its load");
-		release("Shared_Feet", Ready(file("Casual_Feet")));
+		release("Shared_Feet", Loaded(bytes("Casual_Feet")));
 		var feet = [for (o in others) o.getNodes("feet")[0]];
 		check(feet[0] != feet[1] && feet[1] != feet[2] && feet[0].getMesh() == feet[1].getMesh(), "and each wears its own nodes over the same meshes");
 		check(under(feet[2].getJoint(0), skeletons[2]) && !under(feet[2].getJoint(0), skeletons[0]), "each bound to its own skeleton");
@@ -132,7 +129,7 @@ class OutfitTests {
 			"Without a skeleton nothing is worn, and the choices are kept");
 
 		// Every part of the pack is worn on the animations' skeleton, each slot's part from each outfit.
-		var every = new Wardrobe(load), model = new Outfit(every), refused = [];
+		var every = models(), model = new Outfit(every), refused = [];
 		model.setSkeleton(animations.instantiate("model"));
 		for (look in [
 			"Adventurer",
@@ -155,11 +152,75 @@ class OutfitTests {
 			}
 		check(refused.length == 0, 'Every part of the ten outfits is worn: $refused');
 
-		// Closing cancels what's still loading.
+		// A file whose models sit under no joint: the piece is the whole file, hung at a socket.
+		var loose = Node.group(),
+			gem = Node.model(Mesh.plane(.1, .1), new Material());
+		gem.setName("gem");
+		var holder = Node.group();
+		holder.setName("holder");
+		holder.add(gem);
+		loose.add(holder);
+		var at = loose.findAttachment(gem, character);
+		check(at != null && at.piece == holder && at.joint == null, "A model under no joint of the skeleton's is a piece at the file's top, with no joint");
+		check(loose.findAttachment(character, character) == null, "A node not under the file has no attachment");
+
+		// Shutting the models down cancels what's still loading.
 		var cancelled = false;
-		wardrobe.get("Never", result -> cancelled = result.match(Cancelled));
-		wardrobe.close();
-		check(cancelled && !wardrobe.isLoaded("Casual_Head"), "Closing cancels loads and forgets files");
+		shared.load("Never", result -> cancelled = result.match(Cancelled));
+		shared.shutdown();
+		check(cancelled && !shared.isLoaded("Casual_Head"), "Shutting down cancels loads and forgets files");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
+}
+
+/** Assets whose loads wait until the test releases them, counting how often each path is asked for. */
+private class Held implements IAssets {
+	public function new() {}
+
+	public function load(path:String, complete:helix.assets.IAssets.AssetResult->Void):Void {
+		@:privateAccess OutfitTests.asked[path] = (OutfitTests.asked.exists(path) ? OutfitTests.asked[path] : 0) + 1;
+		@:privateAccess OutfitTests.held[path] = complete;
+	}
+
+	public function ensure(path:String, complete:helix.assets.IAssets.AssetResult->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
+			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest {
+		load(path, complete);
+		return new helix.assets.Request(() -> {
+			@:privateAccess OutfitTests.held.remove(path);
+			complete(Cancelled);
+		});
+	}
+
+	public function getHost():Null<String>
+		return null;
+
+	public function setHost(host:Null<String>):Bool
+		return false;
+
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function clearCache(complete:helix.assets.Storage.StorageWriteResult->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function getManifest():Null<String>
+		return null;
+
+	public function setManifest(path:Null<String>):Bool
+		return true;
+
+	public function getCacheMode():helix.assets.IAssets.AssetCacheMode
+		return Revalidate;
+
+	public function setCacheMode(mode:helix.assets.IAssets.AssetCacheMode):Void {}
+
+	public function streamSource(path:String, complete:helix.assets.IAssets.AssetSourceResult->Void):helix.assets.IRequest
+		return new helix.assets.Request(() -> {});
+
+	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
+
+	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+
+	public function isBusy():Bool
+		return false;
 }
