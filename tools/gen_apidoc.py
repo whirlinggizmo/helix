@@ -155,15 +155,17 @@ def markdown(xmls):
 def main():
     if not (ROOT/'build/generated/shaders/shader-contract.json').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build web')
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
-    env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'))
-    if not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
+    check='--check' in sys.argv[1:]
+    env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
+    # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.
+    if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
     import bake_fonts
     bake_fonts.generate()
-    if OUT.exists() and '--check' not in sys.argv[1:]:shutil.rmtree(OUT)
+    if OUT.exists() and not check:shutil.rmtree(OUT)
     browser,native=targets()
     describe('js',native);describe('cpp',browser)
     pages=markdown([OUT/'xml/js.xml',OUT/'xml/cpp.xml'])
-    if '--check' in sys.argv[1:]:
+    if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
         extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
         if stale or extra:sys.exit('gen_apidoc: docs/api is stale ('+', '.join(stale+extra)+'); run python3 tools/gen_apidoc.py and commit it')
