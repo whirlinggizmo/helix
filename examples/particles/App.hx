@@ -47,8 +47,8 @@ class App extends BaseApp {
 	var sparksNode:Node3D;
 	var confettiNode:Particles2D;
 	var paused = false;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(ORBIT, 6, 0, 3, 0, .15);
 
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node3D {
 		var node = new Particles3D(emitter);
@@ -177,7 +177,7 @@ class App extends BaseApp {
 				e.emitting = !paused;
 		}
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
 		ScreenShape.update();
 		var presentation = Screen.instance;
@@ -185,8 +185,7 @@ class App extends BaseApp {
 			burst(presentation.toUnitsX(input.pointerX), presentation.toUnitsY(input.pointerY));
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
-		if (orbit)
-			angle += dt * .15;
+		orbit.update(dt);
 		stage.time = time;
 		flat.time = time;
 		// The sparks' source circles the fountain; the sparks stay where they were born.
@@ -194,7 +193,7 @@ class App extends BaseApp {
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(ORBIT * Math.sin(angle), 6, ORBIT * Math.cos(angle), 0, 3, 0);
+		orbit.apply(camera);
 		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,

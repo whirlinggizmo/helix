@@ -39,6 +39,8 @@ class App extends BaseApp {
 	var cubes:Array<Model> = [];
 	var cars:Array<Node3D> = [];
 	var ownMaterials = false;
+	// The camera, circling on the game's clock.
+	var orbit = new Orbit(22, 12, 0, 1, 0, .15);
 
 	// A colour around the hue circle for cube i.
 	static function tint(i:Int):Int {
@@ -120,10 +122,11 @@ class App extends BaseApp {
 			setMaterials(!ownMaterials);
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
+		orbit.update(Time.clock.delta);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(Math.sin(time * .15) * 22, 12, Math.cos(time * .15) * 22, 0, 1, 0);
+		orbit.apply(camera);
 		for (i in 0...cubes.length) {
 			var x = (i % SIDE - SIDE / 2 + .5) * 1.5,
 				z = (Std.int(i / SIDE) - SIDE / 2 + .5) * 1.5;

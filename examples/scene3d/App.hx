@@ -49,8 +49,8 @@ class App extends BaseApp {
 	var spinner:Model;
 	var button:Shape2D;
 	var label:Text2D;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(10, 6, 0, 1, 0, .25);
 	var spin = 0.;
 
 	override public function init():Void {
@@ -119,11 +119,11 @@ class App extends BaseApp {
 		var buttonY = vy + 36 + batch.font.measureWrapped(title, 20, vw - 24) + 6;
 		button.setPosition(vx + 12, buttonY);
 		label.setPosition(vx + 24, buttonY + 10);
-		camera.setView(10 * Math.sin(angle), 6, 10 * Math.cos(angle), 0, 1, 0);
+		orbit.apply(camera);
 		// Asked once a frame, after input and with the cameras placed: what's under the pointer, pressed and clicked.
 		pointer.update();
 		if (pointer.isClicked(button))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		for (shape in shapes)
 			if (pointer.isClicked(shape)) {
 				if (selected.indexOf(shape) >= 0)
@@ -134,9 +134,8 @@ class App extends BaseApp {
 		for (shape in shapes)
 			shape.tint = selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xc8c8c8ff : 0x8c8c8cff;
 		button.color = pointer.isDown(button) ? 0x56607aff : pointer.isHovered(button) ? 0x3c4458ff : 0x2a3040ff;
-		label.text = orbit ? "stop the camera" : "start the camera";
-		if (orbit)
-			angle += dt * .25;
+		label.text = orbit.running ? "stop the camera" : "start the camera";
+		orbit.update(dt);
 		spin += dt;
 		spinner.setRotation(spin * .7, spin, 0);
 		fps.update(dt, Time.frameCpu);

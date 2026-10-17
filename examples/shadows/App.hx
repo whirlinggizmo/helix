@@ -42,13 +42,13 @@ class App extends BaseApp {
 	var sun = new DirectionalLight();
 	var spot = new SpotLight();
 	var marker:Model;
-	var orbit = true;
+	// The camera, circling.
+	var orbit = new Orbit(11, 5, 0, 1.2, 0, .18);
 	var distance = 30.;
 	var bias = 1.;
 	var strength = 1.;
 	var size = 1;
 	var tint = 0;
-	var angle = 0.;
 
 	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
 	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model {
@@ -122,7 +122,7 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Digit2))
 			spot.shadowCasting = !spot.shadowCasting;
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		if (input.isFramePressed(Key.S)) {
 			strength = strength > .9 ? .65 : strength > .5 ? .35 : 1;
 			sun.shadowStrength = strength;
@@ -152,11 +152,10 @@ class App extends BaseApp {
 		spot.setPosition(sx, 6.5, sz);
 		spot.lookAt(0, 0, 0);
 		marker.setPosition(sx, 6.5, sz);
-		if (orbit)
-			angle += dt * .18;
+		orbit.update(dt);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(11 * Math.sin(angle), 5, 11 * Math.cos(angle), 0, 1.2, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

@@ -42,8 +42,8 @@ class App extends BaseApp {
 	var status = "loading";
 	var fade = true;
 	var paused = false;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(3, 1.6, 0, .9, 0, .3);
 
 	override public function init():Void {
 		Window.title = "HeliX animation";
@@ -115,7 +115,7 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		if (animator != null) {
 			for (i in 0...CLIPS.length)
 				if (input.isFramePressed(cast((Key.Digit1 : Int) + i)))
@@ -128,12 +128,11 @@ class App extends BaseApp {
 			}
 			animator.update(dt);
 		}
-		if (orbit)
-			angle += dt * .3;
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(3 * Math.sin(angle), 1.6, 3 * Math.cos(angle), 0, .9, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

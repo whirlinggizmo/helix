@@ -55,8 +55,8 @@ class App extends BaseApp {
 	var tonemap = 0;
 	var exposure = 0.;
 	var rotation = 0.;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(7.5, 1.8, 0, 1.2, 0, .15);
 	var turning:Array<Node3D> = [];
 	var shaders:Shaders;
 
@@ -142,13 +142,13 @@ class App extends BaseApp {
 		if (input.isDown(Key.Right))
 			rotation += dt;
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
 		// The orbit starts once everything is in (both environments bake at the start): from the front, so a picture taken then (the site's,
 		// once nothing loads) sees the rows, not their ends.
-		if (orbit && !Host.busy)
-			angle += dt * .15;
+		if (!Host.busy)
+			orbit.update(dt);
 		for (node in turning)
 			node.setRotation(0, time * .3, 0);
 		fps.update(dt, Time.frameCpu);
@@ -161,7 +161,7 @@ class App extends BaseApp {
 
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(7.5 * Math.sin(angle), 1.8, 7.5 * Math.cos(angle), 0, 1.2, 0);
+		orbit.apply(camera);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

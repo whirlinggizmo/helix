@@ -20,6 +20,8 @@ class App extends BaseApp {
 	var camera3D = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
+	// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second, starting on the +x side.
+	var orbit = new Orbit(16, 9, 0, 1, 0, .4, Math.PI / 2);
 
 	override public function init():Void {
 		Window.title = "HeliX hello3d";
@@ -35,10 +37,9 @@ class App extends BaseApp {
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second.
-		var angle = Time.time * .4;
+		orbit.update(dt);
 		camera3D.setViewport(width, height);
-		camera3D.setView(Math.cos(angle) * 16, 9, Math.sin(angle) * 16, 0, 1, 0);
+		orbit.apply(camera3D);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

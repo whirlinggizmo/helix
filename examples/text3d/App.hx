@@ -36,8 +36,8 @@ class App extends BaseApp {
 	var sign:Node3D;
 	var signText:Text3D;
 	var cube:Model;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(9, 4, 0, .8, 0, .25);
 
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
 	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model {
@@ -95,17 +95,16 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
-		if (orbit)
-			angle += dt * .25;
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		cube.setRotation(0, time * .8, 0);
 		sign.setRotation(0, Math.sin(time * .7) * .9, 0);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(Math.sin(angle) * 9, 4, Math.cos(angle) * 9, 0, .8, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

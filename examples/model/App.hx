@@ -16,44 +16,42 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
+import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 import helix.time.Time;
 
 /** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
-	under its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its parts are found by name
-	once and kept: the wheels turn, and H switches the headlights. D drives the car around a circle and parks it; C rides along, through a camera
-	parented to the car (behind it and above, looking ahead), and back to the circling camera. O stops the circling camera; Escape quits where
-	quitting means anything. */
+	on its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its wheels and headlights are
+	found by name once and kept: the wheels turn, H switches the headlights, D drives the car round a circle and parks it, and C rides along
+	through a second camera under the car (behind it and above, looking ahead), and back. Escape quits where quitting means anything. */
 class App extends BaseApp {
 	static inline var MODEL = "models/car-kit/sedan-sports-headlights.gltf";
 
 	var stage:Stage3D;
 	var batch:Batch2D;
-	var camera = new Camera3D();
-	// The chase camera: under the car once it's loaded, so it follows it.
-	var chase = new Camera3D();
-	var chasing = false;
-	var driving = false;
-	var travel = 0.;
-	var camera2D = new Camera2D();
+	var hud = new Camera2D();
 	var fps = new FpsOverlay();
+	// The camera going round the stage, and where it goes.
+	var orbitCamera = new Camera3D();
+	var orbit = new Orbit(7, 3, 0, .5, 0, .25);
+	// The camera riding along: under the car once it's in, so it goes where the car goes.
+	var rideCamera = new Camera3D();
+	var riding = false;
 	var car:Null<Node3D>;
 	var wheels:Array<Node3D> = [];
-	var beams:Array<Node3D> = [];
-	var status = 'loading $MODEL';
-	var orbit = true;
-	var headlights = true;
-	var angle = 0.;
-	var roll = 0.;
+	var headlights:Array<SpotLight> = [];
+	var driving = false;
+	// Where round its circle the car is, in radians, and how far its wheels have turned.
+	var driveAngle = 0.;
+	var wheelSpin = 0.;
+	var caption = 'loading $MODEL';
 
 	override public function init():Void {
 		Window.title = "HeliX model";
 		Window.requestSize(1000, 600);
 		stage = new Stage3D(Graphics.instance);
+		batch = new Batch2D(Graphics.instance);
 		stage.setAmbient(0xffffffff, .2);
-		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
-		camera.minAspect = 16 / 9;
-		chase.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
 		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
@@ -62,78 +60,73 @@ class App extends BaseApp {
 		ground.baseColor = 0x616164ff;
 		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), ground));
+		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
+		orbitCamera.minAspect = 16 / 9;
+		rideCamera.minAspect = 16 / 9;
 
-		Models.load(MODEL, file -> place(file), message -> status = message);
-		batch = new Batch2D(Graphics.instance);
+		Models.load(MODEL, file -> place(file), message -> caption = message);
 	}
 
-	// The car's file in: a copy of it on the stage, its wheels and headlights found by name, the chase camera riding behind it.
+	// The car's file in. instantiate makes a tree of the file's nodes under a Node3D named "car", each named as in Blender: a Model for each node
+	// with a mesh (wheel-front-left, wheel-front-right, wheel-back-left, wheel-back-right and body), the spoiler a Model under the body, and the
+	// body's two lights, headlight-left and headlight-right, SpotLights under it shining ahead (the car's +z).
 	function place(file:ModelFile):Void {
 		car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
 		for (name in ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"])
 			wheels.push(car.find(name));
 		for (name in ["headlight-left", "headlight-right"])
-			beams.push(car.find(name));
+			headlights.push(cast(car.find(name), SpotLight));
 		stage.add(car);
-		// Behind and above it, looking ahead; in the car's own units.
-		chase.setPosition(0, 1.8, -4.5);
-		chase.lookAt(0, .4, 2);
-		car.addChild(chase);
-		status = MODEL;
+		// Behind the car and above it, looking ahead, in its own units: a child, so the car carries it.
+		rideCamera.setView(0, 1.8, -4.5, 0, .4, 2);
+		car.addChild(rideCamera);
+		caption = MODEL;
 		for (warning in file.warnings)
 			trace('$MODEL: $warning');
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
-		if (car != null && input.isFramePressed(Key.H)) {
-			headlights = !headlights;
-			for (beam in beams)
-				beam.visible = headlights;
+		if (car != null) {
+			if (Input.isFramePressed(Key.H))
+				for (light in headlights)
+					light.visible = !light.visible;
+			if (Input.isFramePressed(Key.D))
+				driving = !driving;
+			if (Input.isFramePressed(Key.C))
+				riding = !riding;
+			if (driving) {
+				// A circle of 3, facing the way it goes: its +z along the circle's tangent.
+				driveAngle += dt * .5;
+				car.setPosition(3 * Math.cos(driveAngle), 0, 3 * Math.sin(driveAngle));
+				car.setRotation(0, -driveAngle, 0);
+			}
+			wheelSpin += dt * 3;
+			for (wheel in wheels)
+				wheel.setRotation(wheelSpin, 0, 0);
 		}
-		if (car != null && input.isFramePressed(Key.D))
-			driving = !driving;
-		if (car != null && input.isFramePressed(Key.C))
-			chasing = !chasing;
-		if (orbit)
-			angle += dt * .25;
-		if (driving && car != null) {
-			// A circle of 3, facing the way it goes: its +z along the circle's tangent.
-			travel += dt * .5;
-			car.setPosition(3 * Math.cos(travel), 0, 3 * Math.sin(travel));
-			car.setRotation(0, -travel, 0);
-		}
-		roll += dt * 3;
-		for (wheel in wheels)
-			wheel.setRotation(roll, 0, 0);
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
-		camera.setView(7 * Math.sin(angle), 3, 7 * Math.cos(angle), 0, .5, 0);
-		chase.setViewport(width, height);
+		orbitCamera.setViewport(width, height);
+		orbit.apply(orbitCamera);
+		rideCamera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		presentation.apply(camera2D);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		Screen.apply(hud);
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 
 		Graphics.beginFrame(width, height, 0x14161cff);
-		stage.draw(chasing ? chase : camera);
-		batch.begin(camera2D);
+		stage.draw(riding ? rideCamera : orbitCamera);
+		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped('HeliX glTF model: $status', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		batch.drawTextWrapped("D: drive   C: ride along   O: the camera   H: the headlights"
-			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
-			+ 12, y, 16,
-			vw
-			- 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped('HeliX glTF model: $caption', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		var keys = "D: drive   C: ride along   H: the headlights" + (Host.canQuit() ? "   ESC: quit" : "");
+		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

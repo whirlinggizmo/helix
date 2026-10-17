@@ -40,8 +40,8 @@ class App extends BaseApp {
 	var hit = new PickHit();
 	var picked:Null<PickHit>;
 	var animator:Null<Animator>;
-	var orbit = true;
-	var angle = .3;
+	// The camera, circling.
+	var orbit = new Orbit(9, 5, 0, 1, 0, .2, .3);
 
 	override public function init():Void {
 		Window.title = "HeliX pick";
@@ -150,15 +150,14 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
-		if (orbit)
-			angle += dt * .2;
+			orbit.running = !orbit.running;
+		orbit.update(dt);
 		if (animator != null)
 			animator.update(dt);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(9 * Math.sin(angle), 5, 9 * Math.cos(angle), 0, 1, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

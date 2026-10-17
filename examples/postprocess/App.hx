@@ -47,8 +47,8 @@ class App extends BaseApp {
 	var lamp:PointLight;
 	var strength = .8;
 	var breathing = true;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(9, 4.5, 0, .5, 0, .2);
 	var status = "loading the effects";
 
 	override public function init():Void {
@@ -126,15 +126,14 @@ class App extends BaseApp {
 		if (input.isFramePressed(Key.Space))
 			breathing = !breathing;
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		if (input.isDown(Key.Up))
 			strength = Math.min(1, strength + dt * .5);
 		if (input.isDown(Key.Down))
 			strength = Math.max(0, strength - dt * .5);
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
-		if (orbit)
-			angle += dt * .2;
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
 		if (vignette != null)
@@ -143,7 +142,7 @@ class App extends BaseApp {
 			width = Window.framebufferWidth,
 			height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(9 * Math.sin(angle), 4.5, 9 * Math.cos(angle), 0, .5, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

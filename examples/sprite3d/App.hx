@@ -36,8 +36,8 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 	var logo:Sprite3D;
 	var sign:Sprite3D;
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(8, 3.5, 0, 1, 0, .3);
 	var trees:Array<Sprite3D> = [];
 	var tileSprites:Array<Sprite3D> = [];
 	var flames:Array<Sprite3D> = [];
@@ -139,17 +139,16 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
+			orbit.running = !orbit.running;
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
-		if (orbit)
-			angle += dt * .3;
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(Math.sin(angle) * 8, 3.5, Math.cos(angle) * 8, 0, 1, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;

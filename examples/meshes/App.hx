@@ -24,8 +24,8 @@ class App extends BaseApp {
 	var camera = new Camera3D();
 	var camera2D = new Camera2D();
 	var fps = new FpsOverlay();
-	var orbit = true;
-	var angle = 0.;
+	// The camera, circling.
+	var orbit = new Orbit(9, 3.5, 0, .4, 0, .2);
 
 	override public function init():Void {
 		Window.title = "HeliX meshes";
@@ -70,13 +70,12 @@ class App extends BaseApp {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (input.isFramePressed(Key.O))
-			orbit = !orbit;
-		if (orbit)
-			angle += dt * .2;
+			orbit.running = !orbit.running;
+		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		camera.setViewport(width, height);
-		camera.setView(9 * Math.sin(angle), 3.5, 9 * Math.cos(angle), 0, .4, 0);
+		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
@@ -90,8 +89,8 @@ class App extends BaseApp {
 		batch.begin(camera2D);
 		var y = vy + 36;
 		y += batch.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		batch.drawTextWrapped((orbit ? "O: stop the camera" : "O: turn the camera") + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24,
-			0xc8c8c8ff);
+		var keys = (orbit.running ? "O: stop the camera" : "O: turn the camera") + (Host.canQuit() ? "   ESC: quit" : "");
+		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();
