@@ -90,12 +90,29 @@ class Services {
 	public static function getFrameInterval():Float
 		return runner.getFrameInterval();
 
+	/** The game's settings from config.json among its assets (Config), or null without one. */
+	public static var config(default, null):Null<Config>;
+
 	/** A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_
-		and name in capitals. */
+		and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text. */
 	public static function getOption(name:String, fallback:String):String {
 		var value = runner.getHost().getOption(name);
+		if (value == null && config != null)
+			value = config.getString(name);
 		return value == null ? fallback : value;
 	}
+
+	/** getOption as a bool: 1, true, yes and on are true, 0, false, no and off are false; fallback for anything else. */
+	public static function getOptionBool(name:String, fallback:Bool):Bool
+		return Config.toBool(getOption(name, null), fallback);
+
+	/** getOption as a number; fallback for anything that isn't one. */
+	public static function getOptionFloat(name:String, fallback:Float):Float
+		return Config.toFloat(getOption(name, null), fallback);
+
+	/** getOption as a whole number; fallback for anything that isn't one. */
+	public static function getOptionInt(name:String, fallback:Int):Int
+		return Config.toInt(getOption(name, null), fallback);
 
 	/** Whether quitting closes anything, so whether to offer a quit key: not in a browser page, where quit stops the program but the page stays. */
 	public static function canQuit():Bool

@@ -1,0 +1,15 @@
+{
+  "profile": "production",
+  "default": {
+    "showSplash": true,
+    "splashSeconds": 1,
+    "splashMaxWait": 3,
+    "clickToContinue": true,
+    "tip": "Tip: Escape pauses; the window losing focus pauses too."
+  },
+  "development": {
+    "showSplash": false,
+    "clickToContinue": false
+  },
+  "production": {}
+}

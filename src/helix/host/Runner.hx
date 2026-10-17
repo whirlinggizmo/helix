@@ -20,6 +20,8 @@ class Runner {
 	var adapters:Adapters;
 	var app:IApp;
 	var makeApp:Void->IApp;
+	// The config's load as the program starts: the app is built once it has ended, with or without a file.
+	var configPending = false;
 	var resources:AssetService;
 	var decoding:ImageDecoding;
 	var audioDecoding:AudioDecoding;
@@ -93,8 +95,16 @@ class Runner {
 		Services.environments = new helix.render3d.Environments(resources, decoding, a.graphics);
 		Services.harness = a.harness;
 		Services.screenshots = new helix.graphics.Screenshots(a.graphics, a.export, a.name);
-		app = makeApp();
-		app.init();
+		// config.json, fetched now so a deployed game's settings change without a build; the app waits for it (a frame or two, blank).
+		configPending = true;
+		resources.ensure("config.json", result -> {
+			switch result {
+				case Loaded(bytes):
+					Services.config = helix.host.Config.parse(bytes, host.getOption("config"));
+				case _:
+			}
+			configPending = false;
+		});
 	}
 
 	function frame():Void {
@@ -111,6 +121,18 @@ class Runner {
 		var window = Services.window;
 		Services.presentation.refit(window.getFramebufferWidth(), window.getFramebufferHeight(), window.getPixelRatio());
 		Services.clock.update(clock.getElapsed());
+		if (app == null) {
+			// Until the config has come: a blank frame, then the app built and begun.
+			if (configPending) {
+				adapters.graphics.beginFrame(window.getFramebufferWidth(), window.getFramebufferHeight(), 0x000000ff);
+				adapters.graphics.endFrame();
+				input.endFrame();
+				frameCpu = (host.getTime() - now) * 1000;
+				return;
+			}
+			app = makeApp();
+			app.init();
+		}
 		app.frame(clock.getDelta());
 		Services.screenshots.frameEnded();
 		input.endFrame();
@@ -149,6 +171,7 @@ class Runner {
 		Services.environments = null;
 		Services.harness = null;
 		Services.screenshots = null;
+		Services.config = null;
 		Services.runner = null;
 	}
 }

@@ -22,6 +22,32 @@ A profile's choice of adapter for each platform contract, which the Runner build
 - `audioDecoder:IAudioDecoder`: Compressed audio decoding.
 - `audio:IAudio`: Sound output.
 
+## Config
+
+*class* in `src/helix/host/Config.hx`
+
+A game's settings from config.json among its assets, fetched as the program starts (so a deployed game changes them without a build): a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Services.getOption reads the profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's: whether to show a splash, play music, where assets are.
+
+```haxe
+static function parse(bytes:haxe.io.Bytes, ?profileName:String):Null<Config>
+static function toBool(text:Null<String>, fallback:Bool):Bool
+static function toFloat(text:Null<String>, fallback:Float):Float
+static function toInt(text:Null<String>, fallback:Int):Int
+function getProfileName():String
+function getProfileNames():Array<String>
+function get(name:String):Null<Dynamic>
+function getString(name:String):Null<String>
+```
+
+- `parse`: The config in bytes (JSON), with the profile chosen (the root's "profile", else "default") unless profileName names one. Null for bytes that aren't a JSON object.
+- `toBool`: text as a bool: 1, true, yes and on are true, 0, false, no and off are false (any case); fallback for anything else or null.
+- `toFloat`: text as a number; fallback for anything that isn't one, or null.
+- `toInt`: text as a whole number; fallback for anything that isn't one, or null.
+- `getProfileName`: The profile in force.
+- `getProfileNames`: The profiles the file has, in name order, "default" among them when it does.
+- `get`: The value at name (dotted into nested objects) in the profile, else in the default; null for none. A number, a string, a bool, an array or an object, as the JSON has it.
+- `getString`: The value at name as text: a string as it is, a number or bool as JSON writes it ("1.5", "true"); null for none or an object.
+
 ## FrameClock
 
 *class* in `src/helix/host/FrameClock.hx`
@@ -260,7 +286,11 @@ static function getTime():Float
 static function getFrameElapsed():Float
 static function getFrameCpu():Float
 static function getFrameInterval():Float
+static var config(default, null):Null<Config>
 static function getOption(name:String, fallback:String):String
+static function getOptionBool(name:String, fallback:Bool):Bool
+static function getOptionFloat(name:String, fallback:Float):Float
+static function getOptionInt(name:String, fallback:Int):Int
 static function canQuit():Bool
 static function quit():Void
 ```
@@ -285,7 +315,11 @@ static function quit():Void
 - `getFrameElapsed`: The seconds since the last frame, unheld (the app's frame dt is held at 0.1), and 0 on the first: what a fixed-rate simulation (Ticker.advance) is fed, so a slow frame is caught up in ticks instead of lost.
 - `getFrameCpu`: The last frame's CPU time in milliseconds, its services' polls included.
 - `getFrameInterval`: Milliseconds between the last two frames' starts (0 for the first).
-- `getOption`: A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals.
+- `config`: The game's settings from config.json among its assets (Config), or null without one.
+- `getOption`: A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text.
+- `getOptionBool`: getOption as a bool: 1, true, yes and on are true, 0, false, no and off are false; fallback for anything else.
+- `getOptionFloat`: getOption as a number; fallback for anything that isn't one.
+- `getOptionInt`: getOption as a whole number; fallback for anything that isn't one.
 - `canQuit`: Whether quitting closes anything, so whether to offer a quit key: not in a browser page, where quit stops the program but the page stays.
 - `quit`: Ends the program after this frame: the services close and the app's cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
 

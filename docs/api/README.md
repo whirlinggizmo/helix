@@ -10,7 +10,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.core`](core.md): Job, JobRequest, Jobs, WorkQueue
 - [`helix.debug`](debug.md): Autopilot, FpsOverlay, ITestHarness
 - [`helix.graphics`](graphics.md): BlendMode, ClipFlip, GraphicsUnavailable, IGraphics, IImageDecoder, ImageDecodeResult, ImageDecoding, Mipmaps, PipelineDesc, Pipelines, Png, PostProcess, Primitive, ReadPixelsResult, Sampling, ScreenEffect, ScreenshotResult, Screenshots, SdlGpuStages, Shader, ShaderBlock, ShaderLoadResult, ShaderParameter, ShaderParameters, ShaderSource, ShaderStages, ShaderTexture, Shaders, TextureFormat, VertexAttribute, VertexBuffer, Wrap
-- [`helix.host`](host.md): Adapters, FrameClock, IHost, IWindow, Identity, Presentation, PresentationMode, Runner, Services, WindowOptions
+- [`helix.host`](host.md): Adapters, Config, FrameClock, IHost, IWindow, Identity, Presentation, PresentationMode, Runner, Services, WindowOptions
 - [`helix.input`](input.md): Gamepad, IInput, IInputEvents, IInputSource, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.math`](math.md): Curve, CurveKind, Interpolate, Random, Trig
 - [`helix.particles`](particles.md): Emitter
