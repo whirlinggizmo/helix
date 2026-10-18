@@ -6,7 +6,6 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 
 ## Next
 
-- **Milestone 12: input actions and audio control.** An action map ("jump" is Space, a pad's South, a touch button), queried as keys are, rebound at run time and saved; audio buses (master, music, effects) with volumes, fades, pitch and pan; native network streaming (a native stream playing a remote file as it downloads, both targets keeping the copy, shown starting before the download ends on a slowed network). **Done when:** the `ui` example's settings screen rebinds a key and sets the buses, and the stream starts before its download ends.
 - **Milestone 13: the shader library.** `helix.shaders`: surface shaders (outline, silhouette, rim, hit flash, toon, dissolve, water) and screen effects (bloom over half-size intermediates in `PostProcess`, FXAA, blur, vignette, a color LUT, CRT, chromatic aberration, pixelate), and 2D sprite shaders (outline, flash, dissolve, palette swap), each attached in one line with parameters by name. **Done when:** a gallery example shows each on both targets and the autopilot checks each one's pixels.
 - **Milestone 14: physics.** 2D arcade physics first (bodies, gravity, move-and-slide against tiles and slopes, deterministic), then Box2D and Jolt through the work-off-the-frame module (below), with the racer's lessons (its FRICTION part 2) and a body's drawn transform for the camera. **Done when:** a platformer slice replays alike on both targets, and a racer slice after libwgf's (`../libwgf-racer`): a vehicle on Jolt in a worker or a thread, its poses crossing by the study's bulk transfer (32-byte poses into a caller-owned typed array; natively straight into Haxe `Bytes`), a chase camera on the body's drawn transform, the same lap replayed on both targets.
 - **Milestone 15: pathfinding.** Grid A* with flow fields; a navmesh (Recast and Detour, or hxDaedalus, benchmarked first) with steering. **Done when:** agents cross a level in an example on both targets, the same paths.
@@ -17,6 +16,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 
 - **Decided after measuring** (milestone 5 left them for numbers that call for them): a spatial index (both culling and picking walk every node; neither earlier framework needed one), visibility and pick masks, skipping the posing of characters out of view (libwgt: 400 models looking away 0.94 ms posed lazily, 16.1 posed; and its trap: culling by last frame's posed box never poses a culled model, so it never walks back into view), occlusion culling, per-instance picks. Also caching skinned poses for picks, if picking many characters is measured to cost.
 - **The autopilot's UI:** probes that report which widgets are showing, and events recorded for scripts to wait on, beside `click`.
+- **An action bound to a UI widget:** the drawn touch button and the region it presses as one binding, when the UI asks for it.
 - **Animation layers:** an upper body's clip over a lower body's.
 - **Skinned surface shaders:** an app's surface shader on a skinned model (it's ignored today).
 - **Morph targets**, and more than four joints a vertex.

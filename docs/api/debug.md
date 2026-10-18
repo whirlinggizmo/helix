@@ -12,6 +12,7 @@ Bounded JSON commands produce normal input, a tick at a time; probes (named valu
 function new(json:String, ?screenshot:Null<String> -> Void, ?press:String -> Bool)
 var done(default, null):Bool
 var tickCount(get, never):Int
+var input(get, never):IInput
 var seed(default, null):Int
 var outcomes(default, null):Array<Dynamic>
 function advance(probe:String -> Dynamic):IInput
@@ -21,6 +22,7 @@ var snapshot(get, never):Dynamic
 - `new`: Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, screenshot; at most 128) and throws on anything invalid or unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A click uses a UI's widget by name, waiting (as a web suite's actions do) until press, the app's (Ui.press, say), finds it shown and usable, within its limit; without press it fails. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without one.
 - `done`: Whether every command has finished.
 - `tickCount`: Ticks the commands have run so far.
+- `input`: The input the script plays, the one advance returns: the same object for the whole script, so what reads it (a UI, an Actions map) can be given it before the first tick.
 - `seed`: The script's seed, 1 to 2147483647, for the app's random numbers.
 - `outcomes`: One record a finished command: its index, op, the tick it finished on and the probe's value.
 - `advance`: Once a tick: runs commands until one needs this tick, asking probe for named values, and returns the input to play it with. Throws when a wait times out or an assert fails.

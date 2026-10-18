@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "seed": 1,
+  "commands": [
+    {"op": "wait", "probe": "loaded", "equals": true, "seconds": 10},
+    {"op": "assert", "probe": "screen", "equals": "main"},
+    {"op": "assert", "probe": "jump", "equals": "Space, Pad south"},
+    {"op": "assert", "probe": "capturing", "equals": false},
+    {"op": "assert", "probe": "masterVolume", "equals": 1},
+    {"op": "assert", "probe": "musicVolume", "equals": 1},
+    {"op": "assert", "probe": "effectsVolume", "equals": 1},
+    {"op": "assert", "probe": "musicMuted", "equals": false},
+    {"op": "assert", "probe": "jumpDown", "equals": false},
+    {"op": "wait", "probe": "jumpDown", "equals": true, "keys": ["SPACE"], "timeout": 10},
+    {"op": "wait", "probe": "jumpDown", "equals": false, "timeout": 10}
+  ]
+}

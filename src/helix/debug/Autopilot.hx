@@ -24,6 +24,13 @@ class Autopilot {
 	function get_tickCount():Int
 		return ticks;
 
+	/** The input the script plays, the one advance returns: the same object for the whole script, so what reads it (a UI, an Actions map)
+		can be given it before the first tick. */
+	public var input(get, never):IInput;
+
+	function get_input():IInput
+		return state;
+
 	/** The script's seed, 1 to 2147483647, for the app's random numbers. */
 	public var seed(default, null):Int;
 
@@ -33,7 +40,7 @@ class Autopilot {
 	var commands:Array<Dynamic>;
 	var index = 0;
 	var elapsed = 0;
-	var input = new InputState();
+	var state = new InputState();
 	var screenshot:Null<Null<String>->Void>;
 	var press:Null<String->Bool>;
 	var waitStarted = 0.;
@@ -149,14 +156,14 @@ class Autopilot {
 
 	function setKeys(desired:Array<Key>):Void {
 		for (key in Key.all)
-			input.keyEvent(key, desired.indexOf(key) >= 0);
+			state.keyEvent(key, desired.indexOf(key) >= 0);
 	}
 
 	/** Once a tick: runs commands until one needs this tick, asking probe for named values, and returns the input to play it with. Throws when a wait times out or an assert fails. */
 	public function advance(probe:String->Dynamic):IInput {
 		// A tick is the script's frame too: its tick edges and frame edges both end here.
-		input.consume();
-		input.endFrame();
+		state.consume();
+		state.endFrame();
 		while (!done) {
 			if (index == commands.length) {
 				done = true;
@@ -218,9 +225,9 @@ class Autopilot {
 			}
 			elapsed++;
 			ticks++;
-			return input;
+			return state;
 		}
-		return input;
+		return state;
 	}
 
 	/** Progress as a record: completed, ticks, the current command index and the outcomes. */
