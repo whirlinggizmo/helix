@@ -1,14 +1,19 @@
 package helix.render3d;
 
-/** A 3D view, perspective or orthographic (setOrthographic), as a node: it sees from its world position down its -z, its +y up (its scale
+/** A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale
 	ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a
 	target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's.
-	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. */
+	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its
+	values are properties that clamp (fovY, near, far, orthographicHeight, minAspect), each held to its range as its doc comment says. */
 class Camera3D extends Node3D {
-	// The orthographic view's height in world units; 0 for perspective.
-	// The narrowest shape the view keeps its width at; 0 for none.
+	// The least a clip distance is from 0 (perspective near) or from its partner (near from far), and the least orthographic height:
+	// where a value lands when set at or past what it must stay under or over.
+	static inline var LEAST = 1e-6;
+	// The least fovY, and how far under pi the most is.
+	static inline var LEAST_FOV = 1e-3;
+
 	var view = new Mat4();
-	var projection = new Mat4();
+	var projectionMatrix = new Mat4();
 	var viewProjectionMatrix = new Mat4();
 	var placed = new Mat4();
 	// Where it is in the world and which way it looks, from placed: the eye, the unit forward (its -z) and up (its +y).
@@ -16,7 +21,8 @@ class Camera3D extends Node3D {
 	var forward = [0., 0, -1];
 	var up = [0., 1, 0];
 
-	/** A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport. */
+	/** A camera at 0, 0, 10 looking at the origin, +y up, perspective with a quarter turn (pi/4) of vertical view (an orthographic height of 10
+		kept for when projection says so), clipping at 0.1 and 1000, on a 1 x 1 viewport. */
 	public function new() {
 		super();
 		setView(0, 0, 10, 0, 0, 0);
@@ -123,23 +129,33 @@ class Camera3D extends Node3D {
 		return up[2];
 	}
 
-	/** The vertical field of view in radians. */
-	public var fovY(default, null):Float = Math.PI / 4;
+	/** Which projection draws, Perspective to start: a perspective view sees fovY, an orthographic one orthographicHeight, both kept whichever
+		draws, with near and far either way. Perspective holds near above 0: switching to it with a near of 0 or less raises near to 1e-6, and far
+		to 2e-6 when it was no more. */
+	public var projection(default, set):Projection = Perspective;
 
-	/** The projection: fovY radians of vertical view, near and far the clip planes' distances. False, changing nothing, unless 0 < fovY < pi and
-		0 < near < far. */
-	public function setPerspective(fovY:Float, near:Float, far:Float):Bool {
-		if (!(fovY > 0 && fovY < Math.PI && near > 0 && far > near))
-			return false;
-		this.fovY = fovY;
-		this.near = near;
-		this.far = far;
-		orthographicHeight = 0;
-		return true;
+	function set_projection(value:Projection):Projection {
+		projection = value;
+		if (value == Perspective && !(near > 0)) {
+			near = LEAST;
+			if (!(far > near))
+				far = near + LEAST;
+		}
+		return value;
+	}
+
+	/** The perspective view's vertical field of view in radians, pi/4 to start: held from 0.001 to pi - 0.001, a value outside landing on
+		the nearer bound (NaN on the lower). Drawn when projection is Perspective; drawnFovY is what the viewport's shape makes of it. */
+	public var fovY(default, set):Float = Math.PI / 4;
+
+	function set_fovY(value:Float):Float {
+		value = value >= LEAST_FOV ? (value <= Math.PI - LEAST_FOV ? value : Math.PI - LEAST_FOV) : LEAST_FOV;
+		fovY = value;
+		return value;
 	}
 
 	/** The narrowest viewport shape (width / height) the view keeps its width at: on a narrower viewport its vertical view
-		(setPerspective's fovY, or an orthographic height) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 /
+		(fovY, or orthographicHeight) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 /
 		9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0,
 		the default, for none; 0 or more (under 0, or NaN, is 0). */
 	public var minAspect(default, set):Float = 0.;
@@ -166,31 +182,39 @@ class Camera3D extends Node3D {
 		return aspect < minAspect ? orthographicHeight * minAspect / aspect : orthographicHeight;
 	}
 
-	/** The near clip plane's distance from the eye. */
-	public var near(default, null):Float = .1;
+	/** The near clip plane's distance from the eye, 0.1 to start: held below far, one at or past far (or NaN) landing 1e-6 under it; a
+		perspective view (projection) holds it above 0 too, one of 0 or less landing on 1e-6. An orthographic view's near may be 0 or less. Set
+		far first when the new pair lies past the old one. */
+	public var near(default, set):Float = .1;
 
-	/** The far clip plane's distance from the eye. */
-	public var far(default, null):Float = 1000.;
+	function set_near(value:Float):Float {
+		if (!(value < far))
+			value = far - LEAST;
+		if (projection == Perspective && !(value > 0))
+			value = LEAST;
+		near = value;
+		return value;
+	}
 
-	/** An orthographic projection's height in world units; 0 for a perspective one. */
-	public var orthographicHeight(default, null):Float = 0.;
+	/** The far clip plane's distance from the eye, 1000 to start: held above near, one at or under near (or NaN) landing 1e-6 over it. Set
+		near first when the new pair lies under the old one. */
+	public var far(default, set):Float = 1000.;
 
-	/** Whether the projection is orthographic. */
-	public var orthographic(get, never):Bool;
+	function set_far(value:Float):Float {
+		if (!(value > near))
+			value = near + LEAST;
+		far = value;
+		return value;
+	}
 
-	function get_orthographic():Bool
-		return orthographicHeight > 0;
+	/** The orthographic view's height in world units seen top to bottom (the width by the viewport's shape), 10 to start: held above 0, one of
+		0 or less (or NaN) landing on 1e-6. Drawn when projection is Orthographic; drawnHeight is what the viewport's shape makes of it. */
+	public var orthographicHeight(default, set):Float = 10.;
 
-	/** An orthographic projection, with no perspective: height world units seen top to bottom (the width by the viewport's shape), near and far
-		the clip planes' distances from the eye (near may be 0 or less). setPerspective goes back. False, changing nothing, unless height > 0 and
-		near < far. */
-	public function setOrthographic(height:Float, near:Float, far:Float):Bool {
-		if (!(height > 0 && far > near))
-			return false;
-		orthographicHeight = height;
-		this.near = near;
-		this.far = far;
-		return true;
+	function set_orthographicHeight(value:Float):Float {
+		value = value >= LEAST ? value : LEAST;
+		orthographicHeight = value;
+		return value;
 	}
 
 	/** The framebuffer width in pixels, from setViewport. */
@@ -231,17 +255,17 @@ class Camera3D extends Node3D {
 		return true;
 	}
 
-	/** World to clip space, for the viewport's shape: projection * view, recomputed by each call, the view from where it is in the world now. */
+	/** World to clip space, for the viewport's shape: the projection's matrix * view, recomputed by each call, the view from where it is in the world now. */
 	public var viewProjection(get, never):Mat4;
 
 	function get_viewProjection():Mat4 {
 		place();
 		view.makeLookAt(eye[0], eye[1], eye[2], eye[0] + forward[0], eye[1] + forward[1], eye[2] + forward[2], up[0], up[1], up[2]);
-		if (orthographicHeight > 0)
-			projection.makeOrthographic(this.drawnHeight, viewportWidth / viewportHeight, near, far);
+		if (projection == Orthographic)
+			projectionMatrix.makeOrthographic(this.drawnHeight, viewportWidth / viewportHeight, near, far);
 		else
-			projection.makePerspective(this.drawnFovY, viewportWidth / viewportHeight, near, far);
-		viewProjectionMatrix.makeProduct(projection, view);
+			projectionMatrix.makePerspective(this.drawnFovY, viewportWidth / viewportHeight, near, far);
+		viewProjectionMatrix.makeProduct(projectionMatrix, view);
 		return viewProjectionMatrix;
 	}
 

@@ -129,7 +129,7 @@ class Font2D {
 	}
 
 	/** The file changed: baked again in place, at the size it was baked at. */
-	@:allow(helix.render2d.Fonts)
+	@:allow(helix.render2d.FontCache)
 	function replaceTrueType(gpu:IGraphics, data:Bytes):Void {
 		var old = texture;
 		bakeTrueType(gpu, data, size, 6);

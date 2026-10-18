@@ -17,6 +17,8 @@ import helix.graphics.ScreenshotService;
 import helix.graphics.Screenshots;
 import helix.input.Input;
 import helix.input.InputRouter;
+import helix.render2d.FontCache;
+import helix.render2d.Fonts;
 import helix.render2d.TextureCache;
 import helix.render2d.Textures;
 import helix.render3d.EnvironmentCache;
@@ -50,6 +52,7 @@ class Runner {
 	var gameClock:Clock;
 	var sounds:AudioResources;
 	var textures:TextureCache;
+	var fonts:FontCache;
 	var environments:EnvironmentCache;
 	var models:ModelCache;
 	var sceneFiles:SceneFileCache;
@@ -110,6 +113,7 @@ class Runner {
 		gameClock = new Clock();
 		sounds = new AudioResources(resources, a.audio, audioDecoding);
 		textures = new TextureCache(resources, decoding, a.graphics);
+		fonts = new FontCache(resources, a.graphics);
 		environments = new EnvironmentCache(resources, decoding, a.graphics);
 		models = new ModelCache(resources, textures);
 		sceneFiles = new SceneFileCache(resources);
@@ -124,6 +128,7 @@ class Runner {
 		Assets.bind(resources);
 		Audio.bind(sounds);
 		Textures.bind(textures);
+		Fonts.bind(fonts);
 		Environments.bind(environments);
 		Models.bind(models);
 		SceneFiles.bind(sceneFiles);
@@ -179,6 +184,7 @@ class Runner {
 		sounds.shutdown();
 		sceneFiles.shutdown();
 		models.shutdown();
+		fonts.shutdown();
 		textures.shutdown();
 		environments.shutdown();
 		decoding.shutdown();
@@ -201,6 +207,7 @@ class Runner {
 		Assets.bind(null);
 		Audio.bind(null);
 		Textures.bind(null);
+		Fonts.bind(null);
 		Environments.bind(null);
 		Models.bind(null);
 		SceneFiles.bind(null);

@@ -79,6 +79,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
       "kind": "Camera3D",
       "name": "chase",
       "position": [0, 3, -8],
+      "projection": "perspective",
       "fovY": 0.9,
       "behaviors": [{"kind": "ChaseCamera", "props": {"target": "@car"}}]
     }
@@ -93,8 +94,8 @@ What a node entry holds:
 - **`kind`**: the class (`Node3D` for a plain group, else a kind's name). Absent when `scene` is present.
 - **`name`**: the node's name; required, unique among siblings (paths depend on it).
 - **the transform**: `position` `[x, y, z]`, `rotation` `[x, y, z]` radians (Euler, as `setRotation` takes), `scale` `[x, y, z]`; each absent when identity. (A quaternion isn't written: `rotation` is what a hand edits.)
-- **the flags**: `enabled`, `visible`, `pickable`, absent when true.
-- **the kind's properties**, flat beside the above, named as the class names them (`intensity`, `shadowCasting`, `fovY`, `range`, `tint`, `text`): one table per kind lists them with their type and default, and both the reader and the writer go through that table, so nothing can be written that can't be read. Colors are `"#RRGGBB"` or `"#RRGGBBAA"`.
+- **the flags**: `enabled`, `visible`, `pickable`, absent when the kind's own default (true, but a `Text3D` starts unpickable); an override's written whenever said.
+- **the kind's properties**, flat beside the above, named as the class names them (`intensity`, `shadowCasting`, `projection` and `fovY`, `range`, `tint`, `text`): one table per kind lists them with their type and default, and both the reader and the writer go through that table, so nothing can be written that can't be read. Colors are `"#RRGGBB"` or `"#RRGGBBAA"`.
 - **`file`** on a `Model`: a glTF, loaded through `Models` and instantiated under this node, which becomes the file's root (its parts, skin and name). Its materials are the file's.
 - **`material`** on a `Model`: an inline material (`baseColor`, `metallic`, `roughness`, `texture`, `normalTexture`, `emissive`, `doubleSided`), replacing the mesh's or the file's root material.
 - **`scene`**: another file instantiated here as a prefab. A prefab file is an ordinary `.scene`; a file naming itself, directly or through another, is refused.

@@ -36,6 +36,8 @@ class SceneFileTests {
 		canonical();
 		refusals();
 		schema();
+		flags();
+		cameras();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -284,6 +286,8 @@ class SceneFileTests {
 			"Overrides on a node with no file and no scene");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "file": "a.glb"}]}', "A file on a light");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Camera3D", "name": "x", "material": {"roughness": 1}}]}', "A material on a camera");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "PointLight", "name": "x", "shadowCasting": true}]}',
+			"A shadow on a point light, which casts none: an unknown key, not dropped");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "material": {"shiny": 1}}]}', "A material with an unknown key");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"props": {"a": 1}}]}]}', "A behavior without a kind");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"kind": "A", "props": {"a": {"b": 1}}}]}]}',
@@ -303,6 +307,17 @@ class SceneFileTests {
 			&& SceneSchema.kind("Blob") == null,
 			"The kinds by name");
 		check(SceneSchema.property("tint") != null && SceneSchema.property("colour") == null, "A property on any kind");
+		check(SceneSchema.kind("PointLight").property("shadowCasting") == null
+			&& SceneSchema.kind("PointLight").property("shadowColor") == null
+			&& SceneSchema.kind("DirectionalLight").property("shadowCasting") != null
+			&& SceneSchema.kind("SpotLight").property("shadowMapSize") != null,
+			"A point light's table has no shadow properties; a directional light's and a spot's have them");
+		check(SceneSchema.kind("Text3D").pickable == false
+			&& SceneSchema.kind("Text3D").enabled
+			&& SceneSchema.kind("Text3D").visible
+			&& SceneSchema.kind("Model").pickable
+			&& SceneSchema.kind("Node3D").pickable,
+			"Text3D starts unpickable; every other kind's flags start true");
 		for (kind in SceneSchema.kinds) {
 			var keys = [];
 			for (property in kind.properties)
@@ -333,5 +348,60 @@ class SceneFileTests {
 			case [Reference, _]: '"@n"';
 			case _: throw 'The table of ${property.name} has a type its default doesn\'t match';
 		}
+	}
+
+	// A flag unsaid is the kind's own default and isn't written; one said away from it is written; one said at it vanishes.
+	static function flags():Void {
+		var file = parse('{"helix-scene": 1, "nodes": [
+			{"kind": "Text3D", "name": "quiet"},
+			{"kind": "Text3D", "name": "button", "pickable": true},
+			{"kind": "Text3D", "name": "plain", "pickable": false},
+			{"kind": "Model", "name": "ghost", "pickable": false},
+			{"kind": "Model", "name": "solid", "pickable": true, "visible": true, "enabled": true}
+		]}');
+		check(file != null && file.nodes[0].pickable == null && file.nodes[1].pickable == true && file.nodes[3].pickable == false,
+			"A flag parses as said, null when unsaid");
+		var lines = file.write().toString().split("\n");
+		function flagsOf(name:String):String {
+			var at = -1;
+			for (i in 0...lines.length)
+				if (StringTools.startsWith(lines[i], '      "name": "$name"'))
+					at = i;
+			var found = [];
+			for (i in at + 1...lines.length) {
+				var line = StringTools.trim(lines[i]);
+				if (line.indexOf('"kind"') >= 0 || line.indexOf('"name"') >= 0 || line.charAt(0) == "}" || line.charAt(0) == "]")
+					break;
+				found.push(StringTools.trim(lines[i]));
+			}
+			return found.join(" ");
+		}
+		check(flagsOf("quiet") == "", "A Text3D with no flag said is written without one: unpickable is its own default");
+		check(flagsOf("button") == '"pickable": true', "A Text3D said pickable is written so");
+		check(flagsOf("plain") == "", "A Text3D said unpickable is at its default: left out");
+		check(flagsOf("ghost") == '"pickable": false', "A Model said unpickable is written so");
+		check(flagsOf("solid") == "", "A Model's flags said true are its defaults: left out");
+		var again = SceneFile.parse(file.write());
+		check(again != null && again.nodes[1].pickable == true && again.nodes[2].pickable == null && again.nodes[3].pickable == false,
+			"What was written reads back: the said-at-default flag now unsaid");
+	}
+
+	// A camera's projection: a named choice, perspective unless said, written when orthographic.
+	static function cameras():Void {
+		var file = parse('{"helix-scene": 1, "nodes": [
+			{"kind": "Camera3D", "name": "eye", "projection": "perspective", "fovY": 1},
+			{"kind": "Camera3D", "name": "flat", "projection": "orthographic", "orthographicHeight": 6, "near": 0, "far": 20}
+		]}');
+		check(file != null
+			&& same(file.nodes[0].properties.get("projection"), Text("perspective"))
+			&& same(file.nodes[1].properties.get("projection"), Text("orthographic"))
+			&& same(file.nodes[1].properties.get("near"), Number(0)),
+			"A camera's projection parses as text, its near may be 0");
+		var written = file.write().toString();
+		check(written.indexOf('"projection": "perspective"') < 0 && written.indexOf('"projection": "orthographic"') >= 0,
+			"Perspective is the default, left out; orthographic is written");
+		check(written.indexOf('"near": 0,') >= 0
+			&& written.indexOf('"orthographicHeight": 6') >= 0, "An orthographic camera's near 0 and height");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Camera3D", "name": "x", "projection": 1}]}', "A projection that isn't text");
 	}
 }

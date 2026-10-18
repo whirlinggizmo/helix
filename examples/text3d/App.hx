@@ -1,5 +1,4 @@
 import helix.app.BaseApp;
-import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -87,7 +86,7 @@ class App extends BaseApp {
 		signText.setPosition(0, 1.6, .05);
 		sign.addChild(signText);
 		stage.add(sign);
-		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
+		Fonts.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
 	}
 
 	override public function frame(dt:Float):Void {

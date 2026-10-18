@@ -21,18 +21,24 @@ function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
 
 *class* in `src/helix/scene/SceneSchema.hx`
 
-One kind's table: its name, as the file's "kind" names the class, and its properties in the order the writer writes them.
+One kind's table: its name, as the file's "kind" names the class, its properties in the order the writer writes them, and what the class starts its flags at (an unsaid flag in a file means the kind's own default, and a flag at it isn't written).
 
 ```haxe
-function new(name:String, properties:Array<PropertySchema>)
+function new(name:String, properties:Array<PropertySchema>, ?enabled:Bool = true, ?visible:Bool = true, ?pickable:Bool = true)
 final name:String
 final properties:Array<PropertySchema>
+final enabled:Bool
+final visible:Bool
+final pickable:Bool
 function property(name:String):Null<PropertySchema>
 ```
 
-- `new`: A kind name with properties.
+- `new`: A kind name with properties, its flags starting at enabled, visible and pickable (each true unless said).
 - `name`: The class's name: Model, DirectionalLight, Camera3D.
 - `properties`: Its properties, in writing order: a parent class's first (a light's before a spot's range and cones).
+- `enabled`: What the class starts Node.enabled at: true for every kind.
+- `visible`: What the class starts Node.visible at: true for every kind.
+- `pickable`: What the class starts Node.pickable at: false for a Text3D (a label lets a pick through to what it names), true elsewhere.
 - `property`: Its property named name, or null for one it hasn't.
 
 ## Loader
@@ -346,13 +352,13 @@ function write():haxe.io.Bytes
 - `new`: An empty file of the current version: no stage section, no nodes.
 - `VERSION`: The format version read and written: the file's "helix-scene" value.
 - `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file or a material on a kind that isn't a Model, overrides on a node with no file and no scene, an override with a name or a kind or an empty path, or a behavior without a kind.
-- `capture`: The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. Capturing an untouched instance gives the file it was made from, written canonically.
+- `capture`: The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
 - `version`: The file's "helix-scene" version: VERSION, the only one read.
 - `stage`: Its stage section, or null when the file has none.
 - `nodes`: Its nodes at the root, in drawing order.
 - `instantiate`: Makes the file's tree on stage, its behaviors on behaviors: the stage section applied (ambient, tonemap and exposure at once, the environment and background once their files land through Environments), then every node at once under a new group named after the file (its path without directory and extension) added to the stage's root, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
-- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag that is true (an override's is written whenever said), a property at its class's default, an unsaid stage or material value, and a property no table has, are not written.
+- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, an unsaid stage or material value, and a property no table has, are not written.
 
 ## SceneFileCache
 
@@ -442,7 +448,7 @@ function destroy():Void
 
 *class* in `src/helix/scene/SceneKinds.hx`
 
-The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, the stage's tonemap), a texture or a font from its path through Textures and a Fonts of this module's own, a color as 0xRRGGBBAA.
+The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA.
 
 ```haxe
 static function make(kind:String):Null<Node3D>
@@ -453,6 +459,8 @@ static function applyMaterial(model:Model, material:SceneMaterial, ?instance:Sce
 static function readMaterial(model:Model):Null<SceneMaterial>
 static function tonemapOf(name:String):Null<Tonemap>
 static function tonemapName(tonemap:Tonemap):String
+static function projectionOf(name:String):Null<Projection>
+static function projectionName(projection:Projection):String
 static function facingOf(name:String):Null<SpriteFacing>
 static function facingName(facing:SpriteFacing):String
 static function alphaOf(name:String):Null<SpriteAlpha>
@@ -461,12 +469,14 @@ static function alphaName(alpha:SpriteAlpha):String
 
 - `make`: A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table has.
 - `kindOf`: The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has.
-- `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY (through setPerspective, keeping the rest), a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures or this module's fonts and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
+- `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
 - `read`: Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet landed), or one that didn't come through the caches.
 - `applyMaterial`: Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance, when given, keeps them to release at its destroy.
 - `readMaterial`: Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures. Null for a model of no parts.
 - `tonemapOf`: The tone mapping named name, "none", "neutral" or "aces" (SceneSchema.tonemaps); null for another name.
 - `tonemapName`: Tonemap's name as the file writes it (SceneSchema.tonemaps).
+- `projectionOf`: The projection named name, "perspective" or "orthographic" (SceneSchema.projections); null for another name.
+- `projectionName`: A projection's name as the file writes it (SceneSchema.projections).
 - `facingOf`: The facing named name, "camera", "upright", "ground" or "free"; null for another name.
 - `facingName`: A facing's name as the file writes it.
 - `alphaOf`: The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name.
@@ -557,12 +567,14 @@ The kinds a .scene file's nodes can be and what each writes flat beside its name
 ```haxe
 static var kinds(default, null):Array<KindSchema>
 static final tonemaps(default, null):Array<String>
+static final projections(default, null):Array<String>
 static function kind(name:String):Null<KindSchema>
 static function property(name:String):Null<PropertySchema>
 ```
 
 - `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
 - `tonemaps`: What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value.
+- `projections`: What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value.
 - `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
 - `property`: The property named name on whichever kind has it first, or null for a name no kind has: for an override, whose node's kind is the model's or the prefab's to know, not the file's. A name means one type wherever it is (color is a color on a light and on text).
 

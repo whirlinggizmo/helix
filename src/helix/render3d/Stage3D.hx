@@ -404,7 +404,7 @@ class Stage3D {
 		uy = rz * fx - rx * fz;
 		uz = rx * fy - ry * fx;
 		var aspect = camera.viewportWidth / camera.viewportHeight,
-			orthographic = camera.orthographic;
+			orthographic = camera.projection == Orthographic;
 		var corners = new Vector<Float>(24), cx = 0., cy = 0., cz = 0.;
 		for (p in 0...2) {
 			var z = p == 0 ? (orthographic ? 0 : camera.near) : distance;

@@ -1,5 +1,4 @@
 import helix.app.BaseApp;
-import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -70,7 +69,10 @@ class App extends BaseApp {
 		camera.setView(0, 6, 10, 0, .8, 0);
 		// Looking straight down, -z up the map.
 		top.setView(0, 12, 0, 0, 0, 0, 0, 0, -1);
-		top.setOrthographic(9, .1, 50);
+		top.projection = Orthographic;
+		top.orthographicHeight = 9;
+		top.near = .1;
+		top.far = 50;
 
 		// The ground: a flattened sphere.
 		var ground = new Material();
@@ -90,7 +92,7 @@ class App extends BaseApp {
 
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		// The built-in font until it has loaded.
-		new Fonts(Assets.instance, gpu).load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
+		Fonts.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
 	}
 
 	// The car's file in: a copy of it on the stage the target draws.

@@ -227,11 +227,11 @@ static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding
 
 - `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
 
-## Fonts
+## FontCache
 
-*class* in `src/helix/render2d/Fonts.hx`
+*class* in `src/helix/render2d/FontCache.hx`
 
-TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font2D.fromTrueType), the same on every target, and baked again in place when a file changes during development. The caller releases what it loads.
+TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font2D.fromTrueType), the same on every target, and baked again in place when a file changes during development. The runner's is what the Fonts static forwards to; the caller releases what it loads.
 
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)
@@ -239,13 +239,33 @@ function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IReque
 function getPath(font:Font2D):Null<String>
 function release(font:Font2D):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
+function shutdown():Void
 ```
 
-- `new`: Loads through assets and uploads to gpu.
+- `new`: Loads through assets and uploads to gpu; shutdown shuts nothing down but this service.
 - `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
 - `getPath`: The file font was loaded from, or null for one this service didn't load.
 - `release`: Frees a font this service loaded, and stops reloading it.
 - `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font2D objects. A file that no longer reads leaves them as they were.
+- `shutdown`: Frees every font still loaded and takes no more loads: a load that lands after calls nothing. The runner's, at the program's end.
+
+## Fonts
+
+*class* in `src/helix/render2d/Fonts.hx`
+
+TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache's public members with their doc comments.
+
+```haxe
+static var instance(default, null):FontCache
+static function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
+static function getPath(font:Font2D):Null<String>
+static function release(font:Font2D):Void
+```
+
+- `instance`: The fonts forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
+- `getPath`: The file font was loaded from, or null for one this service didn't load.
+- `release`: Frees a font this service loaded, and stops reloading it.
 
 ## Glyph2D
 

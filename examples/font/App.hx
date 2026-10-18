@@ -1,5 +1,4 @@
 import helix.app.BaseApp;
-import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -23,7 +22,6 @@ class App extends BaseApp {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();
-	var fonts:Fonts;
 	var mono:Null<Font2D>;
 	var komika:Null<Font2D>;
 	var failed = false;
@@ -33,9 +31,8 @@ class App extends BaseApp {
 		Window.title = "HeliX font";
 		Window.requestSize(900, 500);
 		batch = new Batch2D();
-		fonts = new Fonts(Assets.instance, Graphics.instance);
-		fonts.load(MONO, font -> mono = font, message -> fail(message));
-		fonts.load(KOMIKA, font -> komika = font, message -> fail(message));
+		Fonts.load(MONO, font -> mono = font, message -> fail(message));
+		Fonts.load(KOMIKA, font -> komika = font, message -> fail(message));
 	}
 
 	// A font failed to load: said on the screen, and why in the log.
@@ -85,7 +82,7 @@ class App extends BaseApp {
 	override public function cleanup():Void {
 		for (font in [mono, komika])
 			if (font != null)
-				fonts.release(font);
+				Fonts.release(font);
 		batch.destroy();
 	}
 }

@@ -41,7 +41,8 @@ class PropertySchema {
 	}
 }
 
-/** One kind's table: its name, as the file's "kind" names the class, and its properties in the order the writer writes them. */
+/** One kind's table: its name, as the file's "kind" names the class, its properties in the order the writer writes them, and what the class
+	starts its flags at (an unsaid flag in a file means the kind's own default, and a flag at it isn't written). */
 class KindSchema {
 	/** The class's name: Model, DirectionalLight, Camera3D. */
 	public final name:String;
@@ -49,10 +50,22 @@ class KindSchema {
 	/** Its properties, in writing order: a parent class's first (a light's before a spot's range and cones). */
 	public final properties:Array<PropertySchema>;
 
-	/** A kind name with properties. */
-	public function new(name:String, properties:Array<PropertySchema>) {
+	/** What the class starts Node.enabled at: true for every kind. */
+	public final enabled:Bool;
+
+	/** What the class starts Node.visible at: true for every kind. */
+	public final visible:Bool;
+
+	/** What the class starts Node.pickable at: false for a Text3D (a label lets a pick through to what it names), true elsewhere. */
+	public final pickable:Bool;
+
+	/** A kind name with properties, its flags starting at enabled, visible and pickable (each true unless said). */
+	public function new(name:String, properties:Array<PropertySchema>, enabled = true, visible = true, pickable = true) {
 		this.name = name;
 		this.properties = properties;
+		this.enabled = enabled;
+		this.visible = visible;
+		this.pickable = pickable;
 	}
 
 	/** Its property named name, or null for one it hasn't. */
@@ -72,23 +85,25 @@ class SceneSchema {
 	/** Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own). */
 	public static var kinds(default, null):Array<KindSchema> = [
 		new KindSchema("Node3D", []),
-		new KindSchema("Model", [
-			new PropertySchema("tint", PropertyType.Color, SceneValue.Color(0xffffffff)),
-			new PropertySchema("shadowCasting", PropertyType.Flag, SceneValue.Flag(true)),
-			new PropertySchema("shadowReceiving", PropertyType.Flag, SceneValue.Flag(true))
-		]),
-		new KindSchema("DirectionalLight", light()),
+		new KindSchema("Model",
+			[
+				new PropertySchema("tint", PropertyType.Color, SceneValue.Color(0xffffffff)),
+				new PropertySchema("shadowCasting", PropertyType.Flag, SceneValue.Flag(true)),
+				new PropertySchema("shadowReceiving", PropertyType.Flag, SceneValue.Flag(true))
+			]),
+		new KindSchema("DirectionalLight", light().concat(shadows())),
 		new KindSchema("PointLight", light().concat([range()])),
-		new KindSchema("SpotLight", light().concat([
+		new KindSchema("SpotLight", light().concat(shadows()).concat([
 			range(),
 			new PropertySchema("innerCone", PropertyType.Number(0, Math.PI / 2), SceneValue.Number(0.3)),
 			new PropertySchema("outerCone", PropertyType.Number(0, Math.PI / 2), SceneValue.Number(0.4))
 		])),
 		new KindSchema("Camera3D", [
-			new PropertySchema("fovY", PropertyType.Number(0, Math.PI), SceneValue.Number(Math.PI / 4)),
-			new PropertySchema("near", PropertyType.Number(0), SceneValue.Number(0.1)),
-			new PropertySchema("far", PropertyType.Number(0), SceneValue.Number(1000)),
-			new PropertySchema("orthographicHeight", PropertyType.Number(0), SceneValue.Number(0)),
+			new PropertySchema("projection", PropertyType.Text, SceneValue.Text("perspective")),
+			new PropertySchema("fovY", PropertyType.Number(0.001, Math.PI - 0.001), SceneValue.Number(Math.PI / 4)),
+			new PropertySchema("near", PropertyType.Number(), SceneValue.Number(0.1)),
+			new PropertySchema("far", PropertyType.Number(), SceneValue.Number(1000)),
+			new PropertySchema("orthographicHeight", PropertyType.Number(1e-6), SceneValue.Number(10)),
 			new PropertySchema("minAspect", PropertyType.Number(0), SceneValue.Number(0))
 		]),
 		new KindSchema("Sprite3D", [
@@ -114,12 +129,15 @@ class SceneSchema {
 			new PropertySchema("pivotX", PropertyType.Number(), SceneValue.Number(0.5)),
 			new PropertySchema("pivotY", PropertyType.Number(), SceneValue.Number(0.5)),
 			new PropertySchema("facing", PropertyType.Text, SceneValue.Text("camera"))
-		]),
+		], true, true, false),
 		new KindSchema("Particles3D", [])
 	];
 
 	/** What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value. */
 	public static final tonemaps = ["none", "neutral", "aces"];
+
+	/** What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value. */
+	public static final projections = ["perspective", "orthographic"];
 
 	/** The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold. */
 	public static function kind(name:String):Null<KindSchema> {
@@ -140,11 +158,16 @@ class SceneSchema {
 		return null;
 	}
 
-	// What every light writes (Light's properties), a fresh table each time, as each kind's table is its own.
+	// What every light writes (Light's color and intensity), a fresh table each time, as each kind's table is its own.
 	static function light():Array<PropertySchema>
 		return [
 			new PropertySchema("color", PropertyType.Color, SceneValue.Color(0xffffffff)),
-			new PropertySchema("intensity", PropertyType.Number(0), SceneValue.Number(1)),
+			new PropertySchema("intensity", PropertyType.Number(0), SceneValue.Number(1))
+		];
+
+	// What a light that can cast shadows writes (a directional light or a spot; a point light casts none, so its table has none of these).
+	static function shadows():Array<PropertySchema>
+		return [
 			new PropertySchema("shadowCasting", PropertyType.Flag, SceneValue.Flag(false)),
 			new PropertySchema("shadowDistance", PropertyType.Number(1e-6), SceneValue.Number(50)),
 			new PropertySchema("shadowMapSize", PropertyType.Number(256, 4096), SceneValue.Number(2048)),

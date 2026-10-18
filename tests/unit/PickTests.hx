@@ -49,7 +49,10 @@ class PickTests {
 		check(c.computeRay(400, 0, ray) && ray.directionY > 0, "The top row looks up: y is turned over");
 		check(!c.computeRay(-1, -1, ray) && !c.computeRay(800, 300, ray), "Off the viewport: no ray");
 		// An orthographic camera's rays run parallel, each from its own place (wgrender-c's 526ff15: picks built a perspective and missed).
-		c.setOrthographic(6, .1, 100);
+		c.projection = Orthographic;
+		c.orthographicHeight = 6;
+		c.near = .1;
+		c.far = 100;
 		check(c.computeRay(400, 0, ray) && near(ray.directionY, 0) && near(ray.originY, 3), "Orthographic: parallel rays from the edge");
 		// A viewport area: its own middle looks straight ahead; outside it, nothing.
 		var area = camera();

@@ -109,7 +109,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Camera3D.hx`
 
-A 3D view, perspective or orthographic (setOrthographic), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians.
+A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its values are properties that clamp (fovY, near, far, orthographicHeight, minAspect), each held to its range as its doc comment says.
 
 ```haxe
 function new()
@@ -123,16 +123,14 @@ var forwardZ(get, never):Float
 var upX(get, never):Float
 var upY(get, never):Float
 var upZ(get, never):Float
-var fovY(default, null):Float
-function setPerspective(fovY:Float, near:Float, far:Float):Bool
+var projection(default, set):Projection
+var fovY(default, set):Float
 var minAspect(default, set):Float
 var drawnFovY(get, never):Float
 var drawnHeight(get, never):Float
-var near(default, null):Float
-var far(default, null):Float
-var orthographicHeight(default, null):Float
-var orthographic(get, never):Bool
-function setOrthographic(height:Float, near:Float, far:Float):Bool
+var near(default, set):Float
+var far(default, set):Float
+var orthographicHeight(default, set):Float
 var framebufferWidth(default, null):Int
 var framebufferHeight(default, null):Int
 var viewportX(default, null):Int
@@ -145,7 +143,7 @@ var viewProjection(get, never):Mat4
 function computeRay(x:Float, y:Float, ray:Ray):Bool
 ```
 
-- `new`: A camera at 0, 0, 10 looking at the origin, +y up, a quarter turn (pi/4) of vertical view, clipping at 0.1 and 1000, on a 1 x 1 viewport.
+- `new`: A camera at 0, 0, 10 looking at the origin, +y up, perspective with a quarter turn (pi/4) of vertical view (an orthographic height of 10 kept for when projection says so), clipping at 0.1 and 1000, on a 1 x 1 viewport.
 - `setView`: Places it at eye and turns it to look at target, up giving the roll: positions relative to its parent (the world's, at the top). False, changing nothing, when the eye is at the target or up is along the view.
 - `eyeX`: The eye's x: its world position.
 - `eyeY`: The eye's y.
@@ -156,16 +154,14 @@ function computeRay(x:Float, y:Float, ray:Ray):Bool
 - `upX`: Its up in the world, x: its +y, a unit vector square to the view.
 - `upY`: Its up, y.
 - `upZ`: Its up, z.
-- `fovY`: The vertical field of view in radians.
-- `setPerspective`: The projection: fovY radians of vertical view, near and far the clip planes' distances. False, changing nothing, unless 0 < fovY < pi and 0 < near < far.
-- `minAspect`: The narrowest viewport shape (width / height) the view keeps its width at: on a narrower viewport its vertical view (setPerspective's fovY, or an orthographic height) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0, the default, for none; 0 or more (under 0, or NaN, is 0).
+- `projection`: Which projection draws, Perspective to start: a perspective view sees fovY, an orthographic one orthographicHeight, both kept whichever draws, with near and far either way. Perspective holds near above 0: switching to it with a near of 0 or less raises near to 1e-6, and far to 2e-6 when it was no more.
+- `fovY`: The perspective view's vertical field of view in radians, pi/4 to start: held from 0.001 to pi - 0.001, a value outside landing on the nearer bound (NaN on the lower). Drawn when projection is Perspective; drawnFovY is what the viewport's shape makes of it.
+- `minAspect`: The narrowest viewport shape (width / height) the view keeps its width at: on a narrower viewport its vertical view (fovY, or orthographicHeight) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0, the default, for none; 0 or more (under 0, or NaN, is 0).
 - `drawnFovY`: The vertical field of view drawn, in radians: fovY, widened on a viewport narrower than the minimum aspect (minAspect).
 - `drawnHeight`: The orthographic height drawn, in world units: orthographicHeight, taller on a viewport narrower than the minimum aspect.
-- `near`: The near clip plane's distance from the eye.
-- `far`: The far clip plane's distance from the eye.
-- `orthographicHeight`: An orthographic projection's height in world units; 0 for a perspective one.
-- `orthographic`: Whether the projection is orthographic.
-- `setOrthographic`: An orthographic projection, with no perspective: height world units seen top to bottom (the width by the viewport's shape), near and far the clip planes' distances from the eye (near may be 0 or less). setPerspective goes back. False, changing nothing, unless height > 0 and near < far.
+- `near`: The near clip plane's distance from the eye, 0.1 to start: held below far, one at or past far (or NaN) landing 1e-6 under it; a perspective view (projection) holds it above 0 too, one of 0 or less landing on 1e-6. An orthographic view's near may be 0 or less. Set far first when the new pair lies past the old one.
+- `far`: The far clip plane's distance from the eye, 1000 to start: held above near, one at or under near (or NaN) landing 1e-6 over it. Set near first when the new pair lies under the old one.
+- `orthographicHeight`: The orthographic view's height in world units seen top to bottom (the width by the viewport's shape), 10 to start: held above 0, one of 0 or less (or NaN) landing on 1e-6. Drawn when projection is Orthographic; drawnHeight is what the viewport's shape makes of it.
 - `framebufferWidth`: The framebuffer width in pixels, from setViewport.
 - `framebufferHeight`: The framebuffer height in pixels, from setViewport.
 - `viewportX`: The viewport's left edge in framebuffer pixels from the framebuffer's left.
@@ -174,7 +170,7 @@ function computeRay(x:Float, y:Float, ray:Ray):Bool
 - `viewportHeight`: The viewport height in framebuffer pixels.
 - `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
-- `viewProjection`: World to clip space, for the viewport's shape: projection * view, recomputed by each call, the view from where it is in the world now.
+- `viewProjection`: World to clip space, for the viewport's shape: the projection's matrix * view, recomputed by each call, the view from where it is in the world now.
 - `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
 
 ## Cube
@@ -858,6 +854,12 @@ var range(default, set):Float
 
 - `new`: A white point light of intensity 1 and unlimited range.
 - `range`: Its range in world units: past it, nothing; 0 for unlimited (falling off with the square of the distance). 0 or more (under 0, or NaN, is 0).
+
+## Projection
+
+*abstract* in `src/helix/render3d/Projection.hx`
+
+How a Camera3D flattens the world onto its viewport: which of its two projections draws (Camera3D.projection).
 
 ## Ray
 

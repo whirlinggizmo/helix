@@ -338,7 +338,8 @@ class ModelFile {
 
 	// Camera index as a Camera3D at the origin, unturned (its node places it): a perspective one's fovY, near and far from its yfov, znear
 	// and zfar (an absent zfar, glTF's infinite one, keeps Camera3D's default far); an orthographic one's height 2 x ymag (ymag is half the
-	// height seen, as Camera3D's height is all of it). Throws for a type that is neither, a required value missing, or one Camera3D refuses.
+	// height seen, as Camera3D's height is all of it). Throws for a type that is neither, a required value missing, or values outside what
+	// the glTF format allows (the camera would clamp them, and a file's camera is read as written or not at all).
 	function camera(index:Int):Camera3D {
 		var c = gltf.list("cameras")[index], type:String = field(c, "type");
 		var camera = new Camera3D();
@@ -351,8 +352,13 @@ class ModelFile {
 				zfar:Null<Float> = field(p, "zfar");
 			if (yfov == null || znear == null)
 				throw 'Camera $index has no yfov or znear';
-			if (!camera.setPerspective(yfov, znear, zfar == null ? camera.far : zfar))
+			if (zfar == null)
+				zfar = camera.far;
+			if (!(yfov > 0 && yfov < Math.PI && znear > 0 && zfar > znear))
 				throw 'Camera $index\'s yfov, znear and zfar aren\'t 0 < yfov < pi and 0 < znear < zfar';
+			camera.projection = Perspective;
+			camera.fovY = yfov;
+			clipPlanes(camera, znear, zfar);
 		} else if (type == "orthographic") {
 			var o:Dynamic = field(c, "orthographic");
 			var ymag:Null<Float> = field(o, "ymag"),
@@ -360,11 +366,22 @@ class ModelFile {
 				zfar:Null<Float> = field(o, "zfar");
 			if (ymag == null || znear == null || zfar == null)
 				throw 'Camera $index has no ymag, znear or zfar';
-			if (!camera.setOrthographic(2 * ymag, znear, zfar))
+			if (!(ymag > 0 && zfar > znear))
 				throw 'Camera $index\'s ymag, znear and zfar aren\'t ymag > 0 and znear < zfar';
+			camera.projection = Orthographic;
+			camera.orthographicHeight = 2 * ymag;
+			clipPlanes(camera, znear, zfar);
 		} else
 			throw 'Camera $index has type $type, neither perspective nor orthographic';
 		return camera;
+	}
+
+	// near and far (near < far, and above 0 for a perspective camera) onto camera exactly: near set first lands under the old far, far
+	// then goes where asked, and near again where asked should the old far have held it.
+	static function clipPlanes(camera:Camera3D, near:Float, far:Float):Void {
+		camera.near = near;
+		camera.far = far;
+		camera.near = near;
 	}
 
 	function node(index:Int, skinned:Array<{model:Model, skin:Int}>):Node3D {

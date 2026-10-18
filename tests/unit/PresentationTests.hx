@@ -84,7 +84,9 @@ class PresentationTests {
 
 		// A 3D view keeps its width on a narrower viewport.
 		var view = new Camera3D();
-		view.setPerspective(1, .1, 100);
+		view.fovY = 1;
+		view.near = .1;
+		view.far = 100;
 		view.setViewport(1600, 900);
 		check(view.drawnFovY == 1, "A 3D view without a minimum aspect is as given");
 		view.minAspect = 16 / 9;
@@ -92,7 +94,10 @@ class PresentationTests {
 		view.setViewport(390, 844);
 		var across = Math.tan(view.drawnFovY / 2) * 390 / 844;
 		check(near(across, Math.tan(.5) * 16 / 9), "On a narrower one it sees as far across as at the minimum aspect");
-		view.setOrthographic(10, -1, 1);
+		view.projection = Orthographic;
+		view.orthographicHeight = 10;
+		view.near = -1;
+		view.far = 1;
 		check(near(view.drawnHeight * 390 / 844, 10 * 16 / 9), "an orthographic one too");
 		view.minAspect = -1;
 		check(view.minAspect == 0, "A minimum aspect under 0 is 0");

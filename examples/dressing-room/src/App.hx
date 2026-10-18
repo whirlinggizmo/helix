@@ -392,7 +392,9 @@ class App extends BaseApp {
 			broad = Math.max(max[0] - min[0], max[2] - min[2]) / 2;
 		var d = Math.max(.08, Math.max(high, broad)) / Math.tan(15 * Math.PI / 180) * 1.12 + broad;
 		shot.setViewport(THUMB, THUMB);
-		shot.setPerspective(30, .02, 50);
+		shot.fovY = 30;
+		shot.near = .02;
+		shot.far = 50;
 		if (held)
 			shot.setView(cx - d, cy + d * .2, cz + d * .25, cx, cy, cz);
 		else
@@ -486,7 +488,9 @@ class App extends BaseApp {
 		fps.update(dt, Time.frameCpu);
 
 		camera.setViewport(width, height);
-		camera.setPerspective(35, .05, 100);
+		camera.fovY = 35;
+		camera.near = .05;
+		camera.far = 100;
 		if (portrait) {
 			// Her above the panel, in the framebuffer over it, centered.
 			var top = Std.int(Math.max(1, Math.min(height, (box.y - vy) * presentation.scaleY + presentation.areaY)));

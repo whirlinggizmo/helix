@@ -59,15 +59,17 @@ class SceneFile {
 		reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the
 		children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run
 		time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference
-		is written as the node's name when one node of the instance has it, else its path. Capturing an untouched instance gives the file
-		it was made from, written canonically. */
+		is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what
+		differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is
+		left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand
+		wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically. */
 	public static function capture(instance:SceneInstance):SceneFile
 		return @:privateAccess instance.capture();
 
 	/** The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing
 		newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a
-		transform at identity, a node's flag that is true (an override's is written whenever said), a property at its class's default, an unsaid stage or material value, and a property no
-		table has, are not written. */
+		transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's
+		default, an unsaid stage or material value, and a property no table has, are not written. */
 	public function write():Bytes
 		return Bytes.ofString(new SceneWriter().write(this));
 }
@@ -593,15 +595,16 @@ private class SceneWriter {
 			entries.push(entry("rotation", [numbers(node.rotation)]));
 		if (node.scale != null && (overriding || !isAll(node.scale, 1)))
 			entries.push(entry("scale", [numbers(node.scale)]));
-		// A node's flag is written when false (true is its default); an override's whenever said, since its base is the file's.
-		for (flag in [
-			{key: "enabled", value: node.enabled},
-			{key: "visible", value: node.visible},
-			{key: "pickable", value: node.pickable}
-		])
-			if (flag.value != null && (overriding || !flag.value))
-				entries.push(entry(flag.key, [flag.value ? "true" : "false"]));
+		// A node's flag at its kind's own default is left out (a file or a prefab node's are a plain group's, true); an override's is
+		// written whenever said, since its base is the file's.
 		var schema = node.kind != null ? SceneSchema.kind(node.kind) : null;
+		for (flag in [
+			{key: "enabled", value: node.enabled, kinds: schema == null || schema.enabled},
+			{key: "visible", value: node.visible, kinds: schema == null || schema.visible},
+			{key: "pickable", value: node.pickable, kinds: schema == null || schema.pickable}
+		])
+			if (flag.value != null && (overriding || flag.value != flag.kinds))
+				entries.push(entry(flag.key, [flag.value ? "true" : "false"]));
 		if (schema != null) {
 			for (property in schema.properties) {
 				var held = node.properties.get(property.name);

@@ -295,11 +295,11 @@ class Render3DTests {
 			eye = Std.downcast(set.find("eye"), Camera3D),
 			flat = Std.downcast(set.find("flat"), Camera3D),
 			body = Std.downcast(set.find("body"), Model);
-		check(eye != null && near(eye.fovY, .9) && near(eye.near, .2) && near(eye.far, 50) && !eye.orthographic,
+		check(eye != null && near(eye.fovY, .9) && near(eye.near, .2) && near(eye.far, 50) && eye.projection == Perspective,
 			"A perspective camera node is a Camera3D with the file's yfov, znear and zfar");
 		check(near(eye.x, 1) && near(eye.y, 2) && near(eye.z, 3) && near(eye.eyeX, 1) && near(eye.forwardZ, -1) && near(eye.upY, 1),
 			"It sits at its node's transform, looking down -z with +y up");
-		check(flat != null && flat.orthographic && near(flat.orthographicHeight, 6) && near(flat.near, .1) && near(flat.far, 20),
+		check(flat != null && flat.projection == Orthographic && near(flat.orthographicHeight, 6) && near(flat.near, .1) && near(flat.far, 20),
 			"An orthographic camera's height is twice its ymag");
 		check(near(flat.eyeZ, 0) && near(flat.forwardZ, -1), "A camera node without a transform is at the origin, not Camera3D's starting place");
 		var bodyCamera = Std.downcast(set.find("body_camera"), Camera3D);

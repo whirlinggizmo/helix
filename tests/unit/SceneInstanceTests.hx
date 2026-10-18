@@ -8,6 +8,8 @@ import helix.graphics.Graphics;
 import helix.graphics.IImageDecoder;
 import helix.graphics.ImageDecoding;
 import helix.graphics.ImageDecoding.ImageDecodeResult;
+import helix.render2d.FontCache;
+import helix.render2d.Fonts;
 import helix.render2d.TextureCache;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
@@ -122,6 +124,7 @@ class SceneInstanceTests {
 		@:privateAccess Graphics.bind(gpu);
 		@:privateAccess Assets.bind(assets);
 		@:privateAccess Textures.bind(textures);
+		@:privateAccess Fonts.bind(new FontCache(assets, gpu));
 		@:privateAccess Models.bind(new ModelCache(assets, textures));
 		@:privateAccess Environments.bind(new EnvironmentCache(assets, decoding, gpu));
 		@:privateAccess SceneFiles.bind(sceneFiles);
@@ -130,6 +133,7 @@ class SceneInstanceTests {
 		prefabs();
 		modelFile();
 		kinds();
+		flagsAndCameras();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -238,8 +242,9 @@ class SceneInstanceTests {
 		var spot = Std.downcast(instance.node("world/spot"), SpotLight);
 		check(spot != null && spot.range == 20 && near(spot.innerCone, .2) && near(spot.outerCone, .5) && spot.shadowCasting, "A spot's cones");
 		var chase = Std.downcast(instance.node("world/chase"), Camera3D);
-		check(chase != null && chase.y == 3 && chase.z == -8 && near(chase.fovY, .9) && chase.near == .5 && chase.far == 500 && near(chase.minAspect, 1.777778),
-			"A camera's projection");
+		check(chase != null && chase.y == 3 && chase.z == -8 && near(chase.fovY, .9) && chase.near == .5 && chase.far == 500
+			&& near(chase.minAspect, 1.777778) && chase.projection == Perspective,
+			"A camera's projection, perspective unsaid");
 		var glow = Std.downcast(instance.node("world/glow"), Sprite3D);
 		check(glow != null && glow.tint == 0xffffff80 && glow.regionX == 8 && glow.regionWidth == 16 && glow.spriteWidth == 2 && glow.pivotX == 0
 			&& glow.pivotY == 1 && glow.facing == Upright && glow.alphaMode == Add && glow.alphaCutoff == .25 && !glow.pickable && held.exists("fx/glow.png"),
@@ -620,9 +625,7 @@ class SceneInstanceTests {
 			decoding.poll();
 			for (property in kind.properties) {
 				var read = SceneKinds.read(node, property.name);
-				// A point light never casts: the class takes true as false (its table still has the flag, as every light's does).
-				var expected = kind.name == "PointLight" && property.name == "shadowCasting" ? Flag(false) : away(property);
-				check(read != null && same(read, expected), '${kind.name}.${property.name} reads back what was applied: $read');
+				check(read != null && same(read, away(property)), '${kind.name}.${property.name} reads back what was applied: $read');
 			}
 			check(!SceneKinds.apply(node, "colour", Color(0))
 				&& SceneKinds.read(node, "colour") == null, 'A property ${kind.name} hasn\'t is refused');
@@ -632,6 +635,28 @@ class SceneInstanceTests {
 		var sprite = new Sprite3D(null);
 		check(!SceneKinds.apply(sprite, "facing", Text("sideways")) && !SceneKinds.apply(sprite, "alphaMode", Text("solid")),
 			"A named choice no enum has is refused");
+		var lamp = new PointLight();
+		check(!SceneKinds.apply(lamp, "shadowCasting", Flag(true)) && SceneKinds.read(lamp, "shadowDistance") == null,
+			"A point light's shadow properties aren't its to apply or read");
+		var camera = new Camera3D();
+		check(!SceneKinds.apply(camera, "projection", Text("isometric"))
+			&& SceneKinds.projectionOf("orthographic") == Orthographic
+			&& SceneKinds.projectionName(Perspective) == "perspective",
+			"Projections by name");
+		check(SceneKinds.apply(camera, "near", Number(2000))
+			&& camera.near == 2000
+			&& camera.far > 2000
+			&& SceneKinds.apply(camera, "far", Number(5000))
+			&& camera.far == 5000
+			&& camera.near == 2000,
+			"A near past the far moves the far just past it, so the far then said lands too");
+		check(SceneKinds.apply(camera, "far", Number(.05))
+			&& camera.far == .05
+			&& camera.near < .05
+			&& SceneKinds.apply(camera, "near", Number(.01))
+			&& camera.near == .01
+			&& camera.far == .05,
+			"and a far under the near moves the near just under it");
 		check(SceneKinds.tonemapOf("aces") == Aces && SceneKinds.tonemapOf("filmic") == null && SceneKinds.tonemapName(None) == "none",
 			"Tone mappings by name");
 		var material = new SceneMaterial();
@@ -665,6 +690,49 @@ class SceneInstanceTests {
 		check(log.length == 0, 'Nothing logged: $log');
 	}
 
+	// An unsaid flag is the kind's own default (a Text3D unpickable), a said one is applied and captured as said away from it; a camera
+	// of each projection applied and read back.
+	static function flagsAndCameras():Void {
+		var file = parse('{"helix-scene": 1, "nodes": [
+			{"kind": "Text3D", "name": "quiet", "text": "a"},
+			{"kind": "Text3D", "name": "button", "text": "b", "pickable": true},
+			{"kind": "Model", "name": "ghost", "pickable": false},
+			{"kind": "Camera3D", "name": "eye", "position": [0, 1, 8], "projection": "perspective", "fovY": 1, "near": 0.5, "far": 50},
+			{"kind": "Camera3D", "name": "flat", "position": [0, 12, 0], "projection": "orthographic", "orthographicHeight": 6, "near": 0,
+				"far": 20}
+		]}', "flags.scene");
+		var made = fresh(), instance = file.instantiate(made.stage, made.pass);
+		var quiet = instance.node("quiet"),
+			button = instance.node("button"),
+			ghost = instance.node("ghost");
+		check(quiet != null && !quiet.pickable && quiet.enabled && quiet.visible, "A Text3D with no flag said is unpickable, as made in code");
+		check(button != null && button.pickable, "A Text3D said pickable is");
+		check(ghost != null && !ghost.pickable && ghost.visible, "A Model said unpickable is");
+		var eye = Std.downcast(instance.node("eye"), Camera3D),
+			flat = Std.downcast(instance.node("flat"), Camera3D);
+		check(eye != null && eye.projection == Perspective && eye.fovY == 1 && eye.near == .5 && eye.far == 50, "A perspective camera from a file");
+		check(flat != null && flat.projection == Orthographic && flat.orthographicHeight == 6 && flat.near == 0 && flat.far == 20,
+			"An orthographic camera from a file, its near 0");
+		var captured = SceneFile.capture(instance);
+		check(captured.write().compare(file.write()) == 0, "The untouched instance captures to its file: flags and projections alike");
+		var written = captured.write().toString();
+		var quietAt = written.indexOf('"name": "quiet"'),
+			buttonAt = written.indexOf('"name": "button"'),
+			ghostAt = written.indexOf('"name": "ghost"');
+		check(written.substring(quietAt, buttonAt).indexOf('"pickable"') < 0, "The unsaid flag at the kind's default isn't written");
+		check(written.substring(buttonAt, ghostAt).indexOf('"pickable": true') >= 0, "The Text3D's pickable true is");
+		check(written.substring(ghostAt).indexOf('"pickable": false') >= 0, "and the Model's pickable false");
+		check(same(captured.nodes[4].properties.get("projection"), Text("orthographic"))
+			&& same(captured.nodes[4].properties.get("near"), Number(0))
+			&& same(captured.nodes[3].properties.get("projection"), Text("perspective"))
+			&& written.indexOf('"projection": "perspective"') < 0,
+			"A projection reads back by name, a perspective one left out of the write as the default");
+		flat.projection = Perspective;
+		check(flat.near > 0 && flat.far == 20, "Perspective raises a near of 0 above it");
+		instance.destroy();
+		check(log.length == 0, 'Nothing logged: $log');
+	}
+
 	// A value for property that isn't its default and that its class keeps.
 	static function away(property:PropertySchema):SceneValue {
 		return switch [property.name, property.type, property.defaultValue] {
@@ -673,6 +741,7 @@ class SceneInstanceTests {
 			case ["font", _, _]: Text("fonts/test.ttf");
 			case ["facing", _, _]: Text("ground");
 			case ["alphaMode", _, _]: Text("mask");
+			case ["projection", _, _]: Text("orthographic");
 			case [_, Number(_, max), Number(v)]: Number(max != null ? (v == max ? max / 2 : (v + max) / 2) : v + 1);
 			case [_, Text, _]: Text("elsewhere");
 			case [_, Flag, Flag(v)]: Flag(!v);

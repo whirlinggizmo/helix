@@ -63,7 +63,7 @@ class SceneInstance {
 	// The loads under way, to cancel at destroy, and what landed through the caches, to release then.
 	var requests:Array<IRequest> = [];
 	var textures:Array<Texture2D> = [];
-	var fonts:Array<{font:Font2D, fonts:Fonts}> = [];
+	var fonts:Array<Font2D> = [];
 	var environments:Array<Environment> = [];
 
 	function new(file:SceneFile, path:String, stage:Stage3D, behaviors:Behaviors, ?ready:Void->Void) {
@@ -147,8 +147,8 @@ class SceneInstance {
 		for (texture in textures)
 			Textures.release(texture);
 		textures = [];
-		for (held in fonts)
-			held.fonts.release(held.font);
+		for (font in fonts)
+			Fonts.release(font);
 		fonts = [];
 		for (environment in environments)
 			Environments.release(environment);
@@ -173,15 +173,15 @@ class SceneInstance {
 		return true;
 	}
 
-	// Keeps a font the file loaded through fonts, to release at destroy; false, releasing it now, once destroyed.
+	// Keeps a font the file loaded through Fonts, to release at destroy; false, releasing it now, once destroyed.
 
 	@:allow(helix.scene)
-	function holdFont(font:Font2D, fonts:Fonts):Bool {
+	function holdFont(font:Font2D):Bool {
 		if (destroyed) {
-			fonts.release(font);
+			Fonts.release(font);
 			return false;
 		}
-		this.fonts.push({font: font, fonts: fonts});
+		fonts.push(font);
 		return true;
 	}
 
@@ -517,16 +517,22 @@ private class SceneBuilder {
 			node.setScale(entry.scale[0], entry.scale[1], entry.scale[2]);
 	}
 
-	// The entry's flags on node: an entry's unsaid flag is true (a Text3D, unpickable when made in code, is pickable from a file unless
-	// the file says not); an override's unsaid flag changes nothing.
+	// The entry's flags on node: an entry's unsaid flag is its kind's own default (SceneSchema's table: a Text3D unpickable, as made in
+	// code; a file or a prefab node a plain group's, all true); an override's unsaid flag changes nothing.
 	function applyFlags(node:Node3D, entry:SceneNode):Void {
-		var overriding = entry.isOverride;
-		if (entry.enabled != null || !overriding)
-			node.enabled = entry.enabled != null ? entry.enabled : true;
-		if (entry.visible != null || !overriding)
-			node.visible = entry.visible != null ? entry.visible : true;
-		if (entry.pickable != null || !overriding)
-			node.pickable = entry.pickable != null ? entry.pickable : true;
+		if (entry.isOverride) {
+			if (entry.enabled != null)
+				node.enabled = entry.enabled;
+			if (entry.visible != null)
+				node.visible = entry.visible;
+			if (entry.pickable != null)
+				node.pickable = entry.pickable;
+			return;
+		}
+		var kind = entry.kind == null ? null : SceneSchema.kind(entry.kind);
+		node.enabled = entry.enabled != null ? entry.enabled : kind == null || kind.enabled;
+		node.visible = entry.visible != null ? entry.visible : kind == null || kind.visible;
+		node.pickable = entry.pickable != null ? entry.pickable : kind == null || kind.pickable;
 	}
 
 	// The entry's properties on node, in its kind's table order (an override's in the table of the node's own kind); one refused is logged.
@@ -885,9 +891,7 @@ private class SceneCapture {
 			}
 		}
 		writeTransform(entry, node);
-		entry.enabled = node.enabled ? null : false;
-		entry.visible = node.visible ? null : false;
-		entry.pickable = node.pickable ? null : false;
+		writeFlags(entry, node);
 		var schema = SceneSchema.kind(entry.kind);
 		if (schema != null)
 			for (property in schema.properties) {
@@ -927,9 +931,7 @@ private class SceneCapture {
 		entry.scene = source.scene;
 		entry.file = source.file;
 		writeTransform(entry, node);
-		entry.enabled = node.enabled ? null : false;
-		entry.visible = node.visible ? null : false;
-		entry.pickable = node.pickable ? null : false;
+		writeFlags(entry, node);
 		for (name in source.properties.keys())
 			entry.properties.set(name, source.properties.get(name));
 		entry.material = source.material;
@@ -1155,6 +1157,13 @@ private class SceneCapture {
 			written.push(entry);
 		}
 		return written;
+	}
+
+	// node's flags as they are, each said: the writer leaves out one at the kind's own default (a Text3D's pickable false).
+	static function writeFlags(entry:SceneNode, node:Node3D):Void {
+		entry.enabled = node.enabled;
+		entry.visible = node.visible;
+		entry.pickable = node.pickable;
 	}
 
 	// A prop's value as a file's; null for one the file can't say (a reference to no node, or to one outside the instance).

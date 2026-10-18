@@ -49,7 +49,9 @@ class StageBench {
 		stage.culling = kind != "away-nocull";
 		var camera = new Camera3D();
 		camera.setViewport(1280, 720);
-		camera.setPerspective(Math.PI / 3, .1, side * 4.);
+		camera.fovY = Math.PI / 3;
+		camera.near = .1;
+		camera.far = side * 4.;
 		var far = side * 1.2;
 		if (kind == "away" || kind == "away-nocull")
 			camera.setView(0, far, far, 0, far * 2, far * 3);

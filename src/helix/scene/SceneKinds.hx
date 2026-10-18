@@ -1,7 +1,5 @@
 package helix.scene;
 
-import helix.assets.Assets;
-import helix.graphics.Graphics;
 import helix.particles.Emitter;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
@@ -15,6 +13,7 @@ import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
 import helix.render3d.PointLight;
+import helix.render3d.Projection;
 import helix.render3d.SpotLight;
 import helix.render3d.Sprite3D;
 import helix.render3d.SpriteAlpha;
@@ -25,13 +24,9 @@ import helix.scene.SceneValue;
 
 /** The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property
 	applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables
-	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, the stage's
-	tonemap), a texture or a font from its path through Textures and a Fonts of this module's own, a color as 0xRRGGBBAA. */
+	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
+	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA. */
 class SceneKinds {
-	// The fonts a Text3D's "font" loads through: made from the program's assets and graphics when first needed (there is no Fonts static:
-	// apps make their own). Kept across a hot reload (@:hot), as the fonts it holds are drawn still.
-	@:hot static var fonts:Null<Fonts>;
-
 	/** A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table
 		has. */
@@ -71,11 +66,12 @@ class SceneKinds {
 		return Type.getClass(node) == Node3D ? "Node3D" : null;
 	}
 
-	/** Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY (through setPerspective,
-		keeping the rest), a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order), a sprite's region
-		and size, a text's size. A texture's or a font's path loads through Textures or this module's fonts and lands when it does ("" for
-		none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind
-		hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses. */
+	/** Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each
+		through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to
+		keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A
+		texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it
+		loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named
+		choice no enum has, or a value the class refuses. */
 	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance):Bool {
 		var model = Std.downcast(node, Model);
 		if (model != null)
@@ -102,19 +98,19 @@ class SceneKinds {
 				case ["intensity", Number(v)]:
 					light.intensity = v;
 					true;
-				case ["shadowCasting", Flag(f)]:
+				case ["shadowCasting", Flag(f)] if (point == null):
 					light.shadowCasting = f;
 					true;
-				case ["shadowDistance", Number(v)]:
+				case ["shadowDistance", Number(v)] if (point == null):
 					light.shadowDistance = v;
 					true;
-				case ["shadowMapSize", Number(v)]:
+				case ["shadowMapSize", Number(v)] if (point == null):
 					light.shadowMapSize = Std.int(v);
 					true;
-				case ["shadowStrength", Number(v)]:
+				case ["shadowStrength", Number(v)] if (point == null):
 					light.shadowStrength = v;
 					true;
-				case ["shadowColor", Color(c)]:
+				case ["shadowColor", Color(c)] if (point == null):
 					light.shadowColor = c;
 					true;
 				case ["range", Number(v)] if (point != null):
@@ -133,16 +129,27 @@ class SceneKinds {
 		var camera = Std.downcast(node, Camera3D);
 		if (camera != null)
 			return switch [name, value] {
-				case ["fovY", Number(v)]: perspective(camera, v, camera.near, camera.far);
+				case ["projection", Text(t)]:
+					var projection = projectionOf(t);
+					if (projection != null)
+						camera.projection = projection;
+					projection != null;
+				case ["fovY", Number(v)]:
+					camera.fovY = v;
+					true;
 				case ["near", Number(v)]:
-					camera.orthographic ? camera.setOrthographic(camera.orthographicHeight, v, camera.far) : camera.setPerspective(camera.fovY, v, camera.far);
+					if (!(v < camera.far))
+						camera.far = v + 1e-6;
+					camera.near = v;
+					true;
 				case ["far", Number(v)]:
-					camera.orthographic ? camera.setOrthographic(camera.orthographicHeight, camera.near,
-						v) : camera.setPerspective(camera.fovY, camera.near, v);
+					if (!(v > camera.near))
+						camera.near = v - 1e-6;
+					camera.far = v;
+					true;
 				case ["orthographicHeight", Number(v)]:
-					if (v > 0) camera.setOrthographic(v, camera.near,
-						camera.far); else if (v == 0) !camera.orthographic
-						|| camera.setPerspective(camera.fovY, camera.near > 0 ? camera.near : .1, camera.far); else false;
+					camera.orthographicHeight = v;
+					true;
 				case ["minAspect", Number(v)]:
 					camera.minAspect = v;
 					true;
@@ -217,16 +224,6 @@ class SceneKinds {
 		return false;
 	}
 
-	// A camera's fovY set, an orthographic one brought back to orthographic after (setPerspective ends that).
-	static function perspective(camera:Camera3D, fovY:Float, near:Float, far:Float):Bool {
-		if (!camera.orthographic)
-			return camera.setPerspective(fovY, near, far);
-		var height = camera.orthographicHeight;
-		if (!camera.setPerspective(fovY, near > 0 ? near : .1, far))
-			return false;
-		return camera.setOrthographic(height, near, far);
-	}
-
 	/** Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a
 		property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet
 		landed), or one that didn't come through the caches. */
@@ -246,11 +243,11 @@ class SceneKinds {
 			return switch name {
 				case "color": Color(light.color);
 				case "intensity": Number(light.intensity);
-				case "shadowCasting": Flag(light.shadowCasting);
-				case "shadowDistance": Number(light.shadowDistance);
-				case "shadowMapSize": Number(light.shadowMapSize);
-				case "shadowStrength": Number(light.shadowStrength);
-				case "shadowColor": Color(light.shadowColor);
+				case "shadowCasting" if (point == null): Flag(light.shadowCasting);
+				case "shadowDistance" if (point == null): Number(light.shadowDistance);
+				case "shadowMapSize" if (point == null): Number(light.shadowMapSize);
+				case "shadowStrength" if (point == null): Number(light.shadowStrength);
+				case "shadowColor" if (point == null): Color(light.shadowColor);
 				case "range" if (point != null): Number(point.range);
 				case "range" if (spot != null): Number(spot.range);
 				case "innerCone" if (spot != null): Number(spot.innerCone);
@@ -261,6 +258,7 @@ class SceneKinds {
 		var camera = Std.downcast(node, Camera3D);
 		if (camera != null)
 			return switch name {
+				case "projection": Text(projectionName(camera.projection));
 				case "fovY": Number(camera.fovY);
 				case "near": Number(camera.near);
 				case "far": Number(camera.far);
@@ -293,7 +291,7 @@ class SceneKinds {
 				case "textSize": Number(text.textSize);
 				case "color": Color(text.color);
 				case "font":
-					var path = text.font == null || fonts == null ? null : fonts.getPath(text.font);
+					var path = text.font == null ? null : Fonts.getPath(text.font);
 					path == null ? null : Text(path);
 				case "pivotX": Number(text.pivotX);
 				case "pivotY": Number(text.pivotY);
@@ -357,6 +355,16 @@ class SceneKinds {
 	public static function tonemapName(tonemap:Tonemap):String
 		return SceneSchema.tonemaps[(tonemap : Int)];
 
+	/** The projection named name, "perspective" or "orthographic" (SceneSchema.projections); null for another name. */
+	public static function projectionOf(name:String):Null<Projection> {
+		var index = SceneSchema.projections.indexOf(name);
+		return index < 0 ? null : cast index;
+	}
+
+	/** A projection's name as the file writes it (SceneSchema.projections). */
+	public static function projectionName(projection:Projection):String
+		return SceneSchema.projections[(projection : Int)];
+
 	/** The facing named name, "camera", "upright", "ground" or "free"; null for another name. */
 	public static function facingOf(name:String):Null<SpriteFacing> {
 		var index = FACINGS.indexOf(name);
@@ -401,16 +409,14 @@ class SceneKinds {
 			instance.holdRequest(request);
 	}
 
-	// path's font through this module's fonts ("" for none, set at once), into set when it lands; the instance keeps it.
+	// path's font through Fonts ("" for none, set at once), into set when it lands; the instance keeps it.
 	static function loadFont(path:String, instance:Null<SceneInstance>, set:Null<Font2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
 		}
-		if (fonts == null)
-			fonts = new Fonts(Assets.instance, Graphics.instance);
-		var request = fonts.load(path, font -> {
-			if (instance != null && !instance.holdFont(font, fonts))
+		var request = Fonts.load(path, font -> {
+			if (instance != null && !instance.holdFont(font))
 				return;
 			set(font);
 		});
