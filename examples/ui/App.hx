@@ -361,7 +361,7 @@ class App extends BaseApp {
 			switch screen {
 				case "main":
 					if (play.clicked)
-						status = 'Playing as ${name.text == "" ? "nobody" : name.text}, music ${muteMusic.on ? "muted" : '${music.value}%'}';
+						status = 'Playing as ${name.text == "" ? "nobody" : name.text}, master ${master.value}%, music ${muteMusic.on ? "muted" : '${music.value}%'}';
 					if (openSettings.clicked)
 						show("settings");
 					if (openControls.clicked)
