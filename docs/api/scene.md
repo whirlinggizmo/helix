@@ -17,6 +17,24 @@ function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
 - `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xRRGGBBAA, its alpha the cover at the middle).
 - `color`: Its color.
 
+## KindSchema
+
+*class* in `src/helix/scene/SceneSchema.hx`
+
+One kind's table: its name, as the file's "kind" names the class, and its properties in the order the writer writes them.
+
+```haxe
+function new(name:String, properties:Array<PropertySchema>)
+final name:String
+final properties:Array<PropertySchema>
+function property(name:String):Null<PropertySchema>
+```
+
+- `new`: A kind name with properties.
+- `name`: The class's name: Model, DirectionalLight, Camera3D.
+- `properties`: Its properties, in writing order: a parent class's first (a light's before a spot's range and cones).
+- `property`: Its property named name, or null for one it hasn't.
+
 ## Loader
 
 *class* in `src/helix/scene/Loader.hx`
@@ -159,14 +177,46 @@ var hit3D(get, never):Null<PickHit>
 - `captured`: Whether a press on a 2D stage holds the pointer: the stages under it, and the app's own world controls, should leave it be.
 - `hit3D`: The last hit in a 3D stage (its point, normal, distance), when the hovered node is a 3D stage's; null otherwise.
 
+## PropertySchema
+
+*class* in `src/helix/scene/SceneSchema.hx`
+
+One property of a kind: its name as the class names it, its type, and the class's default, which the writer leaves out of the file.
+
+```haxe
+function new(name:String, type:PropertyType, defaultValue:SceneValue)
+final name:String
+final type:PropertyType
+final defaultValue:SceneValue
+```
+
+- `new`: A property name of type type, whose class starts it at defaultValue.
+- `name`: Its name, as the class names the property (intensity, fovY, shadowCasting).
+- `type`: The shape of its value.
+- `defaultValue`: What the class starts with: a value equal to it is not written, and an absent key means it.
+
+## PropertyType
+
+*enum* in `src/helix/scene/SceneSchema.hx`
+
+What a kind's property holds in a .scene file: the shape the parser checks a value against, the writer writes, and an inspector makes a control for.
+
+- `Number(?min:Float, ?max:Float)`: A number, held from min to max where given (null for no bound), as the class clamps it.
+- `Text`: Text: a path to an asset, or a named choice in lower case (a sprite's facing: "camera", "upright", "ground", "free").
+- `Flag`: A bool.
+- `Numbers(count:Int)`: A list of count numbers.
+- `Color`: A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xRRGGBBAA in memory.
+- `Reference`: A reference to a node of the file, "@name" or "@path/from/root" in the file.
+
 ## Scene
 
 *class* in `src/helix/scene/Scene.hx`
 
-One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides, so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its Loader (loader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame (Graphics.beginFrame) and draws; the stack ends it, after any transition it draws over.
+One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides, so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its Loader (loader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame (Graphics.beginFrame) and draws; the stack ends it, after any transition it draws over. Its behaviors (behaviors) are a pass of its own, which the stack updates just before update each frame this scene runs, and clears, stopping each, just before exit.
 
 ```haxe
 function new()
+var behaviors(default, null):Behaviors
 var name(get, never):String
 var scenes(default, null):Null<Scenes>
 var loader(get, never):Null<Loader>
@@ -179,7 +229,8 @@ function update(dt:Float):Void
 function draw():Void
 ```
 
-- `new`: A scene not on a stack yet.
+- `new`: A scene not on a stack yet, its behaviors pass empty.
+- `behaviors`: Its behaviors: the pass the stack updates before its update each frame it runs (not while it's under another scene, loading or the window is unfocused) and clears before its exit. What a scene file instantiated onto this scene attaches its behaviors to.
 - `name`: Its name: the class's, without its package, unless overridden; what an autopilot's probe reports.
 - `scenes`: The stack it's on, or null.
 - `loader`: The loads it waits for before it runs, or null for none: made in enter.
@@ -191,11 +242,186 @@ function draw():Void
 - `update`: A frame's logic, dt seconds since the last (the game's clock's delta, or an autopilot's tick).
 - `draw`: A frame's drawing: begins the frame and draws; the stack ends the frame.
 
+## SceneBehavior
+
+*class* in `src/helix/scene/SceneBehavior.hx`
+
+A behavior as a .scene file attaches it to a node: the behavior class's name and its props by name, as data. The file says which behaviors a node gets; at run time they live in the behaviors pass, never on the node.
+
+```haxe
+function new(kind:String)
+var kind:String
+var props:Map<String, SceneValue>
+```
+
+- `new`: A behavior of class kind with no props set.
+- `kind`: The behavior class's name, as the registry knows it.
+- `props`: Its props by name: numbers, text, flags, lists, colors and references to nodes of the file.
+
+## SceneFile
+
+*class* in `src/helix/scene/SceneFile.hx`
+
+A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its stage section and its nodes, each a SceneNode with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made. Instantiating onto a stage and capturing a live tree are the file's next phase.
+
+```haxe
+function new()
+static var VERSION(inline, null):Int
+static function parse(bytes:haxe.io.Bytes, ?path:String):Null<SceneFile>
+var version:Int
+var stage:Null<SceneStage>
+var nodes:Array<SceneNode>
+function write():haxe.io.Bytes
+```
+
+- `new`: An empty file of the current version: no stage section, no nodes.
+- `VERSION`: The format version read and written: the file's "helix-scene" value.
+- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file or a material on a kind that isn't a Model, overrides on a node with no file and no scene, an override with a name or a kind or an empty path, or a behavior without a kind.
+- `version`: The file's "helix-scene" version: VERSION, the only one read.
+- `stage`: Its stage section, or null when the file has none.
+- `nodes`: Its nodes at the root, in drawing order.
+- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag that is true (an override's is written whenever said), a property at its class's default, an unsaid stage or material value, and a property no table has, are not written.
+
+## SceneMaterial
+
+*class* in `src/helix/scene/SceneMaterial.hx`
+
+A material as a .scene file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
+
+```haxe
+function new()
+var baseColor:Null<Int>
+var metallic:Null<Float>
+var roughness:Null<Float>
+var texture:Null<String>
+var normalTexture:Null<String>
+var normalScale:Null<Float>
+var emissive:Null<Int>
+var emissiveStrength:Null<Float>
+var doubleSided:Null<Bool>
+```
+
+- `new`: A material saying nothing.
+- `baseColor`: The base color, 0xRRGGBBAA; null for unsaid.
+- `metallic`: How metallic, 0..1; null for unsaid.
+- `roughness`: How rough, 0..1; null for unsaid.
+- `texture`: The base color texture's path; null for unsaid.
+- `normalTexture`: The normal map's path; null for unsaid.
+- `normalScale`: How strongly the normal map bends the surface, 0 or more; null for unsaid.
+- `emissive`: The light it gives off, 0xRRGGBBAA; null for unsaid.
+- `emissiveStrength`: How bright its emissive light is, 0 or more; null for unsaid.
+- `doubleSided`: Whether both sides of its triangles draw; null for unsaid.
+
+## SceneNode
+
+*class* in `src/helix/scene/SceneNode.hx`
+
+A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
+
+```haxe
+function new(?kind:String, ?name:String)
+var name:Null<String>
+var kind:Null<String>
+var scene:Null<String>
+var file:Null<String>
+var position:Null<Array<Float>>
+var rotation:Null<Array<Float>>
+var scale:Null<Array<Float>>
+var enabled:Null<Bool>
+var visible:Null<Bool>
+var pickable:Null<Bool>
+var properties:Map<String, SceneValue>
+var material:Null<SceneMaterial>
+var overrides:Map<String, SceneNode>
+var children:Array<SceneNode>
+var behaviors:Array<SceneBehavior>
+var props:Map<String, SceneValue>
+var isOverride(get, never):Bool
+```
+
+- `new`: A node of kind (null for a prefab node or an override), named name (null for an override), everything else at its default.
+- `name`: Its name, unique among its siblings (paths depend on it); null for an override.
+- `kind`: The class it is (Node3D for a group, else a kind's name from SceneSchema); null for a prefab node or an override.
+- `scene`: The .scene file instantiated here as a prefab; null for a node of a kind or an override.
+- `file`: A Model's glTF, instantiated under it; null for none.
+- `position`: Its position, x, y, z in its parent's units; null for the origin.
+- `rotation`: Its rotation, Euler x, y, z in radians as Node3D.setRotation takes them; null for none.
+- `scale`: Its scale, x, y, z; null for 1, 1, 1.
+- `enabled`: Whether it takes part at all (Node.enabled), as the file says it; null for unsaid: a node's default, true, when instantiated, and unchanged for an override, which may say true to bring a prefab's disabled node back.
+- `visible`: Whether its own output is drawn (Node.visible), as the file says it; null for unsaid: true for a node, unchanged for an override.
+- `pickable`: Whether a pick can hit it (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for an override.
+- `properties`: Its kind's properties by name (intensity, fovY, tint), from its kind's table in SceneSchema; one absent is the class's default. An override's name any kind's property.
+- `material`: A Model's inline material, replacing the mesh's or the file's root material; null for none.
+- `overrides`: By path from this node ("road/line"), what changes on the nodes its file or prefab makes: each an override node.
+- `children`: The nodes under it, in drawing order; under an override, the nodes added.
+- `behaviors`: The behaviors attached to it when the scene is instantiated.
+- `props`: The game's own values by name, kept by the instance for this node, never on the live node.
+- `isOverride`: Whether it is an override: no name, no kind and no prefab, only what changes on a node another file made.
+
+## SceneSchema
+
+*class* in `src/helix/scene/SceneSchema.hx`
+
+The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind.
+
+```haxe
+static var kinds(default, null):Array<KindSchema>
+static function kind(name:String):Null<KindSchema>
+static function property(name:String):Null<PropertySchema>
+```
+
+- `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
+- `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
+- `property`: The property named name on whichever kind has it first, or null for a name no kind has: for an override, whose node's kind is the model's or the prefab's to know, not the file's. A name means one type wherever it is (color is a color on a light and on text).
+
+## SceneStage
+
+*class* in `src/helix/scene/SceneStage.hx`
+
+A .scene file's stage section: what a Stage3D keeps apart from its tree (its ambient light, environment, background, tone mapping and exposure). Each null means the stage's default and is not written. Only a file instantiated onto a stage applies it; a prefab's is logged and ignored.
+
+```haxe
+function new()
+var ambientColor:Null<Int>
+var ambientIntensity:Null<Float>
+var environmentFile:Null<String>
+var environmentIntensity:Null<Float>
+var environmentRotation:Null<Float>
+var backgroundFile:Null<String>
+var backgroundBlur:Null<Float>
+var tonemap:Null<String>
+var exposure:Null<Float>
+```
+
+- `new`: A stage section saying nothing: every setting the stage's own.
+- `ambientColor`: The ambient light's color, 0xRRGGBBAA; null for the stage's.
+- `ambientIntensity`: The ambient light's intensity, 0 or more; null for the stage's.
+- `environmentFile`: The environment's file (an HDR, loaded through Environments); null for none.
+- `environmentIntensity`: How strongly the environment lights, 1 as its file has it; null for the stage's.
+- `environmentRotation`: How far the environment and the background turn about +y, in radians; null for the stage's.
+- `backgroundFile`: The background's file (an HDR, loaded through Environments); null for none.
+- `backgroundBlur`: How blurred the background is, 0 sharp to 1; null for the stage's.
+- `tonemap`: The tone mapping, "none", "neutral" or "aces" (Tonemap's cases in lower case); null for the stage's.
+- `exposure`: The exposure in stops; null for the stage's.
+
+## SceneValue
+
+*enum* in `src/helix/scene/SceneValue.hx`
+
+A value as a .scene file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text, a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a node of the file, "@name" or "@path/from/root".
+
+- `Number(value:Float)`: A number.
+- `Text(value:String)`: Text: a path to an asset, a named choice ("camera"), or what a behavior wants.
+- `Flag(value:Bool)`: A bool.
+- `Numbers(values:Array<Float>)`: A list of numbers.
+- `Color(rgba:Int)`: A color, 0xRRGGBBAA; "#RRGGBB" in the file is alpha ff.
+- `Reference(path:String)`: A reference to a node of the file: the name or path after the "@", resolved once every node is made.
+
 ## Scenes
 
 *class* in `src/helix/scene/Scenes.hx`
 
-A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.loader) is shown the loading scene until its loads are done: the built-in Loading unless loadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (pauseOnBlur, on unless turned off); focus resumes them. Scenes read input through input (Input.instance, or what an autopilot gives through input). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (quick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
+A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.loader) is shown the loading scene until its loads are done: the built-in Loading unless loadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (pauseOnBlur, on unless turned off); focus resumes them. Scenes read input through input (Input.instance, or what an autopilot gives through input). frame runs update then draw; an autopilot runs several updates a frame and one draw. A frame's update runs the top scene's behaviors pass (Scene.behaviors) and then its update, under the same gates (a transition's swap first; nothing while it loads or the window is unfocused); a scene's behaviors are cleared, each stopped, just before it exits. Quick (quick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
 
 ```haxe
 function new()
@@ -233,7 +459,7 @@ function destroy():Void
 - `replace`: Swaps the top scene for scene: the top exits, scene enters; the one under stays paused.
 - `clear`: Takes every scene off, top first, each exiting.
 - `frame`: A frame: update then draw.
-- `update`: The frame's logic: the transition's time (the frames'), focus, then the top scene's update, or its loading scene's while it loads.
+- `update`: The frame's logic: the transition's time (the frames'), focus, then the top scene's behaviors and its update, or its loading scene's update while it loads.
 - `draw`: The frame's drawing: the top scene's (or its loading scene's), the transition over it, then the frame's end.
 - `destroy`: Frees what it made (the transition batch); the scenes are cleared first.
 

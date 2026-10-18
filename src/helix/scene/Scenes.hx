@@ -14,7 +14,9 @@ import helix.time.Time;
 	scenes swap at its middle. A scene with a loader (Scene.loader) is shown the loading scene until its loads are done: the built-in
 	Loading unless loadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (pauseOnBlur,
 	on unless turned off); focus resumes them. Scenes read input through input (Input.instance, or what an autopilot gives through
-	input). frame runs update then draw; an autopilot runs several updates a frame and one draw. Quick (quick; on with the run option
+	input). frame runs update then draw; an autopilot runs several updates a frame and one draw. A frame's update runs the top scene's
+	behaviors pass (Scene.behaviors) and then its update, under the same gates (a transition's swap first; nothing while it loads or the
+	window is unfocused); a scene's behaviors are cleared, each stopped, just before it exits. Quick (quick; on with the run option
 	quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded. */
 class Scenes {
 	var stack:Array<Scene> = [];
@@ -125,8 +127,7 @@ class Scenes {
 			var top = stack.pop();
 			if (top == null)
 				return;
-			top.exit();
-			top.scenes = null;
+			leave(top);
 			var below = this.top;
 			if (below != null)
 				below.resume();
@@ -136,20 +137,15 @@ class Scenes {
 	public function replace(scene:Scene, ?transition:Transition):Void
 		change(transition, () -> {
 			var top = stack.pop();
-			if (top != null) {
-				top.exit();
-				top.scenes = null;
-			}
+			if (top != null)
+				leave(top);
 			add(scene);
 		});
 
 	/** Takes every scene off, top first, each exiting. */
 	public function clear():Void {
-		while (stack.length > 0) {
-			var top = stack.pop();
-			top.exit();
-			top.scenes = null;
-		}
+		while (stack.length > 0)
+			leave(stack.pop());
 		transition = null;
 		swap = null;
 	}
@@ -160,7 +156,8 @@ class Scenes {
 		draw();
 	}
 
-	/** The frame's logic: the transition's time (the frames'), focus, then the top scene's update, or its loading scene's while it loads. */
+	/** The frame's logic: the transition's time (the frames'), focus, then the top scene's behaviors and its update, or its loading scene's
+		update while it loads. */
 	public function update(dt:Float):Void {
 		if (transition != null) {
 			elapsed += Math.max(0, dt);
@@ -195,8 +192,10 @@ class Scenes {
 				was.exit();
 			waiting = null;
 		}
-		if (!blurred)
+		if (!blurred) {
+			top.behaviors.update(dt);
 			top.update(dt);
+		}
 	}
 
 	/** The frame's drawing: the top scene's (or its loading scene's), the transition over it, then the frame's end. */
@@ -258,6 +257,13 @@ class Scenes {
 		scene.scenes = this;
 		stack.push(scene);
 		scene.enter();
+	}
+
+	// A scene off the stack: its behaviors stopped, then its exit, which may free what they drove.
+	function leave(scene:Scene):Void {
+		scene.behaviors.clear();
+		scene.exit();
+		scene.scenes = null;
 	}
 
 	// A change now, or at the transition's middle. A change asked during a transition takes over: the new transition starts, its swap at its

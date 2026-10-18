@@ -60,6 +60,10 @@ As built today; what is still to change is under **Target shape** below.
 - **Audio: done** (DECISIONS 83).
 - **Input: done** (DECISIONS 84).
 
+## Passes
+
+What runs on the game's clock each frame outside the stage's walk is a pass an app or a scene owns and updates: `Timers` (`helix.time`) runs callbacks after seconds or every interval, `Tweens` (`helix.tween`) moves values by easings, and `Behaviors` (`helix.behavior`) runs behaviors, each on the node it drives. A behavior is never on a node (decisions 61 and 130: nodes draw; the game's state is the truth and the tree its view): the pass holds the pairs, starts what was added since the last update, in order, updates the enabled ones whose node and every node above it are enabled, and stops and drops the ones done. Each `Scene` owns one, which `Scenes.update` runs just before the scene's own `update` under the same gates and clears, stopping each, as the scene exits. The classes are known at compile time: a build macro on every subclass of `Behavior` generates its schema (its `@:prop` fields with types, defaults and ranges) and typed setters, and registers it by name in `BehaviorRegistry`, which a scene file's loader and an inspector read; nothing is found by reflection at run time.
+
 ## Graphics
 
 `IGraphics` knows no program, layout or pipeline of HeliX's own. The engine describes them as data:
