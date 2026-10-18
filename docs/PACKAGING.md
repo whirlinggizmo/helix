@@ -26,7 +26,7 @@ python3 helix.py test --native
 python3 helix.py services --browser /path/to/chromium --native
 ```
 
-`helix.py test` runs the adapter check (`tools/check_adapters.py`), checks the test fixtures are there (`tools/gen_fixtures.py`, which makes them with FFmpeg only when one is missing), then runs the shader tool tests, the package smoke test, every unit test, the deterministic trig check (interpreter and JS, and hxcpp with `--native`) and, with `--native`, the C service tests. `services` runs the asset, storage, fetch and audio services against local HTTP fixtures. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs.
+`helix.py test` runs the adapter check (`tools/check_adapters.py`), checks the test fixtures are there (`tools/gen_fixtures.py`, which makes them with FFmpeg only when one is missing), then runs the tool tests (`tests/shaders`, `tests/tools`), the package smoke test, every unit test, the deterministic trig check (interpreter and JS, and hxcpp with `--native`) and, with `--native`, the C service tests. `services` runs the asset, storage, fetch and audio services against local HTTP fixtures. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs.
 
 An optional Haxe entry point delegates to the same Python CLI:
 

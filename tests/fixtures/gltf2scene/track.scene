@@ -1,0 +1,33 @@
+{
+  "helix-scene": 1,
+  "nodes": [
+    {
+      "kind": "Model",
+      "name": "track",
+      "file": "models/track.gltf",
+      "overrides": {
+        "cone": {
+          "props": {
+            "team": 2
+          }
+        },
+        "gates/gate_0": {
+          "visible": false,
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 3,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        "road/line": {
+          "visible": false,
+          "tint": "#ff0000"
+        }
+      }
+    }
+  ]
+}

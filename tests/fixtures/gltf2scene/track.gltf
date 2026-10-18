@@ -1,0 +1,13 @@
+{
+  "asset": {"version": "2.0", "generator": "written by hand for tests/tools/gltf2scene_test.py"},
+  "scene": 0,
+  "scenes": [{"name": "Scene", "nodes": [0, 3, 5]}],
+  "nodes": [
+    {"name": "gates", "children": [1, 2]},
+    {"name": "gate_0", "extras": {"helix_behavior": "Checkpoint", "helix_index": 3, "helix_race": "@race", "helix_visible": false}},
+    {"name": "gate_1"},
+    {"name": "road", "children": [4]},
+    {"name": "line", "extras": {"helix_visible": false, "helix_tint": "#ff0000"}},
+    {"name": "cone", "extras": {"helix_props_team": 2}}
+  ]
+}

@@ -15,7 +15,7 @@ UNIT={'InputTests':[],'HostTests':[],'ConfigTests':[],'AssetTests':[],'AssetCach
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(native,audio_device):
-    """The adapter rule's check, the shader tool tests, the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
+    """The adapter rule's check, the tool tests (shaders, gltf2scene), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
     import example,bake_fonts
@@ -25,7 +25,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
-    for test in ('shader_metadata_test','pack_shader_test'):run([sys.executable,f'tests/shaders/{test}.py'])
+    for test in ('shaders/shader_metadata_test','shaders/pack_shader_test','tools/gltf2scene_test'):run([sys.executable,f'tests/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','-js','build/tests/package-smoke.js','-dce','full'])
