@@ -281,7 +281,8 @@ class NodeRecord {
 	}
 }
 
-/** A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model, its material. */
+/** A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model, its material and its generated
+	mesh. */
 class NodeSnapshot {
 	/** Its position, x, y, z. */
 	public var position:Array<Float>;
@@ -307,6 +308,10 @@ class NodeSnapshot {
 	/** A Model's material as read; null for another kind or a model of no parts. */
 	public var material:Null<SceneMaterial>;
 
+	/** A Model's generated mesh as read from its record (Mesh.shape), else the entry's mesh when given; null for another kind or a mesh of
+		no record. */
+	public var mesh:Null<SceneMesh>;
+
 	/** Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a
 		texture still loading), entry's value for the property stands in, when given. */
 	public function new(node:Node3D, ?entry:SceneNode) {
@@ -328,6 +333,9 @@ class NodeSnapshot {
 			}
 		var model = Std.downcast(node, Model);
 		if (model != null) {
+			mesh = model.mesh == null ? null : SceneKinds.readMesh(model.mesh);
+			if (mesh == null && entry != null)
+				mesh = entry.mesh;
 			material = SceneKinds.readMaterial(model);
 			if (material != null && entry != null && entry.material != null) {
 				if (material.texture == null)
@@ -478,6 +486,13 @@ private class SceneBuilder {
 		if (entry.file == null && entry.scene == null) {
 			applyProperties(node, entry, nodePath);
 			var model = Std.downcast(node, Model);
+			if (model != null && entry.mesh != null) {
+				var mesh = SceneKinds.makeMesh(entry.mesh);
+				if (mesh != null)
+					model.mesh = mesh;
+				else
+					log(nodePath, 'mesh ${entry.mesh.shape} refused');
+			}
 			if (model != null && entry.material != null)
 				SceneKinds.applyMaterial(model, entry.material, instance);
 		}
@@ -885,9 +900,21 @@ private class SceneCapture {
 				Failure.report(instance.path, '${instance.pathOf(node)}: a node of a class no table has is left out', null);
 				return null;
 			}
-			if (entry.kind == "Model" && !warnedCodeModel) {
+		}
+		var model = Std.downcast(node, Model);
+		if (model != null && model.mesh != null) {
+			entry.mesh = SceneKinds.readMesh(model.mesh);
+			// The file's own mesh entry while the mesh is still what it made, so an untouched one is written as it was.
+			if (entry.mesh != null
+				&& source != null
+				&& source.mesh != null
+				&& record != null
+				&& sameMesh(entry.mesh, record.snapshot.mesh))
+				entry.mesh = source.mesh;
+			if (entry.mesh == null && source == null && !warnedCodeModel) {
 				warnedCodeModel = true;
-				Failure.report(instance.path, '${instance.pathOf(node)}: a Model made in code has no file; it loads back as an empty Model', null);
+				Failure.report(instance.path,
+					'${instance.pathOf(node)}: a Model whose mesh has no record of what made it has no file or mesh; it loads back as an empty Model', null);
 			}
 		}
 		writeTransform(entry, node);
@@ -901,7 +928,6 @@ private class SceneCapture {
 				if (value != null)
 					entry.properties.set(property.name, value);
 			}
-		var model = Std.downcast(node, Model);
 		if (model != null && (source == null || source.material != null)) {
 			var material = SceneKinds.readMaterial(model);
 			if (material != null) {
@@ -1188,6 +1214,22 @@ private class SceneCapture {
 				if (a == null || b == null) a == b; else sameNumbers(a, b);
 			case _: a == b;
 		}
+	}
+
+	// Whether two mesh entries name one shape with the same arguments, an unsaid one at the generator's default.
+	static function sameMesh(a:SceneMesh, b:Null<SceneMesh>):Bool {
+		if (b == null || a.shape != b.shape)
+			return false;
+		var schema = SceneSchema.shape(a.shape);
+		if (schema == null)
+			return false;
+		for (argument in schema.arguments) {
+			var x = a.arguments.exists(argument.name) ? a.arguments.get(argument.name) : argument.defaultValue,
+				y = b.arguments.exists(argument.name) ? b.arguments.get(argument.name) : argument.defaultValue;
+			if (x != y)
+				return false;
+		}
+		return true;
 	}
 
 	static function same(a:SceneValue, b:SceneValue):Bool

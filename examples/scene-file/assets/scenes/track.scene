@@ -37,18 +37,21 @@
     {
       "kind": "Model",
       "name": "ground",
-      "file": "kit/ground.glb",
+      "mesh": {
+        "shape": "plane",
+        "width": 480,
+        "length": 480
+      },
       "position": [
         0,
         -0.01,
         0
       ],
-      "scale": [
-        480,
-        1,
-        480
-      ],
-      "shadowCasting": false
+      "shadowCasting": false,
+      "material": {
+        "baseColor": "#9bbf7c",
+        "roughness": 1
+      }
     },
     {
       "kind": "Node3D",

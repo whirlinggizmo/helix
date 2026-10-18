@@ -2,6 +2,24 @@
 
 [Back to the index](README.md)
 
+## ArgumentSchema
+
+*class* in `src/helix/scene/SceneSchema.hx`
+
+One argument of a mesh generator (Mesh.plane's width, Mesh.sphere's rings): its name as the generator's parameter is named, and the generator's default, null for one it requires. A count (rings, segments, subdivisions) is a whole number; a file's number is rounded toward zero for it.
+
+```haxe
+function new(name:String, ?defaultValue:Float)
+final name:String
+final defaultValue:Null<Float>
+var required(get, never):Bool
+```
+
+- `new`: An argument name, with the generator's default or none.
+- `name`: Its name, as the generator names the parameter (width, radius, segments).
+- `defaultValue`: The generator's default, which the writer leaves out of the file; null for an argument the generator requires.
+- `required`: Whether the generator requires it: a file leaving it out is refused.
+
 ## Fade
 
 *class* in `src/helix/scene/Transition.hx`
@@ -189,7 +207,7 @@ var overridesApplied:Bool
 
 *class* in `src/helix/scene/SceneInstance.hx`
 
-A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model, its material.
+A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model, its material and its generated mesh.
 
 ```haxe
 function new(node:Node3D, ?entry:SceneNode)
@@ -201,6 +219,7 @@ var visible:Bool
 var pickable:Bool
 var properties:Map<String, SceneValue>
 var material:Null<SceneMaterial>
+var mesh:Null<SceneMesh>
 ```
 
 - `new`: Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a texture still loading), entry's value for the property stands in, when given.
@@ -212,6 +231,7 @@ var material:Null<SceneMaterial>
 - `pickable`: Node.pickable.
 - `properties`: Its kind's properties by name, those readable.
 - `material`: A Model's material as read; null for another kind or a model of no parts.
+- `mesh`: A Model's generated mesh as read from its record (Mesh.shape), else the entry's mesh when given; null for another kind or a mesh of no record.
 
 ## Pointer
 
@@ -351,14 +371,14 @@ function write():haxe.io.Bytes
 
 - `new`: An empty file of the current version: no stage section, no nodes.
 - `VERSION`: The format version read and written: the file's "helix-scene" value.
-- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file or a material on a kind that isn't a Model, overrides on a node with no file and no scene, an override with a name or a kind or an empty path, or a behavior without a kind.
-- `capture`: The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
+- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind, a mesh or an empty path, or a behavior without a kind.
+- `capture`: The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
 - `version`: The file's "helix-scene" version: VERSION, the only one read.
 - `stage`: Its stage section, or null when the file has none.
 - `nodes`: Its nodes at the root, in drawing order.
 - `instantiate`: Makes the file's tree on stage, its behaviors on behaviors: the stage section applied (ambient, tonemap and exposure at once, the environment and background once their files land through Environments), then every node at once under a new group named after the file (its path without directory and extension) added to the stage's root, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
-- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, an unsaid stage or material value, and a property no table has, are not written.
+- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid stage or material value, and a property no table has, are not written.
 
 ## SceneFileCache
 
@@ -448,13 +468,15 @@ function destroy():Void
 
 *class* in `src/helix/scene/SceneKinds.hx`
 
-The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA.
+The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh made by Mesh's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA.
 
 ```haxe
 static function make(kind:String):Null<Node3D>
 static function kindOf(node:Node3D):Null<String>
 static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance):Bool
 static function read(node:Node3D, name:String):Null<SceneValue>
+static function makeMesh(mesh:SceneMesh):Null<Mesh>
+static function readMesh(mesh:Mesh):Null<SceneMesh>
 static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance):Void
 static function readMaterial(model:Model):Null<SceneMaterial>
 static function tonemapOf(name:String):Null<Tonemap>
@@ -471,6 +493,8 @@ static function alphaName(alpha:SpriteAlpha):String
 - `kindOf`: The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has.
 - `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
 - `read`: Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet landed), or one that didn't come through the caches.
+- `makeMesh`: The mesh a file's mesh entry names, made by Mesh's generator of its shape with its arguments, an unsaid one the generator's default (SceneSchema.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing.
+- `readMesh`: Mesh as a file's mesh entry, from its record of what made it (Mesh.shape), every argument said (the writer leaves out those at the generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have.
 - `applyMaterial`: Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance, when given, keeps them to release at its destroy.
 - `readMaterial`: Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures. Null for a model of no parts.
 - `tonemapOf`: The tone mapping named name, "none", "neutral" or "aces" (SceneSchema.tonemaps); null for another name.
@@ -512,11 +536,27 @@ var doubleSided:Null<Bool>
 - `emissiveStrength`: How bright its emissive light is, 0 or more; null for unsaid.
 - `doubleSided`: Whether both sides of its triangles draw; null for unsaid.
 
+## SceneMesh
+
+*class* in `src/helix/scene/SceneMesh.hx`
+
+A generated mesh as a .scene file writes it on a Model ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
+
+```haxe
+function new(shape:String)
+var shape:String
+var arguments:Map<String, Float>
+```
+
+- `new`: A mesh of shape with no argument said yet.
+- `shape`: The shape's name, one of SceneSchema.shapes.
+- `arguments`: Its arguments by name, those said; one absent is the generator's default.
+
 ## SceneNode
 
 *class* in `src/helix/scene/SceneNode.hx`
 
-A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
+A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
 
 ```haxe
 function new(?kind:String, ?name:String)
@@ -524,6 +564,7 @@ var name:Null<String>
 var kind:Null<String>
 var scene:Null<String>
 var file:Null<String>
+var mesh:Null<SceneMesh>
 var position:Null<Array<Float>>
 var rotation:Null<Array<Float>>
 var scale:Null<Array<Float>>
@@ -543,7 +584,8 @@ var isOverride(get, never):Bool
 - `name`: Its name, unique among its siblings (paths depend on it); null for an override.
 - `kind`: The class it is (Node3D for a group, else a kind's name from SceneSchema); null for a prefab node or an override.
 - `scene`: The .scene file instantiated here as a prefab; null for a node of a kind or an override.
-- `file`: A Model's glTF, instantiated under it; null for none.
+- `file`: A Model's glTF, instantiated under it; null for none. A Model has a file or a mesh, never both.
+- `mesh`: A Model's generated mesh, made by one of Mesh's generators as its first part; null for none.
 - `position`: Its position, x, y, z in its parent's units; null for the origin.
 - `rotation`: Its rotation, Euler x, y, z in radians as Node3D.setRotation takes them; null for none.
 - `scale`: Its scale, x, y, z; null for 1, 1, 1.
@@ -562,20 +604,24 @@ var isOverride(get, never):Bool
 
 *class* in `src/helix/scene/SceneSchema.hx`
 
-The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind.
+The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the shapes a Model's "mesh" can name (shapes): Mesh's generators with their arguments and defaults.
 
 ```haxe
 static var kinds(default, null):Array<KindSchema>
+static var shapes(default, null):Array<ShapeSchema>
 static final tonemaps(default, null):Array<String>
 static final projections(default, null):Array<String>
 static function kind(name:String):Null<KindSchema>
+static function shape(name:String):Null<ShapeSchema>
 static function property(name:String):Null<PropertySchema>
 ```
 
 - `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
+- `shapes`: The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds calls the generator from it.
 - `tonemaps`: What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value.
 - `projections`: What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value.
 - `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
+- `shape`: The table of the shape named name (as a mesh's "shape" has it), or null for a shape no generator makes.
 - `property`: The property named name on whichever kind has it first, or null for a name no kind has: for an override, whose node's kind is the model's or the prefab's to know, not the file's. A name means one type wherever it is (color is a color on a light and on text).
 
 ## SceneStage
@@ -666,6 +712,24 @@ function destroy():Void
 - `update`: The frame's logic: the transition's time (the frames'), focus, then the top scene's behaviors and its update, or its loading scene's update while it loads.
 - `draw`: The frame's drawing: the top scene's (or its loading scene's), the transition over it, then the frame's end.
 - `destroy`: Frees what it made (the transition batch); the scenes are cleared first.
+
+## ShapeSchema
+
+*class* in `src/helix/scene/SceneSchema.hx`
+
+One shape a Model's "mesh" can name: Mesh's generator of that name and its arguments in the generator's order, the required ones first.
+
+```haxe
+function new(name:String, arguments:Array<ArgumentSchema>)
+final name:String
+final arguments:Array<ArgumentSchema>
+function argument(name:String):Null<ArgumentSchema>
+```
+
+- `new`: A shape name taking arguments.
+- `name`: The generator's name: plane, cube, sphere, cylinder, cone, capsule or torus.
+- `arguments`: Its arguments in the generator's order, which the writer keeps.
+- `argument`: Its argument named name, or null for one it hasn't.
 
 ## Splash
 

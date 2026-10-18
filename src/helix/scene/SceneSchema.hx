@@ -77,10 +77,58 @@ class KindSchema {
 	}
 }
 
+/** One argument of a mesh generator (Mesh.plane's width, Mesh.sphere's rings): its name as the generator's parameter is named, and the
+	generator's default, null for one it requires. A count (rings, segments, subdivisions) is a whole number; a file's number is rounded
+	toward zero for it. */
+class ArgumentSchema {
+	/** Its name, as the generator names the parameter (width, radius, segments). */
+	public final name:String;
+
+	/** The generator's default, which the writer leaves out of the file; null for an argument the generator requires. */
+	public final defaultValue:Null<Float>;
+
+	/** An argument name, with the generator's default or none. */
+	public function new(name:String, ?defaultValue:Float) {
+		this.name = name;
+		this.defaultValue = defaultValue;
+	}
+
+	/** Whether the generator requires it: a file leaving it out is refused. */
+	public var required(get, never):Bool;
+
+	function get_required():Bool
+		return defaultValue == null;
+}
+
+/** One shape a Model's "mesh" can name: Mesh's generator of that name and its arguments in the generator's order, the required ones
+	first. */
+class ShapeSchema {
+	/** The generator's name: plane, cube, sphere, cylinder, cone, capsule or torus. */
+	public final name:String;
+
+	/** Its arguments in the generator's order, which the writer keeps. */
+	public final arguments:Array<ArgumentSchema>;
+
+	/** A shape name taking arguments. */
+	public function new(name:String, arguments:Array<ArgumentSchema>) {
+		this.name = name;
+		this.arguments = arguments;
+	}
+
+	/** Its argument named name, or null for one it hasn't. */
+	public function argument(name:String):Null<ArgumentSchema> {
+		for (argument in arguments)
+			if (argument.name == name)
+				return argument;
+		return null;
+	}
+}
+
 /** The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that
 	says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its
 	controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class
-	starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. */
+	starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the
+	shapes a Model's "mesh" can name (shapes): Mesh's generators with their arguments and defaults. */
 class SceneSchema {
 	/** Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own). */
 	public static var kinds(default, null):Array<KindSchema> = [
@@ -133,6 +181,49 @@ class SceneSchema {
 		new KindSchema("Particles3D", [])
 	];
 
+	/** The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's
+		defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds calls the
+		generator from it. */
+	public static var shapes(default, null):Array<ShapeSchema> = [
+		new ShapeSchema("plane", [
+			new ArgumentSchema("width"),
+			new ArgumentSchema("length"),
+			new ArgumentSchema("subdivisions", 0)
+		]),
+		new ShapeSchema("cube", [
+			new ArgumentSchema("width"),
+			new ArgumentSchema("height"),
+			new ArgumentSchema("length")
+		]),
+		new ShapeSchema("sphere", [
+			new ArgumentSchema("radius"),
+			new ArgumentSchema("rings", 16),
+			new ArgumentSchema("segments", 32)
+		]),
+		new ShapeSchema("cylinder", [
+			new ArgumentSchema("radius"),
+			new ArgumentSchema("height"),
+			new ArgumentSchema("segments", 32)
+		]),
+		new ShapeSchema("cone", [
+			new ArgumentSchema("radius"),
+			new ArgumentSchema("height"),
+			new ArgumentSchema("segments", 32)
+		]),
+		new ShapeSchema("capsule", [
+			new ArgumentSchema("radius"),
+			new ArgumentSchema("height"),
+			new ArgumentSchema("rings", 16),
+			new ArgumentSchema("segments", 32)
+		]),
+		new ShapeSchema("torus", [
+			new ArgumentSchema("radius"),
+			new ArgumentSchema("thickness"),
+			new ArgumentSchema("rings", 32),
+			new ArgumentSchema("segments", 16)
+		])
+	];
+
 	/** What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value. */
 	public static final tonemaps = ["none", "neutral", "aces"];
 
@@ -144,6 +235,14 @@ class SceneSchema {
 		for (kind in kinds)
 			if (kind.name == name)
 				return kind;
+		return null;
+	}
+
+	/** The table of the shape named name (as a mesh's "shape" has it), or null for a shape no generator makes. */
+	public static function shape(name:String):Null<ShapeSchema> {
+		for (shape in shapes)
+			if (shape.name == name)
+				return shape;
 		return null;
 	}
 

@@ -47,6 +47,12 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
       "material": {"baseColor": "#ff8800", "roughness": 0.3}
     },
     {
+      "kind": "Model",
+      "name": "ground",
+      "mesh": {"shape": "plane", "width": 400, "length": 400},
+      "material": {"baseColor": "#9bbf7c", "roughness": 1}
+    },
+    {
       "scene": "prefabs/car.scene",
       "name": "car",
       "position": [0, 0.5, 12],
@@ -75,6 +81,7 @@ What a node entry holds:
 - **the flags**: `enabled`, `visible`, `pickable`, absent when the kind's own default (true, but a `Text3D` starts unpickable); an override's written whenever said.
 - **the kind's properties**, flat beside the above, named as the class names them (`intensity`, `shadowCasting`, `projection` and `fovY`, `range`, `tint`, `text`): one table per kind lists them with their type and default, and both the reader and the writer go through that table, so nothing can be written that can't be read. Colors are `"#RRGGBB"` or `"#RRGGBBAA"`.
 - **`file`** on a `Model`: a glTF, loaded through `Models` and instantiated under this node, which becomes the file's root (its parts, skin and name). Its materials are the file's.
+- **`mesh`** on a `Model`, in place of `file`: a mesh made by one of `Mesh`'s generators as the model's one part, `{"shape": "plane", "width": 400, "length": 400}`. `shape` is `plane`, `cube`, `sphere`, `cylinder`, `cone`, `capsule` or `torus`, and its numbers are the generator's own arguments by name, in its order: `width`, `length`, `subdivisions` (plane); `width`, `height`, `length` (cube); `radius`, `rings`, `segments` (sphere); `radius`, `height`, `segments` (cylinder, cone); `radius`, `height`, `rings`, `segments` (capsule); `radius`, `thickness`, `rings`, `segments` (torus). An optional one is absent when the generator's default; an unknown shape or key, a missing required number or one that isn't a number is refused. A `Model` has a `file` or a `mesh`, never both, or neither (a model of no parts until code gives it one). Its material is the inline `material`, else a default one. A `Model` made in code with a generated mesh is captured as a `mesh` entry too: the mesh keeps a record of what made it (`Mesh.shape`).
 - **`material`** on a `Model`: an inline material (`baseColor`, `metallic`, `roughness`, `texture`, `normalTexture`, `emissive`, `doubleSided`), replacing the mesh's or the file's root material.
 - **`scene`**: another file instantiated here as a prefab. A prefab file is an ordinary `.scene`; a file naming itself, directly or through another, is refused.
 - **`overrides`**: by path from this node (`road/line`), for nodes a `file` or `scene` made. Each is an entry without `name` or `kind`: properties and transform keys change the node, `children` adds new nodes under it, `behaviors` attach to it. No block is needed for a parent on the path (the first lesson above).

@@ -29,8 +29,10 @@ class SceneFile {
 	/** The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or
 		the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section
 		or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
-		has, a key no table has on a node or an override, a value of the wrong shape, a file or a material on a kind that isn't a Model,
-		overrides on a node with no file and no scene, an override with a name or a kind or an empty path, or a behavior without a kind. */
+		has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a
+		Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a
+		required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind,
+		a mesh or an empty path, or a behavior without a kind. */
 	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile> {
 		var file = new SceneReader(path != null ? path : "scene").read(bytes);
 		if (file != null)
@@ -58,7 +60,8 @@ class SceneFile {
 		behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the
 		reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the
 		children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run
-		time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference
+		time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no
+		record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference
 		is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what
 		differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is
 		left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand
@@ -69,7 +72,8 @@ class SceneFile {
 	/** The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing
 		newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a
 		transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's
-		default, an unsaid stage or material value, and a property no table has, are not written. */
+		default, a mesh's argument at its generator's default, an unsaid stage or material value, and a property no table has, are not
+		written. */
 	public function write():Bytes
 		return Bytes.ofString(new SceneWriter().write(this));
 }
@@ -152,7 +156,7 @@ private class SceneReader {
 			name:Dynamic = Reflect.field(value, "name"),
 			file:Dynamic = Reflect.field(value, "file");
 		if (overriding) {
-			for (key in ["kind", "scene", "name", "file"])
+			for (key in ["kind", "scene", "name", "file", "mesh"])
 				if (Reflect.hasField(value, key))
 					refuse(where, 'an override has no $key, only what changes');
 		} else {
@@ -195,6 +199,15 @@ private class SceneReader {
 			var item:Dynamic = Reflect.field(value, key);
 			switch key {
 				case "kind" | "scene" | "name" | "file":
+				case "mesh":
+					if (overriding)
+						continue;
+					if (node.kind != "Model")
+						refuse(where, "a mesh belongs to a Model");
+					else if (Reflect.hasField(value, "file"))
+						refuse(where, "a Model has a file or a mesh, not both");
+					else
+						node.mesh = readMesh(item, where);
 				case "position":
 					node.position = readFloats(item, 3, where, key);
 				case "rotation":
@@ -458,6 +471,41 @@ private class SceneReader {
 				refuse(where, 'unknown key $key');
 	}
 
+	// A Model's generated mesh: its shape, one of SceneSchema.shapes, and that shape's arguments, each a number, the required ones present.
+	function readMesh(value:Dynamic, where:String):Null<SceneMesh> {
+		if (!isObject(value)) {
+			refuse(where, "mesh: expected an object");
+			return null;
+		}
+		var at = '$where mesh';
+		if (!Reflect.hasField(value, "shape")) {
+			refuse(at, "a mesh needs a shape");
+			return null;
+		}
+		var shape:Dynamic = Reflect.field(value, "shape");
+		var schema = Std.isOfType(shape, String) ? SceneSchema.shape(shape) : null;
+		if (schema == null) {
+			refuse(at, 'unknown shape ${describe(shape)}');
+			return null;
+		}
+		var mesh = new SceneMesh(schema.name);
+		for (key in Reflect.fields(value)) {
+			if (key == "shape")
+				continue;
+			if (schema.argument(key) == null) {
+				refuse(at, 'unknown key $key');
+				continue;
+			}
+			var number = readFloat(Reflect.field(value, key), at, key);
+			if (number != null)
+				mesh.arguments.set(key, number);
+		}
+		for (argument in schema.arguments)
+			if (argument.required && !mesh.arguments.exists(argument.name))
+				refuse(at, 'a ${schema.name} needs ${argument.name}');
+		return mesh;
+	}
+
 	function readMaterial(value:Dynamic, where:String):Null<SceneMaterial> {
 		if (!isObject(value)) {
 			refuse(where, "material: expected an object");
@@ -588,6 +636,8 @@ private class SceneWriter {
 			entries.push(entry("name", [string(node.name)]));
 		if (node.file != null)
 			entries.push(entry("file", [string(node.file)]));
+		if (node.mesh != null)
+			entries.push(entry("mesh", mesh(node.mesh)));
 		// A node's transform at identity is left out; an override's is what it changes, so it is written as given.
 		if (node.position != null && (overriding || !isAll(node.position, 0)))
 			entries.push(entry("position", [numbers(node.position)]));
@@ -648,6 +698,19 @@ private class SceneWriter {
 			for (key in sorted([for (key in map.keys()) key]))
 				entry(key, [value(map.get(key))])
 		]);
+
+	// A generated mesh: its shape, then its arguments in the generator's order, an optional one at the generator's default left out.
+	function mesh(mesh:SceneMesh):Array<String> {
+		var entries = [entry("shape", [string(mesh.shape)])];
+		var schema = SceneSchema.shape(mesh.shape);
+		if (schema != null)
+			for (argument in schema.arguments) {
+				var held = mesh.arguments.get(argument.name);
+				if (held != null && (argument.required || held != argument.defaultValue))
+					entries.push(entry(argument.name, [number(held)]));
+			}
+		return object(entries);
+	}
 
 	function material(material:SceneMaterial):Array<String> {
 		var entries = [];

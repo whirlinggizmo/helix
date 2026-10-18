@@ -123,6 +123,10 @@ class Mesh {
 		weights, summing to 1. Null for one that isn't skinned. */
 	public var skinData(default, null):Null<Bytes>;
 
+	/** What made it, for a mesh from plane, cube, sphere, cylinder, cone, capsule or torus: the generator's name and its arguments as it
+		was called. Null for a mesh from arrays (fromArrays, a file's meshes), which nothing can write back as a shape. */
+	public var shape(default, null):Null<MeshShape>;
+
 	/** How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position
 		(Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model.
 		Null for a mesh that isn't skinned. */
@@ -258,7 +262,7 @@ class Mesh {
 		for (j in 0...cells)
 			for (i in 0...cells)
 				b.quad(j * (cells + 1) + i, j * (cells + 1) + i + 1, (j + 1) * (cells + 1) + i + 1, (j + 1) * (cells + 1) + i);
-		return b.build();
+		return made(b, "plane", ["width" => width, "length" => length, "subdivisions" => subdivisions]);
 	}
 
 	/** A box width along x, height along y and length along z, each face its own vertices (sharp edges), textured 0..1 a face. */
@@ -284,14 +288,14 @@ class Mesh {
 					nz, corner[2], corner[3]);
 			b.quad(first, first + 1, first + 2, first + 3);
 		}
-		return b.build();
+		return made(b, "cube", ["width" => width, "height" => height, "length" => length]);
 	}
 
 	/** A sphere of radius, rings (2..256) from pole to pole and segments (3..512) around; u around, v from the top pole to the bottom. */
 	public static function sphere(radius:Float, rings = 16, segments = 32):Mesh {
 		var b = new MeshBuilder();
 		band(b, clamp(rings, 2, 256), clamp(segments, 3, 512), radius, 0, Math.PI, 0, 0, 1);
-		return b.build();
+		return made(b, "sphere", ["radius" => radius, "rings" => rings, "segments" => segments]);
 	}
 
 	/** A capped cylinder along y, of radius and height, segments (3..512) around. */
@@ -300,7 +304,7 @@ class Mesh {
 		side(b, n, radius, radius, -h, h);
 		cap(b, n, radius, h, 1);
 		cap(b, n, radius, -h, -1);
-		return b.build();
+		return made(b, "cylinder", ["radius" => radius, "height" => height, "segments" => segments]);
 	}
 
 	/** A cone along y, tip up, of base radius and height, its base capped, segments (3..512) around. */
@@ -308,7 +312,7 @@ class Mesh {
 		var b = new MeshBuilder(), n = clamp(segments, 3, 512), h = height / 2;
 		side(b, n, radius, 0, -h, h);
 		cap(b, n, radius, -h, -1);
-		return b.build();
+		return made(b, "cone", ["radius" => radius, "height" => height, "segments" => segments]);
 	}
 
 	/** A capsule along y: height from end to end (at least twice the radius; less is a sphere), rings (2..256) across both round ends, segments
@@ -322,7 +326,7 @@ class Mesh {
 		band(b, half, n, radius, 0, Math.PI / 2, straight, 0, radius / total);
 		side(b, n, radius, radius, -straight, straight, (radius + straight) / total, (radius + straight * 3) / total);
 		band(b, half, n, radius, Math.PI / 2, Math.PI, -straight, (total - radius) / total, 1);
-		return b.build();
+		return made(b, "capsule", ["radius" => radius, "height" => height, "rings" => rings, "segments" => segments]);
 	}
 
 	/** A ring around y: radius to the middle of the tube, thickness the tube's radius, rings (3..512) around the ring and segments (3..512)
@@ -344,7 +348,19 @@ class Mesh {
 		for (i in 0...nr)
 			for (j in 0...ns)
 				b.quad(i * (ns + 1) + j, (i + 1) * (ns + 1) + j, (i + 1) * (ns + 1) + j + 1, i * (ns + 1) + j + 1);
-		return b.build();
+		return made(b, "torus", [
+			"radius" => radius,
+			"thickness" => thickness,
+			"rings" => rings,
+			"segments" => segments
+		]);
+	}
+
+	// The builder's mesh, recorded as made by the generator name called with arguments.
+	static function made(b:MeshBuilder, name:String, arguments:Map<String, Float>):Mesh {
+		var mesh = b.build();
+		mesh.shape = new MeshShape(name, arguments);
+		return mesh;
 	}
 
 	static function clamp(value:Int, min:Int, max:Int):Int

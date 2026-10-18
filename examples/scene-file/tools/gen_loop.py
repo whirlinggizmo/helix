@@ -209,7 +209,9 @@ def main():
             # chase camera behind it.
             {'kind': 'DirectionalLight', 'name': 'sun', 'rotation': [-.64, 2.11, 0], 'color': '#fff1dc', 'intensity': 3.5,
              'shadowCasting': True, 'shadowDistance': 70, 'shadowMapSize': 2048, 'shadowColor': '#24304a', 'shadowStrength': .9},
-            {'kind': 'Model', 'name': 'ground', 'file': 'kit/ground.glb', 'position': [0, -.01, 0], 'scale': [480, 1, 480], 'shadowCasting': False},
+            # The ground: a generated plane under everything, grass green and rough (the kit has no plain grass tile).
+            {'kind': 'Model', 'name': 'ground', 'mesh': {'shape': 'plane', 'width': 480, 'length': 480}, 'position': [0, -.01, 0],
+             'shadowCasting': False, 'material': {'baseColor': '#9bbf7c', 'roughness': 1}},
             {'kind': 'Node3D', 'name': 'track', 'children': road},
             {'kind': 'Node3D', 'name': 'barriers', 'children': barriers(straights)},
             {'kind': 'Node3D', 'name': 'scenery', 'children': scenery(straights, corners)},

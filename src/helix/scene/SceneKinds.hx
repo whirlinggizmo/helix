@@ -9,6 +9,7 @@ import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Light;
 import helix.render3d.Material;
+import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
@@ -23,7 +24,8 @@ import helix.render3d.Tonemap;
 import helix.scene.SceneValue;
 
 /** The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property
-	applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables
+	applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh
+	made by Mesh's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
 	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA. */
 class SceneKinds {
@@ -299,6 +301,48 @@ class SceneKinds {
 				case _: null;
 			}
 		return null;
+	}
+
+	/** The mesh a file's mesh entry names, made by Mesh's generator of its shape with its arguments, an unsaid one the generator's default
+		(SceneSchema.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing. */
+	public static function makeMesh(mesh:SceneMesh):Null<Mesh> {
+		var schema = SceneSchema.shape(mesh.shape);
+		if (schema == null)
+			return null;
+		var values = [];
+		for (argument in schema.arguments) {
+			var value = mesh.arguments.get(argument.name);
+			if (value == null)
+				value = argument.defaultValue;
+			if (value == null)
+				return null;
+			values.push(value);
+		}
+		inline function count(i:Int):Int
+			return Std.int(values[i]);
+		return switch mesh.shape {
+			case "plane": Mesh.plane(values[0], values[1], count(2));
+			case "cube": Mesh.cube(values[0], values[1], values[2]);
+			case "sphere": Mesh.sphere(values[0], count(1), count(2));
+			case "cylinder": Mesh.cylinder(values[0], values[1], count(2));
+			case "cone": Mesh.cone(values[0], values[1], count(2));
+			case "capsule": Mesh.capsule(values[0], values[1], count(2), count(3));
+			case "torus": Mesh.torus(values[0], values[1], count(2), count(3));
+			case _: null;
+		}
+	}
+
+	/** Mesh as a file's mesh entry, from its record of what made it (Mesh.shape), every argument said (the writer leaves out those at the
+		generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have. */
+	public static function readMesh(mesh:Mesh):Null<SceneMesh> {
+		var shape = mesh.shape;
+		if (shape == null || SceneSchema.shape(shape.name) == null)
+			return null;
+		var read = new SceneMesh(shape.name);
+		for (argument in SceneSchema.shape(shape.name).arguments)
+			if (shape.arguments.exists(argument.name))
+				read.arguments.set(argument.name, shape.arguments.get(argument.name));
+		return read;
 	}
 
 	/** Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none):

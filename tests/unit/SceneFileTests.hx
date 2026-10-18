@@ -5,7 +5,7 @@ import helix.scene.SceneValue;
 
 /** The .scene file (helix.scene.SceneFile): a sample with the stage section and every kind parses, writes, parses and writes the same
 	bytes; a small sample writes the pinned canonical form (key order, defaults left out, colors, numbers); each refusal returns null; and
-	every kind's table reads and writes every property. */
+	every kind's table reads and writes every property; every mesh shape reads and writes back, with and without its optional arguments. */
 class SceneFileTests {
 	static var checks = 0;
 
@@ -38,6 +38,7 @@ class SceneFileTests {
 		schema();
 		flags();
 		cameras();
+		meshes();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -403,5 +404,57 @@ class SceneFileTests {
 		check(written.indexOf('"near": 0,') >= 0
 			&& written.indexOf('"orthographicHeight": 6') >= 0, "An orthographic camera's near 0 and height");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Camera3D", "name": "x", "projection": 1}]}', "A projection that isn't text");
+	}
+
+	// A Model's generated mesh: every shape with its required arguments only and with every argument, byte-equal through a parse and a
+	// write, arguments in the generator's order after the shape, an optional one at its default left out; and the refusals.
+	static function meshes():Void {
+		check(SceneSchema.shapes.length == 7 && SceneSchema.shape("plane") != null && SceneSchema.shape("blob") == null, "The shapes by name");
+		for (shape in SceneSchema.shapes) {
+			var required = [for (a in shape.arguments) if (a.required) a],
+				all = shape.arguments;
+			for (said in [required, all]) {
+				var keys = [
+					for (i in 0...said.length)
+						'"${said[i].name}": ' + (said[i].required ? Std.string(i + 2) : Std.string(Std.int(said[i].defaultValue) + 3))
+				];
+				var text = '{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "${shape.name}", ' + keys.join(", ") + '}}]}';
+				var file = parse(text, shape.name + ".scene");
+				check(file != null && file.nodes[0].mesh != null && file.nodes[0].mesh.shape == shape.name, 'A ${shape.name} reads');
+				var written = file.write();
+				var again = SceneFile.parse(written);
+				check(again != null && again.write().compare(written) == 0, 'A ${shape.name} writes back byte-equal');
+				var expected = ['"shape": "${shape.name}"'].concat(keys);
+				var lines = written.toString().split("\n");
+				var at = lines.indexOf('      "mesh": {');
+				var got = [
+					for (i in at + 1...at + 1 + expected.length)
+						StringTools.replace(StringTools.trim(lines[i]), ",", "")
+				];
+				check(at >= 0 && got.join("|") == expected.join("|"), 'A ${shape.name}\'s arguments in the generator\'s order: $got');
+			}
+		}
+		var file = parse('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"segments": 32, "radius": 2, "shape": "sphere",
+			"rings": 8}, "material": {"baseColor": "#40a040"}}]}');
+		check(file != null && file.nodes[0].mesh.arguments.get("radius") == 2 && file.nodes[0].material.baseColor == 0x40a040ff,
+			"A mesh beside an inline material");
+		var written = file.write().toString();
+		check(written.indexOf('"segments"') < 0
+			&& written.indexOf('"rings": 8') >= 0
+			&& written.indexOf('"mesh"') < written.indexOf('"material"'),
+			"An argument at its default is left out; the mesh before the material");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "file": "a.glb", "mesh": {"shape": "cube", "width": 1, "height": 1, "length": 1}}]}',
+			"A Model with both a file and a mesh");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "blob"}}]}', "An unknown shape");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"width": 1}}]}', "A mesh without a shape");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere"}}]}', "A sphere missing its radius");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": "big"}}]}', "A number that is text");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": 1, "width": 2}}]}',
+			"An argument the shape hasn't");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": "plane"}]}', "A mesh that isn't an object");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "PointLight", "name": "m", "mesh": {"shape": "sphere", "radius": 1}}]}', "A mesh on a light");
+		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"mesh": {"shape": "sphere", "radius": 1}}}}]}',
+			"A mesh in an override");
+		check(parse('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m"}]}') != null, "A Model with neither a file nor a mesh");
 	}
 }

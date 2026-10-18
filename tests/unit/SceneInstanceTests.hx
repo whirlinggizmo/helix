@@ -43,7 +43,8 @@ import helix.scene.SceneValue;
 	every prop type and a reference resolved by name and by path, what's missing or unknown logged and the rest made, ready after the
 	prefab lands; a prefab turning a flag back on, adding children and behaviors, one naming itself refused; a model file's nodes under
 	their entry with its properties and an override by path; the live side of every kind's table (SceneKinds) applying and reading back;
-	capture of an untouched instance byte-equal, and changes as overrides; and destroy taking everything out. */
+	capture of an untouched instance byte-equal, and changes as overrides; generated meshes made, captured byte-equal, and one made in code
+	captured as a mesh entry; and destroy taking everything out. */
 class SceneInstanceTests {
 	static var checks = 0;
 	static var log:Array<String> = [];
@@ -134,6 +135,7 @@ class SceneInstanceTests {
 		modelFile();
 		kinds();
 		flagsAndCameras();
+		meshes();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -490,7 +492,7 @@ class SceneInstanceTests {
 		sun.name = "sun";
 		sun.intensity = 2;
 		instance.root.addChild(sun);
-		var box = new Model(Mesh.cube(1, 1, 1), new Material());
+		var box = new Model(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null), new Material());
 		box.name = "box";
 		box.material.roughness = .2;
 		instance.root.addChild(box);
@@ -513,7 +515,7 @@ class SceneInstanceTests {
 		var boxEntry = again.nodes[4];
 		check(boxEntry.kind == "Model" && boxEntry.file == null && boxEntry.material != null && boxEntry.material.roughness == .2
 			&& boxEntry.material.baseColor == null,
-			"A model made in code is written without a file, its material as it differs from the default");
+			"A model made in code from arrays is written without a file or a mesh, its material as it differs from the default");
 		check(logged(["main.scene", "box", "has no file"]) && log.length == 0, "and logged once");
 		SceneFile.capture(instance);
 		check(logged(["main.scene", "box", "has no file"]), "once per capture");
@@ -729,6 +731,46 @@ class SceneInstanceTests {
 			"A projection reads back by name, a perspective one left out of the write as the default");
 		flat.projection = Perspective;
 		check(flat.near > 0 && flat.far == 20, "Perspective raises a near of 0 above it");
+		instance.destroy();
+		check(log.length == 0, 'Nothing logged: $log');
+	}
+
+	// Generated meshes: a cube and a plane from a file, made by Mesh's generators with the inline material, captured byte-equal; a sphere
+	// made in code captured as a mesh entry.
+	static function meshes():Void {
+		var file = parse('{"helix-scene": 1, "nodes": [
+			{"kind": "Model", "name": "box", "position": [0, 1, 0], "mesh": {"shape": "cube", "width": 1, "height": 2, "length": 3}},
+			{"kind": "Model", "name": "ground", "mesh": {"shape": "plane", "width": 400, "length": 400, "subdivisions": 2},
+				"material": {"baseColor": "#9bbf7c", "roughness": 1}, "shadowCasting": false}
+		]}', "meshes.scene");
+		var made = fresh(), instance = file.instantiate(made.stage, made.pass);
+		var box = Std.downcast(instance.node("box"), Model),
+			ground = Std.downcast(instance.node("ground"), Model);
+		check(box != null && box.mesh != null && box.mesh.vertexCount == 24 && box.mesh.maxY == 1 && box.mesh.maxZ == 1.5
+			&& box.material.baseColor == 0xffffffff,
+			"A cube from the file: 24 vertices, its size, a default material");
+		check(ground != null
+			&& ground.mesh != null
+			&& ground.mesh.vertexCount == 16
+			&& ground.mesh.maxX == 200
+			&& ground.material.baseColor == 0x9bbf7cff
+			&& ground.material.roughness == 1
+			&& !ground.shadowCasting,
+			"A plane of two subdivisions: 16 vertices, its size, the inline material");
+		check(ground.mesh.shape != null && ground.mesh.shape.name == "plane" && ground.mesh.shape.arguments.get("subdivisions") == 2,
+			"The mesh records what made it");
+		check(SceneFile.capture(instance).write().compare(file.write()) == 0, "The untouched instance captures to its file");
+		var ball = new Model(Mesh.sphere(2));
+		ball.name = "ball";
+		instance.root.addChild(ball);
+		var captured = SceneFile.capture(instance);
+		var entry = captured.nodes[2];
+		check(entry.kind == "Model" && entry.name == "ball" && entry.file == null && entry.mesh != null && entry.mesh.shape == "sphere"
+			&& entry.mesh.arguments.get("radius") == 2,
+			"A Model made in code with a generated mesh captures as a mesh entry");
+		check(captured.write().toString().indexOf('"mesh": {\n        "shape": "sphere",\n        "radius": 2\n      }') >= 0,
+			"written with its defaults left out");
+		check(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).shape == null, "A mesh from arrays has no record");
 		instance.destroy();
 		check(log.length == 0, 'Nothing logged: $log');
 	}

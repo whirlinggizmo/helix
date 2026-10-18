@@ -1,7 +1,7 @@
 package helix.scene;
 
-/** A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF, its transform and
-	flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children,
+/** A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its
+	transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children,
 	the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a
 	property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to
 	add. Phase 3 of the file's plan makes live nodes from these and captures them back. */
@@ -15,8 +15,11 @@ class SceneNode {
 	/** The .scene file instantiated here as a prefab; null for a node of a kind or an override. */
 	public var scene:Null<String>;
 
-	/** A Model's glTF, instantiated under it; null for none. */
+	/** A Model's glTF, instantiated under it; null for none. A Model has a file or a mesh, never both. */
 	public var file:Null<String>;
+
+	/** A Model's generated mesh, made by one of Mesh's generators as its first part; null for none. */
+	public var mesh:Null<SceneMesh>;
 
 	/** Its position, x, y, z in its parent's units; null for the origin. */
 	public var position:Null<Array<Float>>;

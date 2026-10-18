@@ -571,6 +571,7 @@ var maxY(get, never):Float
 var maxZ(get, never):Float
 var skinned(get, never):Bool
 var skinData(default, null):Null<haxe.io.Bytes>
+var shape(default, null):Null<MeshShape>
 function getJointReach(skin:Skin):Null<haxe.ds.Vector<Float>>
 function getSkinBuffer(gpu:IGraphics):Int
 function getVertexBuffer(gpu:IGraphics):Int
@@ -599,11 +600,28 @@ function destroy():Void
 - `maxZ`: Its largest z.
 - `skinned`: Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.skin).
 - `skinData`: A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
+- `shape`: What made it, for a mesh from plane, cube, sphere, cylinder, cone, capsule or torus: the generator's name and its arguments as it was called. Null for a mesh from arrays (fromArrays, a file's meshes), which nothing can write back as a shape.
 - `getJointReach`: How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position (Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model. Null for a mesh that isn't skinned.
 - `getSkinBuffer`: A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned.
 - `getVertexBuffer`: Its static vertex buffer on gpu, made the first time it's asked for.
 - `getIndexBuffer`: Its static index buffer on gpu, made the first time it's asked for.
 - `destroy`: Frees its buffers, if it was uploaded; drawing it again uploads it again.
+
+## MeshShape
+
+*class* in `src/helix/render3d/MeshShape.hx`
+
+What made a generated mesh (Mesh.shape): the generator's name, plane, cube, sphere, cylinder, cone, capsule or torus, and its arguments as it was called, by the generator's own parameter names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), the ones left at their defaults included, a count as a whole number. A scene file writes a Model's generated mesh from it; a mesh from arrays or from a file has none.
+
+```haxe
+function new(name:String, arguments:Map<String, Float>)
+final name:String
+final arguments:Map<String, Float>
+```
+
+- `new`: The record of a call of the generator name with arguments.
+- `name`: The generator's name: plane, cube, sphere, cylinder, cone, capsule or torus.
+- `arguments`: Its arguments by the generator's parameter names, every one said, as the generator was called (before any clamping).
 
 ## Model
 
