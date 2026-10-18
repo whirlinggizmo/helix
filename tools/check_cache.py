@@ -9,8 +9,8 @@ profile, its requests counted:
 5. after one logo is removed: it's asked about, the host says 404, and the page says its load failed.
 
 With --native, the same visits by sprite2d's native build (the sokol profile), downloading from the host (HELIX_ASSET_HOST, its manifest
-HELIX_ASSET_MANIFEST) into a cache directory of its own, on a private display: the requests are the same, offline is a host that doesn't
-answer, and the program's output says whether a load failed.
+HELIX_ASSET_MANIFEST) into a cache directory of its own, on a private display: the requests are the same, offline is the host closed
+(its port kept, as the cache keys by host), and the program's output says whether a load failed.
 
   python3 tools/check_cache.py --browser /path/to/chromium [--native]   (after tools/example.py sprite2d build web [and native])"""
 import argparse
@@ -34,8 +34,8 @@ import gen_manifest
 EXAMPLE='sprite2d'
 LOGOS=('sprites/logo/wg-logo-bw-alpha.png','sprites/logo/wg-logo-white-alpha.png')
 
-def serve(site,counts):
-    """A host for site answering as Pages does; counts each asset request by path, and its 304s as '<path> 304'."""
+def serve(site,counts,port=0):
+    """A host for site answering as Pages does, on port (any free one by default); counts each asset request by path, and its 304s as '<path> 304'."""
     class Host(http.server.SimpleHTTPRequestHandler):
         def __init__(self,*args,**kwargs):super().__init__(*args,directory=str(site),**kwargs)
         def log_message(self,*args):pass
@@ -56,7 +56,7 @@ def serve(site,counts):
         def send_header(self,name,value):
             super().send_header(name,value)
             if name=='Content-Type' and getattr(self,'tag',None):super().send_header('ETag',self.tag);self.tag=None
-    server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Host)
+    server=http.server.ThreadingHTTPServer(('127.0.0.1',port),Host)
     threading.Thread(target=server.serve_forever,daemon=True).start()
     return server
 
@@ -73,14 +73,17 @@ def main():
     native=ROOT/f'build/native/{EXAMPLE}'
     if a.native and not (native/'Main').is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build native')
     def visit_native(n,network='online'):
-        # A visit is a run of a few seconds; offline, the host is a port nothing answers on.
+        # A visit is a run of a few seconds; offline, the host is closed for the visit and reopened on its port after, as the cache keys by host.
+        nonlocal server
         counts.clear()
-        port=server.server_address[1] if network=='online' else closed_port()
+        port=server.server_address[1]
+        if network=='offline':server.shutdown();server.server_close()
         child=dict(display,HELIX_ASSET_HOST=f'http://127.0.0.1:{port}/assets/',HELIX_ASSET_MANIFEST='manifest.json',HELIX_CACHE=str(work/'native-cache'),HELIX_AUDIO='0')
         program=subprocess.Popen([str(native/'Main')],cwd=native,env=child,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8')
         time.sleep(4);program.terminate()
         output=program.communicate(timeout=10)[0]
-        return dict(counts),[line for line in output.splitlines() if 'rror' in line or 'HTTP' in line or 'ailed' in line],None
+        if network=='offline':server=serve(site,counts,port)
+        return dict(counts),[line for line in output.splitlines() if 'rror' in line or 'HTTP' in line or 'ailed' in line or 'EOF' in line],None
     def visit(n,network='online'):
         counts.clear()
         out=subprocess.run(['node',str(ROOT/'tools/check_cache.cjs'),a.browser,url,str(profile),str(work/f'visit{n}.png'),network],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
@@ -104,12 +107,6 @@ def main():
         server.shutdown();print(f'check_cache: visits and screenshots in {work}',flush=True)
     if failures:sys.exit(f'check_cache: {len(failures)} failed')
     print('check_cache: ok',flush=True)
-
-def closed_port():
-    """A local port nothing listens on: bound, then let go."""
-    import socket
-    with socket.socket() as probe:
-        probe.bind(('127.0.0.1',0));return probe.getsockname()[1]
 
 display={}
 
