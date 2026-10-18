@@ -115,11 +115,11 @@ function new()
 function add(behavior:Behavior, node:Node3D):Bool
 function remove(behavior:Behavior):Bool
 var count(get, never):Int
-function find(cls:Class<find.T>):Null<find.T>
-function findAll(cls:Class<findAll.T>):Array<findAll.T>
-function on(node:Node3D, cls:Class<on.T>):Null<on.T>
+function find(cls:Class<T>):Null<T>
+function findAll(cls:Class<T>):Array<T>
+function on(node:Node3D, cls:Class<T>):Null<T>
 function of(node:Node3D):Array<Behavior>
-function allUnder(node:Node3D, cls:Class<allUnder.T>):Array<allUnder.T>
+function allUnder(node:Node3D, cls:Class<T>):Array<T>
 function clear():Void
 function update(dt:Float):Void
 ```

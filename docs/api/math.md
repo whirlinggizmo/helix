@@ -97,9 +97,9 @@ function nextInt(max:Int):Int
 function nextFloat():Float
 function nextRange(min:Float, max:Float):Float
 function nextBool(?chance:Float = .5):Bool
-function pick(items:Array<pick.T>):Null<pick.T>
+function pick(items:Array<T>):Null<T>
 function pickWeighted(weights:Array<Float>):Int
-function shuffle(items:Array<shuffle.T>):Array<shuffle.T>
+function shuffle(items:Array<T>):Array<T>
 ```
 
 - `new`: A generator starting from seed (12345 unless given); 0 is taken as 1, as xorshift needs a state other than 0.

@@ -72,7 +72,7 @@ var doneCount(get, never):Int
 var progress(get, never):Float
 var done(get, never):Bool
 var failures(get, never):Array<String>
-function wrap(name:String, complete:wrap.T -> Void, failed:wrap.T -> Null<String>):wrap.T -> Void
+function wrap(name:String, complete:T -> Void, failed:T -> Null<String>):T -> Void
 function asset(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
 function texture(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
 function clip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest

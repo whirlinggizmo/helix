@@ -42,7 +42,7 @@ Asynchronous operations an adapter carries out on its platform, scheduled and se
 ```haxe
 function new(maxActive:Int)
 var live(default, null):Bool
-function add(start:Job<add.T> -> Void, complete:add.T -> Void, cancelled:add.T, ?refused:add.T):IRequest
+function add(start:Job<T> -> Void, complete:T -> Void, cancelled:T, ?refused:T):IRequest
 var busy(get, never):Bool
 function post(f:() -> Void):Void
 function poll():Void

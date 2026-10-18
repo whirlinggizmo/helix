@@ -56,7 +56,10 @@ def type_text(node,known):
     tag=node.tag
     if tag in ('c','x','t','e'):
         path=node.get('path');params=[type_text(c,known) for c in node]
-        name=short(path) if path.startswith('helix.') else path
+        # A method's type parameter comes as '<method>.T': written as Haxe writes it, T.
+        head,_,last=path.rpartition('.')
+        method=head and '.' not in head and head[:1].islower() and head not in ('haxe','sys','js','cpp','eval','hl','helix')
+        name=last if method else short(path) if path.startswith('helix.') else path
         return name+(f'<{", ".join(params)}>' if params else '')
     if tag=='d':return 'Dynamic'
     if tag=='f':
