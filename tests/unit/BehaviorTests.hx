@@ -152,6 +152,7 @@ class BehaviorTests {
 		check(pass.find(Other) == other && pass.findAll(Logged).length == 2 && pass.findAll(Behavior).length == 3 && pass.find(Probe) == null,
 			"find and findAll by class, a base class finding all");
 		check(pass.of(leaf).length == 3 && pass.of(root).length == 0, "of by node");
+		check(pass.on(leaf, Other) == other && pass.on(root, Other) == null && other.pass == pass, "on by node and class; a behavior knows its pass");
 		// clear stops the started, not the pending.
 		pass.clear();
 		check(took() == "b.stop,later.stop" && pass.count == 0 && other.node == null, "clear stops each started one and drops the rest");

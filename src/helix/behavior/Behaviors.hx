@@ -70,6 +70,18 @@ class Behaviors {
 		return found;
 	}
 
+	/** The first behavior of class cls (or a subclass) on node, started ones first, or null: how a behavior given a node reference
+		reaches the behavior on it. */
+	public function on<T:Behavior>(node:Node3D, cls:Class<T>):Null<T> {
+		for (b in active)
+			if (b.node == node && Std.isOfType(b, cls))
+				return cast b;
+		for (b in pending)
+			if (b.node == node && Std.isOfType(b, cls))
+				return cast b;
+		return null;
+	}
+
 	/** The behaviors on node, started ones first. */
 	public function of(node:Node3D):Array<Behavior> {
 		var found = [];

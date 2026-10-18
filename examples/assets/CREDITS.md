@@ -12,6 +12,7 @@ The files under `examples/assets/` that HeliX didn't make, with each one's sourc
 | `models/modular-women/*.glb` | Ultimate Modular Women: its animations, all ten outfits (Adventurer, Casual, Formal, Medieval, Punk, SciFi, Soldier, Suit, Witch, Worker: each a head, body, legs and feet), the sword and the gun, converted from FBX to GLB in Blender 5.1 (materials made opaque) | Quaternius | [quaternius.com](https://quaternius.com) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `environments/venice_sunset_1k.hdr` | Venice Sunset, 1K | Greg Zaal | [Poly Haven](https://polyhaven.com/a/venice_sunset) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `environments/studio_small_09_1k.hdr` | Studio Small 09, 1K | Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/studio_small_09) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `../scene-file/assets/kit/*.glb` (the scene-file example's own assets folder, not this one) | Racing Kit 2.0: seventeen of its pieces (the road straights, start grid and large corners, the barrier wall, the overhead gantry, the pylon, the flags, the banner towers, the light post, the grandstand and the trees), converted to GLB from an earlier game's set, their triangles the kit's unchanged | Kenney | [kenney.nl](https://kenney.nl/assets/racing-kit) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `audio/sfx/click_004.ogg` | UI Audio | Kenney | [kenney.nl](https://kenney.nl) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 
 CC0 asks for no credit; they're credited anyway.
@@ -25,4 +26,5 @@ CC0 asks for no credit; they're credited anyway.
 - `textures/noise.png`: a generated noise texture (the dissolve shader's), MIT.
 - `textures/tiles.png`: a generated 16-pixel tile sheet (terrain, props, a coin at 42, 22), MIT.
 - `textures/tiles_normal.png`: a generated normal map of bevelled tiles, tangent space (green up), MIT.
+- `../scene-file/assets/kit/ground.glb`: the scene-file example's ground, a one-quad green plane made by its `assets/gen_ground.py`, MIT.
 - `models/toy_car.glb`: the unit tests' glTF fixture, a generated toy car (a checkered body, a see-through cabin, four wheels, emissive headlights with a spot light each), MIT.

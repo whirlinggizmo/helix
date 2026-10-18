@@ -10,6 +10,7 @@ What a game's logic on a node extends: a behavior drives the node a Behaviors pa
 
 ```haxe
 function new()
+var pass(default, null):Null<Behaviors>
 var node(default, null):Null<Node3D>
 var enabled:Bool
 var done:Bool
@@ -19,6 +20,7 @@ function stop():Void
 ```
 
 - `new`: One in no pass yet.
+- `pass`: The pass it's in, from add until it's dropped, null outside: how a behavior reaches another through a node it was given (`pass.on(node, Race)`), with no lookup through the node itself. Add refuses one already in a pass, anywhere.
 - `node`: The node it drives: set by the pass it's added to, before start, and null until then and once it's dropped.
 - `enabled`: Whether its update runs: off, the pass skips it (start and stop still come). On to start.
 - `done`: Set true to end it: at the end of that update the pass calls stop and drops it. False to start.
@@ -112,6 +114,7 @@ function remove(behavior:Behavior):Bool
 var count(get, never):Int
 function find(cls:Class<find.T>):Null<find.T>
 function findAll(cls:Class<findAll.T>):Array<findAll.T>
+function on(node:Node3D, cls:Class<on.T>):Null<on.T>
 function of(node:Node3D):Array<Behavior>
 function clear():Void
 function update(dt:Float):Void
@@ -123,6 +126,7 @@ function update(dt:Float):Void
 - `count`: How many it holds: started, or waiting for the next update to start.
 - `find`: The first behavior of class cls (or a subclass) in it, started ones first, or null.
 - `findAll`: Every behavior of class cls (or a subclass) in it, started ones first.
+- `on`: The first behavior of class cls (or a subclass) on node, started ones first, or null: how a behavior given a node reference reaches the behavior on it.
 - `of`: The behaviors on node, started ones first.
 - `clear`: Takes every behavior out, stopping each started one.
 - `update`: A frame: starts the ones added since the last update, updates the enabled ones under enabled nodes by dt seconds (a clock's delta), then stops and drops the ones done. Once a frame.

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "seed": 7,
+  "commands": [
+    {"op": "wait", "probe": "loaded", "equals": true, "seconds": 120},
+    {"op": "assert", "probe": "state", "equals": "countdown"},
+    {"op": "assert", "probe": "lap", "equals": 1},
+    {"op": "assert", "probe": "checkpoint", "equals": 1},
+    {"op": "assert", "probe": "passed", "equals": 0},
+    {"op": "assert", "probe": "lapTime", "equals": 0},
+    {"op": "assert", "probe": "bestLap", "equals": 0},
+    {"op": "assert", "probe": "speed", "equals": 0},
+    {"op": "wait", "probe": "state", "equals": "racing", "timeout": 400},
+    {"op": "hold", "keys": ["UP"], "ticks": 60},
+    {"op": "assert", "probe": "speed", "atLeast": 5},
+    {"op": "screenshot", "name": "smoke.png"}
+  ]
+}

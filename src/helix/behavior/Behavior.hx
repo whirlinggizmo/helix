@@ -20,9 +20,10 @@ import helix.render3d.Node3D;
 	pass is remade (a scene re-entered). */
 @:autoBuild(helix.macro.Behaviors.build())
 class Behavior {
-	// The pass it's in, or null: add refuses one already in a pass, anywhere.
+	/** The pass it's in, from add until it's dropped, null outside: how a behavior reaches another through a node it was given
+		(`pass.on(node, Race)`), with no lookup through the node itself. Add refuses one already in a pass, anywhere. */
 	@:allow(helix.behavior.Behaviors)
-	var pass:Null<Behaviors>;
+	public var pass(default, null):Null<Behaviors>;
 
 	/** One in no pass yet. */
 	public function new() {}

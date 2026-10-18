@@ -1,28 +1,6 @@
-# Milestone 11: the scene file and behaviors (design)
+# The scene file
 
-The design for the roadmap's milestone 11 entry: the pieces, their names, the file's shape, and the order of work. Decisions 61 (nodes draw only) and 130 (kinds as classes, behaviors never on a node) stand throughout. Settled with the user on 2026-10-18: behaviors are a package of their own (`helix.behavior`), the stage's settings are in the file, a behavior's props nest under `props`, the example is new (`scene-file`), the extension is `.scene`, and 2D comes after this pass.
-
-## What exists
-
-- `helix.scene.Scene` is a screen in the `Scenes` stack (`enter`, `exit`, `pause`, `resume`, `update(dt)`, `draw`), with a `Loader` and transitions. It holds no tree.
-- `helix.scene.Node` is what both trees share: `name`, `enabled`, `visible`, `pickable`, children, `find(name)` (never a path). `Node3D` adds the transform, `addChild`, `addChildInPlace`, settable `parent`; the kinds (`Model` with parts, `DirectionalLight`, `PointLight`, `SpotLight`, `Camera3D`, `Sprite3D`, `Text3D`, `Particles3D`) are classes on it. `Stage3D` draws a tree.
-- `Models.load(path, loaded)` gives a `ModelFile`; `file.instantiate()` gives a `Node3D` subtree whose nodes carry the glTF's names, its punctual lights and (from this milestone) its cameras as `Camera3D` nodes. The glTF reader takes no `extras`.
-- `Timers` and `Tweens` are objects an app makes and updates itself (the motion example).
-- The earlier framework's text scene (`wgf-scene 2`, line per fact) and the racer's use of it, with its lessons: a file's nodes are addressable by path for overrides, but every parent on the path needed a block of its own (awkward); no light kind, so the sun stayed code; a dump that lost flags didn't load back as the same world; a model's material numbers couldn't be set from the file; behaviors took parameters on a line (`behavior index=0`) and references to other actors by path.
-
-## Names
-
-The word *scene* is taken twice: a `Scene` is a screen, and a `.scene` file is a tree. Both stay as the roadmap wrote them, the file's classes named after the file. Behaviors are a package of their own, as tweens and timers are: nothing in a behavior needs the scene package, the pass runs on any app's nodes with no file and no screen, and the dependency runs one way, the scene package using behaviors.
-
-| Piece | Class | Package |
-|---|---|---|
-| the parsed file | `SceneFile` | `helix.scene` |
-| its cache and loader | `SceneFiles` (static, over `SceneFileCache`) | `helix.scene` |
-| what instantiating gives | `SceneInstance` | `helix.scene` |
-| a behavior | `Behavior` | `helix.behavior` |
-| the pass | `Behaviors` | `helix.behavior` |
-| the registry the macro fills | `BehaviorRegistry` | `helix.behavior` |
-| the macro | `Behaviors` | `helix.macro` |
+The `.scene` file is HeliX's own: JSON, one tree, read by `helix.scene.SceneFile` and instantiated onto a `Stage3D` with a `Behaviors` pass ([ARCHITECTURE.md](ARCHITECTURE.md), "The scene file"; why it is shaped so: [DECISIONS.md](DECISIONS.md) 132). This page is the format. The `scene-file` example is a racer slice written entirely in one, and `tools/gltf2scene.py` writes one from a Blender export.
 
 ## The file
 
@@ -108,24 +86,19 @@ A behavior's prop value is a number, a string, a bool, a list of numbers, a colo
 
 What is not in the file: cameras' viewports (the app's) and anything 2D (after this pass: the format's `kind` admits `Sprite2D` and the rest under a `Node2D` root with no change to the file's shape).
 
-## Loading
+## Loading, saving, converting
 
 ```haxe
-SceneFiles.load("levels/track.scene", file -> {
-    instance = file.instantiate(stage, scene.behaviors, ready);
+SceneFiles.load("scenes/track.scene", file -> {
+    instance = file.instantiate(stage, scene.behaviors, () -> trace("ready"));
 });
 ```
 
-- `SceneFiles` is the static over `SceneFileCache`, as `Models` over `ModelCache`: `load(path, loaded, ?failed):IRequest`, `find`, `isLoaded`, `forget`. The cache parses once; a file's prefabs and models are loaded through their own caches as the file is instantiated, so a level's models aren't fetched twice.
-- `file.instantiate(stage, behaviors, ?ready)` applies the `stage` section, makes the tree at once from what the file says under the stage's root (every node, with placeholders where a `file` or `scene` is still loading) and returns a `SceneInstance`; `ready` is called once every model, environment and prefab has landed and the behaviors have started. A prefab is instantiated under a node by the same code with no stage. A game that wants the level whole before play waits for `ready`; one that streams draws what has landed.
-- `SceneInstance`: `root:Node3D`, `node(path):Null<Node3D>`, `props(node):Null<Map<String, Dynamic>>`, `behaviors:Array<Behavior>` (the ones it attached), `ready:Bool`, `destroy()` (removes its nodes from their parent and its behaviors from the pass).
-- A missing model or prefab is logged through `Failure` with the scene's path and the node's, the node left as an empty group, the rest instantiated: a level with one bad prop is still a level.
+`SceneFiles` parses a file once and shares it by path. `instantiate` applies the stage section, makes every node at once under a group named after the file on the stage's root, loads the models, prefabs and environment it names through their caches, attaches the behaviors to the pass once every load has landed (their references resolved then), and calls `ready` at the pass's next update. The `SceneInstance` gives `node(path)`, `pathOf(node)`, `props(node)`, its `behaviors`, `ready`, and `destroy()`. A missing model, prefab or environment is logged with the file's path and the node's, and the rest is made.
 
-## Saving
+`SceneFile.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the stage's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
 
-`SceneFile.capture(instance):SceneFile` and `file.write():Bytes`. Capture walks the instance, not the live tree blindly: nodes that came from a `file` or a `scene` are written as the reference plus the overrides that differ from what the file gave (the instance remembers each node's origin and the values as made), so a round trip of an untouched level is byte identical and a hand edit stays an override. This answers the earlier framework's dump that lost flags.
-
-Under test (`tests/`): parse, write, parse, write equal bytes for a sample with every kind, a file node, a prefab, an override, a behavior with each prop type and a reference; capture of an untouched instance equals the file.
+`python3 tools/gltf2scene.py export.glb out.scene` makes a file from a Blender glTF export: one `Model` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
 
 ## Behaviors
 
@@ -148,25 +121,3 @@ class Checkpoint extends Behavior {
 - **The registry**: `Behavior` carries `@:autoBuild(helix.macro.Behaviors.build())`, which runs on each subclass, generates its `schema()` (name, props with type, default and range, for the loader and an inspector) and `make()`, and records the class by its name (or `@:behavior("Name")`) in `BehaviorRegistry`. A file naming a behavior no class registers is logged, the node left without it. The whole program's behaviors are known at compile time; nothing is found by reflection at run time.
 - **Hot reload**: a behavior's methods are re-pointed in the browser as any class's are; its instances keep their fields. Natively an old instance runs its old module until the pass is remade (a scene re-entered), as decision 130 said of closures.
 - **The game model, settled**: a node draws, a behavior acts on a node, the pass runs the behaviors, the game's state is the truth (rule 5). Whether an ECS follows is for after (ROADMAP's deferred `ecs-scene`).
-
-## Schemas for an inspector
-
-`SceneSchema.kinds:Array<KindSchema>` (each kind's properties with type, default, range, from the same table the reader and writer use) and `BehaviorRegistry.schemas` (from the macro). Exposed, tested (every kind's table reads and writes every property), used by nothing in the framework yet: the editor is a separate package over the JS build, after this milestone.
-
-## Blender
-
-`tools/gltf2scene.py <export.glb> <out.scene>`: a Blender glTF export becomes one `Model` node with `file` pointing at the glb, and its objects' custom properties become overrides by node path: `helix_behavior = "Checkpoint"` with `helix_index = 0` makes a behavior with props; `helix_shadowCasting = false` a property; the export's lights and cameras need nothing from the tool, the glTF reader instantiates them with the model. A `.blend` under `examples/<name>/blender/` with its export checked in, so the conversion is reproducible.
-
-## The example
-
-A new example, `scene-file`: a track-like floor with gates, cones, a sun with shadows, a sky, a chase camera and a driven box, every piece from `scenes/track.scene` and the behaviors above, with an autopilot checking the box passes the gates alike on both targets. `scene3d` keeps proving the stage in code.
-
-## Order of work
-
-1. `SceneFile` parse and write, the kinds' tables, the unit tests for the round trip (browser loop and interp tests only).
-2. `Behavior`, `Behaviors`, the macro and registry, `Scene.behaviors`; the motion or scenes example gains one behavior to prove the pass.
-3. `instantiate` with models, prefabs, overrides, references; `SceneInstance`; `capture`.
-4. The example and its autopilot; `gltf2scene.py` with a Blender export checked in.
-5. Docs: CONVENTIONS (a behavior's shape), ARCHITECTURE (the file and the pass), DECISIONS (the game model settled), the API reference; checkpoint on both targets.
-
-Phases 1 to 3 are supervised agents from this plan, as the API rework was; 4 and 5 by hand with the user at the desk for the Blender part.

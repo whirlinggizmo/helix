@@ -1,0 +1,10 @@
+{
+  "helix-scene": 1,
+  "nodes": [
+    {
+      "kind": "Model",
+      "name": "sedan",
+      "file": "models/car-kit/sedan-sports-headlights.gltf"
+    }
+  ]
+}

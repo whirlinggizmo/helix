@@ -25,6 +25,7 @@ python3 tools/example.py animation build native                   # build/native
 - [docs/HISTORY.md](docs/HISTORY.md): what was built, milestone by milestone.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the engine, the platform contracts and their adapters, and the rule for what an adapter may hold.
 - [docs/INTERFACE.md](docs/INTERFACE.md): the contracts and their limits.
+- [docs/SCENE_FILE.md](docs/SCENE_FILE.md): the `.scene` file's format, its loading and capture, and a behavior's shape.
 - [docs/api/](docs/api/README.md): the API reference, a file a package, generated from the doc comments (the site's HTML is the same).
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout, and how examples are developed.
 - [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are, numbered, in order.

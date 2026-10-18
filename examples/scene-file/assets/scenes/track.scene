@@ -1,0 +1,1357 @@
+{
+  "helix-scene": 1,
+  "stage": {
+    "ambient": {
+      "color": "#dfe8ff",
+      "intensity": 0.2
+    },
+    "environment": {
+      "file": "environments/venice_sunset_1k.hdr",
+      "intensity": 0.55,
+      "rotation": 2.2
+    },
+    "background": {
+      "file": "environments/venice_sunset_1k.hdr",
+      "blur": 0.15
+    },
+    "tonemap": "aces",
+    "exposure": 0.2
+  },
+  "nodes": [
+    {
+      "kind": "DirectionalLight",
+      "name": "sun",
+      "rotation": [
+        -0.64,
+        2.11,
+        0
+      ],
+      "color": "#fff1dc",
+      "intensity": 3.5,
+      "shadowCasting": true,
+      "shadowDistance": 70,
+      "shadowMapSize": 2048,
+      "shadowColor": "#24304a",
+      "shadowStrength": 0.9
+    },
+    {
+      "kind": "Model",
+      "name": "ground",
+      "file": "kit/ground.glb",
+      "position": [
+        0,
+        -0.01,
+        0
+      ],
+      "scale": [
+        480,
+        1,
+        480
+      ],
+      "shadowCasting": false
+    },
+    {
+      "kind": "Node3D",
+      "name": "track",
+      "children": [
+        {
+          "kind": "Model",
+          "name": "road_0",
+          "file": "kit/roadStartPositions.glb",
+          "position": [
+            -8,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_1",
+          "file": "kit/roadStraightLong.glb",
+          "position": [
+            -8,
+            0,
+            -32
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_2",
+          "file": "kit/roadCornerLarge.glb",
+          "position": [
+            -24,
+            0,
+            -96
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_3",
+          "file": "kit/roadStraightLong.glb",
+          "position": [
+            -24,
+            0,
+            -80
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_4",
+          "file": "kit/roadCornerLarge.glb",
+          "position": [
+            -88,
+            0,
+            -64
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_5",
+          "file": "kit/roadStraightLong.glb",
+          "position": [
+            -72,
+            0,
+            -64
+          ],
+          "rotation": [
+            0,
+            3.1416,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_6",
+          "file": "kit/roadStraightLong.glb",
+          "position": [
+            -72,
+            0,
+            -32
+          ],
+          "rotation": [
+            0,
+            3.1416,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_7",
+          "file": "kit/roadCornerLarge.glb",
+          "position": [
+            -56,
+            0,
+            32
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_8",
+          "file": "kit/roadStraightLong.glb",
+          "position": [
+            -56,
+            0,
+            16
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        },
+        {
+          "kind": "Model",
+          "name": "road_9",
+          "file": "kit/roadCornerLarge.glb",
+          "position": [
+            8,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            3.1416,
+            0
+          ],
+          "scale": [
+            16,
+            2,
+            16
+          ],
+          "shadowCasting": false
+        }
+      ]
+    },
+    {
+      "kind": "Node3D",
+      "name": "barriers",
+      "children": [
+        {
+          "kind": "Model",
+          "name": "barrier_0",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            6,
+            0,
+            -16
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_1",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            6,
+            0,
+            -32
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_2",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            6,
+            0,
+            -48
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_3",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            6,
+            0,
+            -64
+          ],
+          "rotation": [
+            0,
+            -1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_4",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -40,
+            0,
+            -94
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_5",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -56,
+            0,
+            -94
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_6",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -86,
+            0,
+            -48
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_7",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -86,
+            0,
+            -32
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_8",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -86,
+            0,
+            -16
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_9",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -86,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_10",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -40,
+            0,
+            30
+          ],
+          "rotation": [
+            0,
+            3.1416,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "barrier_11",
+          "file": "kit/barrierWall.glb",
+          "position": [
+            -24,
+            0,
+            30
+          ],
+          "rotation": [
+            0,
+            3.1416,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Node3D",
+      "name": "scenery",
+      "children": [
+        {
+          "kind": "Model",
+          "name": "gantry",
+          "file": "kit/overhead.glb",
+          "position": [
+            -8,
+            0,
+            -20
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "flag_left",
+          "file": "kit/flagCheckers.glb",
+          "position": [
+            -9.5,
+            0,
+            -20
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "flag_right",
+          "file": "kit/flagCheckers.glb",
+          "position": [
+            9.5,
+            0,
+            -20
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "grandstand",
+          "file": "kit/grandStand.glb",
+          "position": [
+            26,
+            0,
+            -32
+          ],
+          "rotation": [
+            0,
+            1.5708,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "light_1",
+          "file": "kit/lightPostLarge.glb",
+          "position": [
+            -9,
+            0,
+            -16
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "light_3",
+          "file": "kit/lightPostLarge.glb",
+          "position": [
+            -9,
+            0,
+            -48
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tower_0",
+          "file": "kit/bannerTowerGreen.glb",
+          "position": [
+            1.4558,
+            0,
+            -89.4558
+          ],
+          "rotation": [
+            0,
+            0.7854,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_0_0",
+          "file": "kit/pylon.glb",
+          "position": [
+            -9.8579,
+            0,
+            -73.8995
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_0_1",
+          "file": "kit/pylon.glb",
+          "position": [
+            -11.9792,
+            0,
+            -76.0208
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_0_2",
+          "file": "kit/pylon.glb",
+          "position": [
+            -14.1005,
+            0,
+            -78.1421
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_0_0",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            4.2843,
+            0,
+            -100.7696
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_0_1",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            18.4264,
+            0,
+            -95.1127
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_0_2",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            16.3051,
+            0,
+            -84.5061
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_0_3",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            1.4558,
+            0,
+            -109.2548
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tower_1",
+          "file": "kit/bannerTowerRed.glb",
+          "position": [
+            -81.4558,
+            0,
+            -89.4558
+          ],
+          "rotation": [
+            0,
+            2.3562,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_1_0",
+          "file": "kit/pylon.glb",
+          "position": [
+            -65.8995,
+            0,
+            -78.1421
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_1_1",
+          "file": "kit/pylon.glb",
+          "position": [
+            -68.0208,
+            0,
+            -76.0208
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_1_2",
+          "file": "kit/pylon.glb",
+          "position": [
+            -70.1421,
+            0,
+            -73.8995
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_1_0",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            -92.7696,
+            0,
+            -92.2843
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_1_1",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            -87.1127,
+            0,
+            -106.4264
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_1_2",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            -76.5061,
+            0,
+            -104.3051
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_1_3",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            -101.2548,
+            0,
+            -89.4558
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tower_2",
+          "file": "kit/bannerTowerGreen.glb",
+          "position": [
+            -81.4558,
+            0,
+            25.4558
+          ],
+          "rotation": [
+            0,
+            -2.3562,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_2_0",
+          "file": "kit/pylon.glb",
+          "position": [
+            -70.1421,
+            0,
+            9.8995
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_2_1",
+          "file": "kit/pylon.glb",
+          "position": [
+            -68.0208,
+            0,
+            12.0208
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_2_2",
+          "file": "kit/pylon.glb",
+          "position": [
+            -65.8995,
+            0,
+            14.1421
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_2_0",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            -84.2843,
+            0,
+            36.7696
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_2_1",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            -98.4264,
+            0,
+            31.1127
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_2_2",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            -96.3051,
+            0,
+            20.5061
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_2_3",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            -81.4558,
+            0,
+            45.2548
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tower_3",
+          "file": "kit/bannerTowerRed.glb",
+          "position": [
+            1.4558,
+            0,
+            25.4558
+          ],
+          "rotation": [
+            0,
+            -0.7854,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_3_0",
+          "file": "kit/pylon.glb",
+          "position": [
+            -14.1005,
+            0,
+            14.1421
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_3_1",
+          "file": "kit/pylon.glb",
+          "position": [
+            -11.9792,
+            0,
+            12.0208
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "pylon_3_2",
+          "file": "kit/pylon.glb",
+          "position": [
+            -9.8579,
+            0,
+            9.8995
+          ],
+          "scale": [
+            16,
+            16,
+            16
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_3_0",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            12.7696,
+            0,
+            28.2843
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_3_1",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            7.1127,
+            0,
+            42.4264
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_3_2",
+          "file": "kit/treeLarge.glb",
+          "position": [
+            -3.4939,
+            0,
+            40.3051
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        },
+        {
+          "kind": "Model",
+          "name": "tree_3_3",
+          "file": "kit/treeSmall.glb",
+          "position": [
+            21.2548,
+            0,
+            25.4558
+          ],
+          "scale": [
+            10,
+            10,
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Node3D",
+      "name": "race",
+      "behaviors": [
+        {
+          "kind": "Race",
+          "props": {
+            "car": "@car",
+            "countdown": 3
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Node3D",
+      "name": "checkpoints",
+      "children": [
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_0",
+          "position": [
+            0,
+            1,
+            -20
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 0,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_1",
+          "position": [
+            -7.0294,
+            1,
+            -80.9706
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 1,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_2",
+          "position": [
+            -40,
+            1,
+            -88
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 2,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_3",
+          "position": [
+            -72.9706,
+            1,
+            -80.9706
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 3,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_4",
+          "position": [
+            -80,
+            1,
+            -32
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 4,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_5",
+          "position": [
+            -72.9706,
+            1,
+            16.9706
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 5,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_6",
+          "position": [
+            -40,
+            1,
+            24
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 6,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "Node3D",
+          "name": "checkpoint_7",
+          "position": [
+            -7.0294,
+            1,
+            16.9706
+          ],
+          "behaviors": [
+            {
+              "kind": "Checkpoint",
+              "props": {
+                "index": 7,
+                "radius": 10,
+                "race": "@race"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "scenes/car.scene",
+      "name": "car",
+      "position": [
+        0,
+        0.04,
+        -6
+      ],
+      "rotation": [
+        0,
+        3.1416,
+        0
+      ],
+      "behaviors": [
+        {
+          "kind": "Car",
+          "props": {
+            "race": "@race"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "Camera3D",
+      "name": "chase",
+      "position": [
+        0,
+        4,
+        8
+      ],
+      "fovY": 0.9,
+      "far": 600,
+      "behaviors": [
+        {
+          "kind": "ChaseCamera",
+          "props": {
+            "target": "@car",
+            "distance": 9,
+            "height": 3.5,
+            "lag": 0.25
+          }
+        }
+      ]
+    }
+  ]
+}
