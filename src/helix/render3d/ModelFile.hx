@@ -9,13 +9,15 @@ import helix.render3d.AnimationClip.TrackPath;
 
 /** A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
 	(ModelCache loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
-	together; each copy has lights of its own. Made by ModelCache; read, never changed after.
+	together; each copy has lights and cameras of its own. Made by ModelCache; read, never changed after.
 
 	Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline
 	or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked
 	out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive
 	color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and
-	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; skins
+	children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; cameras
+	(a perspective one's yfov, znear and zfar, an orthographic one's ymag, znear and zfar; its aspectRatio or xmag is the viewport's business
+	and isn't read); skins
 	(each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models
 	bound to that copy's joints; animations as AnimationClips (clips), their tracks targeting nodes by name, so a file of animations alone
 	plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights),
@@ -122,8 +124,10 @@ class ModelFile {
 
 	/** A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and
 		children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a
-		DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), and any other a group (a bare Node3D: a joint, an
-		empty). A node with both a mesh and a light is the model, the light its first child. */
+		DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), a camera node a Camera3D (of its own, each copy)
+		seeing from the node down its -z with its +y up, as glTF's does, so nothing is turned, and any other a group (a bare Node3D: a joint,
+		an empty). A node with both a mesh and a light is the model, the light its first child; one with both a mesh and a camera is the
+		model, the camera a child named the node's name with "_camera" appended. */
 	public function instantiate(name = ""):Node3D {
 		var root = new Node3D();
 		root.name = name;
@@ -332,10 +336,45 @@ class ModelFile {
 		return light;
 	}
 
+	// Camera index as a Camera3D at the origin, unturned (its node places it): a perspective one's fovY, near and far from its yfov, znear
+	// and zfar (an absent zfar, glTF's infinite one, keeps Camera3D's default far); an orthographic one's height 2 x ymag (ymag is half the
+	// height seen, as Camera3D's height is all of it). Throws for a type that is neither, a required value missing, or one Camera3D refuses.
+	function camera(index:Int):Camera3D {
+		var c = gltf.list("cameras")[index], type:String = field(c, "type");
+		var camera = new Camera3D();
+		camera.setPosition(0, 0, 0);
+		camera.setQuaternion(0, 0, 0, 1);
+		if (type == "perspective") {
+			var p:Dynamic = field(c, "perspective");
+			var yfov:Null<Float> = field(p, "yfov"),
+				znear:Null<Float> = field(p, "znear"),
+				zfar:Null<Float> = field(p, "zfar");
+			if (yfov == null || znear == null)
+				throw 'Camera $index has no yfov or znear';
+			if (!camera.setPerspective(yfov, znear, zfar == null ? camera.far : zfar))
+				throw 'Camera $index\'s yfov, znear and zfar aren\'t 0 < yfov < pi and 0 < znear < zfar';
+		} else if (type == "orthographic") {
+			var o:Dynamic = field(c, "orthographic");
+			var ymag:Null<Float> = field(o, "ymag"),
+				znear:Null<Float> = field(o, "znear"),
+				zfar:Null<Float> = field(o, "zfar");
+			if (ymag == null || znear == null || zfar == null)
+				throw 'Camera $index has no ymag, znear or zfar';
+			if (!camera.setOrthographic(2 * ymag, znear, zfar))
+				throw 'Camera $index\'s ymag, znear and zfar aren\'t ymag > 0 and znear < zfar';
+		} else
+			throw 'Camera $index has type $type, neither perspective nor orthographic';
+		return camera;
+	}
+
 	function node(index:Int, skinned:Array<{model:Model, skin:Int}>):Node3D {
 		var n = gltf.list("nodes")[index],
-			meshIndex:Null<Int> = field(n, "mesh");
+			meshIndex:Null<Int> = field(n, "mesh"),
+			cameraIndex:Null<Int> = field(n, "camera");
 		var lightIndex:Null<Int> = field(field(field(n, "extensions"), "KHR_lights_punctual"), "light");
+		var name:String = field(n, "name");
+		if (name == null)
+			name = "";
 		var node:Node3D;
 		if (meshIndex != null) {
 			var model = new Model();
@@ -346,13 +385,19 @@ class ModelFile {
 				skinned.push({model: model, skin: skin});
 			if (lightIndex != null)
 				model.addChild(light(lightIndex));
+			if (cameraIndex != null) {
+				var lens = camera(cameraIndex);
+				lens.name = name + "_camera";
+				model.addChild(lens);
+			}
 			node = model;
 		} else if (lightIndex != null)
 			node = light(lightIndex);
+		else if (cameraIndex != null)
+			node = camera(cameraIndex);
 		else
 			node = new Node3D();
-		var name:String = field(n, "name");
-		node.name = name == null ? "" : name;
+		node.name = name;
 		var matrix:Array<Float> = field(n, "matrix");
 		if (matrix != null)
 			node.setMatrix(matrix);

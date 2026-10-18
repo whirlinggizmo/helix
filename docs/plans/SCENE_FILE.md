@@ -6,7 +6,7 @@ The design for the roadmap's milestone 11 entry: the pieces, their names, the fi
 
 - `helix.scene.Scene` is a screen in the `Scenes` stack (`enter`, `exit`, `pause`, `resume`, `update(dt)`, `draw`), with a `Loader` and transitions. It holds no tree.
 - `helix.scene.Node` is what both trees share: `name`, `enabled`, `visible`, `pickable`, children, `find(name)` (never a path). `Node3D` adds the transform, `addChild`, `addChildInPlace`, settable `parent`; the kinds (`Model` with parts, `DirectionalLight`, `PointLight`, `SpotLight`, `Camera3D`, `Sprite3D`, `Text3D`, `Particles3D`) are classes on it. `Stage3D` draws a tree.
-- `Models.load(path, loaded)` gives a `ModelFile`; `file.instantiate()` gives a `Node3D` subtree whose nodes carry the glTF's names. The glTF reader takes no lights, cameras or `extras`.
+- `Models.load(path, loaded)` gives a `ModelFile`; `file.instantiate()` gives a `Node3D` subtree whose nodes carry the glTF's names, its punctual lights and (from this milestone) its cameras as `Camera3D` nodes. The glTF reader takes no `extras`.
 - `Timers` and `Tweens` are objects an app makes and updates itself (the motion example).
 - The earlier framework's text scene (`wgf-scene 2`, line per fact) and the racer's use of it, with its lessons: a file's nodes are addressable by path for overrides, but every parent on the path needed a block of its own (awkward); no light kind, so the sun stayed code; a dump that lost flags didn't load back as the same world; a model's material numbers couldn't be set from the file; behaviors took parameters on a line (`behavior index=0`) and references to other actors by path.
 
@@ -154,7 +154,7 @@ class Checkpoint extends Behavior {
 
 ## Blender
 
-`tools/gltf2scene.py <export.glb> <out.scene>`: a Blender glTF export becomes one `Model` node with `file` pointing at the glb, and its objects' custom properties become overrides by node path: `helix_behavior = "Checkpoint"` with `helix_index = 0` makes a behavior with props; `helix_shadowCasting = false` a property; a KHR_lights_punctual light or a camera in the export becomes a `DirectionalLight`/`PointLight`/`SpotLight` or `Camera3D` node at the object's transform (the glTF reader stays mesh-only; the tool reads the JSON chunk itself). A `.blend` under `examples/<name>/blender/` with its export checked in, so the conversion is reproducible.
+`tools/gltf2scene.py <export.glb> <out.scene>`: a Blender glTF export becomes one `Model` node with `file` pointing at the glb, and its objects' custom properties become overrides by node path: `helix_behavior = "Checkpoint"` with `helix_index = 0` makes a behavior with props; `helix_shadowCasting = false` a property; the export's lights and cameras need nothing from the tool, the glTF reader instantiates them with the model. A `.blend` under `examples/<name>/blender/` with its export checked in, so the conversion is reproducible.
 
 ## The example
 

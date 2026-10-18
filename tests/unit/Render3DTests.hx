@@ -254,6 +254,63 @@ class Render3DTests {
 			&& helix.render3d.Gltf.resolve("models/car.gltf", "../../x.png") == null
 			&& helix.render3d.Gltf.resolve("models/car.gltf", "https://example.com/x.png") == null,
 			"URIs resolve beside the model, inside the assets");
+		// Cameras: a perspective one and an orthographic one as Camera3D nodes at their nodes' transforms, a node with a mesh and a camera the
+		// model with the camera a child of its name plus "_camera", and each copy with cameras of its own.
+		var rig = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.read(haxe.io.Bytes.ofString(haxe.Json.stringify({
+			asset: {version: "2.0"},
+			buffers: [
+				{byteLength: 36, uri: "data:application/octet-stream;base64," + haxe.crypto.Base64.encode(data)}
+			],
+			bufferViews: [{buffer: 0, byteLength: 36}],
+			accessors: [
+				{
+					bufferView: 0,
+					componentType: 5126,
+					count: 3,
+					type: "VEC3"
+				}
+			],
+			meshes: [{primitives: [{attributes: {POSITION: 0}}]}],
+			cameras: ([
+				{type: "perspective", perspective: {yfov: .9, znear: .2, zfar: 50}},
+				{
+					type: "orthographic",
+					orthographic: {
+						xmag: 4,
+						ymag: 3,
+						znear: .1,
+						zfar: 20
+					}
+				},
+				{type: "perspective", perspective: {yfov: 1, znear: 1}}
+			] : Array<Dynamic>),
+			nodes: ([
+				{name: "eye", camera: 0, translation: [1, 2, 3]},
+				{name: "flat", camera: 1},
+				{name: "body", mesh: 0, camera: 2}
+			] : Array<Dynamic>),
+			scenes: [{nodes: [0, 1, 2]}]
+		}))));
+		var set = rig.instantiate("set"),
+			eye = Std.downcast(set.find("eye"), Camera3D),
+			flat = Std.downcast(set.find("flat"), Camera3D),
+			body = Std.downcast(set.find("body"), Model);
+		check(eye != null && near(eye.fovY, .9) && near(eye.near, .2) && near(eye.far, 50) && !eye.orthographic,
+			"A perspective camera node is a Camera3D with the file's yfov, znear and zfar");
+		check(near(eye.x, 1) && near(eye.y, 2) && near(eye.z, 3) && near(eye.eyeX, 1) && near(eye.forwardZ, -1) && near(eye.upY, 1),
+			"It sits at its node's transform, looking down -z with +y up");
+		check(flat != null && flat.orthographic && near(flat.orthographicHeight, 6) && near(flat.near, .1) && near(flat.far, 20),
+			"An orthographic camera's height is twice its ymag");
+		check(near(flat.eyeZ, 0) && near(flat.forwardZ, -1), "A camera node without a transform is at the origin, not Camera3D's starting place");
+		var bodyCamera = Std.downcast(set.find("body_camera"), Camera3D);
+		check(body != null && body.mesh.indexCount == 3 && bodyCamera != null && bodyCamera.parent == body,
+			"A node with a mesh and a camera is the model, the camera its child named after it");
+		check(near(bodyCamera.fovY, 1) && near(bodyCamera.near, 1) && near(bodyCamera.far, 1000), "An absent zfar leaves Camera3D's default far");
+		var setAgain = rig.instantiate();
+		check(setAgain.find("eye") != eye
+			&& Std.downcast(setAgain.find("eye"), Camera3D) != null
+			&& setAgain.find("body_camera") != bodyCamera,
+			"Copies have cameras of their own");
 		shadows();
 		flags();
 		lightChoice();

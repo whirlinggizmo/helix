@@ -236,12 +236,14 @@ TrueType fonts loaded through the assets into Font2Ds: read and baked into a dis
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)
 function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
+function getPath(font:Font2D):Null<String>
 function release(font:Font2D):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 ```
 
 - `new`: Loads through assets and uploads to gpu.
 - `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
+- `getPath`: The file font was loaded from, or null for one this service didn't load.
 - `release`: Frees a font this service loaded, and stops reloading it.
 - `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font2D objects. A file that no longer reads leaves them as they were.
 

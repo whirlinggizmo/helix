@@ -64,7 +64,7 @@ class Behaviors {
 			for (p in props)
 				macro props.push({
 					name: $v{p.name},
-					type: $p{["helix", "behavior", "BehaviorPropType", p.kind]},
+					type: $p{["helix", "behavior", "BehaviorSchema", "BehaviorPropType", p.kind]},
 					value: $e{p.value},
 					min: $e{p.min == null ? macro null : macro $v{p.min}},
 					max: $e{p.max == null ? macro null : macro $v{p.max}}
@@ -77,9 +77,9 @@ class Behaviors {
 			access: [APublic, AStatic],
 			kind: FFun({
 				args: [],
-				ret: macro :helix.behavior.BehaviorSchema,
+				ret: macro :helix.behavior.BehaviorSchema.BehaviorSchema,
 				expr: macro {
-					var props:Array<helix.behavior.BehaviorProp> = $inherited;
+					var props:Array<helix.behavior.BehaviorSchema.BehaviorProp> = $inherited;
 					$b{entries};
 					return {name: $v{name}, props: props};
 				}

@@ -2,12 +2,14 @@ package helix.scene;
 
 import haxe.io.Bytes;
 import helix.assets.Failure;
+import helix.behavior.Behaviors;
+import helix.render3d.Stage3D;
 import helix.scene.SceneSchema;
 
 /** A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its stage section and its nodes, each a SceneNode
 	with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so
 	a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand
-	edit stays where it was made. Instantiating onto a stage and capturing a live tree are the file's next phase. */
+	edit stays where it was made; instantiated onto a stage (instantiate) and captured back from a live instance (capture). */
 class SceneFile {
 	/** The format version read and written: the file's "helix-scene" value. */
 	public static inline var VERSION = 1;
@@ -29,8 +31,38 @@ class SceneFile {
 		or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
 		has, a key no table has on a node or an override, a value of the wrong shape, a file or a material on a kind that isn't a Model,
 		overrides on a node with no file and no scene, an override with a name or a kind or an empty path, or a behavior without a kind. */
-	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile>
-		return new SceneReader(path != null ? path : "scene").read(bytes);
+	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile> {
+		var file = new SceneReader(path != null ? path : "scene").read(bytes);
+		if (file != null)
+			file.path = path;
+		return file;
+	}
+
+	/** Makes the file's tree on stage, its behaviors on behaviors: the stage section applied (ambient, tonemap and exposure at once, the
+		environment and background once their files land through Environments), then every node at once under a new group named after the
+		file (its path without directory and extension) added to the stage's root, a Model's file and a prefab landing later through Models
+		and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
+		node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's
+		next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab
+		naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are
+		each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers
+		where each node came from, for capture. */
+	public function instantiate(stage:Stage3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance
+		return SceneInstance.make(this, path != null ? path : "scene", stage, behaviors, ready);
+
+	/** The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by. */
+	public var path(default, null):Null<String>;
+
+	/** The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of
+		the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the
+		behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the
+		reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the
+		children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run
+		time as its class with its properties (a Model made in code has no file and loads back as an empty Model: logged once). A reference
+		is written as the node's name when one node of the instance has it, else its path. Capturing an untouched instance gives the file
+		it was made from, written canonically. */
+	public static function capture(instance:SceneInstance):SceneFile
+		return @:privateAccess instance.capture();
 
 	/** The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing
 		newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a
@@ -398,10 +430,10 @@ private class SceneReader {
 						case _: stage.backgroundBlur = readFloat(field, "stage background", name);
 					});
 				case "tonemap":
-					if (Std.isOfType(item, String) && SceneWriter.TONEMAPS.indexOf(item) >= 0)
+					if (Std.isOfType(item, String) && SceneSchema.tonemaps.indexOf(item) >= 0)
 						stage.tonemap = item;
 					else
-						refuse("stage", 'tonemap: expected ${SceneWriter.TONEMAPS.join(", ")}');
+						refuse("stage", 'tonemap: expected ${SceneSchema.tonemaps.join(", ")}');
 				case "exposure":
 					stage.exposure = readFloat(item, "stage", key);
 				case _:
@@ -499,9 +531,6 @@ private class SceneReader {
 /** The canonical writer: every value in one place, every key in its fixed order, numbers formatted by integer arithmetic so the browser
 	and native write the same bytes. */
 private class SceneWriter {
-	/** Tonemap's cases in lower case, in its order: what the stage's "tonemap" may say. */
-	public static final TONEMAPS = ["none", "neutral", "aces"];
-
 	/** A writer. */
 	public function new() {}
 

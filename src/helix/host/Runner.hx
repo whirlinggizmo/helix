@@ -23,6 +23,8 @@ import helix.render3d.EnvironmentCache;
 import helix.render3d.Environments;
 import helix.render3d.ModelCache;
 import helix.render3d.Models;
+import helix.scene.SceneFileCache;
+import helix.scene.SceneFiles;
 import helix.time.Clock;
 import helix.time.Time;
 
@@ -50,6 +52,7 @@ class Runner {
 	var textures:TextureCache;
 	var environments:EnvironmentCache;
 	var models:ModelCache;
+	var sceneFiles:SceneFileCache;
 	var screenshots:ScreenshotService;
 	var previousFrame = Math.NaN;
 	var closed = false;
@@ -109,6 +112,7 @@ class Runner {
 		textures = new TextureCache(resources, decoding, a.graphics);
 		environments = new EnvironmentCache(resources, decoding, a.graphics);
 		models = new ModelCache(resources, textures);
+		sceneFiles = new SceneFileCache(resources);
 		screenshots = new ScreenshotService(a.graphics, a.export, a.name);
 		Graphics.bind(a.graphics);
 		Input.bind(input.input);
@@ -122,6 +126,7 @@ class Runner {
 		Textures.bind(textures);
 		Environments.bind(environments);
 		Models.bind(models);
+		SceneFiles.bind(sceneFiles);
 		TestHarness.bind(a.harness);
 		Screenshots.bind(screenshots);
 		// config.json beside the program, read now so a deployed game's settings change without a build; the app waits for it (a frame or
@@ -172,6 +177,7 @@ class Runner {
 		closed = true;
 		screenshots.shutdown();
 		sounds.shutdown();
+		sceneFiles.shutdown();
 		models.shutdown();
 		textures.shutdown();
 		environments.shutdown();
@@ -197,6 +203,7 @@ class Runner {
 		Textures.bind(null);
 		Environments.bind(null);
 		Models.bind(null);
+		SceneFiles.bind(null);
 		TestHarness.bind(null);
 		Screenshots.bind(null);
 		Host.bind(null);

@@ -118,6 +118,9 @@ class SceneSchema {
 		new KindSchema("Particles3D", [])
 	];
 
+	/** What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value. */
+	public static final tonemaps = ["none", "neutral", "aces"];
+
 	/** The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold. */
 	public static function kind(name:String):Null<KindSchema> {
 		for (kind in kinds)

@@ -1,0 +1,420 @@
+package helix.scene;
+
+import helix.assets.Assets;
+import helix.graphics.Graphics;
+import helix.particles.Emitter;
+import helix.render2d.Font2D;
+import helix.render2d.Fonts;
+import helix.render2d.Texture2D;
+import helix.render2d.Textures;
+import helix.render3d.Camera3D;
+import helix.render3d.DirectionalLight;
+import helix.render3d.Light;
+import helix.render3d.Material;
+import helix.render3d.Model;
+import helix.render3d.Node3D;
+import helix.render3d.Particles3D;
+import helix.render3d.PointLight;
+import helix.render3d.SpotLight;
+import helix.render3d.Sprite3D;
+import helix.render3d.SpriteAlpha;
+import helix.render3d.SpriteFacing;
+import helix.render3d.Text3D;
+import helix.render3d.Tonemap;
+import helix.scene.SceneValue;
+
+/** The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property
+	applied to a live node from a file's value and read back from it, and a Model's inline material applied and read. What the tables
+	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, the stage's
+	tonemap), a texture or a font from its path through Textures and a Fonts of this module's own, a color as 0xRRGGBBAA. */
+class SceneKinds {
+	// The fonts a Text3D's "font" loads through: made from the program's assets and graphics when first needed (there is no Fonts static:
+	// apps make their own). Kept across a hot reload (@:hot), as the fonts it holds are drawn still.
+	@:hot static var fonts:Null<Fonts>;
+
+	/** A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a
+		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table
+		has. */
+	public static function make(kind:String):Null<Node3D> {
+		return switch kind {
+			case "Node3D": new Node3D();
+			case "Model": new Model();
+			case "DirectionalLight": new DirectionalLight();
+			case "PointLight": new PointLight();
+			case "SpotLight": new SpotLight();
+			case "Camera3D": new Camera3D();
+			case "Sprite3D": new Sprite3D(null);
+			case "Text3D": new Text3D("");
+			case "Particles3D": new Particles3D(new Emitter(null));
+			case _: null;
+		}
+	}
+
+	/** The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has. */
+	public static function kindOf(node:Node3D):Null<String> {
+		if (Std.isOfType(node, Model))
+			return "Model";
+		if (Std.isOfType(node, DirectionalLight))
+			return "DirectionalLight";
+		if (Std.isOfType(node, PointLight))
+			return "PointLight";
+		if (Std.isOfType(node, SpotLight))
+			return "SpotLight";
+		if (Std.isOfType(node, Camera3D))
+			return "Camera3D";
+		if (Std.isOfType(node, Sprite3D))
+			return "Sprite3D";
+		if (Std.isOfType(node, Text3D))
+			return "Text3D";
+		if (Std.isOfType(node, Particles3D))
+			return "Particles3D";
+		return Type.getClass(node) == Node3D ? "Node3D" : null;
+	}
+
+	/** Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY (through setPerspective,
+		keeping the rest), a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order), a sprite's region
+		and size, a text's size. A texture's or a font's path loads through Textures or this module's fonts and lands when it does ("" for
+		none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind
+		hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses. */
+	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance):Bool {
+		var model = Std.downcast(node, Model);
+		if (model != null)
+			return switch [name, value] {
+				case ["tint", Color(c)]:
+					model.tint = c;
+					true;
+				case ["shadowCasting", Flag(f)]:
+					model.shadowCasting = f;
+					true;
+				case ["shadowReceiving", Flag(f)]:
+					model.shadowReceiving = f;
+					true;
+				case _: false;
+			}
+		var light = Std.downcast(node, Light);
+		if (light != null) {
+			var spot = Std.downcast(node, SpotLight),
+				point = Std.downcast(node, PointLight);
+			return switch [name, value] {
+				case ["color", Color(c)]:
+					light.color = c;
+					true;
+				case ["intensity", Number(v)]:
+					light.intensity = v;
+					true;
+				case ["shadowCasting", Flag(f)]:
+					light.shadowCasting = f;
+					true;
+				case ["shadowDistance", Number(v)]:
+					light.shadowDistance = v;
+					true;
+				case ["shadowMapSize", Number(v)]:
+					light.shadowMapSize = Std.int(v);
+					true;
+				case ["shadowStrength", Number(v)]:
+					light.shadowStrength = v;
+					true;
+				case ["shadowColor", Color(c)]:
+					light.shadowColor = c;
+					true;
+				case ["range", Number(v)] if (point != null):
+					point.range = v;
+					true;
+				case ["range", Number(v)] if (spot != null):
+					spot.range = v;
+					true;
+				case ["innerCone", Number(v)] if (spot != null):
+					spot.setCone(v, Math.max(v, spot.outerCone));
+				case ["outerCone", Number(v)] if (spot != null):
+					spot.setCone(Math.min(spot.innerCone, v), v);
+				case _: false;
+			}
+		}
+		var camera = Std.downcast(node, Camera3D);
+		if (camera != null)
+			return switch [name, value] {
+				case ["fovY", Number(v)]: perspective(camera, v, camera.near, camera.far);
+				case ["near", Number(v)]:
+					camera.orthographic ? camera.setOrthographic(camera.orthographicHeight, v, camera.far) : camera.setPerspective(camera.fovY, v, camera.far);
+				case ["far", Number(v)]:
+					camera.orthographic ? camera.setOrthographic(camera.orthographicHeight, camera.near,
+						v) : camera.setPerspective(camera.fovY, camera.near, v);
+				case ["orthographicHeight", Number(v)]:
+					if (v > 0) camera.setOrthographic(v, camera.near,
+						camera.far); else if (v == 0) !camera.orthographic
+						|| camera.setPerspective(camera.fovY, camera.near > 0 ? camera.near : .1, camera.far); else false;
+				case ["minAspect", Number(v)]:
+					camera.minAspect = v;
+					true;
+				case _: false;
+			}
+		var sprite = Std.downcast(node, Sprite3D);
+		if (sprite != null)
+			return switch [name, value] {
+				case ["texture", Text(path)]:
+					loadTexture(path, instance, texture -> sprite.texture = texture);
+					true;
+				case ["tint", Color(c)]:
+					sprite.tint = c;
+					true;
+				case ["regionX", Number(v)]:
+					sprite.setRegion(v, sprite.regionY, sprite.regionWidth, sprite.regionHeight);
+					true;
+				case ["regionY", Number(v)]:
+					sprite.setRegion(sprite.regionX, v, sprite.regionWidth, sprite.regionHeight);
+					true;
+				case ["regionWidth", Number(v)]:
+					sprite.setRegion(sprite.regionX, sprite.regionY, v, sprite.regionHeight);
+					true;
+				case ["regionHeight", Number(v)]:
+					sprite.setRegion(sprite.regionX, sprite.regionY, sprite.regionWidth, v);
+					true;
+				case ["spriteWidth", Number(v)]: sprite.setSpriteSize(v, sprite.spriteHeight);
+				case ["spriteHeight", Number(v)]: sprite.setSpriteSize(sprite.spriteWidth, v);
+				case ["pivotX", Number(v)]:
+					sprite.setPivot(v, sprite.pivotY);
+					true;
+				case ["pivotY", Number(v)]:
+					sprite.setPivot(sprite.pivotX, v);
+					true;
+				case ["facing", Text(t)]:
+					var facing = facingOf(t);
+					if (facing != null)
+						sprite.facing = facing;
+					facing != null;
+				case ["alphaMode", Text(t)]: var mode = alphaOf(t); mode != null && sprite.setAlphaMode(mode, sprite.alphaCutoff);
+				case ["alphaCutoff", Number(v)]: sprite.setAlphaMode(sprite.alphaMode, v);
+				case _: false;
+			}
+		var text = Std.downcast(node, Text3D);
+		if (text != null)
+			return switch [name, value] {
+				case ["text", Text(t)]:
+					text.text = t;
+					true;
+				case ["textSize", Number(v)]:
+					text.textSize = v;
+					true;
+				case ["color", Color(c)]:
+					text.color = c;
+					true;
+				case ["font", Text(path)]:
+					loadFont(path, instance, font -> text.font = font);
+					true;
+				case ["pivotX", Number(v)]:
+					text.setPivot(v, text.pivotY);
+					true;
+				case ["pivotY", Number(v)]:
+					text.setPivot(text.pivotX, v);
+					true;
+				case ["facing", Text(t)]:
+					var facing = facingOf(t);
+					if (facing != null)
+						text.facing = facing;
+					facing != null;
+				case _: false;
+			}
+		return false;
+	}
+
+	// A camera's fovY set, an orthographic one brought back to orthographic after (setPerspective ends that).
+	static function perspective(camera:Camera3D, fovY:Float, near:Float, far:Float):Bool {
+		if (!camera.orthographic)
+			return camera.setPerspective(fovY, near, far);
+		var height = camera.orthographicHeight;
+		if (!camera.setPerspective(fovY, near > 0 ? near : .1, far))
+			return false;
+		return camera.setOrthographic(height, near, far);
+	}
+
+	/** Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a
+		property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet
+		landed), or one that didn't come through the caches. */
+	public static function read(node:Node3D, name:String):Null<SceneValue> {
+		var model = Std.downcast(node, Model);
+		if (model != null)
+			return switch name {
+				case "tint": Color(model.tint);
+				case "shadowCasting": Flag(model.shadowCasting);
+				case "shadowReceiving": Flag(model.shadowReceiving);
+				case _: null;
+			}
+		var light = Std.downcast(node, Light);
+		if (light != null) {
+			var spot = Std.downcast(node, SpotLight),
+				point = Std.downcast(node, PointLight);
+			return switch name {
+				case "color": Color(light.color);
+				case "intensity": Number(light.intensity);
+				case "shadowCasting": Flag(light.shadowCasting);
+				case "shadowDistance": Number(light.shadowDistance);
+				case "shadowMapSize": Number(light.shadowMapSize);
+				case "shadowStrength": Number(light.shadowStrength);
+				case "shadowColor": Color(light.shadowColor);
+				case "range" if (point != null): Number(point.range);
+				case "range" if (spot != null): Number(spot.range);
+				case "innerCone" if (spot != null): Number(spot.innerCone);
+				case "outerCone" if (spot != null): Number(spot.outerCone);
+				case _: null;
+			}
+		}
+		var camera = Std.downcast(node, Camera3D);
+		if (camera != null)
+			return switch name {
+				case "fovY": Number(camera.fovY);
+				case "near": Number(camera.near);
+				case "far": Number(camera.far);
+				case "orthographicHeight": Number(camera.orthographicHeight);
+				case "minAspect": Number(camera.minAspect);
+				case _: null;
+			}
+		var sprite = Std.downcast(node, Sprite3D);
+		if (sprite != null)
+			return switch name {
+				case "texture": texturePath(sprite.texture);
+				case "tint": Color(sprite.tint);
+				case "regionX": Number(sprite.regionX);
+				case "regionY": Number(sprite.regionY);
+				case "regionWidth": Number(sprite.regionWidth);
+				case "regionHeight": Number(sprite.regionHeight);
+				case "spriteWidth": Number(sprite.spriteWidth);
+				case "spriteHeight": Number(sprite.spriteHeight);
+				case "pivotX": Number(sprite.pivotX);
+				case "pivotY": Number(sprite.pivotY);
+				case "facing": Text(facingName(sprite.facing));
+				case "alphaMode": Text(alphaName(sprite.alphaMode));
+				case "alphaCutoff": Number(sprite.alphaCutoff);
+				case _: null;
+			}
+		var text = Std.downcast(node, Text3D);
+		if (text != null)
+			return switch name {
+				case "text": Text(text.text);
+				case "textSize": Number(text.textSize);
+				case "color": Color(text.color);
+				case "font":
+					var path = text.font == null || fonts == null ? null : fonts.getPath(text.font);
+					path == null ? null : Text(path);
+				case "pivotX": Number(text.pivotX);
+				case "pivotY": Number(text.pivotY);
+				case "facing": Text(facingName(text.facing));
+				case _: null;
+			}
+		return null;
+	}
+
+	/** Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none):
+		an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance,
+		when given, keeps them to release at its destroy. */
+	public static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance):Void {
+		var made = new Material();
+		if (material.baseColor != null)
+			made.baseColor = material.baseColor;
+		if (material.metallic != null)
+			made.metallic = material.metallic;
+		if (material.roughness != null)
+			made.roughness = material.roughness;
+		if (material.normalScale != null)
+			made.normalScale = material.normalScale;
+		if (material.emissive != null || material.emissiveStrength != null)
+			made.setEmissive(material.emissive != null ? material.emissive : made.emissive,
+				material.emissiveStrength != null ? material.emissiveStrength : made.emissiveStrength);
+		if (material.doubleSided != null)
+			made.doubleSided = material.doubleSided;
+		if (material.texture != null)
+			loadTexture(material.texture, instance, texture -> made.texture = texture);
+		if (material.normalTexture != null)
+			loadTexture(material.normalTexture, instance, texture -> made.normalTexture = texture);
+		model.material = made;
+	}
+
+	/** Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for
+		none or one that didn't come through Textures. Null for a model of no parts. */
+	public static function readMaterial(model:Model):Null<SceneMaterial> {
+		var material = model.material;
+		if (material == null)
+			return null;
+		var read = new SceneMaterial();
+		read.baseColor = material.baseColor;
+		read.metallic = material.metallic;
+		read.roughness = material.roughness;
+		read.texture = material.texture == null ? null : Textures.getPath(material.texture);
+		read.normalTexture = material.normalTexture == null ? null : Textures.getPath(material.normalTexture);
+		read.normalScale = material.normalScale;
+		read.emissive = material.emissive;
+		read.emissiveStrength = material.emissiveStrength;
+		read.doubleSided = material.doubleSided;
+		return read;
+	}
+
+	/** The tone mapping named name, "none", "neutral" or "aces" (SceneSchema.tonemaps); null for another name. */
+	public static function tonemapOf(name:String):Null<Tonemap> {
+		var index = SceneSchema.tonemaps.indexOf(name);
+		return index < 0 ? null : cast index;
+	}
+
+	/** Tonemap's name as the file writes it (SceneSchema.tonemaps). */
+	public static function tonemapName(tonemap:Tonemap):String
+		return SceneSchema.tonemaps[(tonemap : Int)];
+
+	/** The facing named name, "camera", "upright", "ground" or "free"; null for another name. */
+	public static function facingOf(name:String):Null<SpriteFacing> {
+		var index = FACINGS.indexOf(name);
+		return index < 0 ? null : cast index;
+	}
+
+	/** A facing's name as the file writes it. */
+	public static function facingName(facing:SpriteFacing):String
+		return FACINGS[(facing : Int)];
+
+	/** The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name. */
+	public static function alphaOf(name:String):Null<SpriteAlpha> {
+		var index = ALPHAS.indexOf(name);
+		return index < 0 ? null : cast index;
+	}
+
+	/** An alpha mode's name as the file writes it. */
+	public static function alphaName(alpha:SpriteAlpha):String
+		return ALPHAS[(alpha : Int)];
+
+	static final FACINGS = ["camera", "upright", "ground", "free"];
+	static final ALPHAS = ["opaque", "mask", "blend", "add"];
+
+	// A sprite's texture as a value: its path, or null for none or one the cache didn't give.
+	static function texturePath(texture:Null<Texture2D>):Null<SceneValue> {
+		var path = texture == null ? null : Textures.getPath(texture);
+		return path == null ? null : Text(path);
+	}
+
+	// path's texture through Textures ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
+	static function loadTexture(path:String, instance:Null<SceneInstance>, set:Null<Texture2D>->Void):Void {
+		if (path == "") {
+			set(null);
+			return;
+		}
+		var request = Textures.load(path, true, texture -> {
+			if (instance != null && !instance.holdTexture(texture))
+				return;
+			set(texture);
+		});
+		if (instance != null)
+			instance.holdRequest(request);
+	}
+
+	// path's font through this module's fonts ("" for none, set at once), into set when it lands; the instance keeps it.
+	static function loadFont(path:String, instance:Null<SceneInstance>, set:Null<Font2D>->Void):Void {
+		if (path == "") {
+			set(null);
+			return;
+		}
+		if (fonts == null)
+			fonts = new Fonts(Assets.instance, Graphics.instance);
+		var request = fonts.load(path, font -> {
+			if (instance != null && !instance.holdFont(font, fonts))
+				return;
+			set(font);
+		});
+		if (instance != null)
+			instance.holdRequest(request);
+	}
+}

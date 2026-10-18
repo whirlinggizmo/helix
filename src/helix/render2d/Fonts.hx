@@ -46,6 +46,14 @@ class Fonts implements IReloadable {
 		return request;
 	}
 
+	/** The file font was loaded from, or null for one this service didn't load. */
+	public function getPath(font:Font2D):Null<String> {
+		for (entry in entries)
+			if (entry.font == font)
+				return entry.path;
+		return null;
+	}
+
 	/** Frees a font this service loaded, and stops reloading it. */
 	public function release(font:Font2D):Void
 		for (entry in entries.copy())
