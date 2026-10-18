@@ -47,11 +47,17 @@ def working_tree():
     return names
 
 
+# Prints every autopilot result whose games differed (tools/example.py writes build/results/<name>/autopilot-*.json), in a .bat.
+SHOW_RESULTS = 'for /r build\results %%f in (autopilot-*.json) do (findstr /c:"\"sameGame\": false" "%%f" >nul 2>nul && (echo remote_windows: result %%f{redir} & type "%%f"{redir}))'
+
+
 def desktop(steps, env):
     """The .bat the desktop's scheduled task runs: env set, each step, its output in log.txt, and a done.txt saying whether all passed."""
     lines = ['@echo off', 'cd /d "%~dp0"', 'set FAILED=0'] + [f'set "{pair}"' for pair in env]
     for step in steps:
         lines += [f'echo remote_windows: python {step} >> log.txt', f'python {step} >> log.txt 2>&1', 'if errorlevel 1 set FAILED=1']
+    # A differing autopilot game's result file, printed: the scratch folder goes, and a difference must stay readable.
+    lines += ['if %FAILED%==1 ' + SHOW_RESULTS.format(redir=' >> log.txt')]
     # Redirection first: "echo 0> f" would redirect stream 0. Renamed once written, so done.txt is never seen empty.
     lines += ['>status.txt echo %FAILED%', 'ren status.txt done.txt']
     return '\r\n'.join(lines) + '\r\n'
@@ -85,6 +91,7 @@ def script(folder, archive, steps, env, keep, on_desktop):
         lines += [f'set "{pair}"' for pair in env]
         for step in steps:
             lines += [f'echo remote_windows: python {step}', f'python {step}', 'if errorlevel 1 set FAILED=1']
+        lines += ['if %FAILED%==1 ' + SHOW_RESULTS.format(redir='')]
     lines += [':done', 'cd /d "%USERPROFILE%"']
     if not keep:
         lines += ['rmdir /s /q "%ROOT%"', f'del "%USERPROFILE%\\{archive}"']
