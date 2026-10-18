@@ -49,6 +49,10 @@ private class Attempt {
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
 class AssetService implements IAssets {
+	// A streamed download's limits (streamSource's download): a file is played as it arrives, so a slow connection takes the time it takes.
+	static inline var STREAM_MAX_BYTES = 256 * 1024 * 1024;
+	static inline var STREAM_TIMEOUT = 600.;
+
 	var fetcher:FetchService;
 	var cache:StorageService;
 	var packaged:StorageService;
@@ -203,29 +207,15 @@ class AssetService implements IAssets {
 			switch result {
 				case Response(value):
 					if (value.status == 304 && record != null) copy(path, attempt, done, () -> download(path, url, expected, null, Force, attempt, done),
-						() -> {
-							var renewed = CacheRecords.of(value.headers, record.hash, now());
-							cache.write(recordKey(path), CacheRecords.encode({
-								etag: renewed.etag != null ? renewed.etag : record.etag,
-								lastModified: renewed.lastModified != null ? renewed.lastModified : record.lastModified,
-								freshUntil: renewed.freshUntil,
-								hash: record.hash,
-								source: record.source
-							}), _ -> {});
-						}); else if (value.status >= 200 && value.status < 300) {
+						() -> renew(path, record, value.headers)); else if (value.status >= 200 && value.status < 300) {
 						var hash = AssetManifest.hash(value.bytes);
 						if (expected != null && hash != expected)
 							done(Failed('Asset does not match its manifest (a deploy still arriving?): $path'));
 						else
 							store(path, value.bytes, value.headers, hash, attempt, done, url == base + path ? null : url);
-						} else if (value.status >= 400 && value.status < 500) {
+					} else if (value.status >= 400 && value.status < 500) {
 						// The host says it's gone: so is the copy.
-						if (cacheMode == Off)
-							session.remove(key(path));
-						else {
-							cache.remove(key(path), _ -> {});
-							cache.remove(recordKey(path), _ -> {});
-						}
+						forget(path);
 						done(Failed('Asset HTTP ${value.status}: $path'));
 					} else unanswered('Asset HTTP ${value.status}: $path');
 				case Failed(message): unanswered(message);
@@ -233,6 +223,27 @@ class AssetService implements IAssets {
 			}
 		}, value -> attempt.report("downloading", value.receivedBytes, value.totalBytes));
 	}
+
+	// Keeps record fresh again from a 304's headers, their validators where they give new ones.
+	function renew(path:String, record:CacheRecord, headers:Map<String, String>):Void {
+		var renewed = CacheRecords.of(headers, record.hash, now());
+		cache.write(recordKey(path), CacheRecords.encode({
+			etag: renewed.etag != null ? renewed.etag : record.etag,
+			lastModified: renewed.lastModified != null ? renewed.lastModified : record.lastModified,
+			freshUntil: renewed.freshUntil,
+			hash: record.hash,
+			source: record.source
+		}), _ -> {});
+	}
+
+	// Removes path's copy and its record (this run's, with the cache Off): the host says it's gone.
+	function forget(path:String):Void
+		if (cacheMode == Off)
+			session.remove(key(path));
+		else {
+			cache.remove(key(path), _ -> {});
+			cache.remove(recordKey(path), _ -> {});
+		}
 
 	// The cached copy of path (this run's, with the cache Off), or missing() when there's none; kept() once it's read.
 	function copy(path:String, attempt:Attempt, done:Outcome->Void, missing:Void->Void, ?kept:Void->Void):Void {
@@ -392,7 +403,7 @@ class AssetService implements IAssets {
 		return cache.clear(complete);
 	}
 
-	public function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void):IRequest {
+	public function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void, download:Bool = false):IRequest {
 		var child:IRequest = null, request:Request = null;
 		// Ends the request with a location, or a failure for null; a stored location that arrives too late is released.
 		function finish(location:Null<AudioLocation>, ?message:String) {
@@ -416,7 +427,16 @@ class AssetService implements IAssets {
 			requests.remove(request);
 		});
 		requests.push(request);
-		function local(result:StorageSourceResult) {
+		var local:StorageSourceResult->Void = null;
+		// The file from the host at url: its URL for the platform to play, or with download, the file arriving (grow); record is the copy's.
+		function remote(url:String, record:Null<CacheRecord>, expected:Null<String>)
+			if (!download)
+				finish(Remote(url));
+			else if (cacheMode == Off && session.exists(key(path)))
+				finish(Downloading(GrowingSource.of(session[key(path)])));
+			else
+				child = grow(path, url, expected == null ? record : null, expected, request, finish, () -> child = cache.source(key(path), local));
+		local = result -> {
 			if (request.settled) {
 				switch result {
 					case Local(value):
@@ -433,15 +453,12 @@ class AssetService implements IAssets {
 				case Cancelled:
 					stop();
 				case Missing:
-					if (base != null)
-						finish(Remote(base + path));
-					else
-						child = packaged.source(path, result -> switch result {
-							case Local(value): finish(Stored(value));
-							case Missing: finish(null, "Missing streamed asset: " + path);
-							case Failed(message): finish(null, message);
-							case Cancelled: stop();
-						});
+					if (base != null) remote(base + path, null, null); else child = packaged.source(path, result -> switch result {
+						case Local(value): finish(Stored(value));
+						case Missing: finish(null, "Missing streamed asset: " + path);
+						case Failed(message): finish(null, message);
+						case Cancelled: stop();
+					});
 			}
 		}
 		queue.add(() -> {
@@ -456,12 +473,12 @@ class AssetService implements IAssets {
 				return;
 			}
 			// A downloaded copy is streamed only while it's current (obtain's rules, without asking the host): the manifest's hash, else fresh.
-			// Otherwise the host's URL, where the platform's own HTTP cache decides.
+			// Otherwise the host's URL, where the platform's own HTTP cache decides, or the download (remote).
 			hashOf(path, (expected, unlisted) -> {
 				if (request.settled)
 					return;
 				if (cacheMode == Off) {
-					finish(Remote(base + path));
+					remote(base + path, null, expected);
 					return;
 				}
 				child = cache.read(recordKey(path), result -> {
@@ -476,18 +493,100 @@ class AssetService implements IAssets {
 						if (cacheMode == Trust || now() < record.freshUntil)
 							child = cache.source(key(path), local);
 						else
-							finish(Remote(record.source));
+							remote(record.source, record, null);
 						return;
 					}
 					if (expected != null ? record != null && record.hash == expected : !unlisted
 						&& (cacheMode == Trust || record != null && now() < record.freshUntil))
 						child = cache.source(key(path), local);
 					else
-						finish(Remote(base + path));
+						remote(base + path, record, expected);
 				});
 			});
 		});
 		return request;
+	}
+
+	/** Downloads path from url into a GrowingSource for streamSource's request, finishing it with Downloading as soon as the first part arrives
+		with a 200 and a Content-Length, or with a source already done once the file is whole without one; then keeps the file in the cache as a
+		download does (store). expected is a manifest's hash, record the stale copy asked about (its ETag and Last-Modified sent): a 304 renews
+		it and calls cached (which leases it), as does no answer (offline, a 5xx) with a copy. A download that fails after the answer ends its
+		source (GrowingSource.failure) and is logged with the path. The download is tracked as a request of its own (busy, shutdown) until the
+		file is kept; the IRequest returned cancels it while request hasn't been answered. */
+	function grow(path:String, url:String, record:Null<CacheRecord>, expected:Null<String>, request:Request, finish:(Null<AudioLocation>, ?String) -> Void,
+			cached:Void->Void):IRequest {
+		var headers:Map<String, String> = [];
+		if (record != null && record.etag != null)
+			headers["If-None-Match"] = record.etag;
+		if (record != null && record.lastModified != null)
+			headers["If-Modified-Since"] = record.lastModified;
+		var source:Null<GrowingSource> = null,
+			fetch:IRequest = null,
+			own:Request = null;
+		own = new Request(() -> {
+			fetch.cancel();
+			requests.remove(own);
+		});
+		requests.push(own);
+		function end()
+			if (own.finish())
+				requests.remove(own);
+		// The download failed: before the answer, the request fails (or uses the copy, when there's one and the host didn't answer); after it,
+		// the source ends and the log says why.
+		function failed(message:String, answered:Bool) {
+			end();
+			if (source != null) {
+				source.fail(message);
+				Failure.report(path, message, null);
+			} else if (!answered && record != null)
+				cached();
+			else
+				finish(null, message);
+		}
+		fetch = fetcher.fetch({
+			url: url,
+			noCache: expected != null || record != null,
+			headers: headers,
+			maxBytes: STREAM_MAX_BYTES,
+			timeoutSeconds: STREAM_TIMEOUT
+		}, result -> switch result {
+			case Response(value):
+				if (value.status == 304 && record != null) {
+					end();
+					renew(path, record, value.headers);
+					cached();
+				} else if (value.status >= 200 && value.status < 300) {
+					var hash = AssetManifest.hash(value.bytes);
+					if (source != null && !source.done)
+						failed('Download ended short of its Content-Length: $path', true);
+					else if (expected != null && hash != expected)
+						failed('Asset does not match its manifest (a deploy still arriving?): $path', true);
+					else {
+						if (source == null)
+							finish(Downloading(GrowingSource.of(value.bytes)));
+						store(path, value.bytes, value.headers, hash, new Attempt(own, _ -> end(), (_, _, _) -> {}), _ -> end(),
+							url == base + path ? null : url);
+					}
+				} else if (value.status >= 400 && value.status < 500) {
+					// The host says it's gone: so is the copy.
+					forget(path);
+					failed('Asset HTTP ${value.status}: $path', true);
+				} else failed('Asset HTTP ${value.status}: $path', false);
+			case Failed(message):
+				failed(message, false);
+			case Cancelled:
+				if (source != null)
+					source.fail("Download cancelled");
+				end();
+		}, null, part -> {
+			if (source == null && !request.settled && part.status == 200 && part.totalBytes != null && part.totalBytes <= STREAM_MAX_BYTES) {
+				source = new GrowingSource(part.totalBytes);
+				source.append(part.bytes);
+				finish(Downloading(source));
+			} else if (source != null)
+				source.append(part.bytes);
+		});
+		return new Request(() -> if (source == null) own.cancel());
 	}
 
 	public function subscribe(path:String, target:IReloadable):Void {

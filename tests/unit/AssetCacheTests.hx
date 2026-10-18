@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import helix.assets.AssetManifest;
 import helix.assets.AssetService;
 import helix.assets.FetchService;
+import helix.assets.GrowingSource;
 import helix.assets.IAssets;
 import helix.assets.IHttp;
 import helix.assets.IStore;
@@ -15,6 +16,13 @@ private class Host implements IHttp {
 	public var sent:Map<String, Map<String, String>> = [];
 	public var offline = false;
 	public var status:Null<Int> = null;
+
+	/** Bodies sent in parts of this many bytes, a part a poll, with a Content-Length when length is set; dropped after the first part when
+		drop is set. */
+	public var part = 1 << 30;
+
+	public var length = false;
+	public var drop = false;
 
 	var pending:Array<Void->Void> = [];
 
@@ -50,8 +58,25 @@ private class Host implements IHttp {
 			else if (headers["If-None-Match"] == file.headers["etag"])
 				head(304, file.headers);
 			else {
-				head(200, file.headers);
-				body(file.body);
+				var sent = file.headers.copy();
+				if (length)
+					sent["content-length"] = Std.string(file.body.length);
+				head(200, sent);
+				// The rest of the body a part a poll, as a slow host sends it.
+				var at = 0;
+				function next():Void {
+					var size = Std.int(Math.min(part, file.body.length - at));
+					body(file.body.sub(at, size));
+					at += size;
+					if (drop)
+						end("dropped");
+					else if (at < file.body.length)
+						pending.push(next);
+					else
+						end(null);
+				}
+				next();
+				return;
 			}
 			end(null);
 		});
@@ -151,6 +176,7 @@ class AssetCacheTests {
 		assets.streamSource(path, location -> outcome = switch location {
 			case Stored(lease): "cached";
 			case Remote(url): "remote";
+			case Downloading(_): "downloading";
 		}, message -> outcome = "failed: " + message);
 		for (_ in 0...200) {
 			if (outcome != null)
@@ -159,6 +185,31 @@ class AssetCacheTests {
 		}
 		return outcome;
 	}
+
+	// Streams path on assets with download, polling until it's answered: the answer ("cached", "remote", "downloading" or "failed: <why>") and
+	// the source when it's a download.
+	static function download(assets:AssetService, path:String):{outcome:String, source:Null<GrowingSource>} {
+		var outcome:Null<String> = null, source:Null<GrowingSource> = null;
+		assets.streamSource(path, location -> outcome = switch location {
+			case Stored(lease): "cached";
+			case Remote(url): "remote";
+			case Downloading(value):
+				source = value;
+				"downloading";
+		}, message -> outcome = "failed: " + message, true);
+		for (_ in 0...200) {
+			if (outcome != null)
+				break;
+			assets.poll();
+		}
+		return {outcome: outcome, source: source};
+	}
+
+	// Polls assets until it's idle (a download ended and was kept).
+	static function settle(assets:AssetService):Void
+		for (_ in 0...400)
+			if (assets.busy)
+				assets.poll();
 
 	// The manifests of dirs over the host's files, as tools/gen_manifest.py writes them: the deepest first, so a parent lists its children's.
 	static function manifests(dirs:Array<String>):Void {
@@ -353,6 +404,55 @@ class AssetCacheTests {
 		for (_ in 0...20)
 			renewing.poll();
 		check(stream(visit("manifest.json"), "listed/bogus.txt") == "cached", "and fresh, it streams from the cache");
+
+		// Downloading a stream (natively): answered with its first part when it has a Content-Length, played as it arrives, kept when it ends.
+		host.put("song.ogg", "0123456789abcdefghij", "public, max-age=600");
+		host.part = 4;
+		host.length = true;
+		var assets = visit(), got = download(assets, "song.ogg");
+		check(got.outcome == "downloading" && got.source.total == 20 && got.source.received == 4 && !got.source.done,
+			"A remote stream is answered as its download once its first part arrives");
+		settle(assets);
+		check(got.source.done
+			&& got.source.bytes.toString() == "0123456789abcdefghij"
+			&& host.count("song.ogg") == 1, "and goes on arriving");
+		check(download(visit(), "song.ogg").outcome == "cached" && host.count("song.ogg") == 1, "and is kept: the next play is local");
+		check(load(visit(), "song.ogg") == "0123456789abcdefghij" && host.count("song.ogg") == 1, "and ensure finds it current");
+		// Without a Content-Length: answered once whole.
+		host.length = false;
+		host.put("chunked.ogg", "abcdefgh", "public, max-age=600");
+		assets = visit();
+		got = download(assets, "chunked.ogg");
+		check(got.outcome == "downloading"
+			&& got.source.done
+			&& got.source.bytes.toString() == "abcdefgh", "Without a Content-Length, the whole download");
+		settle(assets);
+		check(download(visit(), "chunked.ogg").outcome == "cached", "and it's kept too");
+		// Stale: asked about with its ETag; 304 streams the copy.
+		host.put("stale.ogg", "copy");
+		assets = visit();
+		download(assets, "stale.ogg");
+		settle(assets);
+		check(download(visit(), "stale.ogg").outcome == "cached"
+			&& host.count("stale.ogg") == 2
+			&& host.sent["stale.ogg"]["If-None-Match"] != null,
+			"A stale copy is asked about, and 304 streams it");
+		// Dropped halfway: the source ends with why, and nothing is kept.
+		host.length = true;
+		host.drop = true;
+		host.put("dropped.ogg", "0123456789", "public, max-age=600");
+		assets = visit();
+		got = download(assets, "dropped.ogg");
+		settle(assets);
+		check(got.outcome == "downloading" && got.source.failure != null && !got.source.done && got.source.received == 4,
+			"A download dropped halfway ends its source with why");
+		host.drop = false;
+		check(download(visit(), "dropped.ogg").outcome == "downloading" && host.count("dropped.ogg") == 2, "and nothing was kept");
+		check(download(visit(null, Off), "missing.ogg").outcome.indexOf("failed") == 0, "A download the host hasn't fails");
+		check(stream(visit(), "song.ogg") == "cached"
+			&& stream(visit(), "uncached-elsewhere.ogg") == "remote", "Without download, a URL as before");
+		host.part = 1 << 30;
+		host.length = false;
 
 		// Manifests that aren't one are trusted nowhere.
 		check(AssetManifest.parse(Bytes.ofString('{"manifest":1,"files":{"a":"sha256:00"},"dirs":{}}')) == null, "A bad hash spoils a manifest");

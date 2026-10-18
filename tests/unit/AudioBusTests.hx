@@ -28,6 +28,11 @@ private class Recording implements IAudio {
 	function get_available():Bool
 		return true;
 
+	public var playsUrls(get, never):Bool;
+
+	function get_playsUrls():Bool
+		return true;
+
 	public var running(get, never):Bool;
 
 	function get_running():Bool

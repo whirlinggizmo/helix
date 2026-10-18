@@ -4,10 +4,12 @@ import haxe.io.Bytes;
 import helix.assets.StorageService.Lease;
 import helix.assets.StorageService.StorageWriteResult;
 
-/** Where a streamed audio asset is read from: a leased local copy, which its holder releases, or a remote URL. */
+/** Where a streamed audio asset is read from: a leased local copy, which its holder releases; a remote URL, which the platform plays itself (a
+	browser's media element); or a file still arriving from the host, read as it downloads (natively, where the output can't play a URL). */
 enum AudioLocation {
 	Stored(value:Lease);
 	Remote(url:String);
+	Downloading(source:GrowingSource);
 }
 
 /** How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and
@@ -80,8 +82,15 @@ interface IAssets {
 	function clearCache(complete:StorageWriteResult->Void):IRequest;
 
 	/** Locates path for streaming without loading it whole: a leased cached copy while it's current (as ensure says, without asking the host),
-		else the remote URL (a base URL is set) or a leased packaged copy. One of located or failed runs once on the host thread, and neither once the request is cancelled; the caller releases a Stored lease, and one that arrives after cancellation is released for it. failed (else the log, with the path) for an invalid path, a closed service, a missing packaged asset, or a storage error. */
-	function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void):IRequest;
+		else the remote URL (a base URL is set) or a leased packaged copy. With download (an output that can't play a URL, natively), a file
+		that must come from the host is downloaded instead, as ensure would (a stale copy asked about: 304 leases it), and answered as
+		Downloading as soon as its first part arrives with a 200 and a Content-Length, so it plays while it arrives; without a Content-Length
+		it's answered once whole (a source already done). The download goes on after the answer, and when it ends the file is kept in the cache
+		as ensure keeps one, so the next play is local; a download that fails after the answer is logged with the path and ends its source
+		(GrowingSource.failure). One of located or failed runs once on the host thread, and neither once the request is cancelled; the caller
+		releases a Stored lease, and one that arrives after cancellation is released for it. failed (else the log, with the path) for an
+		invalid path, a closed service, a missing packaged asset, a storage error, or, downloading, what fails ensure. */
+	function streamSource(path:String, located:AudioLocation->Void, ?failed:String->Void, download:Bool = false):IRequest;
 
 	/** Tell target when path's file changes and has loaded again (development hot reload). One target per path once. */
 	function subscribe(path:String, target:IReloadable):Void;

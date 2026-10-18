@@ -43,12 +43,14 @@ car.steer = actions.axis("steer");
 
 ## Native network streaming
 
+Done (phase 3), as below with these changes: the platform says whether it plays a URL (`IAudio.playsUrls`), and `AudioResources` passes `download` to `IAssets.streamSource` when it doesn't, so a browser is unchanged and the asset service has no target conditional; `FetchService.fetch` hands the parts on as they come (`part`); a file without a Content-Length is answered as a download already whole rather than a stored lease (it works with the cache Off too); the `GrowingSource` is host-thread only and libsndfile's adapter copies what has arrived into the codec's own allocation at each read, so no thread reads it; a download that fails plays what came and then ends as at the end of its file; libsndfile's two habits (an Ogg file's length read from its last 64 KiB at open, an MP3 without a Xing header scanned whole) are its adapter's, the first hidden from an early open so the file plays to the end of its stream; and the test is its own native program (`tests/streaming`, run by `helix.py test --native`) under SDL3's dummy driver rather than the browser-paired services run. ARCHITECTURE's Audio section has the design.
+
 A native `Remote` stream plays while it downloads, and the file is kept in the asset cache when the download ends, as the browser keeps it:
 
 - The asset service, asked to locate a remote stream, starts the download into a growing buffer and returns a new `AudioLocation.Downloading(source)` where `source` reports the bytes so far, the total from Content-Length when given, and the end.
 - The native decoder opens it through libsndfile's virtual I/O over that buffer. libsndfile reads ahead and takes a short read as the end of the file, so the producer decodes only while the download is a margin ahead of the decoder's position (64 KB, or the whole file once done), and holds the voice's ring otherwise; with the stream ring's 2 s that covers a slow connection's gaps. A file without Content-Length can't be opened this way (libsndfile asks the length): it waits for the whole download, as today's ensure does.
 - The finished download is stored in the cache under the asset's key, so the next play is local.
-- Shown by a test fixture served slowly: the services tests' native run starts a stream from a local server that sends 32 KB every 100 ms, and checks the voice is playing before the server has sent the last byte.
+- Shown by a test fixture served slowly: the services tests' native run starts a stream from a local server that sends 32 KB every 100 ms (an Ogg 4 KB, for a wide margin), and checks the voice is playing before the server has sent the last byte.
 
 ## The example
 
@@ -58,7 +60,7 @@ The `ui` example gains a settings screen: a list of actions with each one's bind
 
 1. Actions: the enum, the map, reading, capture, describe, save and load; unit tests through a scripted `IInput`.
 2. Audio contract: pitch and pan in both adapters (the mixer to stereo), the volume ramps; the engine's buses, fades, crossfade and saving; unit tests over a recording `IAudio` double.
-3. Native network streaming: the growing source, the decoder's virtual I/O over it, the cache write, the slow-server services test.
+3. Native network streaming: the growing source, the decoder's virtual I/O over it, the cache write, the slow-server services test. Done.
 4. The `ui` example's settings screen and autopilot; docs (CONVENTIONS for actions and buses, ARCHITECTURE, DECISIONS, the API reference); checkpoint on both targets.
 
 Phases 1 and 2 can run as parallel agents; 3 after 2 (it touches the native audio); 4 last.

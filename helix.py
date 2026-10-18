@@ -15,7 +15,8 @@ UNIT={'InputTests':[],'ActionsTests':['build/generated/shaders','build/generated
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(native,audio_device):
-    """The adapter rule's check, the tool tests (shaders, gltf2scene), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests."""
+    """The adapter rule's check, the tool tests (shaders, gltf2scene), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
+    native network streaming (tests/streaming, a local server and SDL3's dummy audio driver)."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
     import example,bake_fonts
@@ -42,6 +43,7 @@ def test(native,audio_device):
         print(subprocess.check_output([str(tool('native-services-test'))],text=True, encoding='utf-8'),end='')
         print(subprocess.check_output([str(tool('native-sdl3-input-test'))],text=True, encoding='utf-8'),end='')
         if audio_device:print(subprocess.check_output([str(tool('native-audio-probe'))],text=True, encoding='utf-8'),end='')
+    if native:run([sys.executable,'tests/streaming/streaming_test.py'])
 
 def trig(native):
     """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp. When they

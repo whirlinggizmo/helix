@@ -32,7 +32,7 @@ static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:Stri
 - `saveBuses`: Saves every bus's volume and mute by name as JSON under key through Storage; done runs once it's written, failed (else the log, with the key) for a failed write or no Storage.
 - `loadBuses`: Loads the volumes and mutes saveBuses saved under key into the buses of their names, a name with no bus skipped; a volume is clamped, and assigning it ends a bus's fade. done runs once they're set, or nothing was saved; failed (else the log, with the key) for a failed read, a file that isn't the saved JSON, or no Storage.
 - `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
-- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
+- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL where the backend plays one (a browser), else its download, played as it arrives and kept in the cache when it ends (IAssets.streamSource's download). One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, a failed download, or a source the backend cannot open.
 
 ## AudioClip
 
@@ -152,7 +152,7 @@ function release():Void
 
 *class* in `src/helix/audio/AudioResources.hx`
 
-Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or packaged copy (or a remote URL where the platform plays one), their lifetimes counted, and playbacks, which wait while audio hasn't started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it.
+Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or packaged copy (or a remote URL where the platform plays one, else a download played as it arrives), their lifetimes counted, and playbacks, which wait while audio hasn't started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it.
 
 ```haxe
 function new(assets:IAssets, backend:IAudio, decoding:AudioDecoding)
@@ -166,7 +166,7 @@ function shutdown():Void
 
 - `new`: Loads through assets, decodes with decoding (polled by its owner) and plays on backend (polled here).
 - `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
-- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
+- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL where the backend plays one (a browser), else its download, played as it arrives and kept in the cache when it ends (IAssets.streamSource's download). One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, a failed download, or a source the backend cannot open.
 - `play`: Starts resource from the beginning at volume 0 to 1 through bus (Audio.effects when null), looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1. A game plays through a bus (Bus.play, Audio.play).
 - `reloaded`: A clip's file changed: decode it, then give each clip from that path a new backend clip in place.
 - `poll`: Polls the backend, steps the buses' fades (from Audio.master) and the playbacks' by delta seconds (the frame's), sends each playback's heard volume to its voice when it changed, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread.
@@ -241,6 +241,7 @@ Sound output on a platform: clips (PCM held whole) and streams (played as they'r
 ```haxe
 var available(get, never):Bool
 var running(get, never):Bool
+var playsUrls(get, never):Bool
 function createClip(samples:haxe.io.Bytes):Int
 function destroyClip(clip:Int):Void
 function openStream(source:AudioLocation, done:StreamOpenResult -> Void):() -> Void
@@ -259,9 +260,10 @@ function shutdown():Void
 
 - `available`: Whether there is an output at all: false natively without an audio device.
 - `running`: Whether voices start now: in a browser, once a key or pointer press has unlocked audio.
+- `playsUrls`: Whether openStream plays a Remote location's URL itself (a browser's media element streams it). False natively: the shared AudioResources then asks the assets to download a remote stream, and opens the file arriving (Downloading).
 - `createClip`: Copies samples (mono 32-bit float PCM at 44100 Hz, checked) into a new clip and returns its id. Throws when there's no room for a clip.
 - `destroyClip`: Destroys clip and stops its voices. Throws for an unknown clip.
-- `openStream`: Opens source for playing as it's read; done runs once on the host thread, never during this call: Opened, or Failed for a source the platform can't open (natively a remote URL or a file its codec can't read; in a browser a load error or no metadata within 15 seconds). A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is closed.
+- `openStream`: Opens source for playing as it's read; done runs once on the host thread, never during this call: Opened, or Failed for a source the platform can't open (natively a remote URL, a file its codec can't read, or a download that failed or ended unreadable; in a browser a load error or no metadata within 15 seconds, and a Downloading source). A download is opened once enough of it has arrived for its codec. A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is closed.
 - `destroyStream`: Destroys stream and stops its voices. Throws for an unknown stream.
 - `playClip`: Starts clip at volume (0 to 1), looping if asked, and returns its voice, or 0 when it can't start (no free voice). Throws for an unknown clip.
 - `playStream`: Starts stream from its beginning at volume (0 to 1), looping if asked, and returns its voice, or 0 when it can't start. Throws for an unknown stream.

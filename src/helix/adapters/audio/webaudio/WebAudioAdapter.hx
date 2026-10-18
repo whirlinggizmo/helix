@@ -47,6 +47,11 @@ class WebAudioAdapter implements IAudio {
 	function get_available():Bool
 		return true;
 
+	public var playsUrls(get, never):Bool;
+
+	function get_playsUrls():Bool
+		return true;
+
 	public var running(get, never):Bool;
 
 	function get_running():Bool
@@ -62,7 +67,15 @@ class WebAudioAdapter implements IAudio {
 		var url = switch location {
 			case Stored(value): value.location;
 			case Remote(url): url;
-		}, element = js.Browser.document.createAudioElement(), settled = false, timer = 0, opened = 0;
+			case Downloading(_): null;
+		};
+		// A media element plays a URL, so a remote stream is given as one (playsUrls), never as a download.
+		if (url == null) {
+			var aborted = false;
+			js.Browser.window.setTimeout(() -> if (!aborted) done(Failed("A download isn't streamed in a browser; its URL is")), 0);
+			return () -> aborted = true;
+		}
+		var element = js.Browser.document.createAudioElement(), settled = false, timer = 0, opened = 0;
 		function dispose():Void {
 			element.onloadedmetadata = null;
 			element.onerror = null;

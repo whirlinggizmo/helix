@@ -1,23 +1,34 @@
 package helix.adapters.shared;
 
 import haxe.io.Bytes;
+import helix.assets.GrowingSource;
 import helix.assets.IAssets.AudioLocation;
 import helix.audio.IAudio;
 import sys.thread.Thread;
 
-/** A stream voice's producer: its file's handle, its stream, and whether it loops. */
-private typedef Producer = {var handle:Int; var stream:Int; var loop:Bool;}
+/** A stream voice's producer: its file's handle, its stream, whether it loops, and its download when it's still arriving (or null). */
+private typedef Producer = {var handle:Int; var stream:Int; var loop:Bool; var source:Null<GrowingSource>;}
 
-/** IAudio natively, for either output (sokol_audio's or SDL3's): mono voices at 44100 Hz mixed to stereo (pan, pitch, volume ramps), 16 voices, 32 clips, mixed in C (mixer.c). Streams play stored files (a remote URL fails), read
-	through files (a codec adapter's), each voice kept 88200 frames (2 s) ahead by poll for up to 2 ms a frame, so a frame stalled under that plays on: how a push-based output plays a file as
-	it's read. */
+/** An opened stream's file: a stored file's path, or a download (each voice opens it again). */
+private typedef StreamFile = {final path:Null<String>; final source:Null<GrowingSource>;}
+
+/** A download waiting to open: its source, how much had arrived at the last try, and its opener's answer, unless aborted. */
+private typedef Opening = {final source:GrowingSource; var tried:Int; var aborted:Bool; final done:StreamOpenResult->Void;}
+
+/** IAudio natively, for either output (sokol_audio's or SDL3's): mono voices at 44100 Hz mixed to stereo (pan, pitch, volume ramps), 16 voices, 32 clips, mixed in C (mixer.c). Streams play stored files
+	and downloads as they arrive (a remote URL fails: AudioResources downloads it, playsUrls being false), read through files (a codec adapter's), each voice kept 88200 frames (2 s) ahead by poll for up to
+	2 ms a frame, so a frame stalled under that plays on: how a push-based output plays a file as it's read. A download opens once 64 KiB have arrived (or the whole, when it's smaller), tried again each
+	time what has arrived doubles while its codec can't open it yet; a voice decodes it only while it has arrived 64 KiB past the codec's position (or whole), as the codec takes a short read for the end,
+	and otherwise waits, its 2 s covering a slow connection's gaps; a download that fails plays to where it stopped, then ends as at the end of its file. */
 abstract class NativeAudio implements IAudio {
 	static inline var CHUNK = 2048;
 	static inline var AHEAD = 88200;
+	static inline var MARGIN = 64 * 1024;
 
 	var files:IPcmFiles;
 	var mailbox = new Mailbox();
-	var streams:Map<Int, String> = [];
+	var streams:Map<Int, StreamFile> = [];
+	var openings:Array<Opening> = [];
 	var producers:Map<Int, Producer> = [];
 	var nextStream = 1;
 	var chunk = Bytes.alloc(CHUNK * 4);
@@ -34,6 +45,11 @@ abstract class NativeAudio implements IAudio {
 
 	function get_available():Bool
 		return MixerBridge.audioAvailable() != 0;
+
+	public var playsUrls(get, never):Bool;
+
+	function get_playsUrls():Bool
+		return false;
 
 	public var running(get, never):Bool;
 
@@ -55,7 +71,16 @@ abstract class NativeAudio implements IAudio {
 		var aborted = false;
 		switch source {
 			case Remote(_):
-				mailbox.post(() -> if (!aborted) done(Failed("Remote audio isn't streamed natively; ensure the asset first")));
+				mailbox.post(() -> if (!aborted) done(Failed("Remote audio isn't streamed natively; its download is (Downloading)")));
+			case Downloading(download):
+				var opening:Opening = {
+					source: download,
+					tried: 0,
+					aborted: false,
+					done: done
+				};
+				openings.push(opening);
+				return () -> opening.aborted = true;
 			case Stored(lease):
 				var path = lease.location;
 				// Opened once on a worker to check it reads; each voice opens it again.
@@ -70,7 +95,7 @@ abstract class NativeAudio implements IAudio {
 							done(Failed("Unsupported audio stream: " + path));
 						else {
 							var id = nextStream++;
-							streams[id] = path;
+							streams[id] = ({path: path, source: null} : StreamFile);
 							done(Opened(id));
 						}
 					});
@@ -95,10 +120,10 @@ abstract class NativeAudio implements IAudio {
 	}
 
 	public function playStream(stream:Int, loop:Bool, volume:Float):Int {
-		var path = streams[stream];
-		if (path == null)
+		var file = streams[stream];
+		if (file == null)
 			throw "Invalid audio stream";
-		var handle = files.open(path);
+		var handle = file.source != null ? files.openArriving(file.source) : files.open(file.path);
 		if (handle == 0)
 			return 0;
 		var voice = MixerBridge.audioStream(volume);
@@ -106,7 +131,11 @@ abstract class NativeAudio implements IAudio {
 			files.close(handle);
 			return 0;
 		}
-		producers[voice] = {handle: handle, stream: stream, loop: loop};
+		producers[voice] = {
+			handle: handle,
+			stream: stream,
+			loop: loop,
+			source: file.source != null && !file.source.done ? file.source : null};
 		return fill(voice) ? voice : 0;
 	}
 
@@ -122,9 +151,14 @@ abstract class NativeAudio implements IAudio {
 			var frames = Std.int(Math.min(CHUNK, AHEAD - queued));
 			if (frames == 0)
 				return true;
+			// A download is read only while it's a margin ahead of the codec, or once nothing more will come: whole, or failed, when what came
+			// plays to where it stops, the codec taking that for the end.
+			if (p.source != null && !p.source.done && p.source.failure == null && p.source.received < files.position(p.handle) + MARGIN)
+				return true;
 			var count = files.read(p.handle, chunk, frames);
 			if (count < 0 || count == 0 && p.loop && !files.rewind(p.handle)) {
-				Sys.println("Audio stream failed: " + streams[p.stream]);
+				var file = streams[p.stream];
+				Sys.println("Audio stream failed: " + (file.path != null ? file.path : "a download"));
 				stop(voice);
 				return false;
 			}
@@ -183,8 +217,40 @@ abstract class NativeAudio implements IAudio {
 	public function isPlaying(voice:Int):Bool
 		return MixerBridge.audioIsPlaying(voice) != 0;
 
+	// Tries the downloads waiting to open: once 64 KiB have arrived (or the whole), and again each time that doubles while the codec can't
+	// open them yet; a failed download, or a whole one it can't, fails.
+	function open():Void
+		for (opening in openings.copy()) {
+			var source = opening.source;
+			if (opening.aborted) {
+				openings.remove(opening);
+				continue;
+			}
+			if (source.failure != null) {
+				openings.remove(opening);
+				opening.done(Failed("Download failed: " + source.failure));
+				continue;
+			}
+			if (!source.done && (source.received < MARGIN || source.received < opening.tried * 2))
+				continue;
+			opening.tried = source.received;
+			var handle = files.openArriving(source);
+			if (handle == 0 && !source.done)
+				continue;
+			openings.remove(opening);
+			if (handle == 0) {
+				opening.done(Failed("Unsupported audio stream download"));
+				continue;
+			}
+			files.close(handle);
+			var id = nextStream++;
+			streams[id] = ({path: null, source: source} : StreamFile);
+			opening.done(Opened(id));
+		}
+
 	public function poll():Void {
 		mailbox.deliver();
+		open();
 		for (voice in [for (v in producers.keys()) v])
 			fill(voice);
 	}
@@ -193,6 +259,7 @@ abstract class NativeAudio implements IAudio {
 		for (voice in [for (v in producers.keys()) v])
 			stop(voice);
 		streams.clear();
+		openings = [];
 		closeOutput();
 	}
 }

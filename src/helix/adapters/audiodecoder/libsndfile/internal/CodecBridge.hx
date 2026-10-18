@@ -17,6 +17,9 @@ package helix.adapters.audiodecoder.libsndfile.internal;
 extern class CodecBridge {
 	@:native("helix_codec_memory") static function codecMemory(data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_codec_file") static function codecFile(path:cpp.ConstCharStar):Int;
+	@:native("helix_codec_arriving") static function codecArriving(data:cpp.RawPointer<cpp.UInt8>, bytes:Int, length:Int):Int;
+	@:native("helix_codec_arrive") static function codecArrive(id:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
+	@:native("helix_codec_position") static function codecPosition(id:Int):Int;
 	@:native("helix_codec_frames") static function codecFrames(id:Int):Float;
 	@:native("helix_codec_read") static function codecRead(id:Int, data:cpp.RawPointer<cpp.UInt8>, frames:Int):Int;
 	@:native("helix_codec_rewind") static function codecRewind(id:Int):Int;

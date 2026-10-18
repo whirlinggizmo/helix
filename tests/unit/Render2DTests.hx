@@ -197,7 +197,8 @@ class HeldAssets implements helix.assets.IAssets {
 		return mode;
 	}
 
-	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void):helix.assets.IRequest
+	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void,
+			download:Bool = false):helix.assets.IRequest
 		return new helix.assets.Request(() -> {});
 
 	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}

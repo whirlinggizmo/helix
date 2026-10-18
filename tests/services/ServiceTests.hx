@@ -171,35 +171,37 @@ class ServiceTests {
 					case _: fail(result);
 				}
 			}),
+			// Natively, a second run finds the download the first run's stream kept.
 			() -> assets.streamSource("uncached.wav", location -> {
 				switch location {
 					case Remote(url): check(url == env.base + "/assets/uncached.wav", "Uncached stream resolves remotely without ensuring");
+					case Stored(lease) if (!env.remoteStreams && persisted):
+						lease.release();
+						check(true, "A stream downloaded natively by the last run is kept");
 					case _: fail(location);
 				}
 				next();
-			}, message -> fail(message)),
+			},
+				message -> fail(message)),
+			// A browser plays the URL and keeps nothing; natively the download plays as it arrives and is kept (a later run finds it kept).
 			() -> audio.loadStream("uncached.wav", value -> {
-				if (!env.remoteStreams)
-					fail("A remote stream opened natively");
 				var playing = audio.play(value);
 				value.release();
-				check(playing.id > 0, "Browser remote stream starts without ensure");
+				check(playing.id > 0, "Remote stream starts without ensure");
 				wait(.6, () -> {
 					check(playing.finished && value.disposed, "Remote playback finishes");
 					assets.streamSource("uncached.wav", source -> {
 						switch source {
-							case Remote(_): check(true, "Remote playback did not persist audio");
+							case Remote(_): check(env.remoteStreams, "Remote playback did not persist audio");
+							case Stored(lease):
+								lease.release();
+								check(!env.remoteStreams, "Native remote playback kept its download");
 							case _: fail(source);
 						}
 						next();
 					}, message -> fail(message));
 				});
-			}, message -> {
-				if (env.remoteStreams)
-					fail(message);
-				check(message.indexOf("ensure") >= 0, "Native remote stream capability is explicit");
-				next();
-			}),
+			}, message -> fail(message)),
 			() -> assets.ensure("fixture.wav", bytes -> {
 				check(bytes.getString(0, 4) == "RIFF", "Ensured encoded audio asset");
 				next();
@@ -360,8 +362,6 @@ class ServiceTests {
 					});
 				}, message -> fail(message)),
 				() -> audio.loadStream("uncached." + extension, value -> {
-					if (!env.remoteStreams)
-						fail("A remote Ogg stream opened natively");
 					var playing = audio.play(value);
 					value.release();
 					check(playing.id > 0, "Remote Ogg starts: " + extension);
@@ -369,18 +369,16 @@ class ServiceTests {
 						check(playing.finished && value.disposed, "Remote Ogg EOF");
 						assets.streamSource("uncached." + extension, source -> {
 							switch source {
-								case Remote(_): check(true, "Remote Ogg did not persist");
+								case Remote(_): check(env.remoteStreams, "Remote Ogg did not persist");
+								case Stored(lease):
+									lease.release();
+									check(!env.remoteStreams, "Native remote Ogg kept its download");
 								case _: fail(source);
 							}
 							next();
 						}, message -> fail(message));
 					});
-				}, message -> {
-					if (env.remoteStreams)
-						fail(message);
-					check(message.indexOf("ensure") >= 0, "Native remote Ogg capability explicit");
-					next();
-				})
+				}, message -> fail(message))
 			];
 			for (step in codecSteps)
 				steps.insert(steps.length - 1, step);

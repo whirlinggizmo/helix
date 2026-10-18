@@ -10,7 +10,8 @@ typedef struct {
     SNDFILE *file;
     SF_INFO info;
     unsigned char *memory;
-    sf_count_t length, offset, produced, total;
+    /* A file in memory: length bytes, of which the first available have arrived (all but a download's), read at offset. */
+    sf_count_t length, available, offset, produced, total;
     float chunk[2048];
     int at, count, have_a, have_b;
     float a, b;
@@ -24,12 +25,16 @@ static sf_count_t memory_seek(sf_count_t offset, int whence, void *user) {
     decoder_t *d=user;
     sf_count_t base=whence==SEEK_SET?0:whence==SEEK_CUR?d->offset:whence==SEEK_END?d->length:-1;
     if(base<0 || offset < -base || offset > d->length-base) return -1;
+    /* Nothing past what has arrived: libsndfile then leaves an Ogg file's length unknown, and mpg123 skips its ID3v1 tag, instead of reading
+       what isn't there. */
+    if(d->available<d->length && base+offset>=d->available) return -1;
     d->offset=base+offset; return d->offset;
 }
 static sf_count_t memory_read(void *out, sf_count_t count, void *user) {
     decoder_t *d=user;
     if(count<0) return 0;
-    if(count>d->length-d->offset) count=d->length-d->offset;
+    if(d->offset>=d->available) return 0;
+    if(count>d->available-d->offset) count=d->available-d->offset;
     memcpy(out,d->memory+d->offset,(size_t)count);d->offset+=count;return count;
 }
 static sf_count_t memory_write(const void *data, sf_count_t count, void *user) { (void)data;(void)count;(void)user;return 0; }
@@ -48,7 +53,8 @@ static int register_decoder(decoder_t *d) {
        d->info.samplerate>192000 || d->info.frames<=0) {
         if(d->file)sf_close(d->file);free(d->memory);free(d);return 0;
     }
-    d->total=(sf_count_t)ceil((double)d->info.frames*44100/d->info.samplerate);
+    /* A length libsndfile doesn't know (an Ogg file opened before its end arrived) plays to the end of its stream. */
+    d->total=d->info.frames==SF_COUNT_MAX?SF_COUNT_MAX:(sf_count_t)ceil((double)d->info.frames*44100/d->info.samplerate);
     helix_lock(&codec_lock);
     int id=0;for(int i=0;i<32;i++)if(!decoders[i]){decoders[i]=d;id=i+1;break;}
     helix_unlock(&codec_lock);
@@ -61,14 +67,38 @@ int helix_codec_memory(const void *data,int bytes) {
     if(!data || bytes<4 || bytes>8*1024*1024 || !known)return 0;
     decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
     d->memory=malloc((size_t)bytes);if(!d->memory){free(d);return 0;}
-    memcpy(d->memory,data,(size_t)bytes);d->length=bytes;
+    memcpy(d->memory,data,(size_t)bytes);d->length=d->available=bytes;
     d->file=sf_open_virtual(&memory_io,SFM_READ,&d->info,d);return register_decoder(d);
+}
+int helix_codec_arriving(const void *data,int bytes,int length) {
+    if(!data || bytes<=0 || bytes>length || length>256*1024*1024)return 0;
+    decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
+    d->memory=malloc((size_t)length);if(!d->memory){free(d);return 0;}
+    memcpy(d->memory,data,(size_t)bytes);d->length=length;
+    /* libsndfile reads an Ogg file's last 64 KiB at open for its length (its first step back from the end): opened before the end, it's
+       shown none of them, so it finds no length and plays to the end of the stream, rather than taking the last page arrived for the end. */
+    d->available=bytes<length&&bytes>length-65536?length-65536:bytes;
+    if(d->available<=0){free(d->memory);free(d);return 0;}
+    d->file=sf_open_virtual(&memory_io,SFM_READ,&d->info,d);
+    d->available=bytes;
+    return register_decoder(d);
 }
 int helix_codec_file(const char *path) {
     if(!path)return 0;decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
     d->file=sf_open(path,SFM_READ,&d->info);return register_decoder(d);
 }
 static decoder_t *get_decoder(int id) { return id>0&&id<=32?decoders[id-1]:NULL; }
+int helix_codec_arrive(int id,const void *data,int bytes) {
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
+    int ok=d && d->memory && data && bytes>=0 && bytes<=d->length-d->available;
+    if(ok){memcpy(d->memory+d->available,data,(size_t)bytes);d->available+=bytes;}
+    helix_unlock(&codec_lock);return ok;
+}
+int helix_codec_position(int id) {
+    helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
+    int at=d?(int)d->offset:-1;
+    helix_unlock(&codec_lock);return at;
+}
 double helix_codec_frames(int id) {
     helix_lock(&codec_lock);decoder_t *d=get_decoder(id);
     double n=d?(double)d->total:0;

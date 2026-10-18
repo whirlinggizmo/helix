@@ -16,6 +16,10 @@ typedef FetchRequest = {
 /** Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed). */
 typedef FetchProgress = {final receivedBytes:Int; final totalBytes:Null<Int>;}
 
+/** A part of a response's body as it arrives: the response's HTTP status and headers (lower-case names), the total from Content-Length or null
+	when unknown (or the body is compressed), and the part's bytes. */
+typedef FetchPart = {final status:Int; final headers:Map<String, String>; final totalBytes:Null<Int>; final bytes:Bytes;}
+
 /** A complete response: HTTP status, headers with lower-case names, and the whole body. */
 typedef FetchResponse = {final status:Int; final headers:Map<String, String>; final bytes:Bytes;}
 
@@ -27,7 +31,7 @@ enum FetchResult {
 }
 
 /** Bounded whole-response GETs over a platform's IHttp, the same on every platform: at most two at once, each body limited and the whole transfer
-	timed, progress coalesced to once a frame, completions on the host thread. The runner's is what the Fetch static forwards to. */
+	timed, progress coalesced to once a frame, the body's parts handed on as they come where asked (a download played as it arrives), completions on the host thread. The runner's is what the Fetch static forwards to. */
 @:build(helix.macro.Facade.record())
 class FetchService {
 	static inline var DEFAULT_MAX = 8 * 1024 * 1024;
@@ -43,8 +47,10 @@ class FetchService {
 		this.http = http;
 
 	/** Queues a GET of request.url. complete runs exactly once on the host thread; Failed for a maxBytes or timeoutSeconds not above 0, a closed
-		service, a body over maxBytes, a timeout, or a transport failure. progress, if given, runs on the host thread at most once a frame. */
-	public function fetch(request:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void):IRequest {
+		service, a body over maxBytes, a timeout, or a transport failure. progress, if given, runs on the host thread at most once a frame. part,
+		if given, runs on the host thread with each part of the body as it arrives, in order, before complete (whose response still holds the
+		whole body); never after the fetch has settled. */
+	public function fetch(request:FetchRequest, complete:FetchResult->Void, ?progress:FetchProgress->Void, ?part:FetchPart->Void):IRequest {
 		var limit = request.maxBytes == null ? DEFAULT_MAX : request.maxBytes,
 			timeout = request.timeoutSeconds == null ? DEFAULT_TIMEOUT : request.timeoutSeconds;
 		return jobs.add(job -> {
@@ -72,15 +78,22 @@ class FetchService {
 				headers = names;
 				// A compressed body's length isn't what arrives.
 				total = headers.exists("content-encoding") ? null : Std.parseInt(headers["content-length"]);
-			}, part -> {
+			}, bytes -> {
 				if (job.settled)
 					return;
-				received += part.length;
+				received += bytes.length;
 				if (received > limit) {
 					fail("Fetch exceeds byte limit");
 					return;
 				}
-				buffer.addBytes(part, 0, part.length);
+				buffer.addBytes(bytes, 0, bytes.length);
+				if (part != null)
+					part({
+						status: status,
+						headers: headers,
+						totalBytes: total,
+						bytes: bytes
+					});
 				if (progress != null && reported != received)
 					jobs.post(() -> if (!job.settled && reported != received) {
 						reported = received;

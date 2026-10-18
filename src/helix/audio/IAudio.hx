@@ -19,6 +19,10 @@ interface IAudio {
 	/** Whether voices start now: in a browser, once a key or pointer press has unlocked audio. */
 	var running(get, never):Bool;
 
+	/** Whether openStream plays a Remote location's URL itself (a browser's media element streams it). False natively: the shared AudioResources
+		then asks the assets to download a remote stream, and opens the file arriving (Downloading). */
+	var playsUrls(get, never):Bool;
+
 	/** Copies samples (mono 32-bit float PCM at 44100 Hz, checked) into a new clip and returns its id. Throws when there's no room for a clip. */
 	public function createClip(samples:Bytes):Int;
 
@@ -26,8 +30,10 @@ interface IAudio {
 	public function destroyClip(clip:Int):Void;
 
 	/** Opens source for playing as it's read; done runs once on the host thread, never during this call: Opened, or Failed for a source the
-		platform can't open (natively a remote URL or a file its codec can't read; in a browser a load error or no metadata within 15 seconds).
-		A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is closed. */
+		platform can't open (natively a remote URL, a file its codec can't read, or a download that failed or ended unreadable; in a browser a
+		load error or no metadata within 15 seconds, and a Downloading source). A download is opened once enough of it has arrived for its
+		codec. A Stored lease stays the caller's and must outlive the stream. Returns abort: nothing is called after it, and an opened stream is
+		closed. */
 	public function openStream(source:AudioLocation, done:StreamOpenResult->Void):Void->Void;
 
 	/** Destroys stream and stops its voices. Throws for an unknown stream. */

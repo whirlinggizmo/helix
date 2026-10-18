@@ -9,7 +9,7 @@ import helix.audio.IAudio;
 import helix.assets.IReloadable;
 
 /** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or
-	packaged copy (or a remote URL where the platform plays one), their lifetimes counted, and playbacks, which wait while audio hasn't
+	packaged copy (or a remote URL where the platform plays one, else a download played as it arrives), their lifetimes counted, and playbacks, which wait while audio hasn't
 	started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it. */
 @:build(helix.macro.Facade.record())
 class AudioResources implements IReloadable {
@@ -83,10 +83,11 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
-	/** Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or
-		failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its
-		stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend
-		cannot open, such as a remote URL natively. */
+	/** Opens path for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL
+		where the backend plays one (a browser), else its download, played as it arrives and kept in the cache when it ends
+		(IAssets.streamSource's download). One of loaded or failed runs once on the host thread, and neither once the request is cancelled:
+		loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a
+		closed service, a missing asset, a failed download, or a source the backend cannot open. */
 	public function loadStream(path:String, loaded:AudioStream->Void, ?failed:String->Void):IRequest {
 		var child:IRequest = null,
 			request:Request = null,
@@ -121,7 +122,7 @@ class AudioResources implements IReloadable {
 			}
 			var release = switch source {
 				case Stored(value): value.release;
-				case Remote(_): () -> {};
+				case Remote(_) | Downloading(_): () -> {};
 			}
 			child = null;
 			abort = backend.openStream(source, result -> {
@@ -136,7 +137,7 @@ class AudioResources implements IReloadable {
 						finish(null, message);
 				}
 			});
-		}, message -> if (!request.settled) finish(null, message));
+		}, message -> if (!request.settled) finish(null, message), !backend.playsUrls);
 		return request;
 	}
 
