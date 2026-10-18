@@ -4,9 +4,15 @@ import haxe.io.Bytes;
 import helix.assets.IAssets.AudioLocation;
 import helix.audio.IAudio;
 
-/** IAudio in a browser over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph. The page's first
-	key or pointer press unlocks audio (browsers let it start only in a user gesture); the page losing focus or being hidden suspends it. */
+/** IAudio in a browser over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph, each voice a
+	source through a gain and a stereo panner, its volume and pan changes ramped by setTargetAtTime (RAMP) and its pitch the source's playback
+	rate. The page's first key or pointer press unlocks audio (browsers let it start only in a user gesture); the page losing focus or being
+	hidden suspends it. */
 class WebAudioAdapter implements IAudio {
+	/** The time constant a volume or pan change approaches its target by, in seconds: short enough to follow a fade stepped once a frame,
+		long enough not to click. */
+	static inline var RAMP = .01;
+
 	var context:Dynamic;
 	var clips:Map<Int, Bytes> = [];
 	var buffers:Map<Int, Dynamic> = [];
@@ -104,6 +110,7 @@ class WebAudioAdapter implements IAudio {
 		var source:Dynamic = context.createBufferSource();
 		source.buffer = v.buffer;
 		source.loop = v.loop;
+		source.playbackRate.value = v.pitch;
 		source.connect(v.gain);
 		v.source = source;
 		v.started = context.currentTime;
@@ -112,7 +119,7 @@ class WebAudioAdapter implements IAudio {
 			if (playbacks[id] == v && !v.paused) {
 				playbacks.remove(id);
 				source.disconnect();
-				v.gain.disconnect();
+				disconnect(v);
 			}
 		};
 		source.start(0, v.offset);
@@ -138,10 +145,18 @@ class WebAudioAdapter implements IAudio {
 		return id;
 	}
 
+	// A voice's gain and panner, out of the graph.
+	function disconnect(v:Dynamic):Void {
+		v.gain.disconnect();
+		v.panner.disconnect();
+	}
+
 	function start(id:Int, resource:Int, loop:Bool, volume:Float):Void {
-		var gain:Dynamic = context.createGain();
+		var gain:Dynamic = context.createGain(),
+			panner:Dynamic = context.createStereoPanner();
 		gain.gain.value = volume;
-		gain.connect(context.destination);
+		gain.connect(panner);
+		panner.connect(context.destination);
 		if (streams.exists(resource)) {
 			var entry = streams[resource],
 				element:js.html.AudioElement = entry.element;
@@ -152,6 +167,9 @@ class WebAudioAdapter implements IAudio {
 			}
 			entry.element = null;
 			element.loop = loop;
+			element.playbackRate = 1;
+			// The rate changes the pitch too, as a clip's does.
+			Reflect.setField(element, "preservesPitch", false);
 			var source:Dynamic = context.createMediaElementSource(element);
 			source.connect(gain);
 			var v:Dynamic = {
@@ -159,7 +177,9 @@ class WebAudioAdapter implements IAudio {
 				source: element,
 				node: source,
 				gain: gain,
+				panner: panner,
 				resource: resource,
+				pitch: 1.,
 				paused: false
 			};
 			playbacks[id] = v;
@@ -181,7 +201,9 @@ class WebAudioAdapter implements IAudio {
 				kind: "clip",
 				source: null,
 				gain: gain,
+				panner: panner,
 				resource: resource,
+				pitch: 1.,
 				buffer: buffer,
 				loop: loop,
 				offset: 0.,
@@ -203,7 +225,7 @@ class WebAudioAdapter implements IAudio {
 		v.source.removeAttribute("src");
 		v.source.load();
 		v.node.disconnect();
-		v.gain.disconnect();
+		disconnect(v);
 	}
 
 	public function stop(id:Int):Void {
@@ -218,7 +240,7 @@ class WebAudioAdapter implements IAudio {
 			if (!v.paused)
 				v.source.stop();
 			v.source.disconnect();
-			v.gain.disconnect();
+			disconnect(v);
 		}
 	}
 
@@ -236,9 +258,7 @@ class WebAudioAdapter implements IAudio {
 					return null;
 				});
 		} else if (paused) {
-			v.offset += context.currentTime - v.started;
-			if (v.loop)
-				v.offset %= v.buffer.duration;
+			played(v);
 			v.paused = true;
 			v.source.onended = null;
 			v.source.stop();
@@ -256,7 +276,38 @@ class WebAudioAdapter implements IAudio {
 		var v = playbacks[id];
 		if (v == null || !Math.isFinite(volume) || volume < 0 || volume > 1)
 			return false;
-		v.gain.gain.value = volume;
+		v.gain.gain.setTargetAtTime(volume, context.currentTime, RAMP);
+		return true;
+	}
+
+	// Moves a playing clip voice's offset (in the buffer's seconds) on by what it played since it started or last moved, at its pitch.
+	function played(v:Dynamic):Void {
+		var now:Float = context.currentTime;
+		v.offset += (now - v.started) * v.pitch;
+		if (v.loop)
+			v.offset %= v.buffer.duration;
+		v.started = now;
+	}
+
+	public function setPitch(id:Int, pitch:Float):Bool {
+		var v = playbacks[id];
+		if (v == null)
+			return false;
+		if (v.kind == "stream")
+			v.source.playbackRate = pitch;
+		else if (!v.paused) {
+			played(v);
+			v.source.playbackRate.value = pitch;
+		}
+		v.pitch = pitch;
+		return true;
+	}
+
+	public function setPan(id:Int, pan:Float):Bool {
+		var v = playbacks[id];
+		if (v == null)
+			return false;
+		v.panner.pan.setTargetAtTime(pan, context.currentTime, RAMP);
 		return true;
 	}
 

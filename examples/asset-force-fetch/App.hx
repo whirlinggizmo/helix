@@ -39,7 +39,7 @@ class App extends BaseApp {
 
 	// The stream opened: played, the playback holding it.
 	function play(stream:AudioStream):Void {
-		music = Audio.play(stream, true, .5);
+		music = Audio.music.play(stream, true, .5);
 		stream.release();
 		state = '$KEY played from the bytes of $SOURCE';
 	}

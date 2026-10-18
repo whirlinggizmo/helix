@@ -33,7 +33,7 @@ class App extends BaseApp {
 
 	// The music opened: played, the playback holding the stream.
 	function play(stream:AudioStream):Void {
-		Audio.play(stream, true, .5);
+		Audio.music.play(stream, true, .5);
 		stream.release();
 	}
 

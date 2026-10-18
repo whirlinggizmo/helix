@@ -140,17 +140,17 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
-	/** Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While
-		audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an
-		output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by
-		its owner, or a volume outside 0 to 1. */
-	public function play(resource:AudioResource, loop = false, volume = 1.):AudioPlayback {
+	/** Starts resource from the beginning at volume 0 to 1 through bus (Audio.effects when null), looping if asked; the playback holds the
+		resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback
+		waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource
+		of another backend or already released by its owner, or a volume outside 0 to 1. A game plays through a bus (Bus.play, Audio.play). */
+	public function play(resource:AudioResource, loop = false, volume = 1., ?bus:Bus):AudioPlayback {
 		if (!live || resource.backend != backend)
 			throw "Invalid audio resource service";
 		if (!Math.isFinite(volume) || volume < 0 || volume > 1)
 			throw "Invalid volume";
 		resource.retainPlayback();
-		var playback = try new AudioPlayback(resource, loop, volume) catch (error:Dynamic) {
+		var playback = try new AudioPlayback(resource, loop, volume, bus != null ? bus : Audio.effects) catch (error:Dynamic) {
 			resource.releasePlayback();
 			throw error;
 		};
@@ -175,9 +175,12 @@ class AudioResources implements IReloadable {
 		});
 	}
 
-	/** Polls the backend, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread. */
-	public function poll():Void {
+	/** Polls the backend, steps the buses' fades (from Audio.master) and the playbacks' by delta seconds (the frame's), sends each playback's
+		heard volume to its voice when it changed, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks,
+		and runs queued completions. Call once per frame on the host thread. */
+	public function poll(delta:Float):Void {
 		backend.poll();
+		Audio.master.advance(delta);
 		for (id in retired.copy())
 			if (!Lambda.exists(playbacks, p -> !p.finished && p.source == id)) {
 				retired.remove(id);
@@ -185,9 +188,12 @@ class AudioResources implements IReloadable {
 			}
 		resources = [for (resource in resources) if (!resource.disposed) resource];
 		for (playback in playbacks.copy()) {
+			playback.advance(delta);
 			playback.poll();
 			if (playback.finished)
 				playbacks.remove(playback);
+			else
+				playback.refresh();
 		}
 		queue.poll();
 	}

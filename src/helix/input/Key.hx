@@ -243,13 +243,14 @@ enum abstract Key(Int) to Int {
 		Menu
 	];
 
+	/** Each key's name, in the order of all: its own spelling, a digit's its digit. */
 	static final names:Array<String> = [
-		"SPACE",
-		"APOSTROPHE",
-		"COMMA",
-		"MINUS",
-		"PERIOD",
-		"SLASH",
+		"Space",
+		"Apostrophe",
+		"Comma",
+		"Minus",
+		"Period",
+		"Slash",
 		"0",
 		"1",
 		"2",
@@ -260,8 +261,8 @@ enum abstract Key(Int) to Int {
 		"7",
 		"8",
 		"9",
-		"SEMICOLON",
-		"EQUAL",
+		"Semicolon",
+		"Equal",
 		"A",
 		"B",
 		"C",
@@ -288,24 +289,24 @@ enum abstract Key(Int) to Int {
 		"X",
 		"Y",
 		"Z",
-		"LEFTBRACKET",
-		"BACKSLASH",
-		"RIGHTBRACKET",
-		"GRAVE",
-		"ESCAPE",
-		"ENTER",
-		"TAB",
-		"BACKSPACE",
-		"INSERT",
-		"DELETE",
-		"RIGHT",
-		"LEFT",
-		"DOWN",
-		"UP",
-		"PAGEUP",
-		"PAGEDOWN",
-		"HOME",
-		"END",
+		"LeftBracket",
+		"Backslash",
+		"RightBracket",
+		"Grave",
+		"Escape",
+		"Enter",
+		"Tab",
+		"Backspace",
+		"Insert",
+		"Delete",
+		"Right",
+		"Left",
+		"Down",
+		"Up",
+		"PageUp",
+		"PageDown",
+		"Home",
+		"End",
 		"F1",
 		"F2",
 		"F3",
@@ -318,13 +319,13 @@ enum abstract Key(Int) to Int {
 		"F10",
 		"F11",
 		"F12",
-		"WORLD1",
-		"WORLD2",
-		"CAPSLOCK",
-		"SCROLLLOCK",
-		"NUMLOCK",
-		"PRINTSCREEN",
-		"PAUSE",
+		"World1",
+		"World2",
+		"CapsLock",
+		"ScrollLock",
+		"NumLock",
+		"PrintScreen",
+		"Pause",
 		"F13",
 		"F14",
 		"F15",
@@ -338,35 +339,40 @@ enum abstract Key(Int) to Int {
 		"F23",
 		"F24",
 		"F25",
-		"KEYPAD0",
-		"KEYPAD1",
-		"KEYPAD2",
-		"KEYPAD3",
-		"KEYPAD4",
-		"KEYPAD5",
-		"KEYPAD6",
-		"KEYPAD7",
-		"KEYPAD8",
-		"KEYPAD9",
-		"KEYPADDECIMAL",
-		"KEYPADDIVIDE",
-		"KEYPADMULTIPLY",
-		"KEYPADSUBTRACT",
-		"KEYPADADD",
-		"KEYPADENTER",
-		"KEYPADEQUAL",
-		"SHIFT",
-		"CONTROL",
-		"ALT",
-		"SUPER",
-		"MENU"
+		"Keypad0",
+		"Keypad1",
+		"Keypad2",
+		"Keypad3",
+		"Keypad4",
+		"Keypad5",
+		"Keypad6",
+		"Keypad7",
+		"Keypad8",
+		"Keypad9",
+		"KeypadDecimal",
+		"KeypadDivide",
+		"KeypadMultiply",
+		"KeypadSubtract",
+		"KeypadAdd",
+		"KeypadEnter",
+		"KeypadEqual",
+		"Shift",
+		"Control",
+		"Alt",
+		"Super",
+		"Menu"
 	];
 
-	/** The key a name spells, ignoring case ("A", "space", "KeypadEnter"); throws for an unknown name. */
+	/** The key a name spells, ignoring case ("A", "space", "KeypadEnter", "0"); throws for an unknown name. */
 	public static function named(name:String):Key {
-		var i = names.indexOf(name.toUpperCase());
-		if (i < 0)
-			throw 'Unknown key ' + name;
-		return all[i];
+		var upper = name.toUpperCase();
+		for (i in 0...names.length)
+			if (names[i].toUpperCase() == upper)
+				return all[i];
+		throw 'Unknown key ' + name;
 	}
+
+	/** The key's name as named reads it: its own spelling ("Space", "PageUp", "KeypadEnter"), a digit's its digit ("0"). */
+	public static function getName(key:Key):String
+		return names[all.indexOf(key)];
 }

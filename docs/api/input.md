@@ -2,6 +2,100 @@
 
 [Back to the index](README.md)
 
+## Actions
+
+*class* in `src/helix/input/Actions.hx`
+
+What the player means ("jump", "steer", "fire"), bound by name to keys, pad buttons and axes, mouse buttons and touch regions, and read as one: a game asks for "jump", never for Space or the south button, and a player can rebind it (capture) and keep it (save, load). Each binding gives a value from -1 to 1 (Binding), and the action is the binding pushed furthest, across every pad: axis its value, value how far (0 to 1), isDown while any binding is pushed to its limit (0.5, or a pad axis's non-zero threshold). Pressed and released come per tick (isPressed, isReleased) and per frame (isFramePressed, isFrameReleased), as IInput's do: an action is pressed when it is down and wasn't as the last tick (or frame) ended, or when a key, button or finger of it went down since (IInput's own edges, so a tap shorter than a tick is still a press, and two taps reach two ticks). The map keeps whether each action was down itself, told by the input as each tick and frame ends (IInput.watch), so a game makes no extra calls. A finger's edges are frame edges only (IInput has no tick edges for touches): a tap shorter than a frame reaches isFramePressed, not isPressed. An action never bound reads as up and 0, so a game's code may run before its bindings load. Built on IInput, so whatever drives the input drives the actions: the autopilot's input given to it (input) replays them.
+
+```haxe
+function new(input:IInput, ?presentation:Presentation)
+static var VERSION(inline, null):Int
+static var CAPTURE_THRESHOLD(inline, null):Float
+static function describe(binding:Binding):String
+var input(default, set):Null<IInput>
+var presentation:Null<Presentation>
+var names(get, never):Array<String>
+var capturing(default, null):Bool
+var captureTouchSize(default, set):Float
+function bind(name:String, binding:Binding):Bool
+function unbind(name:String, binding:Binding):Bool
+function clear(name:String):Bool
+function bindings(name:String):Array<Binding>
+function axis(name:String):Float
+function value(name:String):Float
+function isDown(name:String):Bool
+function isPressed(name:String):Bool
+function isReleased(name:String):Bool
+function isFramePressed(name:String):Bool
+function isFrameReleased(name:String):Bool
+function capture(name:String, done:Binding -> Void, ?cancelled:() -> Void):Bool
+function cancelCapture():Bool
+function save(?key:String = "actions", ?done:() -> Void, ?failed:String -> Void):Void
+function load(?key:String = "actions", ?done:() -> Void, ?failed:String -> Void):Void
+function reset():Void
+function tickEnded():Void
+function frameEnded():Void
+```
+
+- `new`: Actions read from input, their touch regions placed on presentation's visible area (Screen.instance's when null).
+- `VERSION`: The saved format's version (save, load).
+- `CAPTURE_THRESHOLD`: How far past it a pad axis must go for capture to take it: half way, as down is for a binding without a threshold.
+- `describe`: The text a remap screen shows for binding: "Space", "Left / Right", "Pad south", "D-pad left / D-pad right", "Left stick X", "Left stick left" (a stick with a side), "Right trigger", "Left mouse", "Touch".
+- `input`: The input the actions are read from, which tells the map as each tick and frame ends; null reads every action as up. Assigning stops watching the input before: a game playing an autopilot's script gives it the script's input, and an Actions given up is given null.
+- `presentation`: Whose visible area and units touch regions are in: null for Screen's (Screen.instance), read as each finger is. Without either (a unit test with no runner) a touch region reads nothing; a test gives its own Presentation, whose None mode is logical pixels.
+- `names`: The actions, in the order first bound; an action cleared or unbound to nothing stays.
+- `capturing`: Whether capture is waiting for a press; while it is, every action reads as up.
+- `captureTouchSize`: The width and height of a touch region capture makes, centered where the finger landed, in the game's units (Screen's). At least 1; 96 to begin with.
+- `bind`: Adds binding to the action name, making the action with its first binding. False, changing nothing, for an empty name, a binding the action has already, a pad axis's side not -1, 0 or 1 or threshold outside 0 to 1, or a touch region with no area or an offset that isn't a number.
+- `unbind`: Takes binding off the action name, the action kept; false for an action or binding there isn't.
+- `clear`: Takes every binding off the action name, the action kept (a remap screen binds it again); false for an action there isn't.
+- `bindings`: The action's bindings, in the order bound (a copy); empty for an action there isn't.
+- `axis`: The action's value with its direction, -1 to 1: the binding pushed furthest. 0 for an action there isn't.
+- `value`: How far the action is pushed, 0 to 1: axis without its direction.
+- `isDown`: Whether the action is held: any of its bindings pushed to 0.5, or a pad axis to its threshold when that isn't 0.
+- `isPressed`: The action went down: since the last tick ended, it went down, or a key, button or mouse button of it did (a tick edge).
+- `isReleased`: The action came up: it was down as the last tick ended and isn't now, or a key, button or mouse button of it came up and it isn't down (a tick edge).
+- `isFramePressed`: The action went down this frame, as isPressed for the frame, a finger landing in a touch region too (a frame edge).
+- `isFrameReleased`: The action came up this frame, as isReleased for the frame, a finger lifting in a touch region too (a frame edge).
+- `capture`: Waits for the player's next press and binds it to the action name: a key, a pad button, a pad axis pushed past half way (Axis with its side and a threshold of CAPTURE_THRESHOLD), or a finger (a captureTouchSize square centered where it landed, anchored to the nearest of the visible area's nine anchors). Mouse buttons aren't captured, as the mouse works the remap screen itself. The press replaces the action's bindings of the same device (the keyboard's Keyboard and KeyboardPair; the pad's Pad, PadPair and Axis; the touch screen's TouchRegion) and leaves the others; done is then called with it. Escape cancels, calling cancelled. Presses in the frame capture is called in don't count (the click or tap on a Rebind button), and while it waits every action reads as up; the captured press, and the Escape, read as up until they are let go. False, starting nothing, for an empty name or while capturing already.
+- `cancelCapture`: Stops a capture waiting for a press, calling its cancelled (a remap screen's Cancel button); false when none is waiting.
+- `save`: Writes every action's bindings under key in Storage, as JSON: {"version":1,"actions":{"jump":[{"key":"Space"},{"padButton":"South"}]}}, each binding by its kind ({"keys":["Left","Right"]}, {"padButtons":["Left","Right"]}, {"padAxis":"LeftX","side":0,"threshold":0.15}, {"mouseButton":"Left"}, {"touch":"BottomRight","x":-120,"y":-120,"width":96,"height":96}), keys by Key.getName. Then done; a failure (no Storage, a write refused) goes to failed, or to the log when failed is null.
+- `load`: Reads the bindings saved under key in Storage, and replaces the bindings of each action the game has bound with the saved ones; an action the save names but the game doesn't bind is dropped, an action the save doesn't name keeps its bindings, and an entry the map can't read (an unknown kind or name, a refused binding) is skipped and logged (Failure). Then done, also when nothing was saved; a failure (no Storage, a read failing, a file that isn't a version 1 save) goes to failed, or to the log when failed is null, the bindings unchanged. The defaults reset restores are kept first.
+- `reset`: Restores each action's defaults: its bindings as the game bound them in code, kept at the first load or capture after the action was made (so what a player changed, by a capture or a loaded save, goes back). An action made after the last load or capture has no defaults yet and keeps its bindings.
+- `tickEnded`: For the input (IInputWatcher): keeps whether each action was down as the tick ended, and lets go of a captured press seen up.
+- `frameEnded`: For the input (IInputWatcher): takes a press for capture, keeps whether each action was down as the frame ended, and lets go of a captured press seen up.
+
+## Anchor
+
+*enum* in `src/helix/input/Anchor.hx`
+
+A point of the visible area (Screen's), which a touch region is placed from: a corner, an edge's middle or the center.
+
+- `TopLeft`: The visible area's top left corner.
+- `Top`: The middle of its top edge.
+- `TopRight`: Its top right corner.
+- `Left`: The middle of its left edge.
+- `Center`: Its center.
+- `Right`: The middle of its right edge.
+- `BottomLeft`: Its bottom left corner.
+- `Bottom`: The middle of its bottom edge.
+- `BottomRight`: Its bottom right corner.
+
+## Binding
+
+*enum* in `src/helix/input/Binding.hx`
+
+What drives an action (Actions), each giving a value from -1 to 1; the action is the binding pushed furthest.
+
+- `Keyboard(key:Key)`: A key: 1 while it is down.
+- `KeyboardPair(negative:Key, positive:Key)`: A pair of keys as an axis: -1 while negative is down, 1 while positive is, 0 for both or neither.
+- `Pad(button:PadButton)`: A pad button on any connected pad: 1 while it is down.
+- `PadPair(negative:PadButton, positive:PadButton)`: A pair of pad buttons as an axis, across the pads: -1 for negative, 1 for positive, 0 for both or neither (the d-pad's Left and Right as steering).
+- `Axis(axis:PadAxis, side:Int, threshold:Float)`: A pad axis, past the dead zone (Gamepad.getAxis), the pad pushed furthest: side 0 reads both directions (-1..1, a trigger 0..1), 1 or -1 only that side, as 0..1; under threshold (0..1) it reads 0, and at or past a non-zero threshold the action is down.
+- `Mouse(button:MouseButton)`: A mouse button: 1 while it is down.
+- `TouchRegion(anchor:Anchor, x:Float, y:Float, width:Float, height:Float)`: A touch region: 1 while a finger is down in it. In the game's units (Screen's): the anchor's point on the visible area, then x, y from it to the region's top left, width x height across and down; so it scales with the design and follows the visible area's edges.
+
 ## Gamepad
 
 *class* in `src/helix/input/Gamepad.hx`
@@ -88,6 +182,8 @@ function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
 function consume():Void
+function watch(watcher:IInputWatcher):Bool
+function unwatch(watcher:IInputWatcher):Bool
 ```
 
 - `isDown`: Whether the key is held now.
@@ -127,6 +223,8 @@ function consume():Void
 - `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
 - `consume`: Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges.
+- `watch`: Plumbing for what is built on the input, not for a game (the Input static leaves it out): tells watcher as each tick and each frame ends (consume, and the frame's end), before their edges are cleared, which is how an action map (Actions) keeps its own previous states without calls from the game. False, changing nothing, for a watcher already told.
+- `unwatch`: Plumbing, as watch: stops telling watcher; false for one not told.
 
 ## IInputEvents
 
@@ -174,11 +272,25 @@ function shutdown():Void
 - `setTextEntry`: Asks the platform for typed text while on (SDL3's text input; a soft keyboard where the platform has one), and no longer when off. The router calls it before a poll, as the app's text entry (IInput.setTextEntry) changes; off until then.
 - `shutdown`: Releases the platform's input, after the app's cleanup.
 
+## IInputWatcher
+
+*class* in `src/helix/input/IInputWatcher.hx`
+
+Told by an IInput (watch) as a tick's edges and a frame's end, before they are cleared: what keeps a state of its own from tick to tick and frame to frame over the input, as an action map (Actions) keeps whether each action was down.
+
+```haxe
+function tickEnded():Void
+function frameEnded():Void
+```
+
+- `tickEnded`: A simulation tick ended: the input's consume() is taking one of each tick edge, after this.
+- `frameEnded`: The frame ended: its frame edges, text, wheel and lifted touches end after this.
+
 ## Input
 
 *class* in `src/helix/input/Input.hx`
 
-Keyboard, mouse, touch and gamepads, as this frame and tick see them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IInput's public members with their doc comments.
+Keyboard, mouse, touch and gamepads, as this frame and tick see them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IInput's public members with their doc comments, but watch and unwatch (plumbing for what is built on IInput, as Actions, not for a game).
 
 ```haxe
 static var instance(default, null):IInput
@@ -340,6 +452,8 @@ function getTouchGesturePanY(?perTick:Bool = false):Float
 function getTouchGestureScale(?perTick:Bool = false):Float
 function getTouchGestureRotation(?perTick:Bool = false):Float
 function clear():Void
+function watch(watcher:IInputWatcher):Bool
+function unwatch(watcher:IInputWatcher):Bool
 function consume():Void
 function endFrame():Void
 ```
@@ -354,7 +468,7 @@ function endFrame():Void
 - `wheelEvent`: Wheel notches, added to this frame's; up and right are positive.
 - `touchEvent`: A finger down, moved or lifted. A lifted one stays in touches, not down, until the frame ends.
 - `clear`: Lets go of everything held, as when focus is lost: the releases are edges; presses not yet consumed, typed text and the wheel are dropped.
-- `endFrame`: Ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame.
+- `endFrame`: Tells the watchers, then ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame.
 
 ## Key
 

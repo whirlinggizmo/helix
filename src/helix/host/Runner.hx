@@ -150,7 +150,7 @@ class Runner {
 		frameInterval = Math.isNaN(previousFrame) ? 0 : (now - previousFrame) * 1000;
 		previousFrame = now;
 		resources.poll();
-		sounds.poll();
+		sounds.poll(clock.delta);
 		decoding.poll();
 		audioDecoding.poll();
 		environments.poll();

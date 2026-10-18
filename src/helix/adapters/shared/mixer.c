@@ -6,12 +6,14 @@
 #include <string.h>
 
 /* The native audio adapters' mixer: 32 clips and 16 voices (a clip played, or a stream fed as it arrives) of 44.1 kHz mono floats, mixed
-   on the output's thread by whichever output the program links (sokol_audio's or SDL3's), which supplies setup, shutdown, available, sample
-   rate and channels (audio.h). */
+   on the output's thread into stereo (or mono, when the output has one channel) by whichever output the program links (sokol_audio's or
+   SDL3's), which supplies setup, shutdown, available, sample rate and channels (audio.h). A voice's pitch multiplies its resampling step; its
+   pan places it by equal power; a volume or pan change ramps linearly across the next callback, so one stepped once a frame doesn't click. */
 typedef struct { int id, count; float *samples; } clip_t;
 /* A stream voice's ring: 2 s at 44.1 kHz, so a frame thread stalled under that (a level load, a collection) feeds it in time. */
 #define HELIX_STREAM_RING 88200
-typedef struct { int id, clip_id, loop, paused, head, count, eof; double position; float volume; float *ring; } voice_t;
+/* mixed: whether a callback has mixed it, so heard_volume and heard_pan (what the last callback ended at) are where its ramps start. */
+typedef struct { int id, clip_id, loop, paused, head, count, eof, mixed; double position; float volume, pitch, pan, heard_volume, heard_pan; float *ring; } voice_t;
 static clip_t clips[32];
 static voice_t voices[16];
 static helix_lock_t audio_lock = HELIX_LOCK_INIT;
@@ -23,22 +25,48 @@ static clip_t *find_clip(int id) {
     return NULL;
 }
 
+/* A voice's ramps across one callback of frames: from what the last callback ended at (its targets for a voice not mixed yet) to its
+   targets, with each end's equal-power gains (left = cos((pan + 1) pi/4), right = sin). */
+typedef struct { float volume0, volume1, pan0, pan1, left0, right0, left1, right1; int panning; } ramp_t;
+static ramp_t ramp_start(voice_t *voice) {
+    ramp_t r = { voice->mixed ? voice->heard_volume : voice->volume, voice->volume, voice->mixed ? voice->heard_pan : voice->pan, voice->pan };
+    const float quarter = 0.78539816339744830962f;
+    r.left0 = cosf((r.pan0 + 1) * quarter); r.right0 = sinf((r.pan0 + 1) * quarter);
+    r.left1 = cosf((r.pan1 + 1) * quarter); r.right1 = sinf((r.pan1 + 1) * quarter);
+    r.panning = r.pan0 != r.pan1;
+    voice->mixed = 1; voice->heard_volume = voice->volume; voice->heard_pan = voice->pan;
+    return r;
+}
+/* Adds sample, the voice's at frame i of frames, into out: its volume ramped, then the mono sum, or the left and right by its pan. */
+static void ramp_add(const ramp_t *r, float *out, int i, int frames, int channels, float sample) {
+    const float t = (float)(i + 1) / (float)frames;
+    sample *= r->volume0 + (r->volume1 - r->volume0) * t;
+    if (channels == 1) { out[i] += sample; return; }
+    float left, right;
+    if (r->panning) {
+        const float angle = (r->pan0 + (r->pan1 - r->pan0) * t + 1) * 0.78539816339744830962f;
+        left = cosf(angle); right = sinf(angle);
+    } else { left = r->left1; right = r->right1; }
+    out[i * channels] += sample * left; out[i * channels + 1] += sample * right;
+}
+
 void helix_mixer_mix(float *out, int frames, int channels, int rate) {
     memset(out, 0, (size_t)frames * channels * sizeof(float));
     helix_lock(&audio_lock);
     callbacks++;
-    /* Clips are 44.1 kHz; stepped to the output's rate. */
-    const double step = rate > 0 ? 44100.0 / rate : 1.0;
+    /* Clips are 44.1 kHz; stepped to the output's rate, times each voice's pitch. */
+    const double base = rate > 0 ? 44100.0 / rate : 1.0;
     for (int v = 0; v < 16; v++) if (voices[v].id) {
         voice_t *voice = &voices[v];
         if (voice->paused) continue;
+        const double step = base * voice->pitch;
         if (voice->ring) {
+            const ramp_t r = ramp_start(voice);
             for(int i=0;i<frames;i++){
                 if(voice->count==0){if(voice->eof){free(voice->ring);memset(voice,0,sizeof *voice);}break;}
                 int next=(voice->head+1)%HELIX_STREAM_RING;
                 float a=voice->ring[voice->head], b=voice->count>1?voice->ring[next]:a;
-                float sample=(a+(b-a)*(float)voice->position)*voice->volume;
-                for(int c=0;c<channels;c++)out[i*channels+c]+=sample;
+                ramp_add(&r,out,i,frames,channels,a+(b-a)*(float)voice->position);
                 voice->position+=step;int used=(int)voice->position;if(used>voice->count)used=voice->count;
                 voice->head=(voice->head+used)%HELIX_STREAM_RING;voice->count-=used;voice->position-=used;
             }
@@ -46,6 +74,7 @@ void helix_mixer_mix(float *out, int frames, int channels, int rate) {
         }
         clip_t *clip = find_clip(voice->clip_id);
         if (!clip) { memset(voice, 0, sizeof *voice); continue; }
+        const ramp_t r = ramp_start(voice);
         for (int i = 0; i < frames; i++) {
             if (voice->position >= clip->count) {
                 if (voice->loop) voice->position = fmod(voice->position, clip->count);
@@ -54,8 +83,7 @@ void helix_mixer_mix(float *out, int frames, int channels, int rate) {
             const int at = (int)voice->position;
             const int next = at + 1 < clip->count ? at + 1 : voice->loop ? 0 : at;
             const float fraction = (float)(voice->position - at);
-            const float sample = (clip->samples[at] + (clip->samples[next] - clip->samples[at]) * fraction) * voice->volume;
-            for (int channel = 0; channel < channels; channel++) out[i * channels + channel] += sample;
+            ramp_add(&r, out, i, frames, channels, clip->samples[at] + (clip->samples[next] - clip->samples[at]) * fraction);
             voice->position += step;
         }
     }
@@ -82,7 +110,7 @@ int helix_audio_play(int clip_id, int loop, float volume) {
     if (!find_clip(clip_id)) { helix_unlock(&audio_lock); return -1; }
     int id = 0;
     if (helix_audio_available()) for (int i = 0; i < 16; i++) if (!voices[i].id) {
-        id = next_voice++; voices[i] = (voice_t){.id=id, .clip_id=clip_id, .loop=loop!=0, .volume=volume}; played++; break;
+        id = next_voice++; voices[i] = (voice_t){.id=id, .clip_id=clip_id, .loop=loop!=0, .volume=volume, .pitch=1}; played++; break;
     }
     helix_unlock(&audio_lock);
     return id;
@@ -123,10 +151,12 @@ void helix_mixer_release(void) {
 int helix_audio_is_playing(int id) {helix_lock(&audio_lock);int found=0;for(int i=0;i<16;i++)if(id&&voices[i].id==id)found=1;helix_unlock(&audio_lock);return found;}
 void helix_audio_pause(int id,int paused) {helix_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].paused=paused!=0;helix_unlock(&audio_lock);}
 void helix_audio_volume(int id,float volume) {if(!isfinite(volume)||volume<0||volume>1)return;helix_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].volume=volume;helix_unlock(&audio_lock);}
+void helix_audio_pitch(int id,float pitch) {if(!isfinite(pitch)||pitch<.25f||pitch>4)return;helix_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].pitch=pitch;helix_unlock(&audio_lock);}
+void helix_audio_pan(int id,float pan) {if(!isfinite(pan)||pan<-1||pan>1)return;helix_lock(&audio_lock);for(int i=0;i<16;i++)if(id&&voices[i].id==id)voices[i].pan=pan;helix_unlock(&audio_lock);}
 int helix_audio_stream(float volume) {
  if(!isfinite(volume)||volume<0||volume>1)return 0;
  helix_lock(&audio_lock);int id=0;
- if(helix_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(HELIX_STREAM_RING,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.ring=ring};played++;}break;}
+ if(helix_audio_available())for(int i=0;i<16;i++)if(!voices[i].id){float *ring=calloc(HELIX_STREAM_RING,sizeof(float));if(ring){id=next_voice++;voices[i]=(voice_t){.id=id,.volume=volume,.pitch=1,.ring=ring};played++;}break;}
  helix_unlock(&audio_lock);return id;
 }
 int helix_audio_stream_queued(int id) {helix_lock(&audio_lock);int count=-1;for(int i=0;i<16;i++)if(id&&voices[i].id==id&&voices[i].ring)count=voices[i].count;helix_unlock(&audio_lock);return count;}

@@ -87,6 +87,24 @@ int main(void) {
     CHECK(helix_audio_stream_push(stream,chunk,sizeof chunk,1)==4);helix_audio_test_render(out,8,1);CHECK(!helix_audio_is_playing(stream));
     stream=helix_audio_stream(1);float *many=calloc(90000,sizeof(float));CHECK(helix_audio_stream_push(stream,many,90000*sizeof(float),1)==88200&&helix_audio_stream_queued(stream)==88200);free(many);
     helix_audio_stop(stream);CHECK(!helix_audio_is_playing(stream)&&helix_audio_stream_queued(stream)==-1);helix_audio_shutdown();
-    printf("{\"passed\":true,\"checks\":%d,\"controller\":\"Pipe-fed evdev records; no kernel virtual-device or physical-controller claim\",\"audio\":\"Sokol dummy backend with mixer callback, concurrency and resampling checks; no audible-output claim\"}\n",checks);
+    /* Stereo out of mono voices: a voice panned hard left is heard only on the left, the middle by equal power, mono output unpanned. */
+    helix_audio_setup(); float half[64]; for(int i=0;i<64;i++) half[i]=.5f; int halves=helix_audio_clip(half,sizeof half); CHECK(halves>0);
+    voice=helix_audio_play(halves,1,1); helix_audio_pan(voice,-1); helix_audio_test_render(out,8,2);
+    for(int i=0;i<8;i++) CHECK(fabsf(out[2*i]-.5f)<1e-6 && fabsf(out[2*i+1])<1e-6);
+    helix_audio_pan(voice,0); helix_audio_test_render(out,8,2); CHECK(fabsf(out[14]-.5f*cosf(.78539816339744830962f))<1e-6 && fabsf(out[15]-out[14])<1e-6); /* Ramped to the middle by the block's end. */
+    CHECK(out[1]>0 && out[1]<out[15]); /* A pan change ramps across the block. */
+    helix_audio_pan(voice,1); helix_audio_test_render(out,8,1); CHECK(fabsf(out[7]-.5f)<1e-6); /* Mono: the sum, unpanned. */
+    helix_audio_volume(voice,.5f); helix_audio_test_render(out,4,1); CHECK(fabsf(out[0]-.5f*.875f)<1e-6 && fabsf(out[3]-.25f)<1e-6); /* Volume ramps linearly. */
+    helix_audio_stop(voice);
+    /* Pitch multiplies the step: at 2 a 64-frame clip ends in 32 output frames. */
+    for(int pitch=1;pitch<=2;pitch++){
+        voice=helix_audio_play(halves,0,1); helix_audio_pitch(voice,(float)pitch); float played[128]; helix_audio_test_render(played,128,1);
+        int heard=0; for(int i=0;i<128;i++) if(played[i]!=0) heard++;
+        CHECK(heard==64/pitch && !helix_audio_is_playing(voice));
+    }
+    voice=helix_audio_play(halves,1,1); helix_audio_pitch(voice,8); helix_audio_pan(voice,2); helix_audio_test_render(out,8,2);
+    CHECK(fabsf(out[0]-out[1])<1e-6); /* Out-of-range pitch and pan are ignored. */
+    helix_audio_stop(voice); helix_audio_shutdown();
+    printf("{\"passed\":true,\"checks\":%d,\"controller\":\"Pipe-fed evdev records; no kernel virtual-device or physical-controller claim\",\"audio\":\"Sokol dummy backend with mixer callback, concurrency, resampling, pan, pitch and ramp checks; no audible-output claim\"}\n",checks);
     return 0;
 }

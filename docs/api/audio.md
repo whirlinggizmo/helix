@@ -6,19 +6,33 @@
 
 *class* in `src/helix/audio/Audio.hx`
 
-Sounds: clips and streams loaded through the assets, decoded and played (AudioResources). The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments.
+Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments, but for the buses and what plays through them, written here: the bus tree is plain engine data, there from the program's start, before the runner binds instance.
 
 ```haxe
 static var instance(default, null):AudioResources
+static final master(default, null):Bus
+static final music(default, null):Bus
+static final effects(default, null):Bus
+static function addBus(name:String, parent:Bus):Null<Bus>
+static function play(sound:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
+static function crossfade(from:AudioPlayback, to:AudioPlayback, seconds:Float, ?toVolume:Float = 1.):Void
+static function saveBuses(?key:String = "audio", ?done:() -> Void, ?failed:String -> Void):Void
+static function loadBuses(?key:String = "audio", ?done:() -> Void, ?failed:String -> Void):Void
 static function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
 static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
-static function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
 ```
 
 - `instance`: The sounds forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `master`: The root bus, every other one under it. Kept across a hot reload (@:hot), as the buses a game holds are.
+- `music`: The music's bus, under master. Kept across a hot reload (@:hot).
+- `effects`: The sound effects' bus, under master: what play plays through. Kept across a hot reload (@:hot).
+- `addBus`: A new bus named name under parent, at volume 1, held as a reference (`@:hot static final ambience = Audio.addBus("ambience", Audio.effects)`); its name is what saveBuses and loadBuses know it by. Null, adding none, for an empty name or one a bus has.
+- `play`: Plays sound through effects from the beginning at volume (0 to 1), looping if asked: effects.play.
+- `crossfade`: Fades from to silence and stops it, and to from its volume up to toVolume (1 by default; the track's own level), both over seconds: start to at 0 (`Audio.crossfade(theme, Audio.music.play(next, true, 0), 2)`).
+- `saveBuses`: Saves every bus's volume and mute by name as JSON under key through Storage; done runs once it's written, failed (else the log, with the key) for a failed write or no Storage.
+- `loadBuses`: Loads the volumes and mutes saveBuses saved under key into the buses of their names, a name with no bus skipped; a volume is clamped, and assigning it ends a bus's fade. done runs once they're set, or nothing was saved; failed (else the log, with the key) for a failed read, a file that isn't the saved JSON, or no Storage.
 - `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
 - `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
-- `play`: Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1.
 
 ## AudioClip
 
@@ -74,30 +88,40 @@ function shutdown():Void
 
 *class* in `src/helix/audio/AudioPlayback.hx`
 
-One playback, playing or paused; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the page's first key or pointer press) it waits, its pause and volume kept, and starts once audio runs.
+One playback, playing or paused, through a bus; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the page's first key or pointer press) it waits, its pause, volume, pitch and pan kept, and starts once audio runs. What the adapter hears is heardVolume, its own volume times its bus's heard volume, sent once a frame when either changed.
 
 ```haxe
-function new(resource:AudioResource, loop:Bool, volume:Float)
+function new(resource:AudioResource, loop:Bool, volume:Float, bus:Bus)
 var id(default, null):Int
 var finished(default, null):Bool
 var source(default, null):Int
+var bus(default, null):Bus
 var state(get, never):PlayState
 function stop():Bool
 function pause():Bool
 function resume():Bool
 var volume(default, set):Float
+var heardVolume(get, never):Float
+var pitch(default, set):Float
+var pan(default, set):Float
+function fade(to:Float, seconds:Float, ?done:() -> Void, ?stopWhenSilent:Bool = false):Void
 function poll():Void
 ```
 
-- `new`: A playback of resource (whose playback reference the caller retained) at volume, looping if asked: it starts now if audio runs, waits if audio is available but hasn't started, and finishes at once otherwise. AudioResources.play makes it.
+- `new`: A playback of resource (whose playback reference the caller retained) through bus at volume, looping if asked: it starts now if audio runs, waits if audio is available but hasn't started, and finishes at once otherwise. AudioResources.play makes it.
 - `id`: The adapter's voice; 0 while it waits for audio to start, or when it couldn't start.
 - `finished`: Whether it was stopped, played to its end, or never started; its resource reference is released then.
 - `source`: The adapter's resource it plays, kept as it started: a reload may replace the resource's.
+- `bus`: The bus it plays through.
 - `state`: Playing or Paused while it lasts (waiting counts as playing); then Stopped (stop(), or it never started) or Complete (it played to its end).
 - `stop`: Stops it and releases its resource reference. False once it has finished.
 - `pause`: Pauses it where it is. False unless it's playing.
 - `resume`: Plays on from where it was paused. False unless it's paused.
-- `volume`: Its volume, 0 to 1. Clamped to 0..1 (NaN is 0); once it has finished, kept but not heard.
+- `volume`: Its own volume, 0 to 1. Clamped to 0..1 (NaN is 0); once it has finished, kept but not heard. Assigning it ends a fade, whose done doesn't run.
+- `heardVolume`: What it is heard at, 0 to 1: its volume times its bus's heardVolume.
+- `pitch`: Its playback rate, 0.25 to 4 (1 as recorded; 2 an octave up and half as long), clamped (NaN is 1).
+- `pan`: Where it is heard, -1 (left) to 1 (right), 0 the middle, equal power; clamped (NaN is 0).
+- `fade`: Moves its volume to to (0 to 1, clamped) over seconds (0 or less, or NaN, sets it at once), linear in decibels, a silent end taken as -60 dB; at the end done runs (during this call for 0 seconds) and, with stopWhenSilent and an end of 0, it stops. A fade started over another, or a volume assigned, ends the earlier one, whose done doesn't run. Nothing once it has finished.
 - `poll`: Starts it once audio runs, and finishes it, releasing its resource reference, once the adapter no longer plays it. AudioResources.poll calls it.
 
 ## AudioResource
@@ -134,18 +158,18 @@ Sounds, the same on every platform: clips loaded through the assets and decoded 
 function new(assets:IAssets, backend:IAudio, decoding:AudioDecoding)
 function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
 function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
-function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
+function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1., ?bus:Bus):AudioPlayback
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function poll():Void
+function poll(delta:Float):Void
 function shutdown():Void
 ```
 
 - `new`: Loads through assets, decodes with decoding (polled by its owner) and plays on backend (polled here).
 - `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
 - `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else its remote URL, without loading it whole. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, or a source the backend cannot open, such as a remote URL natively.
-- `play`: Starts resource from the beginning at volume 0 to 1, looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1.
+- `play`: Starts resource from the beginning at volume 0 to 1 through bus (Audio.effects when null), looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1. A game plays through a bus (Bus.play, Audio.play).
 - `reloaded`: A clip's file changed: decode it, then give each clip from that path a new backend clip in place.
-- `poll`: Polls the backend, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread.
+- `poll`: Polls the backend, steps the buses' fades (from Audio.master) and the playbacks' by delta seconds (the frame's), sends each playback's heard volume to its voice when it changed, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread.
 - `shutdown`: Cancels pending loads (telling none of their callers), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays.
 
 ## AudioStream
@@ -160,11 +184,59 @@ function new(id:Int, backend:IAudio, releaseSource:() -> Void)
 
 - `new`: Owns backend stream id; releaseSource ends the stored copy's lease after the stream is destroyed. AudioResources.loadStream creates it.
 
+## Bus
+
+*class* in `src/helix/audio/Bus.hx`
+
+A bus sounds are played through: a name, a parent, a volume, a mute and a fade, plain engine data. Audio.master is the root, Audio.music and Audio.effects are under it from the program's start, and Audio.addBus makes a game's own. A playback's heard volume is its own times its bus's heardVolume; the buses' fades advance and the heard volumes reach the voices once a frame (AudioResources.poll). A bus is held as a reference; its name is used only to save and load the volumes (Audio.saveBuses, Audio.loadBuses).
+
+```haxe
+final name:String
+final parent:Null<Bus>
+var volume(default, set):Float
+var muted:Bool
+var heardVolume(get, never):Float
+function fade(to:Float, seconds:Float, ?done:() -> Void):Void
+function play(sound:AudioResource, ?loop:Bool = false, ?volume:Float = 1.):AudioPlayback
+function all():Array<Bus>
+```
+
+- `name`: Its name, unique among the buses: what saving and loading the volumes know it by.
+- `parent`: The bus it plays into: null only for the master.
+- `volume`: Its volume, 0 to 1, clamped (NaN is 0). Assigning it ends a fade, whose done doesn't run.
+- `muted`: Whether it is muted: its heard volume, and everything played through it or a bus under it, is then 0, its volume kept for unmuting.
+- `heardVolume`: What it plays at: its volume times its parents' up to the master, 0 when it or a parent is muted.
+- `fade`: Moves its volume to to (0 to 1, clamped) over seconds (0 or less, or NaN, sets it at once), linear in decibels, a silent end taken as -60 dB; done runs at the end, during this call for 0 seconds. A fade started over another, or a volume assigned, ends the earlier one, whose done doesn't run.
+- `play`: Plays sound through it from the beginning at volume (0 to 1), looping if asked: AudioResources.play on the program's (Audio.instance). Throws before the runner has bound one, and as AudioResources.play throws.
+- `all`: This bus and every bus under it, parents before their children.
+
+## Fade
+
+*class* in `src/helix/audio/Fade.hx`
+
+A volume (0 to 1) moving from one level to another over seconds, linear in decibels so it sounds even: a silent end is taken as FLOOR_DB, and the last step lands on the end exactly. A bus's and a playback's fades each step one, once a frame.
+
+```haxe
+function new(from:Float, to:Float, seconds:Float, ?done:() -> Void)
+static var FLOOR_DB(inline, null):Float
+static function at(from:Float, to:Float, fraction:Float):Float
+final done:Null<() -> Void>
+var finished(get, never):Bool
+function step(delta:Float):Float
+```
+
+- `new`: From volume from to volume to (each 0 to 1) over seconds (0 or less ends at the first step), done run at the end by its owner.
+- `FLOOR_DB`: The level a silent end (a volume of 0) is taken as, in decibels.
+- `at`: The volume fraction (0 to 1) of the way from volume from to volume to, linear in decibels, each end under FLOOR_DB's level taken as FLOOR_DB; to itself at 1.
+- `done`: Runs once it reaches its end; null for none.
+- `finished`: Whether it has reached its end.
+- `step`: Moves it on by delta seconds (under 0 as 0) and returns the volume there: to exactly once finished.
+
 ## IAudio
 
 *class* in `src/helix/audio/IAudio.hx`
 
-Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's; lifetimes, volume checks, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens.
+Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's; lifetimes, volume checks, buses and fades, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens.
 
 ```haxe
 var available(get, never):Bool
@@ -178,6 +250,8 @@ function playStream(stream:Int, loop:Bool, volume:Float):Int
 function stop(voice:Int):Void
 function pause(voice:Int, paused:Bool):Void
 function setVolume(voice:Int, volume:Float):Bool
+function setPitch(voice:Int, pitch:Float):Bool
+function setPan(voice:Int, pan:Float):Bool
 function isPlaying(voice:Int):Bool
 function poll():Void
 function shutdown():Void
@@ -193,7 +267,9 @@ function shutdown():Void
 - `playStream`: Starts stream from its beginning at volume (0 to 1), looping if asked, and returns its voice, or 0 when it can't start. Throws for an unknown stream.
 - `stop`: Stops voice; nothing for an unknown or ended one.
 - `pause`: Pauses voice, or resumes it when paused is false; nothing for an unknown one.
-- `setVolume`: Sets voice's volume, 0 to 1. False, changing nothing, for a voice not playing (unknown, stopped or ended) or a volume outside 0 to 1.
+- `setVolume`: Sets voice's volume, 0 to 1, a change ramped over a few milliseconds (the output's next block) so a fade stepped once a frame doesn't click. False, changing nothing, for a voice not playing (unknown, stopped or ended) or a volume outside 0 to 1.
+- `setPitch`: Sets voice's playback rate (0.25 to 4, 1 as recorded; the engine holds it there), which changes its pitch and length together. False, changing nothing, for a voice not playing (unknown, stopped or ended).
+- `setPan`: Sets voice's pan (-1 left to 1 right, 0 the middle; the engine holds it there), equal power, a change ramped as a volume's. False, changing nothing, for a voice not playing (unknown, stopped or ended).
 - `isPlaying`: Whether voice is still playing (or paused); false once it ended or was stopped.
 - `poll`: Keeps streamed voices fed and delivers what arrived from the platform's threads; the shared AudioResources calls it once a frame.
 - `shutdown`: Stops every voice, destroys every stream and clip, and closes the output.

@@ -415,7 +415,7 @@ class ServiceTests {
 		env.start(() -> {
 			assets.poll();
 			decoding.poll();
-			audio.poll();
+			audio.poll(1 / 60);
 			if (delayed != null && haxe.Timer.stamp() >= delay) {
 				var callback = delayed;
 				delayed = null;

@@ -7,14 +7,15 @@
 #define SOKOL_LOG_API_DECL static
 #include "sokol_log.h"
 
-/* The sokol_audio output: 44.1 kHz mono asked for, 512 frames a callback, the shared mixer stepping to whatever rate sokol gets. */
+/* The sokol_audio output: 44.1 kHz stereo asked for, 512 frames a callback, the shared mixer stepping to whatever rate and mixing to whatever
+   channels sokol gets (mono unpanned). */
 static int initialized;
 
 static void callback(float *out, int frames, int channels) { helix_mixer_mix(out, frames, channels, saudio_sample_rate()); }
 
 void helix_audio_setup(void) {
     if (initialized) return;
-    saudio_setup(&(saudio_desc){ .sample_rate = 44100, .num_channels = 1,
+    saudio_setup(&(saudio_desc){ .sample_rate = 44100, .num_channels = 2,
         .buffer_frames = 512, .stream_cb = callback, .logger.func = slog_func });
     initialized = 1;
 }

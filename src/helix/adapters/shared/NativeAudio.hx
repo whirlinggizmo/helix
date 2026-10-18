@@ -8,7 +8,7 @@ import sys.thread.Thread;
 /** A stream voice's producer: its file's handle, its stream, and whether it loops. */
 private typedef Producer = {var handle:Int; var stream:Int; var loop:Bool;}
 
-/** IAudio natively, for either output (sokol_audio's or SDL3's): mono at 44100 Hz, 16 voices, 32 clips, mixed in C (mixer.c). Streams play stored files (a remote URL fails), read
+/** IAudio natively, for either output (sokol_audio's or SDL3's): mono voices at 44100 Hz mixed to stereo (pan, pitch, volume ramps), 16 voices, 32 clips, mixed in C (mixer.c). Streams play stored files (a remote URL fails), read
 	through files (a codec adapter's), each voice kept 88200 frames (2 s) ahead by poll for up to 2 ms a frame, so a frame stalled under that plays on: how a push-based output plays a file as
 	it's read. */
 abstract class NativeAudio implements IAudio {
@@ -163,6 +163,20 @@ abstract class NativeAudio implements IAudio {
 		if (!isPlaying(voice) || !Math.isFinite(volume) || volume < 0 || volume > 1)
 			return false;
 		MixerBridge.audioVolume(voice, volume);
+		return true;
+	}
+
+	public function setPitch(voice:Int, pitch:Float):Bool {
+		if (!isPlaying(voice))
+			return false;
+		MixerBridge.audioPitch(voice, pitch);
+		return true;
+	}
+
+	public function setPan(voice:Int, pan:Float):Bool {
+		if (!isPlaying(voice))
+			return false;
+		MixerBridge.audioPan(voice, pan);
 		return true;
 	}
 

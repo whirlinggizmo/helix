@@ -121,4 +121,12 @@ interface IInput {
 
 	/** Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges. */
 	public function consume():Void;
+
+	/** Plumbing for what is built on the input, not for a game (the Input static leaves it out): tells watcher as each tick and each frame
+		ends (consume, and the frame's end), before their edges are cleared, which is how an action map (Actions) keeps its own previous states
+		without calls from the game. False, changing nothing, for a watcher already told. */
+	public function watch(watcher:IInputWatcher):Bool;
+
+	/** Plumbing, as watch: stops telling watcher; false for one not told. */
+	public function unwatch(watcher:IInputWatcher):Bool;
 }

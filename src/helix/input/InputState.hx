@@ -29,6 +29,7 @@ class InputState implements IInput {
 	var pointerPushes = 0;
 	var pointerLifts = 0;
 	var touchStates:Array<TouchState> = [];
+	var watchers:Array<IInputWatcher> = [];
 
 	/** The gesture's pan x, y, log scale and rotation summed this frame, and since the last tick. */
 	var frameGesture = [0., 0., 0., 0.];
@@ -390,7 +391,19 @@ class InputState implements IInput {
 		wheelY = 0;
 	}
 
+	public function watch(watcher:IInputWatcher):Bool {
+		if (watcher == null || watchers.indexOf(watcher) >= 0)
+			return false;
+		watchers.push(watcher);
+		return true;
+	}
+
+	public function unwatch(watcher:IInputWatcher):Bool
+		return watchers.remove(watcher);
+
 	public function consume():Void {
+		for (watcher in watchers.copy())
+			watcher.tickEnded();
 		tickGesture = [0., 0., 0., 0.];
 		for (i in 0...pushes.length) {
 			if (pushes[i] > 0)
@@ -412,8 +425,10 @@ class InputState implements IInput {
 			pointerLifts--;
 	}
 
-	/** Ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame. */
+	/** Tells the watchers, then ends the frame's edges, text, wheel and lifted touches; the InputRouter calls it after each frame. */
 	public function endFrame():Void {
+		for (watcher in watchers.copy())
+			watcher.frameEnded();
 		anyFramePress = false;
 		frameGesture = [0., 0., 0., 0.];
 		for (i in 0...framePushes.length) {

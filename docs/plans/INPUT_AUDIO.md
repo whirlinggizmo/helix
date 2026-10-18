@@ -15,17 +15,17 @@ The design for the roadmap's milestone 12: an action map, audio buses with fades
 
 ```haxe
 var actions = new Actions(Input.instance);
-actions.bind("jump", Key(Space));
-actions.bind("jump", PadButton(South));
-actions.bind("steer", Keys(Left, Right));
-actions.bind("steer", PadAxis(LeftX, 0, .15));
-actions.bind("fire", Touch(BottomRight, -120, -120, 96, 96));   // anchored on the visible area, in Screen's units
+actions.bind("jump", Keyboard(Space));
+actions.bind("jump", Pad(South));
+actions.bind("steer", KeyboardPair(Left, Right));
+actions.bind("steer", Axis(LeftX, 0, .15));
+actions.bind("fire", TouchRegion(BottomRight, -120, -120, 96, 96));   // anchored on the visible area, in Screen's units
 
 if (actions.isPressed("jump")) jump();
 car.steer = actions.axis("steer");
 ```
 
-- **A binding** is an enum, `Binding`: `Key(key)`, `Keys(negative, positive)`, `PadButton(button)`, `PadButtons(negative, positive)`, `PadAxis(axis, side, threshold)`, `MouseButton(button)`, `Touch(anchor, x, y, width, height)`. A touch region is an anchor on the visible area (`Screen.visibleX` and the rest: a corner, an edge's middle or the center) and an offset and size from it in the game's units, converted through `Screen` when a finger lands: with a design size set it scales with everything the game draws and stays where the design put it, following the visible edge in the modes that show more on one axis; without one a unit is a logical pixel and the region keeps its physical size. A binding to a UI widget, so the drawn button and the pressed region are one, comes when the UI asks.
+- **A binding** is an enum, `Binding`: `Keyboard(key)`, `KeyboardPair(negative, positive)`, `Pad(button)`, `PadPair(negative, positive)`, `Axis(axis, side, threshold)`, `Mouse(button)`, `TouchRegion(anchor, x, y, width, height)` (named apart from the types `Key`, `PadButton`, `PadAxis`, `MouseButton` and `Touch`, so a file importing `Binding` still writes `Key.Space`). A touch region is an anchor on the visible area (`Screen.visibleX` and the rest: a corner, an edge's middle or the center) and an offset and size from it in the game's units, converted through `Screen` when a finger lands: with a design size set it scales with everything the game draws and stays where the design put it, following the visible edge in the modes that show more on one axis; without one a unit is a logical pixel and the region keeps its physical size. A binding to a UI widget, so the drawn button and the pressed region are one, comes when the UI asks.
 - **Reading**: `axis(name)` -1 to 1, `value(name)` 0 to 1, `isDown`, `isPressed`, `isReleased` per tick and the `Frame` pair as `IInput` has them, the binding pushed furthest winning, across every pad. An unknown action reads as up, not as an error, so a game's code runs before its bindings load.
 - **Rebinding**: `capture(name, done:Binding->Void, ?cancel)` waits for the next key, button, axis past a half or touch, Escape cancelling, then replaces the binding of the same device kind (a keyboard rebind leaves the pad's binding alone). `bindings(name)`, `unbind(name, binding)`, `clear(name)`, and `describe(binding)` gives the text a remap screen shows ("Space", "Pad south", "Left stick X", "Touch").
 - **Saving**: `actions.save()` and `load()` as JSON through `Storage` under one key, beside the defaults the game bound in code, which `reset()` restores. A saved map naming an action the game no longer binds is dropped.

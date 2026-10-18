@@ -10,7 +10,7 @@ enum StreamOpenResult {
 }
 
 /** Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's;
-	lifetimes, volume checks, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its
+	lifetimes, volume checks, buses and fades, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its
 	audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens. */
 interface IAudio {
 	/** Whether there is an output at all: false natively without an audio device. */
@@ -47,8 +47,17 @@ interface IAudio {
 	/** Pauses voice, or resumes it when paused is false; nothing for an unknown one. */
 	public function pause(voice:Int, paused:Bool):Void;
 
-	/** Sets voice's volume, 0 to 1. False, changing nothing, for a voice not playing (unknown, stopped or ended) or a volume outside 0 to 1. */
+	/** Sets voice's volume, 0 to 1, a change ramped over a few milliseconds (the output's next block) so a fade stepped once a frame doesn't
+		click. False, changing nothing, for a voice not playing (unknown, stopped or ended) or a volume outside 0 to 1. */
 	public function setVolume(voice:Int, volume:Float):Bool;
+
+	/** Sets voice's playback rate (0.25 to 4, 1 as recorded; the engine holds it there), which changes its pitch and length together. False,
+		changing nothing, for a voice not playing (unknown, stopped or ended). */
+	public function setPitch(voice:Int, pitch:Float):Bool;
+
+	/** Sets voice's pan (-1 left to 1 right, 0 the middle; the engine holds it there), equal power, a change ramped as a volume's. False, changing nothing, for a voice not
+		playing (unknown, stopped or ended). */
+	public function setPan(voice:Int, pan:Float):Bool;
 
 	/** Whether voice is still playing (or paused); false once it ended or was stopped. */
 	public function isPlaying(voice:Int):Bool;
