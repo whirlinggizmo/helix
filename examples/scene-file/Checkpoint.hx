@@ -3,7 +3,9 @@ import helix.render3d.Node3D;
 
 /** A checkpoint on its node: when the race's car comes within radius of it (across the ground, x and z), it tells the race it passed
 	this index, every frame it is near; the race takes only the next index, so a lap counts each once. The race is the Race behavior on
-	race (a node reference, "@race" in the file), found through the pass once both have started. */
+	race (a node reference, "@race" in the file), found through the pass once both have started. It runs in Resolve, so it measures
+	the car where this frame's Simulate left it. */
+@:phase(Resolve)
 class Checkpoint extends Behavior {
 	/** Its index along the lap, from 0 at the start line. */
 	@:prop @:range(0, 64) public var index = 0;

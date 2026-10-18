@@ -110,21 +110,23 @@ SceneFiles.load("scenes/track.scene", file -> {
 ## Behaviors
 
 ```haxe
+@:phase(Resolve)
 class Checkpoint extends Behavior {
     @:prop public var index = 0;
-    @:prop public var radius = 4.;
+    @:prop public var radius = 10.;
+    @:prop public var race:Node3D = null;
 
-    override function start() {}
     override function update(dt:Float) {
-        if (nearCar()) { Race.passed(index); done = true; }
+        var found = pass.on(race, Race);
+        if (found != null && near(found.car)) found.reach(index);
     }
-    override function stop() {}
 }
 ```
 
-- **`Behavior`**: `node:Node3D` (the node it drives, set before `start`), `enabled`, `done` (true ends it: `stop` is called and the pass drops it), `start()`, `update(dt)`, `stop()`. Nothing else: no signals, no children, no lookups through the node. A behavior reaches the game as any code does: statics, the scene, what it was given.
-- **`Behaviors`** (the pass): `add(behavior, node)`, `remove(behavior)`, `update(dt)` (starts the new, updates the enabled whose node is enabled, stops and drops the done), `count`, `find(cls)`, `of(node)`. One pass per `Scene`: `Scene.behaviors`, updated by `Scenes.update` before the scene's own `update`, cleared on `exit`. An app without `Scenes` makes one and updates it, as it does `Tweens`.
+- **`Behavior`**: `node:Node3D` (the node it drives, set before `start`), `pass` (the pass it's in), `enabled`, `done` (true ends it: `stop` is called and the pass drops it), `phase`, `start()`, `update(dt)`, `stop()`. Nothing else: no signals, no children, no lookups through the node. A behavior reaches the game as any code does: statics, the scene, what it was given, and another behavior through a node it was given (`pass.on(race, Race)`).
+- **`@:phase`** on the class says when in a frame it runs: `Input` (reading devices, deciding intent), `Simulate` (moving the world; without `@:phase`), `Resolve` (settling what Simulate produced: the checkpoint above, combat applying queued hits) or `Late` (following the settled world: the chase camera). The pass runs every behavior of one phase before the next, each phase's in the file's order; a subclass keeps its base's phase (decision 134).
+- **`Behaviors`** (the pass): `add(behavior, node)`, `remove(behavior)`, `update(dt)` (starts the new, updates the enabled whose node is enabled phase by phase, stops and drops the done), `count`, `find(cls)`, `findAll(cls)`, `on(node, cls)`, `of(node)`, and `allUnder(node, cls)`: the behaviors of a class or interface on node and under it, how a resolver gathers what has a say on an entity. One pass per `Scene`: `Scene.behaviors`, updated by `Scenes.update` before the scene's own `update`, cleared on `exit`. An app without `Scenes` makes one and updates it, as it does `Tweens`.
 - **`@:prop`**: a `public var` with an initializer, of `Int`, `Float`, `Bool`, `String`, `Array<Float>`, a color (`Int` marked `@:prop("color")`), or `Node3D` (a reference, `"@name"` in the file). The macro reads the initializer as the default and `@:range(min, max)` where present.
-- **The registry**: `Behavior` carries `@:autoBuild(helix.macro.Behaviors.build())`, which runs on each subclass, generates its `schema()` (name, props with type, default and range, for the loader and an inspector) and `make()`, and records the class by its name (or `@:behavior("Name")`) in `BehaviorRegistry`. A file naming a behavior no class registers is logged, the node left without it. The whole program's behaviors are known at compile time; nothing is found by reflection at run time.
+- **The registry**: `Behavior` carries `@:autoBuild(helix.macro.Behaviors.build())`, which runs on each subclass, generates its `schema()` (name, phase, props with type, default and range, for the loader and an inspector) and `make()`, and records the class by its name (or `@:behavior("Name")`) in `BehaviorRegistry`. A file naming a behavior no class registers is logged, the node left without it. The whole program's behaviors are known at compile time; nothing is found by reflection at run time.
 - **Hot reload**: a behavior's methods are re-pointed in the browser as any class's are; its instances keep their fields. Natively an old instance runs its old module until the pass is remade (a scene re-entered), as decision 130 said of closures.
 - **The game model, settled**: a node draws, a behavior acts on a node, the pass runs the behaviors, the game's state is the truth (rule 5). Whether an ECS follows is for after (ROADMAP's deferred `ecs-scene`).

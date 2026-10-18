@@ -6,7 +6,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.app`](app.md): BaseApp, IApp
 - [`helix.assets`](assets.md): AssetCacheMode, AssetManifest, AssetPath, AssetProgress, AssetService, Assets, AudioLocation, CacheRecord, CacheRecords, EnsureOptions, ExportResult, Failure, Fetch, FetchProgress, FetchRequest, FetchResponse, FetchResult, FetchService, IAssets, IExport, IHttp, IReloadable, IRequest, IStore, Lease, Request, Storage, StorageResult, StorageService, StorageSourceResult, StorageWriteResult
 - [`helix.audio`](audio.md): Audio, AudioClip, AudioDecodeResult, AudioDecoding, AudioPlayback, AudioResource, AudioResources, AudioStream, IAudio, IAudioDecoder, Pcm, PlayState, StreamOpenResult, Wav
-- [`helix.behavior`](behavior.md): Behavior, BehaviorEntry, BehaviorProp, BehaviorPropType, BehaviorRegistry, BehaviorSchema, Behaviors
+- [`helix.behavior`](behavior.md): Behavior, BehaviorEntry, BehaviorProp, BehaviorPropType, BehaviorRegistry, BehaviorSchema, Behaviors, Phase
 - [`helix.collision`](collision.md): Collide2D, Hit2D, Move2D, SpatialHash2D
 - [`helix.core`](core.md): Job, JobRequest, Jobs, WorkQueue
 - [`helix.debug`](debug.md): Autopilot, FpsOverlay, ITestHarness, TestHarness

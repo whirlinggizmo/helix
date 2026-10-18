@@ -3,14 +3,20 @@ package helix.behavior;
 import helix.render3d.Node3D;
 
 /** The pass that runs behaviors, beside a game's timers and tweens: add puts a behavior on a node, update each frame starts the ones
-	added since the last update (in order, so a scene file can attach many and they start together), updates each enabled one whose node
-	is enabled (with every node above it: a disabled group stops what's under it), then stops and drops the ones done. One pass per
-	Scene (Scene.behaviors, which the Scenes stack updates before the scene's own update and clears as it exits); an app without a stack
-	makes one and updates it, as it does a Tweens. Adding, removing and clearing inside a behavior's start, update or stop are safe: the
-	pass walks copies, and a change takes effect from the next step. */
+	added since the last update (in order, so a scene file can attach many and they start together), then updates each enabled one whose
+	node is enabled (with every node above it: a disabled group stops what's under it) phase by phase, Input, Simulate, Resolve, Late
+	(Phase, the class's `@:phase`), each phase's in the order added, then stops and drops the ones done. One pass per Scene
+	(Scene.behaviors, which the Scenes stack updates before the scene's own update and clears as it exits); an app without a stack makes
+	one and updates it, as it does a Tweens. Adding, removing and clearing inside a behavior's start, update or stop are safe: the pass
+	walks copies, and a change takes effect from the next step.
+
+	Behaviors don't signal each other. One that decides across entities is a resolver (a Combat in Resolve, found with find): the others
+	report to it or queue on it, and it gathers what has a say on an entity with allUnder (gear on the entity's child nodes implementing
+	an interface, an IDamageModifier) and applies them in an order of its own, so the order lives in one place a test can read. */
 class Behaviors {
-	// The started ones, in the order added, and the ones added since the last update, not yet started.
-	var active:Array<Behavior> = [];
+	// The started ones, a list per phase in Phase's order, each in the order added; and the ones added since the last update, not yet
+	// started.
+	var active:Array<Array<Behavior>> = lists();
 	var pending:Array<Behavior> = [];
 
 	/** No behaviors yet. */
@@ -32,7 +38,11 @@ class Behaviors {
 	public function remove(behavior:Behavior):Bool {
 		if (behavior.pass != this)
 			return false;
-		if (active.remove(behavior))
+		var started = false;
+		for (list in active)
+			if (list.remove(behavior))
+				started = true;
+		if (started)
 			end(behavior);
 		else {
 			pending.remove(behavior);
@@ -44,69 +54,68 @@ class Behaviors {
 	/** How many it holds: started, or waiting for the next update to start. */
 	public var count(get, never):Int;
 
-	function get_count():Int
-		return active.length + pending.length;
+	function get_count():Int {
+		var n = pending.length;
+		for (list in active)
+			n += list.length;
+		return n;
+	}
 
-	/** The first behavior of class cls (or a subclass) in it, started ones first, or null. */
+	/** The first behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added), or null. */
 	public function find<T:Behavior>(cls:Class<T>):Null<T> {
-		for (b in active)
-			if (Std.isOfType(b, cls))
-				return cast b;
-		for (b in pending)
+		for (b in all())
 			if (Std.isOfType(b, cls))
 				return cast b;
 		return null;
 	}
 
-	/** Every behavior of class cls (or a subclass) in it, started ones first. */
+	/** Every behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added). */
 	public function findAll<T:Behavior>(cls:Class<T>):Array<T> {
-		var found:Array<T> = [];
-		for (b in active)
-			if (Std.isOfType(b, cls))
-				found.push(cast b);
-		for (b in pending)
-			if (Std.isOfType(b, cls))
-				found.push(cast b);
-		return found;
+		return [for (b in all()) if (Std.isOfType(b, cls)) cast b];
 	}
 
-	/** The first behavior of class cls (or a subclass) on node, started ones first, or null: how a behavior given a node reference
-		reaches the behavior on it. */
+	/** The first behavior of class cls (or a subclass) on node, started ones first (by phase, then in the order added), or null: how a
+		behavior given a node reference reaches the behavior on it. */
 	public function on<T:Behavior>(node:Node3D, cls:Class<T>):Null<T> {
-		for (b in active)
-			if (b.node == node && Std.isOfType(b, cls))
-				return cast b;
-		for (b in pending)
+		for (b in all())
 			if (b.node == node && Std.isOfType(b, cls))
 				return cast b;
 		return null;
 	}
 
-	/** The behaviors on node, started ones first. */
+	/** The behaviors on node, started ones first (by phase, then in the order added). */
 	public function of(node:Node3D):Array<Behavior> {
-		var found = [];
-		for (b in active)
-			if (b.node == node)
-				found.push(b);
-		for (b in pending)
-			if (b.node == node)
-				found.push(b);
+		return [for (b in all()) if (b.node == node) b];
+	}
+
+	/** Every behavior of class or interface cls on node or on a node under it, started ones first (by phase, then in the order added),
+		then the pending: how a resolver gathers what has a say on an entity, the gear on its child nodes implementing an interface
+		(`allUnder(target, IDamageModifier)`). Each behavior's node is walked up to node; the tree isn't walked down. */
+	public function allUnder<T>(node:Node3D, cls:Class<T>):Array<T> {
+		var found:Array<T> = [];
+		if (node == null)
+			return found;
+		for (b in all())
+			if (Std.isOfType(b, cls) && isUnder(b.node, node))
+				found.push(cast b);
 		return found;
 	}
 
-	/** Takes every behavior out, stopping each started one. */
+	/** Takes every behavior out, stopping each started one (by phase, then in the order added). */
 	public function clear():Void {
 		var ending = active, waiting = pending;
-		active = [];
+		active = lists();
 		pending = [];
-		for (b in ending)
-			end(b);
+		for (list in ending)
+			for (b in list)
+				end(b);
 		for (b in waiting)
 			drop(b);
 	}
 
 	/** A frame: starts the ones added since the last update, updates the enabled ones under enabled nodes by dt seconds (a clock's delta),
-		then stops and drops the ones done. Once a frame. */
+		every Input one, then every Simulate, Resolve and Late one, each phase's in the order added; then stops and drops the ones done.
+		Once a frame. */
 	public function update(dt:Float):Void {
 		var starting = pending;
 		pending = [];
@@ -114,26 +123,56 @@ class Behaviors {
 			// Removed before it started, from an earlier start.
 			if (b.pass != this)
 				continue;
-			active.push(b);
+			active[(b.phase : Int)].push(b);
 			b.start();
 		}
-		for (b in active.copy()) {
-			if (b.pass != this || b.done)
-				continue;
-			if (b.enabled && isEnabled(b.node))
-				b.update(dt);
+		for (phase in 0...PHASES)
+			for (b in active[phase].copy()) {
+				if (b.pass != this || b.done)
+					continue;
+				if (b.enabled && isEnabled(b.node))
+					b.update(dt);
+			}
+		for (phase in 0...PHASES) {
+			var kept = [];
+			for (b in active[phase].copy()) {
+				if (b.pass != this)
+					continue;
+				if (b.done)
+					end(b);
+				else
+					kept.push(b);
+			}
+			// Those a stop removed are out already; a clear emptied the lists, and what was added since is pending.
+			active[phase] = kept.filter(b -> b.pass == this);
 		}
-		var kept = [];
-		for (b in active.copy()) {
-			if (b.pass != this)
-				continue;
-			if (b.done)
-				end(b);
-			else
-				kept.push(b);
+	}
+
+	// How many phases there are: one list each.
+	static inline var PHASES = (Phase.Late : Int) + 1;
+
+	static function lists():Array<Array<Behavior>>
+		return [for (_ in 0...PHASES) []];
+
+	// The started ones by phase, then the pending, as one list.
+	function all():Array<Behavior> {
+		var found = [];
+		for (list in active)
+			for (b in list)
+				found.push(b);
+		for (b in pending)
+			found.push(b);
+		return found;
+	}
+
+	// Whether at is node or under it.
+	static function isUnder(at:Null<Node3D>, node:Node3D):Bool {
+		while (at != null) {
+			if (at == node)
+				return true;
+			at = at.parent;
 		}
-		// Those a stop removed are out already; a clear emptied the list, and what was added since is pending.
-		active = kept.filter(b -> b.pass == this);
+		return false;
 	}
 
 	// Whether node and every node above it are enabled: a node doesn't know its ancestors' flags, so they're walked.

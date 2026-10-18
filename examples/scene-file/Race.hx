@@ -6,7 +6,9 @@ import helix.render3d.Node3D;
 	the lap's time from the pass's dt, the best lap kept. The checkpoints register their indices as they start, so the race knows how many
 	there are without being told. Its state is what the example's autopilot probes. The car (car, the node the Car behavior drives) is
 	exposed for the checkpoints. A checkpoint or the car reaches the race from its node reference ("@race" in the file) through the pass
-	they share, `pass.on(race, Race)`: no static, no lookup through the node. */
+	they share, `pass.on(race, Race)`: no static, no lookup through the node. It runs in Simulate, as the clock the world moves by: its
+	countdown frees the car (added after it in the file) the same frame, and the checkpoints report to it in Resolve, after the lap's time
+	has taken the frame's dt. */
 class Race extends Behavior {
 	/** The node the car is on: what the checkpoints measure their distance to. */
 	@:prop public var car:Node3D = null;

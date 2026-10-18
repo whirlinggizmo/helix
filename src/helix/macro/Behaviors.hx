@@ -8,8 +8,8 @@ import haxe.macro.Type;
 using haxe.macro.Tools;
 
 /** The build macro behind behaviors (helix.behavior.Behavior carries it as `@:autoBuild`, so it runs on each subclass): from the
-	class's `@:prop` fields, a `schema()` (the class's name, or `@:behavior("Name")`, and each prop's name, type, default and
-	`@:range`), a setter and a getter by prop name (a `switch` assigning the field, typed; no reflection), and the class's registration
+	class's `@:prop` fields, a `schema()` (the class's name, or `@:behavior("Name")`, its phase, and each prop's name, type, default
+	and `@:range`), the override of Behavior's phase getter for a class marked `@:phase(Name)`, a setter and a getter by prop name (a `switch` assigning the field, typed; no reflection), and the class's registration
 	in BehaviorRegistry as the program starts.
 
 	The registration is a static `__init__` on a class marked `@:keep`: `__init__` runs when the class is initialized, on JS before
@@ -22,11 +22,12 @@ using haxe.macro.Tools;
 	through its own generated `schema()`, setter and getter, which the subclass's call for the names it doesn't have. */
 class Behaviors {
 	static inline var BASE = "helix.behavior.Behavior";
+	static final PHASES = ["Input", "Simulate", "Resolve", "Late"];
 
 	/** The fields of a Behavior subclass: `schema()`, the setter and getter, and the registration (left out of a class marked
 		`@:abstract` or whose constructor takes arguments). Fails, naming the field, for a `@:prop` that isn't a `public var` with an
-		initializer, whose type isn't one the file can hold, or that is marked a color without being an Int; and for a class that
-		declares a name the macro generates. */
+		initializer, whose type isn't one the file can hold, or that is marked a color without being an Int; for a `@:phase` naming no
+		Phase constructor; and for a class that declares a name the macro generates. */
 	public static function build():Array<Field> {
 		var cls = Context.getLocalClass().get();
 		var fields = Context.getBuildFields();
@@ -40,7 +41,7 @@ class Behaviors {
 		var ownType = typePath(cls);
 		var own = TPath(ownType);
 		for (field in fields)
-			if (["schema", "__setProp", "__getProp", "__init__"].contains(field.name))
+			if (["schema", "__setProp", "__getProp", "__init__", "get_phase"].contains(field.name))
 				Context.error('Behaviors: ${cls.name}.${field.name} is a name the behavior build generates', field.pos);
 		var props = [];
 		for (field in fields) {
@@ -58,6 +59,7 @@ class Behaviors {
 				default: Context.error('Behaviors: @:behavior takes the name to register ${cls.name} under, as a string', named.pos);
 			}
 		}
+		var phase = readPhase(cls);
 
 		// schema(): the superclass's props, then this class's.
 		var entries = [
@@ -71,6 +73,8 @@ class Behaviors {
 				})
 		];
 		var inherited = parentIsBase ? macro [] : macro $p{parentPath}.schema().props;
+		var phaseValue = phase != null ? macro $p{["helix", "behavior", "Phase", phase]} : parentIsBase ? macro helix.behavior.Phase.Simulate : macro $p{parentPath}.schema()
+			.phase;
 		var schema:Field = {
 			name: "schema",
 			doc: "Its name and props (each one's name, type, default and range), for the registry, a scene file's loader and an inspector: generated from its @:prop fields.",
@@ -81,7 +85,7 @@ class Behaviors {
 				expr: macro {
 					var props:Array<helix.behavior.BehaviorSchema.BehaviorProp> = $inherited;
 					$b{entries};
-					return {name: $v{name}, props: props};
+					return {name: $v{name}, props: props, phase: $phaseValue};
 				}
 			}),
 			pos: pos,
@@ -123,6 +127,19 @@ class Behaviors {
 		};
 		var made = [schema, setProp, getProp];
 
+		// The phase getter, for a class that says its phase; one that doesn't inherits its base's.
+		if (phase != null)
+			made.push({
+				name: "get_phase",
+				access: [AOverride],
+				kind: FFun({
+					args: [],
+					ret: macro :helix.behavior.Phase,
+					expr: macro return $p{["helix", "behavior", "Phase", phase]}
+				}),
+				pos: pos,
+			});
+
 		// The registration, for a class that can be made bare.
 		if (!cls.isAbstract && !cls.meta.has(":abstract") && hasBareConstructor(fields)) {
 			cls.meta.add(":keep", [], pos);
@@ -144,6 +161,20 @@ class Behaviors {
 			});
 		}
 		return fields.concat(made);
+	}
+
+	// The Phase constructor's name `@:phase` gives on the class, or null for none.
+	static function readPhase(cls:ClassType):Null<String> {
+		var meta = find(cls.meta.get(), ":phase");
+		if (meta == null)
+			return null;
+		var named = meta.params != null && meta.params.length == 1 ? switch meta.params[0].expr {
+			case EConst(CIdent(n)): n;
+			default: null;
+		} : null;
+		if (named == null || !PHASES.contains(named))
+			Context.error('Behaviors: @:phase on ${cls.name} takes one of ${PHASES.join(", ")}', meta.pos);
+		return named;
 	}
 
 	static function getter(p:Prop):Expr {

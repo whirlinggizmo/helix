@@ -9,7 +9,8 @@ import helix.render3d.Node3D;
 
 	Its props, the fields a scene file or an inspector sets, are `@:prop public var` fields with an initializer (`@:prop public var
 	radius = 4.;`), of Int, Float, Bool, String, Array<Float>, a color (an Int marked `@:prop("color")`) or Node3D (a reference); an
-	optional `@:range(min, max)` on the field gives an inspector its range. The build macro helix.macro.Behaviors runs on each subclass:
+	optional `@:range(min, max)` on the field gives an inspector its range. `@:phase(Late)` on the class says when in a frame it runs
+	(Phase: Input, Simulate, Resolve, Late; Simulate without it). The build macro helix.macro.Behaviors runs on each subclass:
 	it generates `schema()` and the typed setters the registry uses, and registers the class in BehaviorRegistry by its name, or the string
 	in `@:behavior("Name")` on the class, as the program starts (so a class the game's code never names, one only a file names, must be in
 	the build: a class path's `--macro include("pack")`, or an import). A class marked `@:abstract`, or whose constructor takes arguments,
@@ -37,6 +38,13 @@ class Behavior {
 
 	/** Set true to end it: at the end of that update the pass calls stop and drops it. False to start. */
 	public var done:Bool = false;
+
+	/** When in a frame the pass updates it: the class's `@:phase(...)`, its base's without one, Simulate when none says. The build macro
+		generates the getter for a class that says, so the pass reads it without reflection. */
+	public var phase(get, never):Phase;
+
+	function get_phase():Phase
+		return Simulate;
 
 	/** Once, on the pass's first update after it's added, its node set: what it needs from the node and the game. */
 	public function start():Void {}

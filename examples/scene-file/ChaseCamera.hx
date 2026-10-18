@@ -3,7 +3,9 @@ import helix.render3d.Node3D;
 
 /** A chase camera on its node (a Camera3D): it follows target from behind, distance back along the target's heading (its yaw, read from
 	its rotation) and height up, easing toward that place with lag, and looks at a point a little above the target (Node3D.lookAt). Drawing
-	only, so Math's trigonometry is fine here: nothing an autopilot probes depends on it. */
+	only, so Math's trigonometry is fine here: nothing an autopilot probes depends on it. It runs Late, after the car has moved this
+	frame, so it never trails it by one. */
+@:phase(Late)
 class ChaseCamera extends Behavior {
 	/** The node followed. Null: the camera stays where it is. */
 	@:prop public var target:Node3D = null;
