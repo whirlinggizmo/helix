@@ -76,7 +76,11 @@ def prepare(name):
     """The generated shader and font, and the served folder: the page, and the example's files in the web target's shared assets."""
     shader();bake_fonts.generate()
     web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
-    (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name))
+    # The example's config.json (DECISIONS 131) beside the page, and the page told it has one; none, and the page makes no request.
+    config=ROOT/f'examples/{name}/config.json';meta='<meta name="helix-config" content="config.json">' if config.is_file() else ''
+    (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name).replace('{{config}}',meta))
+    if config.is_file():shutil.copyfile(config,web/'config.json')
+    elif (web/'config.json').exists():(web/'config.json').unlink()
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
     assets(name,'web')
     licenses(web)
@@ -160,6 +164,9 @@ def build(name,target):
         run(['haxe',hxml(name,target)],native_env(sdl3))
         folder=ROOT/f'build/{target}/{name}'
         place_runtimes(folder,sdl3)
+        config=ROOT/f'examples/{name}/config.json'
+        if config.is_file():shutil.copyfile(config,folder/'config.json')
+        elif (folder/'config.json').exists():(folder/'config.json').unlink()
         assets(name,target)
         licenses(folder)
 

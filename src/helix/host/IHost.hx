@@ -25,4 +25,9 @@ interface IHost {
 	/** A run option as the platform passes it, or null when it isn't given: in a browser the URL query parameter name, natively the
 		environment variable HELIX_ and name in capitals. */
 	public function getOption(name:String):Null<String>;
+
+	/** Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the
+		executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each
+		start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131). */
+	public function loadConfig(done:Null<haxe.io.Bytes>->Void):Void;
 }

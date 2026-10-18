@@ -89,4 +89,22 @@ class DomHostAdapter implements IHost {
 
 	public function getOption(name:String):Null<String>
 		return params.get(name);
+
+	/** The page says whether it has one: a <meta name="helix-config" content="config.json"> the build writes beside it when the example (or
+		game) ships one, so a page without one makes no request (a 404 would be a console error, which an autopilot counts as a failure).
+		Fetched past the HTTP cache ("no-cache": revalidated), so an edited file is read on the next load. */
+	public function loadConfig(done:Null<haxe.io.Bytes>->Void):Void {
+		var meta:Null<js.html.MetaElement> = cast Browser.document.querySelector('meta[name="helix-config"]');
+		if (meta == null || meta.content == "") {
+			done(null);
+			return;
+		}
+		Browser.window.fetch(meta.content, {cache: NO_CACHE}).then(response -> {
+			if (!response.ok) {
+				done(null);
+				return;
+			}
+			response.arrayBuffer().then(buffer -> done(haxe.io.Bytes.ofData(buffer)), _ -> done(null));
+		}, _ -> done(null));
+	}
 }

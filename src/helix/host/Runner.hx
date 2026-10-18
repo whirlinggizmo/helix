@@ -124,13 +124,14 @@ class Runner {
 		Models.bind(models);
 		TestHarness.bind(a.harness);
 		Screenshots.bind(screenshots);
-		// config.json, fetched now so a deployed game's settings change without a build; the app waits for it (a frame or two, blank).
+		// config.json beside the program, read now so a deployed game's settings change without a build; the app waits for it (a frame or
+		// two, blank). None is no failure: the defaults stand.
 		configPending = true;
-		// None is no failure: the defaults stand.
-		resources.ensure("config.json", bytes -> {
-			Host.config = Config.parse(bytes, host.getOption("config"));
+		host.loadConfig(bytes -> {
+			if (bytes != null)
+				Host.config = Config.parse(bytes, host.getOption("config"));
 			configPending = false;
-		}, _ -> configPending = false);
+		});
 	}
 
 	function frame():Void {

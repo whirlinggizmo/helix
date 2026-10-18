@@ -87,6 +87,7 @@ static function getOptionFloat(name:String, fallback:Float):Float
 static function getOptionInt(name:String, fallback:Int):Int
 static function canQuit():Bool
 static function quit():Void
+static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 ```
 
 - `instance`: The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
@@ -99,6 +100,7 @@ static function quit():Void
 - `getOptionInt`: getOption as a whole number; fallback for anything that isn't one.
 - `canQuit`: Whether quitting closes anything, so whether an app should offer a quit key: not in a browser page, where quit stops the program but the page stays.
 - `quit`: Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
+- `loadConfig`: Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131).
 
 ## IHost
 
@@ -113,6 +115,7 @@ var window(get, never):IWindow
 function canQuit():Bool
 function quit():Void
 function getOption(name:String):Null<String>
+function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 ```
 
 - `run`: Runs the program: init once, when the window and the GPU exist; frame once a display refresh; cleanup once, when it closes (the window closed, quit, or a browser page going away). Natively it returns only after the window closes.
@@ -121,6 +124,7 @@ function getOption(name:String):Null<String>
 - `canQuit`: Whether quitting closes anything, so whether an app should offer a quit key: not in a browser page, where quit stops the program but the page stays.
 - `quit`: Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
 - `getOption`: A run option as the platform passes it, or null when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals.
+- `loadConfig`: Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131).
 
 ## IWindow
 
