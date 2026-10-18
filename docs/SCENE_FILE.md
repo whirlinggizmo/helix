@@ -82,7 +82,7 @@ What a node entry holds:
 - **`behaviors`**: a list of `{"kind": "...", "props": {...}}` attached to this node when the scene is instantiated. They are written under the node because that is how a hand reads them; at run time they live in the pass, never on the node.
 - **`props`**: a plain map of values for the game (`"props": {"team": 2}`), kept by the `SceneInstance` by node, not on the node.
 
-A behavior's prop value is a number, a string, a bool, a list of numbers, a color, or `"@name"` or `"@path/from/root"`: a reference to a node of this file, resolved once every node is made (Blender-style names first, then paths).
+A behavior's prop value is a number, a string, a bool, a list of numbers, a color, or `"@name"` or `"@path/from/root"`: a reference to a node of this instance, resolved once every node is made, by name first (a prefab's subtree before the whole instance) then as a path from the root. A prefab's own file can reference only its own nodes: a behavior that needs a node of the enclosing file is written in that file, on the prefab's node, as the example's car is.
 
 What is not in the file: cameras' viewports (the app's) and anything 2D (after this pass: the format's `kind` admits `Sprite2D` and the rest under a `Node2D` root with no change to the file's shape).
 

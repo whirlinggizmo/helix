@@ -21,6 +21,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 - **Skinned surface shaders:** an app's surface shader on a skinned model (it's ignored today).
 - **Morph targets**, and more than four joints a vertex.
 - **`ISocket`:** milestone 17.
+- **The scene file's next kinds:** a mesh kind from code (a plane, a box: a `Model` needs a file today, so a level's ground is a generated glb), a prefab's reference to a node outside itself (an instantiating entry passing a reference down, so a car prefab's behavior could name the race), and the 2D kinds under a `Node2D` root.
 - **An ECS:** not planned. Milestone 11 settled the game model with behaviors run by a pass (decision 132); an ECS would come only for a game that measures the need.
 
 ## Open designs
