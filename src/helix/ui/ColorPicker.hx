@@ -2,54 +2,81 @@ package helix.ui;
 
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 
-/** A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value): a square of saturation (left to right) and brightness (bottom
-	to top) in the hue, a bar of hue beside it (red at both ends, the hue rising upward), with alpha a bar of alpha (opaque at the top), a
-	swatch of the color (its right half over a checkerboard, as its alpha shows it) and a field of hex under the swatch (hexField, a TextField
-	of its own). The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a
-	pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the
-	hue bar, the alpha bar (Up and Right raise, Down and Left lower) and none, when they move focus again; each step a twentieth of the way.
-	The part they drive has its mark in the theme's focus color. The field takes RRGGBBAA or RRGGBB (alpha 0xff), with or without a leading #,
-	in either case: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the
-	field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or
-	black doesn't lose the hue. Ask color, and changed once a frame. */
+/** A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and
+	brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of
+	the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta
+	and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field
+	writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's
+	name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter,
+	Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down
+	brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a
+	twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex:
+	RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma),
+	without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing,
+	and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging
+	through grey or black doesn't lose the hue. It's as wide as its box is given: theme.widgetHeight * 5 to start (box sized Fixed that
+	wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later.
+	Ask color, and changed once a frame. */
 class ColorPicker extends Widget {
 	// The parts the pointer or the keys work in.
 	static inline var NONE = 0;
 	static inline var SQUARE = 1;
 	static inline var HUE = 2;
 	static inline var ALPHA = 3;
-	// Held on nothing it drags (a gap, the swatch).
+	// Held on nothing it drags (the strip's padding, the swatch).
 	static inline var ELSEWHERE = -1;
 	// A key's step, as a fraction of the way.
 	static inline var STEP = 1 / 20;
+	// The checkerboard's light and dark squares under what has alpha.
+	static inline var LIGHT = 0xccccccff;
+	static inline var DARK = 0x888888ff;
 
 	var face:Shape2D;
 	var squareHue:Shape2D;
 	var whiteRamp:Shape2D;
 	var blackRamp:Shape2D;
-	var hueBase:Shape2D;
+	var hueGroup = new Node2D();
 	var hueBands:Array<Shape2D> = [];
+	var hueStart:Shape2D;
+	var hueEnd:Shape2D;
+	var alphaGroup = new Node2D();
 	var alphaBase:Shape2D;
 	var alphaChecks = new Node2D();
 	var alphaChecksPool:Array<Shape2D> = [];
 	var alphaRamp:Shape2D;
-	var swatchSolid:Shape2D;
+	var alphaEnd:Shape2D;
+	var swatchGroup = new Node2D();
 	var swatchBase:Shape2D;
 	var swatchChecks = new Node2D();
 	var swatchChecksPool:Array<Shape2D> = [];
-	var swatchAlpha:Shape2D;
+	var swatchColor:Shape2D;
+	var swatchEdge:Shape2D;
 	var squareShadow:Shape2D;
 	var squareMark:Shape2D;
 	var hueShadow:Shape2D;
-	var hueMark:Shape2D;
+	var hueKnob:Shape2D;
 	var alphaShadow:Shape2D;
-	var alphaMark:Shape2D;
+	var alphaKnob:Shape2D;
+	var caption:Text2D;
 	var squareBox:Box;
 	var hueBox:Box;
 	var alphaBox:Null<Box>;
 	var swatchBox:Box;
-	var side:Box;
+	var textRow:Box;
+	var fieldColumn:Box;
+	var fieldWidth = 0.;
+	var alphaChecked = -1.;
+	var swatchChecked = -1.;
+	// A bar's thickness, a handle's radius, the height of a bar's row (a handle and its shadow), the swatch's diameter, the field's height.
+	var thickness:Float;
+	var knob:Float;
+	var lane:Float;
+	var diameter:Float;
+	var compact:Float;
+	// The square's side: the width the picker was last given.
+	var side:Float;
 	var hasAlpha:Bool;
 	var h = 0.;
 	var s = 0.;
@@ -62,9 +89,13 @@ class ColorPicker extends Widget {
 	function new(ui:Ui, name:String, color:Int, alpha:Bool) {
 		super(ui, name);
 		hasAlpha = alpha;
-		var theme = ui.theme,
-			length = theme.widgetHeight * 4,
-			bar = theme.widgetHeight / 2;
+		var theme = ui.theme, pad = theme.padding;
+		thickness = theme.widgetHeight / 5;
+		knob = thickness / 2 + 3;
+		lane = (knob + 1.5) * 2;
+		diameter = hasAlpha ? lane * 2 + theme.gap / 2 : lane * 1.6;
+		compact = theme.textSize + pad / 2;
+		side = theme.widgetHeight * 5;
 		face = rectangle(0);
 		face.pickable = true;
 		squareHue = rectangle(0xff0000ff);
@@ -74,67 +105,86 @@ class ColorPicker extends Widget {
 		blackRamp = rectangle(0x00000000);
 		blackRamp.shading = Down;
 		blackRamp.endColor = 0x000000ff;
-		hueBase = rectangle(0);
-		for (n in [face, squareHue, whiteRamp, blackRamp, hueBase])
+		for (n in [face, squareHue, whiteRamp, blackRamp, hueGroup, alphaGroup, swatchGroup])
 			root.addChild(n);
-		// Top to bottom: hue 1 (red) through magenta, blue, cyan, green and yellow to hue 0 (red).
+		// The hue bar: six bands, red through yellow, green, cyan, blue and magenta to red, between round ends of red.
 		for (k in 0...6) {
-			var band = rectangle(fromHsv((6 - k) / 6, 1, 1));
-			band.shading = Down;
-			band.endColor = fromHsv((5 - k) / 6, 1, 1);
+			var band = rectangle(fromHsv(k / 6, 1, 1));
+			band.shading = Across;
+			band.endColor = fromHsv((k + 1) / 6, 1, 1);
 			hueBands.push(band);
-			root.addChild(band);
+			hueGroup.addChild(band);
 		}
-		alphaBase = rectangle(0xccccccff);
+		hueStart = end(hueGroup, false, 0xff0000ff);
+		hueEnd = end(hueGroup, true, 0xff0000ff);
+		// The alpha bar: a checkerboard in its rounded shape, under the color from clear to opaque, its right end round in the opaque color.
+		alphaBase = Shape2D.polygon(capsule(0, 0, thickness * 2, thickness), LIGHT);
+		alphaBase.pickable = false;
 		alphaRamp = rectangle(0);
-		alphaRamp.shading = Down;
-		swatchSolid = rectangle(0);
-		swatchBase = rectangle(0xccccccff);
-		swatchAlpha = rectangle(0);
-		for (n in [
-			alphaBase,
-			alphaChecks,
-			alphaRamp,
-			swatchSolid,
-			swatchBase,
-			swatchChecks,
-			swatchAlpha
-		])
-			root.addChild(n);
-		alphaBase.visible = alphaChecks.enabled = alphaRamp.visible = hasAlpha;
-		// The marks: white over a dark shadow, so they show on any color.
+		alphaRamp.shading = Across;
+		for (n in [alphaBase, alphaChecks, alphaRamp])
+			alphaGroup.addChild(n);
+		alphaEnd = end(alphaGroup, true, 0);
+		alphaGroup.enabled = hasAlpha;
+		// The swatch: a disc of the color, with alpha over a checkerboard in its round shape.
+		swatchBase = round(swatchGroup, diameter / 2, LIGHT);
+		swatchGroup.addChild(swatchChecks);
+		swatchColor = round(swatchGroup, diameter / 2, 0);
+		// Its edge in the faces' color, so a color like the panel's still shows a disc.
+		swatchEdge = round(swatchGroup, diameter / 2 - .75, ui.theme.faceColor);
+		swatchEdge.outline = 1.5;
+		swatchBase.visible = swatchChecks.enabled = hasAlpha;
+		// The handles: the square's a ring, the bars' discs, white over a dark shadow so they show on any color.
 		squareShadow = mark(Shape2D.circle(6, 0x00000090), 4);
 		squareMark = mark(Shape2D.circle(6, 0xffffffff), 2);
-		hueShadow = mark(Shape2D.rectangle(bar + 6, 6, 0x00000090), 4);
-		hueMark = mark(Shape2D.rectangle(bar + 6, 6, 0xffffffff), 2);
-		alphaShadow = mark(Shape2D.rectangle(bar + 6, 6, 0x00000090), 4);
-		alphaMark = mark(Shape2D.rectangle(bar + 6, 6, 0xffffffff), 2);
-		alphaShadow.visible = alphaMark.visible = hasAlpha;
-		// A row: the square, the hue bar, the alpha bar, then a column of the swatch and the field (attach).
+		hueShadow = mark(Shape2D.circle(knob + 1.5, 0x00000080), 0);
+		hueKnob = mark(Shape2D.circle(knob, 0xffffffff), 0);
+		alphaShadow = mark(Shape2D.circle(knob + 1.5, 0x00000080), 0);
+		alphaKnob = mark(Shape2D.circle(knob, 0xffffffff), 0);
+		alphaShadow.visible = alphaKnob.visible = hasAlpha;
+		caption = new Text2D("HEX", theme.textSize * .6, theme.disabledTextColor, Center, theme.font);
+		root.addChild(caption);
+		// A column: the square; a padded strip of the swatch beside the bars; a row of the field (its caption under it) and the format button
+		// (attach).
 		squareBox = Box.of(squareHue);
-		squareBox.setSizing(Fixed(length), Fixed(length));
-		hueBox = Box.of(hueBase);
-		hueBox.setSizing(Fixed(bar), Fixed(length));
-		var row = Box.row();
-		row.gap = theme.gap * 2;
-		row.setAnchor(Stretch, Start);
-		row.add(squareBox);
-		row.add(hueBox);
+		swatchBox = Box.of(swatchGroup);
+		swatchBox.setSizing(Fixed(diameter), Fixed(diameter));
+		var bars = Box.column();
+		bars.gap = theme.gap / 2;
+		bars.setSizing(Grow(1), Fit);
+		bars.setAlign(Start, Stretch);
+		hueBox = Box.of(hueGroup);
+		hueBox.setSizing(Fit, Fixed(lane));
+		bars.add(hueBox);
 		if (hasAlpha) {
-			alphaBox = Box.of(alphaBase);
-			alphaBox.setSizing(Fixed(bar), Fixed(length));
-			row.add(alphaBox);
+			alphaBox = Box.of(alphaGroup);
+			alphaBox.setSizing(Fit, Fixed(lane));
+			bars.add(alphaBox);
 		}
-		side = Box.column();
-		side.gap = theme.gap;
-		side.setSizing(Grow(1), Fit);
-		swatchBox = Box.of(swatchSolid);
-		swatchBox.setSizing(Grow(1), Fixed(theme.widgetHeight));
-		side.add(swatchBox);
-		row.add(side);
+		var strip = Box.row();
+		strip.gap = pad;
+		strip.setPadding(pad, pad, pad, pad);
+		strip.setAlign(Start, Center);
+		strip.add(swatchBox);
+		strip.add(bars);
+		fieldColumn = Box.column();
+		fieldColumn.gap = 2;
+		fieldColumn.setAlign(Start, Center);
+		textRow = Box.row();
+		textRow.gap = theme.gap / 2;
+		textRow.setPadding(pad, 0, pad, pad);
+		textRow.setAlign(Center, Start);
+		textRow.add(fieldColumn);
+		var column = Box.column();
+		column.setAlign(Start, Stretch);
+		column.setAnchor(Stretch, Start);
+		column.add(squareBox);
+		column.add(strip);
+		column.add(textRow);
 		box = Box.stack(face);
-		box.setSizing(Grow(1), Fit);
-		box.add(row);
+		box.add(column);
+		box.setSizing(Fixed(side), Fit);
+		squareBox.setSizing(Fit, Fixed(side));
 		this.color = color;
 	}
 
@@ -146,28 +196,86 @@ class ColorPicker extends Widget {
 		return shape;
 	}
 
-	// A mark outlined width wide, centered on its position, over the parts.
+	// A disc of radius under group, not picked.
+	function round(group:Node2D, radius:Float, color:Int):Shape2D {
+		var shape = Shape2D.circle(radius, color);
+		shape.pickable = false;
+		group.addChild(shape);
+		return shape;
+	}
+
+	// A bar's round end under group, the half of a disc as wide as the bar is thick, its straight side through its position: the right half
+	// (right) or the left.
+	function end(group:Node2D, right:Bool, color:Int):Shape2D {
+		var shape = Shape2D.polygon(arc(0, 0, thickness / 2, right ? -Math.PI / 2 : Math.PI / 2), color);
+		shape.pickable = false;
+		group.addChild(shape);
+		return shape;
+	}
+
+	// A handle, outlined width wide (0: filled), centered on its position, over the parts.
 	function mark(shape:Shape2D, width:Float):Shape2D {
-		shape.setPivot(.5, .5);
 		shape.outline = width;
 		shape.pickable = false;
 		root.addChild(shape);
 		return shape;
 	}
 
-	// The hex field: its box under the swatch, its nodes with the picker's (hidden with it), taken out with it.
+	// The text field and the format button: their boxes in the row under the strip (the field over its caption), their nodes with the
+	// picker's (hidden with it), taken out with it.
 
 	@:allow(helix.ui.Ui)
-	function attach(field:TextField):Void {
-		hexField = field;
-		parts.push(field);
-		field.root.parent = null;
-		root.addChild(field.root);
-		side.add(field.box);
+	function attach(field:TextField, button:Widget):Void {
+		textField = field;
+		formatButton = button;
+		field.centered = true;
+		field.box.setPadding(ui.theme.padding / 2, 0, ui.theme.padding / 2, 0);
+		field.box.setSizing(Fixed(ui.theme.widgetHeight * 3), Fixed(compact));
+		for (part in [field, button]) {
+			parts.push(part);
+			part.root.parent = null;
+			root.addChild(part.root);
+		}
+		fieldColumn.add(field.box);
+		fieldColumn.add(Box.of(caption));
+		textRow.add(button.box);
+		set_format(format);
 	}
 
-	/** Its hex field: the color as RRGGBBAA (RRGGBB without alpha), typed in. */
-	public var hexField(default, null):TextField;
+	// The format button, for the Ui to adopt (named name).
+
+	@:allow(helix.ui.Ui)
+	function makeFormatButton(name:String):Widget
+		return new FormatButton(ui, name, this, compact * .8, compact);
+
+	/** Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text"). */
+	public var textField(default, null):TextField;
+
+	/** The button beside its text field cycling its format (a widget of its own, named after the picker with "-format"): clicked, or activated
+		with focus by Enter, Space or a pad's South. */
+	public var formatButton(default, null):Widget;
+
+	/** How its text field writes and reads the color: Hex (to start) or Rgba. The field shows the color in it at once, its caption under it
+		naming it (HEX, RGBA, or RGB without alpha). */
+	public var format(default, set):ColorFormat = Hex;
+
+	function set_format(value:ColorFormat):ColorFormat {
+		format = value;
+		caption.text = value == Hex ? "HEX" : hasAlpha ? "RGBA" : "RGB";
+		if (textField != null) {
+			textField.text = formatText(get_color());
+			textField.invalid = false;
+			textField.hint = value == Hex ? (hasAlpha ? "RRGGBBAA" : "RRGGBB") : hasAlpha ? "r g b a" : "r g b";
+		}
+		return value;
+	}
+
+	// The next format, as the button asks.
+	function cycleFormat():Void
+		format = format == Hex ? Rgba : Hex;
+
+	function formatText(color:Int):String
+		return format == Hex ? formatHex(color, hasAlpha) : formatRgba(color, hasAlpha);
 
 	/** Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black;
 		without alpha, the alpha is 0xff whatever is assigned. */
@@ -277,6 +385,45 @@ class ColorPicker extends Widget {
 	public static function formatHex(color:Int, alpha:Bool):String
 		return alpha ? StringTools.hex(color, 8).toLowerCase() : StringTools.hex(color >>> 8, 6).toLowerCase();
 
+	/** The color text names, 0xRRGGBBAA: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits),
+		apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else. */
+	public static function parseRgba(text:String):Null<Int> {
+		text = StringTools.trim(text);
+		var values:Array<Int> = [], value = 0, digits = 0, commas = 0;
+		for (i in 0...text.length) {
+			var c = text.charCodeAt(i);
+			if (c >= "0".code && c <= "9".code) {
+				if (digits == 3)
+					return null;
+				value = value * 10 + c - "0".code;
+				digits++;
+				commas = 0;
+			} else if (c == " ".code || c == ",".code) {
+				if (digits > 0) {
+					if (value > 255)
+						return null;
+					values.push(value);
+					value = digits = 0;
+				}
+				if (c == ",".code && (values.length == 0 || ++commas > 1))
+					return null;
+			} else
+				return null;
+		}
+		if (digits == 0 || value > 255 || commas > 0)
+			return null;
+		values.push(value);
+		if (values.length != 3 && values.length != 4)
+			return null;
+		return (values[0] << 24) | (values[1] << 16) | (values[2] << 8) | (values.length == 4 ? values[3] : 0xff);
+	}
+
+	/** color's channels in decimal, 0 to 255 each, apart by a space: r g b a, or r g b without alpha. */
+	public static function formatRgba(color:Int, alpha:Bool):String {
+		var text = '${color >>> 24} ${(color >>> 16) & 255} ${(color >>> 8) & 255}';
+		return alpha ? '$text ${color & 255}' : text;
+	}
+
 	static function clamp(value:Float):Float
 		return value > 0 ? (value < 1 ? value : 1) : 0;
 
@@ -294,17 +441,28 @@ class ColorPicker extends Widget {
 	override function takesUpDown():Bool
 		return editing != NONE;
 
-	// The part under world point x, y (as the last draw placed the parts), or ELSEWHERE.
+	// The part under world point x, y (as the last draw placed the parts), or ELSEWHERE: a bar's whole row, its handle's height.
 	function partAt(x:Float, y:Float):Int {
-		for (part in [SQUARE, HUE, ALPHA]) {
-			var base = part == SQUARE ? squareHue : part == HUE ? hueBase : alphaBase;
-			if (part == ALPHA && !hasAlpha)
+		var lx = squareHue.toLocalX(x, y), ly = squareHue.toLocalY(x, y);
+		if (lx >= 0 && ly >= 0 && lx <= squareHue.width && ly <= squareHue.height)
+			return SQUARE;
+		for (part in [HUE, ALPHA]) {
+			var group = part == HUE ? hueGroup : alphaGroup,
+				at = part == HUE ? hueBox : alphaBox;
+			if (at == null)
 				continue;
-			var lx = base.toLocalX(x, y), ly = base.toLocalY(x, y);
-			if (lx >= 0 && ly >= 0 && lx <= base.width && ly <= base.height)
+			lx = group.toLocalX(x, y);
+			ly = group.toLocalY(x, y);
+			if (lx >= 0 && ly >= 0 && lx <= at.width && ly <= at.height)
 				return part;
 		}
 		return ELSEWHERE;
+	}
+
+	// How far along a bar of width (as the layout last placed it) local x is, 0 to 1: between the centers of its round ends.
+	function along(x:Float, width:Float):Float {
+		var span = width - thickness;
+		return span > 0 ? clamp((x - thickness / 2) / span) : 0;
 	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
@@ -325,9 +483,9 @@ class ColorPicker extends Widget {
 					s = clamp(squareHue.toLocalX(wx, wy) / squareHue.width);
 					v = clamp(1 - squareHue.toLocalY(wx, wy) / squareHue.height);
 				case HUE:
-					h = clamp(1 - hueBase.toLocalY(wx, wy) / hueBase.height);
+					h = along(hueGroup.toLocalX(wx, wy), hueBox.width);
 				case ALPHA:
-					a = clamp(1 - alphaBase.toLocalY(wx, wy) / alphaBase.height);
+					a = along(alphaGroup.toLocalX(wx, wy), alphaBox.width);
 				default:
 			}
 		} else
@@ -347,24 +505,50 @@ class ColorPicker extends Widget {
 				default:
 			}
 		// The field: what was typed in it last frame, when it names a color; shown again as the color once it's left.
-		if (hexField != null) {
-			hexField.enabled = enabled;
-			if (hexField.changed) {
-				var typed = parseHex(hexField.text);
-				hexField.invalid = typed == null;
+		fitSquare();
+		if (textField != null) {
+			fitField();
+			textField.enabled = formatButton.enabled = enabled;
+			if (textField.changed) {
+				var typed = format == Hex ? parseHex(textField.text) : parseRgba(textField.text);
+				textField.invalid = typed == null;
 				if (typed != null)
 					set_color(typed);
 			}
-			if (ui.focused != hexField) {
-				var hex = formatHex(get_color(), hasAlpha);
-				if (hexField.text != hex)
-					hexField.text = hex;
-				hexField.invalid = false;
+			if (ui.focused != textField) {
+				var text = formatText(get_color());
+				if (textField.text != text)
+					textField.text = text;
+				textField.invalid = false;
 			}
 		}
 		var color = get_color();
 		changed = color != was;
 		draw(color, focused);
+	}
+
+	// The square as tall as the picker was last made wide (its box Fixed, or stretched across a column): taken up by the next arrangement, so a
+	// new width shows the square's new height a frame later.
+	function fitSquare():Void {
+		if (box.width > 0 && box.width != side) {
+			side = box.width;
+			squareBox.setSizing(Fit, Fixed(side));
+		}
+	}
+
+	// The field as wide as the widest text of either format needs, with the caret, and no wider than the row has room for beside the button.
+	function fitField():Void {
+		var theme = ui.theme, font = theme.font != null ? theme.font : ui.font;
+		if (font == null)
+			return;
+		var widest = Math.max(font.measure(hasAlpha ? "00000000" : "000000", theme.textSize),
+			font.measure(hasAlpha ? "255 255 255 255" : "255 255 255", theme.textSize));
+		var room = side - theme.padding * 2 - textRow.gap - compact * .8;
+		var wanted = Math.min(widest + theme.padding + 4, room);
+		if (wanted != fieldWidth) {
+			fieldWidth = wanted;
+			textField.box.setSizing(Fixed(wanted), Fixed(compact));
+		}
 	}
 
 	// The parts where the layout last placed them, in the color now.
@@ -379,54 +563,81 @@ class ColorPicker extends Widget {
 			n.setPosition(x, y);
 			n.setSize(w, height);
 		}
-		var hx = hueBox.x, hy = hueBox.y, hw = hueBox.width, hh = hueBox.height;
+		// The bars, thickness tall in the middle of their rows, their ends round: what they choose runs between the ends' centers.
+		var r = thickness / 2, top = (lane - thickness) / 2, middle = lane / 2;
+		var hw = hueBox.width, span = Math.max(0, hw - thickness);
 		for (k in 0...hueBands.length) {
-			hueBands[k].setPosition(hx, hy + hh * k / 6);
-			hueBands[k].setSize(hw, hh / 6);
+			hueBands[k].setPosition(r + span * k / 6, top);
+			hueBands[k].setSize(span / 6, thickness);
 		}
+		hueStart.setPosition(r, middle);
+		hueEnd.setPosition(hw - r, middle);
 		var opaque = color | 0xff, clear = color & 0xffffff00;
 		if (alphaBox != null) {
-			alphaRamp.setPosition(alphaBox.x, alphaBox.y);
-			alphaRamp.setSize(alphaBox.width, alphaBox.height);
-			alphaRamp.color = opaque;
-			alphaRamp.endColor = clear;
-			checker(alphaChecks, alphaChecksPool, alphaBox.x, alphaBox.y, alphaBox.width, alphaBox.height, hw / 2);
+			var aw = alphaBox.width;
+			alphaRamp.setPosition(r, top);
+			alphaRamp.setSize(Math.max(0, aw - thickness), thickness);
+			alphaRamp.color = clear;
+			alphaRamp.endColor = opaque;
+			alphaEnd.setPosition(aw - r, middle);
+			alphaEnd.color = opaque;
+			if (alphaChecked != aw) {
+				alphaChecked = aw;
+				var outline = capsule(0, top, aw, thickness);
+				alphaBase.setPoints(outline);
+				checker(alphaChecks, alphaChecksPool, outline, 0, top, aw, thickness, r);
+			}
 		}
-		// The swatch: the color opaque, and with alpha, its right half as its alpha shows it over a checkerboard.
-		var sx = swatchBox.x,
-			sy = swatchBox.y,
-			sw = swatchBox.width,
-			sh = swatchBox.height,
-			half = hasAlpha ? sw / 2 : sw;
-		swatchSolid.setSize(half, sh);
-		swatchSolid.color = opaque;
-		swatchBase.visible = swatchAlpha.visible = swatchChecks.enabled = hasAlpha;
-		if (hasAlpha) {
-			swatchBase.setPosition(sx + half, sy);
-			swatchBase.setSize(sw - half, sh);
-			swatchAlpha.setPosition(sx + half, sy);
-			swatchAlpha.setSize(sw - half, sh);
-			swatchAlpha.color = color;
-			checker(swatchChecks, swatchChecksPool, sx + half, sy, sw - half, sh, hw / 2);
+		// The swatch: the color over a checkerboard in its disc, as its alpha shows it.
+		var radius = diameter / 2;
+		swatchBase.setPosition(radius, radius);
+		swatchColor.setPosition(radius, radius);
+		swatchEdge.setPosition(radius, radius);
+		swatchColor.color = color;
+		if (hasAlpha && swatchChecked != diameter) {
+			swatchChecked = diameter;
+			checker(swatchChecks, swatchChecksPool, capsule(0, 0, diameter, diameter), 0, 0, diameter, diameter, diameter / 6);
 		}
-		// The marks, the one the keys drive in the focus color, dimmed when it can't be used.
+		// The handles, the one the keys drive in the focus color, dimmed when it can't be used.
 		var markColor = enabled ? 0xffffffff : theme.disabledTextColor;
 		squareShadow.setPosition(x + s * w, y + (1 - v) * height);
 		squareMark.setPosition(x + s * w, y + (1 - v) * height);
 		squareMark.color = focused && editing == SQUARE ? theme.focusColor : markColor;
-		hueShadow.setPosition(hx + hw / 2, hy + (1 - h) * hh);
-		hueMark.setPosition(hx + hw / 2, hy + (1 - h) * hh);
-		hueMark.color = focused && editing == HUE ? theme.focusColor : markColor;
+		var hx = hueBox.x + r + h * span, hy = hueBox.y + middle;
+		hueShadow.setPosition(hx, hy);
+		hueKnob.setPosition(hx, hy);
+		hueKnob.color = focused && editing == HUE ? theme.focusColor : markColor;
 		if (alphaBox != null) {
-			alphaShadow.setPosition(alphaBox.x + alphaBox.width / 2, alphaBox.y + (1 - a) * alphaBox.height);
-			alphaMark.setPosition(alphaBox.x + alphaBox.width / 2, alphaBox.y + (1 - a) * alphaBox.height);
-			alphaMark.color = focused && editing == ALPHA ? theme.focusColor : markColor;
+			var ax = alphaBox.x + r + a * Math.max(0, alphaBox.width - thickness),
+				ay = alphaBox.y + middle;
+			alphaShadow.setPosition(ax, ay);
+			alphaKnob.setPosition(ax, ay);
+			alphaKnob.color = focused && editing == ALPHA ? theme.focusColor : markColor;
 		}
 	}
 
-	// The dark squares of a checkerboard of cells cell wide over x, y, w x h (the light ones the base under them), from pool under group: those
-	// past what it needs hidden, the pool grown as needed, the last row and column cut to the area.
-	function checker(group:Node2D, pool:Array<Shape2D>, x:Float, y:Float, w:Float, h:Float, cell:Float):Void {
+	// The outline of a rectangle x, y, w x h with round ends across its shorter side (a disc when it's square), as a polygon's points: fine
+	// enough that the checkerboard cut to it meets the round shapes drawn over its edge.
+	static function capsule(x:Float, y:Float, w:Float, h:Float):Array<Float> {
+		var r = Math.min(w, h) / 2;
+		return w >= h ? arc(x + w - r, y + r, r,
+			-Math.PI / 2).concat(arc(x + r, y + r, r, Math.PI / 2)) : arc(x + r, y + h - r, r, 0).concat(arc(x + r, y + r, r, Math.PI));
+	}
+
+	// Half a circle of radius about cx, cy as points, from angle start (radians, clockwise on screen) round to start + pi.
+	static function arc(cx:Float, cy:Float, r:Float, start:Float):Array<Float> {
+		var steps = 24, points = [];
+		for (i in 0...steps + 1) {
+			var angle = start + i * Math.PI / steps;
+			points.push(cx + Math.cos(angle) * r);
+			points.push(cy + Math.sin(angle) * r);
+		}
+		return points;
+	}
+
+	// The dark squares of a checkerboard of cells cell wide over x, y, w x h (the light ones the base under them), each cut to the convex
+	// outline, as polygons from pool under group: those past what it needs hidden, the pool grown as needed.
+	function checker(group:Node2D, pool:Array<Shape2D>, outline:Array<Float>, x:Float, y:Float, w:Float, h:Float, cell:Float):Void {
 		var used = 0;
 		if (cell > 0) {
 			var columns = Math.ceil(w / cell), rows = Math.ceil(h / cell);
@@ -434,20 +645,124 @@ class ColorPicker extends Widget {
 				for (column in 0...columns) {
 					if ((row + column) % 2 == 0)
 						continue;
+					var points = cut(outline, x + column * cell, y + row * cell, x + (column + 1) * cell, y + (row + 1) * cell);
+					if (points.length < 6)
+						continue;
 					if (used == pool.length) {
-						var square = rectangle(0x888888ff);
+						var square = Shape2D.polygon(points, DARK);
+						square.pickable = false;
 						pool.push(square);
 						group.addChild(square);
-					}
-					var square = pool[used++],
-						cx = column * cell,
-						cy = row * cell;
-					square.visible = true;
-					square.setPosition(x + cx, y + cy);
-					square.setSize(Math.min(cell, w - cx), Math.min(cell, h - cy));
+					} else
+						pool[used].setPoints(points);
+					pool[used++].visible = true;
 				}
 		}
 		for (i in used...pool.length)
 			pool[i].visible = false;
+	}
+
+	// The convex polygon points cut to the rectangle x0, y0 to x1, y1 (Sutherland and Hodgman's clipping, an edge at a time), points on an edge
+	// within rounding taken as on it, then points as good as their neighbours and points in a line between their neighbours left out, so it
+	// triangulates cleanly (a cell's corner on the outline comes out alike on every target); fewer than 3 points when they don't meet.
+	static function cut(points:Array<Float>, x0:Float, y0:Float, x1:Float, y1:Float):Array<Float> {
+		var out = points;
+		for (edge in 0...4) {
+			var given = out, n = given.length >> 1;
+			out = [];
+			// How far inside this edge a point is (below 0: outside; within rounding of it, on it).
+			function inside(px:Float, py:Float):Float {
+				var d = switch edge {
+					case 0: px - x0;
+					case 1: x1 - px;
+					case 2: py - y0;
+					default: y1 - py;
+				}
+				return Math.abs(d) < 1e-9 ? 0 : d;
+			}
+			for (i in 0...n) {
+				var j = (i + 1) % n,
+					ax = given[i * 2],
+					ay = given[i * 2 + 1],
+					bx = given[j * 2],
+					by = given[j * 2 + 1];
+				var da = inside(ax, ay), db = inside(bx, by);
+				if (da >= 0) {
+					out.push(ax);
+					out.push(ay);
+				}
+				if (da > 0 && db < 0 || da < 0 && db > 0) {
+					var t = da / (da - db);
+					out.push(ax + (bx - ax) * t);
+					out.push(ay + (by - ay) * t);
+				}
+			}
+		}
+		// A point taken out while it's as good as the one before it or in a line between the points either side, until none is.
+		var kept = out.copy(), taken = true;
+		while (taken && kept.length >= 6) {
+			taken = false;
+			var n = kept.length >> 1;
+			for (i in 0...n) {
+				var p = (i + n - 1) % n, q = (i + 1) % n;
+				var ax = kept[i * 2] - kept[p * 2],
+					ay = kept[i * 2 + 1] - kept[p * 2 + 1],
+					bx = kept[q * 2] - kept[p * 2],
+					by = kept[q * 2 + 1] - kept[p * 2 + 1];
+				if (ax * ax + ay * ay < 1e-12 || Math.abs(ax * by - ay * bx) < 1e-9) {
+					kept.splice(i * 2, 2);
+					taken = true;
+					break;
+				}
+			}
+		}
+		return kept.length >= 6 ? kept : [];
+	}
+}
+
+/** The button beside a color picker's text field cycling its format: up and down chevrons on a square face, clicked or activated with focus. */
+private class FormatButton extends Widget {
+	var picker:ColorPicker;
+	var face:Shape2D;
+	var up:Shape2D;
+	var down:Shape2D;
+
+	@:allow(helix.ui.ColorPicker)
+	function new(ui:Ui, name:String, picker:ColorPicker, width:Float, height:Float) {
+		super(ui, name);
+		this.picker = picker;
+		var theme = ui.theme;
+		face = Shape2D.rectangle(1, 1, theme.faceColor);
+		face.setPivot(0, 0);
+		// A chevron's arms out to a, k thick, its point at its position.
+		var a = height * .18, k = Math.max(1.5, height * .08);
+		up = Shape2D.polygon([-a, a, 0, 0, a, a, a, a + k, 0, k, -a, a + k], theme.textColor);
+		down = Shape2D.polygon([-a, -a, 0, 0, a, -a, a, -a - k, 0, -k, -a, -a - k], theme.textColor);
+		for (n in [face, up, down]) {
+			n.pickable = n == face;
+			root.addChild(n);
+		}
+		box = Box.of(face);
+		box.setSizing(Fixed(width), Fixed(height));
+	}
+
+	override function get_focusable():Bool
+		return true;
+
+	override function target():Null<Node2D>
+		return face;
+
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
+		var theme = ui.theme;
+		if (enabled && (clicked || activated))
+			@:privateAccess picker.cycleFormat();
+		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
+		up.color = down.color = enabled ? theme.textColor : theme.disabledTextColor;
+		// The chevrons a little above and below the middle, as the layout last placed it.
+		var cx = box.x + box.width / 2,
+			cy = box.y + box.height / 2,
+			gap = box.height * .1;
+		up.setPosition(cx, cy - gap - box.height * .18);
+		down.setPosition(cx, cy + gap + box.height * .18);
 	}
 }

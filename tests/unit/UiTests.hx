@@ -399,16 +399,30 @@ class UiTests {
 			&& C.parseHex("##ff8800") == null && C.parseHex("ff8800ccdd") == null,
 			"Hex: wrong lengths and digits refused");
 		check(C.formatHex(0xff8800cc, true) == "ff8800cc" && C.formatHex(0x0a0b0cff, false) == "0a0b0c", "Hex written lowercase");
+		// Decimal channels.
+		check(C.parseRgba("255 136 0 204") == 0xff8800cc
+			&& C.parseRgba("255,136,0") == 0xff8800ff
+			&& C.parseRgba(" 1 , 2,3 ,  4 ") == 0x01020304
+			&& C.parseRgba("0 0 0 0") == 0
+			&& C.parseRgba("007 08 9") == 0x070809ff,
+			"RGBA: four or three channels apart by spaces or a comma, spaces around");
+		check(C.parseRgba("256 0 0") == null && C.parseRgba("1 2") == null && C.parseRgba("1 2 3 4 5") == null && C.parseRgba("1,,2,3") == null
+			&& C.parseRgba(",1 2 3") == null && C.parseRgba("1 2 3,") == null && C.parseRgba("1 2 3a") == null && C.parseRgba("1 2 -3") == null
+			&& C.parseRgba("0001 2 3") == null && C.parseRgba("") == null && C.parseRgba("1.5 2 3") == null,
+			"RGBA: out of range, too few or many channels, doubled or loose commas, other characters refused");
+		check(C.formatRgba(0xff8800cc, true) == "255 136 0 204"
+			&& C.formatRgba(0x0a0b0cff, false) == "10 11 12", "RGBA written apart by spaces");
 	}
 
-	// A color picker in a panel: dragged in its square, along its bars, past their ends and through black (the hue kept); its parts stepped
-	// through by Enter and nudged by the arrows, then let go so the arrows move focus again; hex typed in its field, refused text marked and
-	// changing nothing, the field showing the color once left; disabled.
+	// A color picker in a panel: as wide as the panel's column, its square edge to edge and as tall, the strip and the field's row under it;
+	// dragged in its square, along its bars, past their ends and through black (the hue kept); its parts stepped through by Enter and nudged
+	// by the arrows, then let go so the arrows move focus again; hex typed in its field, refused text marked and changing nothing, the field
+	// showing the color once left; the format cycled by its button (clicked, pressed by name, activated) and decimal channels typed; disabled.
 	static function colors(font:Font2D):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Stage2D(),
 			camera = new helix.render2d.Camera2D();
-		camera.setViewport(800, 600);
+		camera.setViewport(800, 900);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
 		pointer.addStage2D(stage, camera);
@@ -433,18 +447,51 @@ class UiTests {
 				input.textEvent(typed);
 			if (x != null)
 				input.pointerEvent(x, y, down == true);
-			Box.arrange(layout, 0, 0, 800, 600, font);
+			Box.arrange(layout, 0, 0, 800, 900, font);
 			batch.begin(camera);
 			stage.draw(batch, camera);
 			batch.end();
 			pointer.update();
 			ui.update();
 		}
+		function click(b:Box):Void {
+			frame(b.x + b.width / 2, b.y + b.height / 2, true);
+			frame(b.x + b.width / 2, b.y + b.height / 2, false);
+		}
 		frame();
 		frame();
-		check(picker.hexField.name == "tint-hex" && picker.hexField.text == "ff0000ff", "The field named after the picker, showing its color");
-		// The square: 160 units, its top-left after the panel's padding and the button above.
-		var side = ui.theme.widgetHeight * 4, square = picker.box, sx = square.x, sy = square.y;
+		var field = picker.textField,
+			button = picker.formatButton,
+			theme = ui.theme;
+		check(field.name == "tint-text" && button.name == "tint-format" && field.text == "ff0000ff" && field.hint == "RRGGBBAA" && picker.format == Hex,
+			"The field and the button named after the picker, the field showing its color as hex");
+		// The layout: the square edge to edge across the 480 units the panel's column gives it, as tall; the swatch and the bars in a padded
+		// strip under it, the hue's row and the alpha's beside the swatch's middle; the field and the button centered under them.
+		var side = picker.box.width,
+			pad = theme.padding,
+			square = @:privateAccess picker.squareBox,
+			swatch = @:privateAccess picker.swatchBox,
+			hueRow = @:privateAccess picker.hueBox,
+			alphaRow = @:privateAccess picker.alphaBox;
+		check(side == 480 && square.x == picker.box.x && square.y == picker.box.y && square.width == side && square.height == side,
+			"The square edge to edge across the picker's width, as tall: " + side);
+		check(swatch.x == picker.box.x + pad && swatch.y == square.y + side + pad && swatch.width == swatch.height, "The swatch at the strip's padded start");
+		check(hueRow.x == swatch.x + swatch.width + pad
+			&& near(hueRow.x + hueRow.width, picker.box.x + side - pad)
+			&& alphaRow.x == hueRow.x
+			&& alphaRow.width == hueRow.width
+			&& alphaRow.y > hueRow.y,
+			"The bars from beside the swatch to the strip's padded end, the alpha's under the hue's");
+		check(near((hueRow.y + alphaRow.y + alphaRow.height) / 2, swatch.y + swatch.height / 2), "The bars beside the swatch's middle");
+		check(near((field.box.x + button.box.x + button.box.width) / 2, picker.box.x + side / 2)
+			&& field.box.y == button.box.y
+			&& field.box.height == button.box.height
+			&& field.box.y >= swatch.y + swatch.height + pad,
+			"The field and the button centered under the strip, as tall as each other");
+		check(picker.box.y + picker.box.height == field.box.y + field.box.height + 2 + theme.textSize * .6 + pad,
+			"The picker ends under the field's caption and the padding");
+		// The square: saturation across, brightness up it.
+		var sx = square.x, sy = square.y;
 		frame(sx + side * .5, sy + side * .25, true);
 		check(ui.focused == picker && near(picker.saturation, .5) && near(picker.brightness, .75) && picker.changed,
 			"Pressed in the square: saturation across, brightness up it, focus with it");
@@ -452,24 +499,36 @@ class UiTests {
 		frame(sx + side * 2, sy + side * 2, true);
 		check(picker.saturation == 1 && picker.brightness == 0 && picker.color == 0x000000ff, "Dragged past the corner: clamped, black");
 		frame(sx + side * 2, sy + side * 2, false);
-		// The hue bar, to the square's right past a gap; dragged through black keeps it.
-		var hx = sx + side + ui.theme.gap * 2 + ui.theme.widgetHeight / 4;
-		frame(hx, sy + side / 2, true);
-		frame(hx, sy + side / 3, true);
+		// The hue bar, left to right, between its round ends' centers (half its thickness in from its row's ends); dragged through black keeps
+		// it.
+		var thickness = theme.widgetHeight / 5;
+		function along(row:Box, f:Float):Float
+			return row.x + thickness / 2 + f * (row.width - thickness);
+		var hy = hueRow.y + hueRow.height / 2;
+		frame(along(hueRow, .5), hy, true);
+		frame(along(hueRow, 2 / 3), hy, true);
 		check(near(picker.hue, 2 / 3) && !picker.changed && picker.color == 0x000000ff, "The hue moved through black: the color still black");
-		frame(hx, sy + side * 3, true);
-		check(picker.hue == 0, "Past the bar's bottom: hue 0");
-		frame(hx, sy + side * 3, false);
+		frame(along(hueRow, 2 / 3), sy - 100, true);
+		check(near(picker.hue, 2 / 3), "Dragged off the bar: still the hue, along it");
+		frame(hueRow.x - 50, sy + side * 3, true);
+		check(picker.hue == 0, "Past the bar's left end: hue 0");
+		frame(hueRow.x - 50, sy + side * 3, false);
+		frame(along(hueRow, 1), hueRow.y + 1, true);
+		frame(along(hueRow, 1), hueRow.y + 1, false);
+		check(picker.hue == 1, "At the right end's center, the top of its row: hue 1");
 		frame(sx + side, sy, true);
 		check(picker.color == 0xff0000ff, "Back to the square's top right: the full hue, red");
 		frame(sx + side, sy, false);
-		// The alpha bar, after the hue bar: opaque at its top.
-		var ax = hx + ui.theme.widgetHeight / 2 + ui.theme.gap * 2;
-		frame(ax, sy + side / 2, true);
-		frame(ax, sy + side / 2, false);
-		check(picker.color == 0xff000080, "Half way down the alpha bar: alpha 0x80");
+		// The alpha bar under it: clear at its left, opaque at its right.
+		frame(along(alphaRow, .5), alphaRow.y + alphaRow.height / 2, true);
+		frame(along(alphaRow, .5), alphaRow.y + alphaRow.height / 2, false);
+		check(picker.color == 0xff000080, "Half way along the alpha bar: alpha 0x80");
 		frame([Up]);
 		check(picker.color & 255 == Math.round(.55 * 255), "Up: the part the pointer chose, alpha up a twentieth");
+		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2, true);
+		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2 - 40, true);
+		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2 - 40, false);
+		check(picker.color & 255 == Math.round(.55 * 255) && ui.focused == picker, "Dragged from the swatch: nothing changes, focus kept");
 		// Keys: Enter steps through the parts (from the alpha bar to none, then the square), the arrows nudge the one stepped to.
 		frame([Enter]);
 		frame([Enter]);
@@ -478,20 +537,21 @@ class UiTests {
 		frame([Down]);
 		check(near(picker.brightness, .95) && ui.focused == picker, "Down: brightness down a twentieth, focus kept");
 		frame([Enter]);
+		frame([Left]);
+		check(near(picker.hue, 1 - 1 / 20), "Enter again, then Left: the hue down a twentieth");
 		frame([Up]);
-		check(near(picker.hue, 1 / 20), "Enter again, then Up: the hue up a twentieth");
-		frame([Right]);
-		check(near(picker.hue, 2 / 20), "Right: up again");
+		check(picker.hue == 1, "Up: up again");
 		frame([Enter]);
 		frame([Down]);
 		check(picker.color & 255 == 0x80, "Enter again, then Down: alpha down a twentieth");
 		frame([Enter]);
 		frame([Down]);
-		check(ui.focused == below, "Enter once more lets the arrows go: Down moves focus on");
+		check(ui.focused == field, "Enter once more lets the arrows go: Down moves focus on, to the field under the bars");
+		frame([Up]);
+		check(ui.focused == picker, "Up: back to the picker");
 		// Typing: hex as typed, refused text marked and changing nothing, the color's own hex once the field is left.
-		var field = picker.hexField, was = picker.color;
-		frame(field.box.x + 10, field.box.y + 10, true);
-		frame(field.box.x + 10, field.box.y + 10, false);
+		var was = picker.color;
+		click(field.box);
 		check(ui.focused == field && ui.capturingKeys, "A click focuses the field");
 		for (i in 0...9)
 			frame([Backspace]);
@@ -514,13 +574,60 @@ class UiTests {
 		check(field.invalid && picker.color == 0x3366cc40, "A wrong digit: marked, the color kept");
 		frame([Tab]);
 		frame();
-		check(ui.focused == below && field.text == "3366cc40" && !field.invalid, "Left: the field shows the color again");
-		// Disabled: not dragged, its field disabled with it.
+		check(ui.focused == button && field.text == "3366cc40" && !field.invalid, "Left for the button after it: the field shows the color again");
+		// The format: the button cycles it, the field showing the color in it at once; decimal channels typed.
+		click(button.box);
+		check(picker.format == Rgba && field.text == "51 102 204 64" && field.hint == "r g b a" && ui.focused == button,
+			"Clicked: decimal channels, shown at once");
+		check(@:privateAccess picker.caption.text == "RGBA", "Its caption names it");
+		click(field.box);
+		for (i in 0...13)
+			frame([Backspace]);
+		frame(null, null, null, null, "10, 20, 30");
+		frame();
+		check(!field.invalid && picker.color == 0x0a141eff, "Three channels apart by commas: taken as opaque");
+		frame(null, null, null, null, " 300");
+		frame();
+		check(field.invalid && picker.color == 0x0a141eff, "A channel past 255: marked, the color kept");
+		frame([Tab]);
+		frame();
+		check(field.text == "10 20 30 255" && !field.invalid, "Left: the color in decimal again");
+		frame([Enter]);
+		check(picker.format == Hex && field.text == "0a141eff" && @:privateAccess picker.caption.text == "HEX", "Enter on the focused button: hex again");
+		check(ui.press("tint-format"), "Pressed by name");
+		frame();
+		check(picker.format == Rgba, "Pressed: decimal");
+		picker.format = Hex;
+		frame();
+		check(field.text == "0a141eff", "Assigned: hex");
+		// Disabled: not dragged, its field and button disabled with it.
 		picker.enabled = false;
 		frame(sx + 1, sy + 1, true);
 		frame(sx + 1, sy + 1, false);
-		check(picker.color == 0x3366cc40 && !field.enabled, "Disabled: not dragged, the field with it");
+		click(button.box);
+		check(picker.color == 0x0a141eff && !field.enabled && !button.enabled && picker.format == Hex,
+			"Disabled: not dragged, the field and the button with it");
 		ui.remove(picker);
-		check(ui.find("tint-hex") == null, "Removed with its field");
+		check(ui.find("tint-text") == null && ui.find("tint-format") == null, "Removed with its field and its button");
+		// Without alpha: no alpha bar, a smaller swatch beside the hue bar, three channels; in a row, its own width.
+		var opaque = ui.colorPicker(0x112233ff, false, "plain"),
+			row = Box.row();
+		panel.adopt(opaque);
+		row.add(opaque.box);
+		panel.content.add(row);
+		frame();
+		frame();
+		var plainSwatch = @:privateAccess opaque.swatchBox,
+			plainHue = @:privateAccess opaque.hueBox;
+		check(opaque.box.width == theme.widgetHeight * 5 && @:privateAccess opaque.squareBox.height == opaque.box.width,
+			"In a row: its own width, the square as tall");
+		check(@:privateAccess opaque.alphaBox == null
+			&& plainSwatch.height < swatch.height
+			&& near(plainHue.y + plainHue.height / 2, plainSwatch.y + plainSwatch.height / 2),
+			"No alpha bar; a smaller swatch, the hue bar beside its middle");
+		opaque.format = Rgba;
+		frame();
+		check(opaque.textField.text == "17 34 51" && opaque.textField.hint == "r g b" && @:privateAccess opaque.caption.text == "RGB",
+			"Without alpha: three channels, RGB");
 	}
 }

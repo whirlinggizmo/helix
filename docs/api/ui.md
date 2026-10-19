@@ -109,17 +109,30 @@ var text(get, set):String
 - `clicked`: Whether it was clicked or activated this frame.
 - `text`: Its text.
 
+## ColorFormat
+
+*enum* in `src/helix/ui/ColorFormat.hx`
+
+How a color picker's text field writes and reads its color (ColorPicker.format).
+
+- `Hex`: Hex digits: RRGGBBAA, or RRGGBB without alpha (ColorPicker.formatHex, parseHex).
+- `Rgba`: The channels in decimal, 0 to 255 each: r g b a, or r g b without alpha (ColorPicker.formatRgba, parseRgba).
+
 ## ColorPicker
 
 *class* in `src/helix/ui/ColorPicker.hx`
 
-A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value): a square of saturation (left to right) and brightness (bottom to top) in the hue, a bar of hue beside it (red at both ends, the hue rising upward), with alpha a bar of alpha (opaque at the top), a swatch of the color (its right half over a checkerboard, as its alpha shows it) and a field of hex under the swatch (hexField, a TextField of its own). The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Up and Right raise, Down and Left lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its mark in the theme's focus color. The field takes RRGGBBAA or RRGGBB (alpha 0xff), with or without a leading #, in either case: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. Ask color, and changed once a frame.
+A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its box is given: theme.widgetHeight * 5 to start (box sized Fixed that wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later. Ask color, and changed once a frame.
 
 ```haxe
 static function fromHsv(hue:Float, saturation:Float, brightness:Float, ?alpha:Int = 0xff):Int
 static function parseHex(text:String):Null<Int>
 static function formatHex(color:Int, alpha:Bool):String
-var hexField(default, null):TextField
+static function parseRgba(text:String):Null<Int>
+static function formatRgba(color:Int, alpha:Bool):String
+var textField(default, null):TextField
+var formatButton(default, null):Widget
+var format(default, set):ColorFormat
 var color(get, set):Int
 var hue(get, set):Float
 var saturation(get, set):Float
@@ -130,7 +143,11 @@ var changed(default, null):Bool
 - `fromHsv`: The color 0xRRGGBBAA of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and alpha (0 to 255), each channel rounded to the nearest of 255.
 - `parseHex`: The color text names, 0xRRGGBBAA: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and with spaces around. Null for anything else.
 - `formatHex`: color as lowercase hex, RRGGBBAA, or RRGGBB without alpha.
-- `hexField`: Its hex field: the color as RRGGBBAA (RRGGBB without alpha), typed in.
+- `parseRgba`: The color text names, 0xRRGGBBAA: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits), apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else.
+- `formatRgba`: color's channels in decimal, 0 to 255 each, apart by a space: r g b a, or r g b without alpha.
+- `textField`: Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text").
+- `formatButton`: The button beside its text field cycling its format (a widget of its own, named after the picker with "-format"): clicked, or activated with focus by Enter, Space or a pad's South.
+- `format`: How its text field writes and reads the color: Hex (to start) or Rgba. The field shows the color in it at once, its caption under it naming it (HEX, RGBA, or RGB without alpha).
 - `color`: Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black; without alpha, the alpha is 0xff whatever is assigned.
 - `hue`: Its hue, 0 to 1 around (red at 0 and 1, then yellow, green, cyan, blue and magenta at sixths); kept through greys and black. Clamped to 0 to 1.
 - `saturation`: Its saturation, 0 (grey) to 1 (the full hue); kept through black. Clamped to 0 to 1.
@@ -234,12 +251,16 @@ A line of text typed in: with focus, the characters typed (after the keyboard la
 
 ```haxe
 var text(get, set):String
+var hint(get, set):String
+var centered(default, set):Bool
 var changed(default, null):Bool
 var submitted(default, null):Bool
 var invalid:Bool
 ```
 
 - `text`: Its text.
+- `hint`: The text shown, dimmed, while it's empty.
+- `centered`: Whether its text and hint are centered in it rather than at its start (false, to start).
 - `changed`: Whether its text changed this frame.
 - `submitted`: Whether Enter was pressed in it this frame.
 - `invalid`: Whether its text is marked as not accepted (what reads it decides: a color picker's field holding no color): drawn in the theme's invalidTextColor.
@@ -371,7 +392,7 @@ function update():Void
 - `textField`: A line of text typed in, at most maxLength characters, hint shown while it's empty.
 - `tile`: A picture with a caption (a texture still to come: null), in a frame whose picture is side units square.
 - `list`: A list of items rows tall, scrolled by the wheel or a drag, an item chosen by the pointer or Up and Down.
-- `colorPicker`: A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a swatch and typed in a field of hex beside them (the field a widget of its own, named name + "-hex", after it in the focus order). Without alpha, its color's alpha is always 0xff.
+- `colorPicker`: A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button widgets of their own, named name + "-text" and name + "-format", after it in the focus order). Without alpha, its color's alpha is always 0xff.
 - `remove`: Takes widget out, its nodes off the stage.
 - `find`: The widget named name (Widget.name), or null.
 - `press`: Uses the widget named name as a click would (a button clicked, a toggle switched, a list's choice activated), at the next update, when it's shown, enabled and can be: as a test or an autopilot does, by name rather than by place. False, doing nothing, when there's no such widget or it isn't usable now.

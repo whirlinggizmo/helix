@@ -74,15 +74,15 @@ import helix.ui.Ui;
 	  palette's colors; without it they show as near-black reds)
 	The sliders under the list set the chosen one's parameters as its fields do; at the top right a color picker sets each of its colors (with
 	an alpha bar where the color's alpha means something), a list above it choosing which when it has several (Water's three, Toon's shadow
-	and rim), its hex field taking a color typed. The menu is drawn after the effects, outside them.
+	and rim), its text field taking a color typed (as hex, or decimal channels once its button cycles the format). The menu is drawn after the effects, outside them.
 
 	Pointer, arrows, Enter and a pad use the menu; PageDown / PageUp: the next or previous shader; X: the chosen one off and on to compare;
 	F: a flash in the flash's color (HitFlash's and SpriteFlash's pickers); O: the camera circling; Escape quits where quitting means anything.
 	Options: autopilot (a script under assets/: the time, her pose and the camera are then held from the first frame, the window the
 	autopilot's page's size, so its samples of the frame compare across targets; the script's click names a shader, None or Chain, choosing
-	it, or else a widget of the menu: a picker is named for its shader and color, Unlit-color, its hex field Unlit-color-hex) and autoclose
+	it, or else a widget of the menu: a picker is named for its shader and color, Unlit-color, its text field Unlit-color-text) and autoclose
 	(1: quit once the script is done). The probes: ready (everything loaded), chosen (the chosen shader's name, or None), color (the color
-	the chosen shader's picker shows, as its hex field writes it; "" without one) and hdr (PostProcess.hdr). */
+	the chosen shader's picker shows, as hex; "" without one) and hdr (PostProcess.hdr). */
 class App extends BaseApp {
 	static inline var FLOOR_Y = 0.;
 	static inline var WOMEN = "models/modular-women/";
@@ -658,7 +658,7 @@ class App extends BaseApp {
 				}
 				colorPanel.add(c.picker = ui.colorPicker(c.value, c.alpha, e.name + "-" + c.label));
 				colorPanel.box.setAnchor(End, Start, -16, 84);
-				colorPanel.box.setSizing(Fixed(330), Fit);
+				colorPanel.box.setSizing(Fit, Fit);
 				colorPanel.visible = false;
 				c.panel = colorPanel;
 			}

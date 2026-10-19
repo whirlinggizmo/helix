@@ -13,8 +13,10 @@ class TextField extends Widget {
 	var face:Shape2D;
 	var textNode:Text2D;
 	var caret:Shape2D;
-	var hint:Text2D;
+	var hintNode:Text2D;
 	var maxLength:Int;
+	var typed:Box;
+	var hinted:Box;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, value:String, hintText:String, maxLength:Int) {
@@ -23,18 +25,18 @@ class TextField extends Widget {
 		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.cornerRadius = theme.cornerRadius;
 		textNode = new Text2D(value.substr(0, maxLength), theme.textSize, theme.textColor, Left, theme.font);
-		hint = new Text2D(hintText, theme.textSize, theme.disabledTextColor, Left, theme.font);
+		hintNode = new Text2D(hintText, theme.textSize, theme.disabledTextColor, Left, theme.font);
 		caret = Shape2D.rectangle(2, theme.textSize + 4, theme.focusColor);
 		caret.setPivot(0, 0);
 		caret.pickable = false;
-		for (n in [face, hint, textNode, caret])
+		for (n in [face, hintNode, textNode, caret])
 			root.addChild(n);
 		box = Box.stack(face);
 		box.setSizing(Grow(1), Fixed(theme.widgetHeight));
 		box.setPadding(theme.padding, 0, theme.padding, 0);
-		var typed = Box.of(textNode), hinted = Box.of(hint);
+		typed = Box.of(textNode);
+		hinted = Box.of(hintNode);
 		typed.setAnchor(Start, Center);
 		hinted.setAnchor(Start, Center);
 		box.add(typed);
@@ -49,6 +51,27 @@ class TextField extends Widget {
 
 	function set_text(value:String):String {
 		textNode.text = value.substr(0, maxLength);
+		return value;
+	}
+
+	/** The text shown, dimmed, while it's empty. */
+	public var hint(get, set):String;
+
+	function get_hint():String
+		return hintNode.text;
+
+	function set_hint(value:String):String {
+		hintNode.text = value;
+		return value;
+	}
+
+	/** Whether its text and hint are centered in it rather than at its start (false, to start). */
+	public var centered(default, set):Bool = false;
+
+	function set_centered(value:Bool):Bool {
+		centered = value;
+		typed.setAnchor(value ? Center : Start, Center);
+		hinted.setAnchor(value ? Center : Start, Center);
 		return value;
 	}
 
@@ -89,16 +112,12 @@ class TextField extends Widget {
 		}
 		textNode.text = value;
 		changed = value != was;
-		hint.visible = value.length == 0;
+		hintNode.visible = value.length == 0;
 		face.color = focused ? theme.hoveredColor : hovered ? theme.hoveredColor : theme.faceColor;
 		textNode.color = !enabled ? theme.disabledTextColor : invalid ? theme.invalidTextColor : theme.textColor;
 		// The caret after the text, as the layout last placed it.
 		var font = theme.font != null ? theme.font : ui.font;
 		caret.visible = enabled && focused;
-		caret.setPosition(box.x
-			+ theme.padding
-			+ (font != null ? font.measure(value, theme.textSize) : 0)
-			+ 1, box.y
-			+ (box.height - theme.textSize - 4) / 2);
+		caret.setPosition(typed.x + (font != null ? font.measure(value, theme.textSize) : 0) + 1, box.y + (box.height - theme.textSize - 4) / 2);
 	}
 }

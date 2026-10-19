@@ -107,12 +107,14 @@ class Ui {
 	public function list(items:Array<String>, rows:Int, ?name:String):ListView
 		return adopt(new ListView(this, name != null ? name : "list", items, rows));
 
-	/** A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a swatch
-		and typed in a field of hex beside them (the field a widget of its own, named name + "-hex", after it in the focus order). Without
-		alpha, its color's alpha is always 0xff. */
+	/** A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round
+		swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button
+		widgets of their own, named name + "-text" and name + "-format", after it in the focus order). Without alpha, its color's alpha is
+		always 0xff. */
 	public function colorPicker(color:Int, alpha = true, ?name:String):ColorPicker {
 		var picker = adopt(new ColorPicker(this, name != null ? name : "color", color, alpha));
-		picker.attach(textField(ColorPicker.formatHex(picker.color, alpha), alpha ? "RRGGBBAA" : "RRGGBB", 9, picker.name + "-hex"));
+		var field = textField(ColorPicker.formatHex(picker.color, alpha), "", 20, picker.name + "-text");
+		picker.attach(field, adopt(picker.makeFormatButton(picker.name + "-format")));
 		return picker;
 	}
 
@@ -281,8 +283,10 @@ class Ui {
 			ring.setSize(b.width + out * 2, b.height + out * 2);
 			ring.setPivot(0, 0);
 			ring.setPosition(b.x - out, b.y - out);
-			// Its corners round about the widgets' corners' centers.
-			ring.cornerRadius = theme.cornerRadius > 0 ? theme.cornerRadius + out : 0;
+			// Its corners round about the widget's corners' centers, square around a square widget (a text field).
+			var face = Std.downcast(@:privateAccess focused.target(), Shape2D),
+				radius = face != null ? face.cornerRadius : theme.cornerRadius;
+			ring.cornerRadius = radius > 0 ? radius + out : 0;
 			ring.visible = true;
 		} else
 			ring.visible = false;

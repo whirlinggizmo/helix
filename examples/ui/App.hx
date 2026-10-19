@@ -45,7 +45,7 @@ import helix.ui.Ui;
 	in the theme's rounded ones, every widget's corners rounded too, laid out in a 1280 x 720 design fitted to the window, used alike by the
 	pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South, East). Nothing is called back: each frame the example asks the widgets
 	what happened. Settings set the master, music and effects buses (Audio.master, music, effects) with music playing under them, a short
-	effect played as the effects slider is let go, and mute the music, and a color picker (ColorPicker, without alpha) chooses the background,
+	effect played as the effects slider is let go, and mute the music, and a color picker (ColorPicker, without alpha, beside its label in a row so it keeps its own width) chooses the background,
 	saved as hex through Storage once the pointer lets go; Controls lists an Actions map's actions with their bindings, a Rebind
 	button capturing the next key, pad button, axis or touch for one (Escape cancels) and Reset; both are saved through Storage and loaded at
 	start. A progress bar fills; the status in the corner is anchored there. Escape on the main menu quits where quitting means anything.
@@ -53,7 +53,7 @@ import helix.ui.Ui;
 	own, removed first, so a run starts from the defaults and leaves a player's alone; the window is then the autopilot's page's size, so its
 	samples of the frame compare across targets), audio (0 for silence) and autoclose (1: quit once the script is done). The probes: screen,
 	focus (the focused widget's name), loaded, jump (its bindings' text, joined by ", "), capturing, jumpDown, masterVolume, musicVolume,
-	effectsVolume, musicMuted and background (the chosen color as hex). */
+	effectsVolume, musicMuted, background (the chosen color as hex) and backgroundText (the picker's text field, in its format). */
 class App extends BaseApp {
 	static final PROBES = [
 		"screen",
@@ -66,7 +66,8 @@ class App extends BaseApp {
 		"musicVolume",
 		"effectsVolume",
 		"musicMuted",
-		"background"
+		"background",
+		"backgroundText"
 	];
 
 	// The background to start, and the autopilot's window (its browser page's size), so its samples compare across targets.
@@ -200,18 +201,18 @@ class App extends BaseApp {
 		var backgroundLabel = ui.label("Background");
 		background = ui.colorPicker(BACKGROUND, false, "background");
 		back = ui.button("Back", "backFromSettings");
-		for (w in [
-			heading,
-			master,
-			music,
-			effects,
-			muteMusic,
-			name,
-			backgroundLabel,
-			background,
-			back
-		])
+		for (w in [heading, master, music, effects, muteMusic, name])
 			settings.add(w);
+		// The picker beside its label, in a row so it keeps its own width (the panel's column would stretch it across, its square as tall).
+		var backgroundRow = Box.row();
+		backgroundRow.gap = ui.theme.gap * 2;
+		for (w in [backgroundLabel, background]) {
+			settings.adopt(w);
+			backgroundRow.add(w.box);
+		}
+		background.box.setSizing(Fixed(240), Fit);
+		settings.content.add(backgroundRow);
+		settings.add(back);
 
 		controls = ui.panel("controls");
 		var heading = ui.label("Controls");
@@ -361,6 +362,7 @@ class App extends BaseApp {
 			case "effectsVolume": Audio.effects.volume;
 			case "musicMuted": Audio.music.muted;
 			case "background": ColorPicker.formatHex(background.color, false);
+			case "backgroundText": background.textField.text;
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -429,7 +431,7 @@ class App extends BaseApp {
 						status = 'Hello, ${name.text}';
 					if (background.changed)
 						backgroundUnsaved = true;
-					if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name && ui.focused != background.hexField)
+					if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name && ui.focused != background.textField)
 						show("main");
 				case "controls":
 					for (row in rows)
