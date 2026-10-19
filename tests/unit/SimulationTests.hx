@@ -88,6 +88,38 @@ class SimulationTests {
 			rejects(() -> pilot(bad), "An invalid sample rejected: " + bad);
 	}
 
+	// A drag: the pointer pressed at its start, moved a straight line over its ticks, let go at its end on the tick after; without a runner the
+	// points are the pointer's as given. Text typed on one tick while text entry is on, and dropped while it's off.
+	static function pointerAndText(g:Game):Void {
+		var script = new Autopilot('{"version":1,"seed":1,"commands":[{"op":"drag","from":[10,20],"to":[50,40],"ticks":4},'
+			+ '{"op":"type","text":"#ff8800"},{"op":"type","text":"ab"}]}');
+		var input = script.advance(g.probe);
+		check(input.pointerDown && input.pointerFramePressed && input.pointerX == 10 && input.pointerY == 20, "A drag presses at its start");
+		input = script.advance(g.probe);
+		check(input.pointerDown && !input.pointerFramePressed && input.pointerX == 20 && input.pointerY == 25, "and moves a quarter of the way");
+		for (_ in 0...3)
+			input = script.advance(g.probe);
+		check(input.pointerDown && input.pointerX == 50 && input.pointerY == 40, "reaching its end after its ticks");
+		input = script.advance(g.probe);
+		check(!input.pointerDown && input.pointerFrameReleased && input.pointerX == 50, "let go there on the tick after");
+		input.textEntry = true;
+		input = script.advance(g.probe);
+		check(input.text == "#ff8800" && script.tickCount == 7, "Text typed on a tick of its own");
+		input.textEntry = false;
+		input = script.advance(g.probe);
+		check(input.text == "" && !script.done, "Dropped while text entry is off");
+		script.advance(g.probe);
+		check(script.done, "Done");
+		for (bad in [
+			'{"op":"drag","from":[1,2],"to":[3,4]}',
+			'{"op":"drag","from":[1],"to":[3,4],"ticks":2}',
+			'{"op":"drag","from":[1,2],"to":[3,4],"ticks":0}',
+			'{"op":"type","text":""}',
+			'{"op":"type","text":5}'
+		])
+			rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[' + bad + ']}'), "An invalid drag or type rejected: " + bad);
+	}
+
 	static function rejects(action:Void->Void, message:String):Void {
 		var rejected = false;
 		try {
@@ -254,6 +286,7 @@ class SimulationTests {
 		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.tickCount == 1, "Screenshots take no tick, named or not");
 		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"../x.png"}]}'), "A screenshot name with a path rejected");
 		samples(g);
+		pointerAndText(g);
 		trace(haxe.Json.stringify({checks: checks, passed: true, replay: a.snapshot()}));
 	}
 }

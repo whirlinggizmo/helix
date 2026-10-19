@@ -229,6 +229,8 @@ var areaWidth(default, null):Int
 var areaHeight(default, null):Int
 function toUnitsX(x:Float):Float
 function toUnitsY(y:Float):Float
+function toPixelsX(x:Float):Float
+function toPixelsY(y:Float):Float
 function apply(camera:Camera2D):Void
 ```
 
@@ -250,6 +252,8 @@ function apply(camera:Camera2D):Void
 - `areaHeight`: The visible area's height in framebuffer pixels.
 - `toUnitsX`: The unit across at framebuffer pixel x (input's pointer and touches are framebuffer pixels).
 - `toUnitsY`: The unit down at framebuffer pixel y.
+- `toPixelsX`: The framebuffer pixel across at unit x (toUnitsX's inverse).
+- `toPixelsY`: The framebuffer pixel down at unit y (toUnitsY's inverse).
 - `apply`: Sets camera to show the visible area on the framebuffer pixels it covers: its viewport the area, a unit its zoom.
 
 ## PresentationMode
@@ -316,6 +320,8 @@ static var areaWidth(get, never):Int
 static var areaHeight(get, never):Int
 static function toUnitsX(x:Float):Float
 static function toUnitsY(y:Float):Float
+static function toPixelsX(x:Float):Float
+static function toPixelsY(y:Float):Float
 static function apply(camera:Camera2D):Void
 ```
 
@@ -337,6 +343,8 @@ static function apply(camera:Camera2D):Void
 - `areaHeight`: The visible area's height in framebuffer pixels.
 - `toUnitsX`: The unit across at framebuffer pixel x (input's pointer and touches are framebuffer pixels).
 - `toUnitsY`: The unit down at framebuffer pixel y.
+- `toPixelsX`: The framebuffer pixel across at unit x (toUnitsX's inverse).
+- `toPixelsY`: The framebuffer pixel down at unit y (toUnitsY's inverse).
 - `apply`: Sets camera to show the visible area on the framebuffer pixels it covers: its viewport the area, a unit its zoom.
 
 ## Window

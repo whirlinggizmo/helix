@@ -109,6 +109,34 @@ var text(get, set):String
 - `clicked`: Whether it was clicked or activated this frame.
 - `text`: Its text.
 
+## ColorPicker
+
+*class* in `src/helix/ui/ColorPicker.hx`
+
+A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value): a square of saturation (left to right) and brightness (bottom to top) in the hue, a bar of hue beside it (red at both ends, the hue rising upward), with alpha a bar of alpha (opaque at the top), a swatch of the color (its right half over a checkerboard, as its alpha shows it) and a field of hex under the swatch (hexField, a TextField of its own). The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Up and Right raise, Down and Left lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its mark in the theme's focus color. The field takes RRGGBBAA or RRGGBB (alpha 0xff), with or without a leading #, in either case: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. Ask color, and changed once a frame.
+
+```haxe
+static function fromHsv(hue:Float, saturation:Float, brightness:Float, ?alpha:Int = 0xff):Int
+static function parseHex(text:String):Null<Int>
+static function formatHex(color:Int, alpha:Bool):String
+var hexField(default, null):TextField
+var color(get, set):Int
+var hue(get, set):Float
+var saturation(get, set):Float
+var brightness(get, set):Float
+var changed(default, null):Bool
+```
+
+- `fromHsv`: The color 0xRRGGBBAA of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and alpha (0 to 255), each channel rounded to the nearest of 255.
+- `parseHex`: The color text names, 0xRRGGBBAA: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and with spaces around. Null for anything else.
+- `formatHex`: color as lowercase hex, RRGGBBAA, or RRGGBB without alpha.
+- `hexField`: Its hex field: the color as RRGGBBAA (RRGGBB without alpha), typed in.
+- `color`: Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black; without alpha, the alpha is 0xff whatever is assigned.
+- `hue`: Its hue, 0 to 1 around (red at 0 and 1, then yellow, green, cyan, blue and magenta at sixths); kept through greys and black. Clamped to 0 to 1.
+- `saturation`: Its saturation, 0 (grey) to 1 (the full hue); kept through black. Clamped to 0 to 1.
+- `brightness`: Its brightness (HSV's value), 0 (black) to 1. Clamped to 0 to 1.
+- `changed`: Whether its color changed this frame: dragged, nudged by keys or typed.
+
 ## Label
 
 *class* in `src/helix/ui/Label.hx`
@@ -208,11 +236,13 @@ A line of text typed in: with focus, the characters typed (after the keyboard la
 var text(get, set):String
 var changed(default, null):Bool
 var submitted(default, null):Bool
+var invalid:Bool
 ```
 
 - `text`: Its text.
 - `changed`: Whether its text changed this frame.
 - `submitted`: Whether Enter was pressed in it this frame.
+- `invalid`: Whether its text is marked as not accepted (what reads it decides: a color picker's field holding no color): drawn in the theme's invalidTextColor.
 
 ## Theme
 
@@ -226,6 +256,7 @@ var font:Null<Font2D>
 var textSize(default, set):Float
 var textColor(get, set):Int
 var disabledTextColor(get, set):Int
+var invalidTextColor(get, set):Int
 var panelColor(get, set):Int
 var faceColor(get, set):Int
 var hoveredColor(get, set):Int
@@ -244,6 +275,7 @@ var widgetHeight(get, set):Float
 - `textSize`: Text's height in units. (18 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `textColor`: Text's color. (0xf0f2f8ff to start.)
 - `disabledTextColor`: The color of text on a widget that can't be used now. (0x80869aff to start.)
+- `invalidTextColor`: The color of a text field's text marked as not accepted (TextField.invalid). (0xff7070ff to start.)
 - `panelColor`: A panel's background color. (0x1e2230e8 to start.)
 - `faceColor`: The color of a button's (and a toggle's box's, a track's) face at rest. (0x2e3448ff to start.)
 - `hoveredColor`: The color of a face under the pointer. (0x3e4660ff to start.)
@@ -294,7 +326,7 @@ var changed(default, null):Bool
 
 *class* in `src/helix/ui/Ui.hx`
 
-A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here, placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's: - Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before, wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed). - The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or a pad, something always has focus (the first widget, if nothing did). - A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its first button. - While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once. The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the stage, through camera.
+A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here, placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's: - Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before, wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed). - The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or a pad, something always has focus (the first widget, if nothing did). - A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its first button. - While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once. The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the stage, through camera.
 
 ```haxe
 function new(stage:Stage2D, camera:Camera2D, pointer:Pointer, input:IInput, ?theme:Theme)
@@ -312,6 +344,7 @@ function progress(value:Float, ?name:String):ProgressBar
 function textField(value:String, ?hint:String = "", ?maxLength:Int = 64, ?name:String):TextField
 function tile(texture:Null<Texture2D>, caption:String, side:Float, ?name:String):Tile
 function list(items:Array<String>, rows:Int, ?name:String):ListView
+function colorPicker(color:Int, ?alpha:Bool = true, ?name:String):ColorPicker
 function remove(widget:Widget):Void
 function find(name:String):Null<Widget>
 function press(name:String):Bool
@@ -338,6 +371,7 @@ function update():Void
 - `textField`: A line of text typed in, at most maxLength characters, hint shown while it's empty.
 - `tile`: A picture with a caption (a texture still to come: null), in a frame whose picture is side units square.
 - `list`: A list of items rows tall, scrolled by the wheel or a drag, an item chosen by the pointer or Up and Down.
+- `colorPicker`: A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a swatch and typed in a field of hex beside them (the field a widget of its own, named name + "-hex", after it in the focus order). Without alpha, its color's alpha is always 0xff.
 - `remove`: Takes widget out, its nodes off the stage.
 - `find`: The widget named name (Widget.name), or null.
 - `press`: Uses the widget named name as a click would (a button clicked, a toggle switched, a list's choice activated), at the next update, when it's shown, enabled and can be: as a test or an autopilot does, by name rather than by place. False, doing nothing, when there's no such widget or it isn't usable now.

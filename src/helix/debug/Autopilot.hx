@@ -20,7 +20,12 @@ import helix.input.InputState;
 	much in some channel (an effect turned on against it off, so a shader drawing nothing fails); and `"matches"` with `"within"`, an earlier
 	sample's name and an amount, failing it unless every point is within that much of the same point there in every channel (what must look
 	the same either way, as a background with an HDR chain and without). The frame read is the one drawn after the
-	ticks before it: while it waits for that frame to end, awaitingFrame is true and the app runs no tick. */
+	ticks before it: while it waits for that frame to end, awaitingFrame is true and the app runs no tick.
+
+	A `drag` is the pointer held down at one point and moved to another: `{"op": "drag", "from": [x, y], "to": [x, y], "ticks": n}`, the
+	points in the design's units (Screen's; as given without a runner, in a test), pressed at from on its first tick, moved a straight line to
+	reach to after n more, and let go there on the tick after. A `type` is text typed on one tick, as a keyboard's characters arrive (dropped,
+	as theirs are, while nothing has asked for text entry: focus a text field first): `{"op": "type", "text": "ff8800"}`. */
 class Autopilot {
 	var ticks = 0;
 
@@ -63,7 +68,7 @@ class Autopilot {
 		frame (its tick loop stops when this is true, as it does when done). */
 	public var awaitingFrame(default, null):Bool = false;
 
-	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, click, screenshot, sample; at most 128) and throws on
+	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, click, screenshot, sample, drag, type; at most 128) and throws on
 		anything invalid or unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A click uses a UI's widget by name,
 		waiting (as a web suite's actions do) until press, the app's (Ui.press, say), finds it shown and usable, within its limit; without press
 		it fails. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
@@ -154,6 +159,16 @@ class Autopilot {
 					if (Reflect.hasField(command, "within") && !integer(command.within, 0, 255))
 						throw "Invalid sample match";
 					sampleCounts.set(command.name, count);
+				case "drag":
+					fields(command, ["op", "from", "to", "ticks"]);
+					point(command.from);
+					point(command.to);
+					if (!integer(command.ticks, 1, 36000))
+						throw "Invalid drag duration";
+				case "type":
+					fields(command, ["op", "text"]);
+					if (!Std.isOfType(command.text, String) || command.text.length == 0 || command.text.length > 256)
+						throw "Invalid typed text";
 				default:
 					throw "Unknown autopilot command";
 			}
@@ -180,10 +195,15 @@ class Autopilot {
 	static function points(value:Dynamic):Int {
 		if (!Std.isOfType(value, Array) || value.length < 1 || value.length > 64)
 			throw "Invalid sample points";
-		for (point in (cast value : Array<Dynamic>))
-			if (!Std.isOfType(point, Array) || point.length != 2 || !finite(point[0]) || !finite(point[1]))
-				throw "Invalid sample point";
+		for (p in (cast value : Array<Dynamic>))
+			point(p);
 		return value.length;
+	}
+
+	// A point: an [x, y] pair of finite numbers.
+	static function point(value:Dynamic):Void {
+		if (!Std.isOfType(value, Array) || value.length != 2 || !finite(value[0]) || !finite(value[1]))
+			throw "Invalid point";
 	}
 
 	static function finite(value:Dynamic):Bool
@@ -273,6 +293,27 @@ class Autopilot {
 					if (screenshot != null)
 						screenshot(command.name);
 					finish = true;
+				case "drag":
+					setKeys([]);
+					// Typed as numbers first: hxcpp's Dynamic arithmetic on a JSON integer and a fraction would keep only the integer.
+					var length:Int = command.ticks,
+						fromX:Float = command.from[0],
+						fromY:Float = command.from[1],
+						toX:Float = command.to[0],
+						toY:Float = command.to[1];
+					if (elapsed <= length) {
+						var t = elapsed / length;
+						pointer(fromX + (toX - fromX) * t, fromY + (toY - fromY) * t, true);
+					} else if (elapsed == length + 1)
+						pointer(toX, toY, false);
+					else
+						finish = true;
+				case "type":
+					setKeys([]);
+					if (elapsed == 0)
+						state.textEvent(command.text);
+					else
+						finish = true;
 				case "sample":
 					if (!sampleAsked) {
 						if (sample == null)
@@ -310,6 +351,12 @@ class Autopilot {
 			return state;
 		}
 		return state;
+	}
+
+	// The pointer at x, y in the design's units (Screen's, or as given without a runner), down or up.
+	function pointer(x:Float, y:Float, down:Bool):Void {
+		var screen = helix.host.Screen.instance;
+		state.pointerEvent(screen != null ? screen.toPixelsX(x) : x, screen != null ? screen.toPixelsY(y) : y, down);
 	}
 
 	// A sample's colors kept under its name, with its points and tolerance; checked against the sample it must match or differ from.

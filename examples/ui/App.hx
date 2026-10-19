@@ -31,6 +31,7 @@ import helix.scene.Pointer;
 import helix.time.Time;
 import helix.ui.Box;
 import helix.ui.Button;
+import helix.ui.ColorPicker;
 import helix.ui.Label;
 import helix.ui.ListView;
 import helix.ui.Panel;
@@ -44,13 +45,15 @@ import helix.ui.Ui;
 	in the theme's rounded ones, every widget's corners rounded too, laid out in a 1280 x 720 design fitted to the window, used alike by the
 	pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South, East). Nothing is called back: each frame the example asks the widgets
 	what happened. Settings set the master, music and effects buses (Audio.master, music, effects) with music playing under them, a short
-	effect played as the effects slider is let go, and mute the music; Controls lists an Actions map's actions with their bindings, a Rebind
+	effect played as the effects slider is let go, and mute the music, and a color picker (ColorPicker, without alpha) chooses the background,
+	saved as hex through Storage once the pointer lets go; Controls lists an Actions map's actions with their bindings, a Rebind
 	button capturing the next key, pad button, axis or touch for one (Escape cancels) and Reset; both are saved through Storage and loaded at
 	start. A progress bar fills; the status in the corner is anchored there. Escape on the main menu quits where quitting means anything.
 	Options: autopilot (a script under assets/; the menus and the actions then read its input, and the settings are saved under keys of its
-	own, removed first, so a run starts from the defaults and leaves a player's alone), audio (0 for silence) and autoclose (1: quit once the
-	script is done). The probes: screen, focus (the focused widget's name), loaded, jump (its bindings' text, joined by ", "), capturing, jumpDown, masterVolume, musicVolume,
-	effectsVolume and musicMuted. */
+	own, removed first, so a run starts from the defaults and leaves a player's alone; the window is then the autopilot's page's size, so its
+	samples of the frame compare across targets), audio (0 for silence) and autoclose (1: quit once the script is done). The probes: screen,
+	focus (the focused widget's name), loaded, jump (its bindings' text, joined by ", "), capturing, jumpDown, masterVolume, musicVolume,
+	effectsVolume, musicMuted and background (the chosen color as hex). */
 class App extends BaseApp {
 	static final PROBES = [
 		"screen",
@@ -62,8 +65,14 @@ class App extends BaseApp {
 		"masterVolume",
 		"musicVolume",
 		"effectsVolume",
-		"musicMuted"
+		"musicMuted",
+		"background"
 	];
+
+	// The background to start, and the autopilot's window (its browser page's size), so its samples compare across targets.
+	static inline var BACKGROUND = 0x14161cff;
+	static inline var PILOT_WIDTH = 800;
+	static inline var PILOT_HEIGHT = 600;
 
 	var stage = new Stage2D();
 	var batch:Batch2D;
@@ -91,6 +100,7 @@ class App extends BaseApp {
 	var effects:Slider;
 	var muteMusic:Toggle;
 	var name:TextField;
+	var background:ColorPicker;
 	var back:Button;
 	var rows:Array<{action:String, bindings:Label, rebind:Button}> = [];
 	var live:Label;
@@ -105,12 +115,15 @@ class App extends BaseApp {
 	var actions:Actions;
 	var actionsKey = "actions";
 	var busesKey = "audio";
+	var backgroundKey = "background";
 	var loads = 0;
 	// The action a rebind waits for a press for, or "".
 	var rebinding = "";
 	// The buses' volumes changed by a slider and not yet saved (saved once the pointer is let go), and whether effects was one.
 	var unsaved = false;
 	var effectsMoved = false;
+	// The background's color changed and not yet saved (saved once the pointer is let go).
+	var backgroundUnsaved = false;
 	var song:Null<AudioPlayback>;
 	var click:Null<AudioClip>;
 	var pilot:Null<Autopilot>;
@@ -118,23 +131,27 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		Window.title = "HeliX ui";
-		Window.requestSize(1000, 600);
 		batch = new Batch2D();
 		if (Host.getOption("audio", "1") != "0") {
 			Audio.instance.loadStream("audio/music/a_hero_is_born.mp3", stream -> playMusic(stream));
 			Audio.instance.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
 		}
 		var script = Host.getOption("autopilot", "");
-		if (script == "")
+		if (script == "") {
+			Window.requestSize(1000, 600);
 			build(Input.instance);
-		else
+		} else {
+			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
 			Assets.load(script, bytes -> {
-				pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name));
+				pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name),
+					(points, done, failed) -> Screenshots.sample(points, done, failed));
 				// A run of its own: its saves apart from a player's, and gone before it starts, so every run begins from the defaults.
 				actionsKey = "autopilot-actions";
 				busesKey = "autopilot-audio";
+				backgroundKey = "autopilot-background";
 				build(pilot.input);
 			}, message -> throw 'Autopilot load failed: ' + message);
+		}
 	}
 
 	// The music opened: played on the music bus, looping, the playback holding the stream.
@@ -180,8 +197,20 @@ class App extends BaseApp {
 		effects = ui.slider("Effects", 0, 100, 100, 10, "effectsVolume");
 		muteMusic = ui.toggle("Mute music", false, "muteMusic");
 		name = ui.textField("", "your name", 16, "name");
+		var backgroundLabel = ui.label("Background");
+		background = ui.colorPicker(BACKGROUND, false, "background");
 		back = ui.button("Back", "backFromSettings");
-		for (w in [heading, master, music, effects, muteMusic, name, back])
+		for (w in [
+			heading,
+			master,
+			music,
+			effects,
+			muteMusic,
+			name,
+			backgroundLabel,
+			background,
+			back
+		])
 			settings.add(w);
 
 		controls = ui.panel("controls");
@@ -252,7 +281,7 @@ class App extends BaseApp {
 		show("main");
 
 		if (pilot != null)
-			Storage.remove(actionsKey, _ -> Storage.remove(busesKey, _ -> loadSettings()));
+			Storage.remove(actionsKey, _ -> Storage.remove(busesKey, _ -> Storage.remove(backgroundKey, _ -> loadSettings())));
 		else
 			loadSettings();
 	}
@@ -274,6 +303,17 @@ class App extends BaseApp {
 			loads++;
 		}, message -> {
 			trace('Volumes not loaded: $message');
+			loads++;
+		});
+		Storage.read(backgroundKey, result -> {
+			switch result {
+				case Stored(bytes):
+					var color = ColorPicker.parseHex(bytes.toString());
+					if (color != null) background.color = color;
+				case Failed(message):
+					trace('Background not loaded: $message');
+				case Missing | Cancelled:
+			}
 			loads++;
 		});
 	}
@@ -312,7 +352,7 @@ class App extends BaseApp {
 		return switch name {
 			case "screen": screen;
 			case "focus": ui.focusedName;
-			case "loaded": loads == 2;
+			case "loaded": loads == 3;
 			case "jump": describe("jump");
 			case "capturing": actions.capturing;
 			case "jumpDown": actions.isDown("jump");
@@ -320,6 +360,7 @@ class App extends BaseApp {
 			case "musicVolume": Audio.music.volume;
 			case "effectsVolume": Audio.effects.volume;
 			case "musicMuted": Audio.music.muted;
+			case "background": ColorPicker.formatHex(background.color, false);
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -340,8 +381,12 @@ class App extends BaseApp {
 			Graphics.endFrame();
 			return;
 		}
-		if (pilot != null && !pilot.done)
+		// The autopilot's tick, none while a sample waits for its frame: the UI then isn't updated, as no input was played.
+		var waiting = false;
+		if (pilot != null && !pilot.done) {
 			pilot.advance(name -> probe(name));
+			waiting = pilot.awaitingFrame;
+		}
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
 		ScreenShape.update();
 		var presentation = Screen.instance;
@@ -353,9 +398,10 @@ class App extends BaseApp {
 		for (row in rows)
 			row.bindings.text = actions.capturing && rebinding == row.action ? "Press a key or button..." : describe(row.action);
 		Box.arrange(layout, vx, vy, vw, vh, batch.font);
-		pointer.update();
+		if (!waiting)
+			pointer.update();
 		// While a rebind waits for its press, the screen waits too: the press is the binding's, not the menu's.
-		if (!actions.capturing) {
+		if (!actions.capturing && !waiting) {
 			ui.update();
 			// Asked, never told: what happened this frame.
 			switch screen {
@@ -381,7 +427,9 @@ class App extends BaseApp {
 					}
 					if (name.submitted)
 						status = 'Hello, ${name.text}';
-					if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name)
+					if (background.changed)
+						backgroundUnsaved = true;
+					if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name && ui.focused != background.hexField)
 						show("main");
 				case "controls":
 					for (row in rows)
@@ -411,6 +459,13 @@ class App extends BaseApp {
 				Audio.play(click);
 			effectsMoved = false;
 		}
+		if (backgroundUnsaved && !ui.input.pointerDown) {
+			backgroundUnsaved = false;
+			Storage.write(backgroundKey, Bytes.ofString(ColorPicker.formatHex(background.color, false)), result -> switch result {
+				case Failed(message): trace('Background not saved: $message');
+				case Written | Cancelled:
+			});
+		}
 		var move = Math.round(actions.axis("move") * 100) / 100;
 		live.text = 'jump ${actions.isDown("jump") ? "down" : "up"}   move ${move}   fire ${actions.isDown("fire") ? "down" : "up"}';
 		loading = (loading + dt * .2) % 1;
@@ -418,7 +473,7 @@ class App extends BaseApp {
 		corner.text = 'focus: ${ui.focusedName == "" ? "none" : ui.focusedName}${ui.capturingKeys ? " (keys)" : ""}';
 		fps.update(dt, Time.frameCpu);
 
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, background.color);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);

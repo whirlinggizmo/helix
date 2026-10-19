@@ -56,11 +56,15 @@ class Widget {
 		return null;
 
 	// Once a frame from the Ui: hovered and held by the pointer, focused, activated by keys or a pad (Enter, Space, South) this frame, and
-	// the step it takes from keys or a pad (Left and Right for one that takes them sideways, Up and Down for one that takes them up and
-	// down), only when it had focus as they were pressed.
+	// the steps it takes from keys or a pad, only when it had focus as they were pressed: stepX from Left (-1) and Right (1) for one that
+	// takes them sideways, stepY from Up (-1) and Down (1) for one that takes them up and down.
 
 	@:allow(helix.ui.Ui)
-	function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {}
+	function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {}
+
+	// The widgets it made through the Ui as parts of itself (a color picker's hex field): taken out with it.
+	@:allow(helix.ui.Ui)
+	var parts:Array<Widget> = [];
 
 	// Whether it uses Left and Right itself while focused (a slider), so they don't move focus.
 

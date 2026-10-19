@@ -34,7 +34,7 @@ class ProgressBar extends Widget {
 		return v;
 	}
 
-	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		fill.setSize(Math.max(0, box.width * value), box.height);
 		fill.setPosition(box.x, box.y);
 	}

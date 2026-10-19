@@ -466,6 +466,39 @@ class Render2DTests {
 		batch.rect(0, 0, 1, 1, -1);
 		batch.end();
 		check(Math.abs(gpu.uploaded.getFloat(0) - camera.clipX(10)) < 1e-6, "setTransform places what follows");
+		// A shaded rectangle: each vertex its color by how far across (or down) it is, alpha too; flat, outlined, it's one color.
+		var shaded = Shape2D.rectangle(10, 20, 0xff000000);
+		shaded.shading = Across;
+		shaded.endColor = 0x0000ffff;
+		var shadedStage = new Stage2D();
+		shadedStage.add(shaded);
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		shadedStage.draw(batch, camera);
+		batch.end();
+		function vertexColor(i:Int):Array<Float> {
+			var c = i * Sprite2DLayout.stride + Sprite2DLayout.colorOffset,
+				data = gpu.uploaded;
+			return [for (k in 0...4) Math.round(data.getFloat(c + k * 4) * 255)];
+		}
+		check(vertexColor(0).join(",") == "255,0,0,0"
+			&& vertexColor(1).join(",") == "0,0,255,255"
+			&& vertexColor(5).join(",") == "255,0,0,0",
+			"Across: its left edge the color, its right the end color");
+		shaded.shading = Down;
+		shaded.cornerRadius = 4;
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		shadedStage.draw(batch, camera);
+		batch.end();
+		var middle = vertexColor(0);
+		check(middle.join(",") == "128,0,128,128", "Down and rounded: a fan from its middle, half way between: " + middle);
+		shaded.outline = 2;
+		gpu.beginFrame(400, 300, 0);
+		batch.begin(camera);
+		shadedStage.draw(batch, camera);
+		batch.end();
+		check(vertexColor(0).join(",") == "255,0,0,0", "Outlined: flat");
 		// Sampling: its bits round-trip, and a change of a texture's sampling splits the batch's run, each part sampled as it was then.
 		var sampling = new Sampling(true, Repeat, Mirror);
 		check(sampling.linear && sampling.wrapU == Repeat && sampling.wrapV == Mirror && (sampling : Int) < Sampling.COUNT,

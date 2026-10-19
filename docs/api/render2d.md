@@ -78,6 +78,7 @@ function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, ti
 function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void
 function frame(x:Float, y:Float, w:Float, h:Float, width:Float, tint:Int):Void
 function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void
+function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void
 function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void
 function circle(x:Float, y:Float, radius:Float, tint:Int):Void
 function circleLines(x:Float, y:Float, radius:Float, width:Float, tint:Int):Void
@@ -119,6 +120,7 @@ function destroy():Void
 - `line`: A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0.
 - `frame`: Rectangle outline drawn inside its bounds.
 - `roundedRect`: A filled rectangle with corners of radius world units (clamped to half the shorter side), with segments for their size on screen.
+- `gradientRect`: A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from one color to the other (0xRRGGBBAA), each channel linearly: across it, from its left edge to its right, or down, from its top to its bottom.
 - `roundedFrame`: A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers.
 - `circle`: A filled circle in world units, centered on x, y, with segments for its size on screen.
 - `circleLines`: Circle outline drawn inside its radius.
@@ -412,6 +414,8 @@ static function line(x0:Float, y0:Float, x1:Float, y1:Float, ?color:Int = 0xffff
 static function polygon(points:Array<Float>, ?color:Int = 0xffffffff):Null<Shape2D>
 var form(default, null):ShapeForm
 var color:Int
+var shading:ShapeShading
+var endColor:Int
 var width(get, never):Float
 var height(get, never):Float
 function setSize(width:Float, height:Float):Void
@@ -430,7 +434,9 @@ function setPoints(value:Array<Float>):Bool
 - `line`: A line from x0, y0 to x1, y1 in its own units, as wide as its outline (1 to start).
 - `polygon`: A filled polygon through points in its own units (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). Null for fewer than 3 points or an odd count.
 - `form`: Which shape it is.
-- `color`: Its color, 0xRRGGBBAA.
+- `color`: Its color, 0xRRGGBBAA: a shaded rectangle's at its start (its left edge, or its top).
+- `shading`: How a filled rectangle is colored: Flat in color (the start), or shaded from color to endColor across or down it, each channel linearly (alpha too, so a ramp to the same color at alpha 0 fades it out). An outlined rectangle and the other forms are drawn flat.
+- `endColor`: The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xRRGGBBAA. (0xffffffff to start.)
 - `width`: A rectangle's width, in its own units.
 - `height`: A rectangle's height, in its own units.
 - `setSize`: Sizes a rectangle, in its own units; below 0 is 0.
@@ -448,6 +454,12 @@ function setPoints(value:Array<Float>):Bool
 *abstract* in `src/helix/render2d/Shape2D.hx`
 
 Which shape a Shape2D is.
+
+## ShapeShading
+
+*abstract* in `src/helix/render2d/Shape2D.hx`
+
+How a filled rectangle is colored.
 
 ## Sprite2D
 

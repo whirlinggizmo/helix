@@ -48,7 +48,7 @@ class Button extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
-	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme;
 		this.clicked = enabled && (clicked || activated);
 		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;

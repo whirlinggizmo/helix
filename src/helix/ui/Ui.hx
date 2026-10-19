@@ -14,8 +14,8 @@ import helix.scene.Pointer;
 
 	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in
 	  two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before,
-	  wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list). Tab and
-	  Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed).
+	  wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color
+	  picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed).
 	- The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or
 	  a pad, something always has focus (the first widget, if nothing did).
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
@@ -107,6 +107,15 @@ class Ui {
 	public function list(items:Array<String>, rows:Int, ?name:String):ListView
 		return adopt(new ListView(this, name != null ? name : "list", items, rows));
 
+	/** A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a swatch
+		and typed in a field of hex beside them (the field a widget of its own, named name + "-hex", after it in the focus order). Without
+		alpha, its color's alpha is always 0xff. */
+	public function colorPicker(color:Int, alpha = true, ?name:String):ColorPicker {
+		var picker = adopt(new ColorPicker(this, name != null ? name : "color", color, alpha));
+		picker.attach(textField(ColorPicker.formatHex(picker.color, alpha), alpha ? "RRGGBBAA" : "RRGGBB", 9, picker.name + "-hex"));
+		return picker;
+	}
+
 	function adopt<T:Widget>(widget:T):T {
 		widgets.push(widget);
 		root.removeChild(ring);
@@ -117,6 +126,8 @@ class Ui {
 
 	/** Takes widget out, its nodes off the stage. */
 	public function remove(widget:Widget):Void {
+		for (part in widget.parts)
+			remove(part);
 		widgets.remove(widget);
 		root.removeChild(widget.root);
 		if (focused == widget)
@@ -193,8 +204,9 @@ class Ui {
 		var shift = input.isDown(Key.Shift),
 			sideways = focused != null && focused.takesSideways(),
 			vertical = focused != null && focused.takesUpDown();
-		// move: along the order (1 or -1); dx, dy: the direction on screen an arrow or the D-pad asked for (0, 0 for Tab).
-		var step = 0, move = 0, dx = 0, dy = 0;
+		// move: along the order (1 or -1); dx, dy: the direction on screen an arrow or the D-pad asked for (0, 0 for Tab); stepX, stepY: what
+		// the focused widget takes itself.
+		var stepX = 0, stepY = 0, move = 0, dx = 0, dy = 0;
 		if (input.isFramePressed(Key.Tab))
 			move = shift ? -1 : 1;
 		if (!vertical) {
@@ -210,7 +222,7 @@ class Ui {
 		var left = input.isFramePressed(Key.Left) || pad(PadButton.Left),
 			right = input.isFramePressed(Key.Right) || pad(PadButton.Right);
 		if (sideways)
-			step = right ? 1 : left ? -1 : 0;
+			stepX = right ? 1 : left ? -1 : 0;
 		else if (left || right) {
 			move = right ? 1 : -1;
 			dx = right ? 1 : -1;
@@ -219,11 +231,11 @@ class Ui {
 		if (vertical) {
 			var up = input.isFramePressed(Key.Up) || pad(PadButton.Up),
 				down = input.isFramePressed(Key.Down) || pad(PadButton.Down);
-			step = down ? 1 : up ? -1 : 0;
+			stepY = down ? 1 : up ? -1 : 0;
 		}
 		// The widget the keys were pressed on: a key moving focus onto a list doesn't also move in it.
-		var stepped = step != 0 ? focused : null;
-		var navigated = move != 0 || step != 0;
+		var stepped = stepX != 0 || stepY != 0 ? focused : null;
+		var navigated = move != 0 || stepX != 0 || stepY != 0;
 		if (navigated) {
 			keys = true;
 			showFocus = true;
@@ -259,7 +271,8 @@ class Ui {
 				clicked = true;
 				@:bypassAccessor focused = w;
 			}
-			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, w == stepped && usable ? step : 0);
+			var steps = w == stepped && usable;
+			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, steps ? stepX : 0, steps ? stepY : 0);
 		}
 		pressing = null;
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.

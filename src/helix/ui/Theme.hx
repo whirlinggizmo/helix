@@ -7,6 +7,7 @@ import helix.render2d.Font2D;
 class Theme {
 	var text:Int = 0xf0f2f8ff;
 	var disabledText:Int = 0x80869aff;
+	var invalidText:Int = 0xff7070ff;
 	var panel:Int = 0x1e2230e8;
 	var face:Int = 0x2e3448ff;
 	var hovered:Int = 0x3e4660ff;
@@ -50,6 +51,17 @@ class Theme {
 
 	function set_disabledTextColor(value:Int):Int {
 		disabledText = value;
+		return value;
+	}
+
+	/** The color of a text field's text marked as not accepted (TextField.invalid). (0xff7070ff to start.) */
+	public var invalidTextColor(get, set):Int;
+
+	function get_invalidTextColor():Int
+		return invalidText;
+
+	function set_invalidTextColor(value:Int):Int {
+		invalidText = value;
 		return value;
 	}
 

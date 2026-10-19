@@ -72,8 +72,8 @@ class ScreenshotService {
 	function colorsAt(points:Array<Array<Float>>, width:Int, height:Int, rgba:Bytes):Array<Array<Int>>
 		return [
 			for (p in points) {
-				var x = Math.floor(presentation.areaX + (p[0] - presentation.visibleX) * presentation.scaleX),
-					y = Math.floor(presentation.areaY + (p[1] - presentation.visibleY) * presentation.scaleY);
+				var x = Math.floor(presentation.toPixelsX(p[0])),
+					y = Math.floor(presentation.toPixelsY(p[1]));
 				if (x < 0 || y < 0 || x >= width || y >= height) [0, 0, 0, 0] else {
 					var at = (y * width + x) * 4;
 					[rgba.get(at), rgba.get(at + 1), rgba.get(at + 2), rgba.get(at + 3)];

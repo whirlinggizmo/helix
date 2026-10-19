@@ -1,5 +1,7 @@
 package helix.render2d;
 
+import helix.render2d.Shape2D.ShapeShading;
+
 /** A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, camera). A draw walks the tree as it is now, depth first, a
 	parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something
 	changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into
@@ -231,6 +233,8 @@ class Stage2D {
 					var r = Math.min(shape.corners, Math.min(shape.givenWidth, shape.givenHeight) / 2);
 					if (o > 0)
 						batch.roundedFrame(x, y, w, h, r > 0 ? r + o / 2 : 0, o, shape.color);
+					else if (shape.shading != Flat)
+						batch.gradientRect(x, y, w, h, r, shape.color, shape.endColor, shape.shading == Down);
 					else
 						batch.roundedRect(x, y, w, h, r, shape.color);
 				case Circle:

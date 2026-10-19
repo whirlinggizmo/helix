@@ -80,7 +80,7 @@ class Slider extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
-	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme, was = value;
 		if (enabled && held) {
 			// The pointer's place along the track, in the track's own units.
@@ -90,8 +90,8 @@ class Slider extends Widget {
 			var along = trackBox.width > 0 ? track.toLocalX(wx, wy) / trackBox.width : 0;
 			value = snap(min + Math.max(0, Math.min(1, along)) * (max - min));
 		}
-		if (enabled && step != 0)
-			value = snap(value + step * (this.step > 0 ? this.step : (max - min) / 10));
+		if (enabled && stepX != 0)
+			value = snap(value + stepX * (step > 0 ? step : (max - min) / 10));
 		changed = value != was;
 		// The fill and knob where the value is along the track, as the layout last placed it.
 		var fraction = max > min ? (value - min) / (max - min) : 0;

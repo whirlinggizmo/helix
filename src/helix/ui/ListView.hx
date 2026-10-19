@@ -102,7 +102,7 @@ class ListView extends Widget {
 		scroll = Math.max(Math.min(scroll, selected * height), (selected + 1) * height - visibleRows * height);
 	}
 
-	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme, input = ui.input, camera = ui.camera, height = theme.widgetHeight, was = selected;
 		this.activated = false;
 		var wx = camera.screenToWorldX(input.pointerX),
@@ -128,8 +128,8 @@ class ListView extends Widget {
 			}
 			dragFrom = Math.NaN;
 		}
-		if (enabled && step != 0 && itemList.length > 0) {
-			selected = selected < 0 ? 0 : Std.int(Math.max(0, Math.min(itemList.length - 1, selected + step)));
+		if (enabled && stepY != 0 && itemList.length > 0) {
+			selected = selected < 0 ? 0 : Std.int(Math.max(0, Math.min(itemList.length - 1, selected + stepY)));
 			reveal();
 		}
 		if (enabled && activated && selected >= 0)

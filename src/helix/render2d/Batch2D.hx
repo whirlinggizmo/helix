@@ -650,6 +650,45 @@ class Batch2D {
 		}
 	}
 
+	/** A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from
+		one color to the other (0xRRGGBBAA), each channel linearly: across it, from its left edge to its right, or down, from its top to its
+		bottom. */
+	public function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void {
+		if (w <= 0 || h <= 0)
+			return;
+		solid();
+		var u = texture.whiteU, v = texture.whiteV;
+		region(u, v, u, v);
+		// The color is linear in the position, so it is exact across any triangles: two for square corners, a fan from the middle for rounded.
+		if (radius <= 0) {
+			shadedVertex(x, y, x, y, w, h, from, to, down, u, v);
+			shadedVertex(x + w, y, x, y, w, h, from, to, down, u, v);
+			shadedVertex(x + w, y + h, x, y, w, h, from, to, down, u, v);
+			shadedVertex(x, y, x, y, w, h, from, to, down, u, v);
+			shadedVertex(x + w, y + h, x, y, w, h, from, to, down, u, v);
+			shadedVertex(x, y + h, x, y, w, h, from, to, down, u, v);
+			return;
+		}
+		var n = roundedOutline(x, y, w, h, radius, cornerSteps(radius), outer), cx = x + w / 2, cy = y + h / 2;
+		for (i in 0...n) {
+			var j = (i + 1) % n;
+			shadedVertex(cx, cy, x, y, w, h, from, to, down, u, v);
+			shadedVertex(outer[i * 2], outer[i * 2 + 1], x, y, w, h, from, to, down, u, v);
+			shadedVertex(outer[j * 2], outer[j * 2 + 1], x, y, w, h, from, to, down, u, v);
+		}
+	}
+
+	// A vertex at px, py of a gradient over the rectangle x, y, w x h: its color from's to to's by how far across (or down) it is.
+	function shadedVertex(px:Float, py:Float, x:Float, y:Float, w:Float, h:Float, from:Int, to:Int, down:Bool, u:Float, v:Float):Void {
+		var t = down ? (py - y) / h : (px - x) / w;
+		t = t < 0 ? 0 : t > 1 ? 1 : t;
+		r = ((from >>> 24) * (1 - t) + (to >>> 24) * t) / 255;
+		g = (((from >>> 16) & 255) * (1 - t) + ((to >>> 16) & 255) * t) / 255;
+		b = (((from >>> 8) & 255) * (1 - t) + ((to >>> 8) & 255) * t) / 255;
+		a = ((from & 255) * (1 - t) + (to & 255) * t) / 255;
+		vertex(px, py, u, v);
+	}
+
 	/** A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers. */
 	public function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void {
 		if (radius <= 0) {

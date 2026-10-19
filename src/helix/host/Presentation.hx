@@ -112,6 +112,14 @@ class Presentation {
 	public function toUnitsY(y:Float):Float
 		return visibleY + (y - areaY) / scaleY;
 
+	/** The framebuffer pixel across at unit x (toUnitsX's inverse). */
+	public function toPixelsX(x:Float):Float
+		return areaX + (x - visibleX) * scaleX;
+
+	/** The framebuffer pixel down at unit y (toUnitsY's inverse). */
+	public function toPixelsY(y:Float):Float
+		return areaY + (y - visibleY) * scaleY;
+
 	/** Sets camera to show the visible area on the framebuffer pixels it covers: its viewport the area, a unit its zoom. */
 	public function apply(camera:Camera2D):Void {
 		camera.setViewport(framebufferWidth, framebufferHeight);

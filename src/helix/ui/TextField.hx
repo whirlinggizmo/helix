@@ -58,6 +58,10 @@ class TextField extends Widget {
 	/** Whether Enter was pressed in it this frame. */
 	public var submitted(default, null):Bool = false;
 
+	/** Whether its text is marked as not accepted (what reads it decides: a color picker's field holding no color): drawn in the theme's
+		invalidTextColor. */
+	public var invalid:Bool = false;
+
 	override function get_focusable():Bool
 		return true;
 
@@ -70,7 +74,7 @@ class TextField extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
-	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, step:Int):Void {
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme, input = ui.input, value = textNode.text, was = value;
 		submitted = false;
 		if (enabled && focused) {
@@ -87,7 +91,7 @@ class TextField extends Widget {
 		changed = value != was;
 		hint.visible = value.length == 0;
 		face.color = focused ? theme.hoveredColor : hovered ? theme.hoveredColor : theme.faceColor;
-		textNode.color = enabled ? theme.textColor : theme.disabledTextColor;
+		textNode.color = !enabled ? theme.disabledTextColor : invalid ? theme.invalidTextColor : theme.textColor;
 		// The caret after the text, as the layout last placed it.
 		var font = theme.font != null ? theme.font : ui.font;
 		caret.visible = enabled && focused;

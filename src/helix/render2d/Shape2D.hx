@@ -51,8 +51,15 @@ class Shape2D extends Node2D {
 	/** Which shape it is. */
 	public var form(default, null):ShapeForm;
 
-	/** Its color, 0xRRGGBBAA. */
+	/** Its color, 0xRRGGBBAA: a shaded rectangle's at its start (its left edge, or its top). */
 	public var color:Int = 0xffffffff;
+
+	/** How a filled rectangle is colored: Flat in color (the start), or shaded from color to endColor across or down it, each channel
+		linearly (alpha too, so a ramp to the same color at alpha 0 fades it out). An outlined rectangle and the other forms are drawn flat. */
+	public var shading:ShapeShading = Flat;
+
+	/** The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xRRGGBBAA. (0xffffffff to start.) */
+	public var endColor:Int = 0xffffffff;
 
 	/** A rectangle's width, in its own units. */
 	public var width(get, never):Float;
@@ -139,6 +146,18 @@ class Shape2D extends Node2D {
 		triangles = Polygon2D.triangulate(pointList);
 		return true;
 	}
+}
+
+/** How a filled rectangle is colored. */
+enum abstract ShapeShading(Int) {
+	/** In its color alone. */
+	var Flat = 0;
+
+	/** From its color at its left edge to its endColor at its right. */
+	var Across = 1;
+
+	/** From its color at its top to its endColor at its bottom. */
+	var Down = 2;
 }
 
 /** Which shape a Shape2D is. */

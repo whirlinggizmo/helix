@@ -7,7 +7,7 @@ import helix.ui.Box.BoxDirection;
 import helix.ui.Box.Sizing;
 
 /** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, alignment and anchors, and the nodes
-	placed by their pivots. */
+	placed by their pivots; the widgets used by keys, the pointer and typing; the color picker's HSV, hex and input. */
 class UiTests {
 	static var checks = 0;
 
@@ -26,6 +26,8 @@ class UiTests {
 		widgets(font);
 		typing(font);
 		tiles(font);
+		hsv();
+		colors(font);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -332,5 +334,193 @@ class UiTests {
 		check(name.submitted, "Enter submits");
 		ui.reset();
 		check(!input.textEntry, "A new screen lets typed text go");
+	}
+
+	// HSV to RGBA and back at the edges: the primaries and secondaries at their sixths, black, white and greys, every 8-bit color of a sweep
+	// back as it went in, and hex read in its forms and refused in others.
+	static function hsv():Void {
+		var C = helix.ui.ColorPicker;
+		check(C.fromHsv(0, 1, 1) == 0xff0000ff && C.fromHsv(1, 1, 1) == 0xff0000ff, "Hue 0 and 1: red");
+		check(C.fromHsv(1 / 6, 1, 1) == 0xffff00ff
+			&& C.fromHsv(2 / 6, 1, 1) == 0x00ff00ff
+			&& C.fromHsv(3 / 6, 1, 1) == 0x00ffffff
+			&& C.fromHsv(4 / 6, 1, 1) == 0x0000ffff
+			&& C.fromHsv(5 / 6, 1, 1) == 0xff00ffff,
+			"The sixths: yellow, green, cyan, blue, magenta");
+		check(C.fromHsv(.3, 0, 1) == 0xffffffff && C.fromHsv(.3, .7, 0) == 0x000000ff && C.fromHsv(.3, 0, .5, 0x80) == 0x80808080,
+			"White, black and a grey whatever the hue; alpha as given");
+		check(C.fromHsv(-1, 2, 2, 300) == 0xff0000ff && C.fromHsv(0, 1, 1, -5) == 0xff000000, "Out of range clamped");
+		// Round trips: every 8-bit color of a sweep comes back from its HSV as it went in.
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		var ui = new helix.ui.Ui(stage, camera, new helix.scene.Pointer(input), input), picker = ui.colorPicker(0x000000ff),
+			opaque = ui.colorPicker(0x123456ff, false), wrong = 0;
+		var r = 0;
+		while (r < 256) {
+			var g = 0;
+			while (g < 256) {
+				var b = 0;
+				while (b < 256) {
+					var c = (r << 24) | (g << 16) | (b << 8) | ((r + g * 3 + b) & 255);
+					picker.color = c;
+					if (picker.color != c || C.fromHsv(picker.hue, picker.saturation, picker.brightness, c & 255) != c)
+						wrong++;
+					b += b == 0 || b == 254 ? 1 : 17;
+				}
+				g += g == 0 || g == 254 ? 1 : 17;
+			}
+			r += r == 0 || r == 254 ? 1 : 17;
+		}
+		check(wrong == 0, 'Every color of the sweep back as it went in ($wrong not)');
+		// The hue kept through grey and black, the saturation through black.
+		picker.color = 0x3366ccff;
+		var hue = picker.hue;
+		picker.color = 0x808080ff;
+		check(near(picker.hue, hue) && picker.saturation == 0 && picker.color == 0x808080ff, "A grey keeps the hue");
+		picker.color = 0x3366ccff;
+		var saturation = picker.saturation;
+		picker.color = 0x000000ff;
+		check(near(picker.hue, hue) && near(picker.saturation, saturation) && picker.brightness == 0, "Black keeps the hue and saturation");
+		picker.brightness = 0xcc / 255;
+		check(picker.color == 0x3366ccff, "Brightened again: the same color");
+		picker.hue = 1;
+		picker.saturation = 1;
+		picker.brightness = 1;
+		picker.color = 0xff0000ff;
+		check(picker.hue == 1, "Red assigned at hue 1 stays at 1 (the top of the bar), not 0");
+		check(opaque.color == 0x123456ff, "An opaque picker");
+		opaque.color = 0x12345600;
+		check(opaque.color == 0x123456ff, "Without alpha, alpha is 0xff whatever is assigned");
+		// Hex.
+		check(C.parseHex("ff8800cc") == 0xff8800cc && C.parseHex("#FF8800") == 0xff8800ff && C.parseHex(" #aBcDeF12 ") == 0xabcdef12,
+			"Hex: RRGGBBAA, RRGGBB as opaque, #, either case, spaces around");
+		check(C.parseHex("ff880") == null && C.parseHex("ff8800c") == null && C.parseHex("gg8800") == null && C.parseHex("") == null
+			&& C.parseHex("##ff8800") == null && C.parseHex("ff8800ccdd") == null,
+			"Hex: wrong lengths and digits refused");
+		check(C.formatHex(0xff8800cc, true) == "ff8800cc" && C.formatHex(0x0a0b0cff, false) == "0a0b0c", "Hex written lowercase");
+	}
+
+	// A color picker in a panel: dragged in its square, along its bars, past their ends and through black (the hue kept); its parts stepped
+	// through by Enter and nudged by the arrows, then let go so the arrows move focus again; hex typed in its field, refused text marked and
+	// changing nothing, the field showing the color once left; disabled.
+	static function colors(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var panel = ui.panel(),
+			above = ui.button("Above"),
+			picker = ui.colorPicker(0xff0000ff, true, "tint"),
+			below = ui.button("Below");
+		for (w in [above, picker, below])
+			panel.add(w);
+		panel.box.setSizing(Fixed(500), Fit);
+		var layout = holding(sized(Grow(1), Grow(1)), [panel.box]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool, ?typed:String):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (typed != null)
+				input.textEvent(typed);
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			Box.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		frame();
+		frame();
+		check(picker.hexField.name == "tint-hex" && picker.hexField.text == "ff0000ff", "The field named after the picker, showing its color");
+		// The square: 160 units, its top-left after the panel's padding and the button above.
+		var side = ui.theme.widgetHeight * 4, square = picker.box, sx = square.x, sy = square.y;
+		frame(sx + side * .5, sy + side * .25, true);
+		check(ui.focused == picker && near(picker.saturation, .5) && near(picker.brightness, .75) && picker.changed,
+			"Pressed in the square: saturation across, brightness up it, focus with it");
+		check(picker.color == helix.ui.ColorPicker.fromHsv(0, .5, .75), "The color from them");
+		frame(sx + side * 2, sy + side * 2, true);
+		check(picker.saturation == 1 && picker.brightness == 0 && picker.color == 0x000000ff, "Dragged past the corner: clamped, black");
+		frame(sx + side * 2, sy + side * 2, false);
+		// The hue bar, to the square's right past a gap; dragged through black keeps it.
+		var hx = sx + side + ui.theme.gap * 2 + ui.theme.widgetHeight / 4;
+		frame(hx, sy + side / 2, true);
+		frame(hx, sy + side / 3, true);
+		check(near(picker.hue, 2 / 3) && !picker.changed && picker.color == 0x000000ff, "The hue moved through black: the color still black");
+		frame(hx, sy + side * 3, true);
+		check(picker.hue == 0, "Past the bar's bottom: hue 0");
+		frame(hx, sy + side * 3, false);
+		frame(sx + side, sy, true);
+		check(picker.color == 0xff0000ff, "Back to the square's top right: the full hue, red");
+		frame(sx + side, sy, false);
+		// The alpha bar, after the hue bar: opaque at its top.
+		var ax = hx + ui.theme.widgetHeight / 2 + ui.theme.gap * 2;
+		frame(ax, sy + side / 2, true);
+		frame(ax, sy + side / 2, false);
+		check(picker.color == 0xff000080, "Half way down the alpha bar: alpha 0x80");
+		frame([Up]);
+		check(picker.color & 255 == Math.round(.55 * 255), "Up: the part the pointer chose, alpha up a twentieth");
+		// Keys: Enter steps through the parts (from the alpha bar to none, then the square), the arrows nudge the one stepped to.
+		frame([Enter]);
+		frame([Enter]);
+		frame([Left]);
+		check(near(picker.saturation, .95) && ui.focused == picker, "Enter twice, then Left: saturation down a twentieth, focus kept");
+		frame([Down]);
+		check(near(picker.brightness, .95) && ui.focused == picker, "Down: brightness down a twentieth, focus kept");
+		frame([Enter]);
+		frame([Up]);
+		check(near(picker.hue, 1 / 20), "Enter again, then Up: the hue up a twentieth");
+		frame([Right]);
+		check(near(picker.hue, 2 / 20), "Right: up again");
+		frame([Enter]);
+		frame([Down]);
+		check(picker.color & 255 == 0x80, "Enter again, then Down: alpha down a twentieth");
+		frame([Enter]);
+		frame([Down]);
+		check(ui.focused == below, "Enter once more lets the arrows go: Down moves focus on");
+		// Typing: hex as typed, refused text marked and changing nothing, the color's own hex once the field is left.
+		var field = picker.hexField, was = picker.color;
+		frame(field.box.x + 10, field.box.y + 10, true);
+		frame(field.box.x + 10, field.box.y + 10, false);
+		check(ui.focused == field && ui.capturingKeys, "A click focuses the field");
+		for (i in 0...9)
+			frame([Backspace]);
+		check(field.text == "" && field.invalid && picker.color == was | 0xff,
+			"Emptied: marked invalid; the color the last it named, its first six digits (opaque) on the way");
+		was = picker.color;
+		frame(null, null, null, null, "#33");
+		frame();
+		check(field.invalid && picker.color == was, "Part of a color: marked invalid, the color unchanged");
+		frame(null, null, null, null, "66cc");
+		frame();
+		check(!field.invalid && picker.color == 0x3366ccff && field.text == "#3366cc", "RRGGBB with #: taken as opaque, the text left as typed");
+		frame(null, null, null, null, "4");
+		frame(null, null, null, null, "0");
+		frame();
+		check(picker.color == 0x3366cc40, "RRGGBBAA: alpha too");
+		frame([Backspace]);
+		frame(null, null, null, null, "x");
+		frame();
+		check(field.invalid && picker.color == 0x3366cc40, "A wrong digit: marked, the color kept");
+		frame([Tab]);
+		frame();
+		check(ui.focused == below && field.text == "3366cc40" && !field.invalid, "Left: the field shows the color again");
+		// Disabled: not dragged, its field disabled with it.
+		picker.enabled = false;
+		frame(sx + 1, sy + 1, true);
+		frame(sx + 1, sy + 1, false);
+		check(picker.color == 0x3366cc40 && !field.enabled, "Disabled: not dragged, the field with it");
+		ui.remove(picker);
+		check(ui.find("tint-hex") == null, "Removed with its field");
 	}
 }
