@@ -21,8 +21,8 @@ import helix.render2d.Texture2D;
 
 	Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and
 	reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes
-	into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start); its sprites,
-	text and particles are display colors, untouched. */
+	into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR
+	scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched. */
 class Stage3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
 	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
@@ -245,8 +245,14 @@ class Stage3D {
 		return true;
 	}
 
-	/** How lit color comes into the screen's 0..1 after the exposure. */
+	/** How lit color comes into the screen's 0..1 after the exposure. In an HDR scene (hdr) the chain's tone mapping applies it instead. */
 	public var tonemap:Tonemap = Tonemap.Neutral;
+
+	/** Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values
+		running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shaders.Tonemap), which
+		its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to
+		endScene when its scene is HDR. */
+	public var hdr:Bool = false;
 
 	/** The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is taken as 0. */
 	public var exposure(default, set):Float = 0.;
@@ -843,6 +849,7 @@ class Stage3D {
 		u.setFloat(76, Math.sin(environmentRotation));
 		u.setFloat(80, tonemap);
 		u.setFloat(84, Math.pow(2, exposure));
+		u.setFloat(88, hdr ? 1 : 0);
 		gpu.draw(pipelines.background3D(), [], 0, 0, 3, 0, 1, [background.backgroundTexture], [Sampling.LINEAR], backgroundUniforms);
 	}
 
@@ -1337,7 +1344,7 @@ class Stage3D {
 		// Tone mapping, then the environment: its intensity (0 for none), last mip, rotation, and irradiance.
 		u.setFloat(TONEMAP, tonemap);
 		u.setFloat(TONEMAP + 4, Math.pow(2, exposure));
-		u.setFloat(TONEMAP + 8, 0);
+		u.setFloat(TONEMAP + 8, hdr ? 1 : 0);
 		u.setFloat(TONEMAP + 12, 0);
 		u.setFloat(ENVIRONMENT, environment != null ? environmentIntensity : 0);
 		u.setFloat(ENVIRONMENT + 4, EnvironmentBake.MIP_COUNT - 1);

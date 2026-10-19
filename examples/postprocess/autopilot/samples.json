@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "seed": 1,
+  "commands": [
+    {"op": "wait", "probe": "ready", "equals": true, "seconds": 60},
+    {"op": "sample", "name": "ldr", "points": [[400, 300], [200, 450], [600, 450], [60, 560], [740, 480], [400, 520]]},
+    {"op": "press", "key": "H"},
+    {"op": "assert", "probe": "hdr", "equals": true},
+    {"op": "sample", "name": "hdr", "points": [[400, 300], [200, 450], [600, 450], [60, 560], [740, 480], [400, 520]]},
+    {"op": "sample", "name": "hdrEdges", "points": [[60, 560], [740, 480], [40, 300], [760, 300]]},
+    {"op": "press", "key": "1"},
+    {"op": "assert", "probe": "vignette", "equals": false},
+    {"op": "sample", "name": "vignetteOff", "points": [[60, 560], [740, 480], [40, 300], [760, 300]], "differsFrom": "hdrEdges", "by": 4}
+  ]
+}

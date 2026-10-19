@@ -5,7 +5,8 @@
  * background3d_fs_params:
  *   inverse_view_projection  the camera's view-projection inverted (GL's -1..1 depth)
  *   environment              x intensity, y the mip (blur), z/w the cosine and sine of its rotation about +y
- *   tonemap                  as lit3d's: x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale */
+ *   tonemap                  as lit3d's: x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale, z 1 in an HDR scene (written past 1, not
+ *                            tone mapped) */
 @vs background3d_vs
 layout(binding=0) uniform background3d_vs_params {
     vec4 clip;
@@ -66,6 +67,12 @@ void main() {
     // Into the environment's frame: turned by -rotation about +y.
     d = vec3(environment.z * d.x - environment.w * d.z, d.y, environment.w * d.x + environment.z * d.z);
     vec3 color = textureLod(samplerCube(background3d_texture, background3d_sampler), d, environment.y).rgb * environment.x * tonemap.y;
+    if (tonemap.z > 0.5) {
+        // An HDR scene: the light as sRGB values, past 1 as well.
+        color = max(color, vec3(0.0));
+        frag_color = vec4(mix(color * 12.92, 1.055 * pow(max(color, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), color)), 1.0);
+        return;
+    }
     int mode = int(tonemap.x + 0.5);
     if (mode == 1) {
         color = tonemap_neutral(color);

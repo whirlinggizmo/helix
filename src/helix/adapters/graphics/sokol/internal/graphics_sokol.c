@@ -37,22 +37,28 @@ static sg_sampler sampler_of(int sampling);
 /* One sampler for each Sampling value used (helix.graphics.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v), made when first used. */
 static sg_sampler samplers[32];
 /* Pipelines (helix_pipeline), by pipeline slot: what a draw through one checks and binds (its program, its buffers' strides and whether each
-   is an instance's and read at all, indexed or not, lines or triangles, block 0's clip flip) and its twin for flipped passes (its front faces
-   the other way round), where it draws triangles into colors. Per buffer slot: whether it is an index buffer. */
-static struct{uint32_t id,shader;int buffer_count,stride[MAX_BUFFERS],instanced[MAX_BUFFERS],read[MAX_BUFFERS],indexed,lines,flip;}pipeline_info[256];
+   is an instance's and read at all, indexed or not, lines or triangles, depth alone, block 0's clip flip). Per buffer slot: whether it is an
+   index buffer. */
+static struct{uint32_t id,shader;int buffer_count,stride[MAX_BUFFERS],instanced[MAX_BUFFERS],read[MAX_BUFFERS],indexed,lines,depth_only,flip;}pipeline_info[256];
+/* A sokol pipeline is made for one kind of pass (its color format, depth format and samples), and a flipped pass draws triangles with their
+   front faces the other way round: a pipeline's variants, by pipeline slot, each made from its description the first time a draw needs it.
+   A variant is the pass's kind: bit 0 half floats, bit 1 no depth, bit 2 single sampled where the screen isn't, bit 3 flipped; variant 0
+   (the screen's) is the pipeline itself. */
+#define VARIANTS 16
+static sg_pipeline_desc pipeline_descs[256];static sg_pipeline variants[256][VARIANTS];
 static int index_buffers[256];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
-   target), so a target is stored top row first, as every texture is. */
-static int active,flipped,used[256],frame_width,frame_height;
+   target), so a target is stored top row first, as every texture is; pass_variant: the pipelines' variant the pass draws with. */
+static int active,flipped,pass_variant,used[256],frame_width,frame_height;
 /* The screen's size this frame, and whether helix_end has ended it (so it can be read back). */
 static int screen_width,screen_height,frame_ended;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
    before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
 #define MAX_RENAMES 8
 static sg_buffer extras[256][MAX_RENAMES];static int renamed[256],bound[256];
-/* Render targets, by texture view slot: their color and depth attachment views, depth image and size. A pipeline's flipped twin, by pipeline
-   slot. */
-static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height;}targets[256];static sg_pipeline flipped_pipelines[256];
+/* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, and the
+   pipelines' variant drawing into them (unflipped). */
+static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant;}targets[256];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 16
@@ -226,11 +232,9 @@ uint32_t helix_pipeline(const int *desc,int count){
  sg_pipeline pipeline=sg_make_pipeline(&pd);
  if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID||(pipeline.id&0xffff)>=256){sg_destroy_pipeline(pipeline);return 0;}
  const int slot=pipeline.id&0xffff;
- /* Triangles into colors get a twin for flipped passes: their front faces (and gl_FrontFacing) the other way round. */
- flipped_pipelines[slot]=(sg_pipeline){0};
- if(!lines&&!depth_only){pd.face_winding=clockwise?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;flipped_pipelines[slot]=sg_make_pipeline(&pd);}
+ pipeline_descs[slot]=pd;memset(variants[slot],0,sizeof variants[slot]);variants[slot][0]=pipeline;
  pipeline_info[slot].id=pipeline.id;pipeline_info[slot].shader=shader;pipeline_info[slot].buffer_count=buffers;pipeline_info[slot].indexed=indexed!=0;pipeline_info[slot].lines=lines;
- pipeline_info[slot].flip=desc[9];
+ pipeline_info[slot].depth_only=depth_only!=0;pipeline_info[slot].flip=desc[9];
  memcpy(pipeline_info[slot].stride,strides,sizeof strides);memcpy(pipeline_info[slot].instanced,instanced,sizeof instanced);memcpy(pipeline_info[slot].read,read,sizeof read);
  return pipeline.id;
 }
@@ -284,28 +288,41 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  int slot=shader.id&0xffff;programs[slot].blocks=blocks;programs[slot].texture_mask=textures;memcpy(programs[slot].block_size,sizes,sizeof sizes);
  return shader.id;
 }
-/* A render target: a color image (8 bits a channel) sampled through the returned texture view, with a depth image for its passes. */
-uint32_t helix_target(int w,int h){
- if(w<=0||h<=0||w>16384||h>16384)return 0;
- /* The screen's formats and samples (sokol's environment defaults), so the same pipelines draw into both: multisampled, its passes draw
-    into an image of the screen's samples, resolved at the pass's end into the one sampled. */
+/* Whether render targets of format (helix.graphics.TextureFormat's) can be drawn into, blended over and sampled filtered: RGBA8, and RGBA16F
+   where GL has it. */
+int helix_can_render(int format){
+ if(format!=0&&format!=4)return 0;
+ const sg_pixelformat_info info=sg_query_pixelformat(format_of(format));
+ return info.render&&info.blend&&info.sample&&info.filter;
+}
+/* A render target: a color image of format sampled through the returned texture view; with depth, a depth image for its passes and the
+   screen's samples (where the format takes them), without, neither. */
+uint32_t helix_target(int w,int h,int format,int depth){
+ if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format))return 0;
+ /* The screen's depth format and samples (sokol's environment defaults): multisampled, its passes draw into an image of the screen's samples,
+    resolved at the pass's end into the one sampled. */
  const sg_environment_defaults defaults=sg_query_desc().environment.defaults;
- const int samples=defaults.sample_count>1?defaults.sample_count:1;
+ const sg_pixel_format pixels=format_of(format);
+ const int screen=defaults.sample_count>1?defaults.sample_count:1,samples=depth&&sg_query_pixelformat(pixels).msaa?screen:1;
  sg_image color=sg_make_image(&(sg_image_desc){.usage={.color_attachment=samples==1,.resolve_attachment=samples>1},.width=w,.height=h,
-  .pixel_format=defaults.color_format,.sample_count=1});
- sg_image drawn=samples>1?sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=defaults.color_format,
+  .pixel_format=pixels,.sample_count=1});
+ sg_image drawn=samples>1?sg_make_image(&(sg_image_desc){.usage.color_attachment=true,.width=w,.height=h,.pixel_format=pixels,
   .sample_count=samples}):color;
- sg_image depth=sg_make_image(&(sg_image_desc){.usage.depth_stencil_attachment=true,.width=w,.height=h,.pixel_format=defaults.depth_format,.sample_count=samples});
- if(sg_query_image_state(color)!=SG_RESOURCESTATE_VALID||sg_query_image_state(drawn)!=SG_RESOURCESTATE_VALID||sg_query_image_state(depth)!=SG_RESOURCESTATE_VALID){
-  sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);sg_destroy_image(depth);return 0;
+ sg_image depth_image=depth?sg_make_image(&(sg_image_desc){.usage.depth_stencil_attachment=true,.width=w,.height=h,.pixel_format=defaults.depth_format,
+  .sample_count=samples}):(sg_image){0};
+ if(sg_query_image_state(color)!=SG_RESOURCESTATE_VALID||sg_query_image_state(drawn)!=SG_RESOURCESTATE_VALID||
+  (depth&&sg_query_image_state(depth_image)!=SG_RESOURCESTATE_VALID)){
+  sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);if(depth)sg_destroy_image(depth_image);return 0;
  }
  sg_view texture=sg_make_view(&(sg_view_desc){.texture.image=color});
  int slot=texture.id&0xffff;
- if(slot>=256){sg_destroy_view(texture);sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);sg_destroy_image(depth);return 0;}
+ if(slot>=256){sg_destroy_view(texture);sg_destroy_image(color);if(samples>1)sg_destroy_image(drawn);if(depth)sg_destroy_image(depth_image);return 0;}
+ memset(&targets[slot],0,sizeof targets[slot]);
  targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=drawn});
  if(samples>1){targets[slot].resolve=sg_make_view(&(sg_view_desc){.resolve_attachment.image=color});targets[slot].samples_image=drawn;}
- targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth});
- targets[slot].depth_image=depth;targets[slot].width=w;targets[slot].height=h;
+ if(depth){targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth_image});targets[slot].depth_image=depth_image;}
+ targets[slot].width=w;targets[slot].height=h;
+ targets[slot].variant=(format==4?1:0)|(depth?0:2)|(samples==1&&screen>1?4:0);
  return texture.id;
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the returned texture view, with an attachment view a layer. */
@@ -330,17 +347,19 @@ uint32_t helix_shadow_map(int size,int layers){
 int helix_begin_shadow(uint32_t map,int layer){
  int slot=map&0xffff;
  if(active||slot>=256||!shadow_maps[slot].image.id||layer<0||layer>=shadow_maps[slot].count||sg_query_view_state((sg_view){map})!=SG_RESOURCESTATE_VALID)return 0;
- active=2;flipped=0;frame_width=frame_height=shadow_maps[slot].size;
+ active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;
  sg_begin_pass(&(sg_pass){.action={.depth={.load_action=SG_LOADACTION_CLEAR,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f},
   .stencil={.load_action=SG_LOADACTION_DONTCARE}},.attachments={.depth_stencil=shadow_maps[slot].layers[layer]},.label="helix-shadow-map"});
  return 1;
 }
 static sg_color color_of(uint32_t color){return (sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
-/* A pass into target, cleared to color, before the screen's: drawn flipped where the backend's origin is the bottom left (GL). */
+/* A pass into target, cleared to color (and its depth, if it has one, to the farthest), before the screen's: drawn flipped where the backend's
+   origin is the bottom left (GL). */
 int helix_begin_target(uint32_t target,uint32_t color){
  int slot=target&0xffff;
  if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
  active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
+ pass_variant=targets[slot].variant|(flipped?8:0);
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
   .attachments={.colors[0]=targets[slot].color,.resolves[0]=targets[slot].resolve,.depth_stencil=targets[slot].depth}});
  return 1;
@@ -348,14 +367,16 @@ int helix_begin_target(uint32_t target,uint32_t color){
 int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
- active=1;flipped=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
+ active=1;flipped=0;pass_variant=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
  sg_begin_pass(&(sg_pass){.swapchain=swapchain(),.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}}});
  return 1;
 }
 /* Reading back. The back buffer holds the ended frame until sokol_app swaps, after the frame callback returns. */
-/* What target 0 (the frame just ended) or a render target reads back as: its width and height, 0 when it can't be read now. */
-int helix_read_width(uint32_t target){int slot=target&0xffff;return target?(slot<256&&targets[slot].color.id?targets[slot].width:0):(frame_ended?screen_width:0);}
-int helix_read_height(uint32_t target){int slot=target&0xffff;return target?(slot<256&&targets[slot].color.id?targets[slot].height:0):(frame_ended?screen_height:0);}
+/* What target 0 (the frame just ended) or an RGBA8 render target reads back as: its width and height, 0 when it can't be read now (or, a target
+   of half floats, at all). */
+static int readable(uint32_t target){int slot=target&0xffff;return slot<256&&targets[slot].color.id&&!(targets[slot].variant&1);}
+int helix_read_width(uint32_t target){return target?(readable(target)?targets[target&0xffff].width:0):(frame_ended?screen_width:0);}
+int helix_read_height(uint32_t target){return target?(readable(target)?targets[target&0xffff].height:0):(frame_ended?screen_height:0);}
 /* Reads target into out (width * height * 4 bytes, RGBA8, rows top first) through GL, outside any pass: the back buffer for 0 (GL's rows
    come bottom first, so they're turned over), else the target's color image attached to a framebuffer of the moment (its rows are already
    top first: target passes draw flipped). sokol caches GL state, so its cache is reset after. */
@@ -434,6 +455,21 @@ static void apply_blocks(int shader,int flip,const void *uniforms){
   at+=size;
  }
 }
+/* The variant of the pipeline in slot that draws in the open pass, made the first time: depth alone has none (it draws only into shadow
+   maps), lines none flipped (they have no faces). */
+static sg_pipeline variant_of(int slot){
+ const int v=pipeline_info[slot].depth_only?0:pipeline_info[slot].lines?pass_variant&7:pass_variant;
+ if(!variants[slot][v].id){
+  sg_pipeline_desc pd=pipeline_descs[slot];
+  if(v&1)pd.colors[0].pixel_format=SG_PIXELFORMAT_RGBA16F;
+  if(v&2){pd.depth.pixel_format=SG_PIXELFORMAT_NONE;pd.depth.compare=SG_COMPAREFUNC_ALWAYS;pd.depth.write_enabled=false;}
+  if(v&6)pd.sample_count=1;
+  /* Flipped: the front faces (and gl_FrontFacing) the other way round. */
+  if(v&8)pd.face_winding=pd.face_winding==SG_FACEWINDING_CW?SG_FACEWINDING_CCW:SG_FACEWINDING_CW;
+  variants[slot][v]=sg_make_pipeline(&pd);
+ }
+ return variants[slot][v];
+}
 /* A draw through pipeline p: count vertices from first (or indices, for an indexed pipeline, from first of `indices`) as instance_count
    instances from record first_instance of its instanced buffers; buffers[i] its buffer i (0 for one it doesn't read), the program's textures
    and samplings by slot, its uniform blocks' bytes one after another by slot. 0, drawing nothing, for anything invalid. */
@@ -459,8 +495,9 @@ int helix_draw(uint32_t p,const uint32_t *buffers,int buffer_count,uint32_t indi
   if(instanced)bindings.vertex_buffer_offsets[b]=first_instance*stride;
  }
  if(!bind_program(shader,&bindings,textures,samplings,texture_count,uniform_bytes))return 0;
- /* Flipped, the front faces wind the other way: the pipeline's twin. */
- sg_apply_pipeline(flipped&&flipped_pipelines[pslot].id?flipped_pipelines[pslot]:(sg_pipeline){p});
+ const sg_pipeline pipeline=variant_of(pslot);
+ if(sg_query_pipeline_state(pipeline)!=SG_RESOURCESTATE_VALID)return 0;
+ sg_apply_pipeline(pipeline);
  sg_apply_bindings(&bindings);
  apply_blocks(shader,pipeline_info[pslot].flip,uniforms);
  for(int b=0;b<pipeline_info[pslot].buffer_count;b++)if(pipeline_info[pslot].read[b])bound[buffers[b]&0xffff]=1;
@@ -471,11 +508,14 @@ void helix_end(void){
  /* Stream buffers start each frame empty and unrenamed; a static one keeps its size. */
  for(int i=0;i<256;i++){if(stream_buffers[i]){used[i]=0;renamed[i]=bound[i]=0;}data_textures[i].written=data_textures[i].bound=data_textures[i].renamed=0;}
 }
-/* Destroys a pipeline, its twin and its record. */
+/* Destroys a pipeline, its variants and its record. */
 static void destroy_pipeline(uint32_t id){
  const int slot=id&0xffff;
  sg_destroy_pipeline((sg_pipeline){id});
- if(slot<256){if(flipped_pipelines[slot].id)sg_destroy_pipeline(flipped_pipelines[slot]);flipped_pipelines[slot].id=0;memset(&pipeline_info[slot],0,sizeof pipeline_info[slot]);}
+ if(slot<256){
+  for(int v=1;v<VARIANTS;v++)if(variants[slot][v].id)sg_destroy_pipeline(variants[slot][v]);
+  memset(variants[slot],0,sizeof variants[slot]);memset(&pipeline_info[slot],0,sizeof pipeline_info[slot]);
+ }
 }
 int helix_destroy(int kind,uint32_t id){
  int slot=id&0xffff;
@@ -495,7 +535,7 @@ int helix_destroy(int kind,uint32_t id){
    free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
   }
   if(slot<256&&targets[slot].color.id){
-   sg_destroy_view(targets[slot].color);sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);
+   sg_destroy_view(targets[slot].color);if(targets[slot].depth.id){sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);}
    if(targets[slot].samples_image.id){sg_destroy_view(targets[slot].resolve);sg_destroy_image(targets[slot].samples_image);}
    memset(&targets[slot],0,sizeof targets[slot]);
   }

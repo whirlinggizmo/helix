@@ -2,28 +2,49 @@ package helix.graphics;
 
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
+import helix.render3d.Stage3D;
+import helix.shaders.Tonemap;
 
 /** Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the
-	enabled effects but the last draw in turn from one texture into another (target passes, still before the screen's), and present draws the
-	last over the screen's pass, or the frame as it is when no effect is on. Its textures follow the screen's size. Effects run in the order
-	given, so turning one off and on keeps its place. */
+	enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and
+	present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one
+	off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates
+	(ScreenEffect.intermediates) are made at their fractions of it.
+
+	An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn
+	in RGBA16F, its stage (stage) writing its light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve
+	carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone
+	mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain
+	has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half
+	floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped. */
 class PostProcess {
 	var gpu:IGraphics;
-	var targets:Array<Null<Texture2D>> = [null, null, null];
+	var effects:Array<ScreenEffect> = [];
 	var width = 0;
 	var height = 0;
+	// The scene's texture (with depth, multisampled as the screen), and the chain's, two of each format in use, drawn back and forth.
+	var scene:Null<Texture2D>;
+	var chain:Map<Int, Array<Texture2D>> = [];
+	// Each effect's intermediates, as last made.
+	var made = new haxe.ds.ObjectMap<ScreenEffect, Array<Texture2D>>();
+	// The tone mapping added to an HDR chain without one, made the first time.
+	var tonemap:Null<Tonemap>;
+	// This frame's effects in order (the tone mapping among them in an HDR chain) and the tone mapping's place in them (-1 for none).
+	var steps:Array<ScreenEffect> = [];
+	var tonemapAt = -1;
 	var result:Null<Texture2D>;
 	var last:Null<ScreenEffect>;
-	var time = 0.;
+	var lastFrame:Null<ScreenFrame>;
 	// Drawing the frame as it is: two clip-space triangles, sampling it whole.
 	var copyBuffer:Int;
 	// The sprite program's block 0, its clip scale, which the adapter writes.
 	var clip = Bytes.alloc(16);
 	var quad = Bytes.alloc(6 * Sprite2DLayout.stride);
 
-	/** Effects drawn on gpu. */
-	public function new(gpu:IGraphics) {
+	/** Effects drawn on gpu, over a scene drawn by stage (or null: a scene of 2D alone, or several stages). */
+	public function new(gpu:IGraphics, ?stage:Stage3D) {
 		this.gpu = gpu;
+		this.stage = stage;
 		copyBuffer = gpu.createBuffer(6 * Sprite2DLayout.stride);
 		var corners = [
 			[-1, 1, 0, 0],
@@ -44,46 +65,80 @@ class PostProcess {
 		}
 	}
 
+	/** The stage the scene is drawn with, or null: in an HDR scene it is told so (Stage3D.hdr, from beginScene to endScene) and the tone mapping
+		added to the chain takes its mode (Stage3D.tonemap). */
+	public var stage:Null<Stage3D>;
+
+	/** Whether this frame's scene (the last beginScene's) is drawn in half floats: an enabled effect wants HDR and the GPU draws them. */
+	public var hdr(default, null):Bool = false;
+
 	/** The texture the scene is drawn into (the last beginScene's), or null before one. */
 	public var sceneTexture(get, never):Null<Texture2D>;
 
 	function get_sceneTexture():Null<Texture2D>
-		return targets[0];
+		return scene;
 
-	/** Starts the frame's scene: a target pass into a width x height texture (the screen's size), cleared to clearColor. Draw it as the screen;
-		endScene ends it. Throws inside another pass. */
+	/** Adds effect at the end of the chain. False, changing nothing, when it is in the chain already. */
+	public function add(effect:ScreenEffect):Bool {
+		if (effects.indexOf(effect) >= 0)
+			return false;
+		effects.push(effect);
+		return true;
+	}
+
+	/** Takes effect out of the chain, freeing its intermediates (the effect stays its owner's). False when it isn't in the chain. */
+	public function remove(effect:ScreenEffect):Bool {
+		if (!effects.remove(effect))
+			return false;
+		release(effect);
+		return true;
+	}
+
+	/** Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to
+		clearColor. Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass. */
 	public function beginScene(width:Int, height:Int, clearColor:Int):Void {
+		plan();
 		if (width != this.width || height != this.height) {
-			for (i in 0...targets.length)
-				if (targets[i] != null) {
-					targets[i].destroy(gpu);
-					targets[i] = null;
-				}
+			clear();
 			this.width = width;
 			this.height = height;
 		}
-		if (targets[0] == null)
-			targets[0] = Texture2D.renderTarget(gpu, width, height);
-		gpu.beginTargetPass(targets[0].handle, clearColor);
+		var format:TextureFormat = hdr ? Rgba16f : Rgba8;
+		if (scene != null && scene.format != format) {
+			scene.destroy(gpu);
+			scene = null;
+		}
+		if (scene == null)
+			scene = Texture2D.renderTarget(gpu, width, height, true, format);
+		if (stage != null)
+			stage.hdr = hdr;
+		gpu.beginTargetPass(scene.handle, clearColor);
 	}
 
-	/** Ends the scene's pass and draws effects (each that is enabled, in order) but the last, each from the one before's result into a texture
-		of its own, at time seconds; the last waits for present. */
-	public function endScene(effects:Array<ScreenEffect>, time:Float):Void {
+	/** Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR
+		chain), each its intermediates and then from the one before's result into a texture of the chain, at time seconds; the last's
+		intermediates too, its last pass waiting for present. */
+	public function endScene(time:Float):Void {
 		gpu.endTargetPass();
-		this.time = time;
-		var on = [for (e in effects) if (e.enabled) e];
-		result = targets[0];
-		last = on.length > 0 ? on[on.length - 1] : null;
-		for (i in 0...on.length - 1) {
-			// Back and forth between two textures.
-			var into = 1 + i % 2;
-			if (targets[into] == null)
-				targets[into] = Texture2D.renderTarget(gpu, width, height);
-			gpu.beginTargetPass(targets[into].handle, 0x000000ff);
-			on[i].draw(result, width, height, time);
+		if (stage != null)
+			stage.hdr = false;
+		result = scene;
+		last = null;
+		lastFrame = null;
+		for (i in 0...steps.length) {
+			var effect = steps[i];
+			var frame = new ScreenFrame(result, width, height, time, intermediatesOf(effect, i <= tonemapAt ? Rgba16f : Rgba8));
+			effect.drawIntermediates(frame);
+			if (i == steps.length - 1) {
+				last = effect;
+				lastFrame = frame;
+				break;
+			}
+			var into = chainTarget(i < tonemapAt ? Rgba16f : Rgba8, result);
+			gpu.beginTargetPass(into.handle, 0x000000ff);
+			effect.draw(frame);
 			gpu.endTargetPass();
-			result = targets[into];
+			result = into;
 		}
 	}
 
@@ -92,7 +147,7 @@ class PostProcess {
 		if (result == null)
 			return;
 		if (last != null) {
-			last.draw(result, width, height, time);
+			last.draw(lastFrame);
 			return;
 		}
 		gpu.updateBuffer(copyBuffer, quad, quad.length);
@@ -101,9 +156,100 @@ class PostProcess {
 
 	/** Frees its textures and buffer; the effects stay their owner's. */
 	public function destroy():Void {
-		for (t in targets)
-			if (t != null)
-				t.destroy(gpu);
+		clear();
+		if (scene != null)
+			scene.destroy(gpu);
+		scene = null;
 		gpu.destroyBuffer(copyBuffer);
+	}
+
+	// This frame's steps: the enabled effects; in an HDR chain the tone mapping after the last wanting HDR (unless the chain has its own),
+	// without one no tone mapping (the stage's does it).
+	function plan():Void {
+		var on = [for (e in effects) if (e.enabled) e];
+		var wanting = -1;
+		for (i in 0...on.length)
+			if (on[i].hdr)
+				wanting = i;
+		hdr = wanting >= 0 && gpu.canRender(Rgba16f);
+		tonemapAt = -1;
+		if (!hdr) {
+			steps = [for (e in on) if (!Std.isOfType(e, Tonemap)) e];
+			return;
+		}
+		steps = on;
+		for (i in 0...steps.length)
+			if (Std.isOfType(steps[i], Tonemap)) {
+				tonemapAt = i;
+				break;
+			}
+		if (tonemapAt < 0) {
+			if (tonemap == null)
+				tonemap = new Tonemap();
+			tonemap.mode = stage != null ? stage.tonemap : helix.render3d.Tonemap.Neutral;
+			tonemapAt = wanting + 1;
+			steps.insert(tonemapAt, tonemap);
+		}
+	}
+
+	// The chain's texture of format to draw into that isn't from (the one it reads), made the first time.
+	function chainTarget(format:TextureFormat, from:Texture2D):Texture2D {
+		var pair = chain[format];
+		if (pair == null)
+			chain[format] = pair = [];
+		var i = pair.length > 0 && pair[0] == from ? 1 : 0;
+		if (pair[i] == null)
+			pair[i] = Texture2D.renderTarget(gpu, width, height, true, format, false);
+		return pair[i];
+	}
+
+	// effect's intermediates in format at its fractions of the frame's size: made again when they or the size changed.
+	function intermediatesOf(effect:ScreenEffect, format:TextureFormat):Array<Texture2D> {
+		var scales = effect.intermediates, have = made.get(effect);
+		var sizes = [for (s in scales) [size(width, s), size(height, s)]];
+		var current = have != null && have.length == scales.length;
+		if (current)
+			for (i in 0...have.length)
+				if (have[i].width != sizes[i][0] || have[i].height != sizes[i][1] || have[i].format != format)
+					current = false;
+		if (current)
+			return have;
+		release(effect);
+		var textures = [for (s in sizes) Texture2D.renderTarget(gpu, s[0], s[1], true, format, false)];
+		made.set(effect, textures);
+		return textures;
+	}
+
+	// A fraction of a length in pixels: rounded down, at least 1.
+	static function size(length:Int, fraction:Float):Int {
+		var n = Math.floor(length * fraction);
+		return n < 1 ? 1 : n;
+	}
+
+	// Frees effect's intermediates.
+	function release(effect:ScreenEffect):Void {
+		var have = made.get(effect);
+		if (have == null)
+			return;
+		for (t in have)
+			t.destroy(gpu);
+		made.remove(effect);
+	}
+
+	// Frees every texture sized to the screen: the scene's, the chain's, the effects' intermediates.
+	function clear():Void {
+		if (scene != null)
+			scene.destroy(gpu);
+		scene = null;
+		for (pair in chain)
+			for (t in pair)
+				if (t != null)
+					t.destroy(gpu);
+		chain.clear();
+		for (effect in [for (e in made.keys()) e])
+			release(effect);
+		result = null;
+		last = null;
+		lastFrame = null;
 	}
 }

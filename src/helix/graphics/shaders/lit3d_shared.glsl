@@ -21,7 +21,9 @@
  * prefiltered cube (a mip a roughness step) scaled by the split-sum BRDF table (A, B by n.v and roughness: F0 * A + B), both turned about +y
  * by its rotation and times its intensity (0: no environment, the cube and table not read).
  *
- * Tone mapping: exposure scales the light, then 0 none (clamped), 1 Khronos PBR Neutral or 2 ACES (Narkowicz's fit) brings it into 0..1.
+ * Tone mapping: exposure scales the light, then 0 none (clamped), 1 Khronos PBR Neutral or 2 ACES (Narkowicz's fit) brings it into 0..1. In
+ * an HDR scene (a half-float target, a PostProcess chain tone mapping it later) the light after the exposure is written as it is, as sRGB
+ * values running past 1 (the sRGB curve carried on).
  *
  * lit3d_vs_params: view_projection
  * lit3d_fs_params:
@@ -38,7 +40,7 @@
  *   shadow_params[s]   x a texel in uv (1 / the map's size), y a texel in world units, z/w bias constant, slope (texels)
  *   shadow_extra[s]    x strength (how much light a shadow takes); a perspective (spot) map: y/z its near and far, w 1
  *   shadow_tint[s]     rgb what a shadow leaves behind (linear), w bias texels -> depth units (an orthographic map's)
- *   tonemap            x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale (2 to the EV)
+ *   tonemap            x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale (2 to the EV), z 1 in an HDR scene
  *   environment        x intensity (0: none), y the prefiltered cube's last mip, z/w the cosine and sine of its rotation about +y
  *   irradiance[9]      xyz each coefficient's rgb */
 
@@ -156,9 +158,18 @@ vec3 tonemap_aces(vec3 color) {
     return clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), 0.0, 1.0);
 }
 
-/* Linear light to the framebuffer's sRGB: exposure, then the tone mapping. */
+/* Linear light as sRGB values, past 1 as well: an HDR scene's. */
+vec3 linear_to_srgb_unclamped(vec3 c) {
+    c = max(c, vec3(0.0));
+    return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
+
+/* Linear light to the framebuffer's sRGB: exposure, then the tone mapping (in an HDR scene, none). */
 vec3 to_display(vec3 color) {
     color *= tonemap.y;
+    if (tonemap.z > 0.5) {
+        return linear_to_srgb_unclamped(color);
+    }
     int mode = int(tonemap.x + 0.5);
     if (mode == 1) {
         color = tonemap_neutral(color);

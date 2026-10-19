@@ -38,7 +38,7 @@ interface IGraphics {
 	public function canSample(format:TextureFormat):Bool;
 
 	/** Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave,
-		which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled. */
+		which may be fewer than asked. Render targets with depth are drawn with the same, resolved into the texture sampled. */
 	var msaaSamples(get, never):Int;
 
 	/** The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to
@@ -46,9 +46,15 @@ interface IGraphics {
 		there it's the count the canvas has when on (4 where the GPU has 4, else 1). */
 	var maxMsaaSamples(get, never):Int;
 
-	/** Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first
-		like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less. */
-	public function createRenderTarget(width:Int, height:Int):Int;
+	/** Makes a render target width x height of format and returns its handle: a texture, sampled like any other and stored top row first like any
+		other, that a target pass draws into. With depth, it has a depth buffer of its own and is multisampled as the screen is (msaaSamples, or
+		single where this GPU can't multisample format), resolved into the texture at each pass's end; without, it has neither (a pass drawing over
+		the whole target: a screen effect's). Throws for a size of 0 or less, or a format this GPU can't draw into (canRender). */
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int;
+
+	/** Whether this GPU draws into render targets of format, blends over them and filters them when sampled: RGBA8 always; RGBA16F where float
+		targets exist (natively nearly always; in a browser through EXT_color_buffer_float, turned on by asking); never a compressed one. */
+	public function canRender(format:TextureFormat):Bool;
 
 	/** Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a
 		comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow
@@ -93,8 +99,8 @@ interface IGraphics {
 		handle that isn't a shadow map or a layer it hasn't. */
 	public function beginShadowPass(map:Int, layer:Int):Void;
 
-	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets
-		the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
+	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the
+		farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
 	public function beginTargetPass(target:Int, clearColor:Int):Void;
 
 	/** Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open. */
@@ -130,7 +136,7 @@ interface IGraphics {
 	/** Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser
 		presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back
 		asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and
-		checks, not every frame. Throws inside a pass or for a handle that isn't a render target. */
+		checks, not every frame. Throws inside a pass or for a handle that isn't an RGBA8 render target. */
 	public function readPixels(target:Int, done:ReadPixelsResult->Void):Void;
 
 	/** Releases the adapter itself, after its handles are destroyed. */

@@ -11,10 +11,12 @@ import helix.graphics.TextureFormat;
 import js.html.CanvasElement;
 import js.html.webgl.WebGL2RenderingContext;
 
-/** A render target: the framebuffer of its texture and its depth buffer, its size; multisampled, the framebuffer drawn into and its color. */
+/** A render target: the framebuffer of its texture and its depth buffer (null without), its size, whether it holds half floats; multisampled,
+	the framebuffer drawn into and its color. */
 private typedef Target = {
 	framebuffer:Dynamic,
 	depth:Dynamic,
+	half:Bool,
 	drawn:Dynamic,
 	color:Dynamic,
 	width:Int,
@@ -31,8 +33,9 @@ class WebGL2GraphicsAdapter implements IGraphics {
 	var textures:Map<Int, Dynamic> = [];
 	// One sampler object for each Sampling value used, made when first used.
 	var samplers:Array<Dynamic> = [];
-	// Whether each TextureFormat is sampled, once asked.
+	// Whether each TextureFormat is sampled, and drawn into, once asked.
 	var formats:Array<Null<Bool>> = [];
+	var renderable:Array<Null<Bool>> = [];
 	// Programs, by handle: the linked program, its uniform blocks' locations and sizes by slot, its textures' sampler locations by slot.
 	var shaders:Map<Int, {program:Dynamic, blocks:Array<Null<{location:Dynamic, size:Int}>>, textures:Array<Dynamic>}> = [];
 	// Pipelines, by handle: their description.
@@ -352,45 +355,71 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		pipelines.remove(handle);
 	}
 
-	public function createRenderTarget(width:Int, height:Int):Int {
-		if (width <= 0 || height <= 0)
+	public function canRender(format:TextureFormat):Bool {
+		var known = renderable[format];
+		if (known == null) {
+			// Asking for the extension also turns it on: half floats then draw, blend and (WebGL2's own) filter.
+			known = switch format {
+				case Rgba8: true;
+				case Rgba16f: gl.getExtension("EXT_color_buffer_float") != null;
+				case _: false;
+			}
+			renderable[format] = known;
+		}
+		return known;
+	}
+
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int {
+		if (width <= 0 || height <= 0 || !canRender(format))
 			throw "Invalid render target";
+		var half = format == Rgba16f,
+			internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
 		var tex = gl.createTexture();
 		gl.bindTexture(WebGL2RenderingContext.TEXTURE_2D, tex);
-		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA8, width, height, 0, WebGL2RenderingContext.RGBA,
-			WebGL2RenderingContext.UNSIGNED_BYTE, null);
+		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internal, width, height, 0, WebGL2RenderingContext.RGBA,
+			half ? WebGL2RenderingContext.HALF_FLOAT : WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
-		// The screen's samples (at most this GPU's), so a target is drawn as smooth as the screen.
-		var count = Std.int(Math.min(msaaSamples, gl.getParameter(WebGL2RenderingContext.MAX_SAMPLES)));
-		var depth = gl.createRenderbuffer();
-		gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depth);
-		if (count > 1)
-			gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
-		else
-			gl.renderbufferStorage(WebGL2RenderingContext.RENDERBUFFER, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		// With depth, the screen's samples (at most what this GPU gives the format), so a target is drawn as smooth as the screen; without, one.
+		var count = 1;
+		if (depth) {
+			var most:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER, internal, WebGL2RenderingContext.SAMPLES);
+			count = Std.int(Math.min(msaaSamples, most != null && most.length > 0 ? most[0] : 1));
+		}
+		var depthBuffer:Dynamic = null;
+		if (depth) {
+			depthBuffer = gl.createRenderbuffer();
+			gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depthBuffer);
+			if (count > 1)
+				gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+			else
+				gl.renderbufferStorage(WebGL2RenderingContext.RENDERBUFFER, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		}
 		var framebuffer = gl.createFramebuffer();
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
 		gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, tex, 0);
-		if (count <= 1)
-			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
+		if (depth && count <= 1)
+			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER,
+				depthBuffer);
 		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
 		var drawn:Dynamic = null, color:Dynamic = null;
 		if (count > 1) {
 			color = gl.createRenderbuffer();
 			gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, color);
-			gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, WebGL2RenderingContext.RGBA8, width, height);
+			gl.renderbufferStorageMultisample(WebGL2RenderingContext.RENDERBUFFER, count, internal, width, height);
 			drawn = gl.createFramebuffer();
 			gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, drawn);
 			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.RENDERBUFFER,
 				color);
-			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER, depth);
+			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER,
+				depthBuffer);
 			complete = complete
 				&& gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
 		}
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		if (!complete) {
 			gl.deleteFramebuffer(framebuffer);
-			gl.deleteRenderbuffer(depth);
+			if (depthBuffer != null)
+				gl.deleteRenderbuffer(depthBuffer);
 			if (drawn != null) {
 				gl.deleteFramebuffer(drawn);
 				gl.deleteRenderbuffer(color);
@@ -402,7 +431,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		textures[id] = tex;
 		targets[id] = {
 			framebuffer: framebuffer,
-			depth: depth,
+			depth: depthBuffer,
+			half: half,
 			drawn: drawn,
 			color: color,
 			width: width,
@@ -692,7 +722,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		if (active)
 			throw "Inside a pass";
 		var t = targets[target];
-		if (target != 0 && t == null)
+		// Half floats read back only as floats in WebGL2: not this call's RGBA8.
+		if (target != 0 && (t == null || t.half))
 			throw "Invalid render target";
 		if (target == 0 && !frameEnded) {
 			done(Failed("No frame has ended"));
@@ -741,7 +772,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		var target = targets[handle];
 		if (target != null) {
 			gl.deleteFramebuffer(target.framebuffer);
-			gl.deleteRenderbuffer(target.depth);
+			if (target.depth != null)
+				gl.deleteRenderbuffer(target.depth);
 			if (target.drawn != null) {
 				gl.deleteFramebuffer(target.drawn);
 				gl.deleteRenderbuffer(target.color);

@@ -29,7 +29,8 @@ static function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 static function canSample(format:TextureFormat):Bool
 static var msaaSamples(get, never):Int
 static var maxMsaaSamples(get, never):Int
-static function createRenderTarget(width:Int, height:Int):Int
+static function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = helix.graphics.TextureFormat.Rgba8, ?depth:Bool = true):Int
+static function canRender(format:TextureFormat):Bool
 static function createShadowMap(size:Int, layers:Int):Int
 static function destroyTexture(handle:Int):Void
 static function createBuffer(capacityBytes:Int):Int
@@ -58,9 +59,10 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
 - `updateDataTexture`: Replaces a data texture's whole contents with data's first width * height * 16 bytes (rows top first, little-endian floats), for the draws after it; any number of times a frame. Throws for a handle that isn't a data texture or data too short.
 - `canSample`: Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them.
-- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
+- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets with depth are drawn with the same, resolved into the texture sampled.
 - `maxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
-- `createRenderTarget`: Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less.
+- `createRenderTarget`: Makes a render target width x height of format and returns its handle: a texture, sampled like any other and stored top row first like any other, that a target pass draws into. With depth, it has a depth buffer of its own and is multisampled as the screen is (msaaSamples, or single where this GPU can't multisample format), resolved into the texture at each pass's end; without, it has neither (a pass drawing over the whole target: a screen effect's). Throws for a size of 0 or less, or a format this GPU can't draw into (canRender).
+- `canRender`: Whether this GPU draws into render targets of format, blends over them and filters them when sampled: RGBA8 always; RGBA16F where float targets exist (natively nearly always; in a browser through EXT_color_buffer_float, turned on by asking); never a compressed one.
 - `createShadowMap`: Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow texture. Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. Throws for a size or layer count of 0 or less, or past this GPU's.
 - `destroyTexture`: Frees a texture of any kind. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `createBuffer`: Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle. Throws for another size.
@@ -72,7 +74,7 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `createPipeline`: Makes a pipeline as desc says (PipelineDesc) and returns its handle. Throws for an unknown shader or a description it can't make.
 - `destroyPipeline`: Frees a pipeline. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
-- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
+- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
 - `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
@@ -80,7 +82,7 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `resetScissor`: Draws everywhere in the pass again. Throws outside a pass.
 - `draw`: Draws through pipeline: count vertices from first of its buffers (or, for an indexed pipeline, count indices from first of indices, a static index buffer), whole primitives, as instanceCount instances whose records start at record firstInstance of its instanced buffers. buffers[i] is the buffer (createBuffer's, as this frame's upload left it, or createStaticBuffer's) for the pipeline's buffer i (0 for a gap); textures[i] is bound at the program's texture slot i (0 for a slot it doesn't sample), sampled as samplings[i] says (a shadow map or data texture as its kind is); uniforms[i] is the bytes of its uniform block at slot i (its declared size; null for a slot it lacks), block 0 flipped as the pipeline's clip flip says. A pipeline without buffers draws count vertices from nothing (one triangle over the viewport: three). Throws for anything invalid, before drawing.
 - `endFrame`: Ends the screen's pass and with it the frame, presenting it. Throws when no screen pass is open.
-- `readPixels`: Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and checks, not every frame. Throws inside a pass or for a handle that isn't a render target.
+- `readPixels`: Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and checks, not every frame. Throws inside a pass or for a handle that isn't an RGBA8 render target.
 
 ## GraphicsUnavailable
 
@@ -107,7 +109,8 @@ function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 function canSample(format:TextureFormat):Bool
 var msaaSamples(get, never):Int
 var maxMsaaSamples(get, never):Int
-function createRenderTarget(width:Int, height:Int):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Int
+function canRender(format:TextureFormat):Bool
 function createShadowMap(size:Int, layers:Int):Int
 function destroyTexture(handle:Int):Void
 function createBuffer(capacityBytes:Int):Int
@@ -136,9 +139,10 @@ function shutdown():Void
 - `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
 - `updateDataTexture`: Replaces a data texture's whole contents with data's first width * height * 16 bytes (rows top first, little-endian floats), for the draws after it; any number of times a frame. Throws for a handle that isn't a data texture or data too short.
 - `canSample`: Whether this GPU samples textures of format: RGBA8 always; the compressed ones on GPUs that have them; half floats where it filters them.
-- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets are drawn with the same, resolved into the texture sampled.
+- `msaaSamples`: Multisampling samples a pixel the screen is drawn with (WindowOptions.requestMsaaSamples): 1 for none, else what the platform gave, which may be fewer than asked. Render targets with depth are drawn with the same, resolved into the texture sampled.
 - `maxMsaaSamples`: The most multisampling samples a pixel a window could ask for here, at most 8 (what requestMsaaSamples takes): for a settings menu to offer, applied at the next start. Natively the GPU's most; a browser only switches antialiasing on or off, choosing its own count, so there it's the count the canvas has when on (4 where the GPU has 4, else 1).
-- `createRenderTarget`: Makes a render target width x height and returns its handle: a texture (8 bits a channel), sampled like any other and stored top row first like any other, that a target pass draws into, with a depth buffer of its own. Throws for a size of 0 or less.
+- `createRenderTarget`: Makes a render target width x height of format and returns its handle: a texture, sampled like any other and stored top row first like any other, that a target pass draws into. With depth, it has a depth buffer of its own and is multisampled as the screen is (msaaSamples, or single where this GPU can't multisample format), resolved into the texture at each pass's end; without, it has neither (a pass drawing over the whole target: a screen effect's). Throws for a size of 0 or less, or a format this GPU can't draw into (canRender).
+- `canRender`: Whether this GPU draws into render targets of format, blends over them and filters them when sampled: RGBA8 always; RGBA16F where float targets exist (natively nearly always; in a browser through EXT_color_buffer_float, turned on by asking); never a compressed one.
 - `createShadowMap`: Makes a shadow map: a depth texture of layers layers, each size x size, that shadow passes draw into (beginShadowPass), sampled through a comparison sampler (linear, less or equal, clamped to its edge; the slot's sampling is ignored) where a program declares a shadow texture. Its rows run bottom first, as GL's: clip space's -1..1 is its 0..1. Throws for a size or layer count of 0 or less, or past this GPU's.
 - `destroyTexture`: Frees a texture of any kind. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `createBuffer`: Allocates a stream vertex buffer of capacityBytes, a positive multiple of 4, filled each frame by updateBuffer, and returns its handle. Throws for another size.
@@ -150,7 +154,7 @@ function shutdown():Void
 - `createPipeline`: Makes a pipeline as desc says (PipelineDesc) and returns its handle. Throws for an unknown shader or a description it can't make.
 - `destroyPipeline`: Frees a pipeline. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
-- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
+- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
 - `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
@@ -158,7 +162,7 @@ function shutdown():Void
 - `resetScissor`: Draws everywhere in the pass again. Throws outside a pass.
 - `draw`: Draws through pipeline: count vertices from first of its buffers (or, for an indexed pipeline, count indices from first of indices, a static index buffer), whole primitives, as instanceCount instances whose records start at record firstInstance of its instanced buffers. buffers[i] is the buffer (createBuffer's, as this frame's upload left it, or createStaticBuffer's) for the pipeline's buffer i (0 for a gap); textures[i] is bound at the program's texture slot i (0 for a slot it doesn't sample), sampled as samplings[i] says (a shadow map or data texture as its kind is); uniforms[i] is the bytes of its uniform block at slot i (its declared size; null for a slot it lacks), block 0 flipped as the pipeline's clip flip says. A pipeline without buffers draws count vertices from nothing (one triangle over the viewport: three). Throws for anything invalid, before drawing.
 - `endFrame`: Ends the screen's pass and with it the frame, presenting it. Throws when no screen pass is open.
-- `readPixels`: Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and checks, not every frame. Throws inside a pass or for a handle that isn't a render target.
+- `readPixels`: Reads target back (a createRenderTarget handle; 0 for the frame endFrame just ended, read before the host's frame returns, as a browser presents it then and a GPU may swap it away); done runs once on the host thread, during this call or, on a GPU that reads back asynchronously, later: Read, or Failed when no frame has ended since the last beginFrame. Slow (it waits for the GPU): for screenshots and checks, not every frame. Throws inside a pass or for a handle that isn't an RGBA8 render target.
 - `shutdown`: Releases the adapter itself, after its handles are destroyed.
 
 ## IImageDecoder
@@ -291,21 +295,29 @@ static function encode(width:Int, height:Int, rgba:haxe.io.Bytes):haxe.io.Bytes
 
 *class* in `src/helix/graphics/PostProcess.hx`
 
-Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Its textures follow the screen's size. Effects run in the order given, so turning one off and on keeps its place.
+Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, its stage (stage) writing its light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped.
 
 ```haxe
-function new(gpu:IGraphics)
+function new(gpu:IGraphics, ?stage:Stage3D)
+var stage:Null<Stage3D>
+var hdr(default, null):Bool
 var sceneTexture(get, never):Null<Texture2D>
+function add(effect:ScreenEffect):Bool
+function remove(effect:ScreenEffect):Bool
 function beginScene(width:Int, height:Int, clearColor:Int):Void
-function endScene(effects:Array<ScreenEffect>, time:Float):Void
+function endScene(time:Float):Void
 function present():Void
 function destroy():Void
 ```
 
-- `new`: Effects drawn on gpu.
+- `new`: Effects drawn on gpu, over a scene drawn by stage (or null: a scene of 2D alone, or several stages).
+- `stage`: The stage the scene is drawn with, or null: in an HDR scene it is told so (Stage3D.hdr, from beginScene to endScene) and the tone mapping added to the chain takes its mode (Stage3D.tonemap).
+- `hdr`: Whether this frame's scene (the last beginScene's) is drawn in half floats: an enabled effect wants HDR and the GPU draws them.
 - `sceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
-- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size), cleared to clearColor. Draw it as the screen; endScene ends it. Throws inside another pass.
-- `endScene`: Ends the scene's pass and draws effects (each that is enabled, in order) but the last, each from the one before's result into a texture of its own, at time seconds; the last waits for present.
+- `add`: Adds effect at the end of the chain. False, changing nothing, when it is in the chain already.
+- `remove`: Takes effect out of the chain, freeing its intermediates (the effect stays its owner's). False when it isn't in the chain.
+- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to clearColor. Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass.
+- `endScene`: Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR chain), each its intermediates and then from the one before's result into a texture of the chain, at time seconds; the last's intermediates too, its last pass waiting for present.
 - `present`: Draws the processed frame over the open screen pass's viewport: the last effect over the others' result, or the frame as it is.
 - `destroy`: Frees its textures and buffer; the effects stay their owner's.
 
@@ -334,21 +346,53 @@ How a draw samples a texture: its filter (linear, smooth and through its mipmaps
 
 *class* in `src/helix/graphics/ScreenEffect.hx`
 
-A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (parameters), kept across the shader's reloads. PostProcess chains them; draw draws one into the open pass.
+A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (parameters), kept across the shader's reloads. PostProcess chains them (PostProcess.add); drawPass draws its shader once into the open pass. An effect of several passes (a subclass: a blur, a bloom's downsample chain) asks for intermediates, draws into them before its last pass (drawIntermediates, each step a ScreenEffect of its own drawn with drawInto) and reads more than one of them through its own textures (parameters.setTexture).
 
 ```haxe
 function new(gpu:IGraphics, shader:Shader, ?alpha:Bool = false)
 var shader(default, null):Shader
 var parameters(default, null):ShaderParameters
 var enabled:Bool
-function draw(source:Texture2D, width:Int, height:Int, time:Float):Void
+var hdr:Bool
+var intermediates(default, null):Array<Float>
+function drawIntermediates(frame:ScreenFrame):Void
+function draw(frame:ScreenFrame):Void
+function drawInto(target:Texture2D, source:Texture2D, time:Float):Void
+function drawPass(source:Texture2D, width:Int, height:Int, time:Float):Void
 ```
 
 - `new`: An effect drawing with shader (kind screen) on gpu, blended over what's there when alpha, else replacing it. Throws for a shader of another kind.
 - `shader`: Its shader.
 - `parameters`: Its shader's own parameters and textures, set by name.
 - `enabled`: Whether PostProcess draws it.
-- `draw`: Draws the effect over the open pass's viewport, reading source (the frame it changes), width x height pixels, seconds since it began. A texture of its own that isn't set is drawn as source.
+- `hdr`: Whether it reads an HDR frame: in a chain with one, PostProcess draws the scene in half floats where the GPU can (IGraphics.canRender), its colors running past 1, and tone maps it after the last such effect (helix.shaders.Tonemap). False (the default) for an effect that reads the frame as the screen shows it, tone mapped, 0 to 1.
+- `intermediates`: The textures it draws through before its last pass, each its size as a fraction of the frame's each way (.5: half; at least a pixel): PostProcess makes them in the frame's format, without depth, and hands them over in ScreenFrame.intermediates. Empty (the default) for an effect of one pass.
+- `drawIntermediates`: Draws its passes before the last into frame.intermediates, each a target pass (drawInto), before the screen's pass: nothing for an effect of one pass (the default).
+- `draw`: Draws its last pass over the open pass's viewport, frame.width x frame.height pixels: by default its shader once, reading frame.source.
+- `drawInto`: Draws its shader once into target in a target pass of its own (cleared to transparent black), reading source, time seconds since it began: one step of an effect of several passes. Before the screen's pass, outside any other.
+- `drawPass`: Draws its shader once over the open pass's viewport, reading source (the frame it changes), width x height pixels, seconds since it began. A texture of its own that isn't set is drawn as source.
+
+## ScreenFrame
+
+*class* in `src/helix/graphics/ScreenFrame.hx`
+
+What a screen effect draws from in a PostProcess chain, this frame: the frame it changes, its size, the time, and the intermediates it asked for (ScreenEffect.intermediates), made by PostProcess at their sizes in the frame's format.
+
+```haxe
+function new(source:Texture2D, width:Int, height:Int, time:Float, intermediates:Array<Texture2D>)
+final source:Texture2D
+final width:Int
+final height:Int
+final time:Float
+final intermediates:Array<Texture2D>
+```
+
+- `new`: A frame for an effect: source, width x height framebuffer pixels, time seconds, its intermediates.
+- `source`: The frame the effect changes: the scene, or the effect before's result.
+- `width`: The size of the frame the effect draws, in framebuffer pixels.
+- `height`: The size of the frame the effect draws, in framebuffer pixels.
+- `time`: Seconds since the effect began (the time PostProcess.endScene was given).
+- `intermediates`: The effect's intermediates, in the order of its ScreenEffect.intermediates: textures without depth, each that fraction of width and height (at least a pixel), half floats where source is.
 
 ## ScreenshotResult
 

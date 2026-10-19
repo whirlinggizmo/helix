@@ -112,8 +112,11 @@ class NullGraphics implements IGraphics {
 	function get_maxMsaaSamples():Int
 		return 1;
 
-	public function createRenderTarget(width:Int, height:Int):Int
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int
 		return next++;
+
+	public function canRender(format:TextureFormat):Bool
+		return true;
 
 	public function createShadowMap(size:Int, layers:Int):Int
 		return next++;

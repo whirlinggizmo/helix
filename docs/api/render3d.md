@@ -1051,7 +1051,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Stage3D.hx`
 
-A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start); its sprites, text and particles are display colors, untouched.
+A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched.
 
 ```haxe
 function new(?gpu:IGraphics)
@@ -1069,6 +1069,7 @@ var background(default, null):Null<Environment>
 var backgroundBlur(default, null):Float
 function setBackground(environment:Null<Environment>, ?blur:Float = 0.):Bool
 var tonemap:Tonemap
+var hdr:Bool
 var exposure(default, set):Float
 var time:Float
 var culling:Bool
@@ -1097,7 +1098,8 @@ function destroy():Void
 - `background`: The environment drawn behind everything, or null.
 - `backgroundBlur`: How blurred the background is: 0 sharp to 1 its blurriest.
 - `setBackground`: Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside 0..1.
-- `tonemap`: How lit color comes into the screen's 0..1 after the exposure.
+- `tonemap`: How lit color comes into the screen's 0..1 after the exposure. In an HDR scene (hdr) the chain's tone mapping applies it instead.
+- `hdr`: Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shaders.Tonemap), which its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to endScene when its scene is HDR.
 - `exposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is taken as 0.
 - `time`: The seconds surface shaders see (helix_time): what the app last set.
 - `culling`: Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. Culls, or draws everything (to measure what culling saves).

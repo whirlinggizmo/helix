@@ -74,10 +74,35 @@ class CountingGraphics implements IGraphics {
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
 		uploaded = data.sub(0, usedBytes);
 
-	public function createRenderTarget(width:Int, height:Int):Int
-		return next++;
+	/** Whether it draws into half floats (canRender). */
+	public var floatTargets = true;
 
-	public function beginTargetPass(target:Int, clearColor:Int):Void {}
+	public function canRender(format:TextureFormat):Bool
+		return format == Rgba8 || floatTargets && format == Rgba16f;
+
+	/** Each render target made, by handle: its size, format and whether it has depth. */
+	public var renderTargets:Map<Int, {
+		width:Int,
+		height:Int,
+		format:TextureFormat,
+		depth:Bool
+	}> = [];
+
+	/** The render targets target passes drew into, in order. */
+	public var targetPasses:Array<Int> = [];
+
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int {
+		renderTargets[next] = {
+			width: width,
+			height: height,
+			format: format,
+			depth: depth
+		};
+		return next++;
+	}
+
+	public function beginTargetPass(target:Int, clearColor:Int):Void
+		targetPasses.push(target);
 
 	public function endTargetPass():Void {}
 
@@ -556,7 +581,7 @@ class Render2DTests {
 			&& !effect.parameters.setValues("strength", [1, 2])
 			&& !effect.parameters.setTexture("helix_screen_texture", texture),
 			"Unknown parameters, too many values and the framework's texture are refused");
-		effect.draw(texture, 640, 480, 2.5);
+		effect.drawPass(texture, 640, 480, 2.5);
 		var block = gpu.screen.uniforms[2], info = gpu.screen.uniforms[1];
 		check(block.getFloat(0) == .5 && block.getFloat(16) == 1 && block.getFloat(24) == 3 && block.getFloat(48) == 7 && block.getFloat(112) == 9,
 			"Values land at their std140 offsets");

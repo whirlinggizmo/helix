@@ -155,8 +155,11 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native upload";
 	}
 
-	public function createRenderTarget(width:Int, height:Int):Int
-		return valid(GraphicsDeviceBridge.target(width, height));
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true):Int
+		return valid(GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0));
+
+	public function canRender(format:TextureFormat):Bool
+		return GraphicsDeviceBridge.canRender(format) == 1;
 
 	public function createShadowMap(size:Int, layers:Int):Int
 		return valid(GraphicsDeviceBridge.shadowMap(size, layers));

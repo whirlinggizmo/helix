@@ -564,7 +564,7 @@ A GPU texture with its size, its format and how it is sampled (Sampling: linear 
 ```haxe
 static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:haxe.io.Bytes, ?linear:Bool = false, ?whiteX:Int = -1, ?whiteY:Int = -1, ?mipmaps:Bool = false):Texture2D
 static function fromLevels(gpu:IGraphics, width:Int, height:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat, sampling:Sampling):Texture2D
-static function renderTarget(gpu:IGraphics, width:Int, height:Int, ?linear:Bool = true):Texture2D
+static function renderTarget(gpu:IGraphics, width:Int, height:Int, ?linear:Bool = true, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Texture2D
 var handle(default, null):Int
 var width(default, null):Int
 var height(default, null):Int
@@ -579,7 +579,7 @@ function destroy(gpu:IGraphics):Void
 
 - `fromRgba`: Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without shimmering. The caller destroys it.
 - `fromLevels`: Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws when the GPU can't sample format (IGraphics.canSample). The caller destroys it.
-- `renderTarget`: A render target width x height: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger). The caller destroys it.
+- `renderTarget`: A render target width x height of format: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger); with depth a depth buffer and the screen's multisampling, without neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). The caller destroys it.
 - `handle`: The IGraphics handle, for draws.
 - `width`: Width in texels.
 - `height`: Height in texels.

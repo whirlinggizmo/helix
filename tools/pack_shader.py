@@ -48,7 +48,8 @@ void main() {
 @end
 
 @block helix_screen
-// The frame being drawn over (its color values as the framebuffer holds them, sRGB), its size and the time.
+// The frame being drawn over (its color values as the framebuffer holds them, sRGB; before an HDR chain's tone mapping, past 1 too), its
+// size and the time.
 layout(binding=1) uniform helix_screen_params {
     vec4 helix_screen_info; // xy the frame's size in pixels, z seconds since the effect began
 };
@@ -129,7 +130,7 @@ layout(binding=1) uniform helix_surface_params {
     vec4 helix_shadow_params[4];
     vec4 helix_shadow_extra[4];
     vec4 helix_shadow_tint[4];
-    vec4 helix_tonemap_params; // x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale
+    vec4 helix_tonemap_params; // x mode (0 none, 1 Neutral, 2 ACES), y exposure's scale, z 1 in an HDR scene
     vec4 helix_environment;    // x intensity (0: none), y the cube's last mip, z/w its rotation's cosine and sine
     vec4 helix_irradiance[9];  // the environment's irradiance over pi: 9 spherical-harmonic coefficients, rgb each
     vec4 helix_fs_info;       // x seconds since the stage began
@@ -336,8 +337,14 @@ vec3 helix_tonemap(vec3 color) {
     }
     return color;
 }
-// Writes linear color (tone mapped, then encoded as the framebuffer's sRGB) and alpha.
+// Writes linear color (tone mapped, then encoded as the framebuffer's sRGB) and alpha; in an HDR scene (a PostProcess chain tone mapping it
+// later) the light after the exposure, as sRGB values running past 1.
 void helix_output(vec3 color, float alpha) {
+    if (helix_tonemap_params.z > 0.5) {
+        vec3 l = max(color * helix_tonemap_params.y, vec3(0.0));
+        helix_frag_color = vec4(mix(l * 12.92, 1.055 * pow(max(l, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), l)), alpha);
+        return;
+    }
     vec3 c = clamp(helix_tonemap(color), vec3(0.0), vec3(1.0));
     helix_frag_color = vec4(mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)), alpha);
 }
