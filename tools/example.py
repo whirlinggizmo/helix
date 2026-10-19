@@ -262,7 +262,14 @@ def main():
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
             failed=None;library_failed=None;packed=time.time()
+            packer=Path(pack_shader.__file__).stat().st_mtime
             while server.poll() is None:
+                # The packer itself edited: loaded again, and every shader packed again with it (the library's as its tool is newer).
+                if Path(pack_shader.__file__).stat().st_mtime!=packer:
+                    import importlib
+                    packer=Path(pack_shader.__file__).stat().st_mtime
+                    try:importlib.reload(pack_shader);packed=0;library_failed=None
+                    except Exception as error:print('example: the shader packer failed to load, kept as it was:',error,flush=True)
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
                     repacked=pack_shaders(a.name,ROOT/'build/web/assets',packed)
