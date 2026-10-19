@@ -69,6 +69,79 @@ class PostProcessTests {
 		post.present();
 	}
 
+	// An sRGB value (running past 1 too) to linear light, and back, as the tone mapping's shader works them.
+	static function decode(v:Float):Float
+		return v < .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);
+
+	static function encode(v:Float):Float
+		return v < .0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - .055;
+
+	// An HDR scene's clear: for each mode, the light Tonemap.computeHdrColor answers is shown (tone mapped as the shader does, written as
+	// 8 bits) as the color asked for, so a background of clear color alone looks the same with an HDR chain and without; PostProcess clears an
+	// 8-bit scene to the color and an HDR one to that light, worked out again when the mode changes.
+	static function hdrClear():Void {
+		var tonemap = new Tonemap();
+		var colors = [
+			0x14161cff,
+			0x000000ff,
+			0x808080ff,
+			0x87ceebff,
+			0xc04020ff,
+			0x2a2f3c80,
+			0xffffffff
+		];
+		for (mode in [
+			helix.render3d.Tonemap.None,
+			helix.render3d.Tonemap.Neutral,
+			helix.render3d.Tonemap.Aces
+		]) {
+			tonemap.mode = mode;
+			for (color in colors) {
+				var out = [];
+				tonemap.computeHdrColor(color, out);
+				var shown = Tonemap.map(mode, [for (c in 0...3) decode(out[c])]);
+				for (c in 0...3) {
+					var asked = (color >>> (24 - 8 * c)) & 255;
+					check(Math.abs(encode(shown[c]) * 255 - asked) <= .5, 'Mode $mode shows ${StringTools.hex(color, 8)}\'s channel $c as given');
+				}
+				check(out[3] == (color & 255) / 255, "The alpha is the color's");
+			}
+		}
+		tonemap.mode = Neutral;
+		var dark = [];
+		tonemap.computeHdrColor(0x14161cff, dark);
+		check(dark[0] > 0x14 / 255 && dark[2] > 0x1c / 255, "Neutral's toe darkens, so its clear is lighter than the color");
+		var white = [];
+		tonemap.computeHdrColor(0xffffffff, white);
+		check(white[0] == white[1] && white[0] > 2, "White under Neutral is the most light it answers");
+
+		var stage = new Stage3D(gpu);
+		var post = new PostProcess(gpu, stage);
+		var bright = new ScreenEffect(gpu, shader);
+		bright.hdr = true;
+		post.add(bright);
+		gpu.targetPasses = [];
+		gpu.targetClears = [];
+		post.beginScene(800, 600, 0x14161cff);
+		post.endScene(1);
+		check(gpu.targetClears[0][0] == dark[0] && gpu.targetClears[0][2] == dark[2], "An HDR scene is cleared to the light Neutral shows as its color");
+		stage.tonemap = Aces;
+		gpu.targetClears = [];
+		post.beginScene(800, 600, 0x14161cff);
+		post.endScene(1);
+		var aces = [];
+		tonemap.mode = Aces;
+		tonemap.computeHdrColor(0x14161cff, aces);
+		check(gpu.targetClears[0][0] == aces[0] && aces[0] != dark[0], "Its clear is worked out again for the mode");
+		bright.enabled = false;
+		gpu.targetClears = [];
+		post.beginScene(800, 600, 0x14161cff);
+		post.endScene(1);
+		check(gpu.targetClears[0][0] == 0x14 / 255 && gpu.targetClears[0][1] == 0x16 / 255 && gpu.targetClears[0][3] == 1,
+			"An 8-bit scene is cleared to its color as given");
+		post.destroy();
+	}
+
 	static function main():Void {
 		gpu = new CountingGraphics();
 		@:privateAccess Graphics.bind(gpu);
@@ -201,6 +274,7 @@ class PostProcessTests {
 		post.destroy();
 		hdrPost.destroy();
 		gpu.floatTargets = true;
+		hdrClear();
 		bloom();
 		fields();
 		identity();

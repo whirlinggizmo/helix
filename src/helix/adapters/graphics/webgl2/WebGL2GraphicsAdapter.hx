@@ -496,17 +496,17 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		// Not flipped: a shadow map's rows run bottom first, as its lookups expect.
 		inTarget = true;
 		flipped = false;
-		open(m.size, m.size, 0);
+		open(m.size, m.size, 0, 0, 0, 0);
 	}
 
-	public function beginTargetPass(target:Int, clearColor:Int):Void {
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		var t = targets[target];
 		if (active || t == null)
 			throw "Invalid target pass";
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
 		drawing = t;
 		inTarget = flipped = true;
-		open(t.width, t.height, clearColor);
+		open(t.width, t.height, red, green, blue, alpha);
 	}
 
 	public function endTargetPass():Void {
@@ -531,11 +531,11 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		inTarget = flipped = frameEnded = false;
 		frameWidth = width;
 		frameHeight = height;
-		open(width, height, clearColor);
+		open(width, height, (clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255, (clearColor & 255) / 255);
 	}
 
 	// Opens a pass on the bound framebuffer, width x height, cleared.
-	function open(width:Int, height:Int, clearColor:Int):Void {
+	function open(width:Int, height:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		active = true;
 		passHeight = height;
 		gl.disable(WebGL2RenderingContext.SCISSOR_TEST);
@@ -543,7 +543,7 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		gl.depthMask(true);
 		// A depth-only draw before may have masked the colors off: a clear writes them all.
 		gl.colorMask(true, true, true, true);
-		gl.clearColor((clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255, (clearColor & 255) / 255);
+		gl.clearColor(red, green, blue, alpha);
 		gl.clearDepth(1);
 		gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 		gl.viewport(0, 0, width, height);

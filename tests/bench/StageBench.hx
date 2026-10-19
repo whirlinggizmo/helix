@@ -145,7 +145,7 @@ class NullGraphics implements IGraphics {
 
 	public function beginShadowPass(map:Int, layer:Int):Void {}
 
-	public function beginTargetPass(target:Int, clearColor:Int):Void {}
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {}
 
 	public function endTargetPass():Void {}
 

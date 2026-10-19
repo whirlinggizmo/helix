@@ -116,8 +116,13 @@ class CountingGraphics implements IGraphics {
 		return next++;
 	}
 
-	public function beginTargetPass(target:Int, clearColor:Int):Void
+	/** The colors target passes cleared to, red, green, blue and alpha, in order. */
+	public var targetClears:Array<Array<Float>> = [];
+
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {
 		targetPasses.push(target);
+		targetClears.push([red, green, blue, alpha]);
+	}
 
 	public function endTargetPass():Void {}
 

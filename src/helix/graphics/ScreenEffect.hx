@@ -53,7 +53,7 @@ class ScreenEffect {
 	/** Draws its shader once into target in a target pass of its own (cleared to transparent black), reading source, time seconds since it
 		began: one step of an effect of several passes. Before the screen's pass, outside any other. */
 	public function drawInto(target:Texture2D, source:Texture2D, time:Float):Void {
-		gpu.beginTargetPass(target.handle, 0x00000000);
+		gpu.beginTargetPass(target.handle, 0, 0, 0, 0);
 		drawPass(source, target.width, target.height, time);
 		gpu.endTargetPass();
 	}

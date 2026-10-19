@@ -51,6 +51,20 @@ class SimulationTests {
 		same.advance(g.probe);
 		asked[1].done([[10, 20, 45, 255], [0, 0, 9, 255]]);
 		rejects(() -> same.advance(g.probe), "A point less unlike the sample it must differ from than by fails the script");
+		var alike = '{"op":"sample","name":"alike","points":[[1,2],[3.5,4]],"matches":"off","within":2}';
+		for (second in [[[11, 21, 30, 255], [0, 2, 0, 255]], [[10, 20, 30, 255], [0, 0, 3, 255]]]) {
+			asked = [];
+			var matching = pilot(off + ',' + alike);
+			matching.advance(g.probe);
+			asked[0].done([[10, 20, 30, 255], [0, 0, 0, 255]]);
+			matching.advance(g.probe);
+			asked[1].done(second);
+			if (second[1][2] == 0) {
+				matching.advance(g.probe);
+				check(matching.done, "A sample within its match's amount at every point passes");
+			} else
+				rejects(() -> matching.advance(g.probe), "A point further from the sample it must match than within fails the script");
+		}
 		asked = [];
 		var failing = pilot(off);
 		failing.advance(g.probe);
@@ -66,7 +80,10 @@ class SimulationTests {
 			'{"op":"sample","name":"x","points":[[1,2]],"differsFrom":"x","by":4}',
 			off + ',' + off,
 			off + ',{"op":"sample","name":"x","points":[[1,2]],"differsFrom":"off","by":4}',
-			off + ',{"op":"sample","name":"x","points":[[1,2],[3,4]],"differsFrom":"off","by":0}'
+			off + ',{"op":"sample","name":"x","points":[[1,2],[3,4]],"differsFrom":"off","by":0}',
+			off + ',{"op":"sample","name":"x","points":[[1,2],[3,4]],"matches":"off"}',
+			off + ',{"op":"sample","name":"x","points":[[1,2]],"matches":"off","within":2}',
+			off + ',{"op":"sample","name":"x","points":[[1,2],[3,4]],"matches":"off","within":256}'
 		])
 			rejects(() -> pilot(bad), "An invalid sample rejected: " + bad);
 	}

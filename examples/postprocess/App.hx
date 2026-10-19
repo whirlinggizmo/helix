@@ -51,7 +51,8 @@ import helix.time.Time;
 	They run in the order added to the chain (PostProcess.add), each on or off (ScreenEffect.enabled); Bloom, Fxaa and Vignette start on.
 
 	H puts the library's tone mapping (helix.shaders.Tonemap) first in the chain, so everything after it reads the tone-mapped frame: Bloom then
-	thresholds it as it does where the GPU draws no half floats.
+	thresholds it as it does where the GPU draws no half floats. The background is the scene's clear color alone, and looks the same with the
+	scene HDR or not (PostProcess clears an HDR scene to what its tone mapping shows as that color).
 
 	1 Bloom, 2 Fxaa, 3 Blur, 4 Pixelate, 5 ColorLut, 6 Sepia, 7 ChromaticAberration, 8 Crt, 9 Vignette: each on and off; H: the tone mapping
 	first; Up / Down: the bloom's intensity; O: stop the camera; Escape: quit, where quitting means anything. Options: autopilot (a script

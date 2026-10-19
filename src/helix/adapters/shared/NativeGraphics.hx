@@ -168,8 +168,8 @@ abstract class NativeGraphics implements IGraphics {
 		if (GraphicsDeviceBridge.beginShadow(map, layer) != 1)
 			throw "Invalid native shadow pass";
 
-	public function beginTargetPass(target:Int, clearColor:Int):Void
-		if (GraphicsDeviceBridge.beginTarget(target, clearColor) != 1)
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
+		if (GraphicsDeviceBridge.beginTarget(target, red, green, blue, alpha) != 1)
 			throw "Invalid native target pass";
 
 	public function endTargetPass():Void

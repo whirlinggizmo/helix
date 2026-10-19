@@ -53,8 +53,10 @@
     {"op": "assert", "probe": "on", "equals": "vignette"},
     {"op": "sample", "name": "vignette", "points": [[7.2, 804.0], [1274.4, 804.0], [64.8, 821.6], [1215.2, 821.6], [7.2, 730.4], [1274.4, 730.4]], "differsFrom": "vignetteOff", "by": 20},
     {"op": "press", "key": "9"},
+    {"op": "sample", "name": "background", "points": [[100.0, 300.0], [1180.0, 300.0], [60.0, 160.0], [1240.0, 120.0], [700.0, 180.0], [400.0, 170.0]]},
     {"op": "press", "key": "H"},
     {"op": "assert", "probe": "hdr", "equals": true},
+    {"op": "sample", "name": "backgroundHdr", "points": [[100.0, 300.0], [1180.0, 300.0], [60.0, 160.0], [1240.0, 120.0], [700.0, 180.0], [400.0, 170.0]], "matches": "background", "within": 2},
     {"op": "sample", "name": "toneMappedOff", "points": [[605.6, 231.2], [671.2, 231.2], [712.8, 280.8], [554.4, 340.0], [437.6, 311.2], [476.0, 231.2]]},
     {"op": "press", "key": "1"},
     {"op": "sample", "name": "toneMappedBloom", "points": [[605.6, 231.2], [671.2, 231.2], [712.8, 280.8], [554.4, 340.0], [437.6, 311.2], [476.0, 231.2]], "differsFrom": "toneMappedOff", "by": 10}

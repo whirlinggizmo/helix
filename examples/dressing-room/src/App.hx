@@ -315,7 +315,7 @@ class App extends BaseApp {
 			modelOutfit.choose(w.slot, w.path);
 			var texture = Texture2D.renderTarget(Graphics.instance, THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
-			Graphics.beginTargetPass(texture.handle, 0x2a2f3cff);
+			Graphics.beginTargetPass(texture.handle, 0x2a / 255, 0x2f / 255, 0x3c / 255, 1);
 			studio.draw(shot);
 			Graphics.endTargetPass();
 			thumbs[w.path] = texture;

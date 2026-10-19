@@ -54,7 +54,7 @@ static function destroyShader(handle:Int):Void
 static function createPipeline(desc:PipelineDesc):Int
 static function destroyPipeline(handle:Int):Void
 static function beginShadowPass(map:Int, layer:Int):Void
-static function beginTargetPass(target:Int, clearColor:Int):Void
+static function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
 static function endTargetPass():Void
 static function beginFrame(width:Int, height:Int, clearColor:Int):Void
 static function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
@@ -86,7 +86,7 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `createPipeline`: Makes a pipeline as desc says (PipelineDesc) and returns its handle. Throws for an unknown shader or a description it can't make.
 - `destroyPipeline`: Frees a pipeline. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
-- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
+- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to red, green, blue and alpha, as its texels store them (0 to 1 in an RGBA8 target; a half-float one holds values past 1, as an HDR scene's light), and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
 - `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
@@ -134,7 +134,7 @@ function destroyShader(handle:Int):Void
 function createPipeline(desc:PipelineDesc):Int
 function destroyPipeline(handle:Int):Void
 function beginShadowPass(map:Int, layer:Int):Void
-function beginTargetPass(target:Int, clearColor:Int):Void
+function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void
 function endTargetPass():Void
 function beginFrame(width:Int, height:Int, clearColor:Int):Void
 function applyViewport(x:Int, y:Int, w:Int, h:Int):Void
@@ -166,7 +166,7 @@ function shutdown():Void
 - `createPipeline`: Makes a pipeline as desc says (PipelineDesc) and returns its handle. Throws for an unknown shader or a description it can't make.
 - `destroyPipeline`: Frees a pipeline. Whoever created a handle destroys it, once. Throws for an unknown handle.
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
-- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
+- `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to red, green, blue and alpha, as its texels store them (0 to 1 in an RGBA8 target; a half-float one holds values past 1, as an HDR scene's light), and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
 - `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
@@ -315,7 +315,7 @@ static function encode(width:Int, height:Int, rgba:haxe.io.Bytes):haxe.io.Bytes
 
 *class* in `src/helix/graphics/PostProcess.hx`
 
-Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, its stage (stage) writing its light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped.
+Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, its stage (stage) writing its light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped. An HDR scene is cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same with the chain HDR or not.
 
 ```haxe
 function new(gpu:IGraphics, ?stage:Stage3D)
@@ -336,7 +336,7 @@ function destroy():Void
 - `sceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
 - `add`: Adds effect at the end of the chain. False, changing nothing, when it is in the chain already.
 - `remove`: Takes effect out of the chain, freeing its intermediates (the effect stays its owner's). False when it isn't in the chain.
-- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to clearColor. Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass.
+- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to clearColor (0xRRGGBBAA; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass.
 - `endScene`: Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR chain), each its intermediates and then from the one before's result into a texture of the chain, at time seconds; the last's intermediates too, its last pass waiting for present.
 - `present`: Draws the processed frame over the open screen pass's viewport: the last effect over the others' result, or the frame as it is.
 - `destroy`: Frees its textures and buffer; the effects stay their owner's.

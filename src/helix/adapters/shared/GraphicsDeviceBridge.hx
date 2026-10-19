@@ -17,7 +17,7 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_update") static function update(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_target") static function target(w:Int, h:Int, format:Int, depth:Int):Int;
 	@:native("helix_can_render") static function canRender(format:Int):Int;
-	@:native("helix_begin_target") static function beginTarget(target:Int, color:Int):Int;
+	@:native("helix_begin_target") static function beginTarget(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Int;
 	@:native("helix_end_target") static function endTarget():Int;
 	@:native("helix_shadow_map") static function shadowMap(size:Int, layers:Int):Int;
 	@:native("helix_begin_shadow") static function beginShadow(map:Int, layer:Int):Int;

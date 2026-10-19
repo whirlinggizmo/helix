@@ -353,14 +353,14 @@ int helix_begin_shadow(uint32_t map,int layer){
  return 1;
 }
 static sg_color color_of(uint32_t color){return (sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
-/* A pass into target, cleared to color (and its depth, if it has one, to the farthest), before the screen's: drawn flipped where the backend's
-   origin is the bottom left (GL). */
-int helix_begin_target(uint32_t target,uint32_t color){
+/* A pass into target, cleared to red, green, blue, alpha as its texels store them (and its depth, if it has one, to the farthest), before the
+   screen's: drawn flipped where the backend's origin is the bottom left (GL). */
+int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){
  int slot=target&0xffff;
  if(active||slot>=256||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
  active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;
  pass_variant=targets[slot].variant|(flipped?8:0);
- sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value=color_of(color)},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
+ sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=SG_LOADACTION_CLEAR,.clear_value={red,green,blue,alpha}},.depth={.load_action=SG_LOADACTION_CLEAR,.clear_value=1.0f}},
   .attachments={.colors[0]=targets[slot].color,.resolves[0]=targets[slot].resolve,.depth_stencil=targets[slot].depth}});
  return 1;
 }

@@ -16,7 +16,9 @@ import helix.shaders.Tonemap;
 	carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone
 	mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain
 	has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half
-	floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped. */
+	floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped. An HDR scene is
+	cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same
+	with the chain HDR or not. */
 class PostProcess {
 	var gpu:IGraphics;
 	var effects:Array<ScreenEffect> = [];
@@ -35,6 +37,10 @@ class PostProcess {
 	var result:Null<Texture2D>;
 	var last:Null<ScreenEffect>;
 	var lastFrame:Null<ScreenFrame>;
+	// An HDR scene's clear: the values, and the clear color and mode they were worked out for (mode -1: none yet).
+	var hdrClear = [0., 0, 0, 0];
+	var hdrClearOf = -1;
+	var hdrClearMode = -1;
 	// Drawing the frame as it is: two clip-space triangles, sampling it whole.
 	var copyBuffer:Int;
 	// The sprite program's block 0, its clip scale, which the adapter writes.
@@ -95,7 +101,8 @@ class PostProcess {
 	}
 
 	/** Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to
-		clearColor. Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass. */
+		clearColor (0xRRGGBBAA; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it.
+		Which effects draw this frame is taken here. Throws inside another pass. */
 	public function beginScene(width:Int, height:Int, clearColor:Int):Void {
 		plan();
 		if (width != this.width || height != this.height) {
@@ -112,7 +119,17 @@ class PostProcess {
 			scene = Texture2D.renderTarget(gpu, width, height, true, format);
 		if (stage != null)
 			stage.hdr = hdr;
-		gpu.beginTargetPass(scene.handle, clearColor);
+		if (hdr) {
+			var tonemap:Tonemap = cast steps[tonemapAt];
+			if (clearColor != hdrClearOf || (tonemap.mode : Int) != hdrClearMode) {
+				tonemap.computeHdrColor(clearColor, hdrClear);
+				hdrClearOf = clearColor;
+				hdrClearMode = tonemap.mode;
+			}
+			gpu.beginTargetPass(scene.handle, hdrClear[0], hdrClear[1], hdrClear[2], hdrClear[3]);
+		} else
+			gpu.beginTargetPass(scene.handle, (clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255,
+				(clearColor & 255) / 255);
 	}
 
 	/** Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR
@@ -135,7 +152,7 @@ class PostProcess {
 				break;
 			}
 			var into = chainTarget(i < tonemapAt ? Rgba16f : Rgba8, result);
-			gpu.beginTargetPass(into.handle, 0x000000ff);
+			gpu.beginTargetPass(into.handle, 0, 0, 0, 1);
 			effect.draw(frame);
 			gpu.endTargetPass();
 			result = into;

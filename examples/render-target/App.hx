@@ -126,7 +126,7 @@ class App extends BaseApp {
 			height = Window.framebufferHeight;
 
 		// 1. The label, first, so the views below use this frame's text.
-		gpu.beginTargetPass(label.handle, 0x1e3c8cff);
+		gpu.beginTargetPass(label.handle, 0x1e / 255, 0x3c / 255, 0x8c / 255, 1);
 		targetCamera.setViewport(LABEL_W, LABEL_H);
 		targetCamera.pixels(1);
 		batch.begin(targetCamera);
@@ -136,13 +136,13 @@ class App extends BaseApp {
 		gpu.endTargetPass();
 
 		// 2. A low-resolution view of the stage.
-		gpu.beginTargetPass(pixelView.handle, BACKGROUND);
+		gpu.beginTargetPass(pixelView.handle, 0x18 / 255, 0x1a / 255, 0x22 / 255, 1);
 		camera.setViewport(PIXEL_W, PIXEL_H);
 		stage.draw(camera);
 		gpu.endTargetPass();
 
 		// 3. The minimap, from above.
-		gpu.beginTargetPass(minimap.handle, 0x0c0e12ff);
+		gpu.beginTargetPass(minimap.handle, 0x0c / 255, 0x0e / 255, 0x12 / 255, 1);
 		top.setViewport(MINIMAP, MINIMAP);
 		stage.draw(top);
 		gpu.endTargetPass();

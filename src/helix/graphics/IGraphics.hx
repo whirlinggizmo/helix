@@ -99,9 +99,10 @@ interface IGraphics {
 		handle that isn't a shadow map or a layer it hasn't. */
 	public function beginShadowPass(map:Int, layer:Int):Void;
 
-	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to clearColor (0xRRGGBBAA) and its depth (if it has one) to the
-		farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
-	public function beginTargetPass(target:Int, clearColor:Int):Void;
+	/** Starts a pass drawing into target (a createRenderTarget handle): clears it to red, green, blue and alpha, as its texels store them (0 to
+		1 in an RGBA8 target; a half-float one holds values past 1, as an HDR scene's light), and its depth (if it has one) to the farthest, and
+		sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target. */
+	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void;
 
 	/** Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open. */
 	public function endTargetPass():Void;

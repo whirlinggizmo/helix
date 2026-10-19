@@ -17,7 +17,9 @@ import helix.input.InputState;
 	between the browser and native: `{"op": "sample", "name": "lit", "points": [[x, y], ...]}`, the points in the design's units (Screen's),
 	1 to 64 of them; `"tolerance"`, how far each channel (0 to 255) may differ across targets, 3 when not given; and `"differsFrom"` with
 	`"by"`, an earlier sample's name and an amount, failing the script unless every point differs from the same point there by at least that
-	much in some channel (an effect turned on against it off, so a shader drawing nothing fails). The frame read is the one drawn after the
+	much in some channel (an effect turned on against it off, so a shader drawing nothing fails); and `"matches"` with `"within"`, an earlier
+	sample's name and an amount, failing it unless every point is within that much of the same point there in every channel (what must look
+	the same either way, as a background with an HDR chain and without). The frame read is the one drawn after the
 	ticks before it: while it waits for that frame to end, awaitingFrame is true and the app runs no tick. */
 class Autopilot {
 	var ticks = 0;
@@ -129,7 +131,7 @@ class Autopilot {
 						&& (!Std.isOfType(command.name, String) || !~/^[A-Za-z0-9_-]{1,64}\.png$/.match(command.name)))
 						throw "Invalid screenshot name";
 				case "sample":
-					fields(command, ["op", "name", "points"], ["tolerance", "differsFrom", "by"]);
+					fields(command, ["op", "name", "points"], ["tolerance", "differsFrom", "by", "matches", "within"]);
 					if (!Std.isOfType(command.name, String)
 						|| !~/^[A-Za-z0-9_-]{1,64}$/.match(command.name)
 						|| sampleCounts.exists(command.name))
@@ -144,6 +146,13 @@ class Autopilot {
 						throw "A sample differs from an earlier sample of as many points";
 					if (Reflect.hasField(command, "by") && !integer(command.by, 1, 255))
 						throw "Invalid sample difference";
+					if (Reflect.hasField(command, "matches") != Reflect.hasField(command, "within"))
+						throw "A sample's matches and within go together";
+					if (Reflect.hasField(command, "matches")
+						&& (!Std.isOfType(command.matches, String) || sampleCounts.get(command.matches) != count))
+						throw "A sample matches an earlier sample of as many points";
+					if (Reflect.hasField(command, "within") && !integer(command.within, 0, 255))
+						throw "Invalid sample match";
 					sampleCounts.set(command.name, count);
 				default:
 					throw "Unknown autopilot command";
@@ -303,13 +312,24 @@ class Autopilot {
 		return state;
 	}
 
-	// A sample's colors kept under its name, with its points and tolerance; checked against the sample it must differ from.
+	// A sample's colors kept under its name, with its points and tolerance; checked against the sample it must match or differ from.
 	function record(command:Dynamic, colors:Array<Array<Int>>):Void {
 		Reflect.setField(samples, command.name, {
 			points: command.points,
 			colors: colors,
 			tolerance: Reflect.hasField(command, "tolerance") ? command.tolerance : 3
 		});
+		if (Reflect.hasField(command, "matches")) {
+			var same:Array<Array<Int>> = Reflect.field(samples, command.matches).colors;
+			for (i in 0...colors.length) {
+				var most = 0;
+				for (c in 0...4)
+					most = Std.int(Math.max(most, Math.abs(colors[i][c] - same[i][c])));
+				if (most > command.within)
+					throw 'Autopilot assertion failed at command ' + index + ': sample ' + command.name + ' point ' + i + ' differs from ' + command.matches
+						+ ' by ' + most + ', over ' + command.within;
+			}
+		}
 		if (!Reflect.hasField(command, "differsFrom"))
 			return;
 		var other:Array<Array<Int>> = Reflect.field(samples, command.differsFrom).colors;

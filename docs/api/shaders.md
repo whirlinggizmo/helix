@@ -350,11 +350,17 @@ An HDR chain's tone mapping, a screen effect of the library: the frame's light (
 
 ```haxe
 function new()
+static var MAX_LIGHT(inline, null):Float
+static function map(mode:Tonemap, linear:Array<Float>):Array<Float>
 var mode(default, set):Tonemap
+function computeHdrColor(color:Int, out:Array<Float>):Void
 ```
 
 - `new`: A tone mapping by Khronos PBR Neutral.
+- `MAX_LIGHT`: The most linear light computeHdrColor answers with, for a color the mode never reaches (Neutral never reaches 1): Neutral shows it as white written in 8 bits.
+- `map`: linear (red, green, blue light) tone mapped by mode as the shader does it, into 0..1, a new array.
 - `mode`: How the light comes into 0..1 (helix.render3d.Tonemap's modes, as Stage3D.tonemap): Khronos PBR Neutral to start.
+- `computeHdrColor`: Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xRRGGBBAA): red, green and blue as sRGB values running past 1, alpha as given, 0 to 1. PostProcess clears an HDR scene to it, so a background of clear color alone looks the same with and without an HDR chain. Solved on the CPU (this tone mapping as the shader works it, one channel at a time by bisection, round after round, as the modes mix the channels a little), no channel past MAX_LIGHT. A color the mode can't show comes as near as it lets: Neutral desaturates what nears white, so a bright saturated color (0xff2000ff) is shown paler.
 
 ## Toon
 
