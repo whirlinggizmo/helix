@@ -51,9 +51,11 @@ import helix.time.Time;
 	while the dev server runs and its material reloads in place (a library shader's too, in src/helix/shaders).
 
 	1 / 2: the sun / the point light on and off; 3: the outlines; 4: the silhouette; 5: the dissolve held whole or running; 6: her toon
-	shading or the stage's; C: the camera close to her or on everything; F: a hit flash; Escape: quit, where quitting means anything. Options: autopilot (a script under assets/: the time
-	is then held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the
-	script is done); the probes are ready (everything loaded), sun, lamp, outlines, silhouette, dissolving, toon and closeUp. */
+	shading or the stage's; 7: the water's own shading or the stage's (whose shadow is the sphere's, still); C: the camera close to her or on
+	everything; F: a hit flash; T: under the autopilot, its held time half a second on (the waves and their shadow moved); Escape: quit, where
+	quitting means anything. Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its
+	samples of the frame compare across targets) and autoclose (1: quit once the script is done); the probes are ready (everything loaded),
+	sun, lamp, outlines, silhouette, dissolving, toon, water, closeUp and time. */
 class App extends BaseApp {
 	static inline var FLOOR_Y = -.5;
 	static inline var WOMEN = "models/modular-women/";
@@ -72,6 +74,8 @@ class App extends BaseApp {
 	var wallMaterial = new Material();
 	var dissolve:Dissolve;
 	var dissolving = true;
+	var sea = new Material();
+	var waterOn = true;
 	var status = "loading";
 	var unlit:Unlit;
 	var pilot:Null<Autopilot>;
@@ -94,6 +98,10 @@ class App extends BaseApp {
 
 	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var HELD_TIME = 2.;
+
+	// The time held under the autopilot: HELD_TIME, stepped on by T.
+	var heldTime = HELD_TIME;
+
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
 
@@ -147,7 +155,6 @@ class App extends BaseApp {
 		sphere.setPosition(0, .1, 0);
 		stage.add(sphere);
 		// Water, finely divided so its waves are smooth.
-		var sea = new Material();
 		new Water(sea);
 		var rippling = new Model(Mesh.sphere(.5, 96, 192), sea);
 		rippling.setPosition(1.9, .1, 0);
@@ -189,7 +196,9 @@ class App extends BaseApp {
 			case "silhouette": silhouettes.length > 0 && silhouettes[0].enabled;
 			case "dissolving": dissolving;
 			case "toon": toonOn;
+			case "water": waterOn;
 			case "closeUp": closeUp;
+			case "time": heldTime;
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -308,6 +317,15 @@ class App extends BaseApp {
 				dissolving = !dissolving;
 			if (input.isFramePressed(Key.Digit6))
 				toonCharacter(!toonOn);
+			if (input.isFramePressed(Key.Digit7)) {
+				waterOn = !waterOn;
+				if (waterOn)
+					new Water(sea);
+				else
+					sea.setShader(null);
+			}
+			if (pilot != null && input.isFramePressed(Key.T))
+				heldTime += .5;
 			if (input.isFramePressed(Key.C)) {
 				closeUp = !closeUp;
 				aim();
@@ -317,7 +335,7 @@ class App extends BaseApp {
 					flash.trigger(0xff3020ff, .25);
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, her pose with it.
-		var time = pilot != null ? HELD_TIME : Time.clock.time;
+		var time = pilot != null ? heldTime : Time.clock.time;
 		stage.time = time;
 		if (animator != null)
 			animator.update(pilot != null ? 0 : dt);
@@ -351,7 +369,7 @@ class App extends BaseApp {
 		var on = (value:Bool) -> value ? "on" : "off";
 		y += batch.drawTextWrapped('[1] sun ${on(sun.visible)}  [2] point light ${on(lamp.visible)}  [3] outlines ${on(outlines.length > 0 && outlines[0].enabled)}'
 			+
-			'  [4] silhouette ${on(silhouettes.length > 0 && silhouettes[0].enabled)}  [5] dissolve ${on(dissolving)}  [6] toon ${on(toonOn)}  [C] close up  [F] flash',
+			'  [4] silhouette ${on(silhouettes.length > 0 && silhouettes[0].enabled)}  [5] dissolve ${on(dissolving)}  [6] toon ${on(toonOn)}  [7] water ${on(waterOn)}  [C] close up  [F] flash',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)
@@ -370,7 +388,8 @@ class App extends BaseApp {
 					outlines: probe("outlines"),
 					silhouette: probe("silhouette"),
 					dissolving: dissolving,
-					toon: toonOn
+					toon: toonOn,
+					water: waterOn
 				},
 				autopilot: pilot.snapshot
 			});

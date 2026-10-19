@@ -6,6 +6,9 @@ import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
 import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
+import helix.graphics.Shader;
+import helix.graphics.Shaders;
+import helix.graphics.SpriteEffect;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -34,12 +37,15 @@ import helix.time.Time;
 	- a one-off Batch2D.sprite in the corner, no node
 	Sprite effects (helix.shaders, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
-	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row.
+	flip (SpriteFlash) and the title line over it (Batch2D.effect around its text: a distance-field glyph through an effect as the framework
+	draws it), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the example's own
+	sprite shader, shaders/wave.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its parameters set by
+	name.
 	Hovering enlarges the sprite under the pointer, the topmost (the last drawn) first: the pointer taken into each sprite's own units
 	(Sprite2D.toLocalX), then inside its gear's disc, or the sheet's or creature's rectangle. Escape quits where quitting means anything.
 	Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its samples of the frame
-	compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos in), outline, dissolving, palette
-	and row. */
+	compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos and the wave in), outline,
+	dissolving, palette, row and waving. */
 class App extends BaseApp {
 	static inline var LOGO = "sprites/logo/wg-logo-bw-alpha.png";
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
@@ -75,6 +81,9 @@ class App extends BaseApp {
 	var dissolve:SpriteDissolve;
 	var flash:SpriteFlash;
 	var swap:PaletteSwap;
+	var shaders:Shaders;
+	var wave:Null<SpriteEffect>;
+	var waving = true;
 	var outlined = true;
 	var dissolving = true;
 	var swapped = true;
@@ -140,6 +149,17 @@ class App extends BaseApp {
 		sprites[5].effect = swap;
 		Textures.load(LOGO, true, texture -> useLogo(texture));
 		Textures.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
+		shaders = new Shaders(Assets.instance, gpu);
+		shaders.load("shaders/wave.hxshader", shader -> useWave(shader));
+	}
+
+	// The example's own shader in: the swing waves, its parameters set by name.
+	function useWave(shader:Shader):Void {
+		wave = new SpriteEffect(shader);
+		wave.parameters.setFloat("amplitude", 32);
+		wave.parameters.setFloat("waves", 1);
+		wave.parameters.setFloat("speed", .8);
+		sprites[2].effect = waving ? wave : null;
 	}
 
 	// The autopilot's script in: the input it plays from now on.
@@ -148,11 +168,12 @@ class App extends BaseApp {
 
 	function probe(name:String):Dynamic
 		return switch name {
-			case "ready": logo != null && whiteLogo;
+			case "ready": logo != null && whiteLogo && wave != null;
 			case "outline": outlined;
 			case "dissolving": dissolving;
 			case "palette": swapped;
 			case "row": swap.row;
+			case "waving": waving;
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -204,6 +225,10 @@ class App extends BaseApp {
 			if (input.isFramePressed(Key.Digit3)) {
 				swapped = !swapped;
 				sprites[5].effect = swapped ? swap : null;
+			}
+			if (input.isFramePressed(Key.Digit4)) {
+				waving = !waving;
+				sprites[2].effect = waving ? wave : null;
 			}
 			if (input.isFramePressed(Key.R))
 				swap.row = (swap.row + 1) % PALETTE.length;
@@ -273,16 +298,17 @@ class App extends BaseApp {
 		stage.draw(batch, camera);
 		if (logo != null)
 			batch.sprite(logo, vx + vw - 42, vy + 42, 64, 64);
-		// Wrapped short of the corner sprite.
+		// Wrapped short of the corner sprite; the title flashes with the flip.
 		var line = vy + 36;
+		batch.effect = flash;
 		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects", vx + 12, line, 16, vw - 96,
 			0xf5f5f5ff)
 			+ 4;
+		batch.effect = null;
 		var on = (value:Bool) -> value ? "on" : "off";
-		line += batch.drawTextWrapped('[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [F] flash',
+		line += batch.drawTextWrapped('[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash',
 			vx
-			+ 12,
-			line, 16, vw
+			+ 12, line, 16, vw
 			- 96, 0xc8c8c8ff)
 			+ 4;
 		batch.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', vx + 12,
@@ -297,7 +323,8 @@ class App extends BaseApp {
 					outline: outlined,
 					dissolving: dissolving,
 					palette: swapped,
-					row: swap.row
+					row: swap.row,
+					waving: waving
 				},
 				autopilot: pilot.snapshot
 			});
@@ -310,5 +337,7 @@ class App extends BaseApp {
 		creature.destroy(Graphics.instance);
 		palette.destroy(Graphics.instance);
 		batch.destroy();
+		if (wave != null)
+			shaders.release(wave.shader);
 	}
 }

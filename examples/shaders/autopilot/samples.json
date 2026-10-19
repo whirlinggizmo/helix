@@ -28,6 +28,20 @@
     {"op": "press", "key": "6"},
     {"op": "sample", "name": "unflashed", "points": [[637, 181], [634, 245], [378, 392]]},
     {"op": "press", "key": "F"},
-    {"op": "sample", "name": "flashed", "points": [[637, 181], [634, 245], [378, 392]], "differsFrom": "unflashed", "by": 40}
+    {"op": "sample", "name": "flashed", "points": [[637, 181], [634, 245], [378, 392]], "differsFrom": "unflashed", "by": 40},
+    {"op": "press", "key": "C"},
+    {"op": "assert", "probe": "closeUp", "equals": false},
+    {"op": "press", "key": "2"},
+    {"op": "press", "key": "5"},
+    {"op": "sample", "name": "waterShadow", "points": [[804.8, 428.8], [846.4, 470.4], [971.2, 472.0], [817.6, 460.8]]},
+    {"op": "press", "key": "T"},
+    {"op": "assert", "probe": "time", "equals": 2.5},
+    {"op": "sample", "name": "waterShadowLater", "points": [[804.8, 428.8], [846.4, 470.4], [971.2, 472.0], [817.6, 460.8]], "differsFrom": "waterShadow", "by": 20},
+    {"op": "press", "key": "7"},
+    {"op": "assert", "probe": "water", "equals": false},
+    {"op": "sample", "name": "sphereShadow", "points": [[804.8, 428.8], [846.4, 470.4], [971.2, 472.0], [817.6, 460.8]]},
+    {"op": "press", "key": "T"},
+    {"op": "assert", "probe": "time", "equals": 3},
+    {"op": "sample", "name": "sphereShadowLater", "points": [[804.8, 428.8], [846.4, 470.4], [971.2, 472.0], [817.6, 460.8]], "matches": "sphereShadow", "within": 0}
   ]
 }

@@ -5,6 +5,9 @@ import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
 import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
+import helix.graphics.Shader;
+import helix.graphics.Shaders;
+import helix.graphics.SpriteEffect;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -35,10 +38,12 @@ import helix.time.Time;
 	- the coin's glow, added over everything (Add), and masked flames that cut out where their texels fade
 	Sprites are unlit and instanced: alike ones (a texture, an alpha mode, an effect) are one draw, and the readout counts them.
 	Sprite effects (helix.shaders, as on 2D sprites): the trees share one SpriteOutline (1), read only inside each tree's cell of the sheet; the
-	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F.
+	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F. The flames shimmer (3) through the
+	example's own sprite shader, shaders/heat.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its
+	parameters set by name.
 	O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
 	held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is
-	done); the probes are ready (the textures in), outline and dissolving. */
+	done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
 class App extends BaseApp {
 	var stage:Stage3D;
 	var batch3D:Batch3D;
@@ -58,6 +63,9 @@ class App extends BaseApp {
 	var flash = new SpriteFlash();
 	var outlined = true;
 	var dissolving = true;
+	var shaders:Shaders;
+	var heat:Null<SpriteEffect>;
+	var shimmering = true;
 	var loaded = 0;
 	var pilot:Null<Autopilot>;
 	// Whether an autopilot was asked for: the camera is held from the first frame, before its script is in.
@@ -135,7 +143,24 @@ class App extends BaseApp {
 		Textures.load("textures/tiles.png", false, texture -> useTiles(texture));
 		Textures.load("textures/flame.png", true, texture -> light(texture));
 		logo.effect = flash;
+		shaders = new Shaders(Assets.instance, gpu);
+		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));
 	}
+
+	// The example's own shader in: the flames shimmer, its parameters set by name.
+	function useHeat(shader:Shader):Void {
+		heat = new SpriteEffect(shader);
+		heat.parameters.setFloat("amplitude", 16);
+		heat.parameters.setFloat("waves", 1.5);
+		heat.parameters.setFloat("speed", 1.2);
+		shimmer();
+		loaded++;
+	}
+
+	// The flames through the heat, or as the framework draws them.
+	function shimmer():Void
+		for (flame in flames)
+			flame.effect = shimmering ? heat : null;
 
 	// The autopilot's script in: the input it plays from now on.
 	function startPilot(bytes:haxe.io.Bytes):Void
@@ -143,9 +168,10 @@ class App extends BaseApp {
 
 	function probe(name:String):Dynamic
 		return switch name {
-			case "ready": loaded == 3;
+			case "ready": loaded == 4;
 			case "outline": outlined;
 			case "dissolving": dissolving;
+			case "shimmering": shimmering;
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -176,6 +202,9 @@ class App extends BaseApp {
 			flames.push(flame);
 			stage.add(flame);
 		}
+		// The heat, when it came in first.
+		if (heat != null)
+			shimmer();
 		// The coin's glow: a soft puff of the same sheet, gold, added over everything.
 		var glow = new Sprite3D(texture, 0xffd25aff);
 		glow.setRegion(0, 0, 64, 64);
@@ -207,6 +236,10 @@ class App extends BaseApp {
 			if (input.isFramePressed(Key.Digit2)) {
 				dissolving = !dissolving;
 				sign.effect = dissolving ? dissolve : null;
+			}
+			if (input.isFramePressed(Key.Digit3)) {
+				shimmering = !shimmering;
+				shimmer();
 			}
 			if (input.isFramePressed(Key.F))
 				flash.trigger(0xffffffff, .4);
@@ -242,7 +275,7 @@ class App extends BaseApp {
 			0xf5f5f5ff)
 			+ 4;
 		var on = (value:Bool) -> value ? "on" : "off";
-		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [F] flash',
+		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff);
@@ -252,7 +285,7 @@ class App extends BaseApp {
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({
-				game: {outline: outlined, dissolving: dissolving},
+				game: {outline: outlined, dissolving: dissolving, shimmering: shimmering},
 				autopilot: pilot.snapshot
 			});
 			if (Host.getOption("autoclose", "0") == "1")
@@ -264,5 +297,7 @@ class App extends BaseApp {
 		stage.destroy();
 		batch3D.destroy();
 		batch.destroy();
+		if (heat != null)
+			shaders.release(heat.shader);
 	}
 }

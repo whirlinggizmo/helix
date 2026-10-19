@@ -13,6 +13,11 @@
     {"op": "assert", "probe": "dissolving", "equals": false},
     {"op": "sample", "name": "whole", "points": [[821.6, 253.6], [821.6, 276.0]], "differsFrom": "dissolved", "by": 40},
     {"op": "press", "key": "2"},
+    {"op": "sample", "name": "shimmering", "points": [[524.8, 328.0], [716.8, 328.0], [523.2, 339.2], [713.6, 347.2]]},
+    {"op": "press", "key": "3"},
+    {"op": "assert", "probe": "shimmering", "equals": false},
+    {"op": "sample", "name": "unshimmered", "points": [[524.8, 328.0], [716.8, 328.0], [523.2, 339.2], [713.6, 347.2]], "differsFrom": "shimmering", "by": 40},
+    {"op": "press", "key": "3"},
     {"op": "sample", "name": "unflashed", "points": [[644.0, 189.6], [621.6, 269.6]]},
     {"op": "press", "key": "F"},
     {"op": "sample", "name": "flashed", "points": [[644.0, 189.6], [621.6, 269.6]], "differsFrom": "unflashed", "by": 40}
