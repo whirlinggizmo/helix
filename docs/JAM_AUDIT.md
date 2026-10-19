@@ -41,10 +41,10 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 
 | Item | Status | Notes |
 |---|---|---|
-| Surface: toon, dissolve, water | partial | The `shaders` example's own `.glsl`, not a library a game can take |
-| Surface: outline, silhouette, rim light, flash or hit tint | **missing** | Outline by inverted hull or by depth and normal edges; silhouette through walls by depth test; rim by view angle; tint for hits |
-| Screen: bloom and glow | **missing** | `PostProcess` chains full-size effects; bloom needs a threshold, down-sampled blurs and an add, so half-size intermediate targets |
-| Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | **missing** | Each a small screen shader with parameters; the `postprocess` example has a few of its own |
+| Surface: toon, dissolve, water | done (milestone 13) | `helix.shaders`' `Toon`, `Dissolve` (its shadow dissolving with it) and `Water` (its waves moving its shadow), and `Unlit`, made on a material in one line, static or skinned; the `shaders` example keeps one of its own to show how one is written |
+| Surface: outline, silhouette, rim light, flash or hit tint | done (milestone 13) | `Outline` (an inverted hull, a width in world units) and `Silhouette` (depth greater) as passes on a model; `Rim` and `HitFlash` as every material's terms, whatever its shader |
+| Screen: bloom and glow | done (milestone 13) | `Bloom` over an HDR scene (half floats where the GPU draws them), down six halving intermediates and back up, `PostProcess` growing intermediates at fractions of the frame |
+| Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | done (milestone 13) | `Fxaa`, `Blur`, `Vignette`, `ColorLut`, `Crt`, `ChromaticAberration`, `Pixelate` and `Tonemap`, each a class whose fields are its parameters; the `shader-gallery` example shows every one |
 | 2D: sprite outline, flash, dissolve, palette swap | done (milestone 13) | `helix.shaders`' `SpriteOutline`, `SpriteFlash`, `SpriteDissolve` and `PaletteSwap`: sprite shaders (the `helix_sprite` kind, a `SpriteEffect`) that a `Sprite2D`, a `Batch2D` or a `Stage3D`'s `Sprite3D` draws through (`effect`), a batch splitting where the effect changes. Before them `Batch2D` had no custom shader path: it always drew the framework's sprite program, its tint only multiplying |
 
 Proposal: `helix.shaders`, a library of ready surface and screen shaders with parameters by name, each with a one-line way to attach it (a material's surface shader, a `ScreenEffect`), and `PostProcess` growing scaled intermediates for bloom.

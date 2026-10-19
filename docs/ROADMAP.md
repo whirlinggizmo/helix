@@ -6,7 +6,6 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 
 ## Next
 
-- **Milestone 13: the shader library.** `helix.shaders`: surface shaders (outline, silhouette, rim, hit flash, toon, dissolve, water) and screen effects (bloom over half-size intermediates in `PostProcess`, FXAA, blur, vignette, a color LUT, CRT, chromatic aberration, pixelate), and 2D sprite shaders (outline, flash, dissolve, palette swap), each attached in one line with parameters by name. **Done when:** a gallery example shows each on both targets and the autopilot checks each one's pixels.
 - **Milestone 14: physics.** 2D arcade physics first (bodies, gravity, move-and-slide against tiles and slopes, deterministic), then Box2D and Jolt through the work-off-the-frame module (below), with the racer's lessons (its FRICTION part 2) and a body's drawn transform for the camera. **Done when:** a platformer slice replays alike on both targets, and a racer slice after libwgf's (`../libwgf-racer`): a vehicle on Jolt in a worker or a thread, its poses crossing by the study's bulk transfer (32-byte poses into a caller-owned typed array; natively straight into Haxe `Bytes`), a chase camera on the body's drawn transform, the same lap replayed on both targets.
 - **Milestone 15: pathfinding.** Grid A* with flow fields; a navmesh (Recast and Detour, or hxDaedalus, benchmarked first) with steering. **Done when:** agents cross a level in an example on both targets, the same paths.
 - **Milestone 16: saves.** A store of the game's own apart from the asset cache: keys to bytes or JSON, slots, a version for migration; IndexedDB in a browser, the user's data directory natively. **Done when:** the dressing room saves a look and the services tests cover it on both targets.
@@ -18,6 +17,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 - **The autopilot's UI:** probes that report which widgets are showing, and events recorded for scripts to wait on, beside `click`.
 - **An action bound to a UI widget:** the drawn touch button and the region it presses as one binding, when the UI asks for it.
 - **Animation layers:** an upper body's clip over a lower body's.
+- **The shader library's next pieces:** an outline's width in pixels, held by the distance (world units only today); values of a sprite's own in its vertices, so sprites with one effect but their own flash or palette row share a draw; sprite effects on a stage's text; a dissolve laid out in the model's space for models whose UVs are an atlas (the gallery's character, her parts each a small region of one texture, barely dissolves).
 - **Morph targets**, and more than four joints a vertex.
 - **`ISocket`:** milestone 17.
 - **The scene file's next kinds:** a prefab's reference to a node outside itself (an instantiating entry passing a reference down, so a car prefab's behavior could name the race), and the 2D kinds under a `Node2D` root.
