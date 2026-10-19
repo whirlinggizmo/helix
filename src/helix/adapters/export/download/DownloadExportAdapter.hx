@@ -13,7 +13,8 @@ class DownloadExportAdapter implements IExport {
 	public function export(name:String, mimeType:String, bytes:Bytes, done:ExportResult->Void):Void {
 		if (name == "" || name.indexOf("/") >= 0 || name.indexOf("\\") >= 0 || name.charAt(0) == ".")
 			throw "Invalid export name";
-		var blob = new js.html.Blob([bytes.getData()], {type: mimeType}),
+		// Its length's worth only: the buffer under a Bytes can be longer (a BytesBuffer's grows ahead of what's written).
+		var blob = new js.html.Blob([new js.lib.Uint8Array(bytes.getData(), 0, bytes.length)], {type: mimeType}),
 			url = js.html.URL.createObjectURL(blob);
 		var link = Browser.document.createAnchorElement();
 		link.href = url;

@@ -38,9 +38,10 @@ import helix.shaders.Tonemap;
 import helix.shaders.Vignette;
 import helix.time.Time;
 
-/** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor,
-	generated shapes, a circling point light and two glowing lamps. The effects are the shader library's (helix.shaders), each a class whose
-	fields are its parameters, and one of the example's own:
+/** Screen effects over the finished frame (PostProcess, ScreenEffect): a chain in the order a game would build one, and how to write an
+	effect of one's own; every library effect alone, with its parameters, is the shader-gallery example's. The frame is an ordinary lit
+	stage: the Kenney sports car on a floor, generated shapes, a circling point light and two glowing lamps. The effects are the shader
+	library's (helix.shaders), each a class whose fields are its parameters, and one of the example's own:
 	- Bloom spreads the light past white around the lamps; it wants HDR, so with it on the scene is drawn in half floats (where the GPU draws
 	them) and tone mapped after it
 	- Fxaa smooths the edges' stair steps

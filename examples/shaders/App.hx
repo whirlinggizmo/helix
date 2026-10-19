@@ -36,7 +36,10 @@ import helix.shaders.Unlit;
 import helix.shaders.Water;
 import helix.time.Time;
 
-/** Surface shaders: HeliX's library (helix.shaders, packed into the program: nothing to load) and one of the example's own.
+/** Surface shaders in a lit scene: how to write one of one's own (the floor), beside HeliX's library (helix.shaders, packed into the program:
+	nothing to load) where it meets the rest of the stage: shadows cast through a shader's discards and vertex hook, a silhouette through a
+	wall on a character of layered parts, a flash on a library shader and on the stage's own shading. Every library shader alone, with its
+	parameters, is the shader-gallery example's.
 	- left: the Kenney sports car toon shaded (Toon: the lights in flat bands, a rim light), outlined (Outline, an extra pass)
 	- middle: a sphere dissolving and coming back (Dissolve: the library's noise, discard, a glowing edge), its shadow dissolving with it
 	- right: a sphere of water in waves (Water: a vertex hook, glints, the sky at grazing angles), its shadow moving with them
