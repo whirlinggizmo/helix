@@ -117,7 +117,7 @@ class Runner {
 		environments = new EnvironmentCache(resources, decoding, a.graphics);
 		models = new ModelCache(resources, textures);
 		sceneFiles = new SceneFileCache(resources);
-		screenshots = new ScreenshotService(a.graphics, a.export, a.name);
+		screenshots = new ScreenshotService(a.graphics, a.export, a.name, presentation);
 		Graphics.bind(a.graphics);
 		Input.bind(input.input);
 		Screen.bind(presentation);
@@ -194,6 +194,7 @@ class Runner {
 			app.cleanup();
 		adapters.audio.shutdown();
 		adapters.input.shutdown();
+		helix.shaders.ShaderLibrary.release(adapters.graphics);
 		helix.graphics.Pipelines.release(adapters.graphics);
 		adapters.graphics.shutdown();
 		// Nothing to work with after the program's end: a read then fails plainly, on null.

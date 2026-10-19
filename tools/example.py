@@ -10,7 +10,8 @@ page's asset cache follows. An example's shaders/*.glsl are packed
 
 autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
 in a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
-logged-in session (tools/remote_windows.py --desktop). Both must publish the same final game."""
+logged-in session (tools/remote_windows.py --desktop). Both must publish the same final game, and the same samples of the frame (the
+autopilot's sample: each point's color within the sample's tolerance per channel, 3 unless the script says, on both targets)."""
 import argparse
 from contextlib import nullcontext
 import json
@@ -41,9 +42,11 @@ def shader_stamp():
     return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
 
 def shader(sdl_gpu=False):
-    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output; with
-    sdl_gpu, their SDL_GPU dialects too (build/generated/shaders-sdlgpu)."""
+    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output, and pack
+    the shader library (src/helix/shaders) into generated Haxe beside them (tools/pack_shader.py's pack_library); with sdl_gpu, their SDL_GPU
+    dialects too (build/generated/shaders-sdlgpu)."""
     GENERATED.mkdir(parents=True,exist_ok=True)
+    pack_shader.pack_library(GENERATED,GENERATED_SDL_GPU if sdl_gpu else None)
     output=GENERATED/'shader-contract.json'
     if not output.is_file() or output.stat().st_mtime<shader_stamp():
         import shdc as compiler
@@ -170,10 +173,25 @@ def build(name,target):
         assets(name,target)
         licenses(folder)
 
+def compare_samples(browser,native,tolerance=3):
+    """What differs between the samples the browser and the native run published (the autopilot's snapshot's samples: by name, the points,
+    the colors as [r, g, b, a] and the tolerance, tolerance when it gives none): a sample one side lacks, another number of points, or a
+    point's channel further apart than its tolerance. Empty when they agree."""
+    problems=[]
+    for sample in sorted(set(browser)|set(native)):
+        if sample not in browser or sample not in native:
+            problems.append(f'{sample}: only in the {"browser" if sample in browser else "native run"}');continue
+        a,b=browser[sample]['colors'],native[sample]['colors'];allowed=browser[sample].get('tolerance',tolerance)
+        if len(a)!=len(b):problems.append(f'{sample}: {len(a)} points in the browser, {len(b)} natively');continue
+        for i,(seen,there) in enumerate(zip(a,b)):
+            apart=max(abs(x-y) for x,y in zip(seen,there))
+            if apart>allowed:problems.append(f'{sample} point {i} {browser[sample]["points"][i]}: browser {seen}, native {there}, {apart} apart (tolerance {allowed})')
+    return problems
+
 def autopilot(name,browser,profile='native'):
     """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, 'native-sdl3' or
     'native-sdl3-gpu');
-    returns the scripts whose final games differ or that failed."""
+    returns the scripts whose final games or samples differ or that failed."""
     import functools,http.server,threading
     if sys.platform.startswith('linux'):from private_display import private_display
     scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
@@ -201,10 +219,13 @@ def autopilot(name,browser,profile='native'):
                 for line in process.stderr.splitlines():
                     if line.startswith('HeliX SDL_GPU: '):print(f'{script}: {line}',flush=True)
                 native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
-                (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
+                samples=compare_samples(web['result'].get('autopilot',{}).get('samples',{}),native.get('autopilot',{}).get('samples',{}))
+                (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'sampleDifferences':samples,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
                 ran=web.get('renderer')+(f', after the GPU gave none: {web["fallback"]}' if web.get('fallback') else '')
                 print(f'{script}: same final game in the browser and {profile}: {same} (the browser on {ran})',flush=True)
-                if not same:failed.append(script)
+                count=len(web['result'].get('autopilot',{}).get('samples',{}))
+                if count:print(f'{script}: {count} samples alike within their tolerances: {not samples}'+''.join(f'\n  {problem}' for problem in samples),flush=True)
+                if not same or samples:failed.append(script)
     finally:server.shutdown()
     return failed
 
@@ -230,7 +251,7 @@ def main():
     if a.action=='autopilot':
         if not a.browser:p.error('autopilot needs --browser')
         failed=autopilot(a.name,a.browser,a.target if a.target!='web' else 'native')
-        if failed:sys.exit('Autopilot outcomes differ: '+', '.join(failed)+f'; see build/results/{a.name}')
+        if failed:sys.exit('Autopilot outcomes or samples differ: '+', '.join(failed)+f'; see build/results/{a.name}')
         return
     if a.action=='dev':
         prepare(a.name)
@@ -240,7 +261,7 @@ def main():
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web')],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
-            failed=None;packed=time.time()
+            failed=None;library_failed=None;packed=time.time()
             while server.poll() is None:
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
@@ -249,6 +270,12 @@ def main():
                     if repacked!=packed:gen_manifest.write(ROOT/'build/web/assets')
                     packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
+                # The shader library's sources, packed into generated Haxe again as they change: the dev server rebuilds, and the reload
+                # builds the changed ones again in place (helix.shaders.ShaderLibrary). A failed source is retried once it changes again.
+                library=max((p.stat().st_mtime for p in pack_shader.LIBRARY.glob('*.glsl')),default=0)
+                if library!=library_failed:
+                    try:pack_shader.pack_library(GENERATED);library_failed=None
+                    except SystemExit as error:print('example: library shader packing failed:',error,flush=True);library_failed=library
                 # A failed source is retried only once it changes again.
                 stamp=shader_stamp()
                 if stamp!=failed:

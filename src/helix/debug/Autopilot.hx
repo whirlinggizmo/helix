@@ -11,7 +11,14 @@ import helix.input.InputState;
 	  running.
 	- The game starts each replayed phase from a known state when it begins: play starting fresh from the seed (a new level), however late it
 	  starts; a title screen's motion is dressing, not part of the game. Then a menu, a slow load or a frame's timing can delay a start without
-	  the game differing. */
+	  the game differing.
+
+	A `sample` reads the frame's pixels at points and puts them in snapshot's samples under its name, which tools/example.py compares
+	between the browser and native: `{"op": "sample", "name": "lit", "points": [[x, y], ...]}`, the points in the design's units (Screen's),
+	1 to 64 of them; `"tolerance"`, how far each channel (0 to 255) may differ across targets, 3 when not given; and `"differsFrom"` with
+	`"by"`, an earlier sample's name and an amount, failing the script unless every point differs from the same point there by at least that
+	much in some channel (an effect turned on against it off, so a shader drawing nothing fails). The frame read is the one drawn after the
+	ticks before it: while it waits for that frame to end, awaitingFrame is true and the app runs no tick. */
 class Autopilot {
 	var ticks = 0;
 
@@ -43,15 +50,28 @@ class Autopilot {
 	var state = new InputState();
 	var screenshot:Null<Null<String>->Void>;
 	var press:Null<String->Bool>;
+	var sample:Null<(points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void) -> Void>;
 	var waitStarted = 0.;
+	var samples:Dynamic = {};
+	var sampleAsked = false;
+	var sampled:Null<Array<Array<Int>>>;
+	var sampleFailure:Null<String>;
 
-	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, screenshot; at most 128) and throws on anything invalid or
-		unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A click uses a UI's widget by name, waiting (as a web
-		suite's actions do) until press, the app's (Ui.press, say), finds it shown and usable, within its limit; without press it fails. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
-		one. */
-	public function new(json:String, ?screenshot:Null<String>->Void, ?press:String->Bool) {
+	/** Whether a sample waits for the frame being drawn to end: the input advance returned isn't to be played, and the app runs no tick this
+		frame (its tick loop stops when this is true, as it does when done). */
+	public var awaitingFrame(default, null):Bool = false;
+
+	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, click, screenshot, sample; at most 128) and throws on
+		anything invalid or unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A click uses a UI's widget by name,
+		waiting (as a web suite's actions do) until press, the app's (Ui.press, say), finds it shown and usable, within its limit; without press
+		it fails. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
+		one. A sample calls sample with its points (Screenshots.sample, say), which calls done with each point's color as [r, g, b, a], 0 to 255,
+		once the frame has ended, or failed; without sample it fails. */
+	public function new(json:String, ?screenshot:Null<String>->Void, ?press:String->Bool,
+			?sample:(points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void) -> Void) {
 		this.screenshot = screenshot;
 		this.press = press;
+		this.sample = sample;
 		var document:Dynamic = haxe.Json.parse(json);
 		fields(document, ["version", "seed", "commands"]);
 		if (document.version != 1
@@ -62,6 +82,8 @@ class Autopilot {
 			throw "Invalid autopilot header";
 		seed = document.seed;
 		commands = document.commands;
+		// Each sample's name and its number of points, in the script's order: what a later one's differsFrom may name.
+		var sampleCounts = new Map<String, Int>();
 		for (command in commands) {
 			switch (command.op) {
 				case "press":
@@ -106,6 +128,23 @@ class Autopilot {
 					if (command.name != null
 						&& (!Std.isOfType(command.name, String) || !~/^[A-Za-z0-9_-]{1,64}\.png$/.match(command.name)))
 						throw "Invalid screenshot name";
+				case "sample":
+					fields(command, ["op", "name", "points"], ["tolerance", "differsFrom", "by"]);
+					if (!Std.isOfType(command.name, String)
+						|| !~/^[A-Za-z0-9_-]{1,64}$/.match(command.name)
+						|| sampleCounts.exists(command.name))
+						throw "Invalid or repeated sample name";
+					var count = points(command.points);
+					if (Reflect.hasField(command, "tolerance") && !integer(command.tolerance, 0, 255))
+						throw "Invalid sample tolerance";
+					if (Reflect.hasField(command, "differsFrom") != Reflect.hasField(command, "by"))
+						throw "A sample's differsFrom and by go together";
+					if (Reflect.hasField(command, "differsFrom")
+						&& (!Std.isOfType(command.differsFrom, String) || sampleCounts.get(command.differsFrom) != count))
+						throw "A sample differs from an earlier sample of as many points";
+					if (Reflect.hasField(command, "by") && !integer(command.by, 1, 255))
+						throw "Invalid sample difference";
+					sampleCounts.set(command.name, count);
 				default:
 					throw "Unknown autopilot command";
 			}
@@ -127,6 +166,19 @@ class Autopilot {
 
 	static function integer(value:Dynamic, min:Int, max:Int):Bool
 		return Std.isOfType(value, Int) && value >= min && value <= max;
+
+	// A sample's points: 1 to 64 [x, y] pairs of finite numbers. Their count.
+	static function points(value:Dynamic):Int {
+		if (!Std.isOfType(value, Array) || value.length < 1 || value.length > 64)
+			throw "Invalid sample points";
+		for (point in (cast value : Array<Dynamic>))
+			if (!Std.isOfType(point, Array) || point.length != 2 || !finite(point[0]) || !finite(point[1]))
+				throw "Invalid sample point";
+		return value.length;
+	}
+
+	static function finite(value:Dynamic):Bool
+		return Std.isOfType(value, Float) && Math.isFinite(value);
 
 	static function keys(value:Dynamic):Array<Key> {
 		if (!Std.isOfType(value, Array) || value.length > 12)
@@ -161,9 +213,11 @@ class Autopilot {
 
 	/** Once a tick: runs commands until one needs this tick, asking probe for named values, and returns the input to play it with. Throws when a wait times out or an assert fails. */
 	public function advance(probe:String->Dynamic):IInput {
-		// A tick is the script's frame too: its tick edges and frame edges both end here.
-		state.consume();
-		state.endFrame();
+		// A tick is the script's frame too: its tick edges and frame edges both end here; not after a frame awaited, whose input wasn't played.
+		if (!awaitingFrame) {
+			state.consume();
+			state.endFrame();
+		}
 		while (!done) {
 			if (index == commands.length) {
 				done = true;
@@ -210,6 +264,25 @@ class Autopilot {
 					if (screenshot != null)
 						screenshot(command.name);
 					finish = true;
+				case "sample":
+					if (!sampleAsked) {
+						if (sample == null)
+							throw 'Autopilot sample at command ' + index + ' with nothing to read the frame with';
+						sampleAsked = true;
+						sampled = null;
+						sampleFailure = null;
+						sample(command.points, colors -> sampled = colors, message -> sampleFailure = message);
+					}
+					if (sampleFailure != null)
+						throw 'Autopilot sample failed at command ' + index + ': ' + sampleFailure;
+					if (sampled == null) {
+						awaitingFrame = true;
+						return state;
+					}
+					awaitingFrame = false;
+					sampleAsked = false;
+					record(command, sampled);
+					finish = true;
 			}
 			if (finish) {
 				outcomes.push({
@@ -230,7 +303,28 @@ class Autopilot {
 		return state;
 	}
 
-	/** Progress as a record: completed, ticks, the current command index and the outcomes. */
+	// A sample's colors kept under its name, with its points and tolerance; checked against the sample it must differ from.
+	function record(command:Dynamic, colors:Array<Array<Int>>):Void {
+		Reflect.setField(samples, command.name, {
+			points: command.points,
+			colors: colors,
+			tolerance: Reflect.hasField(command, "tolerance") ? command.tolerance : 3
+		});
+		if (!Reflect.hasField(command, "differsFrom"))
+			return;
+		var other:Array<Array<Int>> = Reflect.field(samples, command.differsFrom).colors;
+		for (i in 0...colors.length) {
+			var most = 0;
+			for (c in 0...4)
+				most = Std.int(Math.max(most, Math.abs(colors[i][c] - other[i][c])));
+			if (most < command.by)
+				throw 'Autopilot assertion failed at command ' + index + ': sample ' + command.name + ' point ' + i + ' differs from ' + command.differsFrom
+					+ ' by ' + most + ', under ' + command.by;
+		}
+	}
+
+	/** Progress as a record: completed, ticks, the current command index, the outcomes and the samples (by name: points, colors as
+		[r, g, b, a] and tolerance). */
 	public var snapshot(get, never):Dynamic;
 
 	function get_snapshot():Dynamic
@@ -238,6 +332,7 @@ class Autopilot {
 			completed: done,
 			ticks: ticks,
 			command: index,
-			outcomes: outcomes
+			outcomes: outcomes,
+			samples: samples
 		};
 }

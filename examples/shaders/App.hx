@@ -1,13 +1,17 @@
 import helix.app.BaseApp;
 import helix.assets.Assets;
+import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
+import helix.debug.TestHarness;
 import helix.graphics.Graphics;
 import helix.graphics.Sampling;
+import helix.graphics.Screenshots;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
+import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
@@ -24,6 +28,7 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
+import helix.shaders.Unlit;
 import helix.time.Time;
 
 /** Materials drawn by shaders of the example's own (shaders/*.glsl, surface shaders packed into .hxshader assets and loaded at run time):
@@ -31,10 +36,13 @@ import helix.time.Time;
 	- middle: a sphere dissolving and coming back through a noise texture, with a glowing edge (the time, a texture, discard), double sided so
 		its inside shows through the holes
 	- right: a sphere of water rippling in waves (a vertex hook moves the surface), with glints and the sky at grazing angles
+	- above the middle: a cube drawn by a shader of HeliX's library (helix.shaders.Unlit), packed into the program: nothing to load
 	A sun and a point light circling in front light the stage; the shaders read them as the stage's own does. Edit a .glsl while the dev server
-	runs and its material reloads in place.
+	runs and its material reloads in place (a library shader's too, in src/helix/shaders).
 
-	1 / 2: the sun / the point light on and off; Escape: quit, where quitting means anything. */
+	1 / 2: the sun / the point light on and off; Escape: quit, where quitting means anything. Options: autopilot (a script under assets/: the
+	time is then held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once
+	the script is done); the probes are ready (everything loaded), sun and lamp. */
 class App extends BaseApp {
 	static inline var FLOOR_Y = -.5;
 
@@ -52,10 +60,26 @@ class App extends BaseApp {
 	var car:Null<ModelFile>;
 	var toon:Null<Shader>;
 	var status = "loading the shaders";
+	var unlit:Unlit;
+	var pilot:Null<Autopilot>;
+	var published = false;
+	var placed = false;
+	var dissolving = false;
+	var watering = false;
+
+	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	static inline var HELD_TIME = 2.;
+	static inline var PILOT_WIDTH = 800;
+	static inline var PILOT_HEIGHT = 600;
 
 	override public function init():Void {
 		Window.title = "HeliX shaders";
-		Window.requestSize(1000, 600);
+		var script = Host.getOption("autopilot", "");
+		if (script != "") {
+			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
+		} else
+			Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
@@ -94,6 +118,14 @@ class App extends BaseApp {
 		var rippling = new Model(Mesh.sphere(.5, 96, 192), water);
 		rippling.setPosition(1.9, .1, 0);
 		stage.add(rippling);
+		// The library's Unlit: a flat color, no light, and nothing to load.
+		var flat = new Material();
+		unlit = new Unlit(flat);
+		unlit.color = 0xff8a00ff;
+		var cube = new Model(Mesh.cube(.3, .3, .3), flat);
+		cube.setPosition(0, 1.05, 0);
+		cube.setRotation(.5, .7, 0);
+		stage.add(cube);
 
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		Textures.load("textures/noise.png", true, texture -> useNoise(texture));
@@ -103,9 +135,22 @@ class App extends BaseApp {
 		shaders.load("shaders/water.hxshader", shader -> useWater(shader), message -> status = message);
 	}
 
+	// The autopilot's script in: the input it plays from now on.
+	function startPilot(bytes:haxe.io.Bytes):Void
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), null, (points, done, failed) -> Screenshots.sample(points, done, failed));
+
+	function probe(name:String):Dynamic
+		return switch name {
+			case "ready": placed && toon != null && dissolving && watering && noise != null;
+			case "sun": sun.visible;
+			case "lamp": lamp.visible;
+			default: throw 'Unknown probe ' + name;
+		}
+
 	// The car's file in: a copy of it on the left, toon shaded once that shader is in.
 	function place(file:ModelFile):Void {
 		car = file;
+		placed = true;
 		var node = file.instantiate("car");
 		node.setPosition(-1.9, FLOOR_Y, 0);
 		node.setRotation(0, .4, 0);
@@ -132,6 +177,7 @@ class App extends BaseApp {
 	// The dissolve shader in: the middle sphere's, with the noise once that's in.
 	function useDissolve(shader:Shader):Void {
 		dissolve.setShader(shader);
+		dissolving = true;
 		var p = dissolve.shaderParameters;
 		p.setValues("color", [.55, .6, .7, 1]);
 		p.setValues("edge_color", [4, 1.2, .2]);
@@ -144,6 +190,7 @@ class App extends BaseApp {
 	// The water shader in: the right sphere's, its waves and colors.
 	function useWater(shader:Shader):Void {
 		water.setShader(shader);
+		watering = true;
 		var p = water.shaderParameters;
 		p.setFloat("amplitude", .03);
 		p.setFloat("frequency", 2.5);
@@ -168,17 +215,25 @@ class App extends BaseApp {
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
-			Host.quit();
-		if (input.isFramePressed(Key.Digit1))
-			sun.visible = !sun.visible;
-		if (input.isFramePressed(Key.Digit2)) {
-			lamp.visible = !lamp.visible;
-			marker.visible = lamp.visible;
+		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
+		var input:Null<IInput> = Input.instance;
+		if (pilot != null) {
+			input = pilot.done ? null : pilot.advance(name -> probe(name));
+			if (pilot.awaitingFrame)
+				input = null;
 		}
-		// The game's clock: paused, the motion stops.
-		var time = Time.clock.time;
+		if (input != null) {
+			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+				Host.quit();
+			if (input.isFramePressed(Key.Digit1))
+				sun.visible = !sun.visible;
+			if (input.isFramePressed(Key.Digit2)) {
+				lamp.visible = !lamp.visible;
+				marker.visible = lamp.visible;
+			}
+		}
+		// The game's clock: paused, the motion stops; held under the autopilot.
+		var time = pilot != null ? HELD_TIME : Time.clock.time;
 		stage.time = time;
 		fps.update(dt, Time.frameCpu);
 		// Circling in front of the models, toward the camera: always in view, and far enough not to wash them out.
@@ -215,6 +270,12 @@ class App extends BaseApp {
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();
+		if (pilot != null && pilot.done && !published) {
+			published = true;
+			TestHarness.publish({game: {sun: sun.visible, lamp: lamp.visible}, autopilot: pilot.snapshot});
+			if (Host.getOption("autoclose", "0") == "1")
+				Host.quit();
+		}
 	}
 
 	override public function cleanup():Void {

@@ -363,18 +363,20 @@ How a screenshot ended: where it was saved and its PNG file, or why it wasn't.
 
 *class* in `src/helix/graphics/ScreenshotService.hx`
 
-Screenshots, the same on every platform: the next frame the app ends is read back (IGraphics.readPixels), encoded as PNG (Png) and handed to the user (IExport: a download in a browser, a file natively). The Runner calls frameEnded after each of the app's frames. Encoding runs on the host thread, so the frame it's taken in is slower. The runner's is what the Screenshots static forwards to.
+Screenshots, the same on every platform: the next frame the app ends is read back (IGraphics.readPixels), encoded as PNG (Png) and handed to the user (IExport: a download in a browser, a file natively); or read at a few points, for a check comparing pixels (sample). The Runner calls frameEnded after each of the app's frames. Encoding runs on the host thread, so the frame it's taken in is slower. The runner's is what the Screenshots static forwards to.
 
 ```haxe
-function new(graphics:IGraphics, export:IExport, prefix:String)
+function new(graphics:IGraphics, export:IExport, prefix:String, presentation:Presentation)
 function take(?name:String, ?done:ScreenshotResult -> Void):Void
+function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Void, ?failed:String -> Void):Void
 function frameEnded():Void
 function shutdown():Void
 ```
 
-- `new`: Reads frames from graphics and saves them through export, named prefix (the product's name, say) and the time.
+- `new`: Reads frames from graphics and saves them through export, named prefix (the product's name, say) and the time; samples them at points in presentation's units.
 - `take`: Takes a screenshot of the next frame the app ends, saved as name (a plain file name ending .png; by default prefix, the date and time, and a count, as "asteroids-2026-10-14-153012-1.png"). done, when given, runs once on the host thread after that frame. Failed after shutdown. Throws for a name that isn't a plain .png file name.
-- `frameEnded`: After the app's frame: takes the screenshots asked for, from the frame it just ended. Nothing when none were asked for.
+- `sample`: Reads the next frame the app ends at points, each [x, y] in the design's units (Screen's; the pixel under it): done runs once on the host thread with each point's color as [r, g, b, a], 0 to 255 (0, 0, 0, 0 off the frame), or failed (else the log) when the frame can't be read or after shutdown. For checks that compare a few pixels across targets (the autopilot's sample), not every frame.
+- `frameEnded`: After the app's frame: takes the screenshots and samples asked for, from the frame it just ended. Nothing when none were asked for.
 - `shutdown`: Fails what was asked for and refuses more.
 
 ## Screenshots
@@ -386,10 +388,12 @@ Screenshots of the frame, saved for the user (a download in a browser, a file na
 ```haxe
 static var instance(default, null):ScreenshotService
 static function take(?name:String, ?done:ScreenshotResult -> Void):Void
+static function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Void, ?failed:String -> Void):Void
 ```
 
 - `instance`: The screenshots forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `take`: Takes a screenshot of the next frame the app ends, saved as name (a plain file name ending .png; by default prefix, the date and time, and a count, as "asteroids-2026-10-14-153012-1.png"). done, when given, runs once on the host thread after that frame. Failed after shutdown. Throws for a name that isn't a plain .png file name.
+- `sample`: Reads the next frame the app ends at points, each [x, y] in the design's units (Screen's; the pixel under it): done runs once on the host thread with each point's color as [r, g, b, a], 0 to 255 (0, 0, 0, 0 off the frame), or failed (else the log) when the frame can't be read or after shutdown. For checks that compare a few pixels across targets (the autopilot's sample), not every frame.
 
 ## SdlGpuStages
 

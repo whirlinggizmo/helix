@@ -14,6 +14,63 @@ class SimulationTests {
 		checks++;
 	}
 
+	// A script's samples: read once the frame ends (here, when the test answers), no tick while one waits, the input it returned then played
+	// later with its edges, kept by name in the snapshot, and checked unlike an earlier one point by point.
+	static function samples(g:Game):Void {
+		var asked:Array<{points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void}> = [];
+		function pilot(commands:String):Autopilot
+			return new Autopilot('{"version":1,"seed":1,"commands":[' + commands + ']}', null, null,
+				(points, done, failed) -> asked.push({points: points, done: done, failed: failed}));
+		var off = '{"op":"sample","name":"off","points":[[1,2],[3.5,4]]}',
+			on = '{"op":"sample","name":"on","points":[[1,2],[3.5,4]],"tolerance":9,"differsFrom":"off","by":10}';
+		var script = pilot('{"op":"press","key":"Enter"},' + off + ',' + on);
+		var input = script.advance(g.probe);
+		check(input.isDown(Key.Enter) && !script.awaitingFrame && script.tickCount == 1, "The press's tick");
+		input = script.advance(g.probe);
+		check(script.awaitingFrame && asked.length == 1 && asked[0].points[1][0] == 3.5 && script.tickCount == 1,
+			"A sample asks for its frame once and waits for it, taking no tick");
+		script.advance(g.probe);
+		check(script.awaitingFrame && asked.length == 1, "Still waiting for the frame: not asked again");
+		asked[0].done([[10, 20, 30, 255], [0, 0, 0, 255]]);
+		input = script.advance(g.probe);
+		check(input.isFrameReleased(Key.Enter), "The release returned while waiting reaches the input played next");
+		check(script.awaitingFrame && asked.length == 2, "The frame read, the next sample asks for its own");
+		asked[1].done([[10, 20, 45, 255], [12, 0, 0, 255]]);
+		script.advance(g.probe);
+		var kept:Dynamic = script.snapshot.samples;
+		check(script.done
+			&& kept.off.colors[0][2] == 30
+			&& kept.off.tolerance == 3
+			&& kept.on.tolerance == 9
+			&& kept.on.points[1][1] == 4,
+			"Each sample kept by name: points, colors and tolerance (3 unless given)");
+		asked = [];
+		var same = pilot(off + ',' + on);
+		same.advance(g.probe);
+		asked[0].done([[10, 20, 30, 255], [0, 0, 0, 255]]);
+		same.advance(g.probe);
+		asked[1].done([[10, 20, 45, 255], [0, 0, 9, 255]]);
+		rejects(() -> same.advance(g.probe), "A point less unlike the sample it must differ from than by fails the script");
+		asked = [];
+		var failing = pilot(off);
+		failing.advance(g.probe);
+		asked[0].failed("No frame has ended");
+		rejects(() -> failing.advance(g.probe), "A frame that can't be read fails the script");
+		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[' + off + ']}').advance(g.probe), "A sample with nothing to read with fails");
+		for (bad in [
+			'{"op":"sample","name":"x","points":[]}',
+			'{"op":"sample","name":"x","points":[[1]]}',
+			'{"op":"sample","name":"x y","points":[[1,2]]}',
+			'{"op":"sample","name":"x","points":[[1,2]],"tolerance":256}',
+			'{"op":"sample","name":"x","points":[[1,2]],"by":4}',
+			'{"op":"sample","name":"x","points":[[1,2]],"differsFrom":"x","by":4}',
+			off + ',' + off,
+			off + ',{"op":"sample","name":"x","points":[[1,2]],"differsFrom":"off","by":4}',
+			off + ',{"op":"sample","name":"x","points":[[1,2],[3,4]],"differsFrom":"off","by":0}'
+		])
+			rejects(() -> pilot(bad), "An invalid sample rejected: " + bad);
+	}
+
 	static function rejects(action:Void->Void, message:String):Void {
 		var rejected = false;
 		try {
@@ -179,6 +236,7 @@ class SimulationTests {
 		shooter.advance(g.probe);
 		check(shots.length == 2 && shots[0] == "title.png" && shots[1] == null && shooter.tickCount == 1, "Screenshots take no tick, named or not");
 		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"../x.png"}]}'), "A screenshot name with a path rejected");
+		samples(g);
 		trace(haxe.Json.stringify({checks: checks, passed: true, replay: a.snapshot()}));
 	}
 }

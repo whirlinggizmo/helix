@@ -69,7 +69,7 @@ python3 helix.py services --browser /path/to/chromium --native
 
 - **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, 3D math, trigonometry, Blocks and the Asteroids simulation. `helix.math.Trig` must also give the same bits in JS and, with `--native`, in hxcpp.
 - **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures; `--native-profile sdl3` plays natively through SDL3's audio (its dummy driver) instead of sokol's.
-- **Autopilot** (`tools/example.py <name> autopilot [native-sdl3|native-sdl3-gpu]`) replays an example's scripts in a headless browser and natively (the sokol profile, or an SDL3 one), and requires the same final game.
+- **Autopilot** (`tools/example.py <name> autopilot [native-sdl3|native-sdl3-gpu]`) replays an example's scripts in a headless browser and natively (the sokol profile, or an SDL3 one), and requires the same final game, and the same pixels where a script samples the frame (`{"op": "sample", "name": "lit", "points": [[x, y], ...]}`, in the design's units; within 3 per channel, or the sample's `"tolerance"`). A sample can also require the frame unlike an earlier one (`"differsFrom": "off", "by": 10`), so an effect that draws nothing fails.
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
 
