@@ -31,7 +31,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `pick` | every kind a Stage3D picks: a cube, a sphere, a sprite, a text, a glTF car and a walking skinned character, the hit's point, normal and distance shown |
 | `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded in one line into a tree of the file's nodes: its wheels (models) and headlights (spot lights) found by name; D drives it, C rides along through a `Camera3D` under the car, H the headlights; the circling camera the examples share (`Orbit`) |
 | `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
-| `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture |
+| `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture and effect; the library's sprite effects on 3D sprites (outlined trees, a dissolving sign, a flashing logo), with an autopilot sampling each against it off |
 | `text3d` | text in the world: labels facing the camera, a sign's text (a TrueType font) turning with its node; lines on the ground |
 | `particles` | GPU particles: a fountain, trailing sparks, a campfire's flames (a flipbook) and smoke (curves) on a 3D stage; confetti on a 2D one |
 | `shadows` | a sun and a circling spot casting into one shadow map, a layer each; a ball that casts nothing and one nothing shadows; distance, bias, map size, strength and tint live |

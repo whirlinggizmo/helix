@@ -17,19 +17,20 @@ private typedef Program = {
 	var handle:Int;
 }
 
-/** A .hxshader as read: its kind, its program, and a surface shader's variants (null where it has none). */
+/** A .hxshader as read: its kind, its program, and a surface or sprite shader's variants (null where it has none). */
 private typedef ShaderFile = {
 	final kind:String;
 	final main:Program;
 	final skinned:Null<Program>;
 	final caster:Null<Program>;
 	final skinnedCaster:Null<Program>;
+	final sprite3D:Null<Program>;
 }
 
 /** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program):
 	its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures
 	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
-	caster (drawing its shadow, when it has a vertex hook or a discard). A hot reload replaces the programs in place and bumps reloadCount; their
+	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
 	/** The .hxshader format it reads (tools/pack_shader.py's FORMAT). */
@@ -50,7 +51,7 @@ class Shader {
 		var file = read(text);
 		build(gpu, file);
 		var shader = new Shader(gpu);
-		shader.take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster);
+		shader.take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster, file.sprite3D);
 		return shader;
 	}
 
@@ -64,7 +65,8 @@ class Shader {
 			main: program(file),
 			skinned: file.skinned == null ? null : program(file.skinned),
 			caster: file.caster == null ? null : program(file.caster),
-			skinnedCaster: file.skinnedCaster == null ? null : program(file.skinnedCaster)
+			skinnedCaster: file.skinnedCaster == null ? null : program(file.skinnedCaster),
+			sprite3D: file.sprite3D == null ? null : program(file.sprite3D)
 		};
 	}
 
@@ -125,7 +127,7 @@ class Shader {
 	static function build(gpu:IGraphics, file:ShaderFile):Void {
 		var made:Array<Program> = [];
 		try {
-			for (p in [file.main, file.skinned, file.caster, file.skinnedCaster])
+			for (p in [file.main, file.skinned, file.caster, file.skinnedCaster, file.sprite3D])
 				if (p != null) {
 					p.handle = gpu.createShader(p.source);
 					made.push(p);
@@ -138,7 +140,7 @@ class Shader {
 	}
 
 	// Takes built programs as its own: main its, the others its variants' (made, kept or dropped as the file has them).
-	function take(kind:String, main:Program, skinned:Null<Program>, caster:Null<Program>, skinnedCaster:Null<Program>):Void {
+	function take(kind:String, main:Program, skinned:Null<Program>, caster:Null<Program>, skinnedCaster:Null<Program>, sprite3D:Null<Program>):Void {
 		this.kind = kind;
 		source = main.source;
 		parameters = main.parameters;
@@ -149,14 +151,21 @@ class Shader {
 		else {
 			if (this.skinned == null)
 				this.skinned = new Shader(gpu);
-			this.skinned.take(kind, skinned, null, skinnedCaster, null);
+			this.skinned.take(kind, skinned, null, skinnedCaster, null, null);
 		}
 		if (caster == null)
 			this.caster = null;
 		else {
 			if (this.caster == null)
 				this.caster = new Shader(gpu);
-			this.caster.take(kind, caster, null, null, null);
+			this.caster.take(kind, caster, null, null, null, null);
+		}
+		if (sprite3D == null)
+			this.sprite3D = null;
+		else {
+			if (this.sprite3D == null)
+				this.sprite3D = new Shader(gpu);
+			this.sprite3D.take(kind, sprite3D, null, null, null, null);
 		}
 	}
 
@@ -175,6 +184,11 @@ class Shader {
 		discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a
 		screen or sprite shader. */
 	public var caster(default, null):Null<Shader>;
+
+	/** The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage
+		(Sprite3DLayout's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this
+		one's. Null for a screen or surface shader. */
+	public var sprite3D(default, null):Null<Shader>;
 
 	/** How many times it has been replaced by a reload: a pipeline made before the latest is stale. */
 	public var reloadCount(get, never):Int;
@@ -221,7 +235,7 @@ class Shader {
 			throw 'A $kind shader can\'t become a ${file.kind} one';
 		build(gpu, file);
 		release();
-		take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster);
+		take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster, file.sprite3D);
 		bump();
 	}
 
@@ -232,6 +246,8 @@ class Shader {
 			skinned.bump();
 		if (caster != null)
 			caster.bump();
+		if (sprite3D != null)
+			sprite3D.bump();
 	}
 
 	// Frees its programs, its variants' too, and the pipelines made over them.
@@ -242,6 +258,8 @@ class Shader {
 			skinned.release();
 		if (caster != null)
 			caster.release();
+		if (sprite3D != null)
+			sprite3D.release();
 	}
 
 	/** Frees the programs, its variants' too, and the pipelines made over them. */

@@ -272,29 +272,11 @@ class Batch2D {
 			gpu.resetScissor();
 	}
 
-	// Draws count vertices from first of the effects' upload through effect, of texture sampled by sampling: the framework's block (the texture's
-	// size and the time) and the effect's parameters, brought to the time, its own textures unset drawn as the sprite's.
+	// Draws count vertices from first of the effects' upload through effect, of texture sampled by sampling, at the batch's time.
 	function drawEffect(effect:SpriteEffect, texture:Texture2D, sampling:Sampling, first:Int, count:Int):Void {
-		var shader = effect.shader;
-		var blocks:Array<Null<Bytes>> = [for (size in shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
-		if (blocks.length > 1 && blocks[1] != null) {
-			blocks[1].setFloat(0, texture.width);
-			blocks[1].setFloat(4, texture.height);
-			blocks[1].setFloat(8, time);
-		}
-		effect.prepare(time);
-		effect.parameters.write(blocks);
-		var own = effect.parameters.textureSlots, textures = [], samplings = [];
-		for (slot in shader.textureSlots) {
-			while (textures.length < slot) {
-				textures.push(0);
-				samplings.push(Sampling.NEAREST);
-			}
-			var t = slot > 0 && own.exists(slot) ? own[slot] : null;
-			textures.push(t != null ? t.handle : texture.handle);
-			samplings.push(t != null ? t.sampling : sampling);
-		}
-		gpu.draw(pipelines.spriteEffect(shader.handle, Alpha), [effectBuffer], 0, first, count, 0, 1, textures, samplings, blocks);
+		var textures = [], samplings = [];
+		var blocks = effect.bind(effect.shader, texture, sampling, time, clip, textures, samplings);
+		gpu.draw(pipelines.spriteEffect(effect.shader.handle, Alpha), [effectBuffer], 0, first, count, 0, 1, textures, samplings, blocks);
 	}
 
 	/** Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a

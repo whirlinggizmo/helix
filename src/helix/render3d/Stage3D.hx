@@ -868,7 +868,7 @@ class Stage3D {
 		count = 0;
 		draws = 0;
 		lights.resize(0);
-		sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime));
+		sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime), time);
 		drawnTime = time;
 		walk();
 		drawn.resize(count);

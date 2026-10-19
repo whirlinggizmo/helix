@@ -979,6 +979,7 @@ A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default,
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
 var texture:Null<Texture2D>
 var tint:Int
+var effect:Null<SpriteEffect>
 function setRegion(x:Float, y:Float, width:Float, height:Float):Void
 var regionX(default, null):Float
 var regionY(default, null):Float
@@ -999,6 +1000,7 @@ function setAlphaMode(mode:SpriteAlpha, ?cutoff:Float = .5):Bool
 - `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xRRGGBBAA, white for none).
 - `texture`: Its texture, or null.
 - `tint`: Its tint, 0xRRGGBBAA (sRGB).
+- `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect; its shader's sprite3D variant, its alpha mode applied as ever), or null (the default) for the framework's sprite program. Shared, as a 2D sprite's: the sprites given one draw with its values at the stage's time, and alike ones beside each other in the draw order (a texture, an alpha mode, an effect) are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
 - `regionX`: Its region's left, in texels.
 - `regionY`: Its region's top, in texels.
@@ -1031,13 +1033,13 @@ How a 3D sprite or text faces.
 
 *class* in `src/helix/render3d/Sprites3D.hx`
 
-A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can reach), sorts them (opaque and masked ones by texture; blended ones back to front; added ones by texture), writes their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and draws each run of a texture as one instanced draw: the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones last. A camera-facing sprite's axes are the camera's, uniforms of the draw.
+A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can reach), sorts them (opaque and masked ones by texture and effect; blended ones back to front; added ones by texture and effect), writes their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and draws each run of a texture and effect as one instanced draw (through the effect's sprite3D variant for a sprite with one): the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones last. A camera-facing sprite's axes are the camera's, uniforms of the draw.
 
 ```haxe
 function new(gpu:IGraphics)
 var drawnSpriteCount(get, never):Int
 var drawCallCount(get, never):Int
-function begin(dt:Float):Void
+function begin(dt:Float, time:Float):Void
 function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
 function advanceEmitter(node:Particles3D):Void
 function visitText(node:Text3D, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
@@ -1054,8 +1056,8 @@ function destroy():Void
 
 - `new`: Sprites on gpu: their quad and instance buffer.
 - `drawnSpriteCount`: Sprites drawn by the last draw (in view).
-- `drawCallCount`: Draws of the last draw: one a run of a texture.
-- `begin`: Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet.
+- `drawCallCount`: Draws of the last draw: one a run of a texture and effect.
+- `begin`: Starts a draw at time, seconds of the stage's clock (what effects see), dt after the last: no sprites or emitters yet.
 - `visitEmitter`: Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is.
 - `advanceEmitter`: Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's).
 - `visitText`: Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended.

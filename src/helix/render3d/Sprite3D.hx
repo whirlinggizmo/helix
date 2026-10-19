@@ -21,6 +21,12 @@ class Sprite3D extends Node3D {
 	/** Its tint, 0xRRGGBBAA (sRGB). */
 	public var tint:Int = 0xffffffff;
 
+	/** The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's
+		SpriteEffect; its shader's sprite3D variant, its alpha mode applied as ever), or null (the default) for the framework's sprite program.
+		Shared, as a 2D sprite's: the sprites given one draw with its values at the stage's time, and alike ones beside each other in the draw
+		order (a texture, an alpha mode, an effect) are one draw. */
+	public var effect:Null<helix.graphics.SpriteEffect>;
+
 	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {
 		regionX = x;

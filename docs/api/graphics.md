@@ -270,6 +270,7 @@ function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool, 
 function surfaceCaster(shader:Int, skinned:Bool):Int
 function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int
 function sprite3D(blend:BlendMode):Int
+function spriteEffect3D(shader:Int, blend:BlendMode):Int
 function particle3D(blend:BlendMode):Int
 function depth3D():Int
 function skinnedDepth3D():Int
@@ -290,6 +291,7 @@ function screen(shader:Int, blend:BlendMode):Int
 - `surfaceCaster`: A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DLayout's buffers), from the lit models' records: depth only, nothing culled, as the framework's casters.
 - `flat3D`: A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from the lit models' records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
 - `sprite3D`: 3D sprites (Sprite3DLayout).
+- `spriteEffect3D`: A sprite effect's Stage3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DLayout), as sprite3D's.
 - `particle3D`: Particles (Particle3DLayout).
 - `depth3D`: Shadow-map casters (Depth3DLayout): depth only, nothing culled (a one-sided floor still casts).
 - `skinnedDepth3D`: Skinned shadow-map casters (Skinneddepth3DLayout).
@@ -471,7 +473,7 @@ A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU bind
 
 *class* in `src/helix/graphics/Shader.hx`
 
-An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
+An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
 
 ```haxe
 static var FORMAT(inline, null):Int
@@ -480,6 +482,7 @@ var handle(default, null):Int
 var kind(default, null):String
 var skinned(default, null):Null<Shader>
 var caster(default, null):Null<Shader>
+var sprite3D(default, null):Null<Shader>
 var reloadCount(get, never):Int
 var blockSizes(get, never):Array<Int>
 function getParameter(name:String):Null<ShaderParameter>
@@ -494,6 +497,7 @@ function destroy():Void
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Stage3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
 - `skinned`: The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot 5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen or sprite shader. Its caster draws skinned casters.
 - `caster`: The program drawing its shadow casters into a shadow map: the depth pass with its vertex hook, its fragment stage run for what it discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a screen or sprite shader.
+- `sprite3D`: The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage (Sprite3DLayout's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this one's. Null for a screen or surface shader.
 - `reloadCount`: How many times it has been replaced by a reload: a pipeline made before the latest is stale.
 - `blockSizes`: Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks.
 - `getParameter`: One of its own parameters by name, or null.
@@ -609,7 +613,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 *class* in `src/helix/graphics/SpriteEffect.hx`
 
-A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that 2D sprites draw through (Sprite2D.effect, Batch2D.effect) in place of the framework's sprite program, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shaders (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
+A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Sprite2D.effect, Batch2D.effect, and a Stage3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shaders (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
 
 ```haxe
 function new(shader:Shader)

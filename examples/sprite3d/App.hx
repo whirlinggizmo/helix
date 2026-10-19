@@ -1,9 +1,14 @@
 import helix.app.BaseApp;
+import helix.assets.Assets;
+import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
+import helix.debug.TestHarness;
 import helix.graphics.Graphics;
+import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
+import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
@@ -18,6 +23,9 @@ import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
+import helix.shaders.SpriteDissolve;
+import helix.shaders.SpriteFlash;
+import helix.shaders.SpriteOutline;
 import helix.time.Time;
 
 /** Textured sprites on a 3D stage, under a circling camera, over a grid (Batch3D) and a lit pedestal:
@@ -25,8 +33,12 @@ import helix.time.Time;
 	- trees, cut from the tile sheet, upright: they turn to the camera about y only, and stand on their bottom edge (pivot 0.5, 1)
 	- a flag on a sign post, as its node is turned (Free), and a coin flat on the ground (Ground)
 	- the coin's glow, added over everything (Add), and masked flames that cut out where their texels fade
-	Sprites are unlit and instanced: alike ones (a texture, an alpha mode) are one draw, and the readout counts them.
-	O stops the camera; Escape quits where quitting means anything. */
+	Sprites are unlit and instanced: alike ones (a texture, an alpha mode, an effect) are one draw, and the readout counts them.
+	Sprite effects (helix.shaders, as on 2D sprites): the trees share one SpriteOutline (1), read only inside each tree's cell of the sheet; the
+	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F.
+	O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
+	held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is
+	done); the probes are ready (the textures in), outline and dissolving. */
 class App extends BaseApp {
 	var stage:Stage3D;
 	var batch3D:Batch3D;
@@ -41,6 +53,21 @@ class App extends BaseApp {
 	var trees:Array<Sprite3D> = [];
 	var tileSprites:Array<Sprite3D> = [];
 	var flames:Array<Sprite3D> = [];
+	var outline = new SpriteOutline(0xffffffff, 1);
+	var dissolve = new SpriteDissolve();
+	var flash = new SpriteFlash();
+	var outlined = true;
+	var dissolving = true;
+	var loaded = 0;
+	var pilot:Null<Autopilot>;
+	// Whether an autopilot was asked for: the camera is held from the first frame, before its script is in.
+	var piloted = false;
+	var published = false;
+
+	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	static inline var HELD_TIME = 2.;
+	static inline var PILOT_WIDTH = 800;
+	static inline var PILOT_HEIGHT = 600;
 
 	// A sprite of the tile sheet's cell x, y, width x height texels, placed at x, z on the ground.
 	function tile(cell:Array<Int>, x:Float, z:Float, width:Float, height:Float):Sprite3D {
@@ -55,7 +82,13 @@ class App extends BaseApp {
 
 	override public function init():Void {
 		Window.title = "HeliX sprite3d";
-		Window.requestSize(1000, 600);
+		var script = Host.getOption("autopilot", "");
+		if (script != "") {
+			piloted = true;
+			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
+		} else
+			Window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var gpu = Graphics.instance;
@@ -84,6 +117,7 @@ class App extends BaseApp {
 			tree.facing = Upright;
 			tree.setPivot(.5, 1);
 			tree.setAlphaMode(Mask, .5);
+			tree.effect = outline;
 			trees.push(tree);
 		}
 		// A flag on a post, turned as its node is: a sign.
@@ -91,6 +125,7 @@ class App extends BaseApp {
 		sign.facing = Free;
 		sign.setPivot(.5, 1);
 		sign.setAlphaMode(Mask);
+		sign.effect = dissolve;
 		// A coin lying on the ground, and its glow added over it.
 		var coin = tile([42, 22, 16, 16], -2, 1.5, .8, .8);
 		coin.facing = Ground;
@@ -99,18 +134,34 @@ class App extends BaseApp {
 		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
 		Textures.load("textures/tiles.png", false, texture -> useTiles(texture));
 		Textures.load("textures/flame.png", true, texture -> light(texture));
+		logo.effect = flash;
 	}
+
+	// The autopilot's script in: the input it plays from now on.
+	function startPilot(bytes:haxe.io.Bytes):Void
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), null, (points, done, failed) -> Screenshots.sample(points, done, failed));
+
+	function probe(name:String):Dynamic
+		return switch name {
+			case "ready": loaded == 3;
+			case "outline": outlined;
+			case "dissolving": dissolving;
+			default: throw 'Unknown probe ' + name;
+		}
 
 	// The logo's texture in: the billboard draws it, tinted blue.
 	function useLogo(texture:Texture2D):Void {
 		logo.texture = texture;
 		logo.tint = 0x66bfffff;
+		loaded++;
 	}
 
 	// The tile sheet in: every tile sprite draws its cell of it.
-	function useTiles(texture:Texture2D):Void
+	function useTiles(texture:Texture2D):Void {
 		for (sprite in tileSprites)
 			sprite.texture = texture;
+		loaded++;
+	}
 
 	// The flame sheet in: masked flames, cut out where their soft edges fade, a row of them behind the pedestal, and the coin's glow.
 	function light(texture:Texture2D):Void {
@@ -132,17 +183,40 @@ class App extends BaseApp {
 		glow.setPosition(-2, .5, 1.5);
 		glow.setAlphaMode(Add);
 		stage.add(glow);
+		loaded++;
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
-			Host.quit();
-		if (input.isFramePressed(Key.O))
-			orbit.running = !orbit.running;
-		// The game's clock: paused, the motion stops.
-		var time = Time.clock.time;
-		orbit.update(dt);
+		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
+		var input:Null<IInput> = Input.instance;
+		if (pilot != null) {
+			input = pilot.done ? null : pilot.advance(name -> probe(name));
+			if (pilot.awaitingFrame)
+				input = null;
+		}
+		if (input != null) {
+			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+				Host.quit();
+			if (input.isFramePressed(Key.O))
+				orbit.running = !orbit.running;
+			if (input.isFramePressed(Key.Digit1)) {
+				outlined = !outlined;
+				for (tree in trees)
+					tree.effect = outlined ? outline : null;
+			}
+			if (input.isFramePressed(Key.Digit2)) {
+				dissolving = !dissolving;
+				sign.effect = dissolving ? dissolve : null;
+			}
+			if (input.isFramePressed(Key.F))
+				flash.trigger(0xffffffff, .4);
+		}
+		// The game's clock: paused, the motion stops; held under the autopilot, the camera with it.
+		var time = piloted ? HELD_TIME : Time.clock.time;
+		stage.time = time;
+		orbit.update(piloted ? 0 : dt);
+		// Half gone at the autopilot's held time, coming and going.
+		dissolve.amount = .5 + .45 * Math.sin((time - HELD_TIME) * .9);
 		fps.update(dt, Time.frameCpu);
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
@@ -167,11 +241,23 @@ class App extends BaseApp {
 		y += batch.drawTextWrapped("HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18, vw - 24,
 			0xf5f5f5ff)
 			+ 4;
-		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24,
-			0xc8c8c8ff);
+		var on = (value:Bool) -> value ? "on" : "off";
+		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [F] flash',
+			vx
+			+ 12, y, 16, vw
+			- 24, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();
+		if (pilot != null && pilot.done && !published) {
+			published = true;
+			TestHarness.publish({
+				game: {outline: outlined, dissolving: dissolving},
+				autopilot: pilot.snapshot
+			});
+			if (Host.getOption("autoclose", "0") == "1")
+				Host.quit();
+		}
 	}
 
 	override public function cleanup():Void {

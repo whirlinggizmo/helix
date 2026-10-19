@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seed": 1,
+  "commands": [
+    {"op": "wait", "probe": "ready", "equals": true, "seconds": 60},
+    {"op": "sample", "name": "outlined", "points": [[269.6, 346.4], [199.2, 349.6]]},
+    {"op": "press", "key": "1"},
+    {"op": "assert", "probe": "outline", "equals": false},
+    {"op": "sample", "name": "outlineOff", "points": [[269.6, 346.4], [199.2, 349.6]], "differsFrom": "outlined", "by": 40},
+    {"op": "press", "key": "1"},
+    {"op": "sample", "name": "dissolved", "points": [[821.6, 253.6], [821.6, 276.0]]},
+    {"op": "press", "key": "2"},
+    {"op": "assert", "probe": "dissolving", "equals": false},
+    {"op": "sample", "name": "whole", "points": [[821.6, 253.6], [821.6, 276.0]], "differsFrom": "dissolved", "by": 40},
+    {"op": "press", "key": "2"},
+    {"op": "sample", "name": "unflashed", "points": [[644.0, 189.6], [621.6, 269.6]]},
+    {"op": "press", "key": "F"},
+    {"op": "sample", "name": "flashed", "points": [[644.0, 189.6], [621.6, 269.6]], "differsFrom": "unflashed", "by": 40}
+  ]
+}

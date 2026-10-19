@@ -4,14 +4,16 @@ import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
+import helix.graphics.SpriteEffect;
 import helix.render2d.Texture2D;
 
 /** A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
 	drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
-	reach), sorts them (opaque and masked ones by texture; blended ones back to front; added ones by texture), writes their records (where the
-	pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and
-	draws each run of a texture as one instanced draw: the opaque ones after the opaque models, the blended ones among the see-through models
-	(fed to it back to front), the added ones last. A camera-facing sprite's axes are the camera's, uniforms of the draw. */
+	reach), sorts them (opaque and masked ones by texture and effect; blended ones back to front; added ones by texture and effect), writes
+	their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order
+	into one upload, and draws each run of a texture and effect as one instanced draw (through the effect's sprite3D variant for a sprite with
+	one): the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones
+	last. A camera-facing sprite's axes are the camera's, uniforms of the draw. */
 class Sprites3D {
 	static inline var RECORD_FLOATS = 24;
 
@@ -40,6 +42,10 @@ class Sprites3D {
 	var emitters:Array<EmitterItem> = [];
 	var emitterCount = 0;
 	var dt = 0.;
+	// The stage's time this draw (what effects see), and each effect drawn a key, so the sort groups a texture's sprites by it.
+	var time = 0.;
+	var effectKeys = new haxe.ds.ObjectMap<SpriteEffect, Int>();
+	var nextEffectKey = 1;
 	var nextEmitter = 0;
 	var emitterBlendStart = 0;
 	var emitterAddStart = 0;
@@ -74,18 +80,21 @@ class Sprites3D {
 	function get_drawnSpriteCount():Int
 		return count;
 
-	/** Draws of the last draw: one a run of a texture. */
+	/** Draws of the last draw: one a run of a texture and effect. */
 	public var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
 		return draws;
 
-	/** Starts a draw, dt seconds of the stage's clock after the last: no sprites or emitters yet. */
-	public function begin(dt:Float):Void {
+	/** Starts a draw at time, seconds of the stage's clock (what effects see), dt after the last: no sprites or emitters yet. */
+	public function begin(dt:Float, time:Float):Void {
 		count = 0;
 		draws = 0;
 		emitterCount = 0;
 		this.dt = dt;
+		this.time = time;
+		effectKeys.clear();
+		nextEffectKey = 1;
 	}
 
 	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has
@@ -159,6 +168,8 @@ class Sprites3D {
 					it.facing = node.facing;
 					it.tint = node.color;
 					it.texture = font.texture;
+					it.effect = null;
+					it.effectKey = 0;
 					it.phase = 1;
 					it.depth = depth;
 					it.glyph = true;
@@ -201,6 +212,14 @@ class Sprites3D {
 		it.facing = node.facing;
 		it.tint = node.tint;
 		it.texture = texture;
+		it.effect = node.effect;
+		it.effectKey = 0;
+		if (node.effect != null) {
+			var key = effectKeys.get(node.effect);
+			if (key == null)
+				effectKeys.set(node.effect, key = nextEffectKey++);
+			it.effectKey = key;
+		}
 		it.glyph = false;
 		it.phase = switch node.alphaMode {
 			case Blend: 1;
@@ -300,6 +319,8 @@ class Sprites3D {
 			return a.depth > b.depth ? -1 : a.depth < b.depth ? 1 : a.order - b.order;
 		if (a.texture.handle != b.texture.handle)
 			return a.texture.handle - b.texture.handle;
+		if (a.effectKey != b.effectKey)
+			return a.effectKey - b.effectKey;
 		return a.order - b.order;
 	}
 
@@ -495,15 +516,21 @@ class Sprites3D {
 			(tint & 255) / 255 + (item.distanceField ? 2 : 0));
 	}
 
-	// Draws drawn[from..to) as runs of a texture through phase's pipeline.
+	// Draws drawn[from..to) as runs of a texture and effect through phase's pipeline: the framework's, or the effect's sprite3D variant's.
 	function drawRange(from:Int, to:Int, phase:Int):Void {
 		var i = from;
 		while (i < to) {
-			var last = i, texture = drawn[i].texture;
-			while (last + 1 < to && drawn[last + 1].texture == texture)
+			var last = i, texture = drawn[i].texture, effect = drawn[i].effect;
+			while (last + 1 < to && drawn[last + 1].texture == texture && drawn[last + 1].effect == effect)
 				last++;
-			gpu.draw(pipelines.sprite3D(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.handle], [texture.sampling],
-				[uniforms]);
+			if (effect != null) {
+				var program = effect.shader.sprite3D, textures = [], samplings = [];
+				var blocks = effect.bind(program, texture, texture.sampling, time, uniforms, textures, samplings);
+				gpu.draw(pipelines.spriteEffect3D(program.handle, cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, textures, samplings,
+					blocks);
+			} else
+				gpu.draw(pipelines.sprite3D(cast phase), [corners, instanceBuffer], indices, 0, 6, i, last - i + 1, [texture.handle], [texture.sampling],
+					[uniforms]);
 			draws++;
 			i = last + 1;
 		}
@@ -570,6 +597,12 @@ private class SpriteItem {
 
 	/** Its texture. */
 	public var texture:Texture2D;
+
+	/** The effect it draws through (its sprite's), or null. */
+	public var effect:Null<SpriteEffect>;
+
+	/** Its effect's key this draw (0 for none), which the sort groups by. */
+	public var effectKey = 0;
 
 	/** 0 opaque or masked, 1 blended, 2 added. */
 	public var phase = 0;

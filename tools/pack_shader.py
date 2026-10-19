@@ -9,13 +9,15 @@ A shader is a fragment stage `@fs fs` that includes one framework block, which d
                                   and their shadows, the material's base color and textures, its hit flash and rim light (applied by
                                   helix_output); optionally a vertex hook, `@block vertex` defining
                                   `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing)
-    @include_block helix_sprite   a 2D sprite's (helix.graphics.SpriteEffect, Batch2D.effect): its texture, region and tint, the texel size
-                                  and the time (the kind's vertex stage and block are src/helix/graphics/shaders/effect2d.glsl's)
+    @include_block helix_sprite   a sprite's (helix.graphics.SpriteEffect: Sprite2D.effect, Batch2D.effect, Sprite3D.effect): its texture,
+                                  region and tint, the texel size and the time (the kind's vertex stage and block are
+                                  src/helix/graphics/shaders/effect2d.glsl's)
 
 A surface shader is packed with its variants: a skinned one (the same fragment stage over a vertex stage moving each vertex by its joints first),
 and, for a shader with a vertex hook or a `discard`, its shadow casters, static and skinned (the depth pass drawn with the hook, and the
 fragment stage run for what it discards, its output writing nothing), so its shadow moves and opens as it does; a shader with neither casts
-through the framework's depth program.
+through the framework's depth program. A sprite shader is packed with a variant drawing a Stage3D's sprites: the same fragment stage over
+the framework's sprite3d vertex stage, its output applying the sprite's alpha mode.
 
 Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
 either stage; its own textures follow the framework's (screen and sprite: from binding 1; surface: from binding 6, as 5 is the skinned
@@ -393,16 +395,34 @@ KINDS['helix_surface'] = (SURFACE_VS.format(name='helix_surface_vs', skin_inputs
                           + '\n@block helix_surface' + SURFACE_FS + SURFACE_OUTPUT + '@end\n'
                           + '\n@block helix_surface_caster' + SURFACE_FS + CASTER_OUTPUT + '@end\n')
 # The sprite kind's vertex stage and block: the framework's effect2d program less its own fragment stage (its vertices' layout is that
-# program's, Effect2DLayout, which Batch2D packs).
+# program's, Effect2DLayout, which Batch2D packs). Its variant drawing a Stage3D's sprites reads the framework's sprite3d vertex stage (its
+# outputs the kind's, its records Sprite3DLayout's), the block's output applying the sprite's alpha mode.
 SPRITE = ROOT / 'src/helix/graphics/shaders/effect2d.glsl'
+SPRITE3D = ROOT / 'src/helix/graphics/shaders/sprite3d.glsl'
+SPRITE_OUTPUT = 'void helix_output(vec3 color, float alpha) { helix_frag_color = vec4(color, alpha); }'
+SPRITE3D_OUTPUT = '''in float helix_sprite_v_alpha_mode;
+// Writes the color here as the sprite's alpha mode says (Sprite3D.alphaMode): under a mask's cutoff discarded, opaque or masked written
+// whole, blended or added as it is.
+void helix_output(vec3 color, float alpha) {
+    if (helix_sprite_v_alpha_mode > 0.0 && alpha < helix_sprite_v_alpha_mode) discard;
+    helix_frag_color = vec4(color, helix_sprite_v_alpha_mode != 0.0 ? 1.0 : alpha);
+}'''
+SPRITE3D_ATTRIBUTES = ['corner', 'i_position', 'i_size', 'i_region', 'i_right', 'i_up', 'i_tint']
 
 
 def sprite_kind():
-    """The sprite kind's half: effect2d.glsl's vertex stage and helix_sprite block, without its comment, fragment stage and program."""
+    """The sprite kind's half: effect2d.glsl's vertex stage and helix_sprite block, without its comment, fragment stage and program; and for
+    its variant, sprite3d.glsl's vertex stage and the block as helix_sprite_3d, its output applying the alpha mode."""
     text = SPRITE.read_text(encoding='utf-8')
     text = re.sub(r'@fs\s+effect2d_fs\b.*?@end', '', text, flags=re.S)
     text = re.sub(r'@program[^\n]*\n?', '', text)
-    return text[text.index('@vs'):]
+    text = text[text.index('@vs'):]
+    block = re.search(r'@block\s+helix_sprite\b.*?@end', text, re.S).group(0)
+    if SPRITE_OUTPUT not in block:
+        fail(f'{SPRITE}: helix_sprite\'s output must read "{SPRITE_OUTPUT}", which its Stage3D variant replaces')
+    block3d = re.sub(r'@block\s+helix_sprite\b', '@block helix_sprite_3d', block, count=1).replace(SPRITE_OUTPUT, SPRITE3D_OUTPUT)
+    vertex3d = re.search(r'@vs\s+sprite3d_vs\b.*?@end', SPRITE3D.read_text(encoding='utf-8'), re.S).group(0)
+    return text + '\n' + vertex3d + '\n\n' + block3d + '\n'
 
 
 KINDS['helix_sprite'] = sprite_kind()
@@ -411,10 +431,12 @@ SURFACE_ATTRIBUTES = ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_mode
                       'i_lights0', 'i_lights1']
 ATTRIBUTES = {'helix_screen': [], 'helix_surface': SURFACE_ATTRIBUTES, 'helix_sprite': ['position', 'uv', 'color', 'region']}
 # A surface shader's variants beside its program, each its vertex stage, fragment stage and attributes: drawing a skinned model, and drawing
-# its shadow from a static or a skinned model (only for a shader with a vertex hook or a discard; another's shadow is the framework caster's).
+# its shadow from a static or a skinned model (only for a shader with a vertex hook or a discard; another's shadow is the framework caster's);
+# a sprite shader's, drawing a Stage3D's sprites.
 VARIANTS = {'skinned': ('helix_surface_skinned_vs', 'fs', SURFACE_ATTRIBUTES + ['joints', 'weights']),
             'caster': ('helix_surface_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES),
-            'skinnedCaster': ('helix_surface_skinned_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES + ['joints', 'weights'])}
+            'skinnedCaster': ('helix_surface_skinned_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES + ['joints', 'weights']),
+            'sprite3D': ('sprite3d_vs', 'helix_sprite3d_fs', SPRITE3D_ATTRIBUTES)}
 # The first texture binding an app's own may use (a surface's 5 is its skinned variants' joint texture).
 FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 6, 'helix_sprite': 1}
 NO_VERTEX_HOOK = '''
@@ -503,7 +525,7 @@ def described(source_path, source, kind, p, sdl_gpu):
 def packed(shdc, source_path, sdl_gpu=False):
     """source_path packed: the .hxshader's content as a dict, with SDL_GPU's dialects (tools/gpu_shaders.py) only when sdl_gpu, so other
     builds need neither glslang nor SPIRV-Cross. A surface shader carries its variants beside its program (VARIANTS: skinned, and the
-    shadow casters when needs_caster), each a program of its own over the same parameters."""
+    shadow casters when needs_caster), a sprite shader its sprite3D, each a program of its own over the same parameters."""
     source = Path(source_path).read_text(encoding='utf-8')
     kinds = [k for k in KINDS if re.search(r'@include_block\s+' + k + r'\b', source)]
     if len(kinds) != 1:
@@ -527,6 +549,11 @@ def packed(shdc, source_path, sdl_gpu=False):
             # The caster's fragment stage: the app's, over the caster's block (its output writes nothing).
             body = re.sub(r'@include_block\s+helix_surface\b', '@include_block helix_surface_caster', fragment.group(1))
             rest += f'\n@fs helix_caster_fs{body}@end\n'
+    elif kind == 'helix_sprite':
+        programs['sprite3D'] = VARIANTS['sprite3D']
+        # The variant's fragment stage: the app's, over the block whose output applies the sprite's alpha mode.
+        body = re.sub(r'@include_block\s+helix_sprite\b', '@include_block helix_sprite_3d', fragment.group(1))
+        rest += f'\n@fs helix_sprite3d_fs{body}@end\n'
     full = (hook + '\n' + extra + KINDS[kind] + '\n' + rest + '\n'
             + ''.join(f'@program {name} {vs} {fs}\n' for name, (vs, fs, _) in programs.items()))
     with tempfile.TemporaryDirectory() as scratch:
@@ -573,7 +600,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
     """The shader library (src/helix/shaders/*.glsl) packed into generated Haxe in out, so a class in helix.shaders gets its shader with no
     load: <Name>Packed.hx, whose text() is the .hxshader's text, and PackedShaders.hx naming them all (for the dev loop's hot reload); with
     gpu_out (SDL_GPU builds), SDL_GPU's dialects too, as <Name>PackedSdlGpu.hx there, which text() returns in builds defining
-    helix_sdl3_gpu. A shader is packed again only when its source, this tool, or the skinning or sprite kind it may include is newer than its output; generated files whose source is gone
+    helix_sdl3_gpu. A shader is packed again only when its source, this tool, or the skinning or sprite stages it may include is newer than its output; generated files whose source is gone
     are removed. shdc is sokol-shdc's path, found when first needed. Returns the stems packed."""
     out, sources = Path(out), Path(sources)
     out.mkdir(parents=True, exist_ok=True)
@@ -590,7 +617,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
         for stem in stems:
             source, name = sources / f'{stem}.glsl', class_name(stem)
             target = folder / f'{name}{suffix}.hx'
-            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, SKINNING.stat().st_mtime, SPRITE.stat().st_mtime,
+            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, SKINNING.stat().st_mtime, SPRITE.stat().st_mtime, SPRITE3D.stat().st_mtime,
                                                                         gpu_tool_stamp() if sdl_gpu else 0):
                 continue
             shdc = shdc or shdc_path()

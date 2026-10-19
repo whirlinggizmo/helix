@@ -9,6 +9,9 @@ import helix.render2d.Camera2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Texture2D;
+import helix.render3d.Camera3D;
+import helix.render3d.Sprite3D;
+import helix.render3d.Stage3D;
 import helix.shaders.PaletteSwap;
 import helix.shaders.ShaderLibrary;
 import helix.shaders.SpriteDissolve;
@@ -19,7 +22,8 @@ import helix.shaders.SpriteOutline;
 	effect2d program's vertices; a batch splits where the effect changes, as it does where the texture does, one effect shared by sprites drawn
 	one after another staying one draw, and draws without one as it did; an effect's vertices carry their sprite's region (a nine-slice's whole
 	one); the framework's block holds the texture's size and the batch's time; and each library class's fields write their parameters where the
-	shader's reflection puts them, a flash fading over the batch's time. */
+	shader's reflection puts them, a flash fading over the batch's time; and a Stage3D's sprites draw through an effect's sprite3D variant, split
+	by effect as by texture, at the stage's time. */
 class SpriteEffectTests {
 	static var checks = 0;
 
@@ -43,6 +47,7 @@ class SpriteEffectTests {
 		flash(gpu);
 		dissolve(gpu);
 		palette(gpu);
+		stage3D(gpu);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -62,10 +67,16 @@ class SpriteEffectTests {
 		for (name in ["sprite_outline", "sprite_flash", "sprite_dissolve", "palette_swap"]) {
 			check(texts.exists(name), 'The library\'s $name is packed');
 			var shader = Shader.fromText(gpu, texts[name]());
-			check(shader.kind == "sprite" && shader.skinned == null && shader.caster == null, '$name is a sprite shader, with no variants');
+			check(shader.kind == "sprite" && shader.skinned == null && shader.caster == null, '$name is a sprite shader, without a surface\'s variants');
 			var source:helix.graphics.ShaderSource = @:privateAccess shader.source;
 			check(source.attributes.join(",") == "position,uv,color,region", '$name reads the effect2d program\'s vertices');
 			check(source.uniformBlocks.filter(b -> b.slot == 0)[0].size == Effect2DLayout.vertexUniformBytes, '$name: block 0 is the clip scale');
+			var variant:helix.graphics.ShaderSource = @:privateAccess shader.sprite3D.source;
+			check(variant.attributes.join(",") == "corner,i_position,i_size,i_region,i_right,i_up,i_tint"
+				&& variant.uniformBlocks.filter(b -> b.slot == 0)[0].size == Sprite3DLayout.vertexUniformBytes,
+				'$name\'s sprite3D variant reads the 3D sprites\' records and uniforms');
+			check(shader.sprite3D.handle != shader.handle && shader.sprite3D.textureSlots.join(",") == shader.textureSlots.join(","),
+				'$name: the variant a program of its own, its textures the same');
 			shader.destroy();
 		}
 		var surface = ShaderLibrary.get(gpu, "unlit", UnlitPacked.text());
@@ -254,6 +265,62 @@ class SpriteEffectTests {
 			&& gpu.draws[0].textures[1] == colors.handle, "PaletteSwap's row, and its palette at 1");
 		effect.row = -3;
 		check(effect.row == 0, "A row under 0 is 0");
+	}
+
+	// A Stage3D's sprites with an effect draw through its sprite3D variant: opaque ones grouped by effect within a texture, blended ones split
+	// where it changes in their order back to front; block 0 the sprites' uniforms, block 1 the texture's size and the stage's time.
+	static function stage3D(gpu:CountingGraphics):Void {
+		var stage = new Stage3D(gpu),
+			camera = new Camera3D(),
+			texture = Texture2D.fromRgba(gpu, 8, 4, Bytes.alloc(128));
+		camera.setViewport(800, 600);
+		camera.setView(0, 0, 10, 0, 0, 0);
+		var outline = new SpriteOutline(), flash = new SpriteFlash(), sprites = [];
+		for (i in 0...4) {
+			var sprite = new Sprite3D(texture);
+			sprite.setAlphaMode(Opaque);
+			sprite.setPosition(i - 2, 0, 0);
+			sprite.effect = i % 2 == 0 ? outline : null;
+			stage.add(sprite);
+			sprites.push(sprite);
+		}
+		stage.time = 4.5;
+		gpu.beginFrame(800, 600, 0);
+		gpu.meshPipelines = [];
+		gpu.meshDraws = [];
+		stage.draw(camera);
+		var plain = Pipelines.of(gpu).sprite3D(Opaque),
+			through = Pipelines.of(gpu).spriteEffect3D(outline.shader.sprite3D.handle, Opaque);
+		var ours = [
+			for (i in 0...gpu.meshPipelines.length)
+				if (gpu.meshPipelines[i] == plain || gpu.meshPipelines[i] == through) i
+		];
+		check(ours.length == 2 && gpu.meshDraws[ours[0]].instances == 2 && gpu.meshDraws[ours[1]].instances == 2,
+			"Four opaque sprites, two with one effect: two draws of two");
+		var drawn = gpu.meshDraws[ours[gpu.meshPipelines[ours[0]] == through ? 0 : 1]];
+		check(drawn.uniforms[0].length == Sprite3DLayout.vertexUniformBytes
+			&& near(drawn.uniforms[1].getFloat(0), 8)
+			&& near(drawn.uniforms[1].getFloat(4), 4)
+			&& near(drawn.uniforms[1].getFloat(8), 4.5),
+			"The variant's block 0 the sprites' uniforms, block 1 the texture's size and the stage's time");
+		check(gpu.describe(through).indexed && gpu.describe(through).depthWrite, "Drawn as the 3D sprites are: indexed, an opaque one writing depth");
+		// Blended, back to front: the effect changing twice along the way, three draws.
+		for (i in 0...3) {
+			sprites[i].setAlphaMode(Blend);
+			sprites[i].setPosition(0, 0, -i);
+			sprites[i].effect = i == 1 ? flash : outline;
+		}
+		sprites[3].visible = false;
+		gpu.meshPipelines = [];
+		gpu.meshDraws = [];
+		stage.draw(camera);
+		var blended = [
+			for (p in gpu.meshPipelines)
+				if (p == Pipelines.of(gpu).sprite3D(Alpha)
+					|| p == Pipelines.of(gpu).spriteEffect3D(outline.shader.sprite3D.handle, Alpha)
+					|| p == Pipelines.of(gpu).spriteEffect3D(flash.shader.sprite3D.handle, Alpha)) p
+		];
+		check(blended.length == 3 && blended[0] == blended[2] && blended[0] != blended[1], "Blended: split where the effect changes, back to front");
 	}
 
 	// The uniform blocks of a sprite drawn through effect at time.

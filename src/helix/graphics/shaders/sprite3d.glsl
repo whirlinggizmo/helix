@@ -11,9 +11,11 @@
  * i_up        xyz its own up (facing 2+), w the alpha mode: above 0 a mask's cutoff (texels below it discarded, the rest opaque), below 0
  *             opaque, 0 as is (blended or added by the pipeline)
  * i_tint      rgba, sRGB values; an alpha over 1.5 marks a distance-field texture (text: alpha 0.5 is the outline), tinted by the alpha less 2,
- *             as the 2D sprites' does */
+ *             as the 2D sprites' does
+ * Its vertex stage is a sprite shader's too (tools/pack_shader.py: a sprite effect on a Stage3D's sprite, Shader.sprite3D), so its outputs
+ * are the sprite kind's (src/helix/graphics/shaders/effect2d.glsl's helix_sprite block reads them) and its block is named as the framework's. */
 @vs sprite3d_vs
-layout(binding=0) uniform sprite3d_vs_params {
+layout(binding=0) uniform helix_sprite3d_vs_params {
     mat4 view_projection;
     vec4 camera_right; // xyz: facing 0's right
     vec4 camera_up;    // xyz: facing 0's up
@@ -26,9 +28,10 @@ layout(location=3) in vec4 i_region;
 layout(location=4) in vec4 i_right;
 layout(location=5) in vec4 i_up;
 layout(location=6) in vec4 i_tint;
-out vec2 v_uv;
-out vec4 v_tint;
-out float v_alpha_mode;
+out vec2 helix_sprite_v_uv;
+out vec4 helix_sprite_v_tint;
+flat out vec4 helix_sprite_v_region;
+out float helix_sprite_v_alpha_mode;
 void main() {
     vec3 right = i_right.xyz;
     vec3 up = i_up.xyz;
@@ -44,32 +47,34 @@ void main() {
     vec2 local = vec2((corner.x + 0.5 - i_size.z) * i_size.x, (corner.y - 0.5 + i_size.w) * i_size.y);
     vec3 world = i_position.xyz + right * local.x + up * local.y;
     gl_Position = view_projection * vec4(world, 1.0);
-    v_uv = vec2(mix(i_region.x, i_region.z, corner.x + 0.5), mix(i_region.y, i_region.w, 0.5 - corner.y));
-    v_tint = i_tint;
-    v_alpha_mode = i_up.w;
+    helix_sprite_v_uv = vec2(mix(i_region.x, i_region.z, corner.x + 0.5), mix(i_region.y, i_region.w, 0.5 - corner.y));
+    helix_sprite_v_tint = i_tint;
+    helix_sprite_v_region = i_region;
+    helix_sprite_v_alpha_mode = i_up.w;
 }
 @end
 
 @fs sprite3d_fs
 layout(binding=0) uniform texture2D sprite3d_texture;
 layout(binding=0) uniform sampler sprite3d_sampler;
-in vec2 v_uv;
-in vec4 v_tint;
-in float v_alpha_mode;
+in vec2 helix_sprite_v_uv;
+in vec4 helix_sprite_v_tint;
+flat in vec4 helix_sprite_v_region; // a sprite effect's (the vertex stage's outputs, in order)
+in float helix_sprite_v_alpha_mode;
 out vec4 frag_color;
 void main() {
-    vec4 texel = texture(sampler2D(sprite3d_texture, sprite3d_sampler), v_uv);
-    if (v_tint.a > 1.5) {
+    vec4 texel = texture(sampler2D(sprite3d_texture, sprite3d_sampler), helix_sprite_v_uv);
+    if (helix_sprite_v_tint.a > 1.5) {
         // A distance field (text): the edge smoothed over about a pixel at any distance.
         float w = max(fwidth(texel.a) * 0.75, 1e-4);
-        frag_color = vec4(v_tint.rgb, smoothstep(0.5 - w, 0.5 + w, texel.a) * (v_tint.a - 2.0));
+        frag_color = vec4(helix_sprite_v_tint.rgb, smoothstep(0.5 - w, 0.5 + w, texel.a) * (helix_sprite_v_tint.a - 2.0));
         return;
     }
-    frag_color = texel * v_tint;
-    if (v_alpha_mode > 0.0 && frag_color.a < v_alpha_mode) {
+    frag_color = texel * helix_sprite_v_tint;
+    if (helix_sprite_v_alpha_mode > 0.0 && frag_color.a < helix_sprite_v_alpha_mode) {
         discard;
     }
-    if (v_alpha_mode != 0.0) {
+    if (helix_sprite_v_alpha_mode != 0.0) {
         frag_color.a = 1.0;
     }
 }
