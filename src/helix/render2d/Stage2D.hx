@@ -60,10 +60,12 @@ class Stage2D {
 	function get_drawnNodeCount():Int
 		return count;
 
-	/** Draws the stage into batch (begun in this frame), through camera, in its viewport; the batch is left seen through camera, with no
-		transform. Node world transforms are up to date after it, for toLocalX and the like. */
+	/** Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time
+		(batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date
+		after it, for toLocalX and the like. */
 	public function draw(batch:Batch2D, camera:Camera2D):Void {
 		batch.camera = camera;
+		batch.time = time;
 		lastFont = batch.font;
 		var x0 = camera.screenToWorldX(camera.viewportX),
 			y0 = camera.screenToWorldY(camera.viewportY),
@@ -105,6 +107,7 @@ class Stage2D {
 			clipEnds.pop();
 			batch.popClip();
 		}
+		batch.effect = null;
 		batch.resetTransform();
 	}
 
@@ -208,6 +211,7 @@ class Stage2D {
 		if (!inView(node, x, y, w, h))
 			return;
 		count++;
+		batch.effect = sprite != null ? sprite.effect : null;
 		batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 		if (sprite != null) {
 			var t = sprite.texture, tw = t.width, th = t.height;

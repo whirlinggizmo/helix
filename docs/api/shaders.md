@@ -202,6 +202,22 @@ var width(get, set):Float
 - `new`: Outlines model in color (0xRRGGBBAA, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by default; under 0 is 0).
 - `width`: How far the outline reaches past the model's surface, world units, 0 or more. Under 0, or NaN, is 0.
 
+## PaletteSwap
+
+*class* in `src/helix/shaders/PaletteSwap.hx`
+
+A sprite effect of the library: the sprite drawn in a palette's colors. Its texels' red channel (0..255) is a column of the palette, a texture a row a variant (a game's PNG: the first row the colors as drawn, a row below for each swap), and row chooses which; the sprite's alpha is kept, times the palette's, and both are times the tint. The sprite and the palette are read texel by texel at exact texel centers, whatever either's sampling, so an index never blends with its neighbor; a red past the palette's width takes its last column. Shared by the sprites given it (SpriteEffect): a sprite of another variant has a PaletteSwap of its own. Built on the program's GPU (Graphics) the first time one is made.
+
+```haxe
+function new(palette:Texture2D, ?row:Int = 0)
+var palette(default, set):Texture2D
+var row(default, set):Int
+```
+
+- `new`: The sprite in palette's colors, its row row (0 by default).
+- `palette`: The palette: a column an index, a row a variant.
+- `row`: The palette's row drawn, 0 (its top, by default) or more; one past its last draws its last. Under 0 is 0.
+
 ## Pixelate
 
 *class* in `src/helix/shaders/Pixelate.hx`
@@ -267,6 +283,64 @@ function new(model:Model, ?color:Int = 0x3fa9ff99)
 ```
 
 - `new`: Shows model where it's hidden in color (0xRRGGBBAA, sRGB, blended by its alpha): a light blue at 60% by default.
+
+## SpriteDissolve
+
+*class* in `src/helix/shaders/SpriteDissolve.hx`
+
+A sprite effect of the library: the sprite burnt away where a noise texture, laid across its region, is below a threshold rising with amount, with a glowing edge along the cut. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Shared by the sprites given it (SpriteEffect). Built on the program's GPU (Graphics) the first time one is made.
+
+```haxe
+function new()
+var amount(default, set):Float
+var edgeColor(default, set):Int
+var edgeWidth(default, set):Float
+var scale(default, set):Float
+var noise(default, set):Texture2D
+```
+
+- `new`: Whole, an orange edge .1 wide, the library's noise once across.
+- `amount`: How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0).
+- `edgeColor`: The edge's color, 0xRRGGBBAA (sRGB, its alpha how much of it over the sprite's): orange by default.
+- `edgeWidth`: How wide the edge glows, in the noise's values (0..1) past the threshold, .001 to 1: .1 by default. Clamped to .001..1 (NaN is .001).
+- `scale`: How many times the noise repeats across the sprite's region, above 0: 1 by default. Under .001, or NaN, is .001.
+- `noise`: The noise it burns along (its red channel, sampled as its sampling says: repeating, for scale to tile it): the library's by default.
+
+## SpriteFlash
+
+*class* in `src/helix/shaders/SpriteFlash.hx`
+
+A sprite effect of the library: a color mixed over the sprite's (its alpha kept), all of it at a trigger and fading to none over some seconds of the batch's time (Batch2D.time; a Stage2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it (SpriteEffect): each sprite flashing on its own has a SpriteFlash of its own. Built on the program's GPU (Graphics) the first time one is made.
+
+```haxe
+function new()
+var color(default, set):Int
+var amount(get, set):Float
+function trigger(color:Int, seconds:Float):Bool
+function prepare(time:Float):Void
+```
+
+- `new`: No flash until triggered or an amount is held.
+- `color`: The flash's color, 0xRRGGBBAA (sRGB, its alpha how strong at most). White by default.
+- `amount`: How much of the flash is held, 0 to 1 (times its color's alpha): 0, none, by default. Assigning holds it, ending a fade; read during a fade, it's the fade's start, 1. Clamped to 0..1 (NaN is 0).
+- `trigger`: Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the batch's time from the next draw. False, changing nothing, for seconds not above 0.
+- `prepare`: Brings a fade to time (seconds of the batch's clock): its start the first time after a trigger.
+
+## SpriteOutline
+
+*class* in `src/helix/shaders/SpriteOutline.hx`
+
+A sprite effect of the library: the sprite's shape outlined in a color, a width of texels out from its edge (eight reads around each pixel: the sides and the diagonals). The outline is drawn where the sprite's region is see-through, so a sprite needs that much transparent margin around its shape; what lies past its region in an atlas is never read. Shared by the sprites given it (SpriteEffect). Built on the program's GPU (Graphics) the first time one is made.
+
+```haxe
+function new(?color:Int = 0x000000ff, ?width:Float = 1.)
+var color(default, set):Int
+var width(default, set):Float
+```
+
+- `new`: An outline of color (0xRRGGBBAA, black by default) width texels wide (1 by default).
+- `color`: The outline's color, 0xRRGGBBAA (sRGB, its alpha how opaque), faded with each sprite's tint's alpha.
+- `width`: How far it reaches out from the shape, in the sprite's texels, 0 (none) to 32. Clamped to 0..32 (NaN is 0).
 
 ## Tonemap
 

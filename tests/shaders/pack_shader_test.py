@@ -1,6 +1,6 @@
 """Checks of tools/pack_shader.py against real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members'
 std140 offsets, its textures, both dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a
-vertex hook or a discard) and its own textures after the joints; the shader library (src/helix/shaders) packed for every backend, SDL_GPU's
+vertex hook or a discard) and its own textures after the joints; a sprite shader over the effect2d program's vertices; the shader library (src/helix/shaders) packed for every backend, SDL_GPU's
 dialects too (glslang and SPIRV-Cross, fetched by tools/gpu_shaders.py when missing); and the library packed into generated Haxe, again only
 when changed, and gone with its source."""
 import argparse
@@ -160,6 +160,73 @@ layout(binding=5) uniform sampler grain_sampler;
         self.assertIn((6, 'grain'), [(t['slot'], t['name']) for t in shader['skinned']['textures']])
 
 
+SPRITE = '''@fs fs
+@include_block helix_sprite
+layout(binding=2) uniform params {
+    vec4 glow;
+    float reach;
+};
+layout(binding=1) uniform texture2D mask;
+layout(binding=1) uniform sampler mask_sampler;
+void main() {
+    vec4 own = helix_sprite_color() * texture(sampler2D(mask, mask_sampler), helix_quad_uv());
+    float near = helix_region_texel_at(helix_uv() + helix_texel_size() * reach).a;
+    helix_output(mix(own.rgb, glow.rgb, near * helix_time()), own.a);
+}
+@end
+'''
+
+
+class SpriteTests(unittest.TestCase):
+    def test_sprite_kind(self):
+        shader = pack(SPRITE)
+        self.assertEqual(shader['kind'], 'sprite')
+        self.assertEqual(shader['attributes'], ['position', 'uv', 'color', 'region'])
+        self.assertFalse({'skinned', 'caster', 'skinnedCaster'} & set(shader), 'a sprite shader has no variants')
+        blocks = {b['slot']: b for b in shader['uniformBlocks']}
+        self.assertEqual((blocks[0]['stage'], blocks[0]['size'], blocks[0]['name']), ('vertex', 16, 'helix_sprite_vs_params'))
+        self.assertEqual((blocks[1]['stage'], blocks[1]['size'], blocks[1]['name']), ('fragment', 16, 'helix_sprite_params'))
+        self.assertEqual([(m['name'], m['offset']) for m in blocks[2]['members']], [('glow', 0), ('reach', 16)])
+        self.assertEqual([(t['slot'], t['name']) for t in shader['textures']], [(0, 'helix_sprite_texture'), (1, 'mask')])
+        # The region reaches the fragment stage unblended (flat), in both dialects.
+        for dialect in ('glsl410', 'glsl300es'):
+            self.assertIn('flat out', shader[dialect]['vertex'])
+
+    def test_sprite_for_every_backend(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
+            glsl = Path(scratch) / 'sprite.glsl'
+            glsl.write_text(SPRITE, encoding='utf-8')
+            shader = pack_shader.packed(SHDC, glsl, sdl_gpu=True)
+        for dialect in ('spirv', 'msl', 'hlsl'):
+            self.assertTrue(shader['sdlGpu'][dialect]['vertex'] and shader['sdlGpu'][dialect]['fragment'])
+
+    def test_own_texture_at_the_sprites_refused(self):
+        with self.assertRaises(SystemExit):
+            pack(SPRITE.replace('binding=1) uniform', 'binding=0) uniform'))
+
+    def test_vertices_are_effect2d_s(self):
+        # Batch2D packs Effect2DLayout's vertices (the framework's effect2d program, shaders.json) for the kind's vertex stage.
+        programs = json.loads((ROOT / 'src/helix/graphics/shaders/shaders.json').read_text(encoding='utf-8'))['programs']
+        effect2d = next(p for p in programs if p['program'] == 'effect2d')
+        self.assertEqual([a['name'] for a in effect2d['attributes']], pack_shader.ATTRIBUTES['helix_sprite'])
+        self.assertNotIn('@fs', pack_shader.KINDS['helix_sprite'])
+        self.assertNotIn('@program', pack_shader.KINDS['helix_sprite'])
+
+    def test_library_sprite_parameters(self):
+        # helix.shaders' sprite classes write these members: their blocks as the reflection lays them out, their textures at these slots.
+        expected = {'sprite_outline': ([('outline_color', 0), ('width', 16)], []),
+                    'sprite_flash': ([('flash', 0)], []),
+                    'sprite_dissolve': ([('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)], [(1, 'dissolve_noise')]),
+                    'palette_swap': ([('row', 0)], [(1, 'palette')])}
+        for stem, (members, textures) in expected.items():
+            with self.subTest(shader=stem):
+                shader = pack_shader.packed(SHDC, pack_shader.LIBRARY / f'{stem}.glsl')
+                self.assertEqual(shader['kind'], 'sprite')
+                found = {b['slot']: [(m['name'], m['offset']) for m in b['members']] for b in shader['uniformBlocks'] if 'members' in b}
+                self.assertEqual(found, {2: members})
+                self.assertEqual([(t['slot'], t['name']) for t in shader['textures'] if t['slot'] > 0], textures)
+
+
 class LibraryTests(unittest.TestCase):
     def test_every_library_shader_packs_for_every_backend(self):
         sources = sorted(pack_shader.LIBRARY.glob('*.glsl'))
@@ -167,7 +234,7 @@ class LibraryTests(unittest.TestCase):
         for source in sources:
             with self.subTest(shader=source.name):
                 shader = pack_shader.packed(SHDC, source, sdl_gpu=True)
-                self.assertIn(shader['kind'], ('screen', 'surface'))
+                self.assertIn(shader['kind'], ('screen', 'surface', 'sprite'))
                 for dialect, version in (('glsl410', '#version 410'), ('glsl300es', '#version 300 es')):
                     self.assertTrue(shader[dialect]['vertex'].startswith(version) and shader[dialect]['fragment'].startswith(version))
                 for dialect in ('spirv', 'msl', 'hlsl'):

@@ -209,6 +209,11 @@ class Pipelines {
 	public function background3D():Int
 		return pipeline(program("background3d", () -> Background3DLayout.source()), 0, s -> describe(s, [], Opaque, ClipScale, {depthTest: LessEqual}));
 
+	/** A sprite effect's shader (its handle: SpriteEffect.shader's) drawing 2D sprites: Effect2DLayout's vertices in clip space (block 0 the
+		clip scale), no depth. */
+	public function spriteEffect(shader:Int, blend:BlendMode):Int
+		return pipeline(shader, blend, s -> describe(s, Effect2DLayout.buffers(), blend, ClipScale));
+
 	/** An app's screen effect (its handle): one triangle over the viewport, no depth. */
 	public function screen(shader:Int, blend:BlendMode):Int
 		return pipeline(shader, blend, s -> describe(s, [], blend, ClipScale));

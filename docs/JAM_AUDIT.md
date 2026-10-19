@@ -45,7 +45,7 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 | Surface: outline, silhouette, rim light, flash or hit tint | **missing** | Outline by inverted hull or by depth and normal edges; silhouette through walls by depth test; rim by view angle; tint for hits |
 | Screen: bloom and glow | **missing** | `PostProcess` chains full-size effects; bloom needs a threshold, down-sampled blurs and an add, so half-size intermediate targets |
 | Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | **missing** | Each a small screen shader with parameters; the `postprocess` example has a few of its own |
-| 2D: sprite outline, flash, dissolve, palette swap | **missing** | Sprite shaders through `Batch2D`'s custom shader path (exists: the sprite path is a `Shader`) |
+| 2D: sprite outline, flash, dissolve, palette swap | done (milestone 13) | `helix.shaders`' `SpriteOutline`, `SpriteFlash`, `SpriteDissolve` and `PaletteSwap`: sprite shaders (the `helix_sprite` kind, a `SpriteEffect`) that a `Sprite2D` or a `Batch2D` draws through (`effect`), a batch splitting where the effect changes. Before them `Batch2D` had no custom shader path: it always drew the framework's sprite program, its tint only multiplying |
 
 Proposal: `helix.shaders`, a library of ready surface and screen shaders with parameters by name, each with a one-line way to attach it (a material's surface shader, a `ScreenEffect`), and `PostProcess` growing scaled intermediates for bloom.
 

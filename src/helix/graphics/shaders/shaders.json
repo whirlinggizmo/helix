@@ -33,6 +33,43 @@
       ]
     },
     {
+      "program": "effect2d",
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec2"
+        },
+        {
+          "role": "uv",
+          "name": "uv",
+          "type": "vec2"
+        },
+        {
+          "role": "color",
+          "name": "color",
+          "type": "vec4"
+        },
+        {
+          "role": "region",
+          "name": "region",
+          "type": "vec4"
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 16
+        }
+      ],
+      "textures": [
+        {
+          "role": "atlas",
+          "name": "helix_sprite_texture"
+        }
+      ]
+    },
+    {
       "program": "color3d",
       "attributes": [
         {

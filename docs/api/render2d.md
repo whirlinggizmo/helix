@@ -43,7 +43,7 @@ A baked glyph: its place in the atlas, its box's offset from the pen on the base
 
 *class* in `src/helix/render2d/Batch2D.hx`
 
-Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture and camera, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so.
+Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
 
 ```haxe
 function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
@@ -52,6 +52,8 @@ var drawCallCount(get, never):Int
 var font(default, null):Font2D
 function begin(camera:Camera2D):Void
 var camera(default, set):Camera2D
+var effect(default, set):Null<SpriteEffect>
+var time:Float
 var transformA(get, never):Float
 var transformB(get, never):Float
 var transformC(get, never):Float
@@ -86,11 +88,13 @@ function destroy():Void
 ```
 
 - `new`: A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. Without gpu, the program's (Graphics.instance).
-- `vertexCount`: Vertices of the frame drawn last.
-- `drawCallCount`: Draws of the frame drawn last: one per run of a texture.
+- `vertexCount`: Vertices of the frame drawn last, those drawn through effects among them.
+- `drawCallCount`: Draws of the frame drawn last: one per run of a texture, camera and effect.
 - `font`: The built-in pixel font, whose texture also has the white texel shapes use.
 - `begin`: Starts collecting a batch seen through camera, with no transform; later calls only fill it until end.
 - `camera`: The camera what follows is seen through, in its viewport: a world and a HUD in one batch.
+- `effect`: The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
+- `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it to the stage's time.
 - `transformA`: The transform's a: x's share of a point's x.
 - `transformB`: The transform's b: x's share of a point's y.
 - `transformC`: The transform's c: y's share of a point's x.
@@ -99,7 +103,7 @@ function destroy():Void
 - `transformY`: The transform's y offset, world units.
 - `setTransform`: Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units.
 - `resetTransform`: What follows is drawn where it is given, in world units.
-- `end`: Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture and camera, each in its camera's viewport. Once a frame.
+- `end`: Draws the batch in the open frame: one upload of every vertex (and one of those drawn through effects) and one draw per run of a texture, camera and effect, each in its camera's viewport. Once a frame.
 - `pushClip`: Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a turned one's bounds), within any clip already pushed, until popClip.
 - `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
 - `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
@@ -449,12 +453,13 @@ Which shape a Shape2D is.
 
 *class* in `src/helix/render2d/Sprite2D.hx`
 
-A sprite: a texture (or a region of it) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice).
+A sprite: a texture (or a region of it) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
 
 ```haxe
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
 var texture:Null<Texture2D>
 var tint:Int
+var effect:Null<SpriteEffect>
 function setRegion(x:Float, y:Float, width:Float, height:Float):Void
 var regionX(get, never):Float
 var regionY(get, never):Float
@@ -477,6 +482,7 @@ var nineSlice(get, never):Bool
 - `new`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted (0xRRGGBBAA, white for none).
 - `texture`: Its texture, or null: it draws nothing.
 - `tint`: What its texels are multiplied by, 0xRRGGBBAA: white leaves them as they are.
+- `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
 - `regionX`: Its region's left, in texels.
 - `regionY`: Its region's top, in texels.
@@ -520,7 +526,7 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 - `time`: The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw.
 - `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
 - `drawnNodeCount`: Nodes drawn by the last draw (in view).
-- `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport; the batch is left seen through camera, with no transform. Node world transforms are up to date after it, for toLocalX and the like.
+- `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
 - `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
 ## Text2D

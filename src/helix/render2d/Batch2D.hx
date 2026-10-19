@@ -4,23 +4,25 @@ import helix.graphics.IGraphics;
 import helix.graphics.BlendMode;
 import helix.graphics.Pipelines;
 import helix.graphics.Sampling;
+import helix.graphics.SpriteEffect;
 import helix.render3d.SpriteAlpha;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
-	run of a texture and camera, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places
-	what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. */
+	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform)
+	places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a
+	sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own. */
 class Batch2D {
 	var vertices = 0;
 	var draws = 0;
 
-	/** Vertices of the frame drawn last. */
+	/** Vertices of the frame drawn last, those drawn through effects among them. */
 	public var vertexCount(get, never):Int;
 
 	function get_vertexCount():Int
-		return vertices;
+		return vertices + effectVertices;
 
-	/** Draws of the frame drawn last: one per run of a texture. */
+	/** Draws of the frame drawn last: one per run of a texture, camera and effect. */
 	public var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
@@ -46,6 +48,21 @@ class Batch2D {
 	// The clips pushed, each within the one before (x, y, w, h each); the current one last.
 	var clips:Array<Int> = [];
 	// By run: the emitter it draws (its first record and count in the batch's particle upload, its uniforms), or null for a run of quads.
+	// By run: the effect it draws through (its vertices in the effects' upload), or null; and its texture.
+	var runEffects:Array<Null<SpriteEffect>> = [];
+	var runTextures:Array<Texture2D> = [];
+	// The vertices drawn through effects, with their sprites' regions (Effect2DLayout), uploaded beside the others; made when first used.
+	var effectVertices = 0;
+	var effectCapacity = 0;
+	var effectData:Bytes = Bytes.alloc(0);
+	var effectBuffer = 0;
+	var effectBufferCapacity = 0;
+	// The region the vertices that follow are of (texture coordinates: u0, v0, u1, v1), and whether a nine-slice holds it for its quads.
+	var ru0 = 0.;
+	var rv0 = 0.;
+	var ru1 = 0.;
+	var rv1 = 0.;
+	var regionHeld = false;
 	var runEmitters:Array<Null<{
 		emitter:helix.particles.Emitter,
 		first:Int,
@@ -91,13 +108,17 @@ class Batch2D {
 	/** Starts collecting a batch seen through camera, with no transform; later calls only fill it until end. */
 	public function begin(camera:Camera2D):Void {
 		@:bypassAccessor this.camera = camera;
+		@:bypassAccessor effect = null;
 		vertices = 0;
+		effectVertices = 0;
 		draws = 0;
 		runStart = 0;
 		runs = [];
 		runCameras = [];
 		runSamplings = [];
 		runEmitters = [];
+		runEffects = [];
+		runTextures = [];
 		runClips = [];
 		clips = [];
 		particleCount = 0;
@@ -116,6 +137,25 @@ class Batch2D {
 		}
 		return value;
 	}
+
+	/** The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the
+		default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its
+		region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next
+		stays one draw, as one texture does; its parameters are read as end draws. */
+	public var effect(default, set):Null<SpriteEffect>;
+
+	function set_effect(value:Null<SpriteEffect>):Null<SpriteEffect> {
+		if (value != effect) {
+			closeRun();
+			effect = value;
+			runStart = value == null ? vertices : effectVertices;
+		}
+		return value;
+	}
+
+	/** The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it
+		to the stage's time. */
+	public var time:Float = 0.;
 
 	/** The transform's a: x's share of a point's x. */
 	public var transformA(get, never):Float;
@@ -167,11 +207,20 @@ class Batch2D {
 	public function resetTransform():Void
 		setTransform(1, 0, 0, 1, 0, 0);
 
-	/** Draws the batch in the open frame: one upload of every vertex and one draw per run of a texture and camera, each in its camera's viewport.
-		Once a frame. */
+	/** Draws the batch in the open frame: one upload of every vertex (and one of those drawn through effects) and one draw per run of a
+		texture, camera and effect, each in its camera's viewport. Once a frame. */
 	public function end():Void {
 		closeRun();
 		gpu.updateBuffer(buffer, data, vertices * Sprite2DLayout.stride);
+		if (effectVertices > 0) {
+			if (effectBufferCapacity < effectCapacity) {
+				if (effectBuffer != 0)
+					gpu.destroyBuffer(effectBuffer);
+				effectBuffer = gpu.createBuffer(effectCapacity * Effect2DLayout.stride);
+				effectBufferCapacity = effectCapacity;
+			}
+			gpu.updateBuffer(effectBuffer, effectData, effectVertices * Effect2DLayout.stride);
+		}
 		if (particleCount > 0) {
 			if (particleCount > particleCapacity) {
 				if (particleBuffer != 0)
@@ -203,8 +252,10 @@ class Batch2D {
 				gpu.applyScissor(cx, c.framebufferHeight - cy - ch, cw, ch);
 				clipped = true;
 			}
-			var e = runEmitters[run];
-			if (e != null) {
+			var e = runEmitters[run], through = runEffects[run];
+			if (through != null)
+				drawEffect(through, runTextures[run], runSamplings[run], runs[i + 1], runs[i + 2]);
+			else if (e != null) {
 				var phase = switch e.emitter.alphaMode {
 					case Blend: 1;
 					case Add: 2;
@@ -219,6 +270,31 @@ class Batch2D {
 		}
 		if (clipped)
 			gpu.resetScissor();
+	}
+
+	// Draws count vertices from first of the effects' upload through effect, of texture sampled by sampling: the framework's block (the texture's
+	// size and the time) and the effect's parameters, brought to the time, its own textures unset drawn as the sprite's.
+	function drawEffect(effect:SpriteEffect, texture:Texture2D, sampling:Sampling, first:Int, count:Int):Void {
+		var shader = effect.shader;
+		var blocks:Array<Null<Bytes>> = [for (size in shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
+		if (blocks.length > 1 && blocks[1] != null) {
+			blocks[1].setFloat(0, texture.width);
+			blocks[1].setFloat(4, texture.height);
+			blocks[1].setFloat(8, time);
+		}
+		effect.prepare(time);
+		effect.parameters.write(blocks);
+		var own = effect.parameters.textureSlots, textures = [], samplings = [];
+		for (slot in shader.textureSlots) {
+			while (textures.length < slot) {
+				textures.push(0);
+				samplings.push(Sampling.NEAREST);
+			}
+			var t = slot > 0 && own.exists(slot) ? own[slot] : null;
+			textures.push(t != null ? t.handle : texture.handle);
+			samplings.push(t != null ? t.sampling : sampling);
+		}
+		gpu.draw(pipelines.spriteEffect(shader.handle, Alpha), [effectBuffer], 0, first, count, 0, 1, textures, samplings, blocks);
 	}
 
 	/** Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a
@@ -278,16 +354,19 @@ class Batch2D {
 		}
 
 	function closeRun():Void {
-		if (vertices > runStart) {
+		var end = effect == null ? vertices : effectVertices;
+		if (end > runStart) {
 			runs.push(texture.handle);
 			runs.push(runStart);
-			runs.push(vertices - runStart);
+			runs.push(end - runStart);
 			runCameras.push(camera);
 			runSamplings.push(sampling);
 			runEmitters.push(null);
+			runEffects.push(effect);
+			runTextures.push(texture);
 			pushRunClip();
 		}
-		runStart = vertices;
+		runStart = end;
 	}
 
 	inline function color(value:Int):Void {
@@ -298,8 +377,12 @@ class Batch2D {
 	}
 
 	inline function vertex(x:Float, y:Float, u:Float, v:Float):Void {
-		if (vertices >= capacity)
+		if (vertices + effectVertices >= capacity)
 			throw "Batch2D capacity exceeded";
+		if (effect != null) {
+			effectVertex(x, y, u, v);
+			return;
+		}
 		var p = vertices++ * Sprite2DLayout.stride,
 			position = p + Sprite2DLayout.positionOffset,
 			uv = p + Sprite2DLayout.uvOffset,
@@ -314,6 +397,42 @@ class Batch2D {
 		data.setFloat(c + 12, a);
 	}
 
+	// A vertex drawn through the effect: as vertex writes one, and the region it is of.
+	function effectVertex(x:Float, y:Float, u:Float, v:Float):Void {
+		if (effectVertices >= effectCapacity) {
+			effectCapacity = effectCapacity == 0 ? 1536 : effectCapacity * 2;
+			var grown = Bytes.alloc(effectCapacity * Effect2DLayout.stride);
+			grown.blit(0, effectData, 0, effectVertices * Effect2DLayout.stride);
+			effectData = grown;
+		}
+		var p = effectVertices++ * Effect2DLayout.stride,
+			position = p + Effect2DLayout.positionOffset,
+			uv = p + Effect2DLayout.uvOffset,
+			c = p + Effect2DLayout.colorOffset,
+			region = p + Effect2DLayout.regionOffset;
+		effectData.setFloat(position, camera.clipX(ta * x + tc * y + tx));
+		effectData.setFloat(position + 4, camera.clipY(tb * x + td * y + ty));
+		effectData.setFloat(uv, u);
+		effectData.setFloat(uv + 4, v);
+		effectData.setFloat(c, r);
+		effectData.setFloat(c + 4, g);
+		effectData.setFloat(c + 8, b);
+		effectData.setFloat(c + 12, a);
+		effectData.setFloat(region, ru0);
+		effectData.setFloat(region + 4, rv0);
+		effectData.setFloat(region + 8, ru1);
+		effectData.setFloat(region + 12, rv1);
+	}
+
+	// The region the vertices that follow are of, unless a nine-slice holds its own.
+	inline function region(u0:Float, v0:Float, u1:Float, v1:Float):Void
+		if (!regionHeld) {
+			ru0 = u0;
+			rv0 = v0;
+			ru1 = u1;
+			rv1 = v1;
+		}
+
 	/** Untextured shapes need a white texel; switch back to the font's texture when the current one has none. */
 	inline function solid():Void
 		if (texture.whiteU < 0)
@@ -323,6 +442,7 @@ class Batch2D {
 		a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
 	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
+		region(u0, v0, u1, v1);
 		// The 2D shader reads an alpha over 1 as "the texture's alpha is a distance field", tinted by the alpha less 2.
 		if (distanceField)
 			a += 2;
@@ -340,6 +460,7 @@ class Batch2D {
 			v1 = 1.):Void {
 		useTexture(texture);
 		color(tint);
+		region(u0, v0, u1, v1);
 		var c = Math.cos(rotation),
 			s = Math.sin(rotation),
 			hw = width / 2,
@@ -392,12 +513,16 @@ class Batch2D {
 			ys = [y, y + top * fitY, y + height - bottom * fitY, y + height];
 		var us = [sourceX, sourceX + left, sourceX + sourceWidth - right, sourceX + sourceWidth],
 			vs = [sourceY, sourceY + top, sourceY + sourceHeight - bottom, sourceY + sourceHeight];
+		// Each slice of the one region, for an effect.
+		region(sourceX / tw, sourceY / th, (sourceX + sourceWidth) / tw, (sourceY + sourceHeight) / th);
+		regionHeld = true;
 		for (row in 0...3)
 			for (col in 0...3) {
 				var w = xs[col + 1] - xs[col], h = ys[row + 1] - ys[row];
 				if (w > 0 && h > 0)
 					quad(xs[col], ys[row], w, h, us[col] / tw, vs[row] / th, us[col + 1] / tw, vs[row + 1] / th, tint);
 			}
+		regionHeld = false;
 	}
 
 	/** Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places
@@ -448,6 +573,8 @@ class Batch2D {
 		runs.push(count);
 		runCameras.push(camera);
 		runSamplings.push(texture.sampling);
+		runEffects.push(null);
+		runTextures.push(texture);
 		pushRunClip();
 		runEmitters.push({
 			emitter: emitter,
@@ -504,6 +631,7 @@ class Batch2D {
 		solid();
 		var u = texture.whiteU, v = texture.whiteV;
 		color(tint);
+		region(u, v, u, v);
 		vertex(x0, y0, u, v);
 		vertex(x1, y1, u, v);
 		vertex(x2, y2, u, v);
@@ -689,6 +817,8 @@ class Batch2D {
 		}
 		if (particleBuffer != 0)
 			gpu.destroyBuffer(particleBuffer);
+		if (effectBuffer != 0)
+			gpu.destroyBuffer(effectBuffer);
 		font.destroy(gpu);
 	}
 }

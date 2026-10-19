@@ -9,6 +9,8 @@ A shader is a fragment stage `@fs fs` that includes one framework block, which d
                                   and their shadows, the material's base color and textures, its hit flash and rim light (applied by
                                   helix_output); optionally a vertex hook, `@block vertex` defining
                                   `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing)
+    @include_block helix_sprite   a 2D sprite's (helix.graphics.SpriteEffect, Batch2D.effect): its texture, region and tint, the texel size
+                                  and the time (the kind's vertex stage and block are src/helix/graphics/shaders/effect2d.glsl's)
 
 A surface shader is packed with its variants: a skinned one (the same fragment stage over a vertex stage moving each vertex by its joints first),
 and, for a shader with a vertex hook or a `discard`, its shadow casters, static and skinned (the depth pass drawn with the hook, and the
@@ -16,8 +18,8 @@ fragment stage run for what it discards, its output writing nothing), so its sha
 through the framework's depth program.
 
 Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
-either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 6, as 5 is the skinned variants' joint
-texture), each with a sampler at the same binding. Uniform blocks 0 and 1 are the framework's.
+either stage; its own textures follow the framework's (screen and sprite: from binding 1; surface: from binding 6, as 5 is the skinned
+variants' joint texture), each with a sampler at the same binding. Uniform blocks 0 and 1 are the framework's.
 
     python3 tools/pack_shader.py input.glsl output.hxshader"""
 import argparse
@@ -390,17 +392,31 @@ KINDS['helix_surface'] = (SURFACE_VS.format(name='helix_surface_vs', skin_inputs
                           + '\n@image_sample_type helix_shadow_texture depth\n@sampler_type helix_shadow_sampler comparison\n'
                           + '\n@block helix_surface' + SURFACE_FS + SURFACE_OUTPUT + '@end\n'
                           + '\n@block helix_surface_caster' + SURFACE_FS + CASTER_OUTPUT + '@end\n')
-VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs'}
+# The sprite kind's vertex stage and block: the framework's effect2d program less its own fragment stage (its vertices' layout is that
+# program's, Effect2DLayout, which Batch2D packs).
+SPRITE = ROOT / 'src/helix/graphics/shaders/effect2d.glsl'
+
+
+def sprite_kind():
+    """The sprite kind's half: effect2d.glsl's vertex stage and helix_sprite block, without its comment, fragment stage and program."""
+    text = SPRITE.read_text(encoding='utf-8')
+    text = re.sub(r'@fs\s+effect2d_fs\b.*?@end', '', text, flags=re.S)
+    text = re.sub(r'@program[^\n]*\n?', '', text)
+    return text[text.index('@vs'):]
+
+
+KINDS['helix_sprite'] = sprite_kind()
+VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs', 'helix_sprite': 'effect2d_vs'}
 SURFACE_ATTRIBUTES = ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1', 'i_normal2', 'i_tint',
                       'i_lights0', 'i_lights1']
-ATTRIBUTES = {'helix_screen': [], 'helix_surface': SURFACE_ATTRIBUTES}
+ATTRIBUTES = {'helix_screen': [], 'helix_surface': SURFACE_ATTRIBUTES, 'helix_sprite': ['position', 'uv', 'color', 'region']}
 # A surface shader's variants beside its program, each its vertex stage, fragment stage and attributes: drawing a skinned model, and drawing
 # its shadow from a static or a skinned model (only for a shader with a vertex hook or a discard; another's shadow is the framework caster's).
 VARIANTS = {'skinned': ('helix_surface_skinned_vs', 'fs', SURFACE_ATTRIBUTES + ['joints', 'weights']),
             'caster': ('helix_surface_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES),
             'skinnedCaster': ('helix_surface_skinned_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES + ['joints', 'weights'])}
 # The first texture binding an app's own may use (a surface's 5 is its skinned variants' joint texture).
-FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 6}
+FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 6, 'helix_sprite': 1}
 NO_VERTEX_HOOK = '''
 @block vertex
 void helix_vertex(inout vec3 position, inout vec3 normal) {}
@@ -557,7 +573,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
     """The shader library (src/helix/shaders/*.glsl) packed into generated Haxe in out, so a class in helix.shaders gets its shader with no
     load: <Name>Packed.hx, whose text() is the .hxshader's text, and PackedShaders.hx naming them all (for the dev loop's hot reload); with
     gpu_out (SDL_GPU builds), SDL_GPU's dialects too, as <Name>PackedSdlGpu.hx there, which text() returns in builds defining
-    helix_sdl3_gpu. A shader is packed again only when its source, this tool or the skinning it includes is newer than its output; generated files whose source is gone
+    helix_sdl3_gpu. A shader is packed again only when its source, this tool, or the skinning or sprite kind it may include is newer than its output; generated files whose source is gone
     are removed. shdc is sokol-shdc's path, found when first needed. Returns the stems packed."""
     out, sources = Path(out), Path(sources)
     out.mkdir(parents=True, exist_ok=True)
@@ -574,7 +590,8 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
         for stem in stems:
             source, name = sources / f'{stem}.glsl', class_name(stem)
             target = folder / f'{name}{suffix}.hx'
-            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, SKINNING.stat().st_mtime, gpu_tool_stamp() if sdl_gpu else 0):
+            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, SKINNING.stat().st_mtime, SPRITE.stat().st_mtime,
+                                                                        gpu_tool_stamp() if sdl_gpu else 0):
                 continue
             shdc = shdc or shdc_path()
             text = json.dumps(packed(shdc, source, sdl_gpu), separators=(',', ':'))

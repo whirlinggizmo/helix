@@ -67,8 +67,8 @@ class ShaderLibraryTests {
 			check(texts.exists(name), 'The library\'s $name is packed, by its file\'s stem');
 		for (name => text in texts) {
 			var shader = Shader.fromText(gpu, text());
-			check(shader.kind == "surface" || shader.kind == "screen", '$name packs as a kind the framework has');
-			check((shader.kind == "surface") == (shader.skinned != null), '$name: a surface shader has a skinned variant, a screen effect none');
+			check(shader.kind == "surface" || shader.kind == "screen" || shader.kind == "sprite", '$name packs as a kind the framework has');
+			check((shader.kind == "surface") == (shader.skinned != null), '$name: a surface shader has a skinned variant, a screen or sprite shader none');
 			if (shader.kind == "surface") {
 				var casts = name == "dissolve" || name == "water";
 				check((shader.caster != null) == casts && (shader.skinned.caster != null) == casts,

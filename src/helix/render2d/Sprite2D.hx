@@ -2,7 +2,7 @@ package helix.render2d;
 
 /** A sprite: a texture (or a region of it) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
 	center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
-	corners' size as it's sized (setNineSlice). */
+	corners' size as it's sized (setNineSlice). It may draw through an effect (effect). */
 @:allow(helix.render2d.Stage2D)
 class Sprite2D extends Node2D {
 	var sliceLeft = 0.;
@@ -29,6 +29,11 @@ class Sprite2D extends Node2D {
 
 	/** What its texels are multiplied by, 0xRRGGBBAA: white leaves them as they are. */
 	public var tint:Int = 0xffffffff;
+
+	/** The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's
+		SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values,
+		and those drawn one after another with one effect and texture are one draw. */
+	public var effect:Null<helix.graphics.SpriteEffect>;
 
 	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {

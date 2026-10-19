@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "seed": 1,
+  "commands": [
+    {"op": "wait", "probe": "ready", "equals": true, "seconds": 60},
+    {"op": "sample", "name": "outlined", "points": [[235.2, 152], [259.2, 196.8]]},
+    {"op": "press", "key": "1"},
+    {"op": "assert", "probe": "outline", "equals": false},
+    {"op": "sample", "name": "outlineOff", "points": [[235.2, 152], [259.2, 196.8]], "differsFrom": "outlined", "by": 40},
+    {"op": "press", "key": "1"},
+    {"op": "sample", "name": "dissolved", "points": [[643.2, 166.4], [644.8, 209.6]]},
+    {"op": "press", "key": "2"},
+    {"op": "assert", "probe": "dissolving", "equals": false},
+    {"op": "sample", "name": "whole", "points": [[643.2, 166.4], [644.8, 209.6]], "differsFrom": "dissolved", "by": 40},
+    {"op": "press", "key": "2"},
+    {"op": "sample", "name": "swapped", "points": [[614.4, 556.8], [636.8, 592]]},
+    {"op": "press", "key": "3"},
+    {"op": "assert", "probe": "palette", "equals": false},
+    {"op": "sample", "name": "unswapped", "points": [[614.4, 556.8], [636.8, 592]], "differsFrom": "swapped", "by": 40},
+    {"op": "press", "key": "3"},
+    {"op": "press", "key": "R"},
+    {"op": "assert", "probe": "row", "equals": 1},
+    {"op": "sample", "name": "secondRow", "points": [[614.4, 556.8], [636.8, 592]], "differsFrom": "swapped", "by": 40},
+    {"op": "sample", "name": "unflashed", "points": [[1044.8, 547.2], [1088, 568]]},
+    {"op": "press", "key": "F"},
+    {"op": "sample", "name": "flashed", "points": [[1044.8, 547.2], [1088, 568]], "differsFrom": "unflashed", "by": 40}
+  ]
+}

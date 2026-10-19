@@ -58,14 +58,18 @@ class ShaderMetadataTests(unittest.TestCase):
         (self.baseline / 'old_glsl300es_vertex.glsl').write_text('STALE', encoding='utf-8')
         contracts = generate(SHADERS / 'shaders.json', self.baseline, ROOT)
         by = {c['program']: c for c in contracts}
-        self.assertEqual(list(by), ['sprite2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d', 'skinned3d', 'skinneddepth3d',
-                                    'flat3d', 'skinnedflat3d'])
+        self.assertEqual(list(by), ['sprite2d', 'effect2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d', 'skinned3d',
+                                    'skinneddepth3d', 'flat3d', 'skinnedflat3d'])
         sprite, color, lit, depth, background = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d'], by['background3d']
         # A model's flat passes read the lit models' records: their vertex and instance strides, the normals' rows where the lit's are.
         flat = by['flat3d']
         self.assertEqual((flat['stride'], flat['instanceStride'], [a['offset'] for a in flat['attributes'] if a['buffer'] == 1]),
                          (48, 144, [0, 16, 32, 48, 64, 80]))
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
+        # A sprite drawn through an effect: sprite2d's vertex and its region after it.
+        effect = by['effect2d']
+        self.assertEqual((effect['stride'], [(a['role'], a['offset']) for a in effect['attributes']]),
+                         (48, [('position', 0), ('uv', 8), ('color', 16), ('region', 32)]))
         self.assertEqual((color['stride'], [a['offset'] for a in color['attributes']], color['uniforms'][0]['bytes']), (28, [0, 12], 64))
         self.assertEqual(color['textures'], []); self.assertEqual([(u['stage'], u['bytes']) for u in sprite['uniforms']], [('vertex', 16)])
         self.assertEqual([(t['role'], t['depthArray'], t['cube']) for t in lit['textures']],

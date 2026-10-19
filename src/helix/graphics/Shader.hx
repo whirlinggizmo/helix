@@ -27,7 +27,7 @@ private typedef ShaderFile = {
 }
 
 /** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program):
-	its program built on the GPU, its kind ("screen" or "surface"), its uniform blocks' sizes, its own parameters by name and its own textures
+	its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures
 	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
 	caster (drawing its shadow, when it has a vertex hook or a discard). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
@@ -163,17 +163,17 @@ class Shader {
 	/** The IGraphics shader handle. */
 	public var handle(default, null):Int;
 
-	/** Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's). */
+	/** Its kind: "screen" (a screen effect), "surface" (a Stage3D material's) or "sprite" (a 2D sprite's: a SpriteEffect). */
 	public var kind(default, null):String;
 
 	/** The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot
-		5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen effect. Its caster draws skinned
+		5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen or sprite shader. Its caster draws skinned
 		casters. */
 	public var skinned(default, null):Null<Shader>;
 
 	/** The program drawing its shadow casters into a shadow map: the depth pass with its vertex hook, its fragment stage run for what it
 		discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a
-		screen effect. */
+		screen or sprite shader. */
 	public var caster(default, null):Null<Shader>;
 
 	/** How many times it has been replaced by a reload: a pipeline made before the latest is stale. */

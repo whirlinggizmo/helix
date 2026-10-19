@@ -1,9 +1,15 @@
+import haxe.io.Bytes;
 import helix.app.BaseApp;
+import helix.assets.Assets;
+import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
+import helix.debug.TestHarness;
 import helix.graphics.Graphics;
+import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
+import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
@@ -12,6 +18,10 @@ import helix.render2d.Sprite2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
+import helix.shaders.PaletteSwap;
+import helix.shaders.SpriteDissolve;
+import helix.shaders.SpriteFlash;
+import helix.shaders.SpriteOutline;
 import helix.time.Time;
 
 /** Sprites on a Stage2D, in the design for the window's shape and spread over what's visible of it:
@@ -20,13 +30,36 @@ import helix.time.Time;
 	- "swing": turns about its top-left corner (pivot 0, 0)
 	- "flip": mirrored by a negative x scale
 	- "tint": a white copy of the logo cycling through colors (a tint multiplies the texels, so it can't show on the black logo)
+	- "palette": a little creature made here as indexed pixels (its red channel a color's index), drawn in a palette's colors
 	- a one-off Batch2D.sprite in the corner, no node
+	Sprite effects (helix.shaders, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
+	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
+	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row.
 	Hovering enlarges the sprite under the pointer, the topmost (the last drawn) first: the pointer taken into each sprite's own units
-	(Sprite2D.toLocalX), then inside its gear's disc, or the sheet's quarter inside its rectangle. Escape quits where quitting means anything. */
+	(Sprite2D.toLocalX), then inside its gear's disc, or the sheet's or creature's rectangle. Escape quits where quitting means anything.
+	Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its samples of the frame
+	compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos in), outline, dissolving, palette
+	and row. */
 class App extends BaseApp {
 	static inline var LOGO = "sprites/logo/wg-logo-bw-alpha.png";
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
-	static var NAMES = ["sheet", "spin", "swing", "flip", "tint"];
+	static var NAMES = ["sheet", "spin", "swing", "flip", "tint", "palette"];
+	// The creature's pixels, a character an index into its palette's columns: . none, o its outline, b its body, e its eyes.
+	static var CREATURE = [
+		"....oooooooo....", "..oobbbbbbbboo..", ".obbbbbbbbbbbbo.", ".obbbbbbbbbbbbo.", "obbbeeebbeeebbbo", "obbbeooebeooebbo", "obbbeooebeooebbo",
+		"obbbeeebbeeebbbo", "obbbbbbbbbbbbbbo", "obbbbbbbbbbbbbbo", "obbboooooooobbbo", ".obbbbbbbbbbbbo.", ".obbbbbbbbbbbbo.", "..oobbbbbbbboo..",
+		"..o.oo....oo.o..", ".oo..........oo."
+	];
+	// Its palette: a row a variant, a column an index (none, outline, body, eyes); 0xRRGGBBAA.
+	static var PALETTE = [
+		[0x00000000, 0x1a2a1aff, 0x58c858ff, 0xf5f5f5ff],
+		[0x00000000, 0x2a1414ff, 0xe05050ff, 0xffe040ff],
+		[0x00000000, 0x141a30ff, 0x5078f0ff, 0xf5f5f5ff]
+	];
+	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	static inline var HELD_TIME = 2.;
+	static inline var PILOT_WIDTH = 800;
+	static inline var PILOT_HEIGHT = 600;
 
 	var stage = new Stage2D();
 	var batch:Batch2D;
@@ -34,20 +67,38 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 	var sprites:Array<Sprite2D> = [];
 	var logo:Null<Texture2D>;
-	var palette:Array<Int> = [];
+	var whiteLogo = false;
+	var tints:Array<Int> = [];
 	var sheetFrame = 0;
 	var hovered = -1;
+	var outline:SpriteOutline;
+	var dissolve:SpriteDissolve;
+	var flash:SpriteFlash;
+	var swap:PaletteSwap;
+	var outlined = true;
+	var dissolving = true;
+	var swapped = true;
+	var creature:Texture2D;
+	var palette:Texture2D;
+	var pilot:Null<Autopilot>;
+	var published = false;
 
 	override public function init():Void {
 		Window.title = "HeliX sprite2d";
-		Window.requestSize(900, 520);
-		batch = new Batch2D();
-		// Colors are values, so cycle a palette.
+		var script = Host.getOption("autopilot", "");
+		if (script != "") {
+			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
+			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
+		} else
+			Window.requestSize(900, 520);
+		var gpu = Graphics.instance;
+		batch = new Batch2D(gpu);
+		// Colors are values, so cycle a list of them.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;
 			inline function channel(phase:Float):Int
 				return Std.int(127 + 127 * Math.sin(a + phase));
-			palette.push(channel(0) << 24 | channel(2.1) << 16 | channel(4.2) << 8 | 255);
+			tints.push(channel(0) << 24 | channel(2.1) << 16 | channel(4.2) << 8 | 255);
 		}
 		for (i in 0...NAMES.length) {
 			var sprite = new Sprite2D(null);
@@ -60,9 +111,50 @@ class App extends BaseApp {
 		sprites[2].setPivot(0, 0);
 		sprites[2].setSize(96, 96);
 		sprites[4].setSize(96, 96);
+		// The creature and its palette, made here: its red channel an index (alpha 0 where there's nothing), the palette a row a variant.
+		var pixels = Bytes.alloc(16 * 16 * 4);
+		for (y in 0...16)
+			for (x in 0...16) {
+				var index = ".obe".indexOf(CREATURE[y].charAt(x));
+				pixels.set((y * 16 + x) * 4, index);
+				pixels.set((y * 16 + x) * 4 + 3, index == 0 ? 0 : 255);
+			}
+		creature = Texture2D.fromRgba(gpu, 16, 16, pixels);
+		var colors = Bytes.alloc(PALETTE.length * 4 * 4);
+		for (row in 0...PALETTE.length)
+			for (column in 0...4)
+				for (channel in 0...4)
+					colors.set((row * 4 + column) * 4 + channel, (PALETTE[row][column] >>> (24 - channel * 8)) & 255);
+		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
+		sprites[5].texture = creature;
+		sprites[5].setSize(112, 112);
+		// The effects: the sheet and the spin share an outline (one draw); each other one has its own.
+		outline = new SpriteOutline(0xffb020ff, 8);
+		dissolve = new SpriteDissolve();
+		flash = new SpriteFlash();
+		swap = new PaletteSwap(palette);
+		sprites[0].effect = outline;
+		sprites[1].effect = outline;
+		sprites[4].effect = dissolve;
+		sprites[3].effect = flash;
+		sprites[5].effect = swap;
 		Textures.load(LOGO, true, texture -> useLogo(texture));
-		Textures.load(WHITE_LOGO, true, texture -> sprites[4].texture = texture);
+		Textures.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
 	}
+
+	// The autopilot's script in: the input it plays from now on.
+	function startPilot(bytes:Bytes):Void
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), null, (points, done, failed) -> Screenshots.sample(points, done, failed));
+
+	function probe(name:String):Dynamic
+		return switch name {
+			case "ready": logo != null && whiteLogo;
+			case "outline": outlined;
+			case "dissolving": dissolving;
+			case "palette": swapped;
+			case "row": swap.row;
+			default: throw 'Unknown probe ' + name;
+		}
 
 	// The logo's sheet in: the first four sprites draw it.
 	function useLogo(texture:Texture2D):Void {
@@ -71,7 +163,13 @@ class App extends BaseApp {
 			sprites[i].texture = texture;
 	}
 
-	// Whether world point x, y is on sprite i, as the last draw placed it: in its gear's disc, or the sheet's quarter in its rectangle.
+	function useWhiteLogo(texture:Texture2D):Void {
+		whiteLogo = true;
+		sprites[4].texture = texture;
+	}
+
+	// Whether world point x, y is on sprite i, as the last draw placed it: in its gear's disc, or the sheet's quarter or the creature in its
+	// rectangle.
 	function isOver(i:Int, x:Float, y:Float):Bool {
 		var sprite = sprites[i], w = sprite.width, h = sprite.height;
 		if (w <= 0 || h <= 0)
@@ -79,17 +177,44 @@ class App extends BaseApp {
 		// From its pivot to its center, in its own units.
 		var lx = sprite.toLocalX(x, y) - (.5 - sprite.pivotX) * w,
 			ly = sprite.toLocalY(x, y) - (.5 - sprite.pivotY) * h;
-		if (i == 0)
+		if (i == 0 || i == 5)
 			return Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2;
 		return lx * lx + ly * ly <= w * w / 4;
 	}
 
 	override public function frame(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
-			Host.quit();
-		// The game's clock: paused, the motion stops.
-		var time = Time.clock.time;
+		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
+		var input:Null<IInput> = Input.instance;
+		if (pilot != null) {
+			input = pilot.done ? null : pilot.advance(name -> probe(name));
+			if (pilot.awaitingFrame)
+				input = null;
+		}
+		if (input != null) {
+			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+				Host.quit();
+			if (input.isFramePressed(Key.Digit1)) {
+				outlined = !outlined;
+				sprites[0].effect = sprites[1].effect = outlined ? outline : null;
+			}
+			if (input.isFramePressed(Key.Digit2)) {
+				dissolving = !dissolving;
+				sprites[4].effect = dissolving ? dissolve : null;
+			}
+			if (input.isFramePressed(Key.Digit3)) {
+				swapped = !swapped;
+				sprites[5].effect = swapped ? swap : null;
+			}
+			if (input.isFramePressed(Key.R))
+				swap.row = (swap.row + 1) % PALETTE.length;
+			if (input.isFramePressed(Key.F))
+				flash.trigger(0xff3020ff, .4);
+		}
+		// The game's clock: paused, the motion stops; held under the autopilot.
+		var time = pilot != null ? HELD_TIME : Time.clock.time;
+		stage.time = time;
+		// Half gone at the autopilot's held time, coming and going.
+		dissolve.amount = .5 + .45 * Math.sin((time - HELD_TIME) * .9);
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
@@ -100,7 +225,7 @@ class App extends BaseApp {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
-		var top = vy + (shape == "portrait" ? 140 : 90), tall = vy + vh - top;
+		var top = vy + (shape == "portrait" ? 160 : 110), tall = vy + vh - top;
 		inline function place(i:Int, across:Float, down:Float)
 			sprites[i].setPosition(vx + vw * across, top + tall * down);
 		if (shape == "portrait") {
@@ -108,11 +233,13 @@ class App extends BaseApp {
 			place(4, .72, .15);
 			place(1, .28, .5);
 			place(2, .62, .4);
-			place(3, .5, .82);
+			place(3, .3, .82);
+			place(5, .72, .82);
 		} else {
 			place(0, .16, .25);
 			place(1, .16, .72);
 			place(4, .5, .25);
+			place(5, .5, .72);
 			place(2, .74, .12);
 			place(3, .82, .72);
 		}
@@ -122,13 +249,14 @@ class App extends BaseApp {
 		sprites[0].setRegion((sheetFrame % 2) * 128, Std.int(sheetFrame / 2) * 128, 128, 128);
 		sprites[1].rotation = time;
 		sprites[2].rotation = Math.sin(time * 1.5) * .8;
-		sprites[4].tint = palette[Std.int(time * 6) % palette.length];
+		sprites[4].tint = tints[Std.int(time * 6) % tints.length];
 
 		// Hover: the topmost sprite under the pointer, the last drawn first.
-		var x = camera.screenToWorldX(input.pointerX),
-			y = camera.screenToWorldY(input.pointerY);
+		var pointer = Input.instance;
+		var x = camera.screenToWorldX(pointer.pointerX),
+			y = camera.screenToWorldY(pointer.pointerY);
 		hovered = -1;
-		if (input.pointerX >= 0) {
+		if (pilot == null && pointer.pointerX >= 0) {
 			var i = sprites.length;
 			while (i-- > 0 && hovered < 0)
 				if (isOver(i, x, y))
@@ -147,14 +275,40 @@ class App extends BaseApp {
 			batch.sprite(logo, vx + vw - 42, vy + 42, 64, 64);
 		// Wrapped short of the corner sprite.
 		var line = vy + 36;
-		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover", vx + 12, line, 16, vw - 96, 0xf5f5f5ff) + 4;
+		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects", vx + 12, line, 16, vw - 96,
+			0xf5f5f5ff)
+			+ 4;
+		var on = (value:Bool) -> value ? "on" : "off";
+		line += batch.drawTextWrapped('[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [F] flash',
+			vx
+			+ 12,
+			line, 16, vw
+			- 96, 0xc8c8c8ff)
+			+ 4;
 		batch.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', vx + 12,
 			line, 16, vw - 96, 0xc8c8c8ff);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();
+		if (pilot != null && pilot.done && !published) {
+			published = true;
+			TestHarness.publish({
+				game: {
+					outline: outlined,
+					dissolving: dissolving,
+					palette: swapped,
+					row: swap.row
+				},
+				autopilot: pilot.snapshot
+			});
+			if (Host.getOption("autoclose", "0") == "1")
+				Host.quit();
+		}
 	}
 
-	override public function cleanup():Void
+	override public function cleanup():Void {
+		creature.destroy(Graphics.instance);
+		palette.destroy(Graphics.instance);
 		batch.destroy();
+	}
 }

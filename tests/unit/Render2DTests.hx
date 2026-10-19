@@ -22,9 +22,22 @@ class CountingGraphics implements IGraphics {
 	var next = 1;
 	var pipelineDescs = new Map<Int, PipelineDesc>();
 
-	public var draws:Array<{vertices:Int, first:Int, sampling:Sampling}> = [];
+	/** Each 2D draw (unindexed, with buffers), in order: its range, first sampling, pipeline, buffers, textures and uniform blocks. */
+	public var draws:Array<{
+		vertices:Int,
+		first:Int,
+		sampling:Sampling,
+		pipeline:Int,
+		buffers:Array<Int>,
+		textures:Array<Int>,
+		uniforms:Array<Null<Bytes>>
+	}> = [];
+
 	public var viewports:Array<Array<Int>> = [];
 	public var uploaded:Null<Bytes>;
+
+	/** Each buffer's last upload, by handle. */
+	public var uploads:Map<Int, Bytes> = [];
 
 	public function new() {}
 
@@ -71,8 +84,10 @@ class CountingGraphics implements IGraphics {
 
 	public function destroyShader(handle:Int):Void {}
 
-	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void
+	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {
 		uploaded = data.sub(0, usedBytes);
+		uploads[handle] = uploaded;
+	}
 
 	/** Whether it draws into half floats (canRender). */
 	public var floatTargets = true;
@@ -163,7 +178,15 @@ class CountingGraphics implements IGraphics {
 		} else if (desc.buffers.length == 0)
 			screen = {textures: textures, uniforms: uniforms};
 		else
-			draws.push({vertices: count, first: first, sampling: samplings.length > 0 ? samplings[0] : Sampling.NEAREST});
+			draws.push({
+				vertices: count,
+				first: first,
+				sampling: samplings.length > 0 ? samplings[0] : Sampling.NEAREST,
+				pipeline: pipeline,
+				buffers: buffers.copy(),
+				textures: textures.copy(),
+				uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]
+			});
 	}
 
 	public function endFrame():Void {}
