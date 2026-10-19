@@ -141,7 +141,7 @@ class Theme {
 		return value;
 	}
 
-	/** The radius of a panel's, a button's, a field's and a list's corners in units (a track's, a bar's and a box's at most half their
+	/** The radius of a panel's, a button's and a list's corners in units (a track's, a bar's and a box's at most half their
 		height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0). */
 	public var cornerRadius(get, set):Float;
 
@@ -169,6 +169,34 @@ class Theme {
 	function set_gap(value:Float):Float {
 		value = value >= 0 ? value : 0;
 		gap = value;
+		return value;
+	}
+
+	/** A slider's track and a color picker's bars, their thickness in units. (6 to start.) At least 1 (under 1, or NaN, is 1). */
+	public var trackThickness(default, set):Float = 6.;
+
+	function set_trackThickness(value:Float):Float {
+		value = value >= 1 ? value : 1;
+		trackThickness = value;
+		return value;
+	}
+
+	/** A color picker's handles on its bars, their diameter in units. (14 to start.) At least 1 (under 1, or NaN, is 1). */
+	public var handleSize(default, set):Float = 14.;
+
+	function set_handleSize(value:Float):Float {
+		value = value >= 1 ? value : 1;
+		handleSize = value;
+		return value;
+	}
+
+	/** A color picker's width (its square's side) in units, unless its box is given another. (200 to start.) At least 1 (under 1, or NaN,
+		is 1). */
+	public var colorPickerWidth(default, set):Float = 200.;
+
+	function set_colorPickerWidth(value:Float):Float {
+		value = value >= 1 ? value : 1;
+		colorPickerWidth = value;
 		return value;
 	}
 

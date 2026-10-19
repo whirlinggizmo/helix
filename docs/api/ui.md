@@ -122,7 +122,7 @@ How a color picker's text field writes and reads its color (ColorPicker.format).
 
 *class* in `src/helix/ui/ColorPicker.hx`
 
-A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its box is given: theme.widgetHeight * 5 to start (box sized Fixed that wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later. Ask color, and changed once a frame.
+A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its box is given: theme.colorPickerWidth to start (box sized Fixed that wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later. Ask color, and changed once a frame.
 
 ```haxe
 static function fromHsv(hue:Float, saturation:Float, brightness:Float, ?alpha:Int = 0xff):Int
@@ -288,6 +288,9 @@ var focusWidth(default, set):Float
 var cornerRadius(get, set):Float
 var padding(default, set):Float
 var gap(default, set):Float
+var trackThickness(default, set):Float
+var handleSize(default, set):Float
+var colorPickerWidth(default, set):Float
 var widgetHeight(get, set):Float
 ```
 
@@ -304,9 +307,12 @@ var widgetHeight(get, set):Float
 - `accentColor`: The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row. (0x4c8ef0ff to start.)
 - `focusColor`: The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffd25aff to start.)
 - `focusWidth`: The focus ring's width in units. (2 to start.) 0 or more (under 0, or NaN, is 0).
-- `cornerRadius`: The radius of a panel's, a button's, a field's and a list's corners in units (a track's, a bar's and a box's at most half their height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0).
+- `cornerRadius`: The radius of a panel's, a button's and a list's corners in units (a track's, a bar's and a box's at most half their height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0).
 - `padding`: Room inside a button or panel, around its content, in units. (10 to start.) 0 or more (under 0, or NaN, is 0).
 - `gap`: Room between widgets in a panel, in units. (8 to start.) 0 or more (under 0, or NaN, is 0).
+- `trackThickness`: A slider's track and a color picker's bars, their thickness in units. (6 to start.) At least 1 (under 1, or NaN, is 1).
+- `handleSize`: A color picker's handles on its bars, their diameter in units. (14 to start.) At least 1 (under 1, or NaN, is 1).
+- `colorPickerWidth`: A color picker's width (its square's side) in units, unless its box is given another. (200 to start.) At least 1 (under 1, or NaN, is 1).
 - `widgetHeight`: A button's (and a list row's, a slider's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
 
 ## Tile

@@ -16,7 +16,7 @@ import helix.render2d.Text2D;
 	RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma),
 	without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing,
 	and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging
-	through grey or black doesn't lose the hue. It's as wide as its box is given: theme.widgetHeight * 5 to start (box sized Fixed that
+	through grey or black doesn't lose the hue. It's as wide as its box is given: theme.colorPickerWidth to start (box sized Fixed that
 	wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later.
 	Ask color, and changed once a frame. */
 class ColorPicker extends Widget {
@@ -90,12 +90,12 @@ class ColorPicker extends Widget {
 		super(ui, name);
 		hasAlpha = alpha;
 		var theme = ui.theme, pad = theme.padding;
-		thickness = theme.widgetHeight / 5;
-		knob = thickness / 2 + 3;
+		thickness = theme.trackThickness;
+		knob = theme.handleSize / 2;
 		lane = (knob + 1.5) * 2;
 		diameter = hasAlpha ? lane * 2 + theme.gap / 2 : lane * 1.6;
 		compact = theme.textSize + pad / 2;
-		side = theme.widgetHeight * 5;
+		side = theme.colorPickerWidth;
 		face = rectangle(0);
 		face.pickable = true;
 		squareHue = rectangle(0xff0000ff);

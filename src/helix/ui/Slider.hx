@@ -28,11 +28,11 @@ class Slider extends Widget {
 		face = Shape2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
 		label = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
-		track = Shape2D.rectangle(1, 6, theme.faceColor);
+		track = Shape2D.rectangle(1, theme.trackThickness, theme.faceColor);
 		track.setPivot(0, 0);
 		track.cornerRadius = theme.cornerRadius;
 		track.pickable = false;
-		fill = Shape2D.rectangle(1, 6, theme.accentColor);
+		fill = Shape2D.rectangle(1, theme.trackThickness, theme.accentColor);
 		fill.setPivot(0, 0);
 		fill.cornerRadius = theme.cornerRadius;
 		fill.pickable = false;
@@ -43,7 +43,7 @@ class Slider extends Widget {
 		for (n in [face, track, fill, knob, label])
 			root.addChild(n);
 		trackBox = Box.of(track);
-		trackBox.setSizing(Grow(1), Fixed(6));
+		trackBox.setSizing(Grow(1), Fixed(theme.trackThickness));
 		var row = Box.row();
 		row.gap = theme.gap * 2;
 		row.setAlign(Start, Center);
@@ -95,7 +95,7 @@ class Slider extends Widget {
 		changed = value != was;
 		// The fill and knob where the value is along the track, as the layout last placed it.
 		var fraction = max > min ? (value - min) / (max - min) : 0;
-		fill.setSize(Math.max(0, trackBox.width * fraction), 6);
+		fill.setSize(Math.max(0, trackBox.width * fraction), trackBox.height);
 		fill.setPosition(trackBox.x, trackBox.y);
 		knob.setPosition(trackBox.x + trackBox.width * fraction, trackBox.y + 3);
 		knob.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.accentColor;

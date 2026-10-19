@@ -501,7 +501,7 @@ class UiTests {
 		frame(sx + side * 2, sy + side * 2, false);
 		// The hue bar, left to right, between its round ends' centers (half its thickness in from its row's ends); dragged through black keeps
 		// it.
-		var thickness = theme.widgetHeight / 5;
+		var thickness = theme.trackThickness;
 		function along(row:Box, f:Float):Float
 			return row.x + thickness / 2 + f * (row.width - thickness);
 		var hy = hueRow.y + hueRow.height / 2;
@@ -619,7 +619,7 @@ class UiTests {
 		frame();
 		var plainSwatch = @:privateAccess opaque.swatchBox,
 			plainHue = @:privateAccess opaque.hueBox;
-		check(opaque.box.width == theme.widgetHeight * 5 && @:privateAccess opaque.squareBox.height == opaque.box.width,
+		check(opaque.box.width == theme.colorPickerWidth && @:privateAccess opaque.squareBox.height == opaque.box.width,
 			"In a row: its own width, the square as tall");
 		check(@:privateAccess opaque.alphaBox == null
 			&& plainSwatch.height < swatch.height
