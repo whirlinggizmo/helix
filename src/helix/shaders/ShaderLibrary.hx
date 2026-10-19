@@ -47,6 +47,20 @@ class ShaderLibrary {
 		return texture;
 	}
 
+	// Kept across a hot reload with the shaders: each GPU's identity LUT.
+	@:hot static var luts = new haxe.ds.ObjectMap<IGraphics, Texture2D>();
+
+	/** The identity color LUT on gpu (ColorLut's until a game gives its own grade), made the first time it's asked for there from
+		ColorLut.identity(): every color itself. Sampled linear, clamped. The library frees it with its shaders. */
+	public static function getIdentityLut(gpu:IGraphics):Texture2D {
+		var texture = luts.get(gpu);
+		if (texture == null) {
+			texture = Texture2D.fromRgba(gpu, ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, ColorLut.identity(), true);
+			luts.set(gpu, texture);
+		}
+		return texture;
+	}
+
 	/** The noise texture's texels (getNoise), RGBA8, rows top first. */
 	public static function noisePixels():Bytes {
 		var n = NOISE_SIZE, values = [for (_ in 0...n * n) 0.];
@@ -94,12 +108,14 @@ class ShaderLibrary {
 		return (h & 0xffff) / 0xffff;
 	}
 
-	/** Frees gpu's library shaders, the pipelines made over them and its noise texture, before the adapter shuts down. */
+	/** Frees gpu's library shaders, the pipelines made over them, its noise texture and its identity LUT, before the adapter shuts down. */
 	public static function release(gpu:IGraphics):Void {
-		var noise = noises.get(gpu);
-		if (noise != null) {
-			noise.destroy(gpu);
-			noises.remove(gpu);
+		for (textures in [noises, luts]) {
+			var texture = textures.get(gpu);
+			if (texture != null) {
+				texture.destroy(gpu);
+				textures.remove(gpu);
+			}
 		}
 		var shaders = all.get(gpu);
 		if (shaders == null)

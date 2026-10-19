@@ -17,6 +17,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -26,25 +27,37 @@ import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
+import helix.shaders.Bloom;
+import helix.shaders.Blur;
+import helix.shaders.ChromaticAberration;
+import helix.shaders.ColorLut;
+import helix.shaders.Crt;
+import helix.shaders.Fxaa;
+import helix.shaders.Pixelate;
 import helix.shaders.Tonemap;
+import helix.shaders.Vignette;
 import helix.time.Time;
 
-/** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor, generated
-	shapes, a circling point light. The effects are the example's own shaders (shaders/vignette.glsl and scanlines.glsl, packed into
-	.hxshader assets and loaded at run time):
-	- the vignette darkens the corners and warms the middle
-	- the scanlines darken alternating rows, shift red and blue apart, and flicker
-	Both apply in the order added to the chain (PostProcess.add), each on or off. Their parameters are set by name any frame: the vignette breathes in and out, and the arrow
-	keys change how dark it gets. Edit a .glsl while the dev server runs and the effect reloads in place.
+/** Screen effects over the finished frame (PostProcess, ScreenEffect). The frame is an ordinary lit stage: the Kenney sports car on a floor,
+	generated shapes, a circling point light and two glowing lamps. The effects are the shader library's (helix.shaders), each a class whose
+	fields are its parameters, and one of the example's own:
+	- Bloom spreads the light past white around the lamps; it wants HDR, so with it on the scene is drawn in half floats (where the GPU draws
+	them) and tone mapped after it
+	- Fxaa smooths the edges' stair steps
+	- Blur, Pixelate, ColorLut (a teal and orange grade made from the identity strip here; a game would load its graded PNG), Crt,
+	ChromaticAberration and Vignette
+	- Sepia is the example's own shader (shaders/sepia.glsl, packed into a .hxshader asset and loaded at run time), to show how one is
+	written: edit it while the dev server runs and it reloads in place
+	They run in the order added to the chain (PostProcess.add), each on or off (ScreenEffect.enabled); Bloom, Fxaa and Vignette start on.
 
-	H puts the library's tone mapping (helix.shaders.Tonemap) first in the chain, so the scene is drawn HDR (half floats, where the GPU draws
-	them) and tone mapped there rather than by the stage: the frame should look the same, the effects reading it tone mapped as before.
+	H puts the library's tone mapping (helix.shaders.Tonemap) first in the chain, so everything after it reads the tone-mapped frame: Bloom then
+	thresholds it as it does where the GPU draws no half floats.
 
-	1 / 2: the vignette / the scanlines on and off; H: the HDR scene; Up / Down: the vignette's strength; Space: stop the breathing; O: stop the
-	camera; Escape:
-	quit, where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then held, the window the
-	autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is done); the probes
-	are ready (the car and both effects in), hdr (PostProcess.hdr) and vignette (on). */
+	1 Bloom, 2 Fxaa, 3 Blur, 4 Pixelate, 5 ColorLut, 6 Sepia, 7 ChromaticAberration, 8 Crt, 9 Vignette: each on and off; H: the tone mapping
+	first; Up / Down: the bloom's intensity; O: stop the camera; Escape: quit, where quitting means anything. Options: autopilot (a script
+	under assets/: the time and the camera are then held, the window the autopilot's page's size, so its samples of the frame compare across
+	targets) and autoclose (1: quit once the script is done); the probes are ready (the car and the example's shader in), hdr (PostProcess.hdr)
+	and on (the names of the effects on, in the chain's order, joined by spaces). */
 class App extends BaseApp {
 	var stage:Stage3D;
 	var batch:Batch2D;
@@ -53,12 +66,14 @@ class App extends BaseApp {
 	var fps = new FpsOverlay();
 	var post:PostProcess;
 	var shaders:Shaders;
-	var vignette:Null<ScreenEffect>;
-	var scanlines:Null<ScreenEffect>;
+	var bloom:Bloom;
+	var colorLut:ColorLut;
+	var grade:Texture2D;
+	var sepia:Null<ScreenEffect>;
+	// The chain's effects by name, in its order, and their keys.
+	var effects:Array<{name:String, effect:ScreenEffect, key:Key}> = [];
 	var lamp:PointLight;
-	var strength = .8;
-	var breathing = true;
-	// The HDR scene's tone mapping, when it's on.
+	// The HDR scene's tone mapping first in the chain, when it's on.
 	var tonemap:Null<Tonemap>;
 	var placed = false;
 	var pilot:Null<Autopilot>;
@@ -71,7 +86,7 @@ class App extends BaseApp {
 
 	// The camera, circling.
 	var orbit = new Orbit(9, 4.5, .2, .5);
-	var status = "loading the effects";
+	var status = "loading the example's shader";
 
 	override public function init():Void {
 		Window.title = "HeliX postprocess";
@@ -112,11 +127,60 @@ class App extends BaseApp {
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			stage.add(model);
 		}
+		// Two lamps glowing far past white, for the bloom.
+		for (i in 0...2) {
+			var glow = new Material();
+			glow.baseColor = 0x000000ff;
+			glow.setEmissive(i == 0 ? 0xffd9a0ff : 0x9fd8ffff, 10);
+			var bulb = new Model(Mesh.sphere(.25), glow);
+			bulb.setPosition(i == 0 ? -1.6 : 1.9, 1.7, i == 0 ? 1.4 : -.8);
+			stage.add(bulb);
+		}
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 
+		// The library's effects, in the chain's order; the example's own shader (Sepia) takes its place when it loads.
+		bloom = new Bloom();
+		grade = Texture2D.fromRgba(gpu, ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, tealAndOrange(), true);
+		colorLut = new ColorLut(grade);
+		var vignette = new Vignette(.5);
+		var chain:Array<{name:String, effect:ScreenEffect, key:Key}> = [
+			{name: "bloom", effect: bloom, key: Digit1},
+			{name: "fxaa", effect: new Fxaa(), key: Digit2},
+			{name: "blur", effect: new Blur(6), key: Digit3},
+			{name: "pixelate", effect: new Pixelate(8), key: Digit4},
+			{name: "colorLut", effect: colorLut, key: Digit5},
+			{name: "chromaticAberration", effect: new ChromaticAberration(6), key: Digit7},
+			{name: "crt", effect: new Crt(), key: Digit8},
+			{name: "vignette", effect: vignette, key: Digit9}
+		];
+		for (entry in chain) {
+			entry.effect.enabled = entry.name == "bloom" || entry.name == "fxaa" || entry.name == "vignette";
+			effects.push(entry);
+		}
+		rebuild();
+
 		shaders = new Shaders(Assets.instance, gpu);
-		shaders.load("shaders/vignette.hxshader", shader -> makeVignette(shader), message -> status = message);
-		shaders.load("shaders/scanlines.hxshader", shader -> makeScanlines(shader), message -> status = message);
+		shaders.load("shaders/sepia.hxshader", shader -> makeSepia(shader), message -> status = message);
+	}
+
+	// A grade, as an artist would make one from the identity strip: shadows toward teal, highlights toward orange, a little more contrast.
+	static function tealAndOrange():haxe.io.Bytes {
+		var pixels = ColorLut.identity();
+		for (i in 0...Std.int(pixels.length / 4)) {
+			var r = pixels.get(i * 4) / 255,
+				g = pixels.get(i * 4 + 1) / 255,
+				b = pixels.get(i * 4 + 2) / 255;
+			var luma = .299 * r + .587 * g + .114 * b;
+			var warm = luma - .5;
+			inline function channel(c:Float, shift:Float):Int {
+				var v = .5 + (c - .5) * 1.15 + shift * warm;
+				return Std.int(Math.max(0, Math.min(1, v)) * 255 + .5);
+			}
+			pixels.set(i * 4, channel(r, .25));
+			pixels.set(i * 4 + 1, channel(g, -.08));
+			pixels.set(i * 4 + 2, channel(b, -.3));
+		}
+		return pixels;
 	}
 
 	// The autopilot's script in: the input it plays from now on.
@@ -125,9 +189,9 @@ class App extends BaseApp {
 
 	function probe(name:String):Dynamic
 		return switch name {
-			case "ready": placed && vignette != null && scanlines != null;
+			case "ready": placed && sepia != null;
 			case "hdr": post.hdr;
-			case "vignette": vignette != null && vignette.enabled;
+			case "on": [for (e in effects) if (e.effect.enabled) e.name].join(" ");
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -139,44 +203,40 @@ class App extends BaseApp {
 		placed = true;
 	}
 
-	// The vignette's shader in: its effect, warm at the edges.
-	function makeVignette(shader:Shader):Void {
-		vignette = new ScreenEffect(Graphics.instance, shader);
-		vignette.parameters.setFloat("radius", .35);
-		vignette.parameters.setColor("tint", 0xfff2deff);
-		// The vignette before the scanlines, whichever loads first.
-		if (scanlines != null)
-			post.remove(scanlines);
-		post.add(vignette);
-		if (scanlines != null)
-			post.add(scanlines);
+	// The example's shader in: its effect, toned toward old paper, after the grade.
+	function makeSepia(shader:Shader):Void {
+		sepia = new ScreenEffect(Graphics.instance, shader);
+		sepia.parameters.setFloat("amount", .85);
+		sepia.parameters.setColor("paper", 0xffe2b0ff);
+		sepia.enabled = false;
+		var at = 0;
+		while (effects[at].name != "colorLut")
+			at++;
+		effects.insert(at + 1, {name: "sepia", effect: sepia, key: Digit6});
+		rebuild();
 		status = "";
 	}
 
-	// The scanlines' shader in: its effect, 240 lines flickering.
-	function makeScanlines(shader:Shader):Void {
-		scanlines = new ScreenEffect(Graphics.instance, shader);
-		scanlines.parameters.setFloat("lines", 240);
-		scanlines.parameters.setFloat("darkness", .35);
-		scanlines.parameters.setFloat("offset", 1.5);
-		scanlines.parameters.setFloat("flicker", 1);
-		post.add(scanlines);
+	// The chain made again in its order: the tone mapping first when it's on, then the effects.
+	function rebuild():Void {
+		for (e in effects)
+			post.remove(e.effect);
+		if (tonemap != null)
+			post.remove(tonemap);
+		if (tonemap != null)
+			post.add(tonemap);
+		for (e in effects)
+			post.add(e.effect);
 	}
 
-	// The tone mapping first in the chain, or out of it: with it there the scene is HDR, the effects after it reading the tone-mapped frame.
-	function toggleHdr():Void {
+	// The tone mapping first in the chain, or out of it.
+	function toggleTonemap():Void {
 		if (tonemap != null) {
 			post.remove(tonemap);
 			tonemap = null;
-			return;
-		}
-		tonemap = new Tonemap();
-		var after = [for (e in [vignette, scanlines]) if (e != null) e];
-		for (e in after)
-			post.remove(e);
-		post.add(tonemap);
-		for (e in after)
-			post.add(e);
+		} else
+			tonemap = new Tonemap();
+		rebuild();
 	}
 
 	override public function frame(dt:Float):Void {
@@ -194,8 +254,6 @@ class App extends BaseApp {
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
-		if (vignette != null)
-			vignette.parameters.setFloat("strength", strength * (breathing ? .75 + .25 * Math.sin(time * 2) : 1));
 		var gpu = Graphics.instance,
 			width = Window.framebufferWidth,
 			height = Window.framebufferHeight;
@@ -209,7 +267,7 @@ class App extends BaseApp {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		// The scene into a texture, the effects but the last through two more, then the screen.
+		// The scene into a texture, the effects but the last through more, then the screen; the HUD after, outside the effects.
 		post.beginScene(width, height, 0x14161cff);
 		stage.draw(camera);
 		post.endScene(time);
@@ -217,10 +275,13 @@ class App extends BaseApp {
 		post.present();
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX postprocess: screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		inline function onOff(e:Null<ScreenEffect>):String
-			return e == null ? "loading" : e.enabled ? "on" : "off";
-		y += batch.drawTextWrapped('[1] vignette ${onOff(vignette)}  [2] scanlines ${onOff(scanlines)}  [Up/Down] strength ${Math.round(strength * 100) / 100}  [H] HDR ${tonemap == null ? "off" : post.hdr ? "on" : "unavailable"}  [Space] breathing ${breathing ? "on" : "off"}  [O] camera',
+		y += batch.drawTextWrapped("HeliX postprocess: the shader library's screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		var keys = [
+			for (e in effects)
+				'[${(e.key : Int) - (Key.Digit0 : Int)}] ${e.name} ${e.effect.enabled ? "on" : "off"}'
+		].join("  ");
+		y += batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
+		y += batch.drawTextWrapped('[H] tone mapping first ${tonemap == null ? "off" : "on"}  HDR scene ${post.hdr ? "yes" : "no"}  [Up/Down] bloom ${Math.round(bloom.intensity * 100) / 100}  [O] camera',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xc8c8c8ff)
@@ -232,7 +293,7 @@ class App extends BaseApp {
 		gpu.endFrame();
 		if (pilot != null && pilot.done && !published) {
 			published = true;
-			TestHarness.publish({game: {hdr: post.hdr, vignette: vignette != null && vignette.enabled}, autopilot: pilot.snapshot});
+			TestHarness.publish({game: {hdr: post.hdr, on: probe("on")}, autopilot: pilot.snapshot});
 			if (Host.getOption("autoclose", "0") == "1")
 				Host.quit();
 		}
@@ -242,27 +303,24 @@ class App extends BaseApp {
 	function control(input:IInput, dt:Float):Void {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Digit1) && vignette != null)
-			vignette.enabled = !vignette.enabled;
-		if (input.isFramePressed(Key.Digit2) && scanlines != null)
-			scanlines.enabled = !scanlines.enabled;
+		for (e in effects)
+			if (input.isFramePressed(e.key))
+				e.effect.enabled = !e.effect.enabled;
 		if (input.isFramePressed(Key.H))
-			toggleHdr();
-		if (input.isFramePressed(Key.Space))
-			breathing = !breathing;
+			toggleTonemap();
 		if (input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		if (input.isDown(Key.Up))
-			strength = Math.min(1, strength + dt * .5);
+			bloom.intensity = bloom.intensity + dt;
 		if (input.isDown(Key.Down))
-			strength = Math.max(0, strength - dt * .5);
+			bloom.intensity = bloom.intensity - dt;
 	}
 
 	override public function cleanup():Void {
-		for (e in [vignette, scanlines])
-			if (e != null)
-				shaders.release(e.shader);
+		if (sepia != null)
+			shaders.release(sepia.shader);
 		post.destroy();
+		grade.destroy(Graphics.instance);
 		stage.destroy();
 		batch.destroy();
 	}

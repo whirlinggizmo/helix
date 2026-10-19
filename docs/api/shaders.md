@@ -2,6 +2,110 @@
 
 [Back to the index](README.md)
 
+## Bloom
+
+*class* in `src/helix/shaders/Bloom.hx`
+
+Bloom, a screen effect of the library: light past a threshold spread around it, as a bright light glows in a lens or an eye. It wants HDR (ScreenEffect.hdr), so in a chain with it the scene is drawn in half floats where the GPU can, and the light running past 1 is what blooms; it decodes the frame to linear light first. The light past threshold (eased in over a soft knee) is drawn into half the frame's size through a 13-tap filter (each group of four weighted by its brightness, so a lone bright texel doesn't flicker), on down a chain of LEVELS halving sizes; each level is then added to the one above it drawn larger through a 3 x 3 tent filter, back to half the frame's size, and that is added to the frame times intensity. Where the GPU draws no half floats (or after a Tonemap of the chain's own), the frame reaching it is tone mapped, 8-bit, and toneMappedThreshold takes threshold's place. Its intermediates are the chain's levels: LEVELS going down, then LEVELS - 1 coming back up (ScreenEffect.intermediates).
+
+```haxe
+function new()
+static var LEVELS(inline, null):Int
+var threshold(default, set):Float
+var knee(default, set):Float
+var toneMappedThreshold(default, set):Float
+var intensity(default, set):Float
+function drawIntermediates(frame:ScreenFrame):Void
+function draw(frame:ScreenFrame):Void
+```
+
+- `new`: A bloom of light past 1 (in linear light), its knee half the threshold, added at intensity 1.
+- `LEVELS`: The levels of its chain going down: half the frame's size, a quarter, and so on to a 64th.
+- `threshold`: Where the bloom starts in an HDR frame: light (linear, past the exposure) whose brightest channel passes it blooms, the more the further past. 0 to 64, 1 by default: light brighter than the screen's white.
+- `knee`: How softly light past the threshold comes in: the width of the knee either side of it, a share of the threshold, 0 (a hard cut) to 1; .5 by default.
+- `toneMappedThreshold`: Where the bloom starts in a frame already tone mapped (8-bit, where the GPU draws no half floats), in linear light 0 to 1: .8 by default, the brightest of what's there.
+- `intensity`: How much of the bloom is added to the frame, 0 (none) to 16: 1 by default. At 1 the light past the threshold is added again, spread.
+- `drawIntermediates`: Draws the chain: the light past the threshold into the first level, down the levels, and back up them.
+- `draw`: Adds the bloom to the frame, over the open pass's viewport.
+
+## Blur
+
+*class* in `src/helix/shaders/Blur.hx`
+
+Blur, a screen effect of the library: the frame blurred, a Gaussian over radius pixels either way, in two passes (across, into a texture at resolution of the frame's size, then down, from it drawn larger). Its one intermediate is that texture (ScreenEffect.intermediates).
+
+```haxe
+function new(?radius:Float = 8., ?resolution:Float = .5)
+var radius(default, set):Float
+var resolution(default, set):Float
+function drawIntermediates(frame:ScreenFrame):Void
+function draw(frame:ScreenFrame):Void
+```
+
+- `new`: A blur of radius pixels (the frame's) drawn at resolution of the frame's size.
+- `radius`: How far it reaches either way, in the frame's pixels, 0 (none) to 128: 8 by default. Its standard deviation is a third of it.
+- `resolution`: The size of its first pass's texture, a fraction of the frame's each way, 1/16 to 1: .5 by default. Smaller is cheaper and, for a wide radius, no worse.
+- `drawIntermediates`: Draws the pass across, from the frame into its texture.
+- `draw`: Draws the pass down, from its texture over the open pass's viewport.
+
+## ChromaticAberration
+
+*class* in `src/helix/shaders/ChromaticAberration.hx`
+
+Chromatic aberration, a screen effect of the library: red and blue parted from green, red toward the middle and blue away from it, by amount at the frame's edges and less toward its middle, as a cheap lens splits colors.
+
+```haxe
+function new(?amount:Float = 3.)
+var amount(default, set):Float
+```
+
+- `new`: Colors parted by amount pixels at the edges.
+- `amount`: How far red and blue part from green at the frame's edges, each its way, in the frame's pixels, 0 (none) to 64: 3 by default.
+
+## ColorLut
+
+*class* in `src/helix/shaders/ColorLut.hx`
+
+A color grade, a screen effect of the library: the frame's colors looked up in a 32 x 32 x 32 color cube (a LUT) laid out as a strip of SIZE squares, 1024 x 32 texels: blue chooses a square left to right, red runs across it, green down it, and each texel holds what that color becomes (sRGB). A grade is made by grading identity()'s strip in an image editor with the game's look and loading the PNG (linear sampling; Textures.load). Put it after the tone mapping, as the colors it grades are the screen's.
+
+```haxe
+function new(?lut:Texture2D)
+static var SIZE(inline, null):Int
+static function identity():haxe.io.Bytes
+var lut(default, set):Null<Texture2D>
+var amount(default, set):Float
+```
+
+- `new`: A grade through lut (a strip as above, sampled linear), or the identity strip until a lut is given.
+- `SIZE`: The cube's size: SIZE values of each channel, so the strip is SIZE * SIZE x SIZE texels.
+- `identity`: The identity strip's texels, RGBA8, rows top first (SIZE * SIZE x SIZE): each color itself, its channels i * 255 / 31 rounded.
+- `lut`: The strip it looks colors up in, or null for the identity (the library's, ShaderLibrary.getIdentityLut: the frame unchanged). The texture stays its owner's.
+- `amount`: How much of the grade shows, 0 (the frame as it is) to 1 (all of it): 1 by default.
+
+## Crt
+
+*class* in `src/helix/shaders/Crt.hx`
+
+CRT, a screen effect of the library: the frame as an old monitor shows it, its glass curved (black beyond the bent frame), dark lines between its rows, an aperture grille (columns of red, green and blue), and a flicker over the effect's time.
+
+```haxe
+function new()
+var lines(default, set):Float
+var darkness(default, set):Float
+var curvature(default, set):Float
+var mask(default, set):Float
+var maskSize(default, set):Float
+var flicker(default, set):Float
+```
+
+- `new`: A CRT of 240 lines, darkness .35, curvature .3, mask .3 of columns a pixel wide, flicker .5.
+- `lines`: The rows down the frame, 1 to 4096: 240 by default.
+- `darkness`: How dark the lines between rows go, 0 (none) to 1 (black): .35 by default.
+- `curvature`: How far the glass bends, 0 (flat) to 1: .3 by default.
+- `mask`: How strong the aperture grille is, 0 (none) to 1: .3 by default.
+- `maskSize`: A grille column's width, in the frame's pixels, 1 to 64: 1 by default.
+- `flicker`: How much the brightness wobbles over time, 0 (steady) to 1 (6% either way): .5 by default.
+
 ## Dissolve
 
 *class* in `src/helix/shaders/Dissolve.hx`
@@ -26,6 +130,24 @@ var noise(default, set):Texture2D
 - `scale`: How many times the noise repeats across the surface's texture coordinates (0..1), above 0: 2 by default. Under .001, or NaN, is .001.
 - `noise`: The noise it burns along (its red channel, sampled as its sampling says: repeating, for scale to tile it): the library's by default.
 
+## Fxaa
+
+*class* in `src/helix/shaders/Fxaa.hx`
+
+FXAA, a screen effect of the library: Timothy Lottes's FXAA 3.11 (its quality version, preset 12), smoothing the stair steps along edges in the finished frame by the contrast of its luma, which it works out itself. Put it after the tone mapping (in an HDR chain, after the last effect wanting HDR: PostProcess runs the tone mapping there) and before effects that add their own detail (grain, scanlines), so what it smooths is the frame as shown.
+
+```haxe
+function new()
+var subpixel(default, set):Float
+var edgeThreshold(default, set):Float
+var edgeThresholdMin(default, set):Float
+```
+
+- `new`: FXAA at its defaults: subpixel .75, edgeThreshold .166, edgeThresholdMin .0833.
+- `subpixel`: How much edges thinner than a pixel are smoothed, 0 (sharper; none) to 1 (softer): .75 by default.
+- `edgeThreshold`: The least contrast smoothed, a share of the brightest luma around a pixel, .063 (slower, more edges) to .333 (faster, fewer): .166 by default.
+- `edgeThresholdMin`: The least contrast smoothed in all, so dark areas are left alone, 0 to .1 (luma): .0833 by default.
+
 ## HitFlash
 
 *class* in `src/helix/shaders/HitFlash.hx`
@@ -45,6 +167,12 @@ function trigger(color:Int, seconds:Float):Bool
 - `color`: The flash's color, 0xRRGGBBAA (sRGB), its alpha how strong at most. White by default.
 - `amount`: How much of the flash is held, 0 to 1 (times its color's alpha): 0, none, by default. Assigning holds it, ending a fade; read during a fade, it's the fade's start, 1. Clamped to 0..1 (NaN is 0).
 - `trigger`: Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the stage's time from the next draw. False, changing nothing, for seconds not above 0.
+
+## LibraryScreenEffect
+
+*class* in `src/helix/shaders/LibraryScreenEffect.hx`
+
+What the shader library's screen effects share (Bloom, Fxaa, Blur, Vignette, ColorLut, Crt, ChromaticAberration, Pixelate, Tonemap): a ScreenEffect whose shader is the library's, built on the program's GPU (Graphics) the first time one is made and shared by every effect of its kind, and whose fields write its parameters, each held to its range. PostProcess chains them as any effect (PostProcess.add).
 
 ## LibrarySurface
 
@@ -74,6 +202,20 @@ var width(get, set):Float
 - `new`: Outlines model in color (0xRRGGBBAA, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by default; under 0 is 0).
 - `width`: How far the outline reaches past the model's surface, world units, 0 or more. Under 0, or NaN, is 0.
 
+## Pixelate
+
+*class* in `src/helix/shaders/Pixelate.hx`
+
+Pixelate, a screen effect of the library: the frame in square cells, each one color, the frame's at the cell's middle.
+
+```haxe
+function new(?cellSize:Int = 6)
+var cellSize(default, set):Int
+```
+
+- `new`: Cells cellSize pixels a side.
+- `cellSize`: A cell's side, in the frame's pixels, 1 (the frame as it is) to 256: 6 by default.
+
 ## Rim
 
 *class* in `src/helix/shaders/Rim.hx`
@@ -102,6 +244,7 @@ The shader library's programs on each GPU. A library shader's source (src/helix/
 static function get(gpu:IGraphics, name:String, text:String):Shader
 static var NOISE_SIZE(inline, null):Int
 static function getNoise(gpu:IGraphics):Texture2D
+static function getIdentityLut(gpu:IGraphics):Texture2D
 static function noisePixels():haxe.io.Bytes
 static function release(gpu:IGraphics):Void
 ```
@@ -109,8 +252,9 @@ static function release(gpu:IGraphics):Void
 - `get`: The library shader name (its source's file stem: "unlit") on gpu, built from text (its packed .hxshader, <Name>Packed.text()) the first time it's asked for there. Throws, saying why, for a program that doesn't build.
 - `NOISE_SIZE`: The size of the library's noise texture, texels a side.
 - `getNoise`: The library's noise texture on gpu (Dissolve's unless a game gives its own), made the first time it's asked for there: NOISE_SIZE texels a side, tiling, smooth value noise of three octaves in its red, green and blue alike, its values spread evenly over 0..1 (so a threshold at t keeps the share 1 - t of it); the same texels on every target. Sampled linear, repeating. The library frees it with its shaders.
+- `getIdentityLut`: The identity color LUT on gpu (ColorLut's until a game gives its own grade), made the first time it's asked for there from ColorLut.identity(): every color itself. Sampled linear, clamped. The library frees it with its shaders.
 - `noisePixels`: The noise texture's texels (getNoise), RGBA8, rows top first.
-- `release`: Frees gpu's library shaders, the pipelines made over them and its noise texture, before the adapter shuts down.
+- `release`: Frees gpu's library shaders, the pipelines made over them, its noise texture and its identity LUT, before the adapter shuts down.
 
 ## Silhouette
 
@@ -169,6 +313,26 @@ var color(default, set):Int
 
 - `new`: Makes Unlit material's surface shader, color white.
 - `color`: What the material's base color and texture are multiplied by, 0xRRGGBBAA, its color sRGB as the material's are: white (the material as it is) by default.
+
+## Vignette
+
+*class* in `src/helix/shaders/Vignette.hx`
+
+Vignette, a screen effect of the library: the frame shaded toward color from radius out to its corners.
+
+```haxe
+function new(?strength:Float = .4)
+var strength(default, set):Float
+var color(default, set):Int
+var radius(default, set):Float
+var softness(default, set):Float
+```
+
+- `new`: A black vignette of strength (0..1), from .4 of the way to a corner, softness .6.
+- `strength`: How far the corners go toward color, 0 (none) to 1 (all the way): .4 by default.
+- `color`: What the corners go toward, 0xRRGGBBAA (sRGB as the frame is, alpha ignored): black by default.
+- `radius`: Where the shading starts, a share of the way from the middle to a corner, 0 to 1: .4 by default.
+- `softness`: How far past radius the shading takes to reach its strength, the same share, .001 (a hard edge) to 2: .6 by default.
 
 ## Water
 

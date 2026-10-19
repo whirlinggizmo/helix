@@ -5,8 +5,19 @@ import helix.graphics.ScreenEffect;
 import helix.graphics.ScreenFrame;
 import helix.graphics.Shader;
 import helix.graphics.TextureFormat;
+import haxe.io.Bytes;
+import helix.render2d.Texture2D;
 import helix.render3d.Stage3D;
+import helix.shaders.Bloom;
+import helix.shaders.Blur;
+import helix.shaders.ChromaticAberration;
+import helix.shaders.ColorLut;
+import helix.shaders.Crt;
+import helix.shaders.Fxaa;
+import helix.shaders.Pixelate;
+import helix.shaders.ShaderLibrary;
 import helix.shaders.Tonemap;
+import helix.shaders.Vignette;
 
 /** An effect of several passes: intermediates at the fractions given, each drawn into from the one before (the first from the frame). */
 class Steps extends ScreenEffect {
@@ -26,7 +37,8 @@ class Steps extends ScreenEffect {
 
 /** PostProcess's plan: which textures a chain gets, at which sizes and in which formats, and which of them each pass draws into, on graphics
 	that only counts: an 8-bit chain, intermediates at fractions of the screen, an HDR chain with its tone mapping added (and without half
-	floats, none), the order kept through add and remove, and sizes following the screen. */
+	floats, none), the order kept through add and remove, and sizes following the screen; Bloom's chain of levels, down and back up; the
+	library's screen effects' fields written where their shaders' reflection puts them, held to their ranges; the identity LUT's texels. */
 class PostProcessTests {
 	static var checks = 0;
 
@@ -188,6 +200,204 @@ class PostProcessTests {
 		check(pass(3).format == Rgba8, "After its own tone mapping the chain is RGBA8");
 		post.destroy();
 		hdrPost.destroy();
+		gpu.floatTargets = true;
+		bloom();
+		fields();
+		identity();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// The bytes effect's parameters write, by slot (null for a slot its shader lacks).
+	static function blocks(effect:ScreenEffect):Array<Null<Bytes>> {
+		var out = [for (size in effect.shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
+		effect.parameters.write(out);
+		return out;
+	}
+
+	// The value effect's parameter name is written as, its component i, checked at offset in block 2 (the effect's own).
+	static function written(effect:ScreenEffect, name:String, offset:Int, i = 0):Float {
+		var p = effect.shader.getParameter(name);
+		check(p != null && p.slot == 2 && p.offset == offset, '${Type.getClassName(Type.getClass(effect))}\'s $name at $offset in its block');
+		return blocks(effect)[2].getFloat(offset + i * 4);
+	}
+
+	static function near(a:Float, b:Float):Bool
+		return Math.abs(a - b) < 1e-5;
+
+	// Bloom in an HDR chain: its levels going down, halving from half the screen, then back up, in half floats without depth; its composite
+	// into the chain and the tone mapping after it; each step reading what it should. Without half floats the same in RGBA8, thresholding the
+	// tone-mapped frame.
+	static function bloom():Void {
+		var bloom = new Bloom();
+		check(bloom.hdr, "Bloom wants HDR");
+		var post = new PostProcess(gpu);
+		post.add(bloom);
+		frame(post, 800, 600);
+		check(post.hdr && gpu.targetPasses.length == 1 + Bloom.LEVELS + Bloom.LEVELS - 1 + 1,
+			"The scene, the levels down, the levels back up, the bloom added to the frame; the tone mapping over the screen");
+		var sizes = [[400, 300], [200, 150], [100, 75], [50, 37], [25, 18], [12, 9]];
+		for (i in 0...Bloom.LEVELS)
+			check(pass(1 + i).width == sizes[i][0] && pass(1 + i).height == sizes[i][1] && pass(1 + i).format == Rgba16f && !pass(1 + i).depth,
+				'Level $i going down is ${sizes[i]}, half floats without depth');
+		for (k in 0...Bloom.LEVELS - 1) {
+			var level = Bloom.LEVELS - 2 - k;
+			check(pass(1 + Bloom.LEVELS + k).width == sizes[level][0]
+				&& pass(1 + Bloom.LEVELS + k).height == sizes[level][1]
+				&& pass(1 + Bloom.LEVELS + k).format == Rgba16f
+				&& gpu.targetPasses[1 + Bloom.LEVELS + k] != gpu.targetPasses[1 + level],
+				'Coming up, level $level is ${sizes[level]}, a texture of its own');
+		}
+		var last = 1 + 2 * Bloom.LEVELS - 1;
+		check(pass(last).width == 800 && pass(last).format == Rgba16f, "The bloom is added into the chain's half floats, the tone mapping after");
+		var tonemap:Tonemap = @:privateAccess post.tonemap;
+		check(@:privateAccess post.steps[1] == tonemap, "The tone mapping follows the bloom");
+
+		// Its steps by hand: what each reads.
+		var source = Texture2D.renderTarget(gpu, 64, 64, true, Rgba16f, false);
+		var levels = [
+			for (f in bloom.intermediates)
+				Texture2D.renderTarget(gpu, Std.int(Math.max(1, Math.floor(64 * f))), Std.int(Math.max(1, Math.floor(64 * f))), true, Rgba16f, false)
+		];
+		check(levels.length == 2 * Bloom.LEVELS - 1
+			&& bloom.intermediates[Bloom.LEVELS] == .5, "Its intermediates: the levels down, then up");
+		var screenFrame = new ScreenFrame(source, 64, 64, 1, levels);
+		bloom.threshold = 2;
+		bloom.knee = .25;
+		bloom.drawIntermediates(screenFrame);
+		var drawn:{textures:Array<Int>, uniforms:Array<Null<Bytes>>} = gpu.screen;
+		var slot = bloom.shader.getTextureSlot("bloom_texture");
+		check(slot == 1 && drawn.textures[0] == levels[Bloom.LEVELS + 1].handle && drawn.textures[slot] == levels[0].handle,
+			"The last step up reads the level below coming up, and adds the first level going down");
+		check(near(drawn.uniforms[2].getFloat(8), 2)
+			&& near(drawn.uniforms[2].getFloat(12), 2)
+			&& near(drawn.uniforms[2].getFloat(16), .5),
+			"A step up's mode, an HDR frame's threshold, and the knee's width in light");
+		check(near(drawn.uniforms[2].getFloat(0), 1 / levels[Bloom.LEVELS + 1].width), "It steps by a texel of what it reads");
+		bloom.draw(screenFrame);
+		drawn = gpu.screen;
+		check(drawn.textures[0] == source.handle
+			&& drawn.textures[slot] == levels[Bloom.LEVELS].handle
+			&& near(drawn.uniforms[2].getFloat(8), 3),
+			"Its last pass adds the first level coming up to the frame");
+		check(near(drawn.uniforms[2].getFloat(20), 1 / Bloom.LEVELS), "Its intensity over the levels summed");
+		var flat = Texture2D.renderTarget(gpu, 64, 64, true, Rgba8, false);
+		bloom.toneMappedThreshold = .7;
+		bloom.drawIntermediates(new ScreenFrame(flat, 64, 64, 1, levels));
+		check(near(gpu.screen.uniforms[2].getFloat(12), .7), "A tone-mapped frame is thresholded at toneMappedThreshold");
+
+		// Without half floats: the same chain in RGBA8, no tone mapping.
+		gpu.floatTargets = false;
+		frame(post, 800, 600);
+		check(!post.hdr && gpu.targetPasses.length == 1 + 2 * Bloom.LEVELS - 1 && pass(1).format == Rgba8 && pass(1).width == 400,
+			"Without half floats the levels are RGBA8 and the bloom is the last pass, over the screen");
+		gpu.floatTargets = true;
+		post.destroy();
+	}
+
+	// Each library screen effect's fields: written where the reflection puts them, held to their ranges.
+	static function fields():Void {
+		var bloom = new Bloom();
+		check(bloom.threshold == 1 && bloom.knee == .5 && bloom.intensity == 1, "Bloom's defaults");
+		bloom.intensity = 40;
+		bloom.threshold = -1;
+		bloom.knee = Math.NaN;
+		check(bloom.intensity == 16
+			&& bloom.threshold == 0
+			&& bloom.knee == 0
+			&& near(written(bloom, "intensity", 20), 16 / Bloom.LEVELS),
+			"Bloom's fields held to their ranges");
+
+		var fxaa = new Fxaa();
+		check(near(written(fxaa, "subpixel", 0), .75)
+			&& near(written(fxaa, "edge_threshold", 4), .166)
+			&& near(written(fxaa, "edge_threshold_min", 8), .0833),
+			"Fxaa's defaults, FXAA 3.11's");
+		fxaa.edgeThreshold = 1;
+		fxaa.subpixel = -1;
+		check(fxaa.edgeThreshold == .333 && near(written(fxaa, "edge_threshold", 4), .333) && written(fxaa, "subpixel", 0) == 0,
+			"Fxaa's fields held to their ranges");
+
+		var blur = new Blur(12, .25);
+		check(blur.intermediates.length == 1 && blur.intermediates[0] == .25, "Blur's one texture at its resolution");
+		blur.resolution = 0;
+		blur.radius = 1000;
+		check(blur.intermediates[0] == 1 / 16 && blur.radius == 128, "Blur's fields held to their ranges");
+		var source = Texture2D.renderTarget(gpu, 800, 600, true, Rgba8, false),
+			half = Texture2D.renderTarget(gpu, 400, 300, true, Rgba8, false);
+		blur.radius = 16;
+		var screenFrame = new ScreenFrame(source, 800, 600, 0, [half]);
+		blur.drawIntermediates(screenFrame);
+		check(gpu.screen.textures[0] == source.handle
+			&& near(gpu.screen.uniforms[2].getFloat(0), 2 / 800)
+			&& gpu.screen.uniforms[2].getFloat(4) == 0,
+			"Blur's first pass across the frame, taps radius / 8 pixels apart");
+		blur.draw(screenFrame);
+		check(gpu.screen.textures[0] == half.handle
+			&& gpu.screen.uniforms[2].getFloat(0) == 0
+			&& near(gpu.screen.uniforms[2].getFloat(4), 2 / 600),
+			"Its second down, from its texture");
+
+		var vignette = new Vignette(.7);
+		check(near(written(vignette, "strength", 16), .7)
+			&& near(written(vignette, "radius", 20), .4)
+			&& near(written(vignette, "softness", 24), .6)
+			&& written(vignette, "color", 0, 3) == 1,
+			"Vignette's fields");
+		vignette.color = 0xff800000;
+		vignette.softness = 0;
+		check(near(written(vignette, "color", 0), 1)
+			&& near(written(vignette, "color", 0, 1), 0x80 / 255)
+			&& near(written(vignette, "softness", 24), .001),
+			"Vignette's color as it is, its softness held above 0");
+
+		var crt = new Crt();
+		check(written(crt, "lines", 0) == 240
+			&& near(written(crt, "darkness", 4), .35)
+			&& near(written(crt, "curvature", 8), .3)
+			&& near(written(crt, "mask", 12), .3)
+			&& written(crt, "mask_size", 16) == 1
+			&& near(written(crt, "flicker", 20), .5),
+			"Crt's fields");
+		crt.lines = 0;
+		crt.curvature = 3;
+		check(crt.lines == 1 && crt.curvature == 1, "Crt's fields held to their ranges");
+
+		var aberration = new ChromaticAberration();
+		aberration.amount = 100;
+		check(aberration.amount == 64 && written(aberration, "amount", 0) == 64, "ChromaticAberration's amount held to 64");
+
+		var pixelate = new Pixelate(10);
+		check(written(pixelate, "cell_size", 0) == 10, "Pixelate's cell size");
+		pixelate.cellSize = 0;
+		check(pixelate.cellSize == 1 && written(pixelate, "cell_size", 0) == 1, "A cell at least a pixel");
+
+		var grade = new ColorLut();
+		var slot = grade.shader.getTextureSlot("lut_texture");
+		check(slot == 1 && grade.parameters.getTexture("lut_texture") == ShaderLibrary.getIdentityLut(gpu) && grade.lut == null,
+			"ColorLut grades through the library's identity until given a LUT, at slot 1");
+		var own = Texture2D.fromRgba(gpu, 1024, 32, ColorLut.identity(), true);
+		grade.lut = own;
+		grade.amount = 2;
+		check(grade.parameters.getTexture("lut_texture") == own && grade.amount == 1 && written(grade, "amount", 0) == 1,
+			"A LUT of the game's; its amount held to 1");
+		check(ShaderLibrary.getIdentityLut(gpu) == ShaderLibrary.getIdentityLut(gpu), "The identity LUT is made once a GPU");
+	}
+
+	// The identity strip: 1024 x 32, blue choosing the square, red across it, green down, each channel i * 255 / 31.
+	static function identity():Void {
+		var strip = ColorLut.identity();
+		check(strip.length == 1024 * 32 * 4, "The strip is 1024 x 32 RGBA8");
+		inline function texel(x:Int, y:Int):Array<Int> {
+			var at = (y * 1024 + x) * 4;
+			return [strip.get(at), strip.get(at + 1), strip.get(at + 2), strip.get(at + 3)];
+		}
+		check(texel(0, 0).join(",") == "0,0,0,255"
+			&& texel(1023, 31).join(",") == "255,255,255,255", "Black at its first texel, white at its last");
+		check(texel(31, 0).join(",") == "255,0,0,255"
+			&& texel(0, 31).join(",") == "0,255,0,255"
+			&& texel(992, 0).join(",") == "0,0,255,255",
+			"Red across a square, green down, blue by the square");
+		check(texel(32 * 10 + 5, 20).join(",") == '${Std.int(5 * 255 / 31 + .5)},${Std.int(20 * 255 / 31 + .5)},${Std.int(10 * 255 / 31 + .5)},255',
+			"Each channel its index times 255 / 31, rounded");
 	}
 }

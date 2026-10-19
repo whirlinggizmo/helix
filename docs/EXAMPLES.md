@@ -44,7 +44,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `tilemap` | a scrolling, zooming tile map of sprites cut from one sheet, culled to the view; props on their pivots, coins hovered and collected |
 | `render-target` | drawing into textures: a low-resolution pixel view, an orthographic minimap, a text label worn by a globe |
 | `shaders` | Stage3D materials drawn by the library's surface shaders (`helix.shaders`, packed into the program, nothing to load): `Toon` on a car and on a skinned character, `Dissolve` with its shadow dissolving, `Water` with its waves moving its shadow, `Unlit`; `Outline` and `Silhouette` passes (her silhouette through a wall), `HitFlash` on a library shader and on the stage's own shading; and the floor drawn by the example's one shader of its own (`shaders/checker.glsl`, an `.hxshader` asset); its autopilot holds the time and samples the frame's pixels (each effect, and unlike it turned off), alike on both targets |
-| `postprocess` | screen effects of the example's own shaders (`shaders/*.glsl`, packed into `.hxshader` assets, reloaded as they're edited) over a finished frame |
+| `postprocess` | the shader library's screen effects over a finished frame (Bloom on an HDR scene, Fxaa, Blur, Pixelate, ColorLut, Crt, ChromaticAberration, Vignette), and one of the example's own (`shaders/sepia.glsl`, packed into a `.hxshader` asset, reloaded as it's edited) |
 
 ## Larger examples: Asteroids and Blocks
 
