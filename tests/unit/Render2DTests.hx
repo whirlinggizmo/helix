@@ -135,15 +135,31 @@ class CountingGraphics implements IGraphics {
 	/** Each mesh draw's pipeline, in order. */
 	public var meshPipelines:Array<Int> = [];
 
-	/** Each mesh draw's instance count and uniform blocks, in order. */
-	public var meshDraws:Array<{instances:Int, uniforms:Array<Null<Bytes>>}> = [];
+	/** Each mesh draw's instance count and first instance, its buffers, textures and uniform blocks, in order. */
+	public var meshDraws:Array<{
+		instances:Int,
+		firstInstance:Int,
+		buffers:Array<Int>,
+		textures:Array<Int>,
+		uniforms:Array<Null<Bytes>>
+	}> = [];
+
+	/** The description a pipeline was made from. */
+	public function describe(pipeline:Int):PipelineDesc
+		return pipelineDescs[pipeline];
 
 	public function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, count:Int, firstInstance:Int, instanceCount:Int, textures:Array<Int>,
 			samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {
 		var desc = pipelineDescs[pipeline];
 		if (desc.indexed) {
 			meshPipelines.push(pipeline);
-			meshDraws.push({instances: instanceCount, uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]});
+			meshDraws.push({
+				instances: instanceCount,
+				firstInstance: firstInstance,
+				buffers: buffers.copy(),
+				textures: textures.copy(),
+				uniforms: [for (u in uniforms) u == null ? null : u.sub(0, u.length)]
+			});
 		} else if (desc.buffers.length == 0)
 			screen = {textures: textures, uniforms: uniforms};
 		else
@@ -498,7 +514,7 @@ class Render2DTests {
 		// column at 96 + 16; the framework's block 1 holds the frame's size and the time; an unset texture is drawn as the frame.
 		var stages = {vertex: "", fragment: ""};
 		var text = haxe.Json.stringify({
-			helixShader: 1,
+			helixShader: 2,
 			kind: "screen",
 			attributes: [],
 			glsl410: stages,

@@ -636,15 +636,15 @@ class WebGL2GraphicsAdapter implements IGraphics {
 				gl.vertexAttribDivisor(slot, 0);
 			}
 		enabled = used;
-		if (p.depthTest) {
+		if (p.depthTest != DepthTest.Off) {
 			gl.enable(WebGL2RenderingContext.DEPTH_TEST);
-			gl.depthFunc(WebGL2RenderingContext.LEQUAL);
+			gl.depthFunc(p.depthTest == DepthTest.Greater ? WebGL2RenderingContext.GREATER : WebGL2RenderingContext.LEQUAL);
 		} else
 			gl.disable(WebGL2RenderingContext.DEPTH_TEST);
 		gl.depthMask(p.depthWrite);
-		if (p.cullBack) {
+		if (p.cull != CullFace.None) {
 			gl.enable(WebGL2RenderingContext.CULL_FACE);
-			gl.cullFace(WebGL2RenderingContext.BACK);
+			gl.cullFace(p.cull == CullFace.Front ? WebGL2RenderingContext.FRONT : WebGL2RenderingContext.BACK);
 		} else
 			gl.disable(WebGL2RenderingContext.CULL_FACE);
 		// The front faces as described; flipped, they wind the other way (gl_FrontFacing too).

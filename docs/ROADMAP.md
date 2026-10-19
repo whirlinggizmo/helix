@@ -18,7 +18,6 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 - **The autopilot's UI:** probes that report which widgets are showing, and events recorded for scripts to wait on, beside `click`.
 - **An action bound to a UI widget:** the drawn touch button and the region it presses as one binding, when the UI asks for it.
 - **Animation layers:** an upper body's clip over a lower body's.
-- **Skinned surface shaders:** an app's surface shader on a skinned model (it's ignored today).
 - **Morph targets**, and more than four joints a vertex.
 - **`ISocket`:** milestone 17.
 - **The scene file's next kinds:** a prefab's reference to a node outside itself (an instantiating entry passing a reference down, so a car prefab's behavior could name the race), and the 2D kinds under a `Node2D` root.

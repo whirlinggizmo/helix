@@ -1,7 +1,10 @@
 package helix.shaders;
 
+import haxe.io.Bytes;
 import helix.graphics.IGraphics;
+import helix.graphics.Sampling;
 import helix.graphics.Shader;
+import helix.render2d.Texture2D;
 
 /** The shader library's programs on each GPU. A library shader's source (src/helix/shaders/*.glsl) is packed at build time into generated
 	Haxe holding its .hxshader (tools/pack_shader.py: <Name>Packed.text()), so a class in helix.shaders gets its shader at once, with no load
@@ -24,8 +27,80 @@ class ShaderLibrary {
 		return entry.shader;
 	}
 
-	/** Frees gpu's library shaders and the pipelines made over them, before the adapter shuts down. */
+	// Kept across a hot reload with the shaders: each GPU's noise texture.
+	@:hot static var noises = new haxe.ds.ObjectMap<IGraphics, Texture2D>();
+
+	/** The size of the library's noise texture, texels a side. */
+	public static inline var NOISE_SIZE = 128;
+
+	/** The library's noise texture on gpu (Dissolve's unless a game gives its own), made the first time it's asked for there: NOISE_SIZE
+		texels a side, tiling, smooth value noise of three octaves in its red, green and blue alike, its values spread evenly over 0..1 (so a
+		threshold at t keeps the share 1 - t of it); the same texels on every target. Sampled linear, repeating. The library frees it with its
+		shaders. */
+	public static function getNoise(gpu:IGraphics):Texture2D {
+		var texture = noises.get(gpu);
+		if (texture == null) {
+			texture = Texture2D.fromRgba(gpu, NOISE_SIZE, NOISE_SIZE, noisePixels(), true);
+			texture.sampling = new Sampling(true, Repeat, Repeat);
+			noises.set(gpu, texture);
+		}
+		return texture;
+	}
+
+	/** The noise texture's texels (getNoise), RGBA8, rows top first. */
+	public static function noisePixels():Bytes {
+		var n = NOISE_SIZE, values = [for (_ in 0...n * n) 0.];
+		var period = 8, weight = 1.;
+		for (_ in 0...3) {
+			var cell = n / period;
+			for (y in 0...n)
+				for (x in 0...n) {
+					var fx = x / cell, fy = y / cell;
+					var ix = Std.int(fx), iy = Std.int(fy);
+					var tx = fx - ix, ty = fy - iy;
+					tx = tx * tx * (3 - 2 * tx);
+					ty = ty * ty * (3 - 2 * ty);
+					var a = lattice(ix % period, iy % period, period),
+						b = lattice((ix + 1) % period, iy % period, period),
+						c = lattice(ix % period, (iy + 1) % period, period),
+						d = lattice((ix + 1) % period, (iy + 1) % period, period);
+					values[y * n + x] += weight * (a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty);
+				}
+			period *= 2;
+			weight /= 2;
+		}
+		// Spread evenly: each texel its rank among them all, so a threshold cuts away the share it says.
+		var order = [for (i in 0...n * n) i];
+		order.sort((i, j) -> values[i] < values[j] ? -1 : values[i] > values[j] ? 1 : i - j);
+		var pixels = Bytes.alloc(n * n * 4);
+		for (rank in 0...order.length) {
+			var at = order[rank] * 4,
+				v = Std.int(rank * 255 / (order.length - 1) + .5);
+			pixels.set(at, v);
+			pixels.set(at + 1, v);
+			pixels.set(at + 2, v);
+			pixels.set(at + 3, 255);
+		}
+		return pixels;
+	}
+
+	// A lattice point's value, 0..1, from an integer hash of its place and the octave's period: the same on every target.
+	static function lattice(x:Int, y:Int, period:Int):Float {
+		// Int32's arithmetic wraps alike on every target.
+		var h:haxe.Int32 = x;
+		h = h * 374761393 + (y : haxe.Int32) * 668265263 + (period : haxe.Int32) * 1103515245;
+		h = (h ^ (h >>> 13)) * 1274126177;
+		h = h ^ (h >>> 16);
+		return (h & 0xffff) / 0xffff;
+	}
+
+	/** Frees gpu's library shaders, the pipelines made over them and its noise texture, before the adapter shuts down. */
 	public static function release(gpu:IGraphics):Void {
+		var noise = noises.get(gpu);
+		if (noise != null) {
+			noise.destroy(gpu);
+			noises.remove(gpu);
+		}
 		var shaders = all.get(gpu);
 		if (shaders == null)
 			return;
@@ -48,7 +123,7 @@ class ShaderLibrary {
 				if (text == entry.text)
 					continue;
 				try {
-					@:privateAccess entry.shader.replace(text);
+					entry.shader.replace(text);
 					entry.text = text;
 				} catch (e:Dynamic)
 					trace('helix.shaders $name: $e');

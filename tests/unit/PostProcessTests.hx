@@ -62,7 +62,7 @@ class PostProcessTests {
 		@:privateAccess Graphics.bind(gpu);
 		var stages = {vertex: "", fragment: ""};
 		var text = haxe.Json.stringify({
-			helixShader: 1,
+			helixShader: 2,
 			kind: "screen",
 			attributes: [],
 			glsl410: stages,

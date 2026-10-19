@@ -400,7 +400,7 @@ static SDL_GPUColorTargetBlendState blend_of(int blend){
   .src_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE,.dst_alpha_blendfactor=dst,.alpha_blend_op=SDL_GPU_BLENDOP_ADD};
 }
 /* A pipeline as helix.graphics.PipelineDesc describes it, its ints in order (as sokol's adapter reads them): shader, primitive (0 triangles,
-   1 lines), indexed, blend, depth test, depth write, cull back, clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection),
+   1 lines), indexed, blend, depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection),
    the buffer count, then each buffer's stride, instanced and attribute count, each attribute's slot, components and offset. */
 uint32_t helix_pipeline(const int *desc,int count){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!pipelines[i].live){slot=i;break;}
@@ -430,10 +430,10 @@ uint32_t helix_pipeline(const int *desc,int count){
  SDL_GPUGraphicsPipelineCreateInfo info={.vertex_shader=programs[program].vertex,.fragment_shader=programs[program].fragment,
   .vertex_input_state={.vertex_buffer_descriptions=described,.num_vertex_buffers=(Uint32)ndescribed,.vertex_attributes=attrs,.num_vertex_attributes=(Uint32)nattrs},
   .primitive_type=lines?SDL_GPU_PRIMITIVETYPE_LINELIST:SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-  .rasterizer_state={.fill_mode=SDL_GPU_FILLMODE_FILL,.cull_mode=desc[6]?SDL_GPU_CULLMODE_BACK:SDL_GPU_CULLMODE_NONE,
+  .rasterizer_state={.fill_mode=SDL_GPU_FILLMODE_FILL,.cull_mode=desc[6]==2?SDL_GPU_CULLMODE_FRONT:desc[6]?SDL_GPU_CULLMODE_BACK:SDL_GPU_CULLMODE_NONE,
    .front_face=clockwise?SDL_GPU_FRONTFACE_CLOCKWISE:SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,.enable_depth_clip=true},
   .multisample_state={.sample_count=depth_only?SDL_GPU_SAMPLECOUNT_1:sample_count_of(window_samples)},
-  .depth_stencil_state={.compare_op=desc[4]?SDL_GPU_COMPAREOP_LESS_OR_EQUAL:SDL_GPU_COMPAREOP_ALWAYS,.enable_depth_test=true,.enable_depth_write=desc[5]!=0},
+  .depth_stencil_state={.compare_op=desc[4]==2?SDL_GPU_COMPAREOP_GREATER:desc[4]?SDL_GPU_COMPAREOP_LESS_OR_EQUAL:SDL_GPU_COMPAREOP_ALWAYS,.enable_depth_test=true,.enable_depth_write=desc[5]!=0},
   .target_info={.color_target_descriptions=depth_only?NULL:&color,.num_color_targets=depth_only?0:1,.depth_stencil_format=depth_format,.has_depth_stencil_target=true}};
  SDL_GPUGraphicsPipeline *pipeline=SDL_CreateGPUGraphicsPipeline(device,&info),*twin=NULL;
  if(!pipeline){fprintf(stderr,"HeliX SDL_GPU: a pipeline didn't build: %s\n",SDL_GetError());return 0;}

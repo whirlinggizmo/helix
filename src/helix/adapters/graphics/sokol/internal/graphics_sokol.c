@@ -203,15 +203,15 @@ static sg_blend_state blend_of(int blend){
  return (sg_blend_state){.enabled=true,.src_factor_rgb=SG_BLENDFACTOR_SRC_ALPHA,.dst_factor_rgb=dst,.src_factor_alpha=SG_BLENDFACTOR_ONE,.dst_factor_alpha=dst};
 }
 /* A pipeline as helix.graphics.PipelineDesc describes it, its ints in order: shader, primitive (0 triangles, 1 lines), indexed, blend,
-   depth test, depth write, cull back, clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the buffer count, then each
+   depth test (0 none, 1 less or equal, 2 greater), depth write, cull (0 none, 1 back, 2 front), clockwise, depth only, clip flip (0 none, 1 clip scale, 2 view-projection), the buffer count, then each
    buffer's stride, instanced and attribute count, each attribute's slot, components and offset. 0 for a description it can't make. */
 uint32_t helix_pipeline(const int *desc,int count){
  if(!desc||count<11)return 0;
  const uint32_t shader=(uint32_t)desc[0];const int lines=desc[1]==1,indexed=desc[2],blend=desc[3],depth_only=desc[8],clockwise=desc[7];
  if(blend<0||blend>2||(shader&0xffff)>=256||sg_query_shader_state((sg_shader){shader})!=SG_RESOURCESTATE_VALID)return 0;
  sg_pipeline_desc pd={.shader={shader},.primitive_type=lines?SG_PRIMITIVETYPE_LINES:SG_PRIMITIVETYPE_TRIANGLES,
-  .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
-  .cull_mode=desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0].blend=blend_of(blend)};
+  .index_type=indexed?SG_INDEXTYPE_UINT32:SG_INDEXTYPE_NONE,.depth={.compare=desc[4]==2?SG_COMPAREFUNC_GREATER:desc[4]?SG_COMPAREFUNC_LESS_EQUAL:SG_COMPAREFUNC_ALWAYS,.write_enabled=desc[5]!=0},
+  .cull_mode=desc[6]==2?SG_CULLMODE_FRONT:desc[6]?SG_CULLMODE_BACK:SG_CULLMODE_NONE,.face_winding=clockwise?SG_FACEWINDING_CW:SG_FACEWINDING_CCW,.colors[0].blend=blend_of(blend)};
  /* Depth alone: a shadow pass's, no color attachment. */
  if(depth_only){pd.depth.pixel_format=SG_PIXELFORMAT_DEPTH;pd.color_count=0;pd.sample_count=1;}
  const int buffers=desc[10];int at=11,strides[MAX_BUFFERS]={0},instanced[MAX_BUFFERS]={0},read[MAX_BUFFERS]={0};

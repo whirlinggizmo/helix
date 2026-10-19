@@ -83,9 +83,9 @@ class Pipelines {
 	static function describe(shader:Int, buffers:Array<VertexBuffer>, blend:BlendMode, flip:ClipFlip, ?options:{
 		?primitive:Primitive,
 		?indexed:Bool,
-		?depthTest:Bool,
+		?depthTest:DepthTest,
 		?depthWrite:Bool,
-		?cullBack:Bool,
+		?cull:CullFace,
 		?clockwise:Bool,
 		?depthOnly:Bool
 	}):PipelineDesc
@@ -95,9 +95,9 @@ class Pipelines {
 			primitive: options != null && options.primitive != null ? options.primitive : Triangles,
 			indexed: options != null && options.indexed == true,
 			blend: blend,
-			depthTest: options != null && options.depthTest == true,
+			depthTest: options != null && options.depthTest != null ? options.depthTest : Off,
 			depthWrite: options != null && options.depthWrite == true,
-			cullBack: options != null && options.cullBack == true,
+			cull: options != null && options.cull != null ? options.cull : None,
 			clockwise: options != null && options.clockwise == true,
 			depthOnly: options != null && options.depthOnly == true,
 			flip: flip
@@ -110,20 +110,20 @@ class Pipelines {
 	/** Vertex-colored 3D triangles (Color3DLayout, the view-projection its block), depth tested and written. */
 	public function color3D():Int
 		return pipeline(program("color3d", () -> Color3DLayout.source()), 0,
-			s -> describe(s, Color3DLayout.buffers(), Opaque, ViewProjection, {depthTest: true, depthWrite: true}));
+			s -> describe(s, Color3DLayout.buffers(), Opaque, ViewProjection, {depthTest: LessEqual, depthWrite: true}));
 
 	/** Color3D's vertices as lines, two each. */
 	public function lines3D():Int
 		return pipeline(program("color3d", () -> Color3DLayout.source()), 1,
-			s -> describe(s, Color3DLayout.buffers(), Opaque, ViewProjection, {primitive: Lines, depthTest: true, depthWrite: true}));
+			s -> describe(s, Color3DLayout.buffers(), Opaque, ViewProjection, {primitive: Lines, depthTest: LessEqual, depthWrite: true}));
 
 	// A lit model's state over buffers: indexed, depth tested and written (see-through ones too), back faces culled unless double sided.
 	static function lit(shader:Int, buffers:Array<VertexBuffer>, blend:BlendMode, doubleSided:Bool, clockwise:Bool):PipelineDesc
 		return describe(shader, buffers, blend, ViewProjection, {
 			indexed: true,
-			depthTest: true,
+			depthTest: LessEqual,
 			depthWrite: true,
-			cullBack: !doubleSided,
+			cull: doubleSided ? None : Back,
 			clockwise: clockwise
 		});
 
@@ -140,13 +140,43 @@ class Pipelines {
 		return pipeline(program("skinned3d", () -> Skinned3DLayout.source()), variant(blend, doubleSided, clockwise),
 			s -> lit(s, Skinned3DLayout.buffers(), blend, doubleSided, clockwise));
 
-	/** An app's surface shader (its handle) drawing lit models, as lit3d's variants. */
-	public function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
-		return pipeline(shader, variant(blend, doubleSided, clockwise), s -> lit(s, Lit3DLayout.buffers(), blend, doubleSided, clockwise));
+	/** An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DLayout's buffers) drawing lit models, as
+		lit3d's variants. */
+	public function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool, skinned:Bool):Int
+		return pipeline(shader, variant(blend, doubleSided, clockwise),
+			s -> lit(s, skinned ? Skinned3DLayout.buffers() : Lit3DLayout.buffers(), blend, doubleSided, clockwise));
+
+	/** A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DLayout's
+		buffers), from the lit models' records: depth only, nothing culled, as the framework's casters. */
+	public function surfaceCaster(shader:Int, skinned:Bool):Int
+		return pipeline(shader, 0, s -> describe(s, skinned ? Skinned3DLayout.buffers() : Lit3DLayout.buffers(), Opaque, ViewProjection, {
+			indexed: true,
+			depthTest: LessEqual,
+			depthWrite: true,
+			depthOnly: true
+		}));
+
+	/** A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from the lit models' records: an outline's shell (front
+		faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater,
+		not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not. */
+	public function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int {
+		var options = {
+			indexed: true,
+			depthTest: behind ? Greater : LessEqual,
+			depthWrite: !behind,
+			cull: behind ? Back : Front,
+			clockwise: clockwise
+		};
+		var key = (behind ? 1 : 0) + (clockwise ? 2 : 0);
+		return skinned ? pipeline(program("skinnedflat3d", () -> Skinnedflat3DLayout.source()), key,
+			s -> describe(s, Skinnedflat3DLayout.buffers(), behind ? Alpha : Opaque, ViewProjection,
+				options)) : pipeline(program("flat3d", () -> Flat3DLayout.source()), key,
+				s -> describe(s, Flat3DLayout.buffers(), behind ? Alpha : Opaque, ViewProjection, options));
+	}
 
 	// A quad an instance (sprites, particles): indexed, depth tested, written only when opaque, nothing culled.
 	static function quads(shader:Int, buffers:Array<VertexBuffer>, blend:BlendMode):PipelineDesc
-		return describe(shader, buffers, blend, ViewProjection, {indexed: true, depthTest: true, depthWrite: blend == Opaque});
+		return describe(shader, buffers, blend, ViewProjection, {indexed: true, depthTest: LessEqual, depthWrite: blend == Opaque});
 
 	/** 3D sprites (Sprite3DLayout). */
 	public function sprite3D(blend:BlendMode):Int
@@ -160,7 +190,7 @@ class Pipelines {
 	public function depth3D():Int
 		return pipeline(program("depth3d", () -> Depth3DLayout.source()), 0, s -> describe(s, Depth3DLayout.buffers(), Opaque, ViewProjection, {
 			indexed: true,
-			depthTest: true,
+			depthTest: LessEqual,
 			depthWrite: true,
 			depthOnly: true
 		}));
@@ -170,14 +200,14 @@ class Pipelines {
 		return pipeline(program("skinneddepth3d", () -> Skinneddepth3DLayout.source()), 0,
 			s -> describe(s, Skinneddepth3DLayout.buffers(), Opaque, ViewProjection, {
 				indexed: true,
-				depthTest: true,
+				depthTest: LessEqual,
 				depthWrite: true,
 				depthOnly: true
 			}));
 
 	/** An environment behind a 3D scene (Background3DLayout): one triangle at the far plane, depth tested (less or equal) and not written. */
 	public function background3D():Int
-		return pipeline(program("background3d", () -> Background3DLayout.source()), 0, s -> describe(s, [], Opaque, ClipScale, {depthTest: true}));
+		return pipeline(program("background3d", () -> Background3DLayout.source()), 0, s -> describe(s, [], Opaque, ClipScale, {depthTest: LessEqual}));
 
 	/** An app's screen effect (its handle): one triangle over the viewport, no depth. */
 	public function screen(shader:Int, blend:BlendMode):Int
@@ -200,7 +230,9 @@ class Pipelines {
 			"particle3d" => () -> Particle3DLayout.source(),
 			"depth3d" => () -> Depth3DLayout.source(),
 			"skinneddepth3d" => () -> Skinneddepth3DLayout.source(),
-			"background3d" => () -> Background3DLayout.source()
+			"background3d" => () -> Background3DLayout.source(),
+			"flat3d" => () -> Flat3DLayout.source(),
+			"skinnedflat3d" => () -> Skinnedflat3DLayout.source()
 		];
 		for (name => p in programs) {
 			var fresh = sources[name]();

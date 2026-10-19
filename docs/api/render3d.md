@@ -636,6 +636,8 @@ function getPart(index:Int):Null<Part>
 function addPart(mesh:Mesh, ?material:Material):Void
 var mesh(get, set):Null<Mesh>
 var material(get, set):Null<Material>
+var passCount(get, never):Int
+function getPass(index:Int):Null<ModelPass>
 var tint:Int
 var shadowCasting(get, set):Bool
 var shadowReceiving(get, set):Bool
@@ -651,6 +653,8 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
 - `addPart`: Adds a part, mesh drawn with material (a new white one when null), after the others.
 - `mesh`: Its first part's mesh, or null with no parts. Assigned to a model with no parts, it makes that part (white).
 - `material`: Its first part's material, or null with no parts. Assigned to a model with no parts, it makes that part (with no mesh).
+- `passCount`: How many extra passes it's drawn in (ModelPass: helix.shaders.Outline and Silhouette add themselves).
+- `getPass`: Its extra pass at index, in the order added; null past the end.
 - `tint`: Its tint, 0xRRGGBBAA.
 - `shadowCasting`: Whether it casts shadows (from the lights that cast them; see-through models never do). True by default.
 - `shadowReceiving`: Whether shadows fall on it. True by default.
@@ -708,6 +712,24 @@ function instantiate(?name:String = ""):Node3D
 - `getClip`: The animation named name: its whole name, or the part after a "|" (a Blender export names a clip "Armature|Walk", so "Walk" finds it); null for none.
 - `materials`: Its materials, in the file's order: change one and every copy's parts with it change.
 - `instantiate`: A new node tree of the file's default scene, under a group named name: each of the file's nodes as one node of its name, transform and children: a node with a mesh a Model (its primitives the model's parts, sharing the file's meshes and materials), a light node a DirectionalLight, PointLight or SpotLight as the file says (of its own, each copy), a camera node a Camera3D (of its own, each copy) seeing from the node down its -z with its +y up, as glTF's does, so nothing is turned, and any other a group (a bare Node3D: a joint, an empty). A node with both a mesh and a light is the model, the light its first child; one with both a mesh and a camera is the model, the camera a child named the node's name with "_camera" appended.
+
+## ModelPass
+
+*class* in `src/helix/render3d/ModelPass.hx`
+
+An extra pass a model is drawn in after the stage's opaque models: the model again in one flat color, from the same records as its parts (static or skinned, instanced like it), either pushed out along its normals into a shell whose far side shows past its edges (an outline: helix.shaders.Outline), or drawn only where something nearer hides it (a silhouette: helix.shaders.Silhouette). Each kind's constructor adds it to its model. A stage draws its opaque models without silhouettes and its opaque sprites, then the silhouettes, then the opaque models with them (so a model's own parts never hide it), then every outline, then what's see-through.
+
+```haxe
+var model(default, null):Model
+var color:Int
+var enabled:Bool
+function remove():Bool
+```
+
+- `model`: The model it draws.
+- `color`: Its color, 0xRRGGBBAA: a display color (sRGB, written as it is, as sprites' are), its alpha blending a silhouette over what hides it.
+- `enabled`: Whether it draws: true to start.
+- `remove`: Takes it off its model, which draws it no more. False when it was taken off before.
 
 ## Models
 
@@ -1051,7 +1073,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Stage3D.hx`
 
-A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched.
+A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched. Surface shaders: a material's (Material.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's passes (ModelPass: outlines, silhouettes) are drawn from its records after the opaque models.
 
 ```haxe
 function new(?gpu:IGraphics)

@@ -22,7 +22,11 @@ import helix.render2d.Texture2D;
 	Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and
 	reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes
 	into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR
-	scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched. */
+	scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched.
+
+	Surface shaders: a material's (Material.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their
+	shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's
+	passes (ModelPass: outlines, silhouettes) are drawn from its records after the opaque models. */
 class Stage3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
 	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
@@ -30,9 +34,10 @@ class Stage3D {
 	static inline var TABLE_LIGHTS = 16;
 	static inline var MODEL_LIGHTS = 8;
 	static inline var SHADOW_LIGHTS = 4;
-	// The fragment block's layout (lit3d_shared.glsl's lit3d_fs_members): the table's four arrays, then the shadows', tone mapping and the
-	// environment.
-	static inline var LIGHT_POSITION = 80;
+	// The fragment block's layout (lit3d_shared.glsl's lit3d_fs_members): the camera, the ambient light, the material's (its base color, pbr,
+	// emission, flash and rim), the table's four arrays, then the shadows', tone mapping and the environment.
+	static inline var MATERIAL = 32;
+	static inline var LIGHT_POSITION = 112;
 	static inline var LIGHT_DIRECTION = LIGHT_POSITION + TABLE_LIGHTS * 16;
 	static inline var LIGHT_RADIANCE = LIGHT_DIRECTION + TABLE_LIGHTS * 16;
 	static inline var LIGHT_SPOT = LIGHT_RADIANCE + TABLE_LIGHTS * 16;
@@ -103,6 +108,17 @@ class Stage3D {
 	var skinnedCasterCapacity = 16;
 	var skinnedCasterBuffer:Int;
 	var skinnedCasterRecords:Bytes;
+	// The records of casters a surface shader draws (its caster: Lit3DLayout's, as the models' own), apart again.
+	var shadedCasterCapacity = 16;
+	var shadedCasterBuffer:Int;
+	var shadedCasterRecords:Bytes;
+	// The models' passes of a draw (ModelPass): each an item's place in the draw and one of its model's passes, sorted into runs.
+	var passDraws:Array<PassDraw> = [];
+	var passDrawCount = 0;
+	var passUniforms = [
+		Bytes.alloc(Flat3DLayout.vertexUniformBytes),
+		Bytes.alloc(Flat3DLayout.fragmentUniformBytes)
+	];
 	// The joints of the pass's skinned models, and the skinned models the walk met, placed once it has posed every joint.
 	var palette:JointPalette;
 	// Picking: the walk testing what it meets against a ray, the nearest hit so far, a skinned model's vertices posed on the CPU.
@@ -173,6 +189,8 @@ class Stage3D {
 		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
 		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
 		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+		shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DLayout.instanceStride);
+		shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DLayout.instanceStride);
 		palette = new JointPalette(gpu);
 		pickPalette = new JointPalette(gpu);
 		noShadows = gpu.createShadowMap(1, 1);
@@ -498,7 +516,8 @@ class Stage3D {
 		};
 	}
 
-	// Draws layer's casters into it, through lightViewProjection: those its view reaches, alike meshes one draw.
+	// Draws layer's casters into it, through lightViewProjection: those its view reaches, the framework's static ones, its skinned ones, then
+	// those a surface shader draws, each kind's alike ones together, one draw.
 	function drawLayer(layer:Int):Void {
 		viewPlanes(lightViewProjection, lightPlanes);
 		layerCasters.resize(0);
@@ -508,50 +527,73 @@ class Stage3D {
 				layerCasters.push(c);
 		}
 		gpu.beginShadowPass(shadowMap, layer);
-		// Skinned casters after the others, each kind's alike meshes together.
-		layerCasters.sort((a, b) -> a.skinned != b.skinned ? (a.skinned ? 1 : -1) : a.mesh.id - b.mesh.id);
-		var n = 0;
-		while (n < layerCasters.length && !layerCasters[n].skinned)
+		layerCasters.sort((a, b) -> compareCasters(a, b));
+		lightViewProjection.writeTo(depthUniforms);
+		var n = 0, total = layerCasters.length;
+		while (n < total && casterKind(layerCasters[n]) == 0)
 			n++;
-		drawSkinnedCasters(n);
-		layerCasters.resize(n);
-		if (n > 0) {
-			if (n > casterCapacity) {
-				while (casterCapacity < n)
-					casterCapacity *= 2;
-				gpu.destroyBuffer(casterBuffer);
-				gpu.destroyBuffer(skinnedCasterBuffer);
-				palette.destroy();
-				casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
-				casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
-			}
-			for (i in 0...n) {
-				var w = layerCasters[i].node.worldMatrix,
-					at = i * Depth3DLayout.instanceStride;
-				for (row in 0...3)
-					for (col in 0...4)
-						casterRecords.setFloat(at + Depth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
-			}
-			gpu.updateBuffer(casterBuffer, casterRecords, n * Depth3DLayout.instanceStride);
-			lightViewProjection.writeTo(depthUniforms);
-			var uniforms = [depthUniforms], i = 0;
-			while (i < n) {
-				var last = i, mesh = layerCasters[i].mesh;
-				while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
-					last++;
-				gpu.draw(pipelines.depth3D(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.indexCount, i, last - i + 1, [],
-					[], uniforms);
-				shadowDraws++;
-				i = last + 1;
-			}
-			shadowCasters += n;
-		}
+		var m = n;
+		while (m < total && casterKind(layerCasters[m]) == 1)
+			m++;
+		drawStaticCasters(n);
+		drawSkinnedCasters(n, m);
+		drawShadedCasters(m, total);
+		shadowCasters += total;
 		gpu.endTargetPass();
 	}
 
-	// Draws the layer's skinned casters, those from first on in layerCasters, through the skinned depth program.
-	function drawSkinnedCasters(first:Int):Void {
-		var n = layerCasters.length - first;
+	// Which kind of caster: 0 the framework's static, 1 its skinned, 2 one a surface shader draws.
+	static inline function casterKind(c:Caster):Int
+		return c.program != null ? 2 : c.skinned ? 1 : 0;
+
+	// Casters in their drawing order: by kind, then a shader's by its program and material, then by mesh.
+	static function compareCasters(a:Caster, b:Caster):Int {
+		var kind = casterKind(a) - casterKind(b);
+		if (kind != 0)
+			return kind;
+		if (a.program != null) {
+			if (a.program.handle != b.program.handle)
+				return a.program.handle - b.program.handle;
+			if (a.material.id != b.material.id)
+				return a.material.id - b.material.id;
+		}
+		return a.mesh.id - b.mesh.id;
+	}
+
+	// Draws the layer's first n casters, the framework's static ones, through the depth program.
+	function drawStaticCasters(n:Int):Void {
+		if (n == 0)
+			return;
+		if (n > casterCapacity) {
+			while (casterCapacity < n)
+				casterCapacity *= 2;
+			gpu.destroyBuffer(casterBuffer);
+			casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
+			casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
+		}
+		for (i in 0...n) {
+			var w = layerCasters[i].node.worldMatrix,
+				at = i * Depth3DLayout.instanceStride;
+			for (row in 0...3)
+				for (col in 0...4)
+					casterRecords.setFloat(at + Depth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+		}
+		gpu.updateBuffer(casterBuffer, casterRecords, n * Depth3DLayout.instanceStride);
+		var uniforms = [depthUniforms], i = 0;
+		while (i < n) {
+			var last = i, mesh = layerCasters[i].mesh;
+			while (last + 1 < n && layerCasters[last + 1].mesh == mesh)
+				last++;
+			gpu.draw(pipelines.depth3D(), [mesh.getVertexBuffer(gpu), casterBuffer], mesh.getIndexBuffer(gpu), 0, mesh.indexCount, i, last - i + 1, [], [],
+				uniforms);
+			shadowDraws++;
+			i = last + 1;
+		}
+	}
+
+	// Draws the layer's casters first to end (the framework's skinned ones) through the skinned depth program.
+	function drawSkinnedCasters(first:Int, end:Int):Void {
+		var n = end - first;
 		if (n <= 0)
 			return;
 		if (n > skinnedCasterCapacity) {
@@ -571,7 +613,6 @@ class Stage3D {
 			skinnedCasterRecords.setFloat(at + Skinneddepth3DLayout.skinOffset, c.jointBase);
 		}
 		gpu.updateBuffer(skinnedCasterBuffer, skinnedCasterRecords, n * Skinneddepth3DLayout.instanceStride);
-		lightViewProjection.writeTo(depthUniforms);
 		var uniforms = [depthUniforms], i = 0;
 		while (i < n) {
 			var last = i, mesh = layerCasters[first + i].mesh;
@@ -582,8 +623,49 @@ class Stage3D {
 			shadowDraws++;
 			i = last + 1;
 		}
-		shadowCasters += n;
 	}
+
+	// Draws the layer's casters first to end, those a surface shader draws (its caster: its vertex hook moving them, its fragment stage
+	// discarding what it cuts away), from the lit models' records, with their materials' values and textures; a run alike in program,
+	// material and mesh one draw. The shadow map being drawn is never bound: the stand-in is.
+	function drawShadedCasters(first:Int, end:Int):Void {
+		var n = end - first;
+		if (n <= 0)
+			return;
+		if (n > shadedCasterCapacity) {
+			while (shadedCasterCapacity < n)
+				shadedCasterCapacity *= 2;
+			gpu.destroyBuffer(shadedCasterBuffer);
+			shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DLayout.instanceStride);
+			shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DLayout.instanceStride);
+		}
+		for (i in 0...n) {
+			var c = layerCasters[first + i];
+			writeInstance(shadedCasterRecords, i, c.node, c.skinned, c.jointBase, null);
+		}
+		gpu.updateBuffer(shadedCasterBuffer, shadedCasterRecords, n * Lit3DLayout.instanceStride);
+		var i = 0;
+		while (i < n) {
+			var last = i, c = layerCasters[first + i];
+			while (last + 1 < n) {
+				var next = layerCasters[first + last + 1];
+				if (next.program != c.program || next.material != c.material || next.mesh != c.mesh)
+					break;
+				last++;
+			}
+			var program = c.program, mesh = c.mesh;
+			writeMaterial(c.material, fragmentUniforms);
+			var bound = surfaceTextures(program, c.material, noShadows);
+			gpu.draw(pipelines.surfaceCaster(program.handle, c.skinned), meshBuffers(mesh, shadedCasterBuffer, c.skinned), mesh.getIndexBuffer(gpu), 0,
+				mesh.indexCount, i, last - i + 1, bound.textures, bound.samplings, surfaceBlocks(program, c.material, depthUniforms));
+			shadowDraws++;
+			i = last + 1;
+		}
+	}
+
+	// A mesh's buffers as a lit draw takes them: its vertices, the instance records, and a skinned draw's skin.
+	function meshBuffers(mesh:Mesh, instances:Int, skinned:Bool):Array<Int>
+		return skinned ? [mesh.getVertexBuffer(gpu), instances, mesh.getSkinBuffer(gpu)] : [mesh.getVertexBuffer(gpu), instances];
 
 	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into
 		hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a
@@ -807,7 +889,7 @@ class Stage3D {
 		palette.upload();
 		chooseLights();
 		for (i in 0...count)
-			writeRecord(i, drawn[i]);
+			writeInstance(records, i, drawn[i].node, drawn[i].skinned, drawn[i].jointBase, drawn[i].lights);
 		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
 		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		viewProjection.writeTo(vertexUniforms);
@@ -815,26 +897,115 @@ class Stage3D {
 		if (background != null)
 			drawBackground(viewProjection);
 		sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ);
-		// The opaque models, the opaque and masked sprites, the see-through models with the blended sprites between them back to front, then the
-		// blended sprites nearer than any of those and the added ones.
-		var i = 0, opaqueSprites = false;
+		// The opaque models, the opaque and masked sprites, the silhouettes where those hide their models, the opaque models with silhouettes
+		// (after them, so a model's own parts never hide it), every model's outline, the see-through models with the blended sprites between
+		// them back to front, then the blended sprites nearer than any of those and the added ones.
+		var i = 0;
+		while (i < count && !drawn[i].blended && !drawn[i].silhouetted) {
+			var last = i;
+			while (last + 1 < count && alike(drawn[i], drawn[last + 1]))
+				last++;
+			drawRun(i, last - i + 1);
+			i = last + 1;
+		}
+		gatherPasses();
+		sprites.drawOpaque();
+		drawPasses(true, viewProjection);
+		while (i < count && !drawn[i].blended) {
+			var last = i;
+			while (last + 1 < count && alike(drawn[i], drawn[last + 1]))
+				last++;
+			drawRun(i, last - i + 1);
+			i = last + 1;
+		}
+		drawPasses(false, viewProjection);
 		while (i < count) {
 			var last = i;
 			while (last + 1 < count && alike(drawn[i], drawn[last + 1]))
 				last++;
-			if (drawn[i].blended) {
-				if (!opaqueSprites) {
-					sprites.drawOpaque();
-					opaqueSprites = true;
-				}
-				sprites.drawBlendedBeyond(drawn[i].depth);
-			}
+			sprites.drawBlendedBeyond(drawn[i].depth);
 			drawRun(i, last - i + 1);
 			i = last + 1;
 		}
-		if (!opaqueSprites)
-			sprites.drawOpaque();
 		sprites.drawRest();
+	}
+
+	// The draw's passes (ModelPass): each enabled pass of each drawn item's model, sorted so alike ones (in kind, mesh, color and push) of items
+	// next to each other in the draw are a run, drawn as one from the items' records.
+	function gatherPasses():Void {
+		passDrawCount = 0;
+		for (i in 0...count) {
+			var node = drawn[i].node;
+			for (k in 0...node.passCount) {
+				var pass = node.getPass(k);
+				if (!pass.enabled)
+					continue;
+				if (passDrawCount == passDraws.length)
+					passDraws.push(new PassDraw());
+				var d = passDraws[passDrawCount++];
+				d.item = i;
+				d.pass = pass;
+			}
+		}
+		if (passDrawCount == 0)
+			return;
+		var head = passDraws.slice(0, passDrawCount);
+		head.sort((a, b) -> comparePasses(a, b));
+		for (k in 0...passDrawCount)
+			passDraws[k] = head[k];
+	}
+
+	// Passes in drawing order: by kind (outlines first), mesh, skinned or not, winding, color and push; then by their item's place in the draw.
+	function comparePasses(a:PassDraw, b:PassDraw):Int {
+		var x = drawn[a.item], y = drawn[b.item];
+		if (a.pass.behind != b.pass.behind)
+			return a.pass.behind ? 1 : -1;
+		if (x.mesh.id != y.mesh.id)
+			return x.mesh.id - y.mesh.id;
+		if (x.skinned != y.skinned)
+			return x.skinned ? 1 : -1;
+		if (x.mirrored != y.mirrored)
+			return x.mirrored ? 1 : -1;
+		if (a.pass.color != b.pass.color)
+			return a.pass.color < b.pass.color ? -1 : 1;
+		if (a.pass.push != b.pass.push)
+			return a.pass.push < b.pass.push ? -1 : 1;
+		return a.item - b.item;
+	}
+
+	// Whether pass draw b continues a's run: alike in everything comparePasses sorts by, its item the next one in the draw.
+	function continuesRun(a:PassDraw, b:PassDraw):Bool {
+		var x = drawn[a.item], y = drawn[b.item];
+		return b.item == a.item + 1 && a.pass.behind == b.pass.behind && x.mesh == y.mesh && x.skinned == y.skinned && x.mirrored == y.mirrored
+			&& a.pass.color == b.pass.color && a.pass.push == b.pass.push;
+	}
+
+	// Draws the gathered passes that draw behind what hides them (silhouettes) or not (outlines), a run of alike ones a draw, through the flat
+	// program from the items' records.
+	function drawPasses(behind:Bool, viewProjection:Mat4):Void {
+		viewProjection.writeTo(passUniforms[0]);
+		var k = 0;
+		while (k < passDrawCount) {
+			var d = passDraws[k];
+			if (d.pass.behind != behind) {
+				k++;
+				continue;
+			}
+			var last = k;
+			while (last + 1 < passDrawCount && continuesRun(passDraws[last], passDraws[last + 1]))
+				last++;
+			var item = drawn[d.item], pass = d.pass, color = pass.color;
+			passUniforms[0].setFloat(64, pass.push);
+			passUniforms[1].setFloat(0, (color >>> 24) / 255);
+			passUniforms[1].setFloat(4, ((color >>> 16) & 255) / 255);
+			passUniforms[1].setFloat(8, ((color >>> 8) & 255) / 255);
+			passUniforms[1].setFloat(12, (color & 255) / 255);
+			gpu.draw(pipelines.flat3D(item.skinned, behind, item.mirrored), meshBuffers(item.mesh, instanceBuffer, item.skinned),
+				item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, d.item, last - k + 1, item.skinned ? [palette.texture] : [],
+				item.skinned ? [Sampling.NEAREST] : [], passUniforms);
+			draws++;
+			k = last + 1;
+		}
 	}
 
 	// The background, behind everything: the environment's background cube in each pixel's direction, through the inverse view-projection.
@@ -1044,18 +1215,22 @@ class Stage3D {
 		for (i in 0...node.partCount) {
 			var part = node.getPart(i), mesh = part.mesh;
 			if (mesh != null && !part.material.blended)
-				gatherPart(node, mesh);
+				gatherPart(node, mesh, part.material);
 		}
 	}
 
-	function gatherPart(node:Model, mesh:Mesh):Void {
+	function gatherPart(node:Model, mesh:Mesh, material:Material):Void {
 		placeBox(node, mesh);
 		if (casterCount == casters.length)
 			casters.push(new Caster());
 		var c = casters[casterCount++];
 		c.node = node;
 		c.mesh = mesh;
+		c.material = material;
 		c.skinned = isSkinned(node, mesh);
+		// A surface shader with a vertex hook or a discard draws its own shadow (Shader.caster); another's is the framework's.
+		var shader = material.shader;
+		c.program = shader == null ? null : c.skinned ? shader.skinned.caster : shader.caster;
 		c.cx = boxX;
 		c.cy = boxY;
 		c.cz = boxZ;
@@ -1086,6 +1261,13 @@ class Stage3D {
 		item.material = material;
 		item.skinned = isSkinned(node, mesh);
 		item.blended = item.material.blended || node.tint & 255 < 255;
+		item.silhouetted = false;
+		if (!item.blended)
+			for (k in 0...node.passCount) {
+				var pass = node.getPass(k);
+				if (pass.enabled && pass.behind)
+					item.silhouetted = true;
+			}
 		// A placement that mirrors (its matrix's determinant below 0) turns the triangles' winding over.
 		item.mirrored = w.get(0) * (w.get(5) * w.get(10) - w.get(9) * w.get(6)) - w.get(4) * (w.get(1) * w.get(10) - w.get(9) * w.get(2))
 			+ w.get(8) * (w.get(1) * w.get(6) - w.get(5) * w.get(2)) < 0;
@@ -1105,6 +1287,8 @@ class Stage3D {
 			return a.blended ? 1 : -1;
 		if (a.blended)
 			return a.depth > b.depth ? -1 : a.depth < b.depth ? 1 : a.order - b.order;
+		if (a.silhouetted != b.silhouetted)
+			return a.silhouetted ? 1 : -1;
 		if (a.material.id != b.material.id)
 			return a.material.id - b.material.id;
 		if (a.mesh.id != b.mesh.id)
@@ -1117,31 +1301,32 @@ class Stage3D {
 	}
 
 	static inline function alike(a:Item, b:Item):Bool
-		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored && a.skinned == b.skinned;
+		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored && a.skinned == b.skinned
+			&& a.silhouetted == b.silhouetted;
 
-	// The record: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the first's w the tangents' handedness, the
-	// second's whether shadows fall on it), the tint (linear).
-	function writeRecord(index:Int, item:Item):Void {
-		var w = item.node.worldMatrix, r = inverse, at = index * Lit3DLayout.instanceStride;
+	// A model's record (Lit3DLayout's) at index in out: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the
+	// first's w the tangents' handedness, the second's whether shadows fall on it, the third's a skinned model's first joint), its lights (the
+	// table's entries, -1 past the last; none without lights) and its tint (linear).
+	function writeInstance(out:Bytes, index:Int, node:Model, skinned:Bool, jointBase:Int, lights:Null<Array<Int>>):Void {
+		var w = node.worldMatrix, r = inverse, at = index * Lit3DLayout.instanceStride;
 		inverse.makeInverse(w);
 		for (row in 0...3)
 			for (col in 0...4)
-				records.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+				out.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
 		// The w of the normals' first row: the tangents' handedness, -1 where the placement mirrors them.
 		var mirrored = r.get(0) * (r.get(5) * r.get(10) - r.get(9) * r.get(6)) - r.get(4) * (r.get(1) * r.get(10) - r.get(9) * r.get(2))
 			+ r.get(8) * (r.get(1) * r.get(6) - r.get(5) * r.get(2)) < 0;
 		for (row in 0...3)
 			for (col in 0...4)
-				records.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
-					col < 3 ? r.get(row * 4 +
-						col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (item.node.shadowReceiving ? 1 : 0) : item.skinned ? item.jointBase : 0);
+				out.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
+					col < 3 ? r.get(row * 4 + col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (node.shadowReceiving ? 1 : 0) : skinned ? jointBase : 0);
 		for (k in 0...MODEL_LIGHTS)
-			records.setFloat(at + (k < 4 ? Lit3DLayout.lights0Offset + k * 4 : Lit3DLayout.lights1Offset + (k - 4) * 4), item.lights[k]);
-		var tint = item.node.tint;
-		records.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
-		records.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
-		records.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
-		records.setFloat(at + Lit3DLayout.tintOffset + 12, (tint & 255) / 255);
+			out.setFloat(at + (k < 4 ? Lit3DLayout.lights0Offset + k * 4 : Lit3DLayout.lights1Offset + (k - 4) * 4), lights == null ? -1 : lights[k]);
+		var tint = node.tint;
+		out.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
+		out.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
+		out.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
+		out.setFloat(at + Lit3DLayout.tintOffset + 12, (tint & 255) / 255);
 	}
 
 	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order
@@ -1358,92 +1543,123 @@ class Stage3D {
 			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.brdfTable, true);
 	}
 
-	// A run of alike models: the material's uniforms, then one instanced draw.
-	function drawRun(first:Int, runCount:Int):Void {
-		var item = drawn[first],
-			material = item.material,
-			color = material.baseColor,
+	// The material's part of the fragment uniforms in u (lit3d_fs_members' from MATERIAL): its base color, metallic, roughness and whether lit,
+	// its emission and the normal map's strength, its hit flash (as much as shows at the stage's time) and its rim light.
+	function writeMaterial(material:Material, u:Bytes):Void {
+		var color = material.baseColor;
+		u.setFloat(MATERIAL, linear(color >>> 24));
+		u.setFloat(MATERIAL + 4, linear((color >>> 16) & 255));
+		u.setFloat(MATERIAL + 8, linear((color >>> 8) & 255));
+		u.setFloat(MATERIAL + 12, (color & 255) / 255);
+		u.setFloat(MATERIAL + 16, material.metallic);
+		u.setFloat(MATERIAL + 20, material.roughness);
+		u.setFloat(MATERIAL + 24, material.lit ? 1 : 0);
+		u.setFloat(MATERIAL + 28, 0);
+		var emissive = material.emissive, strength = material.emissiveStrength;
+		u.setFloat(MATERIAL + 32, linear(emissive >>> 24) * strength);
+		u.setFloat(MATERIAL + 36, linear((emissive >>> 16) & 255) * strength);
+		u.setFloat(MATERIAL + 40, linear((emissive >>> 8) & 255) * strength);
+		u.setFloat(MATERIAL + 44, material.normalTexture == null ? 0 : material.normalScale);
+		var flash = material.flashColor;
+		u.setFloat(MATERIAL + 48, linear(flash >>> 24));
+		u.setFloat(MATERIAL + 52, linear((flash >>> 16) & 255));
+		u.setFloat(MATERIAL + 56, linear((flash >>> 8) & 255));
+		u.setFloat(MATERIAL + 60, material.flashAt(time) * (flash & 255) / 255);
+		var rim = material.rimColor, strength = (rim & 255) / 255;
+		u.setFloat(MATERIAL + 64, linear(rim >>> 24) * strength);
+		u.setFloat(MATERIAL + 68, linear((rim >>> 16) & 255) * strength);
+		u.setFloat(MATERIAL + 72, linear((rim >>> 8) & 255) * strength);
+		u.setFloat(MATERIAL + 76, material.rimPower);
+	}
+
+	// A surface shader program's textures and their samplings by slot: the material's base color and normal map, shadows (the stage's maps, or
+	// a stand-in), the environment and the BRDF table, the joints (its skinned variants'), then its own (white where unset).
+	function surfaceTextures(program:helix.graphics.Shader, material:Material, shadows:Int):{textures:Array<Int>, samplings:Array<Sampling>} {
+		var base = material.texture != null ? material.texture : white, normal = material.normalTexture != null ? material.normalTexture : flat,
+			own = material.shaderParameters.textureSlots, textures = [], samplings = [];
+		for (slot in program.textureSlots) {
+			while (textures.length < slot) {
+				textures.push(0);
+				samplings.push(Sampling.NEAREST);
+			}
+			switch slot {
+				case 2:
+					textures.push(shadows);
+					samplings.push(Sampling.NEAREST);
+				case 3:
+					textures.push(environment != null ? environment.lightingTexture : noEnvironment);
+					samplings.push(Sampling.LINEAR);
+				case 4:
+					textures.push(brdf != null ? brdf.handle : white.handle);
+					samplings.push(Sampling.LINEAR);
+				case 5:
+					textures.push(palette.texture);
+					samplings.push(Sampling.NEAREST);
+				case _:
+					var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
+					textures.push(texture.handle);
+					samplings.push(texture.sampling);
+			}
+		}
+		return {textures: textures, samplings: samplings};
+	}
+
+	// A surface shader program's uniform blocks: the stage's (vertex, a view-projection's 64 bytes, then the time; the fragment uniforms, then
+	// the time), and the material's own values in its own blocks.
+	function surfaceBlocks(program:helix.graphics.Shader, material:Material, vertex:Bytes):Array<Null<Bytes>> {
+		var blocks = [for (size in program.blockSizes) size > 0 ? Bytes.alloc(size) : null],
 			u = fragmentUniforms;
-		u.setFloat(32, linear(color >>> 24));
-		u.setFloat(36, linear((color >>> 16) & 255));
-		u.setFloat(40, linear((color >>> 8) & 255));
-		u.setFloat(44, (color & 255) / 255);
-		u.setFloat(48, material.metallic);
-		u.setFloat(52, material.roughness);
-		u.setFloat(56, material.lit ? 1 : 0);
-		u.setFloat(60, 0);
-		var emissive = material.emissive,
-			strength = material.emissiveStrength,
-			normal = material.normalTexture;
-		u.setFloat(64, linear(emissive >>> 24) * strength);
-		u.setFloat(68, linear((emissive >>> 16) & 255) * strength);
-		u.setFloat(72, linear((emissive >>> 8) & 255) * strength);
-		u.setFloat(76, normal == null ? 0 : material.normalScale);
-		var base = material.texture;
-		if (base == null)
-			base = white;
-		if (normal == null)
-			normal = flat;
-		var shader = material.shader,
-			shadows = shadowLights.length > 0 ? shadowMap : noShadows,
-			cube = environment != null ? environment.lightingTexture : noEnvironment,
-			table = brdf != null ? brdf.handle : white.handle;
-		// A skinned model draws through the skinned program, its joints from the palette; a surface shader isn't skinned yet, so it's ignored.
-		if (item.skinned) {
-			gpu.draw(pipelines.skinned3D(blendOf(item), item.material.doubleSided, item.mirrored),
-				[item.mesh.getVertexBuffer(gpu), instanceBuffer, item.mesh.getSkinBuffer(gpu)], item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first,
-				runCount, [base.handle, normal.handle, shadows, cube, table, palette.texture], [
-					base.sampling,
-					normal.sampling,
-					Sampling.NEAREST,
-					Sampling.LINEAR,
-					Sampling.LINEAR,
-					Sampling.NEAREST
-				], [vertexUniforms, u]);
-			draws++;
-			return;
-		}
-		if (shader == null) {
-			gpu.draw(pipelines.lit3D(blendOf(item), item.material.doubleSided, item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
-				item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first, runCount, [base.handle, normal.handle, shadows, cube, table], [
-					base.sampling,
-					normal.sampling,
-					Sampling.NEAREST,
-					Sampling.LINEAR,
-					Sampling.LINEAR
-				], [vertexUniforms, u]);
-			draws++;
-			return;
-		}
-		// An app's surface shader: the stage's blocks with the time after them, the shader's own values, its own textures (white where unset).
-		var blocks = [for (size in shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
 		if (blocks.length > 0 && blocks[0] != null) {
-			blocks[0].blit(0, vertexUniforms, 0, vertexUniforms.length);
-			blocks[0].setFloat(vertexUniforms.length, time);
+			blocks[0].blit(0, vertex, 0, 64);
+			blocks[0].setFloat(64, time);
 		}
 		if (blocks.length > 1 && blocks[1] != null) {
 			blocks[1].blit(0, u, 0, u.length);
 			blocks[1].setFloat(u.length, time);
 		}
-		var parameters = material.shaderParameters;
-		parameters.write(blocks);
-		var own = parameters.textureSlots, textures = [], samplings = [];
-		for (slot in shader.textureSlots) {
-			while (textures.length < slot) {
-				textures.push(0);
-				samplings.push(Sampling.NEAREST);
-			}
-			if (slot >= 2 && slot <= 4) {
-				textures.push(slot == 2 ? shadows : slot == 3 ? cube : table);
-				samplings.push(slot == 2 ? Sampling.NEAREST : Sampling.LINEAR);
-				continue;
-			}
-			var texture = slot == 0 ? base : slot == 1 ? normal : own.exists(slot) ? own[slot] : white;
-			textures.push(texture.handle);
-			samplings.push(texture.sampling);
+		material.shaderParameters.write(blocks);
+		return blocks;
+	}
+
+	// A run of alike models: the material's uniforms, then one instanced draw: through the lit program (skinned or not), or the material's
+	// surface shader (its skinned variant for a skinned model).
+	function drawRun(first:Int, runCount:Int):Void {
+		var item = drawn[first],
+			material = item.material,
+			u = fragmentUniforms;
+		writeMaterial(material, u);
+		var shader = material.shader,
+			shadows = shadowLights.length > 0 ? shadowMap : noShadows,
+			mesh = item.mesh;
+		if (shader != null) {
+			var program = item.skinned ? shader.skinned : shader,
+				bound = surfaceTextures(program, material, shadows);
+			gpu.draw(pipelines.surface(program.handle, blendOf(item), material.doubleSided, item.mirrored, item.skinned),
+				meshBuffers(mesh, instanceBuffer, item.skinned), mesh.getIndexBuffer(gpu), 0, mesh.indexCount, first, runCount, bound.textures,
+				bound.samplings, surfaceBlocks(program, material, vertexUniforms));
+			draws++;
+			return;
 		}
-		gpu.draw(pipelines.surface(shader.handle, blendOf(item), item.material.doubleSided, item.mirrored), [item.mesh.getVertexBuffer(gpu), instanceBuffer],
-			item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, first, runCount, textures, samplings, blocks);
+		var base = material.texture != null ? material.texture : white,
+			normal = material.normalTexture != null ? material.normalTexture : flat,
+			cube = environment != null ? environment.lightingTexture : noEnvironment,
+			table = brdf != null ? brdf.handle : white.handle;
+		var textures = [base.handle, normal.handle, shadows, cube, table], samplings = [
+			base.sampling,
+			normal.sampling,
+			Sampling.NEAREST,
+			Sampling.LINEAR,
+			Sampling.LINEAR
+		];
+		// A skinned model draws through the skinned program, its joints from the palette.
+		if (item.skinned) {
+			textures.push(palette.texture);
+			samplings.push(Sampling.NEAREST);
+		}
+		var pipeline = item.skinned ? pipelines.skinned3D(blendOf(item), material.doubleSided,
+			item.mirrored) : pipelines.lit3D(blendOf(item), material.doubleSided, item.mirrored);
+		gpu.draw(pipeline, meshBuffers(mesh, instanceBuffer, item.skinned), mesh.getIndexBuffer(gpu), 0, mesh.indexCount, first, runCount, textures,
+			samplings, [vertexUniforms, u]);
 		draws++;
 	}
 
@@ -1457,6 +1673,10 @@ class Stage3D {
 		sprites.destroy();
 		gpu.destroyBuffer(instanceBuffer);
 		gpu.destroyBuffer(casterBuffer);
+		gpu.destroyBuffer(skinnedCasterBuffer);
+		gpu.destroyBuffer(shadedCasterBuffer);
+		palette.destroy();
+		pickPalette.destroy();
 		gpu.destroyTexture(noShadows);
 		if (shadowMap != 0)
 			gpu.destroyTexture(shadowMap);
@@ -1484,6 +1704,9 @@ private class Item {
 
 	/** Whether its placement mirrors it, so its front faces wind clockwise. */
 	public var mirrored = false;
+
+	/** Whether it's opaque and its model has a silhouette (ModelPass behind): drawn after the silhouettes, so its own parts never hide it. */
+	public var silhouetted = false;
 
 	/** Whether it follows joints (Stage3D.isSkinned). */
 	public var skinned = false;
@@ -1522,6 +1745,18 @@ private class Item {
 	public function new() {}
 }
 
+/** One of a model's passes (ModelPass) in a draw: its item's place in the draw, and the pass. Pooled. */
+private class PassDraw {
+	/** Its item's place in the draw (and its record's in the instance buffer). */
+	public var item = 0;
+
+	/** The pass. */
+	public var pass:ModelPass;
+
+	/** An empty one, filled by the draw. */
+	public function new() {}
+}
+
 /** A model's part that casts shadows, gathered by drawShadows. Pooled. */
 private class Caster {
 	/** The model. */
@@ -1529,6 +1764,13 @@ private class Caster {
 
 	/** Its part's mesh. */
 	public var mesh:Mesh;
+
+	/** Its part's material. */
+	public var material:Material;
+
+	/** The program drawing its shadow: its material's surface shader's caster (Shader.caster, its skinned variant's for a skinned part); null
+		for the framework's. */
+	public var program:Null<helix.graphics.Shader>;
 
 	/** Whether it follows joints. */
 	public var skinned = false;

@@ -101,6 +101,27 @@ class Material {
 	function get_shaderParameters():Null<ShaderParameters>
 		return parameters;
 
+	// The hit flash (helix.shaders.HitFlash) and rim light (helix.shaders.Rim) any material shows, drawn by the stage's lit program and every
+	// surface shader alike: off until one is attached. The flash: its color (0xRRGGBBAA, sRGB, its alpha how strong), how much of it (0..1),
+	// and when fading, over how many seconds of the stage's time (0: held), from when a stage first drew it (NaN until then).
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashColor = 0xffffffff;
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashAmount = 0.;
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashSeconds = 0.;
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashStart = Math.NaN;
+	// The rim: its color (0xRRGGBBAA, sRGB, its alpha how strong; black for none) and power (how tight to the silhouette, above 0).
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimColor = 0x000000ff;
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimPower = 3.;
+
+	// How much of the flash shows at the stage's time: held, or fading from all of it to none over its seconds since a stage first drew it.
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) function flashAt(time:Float):Float {
+		if (flashSeconds <= 0)
+			return flashAmount;
+		if (Math.isNaN(flashStart))
+			flashStart = time;
+		var left = 1 - (time - flashStart) / flashSeconds;
+		return flashAmount * (left > 1 ? 1 : left > 0 ? left : 0);
+	}
+
 	/** Whether it is see-through: drawn blended, back to front after the opaque, when set so or when its base color's alpha is below 255.
 		Set, it draws blended even at full alpha, as glTF's alphaMode BLEND says (its texture's alpha then shows through). */
 	public var blended(get, set):Bool;

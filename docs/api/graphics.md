@@ -14,6 +14,18 @@ How a pipeline's colors meet what the framebuffer has: replacing it, blended ove
 
 What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major, its first 64 bytes) whose y row it negates in such a pass.
 
+## CullFace
+
+*abstract* in `src/helix/graphics/PipelineDesc.hx`
+
+Which faces of a pipeline's triangles aren't drawn.
+
+## DepthTest
+
+*abstract* in `src/helix/graphics/PipelineDesc.hx`
+
+Which fragments a pipeline's depth test passes, against the depth already there.
+
 ## Graphics
 
 *class* in `src/helix/graphics/Graphics.hx`
@@ -225,16 +237,16 @@ static function build(width:Int, height:Int, rgba:haxe.io.Bytes):Array<haxe.io.B
 
 *typedef* in `src/helix/graphics/PipelineDesc.hx`
 
-A pipeline, everything a draw through it fixes: the program (an IGraphics.createShader handle), its vertex buffers' layout, what it draws, whether its draws are indexed (uint32 indices), how its colors meet the target's (blend), the depth test (less or equal) and write, back-face culling and which winding is the front, whether it writes depth alone (a shadow pass's), and its block 0's clip flip. Shared code describes the framework's pipelines (Pipelines); an adapter only makes what the description says.
+A pipeline, everything a draw through it fixes: the program (an IGraphics.createShader handle), its vertex buffers' layout, what it draws, whether its draws are indexed (uint32 indices), how its colors meet the target's (blend), the depth test and write, which faces are culled and which winding is the front, whether it writes depth alone (a shadow pass's), and its block 0's clip flip. Shared code describes the framework's pipelines (Pipelines); an adapter only makes what the description says.
 
 - `shader:Int`
 - `primitive:Primitive`
 - `indexed:Bool`
 - `flip:ClipFlip`
 - `depthWrite:Bool`
-- `depthTest:Bool`
+- `depthTest:DepthTest`
 - `depthOnly:Bool`
-- `cullBack:Bool`
+- `cull:CullFace`
 - `clockwise:Bool`
 - `buffers:Array<VertexBuffer>`
 - `blend:BlendMode`
@@ -254,7 +266,9 @@ function color3D():Int
 function lines3D():Int
 function lit3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
 function skinned3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
-function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
+function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool, skinned:Bool):Int
+function surfaceCaster(shader:Int, skinned:Bool):Int
+function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int
 function sprite3D(blend:BlendMode):Int
 function particle3D(blend:BlendMode):Int
 function depth3D():Int
@@ -271,7 +285,9 @@ function screen(shader:Int, blend:BlendMode):Int
 - `lines3D`: Color3D's vertices as lines, two each.
 - `lit3D`: Lit models (Lit3DLayout): blended or not, double sided or not, front faces clockwise (a mirrored placement's) or not.
 - `skinned3D`: Skinned lit models (Skinned3DLayout: Lit3D's buffers and the skin), as lit3d's variants.
-- `surface`: An app's surface shader (its handle) drawing lit models, as lit3d's variants.
+- `surface`: An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DLayout's buffers) drawing lit models, as lit3d's variants.
+- `surfaceCaster`: A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DLayout's buffers), from the lit models' records: depth only, nothing culled, as the framework's casters.
+- `flat3D`: A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from the lit models' records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
 - `sprite3D`: 3D sprites (Sprite3DLayout).
 - `particle3D`: Particles (Particle3DLayout).
 - `depth3D`: Shadow-map casters (Depth3DLayout): depth only, nothing culled (a one-sided floor still casts).
@@ -453,12 +469,15 @@ A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU bind
 
 *class* in `src/helix/graphics/Shader.hx`
 
-An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps reloadCount; its pipelines (Pipelines) are made again over the new program as they're next asked for.
+An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen" or "surface"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
 
 ```haxe
+static var FORMAT(inline, null):Int
 static function fromText(gpu:IGraphics, text:String):Shader
 var handle(default, null):Int
 var kind(default, null):String
+var skinned(default, null):Null<Shader>
+var caster(default, null):Null<Shader>
 var reloadCount(get, never):Int
 var blockSizes(get, never):Array<Int>
 function getParameter(name:String):Null<ShaderParameter>
@@ -467,15 +486,18 @@ var textureSlots(get, never):Array<Int>
 function destroy():Void
 ```
 
-- `fromText`: Builds a shader from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
+- `FORMAT`: The .hxshader format it reads (tools/pack_shader.py's FORMAT).
+- `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
 - `handle`: The IGraphics shader handle.
 - `kind`: Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's).
+- `skinned`: The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot 5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen effect. Its caster draws skinned casters.
+- `caster`: The program drawing its shadow casters into a shadow map: the depth pass with its vertex hook, its fragment stage run for what it discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a screen effect.
 - `reloadCount`: How many times it has been replaced by a reload: a pipeline made before the latest is stale.
 - `blockSizes`: Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks.
 - `getParameter`: One of its own parameters by name, or null.
 - `getTextureSlot`: One of its own textures' slot by name, or -1.
 - `textureSlots`: The texture slots it samples, the framework's and its own, in order (there may be gaps: a slot it doesn't use).
-- `destroy`: Frees the program and the pipelines made over it.
+- `destroy`: Frees the programs, its variants' too, and the pipelines made over them.
 
 ## ShaderBlock
 

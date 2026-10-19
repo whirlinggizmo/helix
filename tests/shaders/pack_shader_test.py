@@ -1,5 +1,6 @@
 """Checks of tools/pack_shader.py against real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members'
-std140 offsets, its textures, both dialects; the shaders it refuses; the shader library (src/helix/shaders) packed for every backend, SDL_GPU's
+std140 offsets, its textures, both dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a
+vertex hook or a discard) and its own textures after the joints; the shader library (src/helix/shaders) packed for every backend, SDL_GPU's
 dialects too (glslang and SPIRV-Cross, fetched by tools/gpu_shaders.py when missing); and the library packed into generated Haxe, again only
 when changed, and gone with its source."""
 import argparse
@@ -36,17 +37,22 @@ void main() {
 '''
 
 
+def pack(source):
+    """source packed as an .hxshader file would be, read back."""
+    with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
+        glsl, out = Path(scratch) / 'shader.glsl', Path(scratch) / 'shader.hxshader'
+        glsl.write_text(source, encoding='utf-8')
+        pack_shader.pack(SHDC, glsl, out)
+        return json.loads(out.read_text(encoding='utf-8'))
+
+
 class PackShaderTests(unittest.TestCase):
     def pack(self, source):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
-            glsl, out = Path(scratch) / 'effect.glsl', Path(scratch) / 'effect.hxshader'
-            glsl.write_text(source, encoding='utf-8')
-            pack_shader.pack(SHDC, glsl, out)
-            return json.loads(out.read_text(encoding='utf-8'))
+        return pack(source)
 
     def test_screen_effect(self):
         shader = self.pack(EFFECT)
-        self.assertEqual(shader['helixShader'], 1)
+        self.assertEqual(shader['helixShader'], 2)
         self.assertEqual(shader['kind'], 'screen')
         self.assertEqual(shader['attributes'], [])
         for dialect, version in (('glsl410', '#version 410'), ('glsl300es', '#version 300 es')):
@@ -80,6 +86,80 @@ class PackShaderTests(unittest.TestCase):
         self.refused(EFFECT.replace('float strength;', 'int strength;').replace('c.rgb * strength', 'c.rgb * float(strength)'))
 
 
+SURFACE = '''@fs fs
+@include_block helix_surface
+layout(binding=2) uniform params {
+    vec4 tint;
+};
+void main() {
+    vec4 base = helix_base() * tint;
+    helix_output(helix_shade(helix_normal(), base), base.a);
+}
+@end
+'''
+HOOK = '''@block vertex
+layout(binding=3) uniform swell {
+    float height;
+};
+void helix_vertex(inout vec3 position, inout vec3 normal) {
+    position += normal * height;
+}
+@end
+'''
+
+
+class SurfaceTests(unittest.TestCase):
+    def pack(self, source):
+        return pack(source)
+
+    def test_skinned_variant(self):
+        shader = self.pack(SURFACE)
+        self.assertEqual(shader['kind'], 'surface')
+        skinned = shader['skinned']
+        self.assertEqual(skinned['attributes'][-2:], ['joints', 'weights'])
+        self.assertEqual(skinned['attributes'][:-2], shader['attributes'])
+        joints = [t for t in skinned['textures'] if t['slot'] == 5]
+        self.assertEqual([(t['name'], t['stage'], t['data']) for t in joints], [('helix_joint_texture', 'vertex', True)])
+        self.assertNotIn(5, [t['slot'] for t in shader['textures']])
+        # The same parameters, at the same offsets, in both.
+        own = lambda s: [b['members'] for b in s['uniformBlocks'] if b['slot'] == 2]
+        self.assertEqual(own(shader), own(skinned))
+        self.assertIn('helix_joint_texture', skinned['glsl300es']['vertex'])
+
+    def test_no_caster_without_hook_or_discard(self):
+        shader = self.pack(SURFACE.replace('void main() {', '// a discard in a comment is no discard\nvoid main() {'))
+        self.assertNotIn('caster', shader)
+        self.assertNotIn('skinnedCaster', shader)
+
+    def test_caster_for_discard(self):
+        shader = self.pack(SURFACE.replace('helix_output(', 'if (base.a < 0.5) discard;\n    helix_output('))
+        for name in ('caster', 'skinnedCaster'):
+            caster = shader[name]
+            fragment = caster['glsl300es']['fragment']
+            # The fragment stage runs for its discard alone: no color written.
+            self.assertIn('discard', fragment)
+            self.assertNotIn('out highp vec4', fragment)
+            self.assertNotIn('out mediump vec4', fragment)
+        self.assertIn('helix_joint_texture', shader['skinnedCaster']['glsl300es']['vertex'])
+
+    def test_caster_for_vertex_hook(self):
+        shader = self.pack(HOOK + SURFACE)
+        self.assertIn('caster', shader)
+        blocks = {b['slot']: b for b in shader['caster']['uniformBlocks']}
+        self.assertEqual([m['name'] for m in blocks[3]['members']], ['height'])
+        self.assertEqual(blocks[3]['stage'], 'vertex')
+
+    def test_own_texture_after_the_joints(self):
+        texture = '''layout(binding=5) uniform texture2D grain;
+layout(binding=5) uniform sampler grain_sampler;
+'''
+        sampled = SURFACE.replace('void main() {', texture + 'void main() {').replace('* tint;', '* tint * texture(sampler2D(grain, grain_sampler), helix_uv());')
+        with self.assertRaises(SystemExit):
+            self.pack(sampled)
+        shader = self.pack(sampled.replace('binding=5', 'binding=6'))
+        self.assertIn((6, 'grain'), [(t['slot'], t['name']) for t in shader['skinned']['textures']])
+
+
 class LibraryTests(unittest.TestCase):
     def test_every_library_shader_packs_for_every_backend(self):
         sources = sorted(pack_shader.LIBRARY.glob('*.glsl'))
@@ -99,6 +179,19 @@ class LibraryTests(unittest.TestCase):
         # helix.shaders.Unlit's color field writes this member: the block at binding 2, a vec4 at its start.
         self.assertEqual([(m['name'], m['type'], m['offset'], m['count']) for m in blocks[2]['members']], [('color', 'vec4', 0, 1)])
 
+    def test_library_parameters(self):
+        # helix.shaders' classes write these members: Toon's, Dissolve's and Water's blocks as the reflection lays them out.
+        expected = {'toon': {2: [('shadow_color', 0), ('bands', 16)]},
+                    'dissolve': {2: [('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)]},
+                    'water': {2: [('deep_color', 0), ('shallow_color', 16), ('sky_color', 32), ('shininess', 48)],
+                              3: [('amplitude', 0), ('wavelength', 4), ('wave_speed', 8)]}}
+        for stem, blocks in expected.items():
+            with self.subTest(shader=stem):
+                shader = pack_shader.packed(SHDC, pack_shader.LIBRARY / f'{stem}.glsl')
+                found = {b['slot']: [(m['name'], m['offset']) for m in b['members']] for b in shader['uniformBlocks'] if 'members' in b}
+                self.assertEqual(found, blocks)
+                self.assertEqual('caster' in shader, stem != 'toon')
+
     def test_pack_library(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
             scratch = Path(scratch)
@@ -110,7 +203,7 @@ class LibraryTests(unittest.TestCase):
             self.assertIn('#if helix_sdl3_gpu\n  return FilmGrainPackedSdlGpu.text();', base)
             # The literal is the .hxshader's JSON as a string: Haxe's escapes are JSON's.
             text = json.loads(json.loads(base.split('  return ', 2)[2].split(';\n', 1)[0]))
-            self.assertEqual((text['helixShader'], text['kind']), (1, 'screen'))
+            self.assertEqual((text['helixShader'], text['kind']), (2, 'screen'))
             self.assertNotIn('sdlGpu', text)
             self.assertIn('sdlGpu', json.loads(json.loads(dialects.split('  return ', 1)[1].split(';\n', 1)[0])))
             self.assertIn('"film_grain" => () -> FilmGrainPacked.text()', (out / 'PackedShaders.hx').read_text(encoding='utf-8'))

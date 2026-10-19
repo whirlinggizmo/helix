@@ -1,7 +1,5 @@
 package helix.graphics;
 
-import haxe.io.Bytes;
-
 /** One of a shader's own parameters: its uniform block's slot, its byte offset there, its type (float, vec2, vec3, vec4, mat4) and how many
 	(1 unless an array). */
 typedef ShaderParameter = {
@@ -11,39 +9,74 @@ typedef ShaderParameter = {
 	final elementCount:Int;
 }
 
-/** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them): its program built on the GPU, its kind ("screen"), its
-	uniform blocks' sizes, its own parameters by name and its own textures by name. A hot reload replaces the program in place and bumps
-	reloadCount; its pipelines (Pipelines) are made again over the new program as they're next asked for. */
+/** One program of a .hxshader as read: its source, its own parameters and textures by name, and once built, its handle. */
+private typedef Program = {
+	final source:ShaderSource;
+	final parameters:Map<String, ShaderParameter>;
+	final slotsByName:Map<String, Int>;
+	var handle:Int;
+}
+
+/** A .hxshader as read: its kind, its program, and a surface shader's variants (null where it has none). */
+private typedef ShaderFile = {
+	final kind:String;
+	final main:Program;
+	final skinned:Null<Program>;
+	final caster:Null<Program>;
+	final skinnedCaster:Null<Program>;
+}
+
+/** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program):
+	its program built on the GPU, its kind ("screen" or "surface"), its uniform blocks' sizes, its own parameters by name and its own textures
+	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
+	caster (drawing its shadow, when it has a vertex hook or a discard). A hot reload replaces the programs in place and bumps reloadCount; their
+	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
+	/** The .hxshader format it reads (tools/pack_shader.py's FORMAT). */
+	public static inline var FORMAT = 2;
+
 	var gpu:IGraphics;
 	var source:ShaderSource;
 	var parameters:Map<String, ShaderParameter>;
 	var slotsByName:Map<String, Int>;
 	var version = 0;
 
-	function new(gpu:IGraphics, text:String) {
+	function new(gpu:IGraphics)
 		this.gpu = gpu;
-		read(text);
-		handle = gpu.createShader(source);
+
+	/** Builds a shader, and its variants, from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that
+		doesn't build. The caller destroys it. */
+	public static function fromText(gpu:IGraphics, text:String):Shader {
+		var file = read(text);
+		build(gpu, file);
+		var shader = new Shader(gpu);
+		shader.take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster);
+		return shader;
 	}
 
-	/** Builds a shader from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller
-		destroys it. */
-	public static function fromText(gpu:IGraphics, text:String):Shader
-		return new Shader(gpu, text);
-
-	function read(text:String):Void {
+	// The programs of a .hxshader's text, not yet built. Throws for a file of another format.
+	static function read(text:String):ShaderFile {
 		var file:Dynamic = haxe.Json.parse(text);
-		if (file.helixShader != 1)
-			throw "Not a HeliX shader file (format 1)";
-		var blocks:Array<Dynamic> = file.uniformBlocks,
-			textures:Array<Dynamic> = file.textures;
-		kind = file.kind;
-		source = {
-			attributes: file.attributes,
-			glsl410: file.glsl410,
-			glsl300es: file.glsl300es,
-			sdlGpu: file.sdlGpu,
+		if (file.helixShader != FORMAT)
+			throw 'Not a HeliX shader file (format $FORMAT): pack it again with tools/pack_shader.py';
+		return {
+			kind: file.kind,
+			main: program(file),
+			skinned: file.skinned == null ? null : program(file.skinned),
+			caster: file.caster == null ? null : program(file.caster),
+			skinnedCaster: file.skinnedCaster == null ? null : program(file.skinnedCaster)
+		};
+	}
+
+	// One program of the file (its main part or a variant): its source, parameters and textures.
+	static function program(part:Dynamic):Program {
+		var blocks:Array<Dynamic> = part.uniformBlocks,
+			textures:Array<Dynamic> = part.textures;
+		var source:ShaderSource = {
+			attributes: part.attributes,
+			glsl410: part.glsl410,
+			glsl300es: part.glsl300es,
+			sdlGpu: part.sdlGpu,
 			uniformBlocks: [
 				for (b in blocks)
 					{
@@ -66,7 +99,7 @@ class Shader {
 					}
 			]
 		};
-		parameters = new Map();
+		var parameters = new Map<String, ShaderParameter>();
 		for (b in blocks) {
 			var members:Array<Dynamic> = b.members;
 			if (members != null)
@@ -80,7 +113,51 @@ class Shader {
 					parameters[(m.name : String)] = parameter;
 				}
 		}
-		slotsByName = [for (t in textures) t.name => t.slot];
+		return {
+			source: source,
+			parameters: parameters,
+			slotsByName: [for (t in textures) (t.name : String) => (t.slot : Int)],
+			handle: 0
+		};
+	}
+
+	// Builds every program of file on gpu: all of them, or (throwing, saying why) none.
+	static function build(gpu:IGraphics, file:ShaderFile):Void {
+		var made:Array<Program> = [];
+		try {
+			for (p in [file.main, file.skinned, file.caster, file.skinnedCaster])
+				if (p != null) {
+					p.handle = gpu.createShader(p.source);
+					made.push(p);
+				}
+		} catch (e:Dynamic) {
+			for (p in made)
+				gpu.destroyShader(p.handle);
+			throw e;
+		}
+	}
+
+	// Takes built programs as its own: main its, the others its variants' (made, kept or dropped as the file has them).
+	function take(kind:String, main:Program, skinned:Null<Program>, caster:Null<Program>, skinnedCaster:Null<Program>):Void {
+		this.kind = kind;
+		source = main.source;
+		parameters = main.parameters;
+		slotsByName = main.slotsByName;
+		handle = main.handle;
+		if (skinned == null)
+			this.skinned = null;
+		else {
+			if (this.skinned == null)
+				this.skinned = new Shader(gpu);
+			this.skinned.take(kind, skinned, null, skinnedCaster, null);
+		}
+		if (caster == null)
+			this.caster = null;
+		else {
+			if (this.caster == null)
+				this.caster = new Shader(gpu);
+			this.caster.take(kind, caster, null, null, null);
+		}
 	}
 
 	/** The IGraphics shader handle. */
@@ -88,6 +165,16 @@ class Shader {
 
 	/** Its kind: "screen" (a screen effect) or "surface" (a Stage3D material's). */
 	public var kind(default, null):String;
+
+	/** The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot
+		5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen effect. Its caster draws skinned
+		casters. */
+	public var skinned(default, null):Null<Shader>;
+
+	/** The program drawing its shadow casters into a shadow map: the depth pass with its vertex hook, its fragment stage run for what it
+		discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a
+		screen effect. */
+	public var caster(default, null):Null<Shader>;
 
 	/** How many times it has been replaced by a reload: a pipeline made before the latest is stale. */
 	public var reloadCount(get, never):Int;
@@ -124,32 +211,40 @@ class Shader {
 	function get_textureSlots():Array<Int>
 		return [for (t in source.textures) t.slot];
 
-	/** The file changed: the program is built again in place. A file that doesn't read or build leaves it as it was (and throws, saying why). */
+	/** The file changed: its programs are built again in place, its variants with them. A file that doesn't read or build leaves it as it was
+		(and throws, saying why). */
 	@:allow(helix.graphics.Shaders)
+	@:allow(helix.shaders.ShaderLibrary)
 	function replace(text:String):Void {
-		var old = {
-			kind: kind,
-			source: source,
-			parameters: parameters,
-			slotsByName: slotsByName
-		};
-		read(text);
-		var made = try gpu.createShader(source) catch (e:Dynamic) {
-			kind = old.kind;
-			source = old.source;
-			parameters = old.parameters;
-			slotsByName = old.slotsByName;
-			throw e;
-		}
-		Pipelines.of(gpu).forgetShader(handle);
-		gpu.destroyShader(handle);
-		handle = made;
-		version++;
+		var file = read(text);
+		if (file.kind != kind)
+			throw 'A $kind shader can\'t become a ${file.kind} one';
+		build(gpu, file);
+		release();
+		take(file.kind, file.main, file.skinned, file.caster, file.skinnedCaster);
+		bump();
 	}
 
-	/** Frees the program and the pipelines made over it. */
-	public function destroy():Void {
+	// Counts a replacement, its variants' too.
+	function bump():Void {
+		version++;
+		if (skinned != null)
+			skinned.bump();
+		if (caster != null)
+			caster.bump();
+	}
+
+	// Frees its programs, its variants' too, and the pipelines made over them.
+	function release():Void {
 		Pipelines.of(gpu).forgetShader(handle);
 		gpu.destroyShader(handle);
+		if (skinned != null)
+			skinned.release();
+		if (caster != null)
+			caster.release();
 	}
+
+	/** Frees the programs, its variants' too, and the pipelines made over them. */
+	public function destroy():Void
+		release();
 }

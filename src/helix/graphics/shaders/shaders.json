@@ -139,7 +139,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 1728
+          "bytes": 1760
         }
       ],
       "textures": [
@@ -419,7 +419,7 @@
         },
         {
           "stage": "fragment",
-          "bytes": 1728
+          "bytes": 1760
         }
       ],
       "textures": [
@@ -510,6 +510,153 @@
         {
           "role": "joints",
           "name": "skinneddepth3d_joint_texture",
+          "data": true,
+          "stage": "vertex"
+        }
+      ]
+    },
+    {
+      "program": "flat3d",
+      "stride": 48,
+      "instanceStride": 144,
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "normal",
+          "name": "normal",
+          "type": "vec3"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal0",
+          "name": "i_normal0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal1",
+          "name": "i_normal1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal2",
+          "name": "i_normal2",
+          "type": "vec4",
+          "instance": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 80
+        },
+        {
+          "stage": "fragment",
+          "bytes": 16
+        }
+      ],
+      "textures": []
+    },
+    {
+      "program": "skinnedflat3d",
+      "stride": 48,
+      "instanceStride": 144,
+      "attributes": [
+        {
+          "role": "position",
+          "name": "position",
+          "type": "vec3"
+        },
+        {
+          "role": "normal",
+          "name": "normal",
+          "type": "vec3"
+        },
+        {
+          "role": "model0",
+          "name": "i_model0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model1",
+          "name": "i_model1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "model2",
+          "name": "i_model2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal0",
+          "name": "i_normal0",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal1",
+          "name": "i_normal1",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "normal2",
+          "name": "i_normal2",
+          "type": "vec4",
+          "instance": true
+        },
+        {
+          "role": "joints",
+          "name": "joints",
+          "type": "vec4",
+          "skin": true
+        },
+        {
+          "role": "weights",
+          "name": "weights",
+          "type": "vec4",
+          "skin": true
+        }
+      ],
+      "uniforms": [
+        {
+          "stage": "vertex",
+          "bytes": 80
+        },
+        {
+          "stage": "fragment",
+          "bytes": 16
+        }
+      ],
+      "textures": [
+        {
+          "role": "joints",
+          "name": "skinnedflat3d_joint_texture",
           "data": true,
           "stage": "vertex"
         }

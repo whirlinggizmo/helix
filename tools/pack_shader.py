@@ -6,12 +6,18 @@ A shader is a fragment stage `@fs fs` that includes one framework block, which d
 
     @include_block helix_screen   a screen effect: drawn over a whole finished frame (helix.graphics.ScreenEffect)
     @include_block helix_surface  a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights
-                                  and their shadows, the material's base color and textures; optionally a vertex hook, `@block vertex` defining
-                                  `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, before placing)
+                                  and their shadows, the material's base color and textures, its hit flash and rim light (applied by
+                                  helix_output); optionally a vertex hook, `@block vertex` defining
+                                  `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing)
+
+A surface shader is packed with its variants: a skinned one (the same fragment stage over a vertex stage moving each vertex by its joints first),
+and, for a shader with a vertex hook or a `discard`, its shadow casters, static and skinned (the depth pass drawn with the hook, and the
+fragment stage run for what it discards, its output writing nothing), so its shadow moves and opens as it does; a shader with neither casts
+through the framework's depth program.
 
 Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by name, in
-either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 5), each with a sampler at the same binding.
-Uniform blocks 0 and 1 are the framework's.
+either stage; its own textures follow the framework's (screen: from binding 1; surface: from binding 6, as 5 is the skinned variants' joint
+texture), each with a sampler at the same binding. Uniform blocks 0 and 1 are the framework's.
 
     python3 tools/pack_shader.py input.glsl output.hxshader"""
 import argparse
@@ -26,7 +32,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 ROOT = Path(__file__).resolve().parents[1]
-FORMAT = 1
+FORMAT = 2
 # The shader library's sources: packed into generated Haxe (pack_library), not loaded as assets.
 LIBRARY = ROOT / 'src/helix/shaders'
 
@@ -67,13 +73,15 @@ void helix_output(vec3 color, float alpha) { helix_frag_color = vec4(color, alph
 @end
 ''',
 }
-KINDS['helix_surface'] = '''
-@vs helix_surface_vs
-layout(binding=0) uniform helix_surface_vs_params {
+# The surface kind's vertex stage, static or skinned (each vertex first moved by its joints, as the framework's skinned programs move theirs:
+# src/helix/graphics/shaders/skinning.glsl), the app's vertex hook after them (in the model's space, as posed).
+SURFACE_VS = '''
+@vs {name}
+layout(binding=0) uniform helix_surface_vs_params {{
     mat4 helix_view_projection;
     vec4 helix_vs_info; // x seconds since the stage began
-};
-float helix_time() { return helix_vs_info.x; }
+}};
+float helix_time() {{ return helix_vs_info.x; }}
 @include_block vertex
 layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;
@@ -88,7 +96,7 @@ layout(location=9) in vec4 i_normal2;
 layout(location=10) in vec4 i_tint;
 layout(location=11) in vec4 i_lights0;
 layout(location=12) in vec4 i_lights1;
-out vec3 helix_v_normal;
+{skin_inputs}out vec3 helix_v_normal;
 out vec4 helix_v_tangent;
 out vec2 helix_v_uv;
 out vec4 helix_v_tint;
@@ -96,32 +104,49 @@ out vec3 helix_v_world;
 out float helix_v_receive;
 flat out vec4 helix_v_lights0;
 flat out vec4 helix_v_lights1;
-void main() {
-    vec3 moved = position, bent = normal;
-    helix_vertex(moved, bent);
+void main() {{
+    vec3 moved = position, bent = normal, turned = tangent.xyz;
+{skin_call}    helix_vertex(moved, bent);
     vec4 p = vec4(moved, 1.0);
     vec3 world = vec3(dot(i_model0, p), dot(i_model1, p), dot(i_model2, p));
     gl_Position = helix_view_projection * vec4(world, 1.0);
     helix_v_normal = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));
-    helix_v_tangent = vec4(dot(i_model0.xyz, tangent.xyz), dot(i_model1.xyz, tangent.xyz), dot(i_model2.xyz, tangent.xyz), tangent.w * i_normal0.w);
+    helix_v_tangent = vec4(dot(i_model0.xyz, turned), dot(i_model1.xyz, turned), dot(i_model2.xyz, turned), tangent.w * i_normal0.w);
     helix_v_uv = uv;
     helix_v_tint = i_tint;
     helix_v_world = world;
     helix_v_receive = i_normal1.w;
     helix_v_lights0 = i_lights0;
     helix_v_lights1 = i_lights1;
-}
+}}
 @end
+'''
+SKIN_INPUTS = '''layout(location=13) in vec4 joints;
+layout(location=14) in vec4 weights;
+// The stage's joint texture (its palette); the model's first joint is its record's i_normal2.w.
+layout(binding=5) uniform texture2D helix_joint_texture;
+layout(binding=5) uniform sampler helix_joint_sampler;
+@image_sample_type helix_joint_texture unfilterable_float
+@sampler_type helix_joint_sampler nonfiltering
+vec4 joint_texel(ivec2 at) { return texelFetch(sampler2D(helix_joint_texture, helix_joint_sampler), at, 0); }
+@include_block skinning
+'''
+SKIN_CALL = '''    skin(int(i_normal2.w + 0.5), joints, weights, moved, bent, turned);
+'''
+SKINNING = ROOT / 'src/helix/graphics/shaders/skinning.glsl'
 
-@block helix_surface
+# The surface kind's fragment block, less its output: what the app's fragment stage gets, in the drawing program and in its shadow caster.
+SURFACE_FS = '''
 // The stage's: its camera, ambient light, lights, environment and tone mapping (as the lit models' shader has them), the material's own
-// values, and the time.
+// values (its hit flash and rim light among them, which helix_output applies), and the time.
 layout(binding=1) uniform helix_surface_params {
     vec4 helix_camera;        // xyz the camera's position
     vec4 helix_ambient_light; // rgb linear, times intensity
     vec4 helix_base_factor;   // the material's base color, linear rgba
     vec4 helix_pbr;           // x metallic, y roughness, z 1 lit (0 unlit)
     vec4 helix_emission;      // rgb the light it gives off, linear; w the normal map's strength
+    vec4 helix_flash;         // the material's hit flash: rgb linear, a how much (0 none)
+    vec4 helix_rim;           // the material's rim light: rgb linear times its strength (black: none), w its power
     vec4 helix_light_position[16];  // the stage's table of lights; a model's own are up to 8 of them (helix_light_index)
     vec4 helix_light_direction[16];
     vec4 helix_light_radiance[16];
@@ -141,8 +166,6 @@ layout(binding=1) uniform texture2D helix_normal_texture;
 layout(binding=1) uniform sampler helix_normal_sampler;
 layout(binding=2) uniform texture2DArray helix_shadow_texture;
 layout(binding=2) uniform sampler helix_shadow_sampler;
-@image_sample_type helix_shadow_texture depth
-@sampler_type helix_shadow_sampler comparison
 layout(binding=3) uniform textureCube helix_environment_texture;
 layout(binding=3) uniform sampler helix_environment_sampler;
 layout(binding=4) uniform texture2D helix_brdf_texture;
@@ -155,7 +178,6 @@ in vec3 helix_v_world;
 in float helix_v_receive;
 flat in vec4 helix_v_lights0;
 flat in vec4 helix_v_lights1;
-out vec4 helix_frag_color;
 const float HELIX_PI = 3.14159265359;
 
 vec3 helix_srgb_to_linear(vec3 c) {
@@ -198,6 +220,8 @@ vec3 helix_normal() {
     }
     return gl_FrontFacing ? n : -n;
 }
+// The direction toward the camera from here, in the world.
+vec3 helix_view_direction() { return normalize(helix_camera.xyz - helix_v_world); }
 float helix_attenuation(float d, float range) {
     float inv_sq = 1.0 / max(d * d, 0.01);
     if (range <= 0.0) return inv_sq;
@@ -288,7 +312,7 @@ vec2 helix_environment_brdf(float n_dot_v, float roughness) {
 vec3 helix_shade(vec3 n, vec4 base) {
     float metallic = helix_metallic(), alpha = helix_roughness() * helix_roughness(), alpha_sq = alpha * alpha;
     vec3 f0 = mix(vec3(0.04), base.rgb, metallic), c_diff = base.rgb * (1.0 - metallic);
-    vec3 v = normalize(helix_camera.xyz - helix_v_world);
+    vec3 v = helix_view_direction();
     float n_dot_v = clamp(abs(dot(n, v)), 1e-4, 1.0);
     vec3 color = helix_ambient_light.rgb * (c_diff + f0);
     for (int i = 0; i < 4; i++) {
@@ -297,7 +321,7 @@ vec3 helix_shade(vec3 n, vec4 base) {
         float lit;
         vec3 radiance = helix_light_lit(i, helix_v_world, n, l, lit);
         // What a shadow keeps: its tint, deepest where it's darkest.
-        int s = int(helix_light_spot[i].z);
+        int s = int(helix_light_spot[helix_light_index(i)].z);
         if (s >= 0) color += helix_shadow_tint[s].rgb * (1.0 - lit) * c_diff;
         float n_dot_l = dot(n, l);
         if (n_dot_l <= 0.0) continue;
@@ -326,9 +350,8 @@ vec3 helix_tonemap_neutral(vec3 color) {
     color *= new_peak / peak;
     return mix(color, vec3(new_peak), 1.0 - 1.0 / (desaturation * (peak - new_peak) + 1.0));
 }
-// The stage's exposure and tone mapping (none, Neutral or ACES) of linear color: into 0..1.
-vec3 helix_tonemap(vec3 color) {
-    color *= helix_tonemap_params.y;
+// The stage's tone mapping (none, Neutral or ACES) of light after the exposure: into 0..1.
+vec3 helix_tonemap_curve(vec3 color) {
     int mode = int(helix_tonemap_params.x + 0.5);
     if (mode == 1) return helix_tonemap_neutral(color);
     if (mode == 2) {
@@ -337,24 +360,47 @@ vec3 helix_tonemap(vec3 color) {
     }
     return color;
 }
-// Writes linear color (tone mapped, then encoded as the framebuffer's sRGB) and alpha; in an HDR scene (a PostProcess chain tone mapping it
-// later) the light after the exposure, as sRGB values running past 1.
+// The stage's exposure and tone mapping (none, Neutral or ACES) of linear color: into 0..1.
+vec3 helix_tonemap(vec3 color) { return helix_tonemap_curve(color * helix_tonemap_params.y); }
+// The material's rim light here (helix.shaders.Rim): its color, brightest where the surface turns away from the viewer; 0 without one.
+vec3 helix_rim_light() {
+    return helix_rim.rgb * pow(1.0 - clamp(abs(dot(normalize(helix_v_normal), helix_view_direction())), 0.0, 1.0), helix_rim.w);
+}
+'''
+SURFACE_OUTPUT = '''out vec4 helix_frag_color;
+// Writes linear color and alpha: the material's rim light added, its hit flash mixed over the light after the exposure, tone mapped and encoded
+// as the framebuffer's sRGB; in an HDR scene (a PostProcess chain tone mapping it later) the light after the exposure, as sRGB values running
+// past 1.
 void helix_output(vec3 color, float alpha) {
+    vec3 l = mix(max((color + helix_rim_light()) * helix_tonemap_params.y, vec3(0.0)), helix_flash.rgb, helix_flash.a);
     if (helix_tonemap_params.z > 0.5) {
-        vec3 l = max(color * helix_tonemap_params.y, vec3(0.0));
         helix_frag_color = vec4(mix(l * 12.92, 1.055 * pow(max(l, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), l)), alpha);
         return;
     }
-    vec3 c = clamp(helix_tonemap(color), vec3(0.0), vec3(1.0));
+    vec3 c = clamp(helix_tonemap_curve(l), vec3(0.0), vec3(1.0));
     helix_frag_color = vec4(mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)), alpha);
 }
-@end
 '''
+# A shadow caster's: the fragment stage runs for what it discards alone, writing nothing (the depth pass has no color).
+CASTER_OUTPUT = '''void helix_output(vec3 color, float alpha) {}
+'''
+KINDS['helix_surface'] = (SURFACE_VS.format(name='helix_surface_vs', skin_inputs='', skin_call='')
+                          + SURFACE_VS.format(name='helix_surface_skinned_vs', skin_inputs=SKIN_INPUTS, skin_call=SKIN_CALL)
+                          # The shadow map's kind, said once for both blocks declaring it.
+                          + '\n@image_sample_type helix_shadow_texture depth\n@sampler_type helix_shadow_sampler comparison\n'
+                          + '\n@block helix_surface' + SURFACE_FS + SURFACE_OUTPUT + '@end\n'
+                          + '\n@block helix_surface_caster' + SURFACE_FS + CASTER_OUTPUT + '@end\n')
 VERTEX = {'helix_screen': 'helix_screen_vs', 'helix_surface': 'helix_surface_vs'}
-ATTRIBUTES = {'helix_screen': [], 'helix_surface': ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1',
-                                                    'i_normal2', 'i_tint']}
-# The first texture binding an app's own may use.
-FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 5}
+SURFACE_ATTRIBUTES = ['position', 'normal', 'uv', 'tangent', 'i_model0', 'i_model1', 'i_model2', 'i_normal0', 'i_normal1', 'i_normal2', 'i_tint',
+                      'i_lights0', 'i_lights1']
+ATTRIBUTES = {'helix_screen': [], 'helix_surface': SURFACE_ATTRIBUTES}
+# A surface shader's variants beside its program, each its vertex stage, fragment stage and attributes: drawing a skinned model, and drawing
+# its shadow from a static or a skinned model (only for a shader with a vertex hook or a discard; another's shadow is the framework caster's).
+VARIANTS = {'skinned': ('helix_surface_skinned_vs', 'fs', SURFACE_ATTRIBUTES + ['joints', 'weights']),
+            'caster': ('helix_surface_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES),
+            'skinnedCaster': ('helix_surface_skinned_vs', 'helix_caster_fs', SURFACE_ATTRIBUTES + ['joints', 'weights'])}
+# The first texture binding an app's own may use (a surface's 5 is its skinned variants' joint texture).
+FIRST_TEXTURE = {'helix_screen': 1, 'helix_surface': 6}
 NO_VERTEX_HOOK = '''
 @block vertex
 void helix_vertex(inout vec3 position, inout vec3 normal) {}
@@ -392,39 +438,16 @@ def members(source, block):
     return out
 
 
-def packed(shdc, source_path, sdl_gpu=False):
-    """source_path packed: the .hxshader's content as a dict, with SDL_GPU's dialects (tools/gpu_shaders.py) only when sdl_gpu, so other
-    builds need neither glslang nor SPIRV-Cross."""
-    source = Path(source_path).read_text(encoding='utf-8')
-    kinds = [k for k in KINDS if re.search(r'@include_block\s+' + k + r'\b', source)]
-    if len(kinds) != 1:
-        fail(f'{source_path}: include exactly one framework block ({", ".join(KINDS)})')
-    if not re.search(r'@fs\s+fs\b', source):
-        fail(f'{source_path}: the fragment stage must be "@fs fs"')
-    kind = kinds[0]
-    program = 'shader'
-    # The vertex hook block comes first, as the framework's vertex stage includes it.
-    found = re.search(r'@block\s+vertex\b.*?@end', source, re.S)
-    hook, rest = (found.group(0), source[:found.start()] + source[found.end():]) if found else (NO_VERTEX_HOOK if kind == 'helix_surface' else '', source)
-    if found and kind != 'helix_surface':
-        fail(f'{source_path}: only a surface shader has a vertex hook')
-    full = hook + '\n' + KINDS[kind] + '\n' + rest + f'\n@program {program} {VERTEX[kind]} fs\n'
-    with tempfile.TemporaryDirectory() as scratch:
-        scratch = Path(scratch)
-        (scratch / 'shader.glsl').write_text(full, encoding='utf-8')
-        for args in (['-o', scratch / 'shader.h'], ['-o', scratch / 'shader', '-f', 'bare_yaml']):
-            done = subprocess.run([shdc, '-i', scratch / 'shader.glsl', *args, '-l', 'glsl410:glsl300es', '--no-log-cmdline'],
-                                  capture_output=True, text=True, encoding='utf-8')
-            if done.returncode:
-                fail(f'{source_path}: sokol-shdc failed\n{done.stdout}{done.stderr}'.replace(str(scratch / 'shader.glsl'), str(source_path)))
-        reflection = yaml.safe_load((scratch / 'shader_reflection.yaml').read_text(encoding='utf-8'))
-        dialects, first = {}, None
-        for entry in reflection['shaders']:
-            p = entry['programs'][0]
-            dialects[entry['slang']] = {'vertex': Path(p['vertex_func']['path']).read_text(encoding='utf-8'),
-                                        'fragment': Path(p['fragment_func']['path']).read_text(encoding='utf-8')}
-            first = first or p
-    p = first
+def needs_caster(source):
+    """Whether a surface shader's shadow differs from the framework caster's: it has a vertex hook (`@block vertex`, moving its vertices) or a
+    `discard` (cutting holes), comments aside."""
+    code = re.sub(r'//[^\n]*|/\*.*?\*/', '', source, flags=re.S)
+    return bool(re.search(r'@block\s+vertex\b', code) or re.search(r'\bdiscard\b', code))
+
+
+def described(source_path, source, kind, p, sdl_gpu):
+    """One program of the reflection (p) as the .hxshader holds it: its attributes come from the caller; its dialects, uniform blocks (the
+    app's with their members) and textures, with SDL_GPU's dialects when sdl_gpu."""
     blocks = []
     for b in p.get('uniform_blocks') or []:
         uniforms = b['glsl_uniforms']
@@ -453,12 +476,63 @@ def packed(shdc, source_path, sdl_gpu=False):
                          'data': views.get(pair['view_slot'], {}).get('sample_type') == 'unfilterable_float'})
     if set(views) != {t['slot'] for t in textures}:
         fail(f'{source_path}: every texture needs a sampler')
-    shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind], 'glsl410': dialects['glsl410'],
-              'glsl300es': dialects['glsl300es'], 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
-              'textures': sorted(textures, key=lambda t: t['slot'])}
+    out = {'glsl410': p['dialects']['glsl410'], 'glsl300es': p['dialects']['glsl300es'], 'uniformBlocks': sorted(blocks, key=lambda b: b['slot']),
+           'textures': sorted(textures, key=lambda t: t['slot'])}
     if sdl_gpu:
         import gpu_shaders
-        shader['sdlGpu'] = gpu_shaders.translate(dialects['glsl410']['vertex'], dialects['glsl410']['fragment'], blocks, textures)
+        out['sdlGpu'] = gpu_shaders.translate(p['dialects']['glsl410']['vertex'], p['dialects']['glsl410']['fragment'], blocks, textures)
+    return out
+
+
+def packed(shdc, source_path, sdl_gpu=False):
+    """source_path packed: the .hxshader's content as a dict, with SDL_GPU's dialects (tools/gpu_shaders.py) only when sdl_gpu, so other
+    builds need neither glslang nor SPIRV-Cross. A surface shader carries its variants beside its program (VARIANTS: skinned, and the
+    shadow casters when needs_caster), each a program of its own over the same parameters."""
+    source = Path(source_path).read_text(encoding='utf-8')
+    kinds = [k for k in KINDS if re.search(r'@include_block\s+' + k + r'\b', source)]
+    if len(kinds) != 1:
+        fail(f'{source_path}: include exactly one framework block ({", ".join(KINDS)})')
+    fragment = re.search(r'@fs\s+fs\b(.*?)@end', source, re.S)
+    if not fragment:
+        fail(f'{source_path}: the fragment stage must be "@fs fs"')
+    kind = kinds[0]
+    # The vertex hook block comes first, as the framework's vertex stage includes it.
+    found = re.search(r'@block\s+vertex\b.*?@end', source, re.S)
+    hook, rest = (found.group(0), source[:found.start()] + source[found.end():]) if found else (NO_VERTEX_HOOK if kind == 'helix_surface' else '', source)
+    if found and kind != 'helix_surface':
+        fail(f'{source_path}: only a surface shader has a vertex hook')
+    programs = {'shader': (VERTEX[kind], 'fs', ATTRIBUTES[kind])}
+    extra = ''
+    if kind == 'helix_surface':
+        variants = ['skinned'] + (['caster', 'skinnedCaster'] if needs_caster(source) else [])
+        programs.update({name: VARIANTS[name] for name in variants})
+        extra = SKINNING.read_text(encoding='utf-8') + '\n'
+        if 'caster' in programs:
+            # The caster's fragment stage: the app's, over the caster's block (its output writes nothing).
+            body = re.sub(r'@include_block\s+helix_surface\b', '@include_block helix_surface_caster', fragment.group(1))
+            rest += f'\n@fs helix_caster_fs{body}@end\n'
+    full = (hook + '\n' + extra + KINDS[kind] + '\n' + rest + '\n'
+            + ''.join(f'@program {name} {vs} {fs}\n' for name, (vs, fs, _) in programs.items()))
+    with tempfile.TemporaryDirectory() as scratch:
+        scratch = Path(scratch)
+        (scratch / 'shader.glsl').write_text(full, encoding='utf-8')
+        for args in (['-o', scratch / 'shader.h'], ['-o', scratch / 'shader', '-f', 'bare_yaml']):
+            done = subprocess.run([shdc, '-i', scratch / 'shader.glsl', *args, '-l', 'glsl410:glsl300es', '--no-log-cmdline'],
+                                  capture_output=True, text=True, encoding='utf-8')
+            if done.returncode:
+                fail(f'{source_path}: sokol-shdc failed\n{done.stdout}{done.stderr}'.replace(str(scratch / 'shader.glsl'), str(source_path)))
+        reflection = yaml.safe_load((scratch / 'shader_reflection.yaml').read_text(encoding='utf-8'))
+        found = {}
+        for entry in reflection['shaders']:
+            for p in entry['programs']:
+                program = found.setdefault(p['name'], dict(p, dialects={}))
+                program['dialects'][entry['slang']] = {'vertex': Path(p['vertex_func']['path']).read_text(encoding='utf-8'),
+                                                       'fragment': Path(p['fragment_func']['path']).read_text(encoding='utf-8')}
+    shader = {'helixShader': FORMAT, 'kind': kind.removeprefix('helix_'), 'attributes': ATTRIBUTES[kind],
+              **described(source_path, source, kind, found['shader'], sdl_gpu)}
+    for name, (_, _, attributes) in programs.items():
+        if name != 'shader':
+            shader[name] = {'attributes': attributes, **described(source_path, source, kind, found[name], sdl_gpu)}
     return shader
 
 
@@ -483,7 +557,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
     """The shader library (src/helix/shaders/*.glsl) packed into generated Haxe in out, so a class in helix.shaders gets its shader with no
     load: <Name>Packed.hx, whose text() is the .hxshader's text, and PackedShaders.hx naming them all (for the dev loop's hot reload); with
     gpu_out (SDL_GPU builds), SDL_GPU's dialects too, as <Name>PackedSdlGpu.hx there, which text() returns in builds defining
-    helix_sdl3_gpu. A shader is packed again only when its source or this tool is newer than its output; generated files whose source is gone
+    helix_sdl3_gpu. A shader is packed again only when its source, this tool or the skinning it includes is newer than its output; generated files whose source is gone
     are removed. shdc is sokol-shdc's path, found when first needed. Returns the stems packed."""
     out, sources = Path(out), Path(sources)
     out.mkdir(parents=True, exist_ok=True)
@@ -500,7 +574,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
         for stem in stems:
             source, name = sources / f'{stem}.glsl', class_name(stem)
             target = folder / f'{name}{suffix}.hx'
-            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, gpu_tool_stamp() if sdl_gpu else 0):
+            if target.is_file() and target.stat().st_mtime >= max(source.stat().st_mtime, tool, SKINNING.stat().st_mtime, gpu_tool_stamp() if sdl_gpu else 0):
                 continue
             shdc = shdc or shdc_path()
             text = json.dumps(packed(shdc, source, sdl_gpu), separators=(',', ':'))

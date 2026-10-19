@@ -8,6 +8,7 @@ class Model extends Node3D {
 	var castsShadows = true;
 	var receivesShadows = true;
 	var joints:Null<Array<Node3D>>;
+	@:allow(helix.render3d.ModelPass) var passes:Array<ModelPass> = [];
 
 	/** A model of one part, mesh drawn with material (a new white one when null); with no mesh, a model of no parts until mesh. */
 	public function new(?mesh:Mesh, ?material:Material) {
@@ -57,6 +58,16 @@ class Model extends Node3D {
 			parts[0].material = value;
 		return value;
 	}
+
+	/** How many extra passes it's drawn in (ModelPass: helix.shaders.Outline and Silhouette add themselves). */
+	public var passCount(get, never):Int;
+
+	function get_passCount():Int
+		return passes.length;
+
+	/** Its extra pass at index, in the order added; null past the end. */
+	public function getPass(index:Int):Null<ModelPass>
+		return index >= 0 && index < passes.length ? passes[index] : null;
 
 	/** Its tint, 0xRRGGBBAA. */
 	public var tint:Int = 0xffffffff;

@@ -32,6 +32,8 @@
  *   base_color         linear rgba, the material's
  *   pbr                x metallic, y roughness, z 1 = lit (0 = unlit)
  *   emissive           rgb linear light the surface gives off, w the normal map's strength
+ *   flash              the material's hit flash: rgb linear, a how much (0 none); mixed over its light after the exposure
+ *   rim                the material's rim light: rgb linear, times its strength (black: none); w its power, how tight to the silhouette
  *   light_position[i]  the stage's table of 16 lights: xyz position, w range (0: unlimited)
  *   light_direction[i] xyz the direction the light travels, w type (0 directional, 1 point, 2 spot)
  *   light_radiance[i]  rgb color times intensity, linear
@@ -88,6 +90,8 @@ void lit3d_place(vec3 placed, vec3 bent, vec3 turned) {
     vec4 base_color;
     vec4 pbr;
     vec4 emissive;
+    vec4 flash;
+    vec4 rim;
     vec4 light_position[16];
     vec4 light_direction[16];
     vec4 light_radiance[16];
@@ -164,9 +168,9 @@ vec3 linear_to_srgb_unclamped(vec3 c) {
     return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0031308)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
 }
 
-/* Linear light to the framebuffer's sRGB: exposure, then the tone mapping (in an HDR scene, none). */
+/* Linear light to the framebuffer's sRGB: exposure, the material's hit flash mixed over it, then the tone mapping (in an HDR scene, none). */
 vec3 to_display(vec3 color) {
-    color *= tonemap.y;
+    color = mix(color * tonemap.y, flash.rgb, flash.a);
     if (tonemap.z > 0.5) {
         return linear_to_srgb_unclamped(color);
     }
@@ -252,8 +256,11 @@ float shadow_factor(int s, vec3 world, vec3 n, float n_dot_l) {
 void main() {
     vec4 texel = texture(sampler2D(lit3d_base_texture, lit3d_base_sampler), v_uv);
     vec4 base = vec4(srgb_to_linear(texel.rgb), texel.a) * base_color * v_tint;
+    // The rim light: brightest where the surface turns away from the viewer, at its silhouette.
+    vec3 v = normalize(camera_position.xyz - v_world);
+    vec3 rim_light = rim.rgb * pow(1.0 - clamp(abs(dot(normalize(v_normal), v)), 0.0, 1.0), rim.w);
     if (pbr.z < 0.5) {
-        frag_color = vec4(to_display(base.rgb + emissive.rgb), base.a);
+        frag_color = vec4(to_display(base.rgb + emissive.rgb + rim_light), base.a);
         return;
     }
     // The shading frame: the normal map's direction through the tangent, the bitangent and the normal.
@@ -273,7 +280,6 @@ void main() {
     float alpha_sq = alpha * alpha;
     vec3 f0 = mix(vec3(0.04), base.rgb, metallic);
     vec3 c_diff = base.rgb * (1.0 - metallic);
-    vec3 v = normalize(camera_position.xyz - v_world);
     float n_dot_v = clamp(abs(dot(n, v)), 1e-4, 1.0);
     vec3 color = ambient.rgb * (c_diff + f0);
     // The model's own lights: indices into the table, -1 past the last.
@@ -328,7 +334,7 @@ void main() {
         vec2 ab = texture(sampler2D(lit3d_brdf_texture, lit3d_brdf_sampler), vec2(n_dot_v, roughness)).rg;
         color += (diffuse_light * c_diff + reflected * (f0 * ab.x + ab.y)) * environment.x;
     }
-    color += emissive.rgb;
+    color += emissive.rgb + rim_light;
     frag_color = vec4(to_display(color), base.a);
 }
 @end

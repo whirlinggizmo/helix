@@ -23,7 +23,6 @@ CC0 asks for no credit; they're credited anyway.
 - `sprites/logo/wg-logo-bw-alpha.png`, `sprites/logo/wg-logo-white-alpha.png`: the Whirling Gizmo logo, black and white.
 - `textures/flame.png`: a generated soft flame, MIT.
 - `sprites/logo/wg-logo-bw-alpha.{bc7,astc,etc2}.ktx`, `textures/flame.{bc7,astc,etc2}.ktx`: the PNGs compressed, with their mipmaps, as KTX 1 by Basis Universal 1.16.4 (UASTC level 2, transcoded to BC7, ASTC 4x4 and ETC2 RGBA8).
-- `textures/noise.png`: a generated noise texture (the dissolve shader's), MIT.
 - `textures/tiles.png`: a generated 16-pixel tile sheet (terrain, props, a coin at 42, 22), MIT.
 - `textures/tiles_normal.png`: a generated normal map of bevelled tiles, tangent space (green up), MIT.
 - `models/toy_car.glb`: the unit tests' glTF fixture, a generated toy car (a checkered body, a see-through cabin, four wheels, emissive headlights with a spot light each), MIT.
