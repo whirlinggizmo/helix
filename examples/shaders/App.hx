@@ -41,7 +41,8 @@ import helix.time.Time;
 	wall on a character of layered parts, a flash on a library shader and on the stage's own shading. Every library shader alone, with its
 	parameters, is the shader-gallery example's.
 	- left: the Kenney sports car toon shaded (Toon: the lights in flat bands, a rim light), outlined (Outline, an extra pass)
-	- middle: a sphere dissolving and coming back (Dissolve: the library's noise, discard, a glowing edge), its shadow dissolving with it
+	- middle: a sphere dissolving and coming back (Dissolve: the library's noise laid over it in its own space, discard, a glowing edge), its
+		shadow dissolving with it
 	- right: a sphere of water in waves (Water: a vertex hook, glints, the sky at grazing angles), its shadow moving with them
 	- above the middle: a cube drawn by the library's Unlit
 	- in front: a skinned character (Quaternius's Ultimate Modular Women) toon shaded, outlined, and seen through the wall before her
@@ -149,8 +150,8 @@ class App extends BaseApp {
 		dissolving.baseColor = 0x8c9bb4ff;
 		dissolving.doubleSided = true;
 		dissolve = new Dissolve(dissolving);
-		// Large holes: the noise once around.
-		dissolve.scale = 1;
+		// Large holes: the noise's cells a quarter of a unit, four across the sphere.
+		dissolve.scale = .5;
 		var sphere = new Model(Mesh.sphere(.5, 32, 64), dissolving);
 		sphere.setPosition(0, .1, 0);
 		stage.add(sphere);

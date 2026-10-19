@@ -110,7 +110,7 @@ var flicker(default, set):Float
 
 *class* in `src/helix/shaders/Dissolve.hx`
 
-A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Made on a material, it is that material's surface shader from then on (LibrarySurface); make the material doubleSided to see its inside through the holes.
+A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is laid over the model at rest in its own space (helix_model_position: a skinned model's bind pose), read along the three planes of that space and blended by the surface's facing (triplanar), so the holes stay where they are on the body as it moves and animates, whatever its texture coordinates, and every GPU reads the same noise. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Made on a material, it is that material's surface shader from then on (LibrarySurface); make the material doubleSided to see its inside through the holes.
 
 ```haxe
 function new(material:Material)
@@ -122,12 +122,12 @@ var scale(default, set):Float
 var noise(default, set):Texture2D
 ```
 
-- `new`: Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise twice across.
+- `new`: Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise repeating every unit.
 - `amount`: How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0).
 - `edgeColor`: The glowing edge's color, 0xRRGGBBAA (sRGB, alpha ignored): orange by default.
 - `edgeIntensity`: How bright the edge glows: its color times this, 0 or more (past 1 brighter than white light): 4 by default. Under 0, or NaN, is 0.
 - `edgeWidth`: How wide the edge glows, in the noise's values (0..1) past the threshold, .001 to 1: .08 by default. Clamped to .001..1 (NaN is .001).
-- `scale`: How many times the noise repeats across the surface's texture coordinates (0..1), above 0: 2 by default. Under .001, or NaN, is .001.
+- `scale`: How many times the noise repeats per unit of the model's own space (its mesh's, before the model's placing and scale), above 0: 1 by default, the library's noise's 8 cells across then each an eighth of a unit. Under .001, or NaN, is .001.
 - `noise`: The noise it burns along (its red channel, sampled as its sampling says: repeating, for scale to tile it): the library's by default.
 
 ## Fxaa

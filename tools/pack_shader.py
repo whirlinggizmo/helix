@@ -7,7 +7,8 @@ A shader is a fragment stage `@fs fs` that includes one framework block, which d
     @include_block helix_screen   a screen effect: drawn over a whole finished frame (helix.graphics.ScreenEffect)
     @include_block helix_surface  a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights
                                   and their shadows, the material's base color and textures, its hit flash and rim light (applied by
-                                  helix_output); optionally a vertex hook, `@block vertex` defining
+                                  helix_output), where it is on the model at rest (helix_model_position, helix_model_normal: its own
+                                  space before skinning and the hook, alike in every variant); optionally a vertex hook, `@block vertex` defining
                                   `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing)
     @include_block helix_sprite   a sprite's (helix.graphics.SpriteEffect: Sprite2D.effect, Batch2D.effect, Sprite3D.effect): its texture,
                                   region and tint, the texel size and the time (the kind's vertex stage and block are
@@ -101,6 +102,8 @@ layout(location=10) in vec4 i_tint;
 layout(location=11) in vec4 i_lights0;
 layout(location=12) in vec4 i_lights1;
 {skin_inputs}out vec3 helix_v_normal;
+out vec3 helix_v_model_position;
+out vec3 helix_v_model_normal;
 out vec4 helix_v_tangent;
 out vec2 helix_v_uv;
 out vec4 helix_v_tint;
@@ -110,6 +113,9 @@ flat out vec4 helix_v_lights0;
 flat out vec4 helix_v_lights1;
 void main() {{
     vec3 moved = position, bent = normal, turned = tangent.xyz;
+    // The vertex at rest in the model's own space, before skinning and the hook: what a pattern stuck to the surface is laid by.
+    helix_v_model_position = position;
+    helix_v_model_normal = normal;
 {skin_call}    helix_vertex(moved, bent);
     vec4 p = vec4(moved, 1.0);
     vec3 world = vec3(dot(i_model0, p), dot(i_model1, p), dot(i_model2, p));
@@ -175,6 +181,8 @@ layout(binding=3) uniform sampler helix_environment_sampler;
 layout(binding=4) uniform texture2D helix_brdf_texture;
 layout(binding=4) uniform sampler helix_brdf_sampler;
 in vec3 helix_v_normal;
+in vec3 helix_v_model_position;
+in vec3 helix_v_model_normal;
 in vec4 helix_v_tangent;
 in vec2 helix_v_uv;
 in vec4 helix_v_tint;
@@ -190,6 +198,11 @@ vec3 helix_srgb_to_linear(vec3 c) {
 float helix_time() { return helix_fs_info.x; }
 vec2 helix_uv() { return helix_v_uv; }
 vec3 helix_world_position() { return helix_v_world; }
+// Where this is on the model at rest, in its own space (its vertices as given, before skinning and the vertex hook: a skinned model's bind
+// pose), and the surface's unit normal there: the same for a static, instanced or skinned model, and in its shadow caster, so a pattern
+// laid by them stays on the surface as the model moves, animates or waves, and its shadow follows it.
+vec3 helix_model_position() { return helix_v_model_position; }
+vec3 helix_model_normal() { return normalize(helix_v_model_normal); }
 vec3 helix_camera_position() { return helix_camera.xyz; }
 vec3 helix_ambient() { return helix_ambient_light.rgb; }
 vec3 helix_emissive() { return helix_emission.rgb; }

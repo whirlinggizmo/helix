@@ -5,9 +5,11 @@ import helix.render2d.Texture2D;
 import helix.render3d.Material;
 
 /** A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with
-	amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is the library's (ShaderLibrary.getNoise) unless the
-	game gives its own. Made on a material, it is that material's surface shader from then on (LibrarySurface); make the material
-	doubleSided to see its inside through the holes. */
+	amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is laid over the model at rest in its own space
+	(helix_model_position: a skinned model's bind pose), read along the three planes of that space and blended by the surface's facing
+	(triplanar), so the holes stay where they are on the body as it moves and animates, whatever its texture coordinates, and every GPU reads
+	the same noise. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Made on a material, it is that
+	material's surface shader from then on (LibrarySurface); make the material doubleSided to see its inside through the holes. */
 class Dissolve extends LibrarySurface {
 	/** How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0). */
 	public var amount(default, set):Float;
@@ -48,7 +50,8 @@ class Dissolve extends LibrarySurface {
 		return value;
 	}
 
-	/** How many times the noise repeats across the surface's texture coordinates (0..1), above 0: 2 by default. Under .001, or NaN, is .001. */
+	/** How many times the noise repeats per unit of the model's own space (its mesh's, before the model's placing and scale), above 0: 1 by
+		default, the library's noise's 8 cells across then each an eighth of a unit. Under .001, or NaN, is .001. */
 	public var scale(default, set):Float;
 
 	function set_scale(value:Float):Float {
@@ -68,13 +71,13 @@ class Dissolve extends LibrarySurface {
 		return value;
 	}
 
-	/** Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise twice across. */
+	/** Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise repeating every unit. */
 	public function new(material:Material) {
 		super(material, "dissolve", DissolvePacked.text());
 		amount = 0;
 		edgeColor = 0xff7a1eff;
 		edgeWidth = .08;
-		scale = 2;
+		scale = 1;
 		noise = ShaderLibrary.getNoise(Graphics.instance);
 	}
 }

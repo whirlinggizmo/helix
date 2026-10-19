@@ -4,10 +4,10 @@
   "commands": [
     {"op": "wait", "probe": "ready", "equals": true, "seconds": 60},
     {"op": "sample", "name": "frame", "points": [[640, 219], [960, 392], [1100, 700], [650, 350]]},
-    {"op": "sample", "name": "dissolving", "points": [[586, 462], [531, 440]]},
+    {"op": "sample", "name": "dissolving", "points": [[676.8, 347.2], [672, 366.4], [697.6, 361.6]]},
     {"op": "press", "key": "5"},
     {"op": "assert", "probe": "dissolving", "equals": false},
-    {"op": "sample", "name": "whole", "points": [[586, 462], [531, 440]], "differsFrom": "dissolving", "by": 20},
+    {"op": "sample", "name": "whole", "points": [[676.8, 347.2], [672, 366.4], [697.6, 361.6]], "differsFrom": "dissolving", "by": 20},
     {"op": "press", "key": "5"},
     {"op": "press", "key": "C"},
     {"op": "assert", "probe": "closeUp", "equals": true},

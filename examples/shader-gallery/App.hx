@@ -55,12 +55,14 @@ import helix.shaders.Unlit;
 import helix.shaders.Vignette;
 import helix.shaders.Water;
 import helix.time.Time;
+import helix.ui.ColorPicker;
 import helix.ui.ListView;
 import helix.ui.Panel;
 import helix.ui.Slider;
 import helix.ui.Ui;
 
-/** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders.
+/** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
+	its colors on color pickers (helix.ui's ColorPicker).
 	The scene is the Kenney sports car, a sphere and a skinned character (Quaternius's Ultimate Modular Women) behind a low wall, under a sun
 	casting shadows, with two lamps glowing past white; a row of sprites (the logo twice, a creature of indexed pixels and a checkerboard, both drawn sharp) along the bottom.
 	The menu (helix.ui) lists the shaders by kind; choosing one turns it on alone:
@@ -70,13 +72,17 @@ import helix.ui.Ui;
 	  teal and orange grade), Crt, ChromaticAberration, Pixelate; and a chain of two, Bloom then Vignette
 	- sprite effects, on the row: SpriteOutline, SpriteFlash (held; F flashes), SpriteDissolve, and PaletteSwap (the creature's indices in a
 	  palette's colors; without it they show as near-black reds)
-	The sliders under the list set the chosen one's parameters as its fields do. The menu is drawn after the effects, outside them.
+	The sliders under the list set the chosen one's parameters as its fields do; at the top right a color picker sets each of its colors (with
+	an alpha bar where the color's alpha means something), a list above it choosing which when it has several (Water's three, Toon's shadow
+	and rim), its hex field taking a color typed. The menu is drawn after the effects, outside them.
 
 	Pointer, arrows, Enter and a pad use the menu; PageDown / PageUp: the next or previous shader; X: the chosen one off and on to compare;
-	O: the camera circling; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time, her pose and the
-	camera are then held from the first frame, the window the autopilot's page's size, so its samples of the frame compare across targets; the
-	script's click names a shader, None or Chain, choosing it) and autoclose (1: quit once the script is done). The probes: ready (everything
-	loaded), chosen (the chosen shader's name, or None) and hdr (PostProcess.hdr). */
+	F: a flash in the flash's color (HitFlash's and SpriteFlash's pickers); O: the camera circling; Escape quits where quitting means anything.
+	Options: autopilot (a script under assets/: the time, her pose and the camera are then held from the first frame, the window the
+	autopilot's page's size, so its samples of the frame compare across targets; the script's click names a shader, None or Chain, choosing
+	it, or else a widget of the menu: a picker is named for its shader and color, Unlit-color, its hex field Unlit-color-hex) and autoclose
+	(1: quit once the script is done). The probes: ready (everything loaded), chosen (the chosen shader's name, or None), color (the color
+	the chosen shader's picker shows, as its hex field writes it; "" without one) and hdr (PostProcess.hdr). */
 class App extends BaseApp {
 	static inline var FLOOR_Y = 0.;
 	static inline var WOMEN = "models/modular-women/";
@@ -152,19 +158,29 @@ class App extends BaseApp {
 	var palette:Texture2D;
 	var checker:Texture2D;
 
-	// The parameters the surface shaders and the rim are made with, so one made again (switching back to it) keeps what the sliders set.
-	var unlitHue = 30.;
+	// The parameters the surface shaders and the rim are made with, so one made again (switching back to it) keeps what the sliders and
+	// pickers set; colors 0xRRGGBBAA.
+	var unlitColor = 0xff7f00ff;
 	var toonBands = 3;
 	var toonRimPower = 3.;
+	var toonShadowColor = 0x3a4150ff;
+	var toonRimColor = 0xffffff55;
 	var rimPower = 2.;
-	var rimStrength = .8;
+	var rimColor = 0xffffffcc;
 	var flashAmount = .6;
+	var flashColor = 0xffffffff;
 	var dissolveAmount = .45;
 	var dissolveEdge = .06;
-	var dissolveScale = 2.;
+	var dissolveScale = 1.;
+	var dissolveEdgeColor = 0xff7a1eff;
 	var waterAmplitude = .04;
 	var waterWavelength = .6;
 	var waterShininess = 64.;
+	var waterDeepColor = 0x0b2a4aff;
+	var waterShallowColor = 0x2a8f96ff;
+	var waterSkyColor = 0xa0b8d8ff;
+	var outlineColor = 0x101018ff;
+	var silhouetteColor = 0x3fa9ff99;
 
 	// What's loaded: the car, her skeleton and parts, the logos.
 	var carPlaced = false;
@@ -316,9 +332,9 @@ class App extends BaseApp {
 		return pixels;
 	}
 
-	// The autopilot's script in: the menu reads its input, and its clicks choose shaders by name.
+	// The autopilot's script in: the menu reads its input, and its clicks choose shaders by name, or use the menu's widgets by theirs.
 	function startPilot(bytes:Bytes):Void {
-		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> choose(name),
+		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> choose(name) || ui != null && ui.press(name),
 			(points, done, failed) -> Screenshots.sample(points, done, failed));
 		build(pilot.input);
 	}
@@ -327,6 +343,9 @@ class App extends BaseApp {
 		return switch name {
 			case "ready": carPlaced && character != null && worn == PARTS.length && logos == 2 && ui != null;
 			case "chosen": chosen < 0 ? "None" : entries[chosen].name;
+			case "color":
+				var colors = chosen < 0 ? [] : entries[chosen].colors;
+				colors.length == 0 ? "" : ColorPicker.formatHex(colors[entries[chosen].color].value, colors[entries[chosen].color].alpha);
 			case "hdr": post.hdr;
 			default: throw 'Unknown probe ' + name;
 		}
@@ -404,9 +423,9 @@ class App extends BaseApp {
 	// The outlines and silhouettes of every model in so far, made once each, on while theirs is the chosen shader.
 	function passesFor():Void {
 		for (i in outlines.length...models.length)
-			outlines.push(new Outline(models[i], 0x101018ff, .035));
+			outlines.push(new Outline(models[i], outlineColor, .035));
 		for (i in silhouettes.length...skinned.length)
-			silhouettes.push(new Silhouette(skinned[i]));
+			silhouettes.push(new Silhouette(skinned[i], silhouetteColor));
 		if (chosen >= 0 && shown)
 			entries[chosen].on();
 		else {
@@ -425,11 +444,11 @@ class App extends BaseApp {
 		ui.theme.textSize = 15;
 		this.ui = ui;
 		entries = [
-			entry("Unlit", "surface", () -> surface(m -> unlits.push(newUnlit(m))), [
-				slider("hue", 0, 360, unlitHue, 10, v -> {
-					unlitHue = v;
+			entry("Unlit", "surface", () -> surface(m -> unlits.push(newUnlit(m))), [], [
+				color("color", unlitColor, false, c -> {
+					unlitColor = c;
 					for (u in unlits)
-						u.color = hue(v);
+						u.color = c;
 				})
 			]),
 			entry("Toon", "surface", () -> surface(m -> toons.push(newToon(m))), [
@@ -443,21 +462,38 @@ class App extends BaseApp {
 					for (t in toons)
 						t.rim.power = v;
 				})
-			]),
-			entry("Rim", "surface", () -> surface(m -> new Rim(m, rimColor(), rimPower)), [
-				slider("power", .5, 8, rimPower, .5, v -> {
-					rimPower = v;
-					surface(m -> new Rim(m, rimColor(), rimPower));
+			], [
+				color("shadow", toonShadowColor, false, c -> {
+					toonShadowColor = c;
+					for (t in toons)
+						t.shadowColor = c;
 				}),
-				slider("strength", 0, 1, rimStrength, .1, v -> {
-					rimStrength = v;
-					surface(m -> new Rim(m, rimColor(), rimPower));
+				color("rim", toonRimColor, true, c -> {
+					toonRimColor = c;
+					for (t in toons)
+						t.rim.color = c;
 				})
 			]),
-			entry("HitFlash", "surface", () -> surface(m -> new HitFlash(m).amount = flashAmount), [
+			entry("Rim", "surface", () -> surface(m -> new Rim(m, rimColor, rimPower)), [
+				slider("power", .5, 8, rimPower, .5, v -> {
+					rimPower = v;
+					surface(m -> new Rim(m, rimColor, rimPower));
+				})
+			], [
+				color("color", rimColor, true, c -> {
+					rimColor = c;
+					surface(m -> new Rim(m, rimColor, rimPower));
+				})
+			]),
+			entry("HitFlash", "surface", () -> surface(m -> holdFlash(m)), [
 				slider("amount held", 0, 1, flashAmount, .1, v -> {
 					flashAmount = v;
-					surface(m -> new HitFlash(m).amount = flashAmount);
+					surface(m -> holdFlash(m));
+				})
+			], [
+				color("color", flashColor, true, c -> {
+					flashColor = c;
+					surface(m -> holdFlash(m));
 				})
 			]),
 			entry("Dissolve", "surface", () -> surface(m -> dissolves.push(newDissolve(m))), [
@@ -471,10 +507,16 @@ class App extends BaseApp {
 					for (d in dissolves)
 						d.edgeWidth = v;
 				}),
-				slider("scale", .5, 6, dissolveScale, .5, v -> {
+				slider("scale", .25, 4, dissolveScale, .25, v -> {
 					dissolveScale = v;
 					for (d in dissolves)
 						d.scale = v;
+				})
+			], [
+				color("edge", dissolveEdgeColor, false, c -> {
+					dissolveEdgeColor = c;
+					for (d in dissolves)
+						d.edgeColor = c;
 				})
 			]),
 			entry("Water", "surface", () -> surface(m -> waters.push(newWater(m))), [
@@ -493,6 +535,22 @@ class App extends BaseApp {
 					for (w in waters)
 						w.shininess = v;
 				})
+			], [
+				color("deep", waterDeepColor, false, c -> {
+					waterDeepColor = c;
+					for (w in waters)
+						w.deepColor = c;
+				}),
+				color("shallow", waterShallowColor, false, c -> {
+					waterShallowColor = c;
+					for (w in waters)
+						w.shallowColor = c;
+				}),
+				color("sky", waterSkyColor, false, c -> {
+					waterSkyColor = c;
+					for (w in waters)
+						w.skyColor = c;
+				})
 			]),
 			entry("Outline", "pass", () -> {
 				for (o in outlines)
@@ -502,14 +560,21 @@ class App extends BaseApp {
 					for (o in outlines)
 						o.width = v;
 				})
+			], [
+				color("color", outlineColor, false, c -> {
+					outlineColor = c;
+					for (o in outlines)
+						o.color = c;
+				})
 			]),
 			entry("Silhouette", "pass", () -> {
 				for (s in silhouettes)
 					s.enabled = true;
-			}, [
-				slider("alpha", 0, 1, .6, .1, v -> {
+			}, [], [
+				color("color", silhouetteColor, true, c -> {
+					silhouetteColor = c;
 					for (s in silhouettes)
-						s.color = (s.color & 0xffffff00) | Std.int(v * 255);
+						s.color = c;
 				})
 			]),
 			entry("Bloom", "screen", () -> bloom.enabled = true,
@@ -524,11 +589,11 @@ class App extends BaseApp {
 					slider("edge threshold", .06, .33, fxaa.edgeThreshold, .01, v -> fxaa.edgeThreshold = v)
 				]),
 			entry("Blur", "screen", () -> blur.enabled = true, [slider("radius", 0, 24, blur.radius, 1, v -> blur.radius = v)]),
-			entry("Vignette", "screen", () -> vignette.enabled = true,
-				[
-					slider("strength", 0, 1, vignette.strength, .05, v -> vignette.strength = v),
-					slider("radius", .2, 1.2, vignette.radius, .05, v -> vignette.radius = v)
-				]),
+			entry("Vignette", "screen", () -> vignette.enabled = true, [
+				slider("strength", 0, 1, vignette.strength, .05, v -> vignette.strength = v),
+				slider("radius", .2, 1.2, vignette.radius, .05, v -> vignette.radius = v)
+			],
+				[color("color", vignette.color, false, c -> vignette.color = c)]),
 			entry("ColorLut", "screen", () -> colorLut.enabled = true, [slider("amount", 0, 1, colorLut.amount, .05, v -> colorLut.amount = v)]),
 			entry("Crt", "screen", () -> crt.enabled = true,
 				[
@@ -543,16 +608,19 @@ class App extends BaseApp {
 					slider("cell size", 1, 32, pixelate.cellSize, 1, v -> pixelate.cellSize = Std.int(v))
 				]),
 			entry("Chain", "screen", () -> bloom.enabled = vignette.enabled = true, []),
-			entry("SpriteOutline", "sprite", () -> row(spriteOutline), [slider("width", 0, 16, spriteOutline.width, 1, v -> spriteOutline.width = v)]),
+			entry("SpriteOutline", "sprite", () -> row(spriteOutline), [slider("width", 0, 16, spriteOutline.width, 1, v -> spriteOutline.width = v)],
+				[color("color", spriteOutline.color, true, c -> spriteOutline.color = c)]),
 			entry("SpriteFlash", "sprite", () -> {
 				spriteFlash.amount = flashAmount;
 				row(spriteFlash);
 			},
-				[slider("amount held", 0, 1, flashAmount, .1, v -> spriteFlash.amount = v)]),
+				[slider("amount held", 0, 1, flashAmount, .1, v -> spriteFlash.amount = v)],
+				[color("color", spriteFlash.color, true, c -> spriteFlash.color = c)]),
 			entry("SpriteDissolve", "sprite", () -> row(spriteDissolve), [
 				slider("amount", 0, 1, spriteDissolve.amount, .05, v -> spriteDissolve.amount = v),
 				slider("edge width", 0, .2, spriteDissolve.edgeWidth, .02, v -> spriteDissolve.edgeWidth = v)
-			]),
+			],
+				[color("edge", spriteDissolve.edgeColor, true, c -> spriteDissolve.edgeColor = c)]),
 			entry("PaletteSwap", "sprite", () -> rowSprites[2].effect = paletteSwap, [
 				slider("row", 0, PALETTE.length - 1, paletteSwap.row, 1, v -> paletteSwap.row = Std.int(v))
 			])
@@ -560,7 +628,7 @@ class App extends BaseApp {
 		var shaders = ui.list([
 			for (e in entries)
 				'${e.kind}: ${e.name == "Chain" ? "Bloom + Vignette" : e.name}'
-		], 12, "shaders");
+		], 9, "shaders");
 		list = shaders;
 		var choice = ui.panel("menu");
 		choice.add(shaders);
@@ -572,29 +640,50 @@ class App extends BaseApp {
 			panel.add(heading);
 			for (s in e.sliders)
 				panel.add(s.widget = ui.slider(s.label, s.min, s.max, s.value, s.step, e.name + "-" + s.label));
-			if (e.sliders.length == 0)
+			if (e.name == "Chain")
 				panel.add(ui.label("Bloom, then Vignette"));
 			panel.box.setAnchor(Start, End, 16, -16);
 			panel.box.setSizing(Fixed(300), Fit);
 			panel.visible = false;
 			e.panel = panel;
+			// A panel a color: which of the shader's colors (when it has several) and its picker, one shown at a time.
+			var names = [for (c in e.colors) c.label];
+			for (c in e.colors) {
+				var colorPanel = ui.panel(e.name + "-" + c.label + "-panel");
+				colorPanel.add(ui.label(e.name + " " + c.label));
+				if (names.length > 1) {
+					var which = ui.list(names, names.length, e.name + "-" + c.label + "-which");
+					which.selectedIndex = names.indexOf(c.label);
+					colorPanel.add(c.which = which);
+				}
+				colorPanel.add(c.picker = ui.colorPicker(c.value, c.alpha, e.name + "-" + c.label));
+				colorPanel.box.setAnchor(End, Start, -16, 84);
+				colorPanel.box.setSizing(Fixed(330), Fit);
+				colorPanel.visible = false;
+				c.panel = colorPanel;
+			}
 		}
-		// The design: the list at the top left, the chosen shader's sliders at the bottom left.
+		// The design: the list at the top left, the chosen shader's sliders at the bottom left, its colors at the top right.
 		var root = helix.ui.Box.stack();
 		root.setSizing(Grow(1), Grow(1));
 		root.add(choice.box);
-		for (e in entries)
+		for (e in entries) {
 			root.add(e.panel.box);
+			for (c in e.colors)
+				root.add(c.panel.box);
+		}
 		layout = root;
 	}
 
-	function entry(name:String, kind:String, on:Void->Void, sliders:Array<Setting>):Entry
+	function entry(name:String, kind:String, on:Void->Void, sliders:Array<Setting>, ?colors:Array<ColorSetting>):Entry
 		return {
 			name: name,
 			kind: kind,
 			on: on,
 			sliders: sliders,
-			panel: null
+			panel: null,
+			colors: colors != null ? colors : [],
+			color: 0
 		};
 
 	function slider(label:String, min:Float, max:Float, value:Float, step:Float, set:Float->Void):Setting
@@ -606,6 +695,17 @@ class App extends BaseApp {
 			step: step,
 			set: set,
 			widget: null
+		};
+
+	function color(label:String, value:Int, alpha:Bool, set:Int->Void):ColorSetting
+		return {
+			label: label,
+			value: value,
+			alpha: alpha,
+			set: set,
+			panel: null,
+			which: null,
+			picker: null
 		};
 
 	// A surface shader (or term) put on every material: make called with each.
@@ -620,7 +720,7 @@ class App extends BaseApp {
 
 	function newUnlit(m:Material):Unlit {
 		var u = new Unlit(m);
-		u.color = hue(unlitHue);
+		u.color = unlitColor;
 		return u;
 	}
 
@@ -628,6 +728,8 @@ class App extends BaseApp {
 		var t = new Toon(m);
 		t.bands = toonBands;
 		t.rim.power = toonRimPower;
+		t.shadowColor = toonShadowColor;
+		t.rim.color = toonRimColor;
 		return t;
 	}
 
@@ -636,6 +738,7 @@ class App extends BaseApp {
 		d.amount = dissolveAmount;
 		d.edgeWidth = dissolveEdge;
 		d.scale = dissolveScale;
+		d.edgeColor = dissolveEdgeColor;
 		return d;
 	}
 
@@ -644,21 +747,17 @@ class App extends BaseApp {
 		w.amplitude = waterAmplitude;
 		w.wavelength = waterWavelength;
 		w.shininess = waterShininess;
+		w.deepColor = waterDeepColor;
+		w.shallowColor = waterShallowColor;
+		w.skyColor = waterSkyColor;
 		return w;
 	}
 
-	// The rim's color: white, as strong as the slider says.
-	function rimColor():Int
-		return 0xffffff00 | Std.int(rimStrength * 255);
-
-	// A fully saturated color at a hue in degrees, 0xRRGGBBAA.
-	static function hue(degrees:Float):Int {
-		var h = degrees / 60;
-		inline function channel(n:Float):Int {
-			var k = (n + h) % 6;
-			return Std.int((1 - Math.max(0, Math.min(1, Math.min(k, 4 - k)))) * 255);
-		}
-		return channel(5) << 24 | channel(3) << 16 | channel(1) << 8 | 255;
+	// The flash held on a material, in the flash's color.
+	function holdFlash(m:Material):Void {
+		var flash = new HitFlash(m);
+		flash.color = flashColor;
+		flash.amount = flashAmount;
 	}
 
 	// Everything off: the materials on the stage's own shading with no rim (none of them came with one) and no flash, no pass, effect or
@@ -705,8 +804,12 @@ class App extends BaseApp {
 		chosen = index;
 		shown = true;
 		allOff();
-		for (i in 0...entries.length)
-			entries[i].panel.visible = i == index;
+		for (i in 0...entries.length) {
+			var e = entries[i];
+			e.panel.visible = i == index;
+			for (k in 0...e.colors.length)
+				e.colors[k].panel.visible = i == index && k == e.color;
+		}
 		if (index >= 0)
 			entries[index].on();
 	}
@@ -734,10 +837,24 @@ class App extends BaseApp {
 			ui.update();
 			if (list.changed)
 				show(list.selectedIndex);
-			if (chosen >= 0)
-				for (s in entries[chosen].sliders)
+			if (chosen >= 0) {
+				var e = entries[chosen];
+				for (s in e.sliders)
 					if (s.widget.changed)
 						s.set(s.widget.value);
+				var c = e.colors.length > 0 ? e.colors[e.color] : null;
+				if (c != null && c.picker.changed)
+					c.set(c.value = c.picker.color);
+				// Another of its colors chosen: that color's panel shown in this one's place, its list choosing it.
+				if (c != null && c.which != null && c.which.changed && c.which.selectedIndex >= 0) {
+					c.panel.visible = false;
+					e.color = c.which.selectedIndex;
+					c.which.selectedIndex = e.colors.indexOf(c);
+					var next = e.colors[e.color];
+					next.which.selectedIndex = e.color;
+					next.panel.visible = true;
+				}
+			}
 			if (!ui.capturingKeys) {
 				var count = entries.length;
 				if (input.isFramePressed(Key.PageDown))
@@ -753,8 +870,8 @@ class App extends BaseApp {
 			}
 			if (input.isFramePressed(Key.F)) {
 				for (m in materials)
-					new HitFlash(m).trigger(0xff3020ff, .3);
-				spriteFlash.trigger(0xff3020ff, .3);
+					new HitFlash(m).trigger(flashColor, .3);
+				spriteFlash.trigger(spriteFlash.color, .3);
 			}
 			if (input.isFramePressed(Key.O))
 				orbit.running = !orbit.running;
@@ -827,12 +944,26 @@ typedef Setting = {
 	widget:Null<Slider>
 }
 
+/** A color of a shader's: its text, its value (0xRRGGBBAA), whether its alpha means anything (its picker then has an alpha bar), what it sets,
+	and once made its panel, the list there choosing among the shader's colors (when it has several) and its picker. */
+typedef ColorSetting = {
+	label:String,
+	value:Int,
+	alpha:Bool,
+	set:Int->Void,
+	panel:Null<Panel>,
+	which:Null<ListView>,
+	picker:Null<ColorPicker>
+}
+
 /** A shader in the menu: its name, its kind (surface, pass, screen, sprite), how it's turned on (everything else off first), its sliders and
-	their panel. */
+	their panel, its colors and which of them is shown. */
 typedef Entry = {
 	name:String,
 	kind:String,
 	on:Void->Void,
 	sliders:Array<Setting>,
-	panel:Null<Panel>
+	panel:Null<Panel>,
+	colors:Array<ColorSetting>,
+	color:Int
 }

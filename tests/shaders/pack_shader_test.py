@@ -142,6 +142,16 @@ class SurfaceTests(unittest.TestCase):
             self.assertNotIn('out mediump vec4', fragment)
         self.assertIn('helix_joint_texture', shader['skinnedCaster']['glsl300es']['vertex'])
 
+    def test_model_space_in_every_variant(self):
+        # Where a fragment is on the model at rest (helix_model_position, helix_model_normal) reads alike in the program, its skinned variant
+        # and its casters: each vertex stage passes the vertex as the mesh gives it, before skinning moves it.
+        shader = self.pack(SURFACE.replace('helix_output(', 'if (helix_model_position().x * helix_model_normal().y < 0.0) discard;\n    helix_output('))
+        for name, variant in (('program', shader), ('skinned', shader['skinned']), ('caster', shader['caster']), ('skinnedCaster', shader['skinnedCaster'])):
+            with self.subTest(variant=name):
+                self.assertRegex(variant['glsl410']['vertex'], r'helix_v_model_position = position;')
+                self.assertRegex(variant['glsl410']['vertex'], r'helix_v_model_normal = normal;')
+                self.assertIn('helix_v_model_position', variant['glsl410']['fragment'])
+
     def test_caster_for_vertex_hook(self):
         shader = self.pack(HOOK + SURFACE)
         self.assertIn('caster', shader)

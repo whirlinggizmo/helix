@@ -17,7 +17,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 - **The autopilot's UI:** probes that report which widgets are showing, and events recorded for scripts to wait on, beside `click`.
 - **An action bound to a UI widget:** the drawn touch button and the region it presses as one binding, when the UI asks for it.
 - **Animation layers:** an upper body's clip over a lower body's.
-- **The shader library's next pieces:** an outline's width in pixels, held by the distance (world units only today); values of a sprite's own in its vertices, so sprites with one effect but their own flash or palette row share a draw; sprite effects on a stage's text; a dissolve laid out in the model's space for models whose UVs are an atlas (the gallery's character, her parts each a small region of one texture, barely dissolves).
+- **The shader library's next pieces:** an outline's width in pixels, held by the distance (world units only today); values of a sprite's own in its vertices, so sprites with one effect but their own flash or palette row share a draw; sprite effects on a stage's text.
 - **Morph targets**, and more than four joints a vertex.
 - **`ISocket`:** milestone 17.
 - **The scene file's next kinds:** a prefab's reference to a node outside itself (an instantiating entry passing a reference down, so a car prefab's behavior could name the race), and the 2D kinds under a `Node2D` root.

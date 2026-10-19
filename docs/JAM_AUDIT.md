@@ -41,7 +41,7 @@ What a game jam would stall on, checked against what HeliX has (October 2026, af
 
 | Item | Status | Notes |
 |---|---|---|
-| Surface: toon, dissolve, water | done (milestone 13) | `helix.shaders`' `Toon`, `Dissolve` (its shadow dissolving with it) and `Water` (its waves moving its shadow), and `Unlit`, made on a material in one line, static or skinned; the `shaders` example keeps one of its own to show how one is written |
+| Surface: toon, dissolve, water | done (milestone 13) | `helix.shaders`' `Toon`, `Dissolve` (laid over the model in its own space, its shadow dissolving with it) and `Water` (its waves moving its shadow), and `Unlit`, made on a material in one line, static or skinned; the `shaders` example keeps one of its own to show how one is written |
 | Surface: outline, silhouette, rim light, flash or hit tint | done (milestone 13) | `Outline` (an inverted hull, a width in world units) and `Silhouette` (depth greater) as passes on a model; `Rim` and `HitFlash` as every material's terms, whatever its shader |
 | Screen: bloom and glow | done (milestone 13) | `Bloom` over an HDR scene (half floats where the GPU draws them), down six halving intermediates and back up, `PostProcess` growing intermediates at fractions of the frame |
 | Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | done (milestone 13) | `Fxaa`, `Blur`, `Vignette`, `ColorLut`, `Crt`, `ChromaticAberration`, `Pixelate` and `Tonemap`, each a class whose fields are its parameters; the `shader-gallery` example shows every one |
