@@ -28,7 +28,7 @@ static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:Stri
 - `effects`: The sound effects' bus, under master: what play plays through. Kept across a hot reload (@:hot).
 - `addBus`: A new bus named name under parent, at volume 1, held as a reference (`@:hot static final ambience = Audio.addBus("ambience", Audio.effects)`); its name is what saveBuses and loadBuses know it by. Null, adding none, for an empty name or one a bus has.
 - `play`: Plays sound through effects from the beginning at volume (0 to 1), looping if asked: effects.play.
-- `crossfade`: Fades from to silence and stops it, and to from its volume up to toVolume (1 by default; the track's own level), both over seconds: start to at 0 (`Audio.crossfade(theme, Audio.music.play(next, true, 0), 2)`).
+- `crossfade`: Fades from to silence and stops it, and to from its volume up to toVolume (1 by default; the track's own level), both over seconds and linear in power (FadeCurve.Power), so the two together hold their loudness through the middle: start to at 0 (`Audio.crossfade(theme, Audio.music.play(next, true, 0), 2)`).
 - `saveBuses`: Saves every bus's volume and mute by name as JSON under key through Storage; done runs once it's written, failed (else the log, with the key) for a failed write or no Storage.
 - `loadBuses`: Loads the volumes and mutes saveBuses saved under key into the buses of their names, a name with no bus skipped; a volume is clamped, and assigning it ends a bus's fade. done runs once they're set, or nothing was saved; failed (else the log, with the key) for a failed read, a file that isn't the saved JSON, or no Storage.
 - `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
@@ -214,23 +214,29 @@ function all():Array<Bus>
 
 *class* in `src/helix/audio/Fade.hx`
 
-A volume (0 to 1) moving from one level to another over seconds, linear in decibels so it sounds even: a silent end is taken as FLOOR_DB, and the last step lands on the end exactly. A bus's and a playback's fades each step one, once a frame.
+A volume (0 to 1) moving from one level to another over seconds along a curve (FadeCurve): linear in decibels so it sounds even, a silent end taken as FLOOR_DB, or linear in power for a crossfade; the last step lands on the end exactly. A bus's and a playback's fades each step one, once a frame.
 
 ```haxe
-function new(from:Float, to:Float, seconds:Float, ?done:() -> Void)
+function new(from:Float, to:Float, seconds:Float, ?done:() -> Void, ?curve:FadeCurve = FadeCurve.Decibels)
 static var FLOOR_DB(inline, null):Float
-static function at(from:Float, to:Float, fraction:Float):Float
+static function at(from:Float, to:Float, fraction:Float, ?curve:FadeCurve = FadeCurve.Decibels):Float
 final done:Null<() -> Void>
 var finished(get, never):Bool
 function step(delta:Float):Float
 ```
 
-- `new`: From volume from to volume to (each 0 to 1) over seconds (0 or less ends at the first step), done run at the end by its owner.
+- `new`: From volume from to volume to (each 0 to 1) over seconds (0 or less ends at the first step) along curve, done run at the end by its owner.
 - `FLOOR_DB`: The level a silent end (a volume of 0) is taken as, in decibels.
-- `at`: The volume fraction (0 to 1) of the way from volume from to volume to, linear in decibels, each end under FLOOR_DB's level taken as FLOOR_DB; to itself at 1.
+- `at`: The volume fraction (0 to 1) of the way from volume from to volume to along curve: linear in decibels, each end under FLOOR_DB's level taken as FLOOR_DB, or linear in power; to itself at 1.
 - `done`: Runs once it reaches its end; null for none.
 - `finished`: Whether it has reached its end.
 - `step`: Moves it on by delta seconds (under 0 as 0) and returns the volume there: to exactly once finished.
+
+## FadeCurve
+
+*abstract* in `src/helix/audio/FadeCurve.hx`
+
+How a Fade moves between its levels: Decibels, linear in decibels, even to the ear for a fade to or from silence (a bus's and a playback's fades); Power, linear in power (the volume's square), so two sounds crossfaded this way, one out and one in, keep their sum's loudness through the middle (Audio.crossfade).
 
 ## IAudio
 

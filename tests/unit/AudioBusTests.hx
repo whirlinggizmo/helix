@@ -141,7 +141,7 @@ private class Memory implements IStore {
 }
 
 /** Buses and playbacks over a recording IAudio (helix.audio.Bus, AudioPlayback, Audio's statics): heard volumes through buses and a mute,
-	fades linear in decibels, stopWhenSilent, crossfade, pitch and pan clamped and sent, a bus made before any service is bound, saving and
+	fades linear in decibels, stopWhenSilent, crossfade linear in power, pitch and pan clamped and sent, a bus made before any service is bound, saving and
 	loading the buses through Storage. */
 class AudioBusTests {
 	static var checks = 0;
@@ -234,13 +234,16 @@ class AudioBusTests {
 		check(instant.bus == Audio.effects, "Audio.play plays through effects");
 		instant.stop();
 
-		// Crossfade: the old one fades out and stops, the new one up to 1.
+		// Crossfade: the old one fades out and stops, the new one up to 1, linear in power: the two hold their summed power throughout.
+		check(near(Fade.at(1, 0, .25, Power), Math.sqrt(.75)) && near(Fade.at(0, .5, .5, Power), Math.sqrt(.125)), "Linear in power");
 		var old = Audio.music.play(clip, true, 1),
 			next = Audio.music.play(clip, true, 0);
 		Audio.crossfade(old, next, 2);
 		sounds.poll(1);
-		check(near(old.volume, Math.pow(10, -30 / 20)) && near(next.volume, Math.pow(10, -30 / 20)), "Crossfade's middle");
-		sounds.poll(1);
+		check(near(old.volume, Math.sqrt(.5)) && near(next.volume, Math.sqrt(.5)), "Crossfade's middle, each at half the power");
+		sounds.poll(.5);
+		check(near(old.volume * old.volume + next.volume * next.volume, 1), "Crossfade's summed power held");
+		sounds.poll(.5);
 		check(old.finished && next.volume == 1 && !next.finished, "Crossfade ends with the old stopped and the new at 1");
 
 		// Pitch and pan, clamped and sent.

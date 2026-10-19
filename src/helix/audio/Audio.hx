@@ -42,11 +42,12 @@ class Audio {
 	public static function play(sound:AudioResource, loop = false, volume = 1.):AudioPlayback
 		return effects.play(sound, loop, volume);
 
-	/** Fades from to silence and stops it, and to from its volume up to toVolume (1 by default; the track's own level), both over seconds: start to at 0 (`Audio.crossfade(theme,
+	/** Fades from to silence and stops it, and to from its volume up to toVolume (1 by default; the track's own level), both over seconds and
+		linear in power (FadeCurve.Power), so the two together hold their loudness through the middle: start to at 0 (`Audio.crossfade(theme,
 		Audio.music.play(next, true, 0), 2)`). */
 	public static function crossfade(from:AudioPlayback, to:AudioPlayback, seconds:Float, toVolume = 1.):Void {
-		from.fade(0, seconds, null, true);
-		to.fade(toVolume, seconds);
+		from.fadeAlong(0, seconds, null, true, Power);
+		to.fadeAlong(toVolume, seconds, null, false, Power);
 	}
 
 	/** Saves every bus's volume and mute by name as JSON under key through Storage; done runs once it's written, failed (else the log, with

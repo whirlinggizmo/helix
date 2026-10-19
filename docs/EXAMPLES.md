@@ -14,7 +14,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `app-window` | window size, position, fullscreen and displays (properties, `can` and `request`) |
 | `app-gamepad` | four pads in the W3C standard layout |
 | `app-touch` | two-finger pan, pinch and twist; images and mipmaps |
-| `audio-music` | streamed music and decoded clips, with play state |
+| `audio-music` | streamed music and decoded clips, with play state; the music bus faded, a crossfade to a second track, pitch and pan, and natively with `HELIX_ASSET_HOST` the music played as it downloads |
 | `asset-fetch` | assets from a host, the cache, and asking whether a host answers |
 | `asset-force-fetch` | ensure with a source and past the cache |
 | `scenes` | a game's flow on a scene stack: the built-in splash ("press any key" until a press unlocks audio), a title, a level loading behind the built-in loading scene, a pause menu pushed over it and popped, fades between; its autopilot runs the flow on both targets |

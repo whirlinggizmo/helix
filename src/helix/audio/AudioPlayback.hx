@@ -147,10 +147,15 @@ class AudioPlayback {
 	/** Moves its volume to to (0 to 1, clamped) over seconds (0 or less, or NaN, sets it at once), linear in decibels, a silent end taken as
 		-60 dB; at the end done runs (during this call for 0 seconds) and, with stopWhenSilent and an end of 0, it stops. A fade started over
 		another, or a volume assigned, ends the earlier one, whose done doesn't run. Nothing once it has finished. */
-	public function fade(to:Float, seconds:Float, ?done:Void->Void, stopWhenSilent = false):Void {
+	public function fade(to:Float, seconds:Float, ?done:Void->Void, stopWhenSilent = false):Void
+		fadeAlong(to, seconds, done, stopWhenSilent, Decibels);
+
+	/** fade along curve: Audio.crossfade's, linear in power. */
+	@:allow(helix.audio.Audio)
+	function fadeAlong(to:Float, seconds:Float, done:Null<Void->Void>, stopWhenSilent:Bool, curve:FadeCurve):Void {
 		if (finished)
 			return;
-		var fade = new Fade(volume, to > 0 ? (to < 1 ? to : 1) : 0, seconds, done);
+		var fade = new Fade(volume, to > 0 ? (to < 1 ? to : 1) : 0, seconds, done, curve);
 		if (fade.finished) {
 			volume = fade.step(0);
 			ended(fade, stopWhenSilent);
