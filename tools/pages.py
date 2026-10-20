@@ -1,8 +1,8 @@
-"""The examples' site, for GitHub Pages: every example built for the web into build/web (tools/example.py), a thumbnail of each taken in a
-headless browser (tools/pages_shots.cjs), and build/web/index.html, the examples as tiles in groups, each its thumbnail, name and what it shows
-(from docs/EXAMPLES.md), with its size: its code (app.js), as sent (gzipped, as Pages serves it), and the assets it loaded before its
-thumbnail, which the browser caches. Each example's page gains a bar: the index, the previous and next example, and its source. build/web is then the
-site as it's served, the examples sharing build/web/assets.
+"""The examples' site, for GitHub Pages: every example built as js-release-webgl2 (tools/example.py), into out/js/release-webgl2/site, a
+thumbnail of each taken in a headless browser (tools/pages_shots.cjs), and the site's index.html, the examples as tiles in groups, each its
+thumbnail, name and what it shows (from docs/EXAMPLES.md), with its size: its code (app.js), as sent (gzipped, as Pages serves it), and the
+assets it loaded before its thumbnail, which the browser caches. Each example's page gains a bar: the index, the previous and next example,
+and its source. out/js/release-webgl2/site is then the site as it's served, the examples sharing its assets/, and the API reference at api/.
 
   python3 tools/pages.py --browser /path/to/chromium [--no-build]"""
 import argparse
@@ -21,6 +21,11 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import example
+from build_name import Build
+
+# The build the site is: the browser's release build, its site/ folder.
+BUILD=Build('js','release','webgl2')
+SITE=BUILD.programs
 
 # The index's groups, in order; every example is in one, so a new example must be placed.
 GROUPS=[
@@ -68,7 +73,7 @@ def size(count):
 
 def sizes(requested):
     """Each example's code (app.js, minified, then gzipped as Pages sends it) and the assets it requested, in bytes, from the files served."""
-    web=ROOT/'build/web';out={}
+    web=SITE;out={}
     for name,paths in requested.items():
         script=(web/name/'app.js').read_bytes()
         assets=sum((web/p.lstrip('/')).stat().st_size for p in set(paths) if p.startswith('/assets/') and (web/p.lstrip('/')).is_file())
@@ -76,7 +81,7 @@ def sizes(requested):
     return out
 
 def index(shows,commit,weights):
-    """build/web/index.html: a section a group, a tile an example."""
+    """The site's index.html: a section a group, a tile an example."""
     sections=[]
     for title,members in GROUPS:
         tiles=[]
@@ -89,7 +94,7 @@ def index(shows,commit,weights):
         sections.append(f'<section><h2>{html.escape(title)}</h2>\n<ul class="grid">\n'+'\n'.join(tiles)+'\n</ul></section>')
     page=(ROOT/'examples/shared/pages/index.html').read_text(encoding='utf-8')
     page=page.replace('{{sections}}','\n'.join(sections)).replace('{{count}}',str(len(order()))).replace('{{commit}}',commit).replace('{{short}}',commit[:7])
-    (ROOT/'build/web/index.html').write_text(page,encoding='utf-8')
+    (SITE/'index.html').write_text(page,encoding='utf-8')
 
 def weight(code,sent,assets):
     """A tile's size: the code, with what's sent of it (gzipped) in parentheses, then the assets it loads, which the browser keeps."""
@@ -109,13 +114,13 @@ def bar(name,previous,following):
             +''.join(f'<a href="{href}" title="{html.escape(label)}" aria-label="{html.escape(label)}">{text}</a>' for href,label,text in links)+'</nav>')
 
 def shots(browser,all_names):
-    """The thumbnails, build/web/thumbnails/<name>.webp, from the site served locally; returns what each example requested (its paths)."""
-    out=ROOT/'build/web/thumbnails';out.mkdir(parents=True,exist_ok=True)
+    """The thumbnails, thumbnails/<name>.webp in the site, from the site served locally; returns what each example requested (its paths)."""
+    out=SITE/'thumbnails';out.mkdir(parents=True,exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
-    server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Quiet,directory=str(ROOT/'build/web')))
+    server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Quiet,directory=str(SITE)))
     threading.Thread(target=server.serve_forever,daemon=True).start()
-    requests=ROOT/'build/examples/pages-requests.json';requests.parent.mkdir(parents=True,exist_ok=True)
+    requests=BUILD.scratch/'pages-requests.json';requests.parent.mkdir(parents=True,exist_ok=True)
     try:subprocess.run(['node',str(ROOT/'tools/pages_shots.cjs'),browser,f'http://127.0.0.1:{server.server_address[1]}',str(out),str(requests)]
                        +[f'{name}={WAITS.get(name,WAIT)}' for name in all_names],cwd=ROOT,check=True)
     finally:server.shutdown()
@@ -127,20 +132,20 @@ def main():
     a=p.parse_args()
     ordered=order();shows=descriptions()
     if not a.no_build:
-        for name in ordered:example.build(name,'web')
+        for name in ordered:example.build(name,BUILD)
     for i,name in enumerate(ordered):
-        page=ROOT/f'build/web/{name}/index.html';text=page.read_text(encoding='utf-8')
+        page=SITE/name/'index.html';text=page.read_text(encoding='utf-8')
         text=re.sub(r'<style>#helix-pages.*?</nav>','',text,flags=re.S)
         page.write_text(text.replace('<script src="app.js">',bar(name,ordered[i-1],ordered[(i+1)%len(ordered)])+'<script src="app.js">'),encoding='utf-8')
-    (ROOT/'build/web/favicon.png').write_bytes((example.SHARED/'favicon.png').read_bytes())
+    (SITE/'favicon.png').write_bytes((example.SHARED/'favicon.png').read_bytes())
     # The API reference beside the examples, at /api/ (tools/gen_apidoc.py, from the doc comments).
     import gen_apidoc
     gen_apidoc.main()
-    if (ROOT/'build/web/api').exists():shutil.rmtree(ROOT/'build/web/api')
-    shutil.copytree(ROOT/'build/api',ROOT/'build/web/api',ignore=shutil.ignore_patterns('xml','unused*'))
+    if (SITE/'api').exists():shutil.rmtree(SITE/'api')
+    shutil.copytree(ROOT/'build/api',SITE/'api',ignore=shutil.ignore_patterns('xml','unused*'))
     weights=sizes(shots(a.browser,ordered))
     commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
     index(shows,commit,weights)
-    print(f'pages: build/web holds the site, {len(ordered)} examples',flush=True)
+    print(f'pages: {SITE.relative_to(ROOT).as_posix()} holds the site, {len(ordered)} examples',flush=True)
 
 if __name__=='__main__':main()

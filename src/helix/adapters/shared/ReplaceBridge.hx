@@ -3,7 +3,7 @@ package helix.adapters.shared;
 #if cpp
 @:buildXml('<files id="helix-shared-replace" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/>
- <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/>
+ <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/>
  <depend name="${HELIX_ROOT}/src/helix/adapters/shared/replace.h"/>
  <file name="shared/replace.c"/>
 </files>

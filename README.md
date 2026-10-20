@@ -14,7 +14,7 @@ Locally, with Haxe 4.3.7, Python 3 and `sokol-shdc` (the rest, and the native to
 
 ```console
 python3 tools/example.py animation dev   # http://localhost:8060/, hot reload as you edit
-python3 tools/example.py animation build native                   # build/native/animation/Main
+python3 tools/example.py animation build release-sokol-gl         # out/linux-x64/release-sokol-gl/bin/animation/animation
 ```
 
 ## Documents

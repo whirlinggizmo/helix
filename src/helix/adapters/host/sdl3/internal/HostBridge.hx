@@ -5,7 +5,7 @@ package helix.adapters.host.sdl3.internal;
 	Xlib too, to ask whether X is XWayland; on Windows, DWM's, to wait on the compositor. */
 @:buildXml('<files id="helix-host-sdl3" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor/sdl3"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/host/sdl3/internal"/>
- <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
+ <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
  <depend name="${HELIX_ROOT}/vendor/sdl3/SDL3/SDL.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/shared/surface.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/shared/window.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/host/sdl3/internal/host.h"/>
  <file name="host/sdl3/internal/host.c"/>

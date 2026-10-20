@@ -53,7 +53,7 @@ def place_runtimes(folder,sdl3=None):
         else:shutil.copy2(runtime,folder)
 
 def env(sdl3=None):
-    """The environment hxcpp's build reads: HeliX's root, the codec, a shared compile cache, and for the SDL3 profile the library sdl3 names
+    """The environment hxcpp's build reads: HeliX's root, the codec, a shared compile cache, and for an SDL3 backend the library sdl3 names
     (tools/sdl3.py's find)."""
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
     config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n', encoding='utf-8')

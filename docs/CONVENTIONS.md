@@ -68,6 +68,24 @@ python3 tools/gen_apidoc.py     # the API reference: docs/api (committed; --chec
 
 The formatter and dox are pinned in `dependencies.json` and installed into the repository's own haxelib (`build/haxelib`), as hxcpp is.
 
+## Build
+
+A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`, each part chosen from a fixed list, so a name says what was built and where it is (`tools/build_name.py` holds the lists and the folders; DECISIONS 137).
+
+- **platform:** what the program links against, this machine's for a native build: `linux-x64`, `linux-arm64`, `macos-arm64`, `macos-x64`, `windows-x64-msvc` (hxcpp's default on Windows; `windows-x64-mingw` would be MinGW's, not supported yet), and `js` for the browser.
+- **config:** `debug` or `release`. `release` is what ships: full dead-code elimination, the analyzer's optimizations, Terser in the browser. `debug` finds faults: Haxe's `-debug` (a source map in the browser; natively hxcpp's debug runtime with stack lines and null checks), the standard dead-code elimination, no optimizer, and the adapters' C unoptimized with its assertions and sokol_gfx's validation on.
+- **backend:** always named, never implied by the platform: the exact API the build draws with, `webgl2`, `sokol-gl`, `sdl3-gl`, `sdl3-gpu`. sokol is built for GL on every system today, so its Direct3D 11 and Metal builds, when they come, are `sokol-d3d11` and `sokol-metal`; WebGPU's is `webgpu`. `sdl3-gpu` is SDL_GPU, whose driver (Vulkan, Direct3D 12, Metal) SDL picks as the program starts. A profile and its launcher are named for their backend (`Sdl3GpuProfile`, `examples/shared/launch/sdl3-gpu`). A `headless` backend (no window or GPU, for tests) is to come; none exists yet.
+- **options**, then a **sanitizer**, in that order: a name only adds, never `-noX`. The one option is `dev`, the browser's page with hot reload built in, which only the dev loop makes (`js-debug-webgl2-dev`); there are no sanitizer builds yet.
+
+A build's results go to `out/<platform>/<config>-<backend>[-<option>...]/`: natively `bin/<example>/` holding the program, named for its example, and what it loads beside it; in the browser `site/<example>/`; and beside the examples' folders the `assets/` they share, which each loads as `../assets`, so `bin/` or `site/` is what ships. Everything else the build makes is scratch in `build/<name>/` (the HXML, hxcpp's generated C++ and objects). The tools write all of `out/`, so deleting it is a clean; nothing reads results from `build/`. The tools take `<config>-<backend>` with the platform this machine's, or the whole name:
+
+```console
+python3 tools/example.py asteroids build release-sdl3-gpu      # out/linux-x64/release-sdl3-gpu/bin/asteroids/asteroids
+python3 tools/example.py asteroids build                        # release-webgl2: out/js/release-webgl2/site/asteroids/
+python3 tools/example.py asteroids autopilot debug-sokol-gl --browser ...   # against js-debug-webgl2
+python3 tools/example.py asteroids dev                          # js-debug-webgl2-dev
+```
+
 ## Examples
 
 - An example shows a feature through the framework's API. Work that a game would otherwise repeat (hit tests, timers, layout) belongs in the framework; an example that has to do it by hand says so in its comment.

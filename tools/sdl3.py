@@ -1,4 +1,4 @@
-"""SDL3 for the SDL3 profile: the library a native build links, found or made into build/deps the first time. The headers are always
+"""SDL3 for the SDL3 backends (sdl3-gl, sdl3-gpu): the library a native build links, found or made into build/deps the first time. The headers are always
 vendor/sdl3's, SDL 3.4.18's (dependencies.json, sdl3), so a build never uses an API newer than the pin, whichever library it links.
 
 - Linux: the system's SDL3 when pkg-config finds one of 3.4.18 or newer (SDL keeps its ABI across 3.x); else the pinned source release,

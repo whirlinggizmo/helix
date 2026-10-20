@@ -5,12 +5,14 @@
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, both autopilots, natively in a private X display, and
 #   the browser asset cache across visits (tools/check_cache.py);
-#   on Windows and macOS, every example's native build under each profile, the examples split among four runners a system; on macOS,
+#   on Windows and macOS, every example's native build under each backend, the examples split among four runners a system; on macOS,
 #   both autopilots under SDL_GPU through Metal, in a window on the runner's virtual GPU.
+# - Builds are named <platform>-<config>-<backend> (docs/CONVENTIONS.md, Build), given to the tools as <config>-<backend>, the platform the
+#   runner's: release-sokol-gl, release-sdl3-gl and release-sdl3-gpu natively, release-webgl2 in the browser; their results in out/.
 # - On every push to main: the examples' site (tools/pages.py), deployed to GitHub Pages.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so no GL window opens there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one. Linux runs SDL_GPU's Vulkan through Mesa's software driver, lavapipe.
-# - The native profiles, sokol's and SDL3's with GL or SDL_GPU (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
+# - The native backends, sokol-gl, sdl3-gl and sdl3-gpu (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
 #   SPIRV-Cross (tools/gpu_shaders.py, in build/deps): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
 #   (CMake, the runner's) and the official release on Windows and macOS, kept in build/deps and cached.
 #
@@ -75,11 +77,12 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
       - name: Tool, package and unit tests; Trig's bits on every target
         run: python helix.py test --native
-      - name: An example's native build under each profile (the adapters' C)
+      - name: An example's native build under each backend (the adapters' C), and in debug
         run: |
-          python tools/example.py asteroids build native
-          python tools/example.py asteroids build native-sdl3
-          python tools/example.py asteroids build native-sdl3-gpu
+          python tools/example.py asteroids build release-sokol-gl
+          python tools/example.py asteroids build release-sdl3-gl
+          python tools/example.py asteroids build release-sdl3-gpu
+          python tools/example.py asteroids build debug-sokol-gl
       - name: Every example type-checked on both targets
         if: runner.os == 'Linux'
         run: python tools/check_types.py
@@ -119,11 +122,11 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: A quarter of the examples, natively under each profile
+      - name: A quarter of the examples, natively under each backend
         run: |
-          python tools/example.py all build native --group ${{ matrix.group }}/4
-          python tools/example.py all build native-sdl3 --group ${{ matrix.group }}/4
-          python tools/example.py all build native-sdl3-gpu --group ${{ matrix.group }}/4
+          python tools/example.py all build release-sokol-gl --group ${{ matrix.group }}/4
+          python tools/example.py all build release-sdl3-gl --group ${{ matrix.group }}/4
+          python tools/example.py all build release-sdl3-gpu --group ${{ matrix.group }}/4
 
   full:
     name: services and autopilots (Linux, daily)
@@ -158,26 +161,26 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
-      - name: Platform services, in Chrome and natively under each profile
+      - name: Platform services, in Chrome and natively, sokol's and SDL3's
         env:
           HELIX_AUDIO: "0"
         # The runner has no sound card: ALSA's default device is made a null one, so sokol_audio opens and its mixer runs.
         run: |
           printf 'pcm.!default { type null }\n' > ~/.asoundrc
-          python helix.py services --browser "$CHROME" --native
-          python helix.py services --browser "$CHROME" --native --native-profile sdl3
-      - name: The autopilots, the same final game in Chrome and natively under each profile
+          python helix.py services --browser "$CHROME" --native release-sokol-gl
+          python helix.py services --browser "$CHROME" --native release-sdl3-gl
+      - name: The autopilots, the same final game in Chrome and natively under sokol-gl and sdl3-gl
         env:
           HELIX_AUDIO: "0"
         run: |
-          python tools/example.py asteroids autopilot --browser "$CHROME"
-          python tools/example.py blocks autopilot --browser "$CHROME"
-          python tools/example.py asteroids autopilot native-sdl3 --browser "$CHROME"
-          python tools/example.py blocks autopilot native-sdl3 --browser "$CHROME"
+          python tools/example.py asteroids autopilot release-sokol-gl --browser "$CHROME"
+          python tools/example.py blocks autopilot release-sokol-gl --browser "$CHROME"
+          python tools/example.py asteroids autopilot release-sdl3-gl --browser "$CHROME"
+          python tools/example.py blocks autopilot release-sdl3-gl --browser "$CHROME"
       - name: The browser asset cache across visits (revalidation and manifests)
         run: |
-          python tools/example.py sprite2d build web
-          python tools/example.py sprite2d build native
+          python tools/example.py sprite2d build release-webgl2
+          python tools/example.py sprite2d build release-sokol-gl
           python tools/check_cache.py --native --browser "$CHROME"
       - name: The autopilots under SDL_GPU, on Vulkan through Mesa's software driver (lavapipe)
         env:
@@ -185,8 +188,8 @@ jobs:
           SDL_GPU_DRIVER: vulkan
           VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.json
         run: |
-          python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
-          python tools/example.py blocks autopilot native-sdl3-gpu --browser "$CHROME"
+          python tools/example.py asteroids autopilot release-sdl3-gpu --browser "$CHROME"
+          python tools/example.py blocks autopilot release-sdl3-gpu --browser "$CHROME"
       - name: The autopilots' results
         if: always()
         uses: actions/upload-artifact@v4
@@ -228,13 +231,13 @@ jobs:
         run: python tools/pages.py --browser "$CHROME"
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
+          path: out/js/release-webgl2/site
       - id: deploy
         uses: actions/deploy-pages@v4
 
   mac-gpu:
     name: SDL_GPU on CI's Mac (Metal, daily)
-    # Both autopilots under the SDL_GPU profile, in a window SDL_GPU draws in through Metal on the runner's virtual GPU.
+    # Both autopilots under sdl3-gpu, in a window SDL_GPU draws in through Metal on the runner's virtual GPU.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     steps:
@@ -268,8 +271,8 @@ jobs:
         env:
           HELIX_AUDIO: "0"
         run: |
-          python tools/example.py asteroids autopilot native-sdl3-gpu --browser "$CHROME"
-          python tools/example.py blocks autopilot native-sdl3-gpu --browser "$CHROME"
+          python tools/example.py asteroids autopilot release-sdl3-gpu --browser "$CHROME"
+          python tools/example.py blocks autopilot release-sdl3-gpu --browser "$CHROME"
       - name: The autopilots' results
         if: always()
         uses: actions/upload-artifact@v4

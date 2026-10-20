@@ -18,7 +18,8 @@ import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/api'
 DOCS=ROOT/'docs/api'
-# The browser's adapters, by their API's name (the folder under each contract), and its profile; every other adapter and profile is native.
+# The browser's adapters, by their API's name (the folder under each contract), and its profiles, named for a backend among them (WebGL2Profile);
+# every other adapter and profile is native.
 BROWSER_APIS={'dom','webgl2','webaudio','fetchapi','indexeddb','canvas','download'}
 
 def targets():
@@ -30,7 +31,7 @@ def targets():
         for api in sorted(contract.iterdir()):
             if api.is_dir():(browser if api.name in BROWSER_APIS else native).append(f'helix.adapters.{contract.name}.{api.name}')
     for profile in sorted((ROOT/'src/helix/profiles').glob('*.hx')):
-        (browser if profile.stem.startswith('Browser') else native).append(f'helix.profiles.{profile.stem}')
+        (browser if profile.stem.removesuffix('Profile').lower() in BROWSER_APIS else native).append(f'helix.profiles.{profile.stem}')
     return browser,native
 
 def describe(target,ignore):
@@ -165,7 +166,7 @@ def markdown(xmls):
     return out
 
 def main():
-    if not (ROOT/'build/generated/shaders/shader-contract.json').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build web')
+    if not (ROOT/'build/generated/shaders/shader-contract.json').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build')
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     check='--check' in sys.argv[1:]
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)

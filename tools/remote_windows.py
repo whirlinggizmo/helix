@@ -6,7 +6,7 @@
 Packs the working tree (tracked files and new ones git doesn't ignore) with what npm made here
 (build/fixtures), the examples' generated sounds (build/generated/*/assets) and the node tools (build/tools/node_modules, plain JavaScript).
 The Windows machine needn't have FFmpeg. It copies the archive with scp into a scratch folder in the remote user's profile and runs each
---then there as `python TOOL ARGS` in the copied tree (default: the hello example's native build). The scratch folder and the archive are
+--then there as `python TOOL ARGS` in the copied tree (default: the hello example's release-sokol-gl build). The scratch folder and the archive are
 deleted afterwards, also when a step fails, unless --keep.
 
 --env sets a variable for every step (SDL_GPU_DRIVER=vulkan, say).
@@ -28,7 +28,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED = ()
 OPTIONAL = ('build/generated/*/assets', 'build/tools/node_modules')
-DEFAULT = ['tools/example.py app-hello build native']
+DEFAULT = ['tools/example.py app-hello build release-sokol-gl']
 
 
 def working_tree():

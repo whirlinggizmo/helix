@@ -6,8 +6,11 @@ the program run from its own folder (an example's build, which loads ../assets) 
 
     python3 tools/measure_cpu.py [--seconds 20] [--runs 3] CASE...
 
-    python3 tools/measure_cpu.py sokol-gl:build/native/shadows/Main sdl3-gl:build/native-sdl3/shadows/Main \\
-        vulkan:build/native-sdl3-gpu/shadows/Main:SDL_GPU_DRIVER=vulkan d3d12:build/native-sdl3-gpu/shadows/Main:SDL_GPU_DRIVER=direct3d12
+    python3 tools/measure_cpu.py sokol-gl:out/linux-x64/release-sokol-gl/bin/shadows/shadows \\
+        sdl3-gl:out/linux-x64/release-sdl3-gl/bin/shadows/shadows \\
+        vulkan:out/linux-x64/release-sdl3-gpu/bin/shadows/shadows:SDL_GPU_DRIVER=vulkan
+
+(on Windows out/windows-x64-msvc/..., the programs shadows.exe, and d3d12:...:SDL_GPU_DRIVER=direct3d12 too)
 
 Each run opens the program's window where this runs (on Windows through tools/remote_windows.py --desktop, on Linux under
 tools/private_display.py). Lines the program prints naming its GPU (`HeliX SDL_GPU: ...`) are repeated, as a machine may have two.

@@ -57,7 +57,7 @@ Both are whole games, built and developed like every other example, on HeliX's o
 
 ```console
 python3 tools/example.py asteroids dev
-python3 tools/example.py blocks autopilot --browser /path/to/chromium
+python3 tools/example.py blocks autopilot release-sokol-gl --browser /path/to/chromium
 ```
 
 

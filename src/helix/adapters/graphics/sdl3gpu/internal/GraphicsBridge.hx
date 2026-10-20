@@ -5,7 +5,7 @@ package helix.adapters.graphics.sdl3gpu.internal;
 	and its own: setup, shutdown, and programs in the device's dialect. */
 @:buildXml('<files id="helix-graphics-sdl3gpu" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor/sdl3"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/graphics/sdl3gpu/internal"/>
- <compilerflag value="-DNDEBUG"/><compilerflag value="-O2" if="windows"/><compilerflag value="-O3" unless="windows"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
+ <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
  <depend name="${HELIX_ROOT}/vendor/sdl3/SDL3/SDL_gpu.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/shared/surface.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/shared/graphics.h"/><depend name="${HELIX_ROOT}/src/helix/adapters/graphics/sdl3gpu/internal/graphics_sdl3gpu.h"/>
  <file name="graphics/sdl3gpu/internal/graphics_sdl3gpu.c"/>

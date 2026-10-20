@@ -1,4 +1,8 @@
-"""Build/run identical Haxe async service tests against an isolated local HTTP server."""
+"""Build/run identical Haxe async service tests against an isolated local HTTP server: in the browser, and with --native BUILD natively too.
+
+BUILD is a native build's `<config>-<backend>` or whole name (docs/CONVENTIONS.md, Build), release-sokol-gl when --native is given alone;
+its backend's profile chooses the services under test: sokol-gl sokol_audio's output, sdl3-gl SDL3's (its dummy driver), the SDL3
+profile's under either of its backends. The program is built in build/<build>/services."""
 import argparse
 import ctypes
 from collections import Counter
@@ -20,23 +24,30 @@ BODY_BYTES=128*1024
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--browser',required=True);p.add_argument('--native',action='store_true')
- p.add_argument('--native-profile',choices=['sokol','sdl3'],default='sokol',help='the native audio output: sokol_audio, or SDL3 (its dummy driver)');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter);p.add_argument('--browser',required=True)
+ p.add_argument('--native',nargs='?',const='release-sokol-gl',metavar='BUILD',help='also natively: release-sokol-gl when not given, or release-sdl3-gl, either in debug');a=p.parse_args()
+ native=None
+ if a.native:
+  from build_name import parse
+  try:native=parse(a.native)
+  except ValueError as error:p.error(str(error))
+  if native.backend not in ('sokol-gl','sdl3-gl'):p.error(f'--native {a.native}: the services are sokol-gl\'s or sdl3-gl\'s (SDL3\'s, the same under sdl3-gpu)')
  build_dir=None
  from gen_fixtures import generate as fixtures_generate
  fixtures=fixtures_generate()
  build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
- if a.native:
+ if native:
   from pins import check_hxcpp
   from native_build import ARCH,env as native_env,place_runtimes
   from example import shader
   sdl3=None;defines=[]
-  if a.native_profile=='sdl3':
+  if native.backend=='sdl3-gl':
    import sdl3 as finder
    sdl3=finder.find();defines=['-D','helix_sdl3']
   check_hxcpp();shader();env=native_env(sdl3)
-  build_dir=build/('services-native-sdl3' if sdl3 else 'services-native')
-  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,'-dce','full','-D','analyzer-optimize','-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
+  build_dir=native.scratch/'services'
+  config=['-debug','-D','HXCPP_CHECK_POINTER'] if native.debug else ['-dce','full','-D','analyzer-optimize']
+  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,*config,'-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
   place_runtimes(build_dir,sdl3)
  counts=Counter();unchanged=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
@@ -97,14 +108,15 @@ def main():
   result['peakConcurrentTransfers']=peak
   result['requests']=dict(counts);result['singleDownloadStoredAudio']=True
   report={'browser':result}
-  if a.native:
+  if native:
    counts.clear();unchanged.clear();peak=0;runs=[]
    for _ in range(2):
-    child=dict(os.environ,SDL_AUDIO_DRIVER='dummy') if a.native_profile=='sdl3' else None
-    native=subprocess.run([str(build_dir/('ServiceTests.exe' if os.name=='nt' else 'ServiceTests')),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
-    if native.returncode!=0:
-     sys.stderr.write(native.stdout+native.stderr);raise SystemExit(f"native ServiceTests exited {native.returncode}")
-    output=native.stdout
+    child=dict(os.environ,SDL_AUDIO_DRIVER='dummy') if native.backend=='sdl3-gl' else None
+    program=build_dir/(('ServiceTests-debug' if native.debug else 'ServiceTests')+('.exe' if os.name=='nt' else ''))
+    ran=subprocess.run([str(program),base,str(build/'services-cache'/token)],cwd=ROOT,text=True, encoding='utf-8',capture_output=True,env=child)
+    if ran.returncode!=0:
+     sys.stderr.write(ran.stdout+ran.stderr);raise SystemExit(f"native ServiceTests ({native}) exited {ran.returncode}")
+    output=ran.stdout
     value=json.loads(output.strip().splitlines()[-1]);assert value['passed'];runs.append(value)
    assert not runs[0]['persisted'] and runs[1]['persisted']
    assert counts['/assets/fixture.wav']==1,dict(counts)
@@ -114,7 +126,7 @@ def main():
    from native_build import codec_library,codec_runtime
    # The library the program loaded: on Windows the DLL (codec_library is the import library linked), elsewhere the one linked.
    library=ctypes.CDLL(str(codec_runtime() or codec_library()));library.sf_version_string.restype=ctypes.c_char_p
-   report['native']={'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
+   report['native']={'build':native.name,'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
   report['sources']={str(file.relative_to(ROOT)):hashlib.sha256(file.read_bytes()).hexdigest() for group in ['src','tests'] for file in sorted((ROOT/group).rglob('*.hx'))}
   for source in ('src/helix/adapters/shared/mixer.c','src/helix/adapters/audio/sokol/internal/output_sokol.c'):report['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()
   report['sources']['src/helix/adapters/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapters/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()

@@ -1,18 +1,33 @@
-"""Examples: develop one under hotreload-hx, or build it for web or native; `all build TARGET` builds every example (`--group I/N`, a share
-of them).
+"""Examples: develop one under hotreload-hx, or build it for the browser or natively; `all build BUILD` builds every example (`--group I/N`,
+a share of them).
 
-An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the launchers
-and page in examples/shared. Each target's examples share one assets folder beside them, build/<target>/assets, which each loads as ../assets:
-the files in examples/assets, and each example's own, which may not claim a path the shared files or another example has. A larger example
-adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py there makes what's missing first); the web target's folder carries manifests (tools/gen_manifest.py), which the
-page's asset cache follows. An example's shaders/*.glsl are packed
-(tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page. The dev loop's page has
-its own folder, build/dev/<name>, so a build or autopilot of the same example never writes over the page a dev server serves.
+  python3 tools/example.py NAME build|autopilot|dev [BUILD]
 
-autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
-in a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
+A build is named by the rule in docs/CONVENTIONS.md (Build, tools/build_name.py): `<platform>-<config>-<backend>`, given here as
+`<config>-<backend>` (this machine's platform, js for webgl2) or whole. build builds release-webgl2 when not told; autopilot compares a
+native build, release-sokol-gl when not told, against the browser's in the same config; dev serves the browser's, debug-webgl2 when not
+told, as its own build with the dev option (`js-debug-webgl2-dev`), in a folder no build writes, so a build or autopilot of the same example
+never writes over the page a dev server serves.
+
+An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the page
+in examples/shared and the launcher of its backend (examples/shared/launch/<backend>). A build's examples go to its out/ folder: natively
+bin/<example>/, the program named for its example, in the browser site/<example>/; beside them one assets folder they share (bin/assets,
+site/assets), which each loads as ../assets: the files in examples/assets, and each example's own, which may not claim a path the shared
+files or another example has. A larger example adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py
+there makes what's missing first); the browser's folder carries manifests (tools/gen_manifest.py), which the page's asset cache follows.
+An example's shaders/*.glsl are packed (tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading
+in the page. The HXML and hxcpp's work are in build/<build>/.
+
+release builds as the examples ship: full dead-code elimination and the analyzer's optimizations, and in the browser Terser. debug builds
+for finding faults: Haxe's -debug (in the browser a source map; natively hxcpp's debug runtime, stack traces with lines and null checks,
+and the adapters' C unoptimized with its assertions and sokol's validation on), the standard library's dead-code elimination, no
+optimizer.
+
+autopilot builds both and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively in
+a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
 logged-in session (tools/remote_windows.py --desktop). Both must publish the same final game, and the same samples of the frame (the
-autopilot's sample: each point's color within the sample's tolerance per channel, 3 unless the script says, on both targets)."""
+autopilot's sample: each point's color within the sample's tolerance per channel, 3 unless the script says, on both). Reports go to
+build/results/<name>/."""
 import argparse
 from contextlib import nullcontext
 import json
@@ -28,6 +43,7 @@ import pack_shader
 import gen_manifest
 import bake_fonts
 from native_build import ARCH
+from build_name import Build,parse
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/shaders'
@@ -66,15 +82,16 @@ def source(name):
     """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
     return f'examples/{name}/src' if (ROOT/f'examples/{name}/src/App.hx').is_file() else f'examples/{name}'
 
-def hxml(name,target,dev=False):
-    """The example's build arguments, written where the dev server and haxe read them; with dev, the dev loop's own (its page in
-    build/dev/<name>), so a build of the same example never writes over the page a dev server is serving."""
-    launch={'web':'browser-webgl2','native':'native-sokol-gl','native-sdl3':'native-sdl3-gl','native-sdl3-gpu':'native-sdl3-gpu'}[target]
-    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
-    lines+=[f'-js {page(name,dev).relative_to(ROOT).as_posix()}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
+def hxml(name,build):
+    """The example's build arguments for build (a build_name.Build), written to build/<build>/<name>.hxml, where the dev server and haxe
+    read them."""
+    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{build.backend}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}']
+    # release: what ships; debug: Haxe's debug build (natively hxcpp's, its null checks on), the standard DCE, no optimizer.
+    lines+=['-debug']+([] if build.web else ['-D HXCPP_CHECK_POINTER']) if build.debug else ['-dce full','-D analyzer-optimize']
+    lines+=[f'-js {page(name,build).relative_to(ROOT).as_posix()}/app.js'] if build.web else [f'-cpp {(build.scratch/name).relative_to(ROOT).as_posix()}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     # SDL_GPU's programs carry its dialects, which other builds leave out.
-    if target=='native-sdl3-gpu':lines+=['-D helix_sdl3_gpu',f'-cp {GENERATED_SDL_GPU.relative_to(ROOT).as_posix()}']
-    path=ROOT/f'build/examples/{name}-{"dev" if dev else target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
+    if build.backend=='sdl3-gpu':lines+=['-D helix_sdl3_gpu',f'-cp {GENERATED_SDL_GPU.relative_to(ROOT).as_posix()}']
+    path=build.scratch/f'{name}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
 def tool_modules():
@@ -99,33 +116,29 @@ def reload_tools():
         owner=sys.modules.get(getattr(value,'__module__',None) or '')
         if owner in modules and hasattr(owner,name):names[name]=getattr(owner,name)
 
-def page(name,dev=False):
-    """The folder the example's page is built into and served from: build/web/<name>, or the dev loop's build/dev/<name>."""
-    return ROOT/f'build/{"dev" if dev else "web"}/{name}'
+def page(name,build):
+    """The example's folder in build's results: its page in the browser (site/<name>), its program natively (bin/<name>)."""
+    return build.programs/name
 
-def prepare(name,dev=False):
-    """The generated shader and font, and the served folder (page(name,dev)): the page, and the example's files in the web target's shared
-    assets."""
+def prepare(name,build):
+    """The generated shader and font, and the browser build's folder for the example (page(name,build)): the page, and the example's
+    files in the build's shared assets."""
     shader();bake_fonts.generate()
-    web=page(name,dev);web.mkdir(parents=True,exist_ok=True)
+    web=page(name,build);web.mkdir(parents=True,exist_ok=True)
     # The example's config.json (DECISIONS 131) beside the page, and the page told it has one; none, and the page makes no request.
     config=ROOT/f'examples/{name}/config.json';meta='<meta name="helix-config" content="config.json">' if config.is_file() else ''
     (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name).replace('{{config}}',meta))
     if config.is_file():shutil.copyfile(config,web/'config.json')
     elif (web/'config.json').exists():(web/'config.json').unlink()
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
-    assets(name,'web')
+    assets(name,build)
     licenses(web)
 
-def assets(name,target):
-    """build/<target>/assets, which the target's examples share: the shared files, then the example's own (its autopilot scripts as
-    autopilot/<name>/, its own assets/ folder (a gen_*.py there first) and its shaders, with SDL_GPU's dialects for native-sdl3-gpu). The example's own
-    files may not claim a path the shared files or another example has. A copy of its own left from before (build/<target>/<name>/assets)
-    is removed."""
-    out=ROOT/f'build/{target}/assets'
-    old=ROOT/f'build/{target}/{name}/assets'
-    if old.is_symlink():old.unlink()
-    elif old.exists():shutil.rmtree(old)
+def assets(name,build):
+    """The build's shared assets (bin/assets or site/assets), which its examples share: the shared files, then the example's own (its
+    autopilot scripts as autopilot/<name>/, its own assets/ folder (a gen_*.py there first) and its shaders, with SDL_GPU's dialects for
+    sdl3-gpu). The example's own files may not claim a path the shared files or another example has."""
+    out=build.assets
     shutil.copytree(ROOT/'examples/assets',out,dirs_exist_ok=True)
     pilots=ROOT/f'examples/{name}/autopilot'
     if (out/'autopilot'/name).exists():shutil.rmtree(out/'autopilot'/name)
@@ -139,17 +152,17 @@ def assets(name,target):
             spec=importlib.util.spec_from_file_location(f'{name}_{recipe.stem}',recipe);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
             module.generate()
         files=[p for p in own.rglob('*') if p.is_file() and p.suffix!='.py' and '__pycache__' not in p.parts]
-        claim(target,name,[p.relative_to(own).as_posix() for p in files])
+        claim(build,name,[p.relative_to(own).as_posix() for p in files])
         for p in files:
             dest=out/p.relative_to(own);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,dest)
-    pack_shaders(name,out,sdl_gpu=target=='native-sdl3-gpu',target=target)
+    pack_shaders(name,build)
     # The browser's manifests (tools/gen_manifest.py), so a returning page re-fetches exactly what changed; native builds read in place.
-    if target=='web':gen_manifest.write(out)
+    if build.web:gen_manifest.write(out)
 
-def claim(target,name,paths):
-    """Records that the example owns these paths in build/<target>/assets (in build/examples/assets-<target>.json); exits when one is a
+def claim(build,name,paths):
+    """Records that the example owns these paths in the build's shared assets (in build/<build>/assets-claims.json); exits when one is a
     shared file or another example's."""
-    record=ROOT/f'build/examples/assets-{target}.json'
+    record=build.scratch/'assets-claims.json'
     owners=json.loads(record.read_text(encoding='utf-8')) if record.is_file() else {}
     for path in paths:
         if (ROOT/'examples/assets'/path).exists():sys.exit(f'examples/{name}: its {path} is also a shared file (examples/assets/{path})')
@@ -165,14 +178,14 @@ def claim(target,name,paths):
         except PermissionError:time.sleep(.02)
     os.replace(staged,record)
 
-def pack_shaders(name,out,since=0,sdl_gpu=False,target='web'):
-    """The example's shaders/*.glsl packed into out/shaders/*.hxshader (with SDL_GPU's dialects when sdl_gpu), claimed in the target's
-    shared assets: those changed since `since` (a time), all by default. Returns the newest source's time."""
+def pack_shaders(name,build,since=0):
+    """The example's shaders/*.glsl packed into the build's shared assets as shaders/*.hxshader (with SDL_GPU's dialects for sdl3-gpu),
+    claimed there: those changed since `since` (a time), all by default. Returns the newest source's time."""
     newest=since;sources=sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl'))
-    claim(target,name,[f'shaders/{source.stem}.hxshader' for source in sources])
+    claim(build,name,[f'shaders/{source.stem}.hxshader' for source in sources])
     for source in sources:
         stamp=source.stat().st_mtime;newest=max(newest,stamp)
-        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,out/'shaders'/(source.stem+'.hxshader'),sdl_gpu)
+        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,build.assets/'shaders'/(source.stem+'.hxshader'),build.backend=='sdl3-gpu')
     return newest
 
 def licenses(out):
@@ -184,31 +197,40 @@ def licenses(out):
     for name,source in [('HeliX-MIT.txt','LICENSE'),('sokol-zlib.txt','vendor/LICENSE'),('sokol_utils-zlib.txt','vendor/sokol_utils/LICENSE'),('JetBrainsMono-OFL.txt','vendor/fonts/JetBrainsMono/OFL.txt'),('libsndfile-LGPL-2.1.txt','vendor/sndfile/COPYING')]:
         shutil.copyfile(ROOT/source,target/name)
 
-def build(name,target):
-    """Builds the example for target ('web'; 'native' for the sokol profile; 'native-sdl3' for the SDL3 one with sokol_gfx on GL,
-    'native-sdl3-gpu' with SDL_GPU) into build/<target>/<name>."""
-    prepare(name)
-    if target=='web':
-        run(['haxe',hxml(name,'web')])
-        terser=ROOT/'build/tools/node_modules/terser/bin/terser';js=ROOT/f'build/web/{name}/app.js'
-        if terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
+def program(name,build):
+    """The example's program in a native build's results: bin/<name>/<name>, .exe on Windows."""
+    return page(name,build)/(name+('.exe' if os.name=='nt' else ''))
+
+def build(name,chosen):
+    """Builds the example as chosen (a build_name.Build): into its site/<name> in the browser, its bin/<name> natively, hxcpp working
+    in build/<build>/<name>."""
+    if chosen.web:
+        prepare(name,chosen)
+        run(['haxe',hxml(name,chosen)])
+        terser=ROOT/'build/tools/node_modules/terser/bin/terser';js=page(name,chosen)/'app.js'
+        if not chosen.debug and terser.is_file():run(['node',terser,js,'--compress','--mangle','--output',js])
     else:
         from pins import check_hxcpp,check_sokol
         from native_build import env as native_env,place_runtimes
+        shader();bake_fonts.generate()
         check_hxcpp();check_sokol(ROOT)
         sdl3=None
-        if target.startswith('native-sdl3'):
+        if chosen.backend.startswith('sdl3'):
             import sdl3 as finder
             sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
-        if target=='native-sdl3-gpu':shader(sdl_gpu=True)
-        run(['haxe',hxml(name,target)],native_env(sdl3))
-        folder=ROOT/f'build/{target}/{name}'
+        if chosen.backend=='sdl3-gpu':shader(sdl_gpu=True)
+        run(['haxe',hxml(name,chosen)],native_env(sdl3))
+        # hxcpp names the program for the main class (Main, Main-debug in a debug build); the results name it for the example.
+        made=chosen.scratch/name/(('Main-debug' if chosen.debug else 'Main')+('.exe' if os.name=='nt' else ''))
+        folder=page(name,chosen);folder.mkdir(parents=True,exist_ok=True)
+        shutil.copy2(made,program(name,chosen))
         place_runtimes(folder,sdl3)
         config=ROOT/f'examples/{name}/config.json'
         if config.is_file():shutil.copyfile(config,folder/'config.json')
         elif (folder/'config.json').exists():(folder/'config.json').unlink()
-        assets(name,target)
+        assets(name,chosen)
         licenses(folder)
+    print(f'{name}: {page(name,chosen).relative_to(ROOT).as_posix()}',flush=True)
 
 def compare_samples(browser,native,tolerance=3):
     """What differs between the samples the browser and the native run published (the autopilot's snapshot's samples: by name, the points,
@@ -225,21 +247,21 @@ def compare_samples(browser,native,tolerance=3):
             if apart>allowed:problems.append(f'{sample} point {i} {browser[sample]["points"][i]}: browser {seen}, native {there}, {apart} apart (tolerance {allowed})')
     return problems
 
-def autopilot(name,browser,profile='native'):
-    """Replays every examples/<name>/autopilot script in the browser and natively (profile: 'native', the sokol profile, 'native-sdl3' or
-    'native-sdl3-gpu');
-    returns the scripts whose final games or samples differ or that failed."""
+def autopilot(name,browser,native):
+    """Replays every examples/<name>/autopilot script in the browser and natively, under native (a native build_name.Build), against the
+    browser's build in the same config; returns the scripts whose final games or samples differ or that failed."""
     import functools,http.server,threading
     if sys.platform.startswith('linux'):from private_display import private_display
     scripts=sorted(p.name for p in (ROOT/f'examples/{name}/autopilot').glob('*.json'))
     if not scripts:sys.exit(f'examples/{name}/autopilot has no scripts')
-    for target in ('web',profile):build(name,target)
+    web=Build('js',native.config,'webgl2')
+    for each in (web,native):build(name,each)
     out=ROOT/f'build/results/{name}';out.mkdir(parents=True,exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
-    handler=functools.partial(Quiet,directory=str(ROOT/'build/web'))
+    handler=functools.partial(Quiet,directory=str(web.programs))
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),handler);threading.Thread(target=server.serve_forever,daemon=True).start()
-    failed=[];program=ROOT/f'build/{profile}/{name}'/('Main.exe' if os.name=='nt' else 'Main')
+    failed=[];executable=program(name,native);label=native.variant
     try:
         with private_display() if sys.platform.startswith('linux') else nullcontext(dict(os.environ)) as env:
             for script in scripts:
@@ -248,18 +270,18 @@ def autopilot(name,browser,profile='native'):
                 # The native program's Vulkan driver choice (lavapipe, for SDL_GPU on a private display) isn't Chrome's: there it leaves WebGL2 out.
                 browser_env={k:v for k,v in os.environ.items() if k not in ('VK_DRIVER_FILES','VK_ICD_FILENAMES')}
                 web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/{name}/?{query}'],cwd=ROOT,env=browser_env,text=True, encoding='utf-8'))
-                result=out/f'{profile}-{script}';result.unlink(missing_ok=True)
+                result=out/f'{label}-{script}';result.unlink(missing_ok=True)
                 child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
-                process=subprocess.run([str(program)],cwd=ROOT/f'build/{profile}/{name}',env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
+                process=subprocess.run([str(executable)],cwd=page(name,native),env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
                 # What the native graphics said it runs on (SDL_GPU's backend), as SDL chooses it.
                 for line in process.stderr.splitlines():
                     if line.startswith('HeliX SDL_GPU: '):print(f'{script}: {line}',flush=True)
-                native=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==native['game'] and not web['errors']
-                samples=compare_samples(web['result'].get('autopilot',{}).get('samples',{}),native.get('autopilot',{}).get('samples',{}))
-                (out/f'autopilot-{profile}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'sampleDifferences':samples,'browserErrors':web['errors'],'browser':web['result'],'native':native},indent=2)+'\n', encoding='utf-8')
+                published=json.loads(result.read_text(encoding='utf-8'));same=web['result']['game']==published['game'] and not web['errors']
+                samples=compare_samples(web['result'].get('autopilot',{}).get('samples',{}),published.get('autopilot',{}).get('samples',{}))
+                (out/f'autopilot-{label}-{script}').write_text(json.dumps({'script':script,'sameGame':same,'sampleDifferences':samples,'browserErrors':web['errors'],'browser':web['result'],'native':published},indent=2)+'\n', encoding='utf-8')
                 ran=web.get('renderer')+(f', after the GPU gave none: {web["fallback"]}' if web.get('fallback') else '')
-                print(f'{script}: same final game in the browser and {profile}: {same} (the browser on {ran})',flush=True)
+                print(f'{script}: same final game in the browser and {label}: {same} (the browser on {ran})',flush=True)
                 count=len(web['result'].get('autopilot',{}).get('samples',{}))
                 if count:print(f'{script}: {count} samples alike within their tolerances: {not samples}'+''.join(f'\n  {problem}' for problem in samples),flush=True)
                 if not same or samples:failed.append(script)
@@ -267,9 +289,17 @@ def autopilot(name,browser,profile='native'):
     return failed
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot']);p.add_argument('target',nargs='?',choices=['web','native','native-sdl3','native-sdl3-gpu'],default='web')
+    p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter);p.add_argument('name');p.add_argument('action',choices=['dev','build','autopilot'])
+    p.add_argument('build',nargs='?',help='<config>-<backend> or a whole build name (docs/CONVENTIONS.md, Build): release-webgl2 to build, release-sokol-gl to autopilot, debug-webgl2 for dev when not given')
     p.add_argument('--port',type=int,default=8060);p.add_argument('--browser',help='Chromium for autopilot')
     p.add_argument('--group',help='with all: build only group I of N (I/N, from 1), every Nth example in name order, so N runners share them');a=p.parse_args()
+    default={'build':'release-webgl2','autopilot':'release-sokol-gl','dev':'debug-webgl2'}[a.action]
+    try:chosen=parse(a.build or default,('dev',) if a.action=='dev' else ())
+    except ValueError as error:p.error(str(error))
+    if a.action=='dev':
+        if not chosen.web:p.error('dev serves the browser\'s build: <config>-webgl2')
+        chosen=Build(chosen.platform,chosen.config,chosen.backend,('dev',))
+    if a.action=='autopilot' and chosen.web:p.error('autopilot compares a native build with the browser\'s: <config>-sokol-gl, -sdl3-gl or -sdl3-gpu')
     if a.name=='all':
         if a.action!='build':p.error('all only builds')
         names=sorted(d.name for d in (ROOT/'examples').iterdir() if (ROOT/source(d.name)/'App.hx').is_file())
@@ -279,24 +309,25 @@ def main():
             names=names[index-1::count]
         failed=[]
         for name in names:
-            try:build(name,a.target)
+            try:build(name,chosen)
             except subprocess.CalledProcessError:failed.append(name)
-        print(f'built {len(names)-len(failed)} of {len(names)} examples for {a.target}',flush=True)
+        print(f'built {len(names)-len(failed)} of {len(names)} examples as {chosen}',flush=True)
         if failed:sys.exit('Failed: '+', '.join(failed))
         return
     if not (ROOT/source(a.name)/'App.hx').is_file():sys.exit(f'No examples/{a.name}/App.hx or examples/{a.name}/src/App.hx')
     if a.action=='autopilot':
         if not a.browser:p.error('autopilot needs --browser')
-        failed=autopilot(a.name,a.browser,a.target if a.target!='web' else 'native')
+        failed=autopilot(a.name,a.browser,chosen)
         if failed:sys.exit('Autopilot outcomes or samples differ: '+', '.join(failed)+f'; see build/results/{a.name}')
         return
     if a.action=='dev':
-        prepare(a.name,dev=True)
+        prepare(a.name,chosen)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
         # The dev server watches Haxe source; shader source is regenerated here, and the new program classes (Sprite2DProgram.hx and the rest) reload like any Haxe edit.
-        # The page loads ../assets/, which from the served root is /assets/: the web target's shared assets, mounted there.
-        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web',dev=True)],cwd=ROOT)
-        print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
+        # The page loads ../assets/, which from the served root is /assets/: the dev build's shared assets, mounted there.
+        served=chosen.assets.relative_to(ROOT).as_posix()
+        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount',f'/assets={served}',hxml(a.name,chosen)],cwd=ROOT)
+        print(f'{chosen}: {page(a.name,chosen).relative_to(ROOT).as_posix()}. Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
             failed=None;library_failed=None;packed=time.time()
             tools=tool_stamps()
@@ -309,9 +340,9 @@ def main():
                     except Exception as error:print('example: a tool failed to load again, the rest kept as they were:',error,flush=True)
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
-                    repacked=pack_shaders(a.name,ROOT/'build/web/assets',packed)
+                    repacked=pack_shaders(a.name,chosen,packed)
                     # A repacked shader changes its manifest, or the next page load would refuse it.
-                    if repacked!=packed:gen_manifest.write(ROOT/'build/web/assets')
+                    if repacked!=packed:gen_manifest.write(chosen.assets)
                     packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # The shader library's sources, packed into generated Haxe again as they change: the dev server rebuilds, and the reload
@@ -331,6 +362,6 @@ def main():
             try:urllib.request.urlopen(f'http://127.0.0.1:{a.port}/__hotreload_stop',timeout=5).read();server.wait(timeout=10)
             except Exception:server.terminate()
         return
-    build(a.name,a.target)
+    build(a.name,chosen)
 
 if __name__=='__main__':main()

@@ -9,7 +9,7 @@ import helix.adapters.audio.sokol.SokolAudioAdapter as NativeAudioAdapter;
 import helix.adapters.store.filesystem.FileSystemStoreAdapter;
 
 /** The native services under test: the sokol profile's audio output, or with -D helix_sdl3 the SDL3 profile's (tools/services.py
-	--native-profile). */
+	--native release-sdl3-gl). */
 class ServiceEnvironment {
 	public var fetcher = new HaxeHttpAdapter();
 	public var remoteStreams = false;

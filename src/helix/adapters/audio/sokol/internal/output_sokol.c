@@ -10,13 +10,20 @@
 /* The sokol_audio output: 44.1 kHz stereo asked for, 512 frames a callback, the shared mixer stepping to whatever rate and mixing to whatever
    channels sokol gets (mono unpanned). */
 static int initialized;
+/* The device's rate, kept once setup returns: saudio_shutdown marks sokol torn down before it joins the callback thread, so a callback
+   still running then must not ask sokol (its debug build asserts). Until it's kept, the callback asks, sokol being set up by then. */
+static volatile int rate;
 
-static void callback(float *out, int frames, int channels) { helix_mixer_mix(out, frames, channels, saudio_sample_rate()); }
+static void callback(float *out, int frames, int channels) {
+    int now = rate;
+    helix_mixer_mix(out, frames, channels, now ? now : saudio_sample_rate());
+}
 
 void helix_audio_setup(void) {
     if (initialized) return;
     saudio_setup(&(saudio_desc){ .sample_rate = 44100, .num_channels = 2,
         .buffer_frames = 512, .stream_cb = callback, .logger.func = slog_func });
+    rate = saudio_sample_rate();
     initialized = 1;
 }
 int helix_audio_available(void) { return initialized && saudio_isvalid(); }
@@ -24,7 +31,7 @@ int helix_audio_sample_rate(void) { return initialized ? saudio_sample_rate() : 
 int helix_audio_channels(void) { return initialized ? saudio_channels() : 0; }
 void helix_audio_shutdown(void) {
     /* Join Sokol's callback thread before freeing mixer-owned samples. */
-    if (initialized) { saudio_shutdown(); initialized = 0; }
+    if (initialized) { saudio_shutdown(); initialized = 0; rate = 0; }
     helix_mixer_release();
 }
 #ifdef HELIX_SERVICES_TEST
@@ -32,6 +39,6 @@ void helix_audio_shutdown(void) {
 void helix_audio_test_render(float *out, int frames, int channels) { callback(out, frames, channels); }
 void helix_audio_test_setup(int rate) {
     saudio_setup(&(saudio_desc){.sample_rate=rate, .num_channels=1, .buffer_frames=512,
-        .stream_cb=callback, .logger.func=slog_func}); initialized=1;
+        .stream_cb=callback, .logger.func=slog_func}); rate=saudio_sample_rate(); initialized=1;
 }
 #endif

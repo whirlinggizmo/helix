@@ -15,12 +15,12 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
   ```
 - **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `924c46a` or later (a static survives a reload only if it says `@:hot`, on both targets) (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
 - **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `tools/shdc.py` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`) and checks its SHA-256 every time it's used; nothing is installed globally.
-- **SDL_GPU's shader translators:** glslang 16.6.0 (its official release for the system: Linux x86_64, Windows x64, macOS universal) and SPIRV-Cross `vulkan-sdk-1.4.363.0` (its source, built once by hxcpp with the system's compiler, as it publishes no programs), pinned in `dependencies.json` (`gpuShaders`), fetched into `build/deps` and hash-checked by `tools/gpu_shaders.py` the first time shaders are generated. Only SDL_GPU builds (`native-sdl3-gpu`) run them; other builds, the browser's included, never fetch or build them. There's no Linux arm64 glslang release.
+- **SDL_GPU's shader translators:** glslang 16.6.0 (its official release for the system: Linux x86_64, Windows x64, macOS universal) and SPIRV-Cross `vulkan-sdk-1.4.363.0` (its source, built once by hxcpp with the system's compiler, as it publishes no programs), pinned in `dependencies.json` (`gpuShaders`), fetched into `build/deps` and hash-checked by `tools/gpu_shaders.py` the first time shaders are generated. Only SDL_GPU builds (`sdl3-gpu`) run them; other builds, the browser's included, never fetch or build them. There's no Linux arm64 glslang release.
 - **Native builds:** no CMake: hxcpp compiles the adapters' C with each app, from the build XML on each adapter's extern bridge (`internal/*Bridge.hx`).
   - Linux: GCC/G++ 13 and ALSA headers; X11/Xrandr/Xi/Xcursor and GL libraries; the libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - Windows: Visual Studio's C++ tools (MSVC, which hxcpp finds itself; MinGW isn't supported). libsndfile's official 1.2.2 win64 release is downloaded and hash-checked into the user's cache, and its DLL copied beside each program.
   - macOS: Xcode's command-line tools and Homebrew's `libsndfile` (for FFmpeg, if ever, Homebrew's `ffmpeg-full`: its `ffmpeg` has no Vorbis encoder). Apple silicon builds arm64.
-  - **The SDL3 profiles** (`native-sdl3`, sokol_gfx drawing GL in SDL's window; `native-sdl3-gpu`, SDL_GPU on Vulkan, Direct3D 12 or Metal): SDL 3.4.18, found or fetched by `tools/sdl3.py` into `build/deps` on its first build. On Linux, the system's SDL3 when pkg-config finds 3.4.18 or newer; else the pinned source release, checked and built once with **CMake** (needed for that build alone) against the X11, Wayland and audio development headers it finds. Missing CMake, or headers enough to open a window, it stops and prints the install command (Debian/Ubuntu's, CI's list; Fedora's, after SDL's `docs/README-linux.md`); missing only optional parts (Wayland, PipeWire, PulseAudio), it builds and says which, and what would add them. On Windows and macOS, SDL's official release, checked, its DLL or framework copied beside each program. The headers are vendored (`vendor/sdl3`).
+  - **The SDL3 backends** (`sdl3-gl`, sokol_gfx drawing GL in SDL's window; `sdl3-gpu`, SDL_GPU on Vulkan, Direct3D 12 or Metal): SDL 3.4.18, found or fetched by `tools/sdl3.py` into `build/deps` on its first build. On Linux, the system's SDL3 when pkg-config finds 3.4.18 or newer; else the pinned source release, checked and built once with **CMake** (needed for that build alone) against the X11, Wayland and audio development headers it finds. Missing CMake, or headers enough to open a window, it stops and prints the install command (Debian/Ubuntu's, CI's list; Fedora's, after SDL's `docs/README-linux.md`); missing only optional parts (Wayland, PipeWire, PulseAudio), it builds and says which, and what would add them. On Windows and macOS, SDL's official release, checked, its DLL or framework copied beside each program. The headers are vendored (`vendor/sdl3`).
   - `python3 tools/remote_windows.py HOST` builds and checks this checkout on a Windows machine over ssh; `--desktop` runs in its logged-in session, where windows can open.
 - **Pinned in `vendor/`, hashes in `dependencies.json`:**
   - the Sokol headers, from the Whirling Gizmo fork [whirlinggizmo/sokol](https://github.com/whirlinggizmo/sokol) at `c237609` (upstream to `5e94d12`)
@@ -36,15 +36,30 @@ Third-party licenses, and what builds ship with: [THIRD_PARTY_NOTICES.md](THIRD_
 
 Work happens in the browser with hot reload: edit, save, and the running page takes the new code (or the changed asset, shader or font) without restarting.
 
+Every build is named `<platform>-<config>-<backend>` ([docs/CONVENTIONS.md](docs/CONVENTIONS.md#build)): the platform what it links against (`linux-x64`, `linux-arm64`, `macos-arm64`, `macos-x64`, `windows-x64-msvc`, or `js` in the browser), the config `release` or `debug`, the backend the API it draws with:
+
+| Backend | Draws with | Profile and launcher | Platforms |
+| --- | --- | --- | --- |
+| `webgl2` | WebGL2 | `WebGL2Profile`, `examples/shared/launch/webgl2` | `js` |
+| `sokol-gl` | sokol_gfx on GL 4.1 core, in a sokol_app window | `SokolGLProfile`, `examples/shared/launch/sokol-gl` | Linux (GLX), Windows (WGL), macOS (Cocoa) |
+| `sdl3-gl` | sokol_gfx on GL 4.1 core, in SDL3's window | `Sdl3GLProfile`, `examples/shared/launch/sdl3-gl` | Linux, Windows, macOS |
+| `sdl3-gpu` | SDL_GPU (Vulkan, Direct3D 12 or Metal, as SDL picks) | `Sdl3GpuProfile`, `examples/shared/launch/sdl3-gpu` | Linux, Windows, macOS |
+
+The tools take `<config>-<backend>`, the platform this machine's (`js` for `webgl2`), or the whole name. A build's results go to `out/<platform>/<config>-<backend>/`: natively `bin/<example>/<example>` (`.exe` on Windows, with what it loads beside it: `config.json`, the DLLs, the licenses), in the browser `site/<example>/`; beside the examples' folders one `assets/` they share, which each loads as `../assets`, so `bin/` or `site/` is what ships. Its scratch (the HXML, hxcpp's generated C++ and objects) is in `build/<platform>-<config>-<backend>/`. Deleting `out/` is a clean.
+
 ```console
-python3 tools/example.py app-hello dev            # hotreload-hx dev server, http://localhost:8060/
-python3 tools/example.py app-hello build web      # build/web/app-hello/
-python3 tools/example.py app-hello build native   # build/native/app-hello/Main, the sokol profile
-python3 tools/example.py app-hello build native-sdl3   # build/native-sdl3/app-hello/Main, the SDL3 profile on GL
-python3 tools/example.py app-hello build native-sdl3-gpu   # build/native-sdl3-gpu/app-hello/Main, the SDL3 profile on SDL_GPU
-python3 tools/pages.py --browser /path/to/chromium   # the examples' site in build/web: every example, thumbnails, the index
-python3 tools/check_cache.py --browser /path/to/chromium [--native]   # the asset cache across visits (after sprite2d's builds)
+python3 tools/example.py app-hello dev                     # js-debug-webgl2-dev: hotreload-hx dev server, http://localhost:8060/
+python3 tools/example.py app-hello build                   # js-release-webgl2: out/js/release-webgl2/site/app-hello/
+python3 tools/example.py app-hello build release-sokol-gl  # out/linux-x64/release-sokol-gl/bin/app-hello/app-hello
+python3 tools/example.py app-hello build release-sdl3-gl   # out/linux-x64/release-sdl3-gl/bin/app-hello/app-hello
+python3 tools/example.py app-hello build release-sdl3-gpu  # out/linux-x64/release-sdl3-gpu/bin/app-hello/app-hello
+python3 tools/example.py app-hello build debug-sokol-gl    # out/linux-x64/debug-sokol-gl/bin/app-hello/app-hello
+python3 tools/example.py all build release-sdl3-gpu        # every example
+python3 tools/pages.py --browser /path/to/chromium   # the examples' site in out/js/release-webgl2/site: every example, thumbnails, the index
+python3 tools/check_cache.py --browser /path/to/chromium [--native]   # the asset cache across visits (after sprite2d's release-webgl2 and release-sokol-gl builds)
 ```
+
+`release` is what ships: full dead-code elimination and the analyzer's optimizations, and Terser in the browser. `debug` is for finding faults: Haxe's `-debug` (a source map beside `app.js`; natively hxcpp's debug runtime, its stack traces with lines and its null checks, `HXCPP_CHECK_POINTER`, the program `Main-debug` before it's named for its example), the standard library's dead-code elimination, no optimizer or Terser, and natively the adapters' C unoptimized with its assertions and sokol_gfx's validation on. `dev` serves the browser's build with hot reload built in (`js-<config>-webgl2-dev`, `debug` unless told `release-webgl2`), in a folder of its own no build writes, so building or replaying the example while it runs never replaces the page it serves.
 
 The examples' site is built and deployed to GitHub Pages on every push to main (CI's `pages` job): <https://whirlinggizmo.github.io/helix/>.
 
@@ -68,20 +83,18 @@ python3 helix.py services --browser /path/to/chromium --native
 ```
 
 - **Unit tests** run under the Haxe interpreter: input, host and frame timing, WAV and asset paths, 3D math, trigonometry, Blocks and the Asteroids simulation. `helix.math.Trig` must also give the same bits in JS and, with `--native`, in hxcpp.
-- **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures; `--native-profile sdl3` plays natively through SDL3's audio (its dummy driver) instead of sokol's.
-- **Autopilot** (`tools/example.py <name> autopilot [native-sdl3|native-sdl3-gpu]`) replays an example's scripts in a headless browser and natively (the sokol profile, or an SDL3 one), and requires the same final game, and the same pixels where a script samples the frame (`{"op": "sample", "name": "lit", "points": [[x, y], ...]}`, in the design's units; within 3 per channel, or the sample's `"tolerance"`). A sample can also require the frame unlike an earlier one (`"differsFrom": "off", "by": 10`), so an effect that draws nothing fails.
+- **`services`** runs the asset, storage, fetch and audio services on both targets against local HTTP fixtures; natively `--native` builds `release-sokol-gl`'s (sokol_audio), `--native release-sdl3-gl` SDL3's (its dummy driver), either in `debug` too, in `build/<build>/services`.
+- **Autopilot** (`tools/example.py <name> autopilot [<config>-<backend>]`, `release-sokol-gl` when not told) replays an example's scripts in a headless browser and natively under that build, against the browser's build in the same config, and requires the same final game, and the same pixels where a script samples the frame (`{"op": "sample", "name": "lit", "points": [[x, y], ...]}`, in the design's units; within 3 per channel, or the sample's `"tolerance"`). A sample can also require the frame unlike an earlier one (`"differsFrom": "off", "by": 10`), so an effect that draws nothing fails.
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
-
-## Layout
 
 ## Layout
 
 ```text
 src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
   adapters/<contract>/<api>/   one platform API behind one contract (<Api><Contract>Adapter); internal/ holds C glue and externs
-  profiles/                BrowserWebGL2Profile, NativeSokolGLProfile
-examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch and examples/assets (built once a target, build/<target>/assets)
+  profiles/                one per backend: WebGL2Profile, SokolGLProfile, Sdl3GLProfile, Sdl3GpuProfile
+examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch/<backend> and examples/assets (once a build, in its assets/)
 examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
 examples/blocks/src/
 tests/                    unit (Haxe interpreter), services (both targets), native, consumer, shader checks
@@ -89,6 +102,7 @@ tools/                    example/build/check/format/doc tools (Python, some Nod
 docs/                     EXAMPLES, ROADMAP, HISTORY, ARCHITECTURE, INTERFACE, CONVENTIONS, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
 helix.py / Run.hx          front door for the tests and the services checks
-build/                    ignored: generated code, builds, caches, check output
+out/                      ignored: builds' results, out/<platform>/<config>-<backend>/ (deleting it is a clean)
+build/                    ignored: generated code, builds' scratch (build/<build>/), caches, check output
 ```
 

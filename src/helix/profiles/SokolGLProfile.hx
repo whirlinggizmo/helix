@@ -14,8 +14,9 @@ import helix.adapters.store.filesystem.FileSystemStoreAdapter;
 import helix.app.IApp;
 import helix.host.Runner;
 
-/** Linux natively: a sokol_app window, sokol_gfx on GL 4.1, sokol_audio with libsndfile, evdev gamepads, haxe.Http and files, stb_image. */
-class NativeSokolGLProfile {
+/** The desktop through sokol, drawing with GL on every system (the `sokol-gl` backend): a sokol_app window (X11 and GLX, Win32 and WGL, Cocoa), sokol_gfx on GL 4.1 core,
+	sokol_audio with libsndfile, evdev gamepads on Linux and XInput on Windows, haxe.Http and files, stb_image. */
+class SokolGLProfile {
 	/** Runs the app makeApp builds once its services are bound, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the

@@ -8,11 +8,11 @@ profile, its requests counted:
 4. offline: no asset arrives, and the picture is the third's, from the cache;
 5. after one logo is removed: it's asked about, the host says 404, and the page says its load failed.
 
-With --native, the same visits by sprite2d's native build (the sokol profile), downloading from the host (HELIX_ASSET_HOST, its manifest
+With --native, the same visits by sprite2d's native build (release-sokol-gl), downloading from the host (HELIX_ASSET_HOST, its manifest
 HELIX_ASSET_MANIFEST) into a cache directory of its own, on a private display: the requests are the same, offline is the host closed
 (its port kept, as the cache keys by host), and the program's output says whether a load failed.
 
-  python3 tools/check_cache.py --browser /path/to/chromium [--native]   (after tools/example.py sprite2d build web [and native])"""
+  python3 tools/check_cache.py --browser /path/to/chromium [--native]   (after tools/example.py sprite2d build [and build release-sokol-gl])"""
 import argparse
 import collections
 import email.utils
@@ -30,6 +30,8 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import gen_manifest
+from build_name import Build,machine
+from example import page,program
 
 EXAMPLE='sprite2d'
 LOGOS=('sprites/logo/wg-logo-bw-alpha.png','sprites/logo/wg-logo-white-alpha.png')
@@ -63,15 +65,15 @@ def serve(site,counts,port=0):
 def main():
     p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter);p.add_argument('--browser',required=True)
     p.add_argument('--native',action='store_true',help="also sprite2d's native build, downloading from the host");a=p.parse_args()
-    built=ROOT/'build/web'
-    if not (built/EXAMPLE/'app.js').is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build web')
+    browser=Build('js','release','webgl2');built=browser.programs
+    if not (built/EXAMPLE/'app.js').is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build release-webgl2')
     work=ROOT/'build/check_cache'
     if work.exists():shutil.rmtree(work)
     site=work/'site';profile=work/'profile'
     shutil.copytree(built/EXAMPLE,site/EXAMPLE);shutil.copytree(built/'assets',site/'assets')
     counts=collections.Counter();server=serve(site,counts);url=f'http://127.0.0.1:{server.server_address[1]}/{EXAMPLE}/'
-    native=ROOT/f'build/native/{EXAMPLE}'
-    if a.native and not (native/'Main').is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build native')
+    native_build=Build(machine(),'release','sokol-gl');native=page(EXAMPLE,native_build);executable=program(EXAMPLE,native_build)
+    if a.native and not executable.is_file():sys.exit(f'Build it first: python3 tools/example.py {EXAMPLE} build release-sokol-gl')
     def visit_native(n,network='online'):
         # A visit is a run of a few seconds; offline, the host is closed for the visit and reopened on its port after, as the cache keys by host.
         nonlocal server
@@ -79,7 +81,7 @@ def main():
         port=server.server_address[1]
         if network=='offline':server.shutdown();server.server_close()
         child=dict(display,HELIX_ASSET_HOST=f'http://127.0.0.1:{port}/assets/',HELIX_ASSET_MANIFEST='manifest.json',HELIX_CACHE=str(work/'native-cache'),HELIX_AUDIO='0')
-        program=subprocess.Popen([str(native/'Main')],cwd=native,env=child,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8')
+        program=subprocess.Popen([str(executable)],cwd=native,env=child,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8')
         time.sleep(4);program.terminate()
         output=program.communicate(timeout=10)[0]
         if network=='offline':server=serve(site,counts,port)
