@@ -21,7 +21,8 @@ class Dissolve extends LibrarySurface {
 		return value;
 	}
 
-	/** The glowing edge's color, 0xRRGGBBAA (sRGB, alpha ignored): orange by default. */
+	/** The glowing edge's color, 0xRRGGBBAA (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered:
+		a share of its pixels thrown away in a fixed pattern, so the model stays opaque and its shadow alike); opaque orange by default. */
 	public var edgeColor(default, set):Int;
 
 	function set_edgeColor(value:Int):Int {
