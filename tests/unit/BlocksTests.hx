@@ -127,29 +127,29 @@ class BlocksTests {
 		// Gestures, from InputState's pointer as touch delivers it.
 		var input = new InputState(), gestures = new PointerGestures(10);
 		input.pointerEvent(100, 100, true);
-		gestures.update(input, 0);
+		gestures.update(input, 0, true);
 		input.consume();
 		input.pointerEvent(102, 101, false);
-		gestures.update(input, .1);
+		gestures.update(input, .1, true);
 		check(gestures.tapped && !gestures.dragging, "Short still press taps");
 		input.consume();
 		input.pointerEvent(100, 100, true);
-		gestures.update(input, 1);
+		gestures.update(input, 1, true);
 		input.consume();
 		input.pointerEvent(100, 100, false);
-		gestures.update(input, 1.5);
+		gestures.update(input, 1.5, true);
 		check(!gestures.tapped, "Long press is no tap");
 		input.consume();
 		input.pointerEvent(100, 100, true);
-		gestures.update(input, 2);
+		gestures.update(input, 2, true);
 		for (i in 1...5) {
 			input.consume();
 			input.pointerEvent(100, 100 + i * 40, true);
-			gestures.update(input, 2 + i / 60);
+			gestures.update(input, 2 + i / 60, true);
 		}
 		input.consume();
 		input.pointerEvent(100, 300, false);
-		gestures.update(input, 2 + 5 / 60);
+		gestures.update(input, 2 + 5 / 60, true);
 		check(gestures.dragging && !gestures.tapped && gestures.flickVelocityY > 1000, "Fast drag flicks down");
 		var camera = new Camera2D();
 		camera.setViewport(400, 800);

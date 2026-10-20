@@ -6,6 +6,7 @@ import helix.input.Key;
 import helix.input.MouseButton;
 import helix.input.PadButton;
 import helix.input.PadAxis;
+import helix.input.PointerGestures;
 import helix.time.Ticker;
 
 class InputTests {
@@ -139,6 +140,42 @@ class InputTests {
 		ticker.advance(.25, () -> ticks++);
 		check(ticks == 7, "Accumulates");
 		router();
+		// Double taps, read per frame: two quick taps near each other pair, a third starts over, a slow or distant second doesn't pair.
+		var pad = new InputState(), gestures = new PointerGestures();
+		var clock = 0.;
+		function tap(x:Float, y:Float, gap:Float):Bool {
+			clock += gap;
+			pad.pointerEvent(x, y, true);
+			gestures.update(pad, clock, false);
+			pad.endFrame();
+			clock += .05;
+			pad.pointerEvent(x, y, false);
+			gestures.update(pad, clock, false);
+			pad.endFrame();
+			return gestures.tapped && gestures.doubleTapped;
+		}
+		check(!tap(100, 100, 1), "A first tap is no double tap");
+		check(tap(104, 98, .2), "A quick near second tap is a double tap");
+		check(!tap(104, 98, .2), "A third tap starts a new pair");
+		check(tap(100, 100, .2), "And the fourth completes it");
+		check(!tap(100, 100, 1) && !tap(100, 100, .6), "A second tap past the interval doesn't pair");
+		check(!tap(200, 100, .2), "Nor one past the distance");
+		gestures.maxDoubleTapInterval = -1;
+		check(gestures.maxDoubleTapInterval == 1e-6, "The interval clamps to its least");
+		gestures.maxDoubleTapDistance = Math.NaN;
+		check(gestures.maxDoubleTapDistance == 0, "The distance clamps to 0");
+		// Per tick, both presses between two ticks: each tick sees one, and the second pairs.
+		var ticked = new InputState(), perTick = new PointerGestures();
+		for (_ in 0...2) {
+			ticked.pointerEvent(50, 50, true);
+			ticked.pointerEvent(50, 50, false);
+		}
+		perTick.update(ticked, 0, true);
+		ticked.consume();
+		check(perTick.tapped && !perTick.doubleTapped, "The first tick takes the first tap");
+		perTick.update(ticked, 1 / 60, true);
+		ticked.consume();
+		check(perTick.doubleTapped, "The second tick the second, a double tap");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 

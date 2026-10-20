@@ -8,7 +8,7 @@ import helix.render3d.AnimationClip.TrackPath;
 /** Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a
 	clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play()
 	crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the
-	Animator first moved it). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time
+	Animator first moved it). queue() plays a clip next, when the one playing ends (a one-shot back to its idle). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time
 	(layers, playing an upper body's clip over a lower body's, aren't here yet). */
 class Animator {
 	var root:Node3D;
@@ -16,6 +16,7 @@ class Animator {
 	var rests = new ObjectMap<Node3D, Vector<Float>>();
 	var current:Null<Playing>;
 	var previous:Null<Playing>;
+	var next:Null<Queued>;
 	var fade = 0.;
 	var faded = 0.;
 	var channels:Array<Channel> = [];
@@ -69,29 +70,60 @@ class Animator {
 		return previous != null;
 
 	/** Plays clip from its start, looping or not, crossfading from the clip playing over fade seconds (0: at once); playing the clip already
-		playing does nothing. False, changing nothing, for a clip a track of which moves a node not at or under the root, or a fade below 0. */
+		playing does nothing to it. Either way a queued clip is dropped. False, changing nothing, for a clip a track of which moves a node not at
+		or under the root, or a fade below 0. */
 	public function play(clip:AnimationClip, loop = true, fade = 0.):Bool {
 		if (!(fade >= 0) || !Math.isFinite(fade))
 			return false;
 		if (current != null && current.clip == clip) {
 			current.loop = loop;
+			next = null;
 			return true;
 		}
 		var nodes = bind(clip);
 		if (nodes == null)
 			return false;
+		next = null;
+		start(clip, nodes, loop, fade);
+		return true;
+	}
+
+	/** Plays clip next, as play would, once the clip playing ends: at the update a clip that doesn't loop reaches its end, crossfading from its
+		last frame over fade seconds; at once when none is playing or the one playing has finished. A looping clip doesn't end, so a clip queued
+		behind one waits (until the clip playing is played again not looping). One clip waits at a time, a later queue replacing it; play and stop
+		drop it. False, changing nothing, for a clip play would refuse. */
+	public function queue(clip:AnimationClip, loop = true, fade = 0.):Bool {
+		if (!(fade >= 0) || !Math.isFinite(fade))
+			return false;
+		if (current == null || finished)
+			return play(clip, loop, fade);
+		var nodes = bind(clip);
+		if (nodes == null)
+			return false;
+		next = new Queued(clip, nodes, loop, fade);
+		return true;
+	}
+
+	/** The clip waiting to play next (queue), or null. */
+	public var queued(get, never):Null<AnimationClip>;
+
+	function get_queued():Null<AnimationClip>
+		return next == null ? null : next.clip;
+
+	/** Stops playing: the nodes stay as the last update left them, and a queued clip is dropped. */
+	public function stop():Void {
+		current = previous = null;
+		next = null;
+		channels = [];
+	}
+
+	// Plays clip on nodes from its start, crossfading from the clip playing over fade seconds.
+	function start(clip:AnimationClip, nodes:Array<Node3D>, loop:Bool, fade:Float):Void {
 		previous = fade > 0 ? current : null;
 		current = new Playing(clip, nodes, loop);
 		this.fade = fade;
 		faded = 0;
 		rebuild();
-		return true;
-	}
-
-	/** Stops playing: the nodes stay as the last update left them. */
-	public function stop():Void {
-		current = previous = null;
-		channels = [];
 	}
 
 	/** Advances time by seconds (times the speed) and poses the nodes: call once a frame, before drawing. */
@@ -100,7 +132,12 @@ class Animator {
 			return;
 		var step = seconds * speed;
 		current.time = current.at(current.time + step);
-		if (previous != null) {
+		// The queued clip starts as the one playing reaches its end, from its own start.
+		if (next != null && finished) {
+			var n = next;
+			next = null;
+			start(n.clip, n.nodes, n.loop, n.fade);
+		} else if (previous != null) {
 			previous.time = previous.at(previous.time + step);
 			faded += Math.abs(seconds);
 			if (faded >= fade) {
@@ -251,5 +288,28 @@ private class Channel {
 	public function new(node:Node3D, path:TrackPath) {
 		this.node = node;
 		this.path = path;
+	}
+}
+
+/** A clip waiting to play (Animator.queue), its nodes bound when it was queued. */
+private class Queued {
+	/** The clip. */
+	public final clip:AnimationClip;
+
+	/** The nodes its tracks move. */
+	public final nodes:Array<Node3D>;
+
+	/** Whether it loops. */
+	public final loop:Bool;
+
+	/** The crossfade into it, in seconds. */
+	public final fade:Float;
+
+	/** A clip to play next, bound to nodes. */
+	public function new(clip:AnimationClip, nodes:Array<Node3D>, loop:Bool, fade:Float) {
+		this.clip = clip;
+		this.nodes = nodes;
+		this.loop = loop;
+		this.fade = fade;
 	}
 }

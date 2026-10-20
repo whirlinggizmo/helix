@@ -138,6 +138,32 @@ class AnimationTests {
 		check(!animator.play(two, true, -1), "A negative fade is refused");
 		animator.speed = Math.NaN;
 		check(animator.speed == 0, "A speed not finite is taken as 0");
+		// A queued clip: it waits for a one-shot's end, then fades in from its last frame; play and stop drop it; behind a loop it waits.
+		var queuer = new Animator(a);
+		check(queuer.queue(two) && queuer.clip == two && queuer.queued == null, "Queued with nothing playing, it plays at once");
+		queuer.play(one, false);
+		check(queuer.queue(two, true, .5) && queuer.queued == two && !queuer.queue(ghost) && queuer.queued == two,
+			"A clip waits behind a one-shot; one play refuses is refused");
+		queuer.update(.5);
+		check(queuer.clip == one && b.x == 0, "The one-shot plays on");
+		queuer.update(.6);
+		check(queuer.clip == two && queuer.queued == null && queuer.fading && b.x == 0, "At its end the queued clip starts, from the end's pose");
+		queuer.update(.25);
+		check(near(b.x, 5), "Fading in over its seconds");
+		queuer.update(.3);
+		check(b.x == 10 && !queuer.fading, "Then playing alone");
+		check(queuer.queue(one) && queuer.queued == one, "Behind a loop a clip is queued");
+		queuer.update(5);
+		check(queuer.clip == two && queuer.queued == one, "And waits, as a loop doesn't end");
+		queuer.play(three);
+		check(queuer.queued == null, "play drops it");
+		queuer.play(one, false);
+		queuer.queue(two);
+		queuer.stop();
+		check(queuer.queued == null && queuer.clip == null, "As stop does");
+		queuer.play(one, false);
+		queuer.update(2);
+		check(queuer.queue(three) && queuer.clip == three, "Behind a finished one-shot it plays at once");
 	}
 
 	static function joints():Void {
@@ -182,11 +208,16 @@ class AnimationTests {
 		check(JointPalette.computePosedBox(model, model.mesh, box)
 			&& box[0] + box[3] > 41
 			&& box[0] - box[3] < 0, "The posed box holds both joints' reach");
+		var bounds = new Vector<Float>(6);
+		check(model.computeWorldBounds(bounds) && near(bounds[0], 0) && near(bounds[3], 41) && near(bounds[1], 0) && near(bounds[4], 1)
+			&& near(bounds[2], 0) && near(bounds[5], 0),
+			"The world bounds are the vertices as posed: the knee's out at 40 and 41");
 		// The model moved far off while its joints stay: it draws where its joints are, so nothing is drawn there.
 		knee.setPosition(1, 0, 0);
 		model.setPosition(500, 0, 0);
 		view.setView(500, 0, 10, 500, 0, 0);
 		stage.draw(view);
 		check(stage.drawnNodeCount == 0, "A skinned model's own placement doesn't move it: its joints do");
+		check(model.computeWorldBounds(bounds) && near(bounds[0], 0) && near(bounds[3], 2), "Nor its world bounds: back in its bind pose, 0 to 2");
 	}
 }

@@ -4,7 +4,7 @@ package helix.render3d;
 	ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a
 	target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's.
 	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its
-	values are properties that clamp (fovY, near, far, orthographicHeight, minAspect), each held to its range as its doc comment says. */
+	values are properties that clamp (fovY, near, far, orthographicHeight, minAspect, lensShiftX and lensShiftY), each held to its range as its doc comment says. */
 class Camera3D extends Node3D {
 	// The least a clip distance is from 0 (perspective near) or from its partner (near from far), and the least orthographic height:
 	// where a value lands when set at or past what it must stay under or over.
@@ -166,6 +166,27 @@ class Camera3D extends Node3D {
 		return aspect;
 	}
 
+	/** How far right of the viewport's center the view's axis lands, in halves of the viewport's width: 0, the default, at the center; 1 at its
+		right edge, -1 its left. A lens shift (a view camera's rise and fall): the picture slides across without turning the camera, so what it
+		looks at sits off-center (beside a panel, say) seen square on, the view as wide as before. Any finite value; NaN or an infinity is 0. */
+	public var lensShiftX(default, set):Float = 0.;
+
+	function set_lensShiftX(value:Float):Float {
+		value = Math.isFinite(value) ? value : 0;
+		lensShiftX = value;
+		return value;
+	}
+
+	/** How far above the viewport's center the view's axis lands, in halves of the viewport's height: 0, the default, at the center; 1 at its
+		top edge. As lensShiftX, up and down. Any finite value; NaN or an infinity is 0. */
+	public var lensShiftY(default, set):Float = 0.;
+
+	function set_lensShiftY(value:Float):Float {
+		value = Math.isFinite(value) ? value : 0;
+		lensShiftY = value;
+		return value;
+	}
+
 	/** The vertical field of view drawn, in radians: fovY, widened on a viewport narrower than the minimum aspect (minAspect). */
 	public var drawnFovY(get, never):Float;
 
@@ -255,16 +276,24 @@ class Camera3D extends Node3D {
 		return true;
 	}
 
-	/** World to clip space, for the viewport's shape: the projection's matrix * view, recomputed by each call, the view from where it is in the world now. */
+	/** World to clip space, for the viewport's shape: the projection's matrix (its lens shift applied) * view, recomputed by each call, the view
+		from where it is in the world now. */
 	public var viewProjection(get, never):Mat4;
 
 	function get_viewProjection():Mat4 {
 		place();
 		view.makeLookAt(eye[0], eye[1], eye[2], eye[0] + forward[0], eye[1] + forward[1], eye[2] + forward[2], up[0], up[1], up[2]);
-		if (projection == Orthographic)
+		if (projection == Orthographic) {
 			projectionMatrix.makeOrthographic(this.drawnHeight, viewportWidth / viewportHeight, near, far);
-		else
+			// The shift added to x and y after the divide by w, which is 1.
+			projectionMatrix.set(12, lensShiftX);
+			projectionMatrix.set(13, lensShiftY);
+		} else {
 			projectionMatrix.makePerspective(this.drawnFovY, viewportWidth / viewportHeight, near, far);
+			// The shift times w (-z in view space), so it holds after the divide at every depth.
+			projectionMatrix.set(8, -lensShiftX);
+			projectionMatrix.set(9, -lensShiftY);
+		}
 		viewProjectionMatrix.makeProduct(projectionMatrix, view);
 		return viewProjectionMatrix;
 	}

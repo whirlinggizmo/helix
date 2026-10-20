@@ -435,8 +435,9 @@ class Stage3D {
 			var halfHeight = orthographic ? camera.drawnHeight / 2 : Math.tan(camera.drawnFovY / 2) * z,
 				halfWidth = halfHeight * aspect;
 			for (c in 0...4) {
-				var x = c & 1 != 0 ? halfWidth : -halfWidth,
-					y = c & 2 != 0 ? halfHeight : -halfHeight,
+				// The lens shift slides the slice across as it does the picture.
+				var x = (c & 1 != 0 ? halfWidth : -halfWidth) + camera.lensShiftX * halfWidth,
+					y = (c & 2 != 0 ? halfHeight : -halfHeight) + camera.lensShiftY * halfHeight,
 					at = (p * 4 + c) * 3;
 				corners[at] = eyeX + fx * z + rx * x + ux * y;
 				corners[at + 1] = eyeY + fy * z + ry * x + uy * y;

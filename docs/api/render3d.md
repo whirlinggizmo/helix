@@ -26,7 +26,7 @@ function getTrack(index:Int):Null<Track>
 
 *class* in `src/helix/render3d/Animator.hx`
 
-Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play() crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the Animator first moved it). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time (layers, playing an upper body's clip over a lower body's, aren't here yet).
+Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play() crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the Animator first moved it). queue() plays a clip next, when the one playing ends (a one-shot back to its idle). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time (layers, playing an upper body's clip over a lower body's, aren't here yet).
 
 ```haxe
 function new(root:Node3D)
@@ -37,6 +37,8 @@ var speed(default, set):Float
 var finished(get, never):Bool
 var fading(get, never):Bool
 function play(clip:AnimationClip, ?loop:Bool = true, ?fade:Float = 0.):Bool
+function queue(clip:AnimationClip, ?loop:Bool = true, ?fade:Float = 0.):Bool
+var queued(get, never):Null<AnimationClip>
 function stop():Void
 function update(seconds:Float):Void
 ```
@@ -48,8 +50,10 @@ function update(seconds:Float):Void
 - `speed`: How fast time runs: 1 as the clip was made, 0 held, below 0 backwards. A speed that isn't finite is taken as 0.
 - `finished`: Whether a clip that doesn't loop has reached its end (false while one loops, or with none).
 - `fading`: Whether a crossfade is under way.
-- `play`: Plays clip from its start, looping or not, crossfading from the clip playing over fade seconds (0: at once); playing the clip already playing does nothing. False, changing nothing, for a clip a track of which moves a node not at or under the root, or a fade below 0.
-- `stop`: Stops playing: the nodes stay as the last update left them.
+- `play`: Plays clip from its start, looping or not, crossfading from the clip playing over fade seconds (0: at once); playing the clip already playing does nothing to it. Either way a queued clip is dropped. False, changing nothing, for a clip a track of which moves a node not at or under the root, or a fade below 0.
+- `queue`: Plays clip next, as play would, once the clip playing ends: at the update a clip that doesn't loop reaches its end, crossfading from its last frame over fade seconds; at once when none is playing or the one playing has finished. A looping clip doesn't end, so a clip queued behind one waits (until the clip playing is played again not looping). One clip waits at a time, a later queue replacing it; play and stop drop it. False, changing nothing, for a clip play would refuse.
+- `queued`: The clip waiting to play next (queue), or null.
+- `stop`: Stops playing: the nodes stay as the last update left them, and a queued clip is dropped.
 - `update`: Advances time by seconds (times the speed) and poses the nodes: call once a frame, before drawing.
 
 ## Attachment
@@ -109,7 +113,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Camera3D.hx`
 
-A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its values are properties that clamp (fovY, near, far, orthographicHeight, minAspect), each held to its range as its doc comment says.
+A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its values are properties that clamp (fovY, near, far, orthographicHeight, minAspect, lensShiftX and lensShiftY), each held to its range as its doc comment says.
 
 ```haxe
 function new()
@@ -126,6 +130,8 @@ var upZ(get, never):Float
 var projection(default, set):Projection
 var fovY(default, set):Float
 var minAspect(default, set):Float
+var lensShiftX(default, set):Float
+var lensShiftY(default, set):Float
 var drawnFovY(get, never):Float
 var drawnHeight(get, never):Float
 var near(default, set):Float
@@ -157,6 +163,8 @@ function computeRay(x:Float, y:Float, ray:Ray):Bool
 - `projection`: Which projection draws, Perspective to start: a perspective view sees fovY, an orthographic one orthographicHeight, both kept whichever draws, with near and far either way. Perspective holds near above 0: switching to it with a near of 0 or less raises near to 1e-6, and far to 2e-6 when it was no more.
 - `fovY`: The perspective view's vertical field of view in radians, pi/4 to start: held from 0.001 to pi - 0.001, a value outside landing on the nearer bound (NaN on the lower). Drawn when projection is Perspective; drawnFovY is what the viewport's shape makes of it.
 - `minAspect`: The narrowest viewport shape (width / height) the view keeps its width at: on a narrower viewport its vertical view (fovY, or orthographicHeight) grows so it sees as far across as at this aspect. A scene framed for 16:9 (16 / 9) shows all its width on a phone held upright, with more above and below (Godot's keep-width; Presentation's Expand, in 3D). 0, the default, for none; 0 or more (under 0, or NaN, is 0).
+- `lensShiftX`: How far right of the viewport's center the view's axis lands, in halves of the viewport's width: 0, the default, at the center; 1 at its right edge, -1 its left. A lens shift (a view camera's rise and fall): the picture slides across without turning the camera, so what it looks at sits off-center (beside a panel, say) seen square on, the view as wide as before. Any finite value; NaN or an infinity is 0.
+- `lensShiftY`: How far above the viewport's center the view's axis lands, in halves of the viewport's height: 0, the default, at the center; 1 at its top edge. As lensShiftX, up and down. Any finite value; NaN or an infinity is 0.
 - `drawnFovY`: The vertical field of view drawn, in radians: fovY, widened on a viewport narrower than the minimum aspect (minAspect).
 - `drawnHeight`: The orthographic height drawn, in world units: orthographicHeight, taller on a viewport narrower than the minimum aspect.
 - `near`: The near clip plane's distance from the eye, 0.1 to start: held below far, one at or past far (or NaN) landing 1e-6 under it; a perspective view (projection) holds it above 0 too, one of 0 or less landing on 1e-6. An orthographic view's near may be 0 or less. Set far first when the new pair lies past the old one.
@@ -170,7 +178,7 @@ function computeRay(x:Float, y:Float, ray:Ray):Bool
 - `viewportHeight`: The viewport height in framebuffer pixels.
 - `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
-- `viewProjection`: World to clip space, for the viewport's shape: the projection's matrix * view, recomputed by each call, the view from where it is in the world now.
+- `viewProjection`: World to clip space, for the viewport's shape: the projection's matrix (its lens shift applied) * view, recomputed by each call, the view from where it is in the world now.
 - `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
 
 ## Cube
@@ -648,6 +656,7 @@ var shadowReceiving(get, set):Bool
 var skin(default, null):Null<Skin>
 var jointCount(get, never):Int
 function getJoint(index:Int):Null<Node3D>
+function computeWorldBounds(out:haxe.ds.Vector<Float>):Bool
 function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
 ```
 
@@ -665,6 +674,7 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
 - `skin`: Its skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
 - `jointCount`: How many joints it follows: its skin's, once bound; 0 otherwise.
 - `getJoint`: The node its joint index follows; null past them or unbound.
+- `computeWorldBounds`: The box around it in the world as it is now, into out (its least x, y and z, then its most, world units): every part's vertices, a skinned one's posed by the joints it's bound to (moved on the CPU, as the GPU blends them, a pass over its vertices; unbound, its bind pose placed by its world matrix), a rigid one's placed by its world matrix. Worked out afresh from the transforms now, as computeWorld is, not from what a stage last drew; not its children. Exact where a stage's culling box is generous, for framing what's worn: a camera fitted to it. False, leaving out as it was, for a model with no vertices.
 - `bindSkeleton`: Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
 
 ## ModelCache

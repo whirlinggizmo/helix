@@ -498,41 +498,47 @@ A gamepad's buttons, as on an Xbox-style pad, numbered as the W3C standard gamep
 
 *class* in `src/helix/input/PointerGestures.hx`
 
-Taps, drags and flicks from IInput's pointer, in framebuffer pixels; touch and mouse alike. Update once per tick, before the input is consumed.
+Taps, double taps, drags and flicks from IInput's pointer, in framebuffer pixels; touch and mouse alike (a double tap is a double click). Update once per tick, before the input is consumed, reading its tick edges; or once per frame, reading its frame edges, in a program without a fixed tick.
 
 ```haxe
 function new(?slop:Float = 12., ?tapSeconds:Float = .3)
 var maxTapDistance(get, set):Float
 var maxTapDuration(get, set):Float
+var maxDoubleTapInterval(get, set):Float
+var maxDoubleTapDistance(get, set):Float
 var down(default, null):Bool
 var pressed(default, null):Bool
 var released(default, null):Bool
 var dragging(default, null):Bool
 var tapped(default, null):Bool
+var doubleTapped(default, null):Bool
 var x(default, null):Float
 var y(default, null):Float
 var startX(default, null):Float
 var startY(default, null):Float
 var flickVelocityX(get, never):Float
 var flickVelocityY(get, never):Float
-function update(input:IInput, now:Float):Void
+function update(input:IInput, now:Float, perTick:Bool):Void
 ```
 
 - `new`: Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds, clamped as maxTapDistance and maxTapDuration are.
 - `maxTapDistance`: How far a press may move and still be a tap, in pixels. 0 or more (under 0, or NaN, is 0).
 - `maxTapDuration`: How long a press may last and still be a tap, in seconds. At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `maxDoubleTapInterval`: How long after one tap began the next may begin and make a double tap, in seconds. At least 1e-6 (0 or less, or NaN, is 1e-6); half a second at first.
+- `maxDoubleTapDistance`: How far from where one tap began the next may begin and make a double tap, in pixels. 0 or more (under 0, or NaN, is 0); 24 at first.
 - `down`: Whether the pointer is down, as of the last update.
 - `pressed`: The pointer went down at the last update.
 - `released`: The pointer came up at the last update.
 - `dragging`: Moved past the slop during this press.
 - `tapped`: The press that ended at the last update was a tap: it stayed within the slop and the tap time.
+- `doubleTapped`: The tap that ended at the last update was the second of a double tap (a double click): it began within maxDoubleTapInterval of the tap before it and within maxDoubleTapDistance of where that one began. A third tap starts a new pair.
 - `x`: The pointer's x in framebuffer pixels, as of the last update while down; it holds while the pointer is off the window, and after release.
 - `y`: The pointer's y in framebuffer pixels, held as x is.
 - `startX`: Where the current or last press began, x in framebuffer pixels.
 - `startY`: Where the current or last press began, y in framebuffer pixels.
 - `flickVelocityX`: Velocity over the last tenth of a second before release, pixels per second.
 - `flickVelocityY`: Vertical velocity as flickVelocityX, down positive.
-- `update`: Reads the pointer once per tick, before the input is consumed; now is the time in seconds.
+- `update`: Reads the pointer: once per tick with perTick, its tick edges, before the input is consumed; or once per frame without, its frame edges. now is the time in seconds.
 
 ## Touch
 

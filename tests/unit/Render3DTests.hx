@@ -8,6 +8,7 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile.ImageSource;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
+import helix.render3d.Ray;
 import helix.render3d.SpotLight;
 
 /** Mat4 and Camera3D: projection, view and their product, checked by where they put known points. */
@@ -50,6 +51,28 @@ class Render3DTests {
 		check(near(edge[1] / edge[3], 1), "The field of view's edge is the clip edge");
 		var side = clip(vp, 10 * Math.tan(Math.PI / 8) * 2, 0, 0);
 		check(near(side[0] / side[3], 1), "Width follows the viewport's aspect");
+		// A lens shift: the axis half the viewport's half-width right and a quarter of its half-height down, at every depth, the view as wide.
+		camera.lensShiftX = .5;
+		camera.lensShiftY = -.25;
+		var shifted = clip(camera.viewProjection, 0, 0, 0),
+			deeper = clip(camera.viewProjection, 0, 0, -5),
+			top = clip(camera.viewProjection, 0, 10 * Math.tan(Math.PI / 8), 0);
+		check(near(shifted[0] / shifted[3], .5) && near(shifted[1] / shifted[3], -.25) && near(deeper[0] / deeper[3], .5) && near(deeper[1] / deeper[3], -.25),
+			"A lens shift moves the axis across the viewport at every depth");
+		check(near(top[1] / top[3], .75), "A lens shift keeps the field of view's height");
+		var axisRay = new Ray();
+		check(camera.computeRay(600, 250, axisRay)
+			&& near(axisRay.directionX, 0)
+			&& near(axisRay.directionY, 0)
+			&& axisRay.directionZ < 0,
+			"The ray through the shifted center runs down the axis");
+		camera.projection = Orthographic;
+		var flatShifted = clip(camera.viewProjection, 0, 0, 0);
+		check(near(flatShifted[0], .5) && near(flatShifted[1], -.25), "An orthographic view shifts alike");
+		camera.projection = Perspective;
+		camera.lensShiftX = Math.NaN;
+		camera.lensShiftY = Math.POSITIVE_INFINITY;
+		check(camera.lensShiftX == 0 && camera.lensShiftY == 0, "A lens shift not finite is 0");
 		camera.setView(10, 0, 0, 0, 0, 0);
 		var right = clip(camera.viewProjection, 0, 0, -1);
 		check(right[0] / right[3] > 0, "Looking down -x from +x, -z is on the right: right-handed");
@@ -118,6 +141,11 @@ class Render3DTests {
 		@:privateAccess parent.update(null, false);
 		@:privateAccess child.update(parent.worldMatrix, true);
 		check(near(child.worldMatrix.get(12), 1) && near(child.worldMatrix.get(13), 3), "A child is placed through its parent");
+		var bounds = new haxe.ds.Vector<Float>(6);
+		check(child.computeWorldBounds(bounds) && near(bounds[0], .5) && near(bounds[3], 1.5) && near(bounds[1], 2) && near(bounds[4], 4)
+			&& near(bounds[2], 1.5) && near(bounds[5], 4.5),
+			"A rigid model's world bounds are its vertices placed through its parents");
+		check(!new Model().computeWorldBounds(bounds) && near(bounds[0], .5), "A model with no vertices has no bounds, out left alone");
 		parent.setPosition(0, 0, 0);
 		var changed = @:privateAccess parent.update(null, false);
 		@:privateAccess child.update(parent.worldMatrix, changed);
