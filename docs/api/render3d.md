@@ -547,7 +547,7 @@ var blended(get, set):Bool
 
 *class* in `src/helix/render3d/Mesh.hx`
 
-Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DLayout's packing; the tangent's w its bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights (Skinned3DLayout's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up, counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes.
+Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DProgram's packing; the tangent's w its bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights (Skinned3DProgram's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up, counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes.
 
 ```haxe
 function new(vertices:haxe.io.Bytes, vertexCount:Int, indices:haxe.io.Bytes, indexCount:Int)
@@ -581,7 +581,7 @@ function getIndexBuffer(gpu:IGraphics):Int
 function destroy():Void
 ```
 
-- `new`: A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices. Throws for a count of 0 or less, too few bytes, or an index past the vertices.
+- `new`: A mesh of vertexCount vertices in vertices (Lit3DProgram.stride bytes each) and indexCount uint32 indices (whole triangles) in indices. Throws for a count of 0 or less, too few bytes, or an index past the vertices.
 - `fromArrays`: A mesh from arrays: positions (x, y, z each), normals (one a position, unit length; null to work them out from the triangles), texture coordinates (u, v each; null for zeros), tangents (x, y, z, w each, w the bitangent's sign; null to work them out) and indices (whole triangles; null for each three positions a triangle, in order); skinned when joints (four joint indices a vertex) and weights (their four weights, normalized here) are given. Throws for arrays that don't agree.
 - `plane`: Flat in x and z, facing +y, width along x and length along z, subdivisions (0..256) more cells each way; texture coordinates span it once.
 - `cube`: A box width along x, height along y and length along z, each face its own vertices (sharp edges), textured 0..1 a face.
@@ -592,7 +592,7 @@ function destroy():Void
 - `torus`: A ring around y: radius to the middle of the tube, thickness the tube's radius, rings (3..512) around the ring and segments (3..512) around the tube.
 - `vertexCount`: Its vertices.
 - `indexCount`: Its indices: three a triangle.
-- `vertices`: The vertex data, Lit3DLayout.stride bytes a vertex.
+- `vertices`: The vertex data, Lit3DProgram.stride bytes a vertex.
 - `indices`: The indices, uint32 each.
 - `minX`: The box around it: its smallest x.
 - `minY`: Its smallest y.
@@ -601,10 +601,10 @@ function destroy():Void
 - `maxY`: Its largest y.
 - `maxZ`: Its largest z.
 - `skinned`: Whether its vertices follow joints (a skin's): a Model showing it needs one (Model.skin).
-- `skinData`: A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
+- `skinData`: A skinned mesh's joints and weights, Skinned3DProgram.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
 - `shape`: What made it, for a mesh from plane, cube, sphere, cylinder, cone, capsule or torus: the generator's name and its arguments as it was called. Null for a mesh from arrays (fromArrays, a file's meshes), which nothing can write back as a shape.
 - `getJointReach`: How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position (Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model. Null for a mesh that isn't skinned.
-- `passVertices`: Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DLayout.stride bytes each: its position, then its normal averaged over every vertex at that position (the distinct normals of the vertices at exactly that place summed, then made unit length; the vertex's own normal where they cancel out). A hard edge splits a vertex into copies, one a face, each with its face's normal; pushed out along those, an outline's shell would crack into separate faces, so the copies move together instead. Worked out the first time it's read (a mesh no pass draws never has it), Flat3DLayout.stride bytes a vertex more. Vertices of separate meshes (a model's parts) aren't averaged together.
+- `passVertices`: Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DProgram.stride bytes each: its position, then its normal averaged over every vertex at that position (the distinct normals of the vertices at exactly that place summed, then made unit length; the vertex's own normal where they cancel out). A hard edge splits a vertex into copies, one a face, each with its face's normal; pushed out along those, an outline's shell would crack into separate faces, so the copies move together instead. Worked out the first time it's read (a mesh no pass draws never has it), Flat3DProgram.stride bytes a vertex more. Vertices of separate meshes (a model's parts) aren't averaged together.
 - `getPassVertexBuffer`: Its pass vertices (passVertices) as a static vertex buffer on gpu, made the first time it's asked for.
 - `getSkinBuffer`: A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned.
 - `getVertexBuffer`: Its static vertex buffer on gpu, made the first time it's asked for.

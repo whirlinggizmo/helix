@@ -1,6 +1,7 @@
 package helix.ui;
 
 import helix.input.Key;
+import helix.render2d.Font2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -15,8 +16,13 @@ class TextField extends Widget {
 	var caret:Shape2D;
 	var hintNode:Text2D;
 	var maxLength:Int;
-	var typed:Box;
-	var hinted:Box;
+	var typed:Layout2D;
+	var hinted:Layout2D;
+	// The caret's place after the text: what it was measured for (text, font, size), so it's measured again only when one changes.
+	var caretText = "";
+	var caretFont:Null<Font2D>;
+	var caretSize = -1.;
+	var caretX = 0.;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, value:String, hintText:String, maxLength:Int) {
@@ -27,20 +33,20 @@ class TextField extends Widget {
 		face.setPivot(0, 0);
 		textNode = new Text2D(value.substr(0, maxLength), theme.textSize, theme.textColor, Left, theme.font);
 		hintNode = new Text2D(hintText, theme.textSize, theme.disabledTextColor, Left, theme.font);
-		caret = Shape2D.rectangle(2, theme.textSize + 4, theme.focusColor);
+		caret = Shape2D.rectangle(2, 1, theme.focusColor);
 		caret.setPivot(0, 0);
 		caret.pickable = false;
 		for (n in [face, hintNode, textNode, caret])
 			root.addChild(n);
-		box = Box.stack(face);
-		box.setSizing(Grow(1), Fixed(theme.widgetHeight));
-		box.setPadding(theme.padding, 0, theme.padding, 0);
-		typed = Box.of(textNode);
-		hinted = Box.of(hintNode);
+		layout = Layout2D.stack(face);
+		layout.themeSizing(Grow(1), Fit);
+		typed = Layout2D.of(textNode);
+		hinted = Layout2D.of(hintNode);
 		typed.setAnchor(Start, Center);
 		hinted.setAnchor(Start, Center);
-		box.add(typed);
-		box.add(hinted);
+		layout.add(typed);
+		layout.add(hinted);
+		readTheme(theme);
 	}
 
 	/** Its text. */
@@ -97,6 +103,16 @@ class TextField extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
+	override function readTheme(theme:Theme):Void {
+		textNode.textSize = hintNode.textSize = theme.textSize;
+		textNode.font = hintNode.font = theme.font;
+		hintNode.color = theme.disabledTextColor;
+		caret.color = theme.focusColor;
+		caret.setSize(2, theme.textSize + 4);
+		themeFixed(layout, Math.NaN, theme.widgetHeight);
+		layout.themePadding(theme.padding, 0, theme.padding, 0);
+	}
+
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme, input = ui.input, value = textNode.text, was = value;
 		submitted = false;
@@ -117,7 +133,13 @@ class TextField extends Widget {
 		textNode.color = !enabled ? theme.disabledTextColor : invalid ? theme.invalidTextColor : theme.textColor;
 		// The caret after the text, as the layout last placed it.
 		var font = theme.font != null ? theme.font : ui.font;
+		if (value != caretText || font != caretFont || theme.textSize != caretSize) {
+			caretText = value;
+			caretFont = font;
+			caretSize = theme.textSize;
+			caretX = font != null ? font.measure(value, theme.textSize) : 0;
+		}
 		caret.visible = enabled && focused;
-		caret.setPosition(typed.x + (font != null ? font.measure(value, theme.textSize) : 0) + 1, box.y + (box.height - theme.textSize - 4) / 2);
+		caret.setPosition(typed.x + caretX + 1, layout.y + (layout.height - theme.textSize - 4) / 2);
 	}
 }

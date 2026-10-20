@@ -1,4 +1,4 @@
-/* Shadow maps' depth (render3d's Stage3D): the casters as a light sees them, depth only. A model's vertices are the lit models' own (Lit3DLayout's
+/* Shadow maps' depth (render3d's Stage3D): the casters as a light sees them, depth only. A model's vertices are the lit models' own (Lit3DProgram's
  * stride), of which this reads the position; each instance's placement (the model matrix's rows) comes from the instance buffer, so casters
  * alike in mesh are one draw.
  *

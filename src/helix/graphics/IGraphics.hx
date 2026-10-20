@@ -11,7 +11,7 @@ enum ReadPixelsResult {
 /** The GPU, as thin as HeliX can make it: a platform's graphics adapter implements it and nothing else. Resources (textures of a few kinds,
 	buffers, programs built from a ShaderSource, pipelines made from a PipelineDesc), passes (the frame's screen pass after any passes into
 	render targets and shadow maps) and one draw. An adapter knows no program, layout or pipeline of HeliX's own: shared code describes those
-	(Pipelines, the generated layouts) and hands them over as data, so another adapter (another GPU API, another platform) implements this
+	(Pipelines, the generated program classes) and hands them over as data, so another adapter (another GPU API, another platform) implements this
 	alone. A call that can't be done throws, before doing anything. */
 interface IGraphics {
 	/** Uploads an image, rows top first, and returns its handle. levels is the image then, optionally, its mipmaps, each half the size of the last

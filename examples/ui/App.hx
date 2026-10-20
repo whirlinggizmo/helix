@@ -29,7 +29,7 @@ import helix.render2d.Stage2D;
 import helix.render2d.Texture2D;
 import helix.scene.Pointer;
 import helix.time.Time;
-import helix.ui.Box;
+import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.ColorPicker;
 import helix.ui.Label;
@@ -82,7 +82,7 @@ class App extends BaseApp {
 	var pointer:Pointer;
 	var ui:Null<Ui>;
 	var fps = new FpsOverlay();
-	var layout:Box;
+	var layout:Layout2D;
 	var screen = "main";
 	var status = "";
 	var loading = 0.;
@@ -180,7 +180,7 @@ class App extends BaseApp {
 		main = ui.panel("main");
 		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
 		var title = ui.label("HeliX ui");
-		title.node.textSize = 32;
+		title.textSize = 32;
 		play = ui.button("Play", "play");
 		openSettings = ui.button("Settings", "openSettings");
 		openControls = ui.button("Controls", "openControls");
@@ -192,7 +192,7 @@ class App extends BaseApp {
 
 		settings = ui.panel("settings");
 		var heading = ui.label("Settings");
-		heading.node.textSize = 26;
+		heading.textSize = 26;
 		master = ui.slider("Master", 0, 100, 100, 10, "masterVolume");
 		music = ui.slider("Music", 0, 100, 100, 10, "musicVolume");
 		effects = ui.slider("Effects", 0, 100, 100, 10, "effectsVolume");
@@ -204,46 +204,46 @@ class App extends BaseApp {
 		for (w in [heading, master, music, effects, muteMusic, name])
 			settings.add(w);
 		// The picker beside its label, in a row so it keeps its own width (the panel's column would stretch it across, its square as tall).
-		var backgroundRow = Box.row();
+		var backgroundRow = Layout2D.row();
 		backgroundRow.gap = ui.theme.gap * 2;
 		for (w in [backgroundLabel, background]) {
 			settings.adopt(w);
-			backgroundRow.add(w.box);
+			backgroundRow.add(w.layout);
 		}
-		background.box.setSizing(Fixed(240), Fit);
+		background.layout.setSizing(Fixed(240), Fit);
 		settings.content.add(backgroundRow);
 		settings.add(back);
 
 		controls = ui.panel("controls");
 		var heading = ui.label("Controls");
-		heading.node.textSize = 26;
+		heading.textSize = 26;
 		controls.add(heading);
 		for (action in actions.names) {
 			var label = ui.label(action),
 				bindings = ui.label(""),
 				rebind = ui.button("Rebind", 'rebind-$action');
-			label.box.setSizing(Fixed(70), Fit);
-			bindings.box.setSizing(Grow(1), Fit);
-			var row = Box.row();
+			label.layout.setSizing(Fixed(70), Fit);
+			bindings.layout.setSizing(Grow(1), Fit);
+			var row = Layout2D.row();
 			row.gap = ui.theme.gap;
 			row.setAlign(Start, Center);
 			for (w in [label, bindings, rebind]) {
 				controls.adopt(w);
-				row.add(w.box);
+				row.add(w.layout);
 			}
 			controls.content.add(row);
 			rows.push({action: action, bindings: bindings, rebind: rebind});
 		}
 		live = ui.label("");
-		live.node.color = 0x9aa2b8ff;
+		live.color = 0x9aa2b8ff;
 		controls.add(live);
 		reset = ui.button("Reset", "reset");
 		backFromControls = ui.button("Back", "backFromControls");
-		var buttons = Box.row();
+		var buttons = Layout2D.row();
 		buttons.gap = ui.theme.gap;
 		for (b in [reset, backFromControls]) {
 			controls.adopt(b);
-			buttons.add(b.box);
+			buttons.add(b.layout);
 		}
 		controls.content.add(buttons);
 
@@ -257,28 +257,28 @@ class App extends BaseApp {
 		levels.add(list);
 		levels.adopt(start);
 		levels.adopt(backFromLevels);
-		var buttons = Box.row();
+		var buttons = Layout2D.row();
 		buttons.gap = ui.theme.gap;
-		buttons.add(start.box);
-		buttons.add(backFromLevels.box);
+		buttons.add(start.layout);
+		buttons.add(backFromLevels.layout);
 		levels.content.add(buttons);
 		bar = ui.progress(0);
 		corner = ui.label("");
-		corner.node.color = 0x9aa2b8ff;
+		corner.color = 0x9aa2b8ff;
 		// The design: the panels centered, the bar along the bottom, the status in the corner.
-		layout = Box.stack();
+		layout = Layout2D.stack();
 		layout.setSizing(Grow(1), Grow(1));
 		for (panel in [main, settings, controls, levels])
-			panel.box.setAnchor(Center, Center);
-		main.box.setSizing(Fixed(360), Fit);
-		settings.box.setSizing(Fixed(480), Fit);
-		controls.box.setSizing(Fixed(640), Fit);
-		levels.box.setSizing(Fixed(520), Fit);
-		bar.box.setSizing(Fixed(400), Fixed(10));
-		bar.box.setAnchor(Center, End, 0, -24);
-		corner.box.setAnchor(End, End, -16, -48);
+			panel.layout.setAnchor(Center, Center);
+		main.layout.setSizing(Fixed(360), Fit);
+		settings.layout.setSizing(Fixed(480), Fit);
+		controls.layout.setSizing(Fixed(640), Fit);
+		levels.layout.setSizing(Fixed(520), Fit);
+		bar.layout.setSizing(Fixed(400), Fixed(10));
+		bar.layout.setAnchor(Center, End, 0, -24);
+		corner.layout.setAnchor(End, End, -16, -48);
 		for (w in [main, settings, controls, levels, bar, corner])
-			layout.add(w.box);
+			layout.add(w.layout);
 		show("main");
 
 		if (pilot != null)
@@ -399,7 +399,7 @@ class App extends BaseApp {
 			vh = presentation.visibleHeight;
 		for (row in rows)
 			row.bindings.text = actions.capturing && rebinding == row.action ? "Press a key or button..." : describe(row.action);
-		Box.arrange(layout, vx, vy, vw, vh, batch.font);
+		Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
 		if (!waiting)
 			pointer.update();
 		// While a rebind waits for its press, the screen waits too: the press is the binding's, not the menu's.

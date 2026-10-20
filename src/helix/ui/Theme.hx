@@ -2,8 +2,14 @@ package helix.ui;
 
 import helix.render2d.Font2D;
 
-/** How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change one before making widgets; widgets read it as they're made
-	and as they draw their states. */
+/** How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change any value at any time (a settings screen, a reloaded
+	stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame
+	with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given
+	another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value
+	applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's
+	sizing, padding and gap are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap), even to what the
+	theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's
+	nodes are never changed directly: its properties are the way. */
 class Theme {
 	var text:Int = 0xf0f2f8ff;
 	var disabledText:Int = 0x80869aff;
@@ -141,7 +147,46 @@ class Theme {
 		return value;
 	}
 
-	/** The radius of a panel's, a button's and a list's corners in units (a track's, a bar's and a box's at most half their
+	/** The radius of a list's corners in units, its frame's (cornerRadius for the others); 0 for square. (0 to start.) 0 or more (under 0, or
+		NaN, is 0). */
+	public var listCornerRadius(default, set):Float = 0.;
+
+	function set_listCornerRadius(value:Float):Float {
+		value = value >= 0 ? value : 0;
+		listCornerRadius = value;
+		return value;
+	}
+
+	/** Room between a list's frame and its rows in units, so a chosen row's band keeps clear of the frame's round corners. (4 to start.) 0 or
+		more (under 0, or NaN, is 0). */
+	public var listPadding(default, set):Float = 4.;
+
+	function set_listPadding(value:Float):Float {
+		value = value >= 0 ? value : 0;
+		listPadding = value;
+		return value;
+	}
+
+	/** A list's rows' height in units. (40 to start.) At least 1 (under 1, or NaN, is 1). */
+	public var listRowHeight(default, set):Float = 40.;
+
+	function set_listRowHeight(value:Float):Float {
+		value = value >= 1 ? value : 1;
+		listRowHeight = value;
+		return value;
+	}
+
+	/** The radius of a list's rows' corners in units (their hover and selection), apart from the frames' cornerRadius; 0 for square. (0 to
+		start.) 0 or more (under 0, or NaN, is 0). */
+	public var listRowCornerRadius(default, set):Float = 0.;
+
+	function set_listRowCornerRadius(value:Float):Float {
+		value = value >= 0 ? value : 0;
+		listRowCornerRadius = value;
+		return value;
+	}
+
+	/** The radius of a panel's and a button's corners in units (a list's is listCornerRadius) (a track's, a bar's and a box's at most half their
 		height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0). */
 	public var cornerRadius(get, set):Float;
 
@@ -181,7 +226,13 @@ class Theme {
 		return value;
 	}
 
-	/** A color picker's handles on its bars, their diameter in units. (14 to start.) At least 1 (under 1, or NaN, is 1). */
+	/** A handle's color (a slider's, a color picker's bars'; Handle), 0xRRGGBBAA. (White to start.) */
+	public var handleColor:Int = 0xffffffff;
+
+	/** The ring around a handle, so it shows on any color under it, 0xRRGGBBAA. (Black at half alpha to start.) */
+	public var handleShadowColor:Int = 0x00000080;
+
+	/** A handle's diameter in units (a slider's, a color picker's bars'; Handle). (14 to start.) At least 1 (under 1, or NaN, is 1). */
 	public var handleSize(default, set):Float = 14.;
 
 	function set_handleSize(value:Float):Float {
@@ -190,7 +241,7 @@ class Theme {
 		return value;
 	}
 
-	/** A color picker's width (its square's side) in units, unless its box is given another. (200 to start.) At least 1 (under 1, or NaN,
+	/** A color picker's width (its square's side) in units, unless its layout is given another. (200 to start.) At least 1 (under 1, or NaN,
 		is 1). */
 	public var colorPickerWidth(default, set):Float = 200.;
 
@@ -200,7 +251,7 @@ class Theme {
 		return value;
 	}
 
-	/** A button's (and a list row's, a slider's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6). */
+	/** A button's (and a slider's, a field's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6). */
 	public var widgetHeight(get, set):Float;
 
 	function get_widgetHeight():Float

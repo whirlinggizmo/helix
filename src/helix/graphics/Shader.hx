@@ -186,7 +186,7 @@ class Shader {
 	public var caster(default, null):Null<Shader>;
 
 	/** The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage
-		(Sprite3DLayout's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this
+		(Sprite3DProgram's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this
 		one's. Null for a screen or surface shader. */
 	public var sprite3D(default, null):Null<Shader>;
 

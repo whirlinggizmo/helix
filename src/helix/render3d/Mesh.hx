@@ -3,9 +3,9 @@ package helix.render3d;
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 
-/** Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DLayout's packing; the tangent's w its
+/** Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DProgram's packing; the tangent's w its
 	bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights
-	(Skinned3DLayout's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
+	(Skinned3DProgram's skin buffer), its box its bind pose's. Made once and never changed; a Stage3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up,
 	counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes. */
 class Mesh {
 	// Kept across a hot reload: ids made after one mustn't repeat those of meshes still drawn.
@@ -29,13 +29,13 @@ class Mesh {
 	var passData:Null<Bytes>;
 	var reaches:Array<{skin:Skin, reach:haxe.ds.Vector<Float>}> = [];
 
-	/** A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices.
+	/** A mesh of vertexCount vertices in vertices (Lit3DProgram.stride bytes each) and indexCount uint32 indices (whole triangles) in indices.
 		Throws for a count of 0 or less, too few bytes, or an index past the vertices. */
 	public function new(vertices:Bytes, vertexCount:Int, indices:Bytes, indexCount:Int) {
 		if (vertexCount <= 0
 			|| indexCount <= 0
 			|| indexCount % 3 != 0
-			|| vertices.length < vertexCount * Lit3DLayout.stride
+			|| vertices.length < vertexCount * Lit3DProgram.stride
 			|| indices.length < indexCount * 4)
 			throw "Invalid mesh";
 		for (i in 0...indexCount)
@@ -48,7 +48,7 @@ class Mesh {
 		loX = loY = loZ = Math.POSITIVE_INFINITY;
 		hiX = hiY = hiZ = Math.NEGATIVE_INFINITY;
 		for (i in 0...vertexCount) {
-			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset;
+			var at = i * Lit3DProgram.stride + Lit3DProgram.positionOffset;
 			var x = vertices.getFloat(at),
 				y = vertices.getFloat(at + 4),
 				z = vertices.getFloat(at + 8);
@@ -67,7 +67,7 @@ class Mesh {
 	/** Its indices: three a triangle. */
 	public var indexCount(default, null):Int;
 
-	/** The vertex data, Lit3DLayout.stride bytes a vertex. */
+	/** The vertex data, Lit3DProgram.stride bytes a vertex. */
 	public var vertices(get, never):Bytes;
 
 	function get_vertices():Bytes
@@ -121,7 +121,7 @@ class Mesh {
 	function get_skinned():Bool
 		return skinData != null;
 
-	/** A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four
+	/** A skinned mesh's joints and weights, Skinned3DProgram.skinStride bytes a vertex: four joint indices (as floats), then their four
 		weights, summing to 1. Null for one that isn't skinned. */
 	public var skinData(default, null):Null<Bytes>;
 
@@ -142,15 +142,15 @@ class Mesh {
 		for (j in 0...count)
 			reach[j] = -1;
 		for (i in 0...vertexCount) {
-			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset,
+			var at = i * Lit3DProgram.stride + Lit3DProgram.positionOffset,
 				x = vertexData.getFloat(at),
 				y = vertexData.getFloat(at + 4),
 				z = vertexData.getFloat(at + 8);
 			for (k in 0...4) {
-				var s = i * Skinned3DLayout.skinStride;
-				if (skinData.getFloat(s + Skinned3DLayout.weightsOffset + k * 4) <= 0)
+				var s = i * Skinned3DProgram.skinStride;
+				if (skinData.getFloat(s + Skinned3DProgram.weightsOffset + k * 4) <= 0)
 					continue;
-				var j = Std.int(skinData.getFloat(s + Skinned3DLayout.jointsOffset + k * 4) + .5);
+				var j = Std.int(skinData.getFloat(s + Skinned3DProgram.jointsOffset + k * 4) + .5);
 				if (j >= count)
 					continue;
 				var dx = x - skin.getBindPosition(j, 0),
@@ -165,11 +165,11 @@ class Mesh {
 		return reach;
 	}
 
-	/** Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DLayout.stride bytes each: its position, then its
+	/** Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DProgram.stride bytes each: its position, then its
 		normal averaged over every vertex at that position (the distinct normals of the vertices at exactly that place summed, then made unit
 		length; the vertex's own normal where they cancel out). A hard edge splits a vertex into copies, one a face, each with its face's
 		normal; pushed out along those, an outline's shell would crack into separate faces, so the copies move together instead. Worked out the
-		first time it's read (a mesh no pass draws never has it), Flat3DLayout.stride bytes a vertex more. Vertices of separate meshes (a
+		first time it's read (a mesh no pass draws never has it), Flat3DProgram.stride bytes a vertex more. Vertices of separate meshes (a
 		model's parts) aren't averaged together. */
 	public var passVertices(get, never):Bytes;
 
@@ -184,9 +184,9 @@ class Mesh {
 	function averageNormals():Bytes {
 		var data = vertexData;
 		inline function at(i:Int, k:Int):Float
-			return data.getFloat(i * Lit3DLayout.stride + k * 4);
-		var position = Std.int(Lit3DLayout.positionOffset / 4),
-			normal = Std.int(Lit3DLayout.normalOffset / 4);
+			return data.getFloat(i * Lit3DProgram.stride + k * 4);
+		var position = Std.int(Lit3DProgram.positionOffset / 4),
+			normal = Std.int(Lit3DProgram.normalOffset / 4);
 		function compare(a:Int, b:Int, from:Int):Int {
 			for (k in from...from + 3) {
 				var x = at(a, k), y = at(b, k);
@@ -202,7 +202,7 @@ class Mesh {
 				c = compare(a, b, normal);
 			return c != 0 ? c : a - b;
 		});
-		var out = Bytes.alloc(vertexCount * Flat3DLayout.stride), start = 0;
+		var out = Bytes.alloc(vertexCount * Flat3DProgram.stride), start = 0;
 		while (start < vertexCount) {
 			var end = start + 1;
 			while (end < vertexCount && compare(order[start], order[end], position) == 0)
@@ -216,9 +216,9 @@ class Mesh {
 				}
 			var length = Math.sqrt(x * x + y * y + z * z);
 			for (k in start...end) {
-				var i = order[k], o = i * Flat3DLayout.stride, n = o + Flat3DLayout.normalOffset;
+				var i = order[k], o = i * Flat3DProgram.stride, n = o + Flat3DProgram.normalOffset;
 				for (c in 0...3)
-					out.setFloat(o + Flat3DLayout.positionOffset + c * 4, at(i, position + c));
+					out.setFloat(o + Flat3DProgram.positionOffset + c * 4, at(i, position + c));
 				if (length > 1e-6) {
 					out.setFloat(n, x / length);
 					out.setFloat(n + 4, y / length);
@@ -236,7 +236,7 @@ class Mesh {
 	public function getPassVertexBuffer(gpu:IGraphics):Int {
 		upload(gpu);
 		if (passBuffer == 0)
-			passBuffer = gpu.createStaticBuffer(passVertices, vertexCount * Flat3DLayout.stride, false);
+			passBuffer = gpu.createStaticBuffer(passVertices, vertexCount * Flat3DProgram.stride, false);
 		return passBuffer;
 	}
 
@@ -264,10 +264,10 @@ class Mesh {
 		if (this.gpu != null && this.gpu != gpu)
 			throw "A mesh lives on one IGraphics";
 		this.gpu = gpu;
-		vertexBuffer = gpu.createStaticBuffer(vertexData, vertexCount * Lit3DLayout.stride, false);
+		vertexBuffer = gpu.createStaticBuffer(vertexData, vertexCount * Lit3DProgram.stride, false);
 		indexBuffer = gpu.createStaticBuffer(indexData, indexCount * 4, true);
 		if (skinData != null)
-			skinBuffer = gpu.createStaticBuffer(skinData, vertexCount * Skinned3DLayout.skinStride, false);
+			skinBuffer = gpu.createStaticBuffer(skinData, vertexCount * Skinned3DProgram.skinStride, false);
 	}
 
 	/** Frees its buffers, if it was uploaded; drawing it again uploads it again. */
@@ -313,17 +313,17 @@ class Mesh {
 		if (joints != null || weights != null) {
 			if (joints == null || weights == null || joints.length != count * 4 || weights.length != count * 4)
 				throw "Mesh arrays disagree";
-			var skin = Bytes.alloc(count * Skinned3DLayout.skinStride);
+			var skin = Bytes.alloc(count * Skinned3DProgram.skinStride);
 			for (i in 0...count) {
-				var at = i * Skinned3DLayout.skinStride, sum = 0.;
+				var at = i * Skinned3DProgram.skinStride, sum = 0.;
 				for (k in 0...4)
 					sum += weights[i * 4 + k];
 				for (k in 0...4) {
 					if (joints[i * 4 + k] < 0)
 						throw "A negative joint";
-					skin.setFloat(at + Skinned3DLayout.jointsOffset + k * 4, joints[i * 4 + k]);
+					skin.setFloat(at + Skinned3DProgram.jointsOffset + k * 4, joints[i * 4 + k]);
 					// Weights summing to 0 (an unweighted vertex) follow the first joint.
-					skin.setFloat(at + Skinned3DLayout.weightsOffset + k * 4, sum > 0 ? weights[i * 4 + k] / sum : k == 0 ? 1 : 0);
+					skin.setFloat(at + Skinned3DProgram.weightsOffset + k * 4, sum > 0 ? weights[i * 4 + k] / sum : k == 0 ? 1 : 0);
 				}
 			}
 			mesh.skinData = skin;
@@ -691,20 +691,20 @@ private class MeshBuilder {
 		coordinates. */
 	public function build(?given:Array<Float>):Mesh {
 		var count = this.vertexCount,
-			data = Bytes.alloc(count * Lit3DLayout.stride),
+			data = Bytes.alloc(count * Lit3DProgram.stride),
 			tangents = given != null ? given : tangentsOf();
 		for (i in 0...count) {
-			var at = i * Lit3DLayout.stride;
-			data.setFloat(at + Lit3DLayout.positionOffset, positions[i * 3]);
-			data.setFloat(at + Lit3DLayout.positionOffset + 4, positions[i * 3 + 1]);
-			data.setFloat(at + Lit3DLayout.positionOffset + 8, positions[i * 3 + 2]);
-			data.setFloat(at + Lit3DLayout.normalOffset, normals[i * 3]);
-			data.setFloat(at + Lit3DLayout.normalOffset + 4, normals[i * 3 + 1]);
-			data.setFloat(at + Lit3DLayout.normalOffset + 8, normals[i * 3 + 2]);
-			data.setFloat(at + Lit3DLayout.uvOffset, uvs[i * 2]);
-			data.setFloat(at + Lit3DLayout.uvOffset + 4, uvs[i * 2 + 1]);
+			var at = i * Lit3DProgram.stride;
+			data.setFloat(at + Lit3DProgram.positionOffset, positions[i * 3]);
+			data.setFloat(at + Lit3DProgram.positionOffset + 4, positions[i * 3 + 1]);
+			data.setFloat(at + Lit3DProgram.positionOffset + 8, positions[i * 3 + 2]);
+			data.setFloat(at + Lit3DProgram.normalOffset, normals[i * 3]);
+			data.setFloat(at + Lit3DProgram.normalOffset + 4, normals[i * 3 + 1]);
+			data.setFloat(at + Lit3DProgram.normalOffset + 8, normals[i * 3 + 2]);
+			data.setFloat(at + Lit3DProgram.uvOffset, uvs[i * 2]);
+			data.setFloat(at + Lit3DProgram.uvOffset + 4, uvs[i * 2 + 1]);
 			for (k in 0...4)
-				data.setFloat(at + Lit3DLayout.tangentOffset + k * 4, tangents[i * 4 + k]);
+				data.setFloat(at + Lit3DProgram.tangentOffset + k * 4, tangents[i * 4 + k]);
 		}
 		var index = Bytes.alloc(indices.length * 4);
 		for (i in 0...indices.length)

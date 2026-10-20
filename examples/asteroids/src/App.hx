@@ -16,7 +16,7 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Stage2D;
 import helix.scene.Pointer;
-import helix.ui.Box;
+import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.Ui;
 
@@ -35,7 +35,7 @@ class App extends BaseApp {
 	var hud = new Stage2D();
 	var pointer:Pointer;
 	var ui:Ui;
-	var layout:Box;
+	var layout:Layout2D;
 	var play:Button;
 	var again:Button;
 	var toTitle:Button;
@@ -103,14 +103,14 @@ class App extends BaseApp {
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
-		var column = Box.column();
+		var column = Layout2D.column();
 		column.setSizing(Fixed(300), Fit);
 		column.gap = theme.gap;
 		column.setAlign(Start, Stretch);
 		column.setAnchor(Start, Start, 330, 390);
 		for (b in [play, again, toTitle])
-			column.add(b.box);
-		layout = Box.stack();
+			column.add(b.layout);
+		layout = Layout2D.stack();
 		layout.setSizing(Fixed(Game.W), Fixed(Game.H));
 		layout.add(column);
 	}
@@ -127,7 +127,7 @@ class App extends BaseApp {
 		}
 		play.text = ready ? "PLAY" : "LOADING";
 		play.enabled = ready;
-		Box.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.font);
+		Layout2D.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.font);
 		pointer.update();
 		ui.update();
 		if (play.clicked || again.clicked)

@@ -37,7 +37,7 @@ typedef SdlGpuStages = {
 }
 
 /** A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex
-	attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each layout's source(); SDL_GPU's
+	attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's
 	dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (tools/pack_shader.py, SDL_GPU's dialects only
 	when packed for those builds);
 	IGraphics.createShader builds either the same way. */

@@ -1,7 +1,7 @@
 /* 2D sprites drawn through a sprite effect (helix.graphics.SpriteEffect, Batch2D.effect): the sprite kind of shader. Its vertex stage and the
  * block a sprite shader's fragment stage includes (@include_block helix_sprite) are the kind's own: tools/pack_shader.py packs them with
  * every sprite shader, the shader library's and an app's. The program here draws the sprite as the framework's sprite2d does, and gives the
- * vertices' layout (Effect2DLayout): sprite2d's, and each vertex its sprite's texture region.
+ * vertices' layout (Effect2DProgram): sprite2d's, and each vertex its sprite's texture region.
  *
  * position  clip space before the adapter's scale (block 0)
  * uv        the texture coordinate

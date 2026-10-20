@@ -15,18 +15,17 @@ class Tile extends Widget {
 	var picture:Sprite2D;
 	var label:Text2D;
 	var edge:Shape2D;
+	var inner:Layout2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, texture:Null<Texture2D>, caption:String, side:Float) {
 		super(ui, name);
 		this.side = side;
-		var theme = ui.theme, pad = theme.padding;
+		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.cornerRadius = theme.cornerRadius;
 		edge = Shape2D.rectangle(1, 1, theme.accentColor);
 		edge.setPivot(0, 0);
-		edge.cornerRadius = theme.cornerRadius + 2;
 		edge.pickable = false;
 		edge.visible = false;
 		picture = new Sprite2D(texture);
@@ -37,18 +36,17 @@ class Tile extends Widget {
 		for (n in [edge, face, picture, label])
 			root.addChild(n);
 		// The edge a little outside the face, the picture square inside it, the caption under the picture.
-		box = Box.stack(edge);
-		var inner = Box.column(face);
-		inner.setPadding(pad, pad, pad, pad);
-		inner.gap = pad / 2;
+		layout = Layout2D.stack(edge);
+		inner = Layout2D.column(face);
 		inner.setAlign(Start, Center);
-		var image = Box.of(picture);
-		image.setSizing(Fixed(side), Fixed(side));
+		var image = Layout2D.of(picture);
+		image.themeSizing(Fixed(side), Fixed(side));
 		inner.add(image);
-		inner.add(Box.of(label));
-		box.setPadding(3, 3, 3, 3);
-		box.add(inner);
+		inner.add(Layout2D.of(label));
+		layout.themePadding(3, 3, 3, 3);
+		layout.add(inner);
 		picture.visible = texture != null;
+		readTheme(theme);
 	}
 
 	/** Whether it was clicked or activated this frame. */
@@ -88,6 +86,17 @@ class Tile extends Widget {
 
 	override function target():Null<Node2D>
 		return face;
+
+	override function readTheme(theme:Theme):Void {
+		var pad = theme.padding;
+		face.cornerRadius = theme.cornerRadius;
+		edge.color = theme.accentColor;
+		edge.cornerRadius = theme.cornerRadius + 2;
+		label.textSize = theme.textSize * .8;
+		label.font = theme.font;
+		inner.themePadding(pad, pad, pad, pad);
+		inner.themeGap(pad / 2);
+	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme;

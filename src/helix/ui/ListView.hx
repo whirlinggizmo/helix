@@ -26,14 +26,14 @@ class ListView extends Widget {
 		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.cornerRadius = theme.cornerRadius;
 		window = new Node2D();
 		content = new Node2D();
 		window.addChild(content);
 		root.addChild(face);
 		root.addChild(window);
-		box = Box.of(face);
-		box.setSizing(Grow(1), Fixed(visibleRows * theme.widgetHeight));
+		layout = Layout2D.of(face);
+		layout.themeSizing(Grow(1), Fit);
+		// Its look from the theme, with its rows' (readTheme).
 		this.items = items;
 	}
 
@@ -45,24 +45,24 @@ class ListView extends Widget {
 
 	function set_items(value:Array<String>):Array<String> {
 		itemList = value.copy();
-		var theme = ui.theme;
 		for (r in rows) {
 			content.removeChild(r.face);
 			content.removeChild(r.text);
 		}
 		rows = [];
 		for (i in 0...itemList.length) {
-			var rowFace = Shape2D.rectangle(1, theme.widgetHeight, 0);
+			// Sized, placed and styled from the theme by readTheme and update.
+			var rowFace = Shape2D.rectangle(1, 1, 0);
 			rowFace.setPivot(0, 0);
-			rowFace.cornerRadius = theme.cornerRadius;
 			rowFace.pickable = false;
-			var text = new Text2D(itemList[i], theme.textSize, theme.textColor, Left, theme.font);
+			var text = new Text2D(itemList[i]);
 			content.addChild(rowFace);
 			content.addChild(text);
 			rows.push({face: rowFace, text: text});
 		}
 		selected = -1;
 		scroll = 0;
+		readTheme(ui.theme);
 		return value;
 	}
 
@@ -96,18 +96,30 @@ class ListView extends Widget {
 		return true;
 
 	function reveal():Void {
-		var height = ui.theme.widgetHeight;
+		var height = ui.theme.listRowHeight;
 		if (selected < 0)
 			return;
 		scroll = Math.max(Math.min(scroll, selected * height), (selected + 1) * height - visibleRows * height);
 	}
 
+	override function readTheme(theme:Theme):Void {
+		face.color = theme.faceColor;
+		face.cornerRadius = theme.listCornerRadius;
+		for (r in rows) {
+			r.face.cornerRadius = theme.listRowCornerRadius;
+			r.text.textSize = theme.textSize;
+			r.text.font = theme.font;
+			r.text.color = enabled ? theme.textColor : theme.disabledTextColor;
+		}
+		themeFixed(layout, Math.NaN, visibleRows * theme.listRowHeight + theme.listPadding * 2);
+	}
+
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		var theme = ui.theme, input = ui.input, camera = ui.camera, height = theme.widgetHeight, was = selected;
+		var theme = ui.theme, input = ui.input, camera = ui.camera, height = theme.listRowHeight, was = selected;
 		this.activated = false;
 		var wx = camera.screenToWorldX(input.pointerX),
 			wy = camera.screenToWorldY(input.pointerY);
-		var localY = face.toLocalY(wx, wy) + scroll;
+		var localY = face.toLocalY(wx, wy) - theme.listPadding + scroll;
 		if (enabled && hovered && input.wheelY != 0)
 			scroll -= input.wheelY * height;
 		// A drag scrolls; a click without one chooses the row under it (again: activates it).
@@ -119,7 +131,7 @@ class ListView extends Widget {
 				scroll = scrollFrom - (wy - dragFrom);
 		} else {
 			if (clicked && (Math.isNaN(dragFrom) || Math.abs(wy - dragFrom) <= 4)) {
-				var row = Std.int(localY / height);
+				var row = Math.floor(localY / height);
 				if (row >= 0 && row < itemList.length) {
 					if (row == selected)
 						this.activated = true;
@@ -136,17 +148,18 @@ class ListView extends Widget {
 			this.activated = true;
 		scroll = Math.max(0, Math.min(scroll, Math.max(0, itemList.length * height - visibleRows * height)));
 		changed = selected != was;
-		// The window clips the rows to the box; the rows scroll inside it.
-		window.setPosition(box.x, box.y);
-		window.setClip(box.width, box.height);
+		// The window clips the rows to the layout inside its padding (clear of its round corners); the rows scroll inside it.
+		var pad = theme.listPadding,
+			inside = Math.max(0, layout.width - pad * 2);
+		window.setPosition(layout.x + pad, layout.y + pad);
+		window.setClip(inside, Math.max(0, layout.height - pad * 2));
 		content.setPosition(0, -scroll);
 		for (i in 0...rows.length) {
 			var r = rows[i];
-			r.face.setSize(box.width, height);
+			r.face.setSize(inside, height);
 			r.face.setPosition(0, i * height);
 			r.face.color = i == selected ? theme.accentColor : 0;
 			r.text.setPosition(theme.padding, i * height + (height - theme.textSize) / 2);
-			r.text.color = enabled ? theme.textColor : theme.disabledTextColor;
 		}
 	}
 }

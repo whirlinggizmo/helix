@@ -26,7 +26,7 @@ enum PresentationMode {
 
 /** The app's design fitted to its window, one setting for the whole program: a game is written for a design size, its units stay the
 	design's at any window size, on a phone or in fullscreen, and what's visible of them (the visible area) is known each frame. The runner
-	refits it to the window before every frame. A 2D camera shows it (apply), a layout is arranged into the visible area (Box.arrange), and
+	refits it to the window before every frame. A 2D camera shows it (apply), a layout is arranged into the visible area (Layout2D.arrange), and
 	the pointer comes back in units through the camera (Pointer), or through toUnitsX and toUnitsY. A 3D camera draws into the area it covers
 	(areaX and the rest, Camera3D.setViewportArea) to keep out of the bars. */
 @:build(helix.macro.Facade.record())

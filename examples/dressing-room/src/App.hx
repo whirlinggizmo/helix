@@ -26,7 +26,7 @@ import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
 import helix.time.Time;
-import helix.ui.Box;
+import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.Label;
 import helix.ui.Panel;
@@ -85,7 +85,7 @@ class App extends BaseApp {
 	var pointer:Pointer;
 	var batch:Batch2D;
 	var fps = new FpsOverlay();
-	var layout:Box;
+	var layout:Layout2D;
 	var panel:Panel;
 	// The window's shape, as the layout was last arranged for it (shape), and whether it's upright: a phone held so, the panel under her.
 	var shaped = "";
@@ -182,26 +182,26 @@ class App extends BaseApp {
 		ui = new Ui(screen, camera2D, pointer, Input.instance);
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
-		title.node.textSize = 26;
+		title.textSize = 26;
 		panel.add(title);
-		var tabRow = Box.row();
+		var tabRow = Layout2D.row();
 		tabRow.gap = ui.theme.gap;
 		for (s in SLOTS) {
 			var tab = ui.button(s, 'tab ${s.toLowerCase()}');
 			panel.adopt(tab);
-			tabRow.add(tab.box);
+			tabRow.add(tab.layout);
 			tabs.push(tab);
 		}
 		panel.content.add(tabRow);
-		var grid = Box.column();
+		var grid = Layout2D.column();
 		grid.gap = 8;
 		for (r in 0...2) {
-			var row = Box.row();
+			var row = Layout2D.row();
 			row.gap = 8;
 			for (c in 0...5) {
 				var tile = ui.tile(null, "", 72, 'tile ${r * 5 + c}');
 				panel.adopt(tile);
-				row.add(tile.box);
+				row.add(tile.layout);
 				tiles.push(tile);
 			}
 			grid.add(row);
@@ -209,28 +209,28 @@ class App extends BaseApp {
 		panel.content.add(grid);
 		var poseLabel = ui.label("Pose");
 		panel.add(poseLabel);
-		var poseRow = Box.row();
+		var poseRow = Layout2D.row();
 		poseRow.gap = ui.theme.gap;
 		for (i in 0...POSES.length) {
 			var button = ui.button(POSE_NAMES[i], 'pose ${POSES[i].toLowerCase()}');
 			panel.adopt(button);
-			poseRow.add(button.box);
+			poseRow.add(button.layout);
 			poses.push(button);
 		}
 		panel.content.add(poseRow);
-		var actions = Box.row();
+		var actions = Layout2D.row();
 		actions.gap = ui.theme.gap;
 		random = ui.button("Random");
 		reset = ui.button("Reset");
 		for (b in [random, reset]) {
 			panel.adopt(b);
-			actions.add(b.box);
+			actions.add(b.layout);
 		}
 		panel.content.add(actions);
-		layout = Box.stack();
+		layout = Layout2D.stack();
 		layout.setSizing(Grow(1), Grow(1));
 		layout.setPadding(12, 12, 12, 12);
-		layout.add(panel.box);
+		layout.add(panel.layout);
 	}
 
 	// The panel for the window's shape (ScreenShape's designs): on the right, or upright along the bottom (five tiles still fit across the
@@ -238,13 +238,13 @@ class App extends BaseApp {
 	function shape(name:String):Void {
 		shaped = name;
 		portrait = name == "portrait";
-		var box = panel.box;
+		var panelLayout = panel.layout;
 		if (portrait) {
-			box.setSizing(Grow(1), Fit);
-			box.setAnchor(Stretch, End);
+			panelLayout.setSizing(Grow(1), Fit);
+			panelLayout.setAnchor(Stretch, End);
 		} else {
-			box.setSizing(Fixed(600), Fit);
-			box.setAnchor(End, Center, -12, 0);
+			panelLayout.setSizing(Fixed(600), Fit);
+			panelLayout.setAnchor(End, Center, -12, 0);
 		}
 	}
 
@@ -425,7 +425,7 @@ class App extends BaseApp {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
-		Box.arrange(layout, vx, vy, vw, vh, batch.font);
+		Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
 		pointer.update();
 		ui.update();
 		for (i in 0...tabs.length)
@@ -456,10 +456,10 @@ class App extends BaseApp {
 		for (i in 0...offered.length)
 			tiles[i].selected = offered[i] == null ? worn == null : worn == path(slot, offered[i]);
 		// The turntable: a drag on the room (beside the panel, or above it) turns her; the wheel or a pinch comes closer.
-		var box = panel.box,
+		var panelLayout = panel.layout,
 			px = presentation.toUnitsX(input.pointerX),
 			py = presentation.toUnitsY(input.pointerY);
-		if (input.pointerFramePressed && (portrait ? py < box.y : px < box.x))
+		if (input.pointerFramePressed && (portrait ? py < panelLayout.y : px < panelLayout.x))
 			dragFrom = input.pointerX;
 		if (!input.pointerDown)
 			dragFrom = null;
@@ -493,7 +493,7 @@ class App extends BaseApp {
 		camera.far = 100;
 		if (portrait) {
 			// Her above the panel, in the framebuffer over it, centered.
-			var top = Std.int(Math.max(1, Math.min(height, (box.y - vy) * presentation.scaleY + presentation.areaY)));
+			var top = Std.int(Math.max(1, Math.min(height, (panelLayout.y - vy) * presentation.scaleY + presentation.areaY)));
 			camera.setViewportArea(0, 0, width, top);
 			camera.setView(0, focus + distance * .12, distance, 0, focus, 0);
 		} else {
@@ -506,7 +506,7 @@ class App extends BaseApp {
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
-		batch.drawText(status, vx + 24, portrait ? box.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
+		batch.drawText(status, vx + 24, portrait ? panelLayout.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
 		batch.drawText(portrait ? "drag: turn   pinch: closer" : "drag: turn   wheel: closer   Q / E: slot   arrows, Enter, or a pad", vx + 24, vy + 24, 16,
 			0x8a92a8ff);
 		batch.end();

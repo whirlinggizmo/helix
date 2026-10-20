@@ -2,7 +2,7 @@ package helix.ui;
 
 import helix.render2d.Text2D;
 
-/** A line of text (wrapped, if given a width): shown, never focused. */
+/** A line of text: shown, never focused. Its size and color are the theme's unless given its own (textSize, color). */
 class Label extends Widget {
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, text:String) {
@@ -10,7 +10,8 @@ class Label extends Widget {
 		var theme = ui.theme;
 		node = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
 		root.addChild(node);
-		box = Box.of(node);
+		layout = Layout2D.of(node);
+		readTheme(theme);
 	}
 
 	/** Its text. */
@@ -24,6 +25,18 @@ class Label extends Widget {
 		return value;
 	}
 
-	/** Its text node: its color, size, alignment, wrap width. */
-	public var node(default, null):Text2D;
+	// Its text node, its size, color and font from textSize, color and the theme at each update.
+	var node:Text2D;
+
+	/** Its text's height in units, or null (to start) for the theme's textSize: a value is kept whatever the theme becomes. */
+	public var textSize:Null<Float> = null;
+
+	/** Its text's color, 0xRRGGBBAA, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes. */
+	public var color:Null<Int> = null;
+
+	override function readTheme(theme:Theme):Void {
+		node.textSize = textSize != null ? textSize : theme.textSize;
+		node.color = color != null ? color : theme.textColor;
+		node.font = theme.font;
+	}
 }

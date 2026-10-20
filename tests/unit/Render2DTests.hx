@@ -477,7 +477,7 @@ class Render2DTests {
 		shadedStage.draw(batch, camera);
 		batch.end();
 		function vertexColor(i:Int):Array<Float> {
-			var c = i * Sprite2DLayout.stride + Sprite2DLayout.colorOffset,
+			var c = i * Sprite2DProgram.stride + Sprite2DProgram.colorOffset,
 				data = gpu.uploaded;
 			return [for (k in 0...4) Math.round(data.getFloat(c + k * 4) * 255)];
 		}

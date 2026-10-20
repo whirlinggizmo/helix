@@ -10,9 +10,9 @@ import helix.render2d.Stage2D;
 import helix.scene.Pointer;
 
 /** A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here,
-	placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's:
+	placed by their layouts (Layout2D.arrange), asked what happened. update() once a frame, after the pointer's:
 
-	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in
+	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the layouts' last arrangement: a grid of tiles moves in
 	  two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before,
 	  wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color
 	  picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed).
@@ -44,7 +44,7 @@ class Ui {
 		this.camera = camera;
 		this.pointer = pointer;
 		this.input = input;
-		this.theme = theme != null ? theme : new Theme();
+		this.theme = theme;
 		ring = Shape2D.rectangle(1, 1, this.theme.focusColor);
 		ring.outline = this.theme.focusWidth;
 		ring.pickable = false;
@@ -53,8 +53,15 @@ class Ui {
 		stage.add(root);
 	}
 
-	/** Its look. */
-	public var theme(default, null):Theme;
+	/** Its look, read by every widget (and the focus ring) at each update: a value changed, or another theme assigned (a settings screen
+		switching themes), shows from the next update with no widget made again; a size that moves the layout once the layout is next arranged.
+		Null is a new Theme. */
+	public var theme(default, set):Theme;
+
+	function set_theme(value:Theme):Theme {
+		theme = value != null ? value : new Theme();
+		return theme;
+	}
 
 	/** The node its widgets are under. */
 	public var root(default, null):Node2D = new Node2D();
@@ -75,7 +82,7 @@ class Ui {
 	public function label(text:String, ?name:String):Label
 		return adopt(new Label(this, name != null ? name : text, text));
 
-	/** A background holding a column of widgets (add their boxes to its content). */
+	/** A background holding a column of widgets (add their layouts to its content). */
 	public function panel(?name:String):Panel
 		return adopt(new Panel(this, name != null ? name : "panel"));
 
@@ -274,12 +281,15 @@ class Ui {
 				@:bypassAccessor focused = w;
 			}
 			var steps = w == stepped && usable;
+			w.readTheme(theme);
 			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, steps ? stepX : 0, steps ? stepY : 0);
 		}
 		pressing = null;
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
+		ring.color = theme.focusColor;
+		ring.outline = theme.focusWidth;
 		if (showFocus && focused != null) {
-			var b = focused.box, out = theme.focusWidth * 2;
+			var b = focused.layout, out = theme.focusWidth * 2;
 			ring.setSize(b.width + out * 2, b.height + out * 2);
 			ring.setPivot(0, 0);
 			ring.setPosition(b.x - out, b.y - out);
@@ -324,16 +334,16 @@ class Ui {
 		return null;
 	}
 
-	// The focusable widget nearest from on screen in direction (dx, dy), or null when none lies that way: one whose box's center is past from's
+	// The focusable widget nearest from on screen in direction (dx, dy), or null when none lies that way: one whose layout's center is past from's
 	// along that axis, the closest by the distance along it plus twice the offset across it (so the next in a row or column beats a nearer
-	// one off to the side). Boxes not yet arranged (all at the origin) find none.
+	// one off to the side). Layouts not yet arranged (all at the origin) find none.
 	function nearest(from:Widget, dx:Int, dy:Int):Null<Widget> {
-		var b = from.box, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+		var b = from.layout, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
 		var best:Null<Widget> = null, bestScore = Math.POSITIVE_INFINITY;
 		for (w in widgets) {
 			if (w == from || !w.focusable || !w.enabled || !w.visible)
 				continue;
-			var o = w.box, ox = o.x + o.width / 2 - cx, oy = o.y + o.height / 2 - cy;
+			var o = w.layout, ox = o.x + o.width / 2 - cx, oy = o.y + o.height / 2 - cy;
 			var along = dx != 0 ? ox * dx : oy * dy,
 				across = Math.abs(dx != 0 ? oy : ox);
 			if (along <= .5)

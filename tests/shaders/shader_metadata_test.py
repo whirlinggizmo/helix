@@ -84,9 +84,9 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual({a['buffer'] for a in lit['attributes'] if a['name'].startswith('i_')}, {1})
         # Programs reach adapters as Haxe data only: no C header, no GLSL ES class, whatever an older build left.
         self.assertFalse([p.name for p in self.baseline.iterdir() if p.name in ('shaders.h', 'GeneratedShader.hx') or p.name.endswith('.glsl.h')])
-        self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DLayout.hx').read_text(encoding='utf-8'))
-        self.assertIn('instanced: true', (self.baseline / 'Lit3DLayout.hx').read_text(encoding='utf-8'))
-        self.assertIn('return [];', (self.baseline / 'Background3DLayout.hx').read_text(encoding='utf-8'))
+        self.assertIn('vertexUniformBytes=64', (self.baseline / 'Color3DProgram.hx').read_text(encoding='utf-8'))
+        self.assertIn('instanced: true', (self.baseline / 'Lit3DProgram.hx').read_text(encoding='utf-8'))
+        self.assertIn('return [];', (self.baseline / 'Background3DProgram.hx').read_text(encoding='utf-8'))
 
     def test_real_relocated_and_renamed_bindings(self):
         source = (SHADERS / 'sprite2d.glsl').read_text(encoding='utf-8')
@@ -102,9 +102,9 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual([a['slot'] for a in contract['attributes']], [2, 0, 1])
         texture, = contract['textures']
         self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
-        layout = (folder / 'Sprite2DLayout.hx').read_text(encoding='utf-8')
-        self.assertIn('{slot: 2, componentCount: 2, offset: 0}', layout)
-        self.assertIn('"vertexPosition"', layout)
+        program = (folder / 'Sprite2DProgram.hx').read_text(encoding='utf-8')
+        self.assertIn('{slot: 2, componentCount: 2, offset: 0}', program)
+        self.assertIn('"vertexPosition"', program)
 
     def test_attribute_slot_gap_rejected(self):
         source = (SHADERS / 'sprite2d.glsl').read_text(encoding='utf-8').replace('location=2', 'location=5')

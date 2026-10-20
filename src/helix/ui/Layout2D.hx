@@ -6,7 +6,7 @@ import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 
-/** How a box's width or height is decided. */
+/** How a layout's width or height is decided. */
 enum Sizing {
 	/** This many units. */
 	Fixed(units:Float);
@@ -21,7 +21,7 @@ enum Sizing {
 	Percent(fraction:Float);
 }
 
-/** Where boxes go in the room they have, along an axis. */
+/** Where layouts go in the room they have, along an axis. */
 enum Alignment {
 	/** At its start: the left, or the top. */
 	Start;
@@ -36,90 +36,112 @@ enum Alignment {
 	Stretch;
 }
 
-/** How a box lays its children out. */
-enum BoxDirection {
+/** How a layout lays its children out. */
+enum Layout2DDirection {
 	/** Left to right. */
 	Row;
 
 	/** Top to bottom. */
 	Column;
 
-	/** Over one another, each placed by its own alignment in the box (anchored to an edge, a corner or the middle). */
+	/** Over one another, each placed by its own alignment in the layout (anchored to an edge, a corner or the middle). */
 	Stack;
 }
 
-/** A rectangle of a layout: rows, columns and stacks of boxes, each sized fixed, fitted to its content, growing into the room left or as a
-	share of its parent, with padding, gaps and alignment (Clay's model, in Haxe). A box may place a node: arrange() writes its position (by
-	its pivot) and, for a sprite or rectangle, its size, once a frame. Boxes only lay out; what's drawn is the nodes'. */
-class Box {
-	var direction:BoxDirection;
-	var childBoxes:Array<Box> = [];
+/** A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a
+	share of its parent, with padding, gaps and alignment (Clay's model, in Haxe). A layout may place a node: arrange() writes its position (by
+	its pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its
+	sizing, padding and gap from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing, setPadding,
+	gap): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline style wins over a
+	stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's. */
+class Layout2D {
+	var direction:Layout2DDirection;
+	var childLayouts:Array<Layout2D> = [];
 	var widthRule:Sizing = Fit;
 	var heightRule:Sizing = Fit;
 	var selfX:Null<Alignment>;
 	var selfY:Null<Alignment>;
 	var offsetX = 0.;
 	var offsetY = 0.;
+	// Which of its values a game set (setSizing, widthSizing, heightSizing, setPadding, gap): the theme's (themeSizing, themePadding,
+	// themeGap) never replace those.
+	var gameWidth = false;
+	var gameHeight = false;
+	var gamePadding = false;
+	var gameGap = false;
 	var fitWidth = 0.;
 	var fitHeight = 0.;
 	var w = 0.;
 	var h = 0.;
 
-	/** A box laying out its children direction's way, placing node (or none). */
-	public function new(direction:BoxDirection, ?node:Node2D) {
+	/** A layout placing its children direction's way, placing node (or none). */
+	public function new(direction:Layout2DDirection, ?node:Node2D) {
 		this.direction = direction;
 		this.node = node;
 	}
 
 	/** A row, left to right. */
-	public static function row(?node:Node2D):Box
-		return new Box(Row, node);
+	public static function row(?node:Node2D):Layout2D
+		return new Layout2D(Row, node);
 
 	/** A column, top to bottom. */
-	public static function column(?node:Node2D):Box
-		return new Box(Column, node);
+	public static function column(?node:Node2D):Layout2D
+		return new Layout2D(Column, node);
 
 	/** A stack, its children over one another, each by its own alignment. */
-	public static function stack(?node:Node2D):Box
-		return new Box(Stack, node);
+	public static function stack(?node:Node2D):Layout2D
+		return new Layout2D(Stack, node);
 
-	/** A box holding node alone, sized to it unless sized otherwise. */
-	public static function of(node:Node2D):Box
-		return new Box(Stack, node);
+	/** A layout holding node alone, sized to it unless sized otherwise. */
+	public static function of(node:Node2D):Layout2D
+		return new Layout2D(Stack, node);
 
 	/** Adds child as its last. */
-	public function add(child:Box):Void
-		childBoxes.push(child);
+	public function add(child:Layout2D):Void
+		childLayouts.push(child);
 
 	/** Takes child out. */
-	public function remove(child:Box):Bool
-		return childBoxes.remove(child);
+	public function remove(child:Layout2D):Bool
+		return childLayouts.remove(child);
 
 	/** Its children, in order. */
-	public var children(get, never):Array<Box>;
+	public var children(get, never):Array<Layout2D>;
 
-	function get_children():Array<Box>
-		return childBoxes.copy();
+	function get_children():Array<Layout2D>
+		return childLayouts.copy();
 
 	/** The node it places, or null. */
 	public var node(default, null):Null<Node2D>;
 
-	/** How its width is decided. */
-	public var widthSizing(get, never):Sizing;
+	/** How its width is decided (Fit, to start, or what the widget it places takes from the theme). Assigning it makes it the game's: the
+		theme no longer changes it. */
+	public var widthSizing(get, set):Sizing;
 
 	function get_widthSizing():Sizing
 		return widthRule;
 
-	/** How its height is decided. */
-	public var heightSizing(get, never):Sizing;
+	function set_widthSizing(value:Sizing):Sizing {
+		widthRule = value;
+		gameWidth = true;
+		return value;
+	}
+
+	/** How its height is decided, as widthSizing. */
+	public var heightSizing(get, set):Sizing;
 
 	function get_heightSizing():Sizing
 		return heightRule;
 
-	/** How its width and height are decided (Fit both, to start). */
+	function set_heightSizing(value:Sizing):Sizing {
+		heightRule = value;
+		gameHeight = true;
+		return value;
+	}
+
+	/** How its width and height are decided, both made the game's (widthSizing and heightSizing). */
 	public function setSizing(width:Sizing, height:Sizing):Void {
-		this.widthRule = width;
-		this.heightRule = height;
+		set_widthSizing(width);
+		set_heightSizing(height);
 	}
 
 	/** Its padding inside its left edge. */
@@ -134,16 +156,58 @@ class Box {
 	/** Its padding inside its bottom edge. */
 	public var paddingBottom(default, null):Float = 0.;
 
-	/** Its padding inside its edges (none, to start). */
+	/** Its padding inside its edges (none, to start, or what the widget it places takes from the theme), made the game's: the theme no longer
+		changes it. */
 	public function setPadding(left:Float, top:Float, right:Float, bottom:Float):Void {
+		applyPadding(left, top, right, bottom);
+		gamePadding = true;
+	}
+
+	function applyPadding(left:Float, top:Float, right:Float, bottom:Float):Void {
 		paddingLeft = left;
 		paddingTop = top;
 		paddingRight = right;
 		paddingBottom = bottom;
 	}
 
-	/** The room between its children in a row or column. */
-	public var gap:Float = 0.;
+	/** The room between its children in a row or column (0, to start, or what the widget it places takes from the theme). Assigning it makes
+		it the game's: the theme no longer changes it. */
+	public var gap(default, set):Float = 0.;
+
+	function set_gap(value:Float):Float {
+		gap = value;
+		gameGap = true;
+		return value;
+	}
+
+	// The theme's values, from widgets (their readTheme, and the defaults their constructors give their layouts): each applied only while the
+	// game hasn't set that value itself, and never making it the game's, so a theme changed later still reaches it. A widget's own sizes for a
+	// widget it holds (a color picker's field) are its, as a game's: set through the game's calls.
+	// Its width's and height's sizing from the theme (null: that way's left be).
+
+	@:allow(helix.ui)
+	function themeSizing(width:Null<Sizing>, height:Null<Sizing>):Void {
+		if (width != null && !gameWidth)
+			widthRule = width;
+		if (height != null && !gameHeight)
+			heightRule = height;
+	}
+
+	// Its padding from the theme.
+
+	@:allow(helix.ui)
+	function themePadding(left:Float, top:Float, right:Float, bottom:Float):Void {
+		if (!gamePadding)
+			applyPadding(left, top, right, bottom);
+	}
+
+	// Its gap from the theme.
+
+	@:allow(helix.ui)
+	function themeGap(value:Float):Void {
+		if (!gameGap)
+			@:bypassAccessor gap = value;
+	}
 
 	/** Where its children go along its row or column. */
 	public var mainAlign(default, null):Alignment = Start;
@@ -210,8 +274,8 @@ class Box {
 		return h;
 
 	/** Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's) and writes the nodes'
-		places: its content measured (texts in their fonts, font for those without one), then each box placed. Once a frame, before drawing. */
-	public static function arrange(root:Box, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void {
+		places: its content measured (texts in their fonts, font for those without one), then each layout placed. Once a frame, before drawing. */
+	public static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void {
 		root.measure(font);
 		root.x = x;
 		root.y = y;
@@ -230,10 +294,10 @@ class Box {
 
 	// Its content's size, bottom up: its children's along and across its direction, or its node's.
 	function measure(font:Font2D):Void {
-		for (c in childBoxes)
+		for (c in childLayouts)
 			c.measure(font);
 		var cw = 0., ch = 0.;
-		if (childBoxes.length == 0 && node != null) {
+		if (childLayouts.length == 0 && node != null) {
 			var text = Std.downcast(node, Text2D),
 				shape = Std.downcast(node, Shape2D),
 				sprite = Std.downcast(node, Sprite2D);
@@ -250,7 +314,7 @@ class Box {
 				ch = sprite.height;
 			}
 		} else
-			for (c in childBoxes) {
+			for (c in childLayouts) {
 				var fw = own(c.widthRule, c.fitWidth),
 					fh = own(c.heightRule, c.fitHeight);
 				switch direction {
@@ -265,7 +329,7 @@ class Box {
 						ch = Math.max(ch, fh);
 				}
 			}
-		var gaps = childBoxes.length > 1 && direction != Stack ? gap * (childBoxes.length - 1) : 0;
+		var gaps = childLayouts.length > 1 && direction != Stack ? gap * (childLayouts.length - 1) : 0;
 		fitWidth = cw + paddingLeft + paddingRight + (direction == Row ? gaps : 0);
 		fitHeight = ch + paddingTop + paddingBottom + (direction == Column ? gaps : 0);
 	}
@@ -306,7 +370,7 @@ class Box {
 		var innerW = Math.max(0, w - paddingLeft - paddingRight),
 			innerH = Math.max(0, h - paddingTop - paddingBottom);
 		if (direction == Stack) {
-			for (c in childBoxes) {
+			for (c in childLayouts) {
 				var ax = c.selfX != null ? c.selfX : mainAlign,
 					ay = c.selfY != null ? c.selfY : crossAlign;
 				c.w = ax == Stretch ? innerW : sized(c.widthRule, c.fitWidth, innerW);
@@ -321,8 +385,8 @@ class Box {
 			room = row ? innerW : innerH,
 			across = row ? innerH : innerW;
 		// The room left after the fixed, fitted and shared children and the gaps, shared by the growing ones by weight.
-		var used = childBoxes.length > 1 ? gap * (childBoxes.length - 1) : 0., weights = 0.;
-		for (c in childBoxes) {
+		var used = childLayouts.length > 1 ? gap * (childLayouts.length - 1) : 0., weights = 0.;
+		for (c in childLayouts) {
 			var sizing = row ? c.widthRule : c.heightRule;
 			switch sizing {
 				case Grow(weight):
@@ -335,7 +399,7 @@ class Box {
 		}
 		var left = Math.max(0, room - used),
 			at = (row ? innerX : innerY) + (weights > 0 ? 0 : offset(mainAlign, room, used));
-		for (c in childBoxes) {
+		for (c in childLayouts) {
 			var sizing = row ? c.widthRule : c.heightRule,
 				crossSizing = row ? c.heightRule : c.widthRule;
 			var along = switch sizing {

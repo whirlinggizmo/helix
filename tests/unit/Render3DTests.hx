@@ -68,7 +68,7 @@ class Render3DTests {
 		]) {
 			var v = shape.vertices, ix = shape.indices, facing = true;
 			for (t in 0...Std.int(shape.indexCount / 3)) {
-				var p = [for (k in 0...3) ix.getInt32((t * 3 + k) * 4) * Lit3DLayout.stride];
+				var p = [for (k in 0...3) ix.getInt32((t * 3 + k) * 4) * Lit3DProgram.stride];
 				var ax = v.getFloat(p[0]),
 					ay = v.getFloat(p[0] + 4),
 					az = v.getFloat(p[0] + 8);
@@ -81,7 +81,7 @@ class Render3DTests {
 				var cx = uy * wz - uz * wy,
 					cy = uz * wx - ux * wz,
 					cz = ux * wy - uy * wx;
-				var n = p[0] + Lit3DLayout.normalOffset;
+				var n = p[0] + Lit3DProgram.normalOffset;
 				facing = facing && cx * v.getFloat(n) + cy * v.getFloat(n + 4) + cz * v.getFloat(n + 8) > 0;
 			}
 			check(facing, "Generated triangles face out, counter-clockwise");
@@ -91,9 +91,9 @@ class Render3DTests {
 			bv = ball.vertices,
 			tangentsOk = true;
 		for (i in 0...ball.vertexCount) {
-			var at = i * Lit3DLayout.stride,
-				n = at + Lit3DLayout.normalOffset,
-				t = at + Lit3DLayout.tangentOffset;
+			var at = i * Lit3DProgram.stride,
+				n = at + Lit3DProgram.normalOffset,
+				t = at + Lit3DProgram.tangentOffset;
 			var tx = bv.getFloat(t),
 				ty = bv.getFloat(t + 4),
 				tz = bv.getFloat(t + 8),
@@ -103,7 +103,7 @@ class Render3DTests {
 			tangentsOk = tangentsOk && Math.abs(length - 1) < 1e-5 && Math.abs(dot) < 1e-5 && (w == 1 || w == -1);
 		}
 		check(tangentsOk, "Tangents are unit length, perpendicular to their normals, with a sign");
-		var equator = (4 * 17 + 0) * Lit3DLayout.stride + Lit3DLayout.tangentOffset; // ring 4 of 8 (the equator), segment 0: at +x
+		var equator = (4 * 17 + 0) * Lit3DProgram.stride + Lit3DProgram.tangentOffset; // ring 4 of 8 (the equator), segment 0: at +x
 		check(Math.abs(bv.getFloat(equator + 8) + 1) < 1e-5, "At the equator's +x, the tangent follows u toward -z");
 		var box = Mesh.cube(1, 2, 3);
 		check(near(box.minX, -.5) && near(box.maxY, 1) && near(box.maxZ, 1.5) && box.indexCount == 36, "A cube's box and triangles");
@@ -184,7 +184,7 @@ class Render3DTests {
 		check(Std.downcast(again.find("wheel_rl"), Model).mesh == wheel.mesh && again.find("headlight_l_beam") != beam,
 			"Copies share meshes and materials, not lights");
 		check(!new Node3D().setMatrix([1, 0, 0, 0])
-			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).vertices.getFloat(Lit3DLayout.normalOffset + 8), 1),
+			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).vertices.getFloat(Lit3DProgram.normalOffset + 8), 1),
 			"Missing normals are worked out (a triangle in x, y faces +z)");
 		var sided = new Material();
 		check(!sided.doubleSided, "Materials draw one side by default");

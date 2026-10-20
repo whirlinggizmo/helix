@@ -14,16 +14,15 @@ class ProgressBar extends Widget {
 		var theme = ui.theme;
 		track = Shape2D.rectangle(1, 1, theme.faceColor);
 		track.setPivot(0, 0);
-		track.cornerRadius = theme.cornerRadius;
 		track.pickable = false;
 		fill = Shape2D.rectangle(1, 1, theme.accentColor);
 		fill.setPivot(0, 0);
-		fill.cornerRadius = theme.cornerRadius;
 		fill.pickable = false;
 		root.addChild(track);
 		root.addChild(fill);
-		box = Box.of(track);
-		box.setSizing(Grow(1), Fixed(theme.textSize * .75));
+		layout = Layout2D.of(track);
+		layout.themeSizing(Grow(1), Fit);
+		readTheme(theme);
 	}
 
 	/** How far along, 0 to 1. */
@@ -34,8 +33,15 @@ class ProgressBar extends Widget {
 		return v;
 	}
 
+	override function readTheme(theme:Theme):Void {
+		track.color = theme.faceColor;
+		fill.color = theme.accentColor;
+		track.cornerRadius = fill.cornerRadius = theme.cornerRadius;
+		themeFixed(layout, Math.NaN, theme.textSize * .75);
+	}
+
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		fill.setSize(Math.max(0, box.width * value), box.height);
-		fill.setPosition(box.x, box.y);
+		fill.setSize(Math.max(0, layout.width * value), layout.height);
+		fill.setPosition(layout.x, layout.y);
 	}
 }

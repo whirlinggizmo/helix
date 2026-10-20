@@ -45,13 +45,13 @@ class PostProcess {
 	var copyBuffer:Int;
 	// The sprite program's block 0, its clip scale, which the adapter writes.
 	var clip = Bytes.alloc(16);
-	var quad = Bytes.alloc(6 * Sprite2DLayout.stride);
+	var quad = Bytes.alloc(6 * Sprite2DProgram.stride);
 
 	/** Effects drawn on gpu, over a scene drawn by stage (or null: a scene of 2D alone, or several stages). */
 	public function new(gpu:IGraphics, ?stage:Stage3D) {
 		this.gpu = gpu;
 		this.stage = stage;
-		copyBuffer = gpu.createBuffer(6 * Sprite2DLayout.stride);
+		copyBuffer = gpu.createBuffer(6 * Sprite2DProgram.stride);
 		var corners = [
 			[-1, 1, 0, 0],
 			[1, 1, 1, 0],
@@ -61,13 +61,13 @@ class PostProcess {
 			[-1, -1, 0, 1]
 		];
 		for (i in 0...6) {
-			var at = i * Sprite2DLayout.stride, c = corners[i];
-			quad.setFloat(at + Sprite2DLayout.positionOffset, c[0]);
-			quad.setFloat(at + Sprite2DLayout.positionOffset + 4, c[1]);
-			quad.setFloat(at + Sprite2DLayout.uvOffset, c[2]);
-			quad.setFloat(at + Sprite2DLayout.uvOffset + 4, c[3]);
+			var at = i * Sprite2DProgram.stride, c = corners[i];
+			quad.setFloat(at + Sprite2DProgram.positionOffset, c[0]);
+			quad.setFloat(at + Sprite2DProgram.positionOffset + 4, c[1]);
+			quad.setFloat(at + Sprite2DProgram.uvOffset, c[2]);
+			quad.setFloat(at + Sprite2DProgram.uvOffset + 4, c[3]);
 			for (k in 0...4)
-				quad.setFloat(at + Sprite2DLayout.colorOffset + k * 4, 1);
+				quad.setFloat(at + Sprite2DProgram.colorOffset + k * 4, 1);
 		}
 	}
 

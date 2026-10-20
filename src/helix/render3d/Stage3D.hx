@@ -79,7 +79,7 @@ class Stage3D {
 	var instanceBuffer:Int;
 	var records:Bytes;
 	var vertexUniforms = Bytes.alloc(64);
-	var fragmentUniforms = Bytes.alloc(Lit3DLayout.fragmentUniformBytes);
+	var fragmentUniforms = Bytes.alloc(Lit3DProgram.fragmentUniformBytes);
 	var items:Array<Item> = [];
 	var drawn:Array<Item> = [];
 	var count = 0;
@@ -104,11 +104,11 @@ class Stage3D {
 	var casterCapacity = 256;
 	var casterBuffer:Int;
 	var casterRecords:Bytes;
-	// Skinned casters' records (Skinneddepth3DLayout's: the world matrix's rows, then the first joint), apart from the others'.
+	// Skinned casters' records (Skinneddepth3DProgram's: the world matrix's rows, then the first joint), apart from the others'.
 	var skinnedCasterCapacity = 16;
 	var skinnedCasterBuffer:Int;
 	var skinnedCasterRecords:Bytes;
-	// The records of casters a surface shader draws (its caster: Lit3DLayout's, as the models' own), apart again.
+	// The records of casters a surface shader draws (its caster: Lit3DProgram's, as the models' own), apart again.
 	var shadedCasterCapacity = 16;
 	var shadedCasterBuffer:Int;
 	var shadedCasterRecords:Bytes;
@@ -116,8 +116,8 @@ class Stage3D {
 	var passDraws:Array<PassDraw> = [];
 	var passDrawCount = 0;
 	var passUniforms = [
-		Bytes.alloc(Flat3DLayout.vertexUniformBytes),
-		Bytes.alloc(Flat3DLayout.fragmentUniformBytes)
+		Bytes.alloc(Flat3DProgram.vertexUniformBytes),
+		Bytes.alloc(Flat3DProgram.fragmentUniformBytes)
 	];
 	// The joints of the pass's skinned models, and the skinned models the walk met, placed once it has posed every joint.
 	var palette:JointPalette;
@@ -156,14 +156,14 @@ class Stage3D {
 	var lightProjection = new Mat4();
 	var lightViewProjection = new Mat4();
 	var lightPlanes = new Vector<Float>(24);
-	var depthUniforms = Bytes.alloc(Depth3DLayout.vertexUniformBytes);
+	var depthUniforms = Bytes.alloc(Depth3DProgram.vertexUniformBytes);
 	// The environment lighting the models, and the one behind them, with their settings.
 	// A black cube that stands in when there's no environment, and the BRDF table, made with the first environment.
 	var noEnvironment:Int;
 	var brdf:Null<Texture2D>;
 	var backgroundUniforms = [
-		Bytes.alloc(Background3DLayout.vertexUniformBytes),
-		Bytes.alloc(Background3DLayout.fragmentUniformBytes)
+		Bytes.alloc(Background3DProgram.vertexUniformBytes),
+		Bytes.alloc(Background3DProgram.fragmentUniformBytes)
 	];
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.  Without gpu, the program's (Graphics.instance). */
@@ -182,15 +182,15 @@ class Stage3D {
 		normal.set(2, 255);
 		normal.set(3, 255);
 		flat = Texture2D.fromRgba(gpu, 1, 1, normal, true);
-		instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
-		records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
+		instanceBuffer = gpu.createBuffer(capacity * Lit3DProgram.instanceStride);
+		records = Bytes.alloc(capacity * Lit3DProgram.instanceStride);
 		sprites = new Sprites3D(gpu);
-		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
-		casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
-		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
-		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
-		shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DLayout.instanceStride);
-		shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DLayout.instanceStride);
+		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DProgram.instanceStride);
+		casterRecords = Bytes.alloc(casterCapacity * Depth3DProgram.instanceStride);
+		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
+		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
+		shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DProgram.instanceStride);
+		shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DProgram.instanceStride);
 		palette = new JointPalette(gpu);
 		pickPalette = new JointPalette(gpu);
 		noShadows = gpu.createShadowMap(1, 1);
@@ -568,17 +568,17 @@ class Stage3D {
 			while (casterCapacity < n)
 				casterCapacity *= 2;
 			gpu.destroyBuffer(casterBuffer);
-			casterBuffer = gpu.createBuffer(casterCapacity * Depth3DLayout.instanceStride);
-			casterRecords = Bytes.alloc(casterCapacity * Depth3DLayout.instanceStride);
+			casterBuffer = gpu.createBuffer(casterCapacity * Depth3DProgram.instanceStride);
+			casterRecords = Bytes.alloc(casterCapacity * Depth3DProgram.instanceStride);
 		}
 		for (i in 0...n) {
 			var w = layerCasters[i].node.worldMatrix,
-				at = i * Depth3DLayout.instanceStride;
+				at = i * Depth3DProgram.instanceStride;
 			for (row in 0...3)
 				for (col in 0...4)
-					casterRecords.setFloat(at + Depth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+					casterRecords.setFloat(at + Depth3DProgram.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
 		}
-		gpu.updateBuffer(casterBuffer, casterRecords, n * Depth3DLayout.instanceStride);
+		gpu.updateBuffer(casterBuffer, casterRecords, n * Depth3DProgram.instanceStride);
 		var uniforms = [depthUniforms], i = 0;
 		while (i < n) {
 			var last = i, mesh = layerCasters[i].mesh;
@@ -600,19 +600,19 @@ class Stage3D {
 			while (skinnedCasterCapacity < n)
 				skinnedCasterCapacity *= 2;
 			gpu.destroyBuffer(skinnedCasterBuffer);
-			skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
-			skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DLayout.instanceStride);
+			skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
+			skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
 		}
 		for (i in 0...n) {
 			var c = layerCasters[first + i],
 				w = c.node.worldMatrix,
-				at = i * Skinneddepth3DLayout.instanceStride;
+				at = i * Skinneddepth3DProgram.instanceStride;
 			for (row in 0...3)
 				for (col in 0...4)
-					skinnedCasterRecords.setFloat(at + Skinneddepth3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
-			skinnedCasterRecords.setFloat(at + Skinneddepth3DLayout.skinOffset, c.jointBase);
+					skinnedCasterRecords.setFloat(at + Skinneddepth3DProgram.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+			skinnedCasterRecords.setFloat(at + Skinneddepth3DProgram.skinOffset, c.jointBase);
 		}
-		gpu.updateBuffer(skinnedCasterBuffer, skinnedCasterRecords, n * Skinneddepth3DLayout.instanceStride);
+		gpu.updateBuffer(skinnedCasterBuffer, skinnedCasterRecords, n * Skinneddepth3DProgram.instanceStride);
 		var uniforms = [depthUniforms], i = 0;
 		while (i < n) {
 			var last = i, mesh = layerCasters[first + i].mesh;
@@ -636,14 +636,14 @@ class Stage3D {
 			while (shadedCasterCapacity < n)
 				shadedCasterCapacity *= 2;
 			gpu.destroyBuffer(shadedCasterBuffer);
-			shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DLayout.instanceStride);
-			shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DLayout.instanceStride);
+			shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DProgram.instanceStride);
+			shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DProgram.instanceStride);
 		}
 		for (i in 0...n) {
 			var c = layerCasters[first + i];
 			writeInstance(shadedCasterRecords, i, c.node, c.skinned, c.jointBase, null);
 		}
-		gpu.updateBuffer(shadedCasterBuffer, shadedCasterRecords, n * Lit3DLayout.instanceStride);
+		gpu.updateBuffer(shadedCasterBuffer, shadedCasterRecords, n * Lit3DProgram.instanceStride);
 		var i = 0;
 		while (i < n) {
 			var last = i, c = layerCasters[first + i];
@@ -761,7 +761,7 @@ class Stage3D {
 		else
 			for (i in 0...count)
 				for (c in 0...3)
-					positions[i * 3 + c] = vertices.getFloat(i * Lit3DLayout.stride + Lit3DLayout.positionOffset + c * 4);
+					positions[i * 3 + c] = vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.positionOffset + c * 4);
 		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0.;
 		var i = 0, n = mesh.indexCount;
 		while (i < n) {
@@ -831,17 +831,17 @@ class Stage3D {
 			vertices = mesh.vertices,
 			skin = mesh.skinData;
 		for (i in 0...mesh.vertexCount) {
-			var at = i * Lit3DLayout.stride + Lit3DLayout.positionOffset,
-				s = i * Skinned3DLayout.skinStride;
+			var at = i * Lit3DProgram.stride + Lit3DProgram.positionOffset,
+				s = i * Skinned3DProgram.skinStride;
 			var x = vertices.getFloat(at),
 				y = vertices.getFloat(at + 4),
 				z = vertices.getFloat(at + 8);
 			var px = 0., py = 0., pz = 0.;
 			for (k in 0...4) {
-				var weight = skin.getFloat(s + Skinned3DLayout.weightsOffset + k * 4);
+				var weight = skin.getFloat(s + Skinned3DProgram.weightsOffset + k * 4);
 				if (weight <= 0)
 					continue;
-				var j = base + Std.int(skin.getFloat(s + Skinned3DLayout.jointsOffset + k * 4) + .5);
+				var j = base + Std.int(skin.getFloat(s + Skinned3DProgram.jointsOffset + k * 4) + .5);
 				px += weight * (pickPalette.getMatrix(j, 0, 0) * x + pickPalette.getMatrix(j, 0, 1) * y + pickPalette.getMatrix(j, 0, 2) * z
 					+ pickPalette.getMatrix(j, 0, 3));
 				py += weight * (pickPalette.getMatrix(j, 1, 0) * x + pickPalette.getMatrix(j, 1, 1) * y + pickPalette.getMatrix(j, 1, 2) * z
@@ -879,8 +879,8 @@ class Stage3D {
 			while (capacity < count)
 				capacity *= 2;
 			gpu.destroyBuffer(instanceBuffer);
-			instanceBuffer = gpu.createBuffer(capacity * Lit3DLayout.instanceStride);
-			records = Bytes.alloc(capacity * Lit3DLayout.instanceStride);
+			instanceBuffer = gpu.createBuffer(capacity * Lit3DProgram.instanceStride);
+			records = Bytes.alloc(capacity * Lit3DProgram.instanceStride);
 		}
 		palette.clear();
 		for (i in 0...count)
@@ -890,7 +890,7 @@ class Stage3D {
 		chooseLights();
 		for (i in 0...count)
 			writeInstance(records, i, drawn[i].node, drawn[i].skinned, drawn[i].jointBase, drawn[i].lights);
-		gpu.updateBuffer(instanceBuffer, records, count * Lit3DLayout.instanceStride);
+		gpu.updateBuffer(instanceBuffer, records, count * Lit3DProgram.instanceStride);
 		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		viewProjection.writeTo(vertexUniforms);
 		writeScene();
@@ -1305,29 +1305,29 @@ class Stage3D {
 		return a.mesh == b.mesh && a.material == b.material && a.blended == b.blended && a.mirrored == b.mirrored && a.skinned == b.skinned
 			&& a.silhouetted == b.silhouetted;
 
-	// A model's record (Lit3DLayout's) at index in out: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the
+	// A model's record (Lit3DProgram's) at index in out: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the
 	// first's w the tangents' handedness, the second's whether shadows fall on it, the third's a skinned model's first joint), its lights (the
 	// table's entries, -1 past the last; none without lights) and its tint (linear).
 	function writeInstance(out:Bytes, index:Int, node:Model, skinned:Bool, jointBase:Int, lights:Null<Array<Int>>):Void {
-		var w = node.worldMatrix, r = inverse, at = index * Lit3DLayout.instanceStride;
+		var w = node.worldMatrix, r = inverse, at = index * Lit3DProgram.instanceStride;
 		inverse.makeInverse(w);
 		for (row in 0...3)
 			for (col in 0...4)
-				out.setFloat(at + Lit3DLayout.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
+				out.setFloat(at + Lit3DProgram.model0Offset + row * 16 + col * 4, w.get(col * 4 + row));
 		// The w of the normals' first row: the tangents' handedness, -1 where the placement mirrors them.
 		var mirrored = r.get(0) * (r.get(5) * r.get(10) - r.get(9) * r.get(6)) - r.get(4) * (r.get(1) * r.get(10) - r.get(9) * r.get(2))
 			+ r.get(8) * (r.get(1) * r.get(6) - r.get(5) * r.get(2)) < 0;
 		for (row in 0...3)
 			for (col in 0...4)
-				out.setFloat(at + Lit3DLayout.normal0Offset + row * 16 + col * 4,
+				out.setFloat(at + Lit3DProgram.normal0Offset + row * 16 + col * 4,
 					col < 3 ? r.get(row * 4 + col) : row == 0 ? (mirrored ? -1 : 1) : row == 1 ? (node.shadowReceiving ? 1 : 0) : skinned ? jointBase : 0);
 		for (k in 0...MODEL_LIGHTS)
-			out.setFloat(at + (k < 4 ? Lit3DLayout.lights0Offset + k * 4 : Lit3DLayout.lights1Offset + (k - 4) * 4), lights == null ? -1 : lights[k]);
+			out.setFloat(at + (k < 4 ? Lit3DProgram.lights0Offset + k * 4 : Lit3DProgram.lights1Offset + (k - 4) * 4), lights == null ? -1 : lights[k]);
 		var tint = node.tint;
-		out.setFloat(at + Lit3DLayout.tintOffset, linear(tint >>> 24));
-		out.setFloat(at + Lit3DLayout.tintOffset + 4, linear((tint >>> 16) & 255));
-		out.setFloat(at + Lit3DLayout.tintOffset + 8, linear((tint >>> 8) & 255));
-		out.setFloat(at + Lit3DLayout.tintOffset + 12, (tint & 255) / 255);
+		out.setFloat(at + Lit3DProgram.tintOffset, linear(tint >>> 24));
+		out.setFloat(at + Lit3DProgram.tintOffset + 4, linear((tint >>> 16) & 255));
+		out.setFloat(at + Lit3DProgram.tintOffset + 8, linear((tint >>> 8) & 255));
+		out.setFloat(at + Lit3DProgram.tintOffset + 12, (tint & 255) / 255);
 	}
 
 	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order

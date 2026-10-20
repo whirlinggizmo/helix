@@ -12,36 +12,35 @@ class Toggle extends Widget {
 	var mark:Shape2D;
 	var label:Text2D;
 	var value:Bool;
+	var row:Layout2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String, text:String, value:Bool) {
 		super(ui, name);
 		this.value = value;
-		var theme = ui.theme, side = theme.textSize + 4;
+		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
-		check = Shape2D.rectangle(side, side, theme.faceColor);
+		check = Shape2D.rectangle(1, 1, theme.faceColor);
 		check.setPivot(0, 0);
-		check.cornerRadius = theme.cornerRadius / 2;
 		check.pickable = false;
-		mark = Shape2D.rectangle(side - 8, side - 8, theme.accentColor);
+		mark = Shape2D.rectangle(1, 1, theme.accentColor);
 		mark.setPivot(0, 0);
-		mark.cornerRadius = theme.cornerRadius / 4;
 		mark.pickable = false;
 		label = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
 		for (n in [face, check, mark, label])
 			root.addChild(n);
-		var tick = Box.of(mark), square = Box.of(check), row = Box.row();
+		var tick = Layout2D.of(mark), square = Layout2D.of(check);
+		row = Layout2D.row();
 		tick.setAnchor(Center, Center);
 		square.add(tick);
-		row.gap = theme.gap;
 		row.setAlign(Start, Center);
 		row.setAnchor(Start, Center);
 		row.add(square);
-		row.add(Box.of(label));
-		box = Box.stack(face);
-		box.setSizing(Fit, Fixed(theme.widgetHeight));
-		box.add(row);
+		row.add(Layout2D.of(label));
+		layout = Layout2D.stack(face);
+		layout.add(row);
+		readTheme(theme);
 	}
 
 	/** Whether it's on. */
@@ -63,6 +62,20 @@ class Toggle extends Widget {
 
 	override function target():Null<Node2D>
 		return face;
+
+	// The mark textSize - 4 square, the box around it sized by the layout to it.
+	override function readTheme(theme:Theme):Void {
+		var side = theme.textSize - 4;
+		if (mark.width != side)
+			mark.setSize(side, side);
+		mark.color = theme.accentColor;
+		check.cornerRadius = theme.cornerRadius / 2;
+		mark.cornerRadius = theme.cornerRadius / 4;
+		label.textSize = theme.textSize;
+		label.font = theme.font;
+		row.themeGap(theme.gap);
+		themeFixed(layout, Math.NaN, theme.widgetHeight);
+	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme;

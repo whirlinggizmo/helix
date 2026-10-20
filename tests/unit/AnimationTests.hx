@@ -74,9 +74,9 @@ class AnimationTests {
 		var mesh = Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null, [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
 			[.25, 0, 0, 0, 0, 0, 0, 0, .5, .5, 0, 0]);
 		var skin = mesh.skinData;
-		check(skin.getFloat(Skinned3DLayout.weightsOffset) == 1, "Weights normalized to sum to 1");
-		check(skin.getFloat(Skinned3DLayout.skinStride + Skinned3DLayout.weightsOffset) == 1, "An unweighted vertex follows its first joint");
-		check(skin.getFloat(2 * Skinned3DLayout.skinStride + Skinned3DLayout.weightsOffset + 4) == .5, "Split weights kept");
+		check(skin.getFloat(Skinned3DProgram.weightsOffset) == 1, "Weights normalized to sum to 1");
+		check(skin.getFloat(Skinned3DProgram.skinStride + Skinned3DProgram.weightsOffset) == 1, "An unweighted vertex follows its first joint");
+		check(skin.getFloat(2 * Skinned3DProgram.skinStride + Skinned3DProgram.weightsOffset + 4) == .5, "Split weights kept");
 	}
 
 	static function files():Void {
@@ -177,7 +177,7 @@ class AnimationTests {
 		check(palette.jointCount == 2 && near(data.getFloat(48 + 12), 39) && near(data.getFloat(48), 1) && near(data.getFloat(12), 0),
 			"Joint matrices: inverse(model) x joint x inverse bind, their top rows");
 		var record = @:privateAccess stage.records;
-		check(record.getFloat(Lit3DLayout.normal2Offset + 12) == 0, "The model's first joint in its record");
+		check(record.getFloat(Lit3DProgram.normal2Offset + 12) == 0, "The model's first joint in its record");
 		var box = new Vector<Float>(6);
 		check(JointPalette.computePosedBox(model, model.mesh, box)
 			&& box[0] + box[3] > 41

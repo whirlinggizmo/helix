@@ -124,7 +124,7 @@ var noise(default, set):Texture2D
 
 - `new`: Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise repeating every unit.
 - `amount`: How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0).
-- `edgeColor`: The glowing edge's color, 0xRRGGBBAA (sRGB, alpha ignored): orange by default.
+- `edgeColor`: The glowing edge's color, 0xRRGGBBAA (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered: a share of its pixels thrown away in a fixed pattern, so the model stays opaque and its shadow alike); opaque orange by default.
 - `edgeIntensity`: How bright the edge glows: its color times this, 0 or more (past 1 brighter than white light): 4 by default. Under 0, or NaN, is 0.
 - `edgeWidth`: How wide the edge glows, in the noise's values (0..1) past the threshold, .001 to 1: .08 by default. Clamped to .001..1 (NaN is .001).
 - `scale`: How many times the noise repeats per unit of the model's own space (its mesh's, before the model's placing and scale), above 0: 1 by default, the library's noise's 8 cells across then each an eighth of a unit. Under .001, or NaN, is .001.

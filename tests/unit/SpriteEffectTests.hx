@@ -70,10 +70,10 @@ class SpriteEffectTests {
 			check(shader.kind == "sprite" && shader.skinned == null && shader.caster == null, '$name is a sprite shader, without a surface\'s variants');
 			var source:helix.graphics.ShaderSource = @:privateAccess shader.source;
 			check(source.attributes.join(",") == "position,uv,color,region", '$name reads the effect2d program\'s vertices');
-			check(source.uniformBlocks.filter(b -> b.slot == 0)[0].size == Effect2DLayout.vertexUniformBytes, '$name: block 0 is the clip scale');
+			check(source.uniformBlocks.filter(b -> b.slot == 0)[0].size == Effect2DProgram.vertexUniformBytes, '$name: block 0 is the clip scale');
 			var variant:helix.graphics.ShaderSource = @:privateAccess shader.sprite3D.source;
 			check(variant.attributes.join(",") == "corner,i_position,i_size,i_region,i_right,i_up,i_tint"
-				&& variant.uniformBlocks.filter(b -> b.slot == 0)[0].size == Sprite3DLayout.vertexUniformBytes,
+				&& variant.uniformBlocks.filter(b -> b.slot == 0)[0].size == Sprite3DProgram.vertexUniformBytes,
 				'$name\'s sprite3D variant reads the 3D sprites\' records and uniforms');
 			check(shader.sprite3D.handle != shader.handle && shader.sprite3D.textureSlots.join(",") == shader.textureSlots.join(","),
 				'$name: the variant a program of its own, its textures the same');
@@ -125,12 +125,12 @@ class SpriteEffectTests {
 			"Another effect, then another texture: draws of their own");
 		check(gpu.draws[0].buffers[0] != gpu.draws[1].buffers[0], "Effects draw from an upload of their own");
 		var desc = gpu.describe(through);
-		check(desc.buffers[0].stride == Effect2DLayout.stride
+		check(desc.buffers[0].stride == Effect2DProgram.stride
 			&& desc.flip == ClipScale
 			&& desc.depthTest == Off, "Effect2D's vertices, in clip space");
 		check(batch.drawCallCount == 5 && batch.vertexCount == 42, "Counted with the others");
 		var plainBytes = gpu.uploads[gpu.draws[1].buffers[0]];
-		check(plainBytes.length == 6 * Sprite2DLayout.stride, "The sprite program's upload holds only what draws without an effect");
+		check(plainBytes.length == 6 * Sprite2DProgram.stride, "The sprite program's upload holds only what draws without an effect");
 		frame(gpu, batch, () -> {
 			batch.sprite(texture, 10, 10, 4, 4);
 		});
@@ -150,8 +150,8 @@ class SpriteEffectTests {
 			batch.nineSlice(texture, 20, 0, 40, 40, 4, 4, 4, 4, 0xffffffff, 32, 0, 32, 32);
 		});
 		var bytes = gpu.uploads[gpu.draws[0].buffers[0]],
-			stride = Effect2DLayout.stride,
-			at = Effect2DLayout.regionOffset;
+			stride = Effect2DProgram.stride,
+			at = Effect2DProgram.regionOffset;
 		check(near(bytes.getFloat(at), 16 / 64)
 			&& near(bytes.getFloat(at + 4), 8 / 32)
 			&& near(bytes.getFloat(at + 8), 32 / 64)
@@ -298,7 +298,7 @@ class SpriteEffectTests {
 		check(ours.length == 2 && gpu.meshDraws[ours[0]].instances == 2 && gpu.meshDraws[ours[1]].instances == 2,
 			"Four opaque sprites, two with one effect: two draws of two");
 		var drawn = gpu.meshDraws[ours[gpu.meshPipelines[ours[0]] == through ? 0 : 1]];
-		check(drawn.uniforms[0].length == Sprite3DLayout.vertexUniformBytes
+		check(drawn.uniforms[0].length == Sprite3DProgram.vertexUniformBytes
 			&& near(drawn.uniforms[1].getFloat(0), 8)
 			&& near(drawn.uniforms[1].getFloat(4), 4)
 			&& near(drawn.uniforms[1].getFloat(8), 4.5),

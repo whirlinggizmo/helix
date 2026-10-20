@@ -1,5 +1,6 @@
 package helix.ui;
 
+import helix.render2d.Font2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -16,8 +17,9 @@ import helix.render2d.Text2D;
 	RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma),
 	without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing,
 	and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging
-	through grey or black doesn't lose the hue. It's as wide as its box is given: theme.colorPickerWidth to start (box sized Fixed that
-	wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later.
+	through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide,
+	following the theme until the game sizes its layout's width itself), or what a column stretching its children (a panel's) gives it; the
+	square takes a new width a frame later.
 	Ask color, and changed once a frame. */
 class ColorPicker extends Widget {
 	// The parts the pointer or the keys work in.
@@ -55,26 +57,32 @@ class ColorPicker extends Widget {
 	var swatchEdge:Shape2D;
 	var squareShadow:Shape2D;
 	var squareMark:Shape2D;
-	var hueShadow:Shape2D;
-	var hueKnob:Shape2D;
-	var alphaShadow:Shape2D;
-	var alphaKnob:Shape2D;
+	var hueKnob:Handle;
+	var alphaKnob:Handle;
 	var caption:Text2D;
-	var squareBox:Box;
-	var hueBox:Box;
-	var alphaBox:Null<Box>;
-	var swatchBox:Box;
-	var textRow:Box;
-	var fieldColumn:Box;
+	var squareLayout:Layout2D;
+	var hueLayout:Layout2D;
+	var alphaLayout:Null<Layout2D>;
+	var swatchLayout:Layout2D;
+	var strip:Layout2D;
+	var bars:Layout2D;
+	var textRow:Layout2D;
+	var fieldColumn:Layout2D;
+	// The field's width and height as last sized, and what its widest text was measured for (font, size): measured again when one changes.
 	var fieldWidth = 0.;
+	var fieldHeight = Math.NaN;
+	var fieldFont:Null<Font2D>;
+	var fieldSize = -1.;
+	var widest = 0.;
 	var alphaChecked = -1.;
 	var swatchChecked = -1.;
-	// A bar's thickness, a handle's radius, the height of a bar's row (a handle and its shadow), the swatch's diameter, the field's height.
+	// From the theme (readTheme): a bar's thickness, a handle's radius, the height of a bar's row (a handle and its shadow), the swatch's
+	// diameter, the field's height.
 	var thickness:Float;
-	var knob:Float;
-	var lane:Float;
-	var diameter:Float;
-	var compact:Float;
+	var knob = 0.;
+	var lane = 0.;
+	var diameter = 0.;
+	var compact = 0.;
 	// The square's side: the width the picker was last given.
 	var side:Float;
 	var hasAlpha:Bool;
@@ -89,12 +97,9 @@ class ColorPicker extends Widget {
 	function new(ui:Ui, name:String, color:Int, alpha:Bool) {
 		super(ui, name);
 		hasAlpha = alpha;
-		var theme = ui.theme, pad = theme.padding;
+		var theme = ui.theme;
+		// The bars' ends are made for this thickness, made again by readTheme when it changes.
 		thickness = theme.trackThickness;
-		knob = theme.handleSize / 2;
-		lane = (knob + 1.5) * 2;
-		diameter = hasAlpha ? lane * 2 + theme.gap / 2 : lane * 1.6;
-		compact = theme.textSize + pad / 2;
 		side = theme.colorPickerWidth;
 		face = rectangle(0);
 		face.pickable = true;
@@ -126,66 +131,97 @@ class ColorPicker extends Widget {
 			alphaGroup.addChild(n);
 		alphaEnd = end(alphaGroup, true, 0);
 		alphaGroup.enabled = hasAlpha;
-		// The swatch: a disc of the color, with alpha over a checkerboard in its round shape.
-		swatchBase = round(swatchGroup, diameter / 2, LIGHT);
+		// The swatch: a disc of the color, with alpha over a checkerboard in its round shape (its size readTheme's).
+		swatchBase = round(swatchGroup, 1, LIGHT);
 		swatchGroup.addChild(swatchChecks);
-		swatchColor = round(swatchGroup, diameter / 2, 0);
+		swatchColor = round(swatchGroup, 1, 0);
 		// Its edge in the faces' color, so a color like the panel's still shows a disc.
-		swatchEdge = round(swatchGroup, diameter / 2 - .75, ui.theme.faceColor);
+		swatchEdge = round(swatchGroup, 1, theme.faceColor);
 		swatchEdge.outline = 1.5;
 		swatchBase.visible = swatchChecks.enabled = hasAlpha;
 		// The handles: the square's a ring, the bars' discs, white over a dark shadow so they show on any color.
 		squareShadow = mark(Shape2D.circle(6, 0x00000090), 4);
 		squareMark = mark(Shape2D.circle(6, 0xffffffff), 2);
-		hueShadow = mark(Shape2D.circle(knob + 1.5, 0x00000080), 0);
-		hueKnob = mark(Shape2D.circle(knob, 0xffffffff), 0);
-		alphaShadow = mark(Shape2D.circle(knob + 1.5, 0x00000080), 0);
-		alphaKnob = mark(Shape2D.circle(knob, 0xffffffff), 0);
-		alphaShadow.visible = alphaKnob.visible = hasAlpha;
+		hueKnob = new Handle(root, theme);
+		alphaKnob = new Handle(root, theme);
+		alphaKnob.visible = hasAlpha;
 		caption = new Text2D("HEX", theme.textSize * .6, theme.disabledTextColor, Center, theme.font);
 		root.addChild(caption);
 		// A column: the square; a padded strip of the swatch beside the bars; a row of the field (its caption under it) and the format button
-		// (attach).
-		squareBox = Box.of(squareHue);
-		swatchBox = Box.of(swatchGroup);
-		swatchBox.setSizing(Fixed(diameter), Fixed(diameter));
-		var bars = Box.column();
-		bars.gap = theme.gap / 2;
-		bars.setSizing(Grow(1), Fit);
+		// (attach). Their sizes, padding and gaps readTheme's.
+		squareLayout = Layout2D.of(squareHue);
+		swatchLayout = Layout2D.of(swatchGroup);
+		bars = Layout2D.column();
+		bars.themeSizing(Grow(1), Fit);
 		bars.setAlign(Start, Stretch);
-		hueBox = Box.of(hueGroup);
-		hueBox.setSizing(Fit, Fixed(lane));
-		bars.add(hueBox);
+		hueLayout = Layout2D.of(hueGroup);
+		bars.add(hueLayout);
 		if (hasAlpha) {
-			alphaBox = Box.of(alphaGroup);
-			alphaBox.setSizing(Fit, Fixed(lane));
-			bars.add(alphaBox);
+			alphaLayout = Layout2D.of(alphaGroup);
+			bars.add(alphaLayout);
 		}
-		var strip = Box.row();
-		strip.gap = pad;
-		strip.setPadding(pad, pad, pad, pad);
+		strip = Layout2D.row();
 		strip.setAlign(Start, Center);
-		strip.add(swatchBox);
+		strip.add(swatchLayout);
 		strip.add(bars);
-		fieldColumn = Box.column();
-		fieldColumn.gap = 2;
+		fieldColumn = Layout2D.column();
+		fieldColumn.themeGap(2);
 		fieldColumn.setAlign(Start, Center);
-		textRow = Box.row();
-		textRow.gap = theme.gap / 2;
-		textRow.setPadding(pad, 0, pad, pad);
+		textRow = Layout2D.row();
 		textRow.setAlign(Center, Start);
 		textRow.add(fieldColumn);
-		var column = Box.column();
+		var column = Layout2D.column();
 		column.setAlign(Start, Stretch);
 		column.setAnchor(Stretch, Start);
-		column.add(squareBox);
+		column.add(squareLayout);
 		column.add(strip);
 		column.add(textRow);
-		box = Box.stack(face);
-		box.add(column);
-		box.setSizing(Fixed(side), Fit);
-		squareBox.setSizing(Fit, Fixed(side));
+		layout = Layout2D.stack(face);
+		layout.add(column);
+		squareLayout.themeSizing(Fit, Fixed(side));
 		this.color = color;
+		readTheme(theme);
+	}
+
+	// Its sizes from the theme (the bars' ends made again for a new thickness, the checkerboards for a new size as they're drawn), its
+	// field's and button's layouts, its caption, the swatch's edge and the handles; its width the theme's colorPickerWidth unless its layout was
+	// given another.
+	override function readTheme(theme:Theme):Void {
+		var pad = theme.padding;
+		if (theme.trackThickness != thickness) {
+			thickness = theme.trackThickness;
+			var right = arc(0, 0, thickness / 2, -Math.PI / 2),
+				left = arc(0, 0, thickness / 2, Math.PI / 2);
+			hueStart.setPoints(left);
+			hueEnd.setPoints(right);
+			alphaEnd.setPoints(right);
+			alphaChecked = -1;
+		}
+		knob = theme.handleSize / 2;
+		lane = (knob + 1.5) * 2;
+		diameter = hasAlpha ? lane * 2 + theme.gap / 2 : lane * 1.6;
+		compact = theme.textSize + pad / 2;
+		swatchBase.radius = swatchColor.radius = diameter / 2;
+		swatchEdge.radius = diameter / 2 - .75;
+		swatchEdge.color = theme.faceColor;
+		themeFixed(swatchLayout, diameter, diameter);
+		themeFixed(hueLayout, Math.NaN, lane);
+		if (alphaLayout != null)
+			themeFixed(alphaLayout, Math.NaN, lane);
+		bars.themeGap(theme.gap / 2);
+		strip.themeGap(pad);
+		strip.themePadding(pad, pad, pad, pad);
+		textRow.themeGap(theme.gap / 2);
+		textRow.themePadding(pad, 0, pad, pad);
+		caption.textSize = theme.textSize * .6;
+		caption.color = theme.disabledTextColor;
+		caption.font = theme.font;
+		hueKnob.readTheme(theme);
+		alphaKnob.readTheme(theme);
+		// The field's padding and size are the picker's, set as a game sets a layout's (its owner's, so its own theme's never replace them).
+		if (textField != null)
+			textField.layout.setPadding(pad / 2, 0, pad / 2, 0);
+		themeFixed(layout, theme.colorPickerWidth, Math.NaN);
 	}
 
 	// A rectangle of the widget, its top-left at its position, not picked (the face is what the pointer uses).
@@ -221,7 +257,7 @@ class ColorPicker extends Widget {
 		return shape;
 	}
 
-	// The text field and the format button: their boxes in the row under the strip (the field over its caption), their nodes with the
+	// The text field and the format button: their layouts in the row under the strip (the field over its caption), their nodes with the
 	// picker's (hidden with it), taken out with it.
 
 	@:allow(helix.ui.Ui)
@@ -229,16 +265,18 @@ class ColorPicker extends Widget {
 		textField = field;
 		formatButton = button;
 		field.centered = true;
-		field.box.setPadding(ui.theme.padding / 2, 0, ui.theme.padding / 2, 0);
-		field.box.setSizing(Fixed(ui.theme.widgetHeight * 3), Fixed(compact));
+		// Its layout the picker's to size and pad (readTheme, fitField), not the theme's: until its text is measured, three widgets' heights wide.
+		fieldWidth = ui.theme.widgetHeight * 3;
+		readTheme(ui.theme);
+		fitField();
 		for (part in [field, button]) {
 			parts.push(part);
 			part.root.parent = null;
 			root.addChild(part.root);
 		}
-		fieldColumn.add(field.box);
-		fieldColumn.add(Box.of(caption));
-		textRow.add(button.box);
+		fieldColumn.add(field.layout);
+		fieldColumn.add(Layout2D.of(caption));
+		textRow.add(button.layout);
 		set_format(format);
 	}
 
@@ -246,9 +284,10 @@ class ColorPicker extends Widget {
 
 	@:allow(helix.ui.Ui)
 	function makeFormatButton(name:String):Widget
-		return new FormatButton(ui, name, this, compact * .8, compact);
+		return new FormatButton(ui, name, this);
 
-	/** Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text"). */
+	/** Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text"). Its layout is the picker's
+		to size and pad, whatever the theme. */
 	public var textField(default, null):TextField;
 
 	/** The button beside its text field cycling its format (a widget of its own, named after the picker with "-format"): clicked, or activated
@@ -448,7 +487,7 @@ class ColorPicker extends Widget {
 			return SQUARE;
 		for (part in [HUE, ALPHA]) {
 			var group = part == HUE ? hueGroup : alphaGroup,
-				at = part == HUE ? hueBox : alphaBox;
+				at = part == HUE ? hueLayout : alphaLayout;
 			if (at == null)
 				continue;
 			lx = group.toLocalX(x, y);
@@ -483,9 +522,9 @@ class ColorPicker extends Widget {
 					s = clamp(squareHue.toLocalX(wx, wy) / squareHue.width);
 					v = clamp(1 - squareHue.toLocalY(wx, wy) / squareHue.height);
 				case HUE:
-					h = along(hueGroup.toLocalX(wx, wy), hueBox.width);
+					h = along(hueGroup.toLocalX(wx, wy), hueLayout.width);
 				case ALPHA:
-					a = along(alphaGroup.toLocalX(wx, wy), alphaBox.width);
+					a = along(alphaGroup.toLocalX(wx, wy), alphaLayout.width);
 				default:
 			}
 		} else
@@ -527,37 +566,45 @@ class ColorPicker extends Widget {
 		draw(color, focused);
 	}
 
-	// The square as tall as the picker was last made wide (its box Fixed, or stretched across a column): taken up by the next arrangement, so a
+	// The square as tall as the picker was last made wide (its layout Fixed, or stretched across a column): taken up by the next arrangement, so a
 	// new width shows the square's new height a frame later.
 	function fitSquare():Void {
-		if (box.width > 0 && box.width != side) {
-			side = box.width;
-			squareBox.setSizing(Fit, Fixed(side));
+		if (layout.width > 0 && layout.width != side) {
+			side = layout.width;
+			squareLayout.themeSizing(Fit, Fixed(side));
 		}
 	}
 
-	// The field as wide as the widest text of either format needs, with the caret, and no wider than the row has room for beside the button.
+	// The field compact tall, as wide as the widest text of either format needs, with the caret, and no wider than the row has room for beside
+	// the button: that text measured again only when the font or the text's size changed.
 	function fitField():Void {
-		var theme = ui.theme, font = theme.font != null ? theme.font : ui.font;
-		if (font == null)
-			return;
-		var widest = Math.max(font.measure(hasAlpha ? "00000000" : "000000", theme.textSize),
-			font.measure(hasAlpha ? "255 255 255 255" : "255 255 255", theme.textSize));
-		var room = side - theme.padding * 2 - textRow.gap - compact * .8;
-		var wanted = Math.min(widest + theme.padding + 4, room);
-		if (wanted != fieldWidth) {
+		var theme = ui.theme,
+			font = theme.font != null ? theme.font : ui.font,
+			wanted = fieldWidth;
+		if (font != null) {
+			if (font != fieldFont || theme.textSize != fieldSize) {
+				fieldFont = font;
+				fieldSize = theme.textSize;
+				widest = Math.max(font.measure(hasAlpha ? "00000000" : "000000", theme.textSize),
+					font.measure(hasAlpha ? "255 255 255 255" : "255 255 255", theme.textSize));
+			}
+			var room = side - theme.padding * 2 - textRow.gap - compact * .8;
+			wanted = Math.min(widest + theme.padding + 4, room);
+		}
+		if (wanted != fieldWidth || compact != fieldHeight) {
 			fieldWidth = wanted;
-			textField.box.setSizing(Fixed(wanted), Fixed(compact));
+			fieldHeight = compact;
+			textField.layout.setSizing(Fixed(wanted), Fixed(compact));
 		}
 	}
 
 	// The parts where the layout last placed them, in the color now.
 	function draw(color:Int, focused:Bool):Void {
 		var theme = ui.theme,
-			x = squareBox.x,
-			y = squareBox.y,
-			w = squareBox.width,
-			height = squareBox.height;
+			x = squareLayout.x,
+			y = squareLayout.y,
+			w = squareLayout.width,
+			height = squareLayout.height;
 		squareHue.color = fromHsv(h, 1, 1);
 		for (n in [whiteRamp, blackRamp]) {
 			n.setPosition(x, y);
@@ -565,7 +612,7 @@ class ColorPicker extends Widget {
 		}
 		// The bars, thickness tall in the middle of their rows, their ends round: what they choose runs between the ends' centers.
 		var r = thickness / 2, top = (lane - thickness) / 2, middle = lane / 2;
-		var hw = hueBox.width, span = Math.max(0, hw - thickness);
+		var hw = hueLayout.width, span = Math.max(0, hw - thickness);
 		for (k in 0...hueBands.length) {
 			hueBands[k].setPosition(r + span * k / 6, top);
 			hueBands[k].setSize(span / 6, thickness);
@@ -573,8 +620,8 @@ class ColorPicker extends Widget {
 		hueStart.setPosition(r, middle);
 		hueEnd.setPosition(hw - r, middle);
 		var opaque = color | 0xff, clear = color & 0xffffff00;
-		if (alphaBox != null) {
-			var aw = alphaBox.width;
+		if (alphaLayout != null) {
+			var aw = alphaLayout.width;
 			alphaRamp.setPosition(r, top);
 			alphaRamp.setSize(Math.max(0, aw - thickness), thickness);
 			alphaRamp.color = clear;
@@ -599,18 +646,16 @@ class ColorPicker extends Widget {
 			checker(swatchChecks, swatchChecksPool, capsule(0, 0, diameter, diameter), 0, 0, diameter, diameter, diameter / 6);
 		}
 		// The handles, the one the keys drive in the focus color, dimmed when it can't be used.
-		var markColor = enabled ? 0xffffffff : theme.disabledTextColor;
+		var markColor = enabled ? theme.handleColor : theme.disabledTextColor;
 		squareShadow.setPosition(x + s * w, y + (1 - v) * height);
 		squareMark.setPosition(x + s * w, y + (1 - v) * height);
 		squareMark.color = focused && editing == SQUARE ? theme.focusColor : markColor;
-		var hx = hueBox.x + r + h * span, hy = hueBox.y + middle;
-		hueShadow.setPosition(hx, hy);
+		var hx = hueLayout.x + r + h * span, hy = hueLayout.y + middle;
 		hueKnob.setPosition(hx, hy);
 		hueKnob.color = focused && editing == HUE ? theme.focusColor : markColor;
-		if (alphaBox != null) {
-			var ax = alphaBox.x + r + a * Math.max(0, alphaBox.width - thickness),
-				ay = alphaBox.y + middle;
-			alphaShadow.setPosition(ax, ay);
+		if (alphaLayout != null) {
+			var ax = alphaLayout.x + r + a * Math.max(0, alphaLayout.width - thickness),
+				ay = alphaLayout.y + middle;
 			alphaKnob.setPosition(ax, ay);
 			alphaKnob.color = focused && editing == ALPHA ? theme.focusColor : markColor;
 		}
@@ -726,24 +771,37 @@ private class FormatButton extends Widget {
 	var face:Shape2D;
 	var up:Shape2D;
 	var down:Shape2D;
+	// The height its chevrons were made for.
+	var shaped = -1.;
 
 	@:allow(helix.ui.ColorPicker)
-	function new(ui:Ui, name:String, picker:ColorPicker, width:Float, height:Float) {
+	function new(ui:Ui, name:String, picker:ColorPicker) {
 		super(ui, name);
 		this.picker = picker;
 		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		// A chevron's arms out to a, k thick, its point at its position.
-		var a = height * .18, k = Math.max(1.5, height * .08);
-		up = Shape2D.polygon([-a, a, 0, 0, a, a, a, a + k, 0, k, -a, a + k], theme.textColor);
-		down = Shape2D.polygon([-a, -a, 0, 0, a, -a, a, -a - k, 0, -k, -a, -a - k], theme.textColor);
+		up = Shape2D.polygon([0, 0, 1, 0, 0, 1], theme.textColor);
+		down = Shape2D.polygon([0, 0, 1, 0, 0, 1], theme.textColor);
 		for (n in [face, up, down]) {
 			n.pickable = n == face;
 			root.addChild(n);
 		}
-		box = Box.of(face);
-		box.setSizing(Fixed(width), Fixed(height));
+		layout = Layout2D.of(face);
+		readTheme(theme);
+	}
+
+	// As tall as the picker's field (its compact height, from the theme), four fifths as wide, the chevrons made again for a new height.
+	override function readTheme(theme:Theme):Void {
+		var height = @:privateAccess picker.compact;
+		themeFixed(layout, height * .8, height);
+		if (height != shaped) {
+			shaped = height;
+			// A chevron's arms out to a, k thick, its point at its position.
+			var a = height * .18, k = Math.max(1.5, height * .08);
+			up.setPoints([-a, a, 0, 0, a, a, a, a + k, 0, k, -a, a + k]);
+			down.setPoints([-a, -a, 0, 0, a, -a, a, -a - k, 0, -k, -a, -a - k]);
+		}
 	}
 
 	override function get_focusable():Bool
@@ -759,10 +817,10 @@ private class FormatButton extends Widget {
 		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
 		up.color = down.color = enabled ? theme.textColor : theme.disabledTextColor;
 		// The chevrons a little above and below the middle, as the layout last placed it.
-		var cx = box.x + box.width / 2,
-			cy = box.y + box.height / 2,
-			gap = box.height * .1;
-		up.setPosition(cx, cy - gap - box.height * .18);
-		down.setPosition(cx, cy + gap + box.height * .18);
+		var cx = layout.x + layout.width / 2,
+			cy = layout.y + layout.height / 2,
+			gap = layout.height * .1;
+		up.setPosition(cx, cy - gap - layout.height * .18);
+		down.setPosition(cx, cy + gap + layout.height * .18);
 	}
 }

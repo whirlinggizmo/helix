@@ -388,11 +388,11 @@ class ShaderLibraryTests {
 		var cube = Mesh.cube(1, 1, 1), data = cube.passVertices, corners = true, kept = true;
 		var third = 1 / Math.sqrt(3);
 		for (i in 0...cube.vertexCount) {
-			var at = i * Flat3DLayout.stride, lit = i * Lit3DLayout.stride;
+			var at = i * Flat3DProgram.stride, lit = i * Lit3DProgram.stride;
 			for (c in 0...3) {
-				var p = data.getFloat(at + Flat3DLayout.positionOffset + c * 4),
-					n = data.getFloat(at + Flat3DLayout.normalOffset + c * 4);
-				kept = kept && p == cube.vertices.getFloat(lit + Lit3DLayout.positionOffset + c * 4);
+				var p = data.getFloat(at + Flat3DProgram.positionOffset + c * 4),
+					n = data.getFloat(at + Flat3DProgram.normalOffset + c * 4);
+				kept = kept && p == cube.vertices.getFloat(lit + Lit3DProgram.positionOffset + c * 4);
 				corners = corners && Math.abs(Math.abs(n) - third) < 1e-6 && (n > 0) == (p > 0);
 			}
 		}
@@ -403,14 +403,14 @@ class ShaderLibraryTests {
 		for (i in 0...sphere.vertexCount)
 			for (c in 0...3)
 				smooth = smooth
-					&& Math.abs(sphere.passVertices.getFloat(i * Flat3DLayout.stride + Flat3DLayout.normalOffset + c * 4)
-						- sphere.vertices.getFloat(i * Lit3DLayout.stride + Lit3DLayout.normalOffset + c * 4)) < 1e-5;
+					&& Math.abs(sphere.passVertices.getFloat(i * Flat3DProgram.stride + Flat3DProgram.normalOffset + c * 4)
+						- sphere.vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.normalOffset + c * 4)) < 1e-5;
 		check(smooth, "A smooth mesh's normals stay as they are");
 		// Two faces back to back at the same place: their normals cancel, so each keeps its own.
 		var sheet = Mesh.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0], [0., 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1], null,
 			null, null);
-		check(near(sheet.passVertices.getFloat(Flat3DLayout.normalOffset + 8), 1)
-			&& near(sheet.passVertices.getFloat(3 * Flat3DLayout.stride + Flat3DLayout.normalOffset + 8), -1),
+		check(near(sheet.passVertices.getFloat(Flat3DProgram.normalOffset + 8), 1)
+			&& near(sheet.passVertices.getFloat(3 * Flat3DProgram.stride + Flat3DProgram.normalOffset + 8), -1),
 			"Normals cancelling out leave each vertex its own");
 
 		var stage = new Stage3D(gpu),
@@ -427,7 +427,7 @@ class ShaderLibraryTests {
 		var lit = gpu.meshDraws[0],
 			shell = gpu.meshDraws[gpu.meshDraws.length - 1],
 			desc = gpu.describe(gpu.meshPipelines[gpu.meshPipelines.length - 1]);
-		check(desc.cull == Front && desc.buffers.length == 3 && desc.buffers[0].stride == Flat3DLayout.stride,
+		check(desc.cull == Front && desc.buffers.length == 3 && desc.buffers[0].stride == Flat3DProgram.stride,
 			"A skinned outline reads its pass vertices, its records and its skin");
 		check(shell.buffers.length == 3
 			&& shell.buffers[0] == model.mesh.getPassVertexBuffer(gpu)

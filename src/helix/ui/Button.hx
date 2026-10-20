@@ -16,16 +16,14 @@ class Button extends Widget {
 		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		face.cornerRadius = theme.cornerRadius;
 		label = new Text2D(text, theme.textSize, theme.textColor, Center, theme.font);
 		root.addChild(face);
 		root.addChild(label);
-		box = Box.stack(face);
-		box.setSizing(Fit, Fixed(theme.widgetHeight));
-		box.setPadding(theme.padding * 2, 0, theme.padding * 2, 0);
-		var text = Box.of(label);
+		layout = Layout2D.stack(face);
+		var text = Layout2D.of(label);
 		text.setAnchor(Center, Center);
-		box.add(text);
+		layout.add(text);
+		readTheme(theme);
 	}
 
 	/** Whether it was clicked or activated this frame. */
@@ -47,6 +45,14 @@ class Button extends Widget {
 
 	override function target():Null<Node2D>
 		return face;
+
+	override function readTheme(theme:Theme):Void {
+		face.cornerRadius = theme.cornerRadius;
+		label.textSize = theme.textSize;
+		label.font = theme.font;
+		themeFixed(layout, Math.NaN, theme.widgetHeight);
+		layout.themePadding(theme.padding * 2, 0, theme.padding * 2, 0);
+	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme;

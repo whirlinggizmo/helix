@@ -207,7 +207,7 @@ class SpriteTests(unittest.TestCase):
         variant = shader['sprite3D']
         self.assertEqual(variant['attributes'], ['corner', 'i_position', 'i_size', 'i_region', 'i_right', 'i_up', 'i_tint'])
         blocks = {b['slot']: b for b in variant['uniformBlocks']}
-        # Block 0 the 3D sprites' uniforms (Sprite3DLayout's), the framework's block and the app's as the 2D program has them.
+        # Block 0 the 3D sprites' uniforms (Sprite3DProgram's), the framework's block and the app's as the 2D program has them.
         self.assertEqual((blocks[0]['stage'], blocks[0]['size'], blocks[0]['name']), ('vertex', 112, 'helix_sprite3d_vs_params'))
         self.assertEqual(blocks[1]['name'], 'helix_sprite_params')
         own = lambda s: [b['members'] for b in s['uniformBlocks'] if b['slot'] == 2]
@@ -231,7 +231,7 @@ class SpriteTests(unittest.TestCase):
             pack(SPRITE.replace('binding=1) uniform', 'binding=0) uniform'))
 
     def test_vertices_are_effect2d_s(self):
-        # Batch2D packs Effect2DLayout's vertices (the framework's effect2d program, shaders.json) for the kind's vertex stage.
+        # Batch2D packs Effect2DProgram's vertices (the framework's effect2d program, shaders.json) for the kind's vertex stage.
         programs = json.loads((ROOT / 'src/helix/graphics/shaders/shaders.json').read_text(encoding='utf-8'))['programs']
         effect2d = next(p for p in programs if p['program'] == 'effect2d')
         self.assertEqual([a['name'] for a in effect2d['attributes']], pack_shader.ATTRIBUTES['helix_sprite'])

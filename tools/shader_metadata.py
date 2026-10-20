@@ -207,14 +207,14 @@ def manifest(path):
 
 
 def generate(manifest_path, output, working_dir):
-    """Writes each program's <Name>Layout.hx (its CPU packing; source(), the program in both dialects with its bindings, as
+    """Writes each program's <Name>Program.hx (its CPU packing; source(), the program in both dialects with its bindings, as
     IGraphics.createShader takes it; buffers(), its vertex buffers' layout, as a PipelineDesc takes it) and shader-contract.json, from
     output/<program>_reflection.yaml and the dialects' sources beside it."""
     output = Path(output); working_dir = Path(working_dir)
     contracts = []
     for spec in manifest(manifest_path):
         contract, programs = load_contract(output / f'{spec["program"]}_reflection.yaml', spec)
-        program = contract['program']; type_name = class_name(program) + 'Layout'
+        program = contract['program']; type_name = class_name(program) + 'Program'
         sources = {}
         for dialect in ['glsl410', 'glsl300es']:
             for stage in ['vertex', 'fragment']:
@@ -257,8 +257,9 @@ def generate(manifest_path, output, working_dir):
                ' public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>', f'  return [{", ".join(layouts)}];', '}']
         (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n', encoding='utf-8')
         contracts.append(contract)
-    # What the generator wrote before the adapters built programs from data: the GLSL ES class and the C headers.
-    for stale in [output / 'GeneratedShader.hx', output / 'shaders.h', *output.glob('*.glsl.h')]:
+    # What the generator wrote before: the GLSL ES class and the C headers (before the adapters built programs from data), and each
+    # program's class under its old name, <Name>Layout.hx, which a build would otherwise still find on its class path.
+    for stale in [output / 'GeneratedShader.hx', output / 'shaders.h', *output.glob('*.glsl.h'), *output.glob('*[0-9]DLayout.hx')]:
         stale.unlink(missing_ok=True)
     (output / 'shader-contract.json').write_text(json.dumps(contracts, indent=2) + '\n', encoding='utf-8')
     return contracts
@@ -266,7 +267,7 @@ def generate(manifest_path, output, working_dir):
 
 def generate_sdl_gpu(manifest_path, output, gpu_output):
     """Writes each program's <Name>SdlGpu.hx into gpu_output: its SDL_GPU dialects (tools/gpu_shaders.py) from the GLSL 410 generate wrote
-    into output, for the layouts' source() in SDL_GPU builds. Only those builds run it, so no other needs glslang or SPIRV-Cross."""
+    into output, for the program classes' source() in SDL_GPU builds. Only those builds run it, so no other needs glslang or SPIRV-Cross."""
     import gpu_shaders
     contracts = {c['program']: c for c in json.loads((Path(output) / 'shader-contract.json').read_text(encoding='utf-8'))}
     gpu_output = Path(gpu_output)

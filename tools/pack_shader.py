@@ -408,8 +408,8 @@ KINDS['helix_surface'] = (SURFACE_VS.format(name='helix_surface_vs', skin_inputs
                           + '\n@block helix_surface' + SURFACE_FS + SURFACE_OUTPUT + '@end\n'
                           + '\n@block helix_surface_caster' + SURFACE_FS + CASTER_OUTPUT + '@end\n')
 # The sprite kind's vertex stage and block: the framework's effect2d program less its own fragment stage (its vertices' layout is that
-# program's, Effect2DLayout, which Batch2D packs). Its variant drawing a Stage3D's sprites reads the framework's sprite3d vertex stage (its
-# outputs the kind's, its records Sprite3DLayout's), the block's output applying the sprite's alpha mode.
+# program's, Effect2DProgram, which Batch2D packs). Its variant drawing a Stage3D's sprites reads the framework's sprite3d vertex stage (its
+# outputs the kind's, its records Sprite3DProgram's), the block's output applying the sprite's alpha mode.
 SPRITE = ROOT / 'src/helix/graphics/shaders/effect2d.glsl'
 SPRITE3D = ROOT / 'src/helix/graphics/shaders/sprite3d.glsl'
 SPRITE_OUTPUT = 'void helix_output(vec3 color, float alpha) { helix_frag_color = vec4(color, alpha); }'

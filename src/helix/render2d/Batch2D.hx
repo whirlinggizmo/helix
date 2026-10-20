@@ -51,7 +51,7 @@ class Batch2D {
 	// By run: the effect it draws through (its vertices in the effects' upload), or null; and its texture.
 	var runEffects:Array<Null<SpriteEffect>> = [];
 	var runTextures:Array<Texture2D> = [];
-	// The vertices drawn through effects, with their sprites' regions (Effect2DLayout), uploaded beside the others; made when first used.
+	// The vertices drawn through effects, with their sprites' regions (Effect2DProgram), uploaded beside the others; made when first used.
 	var effectVertices = 0;
 	var effectCapacity = 0;
 	var effectData:Bytes = Bytes.alloc(0);
@@ -98,8 +98,8 @@ class Batch2D {
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
 		capacity = maxVertices;
-		data = Bytes.alloc(capacity * Sprite2DLayout.stride);
-		buffer = gpu.createBuffer(capacity * Sprite2DLayout.stride);
+		data = Bytes.alloc(capacity * Sprite2DProgram.stride);
+		buffer = gpu.createBuffer(capacity * Sprite2DProgram.stride);
 		pipelines = Pipelines.of(gpu);
 		font = Font2D.builtIn(gpu);
 		texture = font.texture;
@@ -211,15 +211,15 @@ class Batch2D {
 		texture, camera and effect, each in its camera's viewport. Once a frame. */
 	public function end():Void {
 		closeRun();
-		gpu.updateBuffer(buffer, data, vertices * Sprite2DLayout.stride);
+		gpu.updateBuffer(buffer, data, vertices * Sprite2DProgram.stride);
 		if (effectVertices > 0) {
 			if (effectBufferCapacity < effectCapacity) {
 				if (effectBuffer != 0)
 					gpu.destroyBuffer(effectBuffer);
-				effectBuffer = gpu.createBuffer(effectCapacity * Effect2DLayout.stride);
+				effectBuffer = gpu.createBuffer(effectCapacity * Effect2DProgram.stride);
 				effectBufferCapacity = effectCapacity;
 			}
-			gpu.updateBuffer(effectBuffer, effectData, effectVertices * Effect2DLayout.stride);
+			gpu.updateBuffer(effectBuffer, effectData, effectVertices * Effect2DProgram.stride);
 		}
 		if (particleCount > 0) {
 			if (particleCount > particleCapacity) {
@@ -228,9 +228,9 @@ class Batch2D {
 				particleCapacity = 1024;
 				while (particleCapacity < particleCount)
 					particleCapacity *= 2;
-				particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
+				particleBuffer = gpu.createBuffer(particleCapacity * Particle3DProgram.instanceStride);
 			}
-			gpu.updateBuffer(particleBuffer, particleRecords, particleCount * Particle3DLayout.instanceStride);
+			gpu.updateBuffer(particleBuffer, particleRecords, particleCount * Particle3DProgram.instanceStride);
 		}
 		var i = 0, viewport:Camera2D = null, clipped = false, cx = 0, cy = 0, cw = 0, ch = 0;
 		while (i < runs.length) {
@@ -365,10 +365,10 @@ class Batch2D {
 			effectVertex(x, y, u, v);
 			return;
 		}
-		var p = vertices++ * Sprite2DLayout.stride,
-			position = p + Sprite2DLayout.positionOffset,
-			uv = p + Sprite2DLayout.uvOffset,
-			c = p + Sprite2DLayout.colorOffset;
+		var p = vertices++ * Sprite2DProgram.stride,
+			position = p + Sprite2DProgram.positionOffset,
+			uv = p + Sprite2DProgram.uvOffset,
+			c = p + Sprite2DProgram.colorOffset;
 		data.setFloat(position, camera.clipX(ta * x + tc * y + tx));
 		data.setFloat(position + 4, camera.clipY(tb * x + td * y + ty));
 		data.setFloat(uv, u);
@@ -383,15 +383,15 @@ class Batch2D {
 	function effectVertex(x:Float, y:Float, u:Float, v:Float):Void {
 		if (effectVertices >= effectCapacity) {
 			effectCapacity = effectCapacity == 0 ? 1536 : effectCapacity * 2;
-			var grown = Bytes.alloc(effectCapacity * Effect2DLayout.stride);
-			grown.blit(0, effectData, 0, effectVertices * Effect2DLayout.stride);
+			var grown = Bytes.alloc(effectCapacity * Effect2DProgram.stride);
+			grown.blit(0, effectData, 0, effectVertices * Effect2DProgram.stride);
 			effectData = grown;
 		}
-		var p = effectVertices++ * Effect2DLayout.stride,
-			position = p + Effect2DLayout.positionOffset,
-			uv = p + Effect2DLayout.uvOffset,
-			c = p + Effect2DLayout.colorOffset,
-			region = p + Effect2DLayout.regionOffset;
+		var p = effectVertices++ * Effect2DProgram.stride,
+			position = p + Effect2DProgram.positionOffset,
+			uv = p + Effect2DProgram.uvOffset,
+			c = p + Effect2DProgram.colorOffset,
+			region = p + Effect2DProgram.regionOffset;
 		effectData.setFloat(position, camera.clipX(ta * x + tc * y + tx));
 		effectData.setFloat(position + 4, camera.clipY(tb * x + td * y + ty));
 		effectData.setFloat(uv, u);
@@ -516,7 +516,7 @@ class Batch2D {
 		closeRun();
 		if (!particlesReady) {
 			particlesReady = true;
-			var quad = Bytes.alloc(4 * Particle3DLayout.stride), at = 0;
+			var quad = Bytes.alloc(4 * Particle3DProgram.stride), at = 0;
 			for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
 				quad.setFloat(at, c);
 				at += 4;
@@ -527,14 +527,14 @@ class Batch2D {
 				order.setInt32(k * 4, [0, 1, 2, 0, 2, 3][k]);
 			particleIndices = gpu.createStaticBuffer(order, 24, true);
 		}
-		var needed = (particleCount + emitter.particleCount) * Particle3DLayout.instanceStride;
+		var needed = (particleCount + emitter.particleCount) * Particle3DProgram.instanceStride;
 		if (needed > particleRecords.length) {
 			var grown = Bytes.alloc(Std.int(Math.max(needed, particleRecords.length * 2)));
-			grown.blit(0, particleRecords, 0, particleCount * Particle3DLayout.instanceStride);
+			grown.blit(0, particleRecords, 0, particleCount * Particle3DProgram.instanceStride);
 			particleRecords = grown;
 		}
 		var first = particleCount,
-			count = emitter.writeRecords(particleRecords, first * Particle3DLayout.instanceStride);
+			count = emitter.writeRecords(particleRecords, first * Particle3DProgram.instanceStride);
 		particleCount += count;
 		// The camera's mapping from the world to clip space as a matrix; z at the near plane, so nothing drawn before hides them.
 		var projection = new helix.render3d.Mat4();
@@ -546,7 +546,7 @@ class Batch2D {
 		projection.set(12, -camera.x * sx);
 		projection.set(13, camera.y * sy);
 		projection.set(14, -1);
-		var uniforms = Bytes.alloc(Particle3DLayout.vertexUniformBytes);
+		var uniforms = Bytes.alloc(Particle3DProgram.vertexUniformBytes);
 		// Across the screen, and up it (y grows down in 2D).
 		emitter.writeUniforms(uniforms, projection, [1, 0, 0], [0, -1, 0]);
 		var texture = emitter.texture;

@@ -111,7 +111,7 @@ function new(message:String, ?previous:haxe.Exception, ?native:Any)
 
 *class* in `src/helix/graphics/IGraphics.hx`
 
-The GPU, as thin as HeliX can make it: a platform's graphics adapter implements it and nothing else. Resources (textures of a few kinds, buffers, programs built from a ShaderSource, pipelines made from a PipelineDesc), passes (the frame's screen pass after any passes into render targets and shadow maps) and one draw. An adapter knows no program, layout or pipeline of HeliX's own: shared code describes those (Pipelines, the generated layouts) and hands them over as data, so another adapter (another GPU API, another platform) implements this alone. A call that can't be done throws, before doing anything.
+The GPU, as thin as HeliX can make it: a platform's graphics adapter implements it and nothing else. Resources (textures of a few kinds, buffers, programs built from a ShaderSource, pipelines made from a PipelineDesc), passes (the frame's screen pass after any passes into render targets and shadow maps) and one draw. An adapter knows no program, layout or pipeline of HeliX's own: shared code describes those (Pipelines, the generated program classes) and hands them over as data, so another adapter (another GPU API, another platform) implements this alone. A call that can't be done throws, before doing anything.
 
 ```haxe
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
@@ -255,7 +255,7 @@ A pipeline, everything a draw through it fixes: the program (an IGraphics.create
 
 *class* in `src/helix/graphics/Pipelines.hx`
 
-The framework's programs and pipelines on one GPU, shared by everything drawing on it: each framework program built once from its generated source (the layouts' source()), and each pipeline described here (its program, buffers' layout and state: PipelineDesc) and made the first time it's asked for, then kept. Drawing code asks for its pipeline at each draw and never keeps the handle, so a program built again (an app's shader reloaded, or in development a framework program whose source changed) has its pipelines made again behind it. This is the framework's knowledge of its pipelines; an adapter knows none of it.
+The framework's programs and pipelines on one GPU, shared by everything drawing on it: each framework program built once from its generated source (the program classes' source()), and each pipeline described here (its program, buffers' layout and state: PipelineDesc) and made the first time it's asked for, then kept. Drawing code asks for its pipeline at each draw and never keeps the handle, so a program built again (an app's shader reloaded, or in development a framework program whose source changed) has its pipelines made again behind it. This is the framework's knowledge of its pipelines; an adapter knows none of it.
 
 ```haxe
 static function of(gpu:IGraphics):Pipelines
@@ -282,21 +282,21 @@ function screen(shader:Int, blend:BlendMode):Int
 - `of`: gpu's, made the first time it's asked for.
 - `release`: Frees gpu's pipelines and framework programs, before the adapter shuts down.
 - `forgetShader`: Destroys the pipelines made over shader (an app's, before it is destroyed or replaced); asked for again, they're made again.
-- `sprite2D`: 2D sprites and shapes: Sprite2DLayout's vertices in clip space (its block the clip scale), no depth.
-- `color3D`: Vertex-colored 3D triangles (Color3DLayout, the view-projection its block), depth tested and written.
+- `sprite2D`: 2D sprites and shapes: Sprite2DProgram's vertices in clip space (its block the clip scale), no depth.
+- `color3D`: Vertex-colored 3D triangles (Color3DProgram, the view-projection its block), depth tested and written.
 - `lines3D`: Color3D's vertices as lines, two each.
-- `lit3D`: Lit models (Lit3DLayout): blended or not, double sided or not, front faces clockwise (a mirrored placement's) or not.
-- `skinned3D`: Skinned lit models (Skinned3DLayout: Lit3D's buffers and the skin), as lit3d's variants.
-- `surface`: An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DLayout's buffers) drawing lit models, as lit3d's variants.
-- `surfaceCaster`: A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DLayout's buffers), from the lit models' records: depth only, nothing culled, as the framework's casters.
-- `flat3D`: A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from its mesh's pass vertices (Mesh.passVertices) and the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
-- `sprite3D`: 3D sprites (Sprite3DLayout).
-- `spriteEffect3D`: A sprite effect's Stage3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DLayout), as sprite3D's.
-- `particle3D`: Particles (Particle3DLayout).
-- `depth3D`: Shadow-map casters (Depth3DLayout): depth only, nothing culled (a one-sided floor still casts).
-- `skinnedDepth3D`: Skinned shadow-map casters (Skinneddepth3DLayout).
-- `background3D`: An environment behind a 3D scene (Background3DLayout): one triangle at the far plane, depth tested (less or equal) and not written.
-- `spriteEffect`: A sprite effect's shader (its handle: SpriteEffect.shader's) drawing 2D sprites: Effect2DLayout's vertices in clip space (block 0 the clip scale), no depth.
+- `lit3D`: Lit models (Lit3DProgram): blended or not, double sided or not, front faces clockwise (a mirrored placement's) or not.
+- `skinned3D`: Skinned lit models (Skinned3DProgram: Lit3D's buffers and the skin), as lit3d's variants.
+- `surface`: An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DProgram's buffers) drawing lit models, as lit3d's variants.
+- `surfaceCaster`: A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DProgram's buffers), from the lit models' records: depth only, nothing culled, as the framework's casters.
+- `flat3D`: A model's flat pass (Flat3DProgram, or Skinnedflat3DProgram for a skinned model), from its mesh's pass vertices (Mesh.passVertices) and the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
+- `sprite3D`: 3D sprites (Sprite3DProgram).
+- `spriteEffect3D`: A sprite effect's Stage3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DProgram), as sprite3D's.
+- `particle3D`: Particles (Particle3DProgram).
+- `depth3D`: Shadow-map casters (Depth3DProgram): depth only, nothing culled (a one-sided floor still casts).
+- `skinnedDepth3D`: Skinned shadow-map casters (Skinneddepth3DProgram).
+- `background3D`: An environment behind a 3D scene (Background3DProgram): one triangle at the far plane, depth tested (less or equal) and not written.
+- `spriteEffect`: A sprite effect's shader (its handle: SpriteEffect.shader's) drawing 2D sprites: Effect2DProgram's vertices in clip space (block 0 the clip scale), no depth.
 - `screen`: An app's screen effect (its handle): one triangle over the viewport, no depth.
 
 ## Png
@@ -497,7 +497,7 @@ function destroy():Void
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Stage3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
 - `skinned`: The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot 5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen or sprite shader. Its caster draws skinned casters.
 - `caster`: The program drawing its shadow casters into a shadow map: the depth pass with its vertex hook, its fragment stage run for what it discards. Null for a surface shader with neither a vertex hook nor a discard, whose shadow the framework's caster draws, and for a screen or sprite shader.
-- `sprite3D`: The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage (Sprite3DLayout's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this one's. Null for a screen or surface shader.
+- `sprite3D`: The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage (Sprite3DProgram's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this one's. Null for a screen or surface shader.
 - `reloadCount`: How many times it has been replaced by a reload: a pipeline made before the latest is stale.
 - `blockSizes`: Its uniform blocks' sizes in bytes, by slot: 0 for a slot it lacks.
 - `getParameter`: One of its own parameters by name, or null.
@@ -560,7 +560,7 @@ var textureSlots(get, never):Map<Int, Texture2D>
 
 *typedef* in `src/helix/graphics/ShaderSource.hx`
 
-A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each layout's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (tools/pack_shader.py, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
+A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (tools/pack_shader.py, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
 
 - `uniformBlocks:Array<ShaderBlock>`
 - `textures:Array<ShaderTexture>`

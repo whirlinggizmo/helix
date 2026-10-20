@@ -4,96 +4,14 @@
 
 ## Alignment
 
-*enum* in `src/helix/ui/Box.hx`
+*enum* in `src/helix/ui/Layout2D.hx`
 
-Where boxes go in the room they have, along an axis.
+Where layouts go in the room they have, along an axis.
 
 - `Start`: At its start: the left, or the top.
 - `Center`: In its middle.
 - `End`: At its end: the right, or the bottom.
 - `Stretch`: Across a row or column only: filling it.
-
-## Box
-
-*class* in `src/helix/ui/Box.hx`
-
-A rectangle of a layout: rows, columns and stacks of boxes, each sized fixed, fitted to its content, growing into the room left or as a share of its parent, with padding, gaps and alignment (Clay's model, in Haxe). A box may place a node: arrange() writes its position (by its pivot) and, for a sprite or rectangle, its size, once a frame. Boxes only lay out; what's drawn is the nodes'.
-
-```haxe
-function new(direction:BoxDirection, ?node:Node2D)
-static function row(?node:Node2D):Box
-static function column(?node:Node2D):Box
-static function stack(?node:Node2D):Box
-static function of(node:Node2D):Box
-static function arrange(root:Box, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void
-function add(child:Box):Void
-function remove(child:Box):Bool
-var children(get, never):Array<Box>
-var node(default, null):Null<Node2D>
-var widthSizing(get, never):Sizing
-var heightSizing(get, never):Sizing
-function setSizing(width:Sizing, height:Sizing):Void
-var paddingLeft(default, null):Float
-var paddingTop(default, null):Float
-var paddingRight(default, null):Float
-var paddingBottom(default, null):Float
-function setPadding(left:Float, top:Float, right:Float, bottom:Float):Void
-var gap:Float
-var mainAlign(default, null):Alignment
-var crossAlign(default, null):Alignment
-function setAlign(main:Alignment, cross:Alignment):Void
-var anchorX(get, never):Null<Alignment>
-var anchorY(get, never):Null<Alignment>
-var anchorOffsetX(get, never):Float
-var anchorOffsetY(get, never):Float
-function setAnchor(horizontal:Alignment, vertical:Alignment, ?offsetX:Float = 0., ?offsetY:Float = 0.):Void
-var x(default, null):Float
-var y(default, null):Float
-var width(get, never):Float
-var height(get, never):Float
-```
-
-- `new`: A box laying out its children direction's way, placing node (or none).
-- `row`: A row, left to right.
-- `column`: A column, top to bottom.
-- `stack`: A stack, its children over one another, each by its own alignment.
-- `of`: A box holding node alone, sized to it unless sized otherwise.
-- `arrange`: Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's) and writes the nodes' places: its content measured (texts in their fonts, font for those without one), then each box placed. Once a frame, before drawing.
-- `add`: Adds child as its last.
-- `remove`: Takes child out.
-- `children`: Its children, in order.
-- `node`: The node it places, or null.
-- `widthSizing`: How its width is decided.
-- `heightSizing`: How its height is decided.
-- `setSizing`: How its width and height are decided (Fit both, to start).
-- `paddingLeft`: Its padding inside its left edge.
-- `paddingTop`: Its padding inside its top edge.
-- `paddingRight`: Its padding inside its right edge.
-- `paddingBottom`: Its padding inside its bottom edge.
-- `setPadding`: Its padding inside its edges (none, to start).
-- `gap`: The room between its children in a row or column.
-- `mainAlign`: Where its children go along its row or column.
-- `crossAlign`: Where its children go across its row or column.
-- `setAlign`: Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross, Stretch filling it); Start both, to start.
-- `anchorX`: Where it goes across a stack, or null for its stack's alignment.
-- `anchorY`: Where it goes down a stack, or null for its stack's alignment.
-- `anchorOffsetX`: How far it's moved right from its anchor.
-- `anchorOffsetY`: How far it's moved down from its anchor.
-- `setAnchor`: Where it goes in a stack (horizontally, vertically; Stretch fills that way), moved by offsetX, offsetY: anchored to an edge, a corner or the middle.
-- `x`: Where the last arrange put it, x of its left edge.
-- `y`: Its top edge as last arranged.
-- `width`: Its width as last arranged.
-- `height`: Its height as last arranged.
-
-## BoxDirection
-
-*enum* in `src/helix/ui/Box.hx`
-
-How a box lays its children out.
-
-- `Row`: Left to right.
-- `Column`: Top to bottom.
-- `Stack`: Over one another, each placed by its own alignment in the box (anchored to an edge, a corner or the middle).
 
 ## Button
 
@@ -122,7 +40,7 @@ How a color picker's text field writes and reads its color (ColorPicker.format).
 
 *class* in `src/helix/ui/ColorPicker.hx`
 
-A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its box is given: theme.colorPickerWidth to start (box sized Fixed that wide), or what a column stretching its children (a panel's) gives it, or box.setSizing's; the square takes a new width a frame later. Ask color, and changed once a frame.
+A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide, following the theme until the game sizes its layout's width itself), or what a column stretching its children (a panel's) gives it; the square takes a new width a frame later. Ask color, and changed once a frame.
 
 ```haxe
 static function fromHsv(hue:Float, saturation:Float, brightness:Float, ?alpha:Int = 0xff):Int
@@ -145,7 +63,7 @@ var changed(default, null):Bool
 - `formatHex`: color as lowercase hex, RRGGBBAA, or RRGGBB without alpha.
 - `parseRgba`: The color text names, 0xRRGGBBAA: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits), apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else.
 - `formatRgba`: color's channels in decimal, 0 to 255 each, apart by a space: r g b a, or r g b without alpha.
-- `textField`: Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text").
+- `textField`: Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text"). Its layout is the picker's to size and pad, whatever the theme.
 - `formatButton`: The button beside its text field cycling its format (a widget of its own, named after the picker with "-format"): clicked, or activated with focus by Enter, Space or a pad's South.
 - `format`: How its text field writes and reads the color: Hex (to start) or Rgba. The field shows the color in it at once, its caption under it naming it (HEX, RGBA, or RGB without alpha).
 - `color`: Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black; without alpha, the alpha is 0xff whatever is assigned.
@@ -154,19 +72,123 @@ var changed(default, null):Bool
 - `brightness`: Its brightness (HSV's value), 0 (black) to 1. Clamped to 0 to 1.
 - `changed`: Whether its color changed this frame: dragged, nudged by keys or typed.
 
+## Handle
+
+*class* in `src/helix/ui/Handle.hx`
+
+The round handle a widget drags along a track (a slider's, a color picker's bars): a disc theme.handleSize across in theme.handleColor over a ring of theme.handleShadowColor a little wider, so it shows on any color under it; centered on its position, never picked. One part, so every widget's handle looks alike.
+
+```haxe
+function new(parent:Node2D, theme:Theme)
+function readTheme(theme:Theme):Void
+var color(get, set):Int
+var visible(get, set):Bool
+function setPosition(x:Float, y:Float):Void
+```
+
+- `new`: Makes a handle in theme's look under parent.
+- `readTheme`: Takes its size and its ring's color from theme (its disc's color is its owner's to set: color). Its owner calls it as it reads the theme, every frame, so a changed theme shows at once.
+- `color`: The disc's color, 0xRRGGBBAA: theme.handleColor, or the focus color while it's the part being driven.
+- `visible`: Whether it's drawn.
+- `setPosition`: Centers it on x, y in its parent's units.
+
 ## Label
 
 *class* in `src/helix/ui/Label.hx`
 
-A line of text (wrapped, if given a width): shown, never focused.
+A line of text: shown, never focused. Its size and color are the theme's unless given its own (textSize, color).
 
 ```haxe
 var text(get, set):String
-var node(default, null):Text2D
+var textSize:Null<Float>
+var color:Null<Int>
 ```
 
 - `text`: Its text.
-- `node`: Its text node: its color, size, alignment, wrap width.
+- `textSize`: Its text's height in units, or null (to start) for the theme's textSize: a value is kept whatever the theme becomes.
+- `color`: Its text's color, 0xRRGGBBAA, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes.
+
+## Layout2D
+
+*class* in `src/helix/ui/Layout2D.hx`
+
+A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a share of its parent, with padding, gaps and alignment (Clay's model, in Haxe). A layout may place a node: arrange() writes its position (by its pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its sizing, padding and gap from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing, setPadding, gap): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline style wins over a stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's.
+
+```haxe
+function new(direction:Layout2DDirection, ?node:Node2D)
+static function row(?node:Node2D):Layout2D
+static function column(?node:Node2D):Layout2D
+static function stack(?node:Node2D):Layout2D
+static function of(node:Node2D):Layout2D
+static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void
+function add(child:Layout2D):Void
+function remove(child:Layout2D):Bool
+var children(get, never):Array<Layout2D>
+var node(default, null):Null<Node2D>
+var widthSizing(get, set):Sizing
+var heightSizing(get, set):Sizing
+function setSizing(width:Sizing, height:Sizing):Void
+var paddingLeft(default, null):Float
+var paddingTop(default, null):Float
+var paddingRight(default, null):Float
+var paddingBottom(default, null):Float
+function setPadding(left:Float, top:Float, right:Float, bottom:Float):Void
+var gap(default, set):Float
+var mainAlign(default, null):Alignment
+var crossAlign(default, null):Alignment
+function setAlign(main:Alignment, cross:Alignment):Void
+var anchorX(get, never):Null<Alignment>
+var anchorY(get, never):Null<Alignment>
+var anchorOffsetX(get, never):Float
+var anchorOffsetY(get, never):Float
+function setAnchor(horizontal:Alignment, vertical:Alignment, ?offsetX:Float = 0., ?offsetY:Float = 0.):Void
+var x(default, null):Float
+var y(default, null):Float
+var width(get, never):Float
+var height(get, never):Float
+```
+
+- `new`: A layout placing its children direction's way, placing node (or none).
+- `row`: A row, left to right.
+- `column`: A column, top to bottom.
+- `stack`: A stack, its children over one another, each by its own alignment.
+- `of`: A layout holding node alone, sized to it unless sized otherwise.
+- `arrange`: Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's) and writes the nodes' places: its content measured (texts in their fonts, font for those without one), then each layout placed. Once a frame, before drawing.
+- `add`: Adds child as its last.
+- `remove`: Takes child out.
+- `children`: Its children, in order.
+- `node`: The node it places, or null.
+- `widthSizing`: How its width is decided (Fit, to start, or what the widget it places takes from the theme). Assigning it makes it the game's: the theme no longer changes it.
+- `heightSizing`: How its height is decided, as widthSizing.
+- `setSizing`: How its width and height are decided, both made the game's (widthSizing and heightSizing).
+- `paddingLeft`: Its padding inside its left edge.
+- `paddingTop`: Its padding inside its top edge.
+- `paddingRight`: Its padding inside its right edge.
+- `paddingBottom`: Its padding inside its bottom edge.
+- `setPadding`: Its padding inside its edges (none, to start, or what the widget it places takes from the theme), made the game's: the theme no longer changes it.
+- `gap`: The room between its children in a row or column (0, to start, or what the widget it places takes from the theme). Assigning it makes it the game's: the theme no longer changes it.
+- `mainAlign`: Where its children go along its row or column.
+- `crossAlign`: Where its children go across its row or column.
+- `setAlign`: Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross, Stretch filling it); Start both, to start.
+- `anchorX`: Where it goes across a stack, or null for its stack's alignment.
+- `anchorY`: Where it goes down a stack, or null for its stack's alignment.
+- `anchorOffsetX`: How far it's moved right from its anchor.
+- `anchorOffsetY`: How far it's moved down from its anchor.
+- `setAnchor`: Where it goes in a stack (horizontally, vertically; Stretch fills that way), moved by offsetX, offsetY: anchored to an edge, a corner or the middle.
+- `x`: Where the last arrange put it, x of its left edge.
+- `y`: Its top edge as last arranged.
+- `width`: Its width as last arranged.
+- `height`: Its height as last arranged.
+
+## Layout2DDirection
+
+*enum* in `src/helix/ui/Layout2D.hx`
+
+How a layout lays its children out.
+
+- `Row`: Left to right.
+- `Column`: Top to bottom.
+- `Stack`: Over one another, each placed by its own alignment in the layout (anchored to an edge, a corner or the middle).
 
 ## ListView
 
@@ -194,16 +216,14 @@ A background holding a column of widgets (add): hidden, they're hidden with it. 
 
 ```haxe
 function add(widget:Widget):Void
-var content(default, null):Box
+var content(default, null):Layout2D
 function adopt(widget:Widget):Void
-var frame(default, null):Null<Sprite2D>
 function setFrame(texture:Null<Texture2D>, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff):Bool
 ```
 
-- `add`: Puts widget in it, last in its column: its nodes under the panel's (hidden with it), its box in the column.
-- `content`: The column its widgets go in, for boxes of other kinds (a row of buttons: put the buttons' boxes in a row, and the buttons in the panel with adopt).
-- `adopt`: Puts widget's nodes under the panel's (hidden with it) without placing it: its box goes in a layout of the caller's inside this.content.
-- `frame`: Its nine-slice frame, a sprite (its texture, insets and tint read from it), or null for the theme's rectangle.
+- `add`: Puts widget in it, last in its column: its nodes under the panel's (hidden with it), its layout in the column.
+- `content`: The column its widgets go in, for layouts of other kinds (a row of buttons: put the buttons' layouts in a row, and the buttons in the panel with adopt).
+- `adopt`: Puts widget's nodes under the panel's (hidden with it) without placing it: its layout goes in one of the caller's inside this.content.
 - `setFrame`: Draws it as texture's nine-slice frame, its corners left, top, right and bottom texels in, tinted tint. False, changing nothing, for no texture.
 
 ## ProgressBar
@@ -220,9 +240,9 @@ var value(default, set):Float
 
 ## Sizing
 
-*enum* in `src/helix/ui/Box.hx`
+*enum* in `src/helix/ui/Layout2D.hx`
 
-How a box's width or height is decided.
+How a layout's width or height is decided.
 
 - `Fixed(units:Float)`: This many units.
 - `Fit`: Its content's: its children's (and gaps and padding), or its node's own (a text's measured width, a sprite's or rectangle's size).
@@ -237,10 +257,14 @@ A value from min to max in steps (0: any), beside a line of text: dragged along 
 
 ```haxe
 var value(default, set):Float
+var valueShown:Bool
+function formatValue():String
 var changed(default, null):Bool
 ```
 
 - `value`: Its value.
+- `valueShown`: Whether its value is shown as a number after its track, to as many decimals as its step has (2 without steps, 3 at most). (False to start.)
+- `formatValue`: Its value as valueShown writes it.
 - `changed`: Whether its value changed this frame.
 
 ## TextField
@@ -269,7 +293,7 @@ var invalid:Bool
 
 *class* in `src/helix/ui/Theme.hx`
 
-How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change one before making widgets; widgets read it as they're made and as they draw their states.
+How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change any value at any time (a settings screen, a reloaded stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's sizing, padding and gap are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's nodes are never changed directly: its properties are the way.
 
 ```haxe
 function new()
@@ -285,10 +309,16 @@ var pressedColor(get, set):Int
 var accentColor(get, set):Int
 var focusColor(get, set):Int
 var focusWidth(default, set):Float
+var listCornerRadius(default, set):Float
+var listPadding(default, set):Float
+var listRowHeight(default, set):Float
+var listRowCornerRadius(default, set):Float
 var cornerRadius(get, set):Float
 var padding(default, set):Float
 var gap(default, set):Float
 var trackThickness(default, set):Float
+var handleColor:Int
+var handleShadowColor:Int
 var handleSize(default, set):Float
 var colorPickerWidth(default, set):Float
 var widgetHeight(get, set):Float
@@ -307,13 +337,19 @@ var widgetHeight(get, set):Float
 - `accentColor`: The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row. (0x4c8ef0ff to start.)
 - `focusColor`: The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffd25aff to start.)
 - `focusWidth`: The focus ring's width in units. (2 to start.) 0 or more (under 0, or NaN, is 0).
-- `cornerRadius`: The radius of a panel's, a button's and a list's corners in units (a track's, a bar's and a box's at most half their height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0).
+- `listCornerRadius`: The radius of a list's corners in units, its frame's (cornerRadius for the others); 0 for square. (0 to start.) 0 or more (under 0, or NaN, is 0).
+- `listPadding`: Room between a list's frame and its rows in units, so a chosen row's band keeps clear of the frame's round corners. (4 to start.) 0 or more (under 0, or NaN, is 0).
+- `listRowHeight`: A list's rows' height in units. (40 to start.) At least 1 (under 1, or NaN, is 1).
+- `listRowCornerRadius`: The radius of a list's rows' corners in units (their hover and selection), apart from the frames' cornerRadius; 0 for square. (0 to start.) 0 or more (under 0, or NaN, is 0).
+- `cornerRadius`: The radius of a panel's and a button's corners in units (a list's is listCornerRadius) (a track's, a bar's and a box's at most half their height); 0 for square. The focus ring follows them. (8 to start.) 0 or more (under 0, or NaN, is 0).
 - `padding`: Room inside a button or panel, around its content, in units. (10 to start.) 0 or more (under 0, or NaN, is 0).
 - `gap`: Room between widgets in a panel, in units. (8 to start.) 0 or more (under 0, or NaN, is 0).
 - `trackThickness`: A slider's track and a color picker's bars, their thickness in units. (6 to start.) At least 1 (under 1, or NaN, is 1).
-- `handleSize`: A color picker's handles on its bars, their diameter in units. (14 to start.) At least 1 (under 1, or NaN, is 1).
-- `colorPickerWidth`: A color picker's width (its square's side) in units, unless its box is given another. (200 to start.) At least 1 (under 1, or NaN, is 1).
-- `widgetHeight`: A button's (and a list row's, a slider's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
+- `handleColor`: A handle's color (a slider's, a color picker's bars'; Handle), 0xRRGGBBAA. (White to start.)
+- `handleShadowColor`: The ring around a handle, so it shows on any color under it, 0xRRGGBBAA. (Black at half alpha to start.)
+- `handleSize`: A handle's diameter in units (a slider's, a color picker's bars'; Handle). (14 to start.) At least 1 (under 1, or NaN, is 1).
+- `colorPickerWidth`: A color picker's width (its square's side) in units, unless its layout is given another. (200 to start.) At least 1 (under 1, or NaN, is 1).
+- `widgetHeight`: A button's (and a slider's, a field's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
 
 ## Tile
 
@@ -353,11 +389,11 @@ var changed(default, null):Bool
 
 *class* in `src/helix/ui/Ui.hx`
 
-A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here, placed by their boxes (Box.arrange), asked what happened. update() once a frame, after the pointer's: - Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the boxes' last arrangement: a grid of tiles moves in two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before, wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed). - The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or a pad, something always has focus (the first widget, if nothing did). - A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its first button. - While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once. The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the stage, through camera.
+A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here, placed by their layouts (Layout2D.arrange), asked what happened. update() once a frame, after the pointer's: - Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the layouts' last arrangement: a grid of tiles moves in two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before, wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed). - The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or a pad, something always has focus (the first widget, if nothing did). - A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its first button. - While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once. The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the stage, through camera.
 
 ```haxe
 function new(stage:Stage2D, camera:Camera2D, pointer:Pointer, input:IInput, ?theme:Theme)
-var theme(default, null):Theme
+var theme(default, set):Theme
 var root(default, null):Node2D
 var font(get, never):Null<Font2D>
 var camera(default, null):Camera2D
@@ -384,13 +420,13 @@ function update():Void
 ```
 
 - `new`: A UI on stage (drawn through camera, which pointer looks at), read from input, in theme's look (a new Theme when not given).
-- `theme`: Its look.
+- `theme`: Its look, read by every widget (and the focus ring) at each update: a value changed, or another theme assigned (a settings screen switching themes), shows from the next update with no widget made again; a size that moves the layout once the layout is next arranged. Null is a new Theme.
 - `root`: The node its widgets are under.
 - `font`: The font text is drawn in without the theme's: the stage's last (the batch's built-in), once drawn.
 - `camera`: The camera it's drawn through.
 - `input`: The input it reads.
 - `label`: A line of text.
-- `panel`: A background holding a column of widgets (add their boxes to its content).
+- `panel`: A background holding a column of widgets (add their layouts to its content).
 - `button`: A button reading text: clicked by the pointer, or activated with focus.
 - `toggle`: A box that's on or off, beside text.
 - `slider`: A value from min to max in steps of step (0: any), dragged along a track or stepped by Left and Right, beside text.
@@ -413,20 +449,18 @@ function update():Void
 
 *class* in `src/helix/ui/Widget.hx`
 
-A piece of UI: nodes it owns (under its root, on the Ui's stage) and the layout box placing them. A widget is asked what happened (clicked, value ...), never calls anything (DECISIONS 61); the Ui updates it once a frame.
+A piece of UI: nodes it owns (on the Ui's stage) and the layout (Layout2D) placing them. A widget is asked what happened (clicked, value ...), never calls anything (DECISIONS 61); the Ui updates it once a frame. Its look is its Ui's theme's (Theme), read every frame, except what the game set: its layout's sizing, padding and gap once the game sets them (Layout2D), and the look properties a widget has for one of its own (Label.textSize and color: null for the theme's). Its nodes are its own: a game changes them through its properties, never directly.
 
 ```haxe
 var name(default, null):String
-var box(default, null):Box
-var root(default, null):Node2D
+var layout(default, null):Layout2D
 var enabled:Bool
 var visible(get, set):Bool
 var focusable(get, never):Bool
 ```
 
 - `name`: Its name: what the focus is published as (Ui.focusedName), for checks.
-- `box`: The box placing it: put it in a layout.
-- `root`: Its root node, everything it draws under it.
+- `layout`: The layout placing it: put it in another (a row, a column, a panel's content).
 - `enabled`: Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing.
 - `visible`: Whether it's shown: it, and any panel holding it.
 - `focusable`: Whether focus can rest on it.

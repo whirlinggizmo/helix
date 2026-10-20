@@ -25,7 +25,7 @@ class Sprites3D {
 	var capacity = 256;
 	var instanceBuffer:Int;
 	var records:Bytes;
-	var uniforms = Bytes.alloc(Sprite3DLayout.vertexUniformBytes);
+	var uniforms = Bytes.alloc(Sprite3DProgram.vertexUniformBytes);
 	var items:Array<SpriteItem> = [];
 	var drawn:Array<SpriteItem> = [];
 	var count = 0;
@@ -58,7 +58,7 @@ class Sprites3D {
 	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
 		pipelines = helix.graphics.Pipelines.of(gpu);
-		var quad = Bytes.alloc(4 * Sprite3DLayout.stride), at = 0;
+		var quad = Bytes.alloc(4 * Sprite3DProgram.stride), at = 0;
 		for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
 			quad.setFloat(at, c);
 			at += 4;
@@ -68,10 +68,10 @@ class Sprites3D {
 		for (i in 0...6)
 			order.setInt32(i * 4, [0, 1, 2, 0, 2, 3][i]);
 		indices = gpu.createStaticBuffer(order, 24, true);
-		instanceBuffer = gpu.createBuffer(capacity * Sprite3DLayout.instanceStride);
-		records = Bytes.alloc(capacity * Sprite3DLayout.instanceStride);
-		particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
-		particleRecords = Bytes.alloc(particleCapacity * Particle3DLayout.instanceStride);
+		instanceBuffer = gpu.createBuffer(capacity * Sprite3DProgram.instanceStride);
+		records = Bytes.alloc(capacity * Sprite3DProgram.instanceStride);
+		particleBuffer = gpu.createBuffer(particleCapacity * Particle3DProgram.instanceStride);
+		particleRecords = Bytes.alloc(particleCapacity * Particle3DProgram.instanceStride);
 	}
 
 	/** Sprites drawn by the last draw (in view). */
@@ -376,13 +376,13 @@ class Sprites3D {
 			while (capacity < count)
 				capacity *= 2;
 			gpu.destroyBuffer(instanceBuffer);
-			instanceBuffer = gpu.createBuffer(capacity * Sprite3DLayout.instanceStride);
-			records = Bytes.alloc(capacity * Sprite3DLayout.instanceStride);
+			instanceBuffer = gpu.createBuffer(capacity * Sprite3DProgram.instanceStride);
+			records = Bytes.alloc(capacity * Sprite3DProgram.instanceStride);
 		}
 		for (i in 0...count)
 			write(i, drawn[i]);
 		if (count > 0)
-			gpu.updateBuffer(instanceBuffer, records, count * Sprite3DLayout.instanceStride);
+			gpu.updateBuffer(instanceBuffer, records, count * Sprite3DProgram.instanceStride);
 		prepareEmitters(viewProjection);
 	}
 
@@ -401,8 +401,8 @@ class Sprites3D {
 			while (particleCapacity < total)
 				particleCapacity *= 2;
 			gpu.destroyBuffer(particleBuffer);
-			particleBuffer = gpu.createBuffer(particleCapacity * Particle3DLayout.instanceStride);
-			particleRecords = Bytes.alloc(particleCapacity * Particle3DLayout.instanceStride);
+			particleBuffer = gpu.createBuffer(particleCapacity * Particle3DProgram.instanceStride);
+			particleRecords = Bytes.alloc(particleCapacity * Particle3DProgram.instanceStride);
 		}
 		var at = 0;
 		emitterBlendStart = emitterAddStart = emitterCount;
@@ -413,15 +413,15 @@ class Sprites3D {
 			if (it.phase == 2 && emitterAddStart == emitterCount)
 				emitterAddStart = i;
 			it.first = at;
-			it.count = it.emitter.writeRecords(particleRecords, at * Particle3DLayout.instanceStride);
+			it.count = it.emitter.writeRecords(particleRecords, at * Particle3DProgram.instanceStride);
 			at += it.count;
 			if (it.uniforms == null)
-				it.uniforms = Bytes.alloc(Particle3DLayout.vertexUniformBytes);
+				it.uniforms = Bytes.alloc(Particle3DProgram.vertexUniformBytes);
 			it.emitter.writeUniforms(it.uniforms, viewProjection, cameraRight, cameraUp);
 		}
 		nextEmitter = emitterBlendStart;
 		if (at > 0)
-			gpu.updateBuffer(particleBuffer, particleRecords, at * Particle3DLayout.instanceStride);
+			gpu.updateBuffer(particleBuffer, particleRecords, at * Particle3DProgram.instanceStride);
 	}
 
 	function drawEmitter(it:EmitterItem):Void {
@@ -434,7 +434,7 @@ class Sprites3D {
 	function write(index:Int, item:SpriteItem):Void {
 		var node = item.sprite,
 			w = item.node.worldMatrix,
-			at = index * Sprite3DLayout.instanceStride,
+			at = index * Sprite3DProgram.instanceStride,
 			texture = item.texture;
 		inline function put(offset:Int, a:Float, b:Float, c:Float, d:Float):Void {
 			records.setFloat(at + offset, a);
@@ -448,10 +448,10 @@ class Sprites3D {
 			writeGlyph(at, item, w, facing, sx, sy, sz);
 			return;
 		}
-		put(Sprite3DLayout.positionOffset, w.get(12), w.get(13), w.get(14), facing == Camera ? 0 : facing == Upright ? 1 : 2);
+		put(Sprite3DProgram.positionOffset, w.get(12), w.get(13), w.get(14), facing == Camera ? 0 : facing == Upright ? 1 : 2);
 		// Ground lies along the node's z, its texture's top toward -z; anything else along its y.
 		var height = facing == Ground ? sz : sy;
-		put(Sprite3DLayout.sizeOffset, node.spriteWidth * sx, node.spriteHeight * height, node.pivotX, node.pivotY);
+		put(Sprite3DProgram.sizeOffset, node.spriteWidth * sx, node.spriteHeight * height, node.pivotX, node.pivotY);
 		var rx = node.regionX,
 			ry = node.regionY,
 			rw = node.regionWidth,
@@ -459,21 +459,21 @@ class Sprites3D {
 			tw = texture.width,
 			th = texture.height;
 		if (rw > 0 && rh > 0)
-			put(Sprite3DLayout.regionOffset, rx / tw, ry / th, (rx + rw) / tw, (ry + rh) / th);
+			put(Sprite3DProgram.regionOffset, rx / tw, ry / th, (rx + rw) / tw, (ry + rh) / th);
 		else
-			put(Sprite3DLayout.regionOffset, 0, 0, 1, 1);
-		put(Sprite3DLayout.rightOffset, sx > 0 ? w.get(0) / sx : 1, sx > 0 ? w.get(1) / sx : 0, sx > 0 ? w.get(2) / sx : 0, 0);
+			put(Sprite3DProgram.regionOffset, 0, 0, 1, 1);
+		put(Sprite3DProgram.rightOffset, sx > 0 ? w.get(0) / sx : 1, sx > 0 ? w.get(1) / sx : 0, sx > 0 ? w.get(2) / sx : 0, 0);
 		var alpha = switch node.alphaMode {
 			case Opaque: -1.;
 			case Mask: Math.max(node.alphaCutoff, 1e-4);
 			case _: 0.;
 		};
 		if (facing == Ground)
-			put(Sprite3DLayout.upOffset, sz > 0 ? -w.get(8) / sz : 0, sz > 0 ? -w.get(9) / sz : 0, sz > 0 ? -w.get(10) / sz : -1, alpha);
+			put(Sprite3DProgram.upOffset, sz > 0 ? -w.get(8) / sz : 0, sz > 0 ? -w.get(9) / sz : 0, sz > 0 ? -w.get(10) / sz : -1, alpha);
 		else
-			put(Sprite3DLayout.upOffset, sy > 0 ? w.get(4) / sy : 0, sy > 0 ? w.get(5) / sy : 1, sy > 0 ? w.get(6) / sy : 0, alpha);
+			put(Sprite3DProgram.upOffset, sy > 0 ? w.get(4) / sy : 0, sy > 0 ? w.get(5) / sy : 1, sy > 0 ? w.get(6) / sy : 0, alpha);
 		var tint = item.tint;
-		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255, (tint & 255) / 255);
+		put(Sprite3DProgram.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255, (tint & 255) / 255);
 	}
 
 	// A glyph: a sprite with its own axes (the text's plane), its top-left at its place in the text, tinted as the text (a distance field
@@ -502,17 +502,17 @@ class Sprites3D {
 			records.setFloat(at + offset + 8, c);
 			records.setFloat(at + offset + 12, d);
 		}
-		put(Sprite3DLayout.positionOffset, w.get(12)
+		put(Sprite3DProgram.positionOffset, w.get(12)
 			+ right[0] * ox + up[0] * oy, w.get(13)
 			+ right[1] * ox + up[1] * oy,
 			w.get(14)
 			+ right[2] * ox + up[2] * oy, 2);
-		put(Sprite3DLayout.sizeOffset, item.gw * sx, item.gh * height, 0, 0);
-		put(Sprite3DLayout.regionOffset, item.u0, item.v0, item.u1, item.v1);
-		put(Sprite3DLayout.rightOffset, right[0], right[1], right[2], 0);
-		put(Sprite3DLayout.upOffset, up[0], up[1], up[2], 0);
+		put(Sprite3DProgram.sizeOffset, item.gw * sx, item.gh * height, 0, 0);
+		put(Sprite3DProgram.regionOffset, item.u0, item.v0, item.u1, item.v1);
+		put(Sprite3DProgram.rightOffset, right[0], right[1], right[2], 0);
+		put(Sprite3DProgram.upOffset, up[0], up[1], up[2], 0);
 		var tint = item.tint;
-		put(Sprite3DLayout.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255,
+		put(Sprite3DProgram.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255,
 			(tint & 255) / 255 + (item.distanceField ? 2 : 0));
 	}
 

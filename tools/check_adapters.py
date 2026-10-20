@@ -2,8 +2,8 @@
 """Checks the adapter rule (docs/ARCHITECTURE.md) where it can be checked mechanically:
 
   1. An adapter (src/helix/adapters/) names no engine code: no rendering, no engine service (the shared Fetch, Storage, ImageDecoding,
-     AudioDecoding, InputRouter and job pool among them; their result types are the contracts' and allowed), no generated layout or
-     framework program, no shared decoder or policy. It implements a platform contract and nothing else.
+     AudioDecoding, InputRouter and job pool among them; their result types are the contracts' and allowed), no generated program
+     class, no shared decoder or policy. It implements a platform contract and nothing else.
   2. Engine code (src/helix/ outside adapters/ and profiles/) uses no platform API (js.html, js.Browser, js.Syntax, js.lib, sys., cpp.)
      and no target conditional (#if js, cpp, sys, hl).
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
@@ -33,7 +33,7 @@ DUPLICATE_LINES = 6
 ENGINE = re.compile(r'\bhelix\.(render2d|render3d|particles|app\.(BaseApp|Ticker)|graphics\.(Pipelines|Shader\b|Shaders|ShaderParameters|ScreenEffect|'
                     r'PostProcess|Mipmaps|ImageDecoding(?!\.))|audio\.(AudioResources|AudioPlayback|AudioClip|AudioStream|Wav|AudioDecoding(?!\.))|'
                     r'assets\.(AssetService|Assets|FetchService(?!\.)|Fetch|StorageService(?!\.)|Storage)|input\.(InputRouter|InputState|Input)|core\.Jobs|'
-                    r'host\.(Runner|Host|Window|Screen)|graphics\.(Graphics|Screenshots|ScreenshotService)|audio\.Audio|debug\.TestHarness|time\.Time)\b|\b[A-Z][A-Za-z0-9]*[0-9]DLayout\b|\bGeneratedShader\b')
+                    r'host\.(Runner|Host|Window|Screen)|graphics\.(Graphics|Screenshots|ScreenshotService)|audio\.Audio|debug\.TestHarness|time\.Time)\b|\b[A-Z][A-Za-z0-9]*[0-9]DProgram\b|\bGeneratedShader\b')
 PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A-Za-z]|#if\s+!?(js|cpp|sys|hl)\b')
 GENERATED_HEADER = re.compile(r'#include\s+"([^"]*\.glsl\.h|shaders\.h)"')
 

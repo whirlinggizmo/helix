@@ -26,10 +26,10 @@ class Batch3D {
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
 		capacity = maxVertices;
-		triangles = Bytes.alloc(capacity * Color3DLayout.stride);
-		lines = Bytes.alloc(capacity * Color3DLayout.stride);
-		triangleBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
-		lineBuffer = gpu.createBuffer(capacity * Color3DLayout.stride);
+		triangles = Bytes.alloc(capacity * Color3DProgram.stride);
+		lines = Bytes.alloc(capacity * Color3DProgram.stride);
+		triangleBuffer = gpu.createBuffer(capacity * Color3DProgram.stride);
+		lineBuffer = gpu.createBuffer(capacity * Color3DProgram.stride);
 		pipelines = helix.graphics.Pipelines.of(gpu);
 		setLight(.3, .9, .3, .35);
 	}
@@ -83,8 +83,8 @@ class Batch3D {
 	public function end():Void {
 		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		camera.viewProjection.writeTo(uniforms);
-		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DLayout.stride);
-		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DLayout.stride);
+		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DProgram.stride);
+		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DProgram.stride);
 		if (triangleVertices > 0) {
 			gpu.draw(pipelines.color3D(), [triangleBuffer], 0, 0, triangleVertices, 0, 1, [], [], [uniforms]);
 			draws++;
@@ -96,8 +96,8 @@ class Batch3D {
 	}
 
 	static inline function put(data:Bytes, index:Int, x:Float, y:Float, z:Float, color:Int, shade:Float):Void {
-		var p = index * Color3DLayout.stride + Color3DLayout.positionOffset,
-			c = index * Color3DLayout.stride + Color3DLayout.colorOffset;
+		var p = index * Color3DProgram.stride + Color3DProgram.positionOffset,
+			c = index * Color3DProgram.stride + Color3DProgram.colorOffset;
 		data.setFloat(p, x);
 		data.setFloat(p + 4, y);
 		data.setFloat(p + 8, z);

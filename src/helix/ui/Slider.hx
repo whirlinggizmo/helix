@@ -1,5 +1,6 @@
 package helix.ui;
 
+import helix.render2d.Font2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -10,9 +11,17 @@ class Slider extends Widget {
 	var face:Shape2D;
 	var track:Shape2D;
 	var fill:Shape2D;
-	var knob:Shape2D;
+	var knob:Handle;
 	var label:Text2D;
-	var trackBox:Box;
+	var readout:Text2D;
+	var readoutLayout:Layout2D;
+	var readoutWidth = -1.;
+	// What the readout's width was measured for: its font and size, whether it's shown (measured again only when one changes).
+	var readoutFont:Null<Font2D>;
+	var readoutSize = -1.;
+	var readoutShown = false;
+	var trackLayout:Layout2D;
+	var row:Layout2D;
 	var min:Float;
 	var max:Float;
 	var step:Float;
@@ -28,31 +37,31 @@ class Slider extends Widget {
 		face = Shape2D.rectangle(1, 1, 0);
 		face.setPivot(0, 0);
 		label = new Text2D(text, theme.textSize, theme.textColor, Left, theme.font);
-		track = Shape2D.rectangle(1, theme.trackThickness, theme.faceColor);
+		track = Shape2D.rectangle(1, 1, theme.faceColor);
 		track.setPivot(0, 0);
-		track.cornerRadius = theme.cornerRadius;
 		track.pickable = false;
-		fill = Shape2D.rectangle(1, theme.trackThickness, theme.accentColor);
+		fill = Shape2D.rectangle(1, 1, theme.accentColor);
 		fill.setPivot(0, 0);
-		fill.cornerRadius = theme.cornerRadius;
 		fill.pickable = false;
-		knob = Shape2D.rectangle(10, theme.textSize + 4, theme.accentColor);
-		knob.setPivot(.5, .5);
-		knob.cornerRadius = theme.cornerRadius;
-		knob.pickable = false;
-		for (n in [face, track, fill, knob, label])
+		readout = new Text2D("", theme.textSize, theme.textColor, Right, theme.font);
+		readout.visible = false;
+		for (n in [face, track, fill, label, readout])
 			root.addChild(n);
-		trackBox = Box.of(track);
-		trackBox.setSizing(Grow(1), Fixed(theme.trackThickness));
-		var row = Box.row();
-		row.gap = theme.gap * 2;
+		knob = new Handle(root, theme);
+		trackLayout = Layout2D.of(track);
+		trackLayout.themeSizing(Grow(1), Fit);
+		row = Layout2D.row();
 		row.setAlign(Start, Center);
 		row.setAnchor(Stretch, Center);
-		row.add(Box.of(label));
-		row.add(trackBox);
-		box = Box.stack(face);
-		box.setSizing(Grow(1), Fixed(theme.widgetHeight));
-		box.add(row);
+		row.add(Layout2D.of(label));
+		row.add(trackLayout);
+		readoutLayout = Layout2D.of(readout);
+		readoutLayout.themeSizing(Fixed(0), Fit);
+		row.add(readoutLayout);
+		layout = Layout2D.stack(face);
+		layout.themeSizing(Grow(1), Fit);
+		layout.add(row);
+		readTheme(theme);
 	}
 
 	/** Its value. */
@@ -61,6 +70,25 @@ class Slider extends Widget {
 	function set_value(v:Float):Float {
 		value = snap(v);
 		return v;
+	}
+
+	/** Whether its value is shown as a number after its track, to as many decimals as its step has (2 without steps, 3 at most). (False to
+		start.) */
+	public var valueShown:Bool = false;
+
+	/** Its value as valueShown writes it. */
+	public function formatValue():String
+		return format(value);
+
+	function format(value:Float):String {
+		var decimals = step > 0 ? Std.int(Math.max(0, Math.min(3, Math.ceil(-Math.log(step) / Math.log(10) - 1e-9)))) : 2;
+		var scaled = Math.round(Math.abs(value) * Math.pow(10, decimals)),
+			digits = Std.string(scaled);
+		if (decimals > 0) {
+			digits = StringTools.lpad(digits, "0", decimals + 1);
+			digits = digits.substr(0, digits.length - decimals) + "." + digits.substr(digits.length - decimals);
+		}
+		return (value < 0 && scaled != 0 ? "-" : "") + digits;
 	}
 
 	/** Whether its value changed this frame. */
@@ -80,6 +108,18 @@ class Slider extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
+	override function readTheme(theme:Theme):Void {
+		label.textSize = readout.textSize = theme.textSize;
+		label.font = readout.font = theme.font;
+		track.color = theme.faceColor;
+		fill.color = theme.accentColor;
+		track.cornerRadius = fill.cornerRadius = theme.trackThickness / 2;
+		themeFixed(trackLayout, Math.NaN, theme.trackThickness);
+		row.themeGap(theme.gap * 2);
+		knob.readTheme(theme);
+		themeFixed(layout, Math.NaN, theme.widgetHeight);
+	}
+
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
 		var theme = ui.theme, was = value;
 		if (enabled && held) {
@@ -87,7 +127,7 @@ class Slider extends Widget {
 			var camera = ui.camera, input = ui.input;
 			var wx = camera.screenToWorldX(input.pointerX),
 				wy = camera.screenToWorldY(input.pointerY);
-			var along = trackBox.width > 0 ? track.toLocalX(wx, wy) / trackBox.width : 0;
+			var along = trackLayout.width > 0 ? track.toLocalX(wx, wy) / trackLayout.width : 0;
 			value = snap(min + Math.max(0, Math.min(1, along)) * (max - min));
 		}
 		if (enabled && stepX != 0)
@@ -95,10 +135,29 @@ class Slider extends Widget {
 		changed = value != was;
 		// The fill and knob where the value is along the track, as the layout last placed it.
 		var fraction = max > min ? (value - min) / (max - min) : 0;
-		fill.setSize(Math.max(0, trackBox.width * fraction), trackBox.height);
-		fill.setPosition(trackBox.x, trackBox.y);
-		knob.setPosition(trackBox.x + trackBox.width * fraction, trackBox.y + 3);
-		knob.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.accentColor;
+		fill.setSize(Math.max(0, trackLayout.width * fraction), trackLayout.height);
+		fill.setPosition(trackLayout.x, trackLayout.y);
+		knob.setPosition(trackLayout.x + trackLayout.width * fraction, trackLayout.y + trackLayout.height / 2);
+		knob.color = !enabled ? theme.disabledTextColor : held ? theme.focusColor : theme.handleColor;
 		label.color = enabled ? theme.textColor : theme.disabledTextColor;
+		// The number after the track, as wide as the widest of min's and max's, so the track doesn't move as it changes: measured when it's
+		// shown, its font or its size changed.
+		readout.visible = valueShown;
+		var font = theme.font != null ? theme.font : ui.font;
+		if (valueShown != readoutShown || font != readoutFont || theme.textSize != readoutSize) {
+			readoutShown = valueShown;
+			readoutFont = font;
+			readoutSize = theme.textSize;
+			var width = !valueShown
+				|| font == null ? 0. : Math.max(font.measure(format(min), theme.textSize), font.measure(format(max), theme.textSize));
+			if (width != readoutWidth) {
+				readoutWidth = width;
+				readoutLayout.themeSizing(Fixed(width), null);
+			}
+		}
+		if (valueShown) {
+			readout.text = formatValue();
+			readout.color = label.color;
+		}
 	}
 }

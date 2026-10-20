@@ -119,7 +119,7 @@ class App extends BaseApp {
 	var pointer:Null<Pointer>;
 	var ui:Null<Ui>;
 	var list:Null<ListView>;
-	var layout:Null<helix.ui.Box>;
+	var layout:Null<helix.ui.Layout2D>;
 	var status = "loading";
 
 	// The library's shaders by kind, in the menu's order: each one's name, kind, how it's turned on and off, its sliders and their panel.
@@ -172,6 +172,7 @@ class App extends BaseApp {
 	var dissolveAmount = .45;
 	var dissolveEdge = .06;
 	var dissolveScale = 1.;
+	var dissolveIntensity = 4.;
 	var dissolveEdgeColor = 0xff7a1eff;
 	var waterAmplitude = .04;
 	var waterWavelength = .6;
@@ -512,9 +513,14 @@ class App extends BaseApp {
 					dissolveScale = v;
 					for (d in dissolves)
 						d.scale = v;
+				}),
+				slider("edge intensity", 0, 8, dissolveIntensity, .25, v -> {
+					dissolveIntensity = v;
+					for (d in dissolves)
+						d.edgeIntensity = v;
 				})
 			], [
-				color("edge", dissolveEdgeColor, false, c -> {
+				color("edge", dissolveEdgeColor, true, c -> {
 					dissolveEdgeColor = c;
 					for (d in dissolves)
 						d.edgeColor = c;
@@ -634,18 +640,20 @@ class App extends BaseApp {
 		list = shaders;
 		var choice = ui.panel("menu");
 		choice.add(shaders);
-		choice.box.setAnchor(Start, Start, 16, 84);
-		choice.box.setSizing(Fixed(300), Fit);
+		choice.layout.setAnchor(Start, Start, 16, 84);
+		choice.layout.setSizing(Fixed(300), Fit);
 		for (e in entries) {
 			var panel = ui.panel(e.name);
 			var heading = ui.label(e.kind + " " + e.name);
 			panel.add(heading);
-			for (s in e.sliders)
+			for (s in e.sliders) {
 				panel.add(s.widget = ui.slider(s.label, s.min, s.max, s.value, s.step, e.name + "-" + s.label));
+				s.widget.valueShown = true;
+			}
 			if (e.name == "Chain")
 				panel.add(ui.label("Bloom, then Vignette"));
-			panel.box.setAnchor(Start, End, 16, -16);
-			panel.box.setSizing(Fixed(300), Fit);
+			panel.layout.setAnchor(Start, End, 16, -16);
+			panel.layout.setSizing(Fixed(300), Fit);
 			panel.visible = false;
 			e.panel = panel;
 			// A panel a color: which of the shader's colors (when it has several) and its picker, one shown at a time.
@@ -659,20 +667,20 @@ class App extends BaseApp {
 					colorPanel.add(c.which = which);
 				}
 				colorPanel.add(c.picker = ui.colorPicker(c.value, c.alpha, e.name + "-" + c.label));
-				colorPanel.box.setAnchor(End, Start, -16, 84);
-				colorPanel.box.setSizing(Fit, Fit);
+				colorPanel.layout.setAnchor(End, Start, -16, 84);
+				colorPanel.layout.setSizing(Fit, Fit);
 				colorPanel.visible = false;
 				c.panel = colorPanel;
 			}
 		}
 		// The design: the list at the top left, the chosen shader's sliders at the bottom left, its colors at the top right.
-		var root = helix.ui.Box.stack();
+		var root = helix.ui.Layout2D.stack();
 		root.setSizing(Grow(1), Grow(1));
-		root.add(choice.box);
+		root.add(choice.layout);
 		for (e in entries) {
-			root.add(e.panel.box);
+			root.add(e.panel.layout);
 			for (c in e.colors)
-				root.add(c.panel.box);
+				root.add(c.panel.layout);
 		}
 		layout = root;
 	}
@@ -740,6 +748,7 @@ class App extends BaseApp {
 		d.amount = dissolveAmount;
 		d.edgeWidth = dissolveEdge;
 		d.scale = dissolveScale;
+		d.edgeIntensity = dissolveIntensity;
 		d.edgeColor = dissolveEdgeColor;
 		return d;
 	}
@@ -834,7 +843,7 @@ class App extends BaseApp {
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
 		if (ui != null && input != null) {
-			helix.ui.Box.arrange(layout, vx, vy, vw, vh, batch.font);
+			helix.ui.Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
 			pointer.update();
 			ui.update();
 			if (list.changed)
