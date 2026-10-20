@@ -6,7 +6,8 @@ and page in examples/shared. Each target's examples share one assets folder besi
 the files in examples/assets, and each example's own, which may not claim a path the shared files or another example has. A larger example
 adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py there makes what's missing first); the web target's folder carries manifests (tools/gen_manifest.py), which the
 page's asset cache follows. An example's shaders/*.glsl are packed
-(tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page.
+(tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading in the page. The dev loop's page has
+its own folder, build/dev/<name>, so a build or autopilot of the same example never writes over the page a dev server serves.
 
 autopilot builds both targets and replays each of the example's autopilot scripts on both, with sound off: in a headless browser, and natively
 in a window. On Linux the window is on a private display (tools/private_display.py); elsewhere it opens on the desktop, so run it there in a
@@ -65,20 +66,26 @@ def source(name):
     """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
     return f'examples/{name}/src' if (ROOT/f'examples/{name}/src/App.hx').is_file() else f'examples/{name}'
 
-def hxml(name,target):
-    """The example's build arguments, written where the dev server and haxe read them."""
+def hxml(name,target,dev=False):
+    """The example's build arguments, written where the dev server and haxe read them; with dev, the dev loop's own (its page in
+    build/dev/<name>), so a build of the same example never writes over the page a dev server is serving."""
     launch={'web':'browser-webgl2','native':'native-sokol-gl','native-sdl3':'native-sdl3-gl','native-sdl3-gpu':'native-sdl3-gpu'}[target]
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{launch}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}','-dce full','-D analyzer-optimize']
-    lines+=[f'-js build/web/{name}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
+    lines+=[f'-js {page(name,dev).relative_to(ROOT).as_posix()}/app.js'] if target=='web' else [f'-cpp build/{target}/{name}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     # SDL_GPU's programs carry its dialects, which other builds leave out.
     if target=='native-sdl3-gpu':lines+=['-D helix_sdl3_gpu',f'-cp {GENERATED_SDL_GPU.relative_to(ROOT).as_posix()}']
-    path=ROOT/f'build/examples/{name}-{target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
+    path=ROOT/f'build/examples/{name}-{"dev" if dev else target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
-def prepare(name):
-    """The generated shader and font, and the served folder: the page, and the example's files in the web target's shared assets."""
+def page(name,dev=False):
+    """The folder the example's page is built into and served from: build/web/<name>, or the dev loop's build/dev/<name>."""
+    return ROOT/f'build/{"dev" if dev else "web"}/{name}'
+
+def prepare(name,dev=False):
+    """The generated shader and font, and the served folder (page(name,dev)): the page, and the example's files in the web target's shared
+    assets."""
     shader();bake_fonts.generate()
-    web=ROOT/f'build/web/{name}';web.mkdir(parents=True,exist_ok=True)
+    web=page(name,dev);web.mkdir(parents=True,exist_ok=True)
     # The example's config.json (DECISIONS 131) beside the page, and the page told it has one; none, and the page makes no request.
     config=ROOT/f'examples/{name}/config.json';meta='<meta name="helix-config" content="config.json">' if config.is_file() else ''
     (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name).replace('{{config}}',meta))
@@ -262,11 +269,11 @@ def main():
         if failed:sys.exit('Autopilot outcomes or samples differ: '+', '.join(failed)+f'; see build/results/{a.name}')
         return
     if a.action=='dev':
-        prepare(a.name)
+        prepare(a.name,dev=True)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
         # The dev server watches Haxe source; shader source is regenerated here, and the new layouts (Sprite2DLayout.hx and the rest) reload like any Haxe edit.
         # The page loads ../assets/, which from the served root is /assets/: the web target's shared assets, mounted there.
-        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web')],cwd=ROOT)
+        server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web',dev=True)],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
             failed=None;library_failed=None;packed=time.time()
