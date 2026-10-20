@@ -180,6 +180,7 @@ class App extends BaseApp {
 	var waterShallowColor = 0x2a8f96ff;
 	var waterSkyColor = 0xa0b8d8ff;
 	var outlineColor = 0x101018ff;
+	var outlineWidth = .02;
 	var silhouetteColor = 0x3fa9ff99;
 
 	// What's loaded: the car, her skeleton and parts, the logos.
@@ -422,18 +423,18 @@ class App extends BaseApp {
 
 	// The outlines and silhouettes of every model in so far, made once each, on while theirs is the chosen shader.
 	function passesFor():Void {
-		for (i in outlines.length...models.length)
-			outlines.push(new Outline(models[i], outlineColor, .035));
-		for (i in silhouettes.length...skinned.length)
-			silhouettes.push(new Silhouette(skinned[i], silhouetteColor));
+		for (i in outlines.length...models.length) {
+			var outline = new Outline(models[i], outlineColor, outlineWidth);
+			outline.enabled = false;
+			outlines.push(outline);
+		}
+		for (i in silhouettes.length...skinned.length) {
+			var silhouette = new Silhouette(skinned[i], silhouetteColor);
+			silhouette.enabled = false;
+			silhouettes.push(silhouette);
+		}
 		if (chosen >= 0 && shown)
 			entries[chosen].on();
-		else {
-			for (pass in outlines)
-				pass.enabled = false;
-			for (pass in silhouettes)
-				pass.enabled = false;
-		}
 	}
 
 	// The menu, read from input (the window's, or the autopilot's): the shaders' list and, under it, the chosen one's sliders.
@@ -556,7 +557,8 @@ class App extends BaseApp {
 				for (o in outlines)
 					o.enabled = true;
 			}, [
-				slider("width", 0, .08, .035, .005, v -> {
+				slider("width", 0, .08, outlineWidth, .005, v -> {
+					outlineWidth = v;
 					for (o in outlines)
 						o.width = v;
 				})

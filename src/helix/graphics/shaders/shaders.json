@@ -554,7 +554,7 @@
     },
     {
       "program": "flat3d",
-      "stride": 48,
+      "stride": 24,
       "instanceStride": 144,
       "attributes": [
         {
@@ -618,7 +618,7 @@
     },
     {
       "program": "skinnedflat3d",
-      "stride": 48,
+      "stride": 24,
       "instanceStride": 144,
       "attributes": [
         {

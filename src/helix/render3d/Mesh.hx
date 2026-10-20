@@ -25,6 +25,8 @@ class Mesh {
 	var vertexBuffer = 0;
 	var indexBuffer = 0;
 	var skinBuffer = 0;
+	var passBuffer = 0;
+	var passData:Null<Bytes>;
 	var reaches:Array<{skin:Skin, reach:haxe.ds.Vector<Float>}> = [];
 
 	/** A mesh of vertexCount vertices in vertices (Lit3DLayout.stride bytes each) and indexCount uint32 indices (whole triangles) in indices.
@@ -163,6 +165,81 @@ class Mesh {
 		return reach;
 	}
 
+	/** Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DLayout.stride bytes each: its position, then its
+		normal averaged over every vertex at that position (the distinct normals of the vertices at exactly that place summed, then made unit
+		length; the vertex's own normal where they cancel out). A hard edge splits a vertex into copies, one a face, each with its face's
+		normal; pushed out along those, an outline's shell would crack into separate faces, so the copies move together instead. Worked out the
+		first time it's read (a mesh no pass draws never has it), Flat3DLayout.stride bytes a vertex more. Vertices of separate meshes (a
+		model's parts) aren't averaged together. */
+	public var passVertices(get, never):Bytes;
+
+	function get_passVertices():Bytes {
+		if (passData == null)
+			passData = averageNormals();
+		return passData;
+	}
+
+	// Each vertex's position and its normal averaged over the vertices at its position: the vertices sorted by position, then by normal, so
+	// those at one place are a run and its alike normals neighbours, each distinct one counted once.
+	function averageNormals():Bytes {
+		var data = vertexData;
+		inline function at(i:Int, k:Int):Float
+			return data.getFloat(i * Lit3DLayout.stride + k * 4);
+		var position = Std.int(Lit3DLayout.positionOffset / 4),
+			normal = Std.int(Lit3DLayout.normalOffset / 4);
+		function compare(a:Int, b:Int, from:Int):Int {
+			for (k in from...from + 3) {
+				var x = at(a, k), y = at(b, k);
+				if (x != y)
+					return x < y ? -1 : 1;
+			}
+			return 0;
+		}
+		var order = [for (i in 0...vertexCount) i];
+		order.sort((a, b) -> {
+			var c = compare(a, b, position);
+			if (c == 0)
+				c = compare(a, b, normal);
+			return c != 0 ? c : a - b;
+		});
+		var out = Bytes.alloc(vertexCount * Flat3DLayout.stride), start = 0;
+		while (start < vertexCount) {
+			var end = start + 1;
+			while (end < vertexCount && compare(order[start], order[end], position) == 0)
+				end++;
+			var x = 0., y = 0., z = 0.;
+			for (k in start...end)
+				if (k == start || compare(order[k - 1], order[k], normal) != 0) {
+					x += at(order[k], normal);
+					y += at(order[k], normal + 1);
+					z += at(order[k], normal + 2);
+				}
+			var length = Math.sqrt(x * x + y * y + z * z);
+			for (k in start...end) {
+				var i = order[k], o = i * Flat3DLayout.stride, n = o + Flat3DLayout.normalOffset;
+				for (c in 0...3)
+					out.setFloat(o + Flat3DLayout.positionOffset + c * 4, at(i, position + c));
+				if (length > 1e-6) {
+					out.setFloat(n, x / length);
+					out.setFloat(n + 4, y / length);
+					out.setFloat(n + 8, z / length);
+				} else
+					for (c in 0...3)
+						out.setFloat(n + c * 4, at(i, normal + c));
+			}
+			start = end;
+		}
+		return out;
+	}
+
+	/** Its pass vertices (passVertices) as a static vertex buffer on gpu, made the first time it's asked for. */
+	public function getPassVertexBuffer(gpu:IGraphics):Int {
+		upload(gpu);
+		if (passBuffer == 0)
+			passBuffer = gpu.createStaticBuffer(passVertices, vertexCount * Flat3DLayout.stride, false);
+		return passBuffer;
+	}
+
 	/** A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned. */
 	public function getSkinBuffer(gpu:IGraphics):Int {
 		upload(gpu);
@@ -201,7 +278,9 @@ class Mesh {
 		gpu.destroyBuffer(indexBuffer);
 		if (skinBuffer != 0)
 			gpu.destroyBuffer(skinBuffer);
-		vertexBuffer = indexBuffer = skinBuffer = 0;
+		if (passBuffer != 0)
+			gpu.destroyBuffer(passBuffer);
+		vertexBuffer = indexBuffer = skinBuffer = passBuffer = 0;
 		gpu = null;
 	}
 

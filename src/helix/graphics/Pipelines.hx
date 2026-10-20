@@ -156,9 +156,10 @@ class Pipelines {
 			depthOnly: true
 		}));
 
-	/** A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from the lit models' records: an outline's shell (front
-		faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater,
-		not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not. */
+	/** A model's flat pass (Flat3DLayout, or Skinnedflat3DLayout for a skinned model), from its mesh's pass vertices (Mesh.passVertices) and
+		the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a
+		silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a
+		mirrored placement's) or not. */
 	public function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int {
 		var options = {
 			indexed: true,

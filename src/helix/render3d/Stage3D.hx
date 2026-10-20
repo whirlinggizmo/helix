@@ -981,7 +981,7 @@ class Stage3D {
 	}
 
 	// Draws the gathered passes that draw behind what hides them (silhouettes) or not (outlines), a run of alike ones a draw, through the flat
-	// program from the items' records.
+	// program from the items' records and their meshes' pass vertices (Mesh.passVertices: normals averaged where they split).
 	function drawPasses(behind:Bool, viewProjection:Mat4):Void {
 		viewProjection.writeTo(passUniforms[0]);
 		var k = 0;
@@ -1000,9 +1000,10 @@ class Stage3D {
 			passUniforms[1].setFloat(4, ((color >>> 16) & 255) / 255);
 			passUniforms[1].setFloat(8, ((color >>> 8) & 255) / 255);
 			passUniforms[1].setFloat(12, (color & 255) / 255);
-			gpu.draw(pipelines.flat3D(item.skinned, behind, item.mirrored), meshBuffers(item.mesh, instanceBuffer, item.skinned),
-				item.mesh.getIndexBuffer(gpu), 0, item.mesh.indexCount, d.item, last - k + 1, item.skinned ? [palette.texture] : [],
-				item.skinned ? [Sampling.NEAREST] : [], passUniforms);
+			var mesh = item.mesh, vertices = mesh.getPassVertexBuffer(gpu);
+			gpu.draw(pipelines.flat3D(item.skinned, behind, item.mirrored),
+				item.skinned ? [vertices, instanceBuffer, mesh.getSkinBuffer(gpu)] : [vertices, instanceBuffer], mesh.getIndexBuffer(gpu), 0, mesh.indexCount,
+				d.item, last - k + 1, item.skinned ? [palette.texture] : [], item.skinned ? [Sampling.NEAREST] : [], passUniforms);
 			draws++;
 			k = last + 1;
 		}

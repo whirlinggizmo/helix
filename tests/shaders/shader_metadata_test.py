@@ -61,10 +61,12 @@ class ShaderMetadataTests(unittest.TestCase):
         self.assertEqual(list(by), ['sprite2d', 'effect2d', 'color3d', 'lit3d', 'sprite3d', 'particle3d', 'depth3d', 'background3d', 'skinned3d',
                                     'skinneddepth3d', 'flat3d', 'skinnedflat3d'])
         sprite, color, lit, depth, background = by['sprite2d'], by['color3d'], by['lit3d'], by['depth3d'], by['background3d']
-        # A model's flat passes read the lit models' records: their vertex and instance strides, the normals' rows where the lit's are.
+        # A model's flat passes read the mesh's pass vertices (a position and an averaged normal) and the lit models' instance records, the
+        # normals' rows where the lit's are.
         flat = by['flat3d']
         self.assertEqual((flat['stride'], flat['instanceStride'], [a['offset'] for a in flat['attributes'] if a['buffer'] == 1]),
-                         (48, 144, [0, 16, 32, 48, 64, 80]))
+                         (24, 144, [0, 16, 32, 48, 64, 80]))
+        self.assertEqual([a['offset'] for a in flat['attributes'] if a['buffer'] == 0], [0, 12])
         self.assertEqual((sprite['stride'], [a['offset'] for a in sprite['attributes']]), (32, [0, 8, 16]))
         # A sprite drawn through an effect: sprite2d's vertex and its region after it.
         effect = by['effect2d']

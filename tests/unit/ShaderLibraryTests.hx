@@ -57,6 +57,7 @@ class ShaderLibraryTests {
 		skinned(gpu);
 		casters(gpu);
 		passes(gpu);
+		passVertices(gpu);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
@@ -379,5 +380,60 @@ class ShaderLibraryTests {
 		check(count == 1 && gpu.meshDraws[gpu.meshDraws.length - 1].instances == 1, "A pass not enabled isn't drawn");
 		outlines[1].width = -1;
 		check(outlines[1].width == 0, "A width held to 0 or more");
+	}
+
+	// A pass's vertices: each normal averaged over the vertices at its position, so an outline's shell stays closed at a hard edge; drawn
+	// from their own buffer, static or skinned.
+	static function passVertices(gpu:CountingGraphics):Void {
+		var cube = Mesh.cube(1, 1, 1), data = cube.passVertices, corners = true, kept = true;
+		var third = 1 / Math.sqrt(3);
+		for (i in 0...cube.vertexCount) {
+			var at = i * Flat3DLayout.stride, lit = i * Lit3DLayout.stride;
+			for (c in 0...3) {
+				var p = data.getFloat(at + Flat3DLayout.positionOffset + c * 4),
+					n = data.getFloat(at + Flat3DLayout.normalOffset + c * 4);
+				kept = kept && p == cube.vertices.getFloat(lit + Lit3DLayout.positionOffset + c * 4);
+				corners = corners && Math.abs(Math.abs(n) - third) < 1e-6 && (n > 0) == (p > 0);
+			}
+		}
+		check(cube.vertexCount == 24 && kept, "A pass's vertices keep the mesh's positions, one a vertex");
+		check(corners, "A cube's three faces at a corner share one normal there, out along the diagonal: its shell doesn't crack");
+		check(cube.passVertices == data, "Worked out once");
+		var sphere = Mesh.sphere(.5), smooth = true;
+		for (i in 0...sphere.vertexCount)
+			for (c in 0...3)
+				smooth = smooth
+					&& Math.abs(sphere.passVertices.getFloat(i * Flat3DLayout.stride + Flat3DLayout.normalOffset + c * 4)
+						- sphere.vertices.getFloat(i * Lit3DLayout.stride + Lit3DLayout.normalOffset + c * 4)) < 1e-5;
+		check(smooth, "A smooth mesh's normals stay as they are");
+		// Two faces back to back at the same place: their normals cancel, so each keeps its own.
+		var sheet = Mesh.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0], [0., 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1], null,
+			null, null);
+		check(near(sheet.passVertices.getFloat(Flat3DLayout.normalOffset + 8), 1)
+			&& near(sheet.passVertices.getFloat(3 * Flat3DLayout.stride + Flat3DLayout.normalOffset + 8), -1),
+			"Normals cancelling out leave each vertex its own");
+
+		var stage = new Stage3D(gpu),
+			camera = new Camera3D(),
+			material = new Material();
+		camera.setViewport(800, 600);
+		camera.setView(1, 0, 5, 1, 0, 0);
+		var model = skinnedModel(stage, material);
+		new Outline(model);
+		gpu.meshDraws = [];
+		gpu.meshPipelines = [];
+		gpu.beginFrame(800, 600, 0);
+		stage.draw(camera);
+		var lit = gpu.meshDraws[0],
+			shell = gpu.meshDraws[gpu.meshDraws.length - 1],
+			desc = gpu.describe(gpu.meshPipelines[gpu.meshPipelines.length - 1]);
+		check(desc.cull == Front && desc.buffers.length == 3 && desc.buffers[0].stride == Flat3DLayout.stride,
+			"A skinned outline reads its pass vertices, its records and its skin");
+		check(shell.buffers.length == 3
+			&& shell.buffers[0] == model.mesh.getPassVertexBuffer(gpu)
+			&& shell.buffers[0] != lit.buffers[0]
+			&& shell.buffers[1] == lit.buffers[1]
+			&& shell.buffers[2] == lit.buffers[2],
+			"From the mesh's pass vertex buffer, beside the lit draw's records and skin");
 	}
 }

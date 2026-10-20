@@ -573,6 +573,8 @@ var skinned(get, never):Bool
 var skinData(default, null):Null<haxe.io.Bytes>
 var shape(default, null):Null<MeshShape>
 function getJointReach(skin:Skin):Null<haxe.ds.Vector<Float>>
+var passVertices(get, never):haxe.io.Bytes
+function getPassVertexBuffer(gpu:IGraphics):Int
 function getSkinBuffer(gpu:IGraphics):Int
 function getVertexBuffer(gpu:IGraphics):Int
 function getIndexBuffer(gpu:IGraphics):Int
@@ -602,6 +604,8 @@ function destroy():Void
 - `skinData`: A skinned mesh's joints and weights, Skinned3DLayout.skinStride bytes a vertex: four joint indices (as floats), then their four weights, summing to 1. Null for one that isn't skinned.
 - `shape`: What made it, for a mesh from plane, cube, sphere, cylinder, cone, capsule or torus: the generator's name and its arguments as it was called. Null for a mesh from arrays (fromArrays, a file's meshes), which nothing can write back as a shape.
 - `getJointReach`: How far each of skin's joints reaches in this skinned mesh as bound: the farthest of the vertices it weights from its bind position (Skin.getBindPosition), -1 for a joint that weights none; worked out the first time it's asked for each skin, for culling a posed model. Null for a mesh that isn't skinned.
+- `passVertices`: Its vertices as a model's passes (ModelPass: an outline, a silhouette) draw them, Flat3DLayout.stride bytes each: its position, then its normal averaged over every vertex at that position (the distinct normals of the vertices at exactly that place summed, then made unit length; the vertex's own normal where they cancel out). A hard edge splits a vertex into copies, one a face, each with its face's normal; pushed out along those, an outline's shell would crack into separate faces, so the copies move together instead. Worked out the first time it's read (a mesh no pass draws never has it), Flat3DLayout.stride bytes a vertex more. Vertices of separate meshes (a model's parts) aren't averaged together.
+- `getPassVertexBuffer`: Its pass vertices (passVertices) as a static vertex buffer on gpu, made the first time it's asked for.
 - `getSkinBuffer`: A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned.
 - `getVertexBuffer`: Its static vertex buffer on gpu, made the first time it's asked for.
 - `getIndexBuffer`: Its static index buffer on gpu, made the first time it's asked for.
