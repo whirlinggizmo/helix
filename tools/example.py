@@ -126,7 +126,15 @@ def claim(target,name,paths):
         if (ROOT/'examples/assets'/path).exists():sys.exit(f'examples/{name}: its {path} is also a shared file (examples/assets/{path})')
         if owners.get(path,name)!=name:sys.exit(f'examples/{name}: its {path} is also examples/{owners[path]}\'s, in their shared assets folder')
         owners[path]=name
-    record.parent.mkdir(parents=True,exist_ok=True);record.write_text(json.dumps(owners,indent=1,sort_keys=True)+'\n',encoding='utf-8')
+    # Written beside and moved into place, so a build or dev loop starting at the same moment never reads it half written (a claim missed
+    # by that race is made again the next time that example packs or builds). Windows refuses the move while another reads it: retried.
+    record.parent.mkdir(parents=True,exist_ok=True)
+    staged=record.with_name(f'{record.name}.{os.getpid()}')
+    staged.write_text(json.dumps(owners,indent=1,sort_keys=True)+'\n',encoding='utf-8')
+    for attempt in range(50):
+        try:os.replace(staged,record);return
+        except PermissionError:time.sleep(.02)
+    os.replace(staged,record)
 
 def pack_shaders(name,out,since=0,sdl_gpu=False,target='web'):
     """The example's shaders/*.glsl packed into out/shaders/*.hxshader (with SDL_GPU's dialects when sdl_gpu), claimed in the target's
