@@ -77,6 +77,28 @@ def hxml(name,target,dev=False):
     path=ROOT/f'build/examples/{name}-{"dev" if dev else target}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
+def tool_modules():
+    """The tools/*.py modules this process has loaded, but this one."""
+    here=Path(__file__).resolve().parent
+    return [m for n,m in list(sys.modules.items()) if n!='__main__' and m is not sys.modules.get(__name__) and getattr(m,'__file__',None)
+        and Path(m.__file__).resolve().parent==here]
+
+def tool_stamps():
+    """The loaded tools' files' times, to tell when one is edited."""
+    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}
+
+def reload_tools():
+    """Loads the tools again (twice, so one taking another's names gets the new ones), then this module's names taken from them with
+    `from ... import` (shader_metadata's generate and the rest) are bound to the new ones."""
+    import importlib
+    modules=tool_modules()
+    for _ in range(2):
+        for module in modules:importlib.reload(module)
+    names=globals()
+    for name,value in list(names.items()):
+        owner=sys.modules.get(getattr(value,'__module__',None) or '')
+        if owner in modules and hasattr(owner,name):names[name]=getattr(owner,name)
+
 def page(name,dev=False):
     """The folder the example's page is built into and served from: build/web/<name>, or the dev loop's build/dev/<name>."""
     return ROOT/f'build/{"dev" if dev else "web"}/{name}'
@@ -271,20 +293,20 @@ def main():
     if a.action=='dev':
         prepare(a.name,dev=True)
         # The edit loop: hotreload-hx rebuilds on save and swaps code and served files into the running page.
-        # The dev server watches Haxe source; shader source is regenerated here, and the new layouts (Sprite2DLayout.hx and the rest) reload like any Haxe edit.
+        # The dev server watches Haxe source; shader source is regenerated here, and the new program classes (Sprite2DProgram.hx and the rest) reload like any Haxe edit.
         # The page loads ../assets/, which from the served root is /assets/: the web target's shared assets, mounted there.
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount','/assets=build/web/assets',hxml(a.name,'web',dev=True)],cwd=ROOT)
         print(f'Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
             failed=None;library_failed=None;packed=time.time()
-            packer=Path(pack_shader.__file__).stat().st_mtime
+            tools=tool_stamps()
             while server.poll() is None:
-                # The packer itself edited: loaded again, and every shader packed again with it (the library's as its tool is newer).
-                if Path(pack_shader.__file__).stat().st_mtime!=packer:
-                    import importlib
-                    packer=Path(pack_shader.__file__).stat().st_mtime
-                    try:importlib.reload(pack_shader);packed=0;library_failed=None
-                    except Exception as error:print('example: the shader packer failed to load, kept as it was:',error,flush=True)
+                # A tool this loop uses edited (the packer, the shader generator, the font baker, ...): every one loaded again, and every
+                # shader packed and generated again with them.
+                if tool_stamps()!=tools:
+                    tools=tool_stamps()
+                    try:reload_tools();packed=0;library_failed=None;failed=None
+                    except Exception as error:print('example: a tool failed to load again, the rest kept as they were:',error,flush=True)
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
                     repacked=pack_shaders(a.name,ROOT/'build/web/assets',packed)
