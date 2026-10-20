@@ -7,14 +7,14 @@ import helix.render2d.Font2D;
 	with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given
 	another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value
 	applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's
-	sizing, padding and gap are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap), even to what the
-	theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's
+	sizing, padding, gap and margin are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap,
+	setMargin), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's
 	nodes are never changed directly: its properties are the way. */
 class Theme {
 	var text:Int = 0xf0f2f8ff;
 	var disabledText:Int = 0x80869aff;
 	var invalidText:Int = 0xff7070ff;
-	var panel:Int = 0x1e2230e8;
+	var panel:Int = 0x1e2230ff;
 	var face:Int = 0x2e3448ff;
 	var hovered:Int = 0x3e4660ff;
 	var pressed:Int = 0x56607eff;
@@ -71,7 +71,7 @@ class Theme {
 		return value;
 	}
 
-	/** A panel's background color. (0x1e2230e8 to start.) */
+	/** A panel's background color. (0x1e2230ff to start: opaque, so faces show on it whatever is behind.) */
 	public var panelColor(get, set):Int;
 
 	function get_panelColor():Int
@@ -199,8 +199,8 @@ class Theme {
 		return value;
 	}
 
-	/** Room inside a button or panel, around its content, in units. (10 to start.) 0 or more (under 0, or NaN, is 0). */
-	public var padding(default, set):Float = 10.;
+	/** Room inside a button or panel, around its content, in units. (8 to start.) 0 or more (under 0, or NaN, is 0). */
+	public var padding(default, set):Float = 8.;
 
 	function set_padding(value:Float):Float {
 		value = value >= 0 ? value : 0;
@@ -238,6 +238,30 @@ class Theme {
 	function set_handleSize(value:Float):Float {
 		value = value >= 1 ? value : 1;
 		handleSize = value;
+		return value;
+	}
+
+	/** A scrollbar's width in units (a list's, a scroll area's; Scrollbar), apart from a slider's trackThickness. (8 to start.) At least 1
+		(under 1, or NaN, is 1). */
+	public var scrollbarThickness(default, set):Float = 8.;
+
+	function set_scrollbarThickness(value:Float):Float {
+		value = value >= 1 ? value : 1;
+		scrollbarThickness = value;
+		return value;
+	}
+
+	/** A scrollbar's track's color, 0xRRGGBBAA, under its thumb (whose colors are a handle's: WidgetState.handle). (Black at a quarter alpha
+		to start, so it shows on a list's face and a panel alike.) */
+	public var scrollbarTrackColor:Int = 0x00000040;
+
+	/** When a list's and a scroll area's scrollbars are drawn, unless the widget is given its own (scrollbarVisibility). (WhenNeeded to
+		start.) Null is WhenNeeded. */
+	public var scrollbarVisibility(default, set):ScrollbarVisibility = WhenNeeded;
+
+	function set_scrollbarVisibility(value:ScrollbarVisibility):ScrollbarVisibility {
+		value = value != null ? value : WhenNeeded;
+		scrollbarVisibility = value;
 		return value;
 	}
 

@@ -108,11 +108,17 @@ class Slider extends Widget {
 	override function target():Null<Node2D>
 		return face;
 
+	// "track": the line its value runs along, min at its left edge, max at its right.
+	override function locatePart(part:String, out:Array<Float>):Null<Node2D> {
+		if (part != "track")
+			return super.locatePart(part, out);
+		Widget.setRectangle(out, trackLayout.x, trackLayout.y, trackLayout.width, trackLayout.height);
+		return root;
+	}
+
 	override function readTheme(theme:Theme):Void {
 		label.textSize = readout.textSize = theme.textSize;
 		label.font = readout.font = theme.font;
-		track.color = theme.faceColor;
-		fill.color = theme.accentColor;
 		track.cornerRadius = fill.cornerRadius = theme.trackThickness / 2;
 		themeFixed(trackLayout, Math.NaN, theme.trackThickness);
 		row.themeGap(theme.gap * 2);
@@ -138,8 +144,13 @@ class Slider extends Widget {
 		fill.setSize(Math.max(0, trackLayout.width * fraction), trackLayout.height);
 		fill.setPosition(trackLayout.x, trackLayout.y);
 		knob.setPosition(trackLayout.x + trackLayout.width * fraction, trackLayout.y + trackLayout.height / 2);
-		knob.color = !enabled ? theme.disabledTextColor : held ? theme.focusColor : theme.handleColor;
-		label.color = enabled ? theme.textColor : theme.disabledTextColor;
+		// The knob is over or held wherever the pointer is on the slider, as a press anywhere on it moves the knob there; focus shows in the ring,
+		// not the knob.
+		var state = WidgetState.of(enabled, held, hovered, focused);
+		knob.color = WidgetState.of(enabled, held, hovered, false).handle(theme);
+		track.color = state == Disabled ? WidgetState.dim(theme.faceColor) : theme.faceColor;
+		fill.color = state == Disabled ? WidgetState.dim(theme.accentColor) : theme.accentColor;
+		label.color = state.text(theme);
 		// The number after the track, as wide as the widest of min's and max's, so the track doesn't move as it changes: measured when it's
 		// shown, its font or its size changed.
 		readout.visible = valueShown;

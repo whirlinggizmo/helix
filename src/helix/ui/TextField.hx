@@ -129,8 +129,10 @@ class TextField extends Widget {
 		textNode.text = value;
 		changed = value != was;
 		hintNode.visible = value.length == 0;
-		face.color = focused ? theme.hoveredColor : hovered ? theme.hoveredColor : theme.faceColor;
-		textNode.color = !enabled ? theme.disabledTextColor : invalid ? theme.invalidTextColor : theme.textColor;
+		// Lit while it's typed in (Focused) as under the pointer, held or not: it has no pressed look of its own.
+		var state = WidgetState.of(enabled, held, hovered, focused);
+		face.color = state.pick(theme.faceColor, theme.hoveredColor, theme.hoveredColor, theme.hoveredColor, WidgetState.dim(theme.faceColor));
+		textNode.color = state == Disabled ? theme.disabledTextColor : invalid ? theme.invalidTextColor : theme.textColor;
 		// The caret after the text, as the layout last placed it.
 		var font = theme.font != null ? theme.font : ui.font;
 		if (value != caretText || font != caretFont || theme.textSize != caretSize) {

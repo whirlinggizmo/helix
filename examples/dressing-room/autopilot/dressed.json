@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "seed": 1,
+  "commands": [
+    {"op": "wait", "probe": "ready", "equals": true, "seconds": 60},
+    {"op": "assert", "probe": "slot", "equals": "Body"},
+    {"op": "sample", "name": "backdrop", "points": [[96, 8], [560, 56], [640, 72]]},
+    {"op": "sample", "name": "dressed", "points": [[320, 408], [336, 600], {"target": "tile 0", "at": [0.5, 0.3]}], "differsFrom": "backdrop", "by": 40}
+  ]
+}

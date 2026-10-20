@@ -21,15 +21,25 @@ import helix.scene.Pointer;
 	- A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its
 	  first button.
 	- While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once.
+	- A widget may open a popup (Popup: a dropdown's list), drawn over every widget and the ring and clipped by none of their clips, placed by
+	  its anchor in the visible area (below it, or above when there's no room below and more above; kept on screen across). While it's open
+	  (popup) it has the pointer and the keys: the widgets under it see no pointer, a press off it closes it and does nothing else until it's
+	  let go (not even reaching a world under the UI: the pointer is captured), Escape or East closes it instead of going back (backPressed
+	  stays false), Tab doesn't move focus, and its owner keeps focus and takes the arrows, Enter, Space and South (capturingKeys is true).
 
-	The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them. The pointer must be looking at the
-	stage, through camera. */
+	The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them and the open popup above it. The pointer
+	must be looking at the stage, through camera. */
 class Ui {
 	var stage:Stage2D;
+	// The pointer and the widgets, and whether the ring shows (keys or a pad moved focus): read by a scroll area too (what's under the
+	// pointer, which widgets are inside it, whether to scroll the focused one into view).
+	@:allow(helix.ui)
 	var pointer:Pointer;
 	var ring:Shape2D;
+	@:allow(helix.ui)
 	var widgets:Array<Widget> = [];
 	var textEntry = false;
+	@:allow(helix.ui)
 	var showFocus = false;
 	var keys = false;
 	var guarded = false;
@@ -37,6 +47,10 @@ class Ui {
 	var lastX = -1.;
 	var lastY = -1.;
 	var pressing:Null<Widget>;
+	// Over the widgets and the ring: a clear rectangle over the visible area under the open popup, taking every press off the popup (and held
+	// until a press it took is let go), then the popup's nodes.
+	var layer:Node2D;
+	var scrim:Shape2D;
 
 	/** A UI on stage (drawn through camera, which pointer looks at), read from input, in theme's look (a new Theme when not given). */
 	public function new(stage:Stage2D, camera:Camera2D, pointer:Pointer, input:IInput, ?theme:Theme) {
@@ -50,6 +64,12 @@ class Ui {
 		ring.pickable = false;
 		ring.visible = false;
 		root.addChild(ring);
+		layer = new Node2D();
+		scrim = Shape2D.rectangle(1, 1, 0);
+		scrim.setPivot(0, 0);
+		scrim.enabled = false;
+		layer.addChild(scrim);
+		root.addChild(layer);
 		stage.add(root);
 	}
 
@@ -98,6 +118,10 @@ class Ui {
 	public function slider(text:String, min:Float, max:Float, value:Float, step = 0., ?name:String):Slider
 		return adopt(new Slider(this, name != null ? name : text, text, min, max, value, step));
 
+	/** A thin line between widgets: across a column, or down a row when vertical (Separator). */
+	public function separator(vertical = false, ?name:String):Separator
+		return adopt(new Separator(this, name != null ? name : "separator", vertical));
+
 	/** How far along something is, 0 to 1. */
 	public function progress(value:Float, ?name:String):ProgressBar
 		return adopt(new ProgressBar(this, name != null ? name : "progress", value));
@@ -110,9 +134,22 @@ class Ui {
 	public function tile(texture:Null<helix.render2d.Texture2D>, caption:String, side:Float, ?name:String):Tile
 		return adopt(new Tile(this, name == null ? caption : name, texture, caption, side));
 
-	/** A list of items rows tall, scrolled by the wheel or a drag, an item chosen by the pointer or Up and Down. */
+	/** A list of items rows tall, scrolled by the wheel, a drag or its scrollbar, an item chosen by the pointer or Up and Down. */
 	public function list(items:Array<String>, rows:Int, ?name:String):ListView
 		return adopt(new ListView(this, name != null ? name : "list", items, rows));
+
+	/** A window height units tall onto a column of widgets (add them: ScrollArea.add), scrolled up and down by the wheel over it, a drag, its
+		scrollbar and keys, as wide as its layout is given (Grow, to start). */
+	public function scrollArea(height:Float, ?name:String):ScrollArea
+		return adopt(new ScrollArea(this, name != null ? name : "scroll", height));
+
+	/** A choice of one of items (or none: selected -1, clamped to the items), shown on a face with a chevron and chosen from a list opening
+		over everything (Dropdown), as wide as its widest item to start. */
+	public function dropdown(items:Array<String>, selected = -1, ?name:String):Dropdown {
+		var dropdown = adopt(new Dropdown(this, name != null ? name : "dropdown", items));
+		dropdown.selectedIndex = selected;
+		return dropdown;
+	}
 
 	/** A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round
 		swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button
@@ -128,8 +165,10 @@ class Ui {
 	function adopt<T:Widget>(widget:T):T {
 		widgets.push(widget);
 		root.removeChild(ring);
+		root.removeChild(layer);
 		root.addChild(widget.root);
 		root.addChild(ring);
+		root.addChild(layer);
 		return widget;
 	}
 
@@ -137,6 +176,8 @@ class Ui {
 	public function remove(widget:Widget):Void {
 		for (part in widget.parts)
 			remove(part);
+		if (popup != null && popup.owner == widget)
+			closePopup();
 		widgets.remove(widget);
 		root.removeChild(widget.root);
 		if (focused == widget)
@@ -162,6 +203,29 @@ class Ui {
 		return true;
 	}
 
+	/** Writes to out[0] and out[1] the framebuffer pixel (the pointer's, through camera) at x, y of the widget named name, or of its part named
+		part ("" for the whole widget): x and y fractions of its rectangle as last laid out and drawn, 0, 0 its top left and 1, 1 its bottom
+		right, outside it past them. Where an autopilot's points name widgets (Autopilot), found again whenever they're used, so they follow a
+		layout as it changes. False, writing nothing, while there's no such widget shown and laid out or it has no such part now. The parts: a
+		Slider's "track", the line its value runs along (min at its left edge, max at its right); a ColorPicker's "square" (saturation 0 to 1
+		left to right, brightness 1 to 0 down), "hue" and, with alpha, "alpha" (each bar between the centers of its round ends, where its value
+		runs 0 to 1 left to right) and "swatch", the disc showing the color; a ScrollArea's and a ListView's "track" and "thumb", their
+		scrollbar's while it shows; a ListView's "row:<index>", that item's row where it's scrolled to, in view or not; and while a Dropdown's
+		list is open, its "list", an item's "row:<index>" in it, and its scrollbar's "track" and "thumb". */
+	public function computePoint(name:String, part:String, x:Float, y:Float, out:Array<Float>):Bool {
+		var w = find(name), rectangle = [0., 0., 0., 0.];
+		if (w == null || !w.visible || w.layout.width <= 0 && w.layout.height <= 0)
+			return false;
+		var node = w.locatePart(part, rectangle);
+		if (node == null)
+			return false;
+		var lx = rectangle[0] + rectangle[2] * x,
+			ly = rectangle[1] + rectangle[3] * y;
+		out[0] = camera.worldToScreenX(node.toWorldX(lx, ly));
+		out[1] = camera.worldToScreenY(node.toWorldY(lx, ly));
+		return true;
+	}
+
 	/** The widget with focus, or null. */
 	public var focused(default, set):Null<Widget>;
 
@@ -182,7 +246,7 @@ class Ui {
 	public var capturingKeys(get, never):Bool;
 
 	function get_capturingKeys():Bool
-		return focused != null && (keys || focused.takesText());
+		return popup != null || focused != null && (keys || focused.takesText());
 
 	/** Whether Escape or a pad's East was pressed this frame (not held over from before reset). */
 	public var backPressed(get, never):Bool;
@@ -190,8 +254,37 @@ class Ui {
 	function get_backPressed():Bool
 		return back;
 
-	/** A new screen begins: no focus, and keys and buttons held now do nothing until they're let go. */
+	/** The open popup (a dropdown's list), or null. */
+	public var popup(default, null):Null<Popup>;
+
+	// Opens p over everything, closing the one open: its owner focused (shown as it was) and given the keys.
+
+	@:allow(helix.ui)
+	function openPopup(p:Popup):Void {
+		if (popup == p)
+			return;
+		if (popup != null)
+			closePopup();
+		popup = p;
+		p.open = true;
+		layer.addChild(p.root);
+		scrim.enabled = true;
+		@:bypassAccessor focused = p.owner;
+		syncTextEntry();
+	}
+
+	/** Closes the open popup, if one is: its owner sees it closed at its next update, as when a press off it or Escape closes it. */
+	public function closePopup():Void {
+		if (popup == null)
+			return;
+		popup.open = false;
+		layer.removeChild(popup.root);
+		popup = null;
+	}
+
+	/** A new screen begins: no focus, no popup open, and keys and buttons held now do nothing until they're let go. */
 	public function reset():Void {
+		closePopup();
 		@:bypassAccessor focused = null;
 		showFocus = false;
 		guarded = true;
@@ -210,6 +303,12 @@ class Ui {
 		}
 		lastX = x;
 		lastY = y;
+		// The popup closes when its owner can't hold it now, and on a press off it (on the scrim, which keeps the pointer till it's let go).
+		if (popup != null) {
+			var owner = popup.owner;
+			if (!owner.enabled || !owner.visible || focused != owner || widgets.indexOf(owner) < 0 || pointer.isPressed(scrim))
+				closePopup();
+		}
 		var shift = input.isDown(Key.Shift),
 			sideways = focused != null && focused.takesSideways(),
 			vertical = focused != null && focused.takesUpDown();
@@ -251,6 +350,9 @@ class Ui {
 		}
 		if (focused != null && (!focused.focusable || !focused.enabled || !focused.visible))
 			@:bypassAccessor focused = null;
+		// Focus stays on a popup's owner while it's open.
+		if (popup != null)
+			move = 0;
 		if (move != 0) {
 			var toward = focused != null && (dx != 0 || dy != 0) ? nearest(focused, dx, dy) : null;
 			@:bypassAccessor focused = toward != null ? toward : focused == null ? first() : next(focused, move);
@@ -267,6 +369,11 @@ class Ui {
 			showFocus = true;
 		}
 		back = !guarded && (input.isFramePressed(Key.Escape) || pad(PadButton.East));
+		// Escape or East closes a popup rather than going back.
+		if (back && popup != null) {
+			closePopup();
+			back = false;
+		}
 		for (w in widgets) {
 			var target = w.target(),
 				usable = w.enabled && w.visible && !guarded;
@@ -285,6 +392,7 @@ class Ui {
 			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, steps ? stepX : 0, steps ? stepY : 0);
 		}
 		pressing = null;
+		placePopup();
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
 		ring.color = theme.focusColor;
 		ring.outline = theme.focusWidth;
@@ -301,6 +409,38 @@ class Ui {
 		} else
 			ring.visible = false;
 		syncTextEntry();
+	}
+
+	// The open popup laid out and placed by its anchor in the visible area: below it, or above when there's no room below and more above,
+	// held inside the area as far as it fits; the scrim over the area while the popup is open or a press the scrim took is held.
+	function placePopup():Void {
+		var vx = camera.viewportX, vy = camera.viewportY;
+		var x0 = camera.screenToWorldX(vx),
+			y0 = camera.screenToWorldY(vy),
+			x1 = camera.screenToWorldX(vx + camera.viewportWidth),
+			y1 = camera.screenToWorldY(vy + camera.viewportHeight);
+		var lx0 = root.toLocalX(x0, y0),
+			ly0 = root.toLocalY(x0, y0),
+			lx1 = root.toLocalX(x1, y1),
+			ly1 = root.toLocalY(x1, y1);
+		var left = Math.min(lx0, lx1),
+			top = Math.min(ly0, ly1),
+			right = Math.max(lx0, lx1),
+			bottom = Math.max(ly0, ly1);
+		scrim.enabled = popup != null || pointer.isDown(scrim);
+		scrim.setPosition(left, top);
+		scrim.setSize(right - left, bottom - top);
+		if (popup == null)
+			return;
+		Layout2D.arrange(popup.layout, 0, 0, right - left, bottom - top, theme.font != null ? theme.font : stage.font);
+		var w = popup.layout.width,
+			h = popup.layout.height,
+			below = popup.anchorY + popup.anchorHeight,
+			above = bottom - below < h && popup.anchorY - top > bottom - below;
+		var py = above ? popup.anchorY - h : below;
+		py = Math.max(top, Math.min(py, bottom - h));
+		var px = Math.max(left, Math.min(popup.anchorX, right - w));
+		popup.place(px, py, above);
 	}
 
 	// Typed text is asked for (IInput.textEntry) while the focused widget takes it, a text field, and let go when none does.

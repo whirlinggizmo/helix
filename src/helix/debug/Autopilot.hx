@@ -25,7 +25,15 @@ import helix.input.InputState;
 	A `drag` is the pointer held down at one point and moved to another: `{"op": "drag", "from": [x, y], "to": [x, y], "ticks": n}`, the
 	points in the design's units (Screen's; as given without a runner, in a test), pressed at from on its first tick, moved a straight line to
 	reach to after n more, and let go there on the tick after. A `type` is text typed on one tick, as a keyboard's characters arrive (dropped,
-	as theirs are, while nothing has asked for text entry: focus a text field first): `{"op": "type", "text": "ff8800"}`. */
+	as theirs are, while nothing has asked for text entry: focus a text field first): `{"op": "type", "text": "ff8800"}`.
+
+	Any point (a sample's, a drag's) may instead be a widget's: `{"target": "background", "part": "hue", "at": [.3, .5]}`, at fractions of
+	the rectangle of the UI's widget named target, or of its part named part (Ui.computePoint lists them: a slider's track, a color picker's
+	square and bars, a scrollbar's thumb, a list's rows ...), 0, 0 its top left and 1, 1 its bottom right, outside it past them. So a script
+	keeps working when padding, gaps or a widget's size move the layout. Each is found where the widget was last drawn when the point is
+	used: a sample's as it asks for its frame; a drag's from as it presses, its to again every tick. One not found (no such widget shown, or
+	no such part now) is waited for, as a click waits, within the command's "seconds" (5 when not given), and fails the script after. A
+	`click` with `"at"` (and `"part"`) presses and lets go of the pointer there instead of using the widget by name. */
 class Autopilot {
 	var ticks = 0;
 
@@ -58,6 +66,14 @@ class Autopilot {
 	var screenshot:Null<Null<String>->Void>;
 	var press:Null<String->Bool>;
 	var sample:Null<(points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void) -> Void>;
+	var locate:Null<(target:String, part:String, x:Float, y:Float, out:Array<Float>) -> Bool>;
+	// A drag's or a pointer click's press, once its points were found: the elapsed tick it pressed on (-1 before), and where, with where it
+	// goes, in the pointer's pixels.
+	var pressedAt = -1;
+	var from = [0., 0.];
+	var to = [0., 0.];
+	// A sample's points as found, in the design's units.
+	var sampledPoints:Array<Array<Float>> = [];
 	var waitStarted = 0.;
 	var samples:Dynamic = {};
 	var sampleAsked = false;
@@ -71,14 +87,18 @@ class Autopilot {
 	/** Checks a whole script ({version: 1, seed, commands}: press, hold, wait, assert, click, screenshot, sample, drag, type; at most 128) and throws on
 		anything invalid or unknown. A wait has one limit: "timeout" in ticks, or "seconds" of the clock. A click uses a UI's widget by name,
 		waiting (as a web suite's actions do) until press, the app's (Ui.press, say), finds it shown and usable, within its limit; without press
-		it fails. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
+		it fails; one with "at" (and "part") clicks the pointer at that point of the widget instead, waiting until it's found. A screenshot command calls screenshot with its name (null for the default name; Screenshots.take, say), or does nothing without
 		one. A sample calls sample with its points (Screenshots.sample, say), which calls done with each point's color as [r, g, b, a], 0 to 255,
-		once the frame has ended, or failed; without sample it fails. */
+		once the frame has ended, or failed; without sample it fails. A point naming a widget asks locate (Ui.computePoint, say) for the
+		framebuffer pixel at its fractions of the widget's or its part's rectangle (written to out; as given without a runner, in a test),
+		waiting while it answers false; without locate it fails. */
 	public function new(json:String, ?screenshot:Null<String>->Void, ?press:String->Bool,
-			?sample:(points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void) -> Void) {
+			?sample:(points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void) -> Void,
+			?locate:(target:String, part:String, x:Float, y:Float, out:Array<Float>) -> Bool) {
 		this.screenshot = screenshot;
 		this.press = press;
 		this.sample = sample;
+		this.locate = locate;
 		var document:Dynamic = haxe.Json.parse(json);
 		fields(document, ["version", "seed", "commands"]);
 		if (document.version != 1
@@ -120,9 +140,13 @@ class Autopilot {
 					fields(command, ["op", "probe"], ["equals", "atLeast"]);
 					condition(command);
 				case "click":
-					fields(command, ["op", "target"], ["timeout", "seconds"]);
+					fields(command, ["op", "target"], ["timeout", "seconds", "part", "at"]);
 					if (!Std.isOfType(command.target, String) || command.target == "")
 						throw "Invalid click target";
+					if (Reflect.hasField(command, "part") && !Reflect.hasField(command, "at"))
+						throw "A click's part goes with at";
+					if (Reflect.hasField(command, "at"))
+						point({target: command.target, part: command.part, at: command.at});
 					if (Reflect.hasField(command, "timeout") == Reflect.hasField(command, "seconds"))
 						throw "A click needs a timeout in ticks or in seconds";
 					if (Reflect.hasField(command, "timeout") && !integer(command.timeout, 1, 36000))
@@ -136,7 +160,8 @@ class Autopilot {
 						&& (!Std.isOfType(command.name, String) || !~/^[A-Za-z0-9_-]{1,64}\.png$/.match(command.name)))
 						throw "Invalid screenshot name";
 				case "sample":
-					fields(command, ["op", "name", "points"], ["tolerance", "differsFrom", "by", "matches", "within"]);
+					fields(command, ["op", "name", "points"], ["tolerance", "differsFrom", "by", "matches", "within", "seconds"]);
+					limit(command);
 					if (!Std.isOfType(command.name, String)
 						|| !~/^[A-Za-z0-9_-]{1,64}$/.match(command.name)
 						|| sampleCounts.exists(command.name))
@@ -160,7 +185,8 @@ class Autopilot {
 						throw "Invalid sample match";
 					sampleCounts.set(command.name, count);
 				case "drag":
-					fields(command, ["op", "from", "to", "ticks"]);
+					fields(command, ["op", "from", "to", "ticks"], ["seconds"]);
+					limit(command);
 					point(command.from);
 					point(command.to);
 					if (!integer(command.ticks, 1, 36000))
@@ -200,10 +226,25 @@ class Autopilot {
 		return value.length;
 	}
 
-	// A point: an [x, y] pair of finite numbers.
+	// A point: an [x, y] pair of finite numbers, or a widget's: {target, at: [x, y], part?}, target and part names.
 	static function point(value:Dynamic):Void {
+		if (!Std.isOfType(value, Array)) {
+			fields(value, ["target", "at"], ["part"]);
+			if (!Std.isOfType(value.target, String) || value.target == "")
+				throw "Invalid point target";
+			if (value.part != null && (!Std.isOfType(value.part, String) || value.part == ""))
+				throw "Invalid point part";
+			value = value.at;
+		}
 		if (!Std.isOfType(value, Array) || value.length != 2 || !finite(value[0]) || !finite(value[1]))
 			throw "Invalid point";
+	}
+
+	// A command's optional limit on waiting for its widgets' points: seconds, more than 0 and at most 600.
+	static function limit(command:Dynamic):Void {
+		if (Reflect.hasField(command, "seconds")
+			&& (!Std.isOfType(command.seconds, Float) || !(command.seconds > 0) || command.seconds > 600))
+			throw "Invalid seconds";
 	}
 
 	static function finite(value:Dynamic):Bool
@@ -279,6 +320,21 @@ class Autopilot {
 					if (!matches(command, value))
 						throw 'Autopilot assertion failed at command ' + index + ': ' + command.probe + '=' + haxe.Json.stringify(value);
 					finish = true;
+				case "click" if (Reflect.hasField(command, "at")):
+					setKeys([]);
+					if (elapsed == 0)
+						waitStarted = haxe.Timer.stamp();
+					var at = {target: command.target, part: command.part, at: command.at};
+					if (pressedAt < 0 && resolve(at, from, true))
+						pressedAt = elapsed;
+					if (pressedAt < 0)
+						awaitPoint(command, at);
+					else if (elapsed == pressedAt)
+						pointer(from[0], from[1], true);
+					else if (elapsed == pressedAt + 1)
+						pointer(from[0], from[1], false);
+					else
+						finish = true;
 				case "click":
 					setKeys([]);
 					if (elapsed == 0)
@@ -295,19 +351,26 @@ class Autopilot {
 					finish = true;
 				case "drag":
 					setKeys([]);
-					// Typed as numbers first: hxcpp's Dynamic arithmetic on a JSON integer and a fraction would keep only the integer.
-					var length:Int = command.ticks,
-						fromX:Float = command.from[0],
-						fromY:Float = command.from[1],
-						toX:Float = command.to[0],
-						toY:Float = command.to[1];
-					if (elapsed <= length) {
-						var t = elapsed / length;
-						pointer(fromX + (toX - fromX) * t, fromY + (toY - fromY) * t, true);
-					} else if (elapsed == length + 1)
-						pointer(toX, toY, false);
-					else
-						finish = true;
+					if (elapsed == 0)
+						waitStarted = haxe.Timer.stamp();
+					// From found as it presses (it waits until both are), to found again every tick after.
+					if (pressedAt < 0 && resolve(command.from, from, true) && resolve(command.to, to, true))
+						pressedAt = elapsed;
+					if (pressedAt < 0)
+						awaitPoint(command, resolve(command.from, from, true) ? command.to : command.from);
+					else {
+						var length:Int = command.ticks,
+							step = elapsed - pressedAt;
+						if (step > 0 && step <= length + 1 && !resolve(command.to, to, true))
+							throw 'Autopilot drag at command ' + index + ' lost ' + describe(command.to);
+						if (step <= length) {
+							var t = step / length;
+							pointer(from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, true);
+						} else if (step == length + 1)
+							pointer(to[0], to[1], false);
+						else
+							finish = true;
+					}
 				case "type":
 					setKeys([]);
 					if (elapsed == 0)
@@ -318,10 +381,29 @@ class Autopilot {
 					if (!sampleAsked) {
 						if (sample == null)
 							throw 'Autopilot sample at command ' + index + ' with nothing to read the frame with';
+						if (elapsed == 0)
+							waitStarted = haxe.Timer.stamp();
+						// Its points found first, waited for (ticking) while one isn't.
+						var missing:Dynamic = null;
+						sampledPoints = [];
+						for (p in (cast command.points : Array<Dynamic>)) {
+							var at = [0., 0.];
+							if (!resolve(p, at, false)) {
+								missing = p;
+								break;
+							}
+							sampledPoints.push(at);
+						}
+						if (missing != null) {
+							awaitPoint(command, missing);
+							elapsed++;
+							ticks++;
+							return state;
+						}
 						sampleAsked = true;
 						sampled = null;
 						sampleFailure = null;
-						sample(command.points, colors -> sampled = colors, message -> sampleFailure = message);
+						sample(sampledPoints, colors -> sampled = colors, message -> sampleFailure = message);
 					}
 					if (sampleFailure != null)
 						throw 'Autopilot sample failed at command ' + index + ': ' + sampleFailure;
@@ -343,6 +425,7 @@ class Autopilot {
 				});
 				index++;
 				elapsed = 0;
+				pressedAt = -1;
 				setKeys([]);
 				continue;
 			}
@@ -353,16 +436,49 @@ class Autopilot {
 		return state;
 	}
 
-	// The pointer at x, y in the design's units (Screen's, or as given without a runner), down or up.
-	function pointer(x:Float, y:Float, down:Bool):Void {
+	// The pointer at framebuffer pixel x, y (resolve's), down or up.
+	function pointer(x:Float, y:Float, down:Bool):Void
+		state.pointerEvent(x, y, down);
+
+	// Point p where it is now, written to out: in the pointer's framebuffer pixels when pixels is true, else the design's units (Screen's); a
+	// widget's as locate finds it, a plain one as given. Without a runner, in a test, both are as given. False while a widget's isn't found.
+	function resolve(p:Dynamic, out:Array<Float>, pixels:Bool):Bool {
 		var screen = helix.host.Screen.instance;
-		state.pointerEvent(screen != null ? screen.toPixelsX(x) : x, screen != null ? screen.toPixelsY(y) : y, down);
+		// Typed as numbers first: hxcpp's Dynamic arithmetic on a JSON integer and a fraction would keep only the integer.
+		if (Std.isOfType(p, Array)) {
+			var x:Float = p[0], y:Float = p[1];
+			out[0] = pixels && screen != null ? screen.toPixelsX(x) : x;
+			out[1] = pixels && screen != null ? screen.toPixelsY(y) : y;
+			return true;
+		}
+		if (locate == null)
+			throw 'Autopilot point at command ' + index + ' names a widget with nothing to find it with';
+		var x:Float = p.at[0], y:Float = p.at[1];
+		if (!locate(p.target, p.part != null ? p.part : "", x, y, out))
+			return false;
+		if (!pixels && screen != null) {
+			out[0] = screen.toUnitsX(out[0]);
+			out[1] = screen.toUnitsY(out[1]);
+		}
+		return true;
 	}
+
+	// Fails the script once command has waited its limit (its "timeout" in ticks or "seconds", 5 seconds when it gives neither) for widget
+	// point p.
+	function awaitPoint(command:Dynamic, p:Dynamic):Void {
+		var seconds:Float = Reflect.hasField(command, "seconds") ? command.seconds : 5.;
+		if (Reflect.hasField(command, "timeout") ? elapsed >= command.timeout : haxe.Timer.stamp() - waitStarted >= seconds)
+			throw 'Autopilot timeout at command ' + index + ': no shown ' + describe(p);
+	}
+
+	// A widget point's widget and part, for a message.
+	static function describe(p:Dynamic):String
+		return p.part != null ? p.target + ' part ' + p.part : p.target;
 
 	// A sample's colors kept under its name, with its points and tolerance; checked against the sample it must match or differ from.
 	function record(command:Dynamic, colors:Array<Array<Int>>):Void {
 		Reflect.setField(samples, command.name, {
-			points: command.points,
+			points: sampledPoints,
 			colors: colors,
 			tolerance: Reflect.hasField(command, "tolerance") ? command.tolerance : 3
 		});

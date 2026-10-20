@@ -18,8 +18,8 @@ import helix.render2d.Text2D;
 	without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing,
 	and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging
 	through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide,
-	following the theme until the game sizes its layout's width itself), or what a column stretching its children (a panel's) gives it; the
-	square takes a new width a frame later.
+	following the theme until the game sizes its layout's width itself, kept in a column stretching its children, a panel's), or what
+	a column gives it sized Grow(1); the square takes a new width a frame later.
 	Ask color, and changed once a frame. */
 class ColorPicker extends Widget {
 	// The parts the pointer or the keys work in.
@@ -178,7 +178,7 @@ class ColorPicker extends Widget {
 		column.add(textRow);
 		layout = Layout2D.stack(face);
 		layout.add(column);
-		squareLayout.themeSizing(Fit, Fixed(side));
+		squareLayout.themeSizing(null, Fixed(side));
 		this.color = color;
 		readTheme(theme);
 	}
@@ -498,6 +498,21 @@ class ColorPicker extends Widget {
 		return ELSEWHERE;
 	}
 
+	// "square": saturation 0 to 1 left to right, brightness 1 to 0 top to bottom. "hue" and, with alpha, "alpha": the bar between the centers
+	// of its round ends, where its value runs 0 to 1 left to right, as tall as the bar. "swatch": the disc showing the color, its square.
+	override function locatePart(part:String, out:Array<Float>):Null<Node2D> {
+		var bar = part == "hue" ? hueLayout : part == "alpha" ? alphaLayout : null;
+		if (part == "square")
+			Widget.setRectangle(out, squareLayout.x, squareLayout.y, squareLayout.width, squareLayout.height);
+		else if (part == "swatch")
+			Widget.setRectangle(out, swatchLayout.x, swatchLayout.y, diameter, diameter);
+		else if (bar != null)
+			Widget.setRectangle(out, bar.x + thickness / 2, bar.y + (lane - thickness) / 2, Math.max(0, bar.width - thickness), thickness);
+		else
+			return super.locatePart(part, out);
+		return root;
+	}
+
 	// How far along a bar of width (as the layout last placed it) local x is, 0 to 1: between the centers of its round ends.
 	function along(x:Float, width:Float):Float {
 		var span = width - thickness;
@@ -563,15 +578,19 @@ class ColorPicker extends Widget {
 		}
 		var color = get_color();
 		changed = color != was;
-		draw(color, focused);
+		// The part under the pointer, for its handle's look.
+		var over = ELSEWHERE;
+		if (hovered)
+			over = partAt(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY));
+		draw(color, focused, over);
 	}
 
-	// The square as tall as the picker was last made wide (its layout Fixed, or stretched across a column): taken up by the next arrangement, so a
+	// The square as tall as the picker was last made wide (its layout Fixed, or grown across a column): taken up by the next arrangement, so a
 	// new width shows the square's new height a frame later.
 	function fitSquare():Void {
 		if (layout.width > 0 && layout.width != side) {
 			side = layout.width;
-			squareLayout.themeSizing(Fit, Fixed(side));
+			squareLayout.themeSizing(null, Fixed(side));
 		}
 	}
 
@@ -598,8 +617,8 @@ class ColorPicker extends Widget {
 		}
 	}
 
-	// The parts where the layout last placed them, in the color now.
-	function draw(color:Int, focused:Bool):Void {
+	// The parts where the layout last placed them, in the color now, the handles by their states (over: the part under the pointer).
+	function draw(color:Int, focused:Bool, over:Int):Void {
 		var theme = ui.theme,
 			x = squareLayout.x,
 			y = squareLayout.y,
@@ -645,21 +664,24 @@ class ColorPicker extends Widget {
 			swatchChecked = diameter;
 			checker(swatchChecks, swatchChecksPool, capsule(0, 0, diameter, diameter), 0, 0, diameter, diameter, diameter / 6);
 		}
-		// The handles, the one the keys drive in the focus color, dimmed when it can't be used.
-		var markColor = enabled ? theme.handleColor : theme.disabledTextColor;
+		// The handles by their parts' states: held while dragged, over under the pointer, focused while the keys drive it.
 		squareShadow.setPosition(x + s * w, y + (1 - v) * height);
 		squareMark.setPosition(x + s * w, y + (1 - v) * height);
-		squareMark.color = focused && editing == SQUARE ? theme.focusColor : markColor;
+		squareMark.color = handleState(SQUARE, focused, over).handle(theme);
 		var hx = hueLayout.x + r + h * span, hy = hueLayout.y + middle;
 		hueKnob.setPosition(hx, hy);
-		hueKnob.color = focused && editing == HUE ? theme.focusColor : markColor;
+		hueKnob.color = handleState(HUE, focused, over).handle(theme);
 		if (alphaLayout != null) {
 			var ax = alphaLayout.x + r + a * Math.max(0, alphaLayout.width - thickness),
 				ay = alphaLayout.y + middle;
 			alphaKnob.setPosition(ax, ay);
-			alphaKnob.color = focused && editing == ALPHA ? theme.focusColor : markColor;
+			alphaKnob.color = handleState(ALPHA, focused, over).handle(theme);
 		}
 	}
+
+	// The state of part's handle: down while the pointer drags it, over while it's under the pointer (over), focused while the keys drive it.
+	function handleState(part:Int, focused:Bool, over:Int):WidgetState
+		return WidgetState.of(enabled, dragging == part, over == part, focused && editing == part);
 
 	// The outline of a rectangle x, y, w x h with round ends across its shorter side (a disc when it's square), as a polygon's points: fine
 	// enough that the checkerboard cut to it meets the round shapes drawn over its edge.
@@ -769,10 +791,8 @@ class ColorPicker extends Widget {
 private class FormatButton extends Widget {
 	var picker:ColorPicker;
 	var face:Shape2D;
-	var up:Shape2D;
-	var down:Shape2D;
-	// The height its chevrons were made for.
-	var shaped = -1.;
+	var up:Chevron;
+	var down:Chevron;
 
 	@:allow(helix.ui.ColorPicker)
 	function new(ui:Ui, name:String, picker:ColorPicker) {
@@ -781,27 +801,19 @@ private class FormatButton extends Widget {
 		var theme = ui.theme;
 		face = Shape2D.rectangle(1, 1, theme.faceColor);
 		face.setPivot(0, 0);
-		up = Shape2D.polygon([0, 0, 1, 0, 0, 1], theme.textColor);
-		down = Shape2D.polygon([0, 0, 1, 0, 0, 1], theme.textColor);
-		for (n in [face, up, down]) {
-			n.pickable = n == face;
-			root.addChild(n);
-		}
+		root.addChild(face);
+		up = new Chevron(root, true);
+		down = new Chevron(root, false);
 		layout = Layout2D.of(face);
 		readTheme(theme);
 	}
 
-	// As tall as the picker's field (its compact height, from the theme), four fifths as wide, the chevrons made again for a new height.
+	// As tall as the picker's field (its compact height, from the theme), four fifths as wide, the chevrons shaped for its height.
 	override function readTheme(theme:Theme):Void {
 		var height = @:privateAccess picker.compact;
 		themeFixed(layout, height * .8, height);
-		if (height != shaped) {
-			shaped = height;
-			// A chevron's arms out to a, k thick, its point at its position.
-			var a = height * .18, k = Math.max(1.5, height * .08);
-			up.setPoints([-a, a, 0, 0, a, a, a, a + k, 0, k, -a, a + k]);
-			down.setPoints([-a, -a, 0, 0, a, -a, a, -a - k, 0, -k, -a, -a - k]);
-		}
+		up.setSize(height);
+		down.setSize(height);
 	}
 
 	override function get_focusable():Bool
@@ -811,11 +823,12 @@ private class FormatButton extends Widget {
 		return face;
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		var theme = ui.theme;
+		var theme = ui.theme,
+			state = WidgetState.of(enabled, held, hovered, focused);
 		if (enabled && (clicked || activated))
 			@:privateAccess picker.cycleFormat();
-		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
-		up.color = down.color = enabled ? theme.textColor : theme.disabledTextColor;
+		face.color = state.face(theme);
+		up.color = down.color = state.text(theme);
 		// The chevrons a little above and below the middle, as the layout last placed it.
 		var cx = layout.x + layout.width / 2,
 			cy = layout.y + layout.height / 2,

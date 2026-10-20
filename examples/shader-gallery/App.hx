@@ -56,6 +56,7 @@ import helix.shaders.Vignette;
 import helix.shaders.Water;
 import helix.time.Time;
 import helix.ui.ColorPicker;
+import helix.ui.Dropdown;
 import helix.ui.ListView;
 import helix.ui.Panel;
 import helix.ui.Slider;
@@ -64,19 +65,21 @@ import helix.ui.Ui;
 /** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
 	its colors on color pickers (helix.ui's ColorPicker).
 	The scene is the Kenney sports car, a sphere and a skinned character (Quaternius's Ultimate Modular Women) behind a low wall, under a sun
-	casting shadows, with two lamps glowing past white; a row of sprites (the logo twice, a creature of indexed pixels and a checkerboard, both drawn sharp) along the bottom.
+	casting shadows, with two lamps glowing past white; a row of sprites (the logo twice, a creature of indexed pixels and a checkerboard in a clear ring, both drawn sharp) along the bottom.
 	The menu (helix.ui) lists the shaders by kind; choosing one turns it on alone:
 	- surface shaders, on the car's, the sphere's and her materials: Unlit, Toon, Rim, HitFlash (held; F flashes), Dissolve, Water
 	- passes, on the same models: Outline, and Silhouette (her, seen through the wall)
 	- screen effects, over the whole frame (PostProcess): Bloom, Tonemap (ACES over the stage's Neutral), Fxaa, Blur, Vignette, ColorLut (a
 	  teal and orange grade), Crt, ChromaticAberration, Pixelate; and a chain of two, Bloom then Vignette
-	- sprite effects, on the row: SpriteOutline, SpriteFlash (held; F flashes), SpriteDissolve, and PaletteSwap (the creature's indices in a
-	  palette's colors; without it they show as near-black reds)
+	- sprite effects: SpriteOutline, SpriteFlash (held; F flashes) and SpriteDissolve on the row but the creature, and PaletteSwap (the
+	  creature's indices in another row of its palette: it's drawn through its palette's first row the rest of the time, as a game draws an
+	  indexed sprite, since a sprite has one effect and without one its indices show as near-black reds)
 	The sliders under the list set the chosen one's parameters as its fields do; at the top right a color picker sets each of its colors (with
-	an alpha bar where the color's alpha means something), a list above it choosing which when it has several (Water's three, Toon's shadow
-	and rim), its text field taking a color typed (as hex, or decimal channels once its button cycles the format). The menu is drawn after the effects, outside them.
+	an alpha bar where the color's alpha means something), a dropdown above it choosing which when it has several (Water's three, Toon's
+	shadow and rim), its text field taking a color typed (as hex, or decimal channels once its button cycles the format). The menu is drawn after the effects, outside them.
 
 	Pointer, arrows, Enter and a pad use the menu; PageDown / PageUp: the next or previous shader; X: the chosen one off and on to compare;
+	R: PaletteSwap's next row while it's chosen;
 	F: a flash in the flash's color (HitFlash's and SpriteFlash's pickers); O: the camera circling; Escape quits where quitting means anything.
 	Options: autopilot (a script under assets/: the time, her pose and the camera are then held from the first frame, the window the
 	autopilot's page's size, so its samples of the frame compare across targets; the script's click names a shader, None or Chain, choosing
@@ -153,6 +156,8 @@ class App extends BaseApp {
 	var spriteFlash:SpriteFlash;
 	var spriteDissolve:SpriteDissolve;
 	var paletteSwap:PaletteSwap;
+	// The creature's own look, its palette's first row, whenever no sprite effect is on the row.
+	var creatureColors:PaletteSwap;
 	var grade:Texture2D;
 	var creature:Texture2D;
 	var palette:Texture2D;
@@ -271,18 +276,22 @@ class App extends BaseApp {
 				for (channel in 0...4)
 					colors.set((row * 4 + column) * 4 + channel, (PALETTE[row][column] >>> (24 - channel * 8)) & 255);
 		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
-		// A checkerboard of 8 x 8 texels, drawn sharp: hard edges of strong contrast, where Fxaa shows.
-		var squares = Bytes.alloc(8 * 8 * 4);
-		for (i in 0...64) {
-			var light = (i % 8 + Std.int(i / 8)) % 2 == 0;
+		// A checkerboard of 8 x 8 texels, drawn sharp: hard edges of strong contrast, where Fxaa shows; in a clear ring a texel wide, where
+		// the sprite outline shows (drawn 10 texels across, so its squares are as large as the other sprites' texels would make them).
+		var squares = Bytes.alloc(10 * 10 * 4);
+		for (i in 0...100) {
+			var x = i % 10 - 1,
+				y = Std.int(i / 10) - 1,
+				inside = x >= 0 && x < 8 && y >= 0 && y < 8;
+			var light = (x + y) % 2 == 0;
 			for (c in 0...3)
 				squares.set(i * 4 + c, light ? 0xf0 : 0x20);
-			squares.set(i * 4 + 3, 255);
+			squares.set(i * 4 + 3, inside ? 255 : 0);
 		}
-		checker = Texture2D.fromRgba(gpu, 8, 8, squares);
+		checker = Texture2D.fromRgba(gpu, 10, 10, squares);
 		for (i in 0...4) {
 			var sprite = new Sprite2D(i == 2 ? creature : i == 3 ? checker : null);
-			sprite.setSize(112, 112);
+			sprite.setSize(i == 3 ? 140 : 112, i == 3 ? 140 : 112);
 			rowSprites.push(sprite);
 			sprites.add(sprite);
 		}
@@ -309,7 +318,9 @@ class App extends BaseApp {
 		spriteFlash = new SpriteFlash();
 		spriteDissolve = new SpriteDissolve();
 		spriteDissolve.amount = .45;
-		paletteSwap = new PaletteSwap(palette);
+		paletteSwap = new PaletteSwap(palette, 1);
+		creatureColors = new PaletteSwap(palette);
+		rowSprites[2].effect = creatureColors;
 		// The menu over all of it, read from the window's input (an autopilot's menu waits for its script).
 		if (!piloted)
 			build(Input.instance);
@@ -334,10 +345,12 @@ class App extends BaseApp {
 		return pixels;
 	}
 
-	// The autopilot's script in: the menu reads its input, and its clicks choose shaders by name, or use the menu's widgets by theirs.
+	// The autopilot's script in: the menu reads its input, its clicks choose shaders by name or use the menu's widgets by theirs, and its points
+	// on the widgets are found by the UI.
 	function startPilot(bytes:Bytes):Void {
 		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> choose(name) || ui != null && ui.press(name),
-			(points, done, failed) -> Screenshots.sample(points, done, failed));
+			(points, done, failed) -> Screenshots.sample(points, done, failed),
+			(target, part, x, y, out) -> ui != null && ui.computePoint(target, part, x, y, out));
 		build(pilot.input);
 	}
 
@@ -639,6 +652,7 @@ class App extends BaseApp {
 		], 9, "shaders");
 		list = shaders;
 		var choice = ui.panel("menu");
+		choice.title = "Shaders";
 		choice.add(shaders);
 		choice.layout.setAnchor(Start, Start, 16, 84);
 		choice.layout.setSizing(Fixed(300), Fit);
@@ -656,15 +670,13 @@ class App extends BaseApp {
 			panel.layout.setSizing(Fixed(300), Fit);
 			panel.visible = false;
 			e.panel = panel;
-			// A panel a color: which of the shader's colors (when it has several) and its picker, one shown at a time.
+			// A panel a color: a dropdown of which of the shader's colors (when it has several) and its picker, one shown at a time.
 			var names = [for (c in e.colors) c.label];
 			for (c in e.colors) {
 				var colorPanel = ui.panel(e.name + "-" + c.label + "-panel");
 				colorPanel.add(ui.label(e.name + " " + c.label));
 				if (names.length > 1) {
-					var which = ui.list(names, names.length, e.name + "-" + c.label + "-which");
-					which.selectedIndex = names.indexOf(c.label);
-					colorPanel.add(c.which = which);
+					colorPanel.add(c.which = ui.dropdown(names, names.indexOf(c.label), e.name + "-" + c.label + "-which"));
 				}
 				colorPanel.add(c.picker = ui.colorPicker(c.value, c.alpha, e.name + "-" + c.label));
 				colorPanel.layout.setAnchor(End, Start, -16, 84);
@@ -723,10 +735,12 @@ class App extends BaseApp {
 		for (m in materials)
 			make(m);
 
-	// A sprite effect on the whole row.
+	// A sprite effect on the row but the creature, which keeps its palette (a sprite has one effect: without it, its indices show as
+	// near-black reds).
 	function row(effect:SpriteEffect):Void
 		for (s in rowSprites)
-			s.effect = effect;
+			if (s != rowSprites[2])
+				s.effect = effect;
 
 	function newUnlit(m:Material):Unlit {
 		var u = new Unlit(m);
@@ -772,7 +786,7 @@ class App extends BaseApp {
 	}
 
 	// Everything off: the materials on the stage's own shading with no rim (none of them came with one) and no flash, no pass, effect or
-	// sprite effect.
+	// sprite effect but the creature's own colors.
 	function allOff():Void {
 		for (m in materials) {
 			m.setShader(null);
@@ -792,6 +806,7 @@ class App extends BaseApp {
 		spriteFlash.amount = 0;
 		for (s in rowSprites)
 			s.effect = null;
+		rowSprites[2].effect = creatureColors;
 	}
 
 	// Chooses the shader named name (an entry's name), None for none: it alone on, its sliders shown. False for no such name, or before the
@@ -856,7 +871,7 @@ class App extends BaseApp {
 				var c = e.colors.length > 0 ? e.colors[e.color] : null;
 				if (c != null && c.picker.changed)
 					c.set(c.value = c.picker.color);
-				// Another of its colors chosen: that color's panel shown in this one's place, its list choosing it.
+				// Another of its colors chosen: that color's panel shown in this one's place, its dropdown choosing it.
 				if (c != null && c.which != null && c.which.changed && c.which.selectedIndex >= 0) {
 					c.panel.visible = false;
 					e.color = c.which.selectedIndex;
@@ -872,6 +887,12 @@ class App extends BaseApp {
 					choose(entries[chosen < 0 ? 0 : (chosen + 1) % count].name);
 				if (input.isFramePressed(Key.PageUp))
 					choose(entries[chosen <= 0 ? count - 1 : chosen - 1].name);
+			}
+			if (input.isFramePressed(Key.R) && !ui.capturingKeys && chosen >= 0 && entries[chosen].name == "PaletteSwap") {
+				paletteSwap.row = (paletteSwap.row + 1) % PALETTE.length;
+				var rowSlider = entries[chosen].sliders[0].widget;
+				if (rowSlider != null)
+					rowSlider.value = paletteSwap.row;
 			}
 			if (input.isFramePressed(Key.X) && chosen >= 0) {
 				shown = !shown;
@@ -919,10 +940,10 @@ class App extends BaseApp {
 		menu.draw(batch, view);
 		var title = chosen < 0 ? "nothing chosen" : entries[chosen].kind + " shader " + entries[chosen].name + (shown ? "" : " (off)");
 		batch.drawTextWrapped('HeliX shader gallery: $title', vx + 16, vy + 36, 18, vw - 32, 0xf5f5f5ff);
-		batch.drawTextWrapped('PageDown / PageUp: next / previous  X: off and on  F: flash  O: camera${status == "" ? "" : "   " + status}', vx
+		batch.drawTextWrapped('PageDown / PageUp: next / previous  X: off and on  F: flash  O: camera${chosen >= 0 && entries[chosen].name == "PaletteSwap" ? "  R: next row" : ""}${status == "" ? "" : "   " + status}',
+			vx
 			+ 16, vy
-			+ 60,
-			14, vw
+			+ 60, 14, vw
 			- 32, 0xc8c8c8ff);
 		fps.draw(batch, vx + 16, vy + 10);
 		batch.end();
@@ -956,14 +977,14 @@ typedef Setting = {
 }
 
 /** A color of a shader's: its text, its value (0xRRGGBBAA), whether its alpha means anything (its picker then has an alpha bar), what it sets,
-	and once made its panel, the list there choosing among the shader's colors (when it has several) and its picker. */
+	and once made its panel, the dropdown there choosing among the shader's colors (when it has several) and its picker. */
 typedef ColorSetting = {
 	label:String,
 	value:Int,
 	alpha:Bool,
 	set:Int->Void,
 	panel:Null<Panel>,
-	which:Null<ListView>,
+	which:Null<Dropdown>,
 	picker:Null<ColorPicker>
 }
 

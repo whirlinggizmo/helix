@@ -5,9 +5,11 @@ import helix.render2d.Text2D;
 import helix.ui.Layout2D;
 import helix.ui.Layout2D.Layout2DDirection;
 import helix.ui.Layout2D.Sizing;
+import helix.ui.WidgetState;
 
-/** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, alignment and anchors, and the nodes
-	placed by their pivots; the widgets used by keys, the pointer and typing; the color picker's HSV, hex and input. */
+/** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, margins, alignment and anchors, and the nodes
+	placed by their pivots; the widgets used by keys, the pointer and typing, and their parts drawn by their states; the color picker's HSV, hex
+	and input; a panel's title; the popup layer and the dropdown opening on it. */
 class UiTests {
 	static var checks = 0;
 
@@ -23,13 +25,187 @@ class UiTests {
 	public static function main():Void {
 		var font = Font2D.builtIn(new CountingGraphics());
 		layout(font);
+		margins(font);
 		widgets(font);
 		typing(font);
 		tiles(font);
 		hsv();
 		colors(font);
 		theming(font);
+		contrast();
+		scrolling(font);
+		states(font);
+		titled(font);
+		dropdowns(font);
+		separators(font);
+		points(font);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// Points on widgets and their parts (Ui.computePoint), in framebuffer pixels through the camera (two to a unit here): a widget's laid-out
+	// rectangle, a slider's track, a color picker's square, bars and swatch, a scroll area's and a list's scrollbar and a list's rows, a
+	// dropdown's list and rows only while it's open; none for a hidden widget, an unknown one or an unknown part. An autopilot finding its points
+	// through it drags a slider along its track and clicks a dropdown's row.
+	static function points(font:Font2D):Void {
+		var stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(1600, 1200);
+		camera.pixels(2);
+		var ui:Null<helix.ui.Ui> = null;
+		var pilot = new helix.debug.Autopilot('{"version":1,"seed":1,"commands":['
+			+ '{"op":"drag","from":{"target":"volume","part":"track","at":[0,0.5]},"to":{"target":"volume","part":"track","at":[0.75,0.5]},"ticks":3},'
+			+ '{"op":"click","target":"pick","seconds":5},'
+			+ '{"op":"click","target":"pick","part":"row:2","at":[0.5,0.5],"seconds":5}]}',
+			null, name -> ui.press(name), null, (target, part, x, y, out) -> ui.computePoint(target, part, x, y, out));
+		var input = pilot.input;
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var panel = ui.panel(),
+			volume = ui.slider("Volume", 0, 100, 0, 0, "volume"),
+			tint = ui.colorPicker(0xff0000ff, true, "tint"),
+			area = ui.scrollArea(60, "area"),
+			list = ui.list([for (i in 0...20) 'Item $i'], 4, "items"),
+			pick = ui.dropdown(["Low", "Medium", "High"], 0, "pick"),
+			hidden = ui.button("Hidden", "hidden");
+		for (i in 0...10)
+			area.add(ui.label('Line $i'));
+		for (w in [volume, tint, area, list, pick, hidden])
+			panel.add(w);
+		hidden.visible = false;
+		panel.layout.setSizing(Fixed(300), Fit);
+		var layout = holding(sized(Grow(1), Grow(1)), [panel.layout]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		// As an app's frame: laid out, the pointer and the UI updated (through the places last drawn), then drawn.
+		function frame():Void {
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			pointer.update();
+			ui.update();
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+		}
+		frame();
+		frame();
+		var out = [0., 0.];
+		function at(name:String, part:String, x:Float, y:Float, ex:Float, ey:Float):Bool
+			return ui.computePoint(name, part, x, y, out) && near(out[0], ex * 2) && near(out[1], ey * 2);
+		var b = volume.layout,
+			track:Layout2D = @:privateAccess volume.trackLayout;
+		check(at("volume", "", 0, 0, b.x, b.y)
+			&& at("volume", "", 1, 1, b.x + b.width, b.y + b.height), "A widget's rectangle, in pixels");
+		check(at("volume", "", -.5, 2, b.x - b.width / 2, b.y + b.height * 2), "Past its edges, outside it");
+		check(at("volume", "track", .25, .5, track.x + track.width / 4, track.y + track.height / 2), "A slider's track");
+		var square:Layout2D = @:privateAccess tint.squareLayout,
+			hue:Layout2D = @:privateAccess tint.hueLayout,
+			alpha:Layout2D = @:privateAccess tint.alphaLayout,
+			thick:Float = @:privateAccess tint.thickness,
+			lane:Float = @:privateAccess tint.lane;
+		check(at("tint", "square", 1, 0, square.x + square.width, square.y), "A color picker's square");
+		check(at("tint", "hue", 0, .5, hue.x + thick / 2, hue.y + lane / 2)
+			&& at("tint", "hue", 1, .5, hue.x + hue.width - thick / 2, hue.y + lane / 2),
+			"Its hue bar between the centers of its round ends, in the middle of its lane");
+		check(at("tint", "alpha", .5, .5, alpha.x + alpha.width / 2, alpha.y + lane / 2) && ui.computePoint("tint", "swatch", .5, .5, out),
+			"Its alpha bar and its swatch");
+		check(area.scrollbarShown && ui.computePoint("area", "track", .5, .5, out) && ui.computePoint("area", "thumb", .5, .5, out),
+			"A scroll area's scrollbar's track and thumb");
+		var thumbTop = out[1];
+		area.scroll = area.maxScroll;
+		frame();
+		check(ui.computePoint("area", "thumb", .5, .5, out) && out[1] > thumbTop, "The thumb found where it's moved to");
+		var pad = ui.theme.listPadding, row = ui.theme.listRowHeight;
+		check(at("items", "row:1", 0, 0, list.layout.x + pad, list.layout.y + pad + row) && ui.computePoint("items", "thumb", .5, .5, out),
+			"A list's rows and scrollbar");
+		check(!ui.computePoint("items", "row:20", 0, 0, out) && !ui.computePoint("items", "row:x", 0, 0, out), "No row past its items");
+		check(!ui.computePoint("pick", "list", 0, 0, out)
+			&& !ui.computePoint("pick", "row:0", 0, 0, out), "A dropdown's list only while open");
+		check(!ui.computePoint("hidden", "", 0, 0, out)
+			&& !ui.computePoint("nobody", "", 0, 0, out)
+			&& !ui.computePoint("volume", "knob", 0, 0, out),
+			"None for a hidden widget, an unknown one or an unknown part");
+		// The autopilot: its drag along the track three-quarters of the way, then the dropdown opened and its third row clicked.
+		for (_ in 0...40) {
+			pilot.advance(name -> null);
+			frame();
+			if (pilot.done)
+				break;
+		}
+		check(pilot.done && Math.abs(volume.value - 75) < 1e-3, "An autopilot drags a slider by its track: " + volume.value);
+		check(pick.selectedIndex == 2 && !pick.open, "and clicks a dropdown's row: " + pick.selectedIndex);
+	}
+
+	// Separators: one across a panel's column (spanning it, as thick as the theme's focusWidth, half a gap of room above and below), one down a
+	// row (spanning its height); the theme's faceColor; a theme changed shows at the next frame; never focused or picked.
+	static function separators(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var panel = ui.panel(),
+			above = ui.button("Above"),
+			across = ui.separator(),
+			below = ui.button("Below"),
+			left = ui.button("Left"),
+			down = ui.separator(true, "down"),
+			right = ui.button("Right");
+		for (w in [above, across, below])
+			panel.add(w);
+		var row = Layout2D.row();
+		row.setSizing(Fit, Fixed(60));
+		for (w in [left, down, right]) {
+			panel.adopt(w);
+			row.add(w.layout);
+		}
+		panel.content.add(row);
+		panel.layout.setSizing(Fixed(400), Fit);
+		var layout = holding(sized(Grow(1), Grow(1)), [panel.layout]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame():Void {
+			input.endFrame();
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		frame();
+		frame();
+		var theme = ui.theme,
+			line:Shape2D = @:privateAccess across.line,
+			upright:Shape2D = @:privateAccess down.line;
+		var inner = 400 - theme.padding * 2;
+		check(!across.vertical && down.vertical && across.name == "separator" && down.name == "down", "Made across, or down when vertical");
+		check(near(across.layout.width, inner)
+			&& near(line.width, inner)
+			&& near(line.height, theme.focusWidth)
+			&& near(across.layout.height, theme.focusWidth + theme.gap),
+			"Across the column, as thick as focusWidth, half a gap either side");
+		check(near(line.y, across.layout.y + theme.gap / 2) && near(below.layout.y, across.layout.y + across.layout.height + theme.gap),
+			"The line in the middle of its room, the next widget a gap under it");
+		check(near(upright.height, 60)
+			&& near(upright.width, theme.focusWidth)
+			&& near(down.layout.width, theme.focusWidth + theme.gap)
+			&& near(upright.x, left.layout.x + left.layout.width + theme.gap / 2),
+			"Down the row, spanning its height, half a gap either side");
+		check(line.color == theme.faceColor && upright.color == theme.faceColor && !line.pickable, "In the faces' color, never picked");
+		check(!across.focusable && !down.focusable, "Never focused");
+		theme.faceColor = 0x405060ff;
+		theme.focusWidth = 3;
+		theme.gap = 10;
+		frame();
+		check(line.color == 0x405060ff, "The theme changed: its color at the next frame");
+		frame();
+		check(near(line.height, 3) && near(across.layout.height, 13) && near(upright.width, 3), "Arranged again: its new thickness and room");
+		// A game's sizing wins: a separator made narrower keeps its width in the panel's stretching column, at its start.
+		across.layout.widthSizing = Fixed(100);
+		frame();
+		frame();
+		check(near(across.layout.width, 100) && near(across.layout.x, panel.content.x + theme.padding), "A width the game sets is kept");
 	}
 
 	// Tiles in a grid (rows of a column), with a button under them: arrows and the D-pad move focus across and down the grid on screen, Tab in
@@ -135,13 +311,14 @@ class UiTests {
 			wide = ui.button("Wide"),
 			kept = ui.panel();
 		title.textSize = 30;
+		var startPadding = ui.theme.padding;
 		// Values a game set equal to the theme's: still the game's, kept when the theme changes (no guessing from the value); a game's width
 		// leaves the height the theme's.
 		same.layout.setSizing(Fit, Fixed(40));
-		same.layout.setPadding(20, 0, 20, 0);
+		same.layout.setPadding(startPadding * 2, 0, startPadding * 2, 0);
 		wide.layout.widthSizing = Fixed(120);
 		kept.content.gap = 8;
-		kept.content.setPadding(10, 10, 10, 10);
+		kept.content.setPadding(startPadding, startPadding, startPadding, startPadding);
 		title.color = 0x123456ff;
 		volume.valueShown = true;
 		fixedBar.layout.setSizing(Grow(1), Fixed(10));
@@ -242,10 +419,13 @@ class UiTests {
 		check(play.layout.height == 50 && name.layout.height == 50 && volume.layout.height == 50 && sound.layout.height == 50 && wasToggle == 40,
 			"Arranged again: the widgets' heights");
 		check(levels.layout.height == 3 * 30 + 6 * 2 && listRow.height == 30, "A list's rows' height and its padding");
-		check(panel.content.paddingLeft == 14 && wasPadding == 10 && play.layout.paddingLeft == 28 && name.layout.paddingLeft == 14,
+		check(panel.content.paddingLeft == 14 && wasPadding == startPadding && play.layout.paddingLeft == 28 && name.layout.paddingLeft == 14,
 			"Padding: a panel's, a button's, a field's");
 		check(panel.content.gap == 12 && @:privateAccess sound.row.gap == 12, "Gaps never set follow the theme");
-		check(same.layout.height == 40 && same.layout.paddingLeft == 20 && kept.content.gap == 8 && kept.content.paddingLeft == 10,
+		check(same.layout.height == 40
+			&& same.layout.paddingLeft == startPadding * 2
+			&& kept.content.gap == 8
+			&& kept.content.paddingLeft == startPadding,
 			"Sizing, padding and a gap the game set, equal to the theme's then, are kept");
 		check(wide.layout.widthSizing.match(Fixed(120))
 			&& wide.layout.height == 50, "A width the game set is kept, the height still the theme's");
@@ -292,6 +472,33 @@ class UiTests {
 		return parent;
 	}
 
+	// The default theme's faces stand apart from its panel whatever is behind the panel: a panel see-through enough that a bright scene behind
+	// it (the dressing room's lit plinth, the camera close) brings it to a face's color hides every face on it, its text left floating.
+	static function contrast():Void {
+		var theme = new helix.ui.Theme();
+		for (backdrop in [0x000000ff, 0xffffffff]) {
+			var panel = over(theme.panelColor, backdrop);
+			for (face in [theme.faceColor, theme.hoveredColor, theme.pressedColor])
+				check(difference(face, panel) >= 36, 'A face (${StringTools.hex(face, 8)}) apart from the panel over ${StringTools.hex(backdrop, 8)}');
+		}
+	}
+
+	// color (0xRRGGBBAA) blended by its alpha over an opaque backdrop.
+	static function over(color:Int, backdrop:Int):Int {
+		var a = (color & 255) / 255, out = 0xff;
+		for (shift in [24, 16, 8])
+			out |= Math.round(((color >>> shift) & 255) * a + ((backdrop >>> shift) & 255) * (1 - a)) << shift;
+		return out;
+	}
+
+	// The summed difference of two colors' red, green and blue, 0 to 765.
+	static function difference(a:Int, b:Int):Int {
+		var sum = 0;
+		for (shift in [24, 16, 8])
+			sum += Std.int(Math.abs(((a >>> shift) & 255) - ((b >>> shift) & 255)));
+		return sum;
+	}
+
 	static function layout(font:Font2D):Void {
 		// A row: fixed children, a gap between, padding around; it fits them.
 		var a = fixed(50, 20), b = fixed(50, 30), c = fixed(50, 20);
@@ -312,12 +519,41 @@ class UiTests {
 		centred.setAlign(Center, Start);
 		Layout2D.arrange(centred, 0, 0, 1000, 1000, font);
 		check(half.width == 200 && half.x == 100, "A share of the parent, centred when nothing grows");
-		// A column stretching its children across.
-		var wide = sized(Fit, Fixed(10)),
-			column = holding(sized(Fixed(300), Fit, Column), [wide]);
+		// A column stretching its children across: those growing across and those whose width nobody set; the others keep theirs, at the
+		// column's start or their own anchor across.
+		var wide = Layout2D.stack(),
+			grown = sized(Grow(1), Fixed(10)),
+			narrow = fixed(40, 10),
+			fit = holding(sized(Fit, Fixed(10)), [fixed(60, 10)]),
+			share = sized(Percent(.5), Fixed(10)),
+			ended = fixed(40, 10);
+		wide.heightSizing = Fixed(10);
+		ended.setAnchor(End, Start);
+		var column = holding(sized(Fixed(300), Fit, Column), [wide, grown, narrow, fit, share, ended]);
+		column.setPadding(10, 0, 10, 0);
 		column.setAlign(Start, Stretch);
 		Layout2D.arrange(column, 0, 0, 1000, 1000, font);
-		check(wide.width == 300, "Stretch fills across a column");
+		check(wide.width == 280 && wide.x == 10 && grown.width == 280 && grown.x == 10, "Stretch fills across a column: unsized and growing");
+		check(narrow.width == 40 && narrow.x == 10 && fit.width == 60 && fit.x == 10, "A fixed and a fitted width kept in a stretching column");
+		check(share.width == 140 && share.x == 10 && ended.width == 40 && ended.x == 250, "A share kept; one anchored at the end across");
+		// A row stretching its children down, alike.
+		var tall = Layout2D.stack(),
+			high = sized(Fixed(10), Grow(1)),
+			short = fixed(10, 30),
+			fitHigh = holding(sized(Fixed(10), Fit), [fixed(10, 50)]),
+			middled = fixed(10, 30);
+		tall.widthSizing = Fixed(10);
+		middled.setAnchor(Start, Center);
+		var across = holding(sized(Fit, Fixed(200), Row), [tall, high, short, fitHigh, middled]);
+		across.setAlign(Start, Stretch);
+		Layout2D.arrange(across, 0, 0, 1000, 1000, font);
+		check(tall.height == 200
+			&& high.height == 200
+			&& short.height == 30
+			&& short.y == 0
+			&& fitHigh.height == 50
+			&& middled.y == 85,
+			"Stretch down a row: unsized and growing filled, fixed and fitted kept, one anchored in the middle");
 		// A stack: anchored to a corner and the middle, moved by offsets.
 		var corner = fixed(40, 20), middle = fixed(40, 20);
 		corner.setAnchor(End, End, -10, -10);
@@ -333,7 +569,7 @@ class UiTests {
 		var panelLayout = Layout2D.of(panel),
 			dotLayout = Layout2D.of(dot),
 			labelLayout = Layout2D.of(label);
-		panelLayout.setSizing(Fit, Fixed(30));
+		panelLayout.heightSizing = Fixed(30);
 		var nodes = holding(sized(Fixed(200), Fit, Column), [panelLayout, dotLayout, labelLayout]);
 		nodes.setAlign(Start, Stretch);
 		nodes.gap = 4;
@@ -344,6 +580,110 @@ class UiTests {
 		var fitted = holding(Layout2D.row(), [Layout2D.of(new Text2D("PLAY", 20))]);
 		Layout2D.arrange(fitted, 0, 0, 1000, 1000, font);
 		check(near(fitted.width, font.measure("PLAY", 20)), "A text fits its measure");
+	}
+
+	// Margins: room outside a layout, adding to the gaps in a row or column (never collapsing), counted in what its parent fits, taken before
+	// growing children share the room, kept clear of when stretching or aligning across, insetting it in a stack; the game's kept over the
+	// theme's; negative ones refused.
+	static function margins(font:Font2D):Void {
+		// A row: margins either side add to the gap; across, they keep it from the padding edge; the row fits them.
+		var a = fixed(50, 20), b = fixed(50, 30);
+		a.setMargin(5, 3, 7, 0);
+		b.setMargin(4, 0, 0, 6);
+		var row = holding(Layout2D.row(), [a, b]);
+		row.setPadding(2, 2, 2, 2);
+		row.gap = 10;
+		Layout2D.arrange(row, 0, 0, 1000, 1000, font);
+		check(a.x == 7 && b.x == 7 + 50 + 7 + 10 + 4 && a.y == 5 && b.y == 2, "A row: margins add to the gap and keep off the padding edge");
+		check(row.width == 2 + 5 + 50 + 7 + 10 + 4 + 50 + 2 && row.height == 2 + 30 + 6 + 2, "A row fits its children's margins");
+		// A column: a bottom margin and the next one's top both add to the gap, never collapsing into the larger.
+		var top = fixed(40, 20), next = fixed(40, 20);
+		top.setMargin(0, 10, 0, 5);
+		next.setMargin(0, 8, 0, 0);
+		var column = holding(Layout2D.column(), [top, next]);
+		column.gap = 4;
+		Layout2D.arrange(column, 0, 0, 1000, 1000, font);
+		check(top.y == 10
+			&& next.y == 10 + 20 + 5 + 4 + 8
+			&& column.height == 10 + 20 + 5 + 4 + 8 + 20, "A column: margins added, not collapsed, and fitted");
+		// A stack fits its children with their margins.
+		var held = fixed(40, 20);
+		held.setMargin(1, 2, 3, 4);
+		var fitStack = holding(Layout2D.stack(), [held]);
+		Layout2D.arrange(fitStack, 0, 0, 1000, 1000, font);
+		check(fitStack.width == 44 && fitStack.height == 26 && held.x == 1 && held.y == 2, "A stack fits a child's margins, which inset it");
+		// Growing children share the room left after every child's margins; a share is of the room its own margins leave.
+		var fix = fixed(100, 10),
+			one = sized(Grow(1), Fixed(10)),
+			two = sized(Grow(2), Fixed(10));
+		fix.setMargin(10, 0, 10, 0);
+		one.setMargin(0, 0, 20, 0);
+		var grow = holding(sized(Fixed(400), Fixed(10), Row), [fix, one, two]);
+		Layout2D.arrange(grow, 0, 0, 1000, 1000, font);
+		var left = 400 - 100 - 10 - 10 - 20;
+		check(fix.x == 10 && near(one.x, 120) && near(one.width, left / 3) && near(two.width, left * 2 / 3) && near(two.x, 120 + left / 3 + 20),
+			"Growing children share the room left after the margins");
+		var half = sized(Percent(.5), Fixed(10)),
+			centred = holding(sized(Fixed(400), Fixed(10), Row), [half]);
+		half.setMargin(20, 0, 20, 0);
+		centred.setAlign(Center, Start);
+		Layout2D.arrange(centred, 0, 0, 1000, 1000, font);
+		check(half.width == 180 && half.x == 90 + 20, "A share of the room its margins leave, its margin box centred");
+		// Across a column: stretched less the margins; Center and End place the margin box.
+		var stretched = Layout2D.stack(),
+			middled = fixed(40, 10),
+			ended = fixed(40, 10);
+		stretched.heightSizing = Fixed(10);
+		stretched.setMargin(6, 0, 4, 0);
+		middled.setMargin(10, 0, 0, 0);
+		middled.setAnchor(Center, Start);
+		ended.setMargin(0, 0, 12, 0);
+		ended.setAnchor(End, Start);
+		var across = holding(sized(Fixed(300), Fit, Column), [stretched, middled, ended]);
+		across.setPadding(10, 0, 10, 0);
+		across.setAlign(Start, Stretch);
+		Layout2D.arrange(across, 0, 0, 1000, 1000, font);
+		check(stretched.width == 300 - 20 - 10 && stretched.x == 10 + 6, "Stretch fills across less the margins");
+		check(middled.x == 10 + 10 + (280 - 10 - 40) / 2 && ended.x == 10 + 280 - 12 - 40, "Center and End across place the margin box");
+		// Along a column: Center and End place the margin boxes.
+		var low = fixed(10, 20), mid = fixed(10, 20);
+		low.setMargin(0, 0, 0, 5);
+		mid.setMargin(0, 5, 0, 5);
+		var ending = holding(sized(Fixed(10), Fixed(100), Column), [low]),
+			centring = holding(sized(Fixed(10), Fixed(100), Column), [mid]);
+		ending.setAlign(End, Start);
+		centring.setAlign(Center, Start);
+		Layout2D.arrange(ending, 0, 0, 1000, 1000, font);
+		Layout2D.arrange(centring, 0, 0, 1000, 1000, font);
+		check(low.y == 100 - 5 - 20 && mid.y == (100 - 30) / 2 + 5, "End and Center along a column place the margin boxes");
+		// A stack: stretched inside the margins; anchored to a corner, its offset inside them.
+		var filled = Layout2D.stack(), corner = fixed(40, 20);
+		filled.setAnchor(Stretch, Stretch);
+		filled.setMargin(10, 20, 30, 40);
+		corner.setAnchor(End, End, -5, -5);
+		corner.setMargin(0, 0, 10, 10);
+		var screen = holding(sized(Grow(1), Grow(1)), [filled, corner]);
+		Layout2D.arrange(screen, 0, 0, 800, 600, font);
+		check(filled.x == 10 && filled.y == 20 && filled.width == 760 && filled.height == 540, "A stack's child stretched inside its margins");
+		check(corner.x == 800 - 10 - 40 - 5 && corner.y == 600 - 10 - 20 - 5, "Anchored at a corner, its offset inside its margins");
+		// The root's margins inside arrange's rectangle.
+		var root = sized(Grow(1), Grow(1));
+		root.setMargin(5, 6, 0, 4);
+		Layout2D.arrange(root, 0, 0, 1000, 1000, font);
+		check(root.x == 5 && root.y == 6 && root.width == 995 && root.height == 990, "The root inside its margins");
+		// The theme's margin applies until the game sets one, then never again; a negative or non-finite one is refused, nothing changed.
+		var owned = fixed(10, 10);
+		@:privateAccess owned.themeMargin(1, 2, 3, 4);
+		check(owned.marginLeft == 1 && owned.marginBottom == 4, "The theme's margin while the game set none");
+		check(owned.setMargin(0, 0, 0, 0) && owned.marginLeft == 0, "The game's margin, though none");
+		@:privateAccess owned.themeMargin(5, 5, 5, 5);
+		check(owned.marginLeft == 0 && owned.marginTop == 0, "The game's margin kept over the theme's");
+		check(!owned.setMargin(-1, 0, 0, 0)
+			&& !owned.setMargin(0, Math.NaN, 0, 0)
+			&& !owned.setMargin(0, 0, Math.POSITIVE_INFINITY, 0)
+			&& owned.marginLeft == 0
+			&& owned.marginTop == 0,
+			"A negative or non-finite margin refused");
 	}
 
 	// The widgets used by keys, the pointer and a pad's absence: focus order, the ring, activation, the held-key guard, back, a toggle, a
@@ -583,7 +923,7 @@ class UiTests {
 			&& C.formatRgba(0x0a0b0cff, false) == "10 11 12", "RGBA written apart by spaces");
 	}
 
-	// A color picker in a panel: as wide as the panel's column, its square edge to edge and as tall, the strip and the field's row under it;
+	// A color picker in a panel: the theme's width there, then grown as wide as the panel's column, its square edge to edge and as tall, the strip and the field's row under it;
 	// dragged in its square, along its bars, past their ends and through black (the hue kept); its parts stepped through by Enter and nudged
 	// by the arrows, then let go so the arrows move focus again; hex typed in its field, refused text marked and changing nothing, the field
 	// showing the color once left; the format cycled by its button (clicked, pressed by name, activated) and decimal channels typed; disabled.
@@ -632,9 +972,14 @@ class UiTests {
 		var field = picker.textField,
 			button = picker.formatButton,
 			theme = ui.theme;
+		check(picker.layout.width == theme.colorPickerWidth && picker.layout.x == panel.content.x + theme.padding,
+			"The theme's width kept in the panel's column, which stretches its children: at its start");
+		picker.layout.widthSizing = Grow(1);
+		frame();
+		frame();
 		check(field.name == "tint-text" && button.name == "tint-format" && field.text == "ff0000ff" && field.hint == "RRGGBBAA" && picker.format == Hex,
 			"The field and the button named after the picker, the field showing its color as hex");
-		// The layout: the square edge to edge across the 480 units the panel's column gives it, as tall; the swatch and the bars in a padded
+		// The layout: the square edge to edge across the room the panel's column gives it grown (500 less its padding), as tall; the swatch and the bars in a padded
 		// strip under it, the hue's row and the alpha's beside the swatch's middle; the field and the button centered under them.
 		var side = picker.layout.width,
 			pad = theme.padding,
@@ -642,11 +987,7 @@ class UiTests {
 			swatch = @:privateAccess picker.swatchLayout,
 			hueRow = @:privateAccess picker.hueLayout,
 			alphaRow = @:privateAccess picker.alphaLayout;
-		check(side == 480
-			&& square.x == picker.layout.x
-			&& square.y == picker.layout.y
-			&& square.width == side
-			&& square.height == side,
+		check(side == 500 - pad * 2 && square.x == picker.layout.x && square.y == picker.layout.y && square.width == side && square.height == side,
 			"The square edge to edge across the picker's width, as tall: " + side);
 		check(swatch.x == picker.layout.x + pad && swatch.y == square.y + side + pad && swatch.width == swatch.height,
 			"The swatch at the strip's padded start");
@@ -802,5 +1143,740 @@ class UiTests {
 		frame();
 		check(opaque.textField.text == "17 34 51" && opaque.textField.hint == "r g b" && @:privateAccess opaque.caption.text == "RGB",
 			"Without alpha: three channels, RGB");
+	}
+
+	// A scroll area of buttons and a list: their scrollbars' thumbs sized and placed by the content, the wheel, drags on the content, the thumb
+	// and the track, keys and focus scrolling them, held to their ends; clipped widgets not taking the pointer; the bar shown always, when
+	// needed or never, the content narrowing for it; theme changes at the next frame.
+	static function scrolling(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var top = ui.button("Top"),
+			area = ui.scrollArea(200, "area"),
+			buttons = [for (i in 0...10) ui.button('B$i')],
+			after = ui.button("After"),
+			fits = ui.scrollArea(200, "fits"),
+			few = [for (i in 0...2) ui.button('F$i')],
+			notes = ui.scrollArea(100, "notes"),
+			lines = [for (i in 0...6) ui.label('Line $i')],
+			list = ui.list([for (i in 0...20) 'Item $i'], 4, "items"),
+			short = ui.list(["One", "Two"], 4, "short");
+		for (b in buttons)
+			area.add(b);
+		for (b in few)
+			fits.add(b);
+		for (l in lines)
+			notes.add(l);
+		// The area 100 units down, 300 wide, After right under it; the others beside it.
+		top.layout.setSizing(Grow(1), Fixed(100));
+		var column = Layout2D.column();
+		column.setSizing(Fixed(300), Grow(1));
+		for (w in [top, area, after])
+			column.add(w.layout);
+		var others = Layout2D.column();
+		others.setSizing(Fixed(300), Grow(1));
+		others.gap = 10;
+		for (w in [fits, notes, list, short])
+			others.add(w.layout);
+		var layout = Layout2D.row();
+		layout.setSizing(Grow(1), Grow(1));
+		layout.gap = 50;
+		layout.add(column);
+		layout.add(others);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool, wheel = 0.):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			if (wheel != 0)
+				input.wheelEvent(0, wheel);
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		var bar:helix.ui.Scrollbar = @:privateAccess area.bar;
+		frame();
+		frame();
+		// Ten buttons 40 tall, 8 apart: 472 units of content in a 200-unit window.
+		check(near(area.layout.y, 100) && near(area.layout.height, 200), "The area's window: its height as made");
+		check(near(area.content.height, 472) && near(area.maxScroll, 272), "Its content's height, and how far it scrolls");
+		check(area.scrollbarShown && near(bar.width, 8), "The bar shown, the content overflowing");
+		check(near(bar.thumbLength, 200 * 200 / 472) && near(bar.thumbOffset, 0), "The thumb the share in view, at the top");
+		check(near(buttons[0].layout.width, 300 - 8 - 8), "The buttons narrowed for the bar and a gap");
+		// The wheel over a button in it scrolls it a widget's height a notch, held to its ends.
+		frame(50, 120, false, -1);
+		check(near(area.scroll, 40), "The wheel over a button scrolls the area");
+		frame(50, 120, false, 5);
+		check(near(area.scroll, 0), "Held at the top");
+		frame(50, 120, false, -100);
+		check(near(area.scroll, 272) && near(bar.thumbOffset, 200 - bar.thumbLength), "Held at the end, the thumb at the bottom");
+		frame(50, 80, false, -1);
+		frame(50, 80, false, 1);
+		check(near(area.scroll, 272), "The wheel outside it does nothing");
+		// What's clipped isn't picked: B0 scrolled 30 up out of the window's top; B4 reaching under its bottom, over After.
+		area.scroll = 30;
+		frame(50, 50, false);
+		frame(50, 50, false);
+		check(near(buttons[0].layout.y, 70), "Arranged at the scroll: B0 above the window's top");
+		frame(50, 90, true);
+		frame(50, 90, false);
+		check(!buttons[0].clicked, "B0's clipped part isn't clicked");
+		frame(50, 105, true);
+		frame(50, 105, false);
+		check(buttons[0].clicked, "B0's part in view is");
+		check(near(buttons[4].layout.y + buttons[4].layout.height, 302)
+			&& near(after.layout.y, 300), "B4 reaching past the window, over After");
+		frame(50, 301, true);
+		frame(50, 301, false);
+		check(after.clicked && !buttons[4].clicked, "Under the window After takes the click, not B4");
+		// A drag on the content's empty space (a gap between buttons) scrolls it with the pointer.
+		area.scroll = 0;
+		frame(50, 50, false);
+		frame(50, 50, false);
+		frame(50, 144, true);
+		frame(50, 104, true);
+		check(near(area.scroll, 40), "Dragged up 40: scrolled 40");
+		frame(50, 84, true);
+		frame(50, 84, false);
+		check(near(area.scroll, 60), "And on with the pointer");
+		check(!buttons[0].clicked && !buttons[1].clicked, "A drag clicks nothing");
+		// The thumb dragged: its top follows the pointer, the scroll in proportion; past the end held there.
+		frame(296, 300, false);
+		var grabY = 100 + bar.thumbOffset + 5, offset = bar.thumbOffset;
+		frame(296, grabY, true);
+		check(bar.dragging && near(area.scroll, 60), "The thumb taken, nothing moved yet");
+		frame(296, grabY + 20, true);
+		check(near(area.scroll, (offset + 20) / (200 - bar.thumbLength) * 272), "Dragged 20 down: the scroll in proportion");
+		frame(296, 590, true);
+		check(near(area.scroll, 272), "Dragged past the end: held there");
+		frame(296, 590, false);
+		check(!bar.dragging, "Let go");
+		// The track pressed above the thumb: a page (the window's height) up.
+		frame(296, 105, true);
+		frame(296, 105, false);
+		check(near(area.scroll, 72), "The track above the thumb: a page up");
+		frame(296, 299, true);
+		frame(296, 299, false);
+		check(near(area.scroll, 272), "Below it: a page down, held at the end");
+		// Focus moved by the game or keys to a button out of view scrolls it into view, with room for the ring; Page Up and Down page.
+		area.scroll = 0;
+		frame(50, 50, false);
+		ui.focused = buttons[6];
+		frame();
+		var margin = ui.theme.focusWidth * 3;
+		check(near(area.scroll, 6 * 48 + 40 + margin - 200), "Focus on B6: scrolled to show it");
+		frame([Tab]);
+		check(ui.focused == buttons[7] && near(area.scroll, 7 * 48 + 40 + margin - 200), "Tab to B7: on to show it");
+		frame([Up]);
+		frame([Up]);
+		frame([Up]);
+		frame([Up]);
+		frame([Up]);
+		check(ui.focused == buttons[2] && near(area.scroll, 2 * 48 - margin), "Up to B2, above the window: scrolled back to it");
+		frame([PageDown]);
+		check(near(area.scroll, 272), "Page Down with focus in it: a page, held at the end");
+		frame([PageUp]);
+		check(near(area.scroll, 72), "Page Up: a page back");
+		frame([PageUp]);
+		check(near(area.scroll, 0), "And held at the top");
+		// An area with nothing focusable in it takes focus itself; Up and Down step it.
+		ui.focused = notes;
+		frame();
+		frame([Down]);
+		check(ui.focused == notes && near(notes.scroll, ui.theme.widgetHeight), "Down steps an area holding no focusable widget");
+		// Content that fits: no bar, the buttons full width, nothing to scroll.
+		check(near(fits.maxScroll, 0) && !fits.scrollbarShown && near(few[0].layout.width, 300), "Content that fits: no bar, full width");
+		frame(350 + 50, 20, false, -1);
+		check(near(fits.scroll, 0), "Nothing to scroll");
+		// Always: the bar drawn with content that fits, its thumb the track's length, the buttons narrowed; Never: no bar, full width, still
+		// scrolled by the wheel.
+		fits.scrollbarVisibility = Always;
+		area.scrollbarVisibility = Never;
+		frame();
+		frame();
+		var fitsBar:helix.ui.Scrollbar = @:privateAccess fits.bar;
+		check(fits.scrollbarShown && near(fitsBar.thumbLength, 200) && near(fitsBar.thumbOffset, 0), "Always: shown, the thumb the whole track");
+		check(near(few[0].layout.width, 284), "Always: the buttons narrowed for it");
+		check(!area.scrollbarShown && near(buttons[0].layout.width, 300), "Never: no bar, the buttons full width");
+		frame(50, 120, false, -1);
+		check(near(area.scroll, 40), "Never: still scrolled by the wheel");
+		frame(296, 150, true);
+		frame(296, 150, false);
+		check(near(area.scroll, 40), "Never: no track to press at the right edge");
+		// The list's bar: inside its padding at the right, its rows narrowed, its thumb dragged and its track pressed; none when it fits.
+		var listBar:helix.ui.Scrollbar = @:privateAccess list.bar,
+			pad = ui.theme.listPadding;
+		var lx = list.layout.x, ly = list.layout.y, lw = list.layout.width;
+		check(list.scrollbarShown && !short.scrollbarShown, "The long list's bar shown, the short one's not");
+		check(near(listBar.thumbLength, 160 * 160 / 800) && near(listBar.thumbOffset, 0), "The list's thumb: the share in view");
+		var rows:Array<{face:Shape2D, text:Text2D}> = @:privateAccess list.rows;
+		var shortRows:Array<{face:Shape2D, text:Text2D}> = @:privateAccess short.rows;
+		check(near(rows[0].face.width, lw - pad * 2 - 8 - pad)
+			&& near(shortRows[0].face.width, lw - pad * 2), "Rows narrowed for the bar only where it shows");
+		var bx = lx + lw - pad - 4;
+		frame(bx, ly + pad + 150, true);
+		frame(bx, ly + pad + 150, false);
+		var listScroll:Float = @:privateAccess list.scroll;
+		check(near(listScroll, 160) && list.selectedIndex == -1, "The list's track below the thumb: a page down, no row chosen");
+		var thumbY = ly + pad + listBar.thumbOffset + 2;
+		frame(bx, thumbY, true);
+		frame(bx, thumbY + 64, true);
+		frame(bx, thumbY + 64, false);
+		listScroll = @:privateAccess list.scroll;
+		check(near(listScroll, 160 + 64 / (160 - listBar.thumbLength) * 640), "The list's thumb dragged: the scroll in proportion");
+		short.scrollbarVisibility = Always;
+		frame();
+		check(short.scrollbarShown
+			&& near(shortRows[0].face.width, lw - pad * 2 - 8 - pad), "A short list's bar Always: shown, its rows narrowed");
+		// The theme: its width, its track's color and its visibility at the next frame; a widget's own visibility kept.
+		ui.theme.scrollbarThickness = 12;
+		ui.theme.scrollbarTrackColor = 0x11223344;
+		ui.theme.scrollbarVisibility = Never;
+		frame();
+		var track:Shape2D = @:privateAccess fitsBar.track;
+		check(near(fitsBar.width, 12) && track.color == 0x11223344 && near(track.width, 12), "The theme's thickness and color at the next frame");
+		check(fits.scrollbarShown && short.scrollbarShown && !list.scrollbarShown, "The theme's Never; the widgets' own Always kept");
+		ui.theme.scrollbarVisibility = null;
+		check(ui.theme.scrollbarVisibility == WhenNeeded, "A null visibility is WhenNeeded");
+		frame();
+		frame();
+		check(list.scrollbarShown
+			&& near(rows[0].face.width, lw - pad * 2 - 12 - pad), "Back to WhenNeeded, the rows narrowed for the wider bar");
+		check(near(few[0].layout.width, 300 - 12 - 8), "The area's content narrowed for the wider bar at the next arrange");
+	}
+
+	// The states' priority (WidgetState: disabled, down, over, focused, normal), then every interactive widget's parts after a frame in each:
+	// the pointer away, over them, held on them, focus moved to them by keys, disabled.
+	static function states(font:Font2D):Void {
+		// The table: every combination of enabled, down, over and focused, its state the first that holds in that order.
+		for (k in 0...16) {
+			var enabled = k & 1 != 0,
+				down = k & 2 != 0,
+				over = k & 4 != 0,
+				focused = k & 8 != 0;
+			var state = WidgetState.of(enabled, down, over, focused),
+				expected = !enabled ? Disabled : down ? Down : over ? Over : focused ? Focused : Normal;
+			check(state == expected, 'The state for enabled $enabled, down $down, over $over, focused $focused');
+			var picked = state.pick(1, 2, 3, 4, 5);
+			check(picked == switch expected {
+				case Normal: 1;
+				case Over: 2;
+				case Down: 3;
+				case Focused: 4;
+				case Disabled: 5;
+			}, "Each state picks its own color");
+		}
+		check(WidgetState.dim(0x2e3448ff) == 0x2e34487f
+			&& WidgetState.dim(0x11223300) == 0x11223300, "Dimmed: the color at half its alpha");
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 1200);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var play = ui.button("Play"),
+			off = ui.button("Locked"),
+			sound = ui.toggle("Sound", true),
+			name = ui.textField("abc"),
+			volume = ui.slider("Volume", 0, 10, 5, 1),
+			levels = ui.list([for (i in 0...20) 'Level ${i + 1}'], 4),
+			part = ui.tile(null, "Part", 64),
+			picker = ui.colorPicker(0xff0000ff, true, "tint");
+		off.enabled = false;
+		var column = Layout2D.column();
+		column.setSizing(Fixed(400), Grow(1));
+		column.gap = 10;
+		for (w in [play, off, sound, name, volume, levels, part])
+			column.add(w.layout);
+		var pickerRow = Layout2D.row();
+		pickerRow.add(picker.layout);
+		column.add(pickerRow);
+		var layout = holding(sized(Grow(1), Grow(1)), [column]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			Layout2D.arrange(layout, 0, 0, 800, 1200, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		var theme = ui.theme;
+		var playFace:Shape2D = @:privateAccess play.face,
+			playLabel:Text2D = @:privateAccess play.label,
+			offFace:Shape2D = @:privateAccess off.face,
+			offLabel:Text2D = @:privateAccess off.label,
+			box:Shape2D = @:privateAccess sound.check,
+			fieldFace:Shape2D = @:privateAccess name.face,
+			knob:Shape2D = @:privateAccess volume.knob.disc,
+			tileFace:Shape2D = @:privateAccess part.face,
+			thumb:Shape2D = @:privateAccess levels.bar.thumb,
+			hueKnob:Shape2D = @:privateAccess picker.hueKnob.disc,
+			squareMark:Shape2D = @:privateAccess picker.squareMark;
+		function rowFace(i:Int):Shape2D
+			return @:privateAccess levels.rows[i].face;
+		// Away: every part at rest; the disabled button dimmed whatever the pointer does.
+		frame(790, 1190, false);
+		frame(790, 1190, false);
+		check(playFace.color == theme.faceColor && playLabel.color == theme.textColor, "A button at rest");
+		check(offFace.color == WidgetState.dim(theme.faceColor) && offLabel.color == theme.disabledTextColor,
+			"A disabled button: its face dimmed, its text greyed");
+		check(box.color == theme.faceColor && fieldFace.color == theme.faceColor && tileFace.color == theme.faceColor,
+			"A toggle's box, a field's face, a tile's face at rest");
+		check(knob.color == theme.handleColor && thumb.color == theme.handleColor && hueKnob.color == theme.handleColor
+			&& squareMark.color == theme.handleColor,
+			"Handles at rest: a slider's, a list's thumb, a color picker's");
+		check([for (i in 0...4) rowFace(i).color].join(",") == "0,0,0,0", "A list's rows clear at rest");
+		// Over each widget: its face lit; held: pressed.
+		function over(l:Layout2D):Void
+			frame(l.x + 8, l.y + l.height / 2, false);
+		function held(l:Layout2D):Void
+			frame(l.x + 8, l.y + l.height / 2, true);
+		over(play.layout);
+		check(playFace.color == theme.hoveredColor, "A button under the pointer: hovered");
+		held(play.layout);
+		check(playFace.color == theme.pressedColor, "Held: pressed");
+		over(play.layout);
+		over(off.layout);
+		check(offFace.color == WidgetState.dim(theme.faceColor) && offLabel.color == theme.disabledTextColor,
+			"A disabled button under the pointer: still dimmed");
+		held(off.layout);
+		check(offFace.color == WidgetState.dim(theme.faceColor), "Held: still dimmed (disabled first)");
+		over(off.layout);
+		over(sound.layout);
+		check(box.color == theme.hoveredColor, "A toggle under the pointer: its box hovered");
+		held(sound.layout);
+		check(box.color == theme.pressedColor, "Held: pressed");
+		over(sound.layout);
+		over(part.layout);
+		check(tileFace.color == theme.hoveredColor, "A tile under the pointer: hovered");
+		held(part.layout);
+		check(tileFace.color == theme.pressedColor, "Held: pressed");
+		over(part.layout);
+		over(name.layout);
+		check(fieldFace.color == theme.hoveredColor, "A field under the pointer: hovered");
+		// A slider's knob: over anywhere on the slider (a press there moves it), held while dragged.
+		var sy = volume.layout.y + volume.layout.height / 2,
+			trackLayout:Layout2D = @:privateAccess volume.trackLayout,
+			mid = trackLayout.x + trackLayout.width / 2;
+		frame(mid, sy, false);
+		check(knob.color == theme.accentColor, "A slider under the pointer: its knob over");
+		frame(mid, sy, true);
+		check(knob.color == theme.focusColor, "Held: its knob down");
+		frame(mid, sy, false);
+		frame(790, 1190, false);
+		check(knob.color == theme.handleColor, "Let go and left: at rest");
+		// Focus by keys, the pointer away: a button's face stays at rest (the ring shows focus); a field's is lit.
+		ui.focused = play;
+		frame();
+		check(ui.focused == play && playFace.color == theme.faceColor, "A focused button: at rest, the ring showing focus");
+		ui.focused = name;
+		frame();
+		check(fieldFace.color == theme.hoveredColor, "A focused field: lit as it's typed in");
+		ui.focused = null;
+		frame();
+		check(fieldFace.color == theme.faceColor, "Left: at rest");
+		// A list: the row under the pointer hovered, held pressed; the chosen row in the accent color, hovered or not.
+		var lx = levels.layout.x + 30,
+			pad = theme.listPadding,
+			rowY = (i:Int) -> levels.layout.y + pad + i * theme.listRowHeight + theme.listRowHeight / 2;
+		frame(lx, rowY(1), false);
+		check(rowFace(1).color == theme.hoveredColor && rowFace(0).color == 0 && rowFace(2).color == 0,
+			"A list's row under the pointer: hovered, the others clear");
+		frame(lx, rowY(1), true);
+		check(rowFace(1).color == theme.pressedColor, "Held on it: pressed");
+		frame(lx, rowY(1), false);
+		check(levels.selectedIndex == 1 && rowFace(1).color == theme.accentColor, "Clicked: chosen, in the accent color though under the pointer");
+		frame(lx, rowY(2), false);
+		check(rowFace(1).color == theme.accentColor
+			&& rowFace(2).color == theme.hoveredColor, "Another row hovered beside the chosen one");
+		frame(790, 1190, false);
+		check(rowFace(2).color == 0 && rowFace(1).color == theme.accentColor, "Left: the chosen row only");
+		// Its scrollbar's thumb: over under the pointer, down dragged; no row hovered while the pointer's on the bar.
+		var bar:helix.ui.Scrollbar = @:privateAccess levels.bar,
+			tx = levels.layout.x + levels.layout.width - pad - bar.width / 2,
+			ty = levels.layout.y + pad + bar.thumbOffset + bar.thumbLength / 2;
+		frame(tx, ty, false);
+		check(thumb.color == theme.accentColor && rowFace(0).color == 0, "The thumb under the pointer: over, no row hovered");
+		frame(tx, ty, true);
+		frame(tx, ty + 5, true);
+		check(thumb.color == theme.focusColor, "Dragged: down");
+		frame(tx, ty + 5, false);
+		frame(790, 1190, false);
+		check(thumb.color == theme.handleColor, "Let go and left: at rest");
+		// A color picker's handles: the one over the part under the pointer, the other at rest.
+		var hue:Layout2D = @:privateAccess picker.hueLayout,
+			square:Layout2D = @:privateAccess picker.squareLayout;
+		frame(hue.x + hue.width / 2, hue.y + hue.height / 2, false);
+		check(hueKnob.color == theme.accentColor && squareMark.color == theme.handleColor, "Over the hue bar: its handle over");
+		frame(square.x + square.width / 2, square.y + square.height / 2, false);
+		check(squareMark.color == theme.accentColor && hueKnob.color == theme.handleColor, "Over the square: its handle over");
+		frame(square.x + square.width / 2, square.y + square.height / 2, true);
+		check(squareMark.color == theme.focusColor, "Dragged: down");
+		frame(square.x + square.width / 2, square.y + square.height / 2, false);
+		frame(790, 1190, false);
+		check(squareMark.color == theme.focusColor
+			&& hueKnob.color == theme.handleColor, "Left with focus: the part the keys drive focused");
+		// Disabled, every widget: faces dimmed, text greyed, handles dimmed, even under the pointer.
+		for (w in [play, sound, name, volume, levels, part])
+			w.enabled = false;
+		picker.enabled = false;
+		frame(lx, rowY(2), false);
+		frame(lx, rowY(2), false);
+		check(playFace.color == WidgetState.dim(theme.faceColor) && playLabel.color == theme.disabledTextColor, "A disabled button");
+		check(box.color == WidgetState.dim(theme.faceColor)
+			&& @:privateAccess sound.mark.color == WidgetState.dim(theme.accentColor)
+			&& @:privateAccess sound.label.color == theme.disabledTextColor,
+			"A disabled toggle: box and mark dimmed, text greyed");
+		check(fieldFace.color == WidgetState.dim(theme.faceColor)
+			&& @:privateAccess name.textNode.color == theme.disabledTextColor, "A disabled field");
+		check(knob.color == WidgetState.dim(theme.handleColor)
+			&& @:privateAccess volume.track.color == WidgetState.dim(theme.faceColor)
+			&& @:privateAccess volume.label.color == theme.disabledTextColor,
+			"A disabled slider: knob and track dimmed, text greyed");
+		check(rowFace(2).color == 0
+			&& rowFace(1).color == WidgetState.dim(theme.accentColor)
+			&& @:privateAccess levels.rows[2].text.color == theme.disabledTextColor
+			&& thumb.color == WidgetState.dim(theme.handleColor),
+			"A disabled list: no row hovered, the chosen one dimmed, text greyed, its thumb dimmed");
+		check(tileFace.color == WidgetState.dim(theme.faceColor)
+			&& @:privateAccess part.label.color == theme.disabledTextColor, "A disabled tile");
+		check(hueKnob.color == WidgetState.dim(theme.handleColor) && squareMark.color == WidgetState.dim(theme.handleColor),
+			"A disabled color picker's handles dimmed");
+	}
+
+	// A panel's title: a band across its top as tall as a line of text and a padding, its widgets under it, its text the title; its look the
+	// theme's at the next frame; none for null or "".
+	static function titled(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var panel = ui.panel("menu"), play = ui.button("Play");
+		panel.add(play);
+		panel.layout.setSizing(Fixed(300), Fit);
+		var layout = holding(sized(Grow(1), Grow(1)), [panel.layout]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame():Void {
+			input.endFrame();
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		frame();
+		var theme = ui.theme;
+		var untitled = panel.layout.height,
+			band:helix.render2d.Node2D = @:privateAccess panel.band,
+			bandFace:Shape2D = @:privateAccess panel.bandFace,
+			bandText:Text2D = @:privateAccess panel.bandText,
+			bandLayout:Layout2D = @:privateAccess panel.bandLayout;
+		check(panel.title == null && !band.visible && !bandText.visible && near(play.layout.y, theme.padding), "No title: no band");
+		panel.title = "Shaders";
+		frame();
+		frame();
+		var height = theme.textSize + theme.padding;
+		check(band.visible && bandText.visible && bandText.text == "Shaders", "Titled: the band, its text the title");
+		check(near(bandLayout.y, 0) && near(bandLayout.height, height) && near(bandLayout.width, 300), "The band across its top, a line and a padding tall");
+		check(near(panel.content.y, height) && near(play.layout.y, height + theme.padding) && near(panel.layout.height, untitled + height),
+			"Its widgets under the band, the panel taller by it");
+		check(near(bandText.x, theme.padding) && bandText.y > 0 && bandText.y < height, "The title a padding in, in the band");
+		check(bandFace.color == theme.faceColor
+			&& bandText.color == theme.textColor
+			&& near(bandFace.cornerRadius, theme.cornerRadius)
+			&& near(bandFace.height, height + theme.cornerRadius)
+			&& near(band.clipHeight, height),
+			"The band in the faces' color, its top corners the panel's, its bottom cut square (its face a corner taller, clipped)");
+		// The theme changed: at the next frame (its height once arranged again).
+		theme.faceColor = 0x102030ff;
+		theme.textColor = 0xa0b0c0ff;
+		theme.cornerRadius = 4;
+		theme.textSize = 24;
+		theme.padding = 6;
+		frame();
+		check(bandFace.color == 0x102030ff && bandText.color == 0xa0b0c0ff && bandFace.cornerRadius == 4 && bandText.textSize == 24,
+			"The theme changed: the band's look at the next frame");
+		frame();
+		check(near(bandLayout.height, 30) && near(panel.content.y, 30) && near(play.layout.y, 36), "Arranged again: its new height, its widgets under it");
+		panel.title = "";
+		frame();
+		frame();
+		check(!band.visible && !bandText.visible && near(panel.content.y, 0), "\"\": no band, its widgets at its top again");
+	}
+
+	// The popup layer and a dropdown on it: a dropdown in a scroll area whose window clips it, a button under it and one beside, and a long
+	// dropdown at the bottom right. Its list is drawn and picked above everything and outside the area's clip, takes the pointer (a press off
+	// it closes it and does nothing else) and the keys, and is placed below its face, or above it at the bottom, kept on screen across.
+	static function dropdowns(font:Font2D):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Stage2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addStage2D(stage, camera);
+		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		var sizes = ["Small", "Medium", "Large", "Huge", "Tiny"];
+		var area = ui.scrollArea(80, "area"),
+			size = ui.dropdown(sizes, 0, "size"),
+			under = ui.button("Under"),
+			other = ui.button("Other"),
+			long = ui.dropdown([for (i in 0...20) 'Item $i'], 15, "long");
+		area.add(size);
+		var column = Layout2D.column();
+		column.setSizing(Fixed(300), Fit);
+		for (w in [area, under])
+			column.add(w.layout);
+		column.setAnchor(Start, Start);
+		other.layout.setAnchor(Start, Start, 500, 0);
+		long.layout.setAnchor(End, End);
+		var layout = holding(sized(Grow(1), Grow(1)), [column, other.layout, long.layout]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool, wheel = 0.):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			if (wheel != 0)
+				input.wheelEvent(0, wheel);
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		function click(x:Float, y:Float):Void {
+			frame(x, y, true);
+			frame(x, y, false);
+		}
+		var theme = ui.theme,
+			pad = theme.listPadding,
+			rowHeight = theme.listRowHeight;
+		frame(790, 300, false);
+		frame(790, 300, false);
+		var widest = 0.;
+		for (item in long.items)
+			widest = Math.max(widest, font.measure(item, theme.textSize));
+		check(near(long.layout.width, theme.padding * 2 + theme.padding / 2 + widest + theme.widgetHeight * .4)
+			&& near(long.layout.height, theme.widgetHeight),
+			"Fit: as wide as its widest item, the gap and the chevron's room, a widget tall");
+		var widestSize = 0.;
+		for (item in sizes)
+			widestSize = Math.max(widestSize, font.measure(item, theme.textSize));
+		check(near(size.layout.width, theme.padding * 2 + theme.padding / 2 + widestSize + theme.widgetHeight * .4)
+			&& size.layout.x == area.layout.x,
+			"Its own width in the area's column, which stretches its children: at its start");
+		size.layout.widthSizing = Grow(1);
+		frame(790, 300, false);
+		check(near(size.layout.width, 300), "Grown across the area's column");
+		var shown:Text2D = @:privateAccess size.shownText,
+			sizeFace:Shape2D = @:privateAccess size.face;
+		check(!size.open && ui.popup == null && size.selected == "Small" && shown.text == "Small", "Closed, showing the chosen item");
+		check(long.selectedIndex == 15 && long.selected == "Item 15", "Made with its choice");
+		// Opened by a click: its list below its face, as wide, over everything (the last of the UI's nodes) and in no clip.
+		var cx = size.layout.x + size.layout.width / 2,
+			cy = size.layout.y + size.layout.height / 2;
+		click(cx, cy);
+		var list = size.popup;
+		check(size.open && list.open && ui.popup == list && ui.focusedName == "size" && ui.capturingKeys, "A click opens it: focused, with the keys");
+		check(near(list.x, size.layout.x)
+			&& near(list.y, size.layout.y + size.layout.height)
+			&& !list.placedAbove, "Its list below its face, at its left");
+		check(near(list.layout.width, size.layout.width) && near(list.layout.height, sizes.length * rowHeight + pad * 2),
+			"As wide as the face, its five rows a list's");
+		var layer = @:privateAccess list.root.parent;
+		check(layer != null && ui.root.getChild(ui.root.childCount - 1) == layer, "Above every widget and the ring");
+		var at = @:privateAccess list.root, clipped = false;
+		while (at != null) {
+			clipped = clipped || at.clipping;
+			at = at.parent;
+		}
+		check(!clipped, "Clipped by nothing: not by the scroll area holding its face");
+		frame(790, 300, false);
+		var popFace:Shape2D = @:privateAccess size.popFace;
+		function rowY(d:helix.ui.Dropdown, i:Int):Float
+			return d.popup.y + pad + (i + .5) * rowHeight - @:privateAccess d.scroll;
+		var rx = list.x + list.layout.width / 2;
+		check(rowY(size, 3) > area.layout.y + area.layout.height, "Its fourth row past the area's window");
+		check(stage.pick(camera, rx, rowY(size, 3)) == popFace, "Picked there all the same, above the button under it");
+		var underFace:Shape2D = @:privateAccess under.face;
+		check(rowY(size, 1) > under.layout.y && rowY(size, 1) < under.layout.y + under.layout.height, "Its second row over the button");
+		frame(rx, rowY(size, 1), false);
+		check(size.highlightedIndex == 1 && underFace.color == theme.faceColor, "The pointer over it highlights its row; the button under it sees nothing");
+		var rowFace = (i:Int) -> (@:privateAccess size.rows[i].face : Shape2D);
+		check(rowFace(1).color == theme.hoveredColor && rowFace(0).color == theme.accentColor && rowFace(2).color == 0,
+			"The highlighted row hovered, the chosen one in the accent color, the rest clear");
+		check(sizeFace.color == theme.pressedColor, "Its face pressed while open");
+		// A click on a row chooses it and closes the list; the button under it isn't clicked.
+		frame(rx, rowY(size, 2), true);
+		check(size.open && !size.changed, "Pressed: still open");
+		frame(rx, rowY(size, 2), false);
+		check(!size.open && ui.popup == null && size.changed && size.selectedIndex == 2 && size.selected == "Large" && shown.text == "Large" && !under.clicked,
+			"A click on a row chooses it and closes the list");
+		frame(rx, rowY(size, 2), false);
+		check(!size.changed, "changed lasts the frame");
+		// A press off the list closes it and does nothing else, not even after it's let go.
+		click(cx, cy);
+		check(size.open, "Open again");
+		var ox = other.layout.x + 10, oy = other.layout.y + 10;
+		frame(ox, oy, true);
+		check(!size.open && ui.popup == null && ui.focusedName == "size", "A press off it closes it; focus stays");
+		check(pointer.captured, "The press is the UI's: the world under it sees nothing");
+		frame(ox, oy, false);
+		check(!other.clicked && !size.changed && size.selectedIndex == 2, "Let go: the button under the press isn't clicked");
+		click(ox, oy);
+		check(other.clicked && ui.focusedName == "Other", "The next click reaches it");
+		// Pressing the face of an open dropdown closes it too, without opening it again.
+		click(cx, cy);
+		check(size.open, "Open");
+		click(cx, cy);
+		check(!size.open, "A click on its own face closes it");
+		// Keys: Enter opens it at the chosen item, Up and Down move the highlight, Escape closes it unchanged and isn't back.
+		frame([helix.input.Key.Enter]);
+		check(size.open && size.highlightedIndex == 2 && ui.capturingKeys, "Enter opens it, the chosen item highlighted");
+		frame([helix.input.Key.Down]);
+		frame([helix.input.Key.Down]);
+		check(size.highlightedIndex == 4 && size.selectedIndex == 2 && ui.focusedName == "size", "Down moves the highlight, not focus");
+		frame([helix.input.Key.Down]);
+		check(size.highlightedIndex == 4, "Held at the last");
+		frame([helix.input.Key.Tab]);
+		check(size.open && ui.focusedName == "size", "Tab doesn't move focus while it's open");
+		frame([helix.input.Key.Escape]);
+		check(!size.open && size.selectedIndex == 2 && !size.changed && !ui.backPressed, "Escape closes it unchanged, and isn't back");
+		frame([helix.input.Key.Space]);
+		frame([helix.input.Key.Up]);
+		frame([helix.input.Key.Enter]);
+		check(!size.open && size.changed && size.selectedIndex == 1 && shown.text == "Medium", "Space opens it, Up and Enter choose");
+		frame([helix.input.Key.Down]);
+		check(ui.focusedName == "Under" && size.selectedIndex == 1, "Closed, Down moves focus as for any widget");
+		// A pad: South opens and chooses, East closes.
+		ui.focused = size;
+		function padPress(button:helix.input.PadButton):Void {
+			input.endFrame();
+			input.padEvent(button, true);
+			input.padEvent(button, false);
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		padPress(South);
+		check(size.open, "South opens it");
+		padPress(East);
+		check(!size.open && !ui.backPressed, "East closes it");
+		padPress(South);
+		padPress(Down);
+		padPress(South);
+		check(!size.open && size.selectedIndex == 2, "South chooses the highlighted item");
+		// At the bottom right: its list above its face, kept on screen across, eight rows of twenty scrolled to the chosen one.
+		check(ui.press("long"), "Used by name");
+		frame(790, 10, false);
+		var longList = long.popup,
+			bar:helix.ui.Scrollbar = @:privateAccess long.bar;
+		check(long.open
+			&& longList.placedAbove
+			&& near(longList.y + longList.layout.height, long.layout.y), "Above its face, with no room below");
+		check(near(longList.layout.height, 8 * rowHeight + pad * 2) && bar.visible, "Eight rows, the rest scrolled to by its scrollbar");
+		check(near(longList.layout.width, long.layout.width + bar.width + pad)
+			&& near(longList.x + longList.layout.width, 800)
+			&& longList.x < long.layout.x,
+			"A scrollbar's room wider than its face, moved in to stay on screen");
+		var scroll:Float = @:privateAccess long.scroll;
+		check(long.highlightedIndex == 15 && scroll >= 16 * rowHeight - 8 * rowHeight - 1e-6 && scroll <= 15 * rowHeight + 1e-6,
+			"Opened with the chosen row in view");
+		frame([helix.input.Key.Down]);
+		frame([helix.input.Key.Down]);
+		frame([helix.input.Key.Down]);
+		frame([helix.input.Key.Down]);
+		frame([helix.input.Key.Down]);
+		scroll = @:privateAccess long.scroll;
+		check(long.highlightedIndex == 19 && near(scroll, 12 * rowHeight), "The highlight moved to the last, scrolled into view");
+		var lx = longList.x + 40, ly = longList.y + longList.layout.height / 2;
+		frame(lx, ly, false, 1);
+		check(near(@:privateAccess long.scroll, 11 * rowHeight), "The wheel over it scrolls it");
+		click(lx, rowY(long, 13));
+		check(!long.open && long.changed && long.selectedIndex == 13, "A click on a scrolled row chooses it");
+		// Disabled: dimmed, never opened; disabled while open, closed.
+		size.enabled = false;
+		frame(790, 300, false);
+		click(cx, cy);
+		check(!size.open
+			&& sizeFace.color == WidgetState.dim(theme.faceColor)
+			&& shown.color == theme.disabledTextColor, "Disabled: dimmed, not opened");
+		size.enabled = true;
+		click(cx, cy);
+		check(size.open, "Enabled: opens");
+		size.enabled = false;
+		frame(790, 300, false);
+		check(!size.open && ui.popup == null, "Disabled while open: closed");
+		size.enabled = true;
+		// The theme changed: the face's color and the list's rows at the next frame.
+		click(cx, cy);
+		theme.faceColor = 0x203040ff;
+		theme.listRowHeight = 30;
+		frame(790, 300, false);
+		check(popFace.color == 0x203040ff
+			&& near(size.popup.layout.height, sizes.length * 30 + pad * 2), "The theme's change at the next frame");
+		frame([helix.input.Key.Escape]);
+		frame(790, 300, false);
+		check(sizeFace.color == 0x203040ff, "Its face too");
+		// A width the game gave its layout is kept whatever the theme's text becomes; a hint while none is chosen.
+		var fitted = long.layout.width;
+		theme.textSize = 30;
+		frame();
+		frame();
+		check(long.layout.width > fitted, "Fit: wider for the theme's larger text, once arranged");
+		long.layout.widthSizing = Fixed(250);
+		theme.textSize = 14;
+		frame();
+		frame();
+		check(near(long.layout.width, 250), "The game's width kept whatever the theme's text becomes");
+		size.selectedIndex = -1;
+		size.hint = "Choose";
+		frame();
+		check(size.selected == null && shown.text == "Choose" && shown.color == theme.disabledTextColor && !size.changed,
+			"None chosen: its hint, in the disabled text's color, not a change");
+		// Taken out while open: closed.
+		click(cx, cy);
+		check(size.open, "Open once more");
+		ui.remove(size);
+		check(ui.popup == null && !size.open, "Taken out: its list closed");
 	}
 }

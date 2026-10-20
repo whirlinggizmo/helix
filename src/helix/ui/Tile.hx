@@ -90,7 +90,6 @@ class Tile extends Widget {
 	override function readTheme(theme:Theme):Void {
 		var pad = theme.padding;
 		face.cornerRadius = theme.cornerRadius;
-		edge.color = theme.accentColor;
 		edge.cornerRadius = theme.cornerRadius + 2;
 		label.textSize = theme.textSize * .8;
 		label.font = theme.font;
@@ -99,11 +98,13 @@ class Tile extends Widget {
 	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		var theme = ui.theme;
+		var theme = ui.theme,
+			state = WidgetState.of(enabled, held, hovered, focused);
 		this.clicked = enabled && (clicked || activated);
-		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
+		face.color = state.face(theme);
 		edge.visible = selected;
-		picture.tint = enabled ? 0xffffffff : 0x808080ff;
-		label.color = enabled ? theme.textColor : theme.disabledTextColor;
+		edge.color = state == Disabled ? WidgetState.dim(theme.accentColor) : theme.accentColor;
+		picture.tint = state == Disabled ? 0x808080ff : 0xffffffff;
+		label.color = state.text(theme);
 	}
 }

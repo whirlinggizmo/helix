@@ -32,28 +32,34 @@ import helix.time.Time;
 import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.ColorPicker;
+import helix.ui.Dropdown;
 import helix.ui.Label;
 import helix.ui.ListView;
 import helix.ui.Panel;
 import helix.ui.ProgressBar;
+import helix.ui.ScrollArea;
 import helix.ui.Slider;
 import helix.ui.TextField;
 import helix.ui.Toggle;
 import helix.ui.Ui;
 
 /** A game's menus (helix.ui): a main menu, settings, controls and a scrolling list of levels, the main menu in a nine-slice panel, the others
-	in the theme's rounded ones, every widget's corners rounded too, laid out in a 1280 x 720 design fitted to the window, used alike by the
+	in the theme's rounded ones, every widget's corners rounded too, the headings keeping more room under them (a margin, Layout2D.setMargin), laid out in a 1280 x 720 design fitted to the window, used alike by the
 	pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South, East). Nothing is called back: each frame the example asks the widgets
 	what happened. Settings set the master, music and effects buses (Audio.master, music, effects) with music playing under them, a short
-	effect played as the effects slider is let go, and mute the music, and a color picker (ColorPicker, without alpha, beside its label in a row so it keeps its own width) chooses the background,
-	saved as hex through Storage once the pointer lets go; Controls lists an Actions map's actions with their bindings, a Rebind
+	effect played as the effects slider is let go, and mute the music, a dropdown (Dropdown, beside the name field) chooses a quality, saved
+	through Storage as it changes, and a color picker (ColorPicker, without alpha, beside its label in a row so it keeps its own width)
+	chooses the background, saved as hex through Storage once the pointer lets go; Controls lists an Actions map's actions with their bindings in a scroll area
+	(ScrollArea, more rows than it shows, its scrollbar at the right, a Rebind focused by keys scrolled into view), a Rebind
 	button capturing the next key, pad button, axis or touch for one (Escape cancels) and Reset; both are saved through Storage and loaded at
 	start. A progress bar fills; the status in the corner is anchored there. Escape on the main menu quits where quitting means anything.
 	Options: autopilot (a script under assets/; the menus and the actions then read its input, and the settings are saved under keys of its
 	own, removed first, so a run starts from the defaults and leaves a player's alone; the window is then the autopilot's page's size, so its
 	samples of the frame compare across targets), audio (0 for silence) and autoclose (1: quit once the script is done). The probes: screen,
 	focus (the focused widget's name), loaded, jump (its bindings' text, joined by ", "), capturing, jumpDown, masterVolume, musicVolume,
-	effectsVolume, musicMuted, background (the chosen color as hex) and backgroundText (the picker's text field, in its format). */
+	effectsVolume, musicMuted, background (the chosen color as hex), backgroundText (the picker's text field, in its format),
+	bindingsScrolled (how far the bindings are scrolled, as a share of how far they can be, in hundredths: 0 at the top, 1 at the end, whatever
+	the layout's sizes), quality (the chosen quality's text) and qualityOpen (whether its list is open). */
 class App extends BaseApp {
 	static final PROBES = [
 		"screen",
@@ -67,7 +73,10 @@ class App extends BaseApp {
 		"effectsVolume",
 		"musicMuted",
 		"background",
-		"backgroundText"
+		"backgroundText",
+		"bindingsScrolled",
+		"quality",
+		"qualityOpen"
 	];
 
 	// The background to start, and the autopilot's window (its browser page's size), so its samples compare across targets.
@@ -101,8 +110,10 @@ class App extends BaseApp {
 	var effects:Slider;
 	var muteMusic:Toggle;
 	var name:TextField;
+	var quality:Dropdown;
 	var background:ColorPicker;
 	var back:Button;
+	var bindingsArea:ScrollArea;
 	var rows:Array<{action:String, bindings:Label, rebind:Button}> = [];
 	var live:Label;
 	var reset:Button;
@@ -117,6 +128,7 @@ class App extends BaseApp {
 	var actionsKey = "actions";
 	var busesKey = "audio";
 	var backgroundKey = "background";
+	var qualityKey = "quality";
 	var loads = 0;
 	// The action a rebind waits for a press for, or "".
 	var rebinding = "";
@@ -145,11 +157,12 @@ class App extends BaseApp {
 			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
 			Assets.load(script, bytes -> {
 				pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name),
-					(points, done, failed) -> Screenshots.sample(points, done, failed));
+					(points, done, failed) -> Screenshots.sample(points, done, failed), (target, part, x, y, out) -> ui.computePoint(target, part, x, y, out));
 				// A run of its own: its saves apart from a player's, and gone before it starts, so every run begins from the defaults.
 				actionsKey = "autopilot-actions";
 				busesKey = "autopilot-audio";
 				backgroundKey = "autopilot-background";
+				qualityKey = "autopilot-quality";
 				build(pilot.input);
 			}, message -> throw 'Autopilot load failed: ' + message);
 		}
@@ -175,6 +188,14 @@ class App extends BaseApp {
 		actions.bind("fire", Keyboard(Key.Z));
 		actions.bind("fire", Pad(PadButton.West));
 		actions.bind("fire", TouchRegion(Anchor.BottomRight, -120, -120, 96, 96));
+		actions.bind("dash", Keyboard(Key.X));
+		actions.bind("dash", Pad(PadButton.RightBumper));
+		actions.bind("interact", Keyboard(Key.E));
+		actions.bind("interact", Pad(PadButton.North));
+		actions.bind("pause", Keyboard(Key.P));
+		actions.bind("pause", Pad(PadButton.Start));
+		actions.bind("map", Keyboard(Key.M));
+		actions.bind("map", Pad(PadButton.Back));
 
 		var frame = panelImage();
 		main = ui.panel("main");
@@ -193,17 +214,32 @@ class App extends BaseApp {
 		settings = ui.panel("settings");
 		var heading = ui.label("Settings");
 		heading.textSize = 26;
+		// A heading keeps a gap's more room under it than the widgets keep between them: a margin of its own.
+		heading.layout.setMargin(0, 0, 0, ui.theme.gap);
 		master = ui.slider("Master", 0, 100, 100, 10, "masterVolume");
 		music = ui.slider("Music", 0, 100, 100, 10, "musicVolume");
 		effects = ui.slider("Effects", 0, 100, 100, 10, "effectsVolume");
 		muteMusic = ui.toggle("Mute music", false, "muteMusic");
 		name = ui.textField("", "your name", 16, "name");
+		var qualityLabel = ui.label("Quality");
+		quality = ui.dropdown(["Low", "Medium", "High", "Ultra"], 2, "quality");
 		var backgroundLabel = ui.label("Background");
 		background = ui.colorPicker(BACKGROUND, false, "background");
 		back = ui.button("Back", "backFromSettings");
-		for (w in [heading, master, music, effects, muteMusic, name])
+		// The volumes, a line under them, then the rest.
+		for (w in [heading, master, music, effects, ui.separator(), muteMusic])
 			settings.add(w);
-		// The picker beside its label, in a row so it keeps its own width (the panel's column would stretch it across, its square as tall).
+		// The name's field and the quality's dropdown in a row, the field taking the room the dropdown (as wide as its widest item) leaves.
+		var nameRow = Layout2D.row();
+		nameRow.gap = ui.theme.gap;
+		nameRow.setAlign(Start, Center);
+		name.layout.widthSizing = Grow(1);
+		for (w in [name, qualityLabel, quality]) {
+			settings.adopt(w);
+			nameRow.add(w.layout);
+		}
+		settings.content.add(nameRow);
+		// The picker beside its label, in a row, narrower than the theme's width.
 		var backgroundRow = Layout2D.row();
 		backgroundRow.gap = ui.theme.gap * 2;
 		for (w in [backgroundLabel, background]) {
@@ -217,21 +253,25 @@ class App extends BaseApp {
 		controls = ui.panel("controls");
 		var heading = ui.label("Controls");
 		heading.textSize = 26;
+		heading.layout.setMargin(0, 0, 0, ui.theme.gap);
 		controls.add(heading);
+		// The bindings' rows in a scroll area: three and a half rows in view, the rest scrolled to.
+		bindingsArea = ui.scrollArea(164, "bindings");
+		controls.add(bindingsArea);
 		for (action in actions.names) {
 			var label = ui.label(action),
 				bindings = ui.label(""),
 				rebind = ui.button("Rebind", 'rebind-$action');
-			label.layout.setSizing(Fixed(70), Fit);
+			label.layout.setSizing(Fixed(80), Fit);
 			bindings.layout.setSizing(Grow(1), Fit);
 			var row = Layout2D.row();
 			row.gap = ui.theme.gap;
 			row.setAlign(Start, Center);
 			for (w in [label, bindings, rebind]) {
-				controls.adopt(w);
+				bindingsArea.adopt(w);
 				row.add(w.layout);
 			}
-			controls.content.add(row);
+			bindingsArea.content.add(row);
 			rows.push({action: action, bindings: bindings, rebind: rebind});
 		}
 		live = ui.label("");
@@ -282,7 +322,7 @@ class App extends BaseApp {
 		show("main");
 
 		if (pilot != null)
-			Storage.remove(actionsKey, _ -> Storage.remove(busesKey, _ -> Storage.remove(backgroundKey, _ -> loadSettings())));
+			Storage.remove(actionsKey, _ -> Storage.remove(busesKey, _ -> Storage.remove(backgroundKey, _ -> Storage.remove(qualityKey, _ -> loadSettings()))));
 		else
 			loadSettings();
 	}
@@ -313,6 +353,17 @@ class App extends BaseApp {
 					if (color != null) background.color = color;
 				case Failed(message):
 					trace('Background not loaded: $message');
+				case Missing | Cancelled:
+			}
+			loads++;
+		});
+		Storage.read(qualityKey, result -> {
+			switch result {
+				case Stored(bytes):
+					var index = quality.items.indexOf(bytes.toString());
+					if (index >= 0) quality.selectedIndex = index;
+				case Failed(message):
+					trace('Quality not loaded: $message');
 				case Missing | Cancelled:
 			}
 			loads++;
@@ -353,7 +404,7 @@ class App extends BaseApp {
 		return switch name {
 			case "screen": screen;
 			case "focus": ui.focusedName;
-			case "loaded": loads == 3;
+			case "loaded": loads == 4;
 			case "jump": describe("jump");
 			case "capturing": actions.capturing;
 			case "jumpDown": actions.isDown("jump");
@@ -363,6 +414,9 @@ class App extends BaseApp {
 			case "musicMuted": Audio.music.muted;
 			case "background": ColorPicker.formatHex(background.color, false);
 			case "backgroundText": background.textField.text;
+			case "bindingsScrolled": bindingsArea.maxScroll > 0 ? Math.round(bindingsArea.scroll / bindingsArea.maxScroll * 100) / 100 : 0;
+			case "quality": quality.selected;
+			case "qualityOpen": quality.open;
 			default: throw 'Unknown probe ' + name;
 		}
 
@@ -431,6 +485,13 @@ class App extends BaseApp {
 						status = 'Hello, ${name.text}';
 					if (background.changed)
 						backgroundUnsaved = true;
+					if (quality.changed) {
+						status = 'Quality ${quality.selected}';
+						Storage.write(qualityKey, Bytes.ofString(quality.selected), result -> switch result {
+							case Failed(message): trace('Quality not saved: $message');
+							case Written | Cancelled:
+						});
+					}
 					if (back.clicked || ui.backPressed && !name.submitted && ui.focused != name && ui.focused != background.textField)
 						show("main");
 				case "controls":

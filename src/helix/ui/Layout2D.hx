@@ -17,7 +17,7 @@ enum Sizing {
 	/** A share of the room its row or column has left, by weight against its siblings' (across, the whole room). */
 	Grow(weight:Float);
 
-	/** This fraction of its parent's room inside the padding (0 to 1). */
+	/** This fraction of its parent's room inside the padding, less its own margins that way (0 to 1). */
 	Percent(fraction:Float);
 }
 
@@ -32,7 +32,9 @@ enum Alignment {
 	/** At its end: the right, or the bottom. */
 	End;
 
-	/** Across a row or column only: filling it. */
+	/** Across a row or column only: filling it, for the children that grow that way or whose size that way nobody set (widthSizing,
+		heightSizing; the theme's included); the others keep their size there, at their anchor that way or at its start. In a stack, as an
+		anchor: filling it that way. */
 	Stretch;
 }
 
@@ -49,11 +51,13 @@ enum Layout2DDirection {
 }
 
 /** A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a
-	share of its parent, with padding, gaps and alignment (Clay's model, in Haxe). A layout may place a node: arrange() writes its position (by
-	its pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its
-	sizing, padding and gap from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing, setPadding,
-	gap): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline style wins over a
-	stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's. */
+	share of its parent, with padding, gaps, margins and alignment (Clay's model, in Haxe, with CSS's margins). Padding is room inside a layout,
+	around its children; a gap is room between a row's or column's children, the same between each; a margin is room outside one layout, per
+	side, keeping its neighbours and its parent's padding edge away from it. A layout may place a node: arrange() writes its position (by its
+	pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its
+	sizing, padding, gap and margin from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing,
+	setPadding, gap, setMargin): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline
+	style wins over a stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's. */
 class Layout2D {
 	var direction:Layout2DDirection;
 	var childLayouts:Array<Layout2D> = [];
@@ -63,12 +67,17 @@ class Layout2D {
 	var selfY:Null<Alignment>;
 	var offsetX = 0.;
 	var offsetY = 0.;
-	// Which of its values a game set (setSizing, widthSizing, heightSizing, setPadding, gap): the theme's (themeSizing, themePadding,
-	// themeGap) never replace those.
+	// Which of its values a game set (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin): the theme's (themeSizing,
+	// themePadding, themeGap, themeMargin) never replace those.
 	var gameWidth = false;
 	var gameHeight = false;
 	var gamePadding = false;
 	var gameGap = false;
+	var gameMargin = false;
+	// Which of its sizings anyone set, the game or the theme (themeSizing): one nobody set is the Fit it starts with, filled by a column or row
+	// stretching across.
+	var askedWidth = false;
+	var askedHeight = false;
 	var fitWidth = 0.;
 	var fitHeight = 0.;
 	var w = 0.;
@@ -122,7 +131,7 @@ class Layout2D {
 
 	function set_widthSizing(value:Sizing):Sizing {
 		widthRule = value;
-		gameWidth = true;
+		gameWidth = askedWidth = true;
 		return value;
 	}
 
@@ -134,7 +143,7 @@ class Layout2D {
 
 	function set_heightSizing(value:Sizing):Sizing {
 		heightRule = value;
-		gameHeight = true;
+		gameHeight = askedHeight = true;
 		return value;
 	}
 
@@ -180,6 +189,48 @@ class Layout2D {
 		return value;
 	}
 
+	/** Its margin outside its left edge: room between it and what's left of it (a neighbour, or its parent's padding edge). */
+	public var marginLeft(default, null):Float = 0.;
+
+	/** Its margin outside its top edge. */
+	public var marginTop(default, null):Float = 0.;
+
+	/** Its margin outside its right edge. */
+	public var marginRight(default, null):Float = 0.;
+
+	/** Its margin outside its bottom edge. */
+	public var marginBottom(default, null):Float = 0.;
+
+	/** Its margins outside its edges in units (none, to start, or what the widget it places takes from the theme), made the game's: the theme
+		no longer changes them. As CSS's in a flexbox: in a row or column a child's margins add to the gap between it and its neighbours (two
+		neighbours' margins never collapse into one, as block flow's vertical margins do) and keep it from its parent's padding edge; they count
+		in its parent's Fit; growing children share the room left after every child's margins, and a Percent is of the room its own margins
+		leave; stretching across fills the room less its margins across, and Start, Center and End place its margin box; in a stack it's inset
+		by them; an anchor's offset moves it inside them. The root's are kept inside arrange's rectangle. False, changing nothing, for a side under
+		0 or not finite: a negative margin would pull a layout over its neighbour or past its parent's padding, an overlap rows and columns don't
+		lay out (a stack with an anchor's offset does), and it would shrink what a parent fits to. */
+	public function setMargin(left:Float, top:Float, right:Float, bottom:Float):Bool {
+		if (!validMargin(left, top, right, bottom))
+			return false;
+		applyMargin(left, top, right, bottom);
+		gameMargin = true;
+		return true;
+	}
+
+	// Whether each side is one setMargin takes: 0 or more and finite.
+	static function validMargin(left:Float, top:Float, right:Float, bottom:Float):Bool
+		return isMargin(left) && isMargin(top) && isMargin(right) && isMargin(bottom);
+
+	static function isMargin(side:Float):Bool
+		return side >= 0 && Math.isFinite(side);
+
+	function applyMargin(left:Float, top:Float, right:Float, bottom:Float):Void {
+		marginLeft = left;
+		marginTop = top;
+		marginRight = right;
+		marginBottom = bottom;
+	}
+
 	// The theme's values, from widgets (their readTheme, and the defaults their constructors give their layouts): each applied only while the
 	// game hasn't set that value itself, and never making it the game's, so a theme changed later still reaches it. A widget's own sizes for a
 	// widget it holds (a color picker's field) are its, as a game's: set through the game's calls.
@@ -187,10 +238,14 @@ class Layout2D {
 
 	@:allow(helix.ui)
 	function themeSizing(width:Null<Sizing>, height:Null<Sizing>):Void {
-		if (width != null && !gameWidth)
+		if (width != null && !gameWidth) {
 			widthRule = width;
-		if (height != null && !gameHeight)
+			askedWidth = true;
+		}
+		if (height != null && !gameHeight) {
 			heightRule = height;
+			askedHeight = true;
+		}
 	}
 
 	// Its padding from the theme.
@@ -209,26 +264,38 @@ class Layout2D {
 			@:bypassAccessor gap = value;
 	}
 
+	// Its margins from the theme (no widget takes one yet; the same path as the others, so one a widget takes later can't claim it), left be
+	// when one isn't a margin setMargin would take.
+
+	@:allow(helix.ui)
+	function themeMargin(left:Float, top:Float, right:Float, bottom:Float):Void {
+		if (!gameMargin && validMargin(left, top, right, bottom))
+			applyMargin(left, top, right, bottom);
+	}
+
 	/** Where its children go along its row or column. */
 	public var mainAlign(default, null):Alignment = Start;
 
 	/** Where its children go across its row or column. */
 	public var crossAlign(default, null):Alignment = Start;
 
-	/** Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross, Stretch filling it);
+	/** Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross; Stretch filling it
+		with the children that grow across or whose size across nobody set, the rest keeping their size at their anchor across or its start);
 		Start both, to start. */
 	public function setAlign(main:Alignment, cross:Alignment):Void {
 		mainAlign = main;
 		crossAlign = cross;
 	}
 
-	/** Where it goes across a stack, or null for its stack's alignment. */
+	/** Where it goes across a stack, or null for its stack's alignment; across a column stretching its children (crossAlign Stretch) when
+		it keeps its own width, where it goes across it (null: its start). */
 	public var anchorX(get, never):Null<Alignment>;
 
 	function get_anchorX():Null<Alignment>
 		return selfX;
 
-	/** Where it goes down a stack, or null for its stack's alignment. */
+	/** Where it goes down a stack, or null for its stack's alignment; down a row stretching its children when it keeps its own height, as
+		anchorX across a column. */
 	public var anchorY(get, never):Null<Alignment>;
 
 	function get_anchorY():Null<Alignment>
@@ -273,14 +340,15 @@ class Layout2D {
 	function get_height():Float
 		return h;
 
-	/** Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's) and writes the nodes'
-		places: its content measured (texts in their fonts, font for those without one), then each layout placed. Once a frame, before drawing. */
+	/** Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's; root's margins inside it)
+		and writes the nodes' places: its content measured (texts in their fonts, font for those without one), then each layout placed. Once a
+		frame, before drawing. */
 	public static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void {
 		root.measure(font);
-		root.x = x;
-		root.y = y;
-		root.w = sized(root.widthRule, root.fitWidth, width);
-		root.h = sized(root.heightRule, root.fitHeight, height);
+		root.x = x + root.marginLeft;
+		root.y = y + root.marginTop;
+		root.w = sized(root.widthRule, root.fitWidth, Math.max(0, width - root.marginLeft - root.marginRight));
+		root.h = sized(root.heightRule, root.fitHeight, Math.max(0, height - root.marginTop - root.marginBottom));
 		root.place(font);
 	}
 
@@ -292,7 +360,7 @@ class Layout2D {
 			case Percent(f): room * f;
 		}
 
-	// Its content's size, bottom up: its children's along and across its direction, or its node's.
+	// Its content's size, bottom up: its children's (their margins included) along and across its direction, or its node's.
 	function measure(font:Font2D):Void {
 		for (c in childLayouts)
 			c.measure(font);
@@ -315,8 +383,8 @@ class Layout2D {
 			}
 		} else
 			for (c in childLayouts) {
-				var fw = own(c.widthRule, c.fitWidth),
-					fh = own(c.heightRule, c.fitHeight);
+				var fw = own(c.widthRule, c.fitWidth) + c.marginLeft + c.marginRight,
+					fh = own(c.heightRule, c.fitHeight) + c.marginTop + c.marginBottom;
 				switch direction {
 					case Row:
 						cw += fw;
@@ -370,13 +438,16 @@ class Layout2D {
 		var innerW = Math.max(0, w - paddingLeft - paddingRight),
 			innerH = Math.max(0, h - paddingTop - paddingBottom);
 		if (direction == Stack) {
+			// Each in the room inside the padding less its margins.
 			for (c in childLayouts) {
 				var ax = c.selfX != null ? c.selfX : mainAlign,
 					ay = c.selfY != null ? c.selfY : crossAlign;
-				c.w = ax == Stretch ? innerW : sized(c.widthRule, c.fitWidth, innerW);
-				c.h = ay == Stretch ? innerH : sized(c.heightRule, c.fitHeight, innerH);
-				c.x = innerX + offset(ax, innerW, c.w) + c.offsetX;
-				c.y = innerY + offset(ay, innerH, c.h) + c.offsetY;
+				var roomW = Math.max(0, innerW - c.marginLeft - c.marginRight),
+					roomH = Math.max(0, innerH - c.marginTop - c.marginBottom);
+				c.w = ax == Stretch ? roomW : sized(c.widthRule, c.fitWidth, roomW);
+				c.h = ay == Stretch ? roomH : sized(c.heightRule, c.fitHeight, roomH);
+				c.x = innerX + c.marginLeft + offset(ax, roomW, c.w) + c.offsetX;
+				c.y = innerY + c.marginTop + offset(ay, roomH, c.h) + c.offsetY;
 				c.place(font);
 			}
 			return;
@@ -384,15 +455,18 @@ class Layout2D {
 		var row = direction == Row,
 			room = row ? innerW : innerH,
 			across = row ? innerH : innerW;
-		// The room left after the fixed, fitted and shared children and the gaps, shared by the growing ones by weight.
+		// The room left after the fixed, fitted and shared children, the gaps and every child's margins along, shared by the growing ones by
+		// weight.
 		var used = childLayouts.length > 1 ? gap * (childLayouts.length - 1) : 0., weights = 0.;
 		for (c in childLayouts) {
-			var sizing = row ? c.widthRule : c.heightRule;
+			var sizing = row ? c.widthRule : c.heightRule,
+				margins = row ? c.marginLeft + c.marginRight : c.marginTop + c.marginBottom;
+			used += margins;
 			switch sizing {
 				case Grow(weight):
 					weights += weight;
 				case Percent(f):
-					used += room * f;
+					used += Math.max(0, room - margins) * f;
 				case _:
 					used += own(sizing, row ? c.fitWidth : c.fitHeight);
 			}
@@ -402,13 +476,29 @@ class Layout2D {
 		for (c in childLayouts) {
 			var sizing = row ? c.widthRule : c.heightRule,
 				crossSizing = row ? c.heightRule : c.widthRule;
+			// Its margins along (before and after it) and across (at the start and the end).
+			var before = row ? c.marginLeft : c.marginTop,
+				after = row ? c.marginRight : c.marginBottom,
+				crossStart = row ? c.marginTop : c.marginLeft,
+				crossEnd = row ? c.marginBottom : c.marginRight;
 			var along = switch sizing {
 				case Grow(weight): weights > 0 ? left * weight / weights : 0;
-				case _: sized(sizing, row ? c.fitWidth : c.fitHeight, room);
+				case _: sized(sizing, row ? c.fitWidth : c.fitHeight, Math.max(0, room - before - after));
 			}
-			var crossAlignment = crossAlign == Stretch && crossSizing == Fit ? Stretch : crossAlign;
-			var thick = crossAlignment == Stretch ? across : sized(crossSizing, row ? c.fitHeight : c.fitWidth, across);
-			var crossAt = (row ? innerY : innerX) + offset(crossAlignment, across, thick);
+			// Stretching across fills a child growing across or one whose size across nobody set; one that asked for a size keeps it, at its
+			// own anchor across or the start.
+			var crossAlignment = crossAlign != Stretch ? crossAlign : switch crossSizing {
+				case Grow(_): Stretch;
+				case _ if (!(row ? c.askedHeight : c.askedWidth)): Stretch;
+				case _:
+					var anchor = row ? c.selfY : c.selfX;
+					anchor != null ? anchor : Start;
+			}
+			// Across, in the room less its margins there.
+			var crossRoom = Math.max(0, across - crossStart - crossEnd);
+			var thick = crossAlignment == Stretch ? crossRoom : sized(crossSizing, row ? c.fitHeight : c.fitWidth, crossRoom);
+			var crossAt = (row ? innerY : innerX) + crossStart + offset(crossAlignment, crossRoom, thick);
+			at += before;
 			if (row) {
 				c.x = at;
 				c.y = crossAt;
@@ -422,7 +512,7 @@ class Layout2D {
 			}
 			c.x += c.offsetX;
 			c.y += c.offsetY;
-			at += along + gap;
+			at += along + after + gap;
 			c.place(font);
 		}
 	}

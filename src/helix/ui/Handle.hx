@@ -30,7 +30,7 @@ class Handle {
 		shadow.color = theme.handleShadowColor;
 	}
 
-	/** The disc's color, 0xRRGGBBAA: theme.handleColor, or the focus color while it's the part being driven. */
+	/** The disc's color, 0xRRGGBBAA: its owner's, by the handle's state (WidgetState.handle). */
 	public var color(get, set):Int;
 
 	function get_color():Int

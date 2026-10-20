@@ -4,7 +4,7 @@ import helix.render2d.Node2D;
 
 /** A piece of UI: nodes it owns (on the Ui's stage) and the layout (Layout2D) placing them. A widget is asked what happened (clicked, value ...),
 	never calls anything (DECISIONS 61); the Ui updates it once a frame. Its look is its Ui's theme's (Theme), read every frame, except what
-	the game set: its layout's sizing, padding and gap once the game sets them (Layout2D), and the look properties a widget has for one of its own
+	the game set: its layout's sizing, padding, gap and margin once the game sets them (Layout2D), and the look properties a widget has for one of its own
 	(Label.textSize and color: null for the theme's). Its nodes are its own: a game changes them through its properties, never directly. */
 class Widget {
 	var ui:Ui;
@@ -66,15 +66,15 @@ class Widget {
 	function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {}
 
 	// Its look from theme: its shapes' colors (those not decided by its state, which update picks), corners and sizes, its texts' size and
-	// font, its layouts' sizing, padding and gaps. Called by its constructor, once its parts are made, and by the Ui every frame before update,
+	// font, its layouts' sizing, padding, gaps and margins. Called by its constructor, once its parts are made, and by the Ui every frame before update,
 	// so a theme changed at run time (a settings screen, a reloaded stylesheet) shows at the next frame with no widget made again. One method
 	// every widget overrides, rather than each update reading what it needs, so what comes from the theme is in one place, apart from the
 	// state update works out. Cheap: plain assignments; text measured and polygons remade only when what they come from changed. A size that
 	// moves the layout shows once the layout is arranged again (Layout2D.arrange). Every value is the theme's or the game's, decided by what was
-	// set, never by comparing values: a layout's sizing, padding and gap go through Layout2D.themeSizing, themePadding and themeGap (themeFixed),
-	// which leave a value the game set (Layout2D.setSizing ...); a look a game may give one widget is a property of it, null for the theme's
-	// (Label.textSize, Label.color), read here. A widget's parts (its Text2D and Shape2D nodes) are its own: games change them through its
-	// properties, never directly.
+	// set, never by comparing values: a layout's sizing, padding, gap and margin go through Layout2D.themeSizing, themePadding, themeGap and
+	// themeMargin (themeFixed), which leave a value the game set (Layout2D.setSizing ...); a look a game may give one widget is a property of
+	// it, null for the theme's (Label.textSize, Label.color), read here. A widget's parts (its Text2D and Shape2D nodes) are its own: games
+	// change them through its properties, never directly.
 
 	@:allow(helix.ui.Ui)
 	function readTheme(theme:Theme):Void {}
@@ -94,6 +94,33 @@ class Widget {
 			case Fixed(u): u == units;
 			case _: false;
 		}
+
+	// Its part named part ("" for the whole of it, its layout's rectangle) as it was last laid out and updated: its rectangle written to out as
+	// [left, top, width, height] in the units of the node returned (its root, or the root of the popup the part is in), or null when it has no
+	// such part shown now. What Ui.computePoint finds an autopilot's points in; a widget with parts of its own overrides it and names them in
+	// Ui.computePoint's doc comment.
+
+	@:allow(helix.ui.Ui)
+	function locatePart(part:String, out:Array<Float>):Null<Node2D> {
+		if (part != "")
+			return null;
+		setRectangle(out, layout.x, layout.y, layout.width, layout.height);
+		return root;
+	}
+
+	// out as the rectangle x, y, width x height.
+	static function setRectangle(out:Array<Float>, x:Float, y:Float, width:Float, height:Float):Void {
+		out[0] = x;
+		out[1] = y;
+		out[2] = width;
+		out[3] = height;
+	}
+
+	// The index in a part named "row:<index>", or -1 for another name.
+	static function rowPart(part:String):Int {
+		var pattern = ~/^row:([0-9]{1,6})$/;
+		return pattern.match(part) ? Std.parseInt(pattern.matched(1)) : -1;
+	}
 
 	// The widgets it made through the Ui as parts of itself (a color picker's hex field): taken out with it.
 	@:allow(helix.ui.Ui)

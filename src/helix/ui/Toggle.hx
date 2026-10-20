@@ -68,7 +68,6 @@ class Toggle extends Widget {
 		var side = theme.textSize - 4;
 		if (mark.width != side)
 			mark.setSize(side, side);
-		mark.color = theme.accentColor;
 		check.cornerRadius = theme.cornerRadius / 2;
 		mark.cornerRadius = theme.cornerRadius / 4;
 		label.textSize = theme.textSize;
@@ -78,12 +77,14 @@ class Toggle extends Widget {
 	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		var theme = ui.theme;
+		var theme = ui.theme,
+			state = WidgetState.of(enabled, held, hovered, focused);
 		changed = enabled && (clicked || activated);
 		if (changed)
 			value = !value;
-		check.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
+		check.color = state.face(theme);
 		mark.visible = value;
-		label.color = enabled ? theme.textColor : theme.disabledTextColor;
+		mark.color = state == Disabled ? WidgetState.dim(theme.accentColor) : theme.accentColor;
+		label.color = state.text(theme);
 	}
 }

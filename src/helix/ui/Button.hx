@@ -55,9 +55,10 @@ class Button extends Widget {
 	}
 
 	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
-		var theme = ui.theme;
+		var theme = ui.theme,
+			state = WidgetState.of(enabled, held, hovered, focused);
 		this.clicked = enabled && (clicked || activated);
-		face.color = held ? theme.pressedColor : hovered ? theme.hoveredColor : theme.faceColor;
-		label.color = enabled ? theme.textColor : theme.disabledTextColor;
+		face.color = state.face(theme);
+		label.color = state.text(theme);
 	}
 }

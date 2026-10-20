@@ -21,4 +21,4 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.shaders`](shaders.md): Bloom, Blur, ChromaticAberration, ColorLut, Crt, Dissolve, Fxaa, HitFlash, LibraryScreenEffect, LibrarySurface, Outline, PaletteSwap, Pixelate, Rim, ShaderLibrary, Silhouette, SpriteDissolve, SpriteFlash, SpriteOutline, Tonemap, Toon, Unlit, Vignette, Water
 - [`helix.time`](time.md): Clock, Ticker, Time, Timer, Timers
 - [`helix.tween`](tween.md): Ease, Tween, Tweens
-- [`helix.ui`](ui.md): Alignment, Button, ColorFormat, ColorPicker, Handle, Label, Layout2D, Layout2DDirection, ListView, Panel, ProgressBar, Sizing, Slider, TextField, Theme, Tile, Toggle, Ui, Widget
+- [`helix.ui`](ui.md): Alignment, Button, Chevron, ColorFormat, ColorPicker, Dropdown, Handle, Label, Layout2D, Layout2DDirection, ListView, Panel, Popup, ProgressBar, ScrollArea, Scrollbar, ScrollbarVisibility, Separator, Sizing, Slider, TextField, Theme, Tile, Toggle, Ui, Widget, WidgetState

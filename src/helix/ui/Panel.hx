@@ -3,13 +3,22 @@ package helix.ui;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Shape2D;
+import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 
 /** A background holding a column of widgets (add): hidden, they're hidden with it. A plain rectangle in the theme's panel color, or a nine-slice
-	frame (setFrame). Never focused; the pointer stops at it, so what's under a panel doesn't see it. */
+	frame (setFrame); with a title, a band across its top holding it, the column under the band. Never focused; the pointer stops at it, so
+	what's under a panel doesn't see it. */
 class Panel extends Widget {
 	var background:Node2D;
 	var rectangle:Shape2D;
+	// The band and the column, top to bottom, over the background.
+	var body:Layout2D;
+	// The title's band: its face clipped to the band (band, its clip) so only its top corners are round, its text in the band's layout.
+	var band:Node2D;
+	var bandFace:Shape2D;
+	var bandText:Text2D;
+	var bandLayout:Layout2D;
 
 	@:allow(helix.ui.Ui)
 	function new(ui:Ui, name:String) {
@@ -19,21 +28,75 @@ class Panel extends Widget {
 		rectangle.setPivot(0, 0);
 		background = rectangle;
 		root.addChild(background);
+		band = new Node2D();
+		bandFace = Shape2D.rectangle(1, 1, theme.faceColor);
+		bandFace.setPivot(0, 0);
+		bandFace.pickable = false;
+		bandText = new Text2D("", theme.textSize, theme.textColor, Left, theme.font);
+		bandText.pickable = false;
+		band.addChild(bandFace);
+		band.visible = false;
+		root.addChild(band);
+		root.addChild(bandText);
+		bandText.visible = false;
+		bandLayout = Layout2D.stack();
+		var words = Layout2D.of(bandText);
+		words.setAnchor(Start, Center);
+		bandLayout.add(words);
 		content = Layout2D.column();
 		content.setAlign(Start, Stretch);
-		content.setAnchor(Stretch, Stretch);
+		body = Layout2D.column();
+		body.setAlign(Start, Stretch);
+		body.setAnchor(Stretch, Stretch);
+		body.add(content);
 		layout = Layout2D.stack(background);
-		layout.add(content);
+		layout.add(body);
 		readTheme(theme);
 	}
 
-	// The rectangle's color and corners (unused under a frame), the column's padding and gap, the theme's unless a game set its own.
+	// The rectangle's color and corners (unused under a frame), the column's padding and gap, the theme's unless a game set its own; the title's
+	// band in the faces' color, its text the theme's, as tall as a line of text and a padding, its text a padding in.
 	override function readTheme(theme:Theme):Void {
 		rectangle.color = theme.panelColor;
 		rectangle.cornerRadius = theme.cornerRadius;
 		var pad = theme.padding;
 		content.themePadding(pad, pad, pad, pad);
 		content.themeGap(theme.gap);
+		bandFace.color = theme.faceColor;
+		bandFace.cornerRadius = theme.cornerRadius;
+		bandText.textSize = theme.textSize;
+		bandText.color = theme.textColor;
+		bandText.font = theme.font;
+		themeFixed(bandLayout, Math.NaN, theme.textSize + pad);
+		bandLayout.themePadding(pad, 0, pad, 0);
+	}
+
+	/** Its title, drawn in a band across its top with its widgets under it, or null or "" (to start) for none. */
+	public var title(default, set):Null<String> = null;
+
+	function set_title(value:Null<String>):Null<String> {
+		title = value;
+		var shown = value != null && value != "";
+		bandText.text = shown ? value : "";
+		bandText.visible = band.visible = shown;
+		var has = body.children.indexOf(bandLayout) >= 0;
+		if (shown && !has) {
+			body.remove(content);
+			body.add(bandLayout);
+			body.add(content);
+		} else if (!shown && has)
+			body.remove(bandLayout);
+		return value;
+	}
+
+	// The band where the layout last placed it: its face as wide as the band and a corner taller, clipped to the band, so its bottom corners
+	// are cut square and its top ones follow the panel's.
+	override function update(hovered:Bool, held:Bool, clicked:Bool, focused:Bool, activated:Bool, stepX:Int, stepY:Int):Void {
+		if (!band.visible)
+			return;
+		band.setPosition(bandLayout.x, bandLayout.y);
+		band.setClip(bandLayout.width, bandLayout.height);
+		bandFace.setSize(bandLayout.width, bandLayout.height + bandFace.cornerRadius);
 	}
 
 	/** Puts widget in it, last in its column: its nodes under the panel's (hidden with it), its layout in the column. */
@@ -74,7 +137,7 @@ class Panel extends Widget {
 			root.addChild(n);
 		background = frame;
 		layout = Layout2D.stack(background);
-		layout.add(content);
+		layout.add(body);
 		return true;
 	}
 

@@ -120,6 +120,126 @@ class SimulationTests {
 			rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[' + bad + ']}'), "An invalid drag or type rejected: " + bad);
 	}
 
+	// Points naming widgets: checked as a script is read, found through the app's locate (here a fake one over named rectangles: a point at
+	// fractions of its widget's, or its part's) every time they're used, so a moving layout is followed; waited for while not found, ticking,
+	// and failing the script after its seconds; a sample keeps the points as found, a click with "at" clicks the pointer there.
+	static function widgetPoints(g:Game):Void {
+		var rectangles = new Map<String, Array<Float>>();
+		rectangles.set("box", [100, 200, 50, 20]);
+		rectangles.set("box/knob", [10, 10, 4, 4]);
+		var asked:Array<{points:Array<Array<Float>>, done:Array<Array<Int>>->Void, failed:String->Void}> = [];
+		function locate(target:String, part:String, x:Float, y:Float, out:Array<Float>):Bool {
+			var r = rectangles.get(part == "" ? target : target + "/" + part);
+			if (r == null)
+				return false;
+			out[0] = r[0] + r[2] * x;
+			out[1] = r[1] + r[3] * y;
+			return true;
+		}
+		function pilot(commands:String):Autopilot
+			return new Autopilot('{"version":1,"seed":1,"commands":[' + commands + ']}', null, name -> false,
+				(points, done, failed) -> asked.push({points: points, done: done, failed: failed}), (t, p, x, y, out) -> locate(t, p, x, y, out));
+		var box = '{"target":"box","at":[0,0]}',
+			far = '{"target":"box","at":[1,1]}',
+			knob = '{"target":"box","part":"knob","at":[0.5,0.5]}';
+		pilot('{"op":"sample","name":"a","points":['
+			+ box
+			+ ',[1,2],'
+			+ knob
+			+ '],"seconds":2},'
+			+ '{"op":"drag","from":'
+			+ box
+			+ ',"to":[3,4],"ticks":2,"seconds":1},'
+			+ '{"op":"sample","name":"b","points":[[0,0],[1,1],{"target":"box","at":[-0.5,1.5]}],"differsFrom":"a","by":1},'
+			+ '{"op":"click","target":"box","part":"knob","at":[0.5,0.5],"seconds":1}');
+		for (bad in [
+			'{"op":"sample","name":"x","points":[{"target":"","at":[0,0]}]}',
+			'{"op":"sample","name":"x","points":[{"target":"box"}]}',
+			'{"op":"sample","name":"x","points":[{"target":"box","at":[0]}]}',
+			'{"op":"sample","name":"x","points":[{"target":"box","at":[0,0],"where":1}]}',
+			'{"op":"sample","name":"x","points":[{"target":"box","part":"","at":[0,0]}]}',
+			'{"op":"sample","name":"x","points":[{"target":"box","part":3,"at":[0,0]}]}',
+			'{"op":"sample","name":"x","points":[[1,2]],"seconds":0}',
+			'{"op":"drag","from":' + box + ',"to":[3,4],"ticks":2,"seconds":700}',
+			'{"op":"click","target":"box","part":"knob","seconds":1}',
+			'{"op":"click","target":"box","at":[0.5],"seconds":1}'
+		])
+			rejects(() -> pilot(bad), "An invalid widget point rejected: " + bad);
+
+		// A drag from a widget's corner to its other corner: found on the press, the end followed as the widget moves.
+		var drag = pilot('{"op":"drag","from":' + box + ',"to":' + far + ',"ticks":2}');
+		var input = drag.advance(g.probe);
+		check(input.pointerDown && input.pointerX == 100 && input.pointerY == 200, "A drag presses at its widget's point");
+		input = drag.advance(g.probe);
+		check(input.pointerX == 125 && input.pointerY == 210, "and moves halfway to the other");
+		rectangles.set("box", [300, 200, 50, 20]);
+		input = drag.advance(g.probe);
+		check(input.pointerDown && input.pointerX == 350 && input.pointerY == 220, "its end found again as the widget moves");
+		input = drag.advance(g.probe);
+		check(!input.pointerDown && input.pointerX == 350, "let go there");
+		rectangles.set("box", [100, 200, 50, 20]);
+
+		// A widget not shown yet: waited for, ticking, without pressing; then the drag runs as from its first tick.
+		var later = pilot('{"op":"drag","from":{"target":"later","at":[0.5,0.5]},"to":{"target":"later","at":[1,1]},"ticks":1}');
+		for (_ in 0...3) {
+			input = later.advance(g.probe);
+			check(!input.pointerDown && !later.done && !later.awaitingFrame, "A drag waits for its widget, not pressing");
+		}
+		check(later.tickCount == 3, "ticking as it waits");
+		rectangles.set("later", [0, 0, 10, 10]);
+		input = later.advance(g.probe);
+		check(input.pointerDown && input.pointerFramePressed && input.pointerX == 5 && input.pointerY == 5, "then presses once it's there");
+		rectangles.remove("later");
+		rejects(() -> later.advance(g.probe), "A drag's end that's gone fails the script");
+
+		// A sample: its points found as it asks, kept as found; waits for a part not there yet.
+		asked = [];
+		var sampler = pilot('{"op":"sample","name":"s","points":[' + knob + ',[7,8],{"target":"box","part":"thumb","at":[0,1]}]}');
+		sampler.advance(g.probe);
+		check(asked.length == 0 && !sampler.awaitingFrame && sampler.tickCount == 1, "A sample waits, ticking, for a part not there");
+		rectangles.set("box/thumb", [20, 30, 2, 6]);
+		sampler.advance(g.probe);
+		check(asked.length == 1 && sampler.awaitingFrame && asked[0].points[0][0] == 12 && asked[0].points[0][1] == 12 && asked[0].points[1][0] == 7
+			&& asked[0].points[2][1] == 36,
+			"then asks for its frame at the points as found (a plain one as given)");
+		asked[0].done([[1, 2, 3, 255], [1, 2, 3, 255], [1, 2, 3, 255]]);
+		sampler.advance(g.probe);
+		var kept:Dynamic = sampler.snapshot.samples;
+		check(sampler.done && kept.s.points[0][0] == 12 && kept.s.points[2][1] == 36, "The sample keeps the points as found");
+
+		// A click at a widget's part: pressed there on one tick, let go the next.
+		var clicker = pilot('{"op":"click","target":"box","part":"knob","at":[0,1],"timeout":5}');
+		input = clicker.advance(g.probe);
+		check(input.pointerDown && input.pointerX == 10 && input.pointerY == 14, "A click with at presses there");
+		input = clicker.advance(g.probe);
+		check(!input.pointerDown && input.pointerFrameReleased && input.pointerX == 10, "and lets go there");
+		clicker.advance(g.probe);
+		check(clicker.done, "A pointer click done");
+
+		// Never found: the script fails after its limit, naming the widget and part.
+		var ghost = pilot('{"op":"click","target":"ghost","part":"knob","at":[0,0],"timeout":3}'), message = "";
+		try {
+			for (_ in 0...10)
+				ghost.advance(g.probe);
+		} catch (error:Dynamic) {
+			message = Std.string(error);
+		}
+		check(message.indexOf("no shown ghost part knob") >= 0
+			&& ghost.tickCount == 3, "An unknown widget fails the script after its limit: " + message);
+		var lost = pilot('{"op":"sample","name":"x","points":[{"target":"ghost","at":[0,0]}],"seconds":0.001}');
+		message = "";
+		var started = haxe.Timer.stamp();
+		try {
+			while (haxe.Timer.stamp() - started < 5)
+				lost.advance(g.probe);
+		} catch (error:Dynamic) {
+			message = Std.string(error);
+		}
+		check(message.indexOf("no shown ghost") >= 0, "and a sample's, after its seconds");
+		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"drag","from":' + box + ',"to":[1,2],"ticks":1}]}').advance(g.probe),
+			"A widget's point with nothing to find it with fails");
+	}
+
 	static function rejects(action:Void->Void, message:String):Void {
 		var rejected = false;
 		try {
@@ -287,6 +407,7 @@ class SimulationTests {
 		rejects(() -> new Autopilot('{"version":1,"seed":1,"commands":[{"op":"screenshot","name":"../x.png"}]}'), "A screenshot name with a path rejected");
 		samples(g);
 		pointerAndText(g);
+		widgetPoints(g);
 		trace(haxe.Json.stringify({checks: checks, passed: true, replay: a.snapshot()}));
 	}
 }
