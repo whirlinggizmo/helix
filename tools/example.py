@@ -3,7 +3,7 @@ a share of them).
 
   python3 tools/example.py NAME build|autopilot|dev [BUILD]
 
-A build is named by the rule in docs/CONVENTIONS.md (Build, tools/build_name.py): `<platform>-<config>-<backend>`, given here as
+A build is named by the rule in docs/CONVENTIONS.md (Build, tools/variants.py): `<platform>-<config>-<backend>`, given here as
 `<config>-<backend>` (this machine's platform, js for webgl2) or whole. build builds release-webgl2 when not told; autopilot compares a
 native build, release-sokol-gl when not told, against the browser's in the same config; dev serves the browser's, debug-webgl2 when not
 told, as its own build with the dev option (`js-debug-webgl2-dev`), in a folder no build writes, so a build or autopilot of the same example
@@ -43,7 +43,7 @@ import pack_shader
 import gen_manifest
 import bake_fonts
 from native_build import ARCH
-from build_name import Build,parse
+from variants import Build,parse
 
 ROOT=Path(__file__).resolve().parents[1]
 GENERATED=ROOT/'build/generated/shaders'
@@ -83,7 +83,7 @@ def source(name):
     return f'examples/{name}/src' if (ROOT/f'examples/{name}/src/App.hx').is_file() else f'examples/{name}'
 
 def hxml(name,build):
-    """The example's build arguments for build (a build_name.Build), written to build/<build>/<name>.hxml, where the dev server and haxe
+    """The example's build arguments for build (a variants.Build), written to build/<build>/<name>.hxml, where the dev server and haxe
     read them."""
     lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{build.backend}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}']
     # release: what ships; debug: Haxe's debug build (natively hxcpp's, its null checks on), the standard DCE, no optimizer.
@@ -202,7 +202,7 @@ def program(name,build):
     return page(name,build)/(name+('.exe' if os.name=='nt' else ''))
 
 def build(name,chosen):
-    """Builds the example as chosen (a build_name.Build): into its site/<name> in the browser, its bin/<name> natively, hxcpp working
+    """Builds the example as chosen (a variants.Build): into its site/<name> in the browser, its bin/<name> natively, hxcpp working
     in build/<build>/<name>."""
     if chosen.web:
         prepare(name,chosen)
@@ -248,7 +248,7 @@ def compare_samples(browser,native,tolerance=3):
     return problems
 
 def autopilot(name,browser,native):
-    """Replays every examples/<name>/autopilot script in the browser and natively, under native (a native build_name.Build), against the
+    """Replays every examples/<name>/autopilot script in the browser and natively, under native (a native variants.Build), against the
     browser's build in the same config; returns the scripts whose final games or samples differ or that failed."""
     import functools,http.server,threading
     if sys.platform.startswith('linux'):from private_display import private_display

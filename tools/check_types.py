@@ -14,7 +14,7 @@ GENERATED={'shaders':'build/generated/shaders','fonts':'build/generated/fonts','
 def targets():
     """(label, haxe arguments) for each entry point and target."""
     from example import source
-    from build_name import BACKENDS
+    from variants import BACKENDS
     found=[]
     for example in sorted({p.parent.name for p in (ROOT/'examples').glob('*/App.hx')}|{p.parent.parent.name for p in (ROOT/'examples').glob('*/src/App.hx')}):
         # Each backend's launcher (examples/shared/launch/<backend>), as tools/example.py builds it.

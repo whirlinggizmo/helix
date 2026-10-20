@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import example
-from build_name import Build
+from variants import Build
 
 # The build the site is: the browser's release build, its site/ folder.
 BUILD=Build('js','release','webgl2')

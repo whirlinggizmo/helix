@@ -30,7 +30,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import gen_manifest
-from build_name import Build,machine
+from variants import Build,machine
 from example import page,program
 
 EXAMPLE='sprite2d'

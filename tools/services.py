@@ -28,7 +28,7 @@ def main():
  p.add_argument('--native',nargs='?',const='release-sokol-gl',metavar='BUILD',help='also natively: release-sokol-gl when not given, or release-sdl3-gl, either in debug');a=p.parse_args()
  native=None
  if a.native:
-  from build_name import parse
+  from variants import parse
   try:native=parse(a.native)
   except ValueError as error:p.error(str(error))
   if native.backend not in ('sokol-gl','sdl3-gl'):p.error(f'--native {a.native}: the services are sokol-gl\'s or sdl3-gl\'s (SDL3\'s, the same under sdl3-gpu)')

@@ -64,13 +64,13 @@ python3 tools/check_types.py    # every entry point, both targets, in seconds
 python3 tools/gen_apidoc.py     # the API reference: docs/api (committed; --check in the tests) and build/api/index.html
 ```
 
-- **Tools are named verb_noun, words apart by underscores:** `check_types.py`, `gen_manifest.py`, `bake_fonts.py`, `pack_shader.py`; a `check_` tool only reports, a `gen_` tool makes files (committed ones, remade with `--regenerate`), the rest do what they say. The same for the Node scripts beside them (`check_cache.cjs`). Front doors keep their noun (`helix.py`, `tools/example.py`, `tools/services.py`, `tools/pages.py`).
+- **Tools are named for what they are:** a runnable tool is verb_noun, words apart by underscores (`check_types.py`, `gen_manifest.py`, `bake_fonts.py`, `pack_shader.py`); a `check_` tool only reports, a `gen_` tool makes files (committed ones, remade with `--regenerate`), the rest do what they say. A converter is `<from>2<to>`, naming both ends (`fbx2glb.py`, `gltf2scene.py`). A module only imported by other tools is named for what it holds, a plain noun that can't read as a verb (`shader_metadata.py`, `variants.py`). Front doors keep their noun (`helix.py`, `tools/example.py`, `tools/services.py`, `tools/pages.py`). The same for the Node scripts beside them (`check_cache.cjs`).
 
 The formatter and dox are pinned in `dependencies.json` and installed into the repository's own haxelib (`build/haxelib`), as hxcpp is.
 
 ## Build
 
-A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`, each part chosen from a fixed list, so a name says what was built and where it is (`tools/build_name.py` holds the lists and the folders; DECISIONS 137).
+A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`, each part chosen from a fixed list, so a name says what was built and where it is (`tools/variants.py` holds the lists and the folders; DECISIONS 137).
 
 - **platform:** what the program links against, this machine's for a native build: `linux-x64`, `linux-arm64`, `macos-arm64`, `macos-x64`, `windows-x64-msvc` (hxcpp's default on Windows; `windows-x64-mingw` would be MinGW's, not supported yet), and `js` for the browser.
 - **config:** `debug` or `release`. `release` is what ships: full dead-code elimination, the analyzer's optimizations, Terser in the browser. `debug` finds faults: Haxe's `-debug` (a source map in the browser; natively hxcpp's debug runtime with stack lines and null checks), the standard dead-code elimination, no optimizer, and the adapters' C unoptimized with its assertions and sokol_gfx's validation on.
