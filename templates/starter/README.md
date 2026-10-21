@@ -6,6 +6,7 @@ A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/G
 haxe web.hxml                        # the browser build, out/web/app.js
 haxelib run helix site --zip         # the page around it in out/site/, zipped for hosting (itch.io) as out/{name}-web.zip
 haxe native.hxml && out/native/Main  # the native build (hxcpp), out/native/Main; it reads assets/ beside itself: copy (or link) the folder to out/native/assets
+haxelib run helix setup              # the shader compiler fetched ahead (shader fetches it on first use), e.g. before going offline
 ```
 
 The dev loop, in two terminals: hotreload-hx's server rebuilds on save and swaps the code into the running page at <http://localhost:8064/>

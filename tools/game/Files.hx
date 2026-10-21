@@ -62,6 +62,17 @@ class Files {
 		return count;
 	}
 
+	/** The bytes in the file at path, or in every file under the folder at path; 0 when nothing is there. */
+	public static function size(path:String):Float {
+		if (isFile(path))
+			return FileSystem.stat(path).size;
+		var total = 0.0;
+		if (isFolder(path))
+			for (name in FileSystem.readDirectory(path))
+				total += size(Path.join([path, name]));
+		return total;
+	}
+
 	/** Every file under folder, as paths relative to it with forward slashes, sorted. */
 	public static function listFiles(folder:String, prefix = ""):Array<String> {
 		var out = [];

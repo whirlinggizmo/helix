@@ -28,6 +28,17 @@ class Downloads {
 		return home;
 	}
 
+	/** The program the environment variable names in place of the cache's (one of the user's own, for a machine without a network), or null
+		when it names none; refuses one that isn't a file. Its version is the user's to choose: it isn't checked. */
+	public static function given(variable:String):Null<String> {
+		var path = Sys.getEnv(variable);
+		if (path == null || path == "")
+			return null;
+		if (!Files.isFile(path))
+			throw new CommandError('helix: $variable names $path, which isn\'t a file');
+		return Path.normalize(FileSystem.absolutePath(path));
+	}
+
 	/** A message on the standard error. */
 	public static function say(message:String):Void
 		Sys.stderr().writeString(message + "\n");

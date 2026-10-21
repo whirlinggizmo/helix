@@ -19,14 +19,16 @@ A game on -lib helix, from its own folder: a starter written, its shaders packed
                               app.js (the -js of web.hxml, or --hxml's), assets/ copied beside, config.json and favicon.png from the
                               game's folder when there; --title the page's (the folder's name); --zip writes it as a zip with
                               index.html at the root (out/<game>-web.zip, or FILE), what itch.io takes
+  setup [--sdl-gpu]           the tools `shader` needs, made ready ahead of its first run (before going offline, or for a CI's cache), and
+                              listed: sokol-shdc, and with --sdl-gpu glslang and SPIRV-Cross (built by hxcpp, with the system's C++ compiler)
 
 The game's folder is the current one. `shader` fetches sokol-shdc into the user's cache the first time, and with --sdl-gpu glslang and
-SPIRV-Cross (built by hxcpp) too (BUILDING.md).";
+SPIRV-Cross too; HELIX_SHDC, HELIX_GLSLANG and HELIX_SPIRV_CROSS name programs of your own instead (BUILDING.md).";
 
 	/** Runs the command args name for the game in the current folder, the library being at root; returns the exit code. */
 	public static function run(args:Array<String>, root:String):Int {
 		if (args.length == 0)
-			return usage("a command is needed: init, shader or site");
+			return usage("a command is needed: init, shader, site or setup");
 		var command = args[0], rest = args.slice(1);
 		if (command == "--help" || command == "-h") {
 			Sys.println(HELP);
@@ -58,8 +60,15 @@ SPIRV-Cross (built by hxcpp) too (BUILDING.md).";
 						return help("shader [FILE.glsl ...] [--out DIR] [--sdl-gpu] [--watch]: the game's shaders packed into .hxshader assets");
 					GameShaders.pack(root, ".", options.positional, options.value("--out", "assets/shaders"), options.values.exists("--sdl-gpu"),
 						options.values.exists("--watch"));
+				case "setup":
+					var options = new Options(rest, [], [], ["--sdl-gpu"]);
+					if (options.help)
+						return help("setup [--sdl-gpu]: the tools shader needs, made ready ahead and listed");
+					if (options.positional.length > 0)
+						return usage('setup: unexpected ${options.positional[0]}');
+					Setup.run(root, options.values.exists("--sdl-gpu"));
 				default:
-					return usage('unknown command $command: init, shader or site');
+					return usage('unknown command $command: init, shader, site or setup');
 			}
 		} catch (error:OptionError) {
 			return usage('$command: ${error.message}');

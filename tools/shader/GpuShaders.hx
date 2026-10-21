@@ -20,7 +20,7 @@ import tools.game.Files;
 
 	The tools, pinned in dependencies.json (gpuShaders) and kept in the user's cache (Downloads): glslang's official release for the system,
 	checked against its SHA-256; SPIRV-Cross's source release, checked, built once by hxcpp with the system's compiler (it publishes no
-	programs). */
+	programs). HELIX_GLSLANG and HELIX_SPIRV_CROSS name the user's own instead. */
 class GpuShaders {
 	// SDL_GPU's descriptor sets: textures and uniform blocks, by stage.
 	static final SETS = ["vertex" => {textures: 0, blocks: 1}, "fragment" => {textures: 2, blocks: 3}];
@@ -36,7 +36,7 @@ class GpuShaders {
 			case "Mac": "macos";
 			default:
 				if (Shdc.arm64())
-					throw new CommandError("shader: glslang publishes Linux programs for x86_64 only");
+					throw new CommandError("shader: glslang publishes Linux programs for x86_64 only (HELIX_GLSLANG can name a glslang of your own)");
 				"linux";
 		}
 	}
@@ -44,14 +44,17 @@ class GpuShaders {
 	static function exe(name:String):String
 		return Sys.systemName() == "Windows" ? name + ".exe" : name;
 
-	/** glslang's program, its pinned release unpacked into the cache the first time. */
+	/** glslang's program, its pinned release unpacked into the cache the first time; or the one HELIX_GLSLANG names. */
 	public static function glslang(root:String):String {
-		var entry:Dynamic = pin(root).glslang;
-		var folder = Path.join([Downloads.cache(), 'glslang-${entry.version}-${system()}']);
-		var program = Path.join([folder, "bin", exe("glslang")]);
+		var given = Downloads.given("HELIX_GLSLANG");
+		if (given != null)
+			return given;
+		var program = glslangLocation(root);
 		if (Files.isFile(program))
 			return program;
-		var release:Dynamic = Reflect.field(entry, system());
+		var folder = Path.directory(Path.directory(program));
+		var release:Dynamic = Reflect.field(pin(root).glslang, system());
+		Downloads.say('shader: glslang isn\'t in the cache yet: fetched once, into $folder');
 		var archive = Downloads.fetch([release.url], release.sha256, "shader");
 		Files.removeFolder(folder);
 		Downloads.unzip(archive, folder);
@@ -60,13 +63,30 @@ class GpuShaders {
 		return program;
 	}
 
-	/** SPIRV-Cross's program, built once from its pinned source into the cache by hxcpp (the compiler HeliX's native builds use). */
+	/** Where glslang's pinned release keeps its program in the cache, whether it's there or not. */
+	public static function glslangLocation(root:String):String
+		return Path.join([
+			Downloads.cache(),
+			'glslang-${pin(root).glslang.version}-${system()}',
+			"bin",
+			exe("glslang")
+		]);
+
+	/** SPIRV-Cross's program, built once from its pinned source into the cache by hxcpp (the compiler HeliX's native builds use); or the one
+		HELIX_SPIRV_CROSS names. */
 	public static function spirvCross(root:String):String {
+		var given = Downloads.given("HELIX_SPIRV_CROSS");
+		if (given != null)
+			return given;
 		var entry:Dynamic = pin(root).spirvCross;
-		var folder = Path.join([Downloads.cache(), 'spirv-cross-${entry.version}']);
-		var program = Path.join([folder, exe("spirv-cross")]);
+		var program = spirvCrossLocation(root);
 		if (Files.isFile(program))
 			return program;
+		var folder = Path.directory(program);
+		var hxcpp = try Scratch.run("haxelib", ["path", "hxcpp"]).code == 0 catch (_) false;
+		if (!hxcpp)
+			throw new CommandError("shader: SPIRV-Cross publishes no programs, so it's built from its source once, by hxcpp, which isn't installed:"
+				+ " haxelib install hxcpp (and a C++ compiler: MSVC on Windows, clang or gcc elsewhere), or name a spirv-cross in HELIX_SPIRV_CROSS");
 		var archive = Downloads.fetch([entry.url], entry.sha256, "shader");
 		var source = Path.join([Downloads.cache(), "spirv-cross-source"]);
 		Files.removeFolder(source);
@@ -123,6 +143,14 @@ $files </files>
 			throw new CommandError('shader: SPIRV-Cross built, but $program is missing');
 		return program;
 	}
+
+	/** Where SPIRV-Cross's pinned build keeps its program in the cache, whether it's there or not. */
+	public static function spirvCrossLocation(root:String):String
+		return Path.join([
+			Downloads.cache(),
+			'spirv-cross-${pin(root).spirvCross.version}',
+			exe("spirv-cross")
+		]);
 
 	/** A stage's GLSL 410 rewritten as SDL_GPU's Vulkan GLSL 450 (see the class's description). blocks and textures are the program's (slot,
 		stage, glslName each); every uniform the stage declares must be one of them. */
@@ -182,7 +210,8 @@ $files </files>
 	/** A program's GLSL 410 stages in SDL_GPU's dialects: spirv (each stage base64), msl and hlsl (each stage's text), each {vertex, fragment}.
 		MSL's entry points are main0, HLSL's main. */
 	public static function translate(root:String, vertex:String, fragment:String, blocks:Array<Dynamic>, textures:Array<Dynamic>):JsonValue {
-		var compiler = glslang(root), cross = spirvCross(root);
+		// SPIRV-Cross first: without hxcpp it can't be had, and glslang's download would be for nothing.
+		var cross = spirvCross(root), compiler = glslang(root);
 		var spirv = [], msl = [], hlsl = [];
 		var folder = Scratch.make("helix-gpu-");
 		try {

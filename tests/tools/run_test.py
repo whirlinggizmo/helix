@@ -5,7 +5,8 @@ checkout as helix), and its refusal of a folder with anything in it; site's asse
 title and the config's meta, app.js from the hxml's -js, also through an included hxml, assets copied beside, config.json and favicon.png,
 the zip's layout and name, --title, --js and --out, the refusals); and shader packing a small screen effect (sokol-shdc, fetched when
 missing) into assets/shaders, its refusals, and the manifests rewritten from their root when the assets carry them, as tools/gen_manifest.py
-would write them.
+would write them; setup making sokol-shdc ready and listing the tools, a program HELIX_SHDC names in place of the cache's and its refusal of
+one that isn't there.
 
     python3 tests/tools/run_test.py"""
 import argparse
@@ -72,7 +73,7 @@ class FrontDoor(unittest.TestCase):
         self.assertIn('command', result.stderr)
         result = run_hx('--help')
         self.assertEqual(result.returncode, 0, result.stderr)
-        for command in ('init', 'shader', 'site'):
+        for command in ('init', 'shader', 'site', 'setup'):
             self.assertIn(command, result.stdout)
         self.assertIn('haxelib run helix', result.stdout)
         result = run_hx('bogus')
@@ -84,7 +85,7 @@ class FrontDoor(unittest.TestCase):
         result = run_hx('site', '--out')
         self.assertEqual(result.returncode, 2)
         self.assertIn('needs a value', result.stderr)
-        for command in ('init', 'shader', 'site'):
+        for command in ('init', 'shader', 'site', 'setup'):
             result = run_hx(command, '--help')
             self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -245,6 +246,28 @@ class Shader(unittest.TestCase):
             self.assertEqual((root / 'assets/shaders/manifest.json').read_bytes(), shaders)
             (root / 'shaders/glow.glsl').unlink()
             self.assertIn('nothing to pack', refusal(tool('shader', cwd=root)))
+
+
+class Setup(unittest.TestCase):
+    def test_setup(self):
+        with tempfile.TemporaryDirectory() as folder:
+            listed = done(tool('setup', cwd=folder))
+            shdc = next(line for line in listed.splitlines() if line.startswith('sokol-shdc'))
+            self.assertTrue(Path(shdc.split()[2]).is_file(), listed)
+            self.assertIn('cache:', listed)
+            self.assertIn('unexpected', run_hx('setup', 'extra', folder, env=dict(os.environ, HAXELIB_RUN='1')).stderr)
+            # A program of the user's own, in a cache with nothing in it: listed in place of the pin, nothing fetched.
+            cache = Path(folder) / 'cache'
+            empty = dict(os.environ, HAXELIB_RUN='1', XDG_CACHE_HOME=str(cache), LOCALAPPDATA=str(cache), HOME=str(cache),
+                         USERPROFILE=str(cache))
+            mine = Path(folder) / 'my-shdc'
+            mine.write_bytes(b'shdc')
+            listed = done(run_hx('setup', folder, env=dict(empty, HELIX_SHDC=str(mine))))
+            self.assertIn('HELIX_SHDC', listed)
+            self.assertIn(mine.resolve().as_posix(), listed)
+            self.assertIn('not there yet', listed)
+            self.assertFalse((cache / 'helix').exists())
+            self.assertIn('HELIX_SHDC names', refusal(run_hx('setup', folder, env=dict(empty, HELIX_SHDC=str(mine) + '-not'))))
 
 
 if __name__ == '__main__':

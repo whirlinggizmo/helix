@@ -32,7 +32,7 @@ python3 helix.py services --browser /path/to/chromium --native release-sokol-gl
 
 `helix.py test` runs the adapter check (`tools/check_adapters.py`), checks the test fixtures are there (`tools/gen_fixtures.py`, which makes them with FFmpeg only when one is missing), then runs the tool tests (`tests/shaders`, `tests/tools`), the package smoke test, every unit test, the deterministic trig check (interpreter and JS, and hxcpp with `--native`) and, with `--native`, the C service tests. `services` runs the asset, storage, fetch and audio services against local HTTP fixtures. Native execution/linking is Linux only; Python/Haxe tooling uses portable process/path APIs.
 
-A game's front door is `haxelib run helix` (`Run.hx`, the library's `main`, running `tools/game/` in Haxe's interpreter): `init`, `shader` and `site`, above and in BUILDING.md. The launcher and its commands are outside the game's and the library's class paths.
+A game's front door is `haxelib run helix` (`Run.hx`, the library's `main`, running `tools/game/` in Haxe's interpreter): `init`, `shader`, `site` and `setup`, above and in BUILDING.md. The launcher and its commands are outside the game's and the library's class paths.
 
 ## Autopilot
 
