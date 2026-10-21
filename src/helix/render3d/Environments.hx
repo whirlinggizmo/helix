@@ -1,9 +1,9 @@
 package helix.render3d;
 
-/** Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache). The program's one, a static class: each
+/** Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache), installed by their first use, so a program with none carries none of it. The program's one, a static class: each
 	member forwards to instance, written by helix.macro.Facade from EnvironmentCache's public members with their doc comments. */
-@:build(helix.macro.Facade.build(helix.render3d.EnvironmentCache, ["poll", "reloaded", "shutdown"]))
+@:build(helix.macro.Facade.build(helix.render3d.EnvironmentCache, ["poll", "reloaded", "shutdown"], helix.render3d.EnvironmentCache.install))
 class Environments {
-	/** The environments forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
+	/** The environments forwarded to: installed by their first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
 	@:hot public static var instance(default, null):EnvironmentCache;
 }

@@ -16,6 +16,14 @@ class Host {
 	// The runner, for busy; kept across a hot reload (@:hot), as instance is.
 	@:hot static var runner:Runner;
 
+	/** An optional part's way in (helix.host.Part): make builds it over the runner's shared services and installs its hooks
+		(Runner.install), at the part's first use. Fails plainly when nothing runs the program (a test makes what it needs itself). */
+	@:noCompletion public static function installPart<T>(make:Runner->T):T {
+		if (runner == null)
+			throw "helix: an optional part is used with nothing running the program (helix.App runs it)";
+		return make(runner);
+	}
+
 	/** Whether the runner is running the program: false in a test, which makes what it needs itself. */
 	public static var running(get, never):Bool;
 

@@ -27,6 +27,25 @@ class EnvironmentCache implements IReloadable {
 	// Bakes waiting their turn, the first running: each its path and what to do when it's done or fails.
 	var queue:Array<{path:String, bake:EnvironmentBake, done:Null<String>->Void}> = [];
 
+	// The program's environments, an optional part (helix.host.Part): built over the runner's assets, image decoder and GPU, polled each
+	// frame, closed at the end; Environments installs it at its first use, so a program with no environment carries none of this.
+
+	@:allow(helix.render3d.Environments)
+	static function install():EnvironmentCache {
+		return helix.host.Host.installPart(runner -> {
+			var cache = new EnvironmentCache(runner.assets, runner.images, runner.platform.graphics);
+			runner.install({
+				poll: cache.poll,
+				busy: () -> cache.busy,
+				shutdown: () -> {
+					cache.shutdown();
+					Environments.bind(null);
+				}
+			});
+			cache;
+		});
+	}
+
 	/** Loads through assets, decodes 8-bit images with images and uploads to gpu. */
 	public function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics) {
 		this.assets = assets;

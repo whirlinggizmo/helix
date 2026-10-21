@@ -21,8 +21,6 @@ import helix.render2d.FontCache;
 import helix.render2d.Fonts;
 import helix.render2d.TextureCache;
 import helix.render2d.Textures;
-import helix.render3d.EnvironmentCache;
-import helix.render3d.Environments;
 import helix.render3d.ModelCache;
 import helix.render3d.Models;
 import helix.scene.SceneFileCache;
@@ -53,10 +51,11 @@ class Runner {
 	var sounds:AudioResources;
 	var textures:TextureCache;
 	var fonts:FontCache;
-	var environments:EnvironmentCache;
 	var models:ModelCache;
 	var sceneFiles:SceneFileCache;
 	var screenshots:ScreenshotService;
+	// The optional parts installed by their first use, in that order.
+	var parts:Array<Part> = [];
 	var previousFrame = Math.NaN;
 	var closed = false;
 
@@ -91,7 +90,36 @@ class Runner {
 	public var busy(get, never):Bool;
 
 	function get_busy():Bool
-		return resources != null && (resources.busy || decoding.busy || audioDecoding.busy || environments.busy);
+		return resources != null && (resources.busy || decoding.busy || audioDecoding.busy || partsBusy());
+
+	function partsBusy():Bool {
+		for (part in parts)
+			if (part.busy != null && part.busy())
+				return true;
+		return false;
+	}
+
+	/** The assets, for an optional part built over them. */
+	public var assets(get, never):AssetService;
+
+	function get_assets():AssetService
+		return resources;
+
+	/** The image decoder, for an optional part built over it. */
+	public var images(get, never):ImageDecoding;
+
+	function get_images():ImageDecoding
+		return decoding;
+
+	/** The adapters the program runs on, for an optional part built over them. */
+	public var platform(get, never):Adapters;
+
+	function get_platform():Adapters
+		return adapters;
+
+	/** Adds an optional part, its hooks run from now until the program's end. Its static class calls it, at the part's first use. */
+	public function install(part:Part):Void
+		parts.push(part);
 
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
 	public function assetChanged(path:String):Void
@@ -114,7 +142,6 @@ class Runner {
 		sounds = new AudioResources(resources, a.audio, audioDecoding);
 		textures = new TextureCache(resources, decoding, a.graphics);
 		fonts = new FontCache(resources, a.graphics);
-		environments = new EnvironmentCache(resources, decoding, a.graphics);
 		models = new ModelCache(resources, textures);
 		sceneFiles = new SceneFileCache(resources);
 		screenshots = new ScreenshotService(a.graphics, a.export, a.name, presentation);
@@ -129,7 +156,6 @@ class Runner {
 		Audio.bind(sounds);
 		Textures.bind(textures);
 		Fonts.bind(fonts);
-		Environments.bind(environments);
 		Models.bind(models);
 		SceneFiles.bind(sceneFiles);
 		TestHarness.bind(a.harness);
@@ -153,7 +179,9 @@ class Runner {
 		sounds.poll(clock.delta);
 		decoding.poll();
 		audioDecoding.poll();
-		environments.poll();
+		for (part in parts)
+			if (part.poll != null)
+				part.poll();
 		input.poll(adapters.input);
 		var window = host.window;
 		presentation.refit(window.framebufferWidth, window.framebufferHeight, window.pixelRatio);
@@ -172,6 +200,9 @@ class Runner {
 		}
 		app.frame(clock.delta);
 		screenshots.frameEnded();
+		for (part in parts)
+			if (part.frameEnded != null)
+				part.frameEnded();
 		input.endFrame();
 		frameCpu = (host.time - now) * 1000;
 	}
@@ -181,12 +212,17 @@ class Runner {
 			return;
 		closed = true;
 		screenshots.shutdown();
+		// The parts, the last installed first, before the shared services they're built over.
+		var i = parts.length;
+		while (i-- > 0)
+			if (parts[i].shutdown != null)
+				parts[i].shutdown();
+		parts = [];
 		sounds.shutdown();
 		sceneFiles.shutdown();
 		models.shutdown();
 		fonts.shutdown();
 		textures.shutdown();
-		environments.shutdown();
 		decoding.shutdown();
 		audioDecoding.shutdown();
 		resources.shutdown();
@@ -209,7 +245,6 @@ class Runner {
 		Audio.bind(null);
 		Textures.bind(null);
 		Fonts.bind(null);
-		Environments.bind(null);
 		Models.bind(null);
 		SceneFiles.bind(null);
 		TestHarness.bind(null);

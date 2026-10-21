@@ -19,15 +19,21 @@ using haxe.macro.Tools;
 	class's build types their bodies too early, which the compiler doesn't survive. An interface's members are typed eagerly and read as
 	typed. */
 class Facade {
+	// How the forwarders of the class being built reach its service: instance, or service() for an optional part.
+	static var reach:Expr;
+
 	// What record kept of each class marked with it, by its path: its public instance members as written, their types resolved.
 	static var recorded = new Map<String, Array<Member>>();
 
 	/** The fields of the static class being built, with a forwarder for each public member of the type `of` names (an interface, or a class
 		marked `@:build(helix.macro.Facade.record())`, its superclasses' and extended interfaces' members too) but for the names in exclude
 		(what is the runner's, such as poll and shutdown) and those the class declares itself (which it writes by hand), and `bind(value)`,
-		which sets instance and which only the runner calls: with its service at its init and null at its cleanup. Fails, saying why, for a
-		type that is neither, a class with no instance, or a member it can't forward (one with type parameters, or without a declared type). */
-	public static function build(of:Expr, ?exclude:Array<String>):Array<Field> {
+		which sets instance and which only the runner calls: with its service at its init and null at its cleanup. With install (a static
+		function of the service's class returning it), the service is an optional part (helix.host.Part): the forwarders reach it through
+		service(), which calls install the first time, so a program that never uses it carries none of it, and its class's install and
+		shutdown call bind. Fails, saying why, for a type that is neither, a class with no instance, or a member it can't forward (one with
+		type parameters, or without a declared type). */
+	public static function build(of:Expr, ?exclude:Array<String>, ?install:Expr):Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 		var path = of.toString();
@@ -46,7 +52,10 @@ class Facade {
 			made.push({
 				name: "bind",
 				doc: "Sets the service forwarded to: the runner's, at its init, and null at its cleanup.",
-				meta: [{name: ":allow", params: [macro helix.host.Runner], pos: pos}],
+				meta: [
+					{name: ":allow", params: [macro helix.host.Runner], pos: pos},
+					{name: ":allow", params: [of], pos: pos}
+				],
 				access: [AStatic],
 				kind: FFun({
 					args: [
@@ -57,6 +66,27 @@ class Facade {
 				}),
 				pos: pos,
 			});
+		// A build macro's missing argument comes as the expression null.
+		if (install != null && install.expr.match(EConst(CIdent("null"))))
+			install = null;
+		if (install != null)
+			made.push({
+				name: "service",
+				doc: "The service, installed by its first use.",
+				meta: [{name: ":noCompletion", pos: pos}],
+				access: [AStatic],
+				kind: FFun({
+					args: [],
+					ret: type.toComplexType(),
+					expr: macro {
+						if (instance == null)
+							instance = $install();
+						return instance;
+					}
+				}),
+				pos: pos,
+			});
+		reach = install == null ? macro instance : macro service();
 		var skip = exclude == null ? [] : exclude;
 		for (member in members(source, of.pos)) {
 			if (declared.exists(member.name) || skip.contains(member.name))
@@ -244,7 +274,7 @@ class Facade {
 	static function method(member:Member, pos:Position):Field {
 		var name = member.name;
 		var passed = [for (a in member.args) macro $i{a.name}];
-		var call = macro instance.$name($a{passed});
+		var call = macro $reach.$name($a{passed});
 		var isVoid = switch Context.follow(member.ret) {
 			case TAbstract(_.get() => {pack: [], name: "Void"}, _): true;
 			default: false;
@@ -288,7 +318,7 @@ class Facade {
 				name: "get_" + name,
 				meta: [{name: ":noCompletion", pos: pos}],
 				access: [AStatic],
-				kind: FFun({args: [], ret: t, expr: macro return instance.$name}),
+				kind: FFun({args: [], ret: t, expr: macro return $reach.$name}),
 				pos: pos,
 			});
 		if (member.write)
@@ -296,7 +326,7 @@ class Facade {
 				name: "set_" + name,
 				meta: [{name: ":noCompletion", pos: pos}],
 				access: [AStatic],
-				kind: FFun({args: [{name: "value", type: t}], ret: t, expr: macro return instance.$name = value}),
+				kind: FFun({args: [{name: "value", type: t}], ret: t, expr: macro return $reach.$name = value}),
 				pos: pos,
 			});
 		return made;

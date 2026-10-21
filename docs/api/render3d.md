@@ -327,7 +327,7 @@ function shutdown():Void
 
 *class* in `src/helix/render3d/Environments.hx`
 
-Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from EnvironmentCache's public members with their doc comments.
+Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache), installed by their first use, so a program with none carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from EnvironmentCache's public members with their doc comments.
 
 ```haxe
 static var instance(default, null):EnvironmentCache
@@ -337,7 +337,7 @@ static function load(path:String, loaded:Environment -> Void, ?failed:String -> 
 static function release(environment:Environment):Void
 ```
 
-- `instance`: The environments forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `instance`: The environments forwarded to: installed by their first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `budgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `busy`: Whether anything is still loading or being prepared.
 - `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.

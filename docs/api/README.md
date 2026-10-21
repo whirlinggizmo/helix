@@ -12,7 +12,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.debug`](debug.md): Autopilot, FpsOverlay, ITestHarness, TestHarness
 - [`helix.graphics`](graphics.md): BlendMode, ClipFlip, CullFace, DepthTest, Graphics, GraphicsUnavailable, IGraphics, IImageDecoder, ImageDecodeResult, ImageDecoding, Mipmaps, PipelineDesc, Pipelines, Png, PostProcess, Primitive, ReadPixelsResult, Sampling, ScreenEffect, ScreenFrame, ScreenshotResult, ScreenshotService, Screenshots, SdlGpuStages, Shader, ShaderBlock, ShaderParameter, ShaderParameters, ShaderSource, ShaderStages, ShaderTexture, Shaders, SpriteEffect, TextureFormat, VertexAttribute, VertexBuffer, Wrap
 - [`helix`](helix.md): App
-- [`helix.host`](host.md): Adapters, Config, FrameClock, Host, IHost, IWindow, Identity, Presentation, PresentationMode, Runner, Screen, ScreenShape, Window, WindowOptions
+- [`helix.host`](host.md): Adapters, Config, FrameClock, Host, IHost, IWindow, Identity, Part, Presentation, PresentationMode, Runner, Screen, ScreenShape, Window, WindowOptions
 - [`helix.input`](input.md): Actions, Anchor, Binding, Gamepad, IInput, IInputEvents, IInputSource, IInputWatcher, Input, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.macro`](macro.md): AppBuild, Haxelib
 - [`helix.math`](math.md): Curve, CurveKind, Interpolate, Random, Trig

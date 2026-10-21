@@ -79,6 +79,7 @@ The program on its platform: whether it runs, whether anything is still loading,
 ```haxe
 static var instance(default, null):IHost
 static var config(default, null):Null<Config>
+static function installPart(make:Runner -> T):T
 static var running(get, never):Bool
 static var busy(get, never):Bool
 static function getOption(name:String, fallback:String):String
@@ -92,6 +93,7 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 
 - `instance`: The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `config`: The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is.
+- `installPart`: An optional part's way in (helix.host.Part): make builds it over the runner's shared services and installs its hooks (Runner.install), at the part's first use. Fails plainly when nothing runs the program (a test makes what it needs itself).
 - `running`: Whether the runner is running the program: false in a test, which makes what it needs itself.
 - `busy`: Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in.
 - `getOption`: A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text.
@@ -206,6 +208,17 @@ var product(default, null):String
 - `company`: The company, cleaned; "DefaultCompany" unless given.
 - `product`: The product, cleaned: the program's own name.
 
+## Part
+
+*typedef* in `src/helix/host/Part.hx`
+
+An optional part of the program: a service installed the first time a program uses it (its static class installs it, helix.macro.Facade), so a program that never uses it carries none of its code (docs/CONVENTIONS.md, "An optional part is installed by its first use"). The Runner walks its parts' hooks and never names one. Each hook may be null.
+
+- `shutdown:Null<() -> Void>`: At the program's end, before the shared services close: the part closed and its static class unbound.
+- `poll:Null<() -> Void>`: Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames).
+- `frameEnded:Null<() -> Void>`: Each frame, after the app's: what waits for the frame to be drawn (a screenshot).
+- `busy:Null<() -> Bool>`: Whether the part is loading or preparing anything (Host.busy).
+
 ## Presentation
 
 *class* in `src/helix/host/Presentation.hx`
@@ -289,6 +302,10 @@ var clock(default, null):FrameClock
 var frameCpu(default, null):Float
 var frameInterval(default, null):Float
 var busy(get, never):Bool
+var assets(get, never):AssetService
+var images(get, never):ImageDecoding
+var platform(get, never):Adapters
+function install(part:Part):Void
 function assetChanged(path:String):Void
 ```
 
@@ -299,6 +316,10 @@ function assetChanged(path:String):Void
 - `frameCpu`: The last frame's CPU time in milliseconds.
 - `frameInterval`: Milliseconds between the last two frames' starts (0 for the first).
 - `busy`: Whether the shared services are loading anything (Host.busy).
+- `assets`: The assets, for an optional part built over them.
+- `images`: The image decoder, for an optional part built over it.
+- `platform`: The adapters the program runs on, for an optional part built over them.
+- `install`: Adds an optional part, its hooks run from now until the program's end. Its static class calls it, at the part's first use.
 - `assetChanged`: The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it.
 
 ## Screen
