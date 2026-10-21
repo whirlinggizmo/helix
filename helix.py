@@ -1,6 +1,6 @@
 """HeliX's front door for the tests and the services checks. Python owns external tools; HXML owns Haxe settings.
 
-Examples have their own: tools/example.py."""
+Examples have their own: tools/example.py; a game on -lib helix its own, tools/game.py (`haxelib run helix`, Run.hx)."""
 import argparse
 import json
 import os
@@ -15,7 +15,7 @@ UNIT={'InputTests':[],'ActionsTests':['generated/shaders','generated/fonts'],'Au
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(native,audio_device):
-    """The adapter rule's check, the generated code's check (tools/gen_code.py --check), the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
+    """The adapter rule's check, the generated code's check (tools/gen_code.py --check), the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison, helix.App's build, the game front door), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
     native network streaming (tests/streaming, a local server and SDL3's dummy audio driver)."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
@@ -25,7 +25,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
-    for test in ('shaders/shader_metadata_test','shaders/pack_shader_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test'):run([sys.executable,f'tests/{test}.py'])
+    for test in ('shaders/shader_metadata_test','shaders/pack_shader_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test','tools/game_test'):run([sys.executable,f'tests/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','-js','build/tests/package-smoke.js','-dce','full'])

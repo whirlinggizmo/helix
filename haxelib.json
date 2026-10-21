@@ -6,6 +6,7 @@
 	"description": "HeliX: a Haxe game framework for the browser (WebGL2) and native (hxcpp with sokol or SDL3). A browser build needs Haxe alone; a native build hxcpp 4.3.2; the dev loop hotreload-hx; a game's own shaders sokol-shdc (BUILDING.md).",
 	"version": "0.14.0",
 	"classPath": "src/",
+	"main": "Run",
 	"releasenote": "Milestone 14: a haxelib. The generated code (the framework's programs, the packed shader library and the built-in font) shipped in generated/, added by extraParams.hxml with hxcpp's architecture; templates/index.html for the page.",
 	"contributors": ["whirlinggizmo"],
 	"dependencies": {}
