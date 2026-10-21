@@ -24,6 +24,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/gen_code.py','--check'])
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
+    run([sys.executable,'tools/measure_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
     for test in ('shaders/shader_metadata_test','shaders/shader_packer_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test','tools/helix_tools_test'):run([sys.executable,f'tests/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])

@@ -28,6 +28,7 @@ python3 tools/example.py animation build release-sokol-gl         # out/linux-x6
 ## Documents
 
 - [GOALS.md](GOALS.md): what HeliX is for, why Haxe, and why a framework at all.
+- [docs/benchmarks.md](docs/benchmarks.md): web sizes, measured: the feature cost ladder, and where the bytes are.
 - [BUILDING.md](BUILDING.md): prerequisites and pins, building, the dev loop, the checks, the repository's layout.
 - [docs/EXAMPLES.md](docs/EXAMPLES.md): every example, and the larger games (Asteroids, Blocks).
 - [docs/ROADMAP.md](docs/ROADMAP.md): what comes next.
