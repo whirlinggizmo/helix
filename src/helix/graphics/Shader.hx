@@ -27,13 +27,13 @@ private typedef ShaderFile = {
 	final sprite3D:Null<Program>;
 }
 
-/** An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program):
+/** An app's shader loaded from a .hxshader (tools/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program):
 	its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures
 	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
 	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
-	/** The .hxshader format it reads (tools/pack_shader.py's FORMAT). */
+	/** The .hxshader format it reads (tools/shader/ShaderPacker.hx's FORMAT). */
 	public static inline var FORMAT = 2;
 
 	var gpu:IGraphics;
@@ -59,7 +59,7 @@ class Shader {
 	static function read(text:String):ShaderFile {
 		var file:Dynamic = haxe.Json.parse(text);
 		if (file.helixShader != FORMAT)
-			throw 'Not a HeliX shader file (format $FORMAT): pack it again with tools/pack_shader.py';
+			throw 'Not a HeliX shader file (format $FORMAT): pack it again with haxelib run helix shader';
 		return {
 			kind: file.kind,
 			main: program(file),

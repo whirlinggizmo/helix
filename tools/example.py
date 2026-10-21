@@ -17,7 +17,7 @@ bin/<example>/, the program named for its example, in the browser site/<example>
 site/assets), which each loads as ../assets: the files in examples/assets, and each example's own, which may not claim a path the shared
 files or another example has. A larger example adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py
 there makes what's missing first); the browser's folder carries manifests (tools/gen_manifest.py), which the page's asset cache follows.
-An example's shaders/*.glsl are packed (tools/pack_shader.py) into shaders/*.hxshader, and in dev packed again as they change, reloading
+An example's shaders/*.glsl are packed (tools/shader_tool.py) into shaders/*.hxshader, and in dev packed again as they change, reloading
 in the page. The HXML and hxcpp's work are in build/<build>/.
 
 release builds as the examples ship: full dead-code elimination and the analyzer's optimizations, and in the browser Terser. debug builds
@@ -40,7 +40,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-import pack_shader
+import shader_tool
 import gen_code
 import gen_manifest
 from native_build import ARCH
@@ -78,8 +78,8 @@ def tool_modules():
         and Path(m.__file__).resolve().parent==here]
 
 def tool_stamps():
-    """The loaded tools' files' times, to tell when one is edited."""
-    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}
+    """The loaded tools' files' times, and the Haxe shader tool's (tools/shader_tool.py), to tell when one is edited."""
+    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}|{'tools/shader':shader_tool.stamp()}
 
 def reload_tools():
     """Loads the tools again (twice, so one taking another's names gets the new ones), then this module's names taken from them with
@@ -160,10 +160,9 @@ def pack_shaders(name,build,since=0):
     claimed there: those changed since `since` (a time), all by default. Returns the newest source's time."""
     newest=since;sources=sorted((ROOT/f'examples/{name}/shaders').glob('*.glsl'))
     claim(build,name,[f'shaders/{source.stem}.hxshader' for source in sources])
-    for source in sources:
-        stamp=source.stat().st_mtime;newest=max(newest,stamp)
-        if stamp>since:pack_shader.pack(pack_shader.shdc_path(),source,build.assets/'shaders'/(source.stem+'.hxshader'),build.backend=='sdl3-gpu')
-    return newest
+    changed=[source for source in sources if source.stat().st_mtime>since]
+    shader_tool.pack([(source,build.assets/'shaders'/(source.stem+'.hxshader')) for source in changed],build.backend=='sdl3-gpu')
+    return max([newest]+[source.stat().st_mtime for source in sources])
 
 def licenses(out):
     """HeliX's license, the third-party notices and the license texts they name, which go with every build (THIRD_PARTY_NOTICES.md)."""
@@ -306,14 +305,14 @@ def main():
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount',f'/assets={served}',hxml(a.name,chosen)],cwd=ROOT)
         print(f'{chosen}: {page(a.name,chosen).relative_to(ROOT).as_posix()}. Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
-            failed=None;library_failed=None;packed=time.time()
+            failed=None;library_seen=None;packed=time.time()
             tools=tool_stamps()
             while server.poll() is None:
                 # A tool this loop uses edited (the packer, the shader generator, the font baker, ...): every one loaded again, and every
                 # shader packed and generated again with them.
                 if tool_stamps()!=tools:
                     tools=tool_stamps()
-                    try:reload_tools();packed=0;library_failed=None;failed=None
+                    try:reload_tools();packed=0;library_seen=None;failed=None
                     except Exception as error:print('example: a tool failed to load again, the rest kept as they were:',error,flush=True)
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
@@ -323,12 +322,13 @@ def main():
                     packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # The shader library's sources, packed into generated Haxe again as they change (generated/shaders, which the dev server
-                # watches): it rebuilds, and the reload builds the changed ones again in place (helix.shaders.ShaderLibrary). A failed
-                # source is retried once it changes again.
-                library=max((p.stat().st_mtime for p in pack_shader.LIBRARY.glob('*.glsl')),default=0)
-                if library!=library_failed:
-                    try:pack_shader.pack_library(gen_code.SHADERS_OUT);library_failed=None
-                    except SystemExit as error:print('example: library shader packing failed:',error,flush=True);library_failed=library
+                # watches): it rebuilds, and the reload builds the changed ones again in place (helix.shaders.ShaderLibrary). The packer
+                # runs when a source or the packer changed since it last ran; a failed source is retried once it changes again.
+                library=max([p.stat().st_mtime for p in (ROOT/'src/helix/shaders').glob('*.glsl')]+[shader_tool.stamp()])
+                if library!=library_seen:
+                    library_seen=library
+                    try:shader_tool.pack_library(gen_code.SHADERS_OUT)
+                    except SystemExit as error:print('example: library shader packing failed:',error,flush=True)
                 # The framework's programs likewise; a failed source is retried only once it changes again.
                 stamp=gen_code.shader_stamp()
                 if stamp!=failed:

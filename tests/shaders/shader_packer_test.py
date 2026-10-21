@@ -1,8 +1,9 @@
-"""Checks of tools/pack_shader.py against real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members'
-std140 offsets, its textures, both dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a
-vertex hook or a discard) and its own textures after the joints; a sprite shader over the effect2d program's vertices, and its variant over the 3D sprites'; the shader library (src/helix/shaders) packed for every backend, SDL_GPU's
-dialects too (glslang and SPIRV-Cross, fetched by tools/gpu_shaders.py when missing); and the library packed into generated Haxe, again only
-when changed, and gone with its source."""
+"""Checks of the shader packer, tools/shader/ShaderPacker.hx (run through tools/shader_tool.py, as the repository's tools run it), against
+real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members' std140 offsets, its textures, both
+dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a vertex hook or a discard) and its own
+textures after the joints; a sprite shader over the effect2d program's vertices, and its variant over the 3D sprites'; the shader library
+(src/helix/shaders) packed for every backend, SDL_GPU's dialects too (glslang and SPIRV-Cross, fetched into the user's cache when
+missing); and the library packed into generated Haxe, again only when changed, its classes named for its files, and gone with its source."""
 import argparse
 import json
 from pathlib import Path
@@ -12,11 +13,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
-import pack_shader
+import shader_tool
 
 argparse.ArgumentParser(description=__doc__).parse_args()
-import shdc
-SHDC = str(shdc.path())
+LIBRARY = ROOT / 'src/helix/shaders'
 
 EFFECT = '''@fs fs
 @include_block helix_screen
@@ -37,13 +37,21 @@ void main() {
 '''
 
 
-def pack(source):
-    """source packed as an .hxshader file would be, read back."""
+def pack(source, sdl_gpu=False):
+    """source (GLSL text) packed as an .hxshader file, read back."""
     with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
-        glsl, out = Path(scratch) / 'shader.glsl', Path(scratch) / 'shader.hxshader'
+        glsl = Path(scratch) / 'shader.glsl'
         glsl.write_text(source, encoding='utf-8')
-        pack_shader.pack(SHDC, glsl, out)
-        return json.loads(out.read_text(encoding='utf-8'))
+        return packed(glsl, sdl_gpu=sdl_gpu)
+
+
+def packed(*sources, sdl_gpu=False):
+    """The .hxshader files packed from sources (paths) in one run, read back: one, or a list for several."""
+    with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
+        outputs = [Path(scratch) / f'{i}.hxshader' for i in range(len(sources))]
+        shader_tool.pack(zip(sources, outputs), sdl_gpu)
+        shaders = [json.loads(out.read_text(encoding='utf-8')) for out in outputs]
+        return shaders[0] if len(shaders) == 1 else shaders
 
 
 class PackShaderTests(unittest.TestCase):
@@ -218,10 +226,7 @@ class SpriteTests(unittest.TestCase):
         self.assertNotIn('discard', shader['glsl300es']['fragment'])
 
     def test_sprite_for_every_backend(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
-            glsl = Path(scratch) / 'sprite.glsl'
-            glsl.write_text(SPRITE, encoding='utf-8')
-            shader = pack_shader.packed(SHDC, glsl, sdl_gpu=True)
+        shader = pack(SPRITE, sdl_gpu=True)
         for part in (shader, shader['sprite3D']):
             for dialect in ('spirv', 'msl', 'hlsl'):
                 self.assertTrue(part['sdlGpu'][dialect]['vertex'] and part['sdlGpu'][dialect]['fragment'])
@@ -234,9 +239,7 @@ class SpriteTests(unittest.TestCase):
         # Batch2D packs Effect2DProgram's vertices (the framework's effect2d program, shaders.json) for the kind's vertex stage.
         programs = json.loads((ROOT / 'src/helix/graphics/shaders/shaders.json').read_text(encoding='utf-8'))['programs']
         effect2d = next(p for p in programs if p['program'] == 'effect2d')
-        self.assertEqual([a['name'] for a in effect2d['attributes']], pack_shader.ATTRIBUTES['helix_sprite'])
-        self.assertNotIn('@fs', pack_shader.KINDS['helix_sprite'])
-        self.assertNotIn('@program', pack_shader.KINDS['helix_sprite'])
+        self.assertEqual([a['name'] for a in effect2d['attributes']], pack(SPRITE)['attributes'])
 
     def test_library_sprite_parameters(self):
         # helix.shaders' sprite classes write these members: their blocks as the reflection lays them out, their textures at these slots.
@@ -244,9 +247,9 @@ class SpriteTests(unittest.TestCase):
                     'sprite_flash': ([('flash', 0)], []),
                     'sprite_dissolve': ([('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)], [(1, 'dissolve_noise')]),
                     'palette_swap': ([('row', 0)], [(1, 'palette')])}
-        for stem, (members, textures) in expected.items():
+        shaders = packed(*(LIBRARY / f'{stem}.glsl' for stem in expected))
+        for (stem, (members, textures)), shader in zip(expected.items(), shaders):
             with self.subTest(shader=stem):
-                shader = pack_shader.packed(SHDC, pack_shader.LIBRARY / f'{stem}.glsl')
                 self.assertEqual(shader['kind'], 'sprite')
                 found = {b['slot']: [(m['name'], m['offset']) for m in b['members']] for b in shader['uniformBlocks'] if 'members' in b}
                 self.assertEqual(found, {2: members})
@@ -255,11 +258,10 @@ class SpriteTests(unittest.TestCase):
 
 class LibraryTests(unittest.TestCase):
     def test_every_library_shader_packs_for_every_backend(self):
-        sources = sorted(pack_shader.LIBRARY.glob('*.glsl'))
-        self.assertTrue(sources)
-        for source in sources:
+        sources = sorted(LIBRARY.glob('*.glsl'))
+        self.assertTrue(len(sources) > 1)
+        for source, shader in zip(sources, packed(*sources, sdl_gpu=True)):
             with self.subTest(shader=source.name):
-                shader = pack_shader.packed(SHDC, source, sdl_gpu=True)
                 self.assertIn(shader['kind'], ('screen', 'surface', 'sprite'))
                 for dialect, version in (('glsl410', '#version 410'), ('glsl300es', '#version 300 es')):
                     self.assertTrue(shader[dialect]['vertex'].startswith(version) and shader[dialect]['fragment'].startswith(version))
@@ -267,7 +269,7 @@ class LibraryTests(unittest.TestCase):
                     self.assertTrue(shader['sdlGpu'][dialect]['vertex'] and shader['sdlGpu'][dialect]['fragment'])
 
     def test_unlit_parameters(self):
-        shader = pack_shader.packed(SHDC, pack_shader.LIBRARY / 'unlit.glsl')
+        shader = packed(LIBRARY / 'unlit.glsl')
         blocks = {b['slot']: b for b in shader['uniformBlocks']}
         # helix.shaders.Unlit's color field writes this member: the block at binding 2, a vec4 at its start.
         self.assertEqual([(m['name'], m['type'], m['offset'], m['count']) for m in blocks[2]['members']], [('color', 'vec4', 0, 1)])
@@ -278,9 +280,9 @@ class LibraryTests(unittest.TestCase):
                     'dissolve': {2: [('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)]},
                     'water': {2: [('deep_color', 0), ('shallow_color', 16), ('sky_color', 32), ('shininess', 48)],
                               3: [('amplitude', 0), ('wavelength', 4), ('wave_speed', 8)]}}
-        for stem, blocks in expected.items():
+        shaders = packed(*(LIBRARY / f'{stem}.glsl' for stem in expected))
+        for (stem, blocks), shader in zip(expected.items(), shaders):
             with self.subTest(shader=stem):
-                shader = pack_shader.packed(SHDC, pack_shader.LIBRARY / f'{stem}.glsl')
                 found = {b['slot']: [(m['name'], m['offset']) for m in b['members']] for b in shader['uniformBlocks'] if 'members' in b}
                 self.assertEqual(found, blocks)
                 self.assertEqual('caster' in shader, stem != 'toon')
@@ -291,7 +293,11 @@ class LibraryTests(unittest.TestCase):
             sources, out, gpu = scratch / 'sources', scratch / 'out', scratch / 'gpu'
             sources.mkdir()
             (sources / 'film_grain.glsl').write_text(EFFECT, encoding='utf-8')
-            self.assertEqual(pack_shader.pack_library(out, gpu, sources, SHDC), ['film_grain'])
+            (sources / 'color-lut.glsl').write_text(EFFECT, encoding='utf-8')
+            self.assertEqual(shader_tool.pack_library(out, gpu, sources), ['color-lut', 'film_grain'])
+            # Each class named for its file, its words capitalized.
+            self.assertTrue((out / 'ColorLutPacked.hx').is_file() and (gpu / 'ColorLutPackedSdlGpu.hx').is_file())
+            (sources / 'color-lut.glsl').unlink()
             base, dialects = (out / 'FilmGrainPacked.hx').read_text(encoding='utf-8'), (gpu / 'FilmGrainPackedSdlGpu.hx').read_text(encoding='utf-8')
             self.assertIn('#if helix_sdl3_gpu\n  return FilmGrainPackedSdlGpu.text();', base)
             # The literal is the .hxshader's JSON as a string: Haxe's escapes are JSON's.
@@ -300,14 +306,12 @@ class LibraryTests(unittest.TestCase):
             self.assertNotIn('sdlGpu', text)
             self.assertIn('sdlGpu', json.loads(json.loads(dialects.split('  return ', 1)[1].split(';\n', 1)[0])))
             self.assertIn('"film_grain" => () -> FilmGrainPacked.text()', (out / 'PackedShaders.hx').read_text(encoding='utf-8'))
-            self.assertEqual(pack_shader.pack_library(out, gpu, sources, SHDC), [], 'packed again only when changed')
+            self.assertEqual(shader_tool.pack_library(out, gpu, sources), [], 'packed again only when changed')
+            self.assertFalse((out / 'ColorLutPacked.hx').exists() or (gpu / 'ColorLutPackedSdlGpu.hx').exists())
             (sources / 'film_grain.glsl').unlink()
-            self.assertEqual(pack_shader.pack_library(out, gpu, sources, SHDC), [])
+            self.assertEqual(shader_tool.pack_library(out, gpu, sources), [])
             self.assertFalse((out / 'FilmGrainPacked.hx').exists() or (gpu / 'FilmGrainPackedSdlGpu.hx').exists())
             self.assertIn('return new Map();', (out / 'PackedShaders.hx').read_text(encoding='utf-8'))
-
-    def test_class_names(self):
-        self.assertEqual([pack_shader.class_name(s) for s in ('unlit', 'color_lut', 'chromatic-aberration')], ['Unlit', 'ColorLut', 'ChromaticAberration'])
 
 
 if __name__ == '__main__':

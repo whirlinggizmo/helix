@@ -1,12 +1,13 @@
-"""Checks of the library's front door for a game, `haxelib run helix <command>` (Run.hx, tools/game/): its argument handling (no command,
---help naming the commands, an unknown command or option); Run.hx taking the caller's folder haxelib appends (HAXELIB_RUN=1) and refusing a
-Python that isn't there for shader, the command still Python's (tools/game.py); init's files, that its starter builds for the browser on
-`-lib helix` (a haxelib path holding only this checkout as helix), and its refusal of a folder with anything in it; site's assembly
-(index.html from the template at the root with the title and the config's meta, app.js from the hxml's -js, assets copied beside,
-config.json and favicon.png, the zip's layout, --title and --js, the refusals); and shader packing a small screen effect (sokol-shdc,
-fetched when missing) into assets/shaders, rewriting the manifests from their root when the assets carry them.
+"""Checks of the library's front door for a game, `haxelib run helix <command>` (Run.hx, tools/game/, run by Haxe's interpreter): its
+argument handling (no command, --help naming the commands, an unknown command or option, a missing value); Run.hx taking the caller's folder
+haxelib appends (HAXELIB_RUN=1); init's files, that its starter builds for the browser on `-lib helix` (a haxelib path holding only this
+checkout as helix), and its refusal of a folder with anything in it; site's assembly (index.html from the template at the root with the
+title and the config's meta, app.js from the hxml's -js, also through an included hxml, assets copied beside, config.json and favicon.png,
+the zip's layout and name, --title, --js and --out, the refusals); and shader packing a small screen effect (sokol-shdc, fetched when
+missing) into assets/shaders, its refusals, and the manifests rewritten from their root when the assets carry them, as tools/gen_manifest.py
+would write them.
 
-    python3 tests/tools/game_test.py"""
+    python3 tests/tools/run_test.py"""
 import argparse
 import json
 import os
@@ -19,7 +20,6 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
-import game
 import gen_manifest
 
 argparse.ArgumentParser(description=__doc__).parse_args()
@@ -95,10 +95,6 @@ class FrontDoor(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn(Path(folder).resolve().as_posix(), result.stderr)
             self.assertIn('no web.hxml', result.stderr)
-        result = run_hx('shader', env=dict(os.environ, HELIX_PYTHON=str(Path(tempfile.gettempdir()) / 'no-such-python')))
-        self.assertEqual(result.returncode, 1)
-        self.assertIn('HELIX_PYTHON', result.stderr)
-        self.assertIn('no-such-python', result.stderr)
 
 
 class Init(unittest.TestCase):
@@ -218,30 +214,37 @@ class Shader(unittest.TestCase):
             root = Path(folder) / 'shady'
             (root / 'shaders').mkdir(parents=True)
             (root / 'shaders/glow.glsl').write_text(EFFECT, encoding='utf-8')
-            with self.assertRaises(SystemExit) as refused:
-                game.shader(root, ['shaders/missing.glsl'], 'assets/shaders', False, False)
-            self.assertIn('missing.glsl', str(refused.exception))
-            written = game.shader(root, [], 'assets/shaders', False, False)
-            self.assertEqual(written, [root / 'assets/shaders/glow.hxshader'])
-            packed = json.loads(written[0].read_text(encoding='utf-8'))
+            self.assertIn('missing.glsl', refusal(tool('shader', 'shaders/missing.glsl', cwd=root)))
+            self.assertIn('glow.glsl -> assets/shaders/glow.hxshader', done(tool('shader', cwd=root)))
+            packed = json.loads((root / 'assets/shaders/glow.hxshader').read_text(encoding='utf-8'))
             self.assertEqual(packed['kind'], 'screen')
             for dialect in ('glsl410', 'glsl300es'):
                 self.assertIn(dialect, packed)
             self.assertNotIn('sdlGpu', packed)
             self.assertFalse((root / 'assets/manifest.json').exists())
-            # Assets carrying manifests: rewritten from their root, so the root names the shaders folder's new one.
+            # --out elsewhere, the file named.
+            done(tool('shader', 'shaders/glow.glsl', '--out', 'build/packed', cwd=root))
+            self.assertTrue((root / 'build/packed/glow.hxshader').is_file())
+            # A shader the packer refuses: the packer's message, exit 1.
+            (root / 'shaders/bad.glsl').write_text(EFFECT.replace('@include_block helix_screen', ''), encoding='utf-8')
+            self.assertIn('exactly one framework block', refusal(tool('shader', 'shaders/bad.glsl', cwd=root)))
+            (root / 'shaders/bad.glsl').unlink()
+            # Assets carrying manifests: rewritten from their root, as tools/gen_manifest.py writes them (a sibling folder's kept).
             (root / 'assets/sprites').mkdir()
             (root / 'assets/sprites/hero.png').write_bytes(b'\x89PNG')
+            (root / 'assets/title.txt').write_text('Shady', encoding='utf-8')
             gen_manifest.write(root / 'assets')
             (root / 'shaders/glow.glsl').write_text(EFFECT.replace('* strength', '* strength * 2.0'), encoding='utf-8')
-            game.shader(root, ['shaders/glow.glsl'], 'assets/shaders', False, False)
+            self.assertIn('manifests rewritten under assets', done(tool('shader', cwd=root)))
             shaders = (root / 'assets/shaders/manifest.json').read_bytes()
             self.assertIn('glow.hxshader', json.loads(shaders)['files'])
-            self.assertEqual(json.loads((root / 'assets/manifest.json').read_text(encoding='utf-8'))['dirs']['shaders'], gen_manifest.digest(shaders))
+            top = (root / 'assets/manifest.json').read_bytes()
+            self.assertEqual(json.loads(top)['dirs']['shaders'], gen_manifest.digest(shaders))
+            gen_manifest.write(root / 'assets')
+            self.assertEqual((root / 'assets/manifest.json').read_bytes(), top, "the Python writer's bytes")
+            self.assertEqual((root / 'assets/shaders/manifest.json').read_bytes(), shaders)
             (root / 'shaders/glow.glsl').unlink()
-            with self.assertRaises(SystemExit) as refused:
-                game.shader(root, [], 'assets/shaders', False, False)
-            self.assertIn('nothing to pack', str(refused.exception))
+            self.assertIn('nothing to pack', refusal(tool('shader', cwd=root)))
 
 
 if __name__ == '__main__':

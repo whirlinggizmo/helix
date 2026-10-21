@@ -7,7 +7,7 @@ import helix.graphics.Shader;
 import helix.render2d.Texture2D;
 
 /** The shader library's programs on each GPU. A library shader's source (src/helix/shaders/*.glsl) is packed at build time into generated
-	Haxe holding its .hxshader (tools/pack_shader.py: <Name>Packed.text()), so a class in helix.shaders gets its shader at once, with no load
+	Haxe holding its .hxshader (tools/shader/ShaderPacker.hx: <Name>Packed.text()), so a class in helix.shaders gets its shader at once, with no load
 	and no asset, and a shader nothing uses is left out of the build. Each is built the first time it's asked for on a GPU and kept, shared
 	by everything drawing with it, until the runner releases the GPU's. In development a hot reload brings the shaders packed again from
 	changed sources, and each built is built again in place, as Shaders does an app's. */

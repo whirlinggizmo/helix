@@ -13,8 +13,8 @@ sys.path.insert(0, str(ROOT))
 from tools.shader_metadata import MetadataError, generate, load_contract, manifest, yaml
 
 argparse.ArgumentParser(description=__doc__).parse_args()
-from tools import shdc
-SHDC = str(shdc.path())
+from tools import shader_tool
+SHDC = str(shader_tool.shdc_path())
 SHADERS = ROOT / 'src/helix/graphics/shaders'
 
 

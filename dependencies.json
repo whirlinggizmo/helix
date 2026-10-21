@@ -102,7 +102,7 @@
     "license": "public domain or MIT, at the end of the header"
   },
   "gpuShaders": {
-    "purpose": "SDL_GPU's shader dialects (tools/gpu_shaders.py): glslang compiles HeliX's GLSL to SPIR-V, SPIRV-Cross translates it to MSL and HLSL",
+    "purpose": "SDL_GPU's shader dialects (tools/shader/GpuShaders.hx): glslang compiles HeliX's GLSL to SPIR-V, SPIRV-Cross translates it to MSL and HLSL",
     "glslang": {
       "version": "16.6.0",
       "license": "BSD-3-Clause and others (its LICENSE.txt)",

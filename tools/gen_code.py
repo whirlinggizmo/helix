@@ -1,7 +1,7 @@
 """The generated Haxe the library ships, in generated/ (committed; docs/DECISIONS.md 138): the framework's programs
 (generated/shaders/<Name>Program.hx, from src/helix/graphics/shaders by sokol-shdc and shader_metadata.py), the shader library packed
-(generated/shaders/<Name>Packed.hx and PackedShaders.hx, from src/helix/shaders by pack_shader.py), SDL_GPU's dialects of both
-(generated/shaders-sdlgpu, by gpu_shaders.py; only sdl3-gpu builds carry them) and the built-in font (generated/fonts/GeneratedFont.hx, by
+(generated/shaders/<Name>Packed.hx and PackedShaders.hx, from src/helix/shaders by tools/shader/ShaderPacker.hx), SDL_GPU's dialects of
+both (generated/shaders-sdlgpu, by tools/shader/GpuShaders.hx; only sdl3-gpu builds carry them) and the built-in font (generated/fonts/GeneratedFont.hx, by
 bake_fonts.py). A build on -lib helix finds them through src/helix/macro/Haxelib.hx; the repository's own builds list them.
 
   python3 tools/gen_code.py                 # what's missing or older than its source, SDL_GPU's dialects included
@@ -10,8 +10,8 @@ bake_fonts.py). A build on -lib helix finds them through src/helix/macro/Haxelib
 
 Every build path (tools/example.py, check_types, the tests) calls generate() first, so an edited shader or font is current by the time it
 compiles; the dev loop calls it on every change. Scratch (shdc's reflection and dialect sources, shader-contract.json, the font's atlas) is
-in build/generated. Needs sokol-shdc (tools/shdc.py), and for the dialects glslang and SPIRV-Cross (tools/gpu_shaders.py), which fetch
-themselves; a game needs none of them."""
+in build/generated. Needs sokol-shdc, and for the dialects glslang and SPIRV-Cross, which the Haxe shader tool fetches into the user's cache
+(tools/shader_tool.py); a game needs none of them."""
 import base64
 import filecmp
 from pathlib import Path
@@ -39,8 +39,8 @@ def programs(scratch,out,regenerate=False):
     from shader_metadata import generate,manifest
     scratch.mkdir(parents=True,exist_ok=True);contract=scratch/'shader-contract.json'
     if regenerate or not contract.is_file() or contract.stat().st_mtime<shader_stamp() or not all((out/f'{p}Program.hx').is_file() for p in classes()):
-        import shdc as compiler
-        shdc=compiler.path()
+        import shader_tool
+        shdc=shader_tool.shdc_path()
         for spec in manifest(SOURCES/'shaders.json'):
             program=spec['program']
             run([shdc,'-i',SOURCES/f'{program}.glsl','-o',scratch/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
@@ -55,19 +55,19 @@ def dialects(scratch,out,regenerate=False):
     """SDL_GPU's dialects of the framework's programs (<Name>SdlGpu.hx in out), from the GLSL 410 programs() left in scratch, when that or
     the translators changed (or regenerate); scratch/sdlgpu-stamp records when."""
     from shader_metadata import generate_sdl_gpu
-    import gpu_shaders
+    import shader_tool
     stamp=scratch/'sdlgpu-stamp';contract=scratch/'shader-contract.json'
-    if regenerate or not stamp.is_file() or stamp.stat().st_mtime<max(contract.stat().st_mtime,gpu_shaders.tool_stamp()) or not all((out/f'{p}SdlGpu.hx').is_file() for p in classes()):
+    if regenerate or not stamp.is_file() or stamp.stat().st_mtime<max(contract.stat().st_mtime,shader_tool.stamp(),(ROOT/'dependencies.json').stat().st_mtime) or not all((out/f'{p}SdlGpu.hx').is_file() for p in classes()):
         generate_sdl_gpu(SOURCES/'shaders.json',scratch,out);stamp.write_text('',encoding='utf-8', newline='\n')
 
 def generate(sdl_gpu=True,regenerate=False):
     """Everything in generated/ that's missing or older than its source (or regenerate): the shader library packed, the programs, with
     sdl_gpu their SDL_GPU dialects (left alone otherwise, so a build that doesn't need them never fetches the translators), and the font."""
-    import bake_fonts,pack_shader
+    import bake_fonts,shader_tool
     if regenerate:
         for folder,suffix in ((SHADERS_OUT,'Packed'),(SDL_GPU_OUT,'PackedSdlGpu')):
             for stale in folder.glob(f'*{suffix}.hx'):stale.unlink()
-    pack_shader.pack_library(SHADERS_OUT,SDL_GPU_OUT if sdl_gpu else None)
+    shader_tool.pack_library(SHADERS_OUT,SDL_GPU_OUT if sdl_gpu else None)
     programs(SCRATCH,SHADERS_OUT,regenerate)
     if sdl_gpu:dialects(SCRATCH,SDL_GPU_OUT,regenerate)
     bake_fonts.generate(regenerate)
@@ -80,12 +80,12 @@ def font_parts(text):
 
 def check():
     """Generates everything anew into a scratch folder and returns what differs from generated/: stale files, missing ones and extras."""
-    import bake_fonts,pack_shader
+    import bake_fonts,shader_tool
     from shader_metadata import generate_sdl_gpu
     problems=[]
     with tempfile.TemporaryDirectory(prefix='helix-gen-') as temp:
         fresh=Path(temp)
-        pack_shader.pack_library(fresh/'shaders',fresh/'shaders-sdlgpu')
+        shader_tool.pack_library(fresh/'shaders',fresh/'shaders-sdlgpu')
         programs(fresh/'scratch',fresh/'shaders',True)
         generate_sdl_gpu(SOURCES/'shaders.json',fresh/'scratch',fresh/'shaders-sdlgpu')
         bake_fonts.generate(True,fresh/'fonts')

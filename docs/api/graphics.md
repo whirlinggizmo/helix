@@ -463,7 +463,7 @@ static function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Voi
 
 *typedef* in `src/helix/graphics/ShaderSource.hx`
 
-A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal (entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main).
+A program in SDL_GPU's dialects (tools/shader/GpuShaders.hx), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal (entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main).
 
 - `spirv:ShaderStages`
 - `msl:ShaderStages`
@@ -473,7 +473,7 @@ A program in SDL_GPU's dialects (tools/gpu_shaders.py), laid out as SDL_GPU bind
 
 *class* in `src/helix/graphics/Shader.hx`
 
-An app's shader loaded from a .hxshader (tools/pack_shader.py; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
+An app's shader loaded from a .hxshader (tools/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
 
 ```haxe
 static var FORMAT(inline, null):Int
@@ -491,7 +491,7 @@ var textureSlots(get, never):Array<Int>
 function destroy():Void
 ```
 
-- `FORMAT`: The .hxshader format it reads (tools/pack_shader.py's FORMAT).
+- `FORMAT`: The .hxshader format it reads (tools/shader/ShaderPacker.hx's FORMAT).
 - `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
 - `handle`: The IGraphics shader handle.
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Stage3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
@@ -560,7 +560,7 @@ var textureSlots(get, never):Map<Int, Texture2D>
 
 *typedef* in `src/helix/graphics/ShaderSource.hx`
 
-A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (tools/pack_shader.py, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
+A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (tools/shader/ShaderPacker.hx, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
 
 - `uniformBlocks:Array<ShaderBlock>`
 - `textures:Array<ShaderTexture>`
@@ -595,7 +595,7 @@ A texture a program samples: its binding slot (its sampler's too), its stage, th
 
 *class* in `src/helix/graphics/Shaders.hx`
 
-Apps' shaders (.hxshader files, packed from GLSL by tools/pack_shader.py) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
+Apps' shaders (.hxshader files, packed from GLSL by tools/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
 
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)

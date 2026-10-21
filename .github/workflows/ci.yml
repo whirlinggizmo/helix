@@ -13,11 +13,11 @@
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so no GL window opens there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one. Linux runs SDL_GPU's Vulkan through Mesa's software driver, lavapipe.
 # - The native backends, sokol-gl, sdl3-gl and sdl3-gpu (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
-#   SPIRV-Cross (tools/gpu_shaders.py, in build/deps): SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux
-#   (CMake, the runner's) and the official release on Windows and macOS, kept in build/deps and cached.
+#   SPIRV-Cross (tools/shader/GpuShaders.hx, in the user's cache, cached): SDL 3.4.18 is tools/sdl3.py's, built from its source on
+#   Linux (CMake, the runner's) and the official release on Windows and macOS, kept in build/deps and cached.
 #
 # Haxe 4.3.7; hxcpp 4.3.2 and the formatter in the repository's haxelib (build/haxelib), cached, a cache miss fetching them with retries
-# (tools/pins.py); sokol-shdc fetched and checked by tools/shdc.py. A newer push cancels the run in progress.
+# (tools/pins.py); sokol-shdc fetched and checked by tools/shader/Shdc.hx. A newer push cancels the run in progress.
 name: ci
 
 on:
@@ -75,6 +75,14 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          # The shader tool's (tools/shader/): sokol-shdc, glslang and SPIRV-Cross built, in the user's cache on each system.
+          path: |
+            ~/.cache/helix/tools
+            ~/Library/Caches/helix/tools
+            ~/AppData/Local/helix/tools
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('dependencies.json', 'tools/shader/Shdc.hx') }}
       - name: Tool, package and unit tests; Trig's bits on every target
         run: python helix.py test --native
       - name: An example's native build under each backend (the adapters' C), and in debug
@@ -122,6 +130,14 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          # The shader tool's (tools/shader/): sokol-shdc, glslang and SPIRV-Cross built, in the user's cache on each system.
+          path: |
+            ~/.cache/helix/tools
+            ~/Library/Caches/helix/tools
+            ~/AppData/Local/helix/tools
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('dependencies.json', 'tools/shader/Shdc.hx') }}
       - name: A quarter of the examples, natively under each backend
         run: |
           python tools/example.py all build release-sokol-gl --group ${{ matrix.group }}/4
@@ -161,6 +177,14 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          # The shader tool's (tools/shader/): sokol-shdc, glslang and SPIRV-Cross built, in the user's cache on each system.
+          path: |
+            ~/.cache/helix/tools
+            ~/Library/Caches/helix/tools
+            ~/AppData/Local/helix/tools
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('dependencies.json', 'tools/shader/Shdc.hx') }}
       - name: Platform services, in Chrome and natively, sokol's and SDL3's
         env:
           HELIX_AUDIO: "0"
@@ -267,6 +291,14 @@ jobs:
         with:
           path: build/deps
           key: deps-${{ runner.os }}-${{ hashFiles('dependencies.json') }}
+      - uses: actions/cache@v4
+        with:
+          # The shader tool's (tools/shader/): sokol-shdc, glslang and SPIRV-Cross built, in the user's cache on each system.
+          path: |
+            ~/.cache/helix/tools
+            ~/Library/Caches/helix/tools
+            ~/AppData/Local/helix/tools
+          key: helix-tools-${{ runner.os }}-${{ hashFiles('dependencies.json', 'tools/shader/Shdc.hx') }}
       - name: The autopilots under SDL_GPU (Metal)
         env:
           HELIX_AUDIO: "0"

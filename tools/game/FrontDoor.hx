@@ -20,11 +20,11 @@ A game on -lib helix, from its own folder: a starter written, its shaders packed
                               game's folder when there; --title the page's (the folder's name); --zip writes it as a zip with
                               index.html at the root (out/<game>-web.zip, or FILE), what itch.io takes
 
-The game's folder is the current one. `shader` fetches sokol-shdc into the user's cache the first time (BUILDING.md).";
+The game's folder is the current one. `shader` fetches sokol-shdc into the user's cache the first time, and with --sdl-gpu glslang and
+SPIRV-Cross (built by hxcpp) too (BUILDING.md).";
 
-	/** Runs the command args name for the game in the current folder, the library being at root; returns the exit code. shader runs the
-		program shader returns (Python's packer) with its arguments. */
-	public static function run(args:Array<String>, root:String, shader:Array<String>->Int):Int {
+	/** Runs the command args name for the game in the current folder, the library being at root; returns the exit code. */
+	public static function run(args:Array<String>, root:String):Int {
 		if (args.length == 0)
 			return usage("a command is needed: init, shader or site");
 		var command = args[0], rest = args.slice(1);
@@ -53,7 +53,11 @@ The game's folder is the current one. `shader` fetches sokol-shdc into the user'
 					Site.assemble(root, ".", options.value("--out", "out/site"), zip == null ? null : (zip == "" ? 'out/$name-web.zip' : zip),
 						options.value("--title", name), options.values.get("--js"), options.value("--hxml", "web.hxml"));
 				case "shader":
-					return shader(rest);
+					var options = new Options(rest, ["--out"], [], ["--sdl-gpu", "--watch"]);
+					if (options.help)
+						return help("shader [FILE.glsl ...] [--out DIR] [--sdl-gpu] [--watch]: the game's shaders packed into .hxshader assets");
+					GameShaders.pack(root, ".", options.positional, options.value("--out", "assets/shaders"), options.values.exists("--sdl-gpu"),
+						options.values.exists("--watch"));
 				default:
 					return usage('unknown command $command: init, shader or site');
 			}
@@ -80,13 +84,14 @@ The game's folder is the current one. `shader` fetches sokol-shdc into the user'
 /** A command line that can't be read: an unknown option, or one missing its value. */
 private class OptionError extends haxe.Exception {}
 
-/** A command's options read from its arguments: those taking a value, those whose value is optional (given as "" when absent), --help. */
+/** A command's options read from its arguments: those taking a value, those whose value is optional (given as "" when absent), flags (given
+	as ""), --help. */
 private class Options {
 	public var positional:Array<String> = [];
 	public var values = new Map<String, String>();
 	public var help = false;
 
-	public function new(args:Array<String>, valued:Array<String>, ?optional:Array<String>) {
+	public function new(args:Array<String>, valued:Array<String>, ?optional:Array<String>, ?flags:Array<String>) {
 		var i = 0;
 		while (i < args.length) {
 			var arg = args[i++];
@@ -96,7 +101,9 @@ private class Options {
 				if (i >= args.length)
 					throw new OptionError('$arg needs a value');
 				values.set(arg, args[i++]);
-			} else if (optional != null && optional.indexOf(arg) >= 0)
+			} else if (flags != null && flags.indexOf(arg) >= 0)
+				values.set(arg, "");
+			else if (optional != null && optional.indexOf(arg) >= 0)
 				values.set(arg, i < args.length && !StringTools.startsWith(args[i], "-") ? args[i++] : "");
 			else if (StringTools.startsWith(arg, "-") && arg.length > 1)
 				throw new OptionError('unknown option $arg');

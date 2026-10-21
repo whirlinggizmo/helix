@@ -269,18 +269,24 @@ def generate(manifest_path, output, working_dir, hx_output=None):
 
 
 def generate_sdl_gpu(manifest_path, output, gpu_output):
-    """Writes each program's <Name>SdlGpu.hx into gpu_output: its SDL_GPU dialects (tools/gpu_shaders.py) from the GLSL 410 generate wrote
-    into output, for the program classes' source() in SDL_GPU builds. Only those builds run it, so no other needs glslang or SPIRV-Cross."""
-    import gpu_shaders
+    """Writes each program's <Name>SdlGpu.hx into gpu_output: its SDL_GPU dialects (tools/shader/GpuShaders.hx, through tools/shader_tool.py)
+    from the GLSL 410 generate wrote into output, for the program classes' source() in SDL_GPU builds. Only those builds run it, so no other
+    needs glslang or SPIRV-Cross."""
+    import shader_tool
     contracts = {c['program']: c for c in json.loads((Path(output) / 'shader-contract.json').read_text(encoding='utf-8'))}
     gpu_output = Path(gpu_output)
     gpu_output.mkdir(parents=True, exist_ok=True)
-    for spec in manifest(manifest_path):
-        program = spec['program']; contract = contracts[program]
-        stage = lambda name: (Path(output) / f'{program}_{program}_glsl410_{name}.glsl').read_text(encoding='utf-8')
-        dialects = gpu_shaders.translate(stage('vertex'), stage('fragment'),
-                                         [{'slot': u['slot'], 'stage': u['stage'], 'glslName': u['name']} for u in contract['uniforms']],
-                                         [{'slot': t['view'], 'stage': t['stage'], 'glslName': t['uniform']} for t in contract['textures']])
+    specs = manifest(manifest_path)
+    def stage(program, name):
+        return (Path(output) / f'{program}_{program}_glsl410_{name}.glsl').read_text(encoding='utf-8')
+    # Every program's dialects in one run of the tool.
+    translated = shader_tool.translate([{
+        'vertex': stage(spec['program'], 'vertex'), 'fragment': stage(spec['program'], 'fragment'),
+        'blocks': [{'slot': u['slot'], 'stage': u['stage'], 'glslName': u['name']} for u in contracts[spec['program']]['uniforms']],
+        'textures': [{'slot': t['view'], 'stage': t['stage'], 'glslName': t['uniform']} for t in contracts[spec['program']]['textures']]}
+        for spec in specs])
+    for spec, dialects in zip(specs, translated):
+        program = spec['program']
         stages = ', '.join(f'{d}: {{vertex: {json.dumps(dialects[d]["vertex"])}, fragment: {json.dumps(dialects[d]["fragment"])}}}'
                            for d in ('spirv', 'msl', 'hlsl'))
         name = class_name(program) + 'SdlGpu'
