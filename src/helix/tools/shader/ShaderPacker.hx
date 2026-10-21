@@ -472,7 +472,8 @@ class ShaderPacker {
 	static function browserOnly(value:JsonValue):JsonValue {
 		return switch value {
 			case JObject(fields): JObject([
-					for (f in fields) if (f.key != "glsl410") {key: f.key, value: browserOnly(f.value)}
+					for (f in fields)
+						if (f.key != "glsl410") {key: f.key, value: browserOnly(f.value)}
 				]);
 			case JArray(items): JArray([for (item in items) browserOnly(item)]);
 			case other: other;
