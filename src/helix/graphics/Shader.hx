@@ -59,7 +59,7 @@ class Shader {
 	static function read(text:String):ShaderFile {
 		var file:Dynamic = haxe.Json.parse(text);
 		if (file.helixShader != FORMAT)
-			throw 'Not a HeliX shader file (format $FORMAT): pack it again with haxelib run helix shader';
+			throw 'Not a HeliX shader file (format $FORMAT): pack it again (helix.tools.Build.packShaders, or Watchers.watchShaders)';
 		return {
 			kind: file.kind,
 			main: program(file),

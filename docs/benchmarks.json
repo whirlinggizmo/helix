@@ -1,5 +1,5 @@
 {
- "commit": "4cccbb5 2026-10-21",
+ "commit": "8a8723d 2026-10-21",
  "haxe": "4.3.7",
  "rungs": {
   "1-window": {
@@ -33,9 +33,9 @@
   },
   "2-shapes": {
    "adds": "+ a 2D batch drawing a rectangle",
-   "raw": 214600,
-   "gzip": 71239,
-   "brotli": 63750,
+   "raw": 213205,
+   "gzip": 71150,
+   "brotli": 63696,
    "packages": {
     "generated/fonts": 44058,
     "helix/adapters": 33217,
@@ -47,9 +47,9 @@
     "helix/host": 10915,
     "std/js": 9467,
     "helix/audio": 6887,
-    "generated/shaders": 3594,
     "std/core": 3369,
     "helix/assets": 2439,
+    "generated/shaders": 2199,
     "helix/core": 2194,
     "helix/macro": 1816,
     "helix/profiles": 1205,
@@ -64,9 +64,9 @@
   },
   "3-text": {
    "adds": "+ text in the built-in font (the starter)",
-   "raw": 230056,
-   "gzip": 74411,
-   "brotli": 66357,
+   "raw": 228661,
+   "gzip": 74322,
+   "brotli": 66270,
    "packages": {
     "generated/fonts": 44058,
     "helix/adapters": 33217,
@@ -78,9 +78,9 @@
     "helix/host": 10915,
     "std/js": 9467,
     "helix/audio": 6887,
-    "generated/shaders": 3594,
     "std/core": 3369,
     "helix/assets": 2439,
+    "generated/shaders": 2199,
     "helix/core": 2194,
     "helix/macro": 1816,
     "helix/profiles": 1205,
@@ -95,9 +95,9 @@
   },
   "4-sprites": {
    "adds": "+ a texture loaded and drawn",
-   "raw": 287051,
-   "gzip": 85727,
-   "brotli": 75931,
+   "raw": 285656,
+   "gzip": 85644,
+   "brotli": 75822,
    "packages": {
     "generated/fonts": 44058,
     "helix/render2d": 43389,
@@ -111,8 +111,8 @@
     "helix/host": 10915,
     "helix/audio": 6887,
     "std/core": 4121,
-    "generated/shaders": 3594,
     "helix/core": 3009,
+    "generated/shaders": 2199,
     "helix/macro": 1983,
     "helix/profiles": 1205,
     "helix": 1187,
@@ -126,9 +126,9 @@
   },
   "5-audio": {
    "adds": "+ a sound loaded and played",
-   "raw": 299254,
-   "gzip": 87984,
-   "brotli": 77880,
+   "raw": 297859,
+   "gzip": 87905,
+   "brotli": 77846,
    "packages": {
     "generated/fonts": 44058,
     "helix/render2d": 43389,
@@ -142,8 +142,8 @@
     "std/js": 11446,
     "helix/host": 10915,
     "std/core": 4121,
-    "generated/shaders": 3594,
     "helix/core": 3009,
+    "generated/shaders": 2199,
     "helix/macro": 1983,
     "helix/profiles": 1205,
     "helix": 1187,
@@ -157,9 +157,9 @@
   },
   "6-3d": {
    "adds": "+ a 3D camera and a cube",
-   "raw": 318838,
-   "gzip": 91502,
-   "brotli": 80772,
+   "raw": 316934,
+   "gzip": 91380,
+   "brotli": 80687,
    "packages": {
     "generated/fonts": 44058,
     "helix/render2d": 43389,
@@ -173,8 +173,8 @@
     "helix/input": 13768,
     "std/js": 11446,
     "helix/host": 10915,
-    "generated/shaders": 4985,
     "std/core": 4121,
+    "generated/shaders": 3081,
     "helix/core": 3009,
     "helix/macro": 1983,
     "game": 1335,

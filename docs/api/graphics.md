@@ -565,8 +565,8 @@ A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GL
 - `uniformBlocks:Array<ShaderBlock>`
 - `textures:Array<ShaderTexture>`
 - `sdlGpu:Null<SdlGpuStages>`
-- `glsl410:ShaderStages`
-- `glsl300es:ShaderStages`
+- `glsl410:Null<ShaderStages>`: GLSL 410, natively; absent in a browser build (the webgl2 backend), which reads only glsl300es, so the generated programs leave it out.
+- `glsl300es:ShaderStages`: GLSL ES 300, the browser's.
 - `attributes:Array<String>`
 
 ## ShaderStages

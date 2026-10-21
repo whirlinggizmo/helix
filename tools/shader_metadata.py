@@ -242,12 +242,15 @@ def generate(manifest_path, output, working_dir, hx_output=None):
                            for u in contract['uniforms'])
         textures = ', '.join(f'{{slot: {t["view"]}, stage: "{t["stage"]}", glslName: {json.dumps(t["uniform"])}, shadow: {str(t["depthArray"]).lower()}, '
                              f'cube: {str(t["cube"]).lower()}, data: {str(t["data"]).lower()}}}' for t in contract['textures'])
-        common = (f'attributes: {json.dumps([a["name"] for a in by_slot])}, glsl410: {stages("glsl410")}, glsl300es: {stages("glsl300es")}, '
-                  f'uniformBlocks: [{blocks}], textures: [{textures}]')
+        tail = f'uniformBlocks: [{blocks}], textures: [{textures}]'
+        common = f'attributes: {json.dumps([a["name"] for a in by_slot])}, glsl410: {stages("glsl410")}, glsl300es: {stages("glsl300es")}, {tail}'
+        browser = f'attributes: {json.dumps([a["name"] for a in by_slot])}, glsl300es: {stages("glsl300es")}, {tail}'
         # SDL_GPU's dialects are another generated class (generate_sdl_gpu), on the class path of SDL_GPU builds alone.
-        hx += [' /** The program, as IGraphics.createShader takes it: with SDL_GPU\'s dialects in builds defining helix_sdl3_gpu. */',
+        hx += [' /** The program, as IGraphics.createShader takes it: with SDL_GPU\'s dialects in builds defining helix_sdl3_gpu, and in a browser build',
+               '  (the webgl2 backend) only the GLSL ES it reads. */',
                ' public static function source():helix.graphics.ShaderSource',
-               '  #if helix_sdl3_gpu', f'  return {{{common}, sdlGpu: {class_name(program)}SdlGpu.stages()}};', '  #else', f'  return {{{common}}};', '  #end']
+               '  #if helix_sdl3_gpu', f'  return {{{common}, sdlGpu: {class_name(program)}SdlGpu.stages()}};',
+               '  #elseif (helix_backend == "webgl2")', f'  return {{{browser}}};', '  #else', f'  return {{{common}}};', '  #end']
         # Its vertex buffers by index (0 the vertices, 1 the instance records, 2 the skin), up to the last it reads.
         used = [a['buffer'] for a in contract['attributes']]
         layouts = []

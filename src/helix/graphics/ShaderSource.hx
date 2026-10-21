@@ -43,8 +43,13 @@ typedef SdlGpuStages = {
 	IGraphics.createShader builds either the same way. */
 typedef ShaderSource = {
 	final attributes:Array<String>;
-	final glsl410:ShaderStages;
+
+	/** GLSL 410, natively; absent in a browser build (the webgl2 backend), which reads only glsl300es, so the generated programs leave it out. */
+	@:optional final glsl410:ShaderStages;
+
+	/** GLSL ES 300, the browser's. */
 	final glsl300es:ShaderStages;
+
 	@:optional final sdlGpu:SdlGpuStages;
 	final uniformBlocks:Array<ShaderBlock>;
 	final textures:Array<ShaderTexture>;
