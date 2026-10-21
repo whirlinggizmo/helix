@@ -10,7 +10,7 @@ class Host {
 		runner, nothing would set it again. */
 	@:hot public static var instance(default, null):IHost;
 
-	/** The game's settings from config.json among its assets (Config), or null without one. Kept across a hot reload (@:hot), as instance is. */
+	/** The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is. */
 	@:hot public static var config(default, null):Null<Config>;
 
 	// The runner, for busy; kept across a hot reload (@:hot), as instance is.

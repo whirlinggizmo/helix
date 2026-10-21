@@ -2,7 +2,8 @@ package helix.host;
 
 import haxe.io.Bytes;
 
-/** A game's settings from config.json among its assets, fetched as the program starts (so a deployed game changes them without a build):
+/** A game's settings from config.json beside the program (beside the page on the web; never among the assets or in their cache, DECISIONS
+	131), fetched as the program starts (so a deployed game changes them without a build):
 	a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the
 	default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Host.getOption reads the
 	profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's:

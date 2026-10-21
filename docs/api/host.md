@@ -26,7 +26,7 @@ A profile's choice of adapter for each platform contract, which the Runner build
 
 *class* in `src/helix/host/Config.hx`
 
-A game's settings from config.json among its assets, fetched as the program starts (so a deployed game changes them without a build): a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Host.getOption reads the profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's: whether to show a splash, play music, where assets are.
+A game's settings from config.json beside the program (beside the page on the web; never among the assets or in their cache, DECISIONS 131), fetched as the program starts (so a deployed game changes them without a build): a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Host.getOption reads the profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's: whether to show a splash, play music, where assets are.
 
 ```haxe
 static function parse(bytes:haxe.io.Bytes, ?profileName:String):Null<Config>
@@ -91,7 +91,7 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 ```
 
 - `instance`: The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `config`: The game's settings from config.json among its assets (Config), or null without one. Kept across a hot reload (@:hot), as instance is.
+- `config`: The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is.
 - `running`: Whether the runner is running the program: false in a test, which makes what it needs itself.
 - `busy`: Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in.
 - `getOption`: A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text.
