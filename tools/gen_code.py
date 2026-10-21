@@ -58,7 +58,7 @@ def dialects(scratch,out,regenerate=False):
     import gpu_shaders
     stamp=scratch/'sdlgpu-stamp';contract=scratch/'shader-contract.json'
     if regenerate or not stamp.is_file() or stamp.stat().st_mtime<max(contract.stat().st_mtime,gpu_shaders.tool_stamp()) or not all((out/f'{p}SdlGpu.hx').is_file() for p in classes()):
-        generate_sdl_gpu(SOURCES/'shaders.json',scratch,out);stamp.write_text('',encoding='utf-8')
+        generate_sdl_gpu(SOURCES/'shaders.json',scratch,out);stamp.write_text('',encoding='utf-8', newline='\n')
 
 def generate(sdl_gpu=True,regenerate=False):
     """Everything in generated/ that's missing or older than its source (or regenerate): the shader library packed, the programs, with

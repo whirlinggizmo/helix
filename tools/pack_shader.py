@@ -571,7 +571,7 @@ def packed(shdc, source_path, sdl_gpu=False):
             + ''.join(f'@program {name} {vs} {fs}\n' for name, (vs, fs, _) in programs.items()))
     with tempfile.TemporaryDirectory() as scratch:
         scratch = Path(scratch)
-        (scratch / 'shader.glsl').write_text(full, encoding='utf-8')
+        (scratch / 'shader.glsl').write_text(full, encoding='utf-8', newline='\n')
         for args in (['-o', scratch / 'shader.h'], ['-o', scratch / 'shader', '-f', 'bare_yaml']):
             done = subprocess.run([shdc, '-i', scratch / 'shader.glsl', *args, '-l', 'glsl410:glsl300es', '--no-log-cmdline'],
                                   capture_output=True, text=True, encoding='utf-8')
@@ -596,7 +596,7 @@ def pack(shdc, source_path, output_path, sdl_gpu=False):
     """Packs source_path into output_path (a .hxshader), with SDL_GPU's dialects only when sdl_gpu."""
     shader = packed(shdc, source_path, sdl_gpu)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(output_path).write_text(json.dumps(shader, indent=1) + '\n', encoding='utf-8')
+    Path(output_path).write_text(json.dumps(shader, indent=1) + '\n', encoding='utf-8', newline='\n')
 
 
 def class_name(stem):
@@ -645,7 +645,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
                          ' /** The .hxshader\'s text (helix.graphics.Shader.fromText reads it): with SDL_GPU\'s dialects in builds defining helix_sdl3_gpu. */',
                          ' public static function text():String', '  #if helix_sdl3_gpu', f'  return {name}PackedSdlGpu.text();', '  #else',
                          f'  return {haxe_string(text)};', '  #end', '}']
-            target.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+            target.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
             if stem not in made:
                 made.append(stem)
     registry = out / 'PackedShaders.hx'
@@ -656,7 +656,7 @@ def pack_library(out, gpu_out=None, sources=LIBRARY, shdc=None):
     if not stems:
         content = content.replace('  return [];', '  return new Map();')
     if not registry.is_file() or registry.read_text(encoding='utf-8') != content:
-        registry.write_text(content, encoding='utf-8')
+        registry.write_text(content, encoding='utf-8', newline='\n')
     return made
 
 
