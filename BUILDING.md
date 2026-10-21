@@ -38,7 +38,7 @@ A game anywhere on disk takes HeliX as a haxelib (`haxelib dev helix /path/to/he
 - **Haxe 4.3.7** for a browser build, and nothing else: the generated code a build needs (the framework's programs, the shader library packed, the built-in font) is in the library (`generated/`, below).
 - **hxcpp 4.3.2** (the version `dependencies.json` pins) for a native build, with the system's compiler and libraries listed above (Linux: GCC, X11, GL, ALSA, libsndfile).
 - **hotreload-hx** for the dev loop: `haxe -lib hotreload-hx --run hotreload.DevServer web.hxml` serves the browser build with hot reload.
-- **Python 3** (3.8 or later) for `haxelib run helix`, the library's commands (below); **sokol-shdc** and PyYAML only to pack the game's own shaders (`haxelib run helix shader` fetches sokol-shdc the first time); the framework's and the library's are packed already.
+- **Python 3** (3.8 or later) with PyYAML, and **sokol-shdc**, only to pack the game's own shaders (`haxelib run helix shader`, which fetches sokol-shdc the first time); the library's other commands run on Haxe alone, and the framework's shaders are packed already.
 
 `-lib helix` adds `src/` to the class path and runs `extraParams.hxml`, one line, `--macro helix.macro.Haxelib.configure()`: it adds the generated code's class paths (`generated/shaders`, `generated/fonts`, and for an `sdl3-gpu` build `generated/shaders-sdlgpu`, SDL_GPU's dialects, defining `helix_sdl3_gpu`, which the programs carry them under) and, natively, hxcpp's architecture define for the machine building (`HXCPP_M64`, or `HXCPP_ARM64` on arm64) when the build sets none (hxcpp picks 32-bit on Windows by itself). The game's hxml holds only what's its own: its class paths, `-main`, `-D helix-backend=<backend>` (the profile `helix.App` runs: `webgl2`, `sokol-gl`, `sdl3-gl` or `sdl3-gpu`), the target and its choices, `-dce full -D analyzer-optimize` for a release and `-debug` to find faults, natively `-D HXCPP_COMPILE_THREADS=4` to compile faster. The hello game that dogfoods the library builds from these two files:
 
@@ -69,7 +69,7 @@ A game anywhere on disk takes HeliX as a haxelib (`haxelib dev helix /path/to/he
 
 ### The library's commands: `haxelib run helix`
 
-`haxelib run helix <command>` is the library's front door for a game (`Run.hx`, `haxelib.json`'s `main`: haxelib starts it in the library's folder and appends the folder the command was given from, which the command works in; it runs `tools/game.py` there with Python 3, `python3` on PATH or `python` on Windows, or the one `HELIX_PYTHON` names, and says so when none is there). `haxelib run helix --help` lists the commands, each with `--help` of its own; from a checkout, `python3 tools/game.py <command>` is the same tool on the game in the current folder.
+`haxelib run helix <command>` is the library's front door for a game (`Run.hx`, `haxelib.json`'s `main`: haxelib starts it in the library's folder and appends the folder the command was given from, which the command works in; the commands are `tools/game/`'s, in Haxe, run by Haxe's interpreter). `shader` is still Python's, `tools/game.py`, run with Python 3: `python3` on PATH or `python` on Windows, or the one `HELIX_PYTHON` names, said plainly when none is there. `haxelib run helix --help` lists the commands, each with `--help` of its own; from a checkout, `haxe --run Run <command>` in the checkout's folder works on the game in it (haxelib passes the caller's folder instead).
 
 ```console
 haxelib run helix init my-game                 # a starter game in my-game/ (new or empty): src/Main.hx, src/Game.hx, web.hxml, native.hxml, assets/, .gitignore, README.md
@@ -77,7 +77,7 @@ haxelib run helix shader                       # shaders/*.glsl packed into asse
 haxelib run helix site --zip                   # out/site/: index.html, app.js, assets/ (config.json, favicon.png when there), zipped as out/<game>-web.zip with index.html at the root
 ```
 
-- **`init <folder>`** writes a starter game: the hello's shape (`Game extends helix.App` setting the window's title and drawing a rectangle and a greeting with `Batch2D`; `Main` giving it its `AppOptions`, the product named for the folder), `web.hxml` (`webgl2`, `-debug`, `out/web/app.js`) and `native.hxml` (`sokol-gl`, release, `out/native`), an empty `assets/` with a README line, `.gitignore` (`out/`) and a README with the commands. It refuses a folder with anything in it.
+- **`init <folder>`** writes a starter game, `templates/starter/` with the folder's name and title in it: the hello's shape (`Game extends helix.App` setting the window's title and drawing a rectangle and a greeting with `Batch2D`; `Main` giving it its `AppOptions`, the product named for the folder), `web.hxml` (`webgl2`, `-debug`, `out/web/app.js`) and `native.hxml` (`sokol-gl`, release, `out/native`), an empty `assets/` with a README line, `.gitignore` (`out/`) and a README with the commands. It refuses a folder with anything in it.
 - **`shader [FILE.glsl ...] [--out DIR] [--sdl-gpu] [--watch]`** packs the game's shaders as the examples' are packed: `shaders/<name>.glsl` into `assets/shaders/<name>.hxshader`, which the game loads as `shaders.load("shaders/<name>.hxshader", ...)` (`helix.graphics.Shaders`), so a game's loading line is an example's. Files named are packed instead of the folder's, `--out` puts them elsewhere, `--sdl-gpu` adds SDL_GPU's dialects for an `sdl3-gpu` build (glslang and SPIRV-Cross, fetched into the library's `build/deps` the first time). `--watch` packs each again as it changes, and new ones in `shaders/` as they appear, until Ctrl+C; a shader that fails is reported and its last packed file kept. When the assets carry manifests (`tools/gen_manifest.py`'s `manifest.json`, which a game names in `AppOptions.manifest` for the browser's asset cache), they're rewritten from their root after a pack, as the examples' dev loop does; a game without them needs nothing more. sokol-shdc is fetched into the user's cache the first time (above); packing needs PyYAML.
 - **`site [--out DIR] [--zip [FILE]] [--title TITLE] [--js FILE] [--hxml FILE]`** assembles the browser build for hosting, after `haxe web.hxml`: in `out/site/` (or `--out`) `index.html` from the template with the game folder's name as its title (or `--title`), `app.js` copied from the `-js` output `web.hxml` names (or `--hxml`'s, or the file `--js` names; the source map is left behind), `assets/` copied beside it, and `config.json` (the page told of it) and `favicon.png` from the game's folder when there. The folder is remade each time. `--zip` also writes it as a zip with `index.html` at the root, what itch.io's HTML upload takes, as `out/<game>-web.zip` or the file named. It refuses a build not made yet, and `--out` naming the game's folder.
 
@@ -155,6 +155,7 @@ src/helix/                 the framework: contracts, policy, render2d, render3d,
   profiles/                one per backend: WebGL2Profile, SokolGLProfile, Sdl3GLProfile, Sdl3GpuProfile
 generated/                 committed and shipped: the framework's programs, the shader library packed, SDL_GPU's dialects, the built-in font (tools/gen_code.py)
 templates/index.html       the page a browser build runs in: the examples' and a game's
+templates/starter/         the starter game haxelib run helix init writes
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch/Main.hx and examples/assets (once a build, in its assets/)
 examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
 examples/blocks/src/
@@ -163,7 +164,7 @@ tools/                    example/build/check/format/doc tools (Python, some Nod
 docs/                     EXAMPLES, ROADMAP, HISTORY, ARCHITECTURE, INTERFACE, CONVENTIONS, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
 helix.py                  front door for the tests and the services checks
-Run.hx, tools/game.py     haxelib run helix: a game's front door (init, shader, site)
+Run.hx, tools/game/       haxelib run helix: a game's front door (init, site; shader by tools/game.py)
 haxelib.json, extraParams.hxml   the library: classPath src/, and what -lib helix adds (src/helix/macro/Haxelib.hx)
 out/                      ignored: builds' results, out/<platform>/<config>-<backend>/ (deleting it is a clean)
 build/                    ignored: the generators' scratch, builds' scratch (build/<build>/), caches, check output

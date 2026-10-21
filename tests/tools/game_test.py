@@ -1,10 +1,10 @@
-"""Checks of the library's front door for a game, tools/game.py (`haxelib run helix <command>`, Run.hx): its argument handling (no command,
---help naming the commands, an unknown one); Run.hx taking the caller's folder haxelib appends (HAXELIB_RUN=1) and refusing a Python that
-isn't there; init's files, that its starter builds for the browser on `-lib helix` (a haxelib path holding only this checkout as helix),
-and its refusal of a folder with anything in it; site's assembly (index.html from the template at the root with the title and the
-config's meta, app.js from the hxml's -js, assets copied beside, config.json and favicon.png, the zip's layout, --title and --js, the
-refusals); and shader packing a small screen effect (sokol-shdc, fetched when missing) into assets/shaders, rewriting the manifests from
-their root when the assets carry them.
+"""Checks of the library's front door for a game, `haxelib run helix <command>` (Run.hx, tools/game/): its argument handling (no command,
+--help naming the commands, an unknown command or option); Run.hx taking the caller's folder haxelib appends (HAXELIB_RUN=1) and refusing a
+Python that isn't there for shader, the command still Python's (tools/game.py); init's files, that its starter builds for the browser on
+`-lib helix` (a haxelib path holding only this checkout as helix), and its refusal of a folder with anything in it; site's assembly
+(index.html from the template at the root with the title and the config's meta, app.js from the hxml's -js, assets copied beside,
+config.json and favicon.png, the zip's layout, --title and --js, the refusals); and shader packing a small screen effect (sokol-shdc,
+fetched when missing) into assets/shaders, rewriting the manifests from their root when the assets carry them.
 
     python3 tests/tools/game_test.py"""
 import argparse
@@ -36,44 +36,66 @@ void main() {
 '''
 
 
-def tool(*args, cwd=None, env=None):
-    """tools/game.py run as a command in cwd."""
-    return subprocess.run([sys.executable, str(ROOT / 'tools/game.py'), *args], cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8')
-
-
 def run_hx(*args, cwd=None, env=None):
     """Run.hx run as `haxe --run Run` from the checkout, as haxelib runs it (with HAXELIB_RUN=1, the caller's folder last)."""
     return subprocess.run(['haxe', '--run', 'Run', *args], cwd=cwd or ROOT, env=env, capture_output=True, text=True, encoding='utf-8')
 
 
+def tool(*args, cwd):
+    """The front door run in the game's folder cwd, as `haxelib run helix` runs it there."""
+    return run_hx(*args, str(cwd), env=dict(os.environ, HAXELIB_RUN='1'))
+
+
+def done(result):
+    """result's output, once it succeeded."""
+    assert result.returncode == 0, result.stdout + result.stderr
+    return result.stdout
+
+
+def refusal(result):
+    """result's error, once it was refused (exit 1)."""
+    assert result.returncode == 1, (result.returncode, result.stdout, result.stderr)
+    return result.stderr
+
+
+def site(root, *args):
+    """site run in the game root with args; its folder (out/site or --out's) absolute."""
+    done(tool('site', *args, cwd=root))
+    out = args[args.index('--out') + 1] if '--out' in args else 'out/site'
+    return (Path(root) / out).resolve()
+
+
 class FrontDoor(unittest.TestCase):
     def test_arguments(self):
-        result = tool()
+        result = run_hx()
         self.assertEqual(result.returncode, 2)
         self.assertIn('command', result.stderr)
-        result = tool('--help')
+        result = run_hx('--help')
         self.assertEqual(result.returncode, 0, result.stderr)
         for command in ('init', 'shader', 'site'):
             self.assertIn(command, result.stdout)
         self.assertIn('haxelib run helix', result.stdout)
-        result = tool('bogus')
+        result = run_hx('bogus')
         self.assertEqual(result.returncode, 2)
         self.assertIn('bogus', result.stderr)
+        result = run_hx('site', '--bogus')
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--bogus', result.stderr)
+        result = run_hx('site', '--out')
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('needs a value', result.stderr)
         for command in ('init', 'shader', 'site'):
-            result = tool(command, '--help')
+            result = run_hx(command, '--help')
             self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_run_hx(self):
-        result = run_hx('--help')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('init', result.stdout)
         with tempfile.TemporaryDirectory() as folder:
             # haxelib appends the caller's folder: the command works there, not in the library's.
             result = run_hx('site', folder, env=dict(os.environ, HAXELIB_RUN='1'))
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn(str(Path(folder).resolve()), result.stderr)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(Path(folder).resolve().as_posix(), result.stderr)
             self.assertIn('no web.hxml', result.stderr)
-        result = run_hx('--help', env=dict(os.environ, HELIX_PYTHON=str(Path(tempfile.gettempdir()) / 'no-such-python')))
+        result = run_hx('shader', env=dict(os.environ, HELIX_PYTHON=str(Path(tempfile.gettempdir()) / 'no-such-python')))
         self.assertEqual(result.returncode, 1)
         self.assertIn('HELIX_PYTHON', result.stderr)
         self.assertIn('no-such-python', result.stderr)
@@ -83,7 +105,7 @@ class Init(unittest.TestCase):
     def test_files_and_build(self):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder) / 'my-jam-game'
-            written = game.init(target)
+            written = done(tool('init', 'my-jam-game', cwd=folder))
             for relative in ('src/Main.hx', 'src/Game.hx', 'web.hxml', 'native.hxml', 'assets/README.md', '.gitignore', 'README.md'):
                 self.assertIn(relative, written)
                 self.assertTrue((target / relative).is_file(), relative)
@@ -103,19 +125,16 @@ class Init(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue((target / 'out/web/app.js').is_file())
             # A site from it, as the README says.
-            out, archive = game.site(target, 'out/site', 'out/my-jam-game-web.zip', 'my-jam-game', None, 'web.hxml')
+            out = site(target, '--zip')
             self.assertEqual((out / 'app.js').read_bytes(), (target / 'out/web/app.js').read_bytes())
-            self.assertIn('assets/README.md', zipfile.ZipFile(archive).namelist())
+            self.assertIn('assets/README.md', zipfile.ZipFile(target / 'out/my-jam-game-web.zip').namelist())
 
     def test_refuses_a_folder_in_use(self):
         with tempfile.TemporaryDirectory() as folder:
             (Path(folder) / 'something.txt').write_text('x', encoding='utf-8')
-            with self.assertRaises(SystemExit) as refused:
-                game.init(folder)
-            self.assertIn('not empty', str(refused.exception))
-            result = tool('init', folder)
-            self.assertEqual(result.returncode, 1)
-            self.assertIn('not empty', result.stderr)
+            self.assertIn('not empty', refusal(tool('init', '.', cwd=folder)))
+            (Path(folder) / 'file.txt').write_text('x', encoding='utf-8')
+            self.assertIn('not empty', refusal(tool('init', 'file.txt', cwd=folder)))
 
 
 class Site(unittest.TestCase):
@@ -136,8 +155,9 @@ class Site(unittest.TestCase):
     def test_assembly_and_zip(self):
         with tempfile.TemporaryDirectory() as folder:
             root = self.game(folder)
-            out, archive = game.site(root, 'out/site', 'out/pocket-game-web.zip', 'pocket-game', None, 'web.hxml')
-            self.assertEqual(out, (root / 'out/site').resolve())
+            out = site(root, '--zip')
+            archive = root / 'out/pocket-game-web.zip'
+            self.assertTrue((out / 'index.html').is_file())
             page = (out / 'index.html').read_text(encoding='utf-8')
             self.assertIn('<title>pocket-game</title>', page)
             self.assertIn('<meta name="helix-config" content="config.json">', page)
@@ -152,48 +172,43 @@ class Site(unittest.TestCase):
             self.assertEqual(sorted(names), ['app.js', 'assets/a.txt', 'assets/sub/b.txt', 'config.json', 'favicon.png', 'index.html'])
             # Again: the folder is remade, not accumulated.
             (out / 'stale.txt').write_text('x', encoding='utf-8')
-            game.site(root, 'out/site', None, 'pocket-game', None, 'web.hxml')
+            site(root)
             self.assertFalse((out / 'stale.txt').exists())
 
     def test_options(self):
         with tempfile.TemporaryDirectory() as folder:
             root = self.game(folder, hxml='-lib helix\n--js  out/web/app.js   # the build\n')
-            out, archive = game.site(root, 'out/site', None, 'A Title', None, 'web.hxml')
-            self.assertIsNone(archive)
+            out = site(root, '--title', 'A Title')
+            self.assertFalse((root / 'out/pocket-game-web.zip').exists())
             self.assertIn('<title>A Title</title>', (out / 'index.html').read_text(encoding='utf-8'))
             # A game without config.json or favicon.png: no meta, nothing copied.
             (root / 'config.json').unlink()
             (root / 'favicon.png').unlink()
             (root / 'out/web/other.js').write_text('other', encoding='utf-8')
-            out, _ = game.site(root, 'build/www', None, 'pocket-game', 'out/web/other.js', 'web.hxml')
+            out = site(root, '--out', 'build/www', '--js', 'out/web/other.js')
             page = (out / 'index.html').read_text(encoding='utf-8')
             self.assertNotIn('helix-config', page)
             self.assertFalse((out / 'config.json').exists())
             self.assertEqual((out / 'app.js').read_text(encoding='utf-8'), 'other')
-            # The command, from the game's folder: the zip's default name is the folder's.
-            result = tool('site', '--zip', cwd=root)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue((root / 'out/pocket-game-web.zip').is_file())
-            self.assertIn('index.html at its root', result.stdout)
+            # --zip FILE, and the folder's name as the zip's default (above).
+            self.assertIn('index.html at its root', done(tool('site', '--zip', 'dist/game.zip', cwd=root)))
+            self.assertIn('index.html', zipfile.ZipFile(root / 'dist/game.zip').namelist())
+            # Through an hxml it includes, the last -js winning.
+            (root / 'common.hxml').write_text('-lib helix\n-js out/web/app.js\n', encoding='utf-8')
+            (root / 'web.hxml').write_text('common.hxml\n', encoding='utf-8')
+            self.assertEqual((site(root) / 'app.js').read_text(encoding='utf-8'), 'console.log("the game");\n')
 
     def test_refusals(self):
         with tempfile.TemporaryDirectory() as folder:
             root = self.game(folder)
             (root / 'out/web/app.js').unlink()
-            with self.assertRaises(SystemExit) as refused:
-                game.site(root, 'out/site', None, 'x', None, 'web.hxml')
-            self.assertIn('not built yet', str(refused.exception))
-            with self.assertRaises(SystemExit) as refused:
-                game.site(root, 'out/site', None, 'x', None, 'other.hxml')
-            self.assertIn('no other.hxml', str(refused.exception))
+            self.assertIn('not built yet', refusal(tool('site', cwd=root)))
+            self.assertIn('no other.hxml', refusal(tool('site', '--hxml', 'other.hxml', cwd=root)))
             (root / 'web.hxml').write_text('-lib helix\n-main Main\n', encoding='utf-8')
-            with self.assertRaises(SystemExit) as refused:
-                game.site(root, 'out/site', None, 'x', None, 'web.hxml')
-            self.assertIn('names no -js', str(refused.exception))
+            self.assertIn('names no -js', refusal(tool('site', cwd=root)))
             (root / 'out/web/app.js').write_text('x', encoding='utf-8')
-            with self.assertRaises(SystemExit) as refused:
-                game.site(root, '.', None, 'x', 'out/web/app.js', 'web.hxml')
-            self.assertIn('holds the game itself', str(refused.exception))
+            self.assertIn('holds the game itself', refusal(tool('site', '--out', '.', '--js', 'out/web/app.js', cwd=root)))
+            self.assertIn('holds the game itself', refusal(tool('site', '--out', '..', '--js', 'out/web/app.js', cwd=root)))
             self.assertTrue((root / 'assets/a.txt').is_file())
 
 

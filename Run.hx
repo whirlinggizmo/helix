@@ -1,18 +1,23 @@
 import haxe.io.Path;
 import sys.FileSystem;
 
-/** `haxelib run helix <command>`: the library's front door (haxelib.json's `main`), which runs tools/game.py in the library with Python 3 in
-	the folder the command was given from: haxelib starts this in the library's folder and appends the caller's folder as the last argument
-	(saying so with HAXELIB_RUN=1); run as `haxe --run Run` it works in the current folder. HELIX_PYTHON names the Python to run; else
-	`python3` (`python` on Windows) is looked for on PATH, and a clear message says when neither is there. Deliberately outside the
-	framework's class path (src/), so no game compiles it. The commands: `python3 tools/game.py --help`. */
+/** `haxelib run helix <command>`: the library's front door (haxelib.json's `main`), running a command (tools/game/FrontDoor.hx) on the game
+	in the folder it was given from: haxelib starts this in the library's folder and appends the caller's folder as the last argument (saying
+	so with HAXELIB_RUN=1); run as `haxe --run Run` it works in the current folder. `shader` is still tools/game.py's, run with Python 3:
+	HELIX_PYTHON names the Python, else `python3` (`python` on Windows) is looked for on PATH, and a clear message says when neither is
+	there. Deliberately outside the framework's class path (src/), so no game compiles it. The commands: `--help`. */
 class Run {
 	static function main():Void {
 		var args = Sys.args();
 		var game = Sys.getCwd();
 		if (Sys.getEnv("HAXELIB_RUN") == "1" && args.length > 0)
 			game = args.pop();
-		var tool = Path.join([libraryRoot(), "tools", "game.py"]);
+		Sys.setCwd(game);
+		Sys.exit(tools.game.FrontDoor.run(args, libraryRoot(), shader));
+	}
+
+	// tools/game.py's shader command with args, under Python 3.
+	static function shader(args:Array<String>):Int {
 		var python = findPython();
 		if (python == null) {
 			var chosen = Sys.getEnv("HELIX_PYTHON");
@@ -20,10 +25,9 @@ class Run {
 				.writeString(chosen != null
 					&& chosen != "" ? 'helix: HELIX_PYTHON names $chosen, which is not there (a path, or a program on PATH)\n' : "helix: Python 3 was not found (" +
 					defaultPython() + " on PATH); install it, or set HELIX_PYTHON to the Python to run\n");
-			Sys.exit(1);
+			return 1;
 		}
-		Sys.setCwd(game);
-		Sys.exit(Sys.command(python, [tool].concat(args)));
+		return Sys.command(python, [Path.join([libraryRoot(), "tools", "game.py"]), "shader"].concat(args));
 	}
 
 	// The Python a system calls its own.
