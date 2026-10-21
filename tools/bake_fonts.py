@@ -1,8 +1,8 @@
 """Bake the built-in font (JetBrains Mono, printable ASCII) into a distance-field atlas, as a generated Haxe class.
 
-build/generated/fonts/GeneratedFont.hx holds the atlas, zlib-compressed and base64-encoded, and each glyph's place and
-metrics; Font2D.builtIn() decodes it. Regenerated when the font, the baker or this script is newer than the output, as the
-shaders are. The baker is HeliX's own (helix.render2d.TrueType and FontBaker, which bake loaded fonts at run time too), run
+generated/fonts/GeneratedFont.hx (committed and shipped in the library: tools/gen_code.py) holds the atlas, zlib-compressed and
+base64-encoded, and each glyph's place and metrics; Font2D.builtIn() decodes it. Regenerated when the font, the baker or this script is
+newer than the output, as the shaders are; its atlas and metrics are scratch in build/generated/fonts. The baker is HeliX's own (helix.render2d.TrueType and FontBaker, which bake loaded fonts at run time too), run
 under the Haxe interpreter by tools/bake_fonts/FontBake.hx."""
 import base64
 import json
@@ -14,16 +14,17 @@ import zlib
 ROOT=Path(__file__).resolve().parents[1]
 FONT=ROOT/'vendor/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf'
 BAKER=[ROOT/'tools/bake_fonts/FontBake.hx',ROOT/'src/helix/render2d/TrueType.hx',ROOT/'src/helix/render2d/FontBaker.hx']
-OUT=ROOT/'build/generated/fonts'
+OUT=ROOT/'generated/fonts'
+SCRATCH=ROOT/'build/generated/fonts'
 # Pixel height and distance-field padding: 32 and 6 keep edges clean from small text to about 4x up, in a 512x256 atlas.
 HEIGHT,PADDING,WIDTH=32,6,512
 
-def generate(force=False):
-    """Write GeneratedFont.hx when it's missing or older than what makes it."""
-    output=OUT/'GeneratedFont.hx'
+def generate(force=False,out=OUT):
+    """Write out/GeneratedFont.hx when it's missing or older than what makes it (or force)."""
+    output=out/'GeneratedFont.hx'
     if not force and output.is_file() and output.stat().st_mtime>=max(p.stat().st_mtime for p in (FONT,*BAKER,Path(__file__))):return output
-    OUT.mkdir(parents=True,exist_ok=True)
-    atlas,metrics=OUT/'atlas.r8',OUT/'metrics.json'
+    out.mkdir(parents=True,exist_ok=True);SCRATCH.mkdir(parents=True,exist_ok=True)
+    atlas,metrics=SCRATCH/'atlas.r8',SCRATCH/'metrics.json'
     # The baker leaves the atlas's last row free and its last texel fully inside: Batch2D draws untextured shapes with it.
     subprocess.run(['haxe','-cp','src','-cp','tools/bake_fonts','--run','FontBake',str(FONT),str(HEIGHT),str(PADDING),str(WIDTH),str(atlas),str(metrics)],cwd=ROOT,check=True)
     m=json.loads(metrics.read_text(encoding='utf-8'));raw=atlas.read_bytes()
@@ -56,4 +57,4 @@ class GeneratedFont {{
 ''', encoding='utf-8')
     return output
 
-if __name__=='__main__':print(generate('--force' in sys.argv))
+if __name__=='__main__':print(generate('--regenerate' in sys.argv))

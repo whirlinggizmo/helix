@@ -10,23 +10,22 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parent
-UNIT={'InputTests':[],'ActionsTests':['build/generated/shaders','build/generated/fonts'],'AudioBusTests':[],'HostTests':[],'ConfigTests':[],'AssetTests':[],'AssetCacheTests':[],'Render2DTests':['build/generated/shaders','build/generated/fonts'],'ParticleTests':['build/generated/shaders','build/generated/fonts'],'Render3DTests':['build/generated/shaders','build/generated/fonts'],'PostProcessTests':['build/generated/shaders','build/generated/fonts'],'EnvironmentTests':[],'TrigTests':[],'RandomTests':[],'TimeTests':[],'TweenTests':[],'CurveTests':[],'CollisionTests':['build/generated/shaders','build/generated/fonts'],'SceneTests':['build/generated/shaders','build/generated/fonts'],'BehaviorTests':['build/generated/shaders','build/generated/fonts'],'CombatProbeTests':['build/generated/shaders','build/generated/fonts'],'SceneFileTests':['build/generated/shaders','build/generated/fonts'],'SceneInstanceTests':['build/generated/shaders','build/generated/fonts'],'PresentationTests':['build/generated/shaders','build/generated/fonts'],'PngTests':[],'ShaderLibraryTests':['build/generated/shaders','build/generated/fonts'],'SpriteEffectTests':['build/generated/shaders','build/generated/fonts'],'PickTests':['build/generated/shaders','build/generated/fonts'],'UiTests':['build/generated/shaders','build/generated/fonts'],'AnimationTests':['build/generated/shaders','build/generated/fonts'],'OutfitTests':['build/generated/shaders','build/generated/fonts','examples/dressing-room/src'],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
+UNIT={'InputTests':[],'ActionsTests':['generated/shaders','generated/fonts'],'AudioBusTests':[],'HostTests':[],'ConfigTests':[],'AssetTests':[],'AssetCacheTests':[],'Render2DTests':['generated/shaders','generated/fonts'],'ParticleTests':['generated/shaders','generated/fonts'],'Render3DTests':['generated/shaders','generated/fonts'],'PostProcessTests':['generated/shaders','generated/fonts'],'EnvironmentTests':[],'TrigTests':[],'RandomTests':[],'TimeTests':[],'TweenTests':[],'CurveTests':[],'CollisionTests':['generated/shaders','generated/fonts'],'SceneTests':['generated/shaders','generated/fonts'],'BehaviorTests':['generated/shaders','generated/fonts'],'CombatProbeTests':['generated/shaders','generated/fonts'],'SceneFileTests':['generated/shaders','generated/fonts'],'SceneInstanceTests':['generated/shaders','generated/fonts'],'PresentationTests':['generated/shaders','generated/fonts'],'PngTests':[],'ShaderLibraryTests':['generated/shaders','generated/fonts'],'SpriteEffectTests':['generated/shaders','generated/fonts'],'PickTests':['generated/shaders','generated/fonts'],'UiTests':['generated/shaders','generated/fonts'],'AnimationTests':['generated/shaders','generated/fonts'],'OutfitTests':['generated/shaders','generated/fonts','examples/dressing-room/src'],'BlocksTests':['examples/blocks/src'],'SimulationTests':['examples/asteroids/src']}
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(native,audio_device):
-    """The adapter rule's check, the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
+    """The adapter rule's check, the generated code's check (tools/gen_code.py --check), the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
     native network streaming (tests/streaming, a local server and SDL3's dummy audio driver)."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
-    import example,bake_fonts
     generate()
-    # The generated shader and font code the unit tests compile against, made when missing or stale.
-    example.shader();bake_fonts.generate()
+    # The generated code (generated/, committed and shipped) must be what the sources give, before anything regenerates it in place.
+    run([sys.executable,'tools/gen_code.py','--check'])
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
-    for test in ('shaders/shader_metadata_test','shaders/pack_shader_test','tools/gltf2scene_test','tools/autopilot_samples_test'):run([sys.executable,f'tests/{test}.py'])
+    for test in ('shaders/shader_metadata_test','shaders/pack_shader_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test'):run([sys.executable,f'tests/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','-js','build/tests/package-smoke.js','-dce','full'])

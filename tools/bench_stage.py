@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ['look', 'away', 'away-nocull', 'each', 'lights', 'shadows', 'pick']
-BASE = ['-cp', 'src', '-cp', 'tests/bench', '-cp', 'build/generated/shaders', '-cp', 'build/generated/fonts', '-main', 'StageBench', '-dce',
+BASE = ['-cp', 'src', '-cp', 'tests/bench', '-cp', 'generated/shaders', '-cp', 'generated/fonts', '-main', 'StageBench', '-dce',
         'full', '-D', 'analyzer-optimize']
 
 

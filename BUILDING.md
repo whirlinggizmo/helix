@@ -31,6 +31,42 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
 
 Third-party licenses, and what builds ship with: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Example asset credits: [examples/assets/CREDITS.md](examples/assets/CREDITS.md).
 
+## A game on `-lib helix`
+
+A game anywhere on disk takes HeliX as a haxelib (`haxelib dev helix /path/to/helix`, or `haxelib git helix https://github.com/whirlinggizmo/helix`) and names it in its hxml with `-lib helix`. `haxelib.json` declares no dependencies, so installing the library pulls nothing else; a game installs what its own builds use:
+
+- **Haxe 4.3.7** for a browser build, and nothing else: the generated code a build needs (the framework's programs, the shader library packed, the built-in font) is in the library (`generated/`, below).
+- **hxcpp 4.3.2** (the version `dependencies.json` pins) for a native build, with the system's compiler and libraries listed above (Linux: GCC, X11, GL, ALSA, libsndfile).
+- **hotreload-hx** for the dev loop: `haxe -lib hotreload-hx --run hotreload.DevServer web.hxml` serves the browser build with hot reload.
+- **sokol-shdc** only to pack the game's own shaders (`tools/pack_shader.py`); the framework's and the library's are packed already.
+
+`-lib helix` adds `src/` to the class path and runs `extraParams.hxml`, one line, `--macro helix.macro.Haxelib.configure()`: it adds the generated code's class paths (`generated/shaders`, `generated/fonts`, and `generated/shaders-sdlgpu`, SDL_GPU's dialects, when the build defines `helix_sdl3_gpu`) and, natively, hxcpp's architecture define for the machine building (`HXCPP_M64`, or `HXCPP_ARM64` on arm64) when the build sets none (hxcpp picks 32-bit on Windows by itself). The game's hxml holds only what's its own: its class paths, `-main`, the target and its choices, `-dce full -D analyzer-optimize` for a release and `-debug` to find faults, `-D helix_sdl3_gpu` for an SDL_GPU build, natively `-D HXCPP_COMPILE_THREADS=4` to compile faster. The hello game that dogfoods the library builds from these two files:
+
+```hxml
+# web.hxml: haxe web.hxml -> out/web/app.js, loaded by out/web/index.html
+-lib helix
+-cp src
+-main Main
+-debug
+-js out/web/app.js
+```
+
+```hxml
+# native.hxml: haxe native.hxml -> out/native/Main; hxcpp compiles HeliX's adapters' C with it
+-lib helix
+-cp src
+-main Main
+-dce full
+-D analyzer-optimize
+-cpp out/native
+```
+
+- **The page.** `templates/index.html` is the page a browser build runs in, the one the examples are served from: copy it beside `app.js`, replace `{{title}}` with the game's name and `{{meta}}` with nothing, or with `<meta name="helix-config" content="config.json">` when a `config.json` sits beside the page (`Config`, decision 131). What the framework needs of a page: a `<canvas id="canvas">` to draw in (the template sizes it to the viewport, focusable for the keyboard), a `<div id="status">` for its messages (a lost context, a failed start), and `app.js` loaded after them. The template links `favicon.png` beside the page; without one the browser logs a 404, as it would without the link.
+- **Assets.** A game keeps its files in one folder beside what it ships and names it when it runs the profile: in the browser `assets/` beside `index.html` (`WebGL2Profile.run`'s base, fetched relative to the page; a manifest there, `tools/gen_manifest.py`'s, lets the asset cache follow changes), natively `assets` beside the program (the profiles resolve the folder relative to the program, not the working directory). The build copies the folder there; nothing is packed into the program. The repository's examples share one folder beside their own (`../assets`), which is `tools/example.py`'s doing, not the library's.
+- **The generated code**, `generated/`, is committed and shipped: `generated/shaders` holds the framework's programs (`<Name>Program.hx`, sokol-shdc's output of `src/helix/graphics/shaders` as data) and the shader library packed (`<Name>Packed.hx` and `PackedShaders.hx`, from `src/helix/shaders`), `generated/shaders-sdlgpu` their SDL_GPU dialects (on the class path of `sdl3-gpu` builds alone, 2.7 MB no other build carries), `generated/fonts` the built-in font (`GeneratedFont.hx`, JetBrains Mono baked by `tools/bake_fonts.py`). `tools/gen_code.py` remakes what's older than its source, and every build path and the dev loop call it, so an edited shader is current when it compiles; `--regenerate` remakes all of it, `--check` fails when the committed code isn't what the sources give now (the first thing `helix.py test` does, so CI refuses a stale commit). sokol-shdc, glslang and SPIRV-Cross are the generators' (fetched by the tools); a game needs none of them.
+
+A `haxelib run helix` command that copies the asset folder and writes the page from the template would be the next convenience; it isn't built.
+
 
 ## Build and develop
 
@@ -76,6 +112,7 @@ Examples, their files and how each one is run: [docs/EXAMPLES.md](docs/EXAMPLES.
 python3 tools/check_types.py --no-output    # every entry point, both targets, in seconds
 python3 tools/format.py --check           # haxe-formatter, pinned
 python3 tools/check_docs.py                 # public API without a doc comment
+python3 tools/gen_code.py --check           # the generated code (generated/, committed) is what the sources give; --regenerate remakes it
 python3 tools/gen_apidoc.py                   # the API reference: docs/api (committed, checked by the tests) and build/api/index.html
 python3 tools/gltf2scene.py export.glb out.scene   # a Blender glTF export as a .scene: one Model node, its custom properties as overrides; --check
 python3 tools/fbx2glb.py in.fbx out/ --opaque --smooth-angle 75   # FBX files or folders as GLBs, by Blender run headless (examples/assets/CREDITS.md)
@@ -95,6 +132,8 @@ python3 helix.py services --browser /path/to/chromium --native
 src/helix/                 the framework: contracts, policy, render2d, render3d, math, input, audio, assets
   adapters/<contract>/<api>/   one platform API behind one contract (<Api><Contract>Adapter); internal/ holds C glue and externs
   profiles/                one per backend: WebGL2Profile, SokolGLProfile, Sdl3GLProfile, Sdl3GpuProfile
+generated/                 committed and shipped: the framework's programs, the shader library packed, SDL_GPU's dialects, the built-in font (tools/gen_code.py)
+templates/index.html       the page a browser build runs in: the examples' and a game's
 examples/<name>/App.hx      the catalog: one feature each, sharing examples/shared/launch/<backend> and examples/assets (once a build, in its assets/)
 examples/asteroids/src/     larger examples: whole games, built the same way, with autopilot scripts
 examples/blocks/src/
@@ -103,7 +142,8 @@ tools/                    example/build/check/format/doc tools (Python, some Nod
 docs/                     EXAMPLES, ROADMAP, HISTORY, ARCHITECTURE, INTERFACE, CONVENTIONS, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
 helix.py / Run.hx          front door for the tests and the services checks
+haxelib.json, extraParams.hxml   the library: classPath src/, and what -lib helix adds (src/helix/macro/Haxelib.hx)
 out/                      ignored: builds' results, out/<platform>/<config>-<backend>/ (deleting it is a clean)
-build/                    ignored: generated code, builds' scratch (build/<build>/), caches, check output
+build/                    ignored: the generators' scratch, builds' scratch (build/<build>/), caches, check output
 ```
 

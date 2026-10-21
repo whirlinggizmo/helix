@@ -18,11 +18,9 @@ import gltf2scene
 
 argparse.ArgumentParser(description=__doc__).parse_args()
 FIXTURES = ROOT / 'tests/fixtures/gltf2scene'
-# The generated shader and font code SceneFile's dependencies compile against, made when missing (helix.py test makes them first).
-import bake_fonts
-import example
-example.shader()
-bake_fonts.generate()
+# The generated code SceneFile's dependencies compile against (generated/, committed), made current when a source is newer.
+import gen_code
+gen_code.generate(sdl_gpu=False)
 
 ROUND_TRIP = '''import helix.scene.SceneFile;
 import sys.io.File;
@@ -79,7 +77,7 @@ class Gltf2SceneTests(unittest.TestCase):
         (self.dir / 'RoundTrip.hx').write_text(ROUND_TRIP, encoding='utf-8')
         given, written = self.dir / 'given.scene', self.dir / 'written.scene'
         given.write_bytes(data)
-        subprocess.run(['haxe', '-cp', 'src', '-cp', 'build/generated/shaders', '-cp', 'build/generated/fonts', '-cp', str(self.dir),
+        subprocess.run(['haxe', '-cp', 'src', '-cp', 'generated/shaders', '-cp', 'generated/fonts', '-cp', str(self.dir),
             '--run', 'RoundTrip', str(given), str(written)], cwd=ROOT, check=True)
         return written.read_bytes()
 

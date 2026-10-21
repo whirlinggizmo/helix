@@ -3,9 +3,10 @@
 	"url": "https://github.com/whirlinggizmo/helix",
 	"license": "MIT",
 	"tags": ["game", "2d", "3d", "js", "cpp", "sokol", "sdl3"],
-	"description": "HeliX: a Haxe game framework for the browser (WebGL2) and native (hxcpp with sokol or SDL3).",
-	"version": "0.13.0",
+	"description": "HeliX: a Haxe game framework for the browser (WebGL2) and native (hxcpp with sokol or SDL3). A browser build needs Haxe alone; a native build hxcpp 4.3.2; the dev loop hotreload-hx; a game's own shaders sokol-shdc (BUILDING.md).",
+	"version": "0.14.0",
 	"classPath": "src/",
-	"releasenote": "Milestone 13: the dressing room, helix.ui's widgets, the build names.",
-	"contributors": ["whirlinggizmo"]
+	"releasenote": "Milestone 14: a haxelib. The generated code (the framework's programs, the packed shader library and the built-in font) shipped in generated/, added by extraParams.hxml with hxcpp's architecture; templates/index.html for the page.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {}
 }

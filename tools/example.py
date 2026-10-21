@@ -9,8 +9,10 @@ native build, release-sokol-gl when not told, against the browser's in the same 
 told, as its own build with the dev option (`js-debug-webgl2-dev`), in a folder no build writes, so a build or autopilot of the same example
 never writes over the page a dev server serves.
 
-An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example shares the page
-in examples/shared and the launcher of its backend (examples/shared/launch/<backend>). A build's examples go to its out/ folder: natively
+An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example's page is the
+library's template (templates/index.html, the one a game copies), and its launcher is shared (examples/shared/launch).
+The generated code they compile against (generated/: the framework's programs, the packed shader library, the font) is made current first
+(tools/gen_code.py). A build's examples go to its out/ folder: natively
 bin/<example>/, the program named for its example, in the browser site/<example>/; beside them one assets folder they share (bin/assets,
 site/assets), which each loads as ../assets: the files in examples/assets, and each example's own, which may not claim a path the shared
 files or another example has. A larger example adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py
@@ -38,45 +40,18 @@ import subprocess
 import sys
 import time
 import urllib.request
-from shader_metadata import generate,generate_sdl_gpu,manifest
 import pack_shader
+import gen_code
 import gen_manifest
-import bake_fonts
 from native_build import ARCH
 from variants import Build,parse
 
 ROOT=Path(__file__).resolve().parents[1]
-GENERATED=ROOT/'build/generated/shaders'
-# SDL_GPU's dialects of the framework's programs, made only for SDL_GPU builds (tools/gpu_shaders.py), so no other build needs its tools.
-GENERATED_SDL_GPU=ROOT/'build/generated/shaders-sdlgpu'
-SHADERS=ROOT/'src/helix/graphics/shaders'
 SHARED=ROOT/'examples/shared'
+# The page every example is served from: the library's template, the one a game copies (BUILDING.md).
+TEMPLATE=ROOT/'templates/index.html'
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
-
-def shader_stamp():
-    """The newest change to the framework's shader sources, their manifest, and the tool writing their generated code."""
-    return max([p.stat().st_mtime for p in SHADERS.iterdir() if p.suffix in ('.glsl','.json')]+[(ROOT/'tools/shader_metadata.py').stat().st_mtime])
-
-def shader(sdl_gpu=False):
-    """Generate the framework's shaders (src/helix/graphics/shaders, listed in shaders.json) when a source is newer than the output, and pack
-    the shader library (src/helix/shaders) into generated Haxe beside them (tools/pack_shader.py's pack_library); with sdl_gpu, their SDL_GPU
-    dialects too (build/generated/shaders-sdlgpu)."""
-    GENERATED.mkdir(parents=True,exist_ok=True)
-    pack_shader.pack_library(GENERATED,GENERATED_SDL_GPU if sdl_gpu else None)
-    output=GENERATED/'shader-contract.json'
-    if not output.is_file() or output.stat().st_mtime<shader_stamp():
-        import shdc as compiler
-        shdc=compiler.path()
-        for spec in manifest(SHADERS/'shaders.json'):
-            program=spec['program'];source=SHADERS/f'{program}.glsl'
-            run([shdc,'-i',source,'-o',GENERATED/program,'-l','glsl410:glsl300es','-f','bare_yaml','--no-log-cmdline'])
-        generate(SHADERS/'shaders.json',GENERATED,ROOT)
-    if sdl_gpu:
-        import gpu_shaders
-        stamp=GENERATED_SDL_GPU/'stamp'
-        if not stamp.is_file() or stamp.stat().st_mtime<max(output.stat().st_mtime,gpu_shaders.tool_stamp()):
-            generate_sdl_gpu(SHADERS/'shaders.json',GENERATED,GENERATED_SDL_GPU);stamp.write_text('',encoding='utf-8')
 
 def source(name):
     """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
@@ -85,12 +60,14 @@ def source(name):
 def hxml(name,build):
     """The example's build arguments for build (a variants.Build), written to build/<build>/<name>.hxml, where the dev server and haxe
     read them."""
-    lines=['-cp src',f'-cp {source(name)}',f'-cp examples/shared/launch/{build.backend}','-cp examples/shared/src','-cp build/generated/shaders','-cp build/generated/fonts','-main Main',f'-D example={name}']
+    # The generated code's class paths listed, as src/helix/macro/Haxelib.hx lists them for a game on -lib helix: the dev server watches a
+    # listed one, so a repacked library shader reloads.
+    lines=['-cp src',f'-cp {source(name)}','-cp examples/shared/launch',f'-D helix-backend={build.backend}','-cp generated/shaders','-cp generated/fonts','-main Main',f'-D example={name}']
     # release: what ships; debug: Haxe's debug build (natively hxcpp's, its null checks on), the standard DCE, no optimizer.
     lines+=['-debug']+([] if build.web else ['-D HXCPP_CHECK_POINTER']) if build.debug else ['-dce full','-D analyzer-optimize']
     lines+=[f'-js {page(name,build).relative_to(ROOT).as_posix()}/app.js'] if build.web else [f'-cpp {(build.scratch/name).relative_to(ROOT).as_posix()}',f'-D {ARCH}','-D HXCPP_COMPILE_THREADS=4']
     # SDL_GPU's programs carry its dialects, which other builds leave out.
-    if build.backend=='sdl3-gpu':lines+=['-D helix_sdl3_gpu',f'-cp {GENERATED_SDL_GPU.relative_to(ROOT).as_posix()}']
+    if build.backend=='sdl3-gpu':lines+=['-D helix_sdl3_gpu','-cp generated/shaders-sdlgpu']
     path=build.scratch/f'{name}.hxml';path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines)+'\n', encoding='utf-8')
     return path.relative_to(ROOT)
 
@@ -121,13 +98,13 @@ def page(name,build):
     return build.programs/name
 
 def prepare(name,build):
-    """The generated shader and font, and the browser build's folder for the example (page(name,build)): the page, and the example's
-    files in the build's shared assets."""
-    shader();bake_fonts.generate()
+    """The generated code made current, and the browser build's folder for the example (page(name,build)): the page from the template,
+    and the example's files in the build's shared assets."""
+    gen_code.generate(sdl_gpu=False)
     web=page(name,build);web.mkdir(parents=True,exist_ok=True)
     # The example's config.json (DECISIONS 131) beside the page, and the page told it has one; none, and the page makes no request.
     config=ROOT/f'examples/{name}/config.json';meta='<meta name="helix-config" content="config.json">' if config.is_file() else ''
-    (web/'index.html').write_text((SHARED/'index.html').read_text(encoding='utf-8').replace('{{name}}',name).replace('{{config}}',meta))
+    (web/'index.html').write_text(TEMPLATE.read_text(encoding='utf-8').replace('{{title}}',f'HeliX {name}').replace('{{meta}}',meta),encoding='utf-8')
     if config.is_file():shutil.copyfile(config,web/'config.json')
     elif (web/'config.json').exists():(web/'config.json').unlink()
     shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
@@ -212,13 +189,13 @@ def build(name,chosen):
     else:
         from pins import check_hxcpp,check_sokol
         from native_build import env as native_env,place_runtimes
-        shader();bake_fonts.generate()
+        # SDL_GPU's builds carry the dialects; no other fetches their translators.
+        gen_code.generate(sdl_gpu=chosen.backend=='sdl3-gpu')
         check_hxcpp();check_sokol(ROOT)
         sdl3=None
         if chosen.backend.startswith('sdl3'):
             import sdl3 as finder
             sdl3=finder.find();print(f'sdl3: {sdl3.origin}',flush=True)
-        if chosen.backend=='sdl3-gpu':shader(sdl_gpu=True)
         run(['haxe',hxml(name,chosen)],native_env(sdl3))
         # hxcpp names the program for the main class (Main, Main-debug in a debug build); the results name it for the example.
         made=chosen.scratch/name/(('Main-debug' if chosen.debug else 'Main')+('.exe' if os.name=='nt' else ''))
@@ -345,16 +322,17 @@ def main():
                     if repacked!=packed:gen_manifest.write(chosen.assets)
                     packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
-                # The shader library's sources, packed into generated Haxe again as they change: the dev server rebuilds, and the reload
-                # builds the changed ones again in place (helix.shaders.ShaderLibrary). A failed source is retried once it changes again.
+                # The shader library's sources, packed into generated Haxe again as they change (generated/shaders, which the dev server
+                # watches): it rebuilds, and the reload builds the changed ones again in place (helix.shaders.ShaderLibrary). A failed
+                # source is retried once it changes again.
                 library=max((p.stat().st_mtime for p in pack_shader.LIBRARY.glob('*.glsl')),default=0)
                 if library!=library_failed:
-                    try:pack_shader.pack_library(GENERATED);library_failed=None
+                    try:pack_shader.pack_library(gen_code.SHADERS_OUT);library_failed=None
                     except SystemExit as error:print('example: library shader packing failed:',error,flush=True);library_failed=library
-                # A failed source is retried only once it changes again.
-                stamp=shader_stamp()
+                # The framework's programs likewise; a failed source is retried only once it changes again.
+                stamp=gen_code.shader_stamp()
                 if stamp!=failed:
-                    try:shader();failed=None
+                    try:gen_code.programs(gen_code.SCRATCH,gen_code.SHADERS_OUT);failed=None
                     except (subprocess.CalledProcessError,RuntimeError) as error:print('example: shader generation failed:',error,flush=True);failed=stamp
                 time.sleep(.25)
         except KeyboardInterrupt:pass

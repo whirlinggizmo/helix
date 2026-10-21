@@ -1,0 +1,42 @@
+// Generated from structured shader reflection and shaders.json: the flat3d program.
+class Flat3DProgram {
+ public static inline var stride=24;
+ public static inline var instanceStride=144;
+ public static inline var skinStride=0;
+ public static inline var vertexUniformBytes=80;
+ public static inline var fragmentUniformBytes=16;
+ public static inline var positionSlot=0;
+ public static inline var positionOffset=0;
+ public static inline var positionComponents=3;
+ public static inline var normalSlot=1;
+ public static inline var normalOffset=12;
+ public static inline var normalComponents=3;
+ public static inline var model0Slot=2;
+ public static inline var model0Offset=0;
+ public static inline var model0Components=4;
+ public static inline var model1Slot=3;
+ public static inline var model1Offset=16;
+ public static inline var model1Components=4;
+ public static inline var model2Slot=4;
+ public static inline var model2Offset=32;
+ public static inline var model2Components=4;
+ public static inline var normal0Slot=5;
+ public static inline var normal0Offset=48;
+ public static inline var normal0Components=4;
+ public static inline var normal1Slot=6;
+ public static inline var normal1Offset=64;
+ public static inline var normal1Components=4;
+ public static inline var normal2Slot=7;
+ public static inline var normal2Offset=80;
+ public static inline var normal2Components=4;
+ /** The program, as IGraphics.createShader takes it: with SDL_GPU's dialects in builds defining helix_sdl3_gpu. */
+ public static function source():helix.graphics.ShaderSource
+  #if helix_sdl3_gpu
+  return {attributes: ["position", "normal", "i_model0", "i_model1", "i_model2", "i_normal0", "i_normal1", "i_normal2"], glsl410: {vertex: "#version 410\n\nuniform vec4 flat3d_vs_params[5];\nlayout(location = 2) in vec4 i_model0;\nlayout(location = 3) in vec4 i_model1;\nlayout(location = 4) in vec4 i_model2;\nlayout(location = 5) in vec4 i_normal0;\nlayout(location = 6) in vec4 i_normal1;\nlayout(location = 7) in vec4 i_normal2;\nlayout(location = 0) in vec3 position;\nlayout(location = 1) in vec3 normal;\n\nvoid flat3d_place(vec3 placed, vec3 bent)\n{\n    vec4 _22 = vec4(placed, 1.0);\n    vec3 world = vec3(dot(i_model0, _22), dot(i_model1, _22), dot(i_model2, _22));\n    vec3 _54 = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));\n    float _59 = dot(_54, _54);\n    vec3 _64;\n    if (_59 > 9.9999999600419720025001879548654e-13)\n    {\n        _64 = _54 * inversesqrt(_59);\n    }\n    else\n    {\n        _64 = vec3(0.0);\n    }\n    vec3 _87 = world;\n    vec3 _88 = _87 + (_64 * flat3d_vs_params[4].x);\n    world = _88;\n    gl_Position = mat4(flat3d_vs_params[0], flat3d_vs_params[1], flat3d_vs_params[2], flat3d_vs_params[3]) * vec4(_88, 1.0);\n}\n\nvoid main()\n{\n    vec3 param = position;\n    vec3 param_1 = normal;\n    flat3d_place(param, param_1);\n}\n\n", fragment: "#version 410\n\nuniform vec4 flat3d_fs_params[1];\nlayout(location = 0) out vec4 frag_color;\n\nvoid main()\n{\n    frag_color = flat3d_fs_params[0];\n}\n\n"}, glsl300es: {vertex: "#version 300 es\n\nuniform vec4 flat3d_vs_params[5];\nlayout(location = 2) in vec4 i_model0;\nlayout(location = 3) in vec4 i_model1;\nlayout(location = 4) in vec4 i_model2;\nlayout(location = 5) in vec4 i_normal0;\nlayout(location = 6) in vec4 i_normal1;\nlayout(location = 7) in vec4 i_normal2;\nlayout(location = 0) in vec3 position;\nlayout(location = 1) in vec3 normal;\n\nvoid flat3d_place(vec3 placed, vec3 bent)\n{\n    vec4 _22 = vec4(placed, 1.0);\n    vec3 world = vec3(dot(i_model0, _22), dot(i_model1, _22), dot(i_model2, _22));\n    vec3 _54 = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));\n    float _59 = dot(_54, _54);\n    vec3 _64;\n    if (_59 > 9.9999999600419720025001879548654e-13)\n    {\n        _64 = _54 * inversesqrt(_59);\n    }\n    else\n    {\n        _64 = vec3(0.0);\n    }\n    vec3 _87 = world;\n    vec3 _88 = _87 + (_64 * flat3d_vs_params[4].x);\n    world = _88;\n    gl_Position = mat4(flat3d_vs_params[0], flat3d_vs_params[1], flat3d_vs_params[2], flat3d_vs_params[3]) * vec4(_88, 1.0);\n}\n\nvoid main()\n{\n    vec3 param = position;\n    vec3 param_1 = normal;\n    flat3d_place(param, param_1);\n}\n\n", fragment: "#version 300 es\nprecision mediump float;\nprecision highp int;\n\nuniform highp vec4 flat3d_fs_params[1];\nlayout(location = 0) out highp vec4 frag_color;\n\nvoid main()\n{\n    frag_color = flat3d_fs_params[0];\n}\n\n"}, uniformBlocks: [{slot: 0, stage: "vertex", size: 80, glslName: "flat3d_vs_params", vec4Count: 5}, {slot: 1, stage: "fragment", size: 16, glslName: "flat3d_fs_params", vec4Count: 1}], textures: [], sdlGpu: Flat3DSdlGpu.stages()};
+  #else
+  return {attributes: ["position", "normal", "i_model0", "i_model1", "i_model2", "i_normal0", "i_normal1", "i_normal2"], glsl410: {vertex: "#version 410\n\nuniform vec4 flat3d_vs_params[5];\nlayout(location = 2) in vec4 i_model0;\nlayout(location = 3) in vec4 i_model1;\nlayout(location = 4) in vec4 i_model2;\nlayout(location = 5) in vec4 i_normal0;\nlayout(location = 6) in vec4 i_normal1;\nlayout(location = 7) in vec4 i_normal2;\nlayout(location = 0) in vec3 position;\nlayout(location = 1) in vec3 normal;\n\nvoid flat3d_place(vec3 placed, vec3 bent)\n{\n    vec4 _22 = vec4(placed, 1.0);\n    vec3 world = vec3(dot(i_model0, _22), dot(i_model1, _22), dot(i_model2, _22));\n    vec3 _54 = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));\n    float _59 = dot(_54, _54);\n    vec3 _64;\n    if (_59 > 9.9999999600419720025001879548654e-13)\n    {\n        _64 = _54 * inversesqrt(_59);\n    }\n    else\n    {\n        _64 = vec3(0.0);\n    }\n    vec3 _87 = world;\n    vec3 _88 = _87 + (_64 * flat3d_vs_params[4].x);\n    world = _88;\n    gl_Position = mat4(flat3d_vs_params[0], flat3d_vs_params[1], flat3d_vs_params[2], flat3d_vs_params[3]) * vec4(_88, 1.0);\n}\n\nvoid main()\n{\n    vec3 param = position;\n    vec3 param_1 = normal;\n    flat3d_place(param, param_1);\n}\n\n", fragment: "#version 410\n\nuniform vec4 flat3d_fs_params[1];\nlayout(location = 0) out vec4 frag_color;\n\nvoid main()\n{\n    frag_color = flat3d_fs_params[0];\n}\n\n"}, glsl300es: {vertex: "#version 300 es\n\nuniform vec4 flat3d_vs_params[5];\nlayout(location = 2) in vec4 i_model0;\nlayout(location = 3) in vec4 i_model1;\nlayout(location = 4) in vec4 i_model2;\nlayout(location = 5) in vec4 i_normal0;\nlayout(location = 6) in vec4 i_normal1;\nlayout(location = 7) in vec4 i_normal2;\nlayout(location = 0) in vec3 position;\nlayout(location = 1) in vec3 normal;\n\nvoid flat3d_place(vec3 placed, vec3 bent)\n{\n    vec4 _22 = vec4(placed, 1.0);\n    vec3 world = vec3(dot(i_model0, _22), dot(i_model1, _22), dot(i_model2, _22));\n    vec3 _54 = vec3(dot(i_normal0.xyz, bent), dot(i_normal1.xyz, bent), dot(i_normal2.xyz, bent));\n    float _59 = dot(_54, _54);\n    vec3 _64;\n    if (_59 > 9.9999999600419720025001879548654e-13)\n    {\n        _64 = _54 * inversesqrt(_59);\n    }\n    else\n    {\n        _64 = vec3(0.0);\n    }\n    vec3 _87 = world;\n    vec3 _88 = _87 + (_64 * flat3d_vs_params[4].x);\n    world = _88;\n    gl_Position = mat4(flat3d_vs_params[0], flat3d_vs_params[1], flat3d_vs_params[2], flat3d_vs_params[3]) * vec4(_88, 1.0);\n}\n\nvoid main()\n{\n    vec3 param = position;\n    vec3 param_1 = normal;\n    flat3d_place(param, param_1);\n}\n\n", fragment: "#version 300 es\nprecision mediump float;\nprecision highp int;\n\nuniform highp vec4 flat3d_fs_params[1];\nlayout(location = 0) out highp vec4 frag_color;\n\nvoid main()\n{\n    frag_color = flat3d_fs_params[0];\n}\n\n"}, uniformBlocks: [{slot: 0, stage: "vertex", size: 80, glslName: "flat3d_vs_params", vec4Count: 5}, {slot: 1, stage: "fragment", size: 16, glslName: "flat3d_fs_params", vec4Count: 1}], textures: []};
+  #end
+ /** Its vertex buffers by index (0 the vertices, 1 the instance records, 2 a skin's joints), as a PipelineDesc takes them. */
+ public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>
+  return [{stride: 24, instanced: false, attributes: [{slot: 0, componentCount: 3, offset: 0}, {slot: 1, componentCount: 3, offset: 12}]}, {stride: 144, instanced: true, attributes: [{slot: 2, componentCount: 4, offset: 0}, {slot: 3, componentCount: 4, offset: 16}, {slot: 4, componentCount: 4, offset: 32}, {slot: 5, componentCount: 4, offset: 48}, {slot: 6, componentCount: 4, offset: 64}, {slot: 7, componentCount: 4, offset: 80}]}];
+}

@@ -5,7 +5,8 @@
      AudioDecoding, InputRouter and job pool among them; their result types are the contracts' and allowed), no generated program
      class, no shared decoder or policy. It implements a platform contract and nothing else.
   2. Engine code (src/helix/ outside adapters/ and profiles/) uses no platform API (js.html, js.Browser, js.Syntax, js.lib, sys., cpp.)
-     and no target conditional (#if js, cpp, sys, hl).
+     and no target conditional (#if js, cpp, sys, hl). The build macros (src/helix/macro/) run in the compiler, not on a target, and may
+     ask the machine building (helix.macro.Haxelib reads its architecture for hxcpp).
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
   4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
      one area. A call into an adapter's own extern bridge (its internal/*Bridge) is its own, as it reaches that adapter's C: two thin
@@ -108,7 +109,7 @@ def main():
             if GENERATED_HEADER.search(line):
                 violations.append(('header', path, number, line.strip()))
     for path in sorted(SRC.rglob('*.hx')):
-        if path.is_relative_to(ADAPTERS) or path.is_relative_to(SRC / 'profiles'):
+        if path.is_relative_to(ADAPTERS) or path.is_relative_to(SRC / 'profiles') or path.is_relative_to(SRC / 'macro'):
             continue
         for number, line in code_lines(path):
             if PLATFORM.search(line):

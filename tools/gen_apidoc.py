@@ -38,7 +38,7 @@ def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
-    args=['haxe','-cp','src','-cp','build/generated/shaders','-cp','build/generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
+    args=['haxe','-cp','src','-cp','generated/shaders','-cp','generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
     subprocess.run(args,cwd=ROOT,check=True)
 
@@ -166,14 +166,11 @@ def markdown(xmls):
     return out
 
 def main():
-    if not (ROOT/'build/generated/shaders/shader-contract.json').is_file():sys.exit('Generate the shaders first: python3 tools/example.py app-hello build')
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     check='--check' in sys.argv[1:]
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
     # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.
     if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
-    import bake_fonts
-    bake_fonts.generate()
     if OUT.exists() and not check:shutil.rmtree(OUT)
     browser,native=targets()
     describe('js',native);describe('cpp',browser)

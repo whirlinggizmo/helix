@@ -206,11 +206,13 @@ def manifest(path):
     return document['programs']
 
 
-def generate(manifest_path, output, working_dir):
+def generate(manifest_path, output, working_dir, hx_output=None):
     """Writes each program's <Name>Program.hx (its CPU packing; source(), the program in both dialects with its bindings, as
-    IGraphics.createShader takes it; buffers(), its vertex buffers' layout, as a PipelineDesc takes it) and shader-contract.json, from
-    output/<program>_reflection.yaml and the dialects' sources beside it."""
-    output = Path(output); working_dir = Path(working_dir)
+    IGraphics.createShader takes it; buffers(), its vertex buffers' layout, as a PipelineDesc takes it) into hx_output (output when not
+    given), and shader-contract.json into output, from output/<program>_reflection.yaml and the dialects' sources beside it. A
+    <Name>Program.hx in hx_output whose program the manifest no longer lists is removed."""
+    output = Path(output); working_dir = Path(working_dir); hx_output = Path(hx_output) if hx_output else output
+    hx_output.mkdir(parents=True, exist_ok=True)
     contracts = []
     for spec in manifest(manifest_path):
         contract, programs = load_contract(output / f'{spec["program"]}_reflection.yaml', spec)
@@ -255,12 +257,13 @@ def generate(manifest_path, output, working_dir):
             layouts.append(f'{{stride: {stride}, instanced: {str(index == 1).lower()}, attributes: [{attrs}]}}')
         hx += [' /** Its vertex buffers by index (0 the vertices, 1 the instance records, 2 a skin\'s joints), as a PipelineDesc takes them. */',
                ' public static function buffers():Array<helix.graphics.PipelineDesc.VertexBuffer>', f'  return [{", ".join(layouts)}];', '}']
-        (output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n', encoding='utf-8')
+        (hx_output / f'{type_name}.hx').write_text('\n'.join(hx) + '\n', encoding='utf-8')
         contracts.append(contract)
-    # What the generator wrote before: the GLSL ES class and the C headers (before the adapters built programs from data), and each
-    # program's class under its old name, <Name>Layout.hx, which a build would otherwise still find on its class path.
-    for stale in [output / 'GeneratedShader.hx', output / 'shaders.h', *output.glob('*.glsl.h'), *output.glob('*[0-9]DLayout.hx')]:
-        stale.unlink(missing_ok=True)
+    # A program taken out of the manifest leaves its class, which a build would still find on its class path.
+    wanted = {class_name(c['program']) + 'Program.hx' for c in contracts}
+    for stale in hx_output.glob('*Program.hx'):
+        if stale.name not in wanted:
+            stale.unlink()
     (output / 'shader-contract.json').write_text(json.dumps(contracts, indent=2) + '\n', encoding='utf-8')
     return contracts
 
