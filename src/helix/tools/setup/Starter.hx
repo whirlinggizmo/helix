@@ -7,24 +7,24 @@ import sys.FileSystem;
 import sys.io.File;
 
 /** `init`: the starter game (templates/starter: src/Main.hx and src/Game.hx, its builds in hxml/, assets/, .gitignore and a README with the
-	commands) written into a new or empty folder, each file's {name} the game's (its folder's name) and {title} its title. */
+	commands) written into a new or empty directory, each file's {name} the game's (its directory's name) and {title} its title. */
 class Starter {
-	/** The starter written into folder (made when missing) from the library at root; refuses a folder with anything in it. Returns the files
+	/** The starter written into directory (made when missing) from the library at root; refuses a directory with anything in it. Returns the files
 		written, relative to it. */
-	public static function write(root:String, folder:String):Array<String> {
-		if (FileSystem.exists(folder) && (!FileSystem.isDirectory(folder) || FileSystem.readDirectory(folder).length > 0))
-			throw new CommandError('init: $folder is not empty; a starter goes in a new or empty folder');
-		var name = Path.withoutDirectory(Files.resolve(Sys.getCwd(), folder));
+	public static function write(root:String, directory:String):Array<String> {
+		if (FileSystem.exists(directory) && (!FileSystem.isDirectory(directory) || FileSystem.readDirectory(directory).length > 0))
+			throw new CommandError('init: $directory is not empty; a starter goes in a new or empty directory');
+		var name = Path.withoutDirectory(Files.resolve(Sys.getCwd(), directory));
 		var template = Path.join([root, "templates", "starter"]);
 		var written = Files.listFiles(template);
 		for (relative in written) {
 			var text = File.getContent(Path.join([template, relative]));
-			Files.writeText(Path.join([folder, relative]), StringTools.replace(StringTools.replace(text, "{name}", name), "{title}", title(name)));
+			Files.writeText(Path.join([directory, relative]), StringTools.replace(StringTools.replace(text, "{name}", name), "{title}", title(name)));
 		}
 		return written;
 	}
 
-	/** The title a folder's name gives: its words (apart by -, _ or spaces) capitalized, "my-jam-game" My Jam Game; Game when it has none. */
+	/** The title a directory's name gives: its words (apart by -, _ or spaces) capitalized, "my-jam-game" My Jam Game; Game when it has none. */
 	public static function title(name:String):String {
 		var words = [
 			for (word in ~/[-_\s]+/g.split(name))

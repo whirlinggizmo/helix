@@ -1,7 +1,7 @@
 // One visit for tools/check_cache.py: opens url in a headless browser over a profile kept between visits (userDataDir, so IndexedDB and the
 // HTTP cache persist as a returning visitor's do), offline when asked (after the page itself is in hand), waits, and saves a screenshot;
 // prints the page's errors and the screenshot's light and dark pixels (near white, near black: which logos it drew, whatever their turn)
-// as JSON. Arguments: the browser, the URL, the profile's folder, the screenshot's path, "offline" or "online".
+// as JSON. Arguments: the browser, the URL, the profile's directory, the screenshot's path, "offline" or "online".
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
 const {PNG}=require(path.join(__dirname,'../build/tools/node_modules/pngjs'));

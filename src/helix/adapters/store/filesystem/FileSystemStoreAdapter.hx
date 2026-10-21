@@ -22,7 +22,7 @@ class FileSystemStoreAdapter implements IStore {
 		this.root = root;
 
 	/** Where a program's cache goes on this desktop, for company and product: under $XDG_CACHE_HOME (or ~/.cache) on Linux, ~/Library/Caches on
-		macOS, and %LOCALAPPDATA%\<company>\<product>\cache on Windows (that folder is the program's own, not only its cache). null when the
+		macOS, and %LOCALAPPDATA%\<company>\<product>\cache on Windows (that directory is the program's own, not only its cache). null when the
 		user's directories aren't known. */
 	public static function getCacheDirectory(company:String, product:String):Null<String> {
 		var system = Sys.systemName();

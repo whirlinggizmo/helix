@@ -5,7 +5,7 @@ import haxe.io.Path;
 import sys.FileSystem;
 import sys.io.File;
 
-/** File work the commands share: absolute paths, folders copied and removed whole, a path as a message shows it, and a folder zipped. */
+/** File work the commands share: absolute paths, directories copied and removed whole, a path as a message shows it, and a directory zipped. */
 class Files {
 	/** path made absolute against base (unless it already is), normalized, with forward slashes and no trailing one. */
 	public static function resolve(base:String, path:String):String {
@@ -13,47 +13,47 @@ class Files {
 		return Path.removeTrailingSlashes(Path.normalize(FileSystem.absolutePath(full)));
 	}
 
-	/** Whether path is a file (not a folder). */
+	/** Whether path is a file (not a directory). */
 	public static function isFile(path:String):Bool
 		return FileSystem.exists(path) && !FileSystem.isDirectory(path);
 
-	/** Whether path is a folder. */
-	public static function isFolder(path:String):Bool
+	/** Whether path is a directory. */
+	public static function isDirectory(path:String):Bool
 		return FileSystem.exists(path) && FileSystem.isDirectory(path);
 
-	/** The folder at path made, with its parents. */
-	public static function makeFolder(path:String):Void
+	/** The directory at path made, with its parents. */
+	public static function makeDirectory(path:String):Void
 		FileSystem.createDirectory(path);
 
-	/** text written to path as UTF-8 with the newlines it has (LF on every system), its folder made first. */
+	/** text written to path as UTF-8 with the newlines it has (LF on every system), its directory made first. */
 	public static function writeText(path:String, text:String):Void {
-		makeFolder(Path.directory(path));
+		makeDirectory(Path.directory(path));
 		File.saveContent(path, text);
 	}
 
-	/** The folder at path removed with everything in it; nothing when it isn't there. */
-	public static function removeFolder(path:String):Void {
-		if (!isFolder(path))
+	/** The directory at path removed with everything in it; nothing when it isn't there. */
+	public static function removeDirectory(path:String):Void {
+		if (!isDirectory(path))
 			return;
 		for (name in FileSystem.readDirectory(path)) {
 			var child = Path.join([path, name]);
-			if (isFolder(child))
-				removeFolder(child);
+			if (isDirectory(child))
+				removeDirectory(child);
 			else
 				FileSystem.deleteFile(child);
 		}
 		FileSystem.deleteDirectory(path);
 	}
 
-	/** The folder from copied to to, with everything in it; returns how many files. */
-	public static function copyFolder(from:String, to:String):Int {
-		makeFolder(to);
+	/** The directory from copied to to, with everything in it; returns how many files. */
+	public static function copyDirectory(from:String, to:String):Int {
+		makeDirectory(to);
 		var count = 0;
 		for (name in FileSystem.readDirectory(from)) {
 			var source = Path.join([from, name]),
 				target = Path.join([to, name]);
-			if (isFolder(source))
-				count += copyFolder(source, target);
+			if (isDirectory(source))
+				count += copyDirectory(source, target);
 			else {
 				File.copy(source, target);
 				count++;
@@ -62,25 +62,25 @@ class Files {
 		return count;
 	}
 
-	/** The bytes in the file at path, or in every file under the folder at path; 0 when nothing is there. */
+	/** The bytes in the file at path, or in every file under the directory at path; 0 when nothing is there. */
 	public static function size(path:String):Float {
 		if (isFile(path))
 			return FileSystem.stat(path).size;
 		var total = 0.0;
-		if (isFolder(path))
+		if (isDirectory(path))
 			for (name in FileSystem.readDirectory(path))
 				total += size(Path.join([path, name]));
 		return total;
 	}
 
-	/** Every file under folder, as paths relative to it with forward slashes, sorted. */
-	public static function listFiles(folder:String, prefix = ""):Array<String> {
+	/** Every file under directory, as paths relative to it with forward slashes, sorted. */
+	public static function listFiles(directory:String, prefix = ""):Array<String> {
 		var out = [];
-		var names = FileSystem.readDirectory(folder);
+		var names = FileSystem.readDirectory(directory);
 		names.sort(Reflect.compare);
 		for (name in names) {
-			var path = Path.join([folder, name]);
-			if (isFolder(path))
+			var path = Path.join([directory, name]);
+			if (isDirectory(path))
 				out = out.concat(listFiles(path, prefix + name + "/"));
 			else
 				out.push(prefix + name);
@@ -89,7 +89,7 @@ class Files {
 		return out;
 	}
 
-	/** path as the folder base sees it (relative, forward slashes) for a message; the path itself when it's elsewhere. */
+	/** path as the directory base sees it (relative, forward slashes) for a message; the path itself when it's elsewhere. */
 	public static function relative(path:String, base:String):String {
 		var full = resolve(base, path), root = resolve(base, ".");
 		if (full == root)
@@ -97,16 +97,16 @@ class Files {
 		return StringTools.startsWith(full, root + "/") ? full.substr(root.length + 1) : path;
 	}
 
-	/** Whether ancestor is folder or holds it (both absolute, as resolve gives them). */
-	public static function contains(ancestor:String, folder:String):Bool
-		return folder == ancestor || StringTools.startsWith(folder, ancestor == "/" ? "/" : ancestor + "/");
+	/** Whether ancestor is directory or holds it (both absolute, as resolve gives them). */
+	public static function contains(ancestor:String, directory:String):Bool
+		return directory == ancestor || StringTools.startsWith(directory, ancestor == "/" ? "/" : ancestor + "/");
 
-	/** The files of folder (not skip, when it's among them) written to the zip at target, deflated, each at its path within folder. */
-	public static function zipFolder(folder:String, target:String, ?skip:String):Void {
+	/** The files of directory (not skip, when it's among them) written to the zip at target, deflated, each at its path within directory. */
+	public static function zipDirectory(directory:String, target:String, ?skip:String):Void {
 		var entries = new List<haxe.zip.Entry>();
-		for (name in listFiles(folder)) {
-			var path = Path.join([folder, name]);
-			if (skip != null && resolve(folder, name) == skip)
+		for (name in listFiles(directory)) {
+			var path = Path.join([directory, name]);
+			if (skip != null && resolve(directory, name) == skip)
 				continue;
 			var data = File.getBytes(path);
 			var entry:haxe.zip.Entry = {
@@ -124,7 +124,7 @@ class Files {
 		// Written whole, so a failure leaves no partial zip.
 		var out = new haxe.io.BytesOutput();
 		new haxe.zip.Writer(out).write(entries);
-		makeFolder(Path.directory(target));
+		makeDirectory(Path.directory(target));
 		File.saveBytes(target, out.getBytes());
 	}
 

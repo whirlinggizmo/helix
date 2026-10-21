@@ -27,7 +27,7 @@ class HostTests {
 			true;
 		check(threw, "An identity that cleans to nothing throws");
 		var cache = helix.adapters.store.filesystem.FileSystemStoreAdapter.getCacheDirectory(identity.company, identity.product);
-		// Windows' is the program's own folder under %LOCALAPPDATA%, its cache inside it.
+		// Windows' is the program's own directory under %LOCALAPPDATA%, its cache inside it.
 		var ending = Sys.systemName() == "Windows" ? "HeliX/blocks/cache" : "HeliX/blocks";
 		check(cache != null && StringTools.endsWith(cache, ending), "A cache directory under the user's");
 		var clock = new FrameClock();

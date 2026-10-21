@@ -46,10 +46,10 @@ def pin():
 def check_headers():
     """vendor/sdl3 is the pinned release's include/SDL3 and license: one SHA-256 over each file's path and SHA-256, in path order."""
     headers = pin()['headers']
-    folder = ROOT / headers['directory']
+    directory = ROOT / headers['directory']
     digest = hashlib.sha256()
-    for file in sorted(p for p in folder.rglob('*') if p.is_file()):
-        digest.update(file.relative_to(folder).as_posix().encode() + b'\0' + hashlib.sha256(file.read_bytes()).hexdigest().encode() + b'\n')
+    for file in sorted(p for p in directory.rglob('*') if p.is_file()):
+        digest.update(file.relative_to(directory).as_posix().encode() + b'\0' + hashlib.sha256(file.read_bytes()).hexdigest().encode() + b'\n')
     if digest.hexdigest() != headers['treeSha256']:
         raise RuntimeError(f'vendor/sdl3 differs from its pin in dependencies.json: {digest.hexdigest()}')
 
@@ -138,20 +138,20 @@ def check_backends(found, prefix):
 
 
 def built_linux(entry, version):
-    """The pinned source release built once into build/deps/<folder>-static: a static library (SDL loads X11, Wayland and the audio
+    """The pinned source release built once into build/deps/<directory>-static: a static library (SDL loads X11, Wayland and the audio
     libraries at run time, so it links only libm and pthread besides)."""
-    prefix = DEPS / (entry['folder'] + '-static')
+    prefix = DEPS / (entry['directory'] + '-static')
     pc = prefix / 'lib' / 'pkgconfig' / 'sdl3.pc'
     if not pc.is_file():
         if shutil.which('cmake') is None:
             raise RuntimeError(f'sdl3: no system SDL3 of {entry["systemMinimum"]} or newer, and building the pinned one (once) needs CMake and '
                                'the development headers of what SDL uses:\n' + install_hint())
         archive = fetch(entry)
-        source = DEPS / entry['folder']
+        source = DEPS / entry['directory']
         shutil.rmtree(source, ignore_errors=True)
         with tarfile.open(archive) as tar:
             tar.extractall(DEPS, filter='data')
-        build = DEPS / (entry['folder'] + '-build')
+        build = DEPS / (entry['directory'] + '-build')
         shutil.rmtree(build, ignore_errors=True)
         print(f'sdl3: building SDL {version} into {prefix.relative_to(ROOT)} (once)', flush=True)
         configured = subprocess.run(['cmake', '-S', source, '-B', build, '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={prefix}',
@@ -171,9 +171,9 @@ def built_linux(entry, version):
 
 def windows(entry, version):
     """The pinned SDL3-devel VC release unpacked into build/deps: its import library to link, its DLL beside the program."""
-    folder = DEPS / entry['folder']
+    directory = DEPS / entry['directory']
     arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x64'
-    lib = folder / 'lib' / arch
+    lib = directory / 'lib' / arch
     if not (lib / 'SDL3.lib').is_file():
         with zipfile.ZipFile(fetch(entry)) as z:
             z.extractall(DEPS)
@@ -182,17 +182,17 @@ def windows(entry, version):
 
 def macos(entry, version):
     """The pinned disk image's SDL3.xcframework copied into build/deps: its macOS framework's library linked (found at run time through
-    the program's rpath, its own folder), and the framework beside the program."""
-    folder = DEPS / entry['folder']
-    xcframework = folder / 'SDL3.xcframework'
+    the program's rpath, its own directory), and the framework beside the program."""
+    directory = DEPS / entry['directory']
+    xcframework = directory / 'SDL3.xcframework'
     if not xcframework.is_dir():
         image = fetch(entry)
         mount = DEPS / 'sdl3-dmg'
         mount.mkdir(parents=True, exist_ok=True)
         subprocess.run(['hdiutil', 'attach', '-nobrowse', '-readonly', '-mountpoint', mount, image], check=True)
         try:
-            shutil.rmtree(folder, ignore_errors=True)
-            folder.mkdir(parents=True)
+            shutil.rmtree(directory, ignore_errors=True)
+            directory.mkdir(parents=True)
             shutil.copytree(mount / 'SDL3.xcframework', xcframework, symlinks=True)
         finally:
             subprocess.run(['hdiutil', 'detach', mount], check=True)

@@ -25,7 +25,7 @@ A snapshot: what a game jam would stall on, checked against what HeliX had in Oc
 | Debug | present | FPS overlay, `Batch3D` lines and grid, screenshots, autopilot probes and clicks | A debug text console on the page (libwgf's page had one: logs and errors a phone can't show otherwise) |
 | Hot reload | present | Code and assets in the browser, assets natively | |
 | Settings and flags | present | `config.json` with profiles, fetched at start; `Host.getOption` and the typed readers (milestone 10) | A settings screen saving over it (milestone 12) |
-| Packaging | partial | A web folder per example; a native binary beside its assets; manifests | One command that makes an itch.io-ready zip (web) and a named folder or archive (native), with the manifest written; an icon and a title |
+| Packaging | partial | A web directory per example; a native binary beside its assets; manifests | One command that makes an itch.io-ready zip (web) and a named directory or archive (native), with the manifest written; an icon and a title |
 
 ## 1b. The scene file and the editor
 

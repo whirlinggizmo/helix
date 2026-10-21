@@ -21,7 +21,7 @@ OUT=ROOT/'tests/fixtures'
 
 def generate(regenerate=False):
     """Writes tone.wav, tone.ogg, tone.opus and encoder.json when any is missing (or regenerate), stream.ogg when it's missing (or
-    regenerate), and returns their folder."""
+    regenerate), and returns their directory."""
     if regenerate or not (OUT/'stream.ogg').is_file():stream()
     if not regenerate and all((OUT/name).is_file() for name in ('tone.wav','tone.ogg','tone.opus','encoder.json')):return OUT
     encoder=shutil.which('ffmpeg')
@@ -51,8 +51,8 @@ def stream():
     for i in range(rate*10):
         data.append(round((math.sin(2*math.pi*440*i/rate)*.25+(noise.random()*2-1)*.15)*32767))
     if sys.byteorder!='little':data.byteswap()
-    with tempfile.TemporaryDirectory() as folder:
-        source=Path(folder)/'stream.wav'
+    with tempfile.TemporaryDirectory() as directory:
+        source=Path(directory)/'stream.wav'
         with wave.open(str(source),'wb') as wav:
             wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(data.tobytes())
         subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source),'-map_metadata','-1','-c:a','libvorbis','-q:a','5','-fflags','+bitexact',str(OUT/'stream.ogg')],check=True)

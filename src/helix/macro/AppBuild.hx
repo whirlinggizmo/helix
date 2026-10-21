@@ -37,7 +37,7 @@ class AppBuild {
 		}
 	}
 
-	/** Whether backend draws in a browser (its profile takes an asset URL and a manifest) rather than natively (an asset folder). */
+	/** Whether backend draws in a browser (its profile takes an asset URL and a manifest) rather than natively (an asset directory). */
 	public static function isBrowser(backend:String):Bool
 		return backend == "webgl2";
 

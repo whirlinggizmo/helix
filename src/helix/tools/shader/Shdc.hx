@@ -11,7 +11,7 @@ import helix.tools.shared.Files;
 class Shdc {
 	static final SOURCES = ["floooh/sokol-tools-bin", "whirlinggizmo/sokol-tools-bin"];
 	static final HASHES_PIN = "11d0cf678105d614d675e6d9bd2aaf3eeff12f8c";
-	// Each system's folder in sokol-tools-bin's bin/, and its program's SHA-256.
+	// Each system's directory in sokol-tools-bin's bin/, and its program's SHA-256.
 	static final SHA256 = [
 		"linux" => "ed35e89ef381d521a499096ed4ada85e4d135d8011e151cca6b7d893c43b21df",
 		"linux_arm64" => "446b4bcea0c81d3ae529bc0d93533ea661b017f5b9ec2b2293a4c85f5fdcb639",
@@ -27,26 +27,26 @@ class Shdc {
 		if (given != null)
 			return given;
 		var found = location(root);
-		var folder = system(), exe = Path.withoutDirectory(found);
+		var directory = system(), exe = Path.withoutDirectory(found);
 		var stamp = found + ".sha256";
-		var checked = SHA256[folder] + " " + (Files.isFile(found) ? sys.FileSystem.stat(found).size : -1);
+		var checked = SHA256[directory] + " " + (Files.isFile(found) ? sys.FileSystem.stat(found).size : -1);
 		if (Files.isFile(found) && Files.isFile(stamp) && sys.io.File.getContent(stamp) == checked)
 			return found;
 		// One already there without its record (put there by hand, or by an earlier tool) is checked once, not fetched again.
-		if (Files.isFile(found) && helix.tools.shared.Sha256.hex(sys.io.File.getBytes(found)) == SHA256[folder]) {
+		if (Files.isFile(found) && helix.tools.shared.Sha256.hex(sys.io.File.getBytes(found)) == SHA256[directory]) {
 			sys.io.File.saveContent(stamp, checked);
 			return found;
 		}
 		Downloads.say('shdc: sokol-shdc isn\'t in the cache yet: fetched once, into ${Path.directory(found)}');
 		var data = try Downloads.fetch([
 			for (source in SOURCES)
-				'https://raw.githubusercontent.com/$source/$HASHES_PIN/bin/$folder/$exe'
+				'https://raw.githubusercontent.com/$source/$HASHES_PIN/bin/$directory/$exe'
 		],
-			SHA256[folder],
+			SHA256[directory],
 			"shdc") catch (error:CommandError) throw new CommandError(error.message
-			+ '\nshdc: without a network, put sokol-tools-bin\'s bin/$folder/$exe (at $HASHES_PIN) at $found, or name a sokol-shdc in HELIX_SHDC');
+			+ '\nshdc: without a network, put sokol-tools-bin\'s bin/$directory/$exe (at $HASHES_PIN) at $found, or name a sokol-shdc in HELIX_SHDC');
 		Downloads.place(found, data, true);
-		sys.io.File.saveContent(stamp, SHA256[folder] + " " + data.length);
+		sys.io.File.saveContent(stamp, SHA256[directory] + " " + data.length);
 		return found;
 	}
 
@@ -60,7 +60,7 @@ class Shdc {
 		return Path.join([Downloads.cache(), 'sokol-shdc-${pin.substr(0, 12)}', exe]);
 	}
 
-	// This system's folder in sokol-tools-bin's bin/.
+	// This system's directory in sokol-tools-bin's bin/.
 	static function system():String {
 		return switch Sys.systemName() {
 			case "Linux": arm64() ? "linux_arm64" : "linux";

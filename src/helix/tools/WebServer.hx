@@ -48,7 +48,7 @@ class WebServer {
 	public static function serveDirectory(directory:String, port = 8095):Void {
 		var root = Files.resolve(Sys.getCwd(), directory);
 		try {
-			if (!Files.isFolder(root))
+			if (!Files.isDirectory(root))
 				throw new CommandError('serveDirectory: $directory is not a directory (build it first)');
 			var server = new Socket();
 			try {
@@ -83,7 +83,7 @@ class WebServer {
 			if (method != "GET" && method != "HEAD")
 				respond(client, 405, "text/plain", Bytes.ofString("GET or HEAD"), true);
 			else {
-				if (Files.isFolder(file))
+				if (Files.isDirectory(file))
 					file = Path.join([file, "index.html"]);
 				if (!StringTools.startsWith(file, root) || !Files.isFile(file))
 					respond(client, 404, "text/plain", Bytes.ofString('$path: not found'), method == "GET");

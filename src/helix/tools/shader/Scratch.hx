@@ -3,22 +3,22 @@ package helix.tools.shader;
 import haxe.io.Path;
 import helix.tools.shared.CommandError;
 
-/** The packer's scratch: a new folder under the system's temporary one, and programs run with their output read (line ends as LF, as a
+/** The packer's scratch: a new directory under the system's temporary one, and programs run with their output read (line ends as LF, as a
 	program on Windows writes CRLF to a text stream). */
 class Scratch {
-	/** A new, empty folder under the system's temporary folder, its name starting with prefix; the caller removes it. */
+	/** A new, empty directory under the system's temporary directory, its name starting with prefix; the caller removes it. */
 	public static function make(prefix:String):String {
 		var base = Sys.getEnv(Sys.systemName() == "Windows" ? "TEMP" : "TMPDIR");
 		if (base == null || base == "")
 			base = Sys.systemName() == "Windows" ? Sys.getEnv("TMP") : "/tmp";
 		while (true) {
-			var folder = Path.join([
+			var directory = Path.join([
 				base,
 				prefix + Std.string(Std.random(0x7fffffff)) + Std.string(Std.int(Sys.time() * 1000) % 1000000)
 			]);
-			if (!sys.FileSystem.exists(folder)) {
-				sys.FileSystem.createDirectory(folder);
-				return Path.normalize(sys.FileSystem.absolutePath(folder));
+			if (!sys.FileSystem.exists(directory)) {
+				sys.FileSystem.createDirectory(directory);
+				return Path.normalize(sys.FileSystem.absolutePath(directory));
 			}
 		}
 	}

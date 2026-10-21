@@ -53,8 +53,8 @@ class Build {
 				throw new CommandError('cleanOutput: ${Files.relative(target, game)} holds the game itself; build into a directory of its own (out/dist)');
 			for (name in FileSystem.readDirectory(target)) {
 				var path = Path.join([target, name]);
-				if (Files.isFolder(path))
-					Files.removeFolder(path);
+				if (Files.isDirectory(path))
+					Files.removeDirectory(path);
 				else if (Path.normalize(path) != script)
 					FileSystem.deleteFile(path);
 			}
@@ -91,11 +91,11 @@ class Build {
 		after(() -> {
 			var game = Files.resolve(Sys.getCwd(), "."),
 				assets = Path.join([game, "assets"]);
-			if (!Files.isFolder(assets))
+			if (!Files.isDirectory(assets))
 				return;
 			var target = Path.join([output(directory), "assets"]);
-			Files.removeFolder(target);
-			var count = Files.copyFolder(assets, target);
+			Files.removeDirectory(target);
+			var count = Files.copyDirectory(assets, target);
 			Sys.println('copyAssets: ${Files.relative(target, game)} ($count files)');
 		});
 	}
@@ -111,7 +111,7 @@ class Build {
 			var name = (main == null ? "Main" : main.name) + (Context.defined("debug") ? "-debug" : "") + (Sys.systemName() == "Windows" ? ".exe" : "");
 			if (!Files.isFile(Path.join([built, name])))
 				throw new CommandError('copyProgram: ${Path.join([built, name])} is not there');
-			Files.makeFolder(target);
+			Files.makeDirectory(target);
 			for (file in FileSystem.readDirectory(built))
 				if (file == name || ~/\.(dll|so|dylib)(\.[0-9.]+)?$/.match(file))
 					File.copy(Path.join([built, file]), Path.join([target, file]));
@@ -127,7 +127,7 @@ class Build {
 			var game = Files.resolve(Sys.getCwd(), "."),
 				source = output(directory),
 				archive = Files.resolve(game, path);
-			Files.zipFolder(source, archive, archive);
+			Files.zipDirectory(source, archive, archive);
 			Sys.println('zipOutput: ${Files.relative(archive, game)} (${Std.int(FileSystem.stat(archive).size / 1024)} KB), from ${Files.relative(source, game)}');
 		});
 	}

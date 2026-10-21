@@ -18,12 +18,12 @@ import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/api'
 DOCS=ROOT/'docs/api'
-# The browser's adapters, by their API's name (the folder under each contract), and its profiles, named for a backend among them (WebGL2Profile);
+# The browser's adapters, by their API's name (the directory under each contract), and its profiles, named for a backend among them (WebGL2Profile);
 # every other adapter and profile is native.
 BROWSER_APIS={'dom','webgl2','webaudio','fetchapi','indexeddb','canvas','download'}
 
 def targets():
-    """The packages each target's description leaves out: (the browser's, the native ones), read from the adapters' folders so a new adapter is placed by its API's name."""
+    """The packages each target's description leaves out: (the browser's, the native ones), read from the adapters' directories so a new adapter is placed by its API's name."""
     browser=[];native=[]
     for contract in sorted((ROOT/'src/helix/adapters').iterdir()):
         if not contract.is_dir():continue

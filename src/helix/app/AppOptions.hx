@@ -10,14 +10,14 @@ class AppOptions {
 	public function new() {}
 
 	/** The program's own name: with company, its identity (helix.host.Identity), which names what HeliX keeps for it (its cache
-		directory natively, its cache database in the browser, its screenshots' folder). One safe file name; cleaned as Identity cleans it. */
+		directory natively, its cache database in the browser, its screenshots' directory). One safe file name; cleaned as Identity cleans it. */
 	public var product:String = "Game";
 
 	/** The company, the other half of the identity. */
 	public var company:String = "DefaultCompany";
 
 	/** Where the assets are: in the browser the URL the asset paths are fetched under ("assets/", beside the page, by default), natively
-		a folder relative to the program's ("assets", beside it, by default). Null for the platform's default. */
+		a directory relative to the program's ("assets", beside it, by default). Null for the platform's default. */
 	public var assets:Null<String> = null;
 
 	/** A manifest among the assets (tools/gen_manifest.py; "manifest.json" for the examples), read in the browser so a returning page

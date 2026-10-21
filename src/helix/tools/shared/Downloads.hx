@@ -20,11 +20,11 @@ class Downloads {
 		return Path.normalize(Path.join([base, "helix", "tools"]));
 	}
 
-	/** The user's home folder. */
+	/** The user's home directory. */
 	public static function home():String {
 		var home = Sys.getEnv(Sys.systemName() == "Windows" ? "USERPROFILE" : "HOME");
 		if (home == null || home == "")
-			throw new CommandError("helix: no home folder (HOME, or USERPROFILE on Windows) to keep the tools' cache in");
+			throw new CommandError("helix: no home directory (HOME, or USERPROFILE on Windows) to keep the tools' cache in");
 		return home;
 	}
 
@@ -142,7 +142,7 @@ class Downloads {
 
 	/** data written to path whole: into a .part file first, renamed into place (made executable with executable, outside Windows). */
 	public static function place(path:String, data:Bytes, executable = false):Void {
-		Files.makeFolder(Path.directory(path));
+		Files.makeDirectory(Path.directory(path));
 		var partial = path + ".part";
 		File.saveBytes(partial, data);
 		if (executable && Sys.systemName() != "Windows")
@@ -152,14 +152,14 @@ class Downloads {
 		FileSystem.rename(partial, path);
 	}
 
-	/** The zip archive's files written under folder, at their paths in it; only those keep returns true for, when given. */
-	public static function unzip(archive:Bytes, folder:String, ?keep:String->Bool):Void {
+	/** The zip archive's files written under directory, at their paths in it; only those keep returns true for, when given. */
+	public static function unzip(archive:Bytes, directory:String, ?keep:String->Bool):Void {
 		for (entry in haxe.zip.Reader.readZip(new haxe.io.BytesInput(archive))) {
 			if (StringTools.endsWith(entry.fileName, "/") || (keep != null && !keep(entry.fileName)))
 				continue;
 			safe(entry.fileName);
-			var target = Path.join([folder, entry.fileName]);
-			Files.makeFolder(Path.directory(target));
+			var target = Path.join([directory, entry.fileName]);
+			Files.makeDirectory(Path.directory(target));
 			File.saveBytes(target, haxe.zip.Reader.unzip(entry));
 		}
 	}
@@ -234,9 +234,9 @@ class Downloads {
 		return bytes.getString(at, end - at);
 	}
 
-	// Refuses an archive path that would land outside its folder.
+	// Refuses an archive path that would land outside its directory.
 	static function safe(name:String):Void {
 		if (Path.isAbsolute(name) || name.split("/").indexOf("..") >= 0 || name.indexOf("\\") >= 0)
-			throw new CommandError('helix: an archive names $name, outside its folder');
+			throw new CommandError('helix: an archive names $name, outside its directory');
 	}
 }

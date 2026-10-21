@@ -52,12 +52,12 @@ class GpuShaders {
 		var program = glslangLocation(root);
 		if (Files.isFile(program))
 			return program;
-		var folder = Path.directory(Path.directory(program));
+		var directory = Path.directory(Path.directory(program));
 		var release:Dynamic = Reflect.field(pin(root).glslang, system());
-		Downloads.say('shader: glslang isn\'t in the cache yet: fetched once, into $folder');
+		Downloads.say('shader: glslang isn\'t in the cache yet: fetched once, into $directory');
 		var archive = Downloads.fetch([release.url], release.sha256, "shader");
-		Files.removeFolder(folder);
-		Downloads.unzip(archive, folder);
+		Files.removeDirectory(directory);
+		Downloads.unzip(archive, directory);
 		if (Sys.systemName() != "Windows")
 			Sys.command("chmod", ["755", program]);
 		return program;
@@ -82,19 +82,19 @@ class GpuShaders {
 		var program = spirvCrossLocation(root);
 		if (Files.isFile(program))
 			return program;
-		var folder = Path.directory(program);
+		var directory = Path.directory(program);
 		var hxcpp = try Scratch.run("haxelib", ["path", "hxcpp"]).code == 0 catch (_) false;
 		if (!hxcpp)
 			throw new CommandError("shader: SPIRV-Cross publishes no programs, so it's built from its source once, by hxcpp, which isn't installed:"
 				+ " haxelib install hxcpp (and a C++ compiler: MSVC on Windows, clang or gcc elsewhere), or name a spirv-cross in HELIX_SPIRV_CROSS");
 		var archive = Downloads.fetch([entry.url], entry.sha256, "shader");
 		var source = Path.join([Downloads.cache(), "spirv-cross-source"]);
-		Files.removeFolder(source);
-		// Its top folder's sources and license alone: its tests' names pass Windows' 260-character paths.
+		Files.removeDirectory(source);
+		// Its top directory's sources and license alone: its tests' names pass Windows' 260-character paths.
 		var names = [];
 		for (file in Downloads.untarGz(archive, name -> name.split("/").length == 2)) {
 			var name = file.name.split("/")[1];
-			Files.makeFolder(source);
+			Files.makeDirectory(source);
 			File.saveBytes(Path.join([source, name]), file.data);
 			names.push(name);
 		}
@@ -104,7 +104,7 @@ class GpuShaders {
 				'  <file name="$name"/>\n'
 		].join("");
 		var sourcePath = Path.normalize(FileSystem.absolutePath(source));
-		var folderPath = Path.normalize(FileSystem.absolutePath(folder));
+		var directoryPath = Path.normalize(FileSystem.absolutePath(directory));
 		File.saveContent(Path.join([source, "Build.xml"]), '<xml>
  <include name="$${HXCPP}/build-tool/BuildCommon.xml"/>
  <files id="spirv-cross" dir="$sourcePath">
@@ -113,13 +113,13 @@ class GpuShaders {
   <compilerflag value="-O2"/>
 $files </files>
  <target id="default" tool="linker" toolid="exe" output="spirv-cross">
-  <outdir name="$folderPath"/>
+  <outdir name="$directoryPath"/>
   <files id="spirv-cross"/>
  </target>
 </xml>
 ');
-		Downloads.say('shader: building SPIRV-Cross ${entry.version} into $folderPath (once; hxcpp and the system\'s C++ compiler)');
-		Files.makeFolder(folder);
+		Downloads.say('shader: building SPIRV-Cross ${entry.version} into $directoryPath (once; hxcpp and the system\'s C++ compiler)');
+		Files.makeDirectory(directory);
 		var cwd = Sys.getCwd();
 		Sys.setCwd(source);
 		var arch = Shdc.arm64() ? "-DHXCPP_ARM64" : "-DHXCPP_M64";
@@ -129,7 +129,7 @@ $files </files>
 		Sys.setCwd(cwd);
 		if (code != 0)
 			throw new CommandError('shader: building SPIRV-Cross failed (haxelib run hxcpp, exit $code); SDL_GPU\'s dialects need hxcpp installed');
-		Files.removeFolder(source);
+		Files.removeDirectory(source);
 		if (!Files.isFile(program))
 			throw new CommandError('shader: SPIRV-Cross built, but $program is missing');
 		return program;
@@ -204,14 +204,14 @@ $files </files>
 		// SPIRV-Cross first: without hxcpp it can't be had, and glslang's download would be for nothing.
 		var cross = spirvCross(root), compiler = glslang(root);
 		var spirv = [], msl = [], hlsl = [];
-		var folder = Scratch.make("helix-gpu-");
+		var directory = Scratch.make("helix-gpu-");
 		try {
 			for (stage in [
 				{name: "vertex", source: vertex, suffix: "vert"},
 				{name: "fragment", source: fragment, suffix: "frag"}
 			]) {
-				var glsl = Path.join([folder, '${stage.name}.${stage.suffix}']);
-				var binary = Path.join([folder, '${stage.name}.spv']);
+				var glsl = Path.join([directory, '${stage.name}.${stage.suffix}']);
+				var binary = Path.join([directory, '${stage.name}.spv']);
 				File.saveContent(glsl, vulkanGlsl(stage.source, stage.name, blocks, textures));
 				var run = Scratch.run(compiler, ["-V", "--target-env", "vulkan1.0", "-o", binary, glsl]);
 				if (run.code != 0)
@@ -221,10 +221,10 @@ $files </files>
 				hlsl.push({key: stage.name, value: JString(Scratch.output(cross, [binary, "--hlsl", "--shader-model", "51"]))});
 			}
 		} catch (error:haxe.Exception) {
-			Files.removeFolder(folder);
+			Files.removeDirectory(directory);
 			throw error;
 		}
-		Files.removeFolder(folder);
+		Files.removeDirectory(directory);
 		return JObject([
 			{key: "spirv", value: JObject(spirv)},
 			{key: "msl", value: JObject(msl)},

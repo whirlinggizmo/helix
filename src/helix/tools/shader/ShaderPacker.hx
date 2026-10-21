@@ -88,7 +88,7 @@ class ShaderPacker {
 	];
 	static final COMMENTS = ~/\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
 
-	/** The library's folder (dependencies.json, src/, src/helix/tools/shader/kinds). */
+	/** The library's directory (dependencies.json, src/, src/helix/tools/shader/kinds). */
 	public final root:String;
 
 	var shdc:Null<String>;
@@ -403,10 +403,10 @@ class ShaderPacker {
 					});
 				}
 			}
-			Files.removeFolder(scratch);
+			Files.removeDirectory(scratch);
 			return found;
 		} catch (error:haxe.Exception) {
-			Files.removeFolder(scratch);
+			Files.removeDirectory(scratch);
 			throw error;
 		}
 	}
@@ -472,13 +472,13 @@ class ShaderPacker {
 		tool, and for SDL_GPU's dialects the pins of their translators): a packed library shader older than it is stale. In milliseconds. */
 	public function toolStamp(sdlGpu:Bool):Float {
 		var newest = 0.0;
-		var folders = [
+		var directories = [
 			Path.join([root, "src", "helix", "tools", "shader"]),
 			Path.join([root, "src", "helix", "tools", "shader", "kinds"])
 		];
-		for (folder in folders)
-			for (name in FileSystem.readDirectory(folder)) {
-				var path = Path.join([folder, name]);
+		for (directory in directories)
+			for (name in FileSystem.readDirectory(directory)) {
+				var path = Path.join([directory, name]);
 				if (!FileSystem.isDirectory(path))
 					newest = Math.max(newest, FileSystem.stat(path).mtime.getTime());
 			}
@@ -502,27 +502,27 @@ class ShaderPacker {
 	public function packLibrary(out:String, ?gpuOut:String, ?sources:String):Array<String> {
 		if (sources == null)
 			sources = srcPath("src/helix/shaders");
-		Files.makeFolder(out);
+		Files.makeDirectory(out);
 		var stems = [
 			for (name in FileSystem.readDirectory(sources))
 				if (StringTools.endsWith(name, ".glsl")) name.substr(0, name.length - 5)
 		];
 		stems.sort(Reflect.compare);
 		var made = [];
-		var outputs = [{folder: out, suffix: "Packed", sdlGpu: false}];
+		var outputs = [{directory: out, suffix: "Packed", sdlGpu: false}];
 		if (gpuOut != null)
-			outputs.push({folder: gpuOut, suffix: "PackedSdlGpu", sdlGpu: true});
+			outputs.push({directory: gpuOut, suffix: "PackedSdlGpu", sdlGpu: true});
 		for (output in outputs) {
-			Files.makeFolder(output.folder);
+			Files.makeDirectory(output.directory);
 			var wanted = [for (stem in stems) className(stem) + output.suffix];
-			for (name in FileSystem.readDirectory(output.folder))
+			for (name in FileSystem.readDirectory(output.directory))
 				if (StringTools.endsWith(name, output.suffix + ".hx") && wanted.indexOf(name.substr(0, name.length - 3)) < 0)
-					FileSystem.deleteFile(Path.join([output.folder, name]));
+					FileSystem.deleteFile(Path.join([output.directory, name]));
 			var stamp = toolStamp(output.sdlGpu);
 			for (stem in stems) {
 				var source = Path.join([sources, stem + ".glsl"]),
 					name = className(stem);
-				var target = Path.join([output.folder, name + output.suffix + ".hx"]);
+				var target = Path.join([output.directory, name + output.suffix + ".hx"]);
 				if (Files.isFile(target)
 					&& FileSystem.stat(target).mtime.getTime() >= Math.max(FileSystem.stat(source).mtime.getTime(), stamp))
 					continue;
@@ -587,27 +587,27 @@ class ShaderPacker {
 		source (and carries SDL_GPU's dialects when they're asked for) isn't packed again, and finding none isn't a refusal. Returns the
 		outputs written. */
 	public function packShaders(game:String, files:Array<String>, out:String, sdlGpu:Bool, watch:Bool, current = false):Array<String> {
-		var gameFolder = Files.resolve(Sys.getCwd(), game);
-		var target = Files.resolve(gameFolder, out);
-		var named = [for (f in files) Files.resolve(gameFolder, f)];
+		var gameDirectory = Files.resolve(Sys.getCwd(), game);
+		var target = Files.resolve(gameDirectory, out);
+		var named = [for (f in files) Files.resolve(gameDirectory, f)];
 		for (source in named)
 			if (!Files.isFile(source))
-				throw new CommandError('shader: ${Files.relative(source, gameFolder)} is not a file');
+				throw new CommandError('shader: ${Files.relative(source, gameDirectory)} is not a file');
 		function sources():Array<String> {
 			if (named.length > 0)
 				return named;
-			var folder = Path.join([gameFolder, "shaders"]);
-			if (!Files.isFolder(folder))
+			var directory = Path.join([gameDirectory, "shaders"]);
+			if (!Files.isDirectory(directory))
 				return [];
 			var found = [
-				for (name in FileSystem.readDirectory(folder))
-					if (StringTools.endsWith(name, ".glsl") && Files.isFile(Path.join([folder, name]))) Path.join([folder, name])
+				for (name in FileSystem.readDirectory(directory))
+					if (StringTools.endsWith(name, ".glsl") && Files.isFile(Path.join([directory, name]))) Path.join([directory, name])
 			];
 			found.sort(Reflect.compare);
 			return found;
 		}
 		if (!watch && !current && sources().length == 0)
-			throw new CommandError('shader: nothing to pack: no shaders/*.glsl in $gameFolder and no file named');
+			throw new CommandError('shader: nothing to pack: no shaders/*.glsl in $gameDirectory and no file named');
 		var written = [];
 		var packed = new Map<String, Float>();
 		function packChanged():Void {
@@ -628,15 +628,15 @@ class ShaderPacker {
 					Sys.println('shader: ${Path.withoutDirectory(source)} failed, kept as it was: ${error.message}');
 					continue;
 				}
-				Sys.println('shader: ${Files.relative(source, gameFolder)} -> ${Files.relative(output, gameFolder)}');
+				Sys.println('shader: ${Files.relative(source, gameDirectory)} -> ${Files.relative(output, gameDirectory)}');
 				written.push(output);
 				changed = true;
 			}
 			if (changed) {
-				var manifests = manifestRoot(target, gameFolder);
+				var manifests = manifestRoot(target, gameDirectory);
 				if (manifests != null) {
 					AssetManifests.rewrite(manifests, target);
-					Sys.println('shader: manifests rewritten under ${Files.relative(manifests, gameFolder)}');
+					Sys.println('shader: manifests rewritten under ${Files.relative(manifests, gameDirectory)}');
 				}
 			}
 		}
@@ -658,17 +658,17 @@ class ShaderPacker {
 		return !sdlGpu || sys.io.File.getContent(output).indexOf('"sdlGpu"') >= 0;
 	}
 
-	/** The root of the manifests that out is under: the highest folder from out up to game holding a manifest.json; null when there is none,
+	/** The root of the manifests that out is under: the highest directory from out up to game holding a manifest.json; null when there is none,
 		as a game without a manifest needs nothing. */
 	public static function manifestRoot(out:String, game:String):Null<String> {
-		var folder = out, found:Null<String> = null;
+		var directory = out, found:Null<String> = null;
 		while (true) {
-			if (Files.isFile(Path.join([folder, "manifest.json"])))
-				found = folder;
-			var parent = Path.directory(folder);
-			if (folder == game || parent == folder || parent == "")
+			if (Files.isFile(Path.join([directory, "manifest.json"])))
+				found = directory;
+			var parent = Path.directory(directory);
+			if (directory == game || parent == directory || parent == "")
 				return found;
-			folder = parent;
+			directory = parent;
 		}
 	}
 }

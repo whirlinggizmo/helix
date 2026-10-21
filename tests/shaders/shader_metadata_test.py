@@ -35,17 +35,17 @@ class ShaderMetadataTests(unittest.TestCase):
         cls.temp.cleanup()
 
     @classmethod
-    def compile(cls, source, folder, program):
+    def compile(cls, source, directory, program):
         # The framework's shared pieces (@include lit3d_shared.glsl, skinning.glsl) resolve beside the input.
         for shared in SHADERS.glob('*.glsl'):
-            if not (folder / shared.name).exists():
-                (folder / shared.name).write_text(shared.read_text(encoding='utf-8'))
-        path = folder / f'{program}-input.glsl'; path.write_text(source, encoding='utf-8')
-        subprocess.run([SHDC, '-i', str(path), '-o', str(folder / program), '-l',
+            if not (directory / shared.name).exists():
+                (directory / shared.name).write_text(shared.read_text(encoding='utf-8'))
+        path = directory / f'{program}-input.glsl'; path.write_text(source, encoding='utf-8')
+        subprocess.run([SHDC, '-i', str(path), '-o', str(directory / program), '-l',
                         'glsl410:glsl300es', '-f', 'bare_yaml', '--no-log-cmdline'], check=True, cwd=ROOT)
 
-    def manifest_of(self, folder, specs):
-        path = folder / 'shaders.json'; path.write_text(json.dumps({'programs': specs}), encoding='utf-8')
+    def manifest_of(self, directory, specs):
+        path = directory / 'shaders.json'; path.write_text(json.dumps({'programs': specs}), encoding='utf-8')
         return path
 
     def mutated(self, change, source=None):
@@ -95,22 +95,22 @@ class ShaderMetadataTests(unittest.TestCase):
         source = source.replace('binding=0) uniform texture', 'binding=4) uniform texture')
         source = source.replace('binding=0) uniform sampler', 'binding=2) uniform sampler')
         source = source.replace('position', 'vertexPosition').replace('atlasSampler', 'pixelSampler').replace('atlas', 'pixels')
-        folder = self.directory / 'relocated'; folder.mkdir()
-        self.compile(source, folder, 'sprite2d')
+        directory = self.directory / 'relocated'; directory.mkdir()
+        self.compile(source, directory, 'sprite2d')
         spec = copy.deepcopy(self.specs['sprite2d']); spec['attributes'][0]['name'] = 'vertexPosition'; spec['textures'][0]['name'] = 'pixels'
-        contract, = generate(self.manifest_of(folder, [spec]), folder, ROOT)
+        contract, = generate(self.manifest_of(directory, [spec]), directory, ROOT)
         self.assertEqual([a['slot'] for a in contract['attributes']], [2, 0, 1])
         texture, = contract['textures']
         self.assertEqual((texture['view'], texture['sampler'], texture['uniform']), (4, 2, 'pixels_pixelSampler'))
-        program = (folder / 'Sprite2DProgram.hx').read_text(encoding='utf-8')
+        program = (directory / 'Sprite2DProgram.hx').read_text(encoding='utf-8')
         self.assertIn('{slot: 2, componentCount: 2, offset: 0}', program)
         self.assertIn('"vertexPosition"', program)
 
     def test_attribute_slot_gap_rejected(self):
         source = (SHADERS / 'sprite2d.glsl').read_text(encoding='utf-8').replace('location=2', 'location=5')
-        folder = self.directory / 'gap'; folder.mkdir()
-        self.compile(source, folder, 'sprite2d')
-        with self.assertRaisesRegex(MetadataError, 'without gaps'): generate(self.manifest_of(folder, [self.specs['sprite2d']]), folder, ROOT)
+        directory = self.directory / 'gap'; directory.mkdir()
+        self.compile(source, directory, 'sprite2d')
+        with self.assertRaisesRegex(MetadataError, 'without gaps'): generate(self.manifest_of(directory, [self.specs['sprite2d']]), directory, ROOT)
 
     def test_duplicate_yaml_key_rejected(self):
         path = self.directory / 'duplicate.yaml'; path.write_text('shaders: []\nshaders: []\n', encoding='utf-8')
@@ -148,11 +148,11 @@ class ShaderMetadataTests(unittest.TestCase):
         with self.assertRaises(MetadataError): load_contract(path, self.specs['sprite2d'])
 
     def test_source_outside_output_rejected(self):
-        folder = self.directory / 'outside'; folder.mkdir()
+        directory = self.directory / 'outside'; directory.mkdir()
         document = yaml.safe_load(self.sprite.read_text(encoding='utf-8'))
         document['shaders'][1]['programs'][0]['vertex_func']['path'] = str(SHADERS / 'shaders.json')
-        (folder / 'sprite2d_reflection.yaml').write_text(yaml.safe_dump(document), encoding='utf-8')
-        with self.assertRaises(MetadataError): generate(self.manifest_of(folder, [self.specs['sprite2d']]), folder, ROOT)
+        (directory / 'sprite2d_reflection.yaml').write_text(yaml.safe_dump(document), encoding='utf-8')
+        with self.assertRaises(MetadataError): generate(self.manifest_of(directory, [self.specs['sprite2d']]), directory, ROOT)
 
 
 if __name__ == '__main__':

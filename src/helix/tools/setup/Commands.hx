@@ -2,7 +2,7 @@ package helix.tools.setup;
 
 import helix.tools.shared.CommandError;
 
-/** `haxelib run helix <command>`'s commands, read from the command line and run on the game in the current folder; Run.hx calls it. A
+/** `haxelib run helix <command>`'s commands, read from the command line and run on the game in the current directory; Run.hx calls it. A
 	refusal (CommandError) is said on the standard error and exits with 1; a command line it can't read, with 2. */
 class Commands {
 	/** What `--help` says. */
@@ -11,7 +11,7 @@ class Commands {
 What a game on -lib helix does before it has an hxml, or outside one. Its builds are hxml files (the starter's hxml/), whose build steps are
 macros in helix.tools: Build's steps (shaders packed, the page, assets, the zip), Watchers, WebServer (BUILDING.md).
 
-  init FOLDER                 a starter game in FOLDER (empty or not yet there): src/Main.hx and src/Game.hx (a window title, a rectangle
+  init DIRECTORY                 a starter game in DIRECTORY (empty or not yet there): src/Main.hx and src/Game.hx (a window title, a rectangle
                               and a greeting), hxml/ (common.hxml; build.web, build.native and build.dist; watch.hotreload, watch.shader
                               and serve.dist), assets/, favicon.svg (the page's icon, to replace), .gitignore and a README
   setup [--sdl-gpu]           the tools packing shaders needs, made ready ahead of its first use (before going offline, or for a CI's
@@ -21,7 +21,7 @@ macros in helix.tools: Build's steps (shaders packed, the page, assets, the zip)
 Packing shaders fetches sokol-shdc into the user's cache the first time, and for SDL_GPU glslang and SPIRV-Cross too; HELIX_SHDC,
 HELIX_GLSLANG and HELIX_SPIRV_CROSS name programs of your own instead.";
 
-	/** Runs the command args name for the game in the current folder, the library being at root; returns the exit code. */
+	/** Runs the command args name for the game in the current directory, the library being at root; returns the exit code. */
 	public static function run(args:Array<String>, root:String):Int {
 		if (args.length == 0)
 			return usage("a command is needed: init or setup");
@@ -35,11 +35,11 @@ HELIX_GLSLANG and HELIX_SPIRV_CROSS name programs of your own instead.";
 				case "init":
 					var options = new Options(rest, []);
 					if (options.help)
-						return help("init FOLDER: a starter game in a new or empty folder");
+						return help("init DIRECTORY: a starter game in a new or empty directory");
 					if (options.positional.length != 1)
-						return usage("init: name one folder");
-					var folder = options.positional[0];
-					Sys.println('init: $folder: ' + Starter.write(root, folder).join(", "));
+						return usage("init: name one directory");
+					var directory = options.positional[0];
+					Sys.println('init: $directory: ' + Starter.write(root, directory).join(", "));
 				case "setup":
 					var options = new Options(rest, ["--sdl-gpu"]);
 					if (options.help)

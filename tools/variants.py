@@ -1,4 +1,4 @@
-"""A build's name and its folders (docs/CONVENTIONS.md, Build).
+"""A build's name and its directories (docs/CONVENTIONS.md, Build).
 
 A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`:
 
@@ -10,7 +10,7 @@ A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`:
   does); no sanitizer exists yet.
 
 What a build makes goes to out/<platform>/<config>-<backend>[-<option>...]/: natively bin/<example>/ (the program, named for its example,
-and what it loads beside it) with bin/assets beside the examples' folders, in the browser site/<example>/ with site/assets, so an example
+and what it loads beside it) with bin/assets beside the examples' directories, in the browser site/<example>/ with site/assets, so an example
 loads ../assets either way and bin/ or site/ is what ships. Its scratch (the HXML, hxcpp's generated C++ and objects, the record of whose
 assets are whose) is in build/<name>/. Deleting out/ is a clean."""
 import os
@@ -38,7 +38,7 @@ def machine():
 
 
 class Build:
-    """One build: its platform, config, backend and options, its name and folders."""
+    """One build: its platform, config, backend and options, its name and directories."""
 
     def __init__(self, platform, config, backend, options=()):
         self.platform, self.config, self.backend, self.options = platform, config, backend, tuple(options)
@@ -55,7 +55,7 @@ class Build:
 
     @property
     def variant(self):
-        """The name without its platform: `<config>-<backend>[-<option>...]`, its folder under out/<platform>/."""
+        """The name without its platform: `<config>-<backend>[-<option>...]`, its directory under out/<platform>/."""
         return '-'.join((self.config, self.backend) + self.options)
 
     @property
@@ -70,7 +70,7 @@ class Build:
 
     @property
     def programs(self):
-        """The folder of its examples' folders, beside their shared assets: bin/ natively, site/ in the browser."""
+        """The directory of its examples' directories, beside their shared assets: bin/ natively, site/ in the browser."""
         return self.out / ('site' if self.web else 'bin')
 
     @property

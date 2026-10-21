@@ -1,7 +1,7 @@
 import helix.app.AppOptions;
 
 /** The examples' entry point, one for every backend: the example's App (examples/<name>/App.hx) run by helix.App under the identity
-	"HeliX" / the example's name (-D example), on the assets the examples share beside their folders (../assets; with the manifests
+	"HeliX" / the example's name (-D example), on the assets the examples share beside their directories (../assets; with the manifests
 	tools/example.py writes in the browser, so a returning page re-fetches only what changed), the development extras on in every build
 	(F9 screenshots; the page told the program's state, for the tools capturing the site's pages). The backend is the build's
 	(-D helix-backend). */

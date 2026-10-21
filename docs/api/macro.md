@@ -17,7 +17,7 @@ static final WRITTEN(default, null):Array<String>
 
 - `BACKENDS`: The backends a build may name with -D helix-backend=, each the name of a build's backend (docs/CONVENTIONS.md): the browser's webgl2, and natively sokol-gl, sdl3-gl and sdl3-gpu.
 - `profileOf`: The profile class (helix.profiles) that runs backend, or null for a name not in BACKENDS.
-- `isBrowser`: Whether backend draws in a browser (its profile takes an asset URL and a manifest) rather than natively (an asset folder).
+- `isBrowser`: Whether backend draws in a browser (its profile takes an asset URL and a manifest) rather than natively (an asset directory).
 - `WRITTEN`: The fields the macro writes, which a subclass can't declare itself.
 
 ## Haxelib

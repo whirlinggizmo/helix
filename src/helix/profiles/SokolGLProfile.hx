@@ -18,11 +18,11 @@ import helix.host.Runner;
 	sokol_audio with libsndfile, evdev gamepads on Linux and XInput on Windows, haxe.Http and files, stb_image. */
 class SokolGLProfile {
 	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
-		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
+		"manifest.json"), else from assetDirectory, a directory relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
-	public static function run(identity:helix.host.Identity, assetFolder:String, app:IApp, ?options:helix.host.WindowOptions):Void {
+	public static function run(identity:helix.host.Identity, assetDirectory:String, app:IApp, ?options:helix.host.WindowOptions):Void {
 		var host = new SokolHostAdapter(options != null ? options.msaaSamples : new helix.host.WindowOptions().msaaSamples);
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
@@ -43,7 +43,7 @@ class SokolGLProfile {
 				images: new StbImageDecoderAdapter(),
 				http: new HaxeHttpAdapter(),
 				storage: new FileSystemStoreAdapter(cache),
-				packaged: new FileSystemStoreAdapter(haxe.io.Path.normalize(haxe.io.Path.join([root, assetFolder]))),
+				packaged: new FileSystemStoreAdapter(haxe.io.Path.normalize(haxe.io.Path.join([root, assetDirectory]))),
 				base: Sys.getEnv("HELIX_ASSET_HOST"),
 				manifest: Sys.getEnv("HELIX_ASSET_MANIFEST"),
 				harness: new StdioTestHarnessAdapter(),

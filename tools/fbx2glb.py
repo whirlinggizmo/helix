@@ -1,5 +1,5 @@
 """FBX models as GLB files, converted by Blender run headless: each FBX imported into an empty scene (Blender's own defaults, no user
-preferences or add-ons) and exported as a binary glTF of the same name in the destination folder, with the glTF exporter's defaults
+preferences or add-ons) and exported as a binary glTF of the same name in the destination directory, with the glTF exporter's defaults
 (+Y up, every mesh, its skin and joints, every action as an animation, materials without textures as factors).
 
   --opaque               every material opaque: its Principled BSDF's alpha 1 and nothing linked to it, rendered dithered. Quaternius's
@@ -9,10 +9,10 @@ preferences or add-ons) and exported as a binary glTF of the same name in the de
                          its sharp edges forgotten, every face smooth, and an edge sharp where its faces meet at more than DEG degrees.
                          Without it, the normals are the FBX's as Blender imports them.
 
-Sources are FBX files or folders (searched for *.fbx below them); the GLBs go flat into the destination, named after their FBX, written
+Sources are FBX files or directories (searched for *.fbx below them); the GLBs go flat into the destination, named after their FBX, written
 over any there. Blender is `blender` on the PATH unless --blender names it; the tool runs it once for every file. Tested with Blender 5.1.2.
 
-  python3 tools/fbx2glb.py <model.fbx or folder>... <destination folder> [--opaque] [--smooth-angle DEG] [--blender PATH]
+  python3 tools/fbx2glb.py <model.fbx or directory>... <destination directory> [--opaque] [--smooth-angle DEG] [--blender PATH]
 
 The examples' Ultimate Modular Women (examples/assets/CREDITS.md has the command) were made with it."""
 import argparse
@@ -80,13 +80,13 @@ def blender_main(argv):
 def main():
     """Find the sources, then run Blender once over all of them."""
     parser = argparse.ArgumentParser(description='FBX models as GLB files, converted by Blender run headless.')
-    parser.add_argument('paths', nargs='+', help='FBX files or folders, then the destination folder')
+    parser.add_argument('paths', nargs='+', help='FBX files or directories, then the destination directory')
     parser.add_argument('--opaque', action='store_true', help='make every material opaque')
     parser.add_argument('--smooth-angle', type=float, metavar='DEG', help='smooth the normals by angle, sharp above DEG degrees')
     parser.add_argument('--blender', default='blender', help='the Blender program (default: blender on the PATH)')
     args = parser.parse_args()
     if len(args.paths) < 2:
-        parser.error('give at least one source and the destination folder')
+        parser.error('give at least one source and the destination directory')
     *sources, destination = [Path(p) for p in args.paths]
     if args.smooth_angle is not None and not 0 <= args.smooth_angle <= 180:
         parser.error('--smooth-angle is between 0 and 180 degrees')
@@ -97,7 +97,7 @@ def main():
         elif source.is_file():
             files.append(source)
         else:
-            parser.error(f'{source}: no such file or folder')
+            parser.error(f'{source}: no such file or directory')
     if not files:
         parser.error('no FBX files among the sources')
     names = {}

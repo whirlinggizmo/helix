@@ -2,7 +2,7 @@
 """Measures the CPU a program keeps busy: each case's program is run for a while and the processor time its process used (every thread's,
 the GPU driver's included, user and kernel) is reported as a share of the wall time. Cases alternate round by round, as runs in different
 sessions differ more than runs side by side, and each case's median is given with its runs. A case is `label:program[:NAME=VALUE,...]`,
-the program run from its own folder (an example's build, which loads ../assets) with those variables set, sound off.
+the program run from its own directory (an example's build, which loads ../assets) with those variables set, sound off.
 
     python3 tools/measure_cpu.py [--seconds 20] [--runs 3] CASE...
 

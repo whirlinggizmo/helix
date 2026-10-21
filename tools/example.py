@@ -6,17 +6,17 @@ a share of them).
 A build is named by the rule in docs/CONVENTIONS.md (Build, tools/variants.py): `<platform>-<config>-<backend>`, given here as
 `<config>-<backend>` (this machine's platform, js for webgl2) or whole. build builds release-webgl2 when not told; autopilot compares a
 native build, release-sokol-gl when not told, against the browser's in the same config; dev serves the browser's, debug-webgl2 when not
-told, as its own build with the dev option (`js-debug-webgl2-dev`), in a folder no build writes, so a build or autopilot of the same example
+told, as its own build with the dev option (`js-debug-webgl2-dev`), in a directory no build writes, so a build or autopilot of the same example
 never writes over the page a dev server serves.
 
 An example is examples/<name>/App.hx, or for a larger one examples/<name>/src/App.hx beside its own files. Every example's page is the
 library's template (templates/index.html, the one a game copies), and its launcher is shared (examples/shared/launch).
 The generated code they compile against (generated/: the framework's programs, the packed shader library, the font) is made current first
-(tools/gen_code.py). A build's examples go to its out/ folder: natively
-bin/<example>/, the program named for its example, in the browser site/<example>/; beside them one assets folder they share (bin/assets,
+(tools/gen_code.py). A build's examples go to its out/ directory: natively
+bin/<example>/, the program named for its example, in the browser site/<example>/; beside them one assets directory they share (bin/assets,
 site/assets), which each loads as ../assets: the files in examples/assets, and each example's own, which may not claim a path the shared
-files or another example has. A larger example adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ folder (a gen_*.py
-there makes what's missing first); the browser's folder carries manifests (tools/gen_manifest.py), which the page's asset cache follows.
+files or another example has. A larger example adds its autopilot/ scripts (as autopilot/<name>/) and its own assets/ directory (a gen_*.py
+there makes what's missing first); the browser's directory carries manifests (tools/gen_manifest.py), which the page's asset cache follows.
 An example's shaders/*.glsl are packed (tools/shader_tool.py) into shaders/*.hxshader, and in dev packed again as they change, reloading
 in the page. The HXML and hxcpp's work are in build/<build>/.
 
@@ -54,7 +54,7 @@ TEMPLATE=ROOT/'templates/index.html'
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def source(name):
-    """The example's source folder: examples/<name>/src for a larger example, else examples/<name>."""
+    """The example's source directory: examples/<name>/src for a larger example, else examples/<name>."""
     return f'examples/{name}/src' if (ROOT/f'examples/{name}/src/App.hx').is_file() else f'examples/{name}'
 
 def hxml(name,build):
@@ -94,11 +94,11 @@ def reload_tools():
         if owner in modules and hasattr(owner,name):names[name]=getattr(owner,name)
 
 def page(name,build):
-    """The example's folder in build's results: its page in the browser (site/<name>), its program natively (bin/<name>)."""
+    """The example's directory in build's results: its page in the browser (site/<name>), its program natively (bin/<name>)."""
     return build.programs/name
 
 def prepare(name,build):
-    """The generated code made current, and the browser build's folder for the example (page(name,build)): the page from the template,
+    """The generated code made current, and the browser build's directory for the example (page(name,build)): the page from the template,
     and the example's files in the build's shared assets."""
     gen_code.generate(sdl_gpu=False)
     web=page(name,build);web.mkdir(parents=True,exist_ok=True)
@@ -113,7 +113,7 @@ def prepare(name,build):
 
 def assets(name,build):
     """The build's shared assets (bin/assets or site/assets), which its examples share: the shared files, then the example's own (its
-    autopilot scripts as autopilot/<name>/, its own assets/ folder (a gen_*.py there first) and its shaders, with SDL_GPU's dialects for
+    autopilot scripts as autopilot/<name>/, its own assets/ directory (a gen_*.py there first) and its shaders, with SDL_GPU's dialects for
     sdl3-gpu). The example's own files may not claim a path the shared files or another example has."""
     out=build.assets
     shutil.copytree(ROOT/'examples/assets',out,dirs_exist_ok=True)
@@ -143,7 +143,7 @@ def claim(build,name,paths):
     owners=json.loads(record.read_text(encoding='utf-8')) if record.is_file() else {}
     for path in paths:
         if (ROOT/'examples/assets'/path).exists():sys.exit(f'examples/{name}: its {path} is also a shared file (examples/assets/{path})')
-        if owners.get(path,name)!=name:sys.exit(f'examples/{name}: its {path} is also examples/{owners[path]}\'s, in their shared assets folder')
+        if owners.get(path,name)!=name:sys.exit(f'examples/{name}: its {path} is also examples/{owners[path]}\'s, in their shared assets directory')
         owners[path]=name
     # Written beside and moved into place, so a build or dev loop starting at the same moment never reads it half written (a claim missed
     # by that race is made again the next time that example packs or builds). Windows refuses the move while another reads it: retried.
@@ -198,14 +198,14 @@ def build(name,chosen):
         run(['haxe',hxml(name,chosen)],native_env(sdl3))
         # hxcpp names the program for the main class (Main, Main-debug in a debug build); the results name it for the example.
         made=chosen.scratch/name/(('Main-debug' if chosen.debug else 'Main')+('.exe' if os.name=='nt' else ''))
-        folder=page(name,chosen);folder.mkdir(parents=True,exist_ok=True)
+        directory=page(name,chosen);directory.mkdir(parents=True,exist_ok=True)
         shutil.copy2(made,program(name,chosen))
-        place_runtimes(folder,sdl3)
+        place_runtimes(directory,sdl3)
         config=ROOT/f'examples/{name}/config.json'
-        if config.is_file():shutil.copyfile(config,folder/'config.json')
-        elif (folder/'config.json').exists():(folder/'config.json').unlink()
+        if config.is_file():shutil.copyfile(config,directory/'config.json')
+        elif (directory/'config.json').exists():(directory/'config.json').unlink()
         assets(name,chosen)
-        licenses(folder)
+        licenses(directory)
     print(f'{name}: {page(name,chosen).relative_to(ROOT).as_posix()}',flush=True)
 
 def compare_samples(browser,native,tolerance=3):

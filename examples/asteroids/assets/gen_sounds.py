@@ -35,7 +35,7 @@ def thrust_loop(rate,frames):
 
 def generate(regenerate=False):
     """Writes the sounds as Ogg/Vorbis into audio/sfx/ beside this file when any is missing (or regenerate), the WAV sources under
-    build/generated/asteroids/wav, and returns the example's assets folder."""
+    build/generated/asteroids/wav, and returns the example's assets directory."""
     out=Path(__file__).resolve().parent;sounds=out/'audio/sfx';source=ROOT/'build/generated/asteroids/wav'
     if not regenerate and all((sounds/(name+'.ogg')).is_file() for name in NAMES):return out
     sounds.mkdir(parents=True,exist_ok=True);source.mkdir(parents=True,exist_ok=True)

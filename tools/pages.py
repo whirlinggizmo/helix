@@ -23,7 +23,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 import example
 from variants import Build
 
-# The build the site is: the browser's release build, its site/ folder.
+# The build the site is: the browser's release build, its site/ directory.
 BUILD=Build('js','release','webgl2')
 SITE=BUILD.programs
 

@@ -63,4 +63,4 @@ def shdc_path():
 
 def stamp():
     """When the tool last changed: its newest source's time."""
-    return max(p.stat().st_mtime for folder in SOURCES for p in folder.rglob('*') if p.is_file())
+    return max(p.stat().st_mtime for directory in SOURCES for p in directory.rglob('*') if p.is_file())

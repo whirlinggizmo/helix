@@ -54,7 +54,7 @@ class ToolCache {
 				continue;
 			}
 			if (Files.isFile(program))
-				rows.push([tool.name, tool.version, program, megabytes(Files.size(folderOf(program)))]);
+				rows.push([tool.name, tool.version, program, megabytes(Files.size(directoryOf(program)))]);
 			else
 				rows.push([
 					tool.name,
@@ -75,8 +75,8 @@ class ToolCache {
 		Sys.println('cache: ${Downloads.cache()}');
 	}
 
-	// The tool's own folder in the cache: what's under it all belongs to it.
-	static function folderOf(program:String):String {
+	// The tool's own directory in the cache: what's under it all belongs to it.
+	static function directoryOf(program:String):String {
 		var cache = Downloads.cache();
 		return Path.join([cache, Files.relative(program, cache).split("/")[0]]);
 	}

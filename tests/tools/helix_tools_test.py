@@ -1,7 +1,7 @@
 """Checks of helix.tools, what a game on -lib helix builds with (src/helix/tools, run in the compiler and Haxe's interpreter):
 
 - `haxelib run helix` (Run.hx, helix.tools.setup.Commands): its arguments (no command, --help naming the commands, an unknown command or
-  option); the caller's folder haxelib appends (HAXELIB_RUN=1); init's files and its refusal of a folder with anything in it; setup making
+  option); the caller's directory haxelib appends (HAXELIB_RUN=1); init's files and its refusal of a directory with anything in it; setup making
   sokol-shdc ready and listing the tools, a program HELIX_SHDC names in place of the cache's and its refusal of one that isn't there.
 - The starter's hxml files built on `-lib helix` (a haxelib path holding only this checkout as helix): build.web with its page beside it
   (and a page of the game's kept), build.dist (cleaned, the page, assets/, the zip with index.html at its root).
@@ -57,19 +57,19 @@ def tearDownModule():
 
 
 def run_hx(*args, cwd=None, env=None):
-    """Run.hx run from the checkout as haxelib runs it, the library's src/ on the class path (with HAXELIB_RUN=1, the caller's folder
+    """Run.hx run from the checkout as haxelib runs it, the library's src/ on the class path (with HAXELIB_RUN=1, the caller's directory
     last)."""
     return subprocess.run(['haxe', '-cp', 'src', '--run', 'Run', *args], cwd=cwd or ROOT, env=env, capture_output=True, text=True,
                           encoding='utf-8')
 
 
 def tool(*args, cwd):
-    """`haxelib run helix` run in the folder cwd."""
+    """`haxelib run helix` run in the directory cwd."""
     return run_hx(*args, str(cwd), env=dict(os.environ, HAXELIB_RUN='1'))
 
 
 def haxe(game, *args):
-    """haxe run in the game's folder with args (an hxml, say), on -lib helix."""
+    """haxe run in the game's directory with args (an hxml, say), on -lib helix."""
     return subprocess.run(['haxe', *args], cwd=game, env=LIBRARY_ENV, capture_output=True, text=True, encoding='utf-8')
 
 
@@ -85,10 +85,10 @@ def refusal(result):
     return result.stderr
 
 
-def starter(folder, name='pocket-game'):
-    """A starter game written by init into folder/name; its folder."""
-    done(tool('init', name, cwd=folder))
-    return Path(folder) / name
+def starter(directory, name='pocket-game'):
+    """A starter game written by init into directory/name; its directory."""
+    done(tool('init', name, cwd=directory))
+    return Path(directory) / name
 
 
 class Commands(unittest.TestCase):
@@ -111,45 +111,45 @@ class Commands(unittest.TestCase):
             result = run_hx(command, '--help')
             self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_caller_folder(self):
-        with tempfile.TemporaryDirectory() as folder:
-            # haxelib appends the caller's folder: the command works there, not in the library's.
-            done(run_hx('init', 'here', folder, env=dict(os.environ, HAXELIB_RUN='1')))
-            self.assertTrue((Path(folder) / 'here/src/Main.hx').is_file())
+    def test_caller_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            # haxelib appends the caller's directory: the command works there, not in the library's.
+            done(run_hx('init', 'here', directory, env=dict(os.environ, HAXELIB_RUN='1')))
+            self.assertTrue((Path(directory) / 'here/src/Main.hx').is_file())
             self.assertFalse((ROOT / 'here').exists())
 
-    def test_init_refuses_a_folder_in_use(self):
-        with tempfile.TemporaryDirectory() as folder:
-            (Path(folder) / 'something.txt').write_text('x', encoding='utf-8')
-            self.assertIn('not empty', refusal(tool('init', '.', cwd=folder)))
-            (Path(folder) / 'file.txt').write_text('x', encoding='utf-8')
-            self.assertIn('not empty', refusal(tool('init', 'file.txt', cwd=folder)))
+    def test_init_refuses_a_directory_in_use(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'something.txt').write_text('x', encoding='utf-8')
+            self.assertIn('not empty', refusal(tool('init', '.', cwd=directory)))
+            (Path(directory) / 'file.txt').write_text('x', encoding='utf-8')
+            self.assertIn('not empty', refusal(tool('init', 'file.txt', cwd=directory)))
 
     def test_setup(self):
-        with tempfile.TemporaryDirectory() as folder:
-            listed = done(tool('setup', cwd=folder))
+        with tempfile.TemporaryDirectory() as directory:
+            listed = done(tool('setup', cwd=directory))
             shdc = next(line for line in listed.splitlines() if line.startswith('sokol-shdc'))
             self.assertTrue(Path(shdc.split()[2]).is_file(), listed)
             self.assertIn('cache:', listed)
-            self.assertIn('unexpected', run_hx('setup', 'extra', folder, env=dict(os.environ, HAXELIB_RUN='1')).stderr)
+            self.assertIn('unexpected', run_hx('setup', 'extra', directory, env=dict(os.environ, HAXELIB_RUN='1')).stderr)
             # A program of the user's own, in a cache with nothing in it: listed in place of the pin, nothing fetched.
-            cache = Path(folder) / 'cache'
+            cache = Path(directory) / 'cache'
             empty = dict(os.environ, HAXELIB_RUN='1', XDG_CACHE_HOME=str(cache), LOCALAPPDATA=str(cache), HOME=str(cache),
                          USERPROFILE=str(cache))
-            mine = Path(folder) / 'my-shdc'
+            mine = Path(directory) / 'my-shdc'
             mine.write_bytes(b'shdc')
-            listed = done(run_hx('setup', folder, env=dict(empty, HELIX_SHDC=str(mine))))
+            listed = done(run_hx('setup', directory, env=dict(empty, HELIX_SHDC=str(mine))))
             self.assertIn('HELIX_SHDC', listed)
             self.assertIn(mine.resolve().as_posix(), listed)
             self.assertIn('not there yet', listed)
             self.assertFalse((cache / 'helix').exists())
-            self.assertIn('HELIX_SHDC names', refusal(run_hx('setup', folder, env=dict(empty, HELIX_SHDC=str(mine) + '-not'))))
+            self.assertIn('HELIX_SHDC names', refusal(run_hx('setup', directory, env=dict(empty, HELIX_SHDC=str(mine) + '-not'))))
 
 
 class Starter(unittest.TestCase):
     def test_files_and_builds(self):
-        with tempfile.TemporaryDirectory() as folder:
-            game = starter(folder, 'my-jam-game')
+        with tempfile.TemporaryDirectory() as directory:
+            game = starter(directory, 'my-jam-game')
             names = ('build.web', 'build.native', 'build.dist', 'watch.hotreload', 'watch.shader', 'serve.dist')
             hxml = ['hxml/common.hxml'] + [f'hxml/{name}.hxml' for name in names]
             for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'assets/README.md', 'favicon.svg', '.gitignore', 'README.md']:
@@ -179,8 +179,8 @@ class Starter(unittest.TestCase):
 
 class Build(unittest.TestCase):
     def test_web_page_and_clean(self):
-        with tempfile.TemporaryDirectory() as folder:
-            game = starter(folder)
+        with tempfile.TemporaryDirectory() as directory:
+            game = starter(directory)
             (game / 'config.json').write_text('{"quality": "high"}', encoding='utf-8')
             (game / 'favicon.svg').write_text('<svg/>', encoding='utf-8')
             (game / 'assets/sub').mkdir()
@@ -212,9 +212,9 @@ class Build(unittest.TestCase):
             self.assertEqual((game / 'out/other/favicon.svg').read_bytes(), (ROOT / 'templates/starter/favicon.svg').read_bytes())
 
     def test_refusals(self):
-        with tempfile.TemporaryDirectory() as folder:
-            game = starter(folder)
-            # cleanOutput on a build written into the game's own folder, or a native build's; copyProgram on a browser build.
+        with tempfile.TemporaryDirectory() as directory:
+            game = starter(directory)
+            # cleanOutput on a build written into the game's own directory, or a native build's; copyProgram on a browser build.
             web = ['hxml/common.hxml', '-D', 'helix-backend=webgl2']
             self.assertIn('holds the game itself', refusal(haxe(game, *web, '-js', 'app.js', '--macro', 'helix.tools.Build.cleanOutput()')))
             self.assertTrue((game / 'src/Main.hx').is_file())
@@ -224,8 +224,8 @@ class Build(unittest.TestCase):
             self.assertIn('hxcpp', refusal(haxe(game, *native, '--macro', 'helix.tools.Build.cleanOutput()')))
 
     def test_pack_shaders(self):
-        with tempfile.TemporaryDirectory() as folder:
-            game = starter(folder)
+        with tempfile.TemporaryDirectory() as directory:
+            game = starter(directory)
             (game / 'shaders').mkdir()
             (game / 'shaders/glow.glsl').write_text(EFFECT, encoding='utf-8')
             self.assertIn('glow.glsl -> assets/shaders/glow.hxshader', done(haxe(game, 'hxml/build.web.hxml')))
@@ -238,7 +238,7 @@ class Build(unittest.TestCase):
             (game / 'shaders/bad.glsl').write_text(EFFECT.replace('@include_block helix_screen', ''), encoding='utf-8')
             self.assertIn('exactly one framework block', refusal(haxe(game, 'hxml/build.web.hxml')))
             (game / 'shaders/bad.glsl').unlink()
-            # Assets carrying manifests: rewritten from their root, as tools/gen_manifest.py writes them (a sibling folder's kept).
+            # Assets carrying manifests: rewritten from their root, as tools/gen_manifest.py writes them (a sibling directory's kept).
             (game / 'assets/sprites').mkdir()
             (game / 'assets/sprites/hero.png').write_bytes(b'\x89PNG')
             gen_manifest.write(game / 'assets')
@@ -258,8 +258,8 @@ class Running(unittest.TestCase):
     """The tools an hxml of their own runs until stopped."""
 
     def test_watch_shaders(self):
-        with tempfile.TemporaryDirectory() as folder:
-            game = starter(folder)
+        with tempfile.TemporaryDirectory() as directory:
+            game = starter(directory)
             (game / 'shaders').mkdir()
             (game / 'shaders/glow.glsl').write_text(EFFECT, encoding='utf-8')
             watcher = subprocess.Popen(['haxe', 'hxml/watch.shader.hxml'], cwd=game, env=LIBRARY_ENV, stdout=subprocess.PIPE,
@@ -278,14 +278,14 @@ class Running(unittest.TestCase):
                 watcher.communicate()
 
     def test_web_server(self):
-        with tempfile.TemporaryDirectory() as folder:
-            site = Path(folder) / 'site'
+        with tempfile.TemporaryDirectory() as directory:
+            site = Path(directory) / 'site'
             (site / 'assets').mkdir(parents=True)
             (site / 'index.html').write_text('<!doctype html>', encoding='utf-8')
             (site / 'favicon.svg').write_text('<svg/>', encoding='utf-8')
             (site / 'assets/a.txt').write_text('a', encoding='utf-8')
             port = 8097
-            server = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tools.WebServer.serveDirectory("site", {port})'], cwd=folder,
+            server = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tools.WebServer.serveDirectory("site", {port})'], cwd=directory,
                                       env=LIBRARY_ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             try:
                 def get(path):

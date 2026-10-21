@@ -20,9 +20,9 @@ var pageState:Bool
 ```
 
 - `new`: The defaults: product "Game" by "DefaultCompany", the assets beside the program, no manifest, a window of 4 samples a pixel, and the development extras on in a debug build (-debug) and off otherwise.
-- `product`: The program's own name: with company, its identity (helix.host.Identity), which names what HeliX keeps for it (its cache directory natively, its cache database in the browser, its screenshots' folder). One safe file name; cleaned as Identity cleans it.
+- `product`: The program's own name: with company, its identity (helix.host.Identity), which names what HeliX keeps for it (its cache directory natively, its cache database in the browser, its screenshots' directory). One safe file name; cleaned as Identity cleans it.
 - `company`: The company, the other half of the identity.
-- `assets`: Where the assets are: in the browser the URL the asset paths are fetched under ("assets/", beside the page, by default), natively a folder relative to the program's ("assets", beside it, by default). Null for the platform's default.
+- `assets`: Where the assets are: in the browser the URL the asset paths are fetched under ("assets/", beside the page, by default), natively a directory relative to the program's ("assets", beside it, by default). Null for the platform's default.
 - `manifest`: A manifest among the assets (tools/gen_manifest.py; "manifest.json" for the examples), read in the browser so a returning page re-fetches only what changed; null (the default) fetches each file as it's asked for. Natively a manifest comes from HELIX_ASSET_MANIFEST instead, with HELIX_ASSET_HOST.
 - `window`: The window as it opens: the multisampling samples a pixel.
 - `devKeys`: The development keys around every frame: F9 saves a screenshot of the frame (a download in a browser, a file in the user's pictures natively), logged where it went. On in a debug build (-debug), off otherwise, unless set. A game chooses its own keys for what it ships.

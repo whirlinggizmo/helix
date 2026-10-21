@@ -18,14 +18,14 @@ def sndfile_windows():
     import hashlib,json,urllib.request,zipfile
     pin=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['sndfileSDK']['windows']
     cache=Path(os.environ.get('LOCALAPPDATA') or Path.home()/'.cache')/'helix'/'tools'
-    folder=cache/pin['folder']
-    if not (folder/'lib/sndfile.lib').is_file():
-        cache.mkdir(parents=True,exist_ok=True);archive=cache/(pin['folder']+'.zip')
+    directory=cache/pin['directory']
+    if not (directory/'lib/sndfile.lib').is_file():
+        cache.mkdir(parents=True,exist_ok=True);archive=cache/(pin['directory']+'.zip')
         urllib.request.urlretrieve(pin['url'],archive)
         if hashlib.sha256(archive.read_bytes()).hexdigest()!=pin['sha256']:archive.unlink();raise RuntimeError('libsndfile download differs from its pin: '+pin['url'])
         with zipfile.ZipFile(archive) as z:z.extractall(cache)
         archive.unlink()
-    return folder
+    return directory
 
 def codec_library():
     """The libsndfile to link: on Linux the system's runtime library by path (its development symlink may be absent); on Windows the pinned
@@ -42,15 +42,15 @@ def codec_runtime():
     """The libsndfile a program needs beside it to run, or None where the system provides it (Linux, macOS)."""
     return sndfile_windows()/'bin/sndfile.dll' if sys.platform=='win32' else None
 
-def place_runtimes(folder,sdl3=None):
-    """Copies what a program built into folder loads from beside it: on Windows libsndfile's DLL and SDL3's, on macOS SDL3's framework;
+def place_runtimes(directory,sdl3=None):
+    """Copies what a program built into directory loads from beside it: on Windows libsndfile's DLL and SDL3's, on macOS SDL3's framework;
     nothing where the system provides them."""
     import shutil
     for runtime in [codec_runtime()]+(sdl3.runtime if sdl3 else []):
         if runtime is None:continue
         runtime=Path(runtime)
-        if runtime.is_dir():shutil.copytree(runtime,Path(folder)/runtime.name,symlinks=True,dirs_exist_ok=True)
-        else:shutil.copy2(runtime,folder)
+        if runtime.is_dir():shutil.copytree(runtime,Path(directory)/runtime.name,symlinks=True,dirs_exist_ok=True)
+        else:shutil.copy2(runtime,directory)
 
 def env(sdl3=None):
     """The environment hxcpp's build reads: HeliX's root, the codec, a shared compile cache, and for an SDL3 backend the library sdl3 names

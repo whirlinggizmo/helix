@@ -65,8 +65,8 @@ def generate(sdl_gpu=True,regenerate=False):
     sdl_gpu their SDL_GPU dialects (left alone otherwise, so a build that doesn't need them never fetches the translators), and the font."""
     import bake_fonts,shader_tool
     if regenerate:
-        for folder,suffix in ((SHADERS_OUT,'Packed'),(SDL_GPU_OUT,'PackedSdlGpu')):
-            for stale in folder.glob(f'*{suffix}.hx'):stale.unlink()
+        for directory,suffix in ((SHADERS_OUT,'Packed'),(SDL_GPU_OUT,'PackedSdlGpu')):
+            for stale in directory.glob(f'*{suffix}.hx'):stale.unlink()
     shader_tool.pack_library(SHADERS_OUT,SDL_GPU_OUT if sdl_gpu else None)
     programs(SCRATCH,SHADERS_OUT,regenerate)
     if sdl_gpu:dialects(SCRATCH,SDL_GPU_OUT,regenerate)
@@ -79,7 +79,7 @@ def font_parts(text):
     return text[:match.start(1)]+text[match.end(1):],zlib.decompress(base64.b64decode(match.group(1)))
 
 def check():
-    """Generates everything anew into a scratch folder and returns what differs from generated/: stale files, missing ones and extras."""
+    """Generates everything anew into a scratch directory and returns what differs from generated/: stale files, missing ones and extras."""
     import bake_fonts,shader_tool
     from shader_metadata import generate_sdl_gpu
     problems=[]
@@ -89,14 +89,14 @@ def check():
         programs(fresh/'scratch',fresh/'shaders',True)
         generate_sdl_gpu(SOURCES/'shaders.json',fresh/'scratch',fresh/'shaders-sdlgpu')
         bake_fonts.generate(True,fresh/'fonts')
-        for folder in ('shaders','shaders-sdlgpu','fonts'):
-            made={p.name:p for p in (fresh/folder).glob('*.hx')};have={p.name:p for p in (OUT/folder).glob('*.hx')}
+        for directory in ('shaders','shaders-sdlgpu','fonts'):
+            made={p.name:p for p in (fresh/directory).glob('*.hx')};have={p.name:p for p in (OUT/directory).glob('*.hx')}
             for name in sorted(made.keys()|have.keys()):
-                if name not in have:problems.append(f'generated/{folder}/{name}: missing')
-                elif name not in made:problems.append(f'generated/{folder}/{name}: no source makes it')
+                if name not in have:problems.append(f'generated/{directory}/{name}: missing')
+                elif name not in made:problems.append(f'generated/{directory}/{name}: no source makes it')
                 elif name=='GeneratedFont.hx':
-                    if font_parts(made[name].read_text(encoding='utf-8'))!=font_parts(have[name].read_text(encoding='utf-8')):problems.append(f'generated/{folder}/{name}: stale')
-                elif not filecmp.cmp(made[name],have[name],shallow=False):problems.append(f'generated/{folder}/{name}: stale')
+                    if font_parts(made[name].read_text(encoding='utf-8'))!=font_parts(have[name].read_text(encoding='utf-8')):problems.append(f'generated/{directory}/{name}: stale')
+                elif not filecmp.cmp(made[name],have[name],shallow=False):problems.append(f'generated/{directory}/{name}: stale')
     return problems
 
 def main():

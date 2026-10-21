@@ -54,7 +54,7 @@ interface IAssets {
 		doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles. */
 	function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:AssetProgress->Void, ?options:EnsureOptions):IRequest;
 
-	/** What's put before each path to download it, ending in "/": a URL, or a folder relative to the page (the browser's "assets/"); null
+	/** What's put before each path to download it, ending in "/": a URL, or a directory relative to the page (the browser's "assets/"); null
 		when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host). */
 	var host(get, never):Null<String>;
 

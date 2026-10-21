@@ -33,7 +33,7 @@ def pad():
 
 def generate(regenerate=False):
     """Writes audio/music/pad_loop.ogg beside this file when it's missing (or regenerate), its WAV source under build/generated/audio-music,
-    and returns the example's assets folder."""
+    and returns the example's assets directory."""
     out=Path(__file__).resolve().parent;music=out/'audio/music';source=ROOT/'build/generated/audio-music'
     if not regenerate and (music/'pad_loop.ogg').is_file():return out
     encoder=shutil.which('ffmpeg')
