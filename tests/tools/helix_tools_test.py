@@ -139,8 +139,10 @@ class Commands(unittest.TestCase):
             mine = Path(directory) / 'my-shdc'
             mine.write_bytes(b'shdc')
             listed = done(run_hx('setup', directory, env=dict(empty, HELIX_SHDC=str(mine))))
-            self.assertIn('HELIX_SHDC', listed)
-            self.assertIn(mine.resolve().as_posix(), listed)
+            row = next(line for line in listed.splitlines() if line.startswith('sokol-shdc')).split()
+            self.assertEqual(row[1], 'HELIX_SHDC')
+            # The same file, however the system spells its path (macOS's /var is /private/var; Windows may give a user's short name).
+            self.assertTrue(Path(row[2]).samefile(mine), listed)
             self.assertIn('not there yet', listed)
             self.assertFalse((cache / 'helix').exists())
             self.assertIn('HELIX_SHDC names', refusal(run_hx('setup', directory, env=dict(empty, HELIX_SHDC=str(mine) + '-not'))))
@@ -285,18 +287,22 @@ class Running(unittest.TestCase):
             (site / 'favicon.svg').write_text('<svg/>', encoding='utf-8')
             (site / 'assets/a.txt').write_text('a', encoding='utf-8')
             port = 8097
-            server = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tools.WebServer.serveDirectory("site", {port})'], cwd=directory,
-                                      env=LIBRARY_ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            try:
-                def get(path):
-                    try:
-                        with urllib.request.urlopen(f'http://localhost:{port}{path}', timeout=3) as answer:
-                            return answer.status, answer.headers['Content-Type'], answer.read()
-                    except urllib.error.HTTPError as error:
-                        return error.code, None, b''
-                    except OSError:
-                        return None, None, b''
 
+            def get(path):
+                try:
+                    with urllib.request.urlopen(f'http://localhost:{port}{path}', timeout=3) as answer:
+                        return answer.status, answer.headers['Content-Type'], answer.read()
+                except urllib.error.HTTPError as error:
+                    return error.code, None, b''
+                except OSError:
+                    return None, None, b''
+
+            def serve():
+                return subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tools.WebServer.serveDirectory("site", {port})'], cwd=directory,
+                                        env=LIBRARY_ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+            server = serve()
+            try:
                 self.assertTrue(wait(lambda: get('/')[0] == 200), 'serving')
                 self.assertEqual(get('/favicon.svg')[:2], (200, 'image/svg+xml'))
                 self.assertEqual(get('/')[1], 'text/html; charset=utf-8')
@@ -307,6 +313,17 @@ class Running(unittest.TestCase):
                 connection.request('GET', '/../site/index.html')
                 self.assertEqual(connection.getresponse().status, 404)
                 connection.close()
+                # Another program on the port: refused, plainly.
+                second = serve()
+                self.assertIn('is something else using it', second.communicate(timeout=60)[0])
+                self.assertEqual(second.returncode, 1)
+            finally:
+                server.kill()
+                server.communicate()
+            # Served again at once, its last connections still closing on the port.
+            server = serve()
+            try:
+                self.assertTrue(wait(lambda: get('/')[0] == 200), 'serving again at once')
             finally:
                 server.kill()
                 server.communicate()
