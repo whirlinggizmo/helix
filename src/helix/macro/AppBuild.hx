@@ -17,7 +17,8 @@ import haxe.macro.Expr;
 	  4.3.7), so fields this macro adds are seen as written.
 	- `hotSpringboard()`, giving App the Springboard over those statics, and `hotStart(identity, springboard)`, running the profile of the
 	  backend the build names with `-D helix-backend=` (BACKENDS); a build naming none, or one not in the list, fails here, naming the
-	  choices, and an `sdl3-gpu` build without `-D helix_sdl3_gpu` (the programs' SDL_GPU dialects) too.
+	  choices, and an `sdl3-gpu` build without `helix_sdl3_gpu` (the define the programs carry SDL_GPU's dialects under; `-lib helix`
+	  defines it from the backend, helix.macro.Haxelib, and the repository's builds pass it) too.
 
 	A subclass can't declare a field of those names. */
 class AppBuild {
@@ -57,7 +58,8 @@ class AppBuild {
 		if (profile == null)
 			Context.error('helix.App: "$backend" is not a backend: $choices', pos);
 		if (backend == "sdl3-gpu" && !Context.defined("helix_sdl3_gpu"))
-			Context.error("helix.App: an sdl3-gpu build also defines helix_sdl3_gpu, so the programs carry SDL_GPU's dialects", pos);
+			Context.error("helix.App: an sdl3-gpu build also defines helix_sdl3_gpu, so the programs carry SDL_GPU's dialects (-lib helix defines it from the backend)",
+				pos);
 		for (field in fields)
 			if (WRITTEN.contains(field.name))
 				Context.error('helix.App: ${field.name} is written by helix.macro.AppBuild into every App subclass; rename this one', field.pos);
