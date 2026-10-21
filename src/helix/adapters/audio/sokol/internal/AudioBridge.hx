@@ -1,7 +1,8 @@
 package helix.adapters.audio.sokol.internal;
 
 /** Built with the app by hxcpp: sokol_audio (ALSA on Linux, WASAPI on Windows, AudioToolbox on macOS) feeding the shared mixer (shared/mixer.c). */
-@:buildXml('<files id="helix-audio-sokol" dir="${HELIX_ROOT}/src/helix/adapters">
+@:buildXml('<set name="HELIX_ROOT" value="${haxelib:helix}" unless="HELIX_ROOT"/>
+<files id="helix-audio-sokol" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/>
  <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->

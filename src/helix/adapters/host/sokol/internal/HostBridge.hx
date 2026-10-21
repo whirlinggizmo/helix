@@ -1,7 +1,8 @@
 package helix.adapters.host.sokol.internal;
 
 /** Built with the app by hxcpp: The sokol_app window and loop, and sokol_app_utils' window and display calls: X11 and GLX on Linux, Win32 and WGL on Windows, Cocoa on macOS (compiled as Objective-C there through host_macos.m, as hxcpp picks a file's language by its extension). */
-@:buildXml('<files id="helix-host-sokol" dir="${HELIX_ROOT}/src/helix/adapters">
+@:buildXml('<set name="HELIX_ROOT" value="${haxelib:helix}" unless="HELIX_ROOT"/>
+<files id="helix-host-sokol" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/vendor/sokol_utils"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/host/sokol/internal"/>
  <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->

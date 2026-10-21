@@ -1,0 +1,11 @@
+{
+	"name": "helix",
+	"url": "https://github.com/whirlinggizmo/helix",
+	"license": "MIT",
+	"tags": ["game", "2d", "3d", "js", "cpp", "sokol", "sdl3"],
+	"description": "HeliX: a Haxe game framework for the browser (WebGL2) and native (hxcpp with sokol or SDL3).",
+	"version": "0.13.0",
+	"classPath": "src/",
+	"releasenote": "Milestone 13: the dressing room, helix.ui's widgets, the build names.",
+	"contributors": ["whirlinggizmo"]
+}

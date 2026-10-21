@@ -3,7 +3,8 @@ package helix.adapters.host.sdl3.internal;
 /** Built with the app by hxcpp: the SDL3 window, its GL 4.1 context (or none, for SDL_GPU) and the frame loop, linked with HELIX_SDL3_LIBRARY (tools/sdl3.py:
 	the system's SDL3 of 3.4.18 or newer, or the pinned one built or fetched into build/deps), compiled against vendor/sdl3's headers. On Linux,
 	Xlib too, to ask whether X is XWayland; on Windows, DWM's, to wait on the compositor. */
-@:buildXml('<files id="helix-host-sdl3" dir="${HELIX_ROOT}/src/helix/adapters">
+@:buildXml('<set name="HELIX_ROOT" value="${haxelib:helix}" unless="HELIX_ROOT"/>
+<files id="helix-host-sdl3" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor/sdl3"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/host/sdl3/internal"/>
  <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->

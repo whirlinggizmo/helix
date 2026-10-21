@@ -1,7 +1,9 @@
 package helix.adapters.audiodecoder.libsndfile.internal;
 
-/** Built with the app by hxcpp: libsndfile: HELIX_CODEC_LIBRARY, as tools/native_build.py finds it (the system's on Linux, the pinned release on Windows, Homebrew's on macOS). */
-@:buildXml('<files id="helix-codec-libsndfile" dir="${HELIX_ROOT}/src/helix/adapters">
+/** Built with the app by hxcpp: libsndfile: HELIX_CODEC_LIBRARY when a build names it (tools/native_build.py: the system's on Linux, the pinned release on
+	Windows, Homebrew's on macOS); else, on Linux, the system's by soname, so a game built with only -lib helix links it. */
+@:buildXml('<set name="HELIX_ROOT" value="${haxelib:helix}" unless="HELIX_ROOT"/>
+<files id="helix-codec-libsndfile" dir="${HELIX_ROOT}/src/helix/adapters">
  <compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/>
  <compilerflag value="-DNDEBUG" unless="debug"/><compilerflag value="-O2" if="windows" unless="debug"/><compilerflag value="-O3" unless="windows||debug"/><compilerflag value="-D_POSIX_C_SOURCE=200809L" if="linux"/>
  <!-- hxcpp rebuilds an object when its source changes; these make a changed header rebuild it too. -->
@@ -11,7 +13,9 @@ package helix.adapters.audiodecoder.libsndfile.internal;
 <files id="haxe"><compilerflag value="-I${HELIX_ROOT}/vendor"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/shared"/><compilerflag value="-I${HELIX_ROOT}/src/helix/adapters/audiodecoder/libsndfile/internal"/></files>
 <target id="haxe">
  <files id="helix-codec-libsndfile"/>
- <lib name="${HELIX_CODEC_LIBRARY}"/>
+ <lib name="${HELIX_CODEC_LIBRARY}" if="HELIX_CODEC_LIBRARY"/>
+ <!-- Linux: the system runtime library by soname when nothing names one (its development symlink may be absent). -->
+ <lib name="-l:libsndfile.so.1" if="linux" unless="HELIX_CODEC_LIBRARY"/>
 </target>')
 @:include("codec.h")
 extern class CodecBridge {
