@@ -39,12 +39,12 @@ def main():
  if native:
   from pins import check_hxcpp
   from native_build import ARCH,env as native_env,place_runtimes
-  from example import shader
+  import gen_code
   sdl3=None;defines=[]
   if native.backend=='sdl3-gl':
    import sdl3 as finder
    sdl3=finder.find();defines=['-D','helix_sdl3']
-  check_hxcpp();shader();env=native_env(sdl3)
+  check_hxcpp();gen_code.generate(sdl_gpu=False);env=native_env(sdl3)
   build_dir=native.scratch/'services'
   config=['-debug','-D','HXCPP_CHECK_POINTER'] if native.debug else ['-dce','full','-D','analyzer-optimize']
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,*config,'-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
