@@ -1,7 +1,7 @@
-package tools.shader;
+package helix.tools.shader;
 
 import haxe.io.Path;
-import tools.game.CommandError;
+import helix.tools.shared.CommandError;
 
 /** The packer's scratch: a new folder under the system's temporary one, and programs run with their output read (line ends as LF, as a
 	program on Windows writes CRLF to a text stream). */

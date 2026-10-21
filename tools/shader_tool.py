@@ -1,5 +1,5 @@
-"""The shader packer, sokol-shdc and SDL_GPU's translators as the repository's Python tools reach them: tools/shader/ShaderTool.hx, in Haxe
-(the library's front door, `haxelib run helix shader`, runs the same code), run by Haxe's interpreter in the checkout. A refusal (a shader
+"""The shader packer, sokol-shdc and SDL_GPU's translators as the repository's Python tools reach them: src/helix/tools/shader/ShaderTool.hx, in Haxe
+(helix.tools.Build.packShaders and Watchers.watchShaders run the same code), run by Haxe's interpreter in the checkout. A refusal (a shader
 the packer won't take, a tool that can't be had) exits with its message, as the packer's own refusals did.
 
     import shader_tool
@@ -17,7 +17,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 # The Haxe the tool is: a change to any of it means what it packed may be stale.
-SOURCES = (ROOT / 'tools/shader', ROOT / 'tools/game')
+SOURCES = (ROOT / 'src/helix/tools',)
 
 
 def run(*args, stdin=None):
@@ -27,7 +27,7 @@ def run(*args, stdin=None):
         sys.path.insert(0, str(ROOT / 'tools'))
         from pins import check_hxcpp
         check_hxcpp()
-    done = subprocess.run(['haxe', '--run', 'tools.shader.ShaderTool', *map(str, args)], cwd=ROOT, input=stdin, stdout=subprocess.PIPE,
+    done = subprocess.run(['haxe', '-cp', 'src', '--run', 'helix.tools.shader.ShaderTool', *map(str, args)], cwd=ROOT, input=stdin, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True, encoding='utf-8', env=dict(os.environ))
     if done.returncode:
         sys.exit(done.stderr.strip() or f'shader_tool: {args[0]} failed ({done.returncode})')
@@ -45,7 +45,7 @@ def pack(pairs, sdl_gpu=False):
 
 def pack_library(out, gpu_out=None, sources=None):
     """The shader library (src/helix/shaders, or sources) packed into generated Haxe in out, SDL_GPU's dialects into gpu_out when given,
-    each only when changed (tools/shader/ShaderPacker.hx's packLibrary). Returns the stems packed."""
+    each only when changed (src/helix/tools/shader/ShaderPacker.hx's packLibrary). Returns the stems packed."""
     args = ['library', out] + (['--sdl-gpu-out', gpu_out] if gpu_out else []) + (['--sources', sources] if sources else [])
     return json.loads(run(*args))
 

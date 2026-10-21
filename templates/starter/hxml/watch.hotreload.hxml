@@ -1,0 +1,9 @@
+# The dev loop: haxe hxml/watch.hotreload.hxml, then open http://localhost:8064/. hotreload-hx's server rebuilds hxml/build.web.hxml on
+# save and swaps the code into the running page; assets/ is served at /assets. What follows --run is the server's, one argument a line.
+-lib hotreload-hx
+--run hotreload.DevServer
+--port
+8064
+--mount
+/assets=assets
+hxml/build.web.hxml

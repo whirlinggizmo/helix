@@ -1,4 +1,4 @@
-package tools.game;
+package helix.tools.shared;
 
 import haxe.io.Bytes;
 import haxe.io.Path;

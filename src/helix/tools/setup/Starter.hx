@@ -1,11 +1,13 @@
-package tools.game;
+package helix.tools.setup;
 
+import helix.tools.shared.CommandError;
+import helix.tools.shared.Files;
 import haxe.io.Path;
 import sys.FileSystem;
 import sys.io.File;
 
-/** `init`: the starter game (templates/starter: src/Main.hx and src/Game.hx, web.hxml, native.hxml, assets/, .gitignore and a README with
-	the commands) written into a new or empty folder, each file's {name} the game's (its folder's name) and {title} its title. */
+/** `init`: the starter game (templates/starter: src/Main.hx and src/Game.hx, its builds in hxml/, assets/, .gitignore and a README with the
+	commands) written into a new or empty folder, each file's {name} the game's (its folder's name) and {title} its title. */
 class Starter {
 	/** The starter written into folder (made when missing) from the library at root; refuses a folder with anything in it. Returns the files
 		written, relative to it. */

@@ -269,7 +269,7 @@ def generate(manifest_path, output, working_dir, hx_output=None):
 
 
 def generate_sdl_gpu(manifest_path, output, gpu_output):
-    """Writes each program's <Name>SdlGpu.hx into gpu_output: its SDL_GPU dialects (tools/shader/GpuShaders.hx, through tools/shader_tool.py)
+    """Writes each program's <Name>SdlGpu.hx into gpu_output: its SDL_GPU dialects (src/helix/tools/shader/GpuShaders.hx, through tools/shader_tool.py)
     from the GLSL 410 generate wrote into output, for the program classes' source() in SDL_GPU builds. Only those builds run it, so no other
     needs glslang or SPIRV-Cross."""
     import shader_tool

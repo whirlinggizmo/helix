@@ -14,8 +14,8 @@ Executed on Linux, Windows 11 and macOS (CI's runners, and a Windows machine: de
   npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
   ```
 - **The dev loop:** [hotreload-hx](https://github.com/whirlinggizmo/hotreload-hx) at `924c46a` or later (a static survives a reload only if it says `@:hot`, on both targets) (`haxelib git hotreload-hx https://github.com/whirlinggizmo/hotreload-hx`).
-- **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `tools/shader/Shdc.hx` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`), checks its SHA-256 as it arrives and records it there (hashing it again each use would take seconds in Haxe's interpreter); nothing is installed globally. `HELIX_SHDC` names a sokol-shdc of your own instead (a machine without a network; its version is then yours to keep right).
-- **SDL_GPU's shader translators:** glslang 16.6.0 (its official release for the system: Linux x86_64, Windows x64, macOS universal) and SPIRV-Cross `vulkan-sdk-1.4.363.0` (its source, built once by hxcpp with the system's compiler, as it publishes no programs), pinned in `dependencies.json` (`gpuShaders`), fetched into the same cache and hash-checked by `tools/shader/GpuShaders.hx` the first time SDL_GPU's dialects are made. Only SDL_GPU builds (`sdl3-gpu`) run them; other builds, the browser's included, never fetch or build them. There's no Linux arm64 glslang release. `HELIX_GLSLANG` and `HELIX_SPIRV_CROSS` name programs of your own instead; without hxcpp, SPIRV-Cross's build is refused before anything is fetched.
+- **The shader compiler:** `sokol-shdc` from sokol-tools-bin `11d0cf678105d614d675e6d9bd2aaf3eeff12f8c`. `src/helix/tools/shader/Shdc.hx` downloads it for this system into the user's cache the first time (`~/.cache/helix/tools`, `~/Library/Caches/helix/tools` or `%LOCALAPPDATA%\helix\tools`), checks its SHA-256 as it arrives and records it there (hashing it again each use would take seconds in Haxe's interpreter); nothing is installed globally. `HELIX_SHDC` names a sokol-shdc of your own instead (a machine without a network; its version is then yours to keep right).
+- **SDL_GPU's shader translators:** glslang 16.6.0 (its official release for the system: Linux x86_64, Windows x64, macOS universal) and SPIRV-Cross `vulkan-sdk-1.4.363.0` (its source, built once by hxcpp with the system's compiler, as it publishes no programs), pinned in `dependencies.json` (`gpuShaders`), fetched into the same cache and hash-checked by `src/helix/tools/shader/GpuShaders.hx` the first time SDL_GPU's dialects are made. Only SDL_GPU builds (`sdl3-gpu`) run them; other builds, the browser's included, never fetch or build them. There's no Linux arm64 glslang release. `HELIX_GLSLANG` and `HELIX_SPIRV_CROSS` name programs of your own instead; without hxcpp, SPIRV-Cross's build is refused before anything is fetched.
 - **Native builds:** no CMake: hxcpp compiles the adapters' C with each app, from the build XML on each adapter's extern bridge (`internal/*Bridge.hx`).
   - Linux: GCC/G++ 13 and ALSA headers; X11/Xrandr/Xi/Xcursor and GL libraries; the libsndfile 1.2.2 runtime with Vorbis/Opus and mpg123 (MP3). Its header is vendored.
   - Windows: Visual Studio's C++ tools (MSVC, which hxcpp finds itself; MinGW isn't supported). libsndfile's official 1.2.2 win64 release is downloaded and hash-checked into the user's cache, and its DLL copied beside each program.
@@ -37,57 +37,88 @@ A game anywhere on disk takes HeliX as a haxelib (`haxelib dev helix /path/to/he
 
 - **Haxe 4.3.7** for a browser build, and nothing else: the generated code a build needs (the framework's programs, the shader library packed, the built-in font) is in the library (`generated/`, below).
 - **hxcpp 4.3.2** (the version `dependencies.json` pins) for a native build, with the system's compiler and libraries listed above (Linux: GCC, X11, GL, ALSA, libsndfile).
-- **hotreload-hx** for the dev loop: `haxe -lib hotreload-hx --run hotreload.DevServer web.hxml` serves the browser build with hot reload.
-- Nothing more for the library's commands (`haxelib run helix`, below): they are Haxe, run by Haxe's interpreter. `shader` fetches sokol-shdc the first time, and with `--sdl-gpu` glslang and SPIRV-Cross (built once by hxcpp); `setup` does it ahead; the framework's shaders are packed already.
+- **hotreload-hx** for the dev loop: its DevServer serves the browser build with hot reload (`hxml/watch.hotreload.hxml`, below).
+- Nothing more for its build steps and `haxelib run helix` (below): they are Haxe, run in the compiler or Haxe's interpreter. Packing shaders fetches sokol-shdc the first time, and for SDL_GPU glslang and SPIRV-Cross (built once by hxcpp); `haxelib run helix setup` does it ahead; the framework's shaders are packed already.
 
-`-lib helix` adds `src/` to the class path and runs `extraParams.hxml`, one line, `--macro helix.macro.Haxelib.configure()`: it adds the generated code's class paths (`generated/shaders`, `generated/fonts`, and for an `sdl3-gpu` build `generated/shaders-sdlgpu`, SDL_GPU's dialects, defining `helix_sdl3_gpu`, which the programs carry them under) and, natively, hxcpp's architecture define for the machine building (`HXCPP_M64`, or `HXCPP_ARM64` on arm64) when the build sets none (hxcpp picks 32-bit on Windows by itself). The game's hxml holds only what's its own: its class paths, `-main`, `-D helix-backend=<backend>` (the profile `helix.App` runs: `webgl2`, `sokol-gl`, `sdl3-gl` or `sdl3-gpu`), the target and its choices, `-dce full -D analyzer-optimize` for a release and `-debug` to find faults, natively `-D HXCPP_COMPILE_THREADS=4` to compile faster. The hello game that dogfoods the library builds from these two files:
+`-lib helix` adds `src/` to the class path and runs `extraParams.hxml`, one line, `--macro helix.macro.Haxelib.configure()`: it adds the generated code's class paths (`generated/shaders`, `generated/fonts`, and for an `sdl3-gpu` build `generated/shaders-sdlgpu`, SDL_GPU's dialects, defining `helix_sdl3_gpu`, which the programs carry them under) and, natively, hxcpp's architecture define for the machine building (`HXCPP_M64`, or `HXCPP_ARM64` on arm64) when the build sets none (hxcpp picks 32-bit on Windows by itself). The game's hxml holds only what's its own: its class paths, `-main`, `-D helix-backend=<backend>` (the profile `helix.App` runs: `webgl2`, `sokol-gl`, `sdl3-gl` or `sdl3-gpu`), the target and its choices, `-dce full -D analyzer-optimize` for a release and `-debug` to find faults, natively `-D HXCPP_COMPILE_THREADS=4` to compile faster. The hello game that dogfoods the library builds from these, the starter's layout (`haxelib run helix init`): the builds in `hxml/`, each run from the game's folder as `haxe hxml/<file>.hxml` (the paths in an hxml are read from the folder haxe runs in, not the hxml's), what they share in `common.hxml`:
 
 ```hxml
-# web.hxml: haxe web.hxml -> out/web/app.js, loaded by out/web/index.html
+# hxml/common.hxml: what every build shares
 -lib helix
 -cp src
--D helix-backend=webgl2
 -main Main
+--macro helix.tools.Build.packShaders()
+```
+
+```hxml
+# hxml/build.web.hxml: the browser build for development -> out/web/app.js, the page beside it
+hxml/common.hxml
+-D helix-backend=webgl2
 -debug
 -js out/web/app.js
 ```
 
 ```hxml
-# native.hxml: haxe native.hxml -> out/native/Main; hxcpp compiles HeliX's adapters' C with it
--lib helix
--cp src
+# hxml/build.native.hxml -> out/native/Main; hxcpp compiles HeliX's adapters' C with it
+hxml/common.hxml
 -D helix-backend=sokol-gl
--main Main
 -dce full
 -D analyzer-optimize
 -cpp out/native
 ```
 
-- **The page.** `templates/index.html` is the page a browser build runs in, the one the examples are served from and the one `haxelib run helix site` writes: `{{title}}` is the game's name and `{{meta}}` nothing, or `<meta name="helix-config" content="config.json">` when a `config.json` sits beside the page (`Config`, decision 131). What the framework needs of a page: a `<canvas id="canvas">` to draw in (the template sizes it to the viewport, focusable for the keyboard), a `<div id="status">` for its messages (a lost context, a failed start), and `app.js` loaded after them. The template links `favicon.png` beside the page; without one the browser logs a 404, as it would without the link. Every path in it is relative, so the site runs from any folder of a host (itch.io serves a game under a path of its own; checked under one in headless Chrome, the assets fetched relative to the page).
+```hxml
+# hxml/build.dist.hxml: the release build made ready to host in out/dist/, zipped
+hxml/common.hxml
+-D helix-backend=webgl2
+-dce full
+-D analyzer-optimize
+-js out/dist/app.js
+--macro helix.tools.Build.cleanOutput()
+--macro helix.tools.Build.generateWebPage()
+--macro helix.tools.Build.copyAssets()
+--macro helix.tools.Build.zipOutput("out/my-game-web.zip")
+```
+
+The starter's other three are run beside a build rather than as one: `hxml/watch.hotreload.hxml` and `hxml/watch.shader.hxml`, the dev loop's (below), and `hxml/serve.dist.hxml`, `out/dist/` served on this machine to try before uploading.
+
+
+- **The page.** `templates/index.html` is the page a browser build runs in, the one the examples are served from and the one `helix.tools.Build.generateWebPage` writes beside a build: `{{title}}` is the game's name and `{{meta}}` nothing, or `<meta name="helix-config" content="config.json">` when a `config.json` sits beside the page (`Config`, decision 131). What the framework needs of a page: a `<canvas id="canvas">` to draw in (the template sizes it to the viewport, focusable for the keyboard), a `<div id="status">` for its messages (a lost context, a failed start), and `app.js` loaded after them. A browser build on `-lib helix` writes it beside its `-js` output when no `index.html` is there (one there is the game's and kept; not for `--no-output` or an editor's completion), so the dev loop's server has a page to serve. The template links its icon, `favicon.svg` beside the page: the game's own (the starter carries the Whirling Gizmo logo there, `templates/starter/favicon.svg`, for the game to replace), or the library's when the game has none; the build puts it beside the page. Every path in it is relative, so the site runs from any folder of a host (itch.io serves a game under a path of its own; checked under one in headless Chrome, the assets fetched relative to the page).
 - **Assets.** A game keeps its files in one folder beside what it ships and names it in `AppOptions.assets`, or takes the default: in the browser `assets/` beside `index.html` (fetched relative to the page; a manifest there, `tools/gen_manifest.py`'s, named in `AppOptions.manifest`, lets the asset cache follow changes; a game naming none needs none), natively `assets` beside the program (the profiles resolve the folder relative to the program, not the working directory). `site` copies the folder beside the page; a native program reads `assets` beside itself, so a copy (or a link) of the folder goes beside `out/native/Main`, and ships with it. Nothing is packed into the program. The repository's examples share one folder beside their own (`../assets`), which is `tools/example.py`'s doing, not the library's.
 - **The generated code**, `generated/`, is committed and shipped: `generated/shaders` holds the framework's programs (`<Name>Program.hx`, sokol-shdc's output of `src/helix/graphics/shaders` as data) and the shader library packed (`<Name>Packed.hx` and `PackedShaders.hx`, from `src/helix/shaders`), `generated/shaders-sdlgpu` their SDL_GPU dialects (on the class path of `sdl3-gpu` builds alone, 2.7 MB no other build carries), `generated/fonts` the built-in font (`GeneratedFont.hx`, JetBrains Mono baked by `tools/bake_fonts.py`). `tools/gen_code.py` remakes what's older than its source, and every build path and the dev loop call it, so an edited shader is current when it compiles; `--regenerate` remakes all of it, `--check` fails when the committed code isn't what the sources give now (the first thing `helix.py test` does, so CI refuses a stale commit). sokol-shdc, glslang and SPIRV-Cross are the generators' (fetched by the tools); a game needs none of them.
 
-### The library's commands: `haxelib run helix`
+### Build steps: `helix.tools`
 
-`haxelib run helix <command>` is the library's front door for a game (`Run.hx`, `haxelib.json`'s `main`: haxelib starts it in the library's folder and appends the folder the command was given from, which the command works in; the commands are `tools/game/`'s and the packer `tools/shader/`'s, in Haxe, run by Haxe's interpreter, so they need nothing but Haxe). `haxelib run helix --help` lists the commands, each with `--help` of its own; from a checkout, `haxe --run Run <command>` in the checkout's folder works on the game in it (haxelib passes the caller's folder instead).
+A build's steps are macros an hxml lists (`--macro helix.tools.<Class>.<step>(...)`), run by the compiler from the game's directory, so a build needs nothing but Haxe. A step's directory, when it takes one, is relative to the game's and defaults to the build's output directory (the `-js` file's, natively the `-cpp` one); a step that fails ends the build with its message. The API reference has each in full.
+
+- **`Build`**, the steps of a build, run once it has written its output, in the order listed (`packShaders` before it compiles):
+  - `packShaders(?directory)` packs `shaders/<name>.glsl` into `assets/shaders/<name>.hxshader`, which the game loads as `shaders.load("shaders/<name>.hxshader", ...)` (`helix.graphics.Shaders`), as the examples' are packed; each only when its source is newer, with SDL_GPU's dialects when the build names the `sdl3-gpu` backend; nothing without a `shaders/` directory. When the assets carry manifests (`tools/gen_manifest.py`'s `manifest.json`, which a game names in `AppOptions.manifest` for the browser's asset cache), they're rewritten from their root down to the shaders' directory (each other directory's kept), as `tools/gen_manifest.py` writes them.
+  - `cleanOutput(?directory)` removes everything in the browser build's output directory but the JavaScript just written; it refuses a native build's (`-cpp` is hxcpp's working directory) and one holding the game.
+  - `generateWebPage(?directory)` generates `index.html` from the template and copies `favicon.svg` (the game's, or the library's) beside the JavaScript, each when it isn't there, and the game's `config.json` each build (the page told of it). Every browser build on `-lib helix` runs it.
+  - `copyAssets(?directory)` copies `assets/` beside the page or the program.
+  - `copyProgram(directory)` copies the native program (and the libraries beside it) into a directory of its own: a native distribution is `copyProgram("out/dist-native")`, `copyAssets("out/dist-native")` and `zipOutput(..., "out/dist-native")`.
+  - `zipOutput(path, ?directory)` writes the directory as a zip, its files at the root (`index.html` at the root, what itch.io's HTML upload takes).
+- **`Watchers`**, run beside the dev loop until Ctrl+C: `watchShaders(?directory, sdlGpu = false)` packs the game's shaders as `packShaders` does, then again as each changes and as new ones appear; a shader that fails is reported and its last packed file kept.
+- **`WebServer`**: `serveDirectory(directory, port = 8095)` serves a directory on this machine over HTTP, as a host serves it (each file with its type, a directory's `index.html`, nothing outside it; no building, no reloading), until Ctrl+C.
+
+### `haxelib run helix`
+
+`haxelib run helix <command>` runs what a game needs before it has an hxml, or outside one (`Run.hx`, `haxelib.json`'s `main`: haxelib starts it in the library's folder and appends the folder the command was given from, which the command works in; `helix.tools.setup.Commands`, run by Haxe's interpreter). `haxelib run helix --help` lists them; from a checkout, `haxe -cp src --run Run <command>` works in the current folder.
 
 ```console
-haxelib run helix init my-game                 # a starter game in my-game/ (new or empty): src/Main.hx, src/Game.hx, web.hxml, native.hxml, assets/, .gitignore, README.md
-haxelib run helix shader                       # shaders/*.glsl packed into assets/shaders/<name>.hxshader; --watch packs again on change; FILE.glsl... names them; --out DIR; --sdl-gpu adds SDL_GPU's dialects
-haxelib run helix site --zip                   # out/site/: index.html, app.js, assets/ (config.json, favicon.png when there), zipped as out/<game>-web.zip with index.html at the root
-haxelib run helix setup                        # the tools shader needs, fetched ahead and listed (version, where, size); --sdl-gpu adds SDL_GPU's
+haxelib run helix init my-game     # a starter game in my-game/ (new or empty): src/Main.hx, src/Game.hx, hxml/, assets/, favicon.svg, .gitignore, README.md
+haxelib run helix setup            # the shader tools fetched ahead and listed (version, where, size); --sdl-gpu adds SDL_GPU's
 ```
 
-- **`init <folder>`** writes a starter game, `templates/starter/` with the folder's name and title in it: the hello's shape (`Game extends helix.App` setting the window's title and drawing a rectangle and a greeting with `Batch2D`; `Main` giving it its `AppOptions`, the product named for the folder), `web.hxml` (`webgl2`, `-debug`, `out/web/app.js`) and `native.hxml` (`sokol-gl`, release, `out/native`), an empty `assets/` with a README line, `.gitignore` (`out/`) and a README with the commands. It refuses a folder with anything in it.
-- **`shader [FILE.glsl ...] [--out DIR] [--sdl-gpu] [--watch]`** packs the game's shaders as the examples' are packed: `shaders/<name>.glsl` into `assets/shaders/<name>.hxshader`, which the game loads as `shaders.load("shaders/<name>.hxshader", ...)` (`helix.graphics.Shaders`), so a game's loading line is an example's. Files named are packed instead of the folder's, `--out` puts them elsewhere, `--sdl-gpu` adds SDL_GPU's dialects for an `sdl3-gpu` build (glslang and SPIRV-Cross, fetched into the user's cache the first time, SPIRV-Cross built by hxcpp). `--watch` packs each again as it changes, and new ones in `shaders/` as they appear, until Ctrl+C; a shader that fails is reported and its last packed file kept. When the assets carry manifests (`tools/gen_manifest.py`'s `manifest.json`, which a game names in `AppOptions.manifest` for the browser's asset cache), they're rewritten from their root down to the shaders' folder after a pack (each other folder's manifest kept as it is), as `tools/gen_manifest.py` writes them; a game without them needs nothing more. sokol-shdc is fetched into the user's cache the first time (above).
-- **`site [--out DIR] [--zip [FILE]] [--title TITLE] [--js FILE] [--hxml FILE]`** assembles the browser build for hosting, after `haxe web.hxml`: in `out/site/` (or `--out`) `index.html` from the template with the game folder's name as its title (or `--title`), `app.js` copied from the `-js` output `web.hxml` names (or `--hxml`'s, or the file `--js` names; the source map is left behind), `assets/` copied beside it, and `config.json` (the page told of it) and `favicon.png` from the game's folder when there. The folder is remade each time. `--zip` also writes it as a zip with `index.html` at the root, what itch.io's HTML upload takes, as `out/<game>-web.zip` or the file named. It refuses a build not made yet, and `--out` naming the game's folder.
-- **`setup [--sdl-gpu]`** makes ready what `shader` would fetch or build on its first run, for a machine about to go offline or a CI's cache: sokol-shdc, and with `--sdl-gpu` SPIRV-Cross (built by hxcpp, which it checks for first) and glslang. Then it lists each tool, those not asked for as they stand: its version (or the variable naming one of your own), where it is and the room it takes, and the cache's folder.
 
-**The dev loop** is two commands beside each other in the game's folder, the starter's README's: hotreload-hx's server builds `web.hxml` on save and swaps the code into the page it serves (the assets at `/assets`, where the page fetches them), and `shader --watch` repacks the game's shaders as they change, which the page reloads as an asset:
+- **`init <folder>`** writes a starter game, `templates/starter/` with the folder's name and title in it: the hello's shape (`Game extends helix.App` setting the window's title and drawing a rectangle and a greeting with `Batch2D`; `Main` giving it its `AppOptions`, the product named for the folder), its builds in `hxml/` (above: `common.hxml`, `build.web`, `build.native`, `build.dist`, `watch.hotreload`, `watch.shader`, `serve.dist`), an empty `assets/` with a README line, `favicon.svg` (the page's icon, the logo until the game's replaces it), `.gitignore` (`out/`) and a README with the commands. It refuses a folder with anything in it.
+- **`setup [--sdl-gpu]`** makes ready what packing shaders would fetch or build on its first use, for a machine about to go offline or a CI's cache: sokol-shdc, and with `--sdl-gpu` SPIRV-Cross (built by hxcpp, which it checks for first) and glslang. Then it lists each tool, those not asked for as they stand: its version (or the variable naming one of your own), where it is and the room it takes, and the cache's folder.
+
+**The dev loop** is two hxml files run beside each other in the game's folder, the starter's README's (the second only for a game with shaders of its own): hotreload-hx's server builds `hxml/build.web.hxml` on save and swaps the code into the page it serves (the assets at `/assets`, where the page fetches them), and `Watchers.watchShaders` repacks the game's shaders as they change, which the page reloads as an asset:
 
 ```console
-haxe -lib hotreload-hx --run hotreload.DevServer --port 8064 --mount /assets=assets web.hxml
-haxelib run helix shader --watch
+haxe hxml/watch.hotreload.hxml     # -lib hotreload-hx, --run hotreload.DevServer --port 8064 --mount /assets=assets hxml/build.web.hxml, one argument a line
+haxe hxml/watch.shader.hxml        # -lib helix, --macro helix.tools.Watchers.watchShaders()
 ```
 
 
@@ -166,8 +197,10 @@ tools/                    example/build/check/format/doc tools (Python, some Nod
 docs/                     EXAMPLES, ROADMAP, HISTORY, ARCHITECTURE, INTERFACE, CONVENTIONS, DECISIONS, API_FINDINGS, ADAPTER_AUDIT, PACKAGING
 vendor/                   pinned third-party headers, fonts and their licenses
 helix.py                  front door for the tests and the services checks
-Run.hx, tools/game/       haxelib run helix: a game's front door (init, shader, site), in Haxe
-tools/shader/             the shader packer, sokol-shdc and SDL_GPU's translators, in Haxe (the repository's tools reach it through tools/shader_tool.py)
+src/helix/tools/           a game's build steps (Build, Watchers, WebServer: macros its hxml lists), haxelib run helix's commands (setup/),
+                          the shader packer, sokol-shdc and SDL_GPU's translators (shader/; the repository's tools reach it through
+                          tools/shader_tool.py), what they share (shared/); in Haxe, run in the compiler or its interpreter
+Run.hx                    haxelib run helix (init, setup)
 haxelib.json, extraParams.hxml   the library: classPath src/, and what -lib helix adds (src/helix/macro/Haxelib.hx)
 out/                      ignored: builds' results, out/<platform>/<config>-<backend>/ (deleting it is a clean)
 build/                    ignored: the generators' scratch, builds' scratch (build/<build>/), caches, check output

@@ -1,12 +1,12 @@
-package tools.shader;
+package helix.tools.shader;
 
-import tools.shader.JsonText;
+import helix.tools.shader.JsonText;
 import haxe.io.Path;
 import sys.FileSystem;
 import sys.io.File;
-import tools.game.CommandError;
-import tools.game.Downloads;
-import tools.game.Files;
+import helix.tools.shared.CommandError;
+import helix.tools.shared.Downloads;
+import helix.tools.shared.Files;
 
 /** SDL_GPU's shader dialects from a program's GLSL 410 (sokol-shdc's, with its layout): SPIR-V for Vulkan, MSL for Metal and HLSL (shader
 	model 5.1) for Direct3D 12, each laid out as SDL_GPU binds resources. Metal compiles the MSL and Direct3D 12 the HLSL (as DXBC, through the
@@ -123,19 +123,10 @@ $files </files>
 		var cwd = Sys.getCwd();
 		Sys.setCwd(source);
 		var arch = Shdc.arm64() ? "-DHXCPP_ARM64" : "-DHXCPP_M64";
-		// Its output on the standard error, as the tools' messages are: the standard output is a command's result.
-		var build = new sys.io.Process("haxelib", ["run", "hxcpp", "Build.xml", arch, "-DHXCPP_COMPILE_THREADS=4"]);
+		// Its output on the standard error, as the tools' messages are: the standard output is a command's result. Through the shell (sh and
+		// cmd both take 1>&2), as a macro can't start the thread that would read two pipes at once.
+		var code = Sys.command('haxelib run hxcpp Build.xml $arch -DHXCPP_COMPILE_THREADS=4 1>&2');
 		Sys.setCwd(cwd);
-		var errors = new sys.thread.Lock(), errorText = haxe.io.Bytes.alloc(0);
-		sys.thread.Thread.create(() -> {
-			errorText = build.stderr.readAll();
-			errors.release();
-		});
-		Sys.stderr().write(build.stdout.readAll());
-		errors.wait();
-		Sys.stderr().write(errorText);
-		var code = build.exitCode();
-		build.close();
 		if (code != 0)
 			throw new CommandError('shader: building SPIRV-Cross failed (haxelib run hxcpp, exit $code); SDL_GPU\'s dialects need hxcpp installed');
 		Files.removeFolder(source);

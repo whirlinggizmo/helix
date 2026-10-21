@@ -1,6 +1,6 @@
 """HeliX's front door for the tests and the services checks. Python owns external tools; HXML owns Haxe settings.
 
-Examples have their own: tools/example.py; a game on -lib helix its own, `haxelib run helix` (Run.hx, tools/game/)."""
+Examples have their own: tools/example.py; a game on -lib helix its own: hxml files whose build steps are helix.tools macros, and `haxelib run helix` (Run.hx) for init and setup."""
 import argparse
 import json
 import os
@@ -25,7 +25,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
-    for test in ('shaders/shader_metadata_test','shaders/shader_packer_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test','tools/run_test'):run([sys.executable,f'tests/{test}.py'])
+    for test in ('shaders/shader_metadata_test','shaders/shader_packer_test','tools/gltf2scene_test','tools/autopilot_samples_test','tools/app_test','tools/helix_tools_test'):run([sys.executable,f'tests/{test}.py'])
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','--interp'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     run(['haxe','-cp','src','-cp','tests/consumer','-main','PackageSmoke','-js','build/tests/package-smoke.js','-dce','full'])

@@ -1,9 +1,9 @@
-package tools.shader;
+package helix.tools.shader;
 
 import haxe.io.Path;
-import tools.game.CommandError;
-import tools.game.Downloads;
-import tools.game.Files;
+import helix.tools.shared.CommandError;
+import helix.tools.shared.Downloads;
+import helix.tools.shared.Files;
 
 /** sokol-shdc, the shader compiler: the sokol-tools-bin build dependencies.json pins (sokolToolsBin), for this system, downloaded into the
 	user's cache the first time from floooh's repository, or the Whirling Gizmo mirror when that can't be reached, and checked against its
@@ -33,7 +33,7 @@ class Shdc {
 		if (Files.isFile(found) && Files.isFile(stamp) && sys.io.File.getContent(stamp) == checked)
 			return found;
 		// One already there without its record (put there by hand, or by an earlier tool) is checked once, not fetched again.
-		if (Files.isFile(found) && tools.game.Sha256.hex(sys.io.File.getBytes(found)) == SHA256[folder]) {
+		if (Files.isFile(found) && helix.tools.shared.Sha256.hex(sys.io.File.getBytes(found)) == SHA256[folder]) {
 			sys.io.File.saveContent(stamp, checked);
 			return found;
 		}
@@ -54,7 +54,7 @@ class Shdc {
 	public static function location(root:String):String {
 		var pin:String = haxe.Json.parse(sys.io.File.getContent(Path.join([root, "dependencies.json"]))).sokolToolsBin;
 		if (pin != HASHES_PIN)
-			throw new CommandError('shdc: dependencies.json pins sokol-tools-bin $pin, but tools/shader/Shdc.hx has the hashes of $HASHES_PIN');
+			throw new CommandError('shdc: dependencies.json pins sokol-tools-bin $pin, but src/helix/tools/shader/Shdc.hx has the hashes of $HASHES_PIN');
 		system();
 		var exe = Sys.systemName() == "Windows" ? "sokol-shdc.exe" : "sokol-shdc";
 		return Path.join([Downloads.cache(), 'sokol-shdc-${pin.substr(0, 12)}', exe]);

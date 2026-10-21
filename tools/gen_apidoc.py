@@ -37,6 +37,8 @@ def targets():
 def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
+    # The tools' internals run in the compiler or Haxe's interpreter, not on a target: Build, Watchers and WebServer are their face.
+    ignore=[*ignore,'helix.tools.setup','helix.tools.shader','helix.tools.shared']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
     args=['haxe','-cp','src','-cp','generated/shaders','-cp','generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]

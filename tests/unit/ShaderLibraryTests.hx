@@ -21,7 +21,7 @@ import helix.shaders.Toon;
 import helix.shaders.Unlit;
 import helix.shaders.Water;
 
-/** The shader library packed into the program (tools/shader/ShaderPacker.hx's generated <Name>Packed classes): each packed shader reads and builds
+/** The shader library packed into the program (src/helix/src/helix/tools/shader/ShaderPacker.hx's generated <Name>Packed classes): each packed shader reads and builds
 	with its variants (skinned, and the casters of a shader with a vertex hook or a discard), is built once a GPU and shared, freed with the
 	GPU's release; each library class's fields write their parameters where the shader's reflection puts them; the hit flash and rim reach the
 	stage's uniforms; a skinned model draws through a surface shader's skinned variant; a dissolving shadow is drawn by its caster; and a

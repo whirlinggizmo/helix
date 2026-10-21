@@ -79,7 +79,7 @@ def tool_modules():
 
 def tool_stamps():
     """The loaded tools' files' times, and the Haxe shader tool's (tools/shader_tool.py), to tell when one is edited."""
-    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}|{'tools/shader':shader_tool.stamp()}
+    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}|{'src/helix/tools':shader_tool.stamp()}
 
 def reload_tools():
     """Loads the tools again (twice, so one taking another's names gets the new ones), then this module's names taken from them with
@@ -107,7 +107,7 @@ def prepare(name,build):
     (web/'index.html').write_text(TEMPLATE.read_text(encoding='utf-8').replace('{{title}}',f'HeliX {name}').replace('{{meta}}',meta),encoding='utf-8')
     if config.is_file():shutil.copyfile(config,web/'config.json')
     elif (web/'config.json').exists():(web/'config.json').unlink()
-    shutil.copyfile(SHARED/'favicon.png',web/'favicon.png')
+    shutil.copyfile(ROOT/'templates/starter/favicon.svg',web/'favicon.svg')
     assets(name,build)
     licenses(web)
 

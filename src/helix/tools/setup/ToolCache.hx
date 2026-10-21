@@ -1,12 +1,15 @@
-package tools.game;
+package helix.tools.setup;
 
+import helix.tools.shared.CommandError;
+import helix.tools.shared.Downloads;
+import helix.tools.shared.Files;
 import haxe.io.Path;
-import tools.shader.GpuShaders;
-import tools.shader.Shdc;
+import helix.tools.shader.GpuShaders;
+import helix.tools.shader.Shdc;
 
 /** `setup`: the tools the commands fetch or build the first time they need them, made ready ahead (for a machine about to go offline, or a
 	CI's cache), then listed: each one's version, where it is and the room it takes. */
-class Setup {
+class ToolCache {
 	/** sokol-shdc made ready, and SDL_GPU's translators too when sdlGpu, for the library at root; each tool listed on the standard output,
 		those not asked for as they stand. */
 	public static function run(root:String, sdlGpu:Bool):Void {

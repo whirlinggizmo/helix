@@ -1,4 +1,4 @@
-package tools.game;
+package helix.tools.shared;
 
 import haxe.io.Bytes;
 import haxe.io.Path;
@@ -9,7 +9,7 @@ import sys.io.File;
 	every folder under it, listing each file's SHA-256 and each subfolder's manifest's, so a client knows an unchanged folder from its parent
 	alone; deterministic (sorted, compact), written only where one changed; manifest.json files themselves aren't listed, nor names an asset
 	path can't hold (helix.assets.AssetPath: A-Z, a-z, 0-9, '_', '.', '-'). */
-class Manifests {
+class AssetManifests {
 	static inline final NAME = "manifest.json";
 	static final VALID = ~/^[A-Za-z0-9_.-]+$/;
 

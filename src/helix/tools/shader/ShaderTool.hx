@@ -1,10 +1,10 @@
-package tools.shader;
+package helix.tools.shader;
 
-import tools.shader.JsonText;
+import helix.tools.shader.JsonText;
 import haxe.io.Path;
-import tools.game.CommandError;
+import helix.tools.shared.CommandError;
 
-/** The packer as the repository's Python tools run it (tools/shader_tool.py), in the library's folder: `haxe --run tools.shader.ShaderTool
+/** The packer as the repository's Python tools run it (tools/shader_tool.py), in the library's folder: `haxe --run helix.tools.shader.ShaderTool
 	<command>`. Results go to the standard output (as JSON where they're data), messages to the standard error; a refusal exits with 1.
 
 	- `pack [--sdl-gpu] IN OUT [IN OUT ...]`: each IN (.glsl) packed into its OUT (.hxshader).

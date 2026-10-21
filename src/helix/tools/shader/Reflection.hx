@@ -1,4 +1,4 @@
-package tools.shader;
+package helix.tools.shader;
 
 /** sokol-shdc's reflection (`-f bare_yaml`'s `<name>_reflection.yaml`) read into Haxe values: mappings as objects, sequences as arrays,
 	integers as Int, true and false as Bool, the rest as String. It reads the YAML sokol-shdc writes, block mappings and sequences of them
@@ -99,5 +99,5 @@ class Reflection {
 	}
 
 	function fail(number:Int, problem:String):Void
-		throw new tools.game.CommandError('shader: $source:$number: $problem in sokol-shdc\'s reflection');
+		throw new helix.tools.shared.CommandError('shader: $source:$number: $problem in sokol-shdc\'s reflection');
 }

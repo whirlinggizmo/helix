@@ -10,7 +10,15 @@ HeliX is a Haxe game framework. One Haxe program runs in the browser (Haxe → J
 
 In the browser: **[the examples](https://whirlinggizmo.github.io/helix/)**, each running on WebGL2, and **[the API reference](https://whirlinggizmo.github.io/helix/api/)**.
 
-Locally, with Haxe 4.3.7, Python 3 and `sokol-shdc` (the rest, and the native toolchain: [BUILDING.md](BUILDING.md)):
+A game of your own, with Haxe 4.3.7 and HeliX as a haxelib (BUILDING.md, "A game on `-lib helix`"):
+
+```console
+haxelib run helix init my-game && cd my-game
+haxe hxml/watch.hotreload.hxml          # http://localhost:8064/, hot reload as you edit (hotreload-hx)
+haxe hxml/build.dist.hxml               # the release build for hosting, out/dist/ and a zip for itch.io
+```
+
+HeliX's own examples, from a checkout, with Haxe 4.3.7 and Python 3 (the shader compiler is fetched the first time; the rest, and the native toolchain: [BUILDING.md](BUILDING.md)):
 
 ```console
 python3 tools/example.py animation dev   # http://localhost:8060/, hot reload as you edit

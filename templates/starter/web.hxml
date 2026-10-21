@@ -1,7 +1,0 @@
-# The browser build: haxe web.hxml -> out/web/app.js; `haxelib run helix site` puts the page around it.
--lib helix
--cp src
--D helix-backend=webgl2
--main Main
--debug
--js out/web/app.js

@@ -1,0 +1,7 @@
+# The native build (sokol on GL): haxe hxml/build.native.hxml -> out/native/Main; hxcpp compiles HeliX's adapters' C with it.
+hxml/common.hxml
+-D helix-backend=sokol-gl
+-dce full
+-D analyzer-optimize
+-D HXCPP_COMPILE_THREADS=4
+-cpp out/native

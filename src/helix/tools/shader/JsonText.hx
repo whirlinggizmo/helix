@@ -1,4 +1,4 @@
-package tools.shader;
+package helix.tools.shader;
 
 /** A JSON value whose objects keep their keys' order, as the packer writes .hxshader files: the same text on every system and every run. */
 enum JsonValue {

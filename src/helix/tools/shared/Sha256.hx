@@ -1,4 +1,4 @@
-package tools.game;
+package helix.tools.shared;
 
 import haxe.ds.Vector;
 import haxe.io.Bytes;

@@ -1,4 +1,4 @@
-"""Checks of the shader packer, tools/shader/ShaderPacker.hx (run through tools/shader_tool.py, as the repository's tools run it), against
+"""Checks of the shader packer, src/helix/tools/shader/ShaderPacker.hx (run through tools/shader_tool.py, as the repository's tools run it), against
 real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members' std140 offsets, its textures, both
 dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a vertex hook or a discard) and its own
 textures after the joints; a sprite shader over the effect2d program's vertices, and its variant over the 3D sprites'; the shader library

@@ -1,18 +1,17 @@
 # {title}
 
-A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/Game.hx` is the game, `src/Main.hx` starts it.
+A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/Game.hx` is the game, `src/Main.hx` starts it. The builds
+are in `hxml/`, each run from this folder:
 
 ```console
-haxe web.hxml                        # the browser build, out/web/app.js
-haxelib run helix site --zip         # the page around it in out/site/, zipped for hosting (itch.io) as out/{name}-web.zip
-haxe native.hxml && out/native/Main  # the native build (hxcpp), out/native/Main; it reads assets/ beside itself: copy (or link) the folder to out/native/assets
-haxelib run helix setup              # the shader compiler fetched ahead (shader fetches it on first use), e.g. before going offline
+haxe hxml/watch.hotreload.hxml    # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs
+haxe hxml/watch.shader.hxml       # beside it, for shaders of the game's own: shaders/<name>.glsl packed as they change
+haxe hxml/build.web.hxml          # the browser build alone, out/web/
+haxe hxml/build.dist.hxml         # the release build for hosting: out/dist/, zipped as out/{name}-web.zip (itch.io)
+haxe hxml/serve.dist.hxml         # out/dist/ served at http://localhost:8095/, to try before uploading
+haxe hxml/build.native.hxml       # the native build (hxcpp), out/native/Main; it reads assets/ beside itself: copy (or link) the folder to out/native/assets
 ```
 
-The dev loop, in two terminals: hotreload-hx's server rebuilds on save and swaps the code into the running page at <http://localhost:8064/>
-(the assets served at /assets), and HeliX packs the game's shaders (`shaders/*.glsl`, loaded as `shaders/<name>.hxshader`) as they change.
-
-```console
-haxe -lib hotreload-hx --run hotreload.DevServer --port 8064 --mount /assets=assets web.hxml
-haxelib run helix shader --watch
-```
+`common.hxml` holds what every build shares; the build steps are macros in `helix.tools` (`Build`, `Watchers`, `WebServer`). `favicon.svg` is the page's icon: put
+the game's own there. The shader compiler is fetched the first time a shader is packed; `haxelib run helix setup` fetches it ahead,
+before going offline say.

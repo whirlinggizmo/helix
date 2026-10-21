@@ -1,0 +1,11 @@
+# The game for hosting: haxe hxml/build.dist.hxml -> the release build in out/dist/ with its page and assets/, zipped as
+# out/{name}-web.zip with index.html at its root, what itch.io takes. hxml/serve.dist.hxml serves it to try first.
+hxml/common.hxml
+-D helix-backend=webgl2
+-dce full
+-D analyzer-optimize
+-js out/dist/app.js
+--macro helix.tools.Build.cleanOutput()
+--macro helix.tools.Build.generateWebPage()
+--macro helix.tools.Build.copyAssets()
+--macro helix.tools.Build.zipOutput("out/{name}-web.zip")
