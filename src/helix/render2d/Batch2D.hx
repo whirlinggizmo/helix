@@ -47,7 +47,8 @@ class Batch2D {
 	var runClips:Array<Int> = [];
 	// The clips pushed, each within the one before (x, y, w, h each); the current one last.
 	var clips:Array<Int> = [];
-	// By run: the emitter it draws (its first record and count in the batch's particle upload, its uniforms), or null for a run of quads.
+	// By run: the emitter it draws (its index in the batch's particles), or -1 for a run of quads.
+	var runParticles:Array<Int> = [];
 	// By run: the effect it draws through (its vertices in the effects' upload), or null; and its texture.
 	var runEffects:Array<Null<SpriteEffect>> = [];
 	var runTextures:Array<Texture2D> = [];
@@ -63,23 +64,11 @@ class Batch2D {
 	var ru1 = 0.;
 	var rv1 = 0.;
 	var regionHeld = false;
-	var runEmitters:Array<Null<{
-		emitter:helix.particles.Emitter,
-		first:Int,
-		count:Int,
-		uniforms:Bytes
-	}>> = [];
-	// Particles, made when first drawn: their quad, and the frame's records in one upload.
-	var particlesReady = false;
-	var particleCorners = 0;
+	// What draws particles, made by the first emitter drawn (an optional part: a batch that draws none carries none of it).
+	var particles:Null<BatchParticles>;
 	// A rounded rectangle's outlines, outside and in, reused.
 	var outer:Array<Float> = [];
 	var inner:Array<Float> = [];
-	var particleIndices = 0;
-	var particleBuffer = 0;
-	var particleCapacity = 0;
-	var particleRecords:Bytes = Bytes.alloc(0);
-	var particleCount = 0;
 	var sampling:Sampling = Sampling.NEAREST;
 	var ta = 1.;
 	var tb = 0.;
@@ -118,12 +107,13 @@ class Batch2D {
 		runs = [];
 		runCameras = [];
 		runSamplings = [];
-		runEmitters = [];
+		runParticles = [];
 		runEffects = [];
 		runTextures = [];
 		runClips = [];
 		clips = [];
-		particleCount = 0;
+		if (particles != null)
+			particles.startFrame();
 		texture = font.texture;
 		sampling = texture.sampling;
 		resetTransform();
@@ -225,17 +215,8 @@ class Batch2D {
 			}
 			gpu.updateBuffer(effectBuffer, effectData, effectVertices * Effect2DProgram.stride);
 		}
-		if (particleCount > 0) {
-			if (particleCount > particleCapacity) {
-				if (particleBuffer != 0)
-					gpu.destroyBuffer(particleBuffer);
-				particleCapacity = 1024;
-				while (particleCapacity < particleCount)
-					particleCapacity *= 2;
-				particleBuffer = gpu.createBuffer(particleCapacity * Particle3DProgram.instanceStride);
-			}
-			gpu.updateBuffer(particleBuffer, particleRecords, particleCount * Particle3DProgram.instanceStride);
-		}
+		if (particles != null)
+			particles.upload();
 		var i = 0, viewport:Camera2D = null, clipped = false, cx = 0, cy = 0, cw = 0, ch = 0;
 		while (i < runs.length) {
 			var run = Std.int(i / 3), c = runCameras[run];
@@ -256,18 +237,12 @@ class Batch2D {
 				gpu.applyScissor(cx, c.framebufferHeight - cy - ch, cw, ch);
 				clipped = true;
 			}
-			var e = runEmitters[run], through = runEffects[run];
+			var emitted = runParticles[run], through = runEffects[run];
 			if (through != null)
 				drawEffect(through, runTextures[run], runSamplings[run], runs[i + 1], runs[i + 2]);
-			else if (e != null) {
-				var phase = switch e.emitter.alphaMode {
-					case Blend: 1;
-					case Add: 2;
-					case _: 0;
-				};
-				gpu.draw(pipelines.particle3D(cast phase), [particleCorners, particleBuffer], particleIndices, 0, 6, e.first, e.count, [runs[i]],
-					[runSamplings[run]], [e.uniforms]);
-			} else
+			else if (emitted >= 0)
+				particles.draw(emitted, runs[i], runSamplings[run]);
+			else
 				gpu.draw(pipelines.sprite2D(Alpha), [buffer], 0, runs[i + 1], runs[i + 2], 0, 1, [runs[i]], [runSamplings[run]], [clip]);
 			draws++;
 			i += 3;
@@ -347,7 +322,7 @@ class Batch2D {
 			runs.push(end - runStart);
 			runCameras.push(camera);
 			runSamplings.push(sampling);
-			runEmitters.push(null);
+			runParticles.push(-1);
 			runEffects.push(effect);
 			runTextures.push(texture);
 			pushRunClip();
@@ -518,56 +493,19 @@ class Batch2D {
 		if (!emitter.drawable)
 			return;
 		closeRun();
-		if (!particlesReady) {
-			particlesReady = true;
-			var quad = Bytes.alloc(4 * Particle3DProgram.stride), at = 0;
-			for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
-				quad.setFloat(at, c);
-				at += 4;
-			}
-			particleCorners = gpu.createStaticBuffer(quad, quad.length, false);
-			var order = Bytes.alloc(24);
-			for (k in 0...6)
-				order.setInt32(k * 4, [0, 1, 2, 0, 2, 3][k]);
-			particleIndices = gpu.createStaticBuffer(order, 24, true);
-		}
-		var needed = (particleCount + emitter.particleCount) * Particle3DProgram.instanceStride;
-		if (needed > particleRecords.length) {
-			var grown = Bytes.alloc(Std.int(Math.max(needed, particleRecords.length * 2)));
-			grown.blit(0, particleRecords, 0, particleCount * Particle3DProgram.instanceStride);
-			particleRecords = grown;
-		}
-		var first = particleCount,
-			count = emitter.writeRecords(particleRecords, first * Particle3DProgram.instanceStride);
-		particleCount += count;
-		// The camera's mapping from the world to clip space as a matrix; z at the near plane, so nothing drawn before hides them.
-		var projection = new helix.render3d.Mat4();
-		var sx = camera.zoom * 2 / camera.viewportWidth,
-			sy = camera.zoomY * 2 / camera.viewportHeight;
-		projection.set(0, sx);
-		projection.set(5, -sy);
-		projection.set(10, 0);
-		projection.set(12, -camera.x * sx);
-		projection.set(13, camera.y * sy);
-		projection.set(14, -1);
-		var uniforms = Bytes.alloc(Particle3DProgram.vertexUniformBytes);
-		// Across the screen, and up it (y grows down in 2D).
-		emitter.writeUniforms(uniforms, projection, [1, 0, 0], [0, -1, 0]);
+		if (particles == null)
+			particles = new Batch2DParticles(gpu, pipelines);
+		var drawn = particles.add(emitter, camera);
 		var texture = emitter.texture;
 		runs.push(texture.handle);
-		runs.push(first);
-		runs.push(count);
+		runs.push(drawn.first);
+		runs.push(drawn.count);
 		runCameras.push(camera);
 		runSamplings.push(texture.sampling);
 		runEffects.push(null);
 		runTextures.push(texture);
 		pushRunClip();
-		runEmitters.push({
-			emitter: emitter,
-			first: first,
-			count: count,
-			uniforms: uniforms
-		});
+		runParticles.push(drawn.index);
 	}
 
 	/** Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted
@@ -836,14 +774,131 @@ class Batch2D {
 	/** Frees the buffers and font made by new; the batch is unusable after. */
 	public function destroy():Void {
 		gpu.destroyBuffer(buffer);
-		if (particlesReady) {
-			gpu.destroyBuffer(particleCorners);
-			gpu.destroyBuffer(particleIndices);
-		}
-		if (particleBuffer != 0)
-			gpu.destroyBuffer(particleBuffer);
+		if (particles != null)
+			particles.destroy();
 		if (effectBuffer != 0)
 			gpu.destroyBuffer(effectBuffer);
 		font.destroy(gpu);
+	}
+}
+
+/** What draws a batch's particles, reached only through this, so a batch whose first emitter never comes carries none of the particle
+	drawing, nor the particle program (CONVENTIONS, "An optional part is installed by its first use"). */
+private interface BatchParticles {
+	/** A new frame: no particles yet. */
+	function startFrame():Void;
+
+	/** emitter's particles added to the frame's, seen through camera: the index they're drawn by, and their first record and count. */
+	function add(emitter:helix.particles.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int};
+
+	/** The frame's records uploaded, once all are added. */
+	function upload():Void;
+
+	/** The particles added as index drawn, of texture sampled by sampling. */
+	function draw(index:Int, texture:Int, sampling:Sampling):Void;
+
+	/** Their buffers freed. */
+	function destroy():Void;
+}
+
+/** A batch's particles: their quad, the frame's records in one upload, and each emitter's uniforms and blending. */
+private class Batch2DParticles implements BatchParticles {
+	var gpu:IGraphics;
+	var pipelines:Pipelines;
+	var corners:Int;
+	var indices:Int;
+	var buffer = 0;
+	var capacity = 0;
+	var records:Bytes = Bytes.alloc(0);
+	var count = 0;
+	// By index, this frame: each emitter's first record and count, its uniforms, and its blending (0 opaque, 1 blended, 2 added).
+	var drawn:Array<{
+		first:Int,
+		count:Int,
+		uniforms:Bytes,
+		phase:Int
+	}> = [];
+
+	/** Particles drawn on gpu, with the program from pipelines: their quad made now. */
+	public function new(gpu:IGraphics, pipelines:Pipelines) {
+		this.gpu = gpu;
+		this.pipelines = pipelines;
+		var quad = Bytes.alloc(4 * Particle3DProgram.stride), at = 0;
+		for (c in [-.5, -.5, .5, -.5, .5, .5, -.5, .5]) {
+			quad.setFloat(at, c);
+			at += 4;
+		}
+		corners = gpu.createStaticBuffer(quad, quad.length, false);
+		var order = Bytes.alloc(24);
+		for (k in 0...6)
+			order.setInt32(k * 4, [0, 1, 2, 0, 2, 3][k]);
+		indices = gpu.createStaticBuffer(order, 24, true);
+	}
+
+	public function startFrame():Void {
+		count = 0;
+		drawn = [];
+	}
+
+	public function add(emitter:helix.particles.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int} {
+		var needed = (count + emitter.particleCount) * Particle3DProgram.instanceStride;
+		if (needed > records.length) {
+			var grown = Bytes.alloc(Std.int(Math.max(needed, records.length * 2)));
+			grown.blit(0, records, 0, count * Particle3DProgram.instanceStride);
+			records = grown;
+		}
+		var first = count, written = emitter.writeRecords(records, first * Particle3DProgram.instanceStride);
+		count += written;
+		// The camera's mapping from the world to clip space as a matrix; z at the near plane, so nothing drawn before hides them.
+		var projection = new helix.render3d.Mat4();
+		var sx = camera.zoom * 2 / camera.viewportWidth,
+			sy = camera.zoomY * 2 / camera.viewportHeight;
+		projection.set(0, sx);
+		projection.set(5, -sy);
+		projection.set(10, 0);
+		projection.set(12, -camera.x * sx);
+		projection.set(13, camera.y * sy);
+		projection.set(14, -1);
+		var uniforms = Bytes.alloc(Particle3DProgram.vertexUniformBytes);
+		// Across the screen, and up it (y grows down in 2D).
+		emitter.writeUniforms(uniforms, projection, [1, 0, 0], [0, -1, 0]);
+		var phase = switch emitter.alphaMode {
+			case Blend: 1;
+			case Add: 2;
+			case _: 0;
+		};
+		drawn.push({
+			first: first,
+			count: written,
+			uniforms: uniforms,
+			phase: phase
+		});
+		return {index: drawn.length - 1, first: first, count: written};
+	}
+
+	public function upload():Void {
+		if (count == 0)
+			return;
+		if (count > capacity) {
+			if (buffer != 0)
+				gpu.destroyBuffer(buffer);
+			capacity = 1024;
+			while (capacity < count)
+				capacity *= 2;
+			buffer = gpu.createBuffer(capacity * Particle3DProgram.instanceStride);
+		}
+		gpu.updateBuffer(buffer, records, count * Particle3DProgram.instanceStride);
+	}
+
+	public function draw(index:Int, texture:Int, sampling:Sampling):Void {
+		var d = drawn[index];
+		gpu.draw(pipelines.particle3D(cast d.phase), [corners, buffer], indices, 0, 6, d.first, d.count, [texture], [sampling], [d.uniforms]);
+	}
+
+	public function destroy():Void {
+		gpu.destroyBuffer(corners);
+		gpu.destroyBuffer(indices);
+		if (buffer != 0)
+			gpu.destroyBuffer(buffer);
 	}
 }
