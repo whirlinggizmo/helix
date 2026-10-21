@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -15,10 +14,12 @@ import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Shapes made in code on a Stage3D: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
 	sun and an ambient light, the camera turning around them. O stops and starts the camera; Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -11,11 +10,12 @@ import helix.render2d.Camera2D;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** TrueType fonts loaded from files and baked into distance fields in Haxe (Fonts): a measured, centered title in Komika, JetBrains Mono at
 	several sizes, kerning (Komika's pairs closing "AV", "AT" and "LT"), and the built-in font drawing until they are ready. D switches the last
 	line's font between the built-in one and Komika; Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var MONO = "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf";
 	static inline var KOMIKA = "fonts/Komika/KOMIKAH_.ttf";
 

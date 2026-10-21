@@ -29,7 +29,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 | `scene-file` | a racer slice entirely from a scene file and behaviors (helix.scene.SceneFile, helix.behavior): the sky, the sun's shadows, a closed loop of Kenney's Racing Kit pieces with barriers and scenery, the checkpoints, the race, the car (a prefab) and the chase camera all in `scenes/track.scene`; Car, ChaseCamera, Checkpoint and Race behaviors drive it at a fixed 60 Hz; R destroys the instance and makes it again; its autopilot drives a lap on both targets |
 | `scene3d` | the pointer over a scene: shapes in a ring hovered and clicked to select, a HUD button over the world that captures the pointer, an unpickable ground and label (helix.scene.Pointer) |
 | `pick` | every kind a Stage3D picks: a cube, a sphere, a sprite, a text, a glTF car and a walking skinned character, the hit's point, normal and distance shown |
-| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded in one line into a tree of the file's nodes: its wheels (models) and headlights (spot lights) found by name; D drives it, C rides along through a `Camera3D` under the car, H the headlights; the circling camera the examples share (`Orbit`) |
+| `model` | a glTF model (Kenney's sports car with headlights added in Blender: a .gltf, its buffer and texture files beside it) loaded in one line into a tree of the file's nodes: its wheels (models) and headlights (spot lights) found by name; D drives it, C rides along through a `Camera3D` under the car, H the headlights; the circling camera (`helix.render3d.Orbit`) |
 | `instancing` | 400 cubes sharing a mesh and material as one draw, six cars' parts one draw each, see-through cubes kept in order; SPACE: a material each, a draw each |
 | `sprite3d` | sprites on a Stage3D facing the camera, upright, flat on the ground and free; masked, blended and added; instanced by texture and effect; the library's sprite effects on 3D sprites (outlined trees, a dissolving sign, a flashing logo) and one of the example's own (`shaders/heat.glsl`, an `.hxshader` asset: the flames shimmer), with an autopilot sampling each against it off |
 | `text3d` | text in the world: labels facing the camera, a sign's text (a TrueType font) turning with its node; lines on the ground |
@@ -50,7 +50,7 @@ The catalog follows the earlier C frameworks' example names. Each example matche
 ## Larger examples: Asteroids and Blocks
 
 
-Both are whole games, built and developed like every other example, on HeliX's own 2D API, `Ticker` and shared launchers. Each has autopilot scripts that must end in the same game on both targets.
+Both are whole games, built and developed like every other example, on HeliX's own 2D API, `Ticker` and the examples' shared `Main`. Each has autopilot scripts that must end in the same game on both targets.
 
 - **Asteroids** (`examples/asteroids`): menus, flight, splitting rocks, waves, Ogg sound, keyboard/pointer/gamepad, letterboxed with a camera viewport area.
 - **Blocks** (`examples/blocks`): falling blocks, with keyboard, gamepad and touch.

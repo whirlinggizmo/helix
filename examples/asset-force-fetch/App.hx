@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.audio.Audio;
 import helix.audio.AudioPlayback;
@@ -13,12 +12,13 @@ import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Both of ensure's options at once: a source (where this call's bytes come from) and forceFetch (past the cache). The asset's path is a bogus
 	one, with nothing at the host under it, so a plain ensure would fail; the source names where the bytes really are, relative to the host as a
 	browser reads a URL against a directory, so it's the same call on every target. The bytes are kept under the bogus path, and once the ensure
 	is done that path streams as looping music. M pauses and resumes it; Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var KEY = "audio/music/invalid.mp3";
 	static inline var SOURCE = "audio/music/a_hero_is_born.mp3";
 

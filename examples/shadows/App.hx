@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -18,6 +17,8 @@ import helix.render3d.Models;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Lights casting shadows. The sun casts (DirectionalLight.shadowCasting): each frame, before the frame's own pass, drawShadows draws everything that
 	casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The stage is a floor, a wall, some
@@ -29,7 +30,7 @@ import helix.time.Time;
 	sharpen); [ / ]: depth bias (too little stripes lit surfaces, "acne"; too much lifts a shadow off its caster); M: map size (512 to 4096);
 	S / T: how much light a shadow blocks / what it leaves of the surface's color; O: orbit the camera or hold it; Escape: quit, where quitting
 	means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static var SIZES = [512, 1024, 2048, 4096];
 	// What a shadow keeps of the surface's color: nothing (physical), then two stylized tints.
 	static var TINTS = [0x000000ff, 0x1e3c64ff, 0x64321eff];

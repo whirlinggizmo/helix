@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.time.Ticker;
 import helix.debug.Autopilot;
 import helix.assets.Assets;
@@ -19,10 +18,11 @@ import helix.scene.Pointer;
 import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.Ui;
+import helix.host.ScreenShape;
 
 /** Asteroids: menus, flight, splitting rocks and waves at a fixed 60 Hz, letterboxed. Options: seed, audio (0 for silence), autopilot (a
 	script under assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done). */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	// The score, the lives and the menus, in the presentation's units.
@@ -51,12 +51,6 @@ class App extends BaseApp {
 	var soundReady = false;
 	var pilotReady = true;
 
-	public function new() {
-		super();
-		audioEnabled = Host.getOption("audio", "1") == "1";
-		fast = Host.getOption("fast", "0") == "1";
-	}
-
 	// The autopilot's script in: the pilot made, and the game prepared once the sounds are in too.
 	function startPilot(bytes:haxe.io.Bytes):Void {
 		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> ui.press(name));
@@ -65,6 +59,8 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
+		audioEnabled = Host.getOption("audio", "1") == "1";
+		fast = Host.getOption("fast", "0") == "1";
 		Window.title = "HeliX Asteroids";
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);

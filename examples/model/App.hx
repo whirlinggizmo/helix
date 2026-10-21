@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -19,12 +18,14 @@ import helix.render3d.Node3D;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
 	on its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its wheels and headlights are
 	found by name once and kept: the wheels turn, H switches the headlights, D drives the car round a circle and parks it, and C rides along
 	through a second camera under the car (behind it and above, looking ahead), and back. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var MODEL = "models/car-kit/sedan-sports-headlights.gltf";
 
 	var stage:Stage3D;

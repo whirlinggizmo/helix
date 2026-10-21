@@ -1,5 +1,4 @@
 import haxe.io.Bytes;
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.assets.Storage;
 import helix.audio.Audio;
@@ -42,6 +41,7 @@ import helix.ui.Slider;
 import helix.ui.TextField;
 import helix.ui.Toggle;
 import helix.ui.Ui;
+import helix.host.ScreenShape;
 
 /** A game's menus (helix.ui): a main menu, settings, controls and a scrolling list of levels, the main menu in a nine-slice panel, the others
 	in the theme's rounded ones, every widget's corners rounded too, the headings keeping more room under them (a margin, Layout2D.setMargin), laid out in a 1280 x 720 design fitted to the window, used alike by the
@@ -60,7 +60,7 @@ import helix.ui.Ui;
 	effectsVolume, musicMuted, background (the chosen color as hex), backgroundText (the picker's text field, in its format),
 	bindingsScrolled (how far the bindings are scrolled, as a share of how far they can be, in hundredths: 0 at the top, 1 at the end, whatever
 	the layout's sizes), quality (the chosen quality's text) and qualityOpen (whether its list is open). */
-class App extends BaseApp {
+class App extends helix.App {
 	static final PROBES = [
 		"screen",
 		"focus",

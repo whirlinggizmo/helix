@@ -1,8 +1,8 @@
-import helix.render3d.Camera3D;
+package helix.render3d;
 
-/** The examples' circling camera: a point going round a target at a radius and a height, looking at the target. `update` advances it, `apply`
-	places a camera there. At an angle of 0 the camera is on the target's +z side, and the angle grows toward +x. A game moves its cameras its
-	own way; this is the examples' choice. */
+/** A circling camera: a point going round a target at a radius and a height, looking at the target. `update` advances it, `apply` places a
+	camera there. At an angle of 0 the camera is on the target's +z side, and the angle grows toward +x. The examples' way of showing a
+	model from all sides; a game moves its cameras its own way. */
 class Orbit {
 	/** Where round the circle it is, in radians: 0 on the target's +z side, a quarter turn on its +x side. */
 	public var angle:Float;

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
@@ -14,6 +13,7 @@ import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Looping music and a one-shot click. The music is streamed (decoded as it plays), the click decoded as it loads. The sound plays off the frame's
 	thread on both targets (natively the mixer's, on the web the browser's), so it plays on through a slow frame: S stalls one for 300 ms.
@@ -21,7 +21,7 @@ import helix.time.Time;
 	track (a pad loop beside the example) and back, Left and Right pan the music a quarter at a time, Up and Down pitch it a semitone, 0 sets
 	both back, Escape quits where quitting means anything. Natively with HELIX_ASSET_HOST set (and nothing cached yet), the music is a download
 	played as it arrives; in the browser the page streams it from beside it. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var HERO = "audio/music/a_hero_is_born.mp3";
 	static inline var PAD = "audio/music/pad_loop.ogg";
 	// The crossfade's and the bus fade's seconds.

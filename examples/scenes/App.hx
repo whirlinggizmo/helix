@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.TestHarness;
@@ -19,6 +18,7 @@ import helix.scene.Scenes;
 import helix.scene.Splash;
 import helix.scene.Transition.Fade;
 import helix.tween.Ease;
+import helix.host.ScreenShape;
 
 /** A game's flow on a scene stack (helix.scene.Scenes), a movie-like opening: the built-in Splash fading in (the logo, "press any key"
 	until a press unlocks audio, or three seconds for the impatient), a title, a level whose files load behind the built-in Loading scene,
@@ -29,19 +29,20 @@ import helix.tween.Ease;
 	file's "profile"), and the run option quick=1 skips every wait and transition. Options: autopilot (a script under assets/), fast (1: up
 	to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done); the probes are scene, count, loaded, loading,
 	visited and activated. Escape on the title quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	/** Every scene entered, in order: what the autopilot's run is judged by. Kept across a hot reload (@:hot). */
 	@:hot public static var visited:Array<String> = [];
 
 	/** The one batch the scenes draw with, kept across a hot reload. */
 	@:hot public static var batch:Batch2D;
 
-	var scenes = new Scenes();
+	var scenes:Scenes;
 	var pilot:Null<Autopilot>;
 	var fast = false;
 	var published = false;
 
 	override public function init():Void {
+		scenes = new Scenes();
 		Window.title = "HeliX scenes";
 		Window.requestSize(960, 540);
 		batch = new Batch2D();

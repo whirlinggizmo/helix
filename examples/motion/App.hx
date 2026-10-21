@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
@@ -19,13 +18,14 @@ import helix.time.Time;
 import helix.time.Timers;
 import helix.tween.Ease;
 import helix.tween.Tweens;
+import helix.host.ScreenShape;
 
 /** Motion from the game's clock (Time.clock): a column of squares each tweened across by one easing and back (yoyo, for ever); a ball
 	following a closed curve through points at a steady speed (Curve, by distance); a timer dropping a spark every half second that falls and
 	fades by two tweens onto a floor (counted there by Collide2D); and the squares' colors dealt by a seeded Random. Space pauses the clock,
 	which stops all of it at once; - and = slow and quicken it; R deals the colors again from the seed. Escape quits where quitting means
 	anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static var EASES:Array<{name:String, f:Float->Float}> = [
 		{name: "linear", f: Ease.linear},
 		{name: "quadInOut", f: Ease.quadInOut},

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
@@ -30,6 +29,8 @@ import helix.shaders.SpriteDissolve;
 import helix.shaders.SpriteFlash;
 import helix.shaders.SpriteOutline;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Textured sprites on a 3D stage, under a circling camera, over a grid (Batch3D) and a lit pedestal:
 	- the logo, facing the camera as it circles, bobbing over the pedestal (blended by its alpha)
@@ -44,7 +45,7 @@ import helix.time.Time;
 	O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
 	held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is
 	done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
-class App extends BaseApp {
+class App extends helix.App {
 	var stage:Stage3D;
 	var batch3D:Batch3D;
 	var batch:Batch2D;
@@ -58,9 +59,9 @@ class App extends BaseApp {
 	var trees:Array<Sprite3D> = [];
 	var tileSprites:Array<Sprite3D> = [];
 	var flames:Array<Sprite3D> = [];
-	var outline = new SpriteOutline(0xffffffff, 1);
-	var dissolve = new SpriteDissolve();
-	var flash = new SpriteFlash();
+	var outline:SpriteOutline;
+	var dissolve:SpriteDissolve;
+	var flash:SpriteFlash;
 	var outlined = true;
 	var dissolving = true;
 	var shaders:Shaders;
@@ -89,6 +90,9 @@ class App extends BaseApp {
 	}
 
 	override public function init():Void {
+		outline = new SpriteOutline(0xffffffff, 1);
+		dissolve = new SpriteDissolve();
+		flash = new SpriteFlash();
 		Window.title = "HeliX sprite3d";
 		var script = Host.getOption("autopilot", "");
 		if (script != "") {

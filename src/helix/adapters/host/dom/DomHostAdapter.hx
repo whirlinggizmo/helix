@@ -90,6 +90,9 @@ class DomHostAdapter implements IHost {
 	public function getOption(name:String):Null<String>
 		return params.get(name);
 
+	public function reportBusy(busy:Bool):Void
+		Reflect.setField(Browser.window, "helixBusy", busy);
+
 	/** The page says whether it has one: a <meta name="helix-config" content="config.json"> the build writes beside it when the example (or
 		game) ships one, so a page without one makes no request (a 404 would be a console error, which an autopilot counts as a failure).
 		Fetched past the HTTP cache ("no-cache": revalidated), so an edited file is read on the next load. */

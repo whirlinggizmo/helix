@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -25,12 +24,14 @@ import helix.render3d.Sprite3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Text3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Every kind a Stage3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
 	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). The hit's
 	point is marked, its normal drawn, and its node, distance and point shown. O stops the circling camera; Escape quits where quitting means
 	anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var batch3D:Batch3D;

@@ -1,11 +1,10 @@
-import helix.app.BaseApp;
 import helix.graphics.Graphics;
 import helix.host.Window;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 
 /** A window cleared each frame, and nothing drawn. No keys. */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 

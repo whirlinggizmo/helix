@@ -843,6 +843,38 @@ var worldMatrix(get, never):Mat4
 - `lookAt`: Turns it so its -z looks from its position at x, y, z, up (0, 1, 0 by default) giving the roll; positions relative to its parent. False, changing nothing, when the point is its position or up is along the view.
 - `worldMatrix`: Its world matrix as the last update left it (Stage3D.draw updates it).
 
+## Orbit
+
+*class* in `src/helix/render3d/Orbit.hx`
+
+A circling camera: a point going round a target at a radius and a height, looking at the target. `update` advances it, `apply` places a camera there. At an angle of 0 the camera is on the target's +z side, and the angle grows toward +x. The examples' way of showing a model from all sides; a game moves its cameras its own way.
+
+```haxe
+function new(radius:Float, height:Float, ?speed:Float = .25, ?targetY:Float = 0., ?angle:Float = 0.)
+var angle:Float
+var speed:Float
+var radius:Float
+var height:Float
+var targetX:Float
+var targetY:Float
+var targetZ:Float
+var running:Bool
+function update(dt:Float):Void
+function apply(camera:Camera3D):Void
+```
+
+- `new`: A circle of radius at height, going round at speed radians a second from angle, looking at (0, targetY, 0); targetX and targetZ move the point looked at.
+- `angle`: Where round the circle it is, in radians: 0 on the target's +z side, a quarter turn on its +x side.
+- `speed`: How fast it goes round, in radians a second; under 0 the other way.
+- `radius`: How far out from the target, across the ground, in world units.
+- `height`: How high the camera is, in world units: its y, not its height over the target.
+- `targetX`: The point the camera looks at, in world units.
+- `targetY`: The point the camera looks at, in world units.
+- `targetZ`: The point the camera looks at, in world units.
+- `running`: Whether `update` goes round; false holds the camera where it is.
+- `update`: Goes round for dt seconds, if running.
+- `apply`: Places camera on the circle at the angle, looking at the target (its setView).
+
 ## Part
 
 *class* in `src/helix/render3d/Part.hx`

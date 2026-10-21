@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -7,11 +6,12 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.host.ScreenShape;
 
 /** The window: its size, place, fullscreen, and monitors. Arrows move it 50 pixels, = and - grow and shrink it by 10%, F toggles fullscreen where the
 	window can be, M moves it to the next monitor, H hides it for two seconds (it keeps running), Esc quits where quitting means anything.
 	Where programs don't place their windows (the web, a Wayland desktop) moving and changing monitor say "not supported here". */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var status = "press a key";

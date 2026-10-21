@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
@@ -23,6 +22,8 @@ import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Tonemap;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Image-based light, a background and tone mapping: the material spheres (red plastic above, gold below, roughness 0 to 1 left to right), a
 	normal-mapped sphere, a pearl (a surface shader of the example's own that lets the stage shade it) and a car, lit by an environment alone,
@@ -33,7 +34,7 @@ import helix.time.Time;
 	E: environment (sunset, studio, none); B: background (sharp, soft, blurred, off); T: tone mapping (Neutral, ACES, none); UP / DOWN:
 	exposure, half a stop a press; LEFT / RIGHT: turn the environment; O: orbit the camera or hold it; Escape: quit, where quitting means
 	anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var COLUMNS = 5;
 	static inline var SPACING = 1.35;
 	static var PATHS = ["environments/venice_sunset_1k.hdr", "environments/studio_small_09_1k.hdr"];

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
@@ -37,6 +36,8 @@ import helix.shaders.Pixelate;
 import helix.shaders.Tonemap;
 import helix.shaders.Vignette;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Screen effects over the finished frame (PostProcess, ScreenEffect): a chain in the order a game would build one, and how to write an
 	effect of one's own; every library effect alone, with its parameters, is the shader-gallery example's. The frame is an ordinary lit
@@ -60,7 +61,7 @@ import helix.time.Time;
 	under assets/: the time and the camera are then held, the window the autopilot's page's size, so its samples of the frame compare across
 	targets) and autoclose (1: quit once the script is done); the probes are ready (the car and the example's shader in), hdr (PostProcess.hdr)
 	and on (the names of the effects on, in the chain's order, joined by spaces). */
-class App extends BaseApp {
+class App extends helix.App {
 	var stage:Stage3D;
 	var batch:Batch2D;
 	var camera = new Camera3D();

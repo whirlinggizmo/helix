@@ -105,8 +105,10 @@ class Batch2D {
 		texture = font.texture;
 	}
 
-	/** Starts collecting a batch seen through camera, with no transform; later calls only fill it until end. */
+	/** Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls
+		only fill it until end. */
 	public function begin(camera:Camera2D):Void {
+		camera.fitFramebuffer();
 		@:bypassAccessor this.camera = camera;
 		@:bypassAccessor effect = null;
 		vertices = 0;
@@ -127,12 +129,14 @@ class Batch2D {
 		resetTransform();
 	}
 
-	/** The camera what follows is seen through, in its viewport: a world and a HUD in one batch. */
+	/** The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one
+		batch. */
 	public var camera(default, set):Camera2D;
 
 	function set_camera(value:Camera2D):Camera2D {
 		if (value != camera) {
 			closeRun();
+			value.fitFramebuffer();
 			camera = value;
 		}
 		return value;

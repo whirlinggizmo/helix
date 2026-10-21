@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
@@ -35,6 +34,7 @@ import helix.shaders.Toon;
 import helix.shaders.Unlit;
 import helix.shaders.Water;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Surface shaders in a lit scene: how to write one of one's own (the floor), beside HeliX's library (helix.shaders, packed into the program:
 	nothing to load) where it meets the rest of the stage: shadows cast through a shader's discards and vertex hook, a silhouette through a
@@ -57,7 +57,7 @@ import helix.time.Time;
 	quitting means anything. Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its
 	samples of the frame compare across targets) and autoclose (1: quit once the script is done); the probes are ready (everything loaded),
 	sun, lamp, outlines, silhouette, dissolving, toon, water, closeUp and time. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var FLOOR_Y = -.5;
 	static inline var WOMEN = "models/modular-women/";
 	static var PARTS = ["Casual_Head", "Casual_Body", "Casual_Legs", "Casual_Feet"];

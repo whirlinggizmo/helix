@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -9,10 +8,11 @@ import helix.input.Key;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** 2D shapes, text and input: a marker follows the mouse, typing shows what was typed (Backspace takes the last character back),
 	and Escape quits where quitting means anything. The frame rate is drawn at the top. */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var fps = new FpsOverlay();

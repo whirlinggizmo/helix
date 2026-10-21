@@ -297,6 +297,7 @@ class WhiteImages implements helix.graphics.IImageDecoder {
 }
 
 /** Polygon2D, Node2D's transforms and kinds, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
+@:access(helix.host.Screen)
 class Render2DTests {
 	static var checks = 0;
 
@@ -321,6 +322,41 @@ class Render2DTests {
 			i += 3;
 		}
 		return sum;
+	}
+
+	// An unsized camera takes Screen's framebuffer as a batch begins with it (or as it fits or goes to pixels), and follows it; one the app
+	// sized keeps its size; with no Screen bound (no runner), it stays as it is.
+	static function unsizedCamera():Void {
+		var screen = new helix.host.Presentation();
+		@:privateAccess screen.refit(640, 480, 1);
+		helix.host.Screen.instance = screen;
+		var gpu = new CountingGraphics(),
+			batch = new Batch2D(gpu),
+			fresh = new Camera2D(),
+			own = new Camera2D();
+		check(!fresh.sized && fresh.viewportWidth == 1 && fresh.viewportHeight == 1, "A fresh camera is unsized, on a 1 x 1 viewport");
+		gpu.beginFrame(640, 480, 0);
+		batch.begin(fresh);
+		batch.end();
+		check(!fresh.sized && fresh.viewportWidth == 640 && fresh.viewportHeight == 480 && fresh.framebufferWidth == 640 && fresh.framebufferHeight == 480,
+			"An unsized camera takes the framebuffer as the batch begins, and stays unsized");
+		@:privateAccess screen.refit(800, 600, 1);
+		own.setViewport(320, 240);
+		batch.begin(fresh);
+		batch.camera = own;
+		batch.end();
+		check(fresh.viewportWidth == 800 && fresh.viewportHeight == 600, "It follows the framebuffer's next size");
+		check(own.sized && own.viewportWidth == 320 && own.viewportHeight == 240, "A camera the app sized keeps its size, as the batch's camera too");
+		var byPixels = new Camera2D(), fitted = new Camera2D();
+		check(byPixels.pixels(2) && byPixels.viewportWidth == 800 && near(byPixels.x, 200) && near(byPixels.y, 150),
+			"pixels on an unsized camera takes the framebuffer first");
+		check(fitted.fit(0, 0, 400, 300) && fitted.viewportWidth == 800 && near(fitted.zoom, 2), "So does fit");
+		helix.host.Screen.instance = null;
+		var alone = new Camera2D();
+		batch.begin(alone);
+		batch.end();
+		check(!alone.sized && alone.viewportWidth == 1, "With no Screen bound, outside a runner, an unsized camera stays as it is");
+		batch.destroy();
 	}
 
 	static function main():Void {
@@ -735,6 +771,7 @@ class Render2DTests {
 		clipping();
 		sliceAndWrap();
 		rounded();
+		unsizedCamera();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -19,6 +18,8 @@ import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. On a 3D stage: a fountain
 	(blended drops under gravity), sparks (added, from a point circling the fountain: they trail behind it, are thrown along by it, slowed by
@@ -29,7 +30,7 @@ import helix.time.Time;
 
 	Click or tap: confetti; Space: pause the steady emitters (the particles alive finish their lives); O: the camera; Escape: quit, where
 	quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var ORBIT = 14;
 
 	var stage:Stage3D;

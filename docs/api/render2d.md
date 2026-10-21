@@ -92,8 +92,8 @@ function destroy():Void
 - `vertexCount`: Vertices of the frame drawn last, those drawn through effects among them.
 - `drawCallCount`: Draws of the frame drawn last: one per run of a texture, camera and effect.
 - `font`: The built-in pixel font, whose texture also has the white texel shapes use.
-- `begin`: Starts collecting a batch seen through camera, with no transform; later calls only fill it until end.
-- `camera`: The camera what follows is seen through, in its viewport: a world and a HUD in one batch.
+- `begin`: Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls only fill it until end.
+- `camera`: The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one batch.
 - `effect`: The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
 - `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it to the stage's time.
 - `transformA`: The transform's a: x's share of a point's x.
@@ -133,10 +133,11 @@ function destroy():Void
 
 *class* in `src/helix/render2d/Camera2D.hx`
 
-A 2D view: the world point at the viewport's center and how many pixels a world unit covers (across and down alike, but under a Presentation that stretches). Y grows downward. The viewport is the whole framebuffer, or an area of it (setViewportArea).
+A 2D view: the world point at the viewport's center and how many pixels a world unit covers (across and down alike, but under a Presentation that stretches). Y grows downward. The viewport is the whole framebuffer, or an area of it (setViewportArea). A camera never sized (setViewport) is the whole framebuffer as it is at each use: a Batch2D beginning with it, fit and pixels size it to Screen's framebuffer then (the window's, refitted by the runner before each frame), so it follows a resize; one the app sized keeps its size.
 
 ```haxe
 function new()
+var sized(default, null):Bool
 var x(default, null):Float
 var y(default, null):Float
 function setPosition(x:Float, y:Float):Void
@@ -160,7 +161,8 @@ var clipX(inline, null):(wx:Float) -> Float
 var clipY(inline, null):(wy:Float) -> Float
 ```
 
-- `new`: A camera at world 0, 0, zoom 1, on a 1 x 1 viewport.
+- `new`: A camera at world 0, 0, zoom 1, unsized: the whole framebuffer once used under a runner, a 1 x 1 viewport until then.
+- `sized`: Whether setViewport or setViewportArea sized it. Unsized, it takes the framebuffer's size at each use (the class doc).
 - `x`: The world X at the viewport's center.
 - `y`: The world Y at the viewport's center.
 - `setPosition`: Puts the world point x, y at the viewport's center.
@@ -172,10 +174,10 @@ var clipY(inline, null):(wy:Float) -> Float
 - `viewportY`: The viewport's top edge in framebuffer pixels from the framebuffer's top.
 - `viewportWidth`: The viewport width in framebuffer pixels.
 - `viewportHeight`: The viewport height in framebuffer pixels.
-- `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
+- `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. From then on it's sized: it keeps this size rather than the framebuffer's.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
-- `fit`: Show a world rectangle whole and centered; the longer screen side shows extra world. False for a width or height of 0 or less.
-- `pixels`: World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). False for a scale of 0 or less.
+- `fit`: Show a world rectangle whole and centered; the longer screen side shows extra world (an unsized camera takes the framebuffer first). False for a width or height of 0 or less.
+- `pixels`: World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel); an unsized camera takes the framebuffer first. False for a scale of 0 or less.
 - `screenToWorldX`: The world X under framebuffer pixel X px, from the framebuffer's left edge.
 - `screenToWorldY`: The world Y under framebuffer pixel Y py, from the framebuffer's top edge.
 - `worldToScreenX`: The framebuffer pixel X, from the framebuffer's left edge, of world X wx.

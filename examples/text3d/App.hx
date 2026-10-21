@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -20,12 +19,14 @@ import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.render3d.Text3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Text in the world, and 3D lines: labels facing the camera above a cube, a sphere and a panel (the built-in font), a sign whose text turns
 	with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground with Batch3D's lines. Text is sharp at any distance
 	(a distance-field font), unlit and blended, laid out with the font's advances and kerning. O stops the camera; Escape quits where quitting
 	means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	var stage:Stage3D;
 	var lines:Batch3D;
 	var batch:Batch2D;

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -16,12 +15,13 @@ import helix.render2d.Text2D;
 import helix.render2d.Stage2D;
 import helix.render2d.Textures;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in the design for the window's shape: a polygon rock turning in outline, a ring,
 	a box turning about its center, a rounded one turning with it and a rounded outline, a sprite of a loaded texture, a group (a hub with two
 	moons) turning as one, and a particle emitter circling and trailing (drawn by the GPU at its place in the stage's order); then immediate
 	text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	var world = new Stage2D();
 	var hud = new Stage2D();
 	var batch:Batch2D;

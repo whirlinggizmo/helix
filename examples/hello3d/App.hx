@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -11,10 +10,12 @@ import helix.render2d.Camera2D;
 import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** 3D with a 2D overlay: a camera orbiting the origin over a grid and the axes, a solid cube in its wire frame and two spheres, depth-tested, then
 	text drawn over them. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch3D:Batch3D;
 	var batch2D:Batch2D;
 	var camera3D = new Camera3D();

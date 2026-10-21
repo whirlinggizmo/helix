@@ -41,8 +41,8 @@ class Runner {
 	var compose:Void->Adapters;
 	var adapters:Adapters;
 	var app:IApp;
-	var makeApp:Void->IApp;
-	// The config's load as the program starts: the app is built once it has ended, with or without a file.
+	var started = false;
+	// The config's load as the program starts: the app's init waits for it to end, with or without a file.
 	var configPending = false;
 	var resources:AssetService;
 	var decoding:ImageDecoding;
@@ -68,10 +68,10 @@ class Runner {
 		Host.runner = this;
 	}
 
-	/** Runs the app makeApp builds on the host: built once the services are filled (so its field initializers may read them), its init then,
-		its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes. */
-	public function run(makeApp:Void->IApp):Void {
-		this.makeApp = makeApp;
+	/** Runs app on the host: its init once the services are filled and the game's config has come, its frame once a display refresh, its
+		cleanup at the end. Natively it returns only after the window closes. */
+	public function run(app:IApp):Void {
+		this.app = app;
 		host.run(() -> init(), () -> frame(), () -> cleanup());
 	}
 
@@ -134,8 +134,8 @@ class Runner {
 		SceneFiles.bind(sceneFiles);
 		TestHarness.bind(a.harness);
 		Screenshots.bind(screenshots);
-		// config.json beside the program, read now so a deployed game's settings change without a build; the app waits for it (a frame or
-		// two, blank). None is no failure: the defaults stand.
+		// config.json beside the program, read now so a deployed game's settings change without a build; the app's init waits for it (a
+		// frame or two, blank). None is no failure: the defaults stand.
 		configPending = true;
 		host.loadConfig(bytes -> {
 			if (bytes != null)
@@ -158,8 +158,8 @@ class Runner {
 		var window = host.window;
 		presentation.refit(window.framebufferWidth, window.framebufferHeight, window.pixelRatio);
 		gameClock.update(clock.elapsed);
-		if (app == null) {
-			// Until the config has come: a blank frame, then the app built and begun.
+		if (!started) {
+			// Until the config has come: a blank frame, then the app begun.
 			if (configPending) {
 				adapters.graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x000000ff);
 				adapters.graphics.endFrame();
@@ -167,7 +167,7 @@ class Runner {
 				frameCpu = (host.time - now) * 1000;
 				return;
 			}
-			app = makeApp();
+			started = true;
 			app.init();
 		}
 		app.frame(clock.delta);
@@ -190,7 +190,7 @@ class Runner {
 		decoding.shutdown();
 		audioDecoding.shutdown();
 		resources.shutdown();
-		if (app != null)
+		if (started)
 			app.cleanup();
 		adapters.audio.shutdown();
 		adapters.input.shutdown();

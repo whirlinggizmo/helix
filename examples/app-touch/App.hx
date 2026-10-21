@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -9,12 +8,13 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
+import helix.host.ScreenShape;
 
 /** Fingers, the two-finger gesture, and the pointer: every finger gets a numbered ring (its id) while it's down, and a fading one where it lifted;
 	two fingers pan, pinch and twist the logo about the point between them, so it stays under the fingers; one finger is also the pointer: drag the
 	coin. A second finger lets the drag go, so a pinch never drops the coin somewhere. Without a touch screen: drag with the mouse, and the wheel
 	zooms the logo about the mouse. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var RING = 38.;
 	static inline var COIN = 96.;
 	static inline var FINGERS = 8;

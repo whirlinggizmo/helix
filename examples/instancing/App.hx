@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -18,6 +17,8 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a Stage3D does when models agree on everything
 	but where they stand and their tint. A field of 400 cubes shares one mesh and one material, so it is one draw; six cars share one file, so
@@ -25,7 +26,7 @@ import helix.time.Time;
 	material of its own instead: the same picture, drawn a cube at a time. The readout counts the models drawn and the draws they took.
 
 	SPACE: a material each, or one shared; Escape: quit, where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var SIDE = 20;
 	static inline var CARS = 6;
 	static inline var GLASS = 5;

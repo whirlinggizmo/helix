@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.graphics.Sampling;
@@ -12,6 +11,7 @@ import helix.render2d.Camera2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** One loaded texture or file, and how its load went. */
 private class Slot {
@@ -32,7 +32,7 @@ private class Slot {
 	draws, with its size, GPU memory and how long it took from asking to having it. The tile sheet draws as its cells, cut from their gutters.
 	Below, the logo and the flame again as "name.ktx": compressed for this GPU (name.bc7.ktx on desktops, name.astc.ktx on phones,
 	name.etc2.ktx on older phones), else name.png, as the tile sheet, which has no compressed files, shows. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static var PATHS = ["sprites/logo/wg-logo-bw-alpha.png", "textures/flame.png", "textures/tiles.png"];
 	static var KTX_PATHS = ["sprites/logo/wg-logo-bw-alpha.ktx", "textures/flame.ktx", "textures/tiles.ktx"];
 	static inline var TILES = 2;

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.audio.Audio;
 import helix.audio.AudioStream;
 import helix.debug.TestHarness;
@@ -12,12 +11,13 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Textures;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Quitting while audio plays and files are loading. Plays music, and after a second starts loading files, keeps the frame busy for half a second
 	(like a long synchronous load) and quits: shutdown runs with the loads still in progress, and nothing that was in flight may run after it.
 	In a browser quitting stops the frame loop and runs the shutdown, and the canvas keeps the last frame. Q quits now, everywhere; Escape where
 	quitting closes a window (in a browser Escape is the browser's: it leaves fullscreen). */
-class App extends BaseApp {
+class App extends helix.App {
 	var batch:Batch2D;
 	var camera = new Camera2D();
 	var quitAt = 0.;

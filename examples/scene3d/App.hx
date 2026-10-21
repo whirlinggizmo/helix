@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -20,12 +19,14 @@ import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.scene.Pointer;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** A scene under the pointer (the earlier frameworks' scene3d): eight shapes in a ring about a sphere, a cube turning above them, under a
 	circling camera. The shape under the pointer lightens; a click selects it or lets it go. A HUD over the world (a Stage2D) has a button that
 	stops and starts the camera: pressing it captures the pointer, so the shapes under it see nothing until it's released. Everything is
 	asked of a helix.scene.Pointer each frame; nothing is told to the nodes. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static var COLORS = [
 		0xe0523aff,
 		0xe0a33aff,

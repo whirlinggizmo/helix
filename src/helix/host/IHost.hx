@@ -30,4 +30,9 @@ interface IHost {
 		executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each
 		start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131). */
 	public function loadConfig(done:Null<haxe.io.Bytes>->Void):Void;
+
+	/** Tells the platform whether the program's services are still loading (Host.busy), for the tools driving it: an App says so after
+		each frame, and false at its cleanup, when its pageState option is on. A browser page says it on its window (window.helixBusy), so a
+		tool captures the page once it has settled (tools/pages_shots.cjs); natively nothing listens, and nothing is done. */
+	public function reportBusy(busy:Bool):Void;
 }

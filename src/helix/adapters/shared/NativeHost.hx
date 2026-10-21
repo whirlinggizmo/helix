@@ -53,6 +53,8 @@ abstract class NativeHost implements IHost {
 	public function getOption(name:String):Null<String>
 		return Sys.getEnv("HELIX_" + name.toUpperCase());
 
+	public function reportBusy(busy:Bool):Void {}
+
 	/** config.json beside the executable, read whole when it's there. */
 	public function loadConfig(done:Null<haxe.io.Bytes>->Void):Void {
 		var path = haxe.io.Path.join([haxe.io.Path.directory(Sys.programPath()), "config.json"]);

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
@@ -15,6 +14,7 @@ import helix.render2d.Stage2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** A scrolling tile map: one sprite sheet (textures/tiles.png), one Sprite2D a cell cut out by its source region, on a Stage2D seen
 	through a Camera2D in world units (a cell is 1 x 1, y down).
@@ -23,7 +23,7 @@ import helix.time.Time;
 	- drag or the arrow keys scroll; the wheel zooms (the world units seen top to bottom)
 	- coins light up under the pointer, and a click (a press and a release on the same coin) collects them
 	Only the cells in view are drawn (the stage culls), shown in the corner. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var WORLD_W = 24;
 	static inline var WORLD_H = 16;
 

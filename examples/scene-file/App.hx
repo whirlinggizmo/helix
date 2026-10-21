@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.behavior.Behavior;
 import helix.debug.Autopilot;
@@ -25,6 +24,7 @@ import helix.scene.SceneInstance;
 import helix.scene.Scenes;
 import helix.time.Ticker;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** A racer slice entirely from a scene file (helix.scene.SceneFile) and behaviors (helix.behavior): scenes/track.scene holds the stage's
 	sky, ambient light and tone mapping, the sun with its shadows, a closed loop of Kenney's Racing Kit pieces with barriers, a gantry and
@@ -35,7 +35,7 @@ import helix.time.Time;
 	the lap, its time and the best. Options: autopilot (a script under assets/), fast (1: up to 120 ticks a frame under autopilot) and
 	autoclose (1: quit once the script is done); the probes are loaded, state, lap, checkpoint, passed, lapTime, bestLap, carX, carZ and
 	speed. */
-class App extends BaseApp {
+class App extends helix.App {
 	/** The input the game is played with this tick: the window's, or the autopilot's while a script runs. The Car reads it. Kept across a
 		hot reload (@:hot): set every tick, but a reload between ticks would leave it null for a frame otherwise. */
 	@:hot public static var input:IInput;
@@ -44,14 +44,16 @@ class App extends BaseApp {
 		program starts (a class nothing names is never compiled in). */
 	static var BEHAVIORS:Array<Class<Behavior>> = [Car, ChaseCamera, Checkpoint, Race];
 
-	var scenes = new Scenes();
-	var play = new Play();
+	var scenes:Scenes;
+	var play:Play;
 	var ticker:Ticker;
 	var pilot:Null<Autopilot>;
 	var fast = false;
 	var published = false;
 
 	override public function init():Void {
+		scenes = new Scenes();
+		play = new Play();
 		Window.title = "HeliX scene-file";
 		Window.requestSize(1200, 675);
 		ticker = new Ticker(Input.instance);

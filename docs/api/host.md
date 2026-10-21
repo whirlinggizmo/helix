@@ -74,7 +74,7 @@ var elapsed(default, null):Float
 
 *class* in `src/helix/host/Host.hx`
 
-The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop, the window (Window) and the clock (Time) are reached elsewhere.
+The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop, the window (Window) and the clock (Time) are reached elsewhere, and reportBusy is the App's to call.
 
 ```haxe
 static var instance(default, null):IHost
@@ -116,6 +116,7 @@ function canQuit():Bool
 function quit():Void
 function getOption(name:String):Null<String>
 function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
+function reportBusy(busy:Bool):Void
 ```
 
 - `run`: Runs the program: init once, when the window and the GPU exist; frame once a display refresh; cleanup once, when it closes (the window closed, quit, or a browser page going away). Natively it returns only after the window closes.
@@ -125,6 +126,7 @@ function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 - `quit`: Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
 - `getOption`: A run option as the platform passes it, or null when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals.
 - `loadConfig`: Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131).
+- `reportBusy`: Tells the platform whether the program's services are still loading (Host.busy), for the tools driving it: an App says so after each frame, and false at its cleanup, when its pageState option is on. A browser page says it on its window (window.helixBusy), so a tool captures the page once it has settled (tools/pages_shots.cjs); natively nothing listens, and nothing is done.
 
 ## IWindow
 
@@ -212,6 +214,8 @@ The app's design fitted to its window, one setting for the whole program: a game
 
 ```haxe
 function new()
+var framebufferWidth(default, null):Int
+var framebufferHeight(default, null):Int
 function set(mode:PresentationMode, width:Float, height:Float):Bool
 var mode(default, null):PresentationMode
 var width(get, never):Float
@@ -235,6 +239,8 @@ function apply(camera:Camera2D):Void
 ```
 
 - `new`: None, fitted to a 1 x 1 framebuffer until the runner's first refit.
+- `framebufferWidth`: The framebuffer's width in pixels, as last refitted (the window's, under the runner); 1 before.
+- `framebufferHeight`: The framebuffer's height in pixels, as last refitted; 1 before.
 - `set`: Fits the design, width x height units, to the window by mode, from the next frame (None takes no size: give 0, 0). False, changing nothing, for a size under 1 but for None.
 - `mode`: How the design is fitted.
 - `width`: The design's width in units: the window's logical width under None.
@@ -277,7 +283,7 @@ What a host pumps: at its init it builds the app's services over a profile's ada
 
 ```haxe
 function new(host:IHost, compose:() -> Adapters)
-function run(makeApp:() -> IApp):Void
+function run(app:IApp):Void
 var host(default, null):IHost
 var clock(default, null):FrameClock
 var frameCpu(default, null):Float
@@ -287,7 +293,7 @@ function assetChanged(path:String):Void
 ```
 
 - `new`: A runner for host, building its services from compose's adapters when the host starts (natively the GPU exists only then).
-- `run`: Runs the app makeApp builds on the host: built once the services are filled (so its field initializers may read them), its init then, its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes.
+- `run`: Runs app on the host: its init once the services are filled and the game's config has come, its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes.
 - `host`: The host it runs on.
 - `clock`: The frame clock.
 - `frameCpu`: The last frame's CPU time in milliseconds.
@@ -303,6 +309,8 @@ The app's design fitted to the window (Presentation): its units, what's visible 
 
 ```haxe
 static var instance(default, null):Presentation
+static var framebufferWidth(get, never):Int
+static var framebufferHeight(get, never):Int
 static function set(mode:PresentationMode, width:Float, height:Float):Bool
 static var mode(get, never):PresentationMode
 static var width(get, never):Float
@@ -326,6 +334,8 @@ static function apply(camera:Camera2D):Void
 ```
 
 - `instance`: The presentation forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `framebufferWidth`: The framebuffer's width in pixels, as last refitted (the window's, under the runner); 1 before.
+- `framebufferHeight`: The framebuffer's height in pixels, as last refitted; 1 before.
 - `set`: Fits the design, width x height units, to the window by mode, from the next frame (None takes no size: give 0, 0). False, changing nothing, for a size under 1 but for None.
 - `mode`: How the design is fitted.
 - `width`: The design's width in units: the window's logical width under None.
@@ -346,6 +356,18 @@ static function apply(camera:Camera2D):Void
 - `toPixelsX`: The framebuffer pixel across at unit x (toUnitsX's inverse).
 - `toPixelsY`: The framebuffer pixel down at unit y (toUnitsY's inverse).
 - `apply`: Sets camera to show the visible area on the framebuffer pixels it covers: its viewport the area, a unit its zoom.
+
+## ScreenShape
+
+*class* in `src/helix/host/ScreenShape.hx`
+
+A design per window shape, as a page's breakpoints (Defold's display profiles): 1280 x 720 for a desktop window, 1000 x 560 for a short one (a phone on its side), 560 x 960 upright (a phone held so), each grown to the window's edges (Presentation's Expand), so text at one size stays readable on a phone in each. The examples' choice, called at the top of their frame; a game with designs of its own sets Screen itself.
+
+```haxe
+static function update():String
+```
+
+- `update`: The window's shape now, the design set for it: "landscape", "short" or "portrait". Once a frame, before the presentation is used: the design changes only when the shape does.
 
 ## Window
 

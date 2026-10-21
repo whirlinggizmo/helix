@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -10,12 +9,13 @@ import helix.input.PadAxis;
 import helix.input.PadButton;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.host.ScreenShape;
 
 /** Every connected gamepad, live: up to four side by side, each with its name, both sticks (the dot is where the stick points, past the dead
 	zone; the ring is its reach), the triggers as bars, and the buttons laid out as on an Xbox-style pad, lit while held and flashed the frame
 	they're pressed. South on a pad cycles the dead zone; Escape quits where quitting means anything. In a browser, press a button on the pad
 	first: a page sees gamepads only after that. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var WIDTH = 1000;
 	static inline var HEIGHT = 420;
 	static final DEADZONES = [.1, .2, .3, 0.];

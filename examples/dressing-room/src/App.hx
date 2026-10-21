@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.TestHarness;
@@ -42,6 +41,7 @@ import helix.ui.Panel;
 import helix.ui.Tile;
 import helix.ui.Toggle;
 import helix.ui.Ui;
+import helix.host.ScreenShape;
 
 /** A character creator's dressing room: a character on a turntable in a studio's light, dressed slot by slot (head, body, legs, feet, and
 	what she holds) from Quaternius's Ultimate Modular Women, ten outfits whose parts mix freely. Each slot's parts are tiles, their pictures
@@ -59,7 +59,7 @@ import helix.ui.Ui;
 
 	Options: autopilot (a script under assets/: the turntable, her pose and the camera, on the Body framing, are then held from the first frame,
 	the window the autopilot's page's size, so its samples of her and of the tiles' pictures compare across targets). */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var DIR = "models/modular-women/";
 	static var LOOKS = [
 		"Casual",

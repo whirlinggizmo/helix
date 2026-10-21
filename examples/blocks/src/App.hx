@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.time.Ticker;
 import helix.assets.Assets;
 import helix.debug.TestHarness;
@@ -13,8 +12,9 @@ import helix.input.IInput;
 import helix.debug.Autopilot;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.host.ScreenShape;
 
-class App extends BaseApp {
+class App extends helix.App {
 	var game:Game;
 	var controls = new Controls();
 	var layout = new Layout();

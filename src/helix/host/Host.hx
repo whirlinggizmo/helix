@@ -2,8 +2,8 @@ package helix.host;
 
 /** The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's
 	one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop,
-	the window (Window) and the clock (Time) are reached elsewhere. */
-@:build(helix.macro.Facade.build(helix.host.IHost, ["run", "window", "time"]))
+	the window (Window) and the clock (Time) are reached elsewhere, and reportBusy is the App's to call. */
+@:build(helix.macro.Facade.build(helix.host.IHost, ["run", "window", "time", "reportBusy"]))
 @:allow(helix.host.Runner)
 class Host {
 	/** The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the

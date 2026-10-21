@@ -33,9 +33,13 @@ enum PresentationMode {
 class Presentation {
 	var designWidth = 0.;
 	var designHeight = 0.;
-	var framebufferWidth = 1;
-	var framebufferHeight = 1;
 	var pixelRatio = 1.;
+
+	/** The framebuffer's width in pixels, as last refitted (the window's, under the runner); 1 before. */
+	public var framebufferWidth(default, null):Int = 1;
+
+	/** The framebuffer's height in pixels, as last refitted; 1 before. */
+	public var framebufferHeight(default, null):Int = 1;
 
 	/** None, fitted to a 1 x 1 framebuffer until the runner's first refit. */
 	public function new() {}

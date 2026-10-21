@@ -1,11 +1,33 @@
 package helix.render2d;
 
 /** A 2D view: the world point at the viewport's center and how many pixels a world unit covers (across and down alike, but under a
-	Presentation that stretches). Y grows downward. The viewport is the whole
-	framebuffer, or an area of it (setViewportArea). */
+	Presentation that stretches). Y grows downward. The viewport is the whole framebuffer, or an area of it (setViewportArea). A camera
+	never sized (setViewport) is the whole framebuffer as it is at each use: a Batch2D beginning with it, fit and pixels size it to Screen's
+	framebuffer then (the window's, refitted by the runner before each frame), so it follows a resize; one the app sized keeps its size. */
 class Camera2D {
-	/** A camera at world 0, 0, zoom 1, on a 1 x 1 viewport. */
+	/** A camera at world 0, 0, zoom 1, unsized: the whole framebuffer once used under a runner, a 1 x 1 viewport until then. */
 	public function new() {}
+
+	/** Whether setViewport or setViewportArea sized it. Unsized, it takes the framebuffer's size at each use (the class doc). */
+	public var sized(default, null):Bool = false;
+
+	// An unsized camera takes Screen's framebuffer, the window's as the runner last refitted it; outside a runner (a test with no Screen
+	// bound) it stays as it is.
+
+	@:allow(helix.render2d.Batch2D)
+	function fitFramebuffer():Void {
+		if (sized)
+			return;
+		var screen = helix.host.Screen.instance;
+		if (screen != null)
+			fill(screen.framebufferWidth, screen.framebufferHeight);
+	}
+
+	function fill(width:Int, height:Int):Void {
+		framebufferWidth = viewportWidth = width < 1 ? 1 : width;
+		framebufferHeight = viewportHeight = height < 1 ? 1 : height;
+		viewportX = viewportY = 0;
+	}
 
 	/** The world X at the viewport's center. */
 	public var x(default, null):Float = 0.;
@@ -56,11 +78,11 @@ class Camera2D {
 	/** The viewport height in framebuffer pixels. */
 	public var viewportHeight(default, null):Int = 1;
 
-	/** The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. */
+	/** The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1. From then on it's sized:
+		it keeps this size rather than the framebuffer's. */
 	public function setViewport(width:Int, height:Int):Void {
-		framebufferWidth = viewportWidth = width < 1 ? 1 : width;
-		framebufferHeight = viewportHeight = height < 1 ? 1 : height;
-		viewportX = viewportY = 0;
+		fill(width, height);
+		sized = true;
 	}
 
 	/** Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the
@@ -69,6 +91,7 @@ class Camera2D {
 	public function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool {
 		if (width < 1 || height < 1 || x < 0 || y < 0 || x + width > framebufferWidth || y + height > framebufferHeight)
 			return false;
+		sized = true;
 		viewportX = x;
 		viewportY = y;
 		viewportWidth = width;
@@ -76,20 +99,24 @@ class Camera2D {
 		return true;
 	}
 
-	/** Show a world rectangle whole and centered; the longer screen side shows extra world. False for a width or height of 0 or less. */
+	/** Show a world rectangle whole and centered; the longer screen side shows extra world (an unsized camera takes the framebuffer first).
+		False for a width or height of 0 or less. */
 	public function fit(left:Float, top:Float, width:Float, height:Float):Bool {
 		if (!(width > 0 && height > 0))
 			return false;
+		fitFramebuffer();
 		zoom = zoomY = Math.min(viewportWidth / width, viewportHeight / height);
 		x = left + width / 2;
 		y = top + height / 2;
 		return true;
 	}
 
-	/** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel). False for a scale of 0 or less. */
+	/** World units are logical pixels from the viewport's top-left: scale is the pixel ratio (framebuffer pixels per logical pixel); an
+		unsized camera takes the framebuffer first. False for a scale of 0 or less. */
 	public function pixels(scale:Float):Bool {
 		if (!(scale > 0))
 			return false;
+		fitFramebuffer();
 		zoom = zoomY = scale;
 		x = viewportWidth / 2 / scale;
 		y = viewportHeight / 2 / scale;

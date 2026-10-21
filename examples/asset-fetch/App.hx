@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
@@ -12,13 +11,14 @@ import helix.render2d.Camera2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** The desktop pulls its files from the same site the browser does. In the browser the page fetches each file beside it and caches it; natively,
 	files are read from the program's packaged folder unless HELIX_ASSET_HOST names a host (python3 -m http.server in examples/assets, say), which
 	is asked first whether it answers: then a cache miss downloads the file into the program's cache. Fetch asset (F) loads the logo again, and says
 	whether it came from the cache or was downloaded; Clear cache (C) forgets what was downloaded, so the next fetch downloads it again. Escape quits
 	where quitting means anything. HeliX has no UI module yet, so the two buttons are drawn and hit-tested here. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var TEXTURE = "sprites/logo/wg-logo-white-alpha.png";
 
 	var batch:Batch2D;

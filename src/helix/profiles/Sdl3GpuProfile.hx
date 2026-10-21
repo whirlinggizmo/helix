@@ -17,12 +17,12 @@ import helix.host.Runner;
 /** The desktop through SDL3, drawing with SDL_GPU (the `sdl3-gpu` backend): an SDL window, its input and gamepads, SDL_GPU (Vulkan, Direct3D 12 or Metal) presenting to it; built with -D helix_sdl3_gpu, so the
 	framework's programs carry SDL_GPU's dialects; an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
 class Sdl3GpuProfile {
-	/** Runs the app makeApp builds once its services are bound, for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
+	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetFolder, a folder relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
 		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
-	public static function run(identity:helix.host.Identity, assetFolder:String, makeApp:Void->IApp, ?options:helix.host.WindowOptions):Void {
+	public static function run(identity:helix.host.Identity, assetFolder:String, app:IApp, ?options:helix.host.WindowOptions):Void {
 		var host = new Sdl3HostAdapter(options != null ? options.msaaSamples : new helix.host.WindowOptions().msaaSamples, false);
 		var runner = new Runner(host, () -> {
 			var root = haxe.io.Path.directory(Sys.programPath()), cache = Sys.getEnv("HELIX_CACHE");
@@ -51,6 +51,6 @@ class Sdl3GpuProfile {
 				name: identity.product
 			};
 		});
-		runner.run(makeApp);
+		runner.run(app);
 	}
 }

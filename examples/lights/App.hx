@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -19,12 +18,13 @@ import helix.render3d.PointLight;
 import helix.render3d.SpotLight;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Directional, point and spot lights on a Stage3D: five standing figures (capsules) on a grid, a dim warm sun, a cyan point light orbiting
 	through them and fading with its range (its marker an unlit sphere), and a white spotlight sweeping across them from above. The stage starts
 	unlit; every light here is explicit. 1, 2 and 3 toggle the sun, the point light and the spotlight; Escape quits where quitting means
 	anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var FIGURES = 5;
 
 	var stage:Stage3D;

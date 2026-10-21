@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -21,6 +20,7 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Drawing into textures (Texture2D.renderTarget, IGraphics.beginTargetPass):
 	- "pixel view": the stage drawn into a 160x100 texture and shown 4x larger with nearest sampling, a low-resolution pixel-art look
@@ -28,7 +28,7 @@ import helix.time.Time;
 	- "label": text in two fonts drawn into a 256x128 texture, used as the base color texture of the spinning globe's material, and shown on its own
 	Each frame draws the label first, so the views that use it show this frame's label; the target passes all come before the screen's. The toy
 	car drives a circle. Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var PIXEL_W = 160;
 	static inline var PIXEL_H = 100;
 	static inline var PIXEL_SCALE = 4;

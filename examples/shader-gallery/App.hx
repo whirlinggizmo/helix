@@ -1,5 +1,4 @@
 import haxe.io.Bytes;
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
@@ -61,6 +60,8 @@ import helix.ui.ListView;
 import helix.ui.Panel;
 import helix.ui.Slider;
 import helix.ui.Ui;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
 	its colors on color pickers (helix.ui's ColorPicker).
@@ -86,7 +87,7 @@ import helix.ui.Ui;
 	it, or else a widget of the menu: a picker is named for its shader and color, Unlit-color, its text field Unlit-color-text) and autoclose
 	(1: quit once the script is done). The probes: ready (everything loaded), chosen (the chosen shader's name, or None), color (the color
 	the chosen shader's picker shows, as hex; "" without one) and hdr (PostProcess.hdr). */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var FLOOR_Y = 0.;
 	static inline var WOMEN = "models/modular-women/";
 	static var PARTS = ["Casual_Head", "Casual_Body", "Casual_Legs", "Casual_Feet"];

@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -18,12 +17,13 @@ import helix.render3d.Node3D;
 import helix.render3d.PointLight;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** glTF metallic-roughness materials made in code, one sphere mesh under them all. Top row: plastic (metallic 0), roughness 0 to 1 left to
 	right; middle row: gold (metallic 1), the same steps; bottom row: unlit, emissive, normal mapped and see-through, turning so the normal map
 	moves. A sun, an orbiting blue point light (its marker an unlit sphere) and a little ambient light. 1 toggles the sun, 2 the lamp; Escape
 	quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var COLUMNS = 5;
 	static inline var SPACING = 1.35;
 

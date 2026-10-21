@@ -1,4 +1,3 @@
-import helix.app.BaseApp;
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
 import helix.host.Host;
@@ -19,12 +18,14 @@ import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.Stage3D;
 import helix.time.Time;
+import helix.host.ScreenShape;
+import helix.render3d.Orbit;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and her parts from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
 	names (Model.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's). 1 to 8 play a clip, crossfading from
 	the one before over a quarter second (F: cut instead); Space pauses. O stops the circling camera; Escape quits where quitting means anything. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var DIR = "models/modular-women/";
 	static var CLIPS = ["Idle", "Walk", "Run", "Wave", "Sword_Slash", "Punch_Right", "Roll", "Death"];
 	static var PARTS = ["Casual_Head", "Casual_Body", "Casual_Legs", "Casual_Feet"];

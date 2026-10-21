@@ -1,5 +1,4 @@
 import haxe.io.Bytes;
-import helix.app.BaseApp;
 import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
@@ -26,6 +25,7 @@ import helix.shaders.SpriteDissolve;
 import helix.shaders.SpriteFlash;
 import helix.shaders.SpriteOutline;
 import helix.time.Time;
+import helix.host.ScreenShape;
 
 /** Sprites on a Stage2D, in the design for the window's shape and spread over what's visible of it:
 	- "sheet": the 256x256 logo as a 2x2 sprite sheet, its region stepping through the quarters like animation frames
@@ -46,7 +46,7 @@ import helix.time.Time;
 	Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its samples of the frame
 	compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos and the wave in), outline,
 	dissolving, palette, row and waving. */
-class App extends BaseApp {
+class App extends helix.App {
 	static inline var LOGO = "sprites/logo/wg-logo-bw-alpha.png";
 	static inline var WHITE_LOGO = "sprites/logo/wg-logo-white-alpha.png";
 	static var NAMES = ["sheet", "spin", "swing", "flip", "tint", "palette"];
