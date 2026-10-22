@@ -38,11 +38,6 @@ class Sprite2D extends Node2D {
 		here and smooth elsewhere. */
 	public var sampling:Null<helix.texture.Sampling>;
 
-	/** The effect it draws through (a sprite shader: helix.shader' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's
-		SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values,
-		and those drawn one after another with one effect and texture are one draw. */
-	public var effect:Null<helix.graphics.SpriteEffect>;
-
 	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows
 		no sheet's frame after (setFrame). */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {

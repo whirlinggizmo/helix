@@ -232,8 +232,6 @@ class Game extends helix.App {
 - **Skinning as an optional part of the 3D renderer:** the skinned program, the joint palette, the skinned shadow and pick paths linked only
   into programs that draw a skinned model, as its sprites, text and particles are (`Node3D.spriteKind`, made by the first one listed): the
   lit-3D rung of the size ladder links it today (125 KB gzipped).
-- **Sprite effects on text and drawings:** `Batch2D.effect` is set to none for a `Text2D` and a `Drawing2D`, so a flash or an outline can't
-  cover them (the sprite2d example's title no longer flashes).
 - **Presses for frame-driven screens:** in a fast autopilot (several ticks a frame) each tick ends its presses, so a screen that runs once a
   frame (`Splash`, `Loading`, a `Transition`) misses one made in an earlier tick; the scenes example holds the press itself.
 - **A test harness publishing after the frame is drawn,** so a snapshot's draw counts are the frame's own, not the one before.

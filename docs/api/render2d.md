@@ -268,6 +268,7 @@ What a Renderer2D holds: a transform in a tree, with children of its own kind. A
 ```haxe
 function new()
 var alpha(default, set):Float
+var effect:Null<SpriteEffect>
 var parent(get, set):Null<Node2D>
 function getChild(index:Int):Null<Node2D>
 function find(name:String):Null<Node2D>
@@ -295,6 +296,7 @@ function toLocalY(x:Float, y:Float):Float
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
 - `alpha`: How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it.
+- `effect`: The effect its own drawing goes through (a sprite shader: helix.shader's SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program: a sprite's quad, a shape's, a text's glyphs (their distance field as the effect reads it), a drawing's every call. Its own, not its children's; an emitter and a view draw through their own programs. An effect is shared: the nodes given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
 - `getChild`: Its child at index, in drawing order; null past the end.
 - `find`: The first node named name below it (depth first, in drawing order), or null: found once and kept, never a path.
@@ -446,7 +448,6 @@ function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
 var texture:Null<Texture2D>
 var tint:Int
 var sampling:Null<Sampling>
-var effect:Null<SpriteEffect>
 function setRegion(x:Float, y:Float, width:Float, height:Float):Void
 function setFrame(sheet:SpriteSheet2D, index:Int):Bool
 var frame(default, null):Null<SpriteFrame2D>
@@ -472,7 +473,6 @@ var nineSlice(get, never):Bool
 - `texture`: Its texture, or null: it draws nothing.
 - `tint`: What its texels are multiplied by, 0xAARRGGBB: white leaves them as they are.
 - `sampling`: How its texture is sampled, in place of the texture's own (Texture2D.sampling), or null for the texture's: the same texture drawn sharp here and smooth elsewhere.
-- `effect`: The effect it draws through (a sprite shader: helix.shader' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows no sheet's frame after (setFrame).
 - `setFrame`: Shows sheet's frame at index (a SpriteAnimator2D given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
 - `frame`: The sheet's frame it shows (setFrame), or null: it shows its region.

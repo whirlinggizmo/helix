@@ -67,6 +67,13 @@ class Node2D extends Node {
 	function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font>):Null<Node2D>
 		return null;
 
+	/** The effect its own drawing goes through (a sprite shader: helix.shader's SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an
+		app's SpriteEffect), or null (the default) for the framework's sprite program: a sprite's quad, a shape's, a text's glyphs (their distance
+		field as the effect reads it), a drawing's every call. Its own, not its children's; an emitter and a view draw through their own
+		programs. An effect is shared: the nodes given one draw with its values, and those drawn one after another with one effect and texture
+		are one draw. */
+	public var effect:Null<helix.graphics.SpriteEffect>;
+
 	/** A group at the origin, unturned and unscaled, with no children. */
 	public function new()
 		super();

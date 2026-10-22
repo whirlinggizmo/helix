@@ -188,7 +188,7 @@ class Renderer2D {
 		if (!inView(node, x, y, w, h))
 			return;
 		count++;
-		batch.effect = sprite != null ? sprite.effect : null;
+		batch.effect = node.effect;
 		batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 		if (sprite != null) {
 			var t = sprite.texture, tw = t.width, th = t.height;

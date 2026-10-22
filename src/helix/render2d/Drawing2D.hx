@@ -190,7 +190,9 @@ class Drawing2D extends Node2D {
 	override function drawOwn(batch:Batch2D, camera:Camera2D, time:Float, dt:Float, frozen:Bool, shown:Bool):Bool {
 		if (shown) {
 			batch.setTransform(wa, wb, wc, wd, wx, wy);
+			batch.effect = effect;
 			replay(batch);
+			batch.effect = null;
 		}
 		return true;
 	}

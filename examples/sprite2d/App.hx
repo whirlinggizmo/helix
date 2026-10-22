@@ -68,6 +68,8 @@ class App extends helix.App {
 	// The stage's units, fitted as the stage's camera is: what the pointer is taken into.
 	var camera = new Camera2D();
 	var drawing = new Drawing2D();
+	// The title, a drawing of its own so it flashes with the flip (its effect).
+	var heading = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sprites:Array<Sprite2D> = [];
 	var logo:Null<Texture2D>;
@@ -151,6 +153,8 @@ class App extends helix.App {
 		shaders = new Shaders();
 		shaders.load("shaders/wave.hxshader", shader -> useWave(shader));
 		Stage.addChild(drawing);
+		heading.effect = flash;
+		Stage.addChild(heading);
 		Stage.addChild(fps);
 	}
 
@@ -288,12 +292,13 @@ class App extends helix.App {
 		drawing.clear();
 		if (logo != null)
 			drawing.image(logo, vx + vw - 74, vy + 10, 64, 64);
-		// Wrapped short of the corner sprite.
+		// Wrapped short of the corner sprite; the title flashes with the flip.
+		heading.clear();
 		var on = (value:Bool) -> value ? "on" : "off";
 		var line = vy + 36,
 			title = "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects",
 			keys = '[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash';
-		line += drawing.drawTextWrapped(title, vx + 12, line, 16, vw - 96, 0xfff5f5f5) + 4;
+		line += heading.drawTextWrapped(title, vx + 12, line, 16, vw - 96, 0xfff5f5f5) + 4;
 		line += drawing.drawTextWrapped(keys, vx + 12, line, 16, vw - 96, 0xffc8c8c8) + 4;
 		drawing.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame',
 			vx + 12, line, 16, vw - 96, 0xffc8c8c8);
