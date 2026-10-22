@@ -211,10 +211,6 @@ class Node3D extends Node {
 	public function computeWorld(?out:Mat4):Mat4 {
 		if (out == null)
 			out = new Mat4();
-		if (above == null) {
-			above = new Mat4();
-			product = new Mat4();
-		}
 		out.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
 		var at = parent;
 		while (at != null) {
@@ -226,10 +222,9 @@ class Node3D extends Node {
 		return out;
 	}
 
-	// The scratch matrices computeWorld and the bounds' walk reuse, made at their first use (a static made in its initializer loops
-	// hotreload-hx's build of this class's subclasses: the dev loop failed to compile), and the walk's world matrix at each depth.
-	static var above:Null<Mat4>;
-	static var product:Null<Mat4>;
+	// The scratch matrices computeWorld and the bounds' walk reuse, and the walk's world matrix at each depth.
+	static var above = new Mat4();
+	static var product = new Mat4();
 	static var worlds:Array<Mat4> = [];
 
 	/** The box around it and everything under it as they are now, into out (a new one when not given), or null for nothing to bound: in the
@@ -241,8 +236,6 @@ class Node3D extends Node {
 	public function computeBounds(?relativeTo:Node3D, ?out:Bounds3D):Null<Bounds3D> {
 		var start = computeWorld(worldAt(0));
 		if (relativeTo != null) {
-			if (inverse == null)
-				inverse = new Mat4();
 			var seen = relativeTo.computeWorld(inverse);
 			if (!seen.makeInverse(seen))
 				return null;
@@ -254,8 +247,8 @@ class Node3D extends Node {
 		return out.isEmpty ? null : out;
 	}
 
-	// relativeTo's world matrix, then its inverse, for computeBounds (made at its first use, as above).
-	static var inverse:Null<Mat4>;
+	// relativeTo's world matrix, then its inverse, for computeBounds.
+	static var inverse = new Mat4();
 
 	static function worldAt(depth:Int):Mat4 {
 		while (worlds.length <= depth)
