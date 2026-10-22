@@ -25,13 +25,18 @@ import helix.render3d.Orbit3D;
 	with size and color curves: a dark puff that spreads, lightens and fades as it rises). The steady ones are prewarmed, so they're already
 	going. Click or tap for a burst of 2D confetti there, on the stage over the 3D view: squares cut from the particle texture's middle (so their
 	spin shows), each tinted by a color it picked from the palette. The camera turns slowly around the level.
+	The presets (helix.particle.ParticlePreset, Particles3D's factories, drawn with the built-in dot): 1 to 5 burst an explosion, a smoke
+	puff, sparks, dust and confetti on the grid, each taken off once it's spent; 6 lets it snow.
 
-	Click or tap: confetti; Space: pause the steady emitters (the particles alive finish their lives); O: the camera; Escape: quit, where
-	quitting means anything. */
+	Click or tap: confetti; 1 to 5: a preset's burst; 6: snow; Space: pause the steady emitters (the particles alive finish their lives); O:
+	the camera; Escape: quit, where quitting means anything. */
 class App extends helix.App {
 	static inline var ORBIT = 14;
 
 	var level = new Node3D();
+	// The presets' one-shots alive, and the snow when it falls.
+	var shots:Array<Particles3D> = [];
+	var snow:Null<Particles3D>;
 	var view:View3D;
 	var camera = new Camera3D();
 	var text = new Drawing2D();
@@ -175,6 +180,36 @@ class App extends helix.App {
 			for (e in [fountain, sparks, smoke, flame])
 				e.emitting = !paused;
 		}
+		// The presets: a one-shot each key, off the level once it's spent; snow on and off.
+		var presets = [
+			Particles3D.explosion,
+			Particles3D.smokePuff,
+			Particles3D.sparks,
+			Particles3D.dust,
+			Particles3D.confetti
+		];
+		for (i in 0...presets.length)
+			if (Input.isFramePressed([Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5][i])) {
+				var shot = presets[i](2);
+				shot.setPosition(3, .1, 3);
+				level.addChild(shot);
+				shots.push(shot);
+			}
+		for (shot in shots.copy())
+			if (shot.emitter.spent) {
+				level.removeChild(shot);
+				shots.remove(shot);
+			}
+		if (Input.isFramePressed(Key.Digit6)) {
+			if (snow == null) {
+				snow = Particles3D.snow(16);
+				snow.setPosition(0, 8, 0);
+				level.addChild(snow);
+			} else {
+				level.removeChild(snow);
+				snow = null;
+			}
+		}
 		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
@@ -195,8 +230,11 @@ class App extends helix.App {
 		text.clear();
 		var y = vy + 36;
 		y += text.drawTextWrapped(title, vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
-		text.drawTextWrapped('click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${view.drawCallCount} draws', vx + 12, y, 16,
-			vw - 24, 0xffc8c8c8);
+		text.drawTextWrapped('click / tap: confetti   1-5: presets   6: snow   space: ${paused ? "resume" : "pause"}   O: the camera   ${view.drawCallCount} draws',
+			vx
+			+ 12,
+			y, 16, vw
+			- 24, 0xffc8c8c8);
 		fps.setPosition(vx + 12, vy + 10);
 	}
 

@@ -57,6 +57,10 @@ class Emitter {
 	var moveY = 0.;
 	var moveZ = 0.;
 	var jumped = false;
+	// Particles a burst asked for before it was first placed, born where it first is.
+	var pending = 0;
+	// Seconds a prewarm asked for before it was first placed, run where it first is.
+	var pendingPrewarm = 0.;
 
 	/** An emitter of particles drawn from texture (null for none yet: it draws nothing), at most maxParticles alive at once (newer replace the oldest; clamped to 1..65536),
 		flat for a 2D stage (its particles in the x-y plane, a sphere a circle). By default: no steady rate (bursts only), a life of 1 second,
@@ -451,22 +455,83 @@ class Emitter {
 	public function clear():Void {
 		live = 0;
 		owed = 0;
+		pending = 0;
+		pendingPrewarm = 0;
 	}
 
 	inline function signed():Float
 		return random.nextFloat() * 2 - 1;
 
-	/** Bursts count particles at once, where it is now. False below 0. */
+	/** Whether it's spent: no steady rate running, no burst or prewarm waiting for its first place, and no particle alive. A one-shot
+		(a preset's explosion, say) is spent once its burst has died out: its node can come off the stage. */
+	public var spent(get, never):Bool;
+
+	function get_spent():Bool
+		return pending == 0 && pendingPrewarm == 0 && !(emitting && rate > 0) && particleCount == 0;
+
+	/** Bursts count particles at once, where it is now; before it's first placed (a node made and burst before a draw has placed it), where
+		it first is. False below 0. */
 	public function burst(count:Int):Bool {
 		if (count < 0)
 			return false;
+		if (!placed) {
+			pending += count;
+			return true;
+		}
 		for (_ in 0...count)
 			spawn(time, lastX, lastY, lastZ);
 		return true;
 	}
 
-	/** Starts over as if the steady rate had run for seconds: those it would have made and still alive now are made where it is. */
+	// Each GPU's dot (getDot), and whether the program frees them at its end (an optional part, installed by the first).
+	static var dots = new haxe.ds.ObjectMap<helix.graphics.IGraphics, Texture2D>();
+	static var freesDots = false;
+
+	/** The built-in particle: a soft round dot, white (tinted by the particles' colors), 32 texels a side, its alpha falling smoothly from its
+		center to its edge, sampled linear. Made on gpu (the program's, Graphics, when not given) the first time it's asked for there, kept
+		for the program and freed at its end. The presets draw it (Particles2D.explosion and the others). */
+	public static function getDot(?gpu:helix.graphics.IGraphics):Texture2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
+		var texture = dots.get(gpu);
+		if (texture != null)
+			return texture;
+		var n = 32, pixels = Bytes.alloc(n * n * 4);
+		for (y in 0...n)
+			for (x in 0...n) {
+				var dx = (x + .5) / n * 2 - 1, dy = (y + .5) / n * 2 - 1;
+				var t = 1 - Math.sqrt(dx * dx + dy * dy);
+				var alpha = t <= 0 ? 0. : t >= .5 ? 1. : (t / .5) * (t / .5) * (3 - 2 * (t / .5));
+				var at = (y * n + x) * 4;
+				pixels.set(at, 255);
+				pixels.set(at + 1, 255);
+				pixels.set(at + 2, 255);
+				pixels.set(at + 3, Std.int(alpha * 255 + .5));
+			}
+		texture = Texture2D.fromRgba(n, n, pixels, true, -1, -1, true, gpu);
+		dots.set(gpu, texture);
+		if (!freesDots && helix.host.Host.running)
+			helix.host.Host.installPart(runner -> {
+				freesDots = true;
+				runner.install({
+					shutdown: () -> {
+						for (each in dots.keys())
+							dots.get(each).destroy(each);
+						dots.clear();
+						freesDots = false;
+					}
+				});
+				null;
+			});
+		return texture;
+	}
+
+	/** Starts over as if the steady rate had run for seconds: those it would have made and still alive now are made where it is; before
+		it's first placed, where it first is. */
 	public function prewarm(seconds:Float):Void {
+		if (!placed) {
+			pendingPrewarm = seconds;
+			return;
+		}
 		clear();
 		if (!(seconds > 0) || rate <= 0)
 			return;
@@ -496,6 +561,17 @@ class Emitter {
 			lastZ = z;
 			placed = true;
 			jumped = false;
+		}
+		if (pendingPrewarm > 0) {
+			var seconds = pendingPrewarm, waiting = pending;
+			pendingPrewarm = 0;
+			prewarm(seconds);
+			pending = waiting;
+		}
+		if (pending > 0) {
+			for (_ in 0...pending)
+				spawn(time, x, y, z);
+			pending = 0;
 		}
 		var fromX = lastX, fromY = lastY, fromZ = lastZ;
 		if (dt > 0) {

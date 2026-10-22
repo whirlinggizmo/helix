@@ -10,6 +10,7 @@ A particle emitter: many particles from one texture, each decided when it's born
 
 ```haxe
 function new(texture:Null<Texture2D>, ?maxParticles:Int = 1024, ?flat:Bool = false)
+static function getDot(?gpu:IGraphics):Texture2D
 var texture:Null<Texture2D>
 var maxParticles(get, never):Int
 var regionX(default, null):Float
@@ -72,6 +73,7 @@ var alphaMode(default, null):AlphaMode
 var seed(get, set):Int
 var particleCount(get, never):Int
 function clear():Void
+var spent(get, never):Bool
 function burst(count:Int):Bool
 function prewarm(seconds:Float):Void
 function jump(x:Float, y:Float, z:Float):Void
@@ -82,6 +84,7 @@ function writeUniforms(out:haxe.io.Bytes, viewProjection:Mat4, axisX:Array<Float
 ```
 
 - `new`: An emitter of particles drawn from texture (null for none yet: it draws nothing), at most maxParticles alive at once (newer replace the oldest; clamped to 1..65536), flat for a 2D stage (its particles in the x-y plane, a sphere a circle). By default: no steady rate (bursts only), a life of 1 second, born at a point, moving up at 1 unit a second, size 1, white, added.
+- `getDot`: The built-in particle: a soft round dot, white (tinted by the particles' colors), 32 texels a side, its alpha falling smoothly from its center to its edge, sampled linear. Made on gpu (the program's, Graphics, when not given) the first time it's asked for there, kept for the program and freed at its end. The presets draw it (Particles2D.explosion and the others).
 - `texture`: Its texture, or null (it draws nothing).
 - `maxParticles`: The most particles alive at once.
 - `regionX`: The region's left, in texels.
@@ -144,10 +147,17 @@ function writeUniforms(out:haxe.io.Bytes, viewProjection:Mat4, axisX:Array<Float
 - `seed`: Where its random numbers start (the seed it was last given, or its own, unseeded): the same seed and settings give the same particles. 0 is taken as 1 (the generator needs a seed other than 0).
 - `particleCount`: Particles that may still be alive.
 - `clear`: All of them gone.
-- `burst`: Bursts count particles at once, where it is now. False below 0.
-- `prewarm`: Starts over as if the steady rate had run for seconds: those it would have made and still alive now are made where it is.
+- `spent`: Whether it's spent: no steady rate running, no burst or prewarm waiting for its first place, and no particle alive. A one-shot (a preset's explosion, say) is spent once its burst has died out: its node can come off the stage.
+- `burst`: Bursts count particles at once, where it is now; before it's first placed (a node made and burst before a draw has placed it), where it first is. False below 0.
+- `prewarm`: Starts over as if the steady rate had run for seconds: those it would have made and still alive now are made where it is; before it's first placed, where it first is.
 - `jump`: Puts it at x, y, z without a move: nothing spawns along the way, and particles inherit no velocity from it.
 - `advance`: Advances its clock by dt seconds, it being at x, y, z now (its node's world position): the steady rate's particles due are born along the way it moved, and the dead are let go. A stage calls this each draw.
 - `writeRecords`: Copies the particles that may still be alive, oldest first, into out at byte at (48 bytes each); how many.
 - `drawable`: Whether it draws: a texture, particles alive, and a size and color key each.
 - `writeUniforms`: Writes its draw's uniforms (the particle program's block) into out: viewProjection, the quad's axes before spin (3D: the camera's right and up; 2D: across and up the screen), and its settings, its clock now.
+
+## ParticlePreset
+
+*abstract* in `src/helix/particle/ParticlePreset.hx`
+
+The particle presets' recipes, which Particles2D's and Particles3D's factories (explosion, smokePuff, sparks, dust, fire, smoke, rain, snow, confetti) make their emitters from: each in units of size (about how big the effect is, in its space's units: pixels on a 2D stage, world units in 3D), down being the sign of its space's downward y (+1 on a 2D stage, where y grows downward; -1 in 3D, +y up), drawn with the built-in dot (Emitter.getDot). A one-shot (explosion, smoke puff, sparks, dust, confetti) bursts once, where its node first is; the others run steadily. Each is an ordinary Emitter: change what doesn't fit.
