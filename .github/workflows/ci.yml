@@ -1,8 +1,9 @@
 # HeliX's CI: the checks a milestone ends with, on Linux, Windows and macOS (docs/ROADMAP.md, milestone 7). After wgrender-c's and libwgf's:
 #
 # - On every push and pull request (not for docs alone), on each system: the tool, package and unit tests, Trig's bits on the interpreter,
-#   Node and hxcpp, and (pull requests only until after the jam, 2026-10-25) an example's native build, since only a native build compiles
-#   the adapters' C (wgrender-c's "one example links").
+#   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
+#   Until after the ATL Gamedevs Jam (2026-10-25), a push checks the browser alone, on Linux: the tool and unit tests without the native
+#   ones, every example type-checked for webgl2, formatting and doc comments; everything else waits for the daily run or one on demand.
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, both autopilots, natively in a private X display, and
 #   the browser asset cache across visits (tools/check_cache.py);
@@ -46,7 +47,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025, macos-15]
+        # A push checks the browser on Linux alone until after the ATL Gamedevs Jam (2026-10-25); pull requests, the daily run and a run on
+        # demand check every system, natively too.
+        os: ${{ github.event_name == 'push' && fromJSON('["ubuntu-24.04"]') || fromJSON('["ubuntu-24.04", "windows-2025", "macos-15"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,7 +62,7 @@ jobs:
         with:
           haxe-version: 4.3.7
       - name: System packages (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && github.event_name != 'push'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsndfile1 libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl-dev libasound2-dev $SDL3_BUILD
@@ -84,20 +87,18 @@ jobs:
             ~/Library/Caches/helix/tools
             ~/AppData/Local/helix/tools
           key: helix-tools-${{ runner.os }}-${{ hashFiles('dependencies.json', 'src/helix/tool/shader/Shdc.hx') }}
-      - name: Tool, package and unit tests; Trig's bits on every target
-        run: python helix.py test --native
+      - name: Tool, package and unit tests; Trig's bits on every target (the browser's alone on a push)
+        run: python helix.py test ${{ github.event_name != 'push' && '--native' || '' }}
       - name: An example's native build under each backend (the adapters' C), and in debug
-        # Left out of pushes until after the ATL Gamedevs Jam (2026-10-25), so a push runs in about 12 minutes, not 18; pull requests, the
-        # daily run and a run on demand build it, and the native service tests above still compile the adapters' C on every push.
         if: github.event_name != 'push'
         run: |
           python tools/example.py asteroids build release-sokol-gl
           python tools/example.py asteroids build release-sdl3-gl
           python tools/example.py asteroids build release-sdl3-gpu
           python tools/example.py asteroids build debug-sokol-gl
-      - name: Every example type-checked on both targets
+      - name: Every example type-checked on both targets (the browser alone on a push)
         if: runner.os == 'Linux'
-        run: python tools/check_types.py
+        run: python tools/check_types.py ${{ github.event_name == 'push' && '--web' || '' }}
       - name: Formatting and doc comments
         if: runner.os == 'Linux'
         run: |
