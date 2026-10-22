@@ -38,6 +38,37 @@ class Node3D extends Node {
 	@:allow(helix.render3d.Renderer3D)
 	function drawOwn(camera:Camera3D, renderer:Renderer3D, first:Bool, last:Bool):Void {}
 
+	// Whether it's a kind drawn through the renderer's sprites (Sprite3D and Text3D flat, Particles3D an emitter), and which: linked only
+	// into a program that makes one. Listed, it makes the renderer's sprites if they aren't yet (attachSprites).
+	@:allow(helix.render3d.Renderer3D)
+	var spriteKind(get, never):SpriteKind;
+
+	function get_spriteKind():SpriteKind
+		return None;
+
+	// Gives renderer its sprites (Renderer3D.sprites) if it has none.
+
+	@:allow(helix.render3d.Renderer3D)
+	function attachSprites(renderer:Renderer3D):Void {}
+
+	// Into sprites (the renderer's Sprites3D) to draw, seen from the eye looking along forward, culled by planes; an emitter held still if
+	// still.
+
+	@:allow(helix.render3d.Renderer3D)
+	function visitSprites(sprites:Any, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float,
+		still:Bool):Void {}
+
+	// A hidden emitter moving on without drawing.
+
+	@:allow(helix.render3d.Renderer3D)
+	function advanceSprites(sprites:Any):Void {}
+
+	// Tested against ray as sprites draws it: the distance along it, recorded in hit when nearer than best, else best.
+
+	@:allow(helix.render3d.Renderer3D)
+	function pickSprites(sprites:Any, ray:Ray, best:Float, hit:PickHit):Float
+		return best;
+
 	/** The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its
 		level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one
 		in its tree (the root's, depth first); others are logged once and not used yet (docs/DISPLAY_MODEL.md: the nearest ancestor's will be
@@ -503,4 +534,17 @@ class Node3D extends Node {
 typedef Attachment = {
 	final piece:Node3D;
 	final joint:Null<Node3D>;
+}
+
+/** Which of the kinds drawn through a renderer's sprites a node is (the engine's: Node3D.spriteKind). */
+@:noCompletion
+enum abstract SpriteKind(Int) {
+	/** None of them. */
+	var None;
+
+	/** A sprite or a text: a quad, or a quad a glyph. */
+	var Flat;
+
+	/** An emitter of particles. */
+	var Emitter;
 }

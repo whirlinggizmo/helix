@@ -1205,6 +1205,12 @@ How a sprite (3D or 2D) or a particle uses its texels' alpha.
 
 How a 3D sprite or text faces.
 
+## SpriteKind
+
+*abstract* in `src/helix/render3d/Node3D.hx`
+
+Which of the kinds drawn through a renderer's sprites a node is (the engine's: Node3D.spriteKind).
+
 ## Sprites3D
 
 *class* in `src/helix/render3d/Sprites3D.hx`

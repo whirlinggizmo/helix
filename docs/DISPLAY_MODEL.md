@@ -227,9 +227,9 @@ class Game extends helix.App {
   a prompt) with a behavior (wait, then go to the scene its `next` prop names): `Splash` and `Loading` shrink to default files and their
   behaviors, restyled in a file or an editor rather than subclassed.
 - **Regional environments:** the nearest ancestor's, several per view.
-- **Optional parts of the 3D renderer:** its sprites, text and particles (`Sprites3D`, `Emitter`) and its skinning (the skinned program, the
-  joint palette, the skinned shadow and pick paths) linked only into programs that use them, as views, drawings and emitters already are in
-  2D (`Node2D.drawOwn`): the lit-3D rung of the size ladder links them all today (134 KB gzipped).
+- **Skinning as an optional part of the 3D renderer:** the skinned program, the joint palette, the skinned shadow and pick paths linked only
+  into programs that draw a skinned model, as its sprites, text and particles are (`Node3D.spriteKind`, made by the first one listed): the
+  lit-3D rung of the size ladder links it today (125 KB gzipped).
 - **Sprite effects on text and drawings:** `Batch2D.effect` is set to none for a `Text2D` and a `Drawing2D`, so a flash or an outline can't
   cover them (the sprite2d example's title no longer flashes).
 - **Presses for frame-driven screens:** in a fast autopilot (several ticks a frame) each tick ends its presses, so a screen that runs once a

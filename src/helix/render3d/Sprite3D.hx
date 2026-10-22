@@ -95,4 +95,17 @@ class Sprite3D extends Node3D {
 		this.cutoff = cutoff;
 		return true;
 	}
+
+	override function get_spriteKind():Node3D.SpriteKind
+		return Flat;
+
+	override function attachSprites(renderer:Renderer3D):Void
+		Sprites3D.attach(renderer);
+
+	override function visitSprites(sprites:Any, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float,
+			forwardZ:Float, still:Bool):Void
+		(sprites : Sprites3D).visit(this, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
+
+	override function pickSprites(sprites:Any, ray:Ray, best:Float, hit:PickHit):Float
+		return (sprites : Sprites3D).pickSprite(this, ray, best, hit);
 }

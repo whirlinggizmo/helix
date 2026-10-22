@@ -1,5 +1,5 @@
 {
- "commit": "e1dd408 2026-10-22",
+ "commit": "f01c49e 2026-10-22",
  "haxe": "4.3.7",
  "rungs": {
   "1-window": {
@@ -157,24 +157,23 @@
   },
   "6-3d": {
    "adds": "+ a 3D view of a lit cube",
-   "raw": 555537,
-   "gzip": 137290,
-   "brotli": 115837,
+   "raw": 509462,
+   "gzip": 128225,
+   "brotli": 108792,
    "packages": {
-    "helix/render3d": 133391,
+    "helix/render3d": 111135,
     "helix/render2d": 68578,
-    "generated/shaders": 64507,
+    "generated/shaders": 53885,
     "helix/adapters": 49280,
-    "haxe metadata": 46612,
+    "haxe metadata": 44678,
     "generated/fonts": 44058,
     "std/haxe": 25982,
     "helix/assets": 22345,
-    "helix/graphics": 22286,
+    "helix/graphics": 21508,
     "helix/input": 13954,
     "helix/audio": 13801,
     "helix/host": 12052,
     "std/js": 11713,
-    "helix/particles": 9983,
     "std/core": 4121,
     "helix/core": 3009,
     "helix/macro": 2041,
@@ -183,7 +182,6 @@
     "game": 1268,
     "helix/scene": 1252,
     "helix/shaders": 769,
-    "helix/math": 502,
     "helix/time": 473,
     "helix/app": 467
    }

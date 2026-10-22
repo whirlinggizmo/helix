@@ -72,9 +72,7 @@ class Renderer3D {
 	var treeLightAt:Array<Int> = [];
 	var flats:Array<Node3D> = [];
 	var flatAt:Array<Int> = [];
-	var flatSprites:Array<Null<Sprite3D>> = [];
-	var flatTexts:Array<Null<Text3D>> = [];
-	var emitters:Array<Particles3D> = [];
+	var emitters:Array<Node3D> = [];
 	var emitterAt:Array<Int> = [];
 	// The kinds that draw themselves (Drawing3D: linked only into a program that makes one), after the opaque models; the batch they share,
 	// the first one's to make, and how to free it.
@@ -105,7 +103,9 @@ class Renderer3D {
 	var forwardY = 0.;
 	var forwardZ = -1.;
 	var draws = 0;
-	var sprites:Sprites3D;
+	// The sprites, texts and emitters' drawing (Sprites3D: linked only into a program that makes one), made by the first one listed.
+	@:allow(helix.render3d.Sprites3D)
+	var sprites:Null<SpriteCalls>;
 	// The clock at the last draw: emitters advance by the difference.
 	var drawnTime = Math.NaN;
 	// Shadows: the walk gathering casters rather than drawing; the casters (every model that casts, in view or not) and those of one layer.
@@ -198,7 +198,6 @@ class Renderer3D {
 		flat = Texture2D.fromRgba(gpu, 1, 1, normal, true);
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DProgram.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DProgram.instanceStride);
-		sprites = new Sprites3D(gpu);
 		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DProgram.instanceStride);
 		casterRecords = Bytes.alloc(casterCapacity * Depth3DProgram.instanceStride);
 		skinnedCasterBuffer = gpu.createBuffer(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
@@ -346,13 +345,13 @@ class Renderer3D {
 	public var drawnNodeCount(get, never):Int;
 
 	function get_drawnNodeCount():Int
-		return count + sprites.drawnSpriteCount;
+		return count + (sprites != null ? sprites.drawnSpriteCount() : 0);
 
 	/** Draws of the last draw: one a run of alike models' parts, or of sprites of one texture. */
 	public var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
-		return draws + sprites.drawCallCount;
+		return draws + (sprites != null ? sprites.drawCallCount() : 0);
 
 	/** Draws into shadow maps by the last drawShadows: one a run of casting parts alike in mesh, in each light's layer. */
 	public var shadowDrawCallCount(get, never):Int;
@@ -722,7 +721,9 @@ class Renderer3D {
 		camera shows them: without a camera, only models are hit. */
 	public function pickAlong(ray:Ray, ?camera:Camera3D, ?hit:PickHit):Null<PickHit> {
 		pickCamera = camera;
-		if (camera != null)
+		if (builtStructure != root.structure)
+			rebuild();
+		if (camera != null && sprites != null)
 			sprites.preparePick(camera);
 		var result = hit != null ? hit : new PickHit();
 		result.clear();
@@ -911,7 +912,10 @@ class Renderer3D {
 		count = 0;
 		draws = 0;
 		lights.resize(0);
-		sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime), time);
+		if (builtStructure != root.structure)
+			rebuild();
+		if (sprites != null)
+			sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime), time);
 		drawnTime = time;
 		foundEnvironment = root.environment;
 		moreEnvironments = false;
@@ -945,7 +949,8 @@ class Renderer3D {
 		writeScene();
 		if (background != null)
 			drawBackground(viewProjection);
-		sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ);
+		if (sprites != null)
+			sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ);
 		// The opaque models, the opaque and masked sprites, the silhouettes where those hide their models, the opaque models with silhouettes
 		// (after them, so a model's own parts never hide it), every model's outline, the see-through models with the blended sprites between
 		// them back to front, then the blended sprites nearer than any of those and the added ones.
@@ -958,7 +963,8 @@ class Renderer3D {
 			i = last + 1;
 		}
 		gatherPasses();
-		sprites.drawOpaque();
+		if (sprites != null)
+			sprites.drawOpaque();
 		drawPasses(true, viewProjection);
 		while (i < count && !drawn[i].blended) {
 			var last = i;
@@ -974,11 +980,13 @@ class Renderer3D {
 			var last = i;
 			while (last + 1 < count && alike(drawn[i], drawn[last + 1]))
 				last++;
-			sprites.drawBlendedBeyond(drawn[i].depth);
+			if (sprites != null)
+				sprites.drawBlendedBeyond(drawn[i].depth);
 			drawRun(i, last - i + 1);
 			i = last + 1;
 		}
-		sprites.drawRest();
+		if (sprites != null)
+			sprites.drawRest();
 	}
 
 	// The kinds that draw themselves (Drawing3D) reached and shown, each where its node is, depth-tested against the opaque models: the
@@ -1097,8 +1105,6 @@ class Renderer3D {
 		treeLightAt.resize(0);
 		flats.resize(0);
 		flatAt.resize(0);
-		flatSprites.resize(0);
-		flatTexts.resize(0);
 		emitters.resize(0);
 		emitterAt.resize(0);
 		owners.resize(0);
@@ -1120,14 +1126,15 @@ class Renderer3D {
 		} else if (Std.isOfType(node, Light)) {
 			treeLights.push(cast node);
 			treeLightAt.push(at);
-		} else if (Std.isOfType(node, Sprite3D) || Std.isOfType(node, Text3D)) {
-			flats.push(node);
-			flatAt.push(at);
-			flatSprites.push(Std.downcast(node, Sprite3D));
-			flatTexts.push(Std.downcast(node, Text3D));
-		} else if (Std.isOfType(node, Particles3D)) {
-			emitters.push(cast node);
-			emitterAt.push(at);
+		} else if (node.spriteKind != None) {
+			node.attachSprites(this);
+			if (node.spriteKind == Flat) {
+				flats.push(node);
+				flatAt.push(at);
+			} else {
+				emitters.push(node);
+				emitterAt.push(at);
+			}
 		} else if (node.drawsOwn) {
 			owners.push(node);
 			ownerAt.push(at);
@@ -1177,17 +1184,16 @@ class Renderer3D {
 			if (pickCamera != null)
 				for (k in 0...flats.length)
 					if (reached[flatAt[k]] && !frozen[flatAt[k]] && flats[k].pickable)
-						pickBest = flatSprites[k] != null ? sprites.pickSprite(flatSprites[k], pickRay, pickBest,
-							pickHit) : sprites.pickText(flatTexts[k], pickRay, pickBest, pickHit);
+						pickBest = flats[k].pickSprites(sprites.part, pickRay, pickBest, pickHit);
 		} else {
 			if (!gathering)
 				for (k in 0...emitters.length)
 					if (reached[emitterAt[k]]) {
 						var still = frozen[emitterAt[k]];
 						if (emitters[k].visible)
-							sprites.visitEmitter(emitters[k], eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, still);
+							emitters[k].visitSprites(sprites.part, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, still);
 						else if (!still)
-							sprites.advanceEmitter(emitters[k]);
+							emitters[k].advanceSprites(sprites.part);
 					}
 			for (k in 0...treeLights.length)
 				if (reached[treeLightAt[k]] && treeLights[k].visible && lights.length < GATHERED_LIGHTS)
@@ -1205,12 +1211,8 @@ class Renderer3D {
 			}
 			if (!gathering)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && flats[k].visible) {
-						if (flatSprites[k] != null)
-							sprites.visit(flatSprites[k], planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-						else
-							sprites.visitText(flatTexts[k], planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-					}
+					if (reached[flatAt[k]] && flats[k].visible)
+						flats[k].visitSprites(sprites.part, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, false);
 		}
 		// Skinned models after the others, every joint where this frame has it: their boxes are their joints'.
 		for (node in skinned)
@@ -1748,7 +1750,10 @@ class Renderer3D {
 	/** Frees the stage's own GPU objects (its instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and
 		environments are their owners' to free, and the pipelines the GPU's (Pipelines). */
 	public function destroy():Void {
-		sprites.destroy();
+		if (sprites != null)
+			sprites.destroy();
+		sprites = null;
+		builtStructure = -1;
 		if (ownBatchDestroy != null)
 			ownBatchDestroy();
 		ownBatch = null;
@@ -1880,4 +1885,19 @@ private class Caster {
 
 	/** An empty caster, filled by the walk. */
 	public function new() {}
+}
+
+/** What a renderer calls on its sprites (Sprites3D), made by Sprites3D.attach: the part itself, handed to the kinds' hooks, and its calls,
+	through the object, so a hot reload reaches the new code. */
+private typedef SpriteCalls = {
+	final part:Any;
+	final begin:(dt:Float, time:Float) -> Void;
+	final prepare:(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float) -> Void;
+	final preparePick:Camera3D->Void;
+	final drawOpaque:Void->Void;
+	final drawBlendedBeyond:Float->Void;
+	final drawRest:Void->Void;
+	final drawnSpriteCount:Void->Int;
+	final drawCallCount:Void->Int;
+	final destroy:Void->Void;
 }

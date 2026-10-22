@@ -581,6 +581,28 @@ class Sprites3D {
 		gpu.destroyBuffer(instanceBuffer);
 		gpu.destroyBuffer(particleBuffer);
 	}
+
+	// Gives renderer its sprites if it has none (Renderer3D.sprites): the first sprite, text or emitter it lists does, so a program that
+	// makes none links none of this.
+
+	@:allow(helix.render3d)
+	static function attach(renderer:Renderer3D):Void {
+		if (renderer.sprites != null)
+			return;
+		var sprites = new Sprites3D(@:privateAccess renderer.gpu);
+		renderer.sprites = {
+			part: sprites,
+			begin: (dt, time) -> sprites.begin(dt, time),
+			prepare: (viewProjection, camera, forwardX, forwardY, forwardZ) -> sprites.prepare(viewProjection, camera, forwardX, forwardY, forwardZ),
+			preparePick: camera -> sprites.preparePick(camera),
+			drawOpaque: () -> sprites.drawOpaque(),
+			drawBlendedBeyond: depth -> sprites.drawBlendedBeyond(depth),
+			drawRest: () -> sprites.drawRest(),
+			drawnSpriteCount: () -> sprites.drawnSpriteCount,
+			drawCallCount: () -> sprites.drawCallCount,
+			destroy: () -> sprites.destroy()
+		};
+	}
 }
 
 /** A sprite in view this draw. Pooled. */
