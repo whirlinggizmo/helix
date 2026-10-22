@@ -167,8 +167,10 @@ class Stage3D {
 		Bytes.alloc(Background3DProgram.fragmentUniformBytes)
 	];
 
-	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.  Without gpu, the program's (Graphics.instance). */
-	public function new(?gpu:IGraphics) {
+	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.  Without gpu, the program's (Graphics.instance).
+		With root, it draws root's children (a View3D's tree) rather than a root of its own. */
+	public function new(?gpu:IGraphics, ?root:Node3D) {
+		this.root = root == null ? new Node3D() : root;
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
@@ -202,7 +204,7 @@ class Stage3D {
 	}
 
 	/** The node everything on the stage hangs from. */
-	public var root(default, null):Node3D = new Node3D();
+	public var root(default, null):Node3D;
 
 	/** Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself). */
 	public function add(node:Node3D):Bool

@@ -728,7 +728,7 @@ static var drawnNodeCount(get, never):Int
 A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, camera). A draw walks the tree as it is now, depth first, a parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs. A frame composes its stages in the order it draws them: a backdrop, the world, then a HUD, each through its own camera.
 
 ```haxe
-function new()
+function new(?root:Node2D)
 var root(default, null):Node2D
 function add(node:Node2D):Bool
 function remove(node:Node2D):Bool
@@ -739,7 +739,7 @@ function draw(batch:Batch2D, camera:Camera2D):Void
 function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 ```
 
-- `new`: An empty stage.
+- `new`: An empty stage, or one drawing root's children (a View2D's tree).
 - `root`: The node everything on the stage hangs from.
 - `add`: Adds node to the stage, as the root's last child: drawn over what is there.
 - `remove`: Takes node from the stage's root.
@@ -753,7 +753,7 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 
 *class* in `src/helix/render2d/StageService.hx`
 
-The stage: the one thing the runner draws, after the app's update, every frame (docs/DISPLAY_MODEL.md). Its children are display objects (Node2D and its kinds), drawn in order, later over earlier, through a camera showing the app's design units (Screen: logical pixels unless a presentation mode says otherwise), cleared to its color first. Flash's stage: what a game adds to it shows, with nothing to draw by hand. Installed by its first use (Stage), so a program that never uses it carries none of it.
+The stage: the one thing the runner draws, after the app's update, every frame (docs/DISPLAY_MODEL.md). Its children are display objects (Node2D and its kinds, and views: View2D, View3D), drawn in order, later over earlier, through a camera showing the app's design units (Screen: logical pixels unless a presentation mode says otherwise), cleared to its color first; every 3D view is drawn under the 2D. Flash's stage: what a game adds to it shows, with nothing to draw by hand. Installed by its first use (Stage), so a program that never uses it carries none of it.
 
 ```haxe
 function new(gpu:IGraphics, presentation:Presentation)
@@ -918,3 +918,33 @@ function getKerning(left:Int, right:Int):Int
 - `getAdvance`: How far the pen moves after glyph, in font units.
 - `getOutline`: glyph's outline in font units, y up: empty for a glyph with none (a space). Composite glyphs are assembled from their parts.
 - `getKerning`: The horizontal kerning between glyphs left and right, in font units: added to left's advance (usually negative, closing the pair). From GPOS pair adjustments when the font has them, else its kern table; 0 for none.
+
+## View
+
+*class* in `src/helix/render2d/View.hx`
+
+What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a tree of nodes through a camera, in a rectangle width x height of its own units from its position, scaled with it and not turned (a view is drawn upright; its rotation is ignored), or, with a width or height of 0, the whole area of whatever shows it (the stage's, or the view it's in). Placed like any node: on the stage, or in a tree another view shows (a minimap in a panel). A view is never drawn inside the tree it shows: one that would be (it shows a tree it's in, or one already being drawn above it) is skipped, and logged once.
+
+```haxe
+var width:Float
+var height:Float
+```
+
+- `width`: Its width in its own units; 0 or less for the whole area of what shows it.
+- `height`: Its height in its own units; 0 or less for the whole area of what shows it.
+
+## View2D
+
+*class* in `src/helix/render2d/View2D.hx`
+
+A 2D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in another tree, showing content's children through camera in its rectangle (View), clipped to it. The camera's position and zoom are the app's (framebuffer pixels per world unit, as a Camera2D's always are: Window.pixelRatio for logical pixels); the view sizes its viewport to the rectangle as it draws, so after a first frame the camera's viewport is the view's (what CameraFollow2D reads for its bounds). Several views can show one tree (a minimap of the world); a world's emitters advance once a frame however many show them.
+
+```haxe
+function new(content:Node2D, ?camera:Camera2D, ?width:Float = 0., ?height:Float = 0.)
+var content(default, null):Node2D
+var camera:Camera2D
+```
+
+- `new`: A view of content's children through camera (a new one at world 0, 0, zoom 1 unless given), width x height of its own units (0 for the whole area of what shows it).
+- `content`: The tree whose children it shows.
+- `camera`: What it's seen through: its position and zoom the app's, its viewport the view's rectangle.

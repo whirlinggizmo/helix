@@ -14,4 +14,8 @@ class Particles2D extends Node2D {
 
 	/** Its emitter. */
 	public var emitter(default, null):Emitter;
+
+	// The clock it was last advanced at: a tree several views show advances it once a frame.
+	@:allow(helix.render2d.Stage2D)
+	var advancedAt = Math.NaN;
 }

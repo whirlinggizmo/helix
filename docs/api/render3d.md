@@ -1122,7 +1122,7 @@ function destroy():Void
 A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material). Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched. Surface shaders: a material's (Material.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's passes (ModelPass: outlines, silhouettes) are drawn from its records after the opaque models.
 
 ```haxe
-function new(?gpu:IGraphics)
+function new(?gpu:IGraphics, ?root:Node3D)
 var root(default, null):Node3D
 function add(node:Node3D):Bool
 function remove(node:Node3D):Bool
@@ -1152,7 +1152,7 @@ function draw(camera:Camera3D):Void
 function destroy():Void
 ```
 
-- `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. Without gpu, the program's (Graphics.instance).
+- `new`: An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added. Without gpu, the program's (Graphics.instance). With root, it draws root's children (a View3D's tree) rather than a root of its own.
 - `root`: The node everything on the stage hangs from.
 - `add`: Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself).
 - `remove`: Takes node from the stage's root. False when it isn't one of the root's children.
@@ -1252,3 +1252,27 @@ How a track's keys run between them, glTF's three.
 *abstract* in `src/helix/render3d/AnimationClip.hx`
 
 What a track moves: its node's position, rotation (a quaternion) or scale.
+
+## View3D
+
+*class* in `src/helix/render3d/View3D.hx`
+
+A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping. Drawn under every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's end. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it for itself.
+
+```haxe
+function new(content:Node3D, ?camera:Camera3D, ?width:Float = 0., ?height:Float = 0., ?gpu:IGraphics)
+var content(default, null):Node3D
+var camera:Camera3D
+var tonemap:Tonemap
+var exposure(default, set):Float
+var drawnNodeCount(get, never):Int
+function destroy():Void
+```
+
+- `new`: A view of content's children through camera (a new one unless given), width x height of its own units (0 for the whole area of what shows it), drawn on gpu (the program's, Graphics.instance, unless given).
+- `content`: The tree whose children it shows.
+- `camera`: What it's seen through: its eye, projection and lens the app's, its viewport the view's rectangle.
+- `tonemap`: How lit color comes into the screen's 0..1 after the exposure (Khronos PBR Neutral to start).
+- `exposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is 0.
+- `drawnNodeCount`: How many models the last frame drew, the ones outside the camera's view culled.
+- `destroy`: Frees what it drew with (its GPU buffers); the tree is the app's.

@@ -196,13 +196,17 @@ class Game extends helix.App {
 ## The order of work on the branch
 
 1. The runner owns the frame: `App.update`, `Stage` drawn after it, `Stage.color`; the batch the engine's.
-2. `View2D` and `View3D`; `Stage2D`/`Stage3D` removed, their state moved; nesting and the cycle check.
+2. `View2D` and `View3D` on a shared `View` (a `Node2D`, so a view is a display object; the 2D walk knows only `View`, so a 2D
+   program links no 3D); nesting and the cycle check. Built over `Stage2D`/`Stage3D` as renderers, so every example runs throughout the
+   branch; those classes go in step 8, with the examples.
 3. `Environment3D` on nodes, the view's photography and override; the scene file's root environment, its `stage` section gone.
 4. Behaviors as one pass over the stage; `paused`; `Scenes`/`Scene` removed; transitions and loading as helpers.
 5. The pointer through views; `Input.claim`, the UI claiming.
 6. `Drawing2D`, `Node2D.alpha`.
 7. Post-processing on the stage and on views (views drawn into textures).
-8. Every example, the starter, the tests and the docs moved over; a decision entry recording what was built and checked.
+8. Every example, the starter, the tests and the docs moved over; `Stage2D`/`Stage3D` as public classes gone (their drawing kept as
+   the views' renderers), and the runner's allowance for an app drawing its own frame removed (`Graphics.beginFrame` and `endFrame` the
+   runner's alone); a decision entry recording what was built and checked.
 
 ## Later (ROADMAP)
 
@@ -214,3 +218,6 @@ class Game extends helix.App {
 - **Fonts:** the built-in one only where text is drawn; glyphs from the browser's rasterizer.
 - **2D scene files.**
 - **Regional environments:** the nearest ancestor's, several per view.
+- **Fixed steps built in:** an app option for the tick rate, a `tick()` override called at it, and the fraction between ticks readable in
+  `update`, so no game makes a `Ticker` (Flash's `frameRate`); today a game advances a `Ticker` in `update` and places its nodes at the
+  drawn position (`Body2D.getDrawnX(fraction)`).

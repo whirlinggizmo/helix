@@ -4,8 +4,8 @@ import helix.graphics.IGraphics;
 import helix.host.Presentation;
 
 /** The stage: the one thing the runner draws, after the app's update, every frame (docs/DISPLAY_MODEL.md). Its children are display objects
-	(Node2D and its kinds), drawn in order, later over earlier, through a camera showing the app's design units (Screen: logical pixels unless
-	a presentation mode says otherwise), cleared to its color first. Flash's stage: what a game adds to it shows, with nothing to draw by
+	(Node2D and its kinds, and views: View2D, View3D), drawn in order, later over earlier, through a camera showing the app's design units
+	(Screen: logical pixels unless a presentation mode says otherwise), cleared to its color first; every 3D view is drawn under the 2D. Flash's stage: what a game adds to it shows, with nothing to draw by
 	hand. Installed by its first use (Stage), so a program that never uses it carries none of it. */
 @:build(helix.macro.Facade.record())
 class StageService {
@@ -14,6 +14,7 @@ class StageService {
 	var tree = new Stage2D();
 	var camera = new Camera2D();
 	var batch:Null<Batch2D>;
+	var drawn3D:Array<View> = [];
 
 	// The program's stage, made at its first use and drawn by the runner each frame (an optional part, helix.host.Part).
 
@@ -70,9 +71,17 @@ class StageService {
 			batch = new Batch2D(gpu);
 		presentation.apply(camera);
 		tree.time = time;
+		// The 3D views the last frame reached draw their shadows before this one opens, as any pass into a texture must.
+		for (view in drawn3D)
+			view.prepare();
 		gpu.beginFrame(presentation.framebufferWidth, presentation.framebufferHeight, color);
 		batch.begin(camera);
+		View.deferred.resize(0);
 		tree.draw(batch, camera);
+		// The 3D views the walk reached, drawn now: under every 2D thing, which the batch sends as it ends.
+		drawn3D = View.deferred.copy();
+		for (view in drawn3D)
+			view.drawDeferred();
 		batch.end();
 		gpu.endFrame();
 	}

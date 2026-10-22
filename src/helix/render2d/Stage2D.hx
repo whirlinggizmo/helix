@@ -19,6 +19,9 @@ class Stage2D {
 	var shapes:Array<Null<Shape2D>> = [];
 	var texts:Array<Null<Text2D>> = [];
 	var emitters:Array<Null<Particles2D>> = [];
+	var views:Array<Null<View>> = [];
+	// The camera the walk draws through, which a view it reaches shows its tree inside.
+	var walkCamera:Null<Camera2D>;
 	// The places where the clips a walk is inside end, innermost last; and for a pick, the clipping nodes, outermost first.
 	var clipEnds:Array<Int> = [];
 	var pickClips:Array<Node2D> = [];
@@ -33,11 +36,13 @@ class Stage2D {
 	// The font a text without its own was last drawn in (the batch's), for picking it by its block.
 	var lastFont:Null<Font2D>;
 
-	/** An empty stage. */
-	public function new() {}
+	/** An empty stage, or one drawing root's children (a View2D's tree). */
+	public function new(?root:Node2D) {
+		this.root = root == null ? new Node2D() : root;
+	}
 
 	/** The node everything on the stage hangs from. */
-	public var root(default, null):Node2D = new Node2D();
+	public var root(default, null):Node2D;
 
 	/** Adds node to the stage, as the root's last child: drawn over what is there. */
 	public function add(node:Node2D):Bool
@@ -68,6 +73,7 @@ class Stage2D {
 	public function draw(batch:Batch2D, camera:Camera2D):Void {
 		batch.camera = camera;
 		batch.time = time;
+		walkCamera = camera;
 		lastFont = batch.font;
 		var x0 = camera.screenToWorldX(camera.viewportX),
 			y0 = camera.screenToWorldY(camera.viewportY),
@@ -97,7 +103,7 @@ class Stage2D {
 			if (node.visible)
 				drawNode(batch, i);
 			else if (emitters[i] != null)
-				emitters[i].emitter.advance(dt, node.wx, node.wy, 0);
+				advance(emitters[i]);
 			if (node.clipWidth >= 0) {
 				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
@@ -131,6 +137,7 @@ class Stage2D {
 		shapes.resize(0);
 		texts.resize(0);
 		emitters.resize(0);
+		views.resize(0);
 		for (i in 0...root.childCount)
 			list(root.getChild(i), -1);
 		builtStructure = root.structure;
@@ -146,6 +153,7 @@ class Stage2D {
 		shapes.push(Std.downcast(node, Shape2D));
 		texts.push(Std.downcast(node, Text2D));
 		emitters.push(Std.downcast(node, Particles2D));
+		views.push(Std.downcast(node, View));
 		for (i in 0...node.childCount)
 			list(node.getChild(i), at);
 		endOf[at] = order.length;
@@ -203,10 +211,15 @@ class Stage2D {
 		} else if (emitters[i] != null) {
 			// Not culled: particles reach past where it is.
 			var e = emitters[i].emitter;
-			e.advance(dt, node.wx, node.wy, 0);
+			advance(emitters[i]);
 			count++;
 			batch.resetTransform();
 			batch.emitter(e);
+			return;
+		} else if (views[i] != null) {
+			// What it shows drawn now through its own camera (2D), or under the 2D before the batch ends (3D); not culled.
+			count++;
+			views[i].reach(batch, walkCamera, time);
 			return;
 		} else
 			return;
@@ -260,6 +273,14 @@ class Stage2D {
 			else
 				batch.drawText(text.text, 0, 0, text.textSize, text.color, text.align, text.font);
 		}
+	}
+
+	// An emitter moved on by the time since the last draw, once a frame however many views show its tree.
+	function advance(particles:Particles2D):Void {
+		if (particles.advancedAt == time)
+			return;
+		particles.advancedAt = time;
+		particles.emitter.advance(dt, particles.wx, particles.wy, 0);
 	}
 
 	// Whether the box x, y, w, h of node's own units, placed by its world transform, reaches into the camera's view.
