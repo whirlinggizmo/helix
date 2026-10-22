@@ -319,6 +319,20 @@ class Camera3D extends Node3D {
 		return ray.set(nearX, nearY, nearZ, far[0] - nearX, far[1] - nearY, far[2] - nearZ) ? ray : null;
 	}
 
+	/** Where the world point x, y, z is seen in the framebuffer, in pixels from its top-left (as the pointer is), into out (a new one when
+		not given), returned: through the same matrices the stage draws with, within the camera's viewport area (a point off its sides lands
+		off them). Null for a point behind the camera (or on its eye's plane), which no pixel shows. Given out, it allocates nothing. */
+	public function project(x:Float, y:Float, z:Float, ?out:helix.math.Point2D):Null<helix.math.Point2D> {
+		var m = this.viewProjection;
+		var w = m.get(3) * x + m.get(7) * y + m.get(11) * z + m.get(15);
+		if (!(w > 1e-9))
+			return null;
+		var nx = (m.get(0) * x + m.get(4) * y + m.get(8) * z + m.get(12)) / w,
+			ny = (m.get(1) * x + m.get(5) * y + m.get(9) * z + m.get(13)) / w;
+		var point = out != null ? out : new helix.math.Point2D();
+		return point.set(viewportX + (nx + 1) / 2 * viewportWidth, viewportY + (1 - ny) / 2 * viewportHeight);
+	}
+
 	// Clip-space x, y, z through `inverse` to the world, divided by w.
 	function unproject(x:Float, y:Float, z:Float):Array<Float> {
 		var m = inverse, w = m.get(3) * x + m.get(7) * y + m.get(11) * z + m.get(15);

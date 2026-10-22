@@ -178,6 +178,48 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 - `damp`: value eased toward target over dt seconds at rate (the share closed each second, as 1 - e^(-rate dt)): the same approach at any frame rate, never arriving exactly, which moveToward does. A rate of 0 or less leaves value.
 - `dampAngle`: As damp, between angles in radians the short way round.
 
+## Point2D
+
+*class* in `src/helix/math/Point2D.hx`
+
+A point in 2D, x, y, in whatever space its maker says: what a computation of a point returns (Camera3D.project, Ray3D.pointAt), into one given for reuse. Its 2D is its dimensions, as Bounds2D's is, not the display kind (docs/CONVENTIONS.md).
+
+```haxe
+function new(?x:Float = 0., ?y:Float = 0.)
+var x:Float
+var y:Float
+function set(x:Float, y:Float):Point2D
+function copyFrom(other:Point2D):Point2D
+```
+
+- `new`: The point x, y, 0 for each not given.
+- `x`: Its x.
+- `y`: Its y.
+- `set`: Sets it to x, y; returns it.
+- `copyFrom`: Sets it to other's; returns it.
+
+## Point3D
+
+*class* in `src/helix/math/Point3D.hx`
+
+A point in 3D, x, y, z, in whatever space its maker says: what a computation of a point returns (Camera3D.project, Ray3D.pointAt), into one given for reuse. Its 3D is its dimensions, as Bounds3D's is, not the display kind (docs/CONVENTIONS.md).
+
+```haxe
+function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0.)
+var x:Float
+var y:Float
+var z:Float
+function set(x:Float, y:Float, z:Float):Point3D
+function copyFrom(other:Point3D):Point3D
+```
+
+- `new`: The point x, y, z, 0 for each not given.
+- `x`: Its x.
+- `y`: Its y.
+- `z`: Its z.
+- `set`: Sets it to x, y, z; returns it.
+- `copyFrom`: Sets it to other's; returns it.
+
 ## Random
 
 *class* in `src/helix/math/Random.hx`

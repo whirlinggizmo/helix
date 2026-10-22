@@ -43,6 +43,23 @@ class PickTests {
 
 	static function rays():Void {
 		var c = camera(), ray = new Ray3D();
+		// World to screen and back: a point's pixel, its ray through it, the ground under a pixel.
+		var seen = c.project(0, 0, 0);
+		check(seen != null && near(seen.x, 400) && near(seen.y, 300), "The point looked at is the middle pixel");
+		check(c.project(0, 0, 20) == null, "A point behind the camera has no pixel");
+		var spot = new helix.math.Point2D();
+		check(c.project(1, 2, -3, spot) == spot && spot.x > 400 && spot.y < 300, "Right and up of the middle, into the point given");
+		var back = c.computeRay(spot.x, spot.y, ray),
+			along = back != null ? back.hitPlane(0, 0, 1, -3) : Math.NaN;
+		var met = back != null ? back.pointAt(along) : null;
+		check(met != null && near(met.x, 1) && near(met.y, 2) && near(met.z, -3), "Its pixel's ray passes back through it");
+		var down = new helix.render3d.Camera3D();
+		down.setViewport(800, 600);
+		down.setView(0, 10, 10, 0, 0, 0);
+		var ground = down.computeRay(400, 300, ray).hitHeight(0),
+			floor = ray.pointAt(ground, new helix.math.Point3D());
+		check(near(floor.x, 0) && near(floor.y, 0) && near(floor.z, 0), "The middle pixel's ray reaches the ground where the camera looks");
+		check(Math.isNaN(ray.hitHeight(20)) && Math.isNaN(ray.hitPlane(1, 0, 0, 0)), "No hit behind, and none running along a plane");
 		check(c.computeRay(400, 300, ray) != null
 			&& near(ray.directionZ, -1)
 			&& near(ray.originX, 0)

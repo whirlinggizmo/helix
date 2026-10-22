@@ -67,4 +67,23 @@ class Ray3D {
 	/** The point distance along it, axis 0 (x), 1 (y) or 2 (z). */
 	public function at(distance:Float, axis:Int):Float
 		return axis == 0 ? ox + dx * distance : axis == 1 ? oy + dy * distance : oz + dz * distance;
+
+	/** The point distance along it, into out (a new one when not given), returned. Given out, it allocates nothing. */
+	public function pointAt(distance:Float, ?out:helix.math.Point3D):helix.math.Point3D
+		return (out != null ? out : new helix.math.Point3D()).set(ox + dx * distance, oy + dy * distance, oz + dz * distance);
+
+	/** How far along it it meets the plane of points p where nx * p.x + ny * p.y + nz * p.z = d (the normal nx, ny, nz, any length), from
+		its origin on: NaN when it runs along the plane or away from it (the plane behind it). With pointAt, where on the ground a click
+		landed, where nothing was there to pick. */
+	public function hitPlane(nx:Float, ny:Float, nz:Float, d:Float):Float {
+		var across = nx * dx + ny * dy + nz * dz;
+		if (Math.abs(across) < 1e-12)
+			return Math.NaN;
+		var distance = (d - (nx * ox + ny * oy + nz * oz)) / across;
+		return distance >= 0 ? distance : Math.NaN;
+	}
+
+	/** How far along it it reaches the height y (the plane y = y, the ground at 0): hitPlane(0, 1, 0, y). NaN when it never does. */
+	public function hitHeight(y:Float):Float
+		return hitPlane(0, 1, 0, y);
 }

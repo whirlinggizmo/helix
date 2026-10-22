@@ -151,6 +151,7 @@ function setViewport(width:Int, height:Int):Void
 function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool
 var viewProjection(get, never):Mat4
 function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D>
+function project(x:Float, y:Float, z:Float, ?out:Point2D):Null<Point2D>
 ```
 
 - `new`: A camera at 0, 0, 10 looking at the origin, +y up, perspective with a quarter turn (pi/4) of vertical view (an orthographic height of 10 kept for when projection says so), clipping at 0.1 and 1000, on a 1 x 1 viewport.
@@ -184,6 +185,7 @@ function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D>
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
 - `viewProjection`: World to clip space, for the viewport's shape: the projection's matrix (its lens shift applied) * view, recomputed by each call, the view from where it is in the world now.
 - `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into out (a new one when not given), returned: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). Null, leaving out as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). Given out, it allocates nothing.
+- `project`: Where the world point x, y, z is seen in the framebuffer, in pixels from its top-left (as the pointer is), into out (a new one when not given), returned: through the same matrices the stage draws with, within the camera's viewport area (a point off its sides lands off them). Null for a point behind the camera (or on its eye's plane), which no pixel shows. Given out, it allocates nothing.
 
 ## CubeMap3D
 
@@ -1041,6 +1043,9 @@ var directionY(get, never):Float
 var directionZ(get, never):Float
 function set(x:Float, y:Float, z:Float, dx:Float, dy:Float, dz:Float):Bool
 function at(distance:Float, axis:Int):Float
+function pointAt(distance:Float, ?out:Point3D):Point3D
+function hitPlane(nx:Float, ny:Float, nz:Float, d:Float):Float
+function hitHeight(y:Float):Float
 ```
 
 - `new`: A ray from the origin down -z.
@@ -1052,6 +1057,9 @@ function at(distance:Float, axis:Int):Float
 - `directionZ`: The way it goes, z.
 - `set`: Starts it at x, y, z going along dx, dy, dz (made a unit vector). False, changing nothing, for a direction of length 0 or one that isn't finite.
 - `at`: The point distance along it, axis 0 (x), 1 (y) or 2 (z).
+- `pointAt`: The point distance along it, into out (a new one when not given), returned. Given out, it allocates nothing.
+- `hitPlane`: How far along it it meets the plane of points p where nx * p.x + ny * p.y + nz * p.z = d (the normal nx, ny, nz, any length), from its origin on: NaN when it runs along the plane or away from it (the plane behind it). With pointAt, where on the ground a click landed, where nothing was there to pick.
+- `hitHeight`: How far along it it reaches the height y (the plane y = y, the ground at 0): hitPlane(0, 1, 0, y). NaN when it never does.
 
 ## Renderer3D
 
@@ -1350,6 +1358,8 @@ var drawnNodeCount(get, never):Int
 var drawCallCount(get, never):Int
 var shadowCasterCount(get, never):Int
 var shadowDrawCallCount(get, never):Int
+function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D>
+function project(x:Float, y:Float, z:Float, ?out:Point2D):Null<Point2D>
 function drawToTexture(target:Texture2D, ?clearColor:Int = 0x00000000):Void
 function destroy():Void
 ```
@@ -1364,4 +1374,6 @@ function destroy():Void
 - `drawCallCount`: How many draws the last frame took for its tree.
 - `shadowCasterCount`: How many models cast into the shadow maps the last frame.
 - `shadowDrawCallCount`: How many draws the last frame's shadow maps took.
+- `computeRay`: The ray from its camera's eye through the stage point x, y (the stage's units, as a game holds the pointer: Screen.toUnitsX of its pixels), into out (a new one when not given), returned, as the view was last drawn: with Ray3D.hitHeight and pointAt, where on the ground a click landed. Null for a point outside where it's shown, or before its first draw. Given out, it allocates nothing.
+- `project`: Where the world point x, y, z of its tree is seen, in the stage's units (where a label over a head, an arrow to something off screen or a 2D burst from a 3D chest goes on the stage), into out (a new one when not given), returned, as the view was last drawn; a point off its sides lands off them. Null for a point behind its camera. Given out, it allocates nothing.
 - `drawToTexture`: Draws its tree through its camera into target (a Texture2D.renderTarget with depth), cleared to clearColor (0xAARRGGBB): a picture taken when asked (a tile's portrait, an inventory icon), not each frame. Its shadows are drawn first. Outside a frame only: in init or update, before the runner opens the frame.

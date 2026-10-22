@@ -16,7 +16,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.host`](host.md): Adapters, Config, FrameClock, Host, IHost, IWindow, Identity, Part, Presentation, PresentationMode, Runner, Screen, ScreenShape, Window, WindowOptions
 - [`helix.input`](input.md): Actions, Anchor, Binding, Gamepad, IInput, IInputEvents, IInputSource, IInputWatcher, Input, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.macro`](macro.md): AppBuild, Haxelib
-- [`helix.math`](math.md): Bounds2D, Bounds3D, Curve, CurveKind, Interpolate, Random, Trig
+- [`helix.math`](math.md): Bounds2D, Bounds3D, Curve, CurveKind, Interpolate, Point2D, Point3D, Random, Trig
 - [`helix.particle`](particle.md): Emitter, ParticlePreset
 - [`helix.render2d`](render2d.md): Align2D, AnimationDirection2D, Batch2D, Camera2D, CameraFollow2D, ChainCalls, Drawing2D, Node2D, Particles2D, Polygon2D, Renderer2D, Shape2D, ShapeForm2D, ShapeShading2D, Sprite2D, SpriteAnimation2D, SpriteAnimator2D, SpriteFrame2D, SpriteSheet2D, Stage, StageService, Text2D, View, View2D, ViewFrame
 - [`helix.render3d`](render3d.md): AnimationClip3D, Animator3D, Attachment3D, Batch3D, Camera3D, CubeMap3D, DirectionalLight3D, Drawing3D, Environment3D, EnvironmentBake3D, EnvironmentCache3D, EnvironmentMap3D, Environments3D, Gltf, Hdr, ImageSource3D, JointPalette3D, Light3D, Mat4, Material3D, Mesh3D, MeshShape3D, Model3D, ModelCache3D, ModelFile3D, ModelPass3D, Models3D, Node3D, Orbit3D, Part3D, Particles3D, PickHit3D, PointLight3D, Projection3D, Ray3D, Renderer3D, Skin3D, SpotLight3D, Sprite3D, SpriteFacing3D, SpriteKind3D, Sprites3D, Text3D, Tonemap, Track3D, TrackInterpolation3D, TrackPath3D, View3D

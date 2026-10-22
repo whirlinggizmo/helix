@@ -7,6 +7,8 @@ import helix.texture.Texture2D;
 import helix.render2d.View;
 import helix.render2d.ViewFrame;
 import helix.scene.Node;
+import helix.render2d.Stage;
+import helix.math.Point2D;
 
 /** A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's
 	children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping; the light is the place's (Node3D.environment), unless
@@ -95,6 +97,35 @@ class View3D extends View {
 		this.time = time;
 		ViewFrame.drawsUnder.push(() -> drawDeferred());
 		ViewFrame.shadows.push(() -> prepare());
+	}
+
+	/** The ray from its camera's eye through the stage point x, y (the stage's units, as a game holds the pointer: Screen.toUnitsX of its
+		pixels), into out (a new one when not given), returned, as the view was last drawn: with Ray3D.hitHeight and pointAt, where on the
+		ground a click landed. Null for a point outside where it's shown, or before its first draw. Given out, it allocates nothing. */
+	public function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D> {
+		var px = Stage.camera.worldToScreenX(x),
+			py = Stage.camera.worldToScreenY(y);
+		// With a chain its camera's viewport is its texture: the point carried into it.
+		if (postProcess != null) {
+			px -= shownX;
+			py -= shownY;
+		}
+		return camera.computeRay(px, py, out);
+	}
+
+	/** Where the world point x, y, z of its tree is seen, in the stage's units (where a label over a head, an arrow to something off screen
+		or a 2D burst from a 3D chest goes on the stage), into out (a new one when not given), returned, as the view was last drawn; a point
+		off its sides lands off them. Null for a point behind its camera. Given out, it allocates nothing. */
+	public function project(x:Float, y:Float, z:Float, ?out:Point2D):Null<Point2D> {
+		var seen = camera.project(x, y, z, out);
+		if (seen == null)
+			return null;
+		var px = seen.x, py = seen.y;
+		if (postProcess != null) {
+			px += shownX;
+			py += shownY;
+		}
+		return seen.set(Stage.camera.screenToWorldX(px), Stage.camera.screenToWorldY(py));
 	}
 
 	override function pickShown(x:Float, y:Float):Null<helix.render2d.Node2D> {

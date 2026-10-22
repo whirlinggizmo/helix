@@ -91,6 +91,16 @@ class ViewTests {
 		stage.draw(0);
 		check(eye.viewportX == 40 && eye.viewportY == 30 && eye.viewportWidth == 320 && eye.viewportHeight == 240, "A 3D view's camera sized to its rectangle");
 		check(view3D.drawnNodeCount == 1, "Its tree drawn");
+		// Between the stage and its world: the point it looks at seen at its rectangle's middle, in the stage's units, and that stage point's
+		// ray back to the ground there.
+		@:privateAccess helix.render2d.Stage.bind(stage);
+		var middle = view3D.project(0, 0, 0);
+		check(middle != null && Math.abs(middle.x - 200) < 1e-6 && Math.abs(middle.y - 150) < 1e-6, "The point it looks at, at its middle on the stage");
+		var ray = view3D.computeRay(200, 150),
+			floor = ray != null ? ray.pointAt(ray.hitHeight(0)) : null;
+		check(floor != null && Math.abs(floor.x) < 1e-6 && Math.abs(floor.z) < 1e-6, "That stage point's ray reaches the ground at the point");
+		check(view3D.computeRay(10, 10) == null, "A stage point outside it has no ray");
+		@:privateAccess helix.render2d.Stage.bind(null);
 		stage.draw(0);
 		check(view3D.drawnNodeCount == 1, "And again, its shadows prepared before the frame");
 		check(@:privateAccess view3D.world.ambientIntensity == 0, "No environment anywhere: no ambient light");
