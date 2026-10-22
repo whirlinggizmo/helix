@@ -1168,9 +1168,9 @@ function setPivot(x:Float, y:Float):Void
 var pivotX(default, null):Float
 var pivotY(default, null):Float
 var facing:SpriteFacing3D
-var alphaMode(default, null):SpriteAlpha3D
+var alphaMode(default, null):AlphaMode
 var alphaCutoff(get, never):Float
-function setAlphaMode(mode:SpriteAlpha3D, ?cutoff:Float = .5):Bool
+function setAlphaMode(mode:AlphaMode, ?cutoff:Float = .5):Bool
 ```
 
 - `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xAARRGGBB, white for none).
@@ -1192,12 +1192,6 @@ function setAlphaMode(mode:SpriteAlpha3D, ?cutoff:Float = .5):Bool
 - `alphaMode`: How its texels' alpha is used.
 - `alphaCutoff`: The alpha below which a Mask sprite's texels are cut out (0..1).
 - `setAlphaMode`: Sets how it uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False, changing nothing, for a cutoff outside 0..1.
-
-## SpriteAlpha3D
-
-*abstract* in `src/helix/render3d/SpriteAlpha3D.hx`
-
-How a sprite (3D or 2D) or a particle uses its texels' alpha.
 
 ## SpriteFacing3D
 

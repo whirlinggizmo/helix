@@ -734,7 +734,7 @@ class Render2DTests {
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
 		var spriteTexture = Texture2D.fromRgba(gpu, 1, 1, Bytes.alloc(4));
-		var modes:Array<helix.render3d.SpriteAlpha3D> = [Add, Blend, Opaque, Blend, Add];
+		var modes:Array<helix.graphics.AlphaMode> = [Add, Blend, Opaque, Blend, Add];
 		for (mode in modes) {
 			var s3 = new Sprite3D(spriteTexture);
 			s3.setAlphaMode(mode);

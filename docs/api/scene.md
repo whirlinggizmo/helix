@@ -477,8 +477,8 @@ static function projectionOf(name:String):Null<Projection3D>
 static function projectionName(projection:Projection3D):String
 static function facingOf(name:String):Null<SpriteFacing3D>
 static function facingName(facing:SpriteFacing3D):String
-static function alphaOf(name:String):Null<SpriteAlpha3D>
-static function alphaName(alpha:SpriteAlpha3D):String
+static function alphaOf(name:String):Null<AlphaMode>
+static function alphaName(alpha:AlphaMode):String
 ```
 
 - `make`: A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table has.

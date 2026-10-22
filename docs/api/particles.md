@@ -67,8 +67,8 @@ var maxSpin(get, never):Float
 function setSpin(min:Float, max:Float):Bool
 var stretch(default, set):Float
 var alphaCutoff(get, never):Float
-function setAlphaMode(mode:SpriteAlpha3D, ?cutoff:Float = .5):Bool
-var alphaMode(default, null):SpriteAlpha3D
+function setAlphaMode(mode:AlphaMode, ?cutoff:Float = .5):Bool
+var alphaMode(default, null):AlphaMode
 var seed(get, set):Int
 var particleCount(get, never):Int
 function clear():Void

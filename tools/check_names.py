@@ -7,6 +7,8 @@
      module's subtypes are its kind's too (Attachment3D, Track3D).
   3. Every public type of the scene file family (helix.scene's Scene*) ends in 3D, the only kind a scene file has yet, but for those both
      kinds' files will share (SHARED).
+  4. 2D code names no 3D type: helix.render2d's code (its comments aside) uses nothing ending in 3D, so a type both kinds use is a neutral
+     one (helix.graphics.AlphaMode), and a 2D program never reaches 3D through a name.
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re
@@ -48,8 +50,18 @@ def declared(path):
     return [m.group(2) for m in DECLARATION.finditer(text) if not m.group(1)]
 
 
+# A comment, line or block, which may name what the code doesn't.
+COMMENT = re.compile(r'//[^\n]*|/\*.*?\*/', re.S)
+# A type of the 3D kind, named in code.
+THREE_D = re.compile(r'\b[A-Z]\w*3D\b')
+
+
 def problems():
     found = []
+    for path in sorted((SOURCES / 'render2d').rglob('*.hx')):
+        code = COMMENT.sub('', path.read_text(encoding='utf-8'))
+        for name in sorted(set(THREE_D.findall(code))):
+            found.append(f'{path.relative_to(ROOT).as_posix()}: names {name}, a 3D type, in 2D code: use or make a neutral type')
     for path in sorted(SOURCES.rglob('*.hx')):
         relative = path.relative_to(ROOT).as_posix()
         package = path.parent.name

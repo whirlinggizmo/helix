@@ -2,6 +2,12 @@
 
 [Back to the index](README.md)
 
+## AlphaMode
+
+*abstract* in `src/helix/graphics/AlphaMode.hx`
+
+How a sprite or a particle uses its texels' alpha, the same in 2D and 3D (Sprite3D.alphaMode, Emitter.alphaMode). In 3D it also says when it's drawn among the models: with the opaque ones, among the see-through ones back to front, or after everything.
+
 ## BlendMode
 
 *abstract* in `src/helix/graphics/BlendMode.hx`

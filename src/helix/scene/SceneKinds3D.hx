@@ -17,7 +17,7 @@ import helix.render3d.PointLight3D;
 import helix.render3d.Projection3D;
 import helix.render3d.SpotLight3D;
 import helix.render3d.Sprite3D;
-import helix.render3d.SpriteAlpha3D;
+import helix.graphics.AlphaMode;
 import helix.render3d.SpriteFacing3D;
 import helix.render3d.Text3D;
 import helix.render3d.Tonemap;
@@ -410,13 +410,13 @@ class SceneKinds3D {
 		return FACINGS[(facing : Int)];
 
 	/** The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name. */
-	public static function alphaOf(name:String):Null<SpriteAlpha3D> {
+	public static function alphaOf(name:String):Null<AlphaMode> {
 		var index = ALPHAS.indexOf(name);
 		return index < 0 ? null : cast index;
 	}
 
 	/** An alpha mode's name as the file writes it. */
-	public static function alphaName(alpha:SpriteAlpha3D):String
+	public static function alphaName(alpha:AlphaMode):String
 		return ALPHAS[(alpha : Int)];
 
 	static final FACINGS = ["camera", "upright", "ground", "free"];

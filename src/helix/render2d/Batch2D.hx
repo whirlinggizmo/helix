@@ -6,7 +6,7 @@ import helix.graphics.BlendMode;
 import helix.graphics.Pipelines;
 import helix.graphics.Sampling;
 import helix.graphics.SpriteEffect;
-import helix.render3d.SpriteAlpha3D;
+import helix.graphics.AlphaMode;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per

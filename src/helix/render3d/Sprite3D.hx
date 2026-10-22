@@ -1,5 +1,6 @@
 package helix.render3d;
 
+import helix.graphics.AlphaMode;
 import helix.render2d.Texture2D;
 
 /** A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by
@@ -79,7 +80,7 @@ class Sprite3D extends Node3D {
 	public var facing:SpriteFacing3D = Camera;
 
 	/** How its texels' alpha is used. */
-	public var alphaMode(default, null):SpriteAlpha3D = Blend;
+	public var alphaMode(default, null):AlphaMode = Blend;
 
 	/** The alpha below which a Mask sprite's texels are cut out (0..1). */
 	public var alphaCutoff(get, never):Float;
@@ -88,7 +89,7 @@ class Sprite3D extends Node3D {
 		return cutoff;
 
 	/** Sets how it uses its texels' alpha, and a Mask's cutoff (0..1, 0.5 by default). False, changing nothing, for a cutoff outside 0..1. */
-	public function setAlphaMode(mode:SpriteAlpha3D, cutoff = .5):Bool {
+	public function setAlphaMode(mode:AlphaMode, cutoff = .5):Bool {
 		if (!(cutoff >= 0 && cutoff <= 1))
 			return false;
 		alphaMode = mode;
