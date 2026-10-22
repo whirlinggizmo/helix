@@ -20,6 +20,38 @@ var required(get, never):Bool
 - `defaultValue`: The generator's default, which the writer leaves out of the file; null for an argument the generator requires.
 - `required`: Whether the generator requires it: a file leaving it out is refused.
 
+## Collect2D
+
+*class* in `src/helix/scene/Collect2D.hx`
+
+Things collected flying to where they count: a chest's coins to the score, gems to a counter, hearts to the health bar. Sprites of a texture burst out from a point on the stage, scatter for a moment, then each curves in to a target node, one after another, a callback as each arrives (a ding, a score tick) and another once all have. It runs itself (run), on the frames' time as a Transition does, and takes itself off the stage when done; from a 3D world, the point is a View3D's project of where the chest is. In the stage's units.
+
+```haxe
+function new(texture:Texture2D, ?count:Int = 12)
+var texture(default, null):Texture2D
+var count(default, null):Int
+var size:Float
+var tint:Int
+var scatter:Float
+var scatterSeconds:Float
+var flySeconds:Float
+var stagger:Float
+var running(default, null):Bool
+function run(x:Float, y:Float, target:Node2D, ?arrived:Int -> Void, ?done:() -> Void):Bool
+```
+
+- `new`: Sprites of texture, count of them (at least 1), each texture's size unless sized (size).
+- `texture`: Their texture.
+- `count`: How many fly.
+- `size`: Each sprite's size, the stage's units, square; 0 (the default) for its texture's size.
+- `tint`: Their tint, 0xAARRGGBB: white (the texture as it is) by default.
+- `scatter`: How far they scatter from the point before they fly, the stage's units: 48 by default.
+- `scatterSeconds`: Seconds they scatter for: .35 by default.
+- `flySeconds`: Seconds each takes to fly in once it sets off: .6 by default.
+- `stagger`: Seconds between one setting off and the next: .05 by default.
+- `running`: Whether it's running now.
+- `run`: Bursts them from x, y (the stage's units) to target, each flying to where target's bounds' center is as it arrives (its position when it has none: a group), arrived (when given) called as each arrives with its index, done (when given) once all have. False, running nothing, while it's running already. With the run option quick=1, they arrive at once.
+
 ## Fade
 
 *class* in `src/helix/scene/Transition.hx`

@@ -116,6 +116,26 @@ class SceneTests {
 		check(onward, "Past its most wait it goes on without one");
 		@:privateAccess Input.bind(input);
 
+		// Things collected: they burst, fly to the target one after another, each told on arrival, then all done and off the stage.
+		var score = new Node2D();
+		score.setPosition(700, 40);
+		Stage.addChild(score);
+		var before = Stage.childCount, got = [], finished = false;
+		var coins = new helix.scene.Collect2D(helix.texture.Texture2D.fromRgba(1, 1, haxe.io.Bytes.alloc(4), false, -1, -1, false,
+			new Render2DTests.CountingGraphics()), 5);
+		check(coins.run(100, 500, score, i -> got.push(i), () -> finished = true)
+			&& coins.running
+			&& !coins.run(0, 0, score), "Running, once");
+		check(Stage.childCount == before + 1, "Its sprites on the stage");
+		frame(coins.scatterSeconds);
+		check(got.length == 0, "Scattered, none in yet");
+		frame(coins.flySeconds + .001);
+		check(got.length == 1 && got[0] == 0, "The first in, the others still flying");
+		for (_ in 0...10)
+			frame(coins.stagger);
+		check(got.join(",") == "0,1,2,3,4" && finished && !coins.running && Stage.childCount == before, "All in, in turn: done, off the stage");
+		Stage.removeChild(score);
+
 		// The loader by itself.
 		var loader = new Loader();
 		check(loader.done && loader.progress == 1 && loader.count == 0, "An empty loader is done");

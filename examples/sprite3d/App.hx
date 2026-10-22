@@ -44,7 +44,8 @@ import helix.render3d.Orbit3D;
 	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F. The flames shimmer (3) through the
 	example's own sprite shader, shaders/heat.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its
 	parameters set by name.
-	O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
+	C collects: coins fly from the coin on the ground to the counter at the top right (helix.scene.Collect2D, from where View3D.project sees
+	the coin on the stage), the count rising as each lands. O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
 	held, the stage's with it (Stage.heldTime), the window the autopilot's page's size, so its samples of the frame compare across targets)
 	and autoclose (1: quit once the script is done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
 class App extends helix.App {
@@ -52,6 +53,10 @@ class App extends helix.App {
 	var view:View3D;
 	var camera = new Camera3D();
 	var hud = new Drawing2D();
+	// The coins collected, at the top right, and the flight that brings them.
+	var counter = new helix.render2d.Text2D("coins 0", 20, 0xffffd25a, Right);
+	var coins = 0;
+	var flight:Null<helix.scene.Collect2D>;
 	var fps = new FpsOverlay();
 	var logo:Sprite3D;
 	var sign:Sprite3D;
@@ -170,6 +175,8 @@ class App extends helix.App {
 		view = new View3D(level, camera);
 		Stage.addChild(view);
 		Stage.addChild(hud);
+		counter.setPosition(0, 0);
+		Stage.addChild(counter);
 		Stage.addChild(fps);
 	}
 
@@ -264,6 +271,8 @@ class App extends helix.App {
 			}
 			if (Input.isFramePressed(Key.F))
 				flash.trigger(0xffffffff, .4);
+			if (Input.isFramePressed(Key.C))
+				collect();
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, the camera with it.
 		var time = piloted ? HELD_TIME : Time.clock.time;
@@ -283,11 +292,12 @@ class App extends helix.App {
 		var y = vy + 36, title = "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added";
 		y += hud.drawTextWrapped(title, vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
 		var on = (value:Bool) -> value ? "on" : "off";
-		hud.drawTextWrapped('${view.drawnNodeCount} models and sprites in ${view.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash',
+		hud.drawTextWrapped('${view.drawnNodeCount} models and sprites in ${view.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash  [C] collect',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xffc8c8c8);
 		fps.setPosition(vx + 12, vy + 10);
+		counter.setPosition(vx + vw - 12, vy + 10);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({
@@ -302,5 +312,19 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		if (heat != null)
 			shaders.release(heat.shader);
+	}
+
+	// Coins from the coin on the ground to the counter: where the view sees it on the stage, then a flight to the counter, a coin counted as
+	// each lands.
+	function collect():Void {
+		var seen = view.project(-2, .1, 1.5);
+		if (seen == null)
+			return;
+		if (flight == null) {
+			flight = new helix.scene.Collect2D(helix.particle.Emitter.getDot(), 10);
+			flight.size = 18;
+			flight.tint = 0xffffd25a;
+		}
+		flight.run(seen.x, seen.y, counter, _ -> counter.text = 'coins ${++coins}');
 	}
 }
