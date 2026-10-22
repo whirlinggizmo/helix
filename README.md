@@ -14,7 +14,7 @@ A game of your own, with Haxe 4.3.7 and HeliX as a haxelib (BUILDING.md, "A game
 
 ```console
 haxelib run helix init my-game && cd my-game
-haxe hxml/watch.hotreload.hxml          # http://localhost:8064/, hot reload as you edit (hotreload-hx)
+haxe hxml/dev.hxml                      # http://localhost:8064/, hot reload as you edit (hotreload-hx), shaders packed as they change
 haxe hxml/build.dist.hxml               # the release build for hosting, out/dist/ and a zip for itch.io
 ```
 

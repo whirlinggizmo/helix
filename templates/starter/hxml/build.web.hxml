@@ -1,5 +1,5 @@
 # The browser build for development: haxe hxml/build.web.hxml -> out/web/app.js, with the page beside it (index.html, the library's,
-# written when there's none). hxml/watch.hotreload.hxml rebuilds it on save.
+# written when there's none). hxml/dev.hxml rebuilds it on save.
 hxml/common.hxml
 -D helix-backend=webgl2
 -debug

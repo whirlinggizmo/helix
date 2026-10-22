@@ -180,7 +180,7 @@ class Starter(unittest.TestCase):
     def test_files_and_builds(self):
         with tempfile.TemporaryDirectory() as directory:
             game = starter(directory, 'my-jam-game')
-            names = ('build.web', 'build.native', 'build.dist', 'watch.hotreload', 'watch.shader', 'serve.dist')
+            names = ('build.web', 'build.native', 'build.dist', 'dev', 'serve.dist')
             hxml = ['hxml/common.hxml'] + [f'hxml/{name}.hxml' for name in names]
             for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'assets/README.md', 'favicon.svg', '.gitignore', 'README.md']:
                 self.assertTrue((game / relative).is_file(), relative)
@@ -292,7 +292,7 @@ class Running(unittest.TestCase):
             game = starter(directory)
             (game / 'shaders').mkdir()
             (game / 'shaders/glow.glsl').write_text(EFFECT, encoding='utf-8')
-            watcher = subprocess.Popen(['haxe', 'hxml/watch.shader.hxml'], cwd=game, env=LIBRARY_ENV, stdout=subprocess.PIPE,
+            watcher = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', 'helix.tools.Watchers.watchShaders()'], cwd=game, env=LIBRARY_ENV, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT, text=True)
             try:
                 packed = game / 'assets/shaders/glow.hxshader'

@@ -4,8 +4,7 @@ A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/G
 are in `hxml/`, each run from this directory:
 
 ```console
-haxe hxml/watch.hotreload.hxml    # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs
-haxe hxml/watch.shader.hxml       # beside it, for shaders of the game's own: shaders/<name>.glsl packed as they change
+haxe hxml/dev.hxml                # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs, and shaders/<name>.glsl as they change
 haxe hxml/build.web.hxml          # the browser build alone, out/web/
 haxe hxml/build.dist.hxml         # the release build for hosting: out/dist/, zipped as out/{name}-web.zip (itch.io)
 haxe hxml/serve.dist.hxml         # out/dist/ served at http://localhost:8095/, to try before uploading

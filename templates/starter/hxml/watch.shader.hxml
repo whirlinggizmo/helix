@@ -1,4 +1,0 @@
-# The game's shaders packed as they change, beside the dev loop: haxe hxml/watch.shader.hxml. shaders/<name>.glsl ->
-# assets/shaders/<name>.hxshader, which the game loads as "shaders/<name>.hxshader" and the page reloads. Ctrl+C stops it.
--lib helix
---macro helix.tools.Watchers.watchShaders()

@@ -27,6 +27,10 @@
       "sha256": "ac6d800d609a3332b95fa98309e9ae72ccf569bec869c6e54c773b3c8aa39dea"
     }
   },
+  "hotreloadHx": {
+    "revision": "c5ed8cda816aa86255da74e86f4abbd5740181b9",
+    "repository": "https://github.com/whirlinggizmo/hotreload-hx"
+  },
   "sokolToolsBin": "11d0cf678105d614d675e6d9bd2aaf3eeff12f8c",
   "nodePackages": {
     "terser": "5.44.1",
