@@ -37,6 +37,7 @@ import helix.host.ScreenShape;
 	- a selection ring under the sprite the pointer is over: a SpriteRing (dashed, turning, a faint fill) on a 1 x 1 white texture, at the
 	  sprite's position (its pivot), sized by its bounds in its own units (Node2D.computeBounds relative to itself: unturned), so it stays
 	  steady while the sprite turns, as a ring under a unit does
+	- decals under everything where the pointer is dragged (Decals2D), each fading out after 4 seconds on the game's clock
 	Sprite effects (helix.shader, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
 	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the
@@ -83,6 +84,10 @@ class App extends helix.App {
 	// The ring under the hovered sprite, and the bounds it's sized by.
 	var selection:Sprite2D;
 	var selected = new helix.math.Bounds2D();
+	// The decals a drag leaves, and where the last went (NaN: none this drag).
+	var decals:helix.render2d.Decals2D;
+	var lastDecalX = Math.NaN;
+	var lastDecalY = Math.NaN;
 	var outline:SpriteOutline;
 	var dissolve:SpriteDissolve;
 	var flash:SpriteFlash;
@@ -116,6 +121,13 @@ class App extends helix.App {
 				return Std.int(127 + 127 * Math.sin(a + phase));
 			tints.push(Color.fromChannels(channel(0), channel(2.1), channel(4.2)));
 		}
+		// Under everything: the decals a drag leaves, faint dust fading out after 4 seconds.
+		decals = new helix.render2d.Decals2D(helix.particle.Emitter.getDot(), 64);
+		decals.size = 14;
+		decals.tint = 0x90c8b490;
+		decals.lifeSeconds = 4;
+		decals.fadeSeconds = 1;
+		Stage.addChild(decals);
 		// Under the sprites, so it rings them: drawn by its effect, its texture only a quad's, its tint the ring's color.
 		var white = haxe.io.Bytes.alloc(4);
 		white.fill(0, 4, 255);
@@ -296,6 +308,16 @@ class App extends helix.App {
 		// Hover: the topmost sprite under the pointer, the last drawn first, as the last frame placed them.
 		var x = camera.screenToWorldX(Input.pointerX),
 			y = camera.screenToWorldY(Input.pointerY);
+		// A decal where the left button drags, once it's moved far enough from the last, turned along the way it went.
+		if (pilot == null && Input.pointerDown) {
+			var dx = x - lastDecalX, dy = y - lastDecalY;
+			if (Math.isNaN(dx) || dx * dx + dy * dy >= 18 * 18) {
+				decals.place(x, y, Math.isNaN(dx) ? 0 : Math.atan2(dy, dx));
+				lastDecalX = x;
+				lastDecalY = y;
+			}
+		} else
+			lastDecalX = Math.NaN;
 		hovered = -1;
 		if (pilot == null && Input.pointerX >= 0) {
 			var i = sprites.length;
@@ -327,7 +349,7 @@ class App extends helix.App {
 		var on = (value:Bool) -> value ? "on" : "off";
 		var line = vy + 36,
 			title = "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects",
-			keys = '[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash';
+			keys = '[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash  [LMB] add decal';
 		line += heading.drawTextWrapped(title, vx + 12, line, 16, vw - 96, 0xfff5f5f5) + 4;
 		line += drawing.drawTextWrapped(keys, vx + 12, line, 16, vw - 96, 0xffc8c8c8) + 4;
 		drawing.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame',

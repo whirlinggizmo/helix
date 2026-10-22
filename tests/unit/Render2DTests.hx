@@ -778,6 +778,23 @@ class Render2DTests {
 		sliceAndWrap();
 		rounded();
 		unsizedCamera();
+		// Decals: a pool of sprites, the oldest put down again once full (last in the draw order), those next to be taken up faded.
+		var decals = new helix.render2d.Decals2D(Texture2D.fromRgba(1, 1, Bytes.alloc(4), new CountingGraphics()), 3);
+		check(decals.fadeCount == 0, "A quarter of 3 fades: none");
+		decals.fadeCount = 1;
+		var first = decals.place(10, 20, .5, 8);
+		decals.place(0, 0);
+		check(decals.count == 2 && !first.pickable && near(first.x, 10) && near(first.y, 20) && near(first.rotation, .5) && near(first.width, 8),
+			"Placed where given, turned and sized, never picked");
+		check(first.tint == 0xffffffff, "Unfaded while a place is free");
+		decals.place(0, 0);
+		check(first.tint == 0x80ffffff, "Full: the next to go fades");
+		var again = decals.place(1, 1);
+		check(again == first && decals.count == 3 && decals.childCount == 3 && decals.getChild(2) == first && near(first.width, 1),
+			"Past full, the oldest put down again on top, its texture's size by default");
+		decals.clear();
+		check(decals.count == 0 && decals.childCount == 0, "Cleared");
+
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 

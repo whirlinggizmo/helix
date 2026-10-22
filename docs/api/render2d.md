@@ -221,6 +221,38 @@ A chain's calls (PostProcess's beginScene, endScene, present and hdr), through t
 - `end:Float -> Void`
 - `begin:(Int, Int, Int) -> Void`
 
+## Decals2D
+
+*class* in [`src/helix/render2d/Decals2D.hx`](../../src/helix/render2d/Decals2D.hx)
+
+Marks left on the ground of a game seen from above: skid marks, footsteps, scorch marks, a target ring. A fixed pool of a texture's sprites, drawn together (alike sprites beside each other in the draw order are one draw): each place puts one down, and once the pool is full the oldest is taken up and put down again, so a trail never grows past its capacity. Given a life (lifeSeconds), each mark fades out over fadeSeconds once it has lived it, on the game's clock (a paused game's marks stay as they are), and is taken up; without one it stays until the pool comes round to it. Either way the ones next to be taken up for reuse (fadeCount) fade by how soon, so a full pool's trail thins out where it ends instead of losing a mark at a time. In its own space: add it under what walks over the marks (before them, as a child drawn first). Decals are never picked: a click passes to what's under them.
+
+```haxe
+function new(texture:Texture2D, ?capacity:Int = 64)
+var texture(default, null):Texture2D
+var capacity(get, never):Int
+var count(get, never):Int
+var size:Float
+var tint:Int
+var fadeCount(get, set):Int
+var lifeSeconds(get, set):Float
+var fadeSeconds(get, set):Float
+function place(x:Float, y:Float, ?angle:Float = 0., ?size:Float = 0., ?tint:Int):Sprite2D
+function clear():Void
+```
+
+- `new`: A pool of capacity (at least 1) decals of texture.
+- `texture`: Their texture.
+- `capacity`: How many it holds before the oldest is put down again.
+- `count`: How many are down now: up to capacity.
+- `size`: Each decal's size, its own units, square (place may give its own): 0 to start, for its texture's size (or its region's).
+- `tint`: Their tint, 0xAARRGGBB: white (the texture as it is) to start. place may give its own.
+- `fadeCount`: How many of the decals next to be taken up for reuse fade, by how soon: the next at 1 in fadeCount + 1 of its alpha (none fade while the pool has that many places free). A quarter of the capacity to start; 0 for none. Clamped to 0..capacity. Takes effect at the next place.
+- `lifeSeconds`: Seconds on the game's clock each decal stays as placed before it fades out (over fadeSeconds) and is taken up: 0 (the default, and for less) for as long as the pool lets it. Applies to every decal down, as old as each is.
+- `fadeSeconds`: Seconds a decal takes to fade out once it has lived its life (lifeSeconds): .5 to start; 0 (and for less) to vanish at once.
+- `place`: Puts a decal down at x, y (its own space), turned angle radians (clockwise, as the stage's y is down), size across (0, the default, for the pool's size), tinted (0xAARRGGBB; null for the pool's tint), over the others. Returns its sprite, to set its region (a variant from an atlas) or effect now: it's the pool's, put down again once taken up, its region and effect cleared then.
+- `clear`: Takes every decal up.
+
 ## Drawing2D
 
 *class* in [`src/helix/render2d/Drawing2D.hx`](../../src/helix/render2d/Drawing2D.hx)

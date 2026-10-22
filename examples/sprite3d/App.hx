@@ -16,6 +16,8 @@ import helix.render2d.Stage;
 import helix.texture.Texture2D;
 import helix.texture.Textures;
 import helix.render3d.Camera3D;
+import helix.render3d.Decals3D;
+import helix.render3d.Ray3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
@@ -45,7 +47,9 @@ import helix.render3d.Orbit3D;
 	example's own sprite shader, shaders/heat.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its
 	parameters set by name.
 	C collects: coins fly from the coin on the ground to the counter at the top right (helix.scene.Collect2D, from where View3D.project sees
-	the coin on the stage), the count rising as each lands. O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
+	the coin on the stage), the count rising as each lands. Dragging the pointer over the ground leaves a trail of decals (Decals3D: where its
+	ray meets the ground, View3D.computeRay and Ray3D.hitHeight), each fading out after 4 seconds on the game's clock, and the oldest sooner
+	as the pool comes round to them. O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
 	held, the stage's with it (Stage.heldTime), the window the autopilot's page's size, so its samples of the frame compare across targets)
 	and autoclose (1: quit once the script is done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
 class App extends helix.App {
@@ -57,6 +61,12 @@ class App extends helix.App {
 	var counter = new helix.render2d.Text2D("coins 0", 20, 0xffffd25a, Right);
 	var coins = 0;
 	var flight:Null<helix.scene.Collect2D>;
+	// The decals a drag leaves on the ground, and where the last went (NaN: none this drag).
+	var decals:Decals3D;
+	var ray = new Ray3D();
+	var ground = new helix.math.Point3D();
+	var lastDecalX = Math.NaN;
+	var lastDecalZ = Math.NaN;
 	var fps = new FpsOverlay();
 	var logo:Sprite3D;
 	var sign:Sprite3D;
@@ -172,6 +182,12 @@ class App extends helix.App {
 		logo.effect = flash;
 		shaders = new Shaders();
 		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));
+		decals = new Decals3D(helix.particle.Emitter.getDot(), 48);
+		decals.size = .3;
+		decals.tint = 0xd0140c08;
+		decals.lifeSeconds = 4;
+		decals.fadeSeconds = 1;
+		level.addChild(decals);
 		view = new View3D(level, camera);
 		Stage.addChild(view);
 		Stage.addChild(hud);
@@ -273,6 +289,10 @@ class App extends helix.App {
 				flash.trigger(0xffffffff, .4);
 			if (Input.isFramePressed(Key.C))
 				collect();
+			if (Input.pointerDown)
+				addDecal();
+			else
+				lastDecalX = Math.NaN;
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, the camera with it.
 		var time = piloted ? HELD_TIME : Time.clock.time;
@@ -292,7 +312,7 @@ class App extends helix.App {
 		var y = vy + 36, title = "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added";
 		y += hud.drawTextWrapped(title, vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
 		var on = (value:Bool) -> value ? "on" : "off";
-		hud.drawTextWrapped('${view.drawnNodeCount} models and sprites in ${view.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash  [C] collect',
+		hud.drawTextWrapped('${view.drawnNodeCount} models and sprites in ${view.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash  [C] collect  [LMB] add decal',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xffc8c8c8);
@@ -312,6 +332,21 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		if (heat != null)
 			shaders.release(heat.shader);
+	}
+
+	// A decal where the pointer's ray meets the ground while the left button is down, once it's moved far enough from the last, turned along the way it went.
+	function addDecal():Void {
+		var through = view.computeRay(Screen.toUnitsX(Input.pointerX), Screen.toUnitsY(Input.pointerY), ray);
+		var along = through != null ? through.hitHeight(0) : Math.NaN;
+		if (!(along > 0))
+			return;
+		through.pointAt(along, ground);
+		var dx = ground.x - lastDecalX, dz = ground.z - lastDecalZ;
+		if (dx * dx + dz * dz < .3 * .3)
+			return;
+		decals.place(ground.x, 0, ground.z, Math.isNaN(dx) ? 0 : Math.atan2(-dx, -dz));
+		lastDecalX = ground.x;
+		lastDecalZ = ground.z;
 	}
 
 	// Coins from the coin on the ground to the counter: where the view sees it on the stage, then a flight to the counter, a coin counted as

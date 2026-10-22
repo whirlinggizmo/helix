@@ -348,6 +348,53 @@ class Render3DTests {
 		flags();
 		lightChoice();
 		cullingAndCasters();
+		// Decals: a pool of flat sprites, the oldest put down again once full, those next to be taken up faded.
+		var decals = new helix.render3d.Decals3D(helix.texture.Texture2D.fromRgba(1, 1, haxe.io.Bytes.alloc(4), false, -1, -1, false,
+			new Render2DTests.CountingGraphics()), 4);
+		check(decals.count == 0 && decals.capacity == 4 && decals.fadeCount == 1, "An empty pool, a quarter of it fading");
+		var first = decals.place(1, 2, 3, Math.PI / 2, 0, 0x80ff0000);
+		first.setRegion(1, 1, 2, 2);
+		decals.place(0, 0, 0);
+		decals.place(0, 0, 0, 0, 2);
+		check(decals.count == 3 && decals.childCount == 3 && first.facing == Ground && !first.pickable, "Placed flat, never picked");
+		check(near(first.x, 1) && near(first.y, 2.01) && near(first.z, 3) && Math.abs(first.rotationY - Math.PI / 2) < 1e-9,
+			"At its place, lifted over the ground, turned about y");
+		check(near(first.spriteWidth, 1)
+			&& near(decals.getChild(2).scaleX, 1)
+			&& near((cast decals.getChild(2) : helix.render3d.Sprite3D).spriteWidth, 2),
+			"The pool's size, or its own");
+		check(first.tint == 0x80ff0000, "Its own tint, unfaded while a place is free");
+		decals.place(0, 0, 0);
+		check(first.tint == 0x40ff0000
+			&& (cast decals.getChild(1) : helix.render3d.Sprite3D).tint == 0xffffffff, "Full: the next to go fades");
+		var again = decals.place(5, 0, 5);
+		check(again == first && decals.count == 4 && decals.childCount == 4 && again.regionWidth <= 0 && again.tint == 0xffffffff,
+			"Past full, the oldest is put down again, its region cleared");
+		check((cast decals.getChild(0) : helix.render3d.Sprite3D).tint == 0x80ffffff && decals.getChild(3) == first,
+			"The next oldest fades in its turn; the one put down again is last");
+		decals.fadeCount = 10;
+		var most = decals.fadeCount;
+		decals.fadeCount = -1;
+		check(most == 4 && decals.fadeCount == 0, "fadeCount held to 0..capacity");
+		decals.clear();
+		check(decals.count == 0 && decals.childCount == 0, "Cleared");
+		// A life: as placed for lifeSeconds on the game's clock, then fading out over fadeSeconds, then taken up (and put down again first).
+		decals.fadeCount = 0;
+		decals.lifeSeconds = 1;
+		decals.fadeSeconds = .5;
+		var young = decals.place(0, 0, 0, 0, 0, 0xffffffff);
+		@:privateAccess helix.scene.Flow.tick(.5);
+		var older = decals.place(1, 0, 0);
+		@:privateAccess helix.scene.Flow.tick(.75);
+		check(young.tint == 0x80ffffff && older.tint == 0xffffffff, "Halfway through its fade, a younger one as placed");
+		@:privateAccess helix.scene.Flow.tick(.25);
+		check(decals.count == 1 && decals.childCount == 1 && young.parent == null, "Faded out: taken up");
+		check(decals.place(2, 0, 0) == young && decals.count == 2, "And put down again first");
+		decals.lifeSeconds = 0;
+		@:privateAccess helix.scene.Flow.tick(10);
+		check(decals.count == 2 && older.tint == 0xffffffff, "No life: they stay");
+		decals.clear();
+
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
