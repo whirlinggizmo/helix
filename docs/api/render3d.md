@@ -150,7 +150,7 @@ var viewportHeight(default, null):Int
 function setViewport(width:Int, height:Int):Void
 function setViewportArea(x:Int, y:Int, width:Int, height:Int):Bool
 var viewProjection(get, never):Mat4
-function computeRay(x:Float, y:Float, ray:Ray3D):Bool
+function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D>
 ```
 
 - `new`: A camera at 0, 0, 10 looking at the origin, +y up, perspective with a quarter turn (pi/4) of vertical view (an orthographic height of 10 kept for when projection says so), clipping at 0.1 and 1000, on a 1 x 1 viewport.
@@ -183,7 +183,7 @@ function computeRay(x:Float, y:Float, ray:Ray3D):Bool
 - `setViewport`: The framebuffer it draws to, width x height pixels, all of it the viewport; a size under 1 clamps to 1.
 - `setViewportArea`: Narrows the viewport to an area of the framebuffer last given to setViewport: x, y is its top-left in framebuffer pixels from the framebuffer's top-left. The next setViewport takes the whole framebuffer again. False, changing nothing, for a width or height under 1 or an area not inside the framebuffer.
 - `viewProjection`: World to clip space, for the viewport's shape: the projection's matrix (its lens shift applied) * view, recomputed by each call, the view from where it is in the world now.
-- `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
+- `computeRay`: The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into out (a new one when not given), returned: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). Null, leaving out as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). Given out, it allocates nothing.
 
 ## CubeMap3D
 
@@ -716,7 +716,6 @@ var shadowReceiving(get, set):Bool
 var skin(default, null):Null<Skin3D>
 var jointCount(get, never):Int
 function getJoint(index:Int):Null<Node3D>
-function computeWorldBounds(out:haxe.ds.Vector<Float>):Bool
 function bindSkeleton(skeleton:Node3D, ?skin:Skin3D):Bool
 ```
 
@@ -734,7 +733,6 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin3D):Bool
 - `skin`: Its skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
 - `jointCount`: How many joints it follows: its skin's, once bound; 0 otherwise.
 - `getJoint`: The node its joint index follows; null past them or unbound.
-- `computeWorldBounds`: The box around it in the world as it is now, into out (its least x, y and z, then its most, world units): every part's vertices, a skinned one's posed by the joints it's bound to (moved on the CPU, as the GPU blends them, a pass over its vertices; unbound, its bind pose placed by its world matrix), a rigid one's placed by its world matrix. Worked out afresh from the transforms now, as computeWorld is, not from what a stage last drew; not its children. Exact where a stage's culling box is generous, for framing what's worn: a camera fitted to it. False, leaving out as it was, for a model with no vertices.
 - `bindSkeleton`: Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
 
 ## ModelCache3D
@@ -846,7 +844,8 @@ function getChild(index:Int):Null<Node3D>
 function find(name:String):Null<Node3D>
 function collectModels(skinned:Array<Model3D>, rigid:Array<Model3D>):Void
 function findAttachment(model:Model3D, skeleton:Node3D):Null<Attachment3D>
-function computeWorld(out:Mat4):Void
+function computeWorld(?out:Mat4):Mat4
+function computeBounds(?relativeTo:Node3D, ?out:Bounds3D):Null<Bounds3D>
 var x(get, set):Float
 var y(get, set):Float
 var z(get, set):Float
@@ -880,7 +879,8 @@ var worldMatrix(get, never):Mat4
 - `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
 - `collectModels`: The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit).
 - `findAttachment`: Where a rigid model under it (a part file's root, instantiated) attaches to skeleton: the piece to hang, the node just under model's nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this.
-- `computeWorld`: Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps (a camera's view is found so, wherever it is).
+- `computeWorld`: Its world matrix as it is now, into out (a new one when not given), returned: its own transform and every one above it, worked out afresh without touching what a stage keeps (a camera's view is found so, wherever it is). Given out, it allocates nothing.
+- `computeBounds`: The box around it and everything under it as they are now, into out (a new one when not given), or null for nothing to bound: in the world, or in relativeTo's own units when given (as relativeTo's children are placed). Each model counts by its vertices (a skinned one's as posed), each sprite by the sphere its quad can turn in, placed by the transforms as they are now (a draw needn't have run). A disabled or hidden node and what's under it are left out, as text and emitters are. Null too for a relativeTo scaled to nothing. Exact where a stage's culling box is generous, for framing: a camera fitted to it. `computeBounds(scratch)` is the world into scratch: Haxe skips relativeTo for a Bounds3D. Given out, it allocates nothing once it has walked as deep a tree before.
 - `x`: Its position's x, relative to its parent.
 - `y`: Its position's y.
 - `z`: Its position's z.

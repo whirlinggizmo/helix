@@ -298,23 +298,25 @@ class Camera3D extends Node3D {
 		return viewProjectionMatrix;
 	}
 
-	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the
-		camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it
-		was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). */
-	public function computeRay(x:Float, y:Float, ray:Ray3D):Bool {
+	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into out (a new one when not given),
+		returned: from the near plane, away from the camera, through the same matrices the stage draws with (perspective or orthographic, the
+		viewport's shape). Null, leaving out as it was, for a point outside the viewport area (a pointer off the window, -1, -1, among them).
+		Given out, it allocates nothing. */
+	public function computeRay(x:Float, y:Float, ?out:Ray3D):Null<Ray3D> {
 		if (!(x >= viewportX && x < viewportX + viewportWidth && y >= viewportY && y < viewportY + viewportHeight))
-			return false;
+			return null;
 		// Normalized device coordinates: -1 to 1 across the viewport, y up.
 		var nx = (x - viewportX) / viewportWidth * 2 - 1,
 			ny = 1 - (y - viewportY) / viewportHeight * 2;
 		if (!inverse.makeInverse(this.viewProjection))
-			return false;
+			return null;
 		var near = unproject(nx, ny, -1),
 			nearX = near[0],
 			nearY = near[1],
 			nearZ = near[2];
 		var far = unproject(nx, ny, 1);
-		return ray.set(nearX, nearY, nearZ, far[0] - nearX, far[1] - nearY, far[2] - nearZ);
+		var ray = out != null ? out : new Ray3D();
+		return ray.set(nearX, nearY, nearZ, far[0] - nearX, far[1] - nearY, far[2] - nearZ) ? ray : null;
 	}
 
 	// Clip-space x, y, z through `inverse` to the world, divided by w.

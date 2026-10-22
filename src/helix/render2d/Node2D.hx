@@ -2,6 +2,7 @@ package helix.render2d;
 
 import helix.scene.Node;
 import helix.font.Font;
+import helix.math.Bounds2D;
 
 /** What a Renderer2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for
 	its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a
@@ -50,6 +51,13 @@ class Node2D extends Node {
 	var picksOwn(get, never):Bool;
 
 	function get_picksOwn():Bool
+		return false;
+
+	// The box around its own drawing, not its children's, in its own units, into out, and whether it draws anything: a text measured in font
+	// when it has none of its own. The 2D renderer's culling and computeBounds both read it, so they never disagree.
+
+	@:allow(helix.render2d)
+	function measureOwn(font:Null<Font>, out:Bounds2D):Bool
 		return false;
 
 	// A kind that picks itself: what it has under framebuffer pixel x, y (its own point lx, ly; font for text without its own), itself or a
@@ -177,6 +185,119 @@ class Node2D extends Node {
 			at = at.parent;
 		}
 		return w;
+	}
+
+	/** The box around it and everything under it as they are now, into out (a new one when not given), or null for nothing drawn: in its
+		tree's world (the stage's units on the stage; inside a View2D's content, the world its camera looks at), or in relativeTo's own units
+		when given (Flash's getBounds), as relativeTo's children are placed, to fit a panel around a group. Each sprite, shape, text, drawing
+		and sized view counts by its own box, placed by the transforms as they are now (a draw needn't have run). A disabled or hidden node and
+		what's under it are left out, as an emitter is; a text without a font of its own is measured in the stage's (Stage.font), and left out
+		where there's no stage. Null too for a relativeTo scaled to nothing. relativeTo may be anywhere in the same tree, this node included.
+		`computeBounds(scratch)` is the world into scratch: Haxe skips relativeTo for a Bounds2D. Given out, it allocates nothing. */
+	public function computeBounds(?relativeTo:Node2D, ?out:Bounds2D):Null<Bounds2D> {
+		if (relativeTo == null) {
+			above(this);
+			return gather(this, ta, tb, tc, td, tx, ty, out != null ? out.clear() : new Bounds2D());
+		}
+		// relativeTo's world transform, then its inverse.
+		above(relativeTo);
+		var c = Math.cos(relativeTo.angle), s = Math.sin(relativeTo.angle);
+		var la = c * relativeTo.sx,
+			lb = s * relativeTo.sx,
+			lc = -s * relativeTo.sy,
+			ld = c * relativeTo.sy;
+		var sa = ta * la + tc * lb,
+			sb = tb * la + td * lb,
+			sc = ta * lc + tc * ld,
+			sd = tb * lc + td * ld;
+		var sx = ta * relativeTo.px + tc * relativeTo.py + tx,
+			sy = tb * relativeTo.px + td * relativeTo.py + ty;
+		var det = sa * sd - sb * sc;
+		if (det == 0 || !Math.isFinite(det))
+			return null;
+		var ia = sd / det, ib = -sb / det, ic = -sc / det, id = sa / det;
+		var ix = -(ia * sx + ic * sy), iy = -(ib * sx + id * sy);
+		// Then the transform above this node, carried into relativeTo's units.
+		above(this);
+		return gather(this, ia * ta
+			+ ic * tb, ib * ta
+			+ id * tb, ia * tc
+			+ ic * td, ib * tc
+			+ id * td, ia * tx
+			+ ic * ty
+			+ ix, ib * tx
+			+ id * ty
+			+ iy,
+			out != null ? out.clear() : new Bounds2D());
+	}
+
+	// The transform above node (its parents', root first), afresh from their own transforms, into ta ... ty.
+	static var ta = 1.;
+	static var tb = 0.;
+	static var tc = 0.;
+	static var td = 1.;
+	static var tx = 0.;
+	static var ty = 0.;
+
+	static function above(node:Node2D):Void {
+		ta = 1;
+		tb = 0;
+		tc = 0;
+		td = 1;
+		tx = 0;
+		ty = 0;
+		var at = node.parent;
+		while (at != null) {
+			var c = Math.cos(at.angle), s = Math.sin(at.angle);
+			var la = c * at.sx, lb = s * at.sx, lc = -s * at.sy, ld = c * at.sy;
+			var a = la * ta + lc * tb,
+				b = lb * ta + ld * tb,
+				cc = la * tc + lc * td,
+				d = lb * tc + ld * td;
+			var x = la * tx + lc * ty + at.px, y = lb * tx + ld * ty + at.py;
+			ta = a;
+			tb = b;
+			tc = cc;
+			td = d;
+			tx = x;
+			ty = y;
+			at = at.parent;
+		}
+	}
+
+	// What gather measures each node into, reused.
+	static var measured = new Bounds2D();
+
+	// node's and its subtree's boxes, placed by the transform a ... y above node, into out; null when it stays empty.
+	static function gather(node:Node2D, a:Float, b:Float, c:Float, d:Float, x:Float, y:Float, out:Bounds2D):Null<Bounds2D> {
+		walk(node, a, b, c, d, x, y, out, Stage.instance != null ? Stage.font : null);
+		return out.isEmpty ? null : out;
+	}
+
+	static function walk(node:Node2D, a:Float, b:Float, c:Float, d:Float, x:Float, y:Float, out:Bounds2D, font:Null<Font>):Void {
+		if (!node.enabled || !node.visible)
+			return;
+		var cos = Math.cos(node.angle), sin = Math.sin(node.angle);
+		var la = cos * node.sx,
+			lb = sin * node.sx,
+			lc = -sin * node.sy,
+			ld = cos * node.sy;
+		// Its world transform: the one above it, then its own (as updateWorld).
+		var wa = a * la + c * lb,
+			wb = b * la + d * lb,
+			wc = a * lc + c * ld,
+			wd = b * lc + d * ld;
+		var wx = a * node.px + c * node.py + x,
+			wy = b * node.px + d * node.py + y;
+		if (node.measureOwn(font, measured)) {
+			var m = measured;
+			out.expand(wa * m.minX + wc * m.minY + wx, wb * m.minX + wd * m.minY + wy);
+			out.expand(wa * m.maxX + wc * m.minY + wx, wb * m.maxX + wd * m.minY + wy);
+			out.expand(wa * m.minX + wc * m.maxY + wx, wb * m.minX + wd * m.maxY + wy);
+			out.expand(wa * m.maxX + wc * m.maxY + wx, wb * m.maxX + wd * m.maxY + wy);
+		}
+		for (i in 0...node.childCount)
+			walk(node.getChild(i), wa, wb, wc, wd, wx, wy, out, font);
 	}
 
 	/** Whether its children are clipped (setClip). */

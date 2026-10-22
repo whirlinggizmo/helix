@@ -1,5 +1,6 @@
 package helix.render3d;
 
+import helix.math.Bounds3D;
 import helix.scene.Node;
 
 /** What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing,
@@ -205,19 +206,72 @@ class Node3D extends Node {
 	static function jointOf(skeleton:Node3D, name:String):Null<Node3D>
 		return name == "" ? null : skeleton.name == name ? skeleton : skeleton.find(name);
 
-	/** Its world matrix as it is now, into out: its own transform and every one above it, worked out afresh without touching what a stage keeps
-		(a camera's view is found so, wherever it is). */
-	public function computeWorld(out:Mat4):Void {
+	/** Its world matrix as it is now, into out (a new one when not given), returned: its own transform and every one above it, worked out
+		afresh without touching what a stage keeps (a camera's view is found so, wherever it is). Given out, it allocates nothing. */
+	public function computeWorld(?out:Mat4):Mat4 {
+		if (out == null)
+			out = new Mat4();
 		out.makeTransform(px, py, pz, qx, qy, qz, qw, sx, sy, sz);
-		var at = parent, above = new Mat4(), product = new Mat4();
-		// Two scratch matrices a call: a chain of parents is short, and a camera asks once a draw.
+		var at = parent;
 		while (at != null) {
 			above.makeTransform(at.px, at.py, at.pz, at.qx, at.qy, at.qz, at.qw, at.sx, at.sy, at.sz);
 			product.makeProduct(above, out);
 			out.copyFrom(product);
 			at = at.parent;
 		}
+		return out;
 	}
+
+	// The scratch matrices computeWorld and the bounds' walk reuse, and the walk's world matrix at each depth.
+	static var above = new Mat4();
+	static var product = new Mat4();
+	static var worlds:Array<Mat4> = [];
+
+	/** The box around it and everything under it as they are now, into out (a new one when not given), or null for nothing to bound: in the
+		world, or in relativeTo's own units when given (as relativeTo's children are placed). Each model counts by its vertices (a skinned one's
+		as posed), each sprite by the sphere its quad can turn in, placed by the transforms as they are now (a draw needn't have run). A disabled
+		or hidden node and what's under it are left out, as text and emitters are. Null too for a relativeTo scaled to nothing. Exact where a
+		stage's culling box is generous, for framing: a camera fitted to it. `computeBounds(scratch)` is the world into scratch: Haxe skips
+		relativeTo for a Bounds3D. Given out, it allocates nothing once it has walked as deep a tree before. */
+	public function computeBounds(?relativeTo:Node3D, ?out:Bounds3D):Null<Bounds3D> {
+		var start = computeWorld(worldAt(0));
+		if (relativeTo != null) {
+			var seen = relativeTo.computeWorld(inverse);
+			if (!seen.makeInverse(seen))
+				return null;
+			product.makeProduct(seen, start);
+			start.copyFrom(product);
+		}
+		out = out != null ? out.clear() : new Bounds3D();
+		gather(this, start, 0, out);
+		return out.isEmpty ? null : out;
+	}
+
+	// relativeTo's world matrix, then its inverse, for computeBounds.
+	static var inverse = new Mat4();
+
+	static function worldAt(depth:Int):Mat4 {
+		while (worlds.length <= depth)
+			worlds.push(new Mat4());
+		return worlds[depth];
+	}
+
+	static function gather(node:Node3D, world:Mat4, depth:Int, out:Bounds3D):Void {
+		if (!node.enabled || !node.visible)
+			return;
+		node.measureOwnWorld(world, out);
+		for (i in 0...node.childCount) {
+			var child = node.getChild(i), placed = worldAt(depth + 1);
+			above.makeTransform(child.px, child.py, child.pz, child.qx, child.qy, child.qz, child.qw, child.sx, child.sy, child.sz);
+			placed.makeProduct(world, above);
+			gather(child, placed, depth + 1, out);
+		}
+	}
+
+	// Grows out by what it draws itself (not its children), placed by world: a model's vertices, a sprite's turning quad. Nothing for a group. computeBounds.
+
+	@:allow(helix.render3d)
+	function measureOwnWorld(world:Mat4, out:Bounds3D):Void {}
 
 	/** Its position's x, relative to its parent. */
 	public var x(get, set):Float;

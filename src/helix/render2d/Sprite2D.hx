@@ -1,6 +1,8 @@
 package helix.render2d;
 
 import helix.texture.Texture2D;
+import helix.font.Font;
+import helix.math.Bounds2D;
 
 /** A sprite: a texture (or a region of it, or a SpriteSheet2D's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
 	center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
@@ -173,4 +175,12 @@ class Sprite2D extends Node2D {
 
 	function get_nineSlice():Bool
 		return sliceLeft > 0 || sliceTop > 0 || sliceRight > 0 || sliceBottom > 0;
+
+	override function measureOwn(font:Null<Font>, out:Bounds2D):Bool {
+		var w = width, h = height;
+		if (texture == null || w <= 0 || h <= 0)
+			return false;
+		out.set(-pivotX * w, -pivotY * h, (1 - pivotX) * w, (1 - pivotY) * h);
+		return true;
+	}
 }

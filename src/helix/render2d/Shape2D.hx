@@ -1,5 +1,8 @@
 package helix.render2d;
 
+import helix.font.Font;
+import helix.math.Bounds2D;
+
 /** A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by
 	the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size,
 	pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn. */
@@ -144,6 +147,29 @@ class Shape2D extends Node2D {
 			return false;
 		pointList = value.copy();
 		triangles = Polygon2D.triangulate(pointList);
+		return true;
+	}
+
+	override function measureOwn(font:Null<Font>, out:Bounds2D):Bool {
+		var half = outlineWidth / 2;
+		switch form {
+			case Rectangle:
+				var w = givenWidth, h = givenHeight;
+				out.set(-pivotX * w - half, -pivotY * h - half, (1 - pivotX) * w + half, (1 - pivotY) * h + half);
+			case Circle:
+				out.set(-circleRadius - half, -circleRadius - half, circleRadius + half, circleRadius + half);
+			case Line | Polygon:
+				var p = pointList;
+				out.clear();
+				var k = 0;
+				while (k < p.length) {
+					out.expand(p[k], p[k + 1]);
+					k += 2;
+				}
+				// A miter can reach twice the width past a corner.
+				var reach = form == Polygon ? outlineWidth * 2 : half;
+				out.set(out.minX - reach, out.minY - reach, out.maxX + reach, out.maxY + reach);
+		}
 		return true;
 	}
 }

@@ -715,7 +715,7 @@ class Renderer3D {
 		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
 		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
 	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit3D):Null<PickHit3D>
-		return camera.computeRay(x, y, pickRay) ? pickAlong(pickRay, camera, hit) : null;
+		return camera.computeRay(x, y, pickRay) != null ? pickAlong(pickRay, camera, hit) : null;
 
 	/** The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as
 		camera shows them: without a camera, only models are hit. */

@@ -61,7 +61,7 @@ class Render3DTests {
 			"A lens shift moves the axis across the viewport at every depth");
 		check(near(top[1] / top[3], .75), "A lens shift keeps the field of view's height");
 		var axisRay = new Ray3D();
-		check(camera.computeRay(600, 250, axisRay)
+		check(camera.computeRay(600, 250, axisRay) != null
 			&& near(axisRay.directionX, 0)
 			&& near(axisRay.directionY, 0)
 			&& axisRay.directionZ < 0,
@@ -141,11 +141,16 @@ class Render3DTests {
 		@:privateAccess parent.update(null, false);
 		@:privateAccess child.update(parent.worldMatrix, true);
 		check(near(child.worldMatrix.get(12), 1) && near(child.worldMatrix.get(13), 3), "A child is placed through its parent");
-		var bounds = new haxe.ds.Vector<Float>(6);
-		check(child.computeWorldBounds(bounds) && near(bounds[0], .5) && near(bounds[3], 1.5) && near(bounds[1], 2) && near(bounds[4], 4)
-			&& near(bounds[2], 1.5) && near(bounds[5], 4.5),
-			"A rigid model's world bounds are its vertices placed through its parents");
-		check(!new Model3D().computeWorldBounds(bounds) && near(bounds[0], .5), "A model with no vertices has no bounds, out left alone");
+		var bounds = new helix.math.Bounds3D();
+		check(child.computeBounds(bounds) == bounds
+			&& near(bounds.minX, .5)
+			&& near(bounds.maxX, 1.5)
+			&& near(bounds.minY, 2)
+			&& near(bounds.maxY, 4)
+			&& near(bounds.minZ, 1.5)
+			&& near(bounds.maxZ, 4.5),
+			"A rigid model's world bounds are its vertices placed through its parents, into the bounds given");
+		check(new Model3D().computeBounds(bounds) == null && bounds.isEmpty, "A model with no vertices has no bounds: null, the bounds given emptied");
 		parent.setPosition(0, 0, 0);
 		var changed = @:privateAccess parent.update(null, false);
 		@:privateAccess child.update(parent.worldMatrix, changed);

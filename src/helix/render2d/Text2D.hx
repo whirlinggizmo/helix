@@ -1,6 +1,7 @@
 package helix.render2d;
 
 import helix.font.Font;
+import helix.math.Bounds2D;
 
 /** A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's
 	built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of
@@ -70,5 +71,15 @@ class Text2D extends Node2D {
 			return size;
 		var lines = (this.font != null ? this.font : font).wrap(text, size, wrapWidth).length;
 		return size * (1 + lineHeight * (lines - 1));
+	}
+
+	override function measureOwn(font:Null<Font>, out:Bounds2D):Bool {
+		var f = this.font != null ? this.font : font;
+		if (f == null)
+			return false;
+		var w = measureWidth(f), h = measureHeight(f);
+		var x = align == Center ? -w / 2 : align == Right ? -w : 0;
+		out.set(x, 0, x + w, h);
+		return true;
 	}
 }

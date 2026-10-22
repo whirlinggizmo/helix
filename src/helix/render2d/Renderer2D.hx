@@ -165,62 +165,26 @@ class Renderer2D {
 		endOf[at] = order.length;
 	}
 
+	// What a node measures into as it's drawn (Node2D.measureOwn).
+	var box = new helix.math.Bounds2D();
+
 	// Draws the node at place i in its own units through its world transform, unless its bounds are out of view.
 	function drawNode(batch:Batch2D, i:Int):Void {
 		var node = order[i],
 			sprite = sprites[i],
 			shape = shapes[i],
 			text = texts[i];
-		var x = 0., y = 0., w = 0., h = 0.;
-		if (sprite != null) {
-			w = sprite.width;
-			h = sprite.height;
-			x = -sprite.pivotX * w;
-			y = -sprite.pivotY * h;
-			if (sprite.texture == null || w <= 0 || h <= 0)
-				return;
-		} else if (shape != null) {
-			var half = shape.outlineWidth / 2;
-			switch shape.form {
-				case Rectangle:
-					w = shape.givenWidth;
-					h = shape.givenHeight;
-					x = -shape.pivotX * w - half;
-					y = -shape.pivotY * h - half;
-					w += half * 2;
-					h += half * 2;
-				case Circle:
-					x = y = -shape.circleRadius - half;
-					w = h = (shape.circleRadius + half) * 2;
-				case Line | Polygon:
-					var p = shape.pointList;
-					var minX = p[0], minY = p[1], maxX = p[0], maxY = p[1], k = 2;
-					while (k < p.length) {
-						minX = Math.min(minX, p[k]);
-						maxX = Math.max(maxX, p[k]);
-						minY = Math.min(minY, p[k + 1]);
-						maxY = Math.max(maxY, p[k + 1]);
-						k += 2;
-					}
-					// A miter can reach twice the width past a corner.
-					var reach = shape.form == Polygon ? shape.outlineWidth * 2 : half;
-					x = minX - reach;
-					y = minY - reach;
-					w = maxX - minX + reach * 2;
-					h = maxY - minY + reach * 2;
-			}
-		} else if (text != null) {
-			var font = text.font == null ? batch.font : text.font;
-			w = text.measureWidth(font);
-			h = text.measureHeight(font);
-			x = text.align == Center ? -w / 2 : text.align == Right ? -w : 0;
-		} else {
+		if (sprite == null && shape == null && text == null) {
 			// A kind that draws itself (an emitter, a drawing, a view), not culled; a group draws nothing.
 			batch.effect = null;
 			if (node.drawOwn(batch, walkCamera, time, dt, frozen[i], true))
 				count++;
 			return;
 		}
+		// Its own box, as computeBounds measures it (Node2D.measureOwn): nothing to draw (a sprite without a texture) or out of view, skipped.
+		if (!node.measureOwn(batch.font, box))
+			return;
+		var x = box.minX, y = box.minY, w = box.maxX - box.minX, h = box.maxY - box.minY;
 		if (!inView(node, x, y, w, h))
 			return;
 		count++;

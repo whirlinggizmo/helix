@@ -39,6 +39,7 @@ import helix.ui.Tile;
 import helix.ui.Toggle;
 import helix.ui.Ui;
 import helix.host.ScreenShape;
+import helix.math.Bounds3D;
 
 /** A character creator's dressing room: a character on a turntable in a studio's light (a View3D on the stage, the light the room's
 	Environment3D), under a UI on the stage (Ui), dressed slot by slot (head, body, legs, feet, and
@@ -157,8 +158,8 @@ class App extends helix.App {
 	var focusZ = 0.;
 	var distance = 3.;
 	// What she holds, the box around it as posed (for the hand's framing), and one model's (computeBounds's).
-	var heldBox = new haxe.ds.Vector<Float>(6);
-	var box = new haxe.ds.Vector<Float>(6);
+	var heldBox = new Bounds3D();
+	var box = new Bounds3D();
 	// The autopilot: whether one was asked for (the scene held from the first frame, before its script is in), and its final game published.
 	var pilot:Null<Autopilot>;
 	var piloted = false;
@@ -487,11 +488,11 @@ class App extends helix.App {
 	// its joints): from the front a little to the side, or for a held part from her right, its length across the picture. Near enough that
 	// every corner of the box is inside the picture, a little margin around.
 	function aim(nodes:Array<Node3D>, held:Bool):Void {
-		var bounds = new haxe.ds.Vector<Float>(6);
+		var bounds = new Bounds3D();
 		if (!computeBounds(nodes, bounds))
 			return;
-		var min = [bounds[0], bounds[1], bounds[2]],
-			max = [bounds[3], bounds[4], bounds[5]];
+		var min = [bounds.minX, bounds.minY, bounds.minZ],
+			max = [bounds.maxX, bounds.maxY, bounds.maxZ];
 		var center = [for (a in 0...3) (min[a] + max[a]) / 2];
 		// The way to the eye from the box's center, and the picture's right and up square to it.
 		var back = held ? [-1, .2, .25] : [.35, .15, 1.];
@@ -555,9 +556,9 @@ class App extends helix.App {
 		zoom = Interpolate.clamp(zoom, ZOOM_IN, ROOM_REACH * fitting(FRAMES["Whole"]) / fit);
 		var lookX = 0., lookY = (frame[0] + frame[1]) / 2, lookZ = 0.;
 		if (framed == "Hand" && computeBounds(outfit.getNodes("Hand"), heldBox)) {
-			lookX = (heldBox[0] + heldBox[3]) / 2;
-			lookY = (heldBox[1] + heldBox[4]) / 2;
-			lookZ = (heldBox[2] + heldBox[5]) / 2;
+			lookX = heldBox.centerX;
+			lookY = heldBox.centerY;
+			lookZ = heldBox.centerZ;
 		}
 		focusX = piloted ? lookX : Interpolate.damp(focusX, lookX, 6, dt);
 		focus = piloted ? lookY : Interpolate.damp(focus, lookY, 6, dt);
@@ -581,26 +582,14 @@ class App extends helix.App {
 		zoom = 1;
 	}
 
-	// The box around the models at or under nodes as they are now (a skinned one's vertices as posed), into out (least x, y, z, then most); false
+	// The bounds of nodes and what's under them as they are now (a skinned model's vertices as posed: Node3D.computeBounds), into out; false
 	// for none.
-	function computeBounds(nodes:Array<Node3D>, out:haxe.ds.Vector<Float>):Bool {
-		for (a in 0...3) {
-			out[a] = Math.POSITIVE_INFINITY;
-			out[3 + a] = Math.NEGATIVE_INFINITY;
-		}
-		function walk(node:Node3D) {
-			var model = Std.downcast(node, Model3D);
-			if (model != null && model.computeWorldBounds(box))
-				for (a in 0...3) {
-					out[a] = Math.min(out[a], box[a]);
-					out[3 + a] = Math.max(out[3 + a], box[3 + a]);
-				}
-			for (i in 0...node.childCount)
-				walk(node.getChild(i));
-		}
+	function computeBounds(nodes:Array<Node3D>, out:Bounds3D):Bool {
+		out.clear();
 		for (node in nodes)
-			walk(node);
-		return out[0] <= out[3];
+			if (node.computeBounds(box) != null)
+				out.union(box);
+		return !out.isEmpty;
 	}
 
 	// A clip chosen: Loop set to its own way (isLooping), and played.

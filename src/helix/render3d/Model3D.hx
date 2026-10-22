@@ -1,5 +1,7 @@
 package helix.render3d;
 
+import helix.math.Bounds3D;
+
 /** A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted
 	(0xAARRGGBB, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows
 	the joints it's bound to (bindSkeleton). Its mesh and material are its first part's. */
@@ -107,18 +109,11 @@ class Model3D extends Node3D {
 	public function getJoint(index:Int):Null<Node3D>
 		return joints == null || index < 0 || index >= joints.length ? null : joints[index];
 
-	/** The box around it in the world as it is now, into out (its least x, y and z, then its most, world units): every part's vertices, a
-		skinned one's posed by the joints it's bound to (moved on the CPU, as the GPU blends them, a pass over its vertices; unbound, its bind
-		pose placed by its world matrix), a rigid one's placed by its world matrix. Worked out afresh from the transforms now, as computeWorld
-		is, not from what a stage last drew; not its children. Exact where a stage's culling box is generous, for framing what's worn: a
-		camera fitted to it. False, leaving out as it was, for a model with no vertices. */
-	public function computeWorldBounds(out:haxe.ds.Vector<Float>):Bool {
-		var lo = [Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY, Math.POSITIVE_INFINITY],
-			hi = [Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY, Math.NEGATIVE_INFINITY];
-		var world = new Mat4(), joint = new Mat4();
-		computeWorld(world);
+	// Its parts' vertices placed in the world into out: a skinned one's posed by the joints it's bound to (moved on the CPU, as the GPU
+	// blends them, a pass over its vertices; unbound, its bind pose placed by world), a rigid one's by world. Node3D.computeBounds.
+	override function measureOwnWorld(world:Mat4, out:Bounds3D):Void {
 		// Each joint's world matrix times its inverse bind: what takes a vertex from the mesh's bind space to the world, column-major.
-		var palette:Null<Array<Float>> = null;
+		var palette = posedPalette, made = false;
 		for (part in parts) {
 			var mesh = part.mesh;
 			if (mesh == null)
@@ -126,15 +121,16 @@ class Model3D extends Node3D {
 			var vertices = mesh.vertices,
 				skin = mesh.skinData,
 				posed = joints != null && mesh.skinned;
-			if (posed && palette == null) {
-				palette = [];
+			if (posed && !made) {
+				made = true;
+				palette.resize(0);
 				for (j in 0...joints.length) {
-					joints[j].computeWorld(joint);
+					joints[j].computeWorld(jointWorld);
 					for (col in 0...4)
 						for (row in 0...4) {
 							var v = 0.;
 							for (k in 0...4)
-								v += joint.get(k * 4 + row) * this.skin.getInverseBind(j, col * 4 + k);
+								v += jointWorld.get(k * 4 + row) * this.skin.getInverseBind(j, col * 4 + k);
 							palette.push(v);
 						}
 				}
@@ -144,6 +140,7 @@ class Model3D extends Node3D {
 				var x = vertices.getFloat(at),
 					y = vertices.getFloat(at + 4),
 					z = vertices.getFloat(at + 8);
+				var placedX = 0., placedY = 0., placedZ = 0.;
 				for (row in 0...3) {
 					var v = 0.;
 					if (posed) {
@@ -159,19 +156,21 @@ class Model3D extends Node3D {
 						}
 					} else
 						v = world.get(row) * x + world.get(4 + row) * y + world.get(8 + row) * z + world.get(12 + row);
-					lo[row] = Math.min(lo[row], v);
-					hi[row] = Math.max(hi[row], v);
+					if (row == 0)
+						placedX = v;
+					else if (row == 1)
+						placedY = v;
+					else
+						placedZ = v;
 				}
+				out.expand(placedX, placedY, placedZ);
 			}
 		}
-		if (!(lo[0] <= hi[0]))
-			return false;
-		for (a in 0...3) {
-			out[a] = lo[a];
-			out[3 + a] = hi[a];
-		}
-		return true;
 	}
+
+	// The scratch measureOwnWorld reuses: the palette of a skinned model's joints, and a joint's world matrix.
+	static var posedPalette:Array<Float> = [];
+	static var jointWorld = new Mat4();
 
 	/** Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under
 		skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character

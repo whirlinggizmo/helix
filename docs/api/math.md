@@ -2,6 +2,102 @@
 
 [Back to the index](README.md)
 
+## Bounds2D
+
+*class* in `src/helix/math/Bounds2D.hx`
+
+An axis-aligned box in 2D, its least and most on each axis: a 2D node's and the like (Node2D.computeBounds), a trigger's region, a camera's limits. Empty when made (its least past its most), so expanding it by a first point makes that point; x, y in whatever space its maker says. Its 2D is its dimensions, as a Texture2D's is, not the display kind (docs/CONVENTIONS.md).
+
+```haxe
+function new()
+var minX:Float
+var maxX:Float
+var minY:Float
+var maxY:Float
+function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Bounds2D
+function clear():Bounds2D
+function copyFrom(other:Bounds2D):Bounds2D
+var isEmpty(get, never):Bool
+var width(get, never):Float
+var height(get, never):Float
+var centerX(get, never):Float
+var centerY(get, never):Float
+function expand(x:Float, y:Float):Bounds2D
+function union(other:Bounds2D):Bounds2D
+function contains(x:Float, y:Float):Bool
+function intersects(other:Bounds2D):Bool
+```
+
+- `new`: An empty box.
+- `minX`: Its least x; infinity while empty.
+- `maxX`: Its most x; minus infinity while empty.
+- `minY`: Its least y; infinity while empty.
+- `maxY`: Its most y; minus infinity while empty.
+- `set`: Sets it to minX, minY to maxX, maxY; returns it.
+- `clear`: Empties it; returns it.
+- `copyFrom`: Sets it to other's; returns it.
+- `isEmpty`: Whether it holds nothing: its least past its most on an axis (as made, or cleared).
+- `width`: Its width, maxX - minX; 0 while empty.
+- `height`: Its height, maxY - minY; 0 while empty.
+- `centerX`: Its center's x; NaN while empty.
+- `centerY`: Its center's y; NaN while empty.
+- `expand`: Grows it to hold the point x, y; returns it.
+- `union`: Grows it to hold other too (an empty other changes nothing); returns it.
+- `contains`: Whether the point x, y is in it, its faces included.
+- `intersects`: Whether it and other overlap, touching faces included; never for an empty one.
+
+## Bounds3D
+
+*class* in `src/helix/math/Bounds3D.hx`
+
+An axis-aligned box in 3D, its least and most on each axis: a 3D node's and the like (Node3D.computeBounds), a trigger's region, a camera's limits. Empty when made (its least past its most), so expanding it by a first point makes that point; x, y, z in whatever space its maker says. Its 3D is its dimensions, as a Texture2D's is, not the display kind (docs/CONVENTIONS.md).
+
+```haxe
+function new()
+var minX:Float
+var maxX:Float
+var minY:Float
+var maxY:Float
+var minZ:Float
+var maxZ:Float
+function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Bounds3D
+function clear():Bounds3D
+function copyFrom(other:Bounds3D):Bounds3D
+var isEmpty(get, never):Bool
+var width(get, never):Float
+var height(get, never):Float
+var depth(get, never):Float
+var centerX(get, never):Float
+var centerY(get, never):Float
+var centerZ(get, never):Float
+function expand(x:Float, y:Float, z:Float):Bounds3D
+function union(other:Bounds3D):Bounds3D
+function contains(x:Float, y:Float, z:Float):Bool
+function intersects(other:Bounds3D):Bool
+```
+
+- `new`: An empty box.
+- `minX`: Its least x; infinity while empty.
+- `maxX`: Its most x; minus infinity while empty.
+- `minY`: Its least y; infinity while empty.
+- `maxY`: Its most y; minus infinity while empty.
+- `minZ`: Its least z; infinity while empty.
+- `maxZ`: Its most z; minus infinity while empty.
+- `set`: Sets it to minX, minY, minZ to maxX, maxY, maxZ; returns it.
+- `clear`: Empties it; returns it.
+- `copyFrom`: Sets it to other's; returns it.
+- `isEmpty`: Whether it holds nothing: its least past its most on an axis (as made, or cleared).
+- `width`: Its width, maxX - minX; 0 while empty.
+- `height`: Its height, maxY - minY; 0 while empty.
+- `depth`: Its depth, maxZ - minZ; 0 while empty.
+- `centerX`: Its center's x; NaN while empty.
+- `centerY`: Its center's y; NaN while empty.
+- `centerZ`: Its center's z; NaN while empty.
+- `expand`: Grows it to hold the point x, y, z; returns it.
+- `union`: Grows it to hold other too (an empty other changes nothing); returns it.
+- `contains`: Whether the point x, y, z is in it, its faces included.
+- `intersects`: Whether it and other overlap, touching faces included; never for an empty one.
+
 ## Curve
 
 *class* in `src/helix/math/Curve.hx`

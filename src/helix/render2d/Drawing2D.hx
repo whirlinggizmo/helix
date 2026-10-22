@@ -2,6 +2,7 @@ package helix.render2d;
 
 import helix.font.Font;
 import helix.texture.Texture2D;
+import helix.math.Bounds2D;
 
 /** Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle,
 	circleLines, line, polygon, polygonLines, image, drawText, drawTextWrapped), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls
@@ -252,6 +253,23 @@ class Drawing2D extends Node2D {
 					return true;
 			}
 		return false;
+	}
+
+	override function measureOwn(font:Null<Font>, out:Bounds2D):Bool {
+		out.set(left, top, right, bottom);
+		for (i in 0...kinds.length)
+			if (kinds[i] == Text) {
+				var f = fonts[i] != null ? fonts[i] : font;
+				if (f == null)
+					continue;
+				var at = starts[i],
+					size = numbers[at + 2],
+					w = f.measure(texts[i], size);
+				var x0 = numbers[at] - (aligns[i] == Center ? w / 2 : aligns[i] == Right ? w : 0),
+					y0 = numbers[at + 1];
+				out.expand(x0, y0).expand(x0 + w, y0 + size);
+			}
+		return !out.isEmpty;
 	}
 }
 

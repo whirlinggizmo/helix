@@ -274,6 +274,7 @@ function find(name:String):Null<Node2D>
 function addChild(child:Node2D):Bool
 function addChildInPlace(child:Node2D):Bool
 function removeChild(child:Node2D):Bool
+function computeBounds(?relativeTo:Node2D, ?out:Bounds2D):Null<Bounds2D>
 var clipping(get, never):Bool
 var clipWidth(default, null):Float
 var clipHeight(default, null):Float
@@ -300,6 +301,7 @@ function toLocalY(x:Float, y:Float):Float
 - `addChild`: Makes child its last child (drawn over the others), taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
 - `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or this scaled to nothing.
 - `removeChild`: Takes child from its children. False when it isn't one.
+- `computeBounds`: The box around it and everything under it as they are now, into out (a new one when not given), or null for nothing drawn: in its tree's world (the stage's units on the stage; inside a View2D's content, the world its camera looks at), or in relativeTo's own units when given (Flash's getBounds), as relativeTo's children are placed, to fit a panel around a group. Each sprite, shape, text, drawing and sized view counts by its own box, placed by the transforms as they are now (a draw needn't have run). A disabled or hidden node and what's under it are left out, as an emitter is; a text without a font of its own is measured in the stage's (Stage.font), and left out where there's no stage. Null too for a relativeTo scaled to nothing. relativeTo may be anywhere in the same tree, this node included. `computeBounds(scratch)` is the world into scratch: Haxe skips relativeTo for a Bounds2D. Given out, it allocates nothing.
 - `clipping`: Whether its children are clipped (setClip).
 - `clipWidth`: The clip's width in its own units, or -1 without one.
 - `clipHeight`: The clip's height in its own units, or -1 without one.

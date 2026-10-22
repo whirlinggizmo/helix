@@ -43,24 +43,27 @@ class PickTests {
 
 	static function rays():Void {
 		var c = camera(), ray = new Ray3D();
-		check(c.computeRay(400, 300, ray) && near(ray.directionZ, -1) && near(ray.originX, 0) && near(ray.originZ, 10 - c.near),
+		check(c.computeRay(400, 300, ray) != null
+			&& near(ray.directionZ, -1)
+			&& near(ray.originX, 0)
+			&& near(ray.originZ, 10 - c.near),
 			"The middle pixel looks straight ahead, from the near plane");
-		check(c.computeRay(800 - 1e-6, 300, ray) && ray.directionX > 0, "Right of the middle, to the right");
-		check(c.computeRay(400, 0, ray) && ray.directionY > 0, "The top row looks up: y is turned over");
-		check(!c.computeRay(-1, -1, ray) && !c.computeRay(800, 300, ray), "Off the viewport: no ray");
+		check(c.computeRay(800 - 1e-6, 300, ray) != null && ray.directionX > 0, "Right of the middle, to the right");
+		check(c.computeRay(400, 0, ray) != null && ray.directionY > 0, "The top row looks up: y is turned over");
+		check(c.computeRay(-1, -1, ray) == null && c.computeRay(800, 300, ray) == null, "Off the viewport: no ray");
 		// An orthographic camera's rays run parallel, each from its own place (wgrender-c's 526ff15: picks built a perspective and missed).
 		c.projection = Orthographic;
 		c.orthographicHeight = 6;
 		c.near = .1;
 		c.far = 100;
-		check(c.computeRay(400, 0, ray) && near(ray.directionY, 0) && near(ray.originY, 3), "Orthographic: parallel rays from the edge");
+		check(c.computeRay(400, 0, ray) != null && near(ray.directionY, 0) && near(ray.originY, 3), "Orthographic: parallel rays from the edge");
 		// A viewport area: its own middle looks straight ahead; outside it, nothing.
 		var area = camera();
 		check(area.setViewportArea(400, 0, 400, 300)
-			&& area.computeRay(600, 150, ray)
+			&& area.computeRay(600, 150, ray) != null
 			&& near(ray.directionX, 0)
 			&& near(ray.directionY, 0)
-			&& !area.computeRay(100, 150, ray),
+			&& area.computeRay(100, 150, ray) == null,
 			"A viewport area's middle looks ahead; a point outside it has no ray");
 	}
 

@@ -208,9 +208,9 @@ class AnimationTests {
 		check(JointPalette3D.computePosedBox(model, model.mesh, box)
 			&& box[0] + box[3] > 41
 			&& box[0] - box[3] < 0, "The posed box holds both joints' reach");
-		var bounds = new Vector<Float>(6);
-		check(model.computeWorldBounds(bounds) && near(bounds[0], 0) && near(bounds[3], 41) && near(bounds[1], 0) && near(bounds[4], 1)
-			&& near(bounds[2], 0) && near(bounds[5], 0),
+		var bounds = new helix.math.Bounds3D();
+		check(model.computeBounds(bounds) != null && near(bounds.minX, 0) && near(bounds.maxX, 41) && near(bounds.minY, 0) && near(bounds.maxY, 1)
+			&& near(bounds.minZ, 0) && near(bounds.maxZ, 0),
 			"The world bounds are the vertices as posed: the knee's out at 40 and 41");
 		// The model moved far off while its joints stay: it draws where its joints are, so nothing is drawn there.
 		knee.setPosition(1, 0, 0);
@@ -218,6 +218,6 @@ class AnimationTests {
 		view.setView(500, 0, 10, 500, 0, 0);
 		stage.draw(view);
 		check(stage.drawnNodeCount == 0, "A skinned model's own placement doesn't move it: its joints do");
-		check(model.computeWorldBounds(bounds) && near(bounds[0], 0) && near(bounds[3], 2), "Nor its world bounds: back in its bind pose, 0 to 2");
+		check(model.computeBounds(bounds) != null && near(bounds.minX, 0) && near(bounds.maxX, 2), "Nor its world bounds: back in its bind pose, 0 to 2");
 	}
 }

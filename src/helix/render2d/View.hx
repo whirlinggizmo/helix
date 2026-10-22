@@ -5,6 +5,7 @@ import helix.graphics.PostProcess;
 import helix.scene.Node;
 import helix.texture.Texture2D;
 import helix.font.Font;
+import helix.math.Bounds2D;
 
 /** What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a tree of nodes through a camera, in a rectangle width x
 	height of its own units from its position, scaled with it and not turned (a view is drawn upright; its rotation is ignored), or, with a
@@ -214,5 +215,13 @@ class View extends Node2D {
 			node = node.parent;
 		}
 		return false;
+	}
+
+	// Its rectangle, when it has a size of its own; one filling what shows it has none to give.
+	override function measureOwn(font:Null<Font>, out:Bounds2D):Bool {
+		if (width <= 0 || height <= 0)
+			return false;
+		out.set(0, 0, width, height);
+		return true;
 	}
 }
