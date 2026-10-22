@@ -11,7 +11,7 @@ import helix.assets.Storage;
 @:build(helix.macro.Facade.build(helix.audio.AudioResources, ["poll", "reloaded", "shutdown"]))
 class Audio {
 	/** The sounds forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):AudioResources;
+	@:hot @:allow(helix) static var instance(default, null):AudioResources;
 
 	/** The root bus, every other one under it. Kept across a hot reload (@:hot), as the buses a game holds are. */
 	@:hot public static final master:Bus = new Bus("master", null);

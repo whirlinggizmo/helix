@@ -9,7 +9,6 @@
 Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments, but for the buses and what plays through them, written here: the bus tree is plain engine data, there from the program's start, before the runner binds instance.
 
 ```haxe
-static var instance(default, null):AudioResources
 static final master(default, null):Bus
 static final music(default, null):Bus
 static final effects(default, null):Bus
@@ -22,7 +21,6 @@ static function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -
 static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
 ```
 
-- `instance`: The sounds forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `master`: The root bus, every other one under it. Kept across a hot reload (@:hot), as the buses a game holds are.
 - `music`: The music's bus, under master. Kept across a hot reload (@:hot).
 - `effects`: The sound effects' bus, under master: what play plays through. Kept across a hot reload (@:hot).

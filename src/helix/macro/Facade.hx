@@ -11,7 +11,7 @@ using haxe.macro.Tools;
 	service's interface, or a class's public instance members, a static forwarder for each method and a static property for each variable or
 	property, each with the member's doc comment, and the runner's bind, so the statics are never written twice by hand.
 
-	The static class declares the instance it forwards to itself, `@:hot public static var instance(default, null):T`, with its doc comment:
+	The static class declares the instance it forwards to itself, `@:hot @:allow(helix) static var instance(default, null):T`, with its doc comment:
 	the global build hotreload-hx gives every class runs before a class's own, so a field this macro added would never be seen as `@:hot`, and
 	natively it would start over, null, at a reload.
 
@@ -46,7 +46,7 @@ class Facade {
 		for (field in fields)
 			declared.set(field.name, true);
 		if (!declared.exists("instance"))
-			Context.error('Facade: declare `@:hot public static var instance(default, null):$path;`, the service forwarded to', pos);
+			Context.error('Facade: declare `@:hot @:allow(helix) static var instance(default, null):$path;`, the service forwarded to', pos);
 		var made:Array<Field> = [];
 		if (!declared.exists("bind"))
 			made.push({

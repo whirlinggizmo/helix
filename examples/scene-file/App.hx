@@ -35,10 +35,6 @@ import helix.host.ScreenShape;
 	assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done); the probes are loaded,
 	state, lap, checkpoint, passed, lapTime, bestLap, carX, carZ and speed. */
 class App extends helix.App {
-	/** The input the game is played with this tick: the window's, or the autopilot's while a script runs. The Car reads it. Kept across a
-		hot reload (@:hot): set every tick, but a reload between ticks would leave it null for a frame otherwise. */
-	@:hot public static var input:IInput;
-
 	/** The behaviors the scene file names: listed so the build keeps their classes, which register themselves with BehaviorRegistry as the
 		program starts (a class nothing names is never compiled in). */
 	static var BEHAVIORS:Array<Class<Behavior>> = [Car, ChaseCamera, Checkpoint, Race];
@@ -92,25 +88,25 @@ class App extends helix.App {
 	static function hundredths(value:Float):Float
 		return Math.round(value * 100) / 100;
 
-	// One tick of the game from source: the level's keys and its behaviors at a sixtieth of a second.
-	function tick(source:IInput):Void {
-		input = source;
+	// One tick of the game from the program's input (the autopilot's while it plays): the level's keys and its behaviors at a sixtieth of a
+	// second.
+	function tick():Void {
 		if (play != null)
-			play.tick(source, 1 / 60);
+			play.tick(1 / 60);
 	}
 
 	override public function update(dt:Float):Void {
 		if (pilot != null && !pilot.done) {
 			// The script's ticks, each a sixtieth of a second to the game, many a frame when fast.
 			for (_ in 0...(fast ? 120 : 1)) {
-				var source:IInput = pilot.advance(name -> probe(name));
+				pilot.advance(name -> probe(name));
 				if (pilot.done)
 					break;
-				tick(source);
-				source.consume();
+				tick();
+				Input.consume();
 			}
 		} else
-			ticker.advance(Time.clock.elapsed, () -> tick(Input.instance));
+			ticker.advance(Time.clock.elapsed, () -> tick());
 		if (play != null)
 			play.update(dt);
 		if (pilot != null && pilot.done && !published) {
@@ -206,11 +202,11 @@ class Play {
 		car = behaviors.find(Car);
 	}
 
-	/** A tick of dt seconds with input: its keys, then its behaviors. */
-	public function tick(input:IInput, dt:Float):Void {
-		if (input.isFramePressed(Key.Escape) && Host.canQuit())
+	/** A tick of dt seconds: the program's keys, then its behaviors. */
+	public function tick(dt:Float):Void {
+		if (Input.isFramePressed(Key.Escape) && Host.canQuit())
 			Host.quit();
-		if (input.isFramePressed(Key.R) && file != null)
+		if (Input.isFramePressed(Key.R) && file != null)
 			restart();
 		behaviors.update(dt);
 	}

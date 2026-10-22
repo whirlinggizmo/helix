@@ -94,7 +94,6 @@ function shutdown():Void
 Assets: the packaged files or downloads, cached. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IAssets's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):IAssets
 static function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
 static function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
 static var host(get, never):Null<String>
@@ -110,7 +109,6 @@ static function unsubscribe(path:String, target:IReloadable):Void
 static var busy(get, never):Bool
 ```
 
-- `instance`: The assets forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `load`: Loads path's bytes as ensure does, without progress or options.
 - `ensure`: Loads path's bytes: downloaded from the host when one is set and kept in the cache, or else read from the packaged files in place. A cached copy is used only while it's current: when a manifest (setManifest) lists the file, while the copy has the manifest's hash (else the file is downloaded past HTTP caches and kept only if it has it); otherwise while the host's Cache-Control says it's fresh, and then after asking the host (its ETag and Last-Modified sent): 304 keeps it, 200 replaces it, 4xx deletes it, and no answer (offline, a 5xx) uses it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for an invalid path, a closed service, a missing asset, an HTTP status outside 200-299 with no copy to use, a download that doesn't match its manifest, or a storage or transport error. progress, if given, reports each phase until the request settles.
 - `host`: What's put before each path to download it, ending in "/": a URL, or a directory relative to the page (the browser's "assets/"); null when files are read from the program's packaged files (natively, unless HELIX_ASSET_HOST names a host).
@@ -204,11 +202,9 @@ static function named(path:String, message:String):String
 Downloads: bounded whole-response GETs (FetchService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FetchService's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):FetchService
 static function fetch(request:FetchRequest, complete:FetchResult -> Void, ?progress:FetchProgress -> Void, ?part:FetchPart -> Void):IRequest
 ```
 
-- `instance`: The downloads forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `fetch`: Queues a GET of request.url. complete runs exactly once on the host thread; Failed for a maxBytes or timeoutSeconds not above 0, a closed service, a body over maxBytes, a timeout, or a transport failure. progress, if given, runs on the host thread at most once a frame. part, if given, runs on the host thread with each part of the body as it arrives, in order, before complete (whose response still holds the whole body); never after the fetch has settled.
 
 ## FetchPart
@@ -474,14 +470,12 @@ function shutdown():Void
 The game's saves, apart from the asset cache (SaveService), installed by their first use, so a program that saves nothing opens no store for them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SaveService's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):SaveService
 static var busy(get, never):Bool
 static function read(name:String, loaded:String -> Void, ?missing:() -> Void, ?failed:String -> Void):IRequest
 static function write(name:String, text:String, ?written:() -> Void, ?failed:String -> Void):IRequest
 static function remove(name:String, ?removed:() -> Void, ?failed:String -> Void):IRequest
 ```
 
-- `instance`: The saves forwarded to: installed by their first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `busy`: Whether a read, write or removal hasn't completed yet.
 - `read`: Reads the save named name: loaded gets its text, missing runs when there is none (else loaded isn't called), failed (else the log) for a name that isn't an asset path or a store that fails. None runs once the request is cancelled.
 - `write`: Writes text as the save named name, in place of what it was: written runs once it's kept, failed (else the log) for a name that isn't an asset path, text over 8 MiB or a store that fails.
@@ -494,7 +488,6 @@ static function remove(name:String, ?removed:() -> Void, ?failed:String -> Void)
 The writable cache: files by key (StorageService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StorageService's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):StorageService
 static function read(key:String, complete:StorageResult -> Void):IRequest
 static function write(key:String, bytes:haxe.io.Bytes, complete:StorageWriteResult -> Void):IRequest
 static function remove(key:String, complete:StorageWriteResult -> Void):IRequest
@@ -502,7 +495,6 @@ static function source(key:String, complete:StorageSourceResult -> Void):IReques
 static function clear(complete:StorageWriteResult -> Void):IRequest
 ```
 
-- `instance`: The cache forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `read`: Reads the whole file under key. Failed for an invalid key, a file over 8 MiB, a closed store, or an I/O error.
 - `write`: Stores a copy of bytes under key, replacing what is there. Failed for an invalid key, more than 8 MiB, a read-only store, a closed store, or an I/O error.
 - `remove`: Deletes the file under key; Written also when there was none. Failed for an invalid key, a read-only store, a closed store, or an I/O error.

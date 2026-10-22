@@ -61,9 +61,8 @@ class App extends helix.App {
 		};
 
 	function step():Void {
-		var source:IInput = Input.instance;
 		if (pilot != null) {
-			source = pilot.advance(name -> game.probe(name));
+			pilot.advance(name -> game.probe(name));
 			if (pilot.done) {
 				TestHarness.publish(inspect());
 				pilot = null;
@@ -73,8 +72,8 @@ class App extends helix.App {
 				return;
 			}
 		}
-		game.step(controls.read(source, ticks, game, layout, camera));
-		source.consume();
+		game.step(controls.read(ticks, game, layout, camera));
+		Input.consume();
 		ticks++;
 	}
 

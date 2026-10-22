@@ -5,5 +5,5 @@ package helix.scene;
 @:build(helix.macro.Facade.build(helix.scene.SceneFileCache3D, ["shutdown"]))
 class SceneFiles3D {
 	/** The scene files forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):SceneFileCache3D;
+	@:hot @:allow(helix) static var instance(default, null):SceneFileCache3D;
 }

@@ -5,5 +5,5 @@ package helix.assets;
 @:build(helix.macro.Facade.build(helix.assets.FetchService, ["poll", "shutdown"]))
 class Fetch {
 	/** The downloads forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):FetchService;
+	@:hot @:allow(helix) static var instance(default, null):FetchService;
 }

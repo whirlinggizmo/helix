@@ -143,7 +143,6 @@ What a behavior class takes from a scene file or an inspector: its name (the cla
 The program's behaviors: one pass (BehaviorPass) the runner updates after the app's update and before the frame is drawn, with the game's clock, so a behavior attached to a node on the stage runs with nothing more (docs/DISPLAY_MODEL.md); what a scene file attaches goes here unless it's given another pass. Installed by its first use. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from BehaviorPass's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):BehaviorPass
 static var pass(get, never):BehaviorPass
 static function find(cls:Class<T>):Null<T>
 static function findAll(cls:Class<T>):Array<T>
@@ -156,7 +155,6 @@ static function of(node:Node3D):Array<Behavior>
 static function clear():Void
 ```
 
-- `instance`: The pass forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `pass`: The program's pass itself, installed if it wasn't: what SceneFile3D.instantiate attaches to unless given another.
 - `find`: The first behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added), or null.
 - `findAll`: Every behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added).

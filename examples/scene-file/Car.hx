@@ -1,12 +1,12 @@
 import helix.behavior.Behavior;
-import helix.input.IInput;
+import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadAxis;
 import helix.math.Trig;
 import helix.render3d.Node3D;
 
 /** A kinematic car on its node, driven by the keys (UP / DOWN or W / S throttle and brake, LEFT / RIGHT or A / D steering) or a pad (the
-	left stick steers, the right trigger drives, the left brakes), read from App.input (the window's, or an autopilot's). A bicycle model:
+	left stick steers, the right trigger drives, the left brakes), read from the program's input (Input: the window's, or an autopilot's while it plays). A bicycle model:
 	the speed from the throttle's acceleration, drag (the speed settles at topSpeed under full throttle) and the brake, the steering angle
 	moving toward the wheel's at a fixed rate and narrowing as the speed grows, the heading turned by speed / wheelbase x tan(angle) and the
 	position moved along it. Deterministic (helix.math.Trig for every sine, cosine and tangent), so an autopilot's drive replays alike in
@@ -82,24 +82,23 @@ class Car extends Behavior {
 	override public function update(dt:Float):Void {
 		var held = race != null ? pass.on(race, Race) : null;
 		var racing = held == null || held.racing;
-		var input:IInput = App.input;
 		var throttle = 0., braking = 0., steer = 0.;
-		if (racing && input != null) {
-			if (input.isDown(Key.Up) || input.isDown(Key.W))
+		if (racing) {
+			if (Input.isDown(Key.Up) || Input.isDown(Key.W))
 				throttle = 1;
-			if (input.isDown(Key.Down) || input.isDown(Key.S))
+			if (Input.isDown(Key.Down) || Input.isDown(Key.S))
 				braking = 1;
-			if (input.isDown(Key.Left) || input.isDown(Key.A))
+			if (Input.isDown(Key.Left) || Input.isDown(Key.A))
 				steer += 1;
-			if (input.isDown(Key.Right) || input.isDown(Key.D))
+			if (Input.isDown(Key.Right) || Input.isDown(Key.D))
 				steer -= 1;
-			var stick = input.getPadAxis(PadAxis.LeftX);
+			var stick = Input.getPadAxis(PadAxis.LeftX);
 			if (stick > .2 || stick < -.2)
 				steer -= stick;
-			var gas = input.getPadAxis(PadAxis.RightTrigger);
+			var gas = Input.getPadAxis(PadAxis.RightTrigger);
 			if (gas > throttle)
 				throttle = gas;
-			var pedal = input.getPadAxis(PadAxis.LeftTrigger);
+			var pedal = Input.getPadAxis(PadAxis.LeftTrigger);
 			if (pedal > braking)
 				braking = pedal;
 		}

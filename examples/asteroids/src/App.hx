@@ -161,13 +161,12 @@ class App extends helix.App {
 	function step():Bool {
 		if (stopped)
 			return false;
-		var source:IInput = Input.instance;
 		if (pilot != null) {
-			source = pilot.advance(name -> game.probe(name));
+			pilot.advance(name -> game.probe(name));
 			if (pilot.done)
 				return false;
 		}
-		input.read(source);
+		input.read();
 		// The UI decides the menu while it has the keys (Enter on Title isn't also a start); a click is taken here, by a tick.
 		if (ui.capturingKeys)
 			input.start = false;
@@ -180,7 +179,7 @@ class App extends helix.App {
 			return false;
 		}
 		game.step(input);
-		source.consume();
+		Input.consume();
 		sounds.play(game, audioEnabled, Window.focused);
 		return true;
 	}

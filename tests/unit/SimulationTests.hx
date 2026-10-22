@@ -1,4 +1,5 @@
 import Game.Body;
+import helix.input.Input;
 import helix.input.InputState;
 import helix.input.Key;
 import helix.input.PadButton;
@@ -350,7 +351,8 @@ class SimulationTests {
 		state.keyEvent(Key.Enter, true);
 		state.keyEvent(Key.Enter, false);
 		check(!state.isDown(Key.Enter) && state.isPressed(Key.Enter) && state.isReleased(Key.Enter), "Short tap retains both edges");
-		c.read(state);
+		@:privateAccess Input.bind(state);
+		c.read();
 		check(c.start, "Controls see short tap");
 		state.consume();
 		check(!state.isPressed(Key.Enter) && !state.isReleased(Key.Enter), "Consume once");
@@ -363,7 +365,8 @@ class SimulationTests {
 		state.padEvent(PadButton.East, true);
 		state.axisEvent(PadAxis.LeftX, -.8);
 		state.axisEvent(PadAxis.RightTrigger, .7);
-		c.read(state);
+		@:privateAccess Input.bind(state);
+		c.read();
 		check(c.fire && c.left && c.thrust, "Standard controller actions");
 		state.clear();
 		check(state.getPadAxis(PadAxis.LeftX) == 0 && !state.isPadDown(PadButton.East), "Controller disconnect clears state");
@@ -378,7 +381,8 @@ class SimulationTests {
 				var source = pilot.advance(g.probe);
 				if (pilot.done)
 					break;
-				c.read(source);
+				@:privateAccess Input.bind(source);
+				c.read();
 				c.title = wantTitle;
 				wantTitle = false;
 				g.step(c);

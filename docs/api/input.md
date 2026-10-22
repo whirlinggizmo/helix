@@ -297,7 +297,6 @@ function frameEnded():Void
 Keyboard, mouse, touch and gamepads, as this frame and tick see them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IInput's public members with their doc comments, but watch and unwatch (plumbing for what is built on IInput, as Actions, not for a game).
 
 ```haxe
-static var instance(default, null):IInput
 static function isDown(key:Key):Bool
 static function isPressed(key:Key):Bool
 static function isReleased(key:Key):Bool
@@ -339,7 +338,6 @@ static function getPadAxis(axis:PadAxis):Float
 static function consume():Void
 ```
 
-- `instance`: The input forwarded to: the runner's router's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `isDown`: Whether the key is held now.
 - `isPressed`: The key went down: a tick edge, counted until consume() takes it.
 - `isReleased`: The key came up: a tick edge, counted until consume() takes it.

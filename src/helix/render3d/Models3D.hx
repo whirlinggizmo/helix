@@ -5,5 +5,5 @@ package helix.render3d;
 @:build(helix.macro.Facade.build(helix.render3d.ModelCache3D, ["shutdown"]))
 class Models3D {
 	/** The models forwarded to, for what takes a ModelCache3D (a Loader, an outfit): the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):ModelCache3D;
+	@:hot @:allow(helix) static var instance(default, null):ModelCache3D;
 }

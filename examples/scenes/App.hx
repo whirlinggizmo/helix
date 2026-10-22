@@ -131,21 +131,21 @@ class App extends helix.App {
 	}
 
 	// The screens' keys for a tick of dt seconds, read from input (the window's, or the autopilot's).
-	function step(input:IInput, dt:Float):Void {
+	function step(dt:Float):Void {
 		if (transition != null && transition.running)
 			return;
 		switch state {
 			case "Title":
-				if (input.isFramePressed(Key.Enter) || input.pointerFramePressed)
+				if (Input.isFramePressed(Key.Enter) || Input.pointerFramePressed)
 					startPlay();
-				else if (input.isFramePressed(Key.Escape) && Host.canQuit())
+				else if (Input.isFramePressed(Key.Escape) && Host.canQuit())
 					Host.quit();
 			case "Play":
 				var level = play;
 				if (level == null || loading != null)
 					return;
 				level.advance(dt);
-				if (input.isFramePressed(Key.Escape))
+				if (Input.isFramePressed(Key.Escape))
 					fade(new Fade(.3, 0x80000000), () -> {
 						// The level waits under the menu, still drawn.
 						level.paused = true;
@@ -153,14 +153,14 @@ class App extends helix.App {
 					});
 			case "Pause":
 				var level = play;
-				if (input.isFramePressed(Key.Escape))
+				if (Input.isFramePressed(Key.Escape))
 					fade(new Fade(.3, 0x80000000), () -> {
 						Stage.removeChild(pause);
 						if (level != null)
 							level.paused = false;
 						state = "Play";
 					});
-				else if (input.isFramePressed(Key.T))
+				else if (Input.isFramePressed(Key.T))
 					fade(new Fade(.6), () -> {
 						Stage.removeChild(pause);
 						if (level != null)
@@ -192,15 +192,15 @@ class App extends helix.App {
 			// transitions run once a frame, after this, and read the press then.
 			for (_ in 0...(fast ? 120 : 1)) {
 				pilot.input.consume();
-				var source:IInput = pilot.advance(name -> probe(name));
+				pilot.advance(name -> probe(name));
 				if (pilot.done)
 					break;
-				step(source, 1 / 60);
-				if (source.anyFramePressed)
+				step(1 / 60);
+				if (Input.anyFramePressed)
 					break;
 			}
 		} else
-			step(Input.instance, Time.clock.delta);
+			step(Time.clock.delta);
 		// The screens drawn again for the visible area as it is now.
 		ScreenShape.update();
 		title.layout();

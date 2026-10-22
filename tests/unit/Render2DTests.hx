@@ -336,7 +336,7 @@ class Render2DTests {
 	static function unsizedCamera():Void {
 		var screen = new helix.host.Presentation();
 		@:privateAccess screen.refit(640, 480, 1);
-		helix.host.Screen.instance = screen;
+		@:privateAccess helix.host.Screen.bind(screen);
 		var gpu = new CountingGraphics(),
 			batch = new Batch2D(gpu),
 			fresh = new Camera2D(),
@@ -358,7 +358,7 @@ class Render2DTests {
 		check(byPixels.pixels(2) && byPixels.viewportWidth == 800 && near(byPixels.x, 200) && near(byPixels.y, 150),
 			"pixels on an unsized camera takes the framebuffer first");
 		check(fitted.fit(0, 0, 400, 300) && fitted.viewportWidth == 800 && near(fitted.zoom, 2), "So does fit");
-		helix.host.Screen.instance = null;
+		@:privateAccess helix.host.Screen.bind(null);
 		var alone = new Camera2D();
 		batch.begin(alone);
 		batch.end();

@@ -5,5 +5,5 @@ package helix.graphics;
 @:build(helix.macro.Facade.build(helix.graphics.ScreenshotService, ["frameEnded", "shutdown"]))
 class Screenshots {
 	/** The screenshots forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):ScreenshotService;
+	@:hot @:allow(helix) static var instance(default, null):ScreenshotService;
 }

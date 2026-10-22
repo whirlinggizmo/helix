@@ -8,7 +8,7 @@ package helix.host;
 class Host {
 	/** The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the
 		runner, nothing would set it again. */
-	@:hot public static var instance(default, null):IHost;
+	@:hot @:allow(helix) static var instance(default, null):IHost;
 
 	/** The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is. */
 	@:hot public static var config(default, null):Null<Config>;

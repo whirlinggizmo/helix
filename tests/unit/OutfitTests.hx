@@ -5,10 +5,11 @@ import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
 import helix.render3d.ModelCache3D;
+import helix.render3d.Models3D;
 import helix.render3d.ModelFile3D;
 import helix.render3d.Node3D;
 
-/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through a ModelCache3D, over the framework's queries
+/** Characters dressed by slot (the dressing room example's Outfit, examples/dressing-room/src) from part files shared through a ModelCache3D, over the framework's queries
 	(Node3D.collectModels, Model3D.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
 	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
 	shared by many characters. */
@@ -64,7 +65,9 @@ class OutfitTests {
 			shared.put(name, file(name));
 		var animations = file("Animations");
 		var character = animations.instantiate("character");
-		var outfit = new Outfit(shared);
+		// The program's models are the test's: an outfit reads Models3D, as a game's does.
+		@:privateAccess Models3D.bind(shared);
+		var outfit = new Outfit();
 
 		// Chosen before the skeleton: waits, then is worn on it.
 		outfit.choose("head", "Casual_Head");
@@ -113,7 +116,7 @@ class OutfitTests {
 		check(outfit.getWorn("feet") == null && outfit.getError("feet") != null && !outfit.pending, "A part whose file fails empties its slot");
 
 		// Many characters, one load.
-		var others = [for (i in 0...3) new Outfit(shared)];
+		var others = [for (i in 0...3) new Outfit()];
 		var skeletons = [for (i in 0...3) animations.instantiate('other$i')];
 		for (i in 0...3) {
 			others[i].skeleton = skeletons[i];
@@ -139,7 +142,9 @@ class OutfitTests {
 			"Without a skeleton nothing is worn, and the choices are kept");
 
 		// Every part of the pack is worn on the animations' skeleton, each slot's part from each outfit.
-		var every = models(), model = new Outfit(every), refused = [];
+		var every = models();
+		@:privateAccess Models3D.bind(every);
+		var model = new Outfit(), refused = [];
 		model.skeleton = animations.instantiate("model");
 		for (look in [
 			"Adventurer",
@@ -180,6 +185,7 @@ class OutfitTests {
 		shared.shutdown();
 		check(!told && !shared.isLoading("Never") && !held.exists("Never") && !shared.isLoaded("Casual_Head"),
 			"Shutting down cancels loads, calling nothing, and forgets files");
+		@:privateAccess Models3D.bind(null);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

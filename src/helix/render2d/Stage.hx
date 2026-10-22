@@ -6,5 +6,5 @@ package helix.render2d;
 @:build(helix.macro.Facade.build(helix.render2d.StageService, ["draw", "destroy"], helix.render2d.StageService.install))
 class Stage {
 	/** The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):StageService;
+	@:hot @:allow(helix) static var instance(default, null):StageService;
 }

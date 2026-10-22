@@ -1,4 +1,3 @@
-import helix.render3d.ModelCache3D;
 import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 
@@ -13,16 +12,8 @@ class Outfit {
 	var worn:Map<String, Worn> = [];
 	var errors:Map<String, String> = [];
 
-	// The models given, or null for the program's (Models3D), read when used.
-	var given:Null<ModelCache3D>;
-	var models(get, never):ModelCache3D;
-
-	function get_models():ModelCache3D
-		return given != null ? given : Models3D.instance;
-
-	/** An outfit drawing its parts from models, the program's (Models3D) when not given, for a skeleton given later (skeleton). */
-	public function new(?models:ModelCache3D)
-		given = models;
+	/** An outfit drawing its parts from the program's models (Models3D), for a skeleton given later (skeleton). */
+	public function new() {}
 
 	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given; assigning one wears
 		every slot's choice on it, taking them off the one before (null takes everything off). */
@@ -100,9 +91,9 @@ class Outfit {
 		var w = worn[slot];
 		if (w != null && w.path == choice.path && w.joint == choice.joint)
 			return;
-		var file = models.find(choice.path);
+		var file = Models3D.find(choice.path);
 		if (file == null) {
-			models.load(choice.path, _ -> if (chosen[slot] == choice) apply(slot), message -> if (chosen[slot] == choice) fail(slot, message));
+			Models3D.load(choice.path, _ -> if (chosen[slot] == choice) apply(slot), message -> if (chosen[slot] == choice) fail(slot, message));
 			return;
 		}
 		takeOff(slot);

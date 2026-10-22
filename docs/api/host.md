@@ -78,7 +78,6 @@ var elapsed(default, null):Float
 The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop, the window (Window) and the clock (Time) are reached elsewhere, and reportBusy is the App's to call.
 
 ```haxe
-static var instance(default, null):IHost
 static var config(default, null):Null<Config>
 static function installPart(make:Runner -> T):T
 static var running(get, never):Bool
@@ -92,7 +91,6 @@ static function quit():Void
 static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 ```
 
-- `instance`: The host forwarded to: the runner's from its start to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `config`: The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is.
 - `installPart`: An optional part's way in (helix.host.Part): make builds it over the runner's shared services and installs its hooks (Runner.install), at the part's first use. Fails plainly when nothing runs the program (a test makes what it needs itself).
 - `running`: Whether the runner is running the program: false in a test, which makes what it needs itself.
@@ -332,7 +330,6 @@ function assetChanged(path:String):Void
 The app's design fitted to the window (Presentation): its units, what's visible of them, and a 2D camera to show them (None, logical pixels, until the app sets a mode). The runner refits it to the window before every frame. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from Presentation's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):Presentation
 static var framebufferWidth(get, never):Int
 static var framebufferHeight(get, never):Int
 static function set(mode:PresentationMode, width:Float, height:Float):Bool
@@ -357,7 +354,6 @@ static function toPixelsY(y:Float):Float
 static function apply(camera:Camera2D):Void
 ```
 
-- `instance`: The presentation forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `framebufferWidth`: The framebuffer's width in pixels, as last refitted (the window's, under the runner); 1 before.
 - `framebufferHeight`: The framebuffer's height in pixels, as last refitted; 1 before.
 - `set`: Fits the design, width x height units, to the window by mode, from the next frame (None takes no size: give 0, 0). False, changing nothing, for a size under 1 but for None.
@@ -400,7 +396,6 @@ static function update():String
 The window the app draws in (the page, on the web): its drawing surface's size, pixel ratio and focus too, and what may be asked of it (a size, a position, fullscreen). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IWindow's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):IWindow
 static var framebufferWidth(get, never):Int
 static var framebufferHeight(get, never):Int
 static var pixelRatio(get, never):Float
@@ -428,7 +423,6 @@ static function getMonitorWidth(index:Int):Int
 static function getMonitorHeight(index:Int):Int
 ```
 
-- `instance`: The window forwarded to: the host's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `framebufferWidth`: The drawable area's width in framebuffer pixels (the width and height sizes are logical pixels).
 - `framebufferHeight`: The drawable area's height in framebuffer pixels.
 - `pixelRatio`: Framebuffer pixels per logical pixel.

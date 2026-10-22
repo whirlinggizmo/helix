@@ -6,5 +6,5 @@ package helix.host;
 @:build(helix.macro.Facade.build(helix.host.IWindow))
 class Window {
 	/** The window forwarded to: the host's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):IWindow;
+	@:hot @:allow(helix) static var instance(default, null):IWindow;
 }

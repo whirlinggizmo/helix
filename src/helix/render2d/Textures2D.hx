@@ -5,5 +5,5 @@ package helix.render2d;
 @:build(helix.macro.Facade.build(helix.render2d.TextureCache2D, ["reloaded", "shutdown"]))
 class Textures2D {
 	/** The textures forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):TextureCache2D;
+	@:hot @:allow(helix) static var instance(default, null):TextureCache2D;
 }

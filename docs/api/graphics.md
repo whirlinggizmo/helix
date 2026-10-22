@@ -65,7 +65,6 @@ Which fragments a pipeline's depth test passes, against the depth already there.
 The GPU: textures, buffers, shaders, pipelines, passes and draws. Shutting it down is the runner's, and so is the frame: the runner opens and closes it around the stage's drawing (docs/DISPLAY_MODEL.md), so beginFrame and endFrame aren't here; a pass into a texture (beginTargetPass) is drawn in init or update, before the frame opens. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IGraphics's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):IGraphics
 static function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = helix.graphics.TextureFormat.Rgba8):Int
 static function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
 static function createDataTexture(width:Int, height:Int):Int
@@ -95,7 +94,6 @@ static function draw(pipeline:Int, buffers:Array<Int>, indices:Int, first:Int, c
 static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 ```
 
-- `instance`: The GPU forwarded to: the profile's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `createTexture`: Uploads an image, rows top first, and returns its handle. levels is the image then, optionally, its mipmaps, each half the size of the last (at least 1; Mipmaps.build makes them for RGBA8), each format.levelBytes of its size. How it is sampled is each draw's (Sampling). Throws for a size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample.
 - `createCubeTexture`: Uploads a cubemap, each face size x size, and returns its handle, sampled at a texture slot like any texture (the samplings' filter applies, their wrap doesn't: a cube's faces meet). levels is mip 0 then, optionally, its mips, each half the size of the last (at least 1), each its six faces one after another (+X, -X, +Y, -Y, +Z, -Z, in GL's cube orientation: a face's first row is its t = 0), each face format.levelBytes of its size. Throws for a size of 0 or less, no levels, a level of the wrong byte count, or a format this GPU can't sample.
 - `createDataTexture`: Makes a data texture width x height of RGBA 32-bit floats (16 bytes a texel), read texel by texel (texelFetch: never filtered, its samplings ignored), and returns its handle. Its contents are updateDataTexture's. Throws for a size of 0 or less or past this GPU's.
@@ -476,12 +474,10 @@ function shutdown():Void
 Screenshots of the frame, saved for the user (a download in a browser, a file natively; ScreenshotService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ScreenshotService's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):ScreenshotService
 static function take(?name:String, ?done:ScreenshotResult -> Void):Void
 static function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Void, ?failed:String -> Void):Void
 ```
 
-- `instance`: The screenshots forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `take`: Takes a screenshot of the next frame the app ends, saved as name (a plain file name ending .png; by default prefix, the date and time, and a count, as "asteroids-2026-10-14-153012-1.png"). done, when given, runs once on the host thread after that frame. Failed after shutdown. Throws for a name that isn't a plain .png file name.
 - `sample`: Reads the next frame the app ends at points, each [x, y] in the design's units (Screen's; the pixel under it): done runs once on the host thread with each point's color as [r, g, b, a], 0 to 255 (0, 0, 0, 0 off the frame), or failed (else the log) when the frame can't be read or after shutdown. For checks that compare a few pixels across targets (the autopilot's sample), not every frame.
 

@@ -71,9 +71,7 @@ function publish(value:Dynamic):Void
 Where results go for the check that launched the program (an autopilot's final state, a test's checks). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ITestHarness's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):ITestHarness
 static function publish(value:Dynamic):Void
 ```
 
-- `instance`: The harness forwarded to: the profile's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `publish`: Hands value (JSON-able) to the check: window.result in a browser; natively a JSON line on stdout, also written to the file HELIX_RESULT names.

@@ -6,5 +6,5 @@ package helix.input;
 @:build(helix.macro.Facade.build(helix.input.IInput, ["watch", "unwatch"]))
 class Input {
 	/** The input forwarded to: the runner's router's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):IInput;
+	@:hot @:allow(helix) static var instance(default, null):IInput;
 }

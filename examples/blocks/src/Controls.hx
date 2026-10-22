@@ -1,5 +1,5 @@
 import Game.Actions;
-import helix.input.IInput;
+import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadButton;
 import helix.input.PointerGestures;
@@ -24,35 +24,35 @@ class Controls {
 	static function repeats(ticks:Int):Int
 		return ticks == 1 || ticks > REPEAT_DELAY && (ticks - REPEAT_DELAY) % REPEAT_EVERY == 0 ? 1 : 0;
 
-	public function read(input:IInput, tick:Int, game:Game, layout:Layout, camera:Camera2D):Actions {
+	public function read(tick:Int, game:Game, layout:Layout, camera:Camera2D):Actions {
 		var a = actions;
 		a.clear();
-		a.start = input.isPressed(Key.Enter) || input.isPressed(Key.Space) && game.state != "playing" || input.isPadPressed(PadButton.Start)
+		a.start = Input.isPressed(Key.Enter) || Input.isPressed(Key.Space) && game.state != "playing" || Input.isPadPressed(PadButton.Start)
 			&& game.state != "playing";
 		a.pause = game.state != "title"
 			&& game.state != "over"
-			&& (input.isPressed(Key.Escape) || input.isPressed(Key.P) || input.isPadPressed(PadButton.Start) && game.state == "playing");
-		var left = input.isDown(Key.Left) || input.isDown(Key.A) || input.isPadDown(PadButton.Left),
-			right = input.isDown(Key.Right) || input.isDown(Key.D) || input.isPadDown(PadButton.Right);
+			&& (Input.isPressed(Key.Escape) || Input.isPressed(Key.P) || Input.isPadPressed(PadButton.Start) && game.state == "playing");
+		var left = Input.isDown(Key.Left) || Input.isDown(Key.A) || Input.isPadDown(PadButton.Left),
+			right = Input.isDown(Key.Right) || Input.isDown(Key.D) || Input.isPadDown(PadButton.Right);
 		heldLeft = left ? heldLeft + 1 : 0;
 		heldRight = right ? heldRight + 1 : 0;
 		if (heldLeft > 0 && (heldRight == 0 || heldLeft < heldRight))
 			a.left = repeats(heldLeft);
 		else if (heldRight > 0)
 			a.right = repeats(heldRight);
-		a.softDrop = input.isDown(Key.Down) || input.isDown(Key.S) || input.isPadDown(PadButton.Down);
-		a.rotateClockwise = input.isPressed(Key.Up) || input.isPressed(Key.X) || input.isPressed(Key.W) || input.isPadPressed(PadButton.South);
-		a.rotateCounter = input.isPressed(Key.Z) || input.isPadPressed(PadButton.East);
-		a.hardDrop = game.state == "playing" && input.isPressed(Key.Space) || input.isPadPressed(PadButton.Up);
-		a.hold = input.isPressed(Key.C) || input.isPressed(Key.Shift) || input.isPadPressed(PadButton.RightBumper);
-		touch(input, tick, game, layout, camera);
+		a.softDrop = Input.isDown(Key.Down) || Input.isDown(Key.S) || Input.isPadDown(PadButton.Down);
+		a.rotateClockwise = Input.isPressed(Key.Up) || Input.isPressed(Key.X) || Input.isPressed(Key.W) || Input.isPadPressed(PadButton.South);
+		a.rotateCounter = Input.isPressed(Key.Z) || Input.isPadPressed(PadButton.East);
+		a.hardDrop = game.state == "playing" && Input.isPressed(Key.Space) || Input.isPadPressed(PadButton.Up);
+		a.hold = Input.isPressed(Key.C) || Input.isPressed(Key.Shift) || Input.isPadPressed(PadButton.RightBumper);
+		touch(tick, game, layout, camera);
 		return a;
 	}
 
-	function touch(input:IInput, tick:Int, game:Game, layout:Layout, camera:Camera2D):Void {
+	function touch(tick:Int, game:Game, layout:Layout, camera:Camera2D):Void {
 		var g = gestures, a = actions, cell = camera.zoom;
 		g.maxTapDistance = cell * .4;
-		g.update(tick / 60, true, input);
+		g.update(tick / 60, true);
 		if (g.pressed) {
 			anchorX = g.x;
 			anchorY = g.y;

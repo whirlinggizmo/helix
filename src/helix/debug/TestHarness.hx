@@ -5,5 +5,5 @@ package helix.debug;
 @:build(helix.macro.Facade.build(helix.debug.ITestHarness))
 class TestHarness {
 	/** The harness forwarded to: the profile's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):ITestHarness;
+	@:hot @:allow(helix) static var instance(default, null):ITestHarness;
 }

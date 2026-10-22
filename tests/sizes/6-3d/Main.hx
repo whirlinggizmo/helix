@@ -48,6 +48,6 @@ class Game extends helix.App {
 			logo.setSize(64, 64);
 			Stage.addChild(logo);
 		});
-		Audio.instance.loadClip("audio/click.ogg", clip -> Audio.play(clip));
+		Audio.loadClip("audio/click.ogg", clip -> Audio.play(clip));
 	}
 }

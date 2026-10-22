@@ -394,14 +394,12 @@ function destroy(?gpu:IGraphics):Void
 Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache3D), installed by their first use, so a program with none carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from EnvironmentCache3D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):EnvironmentCache3D
 static var budgetMs(get, set):Float
 static var busy(get, never):Bool
 static function load(path:String, loaded:EnvironmentMap3D -> Void, ?failed:String -> Void):IRequest
 static function release(environment:EnvironmentMap3D):Void
 ```
 
-- `instance`: The environments forwarded to: installed by their first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `budgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `busy`: Whether anything is still loading or being prepared.
 - `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
@@ -814,7 +812,6 @@ function remove():Bool
 Model files (glTF 2.0), loaded once and shared by path (ModelCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ModelCache3D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):ModelCache3D
 static function load(path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void):IRequest
 static function find(path:String):Null<ModelFile3D>
 static function isLoaded(path:String):Bool
@@ -824,7 +821,6 @@ static function put(path:String, file:ModelFile3D):Void
 static function forget(path:String):Void
 ```
 
-- `instance`: The models forwarded to, for what takes a ModelCache3D (a Loader, an outfit): the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `load`: Loads path (a .glb or .gltf) into a ModelFile3D: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: loaded once its images are in (one that fails leaves its material untextured, with a warning), failed (else the log, with the path) for a load failure, a buffer that won't load, or a file it can't read. Neither runs once the request is cancelled (the shared load goes on for the others) or the service shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.

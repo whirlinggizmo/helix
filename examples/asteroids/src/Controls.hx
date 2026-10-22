@@ -1,4 +1,4 @@
-import helix.input.IInput;
+import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadButton;
 import helix.input.PadAxis;
@@ -14,20 +14,20 @@ class Controls {
 
 	public function new() {}
 
-	public function read(input:IInput):Void {
-		start = input.isPressed(Key.Enter) || input.isPadPressed(PadButton.South) || input.isPadPressed(PadButton.Start);
+	public function read():Void {
+		start = Input.isPressed(Key.Enter) || Input.isPadPressed(PadButton.South) || Input.isPadPressed(PadButton.Start);
 		title = false;
-		quit = input.isPressed(Key.Escape);
-		left = input.isDown(Key.Left) || input.isPressed(Key.Left) || input.isDown(Key.A) || input.isPadDown(PadButton.Left)
-			|| input.getPadAxis(PadAxis.LeftX) < -.4;
-		right = input.isDown(Key.Right) || input.isPressed(Key.Right) || input.isDown(Key.D) || input.isPadDown(PadButton.Right)
-			|| input.getPadAxis(PadAxis.LeftX) > .4;
-		thrust = input.isDown(Key.Up)
-			|| input.isPressed(Key.Up)
-			|| input.isDown(Key.W)
-			|| input.isPadDown(PadButton.South)
-			|| input.getPadAxis(PadAxis.RightTrigger) > .3;
-		fire = input.isDown(Key.Space) || input.isPressed(Key.Space) || input.isPadDown(PadButton.East) || input.isPadDown(PadButton.RightBumper);
+		quit = Input.isPressed(Key.Escape);
+		left = Input.isDown(Key.Left) || Input.isPressed(Key.Left) || Input.isDown(Key.A) || Input.isPadDown(PadButton.Left)
+			|| Input.getPadAxis(PadAxis.LeftX) < -.4;
+		right = Input.isDown(Key.Right) || Input.isPressed(Key.Right) || Input.isDown(Key.D) || Input.isPadDown(PadButton.Right)
+			|| Input.getPadAxis(PadAxis.LeftX) > .4;
+		thrust = Input.isDown(Key.Up)
+			|| Input.isPressed(Key.Up)
+			|| Input.isDown(Key.W)
+			|| Input.isPadDown(PadButton.South)
+			|| Input.getPadAxis(PadAxis.RightTrigger) > .3;
+		fire = Input.isDown(Key.Space) || Input.isPressed(Key.Space) || Input.isPadDown(PadButton.East) || Input.isPadDown(PadButton.RightBumper);
 	}
 
 	public function replay(tick:Int):Void {

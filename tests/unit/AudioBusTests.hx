@@ -157,7 +157,7 @@ class AudioBusTests {
 
 	static function main():Void {
 		// Made before any service: a bus is plain engine data.
-		check(Audio.instance == null, "No service bound yet");
+		check(@:privateAccess Audio.instance == null, "No service bound yet");
 		var ambience = Audio.addBus("ambience", Audio.effects);
 		check(ambience != null && ambience.parent == Audio.effects && ambience.volume == 1, "A bus made before the service is bound");
 		check(Audio.addBus("ambience", Audio.master) == null

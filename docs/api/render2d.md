@@ -369,13 +369,11 @@ function shutdown():Void
 TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache2D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):FontCache2D
 static function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
 static function getPath(font:Font2D):Null<String>
 static function release(font:Font2D):Void
 ```
 
-- `instance`: The fonts forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
 - `getPath`: The file font was loaded from, or null for one this service didn't load.
 - `release`: Frees a font this service loaded, and stops reloading it.
@@ -791,7 +789,6 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 The stage: what the program shows, drawn by the runner after every update (StageService; docs/DISPLAY_MODEL.md). Installed by its first use, so a program that never uses it carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StageService's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):StageService
 static var color(get, set):Int
 static var heldTime(get, set):Null<Float>
 static var postProcess(get, set):Null<PostProcess>
@@ -806,7 +803,6 @@ static var drawnNodeCount(get, never):Int
 static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 ```
 
-- `instance`: The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
 - `heldTime`: The time the stage and its views draw at when set (emitters, sprite and screen effects, water), held there: an autopilot's samples, the same on every target. Null, to start, for the game's clock (Time.clock).
 - `postProcess`: Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the screen.
@@ -961,7 +957,6 @@ function shutdown():Void
 Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache2D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):TextureCache2D
 static function getCandidates(path:String):Array<String>
 static function getPath(texture:Texture2D):Null<String>
 static function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
@@ -969,7 +964,6 @@ static function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> 
 static function release(texture:Texture2D):Void
 ```
 
-- `instance`: The textures forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
 - `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
 - `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.

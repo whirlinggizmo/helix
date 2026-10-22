@@ -5,5 +5,5 @@ package helix.assets;
 @:build(helix.macro.Facade.build(helix.assets.IAssets))
 class Assets {
 	/** The assets forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
-	@:hot public static var instance(default, null):IAssets;
+	@:hot @:allow(helix) static var instance(default, null):IAssets;
 }

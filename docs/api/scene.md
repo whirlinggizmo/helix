@@ -409,7 +409,6 @@ function shutdown():Void
 Scene files (.scene3d), parsed once and shared by path (SceneFileCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SceneFileCache3D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):SceneFileCache3D
 static function load(path:String, loaded:SceneFile3D -> Void, ?failed:String -> Void):IRequest
 static function find(path:String):Null<SceneFile3D>
 static function isLoaded(path:String):Bool
@@ -419,7 +418,6 @@ static function put(path:String, file:SceneFile3D):Void
 static function forget(path:String):Void
 ```
 
-- `instance`: The scene files forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `load`: Loads path (a .scene3d) into a SceneFile3D, parsed with SceneFile3D.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.
