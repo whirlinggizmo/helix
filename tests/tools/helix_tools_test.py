@@ -187,7 +187,7 @@ class Starter(unittest.TestCase):
             self.assertIn('options.product = "my-jam-game"', (game / 'src/Main.hx').read_text(encoding='utf-8'))
             self.assertIn('Window.title = "My Jam Game"', (game / 'src/Game.hx').read_text(encoding='utf-8'))
             self.assertIn('out/my-jam-game-web.zip', (game / 'hxml/build.dist.hxml').read_text(encoding='utf-8'))
-            self.assertEqual((game / '.gitignore').read_text(encoding='utf-8'), 'out/\n')
+            self.assertEqual((game / '.gitignore').read_text(encoding='utf-8'), 'out/\n.haxelib/\n')
             readme = (game / 'README.md').read_text(encoding='utf-8')
             for relative in hxml[1:]:
                 self.assertIn(f'haxe {relative}', readme)
