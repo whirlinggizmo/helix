@@ -353,7 +353,6 @@ A glTF 2.0 file as read: its JSON document and its buffers, from a GLB (the bina
 static function read(bytes:haxe.io.Bytes):Gltf
 static function readGlb(bytes:haxe.io.Bytes):Gltf
 static function dataUri(uri:String):Null<haxe.io.Bytes>
-static function resolve(path:String, uri:String):Null<String>
 static function field(object:Dynamic, name:String):Dynamic
 final document:Dynamic
 var missingBuffers(get, never):Array<{uri:String, index:Int}>
@@ -368,7 +367,6 @@ function ints(index:Int):Array<Int>
 - `read`: Reads a GLB, or a .gltf (its JSON, as UTF-8 bytes): by its first bytes.
 - `readGlb`: Reads a GLB file.
 - `dataUri`: The bytes of a base64 data: URI, or null for any other uri (a file's). Throws for a data: URI that isn't base64.
-- `resolve`: The asset path of uri (a file the model names, relative to it) beside the model at path: its %-escapes decoded and its "." and ".." segments followed. Null for one that isn't a relative path inside the assets (a URL, an absolute path, one climbing above them).
 - `field`: A field of a JSON object, or null.
 - `document`: The document: glTF's JSON, as parsed.
 - `missingBuffers`: The buffers that are files of their own, not read yet: each its index and uri.

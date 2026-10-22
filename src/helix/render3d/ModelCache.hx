@@ -141,7 +141,7 @@ class ModelCache {
 			if (waiting == 0)
 				build(path, gltf, request, children, done);
 			for (buffer in missing) {
-				var file = Gltf.resolve(path, buffer.uri);
+				var file = helix.assets.AssetPath.resolve(path, buffer.uri);
 				if (file == null) {
 					failed('buffer ${buffer.index}\'s uri ${buffer.uri} isn\'t a file beside the model');
 					return;
@@ -197,7 +197,7 @@ class ModelCache {
 				case Inline(bytes):
 					children.push(textures.decode(bytes, linear, texture -> loaded(texture), message -> failed(message)));
 				case File(uri):
-					var resolved = Gltf.resolve(path, uri);
+					var resolved = helix.assets.AssetPath.resolve(path, uri);
 					if (resolved == null)
 						failed('its uri $uri isn\'t a file beside the model');
 					else

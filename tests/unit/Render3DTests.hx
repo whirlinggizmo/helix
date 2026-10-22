@@ -276,11 +276,11 @@ class Render3DTests {
 		var sources = @:privateAccess triangle.images();
 		check(sources.length == 1
 			&& sources[0].source.match(File("Textures/colormap.png")), "An image file beside the model is named by its uri");
-		check(helix.render3d.Gltf.resolve("models/car/car.gltf", "Textures/colormap.png") == "models/car/Textures/colormap.png"
-			&& helix.render3d.Gltf.resolve("models/car/car.gltf", "../shared/a%20b.png") == null
-			&& helix.render3d.Gltf.resolve("models/car/car.gltf", "../shared/ab.png") == "models/shared/ab.png"
-			&& helix.render3d.Gltf.resolve("models/car.gltf", "../../x.png") == null
-			&& helix.render3d.Gltf.resolve("models/car.gltf", "https://example.com/x.png") == null,
+		check(helix.assets.AssetPath.resolve("models/car/car.gltf", "Textures/colormap.png") == "models/car/Textures/colormap.png"
+			&& helix.assets.AssetPath.resolve("models/car/car.gltf", "../shared/a%20b.png") == null
+			&& helix.assets.AssetPath.resolve("models/car/car.gltf", "../shared/ab.png") == "models/shared/ab.png"
+			&& helix.assets.AssetPath.resolve("models/car.gltf", "../../x.png") == null
+			&& helix.assets.AssetPath.resolve("models/car.gltf", "https://example.com/x.png") == null,
 			"URIs resolve beside the model, inside the assets");
 		// Cameras: a perspective one and an orthographic one as Camera3D nodes at their nodes' transforms, a node with a mesh and a camera the
 		// model with the camera a child of its name plus "_camera", and each copy with cameras of its own.

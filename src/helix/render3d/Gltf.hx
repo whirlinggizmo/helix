@@ -78,28 +78,6 @@ class Gltf {
 		return haxe.crypto.Base64.decode(uri.substr(comma + 1));
 	}
 
-	/** The asset path of uri (a file the model names, relative to it) beside the model at path: its %-escapes decoded and its "." and ".."
-		segments followed. Null for one that isn't a relative path inside the assets (a URL, an absolute path, one climbing above them). */
-	public static function resolve(path:String, uri:String):Null<String> {
-		var decoded = try StringTools.urlDecode(uri) catch (e:Dynamic) return null;
-		if (decoded.indexOf(":") >= 0 || StringTools.startsWith(decoded, "/"))
-			return null;
-		var parts = path.split("/");
-		parts.pop();
-		for (part in decoded.split("/")) {
-			if (part == "" || part == ".")
-				continue;
-			if (part == "..") {
-				if (parts.length == 0)
-					return null;
-				parts.pop();
-			} else
-				parts.push(part);
-		}
-		var joined = parts.join("/");
-		return helix.assets.AssetPath.isValid(joined) ? joined : null;
-	}
-
 	/** The buffers that are files of their own, not read yet: each its index and uri. */
 	public var missingBuffers(get, never):Array<{index:Int, uri:String}>;
 

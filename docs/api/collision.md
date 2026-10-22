@@ -2,6 +2,62 @@
 
 [Back to the index](README.md)
 
+## Body2D
+
+*class* in `src/helix/collision/Body2D.hx`
+
+An arcade body: a box moved by its velocity and gravity over a grid of solid tiles, sliding along what it meets (Collide2D.moveAndSlide), its velocity stopped against it, and what it touches kept: the ground under it, a wall either side, a ceiling. A platformer's player or enemy, a top-down character with no gravity. step runs it: in a Ticker's fixed step (helix.time), so it moves the same at any frame rate. Bodies don't push each other; Collide2D's overlaps meet them.
+
+```haxe
+function new(x:Float, y:Float, width:Float, height:Float)
+var x:Float
+var y:Float
+var previousX(default, null):Float
+var previousY(default, null):Float
+function getDrawnX(fraction:Float):Float
+function getDrawnY(fraction:Float):Float
+var width:Float
+var height:Float
+var centerX(get, never):Float
+var centerY(get, never):Float
+var bottom(get, never):Float
+var velocityX:Float
+var velocityY:Float
+var gravity:Float
+var maxFallSpeed(default, set):Float
+var grounded(default, null):Bool
+var blockedLeft(default, null):Bool
+var blockedRight(default, null):Bool
+var blockedAbove(default, null):Bool
+var airTime(default, null):Float
+function place(x:Float, y:Float):Void
+function step(dt:Float, tileSize:Float, solid:(Int, Int) -> Bool):Void
+```
+
+- `new`: A width x height box with its top-left at x, y (world units), still, with no gravity.
+- `x`: Its left edge, in world units.
+- `y`: Its top edge, in world units.
+- `previousX`: Its left edge before its last step, in world units: drawn between the two (getDrawnX).
+- `previousY`: Its top edge before its last step, in world units.
+- `getDrawnX`: Its left edge as drawn fraction of the way from before its last step to now (a Ticker's fraction): where a frame between ticks draws it, and where a camera following it looks.
+- `getDrawnY`: Its top edge as drawn fraction of the way from before its last step to now.
+- `width`: Its width, in world units.
+- `height`: Its height, in world units.
+- `centerX`: Its center across, in world units.
+- `centerY`: Its center down, in world units.
+- `bottom`: Its bottom edge, where it stands, in world units.
+- `velocityX`: Its speed across, world units a second, + right.
+- `velocityY`: Its speed down, world units a second, + down.
+- `gravity`: Its acceleration down, world units a second each second (0, the start: none, top-down).
+- `maxFallSpeed`: The fastest it falls, world units a second, at least 0.
+- `grounded`: Whether it stood on a solid at its last step.
+- `blockedLeft`: Whether a solid stopped its left side at its last step.
+- `blockedRight`: Whether a solid stopped its right side at its last step.
+- `blockedAbove`: Whether a solid stopped its top at its last step: it hit its head.
+- `airTime`: Seconds since it was last grounded, 0 while it is: a jump a moment after walking off a ledge (coyote time) asks whether this is short.
+- `place`: Puts its top-left at x, y at once (a respawn: drawn there, not moved there), still, touching nothing until its next step.
+- `step`: Runs it dt seconds over a grid of tiles of tileSize, each solid or not by solid(column, row): gravity speeds its fall (held to maxFallSpeed), it moves by its velocity, across then down, sliding along what it meets, and a side that meets a solid stops its velocity that way. A body standing still on the ground stays grounded: gravity presses it down each step.
+
 ## Collide2D
 
 *class* in `src/helix/collision/Collide2D.hx`

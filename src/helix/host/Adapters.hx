@@ -36,6 +36,10 @@ typedef Adapters = {
 	/** The assets shipped with the build, read when base is null (read-only). */
 	final packaged:IStore;
 
+	/** Opens the store the game's saves are kept in, apart from the cache (which a game may clear): called once, by the first use of Saves,
+		so a game that saves nothing opens nothing. */
+	final saves:Void->IStore;
+
 	/** The URL prefix assets are fetched from; null reads them from packaged instead. */
 	final base:Null<String>;
 

@@ -439,6 +439,58 @@ class Batch2D {
 		vertex(dx, dy, u0, v1);
 	}
 
+	/** sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times
+		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xRRGGBBAA, white
+		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing.
+		Throws when the frame's vertices pass capacity. */
+	public function sheetFrame(sheet:SpriteSheet, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
+		var frame = sheet.getFrame(index);
+		if (frame == null)
+			return;
+		// The transform as it was, then the frame's own (moved, turned and scaled) after it.
+		var a0 = ta, b0 = tb, c0 = tc, d0 = td, x0 = tx, y0 = ty;
+		var cos = Math.cos(rotation), sin = Math.sin(rotation);
+		var la = cos * scaleX,
+			lb = sin * scaleX,
+			lc = -sin * scaleY,
+			ld = cos * scaleY;
+		setTransform(a0 * la + c0 * lb, b0 * la + d0 * lb, a0 * lc + c0 * ld, b0 * lc + d0 * ld, a0 * x + c0 * y + x0, b0 * x + d0 * y + y0);
+		var px = frame.hasPivot ? frame.pivotX : .5,
+			py = frame.hasPivot ? frame.pivotY : .5;
+		frameQuad(sheet.texture, frame, -px * frame.sourceWidth, -py * frame.sourceHeight, frame.sourceWidth, frame.sourceHeight, tint);
+		setTransform(a0, b0, c0, d0, x0, y0);
+	}
+
+	// frame of texture filling the box x, y, width x height (its whole picture's, untrimmed): its texels where trimming left them, upright.
+
+	@:allow(helix.render2d.Stage2D)
+	function frameQuad(texture:Texture2D, frame:SpriteFrame, x:Float, y:Float, width:Float, height:Float, tint:Int):Void {
+		useTexture(texture);
+		var sx = width / frame.sourceWidth, sy = height / frame.sourceHeight;
+		var qx = x + frame.offsetX * sx,
+			qy = y + frame.offsetY * sy,
+			qw = frame.width * sx,
+			qh = frame.height * sy;
+		var tw = texture.width, th = texture.height;
+		if (!frame.rotated) {
+			quad(qx, qy, qw, qh, frame.x / tw, frame.y / th, (frame.x + frame.width) / tw, (frame.y + frame.height) / th, tint);
+			return;
+		}
+		// Packed a quarter turn clockwise: in the texture it is height x width, its top-left at the texture rectangle's top-right.
+		var u0 = frame.x / tw,
+			v0 = frame.y / th,
+			u1 = (frame.x + frame.height) / tw,
+			v1 = (frame.y + frame.width) / th;
+		color(tint);
+		region(u0, v0, u1, v1);
+		vertex(qx, qy, u1, v0);
+		vertex(qx + qw, qy, u1, v1);
+		vertex(qx + qw, qy + qh, u0, v1);
+		vertex(qx, qy, u1, v0);
+		vertex(qx + qw, qy + qh, u0, v1);
+		vertex(qx, qy + qh, u0, v0);
+	}
+
 	/** texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x
 		sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is
 		now. */

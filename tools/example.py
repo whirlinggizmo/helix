@@ -136,6 +136,21 @@ def assets(name,build):
     # The browser's manifests (tools/gen_manifest.py), so a returning page re-fetches exactly what changed; native builds read in place.
     if build.web:gen_manifest.write(out)
 
+def copy_changed_assets(name,build,since):
+    """The shared assets (examples/assets) and the example's own (examples/<name>/assets, not their recipes) changed since `since` (a
+    time), copied into the build's shared assets again, as the dev loop runs: a sheet made again while it runs is the one the page reloads,
+    not the one there when it started. Returns the newest file's time."""
+    own=ROOT/f'examples/{name}/assets';newest=since
+    for root in (ROOT/'examples/assets',own):
+        if not root.is_dir():continue
+        for source in root.rglob('*'):
+            if not source.is_file() or source.suffix=='.py' or '__pycache__' in source.parts:continue
+            stamp=source.stat().st_mtime
+            if stamp>since:
+                dest=build.assets/source.relative_to(root);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,dest)
+            newest=max(newest,stamp)
+    return newest
+
 def claim(build,name,paths):
     """Records that the example owns these paths in the build's shared assets (in build/<build>/assets-claims.json); exits when one is a
     shared file or another example's."""
@@ -305,7 +320,7 @@ def main():
         server=subprocess.Popen(['haxe','-lib','hotreload-hx','--run','hotreload.DevServer','--port',str(a.port),'--mount',f'/assets={served}',hxml(a.name,chosen)],cwd=ROOT)
         print(f'{chosen}: {page(a.name,chosen).relative_to(ROOT).as_posix()}. Open http://localhost:{a.port}/ and edit; Ctrl+C stops.',flush=True)
         try:
-            failed=None;library_seen=None;packed=time.time()
+            failed=None;library_seen=None;packed=time.time();copied=time.time()
             tools=tool_stamps()
             while server.poll() is None:
                 # A tool this loop uses edited (the packer, the shader generator, the font baker, ...): every one loaded again, and every
@@ -314,6 +329,10 @@ def main():
                     tools=tool_stamps()
                     try:reload_tools();packed=0;library_seen=None;failed=None
                     except Exception as error:print('example: a tool failed to load again, the rest kept as they were:',error,flush=True)
+                # The assets, copied again as they change (a generated sheet made again, an image saved), with their manifest; the page
+                # reloads what it loaded of them.
+                recopied=copy_changed_assets(a.name,chosen,copied)
+                if recopied!=copied:gen_manifest.write(chosen.assets);copied=recopied
                 # The example's shaders, packed again as they change; the page reloads the asset.
                 try:
                     repacked=pack_shaders(a.name,chosen,packed)

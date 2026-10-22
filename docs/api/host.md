@@ -9,6 +9,7 @@
 A profile's choice of adapter for each platform contract, which the Runner builds the app's services over.
 
 - `storage:IStore`: The writable cache downloaded assets are kept in.
+- `saves:() -> IStore`: Opens the store the game's saves are kept in, apart from the cache (which a game may clear): called once, by the first use of Saves, so a game that saves nothing opens nothing.
 - `packaged:IStore`: The assets shipped with the build, read when base is null (read-only).
 - `name:String`: The program's name, beginning the names of the files it makes (Identity.product).
 - `manifest:Null<String>`: The root asset manifest's path under base (IAssets.setManifest), or null for none.

@@ -20,7 +20,8 @@ class SokolGLProfile {
 	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetDirectory, a directory relative to the program's (a game's own: "assets", beside it);
 		downloads cached in HELIX_CACHE, else the user's cache directory for identity (FileSystemStoreAdapter.getCacheDirectory), else cache/ beside the
-		program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
+		program; saves in HELIX_SAVES, else the user's data directory for identity (FileSystemStoreAdapter.getDataDirectory), else saves/ beside
+		the program; files made for the user (screenshots) in HELIX_EXPORT, else the user's pictures directory for the product
 		(FileSystemExportAdapter.getPicturesDirectory), else exports/ beside the program. The window opens as options ask (the defaults when not given). Returns when the window closes. */
 	public static function run(identity:helix.host.Identity, assetDirectory:String, app:IApp, ?options:helix.host.WindowOptions):Void {
 		var host = new SokolHostAdapter(options != null ? options.msaaSamples : new helix.host.WindowOptions().msaaSamples);
@@ -44,6 +45,12 @@ class SokolGLProfile {
 				http: new HaxeHttpAdapter(),
 				storage: new FileSystemStoreAdapter(cache),
 				packaged: new FileSystemStoreAdapter(haxe.io.Path.normalize(haxe.io.Path.join([root, assetDirectory]))),
+				saves: () -> {
+					var saves = Sys.getEnv("HELIX_SAVES");
+					if (saves == null)
+						saves = FileSystemStoreAdapter.getDataDirectory(identity.company, identity.product);
+					new FileSystemStoreAdapter(saves == null ? haxe.io.Path.join([root, "saves"]) : saves);
+				},
 				base: Sys.getEnv("HELIX_ASSET_HOST"),
 				manifest: Sys.getEnv("HELIX_ASSET_MANIFEST"),
 				harness: new StdioTestHarnessAdapter(),

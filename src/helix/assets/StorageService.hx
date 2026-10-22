@@ -30,7 +30,7 @@ enum StorageSourceResult {
 }
 
 /** Files by key (an asset path) over a platform's IStore, the same on every platform: keys checked, files at most 8 MiB, a read-only store
-	refusing writes, at most two operations at once, each completing exactly once on the host thread. The app's cache, and the packaged assets
+	refusing writes, at most two operations at once (or as many as it's made with), each completing exactly once on the host thread. The app's cache, and the packaged assets
 	read-only: the runner's cache is what the Storage static forwards to. */
 @:build(helix.macro.Facade.record())
 class StorageService {
@@ -39,12 +39,14 @@ class StorageService {
 
 	var store:IStore;
 	var readOnly:Bool;
-	var jobs = new Jobs(2);
+	var jobs:Jobs;
 
-	/** Files in store; readOnly refuses write, remove and clear (packaged assets). */
-	public function new(store:IStore, readOnly = false) {
+	/** Files in store; readOnly refuses write, remove and clear (packaged assets); at most maxActive operations at once (1: each in turn,
+		so they complete in the order asked). */
+	public function new(store:IStore, readOnly = false, maxActive = 2) {
 		this.store = store;
 		this.readOnly = readOnly;
+		jobs = new Jobs(maxActive);
 	}
 
 	/** Reads the whole file under key. Failed for an invalid key, a file over 8 MiB, a closed store, or an I/O error. */

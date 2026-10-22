@@ -36,13 +36,15 @@ final dirs:Map<String, String>
 
 *class* in `src/helix/assets/AssetPath.hx`
 
-Validates asset and storage keys, for the asset service, the shared StorageService and model files.
+Validates asset and storage keys, for the asset service, the shared StorageService and model files, and resolves a path one file names relative to itself.
 
 ```haxe
 static function isValid(path:String):Bool
+static function resolve(path:String, uri:String):Null<String>
 ```
 
 - `isValid`: Whether path is a safe relative path: 1 to 256 characters of A-Z, a-z, 0-9, '_', '.', '-' and '/', with no empty, "." or ".." segment (so no leading slash and no URL).
+- `resolve`: The asset path of uri (a file another names, relative to it: a model's buffers and images, a sprite sheet's image) beside the file at path: its %-escapes decoded and its "." and ".." segments followed. Null for one that isn't a relative path inside the assets (a URL, an absolute path, one climbing above them).
 
 ## AssetProgress
 
@@ -441,6 +443,50 @@ function cancel():Void
 - `settled`: Whether it has finished or been cancelled.
 - `finish`: Settles the request: true the first time, false once it has finished or been cancelled.
 
+## SaveService
+
+*class* in `src/helix/assets/SaveService.hx`
+
+The game's saves: text by name (JSON, as haxe.Json writes it, or anything), kept apart from the asset cache, which a game may clear: in the user's data directory natively (the profile's, by the game's identity), an IndexedDB database of its own in a browser. A name is an asset path ("progress", "slots/2.json"); a save is at most 8 MiB. Reads, writes and removals complete in the order asked. A save is kept once written runs: quitting before it may lose it, so a game saves at a checkpoint, not as it quits.
+
+```haxe
+function new(store:IStore)
+var busy(get, never):Bool
+function read(name:String, loaded:String -> Void, ?missing:() -> Void, ?failed:String -> Void):IRequest
+function write(name:String, text:String, ?written:() -> Void, ?failed:String -> Void):IRequest
+function remove(name:String, ?removed:() -> Void, ?failed:String -> Void):IRequest
+function poll():Void
+function shutdown():Void
+```
+
+- `new`: Saves in store, one operation at a time, so they complete in the order asked: a later write of a save is the one kept.
+- `busy`: Whether a read, write or removal hasn't completed yet.
+- `read`: Reads the save named name: loaded gets its text, missing runs when there is none (else loaded isn't called), failed (else the log) for a name that isn't an asset path or a store that fails. None runs once the request is cancelled.
+- `write`: Writes text as the save named name, in place of what it was: written runs once it's kept, failed (else the log) for a name that isn't an asset path, text over 8 MiB or a store that fails.
+- `remove`: Removes the save named name (none is no failure): removed runs once it's gone, failed (else the log) for a name that isn't an asset path or a store that fails.
+- `poll`: Delivers what completed. The runner calls it each frame; a program without one (a test) calls it itself.
+- `shutdown`: Cancels what hasn't completed and closes the store.
+
+## Saves
+
+*class* in `src/helix/assets/Saves.hx`
+
+The game's saves, apart from the asset cache (SaveService), installed by their first use, so a program that saves nothing opens no store for them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SaveService's public members with their doc comments.
+
+```haxe
+static var instance(default, null):SaveService
+static var busy(get, never):Bool
+static function read(name:String, loaded:String -> Void, ?missing:() -> Void, ?failed:String -> Void):IRequest
+static function write(name:String, text:String, ?written:() -> Void, ?failed:String -> Void):IRequest
+static function remove(name:String, ?removed:() -> Void, ?failed:String -> Void):IRequest
+```
+
+- `instance`: The saves forwarded to: installed by their first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `busy`: Whether a read, write or removal hasn't completed yet.
+- `read`: Reads the save named name: loaded gets its text, missing runs when there is none (else loaded isn't called), failed (else the log) for a name that isn't an asset path or a store that fails. None runs once the request is cancelled.
+- `write`: Writes text as the save named name, in place of what it was: written runs once it's kept, failed (else the log) for a name that isn't an asset path, text over 8 MiB or a store that fails.
+- `remove`: Removes the save named name (none is no failure): removed runs once it's gone, failed (else the log) for a name that isn't an asset path or a store that fails.
+
 ## Storage
 
 *class* in `src/helix/assets/Storage.hx`
@@ -478,10 +524,10 @@ How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
 *class* in `src/helix/assets/StorageService.hx`
 
-Files by key (an asset path) over a platform's IStore, the same on every platform: keys checked, files at most 8 MiB, a read-only store refusing writes, at most two operations at once, each completing exactly once on the host thread. The app's cache, and the packaged assets read-only: the runner's cache is what the Storage static forwards to.
+Files by key (an asset path) over a platform's IStore, the same on every platform: keys checked, files at most 8 MiB, a read-only store refusing writes, at most two operations at once (or as many as it's made with), each completing exactly once on the host thread. The app's cache, and the packaged assets read-only: the runner's cache is what the Storage static forwards to.
 
 ```haxe
-function new(store:IStore, ?readOnly:Bool = false)
+function new(store:IStore, ?readOnly:Bool = false, ?maxActive:Int = 2)
 static var MAX_BYTES(inline, null):Int
 function read(key:String, complete:StorageResult -> Void):IRequest
 function write(key:String, bytes:haxe.io.Bytes, complete:StorageWriteResult -> Void):IRequest
@@ -492,7 +538,7 @@ function poll():Void
 function shutdown():Void
 ```
 
-- `new`: Files in store; readOnly refuses write, remove and clear (packaged assets).
+- `new`: Files in store; readOnly refuses write, remove and clear (packaged assets); at most maxActive operations at once (1: each in turn, so they complete in the order asked).
 - `MAX_BYTES`: The largest file it stores or reads, in bytes.
 - `read`: Reads the whole file under key. Failed for an invalid key, a file over 8 MiB, a closed store, or an I/O error.
 - `write`: Stores a copy of bytes under key, replacing what is there. Failed for an invalid key, more than 8 MiB, a read-only store, a closed store, or an I/O error.

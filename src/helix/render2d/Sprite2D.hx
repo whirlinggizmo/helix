@@ -1,6 +1,6 @@
 package helix.render2d;
 
-/** A sprite: a texture (or a region of it) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
+/** A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
 	center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
 	corners' size as it's sized (setNineSlice). It may draw through an effect (effect). */
 @:allow(helix.render2d.Stage2D)
@@ -35,13 +35,32 @@ class Sprite2D extends Node2D {
 		and those drawn one after another with one effect and texture are one draw. */
 	public var effect:Null<helix.graphics.SpriteEffect>;
 
-	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. */
+	/** Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows
+		no sheet's frame after (setFrame). */
 	public function setRegion(x:Float, y:Float, width:Float, height:Float):Void {
+		frame = null;
 		sourceX = x;
 		sourceY = y;
 		sourceWidth = width;
 		sourceHeight = height;
 	}
+
+	/** Shows sheet's frame at index (a SpriteAnimator given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's
+		whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated
+		one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't. */
+	public function setFrame(sheet:SpriteSheet, index:Int):Bool {
+		var next = sheet.getFrame(index);
+		if (next == null)
+			return false;
+		frame = next;
+		texture = sheet.texture;
+		if (next.hasPivot)
+			setPivot(next.pivotX, next.pivotY);
+		return true;
+	}
+
+	/** The sheet's frame it shows (setFrame), or null: it shows its region. */
+	public var frame(default, null):Null<SpriteFrame>;
 
 	/** Its region's left, in texels. */
 	public var regionX(get, never):Float;
@@ -55,17 +74,18 @@ class Sprite2D extends Node2D {
 	function get_regionY():Float
 		return sourceY;
 
-	/** Its region's width in texels: what was set, or else its texture's (0 without one). */
+	/** Its region's width in texels: its frame's whole picture's when it shows one, else what was set, or else its texture's (0 without one). */
 	public var regionWidth(get, never):Float;
 
 	function get_regionWidth():Float
-		return sourceWidth > 0 && sourceHeight > 0 ? sourceWidth : texture == null ? 0 : texture.width;
+		return frame != null ? frame.sourceWidth : sourceWidth > 0 && sourceHeight > 0 ? sourceWidth : texture == null ? 0 : texture.width;
 
-	/** Its region's height in texels: what was set, or else its texture's (0 without one). */
+	/** Its region's height in texels: its frame's whole picture's when it shows one, else what was set, or else its texture's (0 without one). */
 	public var regionHeight(get, never):Float;
 
 	function get_regionHeight():Float
-		return sourceWidth > 0 && sourceHeight > 0 ? sourceHeight : texture == null ? 0 : texture.height;
+		return frame != null ? frame.sourceHeight : sourceWidth > 0
+			&& sourceHeight > 0 ? sourceHeight : texture == null ? 0 : texture.height;
 
 	// Its region's left and top as drawn: 0, 0 for the whole texture.
 	function drawnRegionX():Float

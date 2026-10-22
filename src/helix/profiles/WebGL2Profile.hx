@@ -34,6 +34,7 @@ class WebGL2Profile {
 				http: new FetchApiHttpAdapter(),
 				storage: new IndexedDbStoreAdapter(cacheName),
 				packaged: new IndexedDbStoreAdapter(cacheName + "-packaged"),
+				saves: () -> new IndexedDbStoreAdapter(cacheName + "-saves"),
 				base: assetBase,
 				manifest: assetManifest,
 				harness: new DomTestHarnessAdapter(),

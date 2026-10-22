@@ -38,6 +38,24 @@ class FileSystemStoreAdapter implements IStore {
 		return base == null ? null : Path.join([base, company, product]);
 	}
 
+	/** Where a program's lasting files (its saves) go on this desktop, for company and product: under $XDG_DATA_HOME (or ~/.local/share) on
+		Linux, ~/Library/Application Support on macOS, and %APPDATA%\<company>\<product> on Windows (roaming with the user). null when the
+		user's directories aren't known. */
+	public static function getDataDirectory(company:String, product:String):Null<String> {
+		var system = Sys.systemName();
+		if (system == "Windows") {
+			var roaming = Sys.getEnv("APPDATA");
+			return roaming == null || roaming == "" ? null : Path.join([roaming, company, product]);
+		}
+		var home = Sys.getEnv("HOME");
+		if (system == "Mac")
+			return home == null || home == "" ? null : Path.join([home, "Library/Application Support", company, product]);
+		var xdg = Sys.getEnv("XDG_DATA_HOME");
+		var base = xdg != null
+			&& StringTools.startsWith(xdg, "/") ? xdg : home == null || home == "" ? null : Path.join([home, ".local/share"]);
+		return base == null ? null : Path.join([base, company, product]);
+	}
+
 	// Runs work on a worker thread and hands its result to done on the host thread.
 	function run<T>(work:Void->T, done:T->Void):Void
 		Thread.create(() -> {

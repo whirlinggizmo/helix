@@ -1,10 +1,12 @@
+import helix.collision.Body2D;
 import helix.collision.Collide2D;
 import helix.collision.Hit2D;
 import helix.collision.Move2D;
 import helix.collision.SpatialHash2D;
 
 /** 2D collision (helix.collision): overlaps of rectangles, circles and polygons, points inside, segments and rays with where and the
-	normal, sweeps, a box moved and slid over tiles, and a spatial hash narrowing the pairs. */
+	normal, sweeps, a box moved and slid over tiles, a spatial hash narrowing the pairs, and an arcade body falling, landing, walking into a wall,
+	hitting its head and drawn between its steps. */
 class CollisionTests {
 	static var checks = 0;
 
@@ -149,6 +151,44 @@ class CollisionTests {
 		catch (e:Dynamic)
 			threw = true;
 		check(threw, "A cell size of 0 is refused");
+
+		// An arcade body over a floor (row 10) with a wall (column 8) and a ceiling tile (column 2, row 7), tiles 1 across.
+		var level = (column:Int, row:Int) -> row == 10 || column == 8 || column == 2 && row == 7;
+		var body = new Body2D(4, 5, .5, 1);
+		body.gravity = 20;
+		body.maxFallSpeed = 12;
+		for (_ in 0...120)
+			body.step(1 / 60, 1, level);
+		check(body.grounded && body.bottom == 10 && body.velocityY == 0 && body.airTime == 0, "It falls and lands on the floor, still");
+		body.velocityY = -100;
+		body.step(1 / 60, 1, level);
+		check(body.velocityY == -100 + 20 / 60 && !body.grounded && body.airTime == 1 / 60, "Off the ground, its air time counts");
+		body.place(4, 9);
+		check(body.x == 4 && body.previousX == 4 && body.velocityY == 0 && !body.grounded, "Placed, still");
+		body.step(1 / 60, 1, level);
+		check(body.grounded, "Standing on the floor, gravity keeps it grounded");
+		// Walking right, as a game sets its speed each step.
+		for (_ in 0...30) {
+			body.velocityX = 30;
+			body.step(1 / 60, 1, level);
+		}
+		check(body.x + body.width == 8 && body.blockedRight && body.velocityX == 0 && body.grounded, "It walks into the wall and stops there");
+		body.step(1 / 60, 1, level);
+		check(!body.blockedRight, "Not pushing, it isn't blocked");
+		var fall = new Body2D(0, 0, .5, 1);
+		fall.gravity = 1000;
+		fall.maxFallSpeed = 12;
+		fall.step(1 / 60, 1, (_, _) -> false);
+		check(fall.velocityY == 12, "Its fall is held to its top speed");
+		var head = new Body2D(2.25, 8.5, .5, 1);
+		head.place(2.25, 8.5);
+		head.velocityY = -40;
+		head.step(1 / 60, 1, level);
+		check(head.blockedAbove && head.y == 8 && head.velocityY == 0, "Jumping into a ceiling stops it there");
+		var drawn = new Body2D(0, 0, 1, 1);
+		drawn.velocityX = 60;
+		drawn.step(1 / 60, 1, (_, _) -> false);
+		check(drawn.previousX == 0 && drawn.x == 1 && drawn.getDrawnX(.25) == .25 && drawn.getDrawnY(.5) == 0, "Drawn between its steps");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }

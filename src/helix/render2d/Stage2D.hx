@@ -218,7 +218,9 @@ class Stage2D {
 		if (sprite != null) {
 			var t = sprite.texture, tw = t.width, th = t.height;
 			var sx = sprite.drawnRegionX(), sy = sprite.drawnRegionY();
-			if (sprite.nineSlice)
+			if (sprite.frame != null)
+				batch.frameQuad(t, sprite.frame, x, y, w, h, sprite.tint);
+			else if (sprite.nineSlice)
 				batch.nineSlice(t, x, y, w, h, sprite.sliceLeft, sprite.sliceTop, sprite.sliceRight, sprite.sliceBottom, sprite.tint, sx, sy,
 					sprite.regionWidth, sprite.regionHeight);
 			else {
