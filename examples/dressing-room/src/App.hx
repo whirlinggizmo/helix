@@ -649,7 +649,7 @@ class App extends helix.App {
 	function step(direction:Int):Void
 		open(SLOTS[(SLOTS.indexOf(slot) + direction + SLOTS.length) % SLOTS.length]);
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		// The autopilot's tick: it presses nothing, only waits and samples the frame.
 		if (pilot != null && !pilot.done)

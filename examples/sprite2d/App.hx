@@ -204,7 +204,7 @@ class App extends helix.App {
 		return lx * lx + ly * ly <= w * w / 4;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
 		var input:Null<IInput> = Input.instance;
 		if (pilot != null) {

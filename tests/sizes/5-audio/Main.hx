@@ -30,7 +30,7 @@ class Game extends helix.App {
 		Audio.instance.loadClip("audio/click.ogg", clip -> Audio.play(clip));
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		camera.pixels(Window.pixelRatio);
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		batch.begin(camera);

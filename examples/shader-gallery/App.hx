@@ -842,7 +842,7 @@ class App extends helix.App {
 			entries[index].on();
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
 		var input:Null<IInput> = pilot != null ? null : Input.instance;

@@ -32,7 +32,7 @@ GROUPS=[
     ('Games',['asteroids','blocks']),
     ('3D',['hello3d','meshes','materials','lights','environment','shadows','model','animation','instancing','pick','scene3d','sprite3d','text3d',
            'particles','shaders','postprocess','shader-gallery','render-target','dressing-room','scene-file']),
-    ('2D',['app-hello','sprite2d','stage2d','motion','tilemap','sprite-sheet','platformer','font','textures','ui']),
+    ('2D',['app-hello','stage','sprite2d','stage2d','motion','tilemap','sprite-sheet','platformer','font','textures','ui']),
     ('App and services',['app-skeleton','app-tick','app-window','app-gamepad','app-touch','scenes','audio-music','asset-fetch','asset-force-fetch','quit']),
 ]
 # The most milliseconds an example's capture waits for it to settle (tools/pages_shots.cjs captures once nothing has loaded for a moment):

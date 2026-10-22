@@ -146,7 +146,7 @@ class App extends helix.App {
 		return at == null ? "a node" : at.name;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();

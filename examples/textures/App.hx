@@ -130,7 +130,7 @@ class App extends helix.App {
 		}
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);

@@ -53,7 +53,7 @@ function getString(name:String):Null<String>
 
 *class* in `src/helix/host/FrameClock.hx`
 
-A host's frame timing, the same on every target, measured on the host's own clock between frames that ran (not a smoothed estimate, whose sum drifts from wall time). Each frame has two measures: the delta, the dt IApp.frame is passed, held between MIN_DELTA and MAX_DELTA for animation; and the elapsed time, unheld, for a fixed-rate simulation (Ticker), which bounds its own catch-up.
+A host's frame timing, the same on every target, measured on the host's own clock between frames that ran (not a smoothed estimate, whose sum drifts from wall time). Each frame has two measures: the delta, the dt IApp.update is passed, held between MIN_DELTA and MAX_DELTA for animation; and the elapsed time, unheld, for a fixed-rate simulation (Ticker), which bounds its own catch-up.
 
 ```haxe
 function new()
@@ -217,7 +217,8 @@ An optional part of the program: a service installed the first time a program us
 
 - `shutdown:Null<() -> Void>`: At the program's end, before the shared services close: the part closed and its static class unbound.
 - `poll:Null<() -> Void>`: Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames).
-- `frameEnded:Null<() -> Void>`: Each frame, after the app's: what waits for the frame to be drawn (a screenshot).
+- `frameEnded:Null<() -> Void>`: Each frame, after the app's and the frame drawn: what waits for the frame to be drawn (a screenshot).
+- `draw:Null<() -> Void>`: Each frame, after the app's update: the part draws the frame, opening and closing it (the stage, StageService). One part draws.
 - `busy:Null<() -> Bool>`: Whether the part is loading or preparing anything (Host.busy).
 
 ## Presentation
@@ -293,7 +294,7 @@ How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
 *class* in `src/helix/host/Runner.hx`
 
-What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's frame, input's frame end) with the clock and timings, and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and unbinds the statics: the platform's services are the runner's to close, never the app's. The same on every platform: a host owns only the loop, the clock and the window.
+What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's update, the stage drawn, input's frame end) with the clock and timings, and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and unbinds the statics: the platform's services are the runner's to close, never the app's. The same on every platform: a host owns only the loop, the clock and the window.
 
 ```haxe
 function new(host:IHost, compose:() -> Adapters)

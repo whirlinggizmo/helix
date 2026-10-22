@@ -26,7 +26,7 @@ class App extends helix.App {
 	function report(what:String, ok:Bool):Void
 		status = what + ": " + (ok ? "done" : "not supported here");
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance, window = Window.instance, width = window.width, height = window.height, x = window.x, y = window.y;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();

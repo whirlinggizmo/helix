@@ -87,7 +87,7 @@ class App extends helix.App {
 			trace('$MODEL: $warning');
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		if (car != null) {

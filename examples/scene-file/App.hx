@@ -104,7 +104,7 @@ class App extends helix.App {
 		scenes.update(1 / 60);
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (pilot != null && !pilot.done) {
 			// The script's ticks, each a sixtieth of a second to the game, many a frame when fast.
 			for (_ in 0...(fast ? 120 : 1)) {

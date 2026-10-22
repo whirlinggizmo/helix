@@ -7,22 +7,22 @@ package helix.app;
 	lambdas cost nothing. */
 class Springboard implements IApp {
 	final initCall:Void->Void;
-	final frameCall:Float->Void;
+	final updateCall:Float->Void;
 	final cleanupCall:Void->Void;
 
 	/** The three calls: each a lambda calling the class's `@:hot` static by name, `() -> Game.hotInit()`, never the function passed as a
 		value (a bound method keeps its old code). */
-	public function new(init:Void->Void, frame:Float->Void, cleanup:Void->Void) {
+	public function new(init:Void->Void, update:Float->Void, cleanup:Void->Void) {
 		initCall = init;
-		frameCall = frame;
+		updateCall = update;
 		cleanupCall = cleanup;
 	}
 
 	public function init():Void
 		initCall();
 
-	public function frame(dt:Float):Void
-		frameCall(dt);
+	public function update(dt:Float):Void
+		updateCall(dt);
 
 	public function cleanup():Void
 		cleanupCall();

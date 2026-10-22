@@ -37,7 +37,7 @@ class App extends helix.App {
 		stream.release();
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (input.isFramePressed(Key.Q) || Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();

@@ -125,7 +125,7 @@ class App extends helix.App {
 		trace('${NAMES[i]} ready in ${Math.round(loadMs[i])} ms');
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();

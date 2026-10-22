@@ -109,7 +109,7 @@ class App extends helix.App {
 		batch.drawText(caption, x, y - 22, 16, 0xffc8c8c8);
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The game's clock: paused, the motion stops.

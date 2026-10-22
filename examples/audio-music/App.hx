@@ -93,7 +93,7 @@ class App extends helix.App {
 			case Complete: "complete";
 		};
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (input.isFramePressed(Key.Space) && click != null)
 			Audio.play(click);

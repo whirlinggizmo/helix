@@ -181,7 +181,7 @@ class App extends helix.App {
 		return true;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (stopped || Window.framebufferWidth <= 0 || Window.framebufferHeight <= 0)
 			return;
 		Field.view(camera, Window.framebufferWidth, Window.framebufferHeight);

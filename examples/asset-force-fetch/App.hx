@@ -44,7 +44,7 @@ class App extends helix.App {
 		state = '$KEY played from the bytes of $SOURCE';
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();

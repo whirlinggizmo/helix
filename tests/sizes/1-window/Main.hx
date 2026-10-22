@@ -18,7 +18,7 @@ class Game extends helix.App {
 		Window.title = "1-window";
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		Graphics.endFrame();
 	}

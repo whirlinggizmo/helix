@@ -291,7 +291,7 @@ class App extends helix.App {
 				toons[i].material.setShader(null);
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
 		var input:Null<IInput> = Input.instance;
 		if (pilot != null) {

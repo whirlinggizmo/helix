@@ -6,15 +6,15 @@ import helix.macro.AppBuild;
 	the constructor would start the backend's profile; made empty instead. */
 class Game extends helix.App {
 	public var inits = 0;
-	public var frames = 0;
+	public var updates = 0;
 	public var cleanups = 0;
 	public var lastDt = 0.;
 
 	override public function init():Void
 		inits++;
 
-	override public function frame(dt:Float):Void {
-		frames++;
+	override public function update(dt:Float):Void {
+		updates++;
 		lastDt = dt;
 	}
 
@@ -38,7 +38,7 @@ class AppTests {
 	// A Game without its constructor (which would start the profile), its counters at 0 (createEmptyInstance runs no initializer on JS).
 	static function empty():Game {
 		var game:Game = Type.createEmptyInstance(Game);
-		game.inits = game.frames = game.cleanups = 0;
+		game.inits = game.updates = game.cleanups = 0;
 		game.lastDt = 0;
 		return game;
 	}
@@ -54,20 +54,20 @@ class AppTests {
 		check(Game.hotApp == game, "Making the springboard holds the app in the class's hot static");
 		springboard.init();
 		check(game.inits == 1, "init reaches the app");
-		springboard.frame(.5);
-		check(game.frames == 1 && game.lastDt == .5, "frame reaches the app with its dt");
+		springboard.update(.5);
+		check(game.updates == 1 && game.lastDt == .5, "update reaches the app with its dt");
 		springboard.cleanup();
 		check(game.cleanups == 1, "cleanup reaches the app");
 		// A native reload migrates the object held in hotApp and re-points the statics: the same springboard reaches the new object.
 		var migrated = empty();
 		migrated.options = game.options;
 		@:privateAccess Game.hotApp = migrated;
-		springboard.frame(.25);
-		check(game.frames == 1 && migrated.frames == 1 && migrated.lastDt == .25, "The springboard reaches the app hotApp holds now");
+		springboard.update(.25);
+		check(game.updates == 1 && migrated.updates == 1 && migrated.lastDt == .25, "The springboard reaches the app hotApp holds now");
 		Game.hotInit();
-		Game.hotFrame(1);
+		Game.hotUpdate(1);
 		Game.hotCleanup();
-		check(migrated.inits == 1 && migrated.frames == 2 && migrated.cleanups == 1, "The statics the Runner's lambdas call by name");
+		check(migrated.inits == 1 && migrated.updates == 2 && migrated.cleanups == 1, "The statics the Runner's lambdas call by name");
 		var statics = Type.getClassFields(Game);
 		for (name in AppBuild.WRITTEN.slice(0, 4))
 			check(statics.contains(name), 'The build wrote $name');
@@ -92,11 +92,11 @@ class AppTests {
 
 		// A Springboard calls what it was given, in order.
 		var calls = [];
-		var made = new Springboard(() -> calls.push("init"), dt -> calls.push('frame $dt'), () -> calls.push("cleanup"));
+		var made = new Springboard(() -> calls.push("init"), dt -> calls.push('update $dt'), () -> calls.push("cleanup"));
 		made.init();
-		made.frame(2);
+		made.update(2);
 		made.cleanup();
-		check(calls.join(",") == "init,frame 2,cleanup", "A Springboard's three calls");
+		check(calls.join(",") == "init,update 2,cleanup", "A Springboard's three calls");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

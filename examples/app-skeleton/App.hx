@@ -14,7 +14,7 @@ class App extends helix.App {
 		batch = new Batch2D();
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		camera.setViewport(Window.framebufferWidth, Window.framebufferHeight);
 		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0xfff5f5f5);
 		batch.begin(camera);

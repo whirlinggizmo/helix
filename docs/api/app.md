@@ -36,12 +36,12 @@ What the Runner drives. It calls through the object each time, so after a hot re
 
 ```haxe
 function init():Void
-function frame(dt:Float):Void
+function update(dt:Float):Void
 function cleanup():Void
 ```
 
 - `init`: Once, before the first frame, with the app's services bound (Window, Input, Graphics and the others).
-- `frame`: Once a display refresh; dt is the measured seconds since the last frame, held between 1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes Time.frameElapsed instead (helix.host.FrameClock).
+- `update`: Once a display refresh, before the frame is drawn: the game's logic. dt is the measured seconds since the last frame, held between 1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes Time.frameElapsed instead (helix.host.FrameClock).
 - `cleanup`: Once, when the window closes (on the web, at the page's pagehide).
 
 ## Springboard
@@ -51,9 +51,9 @@ function cleanup():Void
 The Runner's way into an App across a hot reload: three lambdas, each calling a `@:hot` static function of the app's class by name (hotreload-hx's springboards), which helix.macro.AppBuild writes for every App subclass. Natively a reload re-points those statics at the new module and migrates the app object held in the class's `@:hot static`, so the Runner, compiled once into the executable, reaches the newest code and the migrated object without knowing either; in the browser every call reaches the new code anyway, and the lambdas cost nothing.
 
 ```haxe
-function new(init:() -> Void, frame:Float -> Void, cleanup:() -> Void)
+function new(init:() -> Void, update:Float -> Void, cleanup:() -> Void)
 function init():Void
-function frame(dt:Float):Void
+function update(dt:Float):Void
 function cleanup():Void
 ```
 

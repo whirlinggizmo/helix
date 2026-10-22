@@ -35,7 +35,7 @@ class Game extends helix.App {
 		batch3D = new Batch3D();
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		camera.pixels(Window.pixelRatio);
 		camera3D.setViewport(Window.framebufferWidth, Window.framebufferHeight);
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);

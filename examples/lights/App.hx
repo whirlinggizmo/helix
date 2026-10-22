@@ -86,7 +86,7 @@ class App extends helix.App {
 	static function onOff(node:Node3D):String
 		return node.visible ? "on " : "off";
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (input.isFramePressed(Key.Digit1))
 			sun.visible = !sun.visible;

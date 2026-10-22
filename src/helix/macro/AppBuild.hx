@@ -8,7 +8,7 @@ import haxe.macro.Expr;
 /** The build macro behind helix.App, run on every class extending it (`@:autoBuild`). It writes into the subclass what a native hot
 	reload needs and what the build's backend decides, so a game writes neither:
 
-	- `@:hot public static var hotApp`, the app object `new` made, and `@:hot static function hotInit()`, `hotFrame(dt)` and
+	- `@:hot public static var hotApp`, the app object `new` made, and `@:hot static function hotInit()`, `hotUpdate(dt)` and
 	  `hotCleanup()`, each calling the app in `hotApp`: hotreload-hx's springboards. The Runner, compiled once into the executable, reaches
 	  the game only through them (a Springboard of lambdas calling them by name), so a native reload re-points the calls at the new module
 	  and migrates `hotApp` with the other `@:hot` statics; in the browser they cost nothing. They're written here, in the game's own class,
@@ -42,7 +42,7 @@ class AppBuild {
 		return backend == "webgl2";
 
 	/** The fields the macro writes, which a subclass can't declare itself. */
-	public static final WRITTEN = ["hotApp", "hotInit", "hotFrame", "hotCleanup", "hotSpringboard", "hotStart"];
+	public static final WRITTEN = ["hotApp", "hotInit", "hotUpdate", "hotCleanup", "hotSpringboard", "hotStart"];
 
 	#if macro
 	/** The subclass's fields with the springboards and the backend's start added (the class doc above). */
@@ -80,9 +80,9 @@ class AppBuild {
 			@:hot static function hotInit():Void
 				hotApp.runInit();
 
-			/** The Runner's way to the app's frame, by name, so a native reload re-points it (@:hot). Written by helix.macro.AppBuild. */
-			@:hot static function hotFrame(dt:Float):Void
-				hotApp.runFrame(dt);
+			/** The Runner's way to the app's update, by name, so a native reload re-points it (@:hot). Written by helix.macro.AppBuild. */
+			@:hot static function hotUpdate(dt:Float):Void
+				hotApp.runUpdate(dt);
 
 			/** The Runner's way to the app's cleanup, by name, so a native reload re-points it (@:hot). Written by helix.macro.AppBuild. */
 			@:hot static function hotCleanup():Void
@@ -90,7 +90,7 @@ class AppBuild {
 
 			override function hotSpringboard():helix.app.Springboard {
 				hotApp = this;
-				return new helix.app.Springboard(() -> hotInit(), dt -> hotFrame(dt), () -> hotCleanup());
+				return new helix.app.Springboard(() -> hotInit(), dt -> hotUpdate(dt), () -> hotCleanup());
 			}
 
 			override function hotStart(identity:helix.host.Identity, springboard:helix.app.Springboard):Void

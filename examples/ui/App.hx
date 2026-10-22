@@ -429,7 +429,7 @@ class App extends helix.App {
 		effectsMoved = effectsMoved || slider == effects;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		if (ui == null) {
 			// The autopilot's script still loading.

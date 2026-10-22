@@ -58,7 +58,7 @@ class App extends helix.App {
 		logoRotation += rotation;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		// The design for the window's shape; the logo and the coin start in the middle of what's visible of it, and go back there when
 		// the shape changes (a phone turned), as they might be past the new edges.

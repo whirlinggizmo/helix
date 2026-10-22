@@ -7,7 +7,10 @@ typedef Part = {
 	/** Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames). */
 	var ?poll:Void->Void;
 
-	/** Each frame, after the app's: what waits for the frame to be drawn (a screenshot). */
+	/** Each frame, after the app's update: the part draws the frame, opening and closing it (the stage, StageService). One part draws. */
+	var ?draw:Void->Void;
+
+	/** Each frame, after the app's and the frame drawn: what waits for the frame to be drawn (a screenshot). */
 	var ?frameEnded:Void->Void;
 
 	/** Whether the part is loading or preparing anything (Host.busy). */

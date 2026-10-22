@@ -90,7 +90,7 @@ class App extends helix.App {
 		Fonts.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();

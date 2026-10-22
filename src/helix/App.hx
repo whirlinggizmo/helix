@@ -9,12 +9,13 @@ import helix.host.Identity;
 import helix.input.Input;
 import helix.input.Key;
 
-/** HeliX's entry point. A game is a class extending it, overriding init, frame and cleanup (the IApp contract), and its Main is
+/** HeliX's entry point. A game is a class extending it, overriding init, update and cleanup (the IApp contract), and its Main is
 	`new Game()`: the constructor starts HeliX, picking the profile by the backend the build names (`-D helix-backend=webgl2`,
 	`sokol-gl`, `sdl3-gl` or `sdl3-gpu`; a build naming none fails, naming the choices), so one Main serves every target: `class Game
-	extends helix.App { override public function init():Void {...} override public function frame(dt:Float):Void {...} }` (init once,
-	the services bound: Window, Input, Graphics and the others; frame once a display refresh, drawing between Graphics.beginFrame and
-	endFrame), and `class Main { static function main() new Game(); }`.
+	extends helix.App { override public function init():Void {...} override public function update(dt:Float):Void {...} }` (init once,
+	the services bound: Window, Input, Graphics and the others; update once a display refresh, the game's logic), and
+	`class Main { static function main() new Game(); }`. The drawing is the runner's: after update it draws the Stage (helix.render2d.Stage),
+	what the game put on it (docs/DISPLAY_MODEL.md).
 
 	The object exists before HeliX does: a field initializer runs before the services are bound, so what needs them (a Batch2D, a
 	texture) is made in init. Natively the constructor returns only when the window closes. Options (AppOptions: the identity, where the
@@ -31,7 +32,7 @@ class App implements IApp {
 	public var options(default, null):AppOptions;
 
 	/** Starts HeliX with this app, with options (the defaults when not given): the profile of the build's backend runs, binds the
-		services, calls init once the game's config.json (if any) has come, then frame once a display refresh, and cleanup when the
+		services, calls init once the game's config.json (if any) has come, then update once a display refresh, and cleanup when the
 		window closes (the page goes away). Throws for an identity (product, company) that isn't a file name. Natively returns when the
 		window has closed. */
 	public function new(?options:AppOptions) {
@@ -41,22 +42,22 @@ class App implements IApp {
 
 	public function init():Void {}
 
-	public function frame(dt:Float):Void {}
+	public function update(dt:Float):Void {}
 
 	public function cleanup():Void {}
 
-	// What the subclass's springboards call: the development extras (AppOptions) around the app's own callbacks. Final, so init, frame and
+	// What the subclass's springboards call: the development extras (AppOptions) around the app's own callbacks. Final, so init, update and
 	// cleanup are the only overrides.
 	final function runInit():Void
 		init();
 
-	final function runFrame(dt:Float):Void {
+	final function runUpdate(dt:Float):Void {
 		if (options.devKeys && Input.isFramePressed(Key.F9))
 			Screenshots.take(null, result -> switch result {
 				case Saved(where, _): trace('Screenshot saved: $where');
 				case Failed(message): trace('Screenshot failed: $message');
 			});
-		frame(dt);
+		update(dt);
 		if (options.pageState)
 			Host.instance.reportBusy(Host.busy);
 	}

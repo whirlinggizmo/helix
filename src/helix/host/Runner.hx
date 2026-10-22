@@ -30,7 +30,7 @@ import helix.time.Time;
 
 /** What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and
 	binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each
-	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's frame, input's frame end) with the clock and timings,
+	frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's update, the stage drawn, input's frame end) with the clock and timings,
 	and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and
 	unbinds the statics: the
 	platform's services are the runner's to close, never the app's. The same on
@@ -198,7 +198,13 @@ class Runner {
 			started = true;
 			app.init();
 		}
-		app.frame(clock.delta);
+		app.update(clock.delta);
+		// The stage draws the frame, once the app has used it. Until every example has moved onto the stage (docs/DISPLAY_MODEL.md, the
+		// order of work's last step), an app that draws its own frame and never uses the stage still runs: the stage, never installed,
+		// draws nothing.
+		for (part in parts)
+			if (part.draw != null)
+				part.draw();
 		screenshots.frameEnded();
 		for (part in parts)
 			if (part.frameEnded != null)

@@ -53,7 +53,7 @@ class App extends helix.App {
 			tickPresses++;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		if (input.isFramePressed(Key.Enter))
 			framePresses++;

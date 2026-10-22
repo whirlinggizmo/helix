@@ -699,6 +699,28 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 - `destroy`: Frees what load loaded (its texture through Textures) and stops reading its file again; a sheet made from a texture leaves the texture to its maker.
 - `reloaded`: Its file changed: its frames and animations are read again (its image reloads on its own). A file that doesn't read leaves it as it was, and throws.
 
+## Stage
+
+*class* in `src/helix/render2d/Stage.hx`
+
+The stage: what the program shows, drawn by the runner after every update (StageService; docs/DISPLAY_MODEL.md). Installed by its first use, so a program that never uses it carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StageService's public members with their doc comments.
+
+```haxe
+static var instance(default, null):StageService
+static var color(get, set):Int
+static function addChild(node:Node2D):Void
+static function removeChild(node:Node2D):Bool
+static var childCount(get, never):Int
+static var drawnNodeCount(get, never):Int
+```
+
+- `instance`: The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
+- `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
+- `childCount`: How many children the stage has.
+- `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+
 ## Stage2D
 
 *class* in `src/helix/render2d/Stage2D.hx`
@@ -726,6 +748,32 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 - `drawnNodeCount`: Nodes drawn by the last draw (in view).
 - `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
 - `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
+
+## StageService
+
+*class* in `src/helix/render2d/StageService.hx`
+
+The stage: the one thing the runner draws, after the app's update, every frame (docs/DISPLAY_MODEL.md). Its children are display objects (Node2D and its kinds), drawn in order, later over earlier, through a camera showing the app's design units (Screen: logical pixels unless a presentation mode says otherwise), cleared to its color first. Flash's stage: what a game adds to it shows, with nothing to draw by hand. Installed by its first use (Stage), so a program that never uses it carries none of it.
+
+```haxe
+function new(gpu:IGraphics, presentation:Presentation)
+var color:Int
+function addChild(node:Node2D):Void
+function removeChild(node:Node2D):Bool
+var childCount(get, never):Int
+var drawnNodeCount(get, never):Int
+function draw(time:Float):Void
+function destroy():Void
+```
+
+- `new`: A stage drawn on gpu, its camera showing presentation's design units.
+- `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
+- `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
+- `childCount`: How many children the stage has.
+- `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+- `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner calls it once a frame after the app's update, with the game's clock in seconds (emitters advance by it); a program without one (a test) calls it itself.
+- `destroy`: Frees its batch.
 
 ## Text2D
 

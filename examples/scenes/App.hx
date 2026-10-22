@@ -98,7 +98,7 @@ class App extends helix.App {
 		}
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		if (pilot != null && !pilot.done && scenes.top != null) {
 			// The script's ticks, each a sixtieth of a second to the scenes, many a frame when fast; none until the splash is up (its logo loads first).

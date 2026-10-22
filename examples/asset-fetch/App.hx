@@ -91,7 +91,7 @@ class App extends helix.App {
 			case Cancelled: state;
 		});
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		var input = Input.instance;
 		// The design for the window's shape: the text wrapped to what's visible of it, the buttons under it (laid out before the pointer is
 		// tested against them), the logo centered below.

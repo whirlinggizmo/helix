@@ -76,7 +76,7 @@ class App extends helix.App {
 		ticks++;
 	}
 
-	override public function frame(dt:Float):Void {
+	override public function update(dt:Float):Void {
 		if (stopped || Window.framebufferWidth <= 0 || Window.framebufferHeight <= 0)
 			return;
 		layout.update(Window.framebufferWidth, Window.framebufferHeight);

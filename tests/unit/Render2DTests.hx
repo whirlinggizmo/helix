@@ -135,9 +135,15 @@ class CountingGraphics implements IGraphics {
 	public function beginShadowPass(map:Int, layer:Int):Void
 		shadowPasses.push(layer);
 
+	/** The last frame's clear color, and how many frames have ended. */
+	public var clearColor = 0;
+
+	public var framesEnded = 0;
+
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void {
 		draws = [];
 		viewports = [];
+		this.clearColor = clearColor;
 	}
 
 	/** Each scissor set (x, y, w, h), or null for a reset, in order. */
@@ -194,7 +200,8 @@ class CountingGraphics implements IGraphics {
 			});
 	}
 
-	public function endFrame():Void {}
+	public function endFrame():Void
+		framesEnded++;
 
 	public function readPixels(target:Int, done:helix.graphics.IGraphics.ReadPixelsResult->Void):Void
 		done(Failed("No GPU"));
