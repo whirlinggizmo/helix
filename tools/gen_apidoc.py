@@ -169,7 +169,9 @@ def markdown(xmls):
 
 def main():
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
-    check='--check' in sys.argv[1:]
+    import cli
+    p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when docs/api isn't what the sources give")
+    check=p.parse_args().check
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
     # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.
     if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)

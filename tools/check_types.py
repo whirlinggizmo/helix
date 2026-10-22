@@ -37,7 +37,7 @@ def generate(web=False):
 
 def main():
     import argparse
-    parser=argparse.ArgumentParser(description=__doc__.split('\n\n')[0],formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--web',action='store_true',help="the browser's alone: every example for webgl2 and every test that isn't native's")
     parser.add_argument('--no-output',action='store_true',help='accepted for the habit: nothing is ever built (haxe --no-output)')
     web=parser.parse_args().web

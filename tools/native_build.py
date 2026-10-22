@@ -78,3 +78,8 @@ def tool(name):
     output=TOOLS/name
     subprocess.run(list(map(str,command))+['-o',str(output)],cwd=ROOT,check=True)
     return output
+
+
+if __name__ == '__main__':
+    import cli
+    cli.module(__doc__)

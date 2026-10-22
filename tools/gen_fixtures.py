@@ -57,4 +57,7 @@ def stream():
             wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(data.tobytes())
         subprocess.run([encoder,'-v','error','-y','-bitexact','-i',str(source),'-map_metadata','-1','-c:a','libvorbis','-q:a','5','-fflags','+bitexact',str(OUT/'stream.ogg')],check=True)
 
-if __name__=='__main__':print(generate('--regenerate' in sys.argv[1:]))
+if __name__=='__main__':
+    import cli
+    p=cli.parser(__doc__);p.add_argument('--regenerate',action='store_true',help='make them again even when they are there')
+    print(generate(p.parse_args().regenerate))

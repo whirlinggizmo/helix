@@ -1,4 +1,6 @@
+// The browser's half of the services check (tools/services.py): opens url, the service tests' page, twice in one headless browser context
+// (the second visit a returning one, its storage kept), and prints what each run reported. Arguments: the browser, the URL.
 const fs=require('fs'),path=require('path');
 const {chromium}=require('../build/tools/node_modules/playwright');
-(async()=>{const [browserPath,url]=process.argv.slice(2);const browser=await chromium.launch({executablePath:browserPath,headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
+(async()=>{const [browserPath,url]=require('./cli.cjs').args(__filename,['browser','url']);const browser=await chromium.launch({executablePath:browserPath,headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
 try {const context=await browser.newContext();const runs=[];for(let i=0;i<2;i++){const page=await context.newPage();await page.goto(url);await page.waitForFunction(()=>window.serviceResult,undefined,{timeout:35000});const result=await page.evaluate(()=>window.serviceResult);runs.push(result);await page.close();if(!result.passed)throw Error(JSON.stringify(result));}console.log(JSON.stringify({passed:true,runs,browser:browser.version()}));}finally{await browser.close();}})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -145,4 +145,6 @@ def generate():
 
 
 if __name__ == '__main__':
+    import cli
+    cli.parser(__doc__).parse_args()
     generate()

@@ -185,6 +185,50 @@ python3 helix.py services --browser /path/to/chromium --native
 - **Native window checks** run on a private Xvfb display (`tools/private_display.py`), never on the desktop in use.
 
 
+## Tools
+
+Every tool answers `--help` with what it does (its docstring) and its arguments, and does nothing else; it refuses an argument it doesn't
+take. A module, which the others import, says so when it's run. `tools/check_tools.py` checks both, and that this table names every tool.
+
+| Tool | What it does |
+|---|---|
+| `helix.py` | the front door: `test` (the tool, package and unit tests; `--native` adds the native ones) and `services` |
+| `tools/example.py` | develop an example under hotreload-hx (`dev`), build it (`build`), or run its autopilot natively against the browser (`autopilot`) |
+| `tools/check_types.py` | type-check every example and test on every target, or the browser's alone (`--web`), without building |
+| `tools/check_adapters.py` | the adapter rule, where it can be checked mechanically (docs/ARCHITECTURE.md) |
+| `tools/check_names.py` | the rule that 2D and 3D are named apart (docs/CONVENTIONS.md) |
+| `tools/check_tools.py` | the tools themselves: each answers `--help` with its usage and refuses what it doesn't take, and this table names each |
+| `tools/check_docs.py` | every public type and member documented, every doc's links resolving |
+| `tools/check_cache.py` | the browser asset cache across visits, as a returning visitor meets it |
+| `tools/format.py` | lay out the Haxe source with haxe-formatter, or `--check` it |
+| `tools/gen_code.py` | the generated Haxe the library ships, in `generated/` (`--check` fails when stale) |
+| `tools/gen_apidoc.py` | the API reference from the doc comments, `docs/api` (`--check` fails when stale) |
+| `tools/gen_manifest.py` | asset manifests through an assets directory, as the browser's cache reads them |
+| `tools/gen_fixtures.py` | the test fixtures: tones as WAV, Ogg/Vorbis and Ogg/Opus, and a stream |
+| `tools/gen_sprite_sheet.py` | the examples' sprite sheet, `examples/assets/sheets/gizmos.png` and `.json` |
+| `tools/bake_fonts.py` | the built-in font baked into a distance-field atlas, as generated Haxe |
+| `tools/gltf2scene.py` | a Blender glTF export as a `.scene3d` file |
+| `tools/fbx2glb.py` | FBX models as GLB files, through Blender run headless |
+| `tools/measure_sizes.py` | the web size ladder (`tests/sizes`), against the committed baseline (`--write` remakes it) |
+| `tools/measure_cpu.py` | the CPU a program keeps busy, case by case |
+| `tools/bench_stage.py` | a `Renderer3D`'s CPU work by case and model count, natively and in V8 |
+| `tools/pages.py` | the examples' site for GitHub Pages, with thumbnails |
+| `tools/services.py` | the async service tests against a local HTTP server, in the browser and natively |
+| `tools/remote_windows.py` | build and check this checkout on a Windows machine over ssh, leaving nothing behind |
+| `tools/sdl3.py` | SDL3 for the SDL3 backends, found or made into `build/deps` |
+| `tools/autopilot.cjs` | an example's autopilot in a headless browser (run by `example.py autopilot`) |
+| `tools/check_cache.cjs` | one visit of `check_cache.py`'s |
+| `tools/pages_shots.cjs` | the site's thumbnails (run by `pages.py`) |
+| `tools/service_browser.cjs` | the browser's half of `services.py` |
+| `tools/cli.py` | a module: the tools' command lines (`--help` from the docstring; unknown arguments refused) |
+| `tools/cli.cjs` | a module: the Node tools' command lines, as `cli.py` |
+| `tools/native_build.py` | a module: native builds without CMake, hxcpp compiling the adapters' C |
+| `tools/pins.py` | a module: the repository-local haxelib holding the pinned hxcpp, and the vendored headers' pins |
+| `tools/private_display.py` | a module: a private X display (Xvfb and Openbox) for native window checks |
+| `tools/shader_tool.py` | a module: the shader packer and translators as the Python tools reach them |
+| `tools/shader_metadata.py` | a module: sokol-shdc's reflection read into the framework shaders' fixed layout |
+| `tools/variants.py` | a module: a build's name and its directories |
+
 ## Layout
 
 ```text

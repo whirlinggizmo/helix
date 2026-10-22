@@ -100,11 +100,16 @@ def check():
     return problems
 
 def main():
-    if '--check' in sys.argv[1:]:
+    import cli
+    p=cli.parser(__doc__)
+    p.add_argument('--check',action='store_true',help="write nothing; fail when generated/ isn't what the sources give")
+    p.add_argument('--regenerate',action='store_true',help='make everything again, current or not')
+    a=p.parse_args()
+    if a.check:
         problems=check()
         if problems:sys.exit('\n'.join(problems)+'\ngenerated/ is stale: python3 tools/gen_code.py --regenerate, and commit it')
         print(f'generated/ is current: {sum(1 for _ in OUT.rglob("*.hx"))} files',flush=True);return
-    generate(regenerate='--regenerate' in sys.argv[1:])
+    generate(regenerate=a.regenerate)
     print(f'generated/: {sum(1 for _ in OUT.rglob("*.hx"))} files',flush=True)
 
 if __name__=='__main__':main()

@@ -5,7 +5,7 @@
 // usable WebGL2. The autopilot compares games, not pixels, so either serves; the output says which ran, and why it fell back.
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
-const [browserPath,url]=process.argv.slice(2);
+const [browserPath,url]=require('./cli.cjs').args(__filename,['browser','url']);
 const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
 

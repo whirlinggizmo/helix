@@ -79,7 +79,7 @@ def blender_main(argv):
 
 def main():
     """Find the sources, then run Blender once over all of them."""
-    parser = argparse.ArgumentParser(description='FBX models as GLB files, converted by Blender run headless.')
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('paths', nargs='+', help='FBX files or directories, then the destination directory')
     parser.add_argument('--opaque', action='store_true', help='make every material opaque')
     parser.add_argument('--smooth-angle', type=float, metavar='DEG', help='smooth the normals by angle, sharp above DEG degrees')

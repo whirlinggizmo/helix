@@ -27,3 +27,8 @@ def check_sokol(root):
     for part in ('audio','appUtils'):
         pin=sokol[part]
         if hashlib.sha256((root/pin['source']).read_bytes()).hexdigest()!=pin['sha256']:raise RuntimeError('Pinned Sokol header changed: '+pin['source'])
+
+
+if __name__ == '__main__':
+    import cli
+    cli.module(__doc__)

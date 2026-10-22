@@ -5,7 +5,7 @@
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
 const {PNG}=require(path.join(__dirname,'../build/tools/node_modules/pngjs'));
-const [browserPath,url,profile,shot,network]=process.argv.slice(2);
+const [browserPath,url,profile,shot,network]=require('./cli.cjs').args(__filename,['browser','url','profile','shot','network']);
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
 
 (async()=>{

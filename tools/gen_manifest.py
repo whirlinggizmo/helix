@@ -30,7 +30,10 @@ def write(directory):
     return data
 
 def main():
-    if len(sys.argv)!=2 or not Path(sys.argv[1]).is_dir():sys.exit(__doc__)
-    write(Path(sys.argv[1]))
+    import cli
+    p=cli.parser(__doc__);p.add_argument('directory',type=Path,help='the assets directory to write manifests through')
+    directory=p.parse_args().directory
+    if not directory.is_dir():p.error(f'{directory} is not a directory')
+    write(directory)
 
 if __name__=='__main__':main()

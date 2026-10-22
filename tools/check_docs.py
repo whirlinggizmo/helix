@@ -31,6 +31,8 @@ def interface_members():
     return found
 
 def main():
+    import cli
+    cli.parser(__doc__).parse_args()
     interfaces=interface_members();missing=[]
     for path in sorted((ROOT/'src/helix').rglob('*.hx')):
         if '/internal/' in path.as_posix():continue

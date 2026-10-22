@@ -15,7 +15,7 @@ UNIT={'InputTests':[],'BoundsTests':['generated/shaders','generated/fonts'],'Act
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
 
 def test(native,audio_device):
-    """The adapter rule's check, the 2D and 3D names' check (tools/check_names.py), the generated code's check (tools/gen_code.py --check), the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison, helix.App's build, the game front door), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
+    """The adapter rule's check, the 2D and 3D names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the generated code's check (tools/gen_code.py --check), the tool tests (shaders and the shader library, gltf2scene, the autopilot's sample comparison, helix.App's build, the game front door), the package smoke test on the interpreter and Node, every unit test, and with native the C service tests and
     native network streaming (tests/streaming, a local server and SDL3's dummy audio driver)."""
     sys.path.insert(0,str(ROOT/'tools'))
     from gen_fixtures import generate
@@ -24,6 +24,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/gen_code.py','--check'])
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/check_names.py'])
+    run([sys.executable,'tools/check_tools.py'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/measure_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])

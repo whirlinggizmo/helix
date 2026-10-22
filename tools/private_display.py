@@ -32,3 +32,8 @@ def private_display(number=91,width=1920,height=1080):
             process.terminate()
             try:process.wait(timeout=5)
             except subprocess.TimeoutExpired:process.kill()
+
+
+if __name__ == '__main__':
+    import cli
+    cli.module(__doc__)

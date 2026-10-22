@@ -8,7 +8,7 @@
 const fs=require('fs');
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
-const [browserPath,site,out,requestsFile,...shots]=process.argv.slice(2);
+const [browserPath,site,out,requestsFile,...shots]=require('./cli.cjs').args(__filename,['browser','site','out','requests','name=milliseconds...']);
 const requested={};
 const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];

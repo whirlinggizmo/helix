@@ -77,6 +77,8 @@ def problems():
 
 
 def main():
+    import cli
+    cli.parser(__doc__).parse_args()
     found = problems()
     for line in found:
         print(line)

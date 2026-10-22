@@ -100,6 +100,8 @@ def adapter_name(api, contract):
 
 
 def main():
+    import cli
+    cli.parser(__doc__).parse_args()
     violations = []
     for path in sorted(ADAPTERS.rglob('*.hx')):
         for number, line in code_lines(path):

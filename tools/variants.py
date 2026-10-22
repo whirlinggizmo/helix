@@ -115,3 +115,8 @@ def parse(text, options=()):
     if named and named != platform:
         raise ValueError(f'{text}: this machine builds {backend} for {platform}, not {named}')
     return Build(platform, config, backend, given)
+
+
+if __name__ == '__main__':
+    import cli
+    cli.module(__doc__)

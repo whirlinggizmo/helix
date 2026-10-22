@@ -57,4 +57,7 @@ class GeneratedFont {{
 ''', encoding='utf-8', newline='\n')
     return output
 
-if __name__=='__main__':print(generate('--regenerate' in sys.argv))
+if __name__=='__main__':
+    import cli
+    p=cli.parser(__doc__);p.add_argument('--regenerate',action='store_true',help='bake it again even when it is current')
+    print(generate(p.parse_args().regenerate))

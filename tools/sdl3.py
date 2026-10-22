@@ -212,6 +212,8 @@ def find():
 
 
 if __name__ == '__main__':
+    import cli
+    cli.parser(__doc__).parse_args()
     found = find()
     print(f'sdl3: {found.origin}')
     print(f'sdl3: link {found.library}')
