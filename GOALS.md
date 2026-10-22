@@ -43,3 +43,15 @@ Why build one, if you can tell an agent "make my game, more like GTA, CS or Diab
   point and say "no, not like that". A clean, consistent API with its checks built in makes that easier for both of them.
 - **Some places prohibit AI.** A game jam may ban generative AI, but there's nothing wrong with using tools that were built with its
   help. A framework is such a tool: a person writes the game on it by hand.
+
+## Why not an existing Haxe framework
+
+- **OpenFL with Lime** carries Flash's API, which people and agents know well, and Lime builds natively through hxcpp. Measured
+  (2026-10-22, OpenFL 9.5.2, Lime 8.3.2, Haxe 4.3.7, an HTML5 release build with `-dce full`, gzip -9): an empty program is 232 KB of
+  JavaScript, 181 KB after Terser, and a rectangle and a line of text add almost nothing to it (its runtime starts whole). HeliX's same
+  three programs are 25, 71 and 74 KB (19.5, 62 and 65 KB after Terser), and a lit 3D scene 91 KB. Its text used the browser's fonts,
+  where HeliX's carries its own. It has no hot reload (its model is listeners on display objects, which a reload strands), no path to
+  C libraries as WebAssembly, and no 3D beyond Stage3D, Flash's low-level GPU API with AGAL shaders. Flash's model is worth borrowing
+  (a stage that draws itself, display objects, drawing on a node); its runtime isn't.
+- **Heaps** is Haxe, 2D and 3D, and has shipped console games. It builds natively through HashLink, not hxcpp, has no hot reload of its
+  own, and has its own shader language. Not measured here.
