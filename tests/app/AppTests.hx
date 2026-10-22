@@ -1,8 +1,8 @@
-import helix.app.AppOptions;
-import helix.app.Springboard;
+import helix.AppOptions;
+import helix.hotreload.AppRouter;
 import helix.macro.AppBuild;
 
-/** A game as a user writes one: helix.App's build (helix.macro.AppBuild) writes its springboards into it. Never constructed here, since
+/** A game as a user writes one: helix.App's build (helix.macro.AppBuild) writes its hot statics into it. Never constructed here, since
 	the constructor would start the backend's profile; made empty instead. */
 @:access(helix)
 class Game extends helix.App {
@@ -24,8 +24,8 @@ class Game extends helix.App {
 }
 
 /** helix.App built with a backend named (-D helix-backend=webgl2, run on Node by tests/tools/app_test.py, which also checks the builds
-	that must be refused): the springboards the build writes reach the app in hotApp, and another app once hotApp is re-pointed, as a native reload does;
-	the backend table; AppOptions' defaults; a Springboard's three calls. */
+	that must be refused): the hot statics the build writes reach the app in hotApp, and another app once hotApp is re-pointed, as a native reload does;
+	the backend table; AppOptions' defaults; a AppRouter's three calls. */
 @:access(helix.App)
 @:access(helix)
 class AppTests {
@@ -46,26 +46,26 @@ class AppTests {
 	}
 
 	static function main():Void {
-		// The springboards: hotApp held as the Springboard is made, each call reaching the app's callbacks through App's run methods.
+		// The hot statics: hotApp held as the AppRouter is made, each call reaching the app's callbacks through App's run methods.
 		var game = empty();
 		game.options = new AppOptions();
 		game.options.devKeys = false;
 		game.options.pageState = false;
 		check(Game.hotApp == null, "No app yet");
-		var springboard = game.hotSpringboard();
-		check(Game.hotApp == game, "Making the springboard holds the app in the class's hot static");
-		springboard.init();
+		var router = game.hotAppRouter();
+		check(Game.hotApp == game, "Making the router holds the app in the class's hot static");
+		router.init();
 		check(game.inits == 1, "init reaches the app");
-		springboard.update(.5);
+		router.update(.5);
 		check(game.updates == 1 && game.lastDt == .5, "update reaches the app with its dt");
-		springboard.cleanup();
+		router.cleanup();
 		check(game.cleanups == 1, "cleanup reaches the app");
-		// A native reload migrates the object held in hotApp and re-points the statics: the same springboard reaches the new object.
+		// A native reload migrates the object held in hotApp and re-points the statics: the same router reaches the new object.
 		var migrated = empty();
 		migrated.options = game.options;
 		@:privateAccess Game.hotApp = migrated;
-		springboard.update(.25);
-		check(game.updates == 1 && migrated.updates == 1 && migrated.lastDt == .25, "The springboard reaches the app hotApp holds now");
+		router.update(.25);
+		check(game.updates == 1 && migrated.updates == 1 && migrated.lastDt == .25, "The router reaches the app hotApp holds now");
 		Game.hotInit();
 		Game.hotUpdate(1);
 		Game.hotCleanup();
@@ -92,13 +92,13 @@ class AppTests {
 		var debug = #if debug true #else false #end;
 		check(options.devKeys == debug && options.pageState == debug, "The development extras follow the build");
 
-		// A Springboard calls what it was given, in order.
+		// A AppRouter calls what it was given, in order.
 		var calls = [];
-		var made = new Springboard(() -> calls.push("init"), dt -> calls.push('update $dt'), () -> calls.push("cleanup"));
+		var made = new AppRouter(() -> calls.push("init"), dt -> calls.push('update $dt'), () -> calls.push("cleanup"));
 		made.init();
 		made.update(2);
 		made.cleanup();
-		check(calls.join(",") == "init,update 2,cleanup", "A Springboard's three calls");
+		check(calls.join(",") == "init,update 2,cleanup", "A AppRouter's three calls");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

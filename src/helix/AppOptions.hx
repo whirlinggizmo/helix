@@ -1,4 +1,4 @@
-package helix.app;
+package helix;
 
 import helix.host.WindowOptions;
 

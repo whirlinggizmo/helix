@@ -1,5 +1,5 @@
 // The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one + the stage showing a rectangle.
-import helix.app.AppOptions;
+import helix.AppOptions;
 import helix.host.Window;
 import helix.render2d.Shape2D;
 import helix.render2d.Stage;

@@ -1,15 +1,14 @@
 package helix;
 
-import helix.app.AppOptions;
-import helix.app.IApp;
-import helix.app.Springboard;
+import helix.AppOptions;
+import helix.hotreload.AppRouter;
 import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Identity;
 import helix.input.Input;
 import helix.input.Key;
 
-/** HeliX's entry point. A game is a class extending it, overriding init, update and cleanup (the IApp contract), and its Main is
+/** HeliX's entry point. A game is a class extending it, overriding init, update and cleanup, and its Main is
 	`new Game()`: the constructor starts HeliX, picking the profile by the backend the build names (`-D helix-backend=webgl2`,
 	`sokol-gl`, `sdl3-gl` or `sdl3-gpu`; a build naming none fails, naming the choices), so one Main serves every target: `class Game
 	extends helix.App { override public function init():Void {...} override public function update(dt:Float):Void {...} }` (init once,
@@ -21,13 +20,13 @@ import helix.input.Key;
 	texture) is made in init. Natively the constructor returns only when the window closes. Options (AppOptions: the identity, where the
 	assets are, a manifest, the window, the development extras) are given to the constructor, `super(options)` or `new Game(options)`.
 
-	Hot reload: the Runner reaches the app only through `@:hot` static springboards that helix.macro.AppBuild writes into the game's class
+	Hot reload: the Runner reaches the app only through `@:hot` static functions (hot statics) that helix.macro.AppBuild writes into the game's class
 	(`hotApp`, the object; `hotInit`, `hotFrame`, `hotCleanup`), so a native reload re-points its calls and migrates the object (hotreload-hx:
 	the main class is compiled once and never reloaded, and a call from code compiled before a reload reaches new code only through a
 	`@:hot` static function); in the browser old classes forward, so it costs nothing. The game class is therefore not Main, which
 	hotreload-hx never reloads and refuses `@:hot` in. */
 @:autoBuild(helix.macro.AppBuild.build())
-class App implements IApp {
+class App {
 	/** The options it started with. */
 	public var options(default, null):AppOptions;
 
@@ -37,16 +36,21 @@ class App implements IApp {
 		window has closed. */
 	public function new(?options:AppOptions) {
 		this.options = options == null ? new AppOptions() : options;
-		hotStart(new Identity(this.options.product, this.options.company), hotSpringboard());
+		hotStart(new Identity(this.options.product, this.options.company), hotAppRouter());
 	}
 
+	/** Once, before the first frame, with the app's services bound (Window, Input, Graphics and the others). Nothing by default. */
 	public function init():Void {}
 
+	/** Once a display refresh, before the frame is drawn: the game's logic. dt is the measured seconds since the last frame, held between
+		1e-6 and 0.1, and 1/60 on the first: for animation. A fixed-rate simulation takes Time.frameElapsed instead (helix.host.FrameClock).
+		Nothing by default. */
 	public function update(dt:Float):Void {}
 
+	/** Once, when the window closes (on the web, at the page's pagehide). Nothing by default. */
 	public function cleanup():Void {}
 
-	// What the subclass's springboards call: the development extras (AppOptions) around the app's own callbacks. Final, so init, update and
+	// What the subclass's hot statics call: the development extras (AppOptions) around the app's own callbacks. Final, so init, update and
 	// cleanup are the only overrides.
 	final function runInit():Void
 		init();
@@ -94,11 +98,11 @@ class App implements IApp {
 			Host.instance.reportBusy(false);
 	}
 
-	// Written by helix.macro.AppBuild into every subclass: the Springboard over the class's @:hot statics, hotApp set to this ...
-	function hotSpringboard():Springboard
-		throw "helix.App: hotSpringboard is written by helix.macro.AppBuild into each subclass";
+	// Written by helix.macro.AppBuild into every subclass: the AppRouter over the class's @:hot statics, hotApp set to this ...
+	function hotAppRouter():AppRouter
+		throw "helix.App: hotAppRouter is written by helix.macro.AppBuild into each subclass";
 
 	// ... and the start on the profile of the backend the build names.
-	function hotStart(identity:Identity, springboard:Springboard):Void
+	function hotStart(identity:Identity, router:AppRouter):Void
 		throw "helix.App: hotStart is written by helix.macro.AppBuild into each subclass";
 }

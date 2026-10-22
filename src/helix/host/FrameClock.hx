@@ -1,7 +1,7 @@
 package helix.host;
 
 /** A host's frame timing, the same on every target, measured on the host's own clock between frames that ran (not a smoothed estimate, whose
-	sum drifts from wall time). Each frame has two measures: the delta, the dt IApp.update is passed, held between MIN_DELTA and MAX_DELTA for animation; and the
+	sum drifts from wall time). Each frame has two measures: the delta, the dt App.update is passed, held between MIN_DELTA and MAX_DELTA for animation; and the
 	elapsed time, unheld, for a fixed-rate simulation (Ticker), which bounds its own catch-up. */
 @:noCompletion
 @:allow(helix)

@@ -1,5 +1,5 @@
 // The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one + a sound loaded and played.
-import helix.app.AppOptions;
+import helix.AppOptions;
 import helix.audio.Audio;
 import helix.host.Window;
 import helix.render2d.Shape2D;

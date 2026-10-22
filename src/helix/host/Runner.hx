@@ -1,6 +1,6 @@
 package helix.host;
 
-import helix.app.IApp;
+import helix.hotreload.AppRouter;
 import helix.asset.AssetService;
 import helix.asset.Assets;
 import helix.asset.Fetch;
@@ -40,7 +40,7 @@ import helix.time.Time;
 class Runner {
 	var compose:Void->Adapters;
 	var adapters:Adapters;
-	var app:IApp;
+	var router:AppRouter;
 	var started = false;
 	// The config's load as the program starts: the app's init waits for it to end, with or without a file.
 	var configPending = false;
@@ -69,10 +69,10 @@ class Runner {
 		Host.runner = this;
 	}
 
-	/** Runs app on the host: its init once the services are filled and the game's config has come, its frame once a display refresh, its
-		cleanup at the end. Natively it returns only after the window closes. */
-	function run(app:IApp):Void {
-		this.app = app;
+	/** Runs the app router reaches on the host: its init once the services are filled and the game's config has come, its update once a
+		display refresh, its cleanup at the end. Natively it returns only after the window closes. */
+	function run(router:AppRouter):Void {
+		this.router = router;
 		host.run(() -> init(), () -> frame(), () -> cleanup());
 	}
 
@@ -198,9 +198,9 @@ class Runner {
 				return;
 			}
 			started = true;
-			app.init();
+			router.init();
 		}
-		app.update(clock.delta);
+		router.update(clock.delta);
 		for (part in parts)
 			if (part.update != null)
 				part.update(gameClock.delta);
@@ -243,7 +243,7 @@ class Runner {
 		audioDecoding.shutdown();
 		resources.shutdown();
 		if (started)
-			app.cleanup();
+			router.cleanup();
 		adapters.audio.shutdown();
 		adapters.input.shutdown();
 		helix.shader.ShaderLibrary.release(adapters.graphics);

@@ -2,7 +2,6 @@
 
 Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it's stale. A file a package, each type with its public members. Every type here is on both of HeliX's Haxe targets, js (the browser) and cpp (native); the engine's own types beneath them (@:noCompletion: the adapters, profiles and services behind the static classes), which a game never names, are left out.
 
-- [`helix.app`](app.md): AppOptions
 - [`helix.asset`](asset.md): AssetCacheMode, AssetPath, AssetProgress, Assets, EnsureOptions, ExportResult, Failure, Fetch, FetchPart, FetchProgress, FetchRequest, FetchResponse, FetchResult, IReloadable, IRequest, Saves, Storage, StorageResult, StorageSourceResult, StorageWriteResult
 - [`helix.audio`](audio.md): Audio, AudioClip, AudioPlayback, AudioResource, AudioStream, Bus, Fade, FadeCurve, PlayState, StreamOpenResult
 - [`helix.behavior`](behavior.md): Behavior, BehaviorEntry, BehaviorPass, BehaviorProp, BehaviorPropType, BehaviorRegistry, BehaviorSchema, Behaviors, Phase
@@ -10,7 +9,7 @@ Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source
 - [`helix.debug`](debug.md): Autopilot, FpsOverlay, TestHarness
 - [`helix.font`](font.md): Font, Fonts, Glyph
 - [`helix.graphics`](graphics.md): AlphaMode, BlendMode, ClipFlip, Color, DepthTest, Graphics, PostProcess, ScreenEffect, ScreenFrame, ScreenshotResult, Screenshots, Shader, ShaderParameter, ShaderParameters, Shaders, SpriteEffect
-- [`helix`](helix.md): App
+- [`helix`](helix.md): App, AppOptions
 - [`helix.host`](host.md): Config, Host, Identity, PresentationMode, Screen, ScreenShape, Window, WindowOptions
 - [`helix.input`](input.md): Actions, Anchor, Binding, Gamepad, IInput, Input, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.math`](math.md): Bounds2D, Bounds3D, Curve, CurveKind, Interpolate, Point2D, Point3D, Random, Trig

@@ -9,13 +9,13 @@ import haxe.macro.Expr;
 	reload needs and what the build's backend decides, so a game writes neither:
 
 	- `@:hot public static var hotApp`, the app object `new` made, and `@:hot static function hotInit()`, `hotUpdate(dt)` and
-	  `hotCleanup()`, each calling the app in `hotApp`: hotreload-hx's springboards. The Runner, compiled once into the executable, reaches
-	  the game only through them (a Springboard of lambdas calling them by name), so a native reload re-points the calls at the new module
+	  `hotCleanup()`, each calling the app in `hotApp`: hotreload-hx's hot statics. The Runner, compiled once into the executable, reaches
+	  the game only through them (a AppRouter of lambdas calling them by name), so a native reload re-points the calls at the new module
 	  and migrates `hotApp` with the other `@:hot` statics; in the browser they cost nothing. They're written here, in the game's own class,
 	  because a `@:hot` static in the library's App would make the library reloaded code, and because hotreload-hx's global build, which
 	  turns `@:hot` into what a reload needs, runs after a parent's `@:autoBuild` and before a class's own `@:build` (checked with Haxe
 	  4.3.7), so fields this macro adds are seen as written.
-	- `hotSpringboard()`, giving App the Springboard over those statics, and `hotStart(identity, springboard)`, running the profile of the
+	- `hotAppRouter()`, giving App the AppRouter over those statics, and `hotStart(identity, router)`, running the profile of the
 	  backend the build names with `-D helix-backend=` (BACKENDS); a build naming none, or one not in the list, fails here, naming the
 	  choices, and an `sdl3-gpu` build without `helix_sdl3_gpu` (the define the programs carry SDL_GPU's dialects under; `-lib helix`
 	  defines it from the backend, helix.macro.Haxelib, and the repository's builds pass it) too.
@@ -43,10 +43,10 @@ class AppBuild {
 		return backend == "webgl2";
 
 	/** The fields the macro writes, which a subclass can't declare itself. */
-	public static final WRITTEN = ["hotApp", "hotInit", "hotUpdate", "hotCleanup", "hotSpringboard", "hotStart"];
+	public static final WRITTEN = ["hotApp", "hotInit", "hotUpdate", "hotCleanup", "hotAppRouter", "hotStart"];
 
 	#if macro
-	/** The subclass's fields with the springboards and the backend's start added (the class doc above). */
+	/** The subclass's fields with the hot statics and the backend's start added (the class doc above). */
 	public static function build():Array<Field> {
 		var cls = Context.getLocalClass().get();
 		var fields = Context.getBuildFields();
@@ -70,10 +70,10 @@ class AppBuild {
 		var self:ComplexType = TPath(moduleName == cls.name ? {pack: cls.pack, name: cls.name} : {pack: cls.pack, name: moduleName, sub: cls.name});
 		var run = profile.split(".");
 		run.push("run");
-		var start = isBrowser(backend) ? macro $p{run}(identity, options.assets != null ? options.assets : "assets/", options.manifest, springboard,
-			options.window) : macro $p{run}(identity, options.assets != null ? options.assets : "assets", springboard, options.window);
+		var start = isBrowser(backend) ? macro $p{run}(identity, options.assets != null ? options.assets : "assets/", options.manifest, router,
+			options.window) : macro $p{run}(identity, options.assets != null ? options.assets : "assets", router, options.window);
 		var made = (macro class {
-			/** The app `new` made, the one the springboards call: kept across a hot reload (@:hot) and migrated to the new code with it.
+			/** The app `new` made, the one the hot statics call: kept across a hot reload (@:hot) and migrated to the new code with it.
 				Written by helix.macro.AppBuild. */
 			@:hot public static var hotApp:$self;
 
@@ -89,12 +89,12 @@ class AppBuild {
 			@:hot static function hotCleanup():Void
 				hotApp.runCleanup();
 
-			override function hotSpringboard():helix.app.Springboard {
+			override function hotAppRouter():helix.hotreload.AppRouter {
 				hotApp = this;
-				return new helix.app.Springboard(() -> hotInit(), dt -> hotUpdate(dt), () -> hotCleanup());
+				return new helix.hotreload.AppRouter(() -> hotInit(), dt -> hotUpdate(dt), () -> hotCleanup());
 			}
 
-			override function hotStart(identity:helix.host.Identity, springboard:helix.app.Springboard):Void
+			override function hotStart(identity:helix.host.Identity, router:helix.hotreload.AppRouter):Void
 				$start;
 		}).fields;
 		for (field in made)

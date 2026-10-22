@@ -1,5 +1,5 @@
 // The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a window cleared, nothing drawn.
-import helix.app.AppOptions;
+import helix.AppOptions;
 import helix.host.Window;
 
 /** The entry point: Game on the backend the build names. */

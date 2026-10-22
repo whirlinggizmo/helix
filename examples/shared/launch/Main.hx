@@ -1,4 +1,4 @@
-import helix.app.AppOptions;
+import helix.AppOptions;
 
 /** The examples' entry point, one for every backend: the example's App (examples/<name>/App.hx) run by helix.App under the identity
 	"HeliX" / the example's name (-D example), on the assets the examples share beside their directories (../assets; with the manifests

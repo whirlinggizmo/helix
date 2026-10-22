@@ -1,5 +1,5 @@
 """helix.App's build (src/helix/macro/AppBuild.hx): tests/app/AppTests.hx built for the browser with its backend named and run on Node
-(the springboards the build writes into a game class, the backend table, AppOptions' defaults; the interpreter can't build a profile, whose
+(the hot statics the build writes into a game class, the backend table, AppOptions' defaults; the interpreter can't build a profile, whose
 adapters are a target's), and the builds it must refuse: one naming no backend, one naming a name not in the list, and an sdl3-gpu build
 without the programs' SDL_GPU dialects (-D helix_sdl3_gpu); each refusal names what to add.
 
