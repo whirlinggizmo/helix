@@ -1,7 +1,7 @@
 """Checks of helix.tools, what a game on -lib helix builds with (src/helix/tools, run in the compiler and Haxe's interpreter):
 
 - `haxelib run helix` (Run.hx, helix.tools.setup.Commands): its arguments (no command, --help naming the commands, an unknown command or
-  option); the caller's directory haxelib appends (HAXELIB_RUN=1); init's files and its refusal of a directory with anything in it; setup making
+  option); the caller's directory haxelib appends (HAXELIB_RUN=1); init's files and its refusal of a directory with anything in it; init --example copying an example as a game, refusing one it hasn't; setup making
   sokol-shdc ready and listing the tools, a program HELIX_SHDC names in place of the cache's and its refusal of one that isn't there.
 - The starter's hxml files built on `-lib helix` (a haxelib path holding only this checkout as helix): build.web with its page beside it
   (and a page of the game's kept), build.dist (cleaned, the page, assets/, the zip with index.html at its root).
@@ -124,6 +124,34 @@ class Commands(unittest.TestCase):
             self.assertIn('not empty', refusal(tool('init', '.', cwd=directory)))
             (Path(directory) / 'file.txt').write_text('x', encoding='utf-8')
             self.assertIn('not empty', refusal(tool('init', 'file.txt', cwd=directory)))
+
+    def test_init_example(self):
+        with tempfile.TemporaryDirectory() as directory:
+            # A larger example (its src/), its own assets and autopilot scripts, the starter around it.
+            said = done(tool('init', 'rocks', '--example', 'asteroids', cwd=directory))
+            self.assertIn('the example asteroids', said)
+            game = Path(directory) / 'rocks'
+            for path in ('src/Main.hx', 'src/App.hx', 'src/Game.hx', 'hxml/common.hxml', 'assets/audio/sfx/fire.ogg',
+                         'assets/fonts', 'assets/CREDITS.md'):
+                self.assertTrue((game / path).exists(), path)
+            self.assertTrue(any((game / 'assets/autopilot/asteroids').iterdir()))
+            self.assertFalse(list(game.rglob('*.py')))
+            main = (game / 'src/Main.hx').read_text(encoding='utf-8')
+            self.assertIn('new App(options)', main)
+            self.assertIn('"rocks"', main)
+            # A small example (its App.hx) with shaders and a config; its own Game.hx none, so the starter's isn't written.
+            done(tool('init', 'waves', '--example', 'sprite2d', cwd=directory))
+            game = Path(directory) / 'waves'
+            self.assertTrue((game / 'src/App.hx').is_file() and (game / 'shaders/wave.glsl').is_file())
+            self.assertFalse((game / 'src/Game.hx').exists())
+            done(tool('init', 'flow', '--example', 'scenes', cwd=directory))
+            self.assertTrue((Path(directory) / 'flow/config.json').is_file())
+            # An example the library hasn't: refused, the examples listed, nothing written.
+            said = refusal(tool('init', 'nothing', '--example', 'nope', cwd=directory))
+            self.assertIn('no example nope', said)
+            self.assertIn('asteroids', said)
+            self.assertFalse((Path(directory) / 'nothing').exists())
+            self.assertEqual(run_hx('init', 'x', '--example').returncode, 2)
 
     def test_setup(self):
         with tempfile.TemporaryDirectory() as directory:

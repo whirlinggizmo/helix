@@ -14,6 +14,8 @@ macros in helix.tools: Build's steps (shaders packed, the page, assets, the zip)
   init DIRECTORY                 a starter game in DIRECTORY (empty or not yet there): src/Main.hx and src/Game.hx (a window title, a rectangle
                               and a greeting), hxml/ (common.hxml; build.web, build.native and build.dist; watch.hotreload, watch.shader
                               and serve.dist), assets/, favicon.svg (the page's icon, to replace), .gitignore and a README
+  init DIRECTORY --example NAME  the library's example NAME as a game in DIRECTORY, the starter around it: its App in src/, the examples'
+                              assets and its own in assets/, its shaders/ and config.json; an unknown NAME lists the examples
   setup [--sdl-gpu]           the tools packing shaders needs, made ready ahead of its first use (before going offline, or for a CI's
                               cache), and listed: sokol-shdc, and with --sdl-gpu glslang and SPIRV-Cross (built by hxcpp, with the system's
                               C++ compiler)
@@ -33,15 +35,24 @@ HELIX_GLSLANG and HELIX_SPIRV_CROSS name programs of your own instead.";
 		try {
 			switch command {
 				case "init":
-					var options = new Options(rest, []);
+					var options = new Options(rest, [], ["--example"]);
 					if (options.help)
-						return help("init DIRECTORY: a starter game in a new or empty directory");
+						return help("init DIRECTORY [--example NAME]: a starter game, or the library's example NAME as a game, in a new or empty directory");
 					if (options.positional.length != 1)
 						return usage("init: name one directory");
-					var directory = options.positional[0];
-					Sys.println('init: $directory: ' + Starter.write(root, directory).join(", "));
+					var directory = options.positional[0],
+						example = options.values["--example"];
+					var written = Starter.write(root, directory, example);
+					if (example == null)
+						Sys.println('init: $directory: ' + written.join(", "));
+					else {
+						var assets = written.filter(file -> StringTools.startsWith(file, "assets/"));
+						Sys.println('init: $directory: the example $example, '
+							+ written.filter(file -> !StringTools.startsWith(file, "assets/")).join(", ")
+							+ ', and ${assets.length} files in assets/');
+					}
 				case "setup":
-					var options = new Options(rest, ["--sdl-gpu"]);
+					var options = new Options(rest, ["--sdl-gpu"], []);
 					if (options.help)
 						return help("setup [--sdl-gpu]: the tools packing shaders needs, made ready ahead and listed");
 					if (options.positional.length > 0)
@@ -81,17 +92,26 @@ private class Options {
 	/** The flags given. */
 	public var flags:Array<String> = [];
 
+	/** The options given a value (the argument after them), by name. */
+	public var values:Map<String, String> = [];
+
 	/** Whether --help (or -h) was given. */
 	public var help = false;
 
-	/** args read, known naming the command's flags. */
-	public function new(args:Array<String>, known:Array<String>) {
-		for (arg in args) {
+	/** args read, known naming the command's flags and valued its options taking a value. */
+	public function new(args:Array<String>, known:Array<String>, valued:Array<String>) {
+		var i = 0;
+		while (i < args.length) {
+			var arg = args[i++];
 			if (arg == "--help" || arg == "-h")
 				help = true;
 			else if (known.indexOf(arg) >= 0)
 				flags.push(arg);
-			else if (StringTools.startsWith(arg, "-") && arg.length > 1)
+			else if (valued.indexOf(arg) >= 0) {
+				if (i >= args.length || StringTools.startsWith(args[i], "-"))
+					throw new OptionError('$arg needs a value');
+				values[arg] = args[i++];
+			} else if (StringTools.startsWith(arg, "-") && arg.length > 1)
 				throw new OptionError('unknown option $arg');
 			else
 				positional.push(arg);
