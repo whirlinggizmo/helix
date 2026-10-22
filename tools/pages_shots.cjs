@@ -5,10 +5,10 @@
 // so what it loads is in and drawn, or at its wait's end, whichever comes first.
 // Arguments: the browser, the site's URL, the output directory, a file for what each page requested (its paths on the site, as JSON by example:
 // what it loaded before its capture), then name=milliseconds for each example, the longest wait before its capture.
+const [browserPath,site,out,requestsFile,...shots]=require('./cli.cjs').args(__filename,['browser','site','out','requests','name=milliseconds...']);
 const fs=require('fs');
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
-const [browserPath,site,out,requestsFile,...shots]=require('./cli.cjs').args(__filename,['browser','site','out','requests','name=milliseconds...']);
 const requested={};
 const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];

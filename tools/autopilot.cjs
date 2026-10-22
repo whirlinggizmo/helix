@@ -3,9 +3,9 @@
 // can show; when the page says the platform can't draw (window.graphicsUnavailable: no WebGL2, a context lost; whichever GPU API the page
 // uses), once more on SwiftShader, the browser's software renderer: CI's machines have no GPU, and a software Vulkan driver gives ANGLE no
 // usable WebGL2. The autopilot compares games, not pixels, so either serves; the output says which ran, and why it fell back.
+const [browserPath,url]=require('./cli.cjs').args(__filename,['browser','url']);
 const path=require('path');
 const {chromium}=require(path.join(__dirname,'../build/tools/node_modules/playwright'));
-const [browserPath,url]=require('./cli.cjs').args(__filename,['browser','url']);
 const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
 
