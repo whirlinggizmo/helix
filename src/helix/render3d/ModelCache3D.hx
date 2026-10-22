@@ -12,6 +12,7 @@ import helix.render3d.ModelFile3D.ImageSource3D;
 	through a TextureCache. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking
 	while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models3D static forwards to. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class ModelCache3D {
 	var assets:IAssets;
 	var textures:TextureCache;

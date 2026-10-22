@@ -20,6 +20,7 @@ private typedef Opening = {final source:GrowingSource; var tried:Int; var aborte
 	2 ms a frame, so a frame stalled under that plays on: how a push-based output plays a file as it's read. A download opens once 64 KiB have arrived (or the whole, when it's smaller), tried again each
 	time what has arrived doubles while its codec can't open it yet; a voice decodes it only while it has arrived 64 KiB past the codec's position (or whole), as the codec takes a short read for the end,
 	and otherwise waits, its 2 s covering a slow connection's gaps; a download that fails plays to where it stopped, then ends as at the end of its file. */
+@:noCompletion
 abstract class NativeAudio implements IAudio {
 	static inline var CHUNK = 2048;
 	static inline var AHEAD = 88200;

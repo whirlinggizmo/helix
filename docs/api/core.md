@@ -4,7 +4,7 @@
 
 ## Job<T>
 
-*class* in `src/helix/core/Jobs.hx`
+*class* in [`src/helix/core/Jobs.hx`](../../src/helix/core/Jobs.hx)
 
 A running operation, as its adapter sees it: it finishes it once with its result, on the host thread, and may set what cancelling it while it runs does.
 
@@ -22,7 +22,7 @@ var runningSeconds(get, never):Float
 
 ## JobRequest<T>
 
-*class* in `src/helix/core/Jobs.hx`
+*class* in [`src/helix/core/Jobs.hx`](../../src/helix/core/Jobs.hx)
 
 The IRequest a Jobs operation's caller holds.
 
@@ -35,7 +35,7 @@ function cancel():Void
 
 ## Jobs
 
-*class* in `src/helix/core/Jobs.hx`
+*class* in [`src/helix/core/Jobs.hx`](../../src/helix/core/Jobs.hx)
 
 Asynchronous operations an adapter carries out on its platform, scheduled and settled here, the same on every platform: a queue, at most maxActive running at once, each settling exactly once on the host thread (with its result, or as cancelled: by its request, or when the pool shuts down), its completion run at a later poll, never during the call that settled it. An operation's start runs on the host thread when a slot is free; it settles its Job when the platform answers, and may set an abort for cancelling it while it runs.
 
@@ -61,7 +61,7 @@ function shutdown():Void
 
 ## WorkQueue
 
-*class* in `src/helix/core/WorkQueue.hx`
+*class* in [`src/helix/core/WorkQueue.hx`](../../src/helix/core/WorkQueue.hx)
 
 Cooperative host work. Individual operations can exceed the nominal budget.
 

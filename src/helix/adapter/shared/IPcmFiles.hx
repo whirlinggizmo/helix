@@ -5,6 +5,7 @@ import helix.asset.GrowingSource;
 
 /** Audio files read as mono 32-bit float PCM at 44100 Hz, a part at a time: what a native output streams from, supplied by a codec adapter.
 	Callable from any thread, a handle at a time; a download's (openArriving) from the host thread only, as its source is written there. */
+@:noCompletion
 interface IPcmFiles {
 	/** Opens the audio file at path; its handle, or 0 when it can't be read. */
 	public function open(path:String):Int;

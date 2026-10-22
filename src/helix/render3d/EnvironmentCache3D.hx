@@ -15,6 +15,7 @@ import helix.graphics.ImageDecoding;
 	prepared again and replaced in place when a file changes during development. The runner's is what the Environments3D static forwards to; the caller releases what it
 	loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class EnvironmentCache3D implements IReloadable {
 	var assets:IAssets;
 	var images:ImageDecoding;

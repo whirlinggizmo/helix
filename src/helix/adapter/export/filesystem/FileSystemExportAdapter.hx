@@ -7,6 +7,7 @@ import helix.asset.IExport;
 
 /** IExport natively: the file is written into a directory (made when first needed), through a temporary file renamed over it, so a file
 	there is never half written. */
+@:noCompletion
 class FileSystemExportAdapter implements IExport {
 	var directory:String;
 

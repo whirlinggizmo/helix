@@ -15,12 +15,14 @@ package helix.adapter.shared;
 /** Built with the app by hxcpp, once for every adapter that writes files: replacing a file in one step (replace.c), which Windows' rename
 	can't. */
 @:include("replace.h")
+@:noCompletion
 extern class ReplaceBridge {
 	@:native("helix_replace_file") static function replace(from:cpp.ConstCharStar, to:cpp.ConstCharStar):Int;
 }
 #else
 
 /** Elsewhere (the interpreter's tests): the target's rename, which replaces an existing file on the systems the tests run on but Windows'. */
+@:noCompletion
 class ReplaceBridge {
 	/** 1 when from replaced to, else 0, as replace.c's. */
 	public static function replace(from:String, to:String):Int {

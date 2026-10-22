@@ -3,6 +3,7 @@ package helix.adapter.shared;
 /** The shared input queue's C (input.h), built by whichever input adapter the program links (its own InputBridge): the events queued since
 	the last poll, and the gamepads. */
 @:include("input.h")
+@:noCompletion
 extern class InputQueueBridge {
 	@:native("helix_input_next") static function next():Int;
 	@:native("helix_event_type") static function eventType():Int;

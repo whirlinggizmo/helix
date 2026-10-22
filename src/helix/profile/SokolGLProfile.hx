@@ -16,6 +16,7 @@ import helix.host.Runner;
 
 /** The desktop through sokol, drawing with GL on every system (the `sokol-gl` backend): a sokol_app window (X11 and GLX, Win32 and WGL, Cocoa), sokol_gfx on GL 4.1 core,
 	sokol_audio with libsndfile, evdev gamepads on Linux and XInput on Windows, haxe.Http and files, stb_image. */
+@:noCompletion
 class SokolGLProfile {
 	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetDirectory, a directory relative to the program's (a game's own: "assets", beside it);

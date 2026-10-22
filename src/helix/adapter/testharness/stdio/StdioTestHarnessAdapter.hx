@@ -3,6 +3,7 @@ package helix.adapter.testharness.stdio;
 import helix.debug.ITestHarness;
 
 /** The native test harness: a published result is a JSON line on stdout, also written to the file HELIX_RESULT names. */
+@:noCompletion
 class StdioTestHarnessAdapter implements ITestHarness {
 	/** The process's harness. */
 	public function new() {}

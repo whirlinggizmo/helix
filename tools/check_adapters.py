@@ -17,6 +17,8 @@
      name being the interface's without the I, lowercased.
   6. Each API directory (adapter/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
      name ends with and the contract's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
+  7. Every type in adapter/ and profile/ but a module's private ones is @:noCompletion: platform code a game never names, so the
+     language server doesn't offer it and the API reference leaves it out (dox and tools/gen_apidoc.py skip what's marked).
 
 Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
 landed); one that has gone must be taken off, so the list only shrinks. Exits 1 on any other violation.
@@ -37,6 +39,8 @@ ENGINE = re.compile(r'\bhelix\.(render2d|render3d|particles|App\b|app\.Ticker|gr
                     r'assets\.(AssetService|Assets|FetchService(?!\.)|Fetch|StorageService(?!\.)|Storage)|input\.(InputRouter|InputState|Input)|core\.Jobs|'
                     r'host\.(Runner|Host|Window|Screen)|graphics\.(Graphics|Screenshots|ScreenshotService)|audio\.Audio|debug\.TestHarness|time\.Time)\b|\b[A-Z][A-Za-z0-9]*[0-9]DProgram\b|\bGeneratedShader\b')
 PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A-Za-z]|#if\s+!?(js|cpp|sys|hl)\b')
+# A type's declaration at a line's start (a module's private types begin with private, and are hidden already).
+DECLARATION = re.compile(r'^(?:(?:extern|final|abstract|enum)\s+)*(?:class|interface|enum|typedef|abstract)\s+(\w+)')
 GENERATED_HEADER = re.compile(r'#include\s+"([^"]*\.glsl\.h|shaders\.h)"')
 
 # Known violations: (rule, file relative to src/helix, the step that removes it).
@@ -141,6 +145,20 @@ def main():
                             violations.append(('name', f, 0, f'{name} implements I{contract} in {area.name}/{api.name}/: expected {expected} (any case)'))
             if not found and any(api.glob('*.hx')):
                 violations.append(('name', api, 0, f'no class in {area.name}/{api.name}/ implements I<{area.name}>'))
+    # Platform code is hidden: its types are @:noCompletion, among the metadata lines right above each.
+    for path in sorted(ADAPTERS.rglob('*.hx')) + sorted((SRC / 'profile').rglob('*.hx')):
+        lines = path.read_text(encoding='utf-8').split('\n')
+        for number, line in enumerate(lines, 1):
+            found = DECLARATION.match(line)
+            if not found:
+                continue
+            above = number - 2
+            metas = []
+            while above >= 0 and lines[above].startswith('@'):
+                metas.append(lines[above])
+                above -= 1
+            if not any('@:noCompletion' in m for m in metas):
+                violations.append(('hidden', path, number, f'{found.group(1)} is platform code: mark it @:noCompletion on the line above'))
     known = {(rule, SRC / file) for rule, file, _ in KNOWN}
     seen = set()
     failed = False

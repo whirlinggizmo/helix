@@ -6,6 +6,7 @@ import helix.audio.IAudioDecoder;
 
 /** IAudioDecoder in a browser: decodeAudioData on an OfflineAudioContext at 44100 Hz (no user gesture needed; it resamples), its channels
 	mixed down to mono. */
+@:noCompletion
 class WebAudioDecoderAdapter implements IAudioDecoder {
 	var context:Dynamic;
 

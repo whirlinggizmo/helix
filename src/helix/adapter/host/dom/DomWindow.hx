@@ -6,6 +6,7 @@ import js.html.CanvasElement;
 
 /** The page is the window: its title is the document's, its size the viewport's, and fullscreen is the canvas's. A page can't move or size its window,
 	or choose a monitor; it sees one screen. */
+@:noCompletion
 class DomWindow implements IWindow {
 	var canvas:CanvasElement;
 

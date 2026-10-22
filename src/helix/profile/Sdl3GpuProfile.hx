@@ -16,6 +16,7 @@ import helix.host.Runner;
 
 /** The desktop through SDL3, drawing with SDL_GPU (the `sdl3-gpu` backend): an SDL window, its input and gamepads, SDL_GPU (Vulkan, Direct3D 12 or Metal) presenting to it; built with -D helix_sdl3_gpu, so the
 	framework's programs carry SDL_GPU's dialects; an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
+@:noCompletion
 class Sdl3GpuProfile {
 	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetDirectory, a directory relative to the program's (a game's own: "assets", beside it);

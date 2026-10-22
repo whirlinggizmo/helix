@@ -202,7 +202,7 @@ take. A module, which the others import, says so when it's run. `tools/check_too
 | `tools/check_cache.py` | the browser asset cache across visits, as a returning visitor meets it |
 | `tools/format.py` | lay out the Haxe source with haxe-formatter, or `--check` it |
 | `tools/gen_code.py` | the generated Haxe the library ships, in `generated/` (`--check` fails when stale) |
-| `tools/gen_apidoc.py` | the API reference from the doc comments, `docs/api` (`--check` fails when stale) |
+| `tools/gen_apidoc.py` | the API reference from the doc comments, `docs/api` (`--check` fails when stale): what a game writes against, anything `@:noCompletion` (the adapters, profiles and services behind the static classes) left out, each type linked to its source; fails unless js and cpp describe the same types and members |
 | `tools/gen_manifest.py` | asset manifests through an assets directory, as the browser's cache reads them |
 | `tools/gen_fixtures.py` | the test fixtures: tones as WAV, Ogg/Vorbis and Ogg/Opus, and a stream |
 | `tools/gen_sprite_sheet.py` | the examples' sprite sheet, `examples/assets/sheets/gizmos.png` and `.json` |

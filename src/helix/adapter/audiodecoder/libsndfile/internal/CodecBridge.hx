@@ -18,6 +18,7 @@ package helix.adapter.audiodecoder.libsndfile.internal;
  <lib name="-l:libsndfile.so.1" if="linux" unless="HELIX_CODEC_LIBRARY"/>
 </target>')
 @:include("codec.h")
+@:noCompletion
 extern class CodecBridge {
 	@:native("helix_codec_memory") static function codecMemory(data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_codec_file") static function codecFile(path:cpp.ConstCharStar):Int;

@@ -7,6 +7,7 @@ import haxe.io.Bytes;
 	path ("progress", "slots/2.json"); a save is at most 8 MiB. Reads, writes and removals complete in the order asked. A save is kept once written runs: quitting before it
 	may lose it, so a game saves at a checkpoint, not as it quits. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class SaveService {
 	var storage:StorageService;
 	var pending = 0;

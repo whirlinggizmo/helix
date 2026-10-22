@@ -30,6 +30,7 @@ enum PresentationMode {
 	the pointer comes back in units through the camera (Pointer), or through toUnitsX and toUnitsY. A 3D camera draws into the area it covers
 	(areaX and the rest, Camera3D.setViewportArea) to keep out of the bars. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class Presentation {
 	var designWidth = 0.;
 	var designHeight = 0.;

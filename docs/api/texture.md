@@ -4,7 +4,7 @@
 
 ## Ktx
 
-*class* in `src/helix/texture/Ktx.hx`
+*class* in [`src/helix/texture/Ktx.hx`](../../src/helix/texture/Ktx.hx)
 
 A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps (https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures loads them.
 
@@ -24,7 +24,7 @@ final levels:Array<haxe.io.Bytes>
 
 ## Mipmaps
 
-*class* in `src/helix/texture/Mipmaps.hx`
+*class* in [`src/helix/texture/Mipmaps.hx`](../../src/helix/texture/Mipmaps.hx)
 
 Mipmap chains for IGraphics.createTexture, built the same on every target so their images match.
 
@@ -36,13 +36,13 @@ static function build(width:Int, height:Int, rgba:haxe.io.Bytes):Array<haxe.io.B
 
 ## Sampling
 
-*abstract* in `src/helix/texture/Sampling.hx`
+*abstract* in [`src/helix/texture/Sampling.hx`](../../src/helix/texture/Sampling.hx)
 
 How a draw samples a texture: its filter (linear, smooth and through its mipmaps when it has them; or nearest, sharp, for pixel art) and how it wraps along u and v. A small value, passed with each texture a draw uses; adapters keep one sampler for each that is used.
 
 ## Texture2D
 
-*class* in `src/helix/texture/Texture2D.hx`
+*class* in [`src/helix/texture/Texture2D.hx`](../../src/helix/texture/Texture2D.hx)
 
 A GPU texture with its size, its format and how it is sampled (Sampling: linear or nearest, and its wrap), which a draw reads when it takes the texture, so one texture can be drawn smooth and then sharp. whiteU/whiteV name an opaque white texel, -1 when it has none, for untextured shapes.
 
@@ -76,41 +76,15 @@ function destroy(?gpu:IGraphics):Void
 - `whiteV`: V of the center of an opaque white texel, or -1 when it has none.
 - `destroy`: Frees the GPU texture on gpu, the adapter that made it: the program's (Graphics) when not given.
 
-## TextureCache
-
-*class* in `src/helix/texture/TextureCache.hx`
-
-Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures static forwards to; the caller releases what it loads.
-
-```haxe
-function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
-function getCandidates(path:String):Array<String>
-function getPath(texture:Texture2D):Null<String>
-function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
-function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> Void, ?failed:String -> Void):IRequest
-function release(texture:Texture2D):Void
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets, decodes with images (shared, polled by its owner) and uploads to gpu; shutdown shuts nothing down but this service.
-- `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
-- `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.
-- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. One of decoded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log) for a closed service or bytes that don't decode.
-- `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
-- `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
-- `shutdown`: Refuses new loads; the textures already loaded stay until released.
-
 ## TextureFormat
 
-*abstract* in `src/helix/texture/TextureFormat.hx`
+*abstract* in [`src/helix/texture/TextureFormat.hx`](../../src/helix/texture/TextureFormat.hx)
 
 What a texture's texels are: plain RGBA8, a GPU's compressed format (4x4 blocks of 16 bytes each), which only some GPUs sample (IGraphics.canSample), or half floats, linear light beyond 1 (an environment's cubes). The 8-bit and compressed ones' colors are sRGB values, as the shaders treat them.
 
 ## Textures
 
-*class* in `src/helix/texture/Textures.hx`
+*class* in [`src/helix/texture/Textures.hx`](../../src/helix/texture/Textures.hx)
 
 Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache's public members with their doc comments.
 
@@ -130,6 +104,6 @@ static function release(texture:Texture2D):Void
 
 ## Wrap
 
-*abstract* in `src/helix/texture/Sampling.hx`
+*abstract* in [`src/helix/texture/Sampling.hx`](../../src/helix/texture/Sampling.hx)
 
 How a texture's edges repeat past 0..1.

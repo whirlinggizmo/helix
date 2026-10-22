@@ -6,6 +6,7 @@ import helix.graphics.ImageDecoding.ImageDecodeResult;
 
 /** IImageDecoder in a browser: the page's own decoder (createImageBitmap, without colour conversion or premultiplying), read back as RGBA
 	through an OffscreenCanvas, which stores pixels premultiplied: a partly transparent pixel may come back a level or two from the file. */
+@:noCompletion
 class CanvasImageDecoderAdapter implements IImageDecoder {
 	/** The page's decoder. */
 	public function new() {}

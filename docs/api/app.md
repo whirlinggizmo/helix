@@ -4,7 +4,7 @@
 
 ## AppOptions
 
-*class* in `src/helix/app/AppOptions.hx`
+*class* in [`src/helix/app/AppOptions.hx`](../../src/helix/app/AppOptions.hx)
 
 What an App starts with, given to its constructor (`super(options)`, or `new Game(options)` from Main); the defaults when none is given. Read once, as the app starts: a change after is too late.
 
@@ -32,7 +32,7 @@ var pauseOnBlur:Bool
 
 ## IApp
 
-*class* in `src/helix/app/IApp.hx`
+*class* in [`src/helix/app/IApp.hx`](../../src/helix/app/IApp.hx)
 
 What the Runner drives. It calls through the object each time, so after a hot reload its new methods are what run.
 
@@ -48,7 +48,7 @@ function cleanup():Void
 
 ## Springboard
 
-*class* in `src/helix/app/Springboard.hx`
+*class* in [`src/helix/app/Springboard.hx`](../../src/helix/app/Springboard.hx)
 
 The Runner's way into an App across a hot reload: three lambdas, each calling a `@:hot` static function of the app's class by name (hotreload-hx's springboards), which helix.macro.AppBuild writes for every App subclass. Natively a reload re-points those statics at the new module and migrates the app object held in the class's `@:hot static`, so the Runner, compiled once into the executable, reaches the newest code and the migrated object without knowing either; in the browser every call reaches the new code anyway, and the lambdas cost nothing.
 

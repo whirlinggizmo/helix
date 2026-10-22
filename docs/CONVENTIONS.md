@@ -60,6 +60,7 @@ Code is written to be read, by people and agents, not packed.
 - **Formatted by the tool, not by hand.** Haxe source is laid out by haxe-formatter (`formatter` on lib.haxe.org) with the repository's `hxformat.json`: one statement per line, indented blocks. Formatting is checked with the other checks, so dense one-line classes and functions don't come back.
 - **Every public type and member has a doc comment** (`/** ... */`) saying what it is or does, in the units it uses, with its ranges and every refusal ("False for ..."). Private code gets a comment where the reason isn't plain from the code.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what a developer or an agent reads is what the code says.
+- **The engine's own public types are `@:noCompletion`.** Haxe has no internal: a type another package of the engine must reach is public, so one a game never names (every adapter and profile, the services behind the static classes such as `StorageService` behind `Storage`) carries `@:noCompletion`, which keeps it out of the language server's completion and out of the API reference (dox and `tools/gen_apidoc.py` skip it). It still compiles when named. `tools/check_adapters.py` requires it in `adapter/` and `profile/`; elsewhere, mark a type when it's added. A type a game may make or use itself (`BehaviorPass`) stays unmarked.
 
 ```console
 python3 tools/format.py         # lay out the Haxe source; --check only checks

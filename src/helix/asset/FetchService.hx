@@ -33,6 +33,7 @@ enum FetchResult {
 /** Bounded whole-response GETs over a platform's IHttp, the same on every platform: at most two at once, each body limited and the whole transfer
 	timed, progress coalesced to once a frame, the body's parts handed on as they come where asked (a download played as it arrives), completions on the host thread. The runner's is what the Fetch static forwards to. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class FetchService {
 	static inline var DEFAULT_MAX = 8 * 1024 * 1024;
 	static inline var DEFAULT_TIMEOUT = 15.;

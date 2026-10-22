@@ -26,6 +26,7 @@ private typedef Target = {
 
 /** IGraphics on a canvas's WebGL2 context: raw browser API calls only. It builds whatever program it is given (a ShaderSource's GLSL ES) and
 	makes whatever pipeline it is described (a PipelineDesc); it knows no program, layout or pipeline of HeliX's own. */
+@:noCompletion
 class WebGL2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
 

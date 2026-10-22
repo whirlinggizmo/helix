@@ -4,7 +4,7 @@
 
 ## AssetCacheMode
 
-*enum* in `src/helix/asset/IAssets.hx`
+*enum* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
 
 How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and ensure's forceFetch downloads past the cache in every mode. - Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other is asked about first: 304, the copy is used (and fresh again); 200, the new file replaces it; 4xx, the copy is deleted and the load fails; no answer (offline, a timeout) or a 5xx, the copy is used. no-cache and no-store make a copy never fresh, but it's kept, for the next check and for starting offline. - Trust: a copy is used without asking, however old: offline-first play, files that never change, or a game that evicts by itself. - Off: nothing is kept between runs, and what earlier runs kept is neither used nor deleted (development); this run's downloads are held in memory, so a file loads once a run.
 
@@ -14,7 +14,7 @@ How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a 
 
 ## AssetManifest
 
-*class* in `src/helix/asset/AssetManifest.hx`
+*class* in [`src/helix/asset/AssetManifest.hx`](../../src/helix/asset/AssetManifest.hx)
 
 One directory's asset manifest (tools/gen_manifest.py writes them): the hash of each file in it, and of each subdirectory's own manifest, so an unchanged directory is known unchanged from its parent alone, as git knows a tree. The JSON is `{"manifest": 1, "files": {"name": "sha256:<64 hex>"}, "dirs": {"name": "sha256:<64 hex>"}}`; other top-level keys are ignored.
 
@@ -34,7 +34,7 @@ final dirs:Map<String, String>
 
 ## AssetPath
 
-*class* in `src/helix/asset/AssetPath.hx`
+*class* in [`src/helix/asset/AssetPath.hx`](../../src/helix/asset/AssetPath.hx)
 
 Validates asset and storage keys, for the asset service, the shared StorageService and model files, and resolves a path one file names relative to itself.
 
@@ -48,7 +48,7 @@ static function resolve(path:String, uri:String):Null<String>
 
 ## AssetProgress
 
-*typedef* in `src/helix/asset/IAssets.hx`
+*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
 
 Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown.
 
@@ -56,40 +56,9 @@ Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes re
 - `receivedBytes:Int`
 - `phase:String`
 
-## AssetService
-
-*class* in `src/helix/asset/AssetService.hx`
-
-Asset identity/cache policy stays shared. No target conditionals.
-
-```haxe
-function new(fetcher:FetchService, cache:StorageService, packaged:StorageService, base:Null<String>)
-function load(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):IRequest
-function ensure(path:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void, ?progress:AssetProgress -> Void, ?options:EnsureOptions):IRequest
-var manifest(get, never):Null<String>
-function setManifest(path:Null<String>):Bool
-var host(get, never):Null<String>
-function setHost(host:Null<String>):Bool
-function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool -> Void):IRequest
-var cacheMode(get, set):AssetCacheMode
-function clearCache(complete:StorageWriteResult -> Void):IRequest
-function streamSource(path:String, located:AudioLocation -> Void, ?failed:String -> Void, ?download:Bool = false):IRequest
-function subscribe(path:String, target:IReloadable):Void
-function unsubscribe(path:String, target:IReloadable):Void
-function changed(path:String):Void
-var busy(get, never):Bool
-function poll():Void
-function shutdown():Void
-```
-
-- `new`: Loads through fetcher when base (the URL put before each path) is set, or else from the read-only packaged store, keeping each asset in cache under a key of base and path. It polls and shuts down all three.
-- `changed`: A file changed: load it again past every cache, keep the new copy, and tell the path's subscribers. A failure keeps what they have.
-- `poll`: Polls the fetcher, cache and packaged store, then runs queued work and completions within the work budget. Call once per frame on the host thread.
-- `shutdown`: Cancels every pending request (each telling no one), shuts down the fetcher, cache and packaged store, and runs queued completions. Later requests fail.
-
 ## Assets
 
-*class* in `src/helix/asset/Assets.hx`
+*class* in [`src/helix/asset/Assets.hx`](../../src/helix/asset/Assets.hx)
 
 Assets: the packaged files or downloads, cached. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IAssets's public members with their doc comments.
 
@@ -125,7 +94,7 @@ static var busy(get, never):Bool
 
 ## AudioLocation
 
-*enum* in `src/helix/asset/IAssets.hx`
+*enum* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
 
 Where a streamed audio asset is read from: a leased local copy, which its holder releases; a remote URL, which the platform plays itself (a browser's media element); or a file still arriving from the host, read as it downloads (natively, where the output can't play a URL).
 
@@ -135,7 +104,7 @@ Where a streamed audio asset is read from: a leased local copy, which its holder
 
 ## CacheRecord
 
-*typedef* in `src/helix/asset/AssetManifest.hx`
+*typedef* in [`src/helix/asset/AssetManifest.hx`](../../src/helix/asset/AssetManifest.hx)
 
 What the cache keeps beside a downloaded file: the response's validators (its ETag and Last-Modified), until when the copy is fresh (seconds since 1970, from Cache-Control: max-age, or a year for immutable; no time at all otherwise), and the hash of the bytes kept.
 
@@ -147,7 +116,7 @@ What the cache keeps beside a downloaded file: the response's validators (its ET
 
 ## CacheRecords
 
-*class* in `src/helix/asset/AssetManifest.hx`
+*class* in [`src/helix/asset/AssetManifest.hx`](../../src/helix/asset/AssetManifest.hx)
 
 Reading and writing CacheRecords.
 
@@ -165,7 +134,7 @@ static function encode(record:CacheRecord):haxe.io.Bytes
 
 ## EnsureOptions
 
-*typedef* in `src/helix/asset/IAssets.hx`
+*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
 
 How ensure finds a file. source: where its bytes come from instead of its own path, a path read against the host as a browser reads a URL against a directory, or a whole URL; they're kept under the path asked for, remembering where they came from: a later plain load of the path asks about the copy there, and it streams from there when it's stale, as the host has nothing at the path. forceFetch: go past the cache to the host (or the packaged files), replacing what the cache holds.
 
@@ -174,7 +143,7 @@ How ensure finds a file. source: where its bytes come from instead of its own pa
 
 ## ExportResult
 
-*enum* in `src/helix/asset/IExport.hx`
+*enum* in [`src/helix/asset/IExport.hx`](../../src/helix/asset/IExport.hx)
 
 Where an exported file went: a path natively, the downloaded file's name in a browser; or why it couldn't be.
 
@@ -183,7 +152,7 @@ Where an exported file went: a path natively, the downloaded file's name in a br
 
 ## Failure
 
-*class* in `src/helix/asset/Failure.hx`
+*class* in [`src/helix/asset/Failure.hx`](../../src/helix/asset/Failure.hx)
 
 Where a load's failure goes: to the caller's failed lambda, or, when it gave none, to the log with the path, so nothing fails silently. Every load taking (loaded, ?failed) reports through it.
 
@@ -197,7 +166,7 @@ static function named(path:String, message:String):String
 
 ## Fetch
 
-*class* in `src/helix/asset/Fetch.hx`
+*class* in [`src/helix/asset/Fetch.hx`](../../src/helix/asset/Fetch.hx)
 
 Downloads: bounded whole-response GETs (FetchService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FetchService's public members with their doc comments.
 
@@ -209,7 +178,7 @@ static function fetch(request:FetchRequest, complete:FetchResult -> Void, ?progr
 
 ## FetchPart
 
-*typedef* in `src/helix/asset/FetchService.hx`
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
 
 A part of a response's body as it arrives: the response's HTTP status and headers (lower-case names), the total from Content-Length or null when unknown (or the body is compressed), and the part's bytes.
 
@@ -220,7 +189,7 @@ A part of a response's body as it arrives: the response's HTTP status and header
 
 ## FetchProgress
 
-*typedef* in `src/helix/asset/FetchService.hx`
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
 
 Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed).
 
@@ -229,7 +198,7 @@ Body bytes received so far, and the total from Content-Length, or null when unkn
 
 ## FetchRequest
 
-*typedef* in `src/helix/asset/FetchService.hx`
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
 
 A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches (default false), headers are sent with it (none by default).
 
@@ -241,7 +210,7 @@ A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds th
 
 ## FetchResponse
 
-*typedef* in `src/helix/asset/FetchService.hx`
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
 
 A complete response: HTTP status, headers with lower-case names, and the whole body.
 
@@ -251,7 +220,7 @@ A complete response: HTTP status, headers with lower-case names, and the whole b
 
 ## FetchResult
 
-*enum* in `src/helix/asset/FetchService.hx`
+*enum* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
 
 How a fetch ended: a response of any HTTP status, a transport failure message, or cancellation.
 
@@ -259,27 +228,9 @@ How a fetch ended: a response of any HTTP status, a transport failure message, o
 - `Failed(message:String)`
 - `Cancelled`
 
-## FetchService
-
-*class* in `src/helix/asset/FetchService.hx`
-
-Bounded whole-response GETs over a platform's IHttp, the same on every platform: at most two at once, each body limited and the whole transfer timed, progress coalesced to once a frame, the body's parts handed on as they come where asked (a download played as it arrives), completions on the host thread. The runner's is what the Fetch static forwards to.
-
-```haxe
-function new(http:IHttp)
-function fetch(request:FetchRequest, complete:FetchResult -> Void, ?progress:FetchProgress -> Void, ?part:FetchPart -> Void):IRequest
-function poll():Void
-function shutdown():Void
-```
-
-- `new`: Fetches over http.
-- `fetch`: Queues a GET of request.url. complete runs exactly once on the host thread; Failed for a maxBytes or timeoutSeconds not above 0, a closed service, a body over maxBytes, a timeout, or a transport failure. progress, if given, runs on the host thread at most once a frame. part, if given, runs on the host thread with each part of the body as it arrives, in order, before complete (whose response still holds the whole body); never after the fetch has settled.
-- `poll`: Delivers what arrived, fails fetches past their time, starts queued ones and runs completions. Call once per frame.
-- `shutdown`: Cancels every pending fetch (each completes Cancelled), refuses later ones, and aborts the platform's transfers.
-
 ## GrowingSource
 
-*class* in `src/helix/asset/GrowingSource.hx`
+*class* in [`src/helix/asset/GrowingSource.hx`](../../src/helix/asset/GrowingSource.hx)
 
 A file arriving from the host, readable while it downloads: the asset service writes each part as it comes (AudioLocation.Downloading), a native output's decoder reads what has arrived. The whole file's room is taken at the start (its length is known), so the bytes never move and what has arrived is the first received of them. Host thread only: the service writes from the fetch's parts, which arrive there, and the reader copies from it there.
 
@@ -303,7 +254,7 @@ var failure(default, null):Null<String>
 
 ## IAssets
 
-*class* in `src/helix/asset/IAssets.hx`
+*class* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
 
 The asset service games load through (AssetService): assets by relative path through the cache, streamed audio locations, and hot reload subscriptions. Completions run on the host thread.
 
@@ -339,7 +290,7 @@ var busy(get, never):Bool
 
 ## IExport
 
-*class* in `src/helix/asset/IExport.hx`
+*class* in [`src/helix/asset/IExport.hx`](../../src/helix/asset/IExport.hx)
 
 Hands a finished file to the user on a platform: a browser downloads it, natively it is written into the directory the profile chose (the user's pictures, say). What is exported and what it is called are the caller's (Screenshots names its files).
 
@@ -351,7 +302,7 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, done:ExportRe
 
 ## IHttp
 
-*class* in `src/helix/asset/IHttp.hx`
+*class* in [`src/helix/asset/IHttp.hx`](../../src/helix/asset/IHttp.hx)
 
 HTTP GET on a platform: a response arriving in parts. Limits, timeouts, progress and queuing are the shared FetchService's.
 
@@ -367,7 +318,7 @@ function shutdown():Void
 
 ## IReloadable
 
-*class* in `src/helix/asset/IReloadable.hx`
+*class* in [`src/helix/asset/IReloadable.hx`](../../src/helix/asset/IReloadable.hx)
 
 Told when a subscribed asset's file changed and was loaded again (IAssets.subscribe). Called through the object, so after a hot reload its new code runs.
 
@@ -379,7 +330,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 ## IRequest
 
-*class* in `src/helix/asset/IRequest.hx`
+*class* in [`src/helix/asset/IRequest.hx`](../../src/helix/asset/IRequest.hx)
 
 Host-thread cancellation. Completion is asynchronous and exactly once.
 
@@ -391,7 +342,7 @@ function cancel():Void
 
 ## IStore
 
-*class* in `src/helix/asset/IStore.hx`
+*class* in [`src/helix/asset/IStore.hx`](../../src/helix/asset/IStore.hx)
 
 Files kept by key on a platform (a directory, IndexedDB). Keys are valid asset paths (the shared StorageService checks them); limits, read-only refusal, queuing and cancellation are the shared StorageService's. Each answer arrives on the host thread, never during the call that asked, and is never Cancelled.
 
@@ -415,7 +366,7 @@ function shutdown():Void
 
 ## Lease
 
-*typedef* in `src/helix/asset/StorageService.hx`
+*typedef* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
 
 A lease on a stored file for streaming: location is a file path or URL the audio adapter opens, and release, called once, ends the lease.
 
@@ -424,7 +375,7 @@ A lease on a stored file for streaming: location is a file path or URL the audio
 
 ## Request
 
-*class* in `src/helix/asset/Request.hx`
+*class* in [`src/helix/asset/Request.hx`](../../src/helix/asset/Request.hx)
 
 The IRequest the asset service and audio resources return for work they settle themselves (Jobs returns its own): it settles exactly once, by finish or by cancel.
 
@@ -439,33 +390,9 @@ function cancel():Void
 - `settled`: Whether it has finished or been cancelled.
 - `finish`: Settles the request: true the first time, false once it has finished or been cancelled.
 
-## SaveService
-
-*class* in `src/helix/asset/SaveService.hx`
-
-The game's saves: text by name (JSON, as haxe.Json writes it, or anything), kept apart from the asset cache, which a game may clear: in the user's data directory natively (the profile's, by the game's identity), an IndexedDB database of its own in a browser. A name is an asset path ("progress", "slots/2.json"); a save is at most 8 MiB. Reads, writes and removals complete in the order asked. A save is kept once written runs: quitting before it may lose it, so a game saves at a checkpoint, not as it quits.
-
-```haxe
-function new(store:IStore)
-var busy(get, never):Bool
-function read(name:String, loaded:String -> Void, ?missing:() -> Void, ?failed:String -> Void):IRequest
-function write(name:String, text:String, ?written:() -> Void, ?failed:String -> Void):IRequest
-function remove(name:String, ?removed:() -> Void, ?failed:String -> Void):IRequest
-function poll():Void
-function shutdown():Void
-```
-
-- `new`: Saves in store, one operation at a time, so they complete in the order asked: a later write of a save is the one kept.
-- `busy`: Whether a read, write or removal hasn't completed yet.
-- `read`: Reads the save named name: loaded gets its text, missing runs when there is none (else loaded isn't called), failed (else the log) for a name that isn't an asset path or a store that fails. None runs once the request is cancelled.
-- `write`: Writes text as the save named name, in place of what it was: written runs once it's kept, failed (else the log) for a name that isn't an asset path, text over 8 MiB or a store that fails.
-- `remove`: Removes the save named name (none is no failure): removed runs once it's gone, failed (else the log) for a name that isn't an asset path or a store that fails.
-- `poll`: Delivers what completed. The runner calls it each frame; a program without one (a test) calls it itself.
-- `shutdown`: Cancels what hasn't completed and closes the store.
-
 ## Saves
 
-*class* in `src/helix/asset/Saves.hx`
+*class* in [`src/helix/asset/Saves.hx`](../../src/helix/asset/Saves.hx)
 
 The game's saves, apart from the asset cache (SaveService), installed by their first use, so a program that saves nothing opens no store for them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SaveService's public members with their doc comments.
 
@@ -483,7 +410,7 @@ static function remove(name:String, ?removed:() -> Void, ?failed:String -> Void)
 
 ## Storage
 
-*class* in `src/helix/asset/Storage.hx`
+*class* in [`src/helix/asset/Storage.hx`](../../src/helix/asset/Storage.hx)
 
 The writable cache: files by key (StorageService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StorageService's public members with their doc comments.
 
@@ -503,7 +430,7 @@ static function clear(complete:StorageWriteResult -> Void):IRequest
 
 ## StorageResult
 
-*enum* in `src/helix/asset/StorageService.hx`
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
 
 How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
@@ -512,37 +439,9 @@ How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 - `Failed(message:String)`
 - `Cancelled`
 
-## StorageService
-
-*class* in `src/helix/asset/StorageService.hx`
-
-Files by key (an asset path) over a platform's IStore, the same on every platform: keys checked, files at most 8 MiB, a read-only store refusing writes, at most two operations at once (or as many as it's made with), each completing exactly once on the host thread. The app's cache, and the packaged assets read-only: the runner's cache is what the Storage static forwards to.
-
-```haxe
-function new(store:IStore, ?readOnly:Bool = false, ?maxActive:Int = 2)
-static var MAX_BYTES(inline, null):Int
-function read(key:String, complete:StorageResult -> Void):IRequest
-function write(key:String, bytes:haxe.io.Bytes, complete:StorageWriteResult -> Void):IRequest
-function remove(key:String, complete:StorageWriteResult -> Void):IRequest
-function source(key:String, complete:StorageSourceResult -> Void):IRequest
-function clear(complete:StorageWriteResult -> Void):IRequest
-function poll():Void
-function shutdown():Void
-```
-
-- `new`: Files in store; readOnly refuses write, remove and clear (packaged assets); at most maxActive operations at once (1: each in turn, so they complete in the order asked).
-- `MAX_BYTES`: The largest file it stores or reads, in bytes.
-- `read`: Reads the whole file under key. Failed for an invalid key, a file over 8 MiB, a closed store, or an I/O error.
-- `write`: Stores a copy of bytes under key, replacing what is there. Failed for an invalid key, more than 8 MiB, a read-only store, a closed store, or an I/O error.
-- `remove`: Deletes the file under key; Written also when there was none. Failed for an invalid key, a read-only store, a closed store, or an I/O error.
-- `source`: Leases the file under key for streaming without reading it; the caller releases a Local lease, and one that arrives after cancellation is released for it. Failed for an invalid key, a closed store, or an I/O error.
-- `clear`: Removes every stored file; Failed for a read-only store.
-- `poll`: Delivers what arrived, starts queued operations and runs completions. Call once per frame.
-- `shutdown`: Cancels every pending operation (each completes Cancelled), refuses later ones and closes the store.
-
 ## StorageSourceResult
 
-*enum* in `src/helix/asset/StorageService.hx`
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
 
 How leasing a stored file ended: the lease, Missing, a failure message, or cancellation.
 
@@ -553,7 +452,7 @@ How leasing a stored file ended: the lease, Missing, a failure message, or cance
 
 ## StorageWriteResult
 
-*enum* in `src/helix/asset/StorageService.hx`
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
 
 How a write or remove ended: Written, a failure message, or cancellation.
 

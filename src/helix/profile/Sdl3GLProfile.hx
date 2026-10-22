@@ -15,6 +15,7 @@ import helix.app.IApp;
 import helix.host.Runner;
 
 /** The desktop through SDL3, drawing with GL (the `sdl3-gl` backend): an SDL window, its input and gamepads, sokol_gfx on GL 4.1 in its context, an SDL audio stream with libsndfile, haxe.Http and files, stb_image. */
+@:noCompletion
 class Sdl3GLProfile {
 	/** Runs app (its init once its services are bound) for identity: assets from HELIX_ASSET_HOST when set (following the manifest tree from HELIX_ASSET_MANIFEST under it when that's set too,
 		"manifest.json"), else from assetDirectory, a directory relative to the program's (a game's own: "assets", beside it);

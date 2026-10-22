@@ -9,6 +9,7 @@ import helix.asset.GrowingSource;
 	copied into the codec's memory (a file's length taken at its open), the rest of it as it arrives, at each read; the C reads it through
 	libsndfile's virtual I/O. An Ogg file opened before its end plays to the end of its stream (libsndfile can't learn its length without its
 	last bytes); an MP3 without a Xing or Info header opens only once whole (libsndfile scans it for its length). */
+@:noCompletion
 class LibsndfilePcmFiles implements IPcmFiles {
 	// The downloads' handles: each one's source, and how much of it the codec has; under lock, as a stored file's handle may be closed on another thread.
 	var arriving:Map<Int, {source:GrowingSource, copied:Int}> = [];

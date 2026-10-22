@@ -2,11 +2,12 @@
 published on the examples' site at /api/; and as Markdown in docs/api, committed, so the repository carries a readable
 reference without the site (README.md, the index of packages, then a file a package with each type's public members).
 
-Haxe describes the types once per target (XML), since each target has its own adapters: the browser's (DOM, WebGL2,
-Web Audio, fetch, IndexedDB) and the native ones (Sokol, SDL3, libsndfile, evdev, the filesystem). dox merges the two and
-marks what only one target has; the Markdown lists the adapters in one file, by name, as platform code nobody writes a
-game against. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is
-committed with its reference (helix.py test runs it)."""
+The reference is what a game writes against: a type or member marked @:noCompletion is the engine's own (the adapters and
+profiles, checked by tools/check_adapters.py, and the services behind the static classes), hidden from the language server
+and left out here as dox leaves it out. Haxe describes the code once per target (XML), js and cpp; engine code has no target
+conditional, so both must describe the same types with the same public members, and the tool fails when they differ. The HTML is then made from one of them, so dox has nothing to mark as one target's. --check regenerates
+the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with its reference
+(helix.py test runs it)."""
 import json
 import os
 from pathlib import Path
@@ -18,40 +19,50 @@ import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/api'
 DOCS=ROOT/'docs/api'
-# The browser's adapters, by their API's name (the directory under each contract), and its profiles, named for a backend among them (WebGL2Profile);
-# every other adapter and profile is native.
-BROWSER_APIS={'dom','webgl2','webaudio','fetchapi','indexeddb','canvas','download'}
+# The platform code: each target's adapters compile on it alone, so neither description includes them (they're @:noCompletion anyway).
+PLATFORM=('helix.adapter','helix.profile')
+# What the reference says of its targets, once.
+TARGETS='Every type here is on both of HeliX\'s Haxe targets, js (the browser) and cpp (native); the engine\'s own types beneath them (@:noCompletion: the adapters, profiles and services behind the static classes), which a game never names, are left out.'
 
-def targets():
-    """The packages each target's description leaves out: (the browser's, the native ones), read from the adapters' directories so a new adapter is placed by its API's name."""
-    browser=[];native=[]
-    for contract in sorted((ROOT/'src/helix/adapter').iterdir()):
-        if not contract.is_dir():continue
-        if contract.name=='shared':native.append('helix.adapter.shared');continue
-        for api in sorted(contract.iterdir()):
-            if api.is_dir():(browser if api.name in BROWSER_APIS else native).append(f'helix.adapter.{contract.name}.{api.name}')
-    for profile in sorted((ROOT/'src/helix/profile').glob('*.hx')):
-        (browser if profile.stem.removesuffix('Profile').lower() in BROWSER_APIS else native).append(f'helix.profile.{profile.stem}')
-    return browser,native
-
-def describe(target,ignore):
-    """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
+def describe(target):
+    """Haxe's XML description of package helix for one target, the platform code left out."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
     # The tools' internals run in the compiler or Haxe's interpreter, not on a target: Build, Watchers and WebServer are their face.
-    ignore=[*ignore,'helix.tool.setup','helix.tool.shader','helix.tool.shared']
+    ignore=[p+'*' for p in PLATFORM]+['helix.tool.setup','helix.tool.shader','helix.tool.shared']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
     args=['haxe','-cp','src','-cp','generated/shaders','-cp','generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
     subprocess.run(args,cwd=ROOT,check=True)
+
+def hidden(node):
+    """Whether a type or member is marked @:noCompletion, the engine's own."""
+    meta=node.find('meta')
+    return meta is not None and any(m.get('n')==':noCompletion' for m in meta)
+
+def public_types(file):
+    """A target's XML description's documented types: helix's public ones not hidden, {path: node} (a module's private types have a
+    path through the module, helix.asset._AssetService.Attempt)."""
+    return {n.get('path'):n for n in ET.parse(file).getroot()
+        if (n.get('path') or '').startswith('helix.') and '._' not in n.get('path') and n.get('private')!='1' and not hidden(n)}
+
+def same_on_both(js,cpp):
+    """Fails unless both targets describe the same documented types, each with the same public members as written."""
+    a=public_types(js);b=public_types(cpp)
+    differ=[f'{p}: only on {"js" if p in a else "cpp"}' for p in sorted(set(a)^set(b))]
+    for path in sorted(set(a)&set(b)):
+        known=set(a)
+        ma={m for m in (member_lines(c,known) for c in a[path]) if m};mb={m for m in (member_lines(c,known) for c in b[path]) if m}
+        differ+=[f'{path}: {sig} only on {"js" if (sig,d) in ma else "cpp"}' for sig,d in sorted(ma^mb)]
+    if differ:
+        sys.exit('gen_apidoc: js and cpp describe the API differently (engine code has no target conditional):\n  '+'\n  '.join(differ))
 
 def short(path):
     """A type's name without its package."""
     return path.rsplit('.',1)[-1]
 
 def package_file(path):
-    """The Markdown file a package's types go in: adapters and profiles together, else the package's name after helix."""
+    """The Markdown file a package's types go in: the package's name after helix."""
     package=path.rsplit('.',1)[0]
-    if package.startswith('helix.adapter') or package=='helix.profile':return 'adapters.md'
     return package[len('helix.'):].replace('.','-')+'.md' if package!='helix' else 'helix.md'
 
 def type_text(node,known):
@@ -81,7 +92,7 @@ def doc_text(node):
 
 def member_lines(member,known):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta."""
-    if member.tag in ('haxe_doc','meta') or member.get('public')!='1':return None
+    if member.tag in ('haxe_doc','meta') or member.get('public')!='1' or hidden(member):return None
     name=member.tag;static='static ' if member.get('static')=='1' else ''
     kids=[c for c in member if c.tag not in ('haxe_doc','meta')]
     if not kids:return None
@@ -108,27 +119,21 @@ def member_lines(member,known):
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
     return sig,doc_text(member)
 
-def markdown(xmls):
-    """The Markdown files from the targets' XML descriptions merged: {relative path: text}."""
-    types={}
-    for file in xmls:
-        for node in ET.parse(file).getroot():
-            path=node.get('path')
-            # Public types alone: a module's private ones have a path through the module (helix.asset._AssetService.Attempt).
-            if path and path.startswith('helix.') and '._' not in path and node.get('private')!='1' and path not in types:types[path]=node
+def markdown(xml):
+    """The Markdown files from a target's XML description: {relative path: text}."""
+    types=public_types(xml)
     known=set(types)
     files={};index={}
     for path in sorted(types):
         node=types[path];name=short(path);params=node.get('params','')
         header=name+(f'<{params.replace(":",", ")}>' if params else '')
         kind={'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
-        lines=[f'## {header}','',f'*{kind}* in `{node.get("file","")}`','']
+        # Its source, relative to docs/api: a link on GitHub and in a checkout alike.
+        source=node.get('file','')
+        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})','']
         doc=doc_text(node)
         if doc:lines+=[doc,'']
         file=package_file(path)
-        if file=='adapters.md':
-            index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append(f'- **{header}** (`{node.get("file","")}`): {doc}' if doc else f'- **{header}** (`{node.get("file","")}`)')
-            continue
         if node.tag=='class':
             # A property's accessors (get_x, set_x; an interface's are public) are the property, listed once.
             properties={c.tag for c in node if c.get('set')!='method' and c.get('get') is not None}
@@ -156,14 +161,11 @@ def markdown(xmls):
                 lines.append('')
         index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append('\n'.join(lines))
     out={}
-    readme=['# HeliX API reference','','Generated from the code\'s doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members.','']
+    readme=['# HeliX API reference','','Generated from the code\'s doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members. '+TARGETS,'']
     for file in sorted(files):
-        package='helix.adapter and helix.profile' if file=='adapters.md' else 'helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
-        names=', '.join(short(p) for p,_ in index[file]) if file!='adapters.md' else f'{len(index[file])} adapters and profiles, the platform code'
-        readme.append(f'- [`{package}`]({file}): {names}')
-        title=f'# {package}' if file!='adapters.md' else '# helix.adapter and helix.profile'
-        lead='' if file!='adapters.md' else '\nThe platform code: one adapter an API behind each contract, and the profiles that choose them (ARCHITECTURE.md). A game writes against the contracts, never these.\n'
-        out[file]='\n'.join([title,lead]+(['[Back to the index](README.md)','']) + files[file]).rstrip('\n')+'\n'
+        package='helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
+        readme.append(f'- [`{package}`]({file}): '+', '.join(short(p) for p,_ in index[file]))
+        out[file]='\n'.join([f'# {package}','']+(['[Back to the index](README.md)','']) + files[file]).rstrip('\n')+'\n'
     out['README.md']='\n'.join(readme)+'\n'
     return out
 
@@ -180,9 +182,9 @@ def generate(check=False):
     # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.
     if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
     if OUT.exists() and not check:shutil.rmtree(OUT)
-    browser,native=targets()
-    describe('js',native);describe('cpp',browser)
-    pages=markdown([OUT/'xml/js.xml',OUT/'xml/cpp.xml'])
+    describe('js');describe('cpp')
+    same_on_both(OUT/'xml/js.xml',OUT/'xml/cpp.xml')
+    pages=markdown(OUT/'xml/js.xml')
     if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
         extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
@@ -199,9 +201,12 @@ def generate(check=False):
     for p in DOCS.glob('*.md'):
         if p.name not in pages:p.unlink()
     for name,text in pages.items():(DOCS/name).write_text(text,encoding='utf-8')
-    # No source links yet: dox could link each type to its source on GitHub.
-    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml'),'-o',str(OUT),'-in','^helix','--title','HeliX API',
-        '-D','description','HeliX: a Haxe game framework over thin per-platform adapters.'],cwd=ROOT,env=env,check=True)
+    # One target's description, both being the same (same_on_both): dox marks nothing as one target's and offers no filter by one. It
+    # leaves out what's @:noCompletion itself.
+    # Each type's View Source on GitHub, at the commit described, so the code linked is the code documented.
+    commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/js.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/src/',
+        '--title','HeliX API','-D','description','HeliX: a Haxe game framework. '+TARGETS],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html','and',DOCS)
 
 if __name__=='__main__':main()

@@ -18,6 +18,7 @@ package helix.adapter.audio.sokol.internal;
  <section if="macos"><vflag name="-framework" value="AudioToolbox"/></section>
 </target>')
 @:include("audio.h")
+@:noCompletion
 extern class AudioBridge {
 	@:native("helix_audio_setup") static function setup():Void;
 	@:native("helix_audio_shutdown") static function shutdown():Void;

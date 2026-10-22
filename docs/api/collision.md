@@ -4,7 +4,7 @@
 
 ## Body2D
 
-*class* in `src/helix/collision/Body2D.hx`
+*class* in [`src/helix/collision/Body2D.hx`](../../src/helix/collision/Body2D.hx)
 
 An arcade body: a box moved by its velocity and gravity over a grid of solid tiles, sliding along what it meets (Collide2D.moveAndSlide), its velocity stopped against it, and what it touches kept: the ground under it, a wall either side, a ceiling. A platformer's player or enemy, a top-down character with no gravity. step runs it: in a Ticker's fixed step (helix.time), so it moves the same at any frame rate. Bodies don't push each other; Collide2D's overlaps meet them.
 
@@ -60,7 +60,7 @@ function step(dt:Float, tileSize:Float, solid:(Int, Int) -> Bool):Void
 
 ## Collide2D
 
-*class* in `src/helix/collision/Collide2D.hx`
+*class* in [`src/helix/collision/Collide2D.hx`](../../src/helix/collision/Collide2D.hx)
 
 2D collision tests in floats, the same on every target (sums, products and square roots round alike everywhere; nothing transcendental): overlaps of rectangles (x, y the top-left, width and height), circles and convex polygons (points as flat x, y pairs, in either winding); points inside them; segments and rays against them, with where and the normal (Hit2D); sweeps, a shape moved by dx, dy until it meets another; and a box moved and slid over a grid of solid tiles (Move2D). Touching edges don't overlap. Polygon tests are the separating axis theorem, so a concave polygon is split into convex ones first. A SpatialHash2D narrows which pairs to test.
 
@@ -102,7 +102,7 @@ static function moveAndSlide(x:Float, y:Float, width:Float, height:Float, dx:Flo
 
 ## Hit2D
 
-*class* in `src/helix/collision/Hit2D.hx`
+*class* in [`src/helix/collision/Hit2D.hx`](../../src/helix/collision/Hit2D.hx)
 
 What a 2D test found (Collide2D): where along a ray or a sweep (time, 0 at its start to 1 at its end), the point there, the surface's normal (a unit vector out of what was hit; 0, 0 when the test started inside), and how deep an overlap goes along that normal. One is kept and filled again, not made a test.
 
@@ -128,7 +128,7 @@ function reset():Void
 
 ## Move2D
 
-*class* in `src/helix/collision/Move2D.hx`
+*class* in [`src/helix/collision/Move2D.hx`](../../src/helix/collision/Move2D.hx)
 
 Where a move-and-slide ended (Collide2D.moveAndSlide): the box's new place, and which of its sides met a solid on the way, so a game knows it stands on the ground (bottom), hit a wall (left, right) or its head (top). One is kept and filled again.
 
@@ -152,7 +152,7 @@ var bottom:Bool
 
 ## SpatialHash2D<T>
 
-*class* in `src/helix/collision/SpatialHash2D.hx`
+*class* in [`src/helix/collision/SpatialHash2D.hx`](../../src/helix/collision/SpatialHash2D.hx)
 
 Which things might touch, before asking which do: items kept by their rectangle in cells of one size, and a rectangle's query giving the items in the cells it covers (each once), so a game tests a few pairs with Collide2D instead of every pair. Cells are about the size of a common item; a moved item is updated with its new rectangle.
 

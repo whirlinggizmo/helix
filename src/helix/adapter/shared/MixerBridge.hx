@@ -3,6 +3,7 @@ package helix.adapter.shared;
 /** The shared mixer's C (audio.h: mixer.c, and the output's availability, rate and channels), built by whichever audio adapter the
 	program links (its own AudioBridge). */
 @:include("audio.h")
+@:noCompletion
 extern class MixerBridge {
 	@:native("helix_audio_clip") static function audioClip(data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_audio_play") static function audioPlay(clip:Int, loop:Int, volume:cpp.Float32):Int;

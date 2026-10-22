@@ -10,6 +10,7 @@ import helix.asset.Request;
 	prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched
 	twice. The runner's is what the SceneFiles3D static forwards to. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class SceneFileCache3D {
 	var assets:IAssets;
 	var files:Map<String, SceneFile3D> = [];

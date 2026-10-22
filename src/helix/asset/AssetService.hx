@@ -48,6 +48,7 @@ private class Attempt {
 }
 
 /** Asset identity/cache policy stays shared. No target conditionals. */
+@:noCompletion
 class AssetService implements IAssets {
 	// A streamed download's limits (streamSource's download): a file is played as it arrives, so a slow connection takes the time it takes.
 	static inline var STREAM_MAX_BYTES = 256 * 1024 * 1024;

@@ -12,6 +12,7 @@ import helix.asset.IReloadable;
 	packaged copy (or a remote URL where the platform plays one, else a download played as it arrives), their lifetimes counted, and playbacks, which wait while audio hasn't
 	started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class AudioResources implements IReloadable {
 	var assets:IAssets;
 	var backend:IAudio;

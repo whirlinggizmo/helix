@@ -8,6 +8,7 @@ import helix.audio.IAudio;
 	source through a gain and a stereo panner, its volume and pan changes ramped by setTargetAtTime (RAMP) and its pitch the source's playback
 	rate. The page's first key or pointer press unlocks audio (browsers let it start only in a user gesture); the page losing focus or being
 	hidden suspends it. */
+@:noCompletion
 class WebAudioAdapter implements IAudio {
 	/** The time constant a volume or pan change approaches its target by, in seconds: short enough to follow a fade stepped once a frame,
 		long enough not to click. */

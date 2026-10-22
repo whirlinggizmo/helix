@@ -18,6 +18,7 @@ package helix.adapter.inputsource.sokol.internal;
  <files id="helix-input-sokol"/>
 </target>')
 @:include("input.h")
+@:noCompletion
 extern class InputBridge {
 	@:native("helix_input_setup") static function setup():Void;
 	@:native("helix_input_shutdown") static function shutdown():Void;

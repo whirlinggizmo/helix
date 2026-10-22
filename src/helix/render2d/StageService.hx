@@ -9,6 +9,7 @@ import helix.font.Font;
 	(Screen: logical pixels unless a presentation mode says otherwise), cleared to its color first; every 3D view is drawn under the 2D. Flash's stage: what a game adds to it shows, with nothing to draw by
 	hand. Installed by its first use (Stage), so a program that never uses it carries none of it. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class StageService {
 	var gpu:IGraphics;
 	var presentation:Presentation;

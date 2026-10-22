@@ -4,7 +4,7 @@
 
 ## Adapters
 
-*typedef* in `src/helix/host/Adapters.hx`
+*typedef* in [`src/helix/host/Adapters.hx`](../../src/helix/host/Adapters.hx)
 
 A profile's choice of adapter for each platform contract, which the Runner builds the app's services over.
 
@@ -25,7 +25,7 @@ A profile's choice of adapter for each platform contract, which the Runner build
 
 ## Config
 
-*class* in `src/helix/host/Config.hx`
+*class* in [`src/helix/host/Config.hx`](../../src/helix/host/Config.hx)
 
 A game's settings from config.json beside the program (beside the page on the web; never among the assets or in their cache, DECISIONS 131), fetched as the program starts (so a deployed game changes them without a build): a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Host.getOption reads the profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's: whether to show a splash, play music, where assets are.
 
@@ -51,7 +51,7 @@ function getString(name:String):Null<String>
 
 ## FrameClock
 
-*class* in `src/helix/host/FrameClock.hx`
+*class* in [`src/helix/host/FrameClock.hx`](../../src/helix/host/FrameClock.hx)
 
 A host's frame timing, the same on every target, measured on the host's own clock between frames that ran (not a smoothed estimate, whose sum drifts from wall time). Each frame has two measures: the delta, the dt IApp.update is passed, held between MIN_DELTA and MAX_DELTA for animation; and the elapsed time, unheld, for a fixed-rate simulation (Ticker), which bounds its own catch-up.
 
@@ -73,13 +73,12 @@ var elapsed(default, null):Float
 
 ## Host
 
-*class* in `src/helix/host/Host.hx`
+*class* in [`src/helix/host/Host.hx`](../../src/helix/host/Host.hx)
 
 The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop, the window (Window) and the clock (Time) are reached elsewhere, and reportBusy is the App's to call.
 
 ```haxe
 static var config(default, null):Null<Config>
-static function installPart(make:Runner -> T):T
 static var running(get, never):Bool
 static var busy(get, never):Bool
 static function getOption(name:String, fallback:String):String
@@ -92,7 +91,6 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 ```
 
 - `config`: The game's settings from config.json beside the program (Config; DECISIONS 131), or null without one. Kept across a hot reload (@:hot), as instance is.
-- `installPart`: An optional part's way in (helix.host.Part): make builds it over the runner's shared services and installs its hooks (Runner.install), at the part's first use. Fails plainly when nothing runs the program (a test makes what it needs itself).
 - `running`: Whether the runner is running the program: false in a test, which makes what it needs itself.
 - `busy`: Whether anything is still loading: an asset, an image or sound being decoded, an environment being prepared. A loading screen waits for it to be false (with the app's own loads in view); so does a tool taking the frame's picture once it's in.
 - `getOption`: A run option, or fallback when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals; else the config's value at name (its profile over its default, dotted into nested objects), as text.
@@ -105,7 +103,7 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 
 ## IHost
 
-*class* in `src/helix/host/IHost.hx`
+*class* in [`src/helix/host/IHost.hx`](../../src/helix/host/IHost.hx)
 
 The host: what runs the program on a platform (a browser page's frame callbacks, a native process's app loop). It owns the loop, the clock, quitting, the window and where run options come from, and nothing else: the Runner it pumps builds and runs everything the app sees (the static classes it binds: Window, Input, Graphics and the others).
 
@@ -131,7 +129,7 @@ function reportBusy(busy:Bool):Void
 
 ## IWindow
 
-*class* in `src/helix/host/IWindow.hx`
+*class* in [`src/helix/host/IWindow.hx`](../../src/helix/host/IWindow.hx)
 
 The window the app draws in: title, size, place, fullscreen, visibility and the monitors, in logical pixels. Names follow docs/CONVENTIONS.md: a value is a property; can says whether to offer an action at all; request asks for what the platform may refuse or grant later, returning whether it asked, never whether it was granted, and the property answers on a later frame. A request that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows.
 
@@ -191,7 +189,7 @@ function getMonitorHeight(index:Int):Int
 
 ## Identity
 
-*class* in `src/helix/host/Identity.hx`
+*class* in [`src/helix/host/Identity.hx`](../../src/helix/host/Identity.hx)
 
 Who the program is, for what HeliX keeps for it: a company and a product, each one safe file name. Natively it names the cache directory (<user cache>/<company>/<product>); in the browser, the page's cache database.
 
@@ -209,7 +207,7 @@ var product(default, null):String
 
 ## Part
 
-*typedef* in `src/helix/host/Part.hx`
+*typedef* in [`src/helix/host/Part.hx`](../../src/helix/host/Part.hx)
 
 An optional part of the program: a service installed the first time a program uses it (its static class installs it, helix.macro.Facade), so a program that never uses it carries none of its code (docs/CONVENTIONS.md, "An optional part is installed by its first use"). The Runner walks its parts' hooks and never names one. Each hook may be null.
 
@@ -220,65 +218,9 @@ An optional part of the program: a service installed the first time a program us
 - `draw:Null<() -> Void>`: Each frame, after the app's update: the part draws the frame, opening and closing it (the stage, StageService). One part draws.
 - `busy:Null<() -> Bool>`: Whether the part is loading or preparing anything (Host.busy).
 
-## Presentation
-
-*class* in `src/helix/host/Presentation.hx`
-
-The app's design fitted to its window, one setting for the whole program: a game is written for a design size, its units stay the design's at any window size, on a phone or in fullscreen, and what's visible of them (the visible area) is known each frame. The runner refits it to the window before every frame. A 2D camera shows it (apply), a layout is arranged into the visible area (Layout2D.arrange), and the pointer comes back in units through the camera (Pointer), or through toUnitsX and toUnitsY. A 3D camera draws into the area it covers (areaX and the rest, Camera3D.setViewportArea) to keep out of the bars.
-
-```haxe
-function new()
-var framebufferWidth(default, null):Int
-var framebufferHeight(default, null):Int
-function set(mode:PresentationMode, width:Float, height:Float):Bool
-var mode(default, null):PresentationMode
-var width(get, never):Float
-var height(get, never):Float
-var scaleX(default, null):Float
-var scaleY(default, null):Float
-var visibleX(default, null):Float
-var visibleY(default, null):Float
-var visibleWidth(default, null):Float
-var visibleHeight(default, null):Float
-var portrait(get, never):Bool
-var areaX(default, null):Int
-var areaY(default, null):Int
-var areaWidth(default, null):Int
-var areaHeight(default, null):Int
-function toUnitsX(x:Float):Float
-function toUnitsY(y:Float):Float
-function toPixelsX(x:Float):Float
-function toPixelsY(y:Float):Float
-function apply(camera:Camera2D):Void
-```
-
-- `new`: None, fitted to a 1 x 1 framebuffer until the runner's first refit.
-- `framebufferWidth`: The framebuffer's width in pixels, as last refitted (the window's, under the runner); 1 before.
-- `framebufferHeight`: The framebuffer's height in pixels, as last refitted; 1 before.
-- `set`: Fits the design, width x height units, to the window by mode, from the next frame (None takes no size: give 0, 0). False, changing nothing, for a size under 1 but for None.
-- `mode`: How the design is fitted.
-- `width`: The design's width in units: the window's logical width under None.
-- `height`: The design's height in units: the window's logical height under None.
-- `scaleX`: Framebuffer pixels to a unit, across (under Stretch, each axis has its own).
-- `scaleY`: Framebuffer pixels to a unit, down.
-- `visibleX`: The visible area's left edge in units: 0 under None, Stretch, Fit and Integer; more under Fill, which crops; less under Expand, which grows. A HUD anchored to an edge places itself from the visible area.
-- `visibleY`: The visible area's top edge in units.
-- `visibleWidth`: The visible area's width in units.
-- `visibleHeight`: The visible area's height in units.
-- `portrait`: Whether the visible area is taller than wide: a phone held upright, for a game with a layout for each.
-- `areaX`: The visible area's left edge in framebuffer pixels: past 0 where Fit and Integer have bars.
-- `areaY`: The visible area's top edge in framebuffer pixels, from the framebuffer's top.
-- `areaWidth`: The visible area's width in framebuffer pixels.
-- `areaHeight`: The visible area's height in framebuffer pixels.
-- `toUnitsX`: The unit across at framebuffer pixel x (input's pointer and touches are framebuffer pixels).
-- `toUnitsY`: The unit down at framebuffer pixel y.
-- `toPixelsX`: The framebuffer pixel across at unit x (toUnitsX's inverse).
-- `toPixelsY`: The framebuffer pixel down at unit y (toUnitsY's inverse).
-- `apply`: Sets camera to show the visible area on the framebuffer pixels it covers: its viewport the area, a unit its zoom.
-
 ## PresentationMode
 
-*enum* in `src/helix/host/Presentation.hx`
+*enum* in [`src/helix/host/Presentation.hx`](../../src/helix/host/Presentation.hx)
 
 How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
@@ -291,7 +233,7 @@ How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
 ## Runner
 
-*class* in `src/helix/host/Runner.hx`
+*class* in [`src/helix/host/Runner.hx`](../../src/helix/host/Runner.hx)
 
 What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's update, the stage drawn, input's frame end) with the clock and timings, and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and unbinds the statics: the platform's services are the runner's to close, never the app's. The same on every platform: a host owns only the loop, the clock and the window.
 
@@ -325,7 +267,7 @@ function assetChanged(path:String):Void
 
 ## Screen
 
-*class* in `src/helix/host/Screen.hx`
+*class* in [`src/helix/host/Screen.hx`](../../src/helix/host/Screen.hx)
 
 The app's design fitted to the window (Presentation): its units, what's visible of them, and a 2D camera to show them (None, logical pixels, until the app sets a mode). The runner refits it to the window before every frame. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from Presentation's public members with their doc comments.
 
@@ -379,7 +321,7 @@ static function apply(camera:Camera2D):Void
 
 ## ScreenShape
 
-*class* in `src/helix/host/ScreenShape.hx`
+*class* in [`src/helix/host/ScreenShape.hx`](../../src/helix/host/ScreenShape.hx)
 
 A design per window shape, as a page's breakpoints (Defold's display profiles): 1280 x 720 for a desktop window, 1000 x 560 for a short one (a phone on its side), 560 x 960 upright (a phone held so), each grown to the window's edges (Presentation's Expand), so text at one size stays readable on a phone in each. The examples' choice, called at the top of their frame; a game with designs of its own sets Screen itself.
 
@@ -391,7 +333,7 @@ static function update():String
 
 ## Window
 
-*class* in `src/helix/host/Window.hx`
+*class* in [`src/helix/host/Window.hx`](../../src/helix/host/Window.hx)
 
 The window the app draws in (the page, on the web): its drawing surface's size, pixel ratio and focus too, and what may be asked of it (a size, a position, fullscreen). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IWindow's public members with their doc comments.
 
@@ -451,7 +393,7 @@ static function getMonitorHeight(index:Int):Int
 
 ## WindowOptions
 
-*class* in `src/helix/host/WindowOptions.hx`
+*class* in [`src/helix/host/WindowOptions.hx`](../../src/helix/host/WindowOptions.hx)
 
 What's fixed when the window opens, given to a profile's run before it does: an app starts after, too late to change them.
 

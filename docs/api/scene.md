@@ -4,7 +4,7 @@
 
 ## ArgumentSchema3D
 
-*class* in `src/helix/scene/SceneSchema3D.hx`
+*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
 
 One argument of a mesh generator (Mesh3D.plane's width, Mesh3D.sphere's rings): its name as the generator's parameter is named, and the generator's default, null for one it requires. A count (rings, segments, subdivisions) is a whole number; a file's number is rounded toward zero for it.
 
@@ -22,7 +22,7 @@ var required(get, never):Bool
 
 ## Collect2D
 
-*class* in `src/helix/scene/Collect2D.hx`
+*class* in [`src/helix/scene/Collect2D.hx`](../../src/helix/scene/Collect2D.hx)
 
 Things collected flying to where they count: a chest's coins to the score, gems to a counter, hearts to the health bar. Sprites of a texture burst out from a point on the stage, scatter for a moment, then each curves in to a target node, one after another, a callback as each arrives (a ding, a score tick) and another once all have. It runs itself (run), on the frames' time as a Transition does, and takes itself off the stage when done; from a 3D world, the point is a View3D's project of where the chest is. In the stage's units.
 
@@ -54,7 +54,7 @@ function run(x:Float, y:Float, target:Node2D, ?arrived:Int -> Void, ?done:() -> 
 
 ## Fade
 
-*class* in `src/helix/scene/Transition.hx`
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
 
 A fade to a color and back: covered at the middle, where what's shown swaps.
 
@@ -67,23 +67,9 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 - `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xAARRGGBB, its alpha the cover at the middle).
 - `color`: Its color.
 
-## Flow
-
-*class* in `src/helix/scene/Flow.hx`
-
-What runs the screens that run themselves (a Transition, Loading, Splash) while they're on the stage: each a step called once a frame, after the app's update and before the frame is drawn, with the frames' seconds (not the game's clock: a paused game still transitions), until it says it's done. Installed by the first one (an optional part, helix.host.Part). A completion's lifetime: each step dies with its screen (decision 123).
-
-```haxe
-static var quick(get, never):Bool
-static function run(step:Float -> Bool):Void
-```
-
-- `quick`: Whether the built-in screens' waits and every transition are skipped: the run option quick=1 (a developer's), so the game jumps in as soon as it's loaded.
-- `run`: Calls step once a frame, with the frames' seconds, until it returns false. Outside the runner (a test) nothing calls the steps but tick.
-
 ## KindSchema
 
-*class* in `src/helix/scene/KindSchema.hx`
+*class* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
 
 One kind's table: its name, as the file's "kind" names the class, its properties in the order the writer writes them, and what the class starts its flags at (an unsaid flag in a file means the kind's own default, and a flag at it isn't written).
 
@@ -107,7 +93,7 @@ function property(name:String):Null<PropertySchema>
 
 ## Loader
 
-*class* in `src/helix/scene/Loader.hx`
+*class* in [`src/helix/scene/Loader.hx`](../../src/helix/scene/Loader.hx)
 
 A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (progress, from how many have ended) and the scene starts once they're done (done), with what failed by name (failures). Each load goes through the service it always did, its own lambdas kept (a failure with no failed lambda logged with its path, as the service would); the loader only counts. wrap counts any other load the game makes. Nothing here cancels: a scene that exits early cancels its own requests, and a cancelled load is never counted as ended.
 
@@ -143,7 +129,7 @@ function model(models:ModelCache3D, path:String, loaded:ModelFile3D -> Void, ?fa
 
 ## Loading
 
-*class* in `src/helix/scene/Loading.hx`
+*class* in [`src/helix/scene/Loading.hx`](../../src/helix/scene/Loading.hx)
 
 The built-in loading screen (docs/DISPLAY_MODEL.md): the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption ("Loading the caves", text; "Loading" unless given) over a bar of its loader's progress and the count, a tip along the bottom (tip), and what failed in the disabled text color. Shown on the stage (show) over what's there until its loader is done, then taken off and then called: put the level on the stage there. With holdForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening). It runs itself; quick (the run option quick=1) doesn't hold.
 
@@ -175,7 +161,7 @@ function show(then:() -> Void):Bool
 
 ## Node
 
-*class* in `src/helix/scene/Node.hx`
+*class* in [`src/helix/scene/Node.hx`](../../src/helix/scene/Node.hx)
 
 What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130).
 
@@ -201,7 +187,7 @@ function getChild(index:Int):Null<Node>
 
 ## NodeOrigin3D
 
-*enum* in `src/helix/scene/SceneInstance3D.hx`
+*enum* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
 
 Where a node of an instance came from.
 
@@ -211,7 +197,7 @@ Where a node of an instance came from.
 
 ## NodeRecord3D
 
-*class* in `src/helix/scene/SceneInstance3D.hx`
+*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
 
 What an instance keeps of a node: its origin, the values the origin gave it (its snapshot, taken before any override), the game's props, and for an entry with a file or a prefab, whether its overrides have been applied (false while the file loads, or for one that failed: its overrides are then kept as written).
 
@@ -239,7 +225,7 @@ var overridesApplied:Bool
 
 ## NodeSnapshot3D
 
-*class* in `src/helix/scene/SceneInstance3D.hx`
+*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
 
 A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model3D, its material and its generated mesh.
 
@@ -269,7 +255,7 @@ var mesh:Null<SceneMesh3D>
 
 ## Pointer
 
-*class* in `src/helix/scene/Pointer.hx`
+*class* in [`src/helix/scene/Pointer.hx`](../../src/helix/scene/Pointer.hx)
 
 The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's released, the stages under it see nothing (captured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. With no stages added, it looks at the Stage (helix.render2d.Stage) and the views on it, in their drawing order (docs/DISPLAY_MODEL.md).
 
@@ -305,7 +291,7 @@ var hit3D(get, never):Null<PickHit3D>
 
 ## PropertySchema
 
-*class* in `src/helix/scene/KindSchema.hx`
+*class* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
 
 One property of a kind: its name as the class names it, its type, and the class's default, which the writer leaves out of the file.
 
@@ -323,7 +309,7 @@ final defaultValue:SceneValue
 
 ## PropertyType
 
-*enum* in `src/helix/scene/KindSchema.hx`
+*enum* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
 
 What a kind's property holds in a .scene3d file: the shape the parser checks a value against, the writer writes, and an inspector makes a control for.
 
@@ -336,7 +322,7 @@ What a kind's property holds in a .scene3d file: the shape the parser checks a v
 
 ## SceneBehavior
 
-*class* in `src/helix/scene/SceneBehavior.hx`
+*class* in [`src/helix/scene/SceneBehavior.hx`](../../src/helix/scene/SceneBehavior.hx)
 
 A behavior as a .scene3d file attaches it to a node: the behavior class's name and its props by name, as data. The file says which behaviors a node gets; at run time they live in the behaviors pass, never on the node.
 
@@ -352,7 +338,7 @@ var props:Map<String, SceneValue>
 
 ## SceneEnvironment3D
 
-*class* in `src/helix/scene/SceneEnvironment3D.hx`
+*class* in [`src/helix/scene/SceneEnvironment3D.hx`](../../src/helix/scene/SceneEnvironment3D.hx)
 
 A .scene3d file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the place (exposure, tone mapping) is the view's (View3D), not the file's.
 
@@ -378,7 +364,7 @@ var backgroundBlur:Null<Float>
 
 ## SceneFile3D
 
-*class* in `src/helix/scene/SceneFile3D.hx`
+*class* in [`src/helix/scene/SceneFile3D.hx`](../../src/helix/scene/SceneFile3D.hx)
 
 A .scene3d file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene3d"), its environment section and its nodes, each a SceneNode3D with its kind's properties as SceneSchema3D's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree.
 
@@ -406,37 +392,9 @@ function write():haxe.io.Bytes
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
 - `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid environment or material value, and a property no table has, are not written.
 
-## SceneFileCache3D
-
-*class* in `src/helix/scene/SceneFileCache3D.hx`
-
-Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache3D is for models: a path asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models, prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched twice. The runner's is what the SceneFiles3D static forwards to.
-
-```haxe
-function new(assets:IAssets)
-function load(path:String, loaded:SceneFile3D -> Void, ?failed:String -> Void):IRequest
-function find(path:String):Null<SceneFile3D>
-function isLoaded(path:String):Bool
-function isLoading(path:String):Bool
-var loadingCount(get, never):Int
-function put(path:String, file:SceneFile3D):Void
-function forget(path:String):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets.
-- `load`: Loads path (a .scene3d) into a SceneFile3D, parsed with SceneFile3D.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
-- `find`: The file at path if it's loaded, else null.
-- `isLoaded`: Whether path is loaded.
-- `isLoading`: Whether path is loading.
-- `loadingCount`: How many files are loading.
-- `put`: Adds a file parsed some other way under path, as if loaded from there (a test's, a generated one).
-- `forget`: Forgets path: its file (the instances made from it stay) or its failure, so it's loaded again when next asked for.
-- `shutdown`: Cancels every load (telling none of its callers) and forgets every file.
-
 ## SceneFiles3D
 
-*class* in `src/helix/scene/SceneFiles3D.hx`
+*class* in [`src/helix/scene/SceneFiles3D.hx`](../../src/helix/scene/SceneFiles3D.hx)
 
 Scene files (.scene3d), parsed once and shared by path (SceneFileCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SceneFileCache3D's public members with their doc comments.
 
@@ -460,7 +418,7 @@ static function forget(path:String):Void
 
 ## SceneInstance3D
 
-*class* in `src/helix/scene/SceneInstance3D.hx`
+*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
 
 What instantiating a .scene3d file gives (SceneFile3D.instantiate): its root, a group named after the file under the node it was put in, holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile3D.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
 
@@ -490,7 +448,7 @@ function destroy():Void
 
 ## SceneKinds3D
 
-*class* in `src/helix/scene/SceneKinds3D.hx`
+*class* in [`src/helix/scene/SceneKinds3D.hx`](../../src/helix/scene/SceneKinds3D.hx)
 
 The live side of SceneSchema3D's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh made by Mesh3D's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB.
 
@@ -528,7 +486,7 @@ static function alphaName(alpha:AlphaMode):String
 
 ## SceneMaterial3D
 
-*class* in `src/helix/scene/SceneMaterial3D.hx`
+*class* in [`src/helix/scene/SceneMaterial3D.hx`](../../src/helix/scene/SceneMaterial3D.hx)
 
 A material as a .scene3d file writes it inline on a Model3D: Material3D's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
 
@@ -558,7 +516,7 @@ var doubleSided:Null<Bool>
 
 ## SceneMesh3D
 
-*class* in `src/helix/scene/SceneMesh3D.hx`
+*class* in [`src/helix/scene/SceneMesh3D.hx`](../../src/helix/scene/SceneMesh3D.hx)
 
 A generated mesh as a .scene3d file writes it on a Model3D ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema3D.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
 
@@ -574,7 +532,7 @@ var arguments:Map<String, Float>
 
 ## SceneNode3D
 
-*class* in `src/helix/scene/SceneNode3D.hx`
+*class* in [`src/helix/scene/SceneNode3D.hx`](../../src/helix/scene/SceneNode3D.hx)
 
 A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model3D's glTF or generated mesh, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode3D too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
 
@@ -622,7 +580,7 @@ var isOverride(get, never):Bool
 
 ## SceneSchema3D
 
-*class* in `src/helix/scene/SceneSchema3D.hx`
+*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
 
 The kinds a .scene3d file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the shapes a Model3D's "mesh" can name (shapes): Mesh3D's generators with their arguments and defaults.
 
@@ -644,7 +602,7 @@ static function property(name:String):Null<PropertySchema>
 
 ## SceneValue
 
-*enum* in `src/helix/scene/SceneValue.hx`
+*enum* in [`src/helix/scene/SceneValue.hx`](../../src/helix/scene/SceneValue.hx)
 
 A value as a .scene3d file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text, a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a node of the file, "@name" or "@path/from/root".
 
@@ -657,7 +615,7 @@ A value as a .scene3d file holds it: a kind's property, a behavior's prop, or on
 
 ## ShapeSchema3D
 
-*class* in `src/helix/scene/SceneSchema3D.hx`
+*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
 
 One shape a Model3D's "mesh" can name: Mesh3D's generator of that name and its arguments in the generator's order, the required ones first.
 
@@ -675,7 +633,7 @@ function argument(name:String):Null<ArgumentSchema3D>
 
 ## Splash
 
-*class* in `src/helix/scene/Splash.hx`
+*class* in [`src/helix/scene/Splash.hx`](../../src/helix/scene/Splash.hx)
 
 The built-in splash (docs/DISPLAY_MODEL.md): a logo (or none) centered on the theme's panel color, shown on the stage (show) for at least its seconds, then taken off through its transition (a half-second fade unless given), then called at the transition's middle: put the next screen on the stage there. It leaves once the user has pressed a key, a button or a finger (IInput.activated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere), or after maxWait's seconds without one: "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. It runs itself; quick (the run option quick=1) skips its wait. theme for its colors and font, prompt for the line.
 
@@ -697,7 +655,7 @@ function show(next:() -> Void):Bool
 
 ## Transition
 
-*class* in `src/helix/scene/Transition.hx`
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
 
 How one screen gives way to the next on the stage (docs/DISPLAY_MODEL.md): a cover drawn over everything for its seconds, what's shown swapped at its middle. It runs itself (run, swap) on the frames' time, not the game's clock, so a paused game still transitions to its menu; quick (the run option quick=1) skips it, swapping at once. Fade is the one made; another draws anything into its cover by progress (draw).
 

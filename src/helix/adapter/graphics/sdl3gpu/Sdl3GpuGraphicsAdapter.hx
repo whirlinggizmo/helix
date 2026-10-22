@@ -8,6 +8,7 @@ import haxe.io.Bytes;
 
 /** IGraphics on SDL_GPU for native hxcpp builds under the SDL3 host: Vulkan, Direct3D 12 or Metal, whichever SDL picks for the system
 	(SDL_GPU_DRIVER chooses another); programs from a ShaderSource's SDL_GPU dialects (built with -D helix_sdl3_gpu). */
+@:noCompletion
 class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 	/** Makes the GPU device and claims the host's window, which must already exist. Throws when SDL can't. */
 	public function new() {

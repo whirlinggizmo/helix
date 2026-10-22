@@ -4,7 +4,7 @@
 
 ## Ease
 
-*class* in `src/helix/tween/Ease.hx`
+*class* in [`src/helix/tween/Ease.hx`](../../src/helix/tween/Ease.hx)
 
 Easing functions: from progress t, 0 to 1, to how far along a tween is, 0 to 1 (past them for back and elastic). Robert Penner's set, each in its three forms: in (starting slow), out (ending slow), inOut (both). linear is as it is.
 
@@ -70,7 +70,7 @@ static function bounceInOut(t:Float):Float
 
 ## Tween
 
-*class* in `src/helix/tween/Tweens.hx`
+*class* in [`src/helix/tween/Tweens.hx`](../../src/helix/tween/Tweens.hx)
 
 One tween of a Tweens set, made by Tweens.to: set its delay and repeats before its first update; read its value any time.
 
@@ -100,7 +100,7 @@ function cancel():Void
 
 ## Tweens
 
-*class* in `src/helix/tween/Tweens.hx`
+*class* in [`src/helix/tween/Tweens.hx`](../../src/helix/tween/Tweens.hx)
 
 Tweens on a clock: a value moved from one number to another over seconds by an easing, told to the game each update (a node's x, an alpha, a camera's zoom), with a delay before, repeats and a yoyo back, and a completion. update runs each frame with the clock's delta (Clock.delta), so tweens pause and slow with the game. Each tween moves in the order made; one made inside a callback starts from the next update.
 

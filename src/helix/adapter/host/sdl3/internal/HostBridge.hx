@@ -20,6 +20,7 @@ package helix.adapter.host.sdl3.internal;
  <flag value="-Wl,-rpath,@executable_path" if="macos"/>
 </target>')
 @:include("host.h")
+@:noCompletion
 extern class HostBridge {
 	@:native("helix_sdl3_run") static function run(init:cpp.Callable<Void->Void>, frame:cpp.Callable<Void->Void>, cleanup:cpp.Callable<Void->Void>,
 		sampleCount:Int, withGl:Int):Void;

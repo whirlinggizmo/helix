@@ -16,6 +16,7 @@ package helix.adapter.audio.sdl3.internal;
  <lib name="${HELIX_SDL3_LIBRARY}"/>
 </target>')
 @:include("audio.h")
+@:noCompletion
 extern class AudioBridge {
 	@:native("helix_audio_setup") static function setup():Void;
 	@:native("helix_audio_shutdown") static function shutdown():Void;

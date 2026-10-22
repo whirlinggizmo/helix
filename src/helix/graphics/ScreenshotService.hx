@@ -16,6 +16,7 @@ enum ScreenshotResult {
 	Runner calls frameEnded after each of the app's frames. Encoding runs on the host thread, so the frame it's taken in is slower. The
 	runner's is what the Screenshots static forwards to. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class ScreenshotService {
 	var graphics:IGraphics;
 	var export:IExport;

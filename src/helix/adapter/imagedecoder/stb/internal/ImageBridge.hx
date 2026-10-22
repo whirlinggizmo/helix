@@ -14,6 +14,7 @@ package helix.adapter.imagedecoder.stb.internal;
  <files id="helix-images-stb"/>
 </target>')
 @:include("images.h")
+@:noCompletion
 extern class ImageBridge {
 	@:native("helix_image_decode") static function decode(data:cpp.RawConstPointer<cpp.Void>, size:Int):cpp.RawPointer<cpp.Void>;
 	@:native("helix_image_width") static function width(image:cpp.RawConstPointer<cpp.Void>):Int;

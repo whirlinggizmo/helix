@@ -7,6 +7,7 @@ import js.html.CanvasElement;
 
 /** The browser host: the page's canvas (id "canvas") and its window, a requestAnimationFrame loop, the page's clock, and options from the URL
 	query. An error the page doesn't catch, or a lost graphics context, stops the frames and says so in the element with id "status". */
+@:noCompletion
 class DomHostAdapter implements IHost {
 	var stopped = false;
 	var quitting = false;

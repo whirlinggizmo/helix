@@ -3,6 +3,7 @@ package helix.adapter.shared;
 /** The graphics calls every native graphics adapter's C implements (graphics.h), built by whichever graphics adapter the program links (its
 	own GraphicsBridge). */
 @:include("graphics.h")
+@:noCompletion
 extern class GraphicsDeviceBridge {
 	@:native("helix_texture") static function texture(w:Int, h:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;
 	@:native("helix_cube_texture") static function cubeTexture(size:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int, levels:Int, format:Int):Int;

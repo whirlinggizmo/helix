@@ -5,6 +5,7 @@ import helix.host.IWindow;
 
 /** What either native host (sokol_app's or SDL's) does the same: the frame loop's callbacks, haxe.Timer's clock, the window
 	(NativeWindow) and options from HELIX_* environment variables. A host adapter opens its window and runs its loop (start) and quits. */
+@:noCompletion
 abstract class NativeHost implements IHost {
 	static var init:Void->Void;
 	static var frame:Void->Void;

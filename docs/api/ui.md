@@ -4,7 +4,7 @@
 
 ## Alignment2D
 
-*enum* in `src/helix/ui/Layout2D.hx`
+*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx)
 
 Where layouts go in the room they have, along an axis.
 
@@ -15,7 +15,7 @@ Where layouts go in the room they have, along an axis.
 
 ## Button
 
-*class* in `src/helix/ui/Button.hx`
+*class* in [`src/helix/ui/Button.hx`](../../src/helix/ui/Button.hx)
 
 A button reading a line of text: clicked by the pointer (released over it, as pressed), or activated with focus by Enter, Space or a pad's South. Ask clicked once a frame.
 
@@ -29,7 +29,7 @@ var text(get, set):String
 
 ## Chevron
 
-*class* in `src/helix/ui/Chevron.hx`
+*class* in [`src/helix/ui/Chevron.hx`](../../src/helix/ui/Chevron.hx)
 
 A chevron drawn on a widget's face, pointing up or down (a color picker's format button, a dropdown's face): two arms meeting at its point, sized for the face's height, never picked. One part, so every widget's chevron looks alike. Its place is in its parent's units.
 
@@ -51,7 +51,7 @@ function setPosition(x:Float, y:Float):Void
 
 ## ColorFormat
 
-*enum* in `src/helix/ui/ColorFormat.hx`
+*enum* in [`src/helix/ui/ColorFormat.hx`](../../src/helix/ui/ColorFormat.hx)
 
 How a color picker's text field writes and reads its color (ColorPicker.format).
 
@@ -60,7 +60,7 @@ How a color picker's text field writes and reads its color (ColorPicker.format).
 
 ## ColorPicker
 
-*class* in `src/helix/ui/ColorPicker.hx`
+*class* in [`src/helix/ui/ColorPicker.hx`](../../src/helix/ui/ColorPicker.hx)
 
 A color, 0xAARRGGBB, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide, following the theme until the game sizes its layout's width itself, kept in a column stretching its children, a panel's), or what a column gives it sized Grow(1); the square takes a new width a frame later. Ask color, and changed once a frame.
 
@@ -96,7 +96,7 @@ var changed(default, null):Bool
 
 ## Dropdown
 
-*class* in `src/helix/ui/Dropdown.hx`
+*class* in [`src/helix/ui/Dropdown.hx`](../../src/helix/ui/Dropdown.hx)
 
 A choice of one of its items, or none. Closed, a face showing the chosen item's text (its hint, in the theme's disabledTextColor, while none is chosen) and a chevron at its right. Open, a list of its items over everything (a Popup: drawn above every widget and panel, clipped by none, below the face or above it when there's no room below), its rows a list's (the theme's listRowHeight, listPadding and list corners), the chosen one in the accent color, the highlighted one hovered; at most maxRows of them, the rest scrolled to by the wheel or the shared Scrollbar, opening with the chosen one in view. The pointer: a click opens it; a click on an item chooses it and closes it; a press anywhere off the list closes it without changing the choice, and does nothing else. Keys and a pad, with focus: Enter, Space or South opens it, the chosen item highlighted; Up and Down move the highlight (the pointer moving over a row moves it there too); Enter, Space or South chooses the highlighted item and closes it; Escape or East closes it unchanged. While it's closed the arrows move focus as for any widget (they don't step the choice, so a column of them is walked by Up and Down); while it's open it has the keys (Ui.capturingKeys) and Tab doesn't move focus. Its face is drawn by its state (WidgetState: a face, pressed while open), disabled dimmed and never opened. As wide as its widest item (and its hint) and the chevron to start, as its layout is Fit (the theme's, so a column stretching its children, a panel's, leaves it so); a width the game gives its layout is kept, the text clipped short of the chevron. Its list is as wide as it, and a scrollbar's room wider when it scrolls. Ask selectedIndex, selected and changed once a frame.
 
@@ -124,7 +124,7 @@ var popup(default, null):Popup
 
 ## Handle
 
-*class* in `src/helix/ui/Handle.hx`
+*class* in [`src/helix/ui/Handle.hx`](../../src/helix/ui/Handle.hx)
 
 The round handle a widget drags along a track (a slider's, a color picker's bars): a disc theme.handleSize across in theme.handleColor over a ring of theme.handleShadowColor a little wider, so it shows on any color under it; centered on its position, never picked. One part, so every widget's handle looks alike.
 
@@ -144,7 +144,7 @@ function setPosition(x:Float, y:Float):Void
 
 ## Label
 
-*class* in `src/helix/ui/Label.hx`
+*class* in [`src/helix/ui/Label.hx`](../../src/helix/ui/Label.hx)
 
 A line of text: shown, never focused. Its size and color are the theme's unless given its own (textSize, color).
 
@@ -160,7 +160,7 @@ var color:Null<Int>
 
 ## Layout2D
 
-*class* in `src/helix/ui/Layout2D.hx`
+*class* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx)
 
 A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a share of its parent, with padding, gaps, margins and alignment (Clay's model, in Haxe, with CSS's margins). Padding is room inside a layout, around its children; a gap is room between a row's or column's children, the same between each; a margin is room outside one layout, per side, keeping its neighbours and its parent's padding edge away from it. A layout may place a node: arrange() writes its position (by its pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its sizing, padding, gap and margin from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline style wins over a stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's.
 
@@ -242,7 +242,7 @@ var height(get, never):Float
 
 ## LayoutDirection2D
 
-*enum* in `src/helix/ui/Layout2D.hx`
+*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx)
 
 How a layout lays its children out.
 
@@ -252,7 +252,7 @@ How a layout lays its children out.
 
 ## ListView
 
-*class* in `src/helix/ui/ListView.hx`
+*class* in [`src/helix/ui/ListView.hx`](../../src/helix/ui/ListView.hx)
 
 A list of items in a window rows tall: scrolled by the wheel over it, a drag or its scrollbar (Scrollbar, at its right edge as scrollbarVisibility says, the rows narrowing for it while it shows: its thumb dragged, its track pressed above or below the thumb for a page), an item chosen by a click or, with focus, by Up and Down (scrolled into view), and activated by a click on the chosen one or Enter, Space or a pad's South. Ask selectedIndex, changed and activated once a frame.
 
@@ -274,7 +274,7 @@ var scrollbarShown(get, never):Bool
 
 ## Panel
 
-*class* in `src/helix/ui/Panel.hx`
+*class* in [`src/helix/ui/Panel.hx`](../../src/helix/ui/Panel.hx)
 
 A background holding a column of widgets (add): hidden, they're hidden with it. A plain rectangle in the theme's panel color, or a nine-slice frame (setFrame); with a title, a band across its top holding it, the column under the band. Never focused; the pointer stops at it, so what's under a panel doesn't see it.
 
@@ -294,7 +294,7 @@ function setFrame(texture:Null<Texture2D>, left:Float, top:Float, right:Float, b
 
 ## Popup
 
-*class* in `src/helix/ui/Popup.hx`
+*class* in [`src/helix/ui/Popup.hx`](../../src/helix/ui/Popup.hx)
 
 What a widget opens over everything else (Ui.popup): a dropdown's list, and later a menu or a tooltip. Its owner makes it (its nodes under root, their layout, the anchor it hangs from) and opens it through its Ui, which then draws it above every widget, panel and focus ring, clipped by none of its owner's clips, and places it by its anchor each frame: below the anchor, or above when the visible area has no room for it below and more above, and moved in to keep it on screen across. While it's open it has the pointer and the keys: a press anywhere off it closes it and does nothing else, Escape or a pad's East closes it, and focus stays on its owner, which takes the keys. One is open at a time; it closes too when its owner is hidden, disabled, loses focus or is taken out, and when the Ui is reset.
 
@@ -326,7 +326,7 @@ function setAnchor(x:Float, y:Float, width:Float, height:Float):Void
 
 ## ProgressBar
 
-*class* in `src/helix/ui/ProgressBar.hx`
+*class* in [`src/helix/ui/ProgressBar.hx`](../../src/helix/ui/ProgressBar.hx)
 
 How far along something is: a track filled from its left by a value, 0 to 1. Never focused.
 
@@ -338,7 +338,7 @@ var value(default, set):Float
 
 ## ScrollArea
 
-*class* in `src/helix/ui/ScrollArea.hx`
+*class* in [`src/helix/ui/ScrollArea.hx`](../../src/helix/ui/ScrollArea.hx)
 
 A window onto a column of widgets (add; content), clipping them, drawn and picked, to what's in view and scrolling them up and down: by the wheel over it, a drag on its empty space, its scrollbar (Scrollbar: its thumb dragged, its track pressed above or below the thumb for a page), and keys: focus moving by keys or a pad to a widget out of view scrolls it into view, Page Up and Page Down page while focus is in it, and with no widget in it that takes focus it takes focus itself, Up and Down then stepping it. The widgets in it work as anywhere, the pointer reaching them only where they're in view. Its height is its layout's (the height it was made with, to start), its width what its layout is given (Grow, to start); the column's gap the theme's. The scrollbar at its right edge shows as scrollbarVisibility says, the column narrowing for it while it shows. A wheel over a list in it scrolls the list, not it. Ask scroll (or set it) once a frame.
 
@@ -362,7 +362,7 @@ var scrollbarShown(get, never):Bool
 
 ## Scrollbar
 
-*class* in `src/helix/ui/Scrollbar.hx`
+*class* in [`src/helix/ui/Scrollbar.hx`](../../src/helix/ui/Scrollbar.hx)
 
 The bar along a scrolling widget's right edge (a list's, a scroll area's): a track theme.scrollbarThickness wide in theme.scrollbarTrackColor, and on it a thumb as long as the share of the content in view and as far down as the content is scrolled, both with round ends. The thumb is colored as a handle by its state (WidgetState.handle: theme.handleColor, theme.accentColor under the pointer, theme.focusColor dragged), dimmed as disabled when its owner is disabled or has nothing to scroll. Never picked: its owner's face takes the pointer and hands it on (drive). One part, so every widget's scrollbar looks and works alike. Its places are in its parent's units.
 
@@ -398,7 +398,7 @@ function place(scroll:Float, x:Float, y:Float, enabled:Bool, theme:Theme):Void
 
 ## ScrollbarVisibility
 
-*enum* in `src/helix/ui/ScrollbarVisibility.hx`
+*enum* in [`src/helix/ui/ScrollbarVisibility.hx`](../../src/helix/ui/ScrollbarVisibility.hx)
 
 When a scrolling widget's scrollbar (a list's, a scroll area's) is drawn. Hidden or not, the widget scrolls alike: by the wheel, a drag and keys.
 
@@ -408,7 +408,7 @@ When a scrolling widget's scrollbar (a list's, a scroll area's) is drawn. Hidden
 
 ## Separator
 
-*class* in `src/helix/ui/Separator.hx`
+*class* in [`src/helix/ui/Separator.hx`](../../src/helix/ui/Separator.hx)
 
 A thin line between widgets: across its column (horizontal, made so to start) or down its row (vertical), as told when made, spanning its parent that way (its layout grows that way: Grow(1)), as thick as the theme's focusWidth, in the theme's faceColor, with half the theme's gap of room either side of it. Never focused, never picked, no states.
 
@@ -420,7 +420,7 @@ var vertical(default, null):Bool
 
 ## Sizing2D
 
-*enum* in `src/helix/ui/Layout2D.hx`
+*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx)
 
 How a layout's width or height is decided.
 
@@ -431,7 +431,7 @@ How a layout's width or height is decided.
 
 ## Slider
 
-*class* in `src/helix/ui/Slider.hx`
+*class* in [`src/helix/ui/Slider.hx`](../../src/helix/ui/Slider.hx)
 
 A value from min to max in steps (0: any), beside a line of text: dragged along its track by the pointer, or stepped by Left and Right with focus (a tenth of the way without steps). Ask value, and changed once a frame.
 
@@ -449,7 +449,7 @@ var changed(default, null):Bool
 
 ## TextField
 
-*class* in `src/helix/ui/TextField.hx`
+*class* in [`src/helix/ui/TextField.hx`](../../src/helix/ui/TextField.hx)
 
 A line of text typed in: with focus, the characters typed (after the keyboard layout) are added, Backspace takes the last off and Enter submits; the caret is at its end. While it has focus the UI has the keys (Ui.capturingKeys) and asks for typed text (IInput.setTextEntry, so a platform's keyboard shows for it), however it got focus, so a game doesn't act on letters typed. Ask text, changed and submitted once a frame. No input method (IME) composition yet.
 
@@ -471,7 +471,7 @@ var invalid:Bool
 
 ## Theme
 
-*class* in `src/helix/ui/Theme.hx`
+*class* in [`src/helix/ui/Theme.hx`](../../src/helix/ui/Theme.hx)
 
 How the UI's widgets look: their colors (0xAARRGGBB), font and sizes. Change any value at any time (a settings screen, a reloaded stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's sizing, padding, gap and margin are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's nodes are never changed directly: its properties are the way.
 
@@ -539,7 +539,7 @@ var widgetHeight(get, set):Float
 
 ## Tile
 
-*class* in `src/helix/ui/Tile.hx`
+*class* in [`src/helix/ui/Tile.hx`](../../src/helix/ui/Tile.hx)
 
 A picture with a caption under it, in a frame: an inventory's item, a character creator's choice, a level to pick. Clicked by the pointer, or activated with focus by Enter, Space or a pad's South; marked selected by the game (one of a group, as the game decides: clicked, then selected). Its picture can come later (a thumbnail still being made): until then, and with none, the frame shows the theme's face color. Ask clicked once a frame.
 
@@ -559,7 +559,7 @@ var side(default, null):Float
 
 ## Toggle
 
-*class* in `src/helix/ui/Toggle.hx`
+*class* in [`src/helix/ui/Toggle.hx`](../../src/helix/ui/Toggle.hx)
 
 A box that's on or off, beside a line of text: switched by a click or by activating it with focus. Ask on, and changed once a frame.
 
@@ -573,7 +573,7 @@ var changed(default, null):Bool
 
 ## Ui
 
-*class* in `src/helix/ui/Ui.hx`
+*class* in [`src/helix/ui/Ui.hx`](../../src/helix/ui/Ui.hx)
 
 A screen's widgets on the stage, used by the pointer, keys and pads alike: made here, placed by their layouts (Layout2D.arrange), asked what happened. update() once a frame, after the pointer's: - Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the layouts' last arrangement: a grid of tiles moves in two dimensions), or, with none that way, in the order widgets were made: Down and Right to the next, Up and Left to the one before, wrapping; Left and Right only when the focused widget doesn't use them (a slider), Up and Down only when it doesn't (a list; a color picker uses all four while one of its parts is driven by them). Tab and Shift+Tab always go in that order. Enter, Space or a pad's South activates it; Escape or East is back (backPressed). - The ring around the focused widget shows only when keys or a pad moved focus, not the pointer (as the web's :focus-visible); after keys or a pad, something always has focus (the first widget, if nothing did). - A key or button already held when a screen begins (reset) does nothing until it's let go: a fire key held into a menu doesn't press its first button. - While a widget has the keys (capturingKeys), a game should leave arrows and Enter be, or they drive the game and the menu at once. - A widget may open a popup (Popup: a dropdown's list), drawn over every widget and the ring and clipped by none of their clips, placed by its anchor in the visible area (below it, or above when there's no room below and more above; kept on screen across). While it's open (popup) it has the pointer and the keys: the widgets under it see no pointer, a press off it closes it and does nothing else until it's let go (not even reaching a world under the UI: the pointer is captured), Escape or East closes it instead of going back (backPressed stays false), Tab doesn't move focus, and its owner keeps focus and takes the arrows, Enter, Space and South (capturingKeys is true). The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them and the open popup above it: what's added to the stage after it draws over it.
 
@@ -645,7 +645,7 @@ function update():Void
 
 ## Widget
 
-*class* in `src/helix/ui/Widget.hx`
+*class* in [`src/helix/ui/Widget.hx`](../../src/helix/ui/Widget.hx)
 
 A piece of UI: nodes it owns (on the Ui's stage) and the layout (Layout2D) placing them. A widget is asked what happened (clicked, value ...), never calls anything (DECISIONS 61); the Ui updates it once a frame. Its look is its Ui's theme's (Theme), read every frame, except what the game set: its layout's sizing, padding, gap and margin once the game sets them (Layout2D), and the look properties a widget has for one of its own (Label.textSize and color: null for the theme's). Its nodes are its own: a game changes them through its properties, never directly.
 
@@ -665,6 +665,6 @@ var focusable(get, never):Bool
 
 ## WidgetState
 
-*abstract* in `src/helix/ui/WidgetState.hx`
+*abstract* in [`src/helix/ui/WidgetState.hx`](../../src/helix/ui/WidgetState.hx)
 
 The state a widget's part is drawn in, one at a time, picked by a fixed priority: Disabled (its widget can't be used), then Down (held by the pointer), Over (under the pointer), Focused (its widget has focus, or the part is the one keys drive), else Normal. Every interactive widget colors its parts through it (of, then pick, or the palettes face, handle and text over pick), so they answer the pointer, the keys and enabled alike: a face in faceColor, hoveredColor under the pointer, pressedColor held and its own color at half alpha disabled (dim); a handle in handleColor, accentColor under the pointer, focusColor held; text in textColor, disabledTextColor disabled. What isn't state, a toggle's mark on, a list's or a tile's selection, is its widget's own and drawn over or beside it.

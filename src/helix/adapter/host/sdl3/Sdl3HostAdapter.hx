@@ -6,6 +6,7 @@ import helix.host.IHost;
 
 /** The native host through SDL3: one window and its frame loop, the window with a GL 4.1 context for sokol_gfx or without one for SDL_GPU.
 	One per program. */
+@:noCompletion
 class Sdl3HostAdapter extends NativeHost implements IHost {
 	var gl:Bool;
 

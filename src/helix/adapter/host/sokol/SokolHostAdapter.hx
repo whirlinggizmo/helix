@@ -5,6 +5,7 @@ import helix.adapter.shared.NativeHost;
 import helix.host.IHost;
 
 /** The native host through sokol_app: one window and its frame loop (X11 and GLX, Win32 and WGL, Cocoa). One per program. */
+@:noCompletion
 class SokolHostAdapter extends NativeHost implements IHost {
 	/** The program's host; its window opens when run starts, asking for msaaSamples multisampling samples a pixel (1: none). */
 	public function new(msaaSamples:Int)

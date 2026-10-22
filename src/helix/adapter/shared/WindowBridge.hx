@@ -3,6 +3,7 @@ package helix.adapter.shared;
 /** The desktop window's C (window.h), implemented by whichever native host the program links; built by that host's own bridge. */
 @:include("window.h")
 @:include("surface.h")
+@:noCompletion
 extern class WindowBridge {
 	@:native("helix_surface_width") static function width():Int;
 	@:native("helix_surface_height") static function height():Int;

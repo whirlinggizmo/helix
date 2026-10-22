@@ -4,7 +4,7 @@
 
 ## AnimationClip3D
 
-*class* in `src/helix/render3d/AnimationClip3D.hx`
+*class* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx)
 
 A named animation: tracks moving nodes, by name, over its duration (its last key). Read from a glTF file (ModelFile3D.clips), whether or not the file has meshes: a file of animations alone plays on any skeleton with the joint names its tracks target (Animator3D). Read, never changed; shared by everything that plays it.
 
@@ -24,7 +24,7 @@ function getTrack(index:Int):Null<Track3D>
 
 ## Animator3D
 
-*class* in `src/helix/render3d/Animator3D.hx`
+*class* in [`src/helix/render3d/Animator3D.hx`](../../src/helix/render3d/Animator3D.hx)
 
 Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play() crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the Animator3D first moved it). queue() plays a clip next, when the one playing ends (a one-shot back to its idle). update() advances the time and poses the nodes; a Renderer3D draws them as they're left. One clip plays at a time (layers, playing an upper body's clip over a lower body's, aren't here yet).
 
@@ -58,7 +58,7 @@ function update(seconds:Float):Void
 
 ## Attachment3D
 
-*typedef* in `src/helix/render3d/Node3D.hx`
+*typedef* in [`src/helix/render3d/Node3D.hx`](../../src/helix/render3d/Node3D.hx)
 
 Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none.
 
@@ -67,7 +67,7 @@ Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, a
 
 ## Batch3D
 
-*class* in `src/helix/render3d/Batch3D.hx`
+*class* in [`src/helix/render3d/Batch3D.hx`](../../src/helix/render3d/Batch3D.hx)
 
 Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xAARRGGBB. Solid shapes are shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader.
 
@@ -115,7 +115,7 @@ function destroy():Void
 
 ## Camera3D
 
-*class* in `src/helix/render3d/Camera3D.hx`
+*class* in [`src/helix/render3d/Camera3D.hx`](../../src/helix/render3d/Camera3D.hx)
 
 A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's. Drawn through by Renderer3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its values are properties that clamp (fovY, near, far, orthographicHeight, minAspect, lensShiftX and lensShiftY), each held to its range as its doc comment says.
 
@@ -189,7 +189,7 @@ function project(x:Float, y:Float, z:Float, ?out:Point2D):Null<Point2D>
 
 ## CubeMap3D
 
-*class* in `src/helix/render3d/EnvironmentBake3D.hx`
+*class* in [`src/helix/render3d/EnvironmentBake3D.hx`](../../src/helix/render3d/EnvironmentBake3D.hx)
 
 A cubemap of linear RGB floats with its mips: mips[m] holds the six faces of (size >> m) squared texels each, three floats a texel.
 
@@ -207,7 +207,7 @@ final mips:Array<haxe.ds.Vector<Float>>
 
 ## DirectionalLight3D
 
-*class* in `src/helix/render3d/DirectionalLight3D.hx`
+*class* in [`src/helix/render3d/DirectionalLight3D.hx`](../../src/helix/render3d/DirectionalLight3D.hx)
 
 The sun: everything lit from one direction, its node's -z (aim it with lookAt or setRotation), wherever it is. It may cast shadows (shadowCasting), over what the camera sees out to its shadow distance.
 
@@ -219,7 +219,7 @@ function new()
 
 ## Drawing3D
 
-*class* in `src/helix/render3d/Drawing3D.hx`
+*class* in [`src/helix/render3d/Drawing3D.hx`](../../src/helix/render3d/Drawing3D.hx)
 
 3D drawing kept on a node (docs/DISPLAY_MODEL.md): Drawing2D's counterpart, as calls named as Batch3D's (line, triangle, cube, cubeWires, sphere, grid), each taking its own color (0xAARRGGBB), kept in order in the node's own units and drawn each frame where the node is, after the tree's opaque models and depth-tested against them, before what's seen through (smoke, glyphs), solid shapes shaded by Batch3D's fixed light; clear takes them away. Calling clear and drawing again in update is immediate drawing (a debug line, a path, a grid under a scene). Not lit by the tree's lights, not culled, not picked.
 
@@ -247,7 +247,7 @@ function grid(slices:Int, spacing:Float, color:Int):Void
 
 ## Environment3D
 
-*class* in `src/helix/render3d/Environment3D.hx`
+*class* in [`src/helix/render3d/Environment3D.hx`](../../src/helix/render3d/Environment3D.hx)
 
 A place's light (docs/DISPLAY_MODEL.md): the ambient light reaching everything evenly, the environment map lighting and reflecting the lit models, and the background drawn behind them. Data, set as a 3D node's environment (Node3D.environment, where a scene file's "environment" section puts it) or as a view's, which overrides what it shows (View3D.environment). How a camera photographs the place (exposure, tone mapping) is the view's, not this. Unlit to start: no ambient light, no map, no background.
 
@@ -279,7 +279,7 @@ function setBackground(map:Null<EnvironmentMap3D>, ?blur:Float = 0.):Bool
 
 ## EnvironmentBake3D
 
-*class* in `src/helix/render3d/EnvironmentBake3D.hx`
+*class* in [`src/helix/render3d/EnvironmentBake3D.hx`](../../src/helix/render3d/EnvironmentBake3D.hx)
 
 Prepares an environment map on the CPU, a step at a time (run, under a time budget), so that it spreads over frames: from an equirectangular image (a .hdr's linear light, or an 8-bit image's sRGB) it works out the light it casts on rough surfaces (irradiance, as 9 spherical-harmonic coefficients), a cubemap of the image at its own resolution (the background, its mips box-filtered for blur) and one blurred for each roughness (GGX-prefiltered, CUBE_SIZE a face and MIP_COUNT mips, roughness 0 to 1 across them: what smooth to rough surfaces reflect), both as half floats ready for the GPU; and once, shared by every environment, the split-sum BRDF table (brdfTable). Split-sum image-based lighting, as the glTF sample viewer, Filament and Unreal light with it. Conventions: directions are world space, +y up. An equirectangular image's u runs around the horizon, 0.5 looking toward -z and growing toward +x; v = 0 is straight up. Cubemap faces are +X, -X, +Y, -Y, +Z, -Z in GL's orientation (s, t from 0 to 1, t = 0 the face's first row). The coefficients are convolved for Lambert's diffuse and divided by pi: evaluated at a normal, they give irradiance over pi.
 
@@ -339,35 +339,9 @@ var backgroundSize(default, null):Int
 - `backgroundLevels`: The background cube once done: from backgroundSize down to 1, each its six faces one after another, RGBA half floats.
 - `backgroundSize`: The background cube's face size, once its size is known (0 before): the image's width over 4, rounded down to a power of two, 64 to 1024.
 
-## EnvironmentCache3D
-
-*class* in `src/helix/render3d/EnvironmentCache3D.hx`
-
-Environment maps from equirectangular images (2:1, latitude-longitude): a Radiance .hdr (true high dynamic range, recommended) or a PNG or JPEG (sRGB, low dynamic range). Loaded through the assets, prepared on the CPU a step at a time within a budget each frame (poll), one at a time, so a load spreads over frames rather than stalling one (a 1K image takes a few hundred milliseconds of steps natively), uploaded, and prepared again and replaced in place when a file changes during development. The runner's is what the Environments3D static forwards to; the caller releases what it loads. Needs a GPU that filters half floats (IGraphics.canSample(Rgba16f)); every HeliX target's does.
-
-```haxe
-function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
-var budgetMs(get, set):Float
-var busy(get, never):Bool
-function load(path:String, loaded:EnvironmentMap3D -> Void, ?failed:String -> Void):IRequest
-function release(environment:EnvironmentMap3D):Void
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function poll():Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets, decodes 8-bit images with images and uploads to gpu.
-- `budgetMs`: The milliseconds of preparation poll does a frame: 4 to start. A loading screen might raise it. At least 1e-6 (0 or less, or NaN, is 1e-6).
-- `busy`: Whether anything is still loading or being prepared.
-- `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
-- `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
-- `reloaded`: The file behind a loaded environment changed: it's prepared again and its cubes replaced, keeping its EnvironmentMap3D object, so the stages using it show the new one once that's done. A file that no longer reads leaves it as it was.
-- `poll`: Prepares the bake at the head of the queue for up to the budget, finishing it when it's done; the Runner calls it once a frame.
-- `shutdown`: Refuses new loads and drops the bakes under way; the environments already loaded stay until released.
-
 ## EnvironmentMap3D
 
-*class* in `src/helix/render3d/EnvironmentMap3D.hx`
+*class* in [`src/helix/render3d/EnvironmentMap3D.hx`](../../src/helix/render3d/EnvironmentMap3D.hx)
 
 An environment map, ready to light a stage and stand behind it (Renderer3D.setEnvironment, setBackground): its irradiance (the light it casts on rough surfaces, 9 spherical-harmonic coefficients), its prefiltered cube (what smooth to rough surfaces reflect) and its background cube (the image at its own resolution, blurred mips below), both half floats on the GPU. From Environments3D.load, which prepares it (EnvironmentBake3D) and replaces its cubes in place when its file changes during development.
 
@@ -391,7 +365,7 @@ function destroy(?gpu:IGraphics):Void
 
 ## Environments3D
 
-*class* in `src/helix/render3d/Environments3D.hx`
+*class* in [`src/helix/render3d/Environments3D.hx`](../../src/helix/render3d/Environments3D.hx)
 
 Environment maps from equirectangular images, prepared a little each frame (EnvironmentCache3D), installed by their first use, so a program with none carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from EnvironmentCache3D's public members with their doc comments.
 
@@ -409,7 +383,7 @@ static function release(environment:EnvironmentMap3D):Void
 
 ## Gltf
 
-*class* in `src/helix/render3d/Gltf.hx`
+*class* in [`src/helix/render3d/Gltf.hx`](../../src/helix/render3d/Gltf.hx)
 
 A glTF 2.0 file as read: its JSON document and its buffers, from a GLB (the binary container: a JSON chunk and a BIN chunk, its first buffer) or a .gltf (the JSON alone), with the reading of its accessors. A buffer inside the file (the GLB's, or a base64 data: URI) is read here; one in a file of its own (a uri beside the model) is the loader's to fetch and set (missingBuffers, setBuffer). Only what a ModelFile3D needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read.
 
@@ -443,7 +417,7 @@ function ints(index:Int):Array<Int>
 
 ## Hdr
 
-*class* in `src/helix/render3d/Hdr.hx`
+*class* in [`src/helix/render3d/Hdr.hx`](../../src/helix/render3d/Hdr.hx)
 
 A Radiance .hdr image (RGBE, "#?RADIANCE" or "#?RGBE", 32-bit_rle_rgbe, flat or run-length encoded scanlines, "-Y height +X width": the orientation every .hdr environment uses) read into linear RGB floats, three a pixel, rows top first, a band of rows at a time (readRows), so a large one can be read across frames.
 
@@ -469,7 +443,7 @@ function readRows(count:Int):Bool
 
 ## ImageSource3D
 
-*enum* in `src/helix/render3d/ModelFile3D.hx`
+*enum* in [`src/helix/render3d/ModelFile3D.hx`](../../src/helix/render3d/ModelFile3D.hx)
 
 Where a model's image file is.
 
@@ -479,7 +453,7 @@ Where a model's image file is.
 
 ## JointPalette3D
 
-*class* in `src/helix/render3d/JointPalette3D.hx`
+*class* in [`src/helix/render3d/JointPalette3D.hx`](../../src/helix/render3d/JointPalette3D.hx)
 
 The joints of a draw's skinned models, one data texture for them all (as skinning.glsl reads it: 1024 texels a row, three a joint, each joint's matrix's top three rows): a model's joints from its base, each the model's own space moved by the joint as posed, its inverse bind matrix applied (inverse(model world) × joint world × inverse bind). Renderer3D fills it once a pass and uploads it; also, a posed model's box.
 
@@ -507,7 +481,7 @@ function destroy():Void
 
 ## Light3D
 
-*class* in `src/helix/render3d/Light3D.hx`
+*class* in [`src/helix/render3d/Light3D.hx`](../../src/helix/render3d/Light3D.hx)
 
 A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight3D, a PointLight3D or a SpotLight3D (a stage never holds a bare Light3D). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier (a directional light's π shows a surface facing it at its color as written). Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Renderer3D.drawShadows): from the models that cast them onto those that receive them (Model3D.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
 
@@ -537,7 +511,7 @@ function setShadowBias(constant:Float, slope:Float):Bool
 
 ## Mat4
 
-*class* in `src/helix/render3d/Mat4.hx`
+*class* in [`src/helix/render3d/Mat4.hx`](../../src/helix/render3d/Mat4.hx)
 
 A 4x4 matrix of floats, column-major (element column * 4 + row), as shaders take it. Setters overwrite the whole matrix.
 
@@ -573,7 +547,7 @@ function writeTo(bytes:haxe.io.Bytes, ?offset:Int = 0):Void
 
 ## Material3D
 
-*class* in `src/helix/render3d/Material3D.hx`
+*class* in [`src/helix/render3d/Material3D.hx`](../../src/helix/render3d/Material3D.hx)
 
 How a model's surface looks: glTF's metallic-roughness model. A base color (0xAARRGGBB, its color sRGB-encoded as the convention's colors are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how rough (0..1) it is, an optional normal map (linear, tangent space, green up) and its strength, light it gives off (emissive), and whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw together.
 
@@ -615,7 +589,7 @@ var blended(get, set):Bool
 
 ## Mesh3D
 
-*class* in `src/helix/render3d/Mesh3D.hx`
+*class* in [`src/helix/render3d/Mesh3D.hx`](../../src/helix/render3d/Mesh3D.hx)
 
 Triangles for lit models: each vertex a position, a normal, texture coordinates and a tangent (Lit3DProgram's packing; the tangent's w its bitangent's sign, glTF's convention), indexed, with the box around them; a skinned one also each vertex's four joints and their weights (Skinned3DProgram's skin buffer), its box its bind pose's. Made once and never changed; a Renderer3D uploads it the first time it draws it. The shapes made here are centered on the origin, y up, counter-clockwise from outside (the front face), in world units, as the earlier frameworks' generated meshes.
 
@@ -683,7 +657,7 @@ function destroy():Void
 
 ## MeshShape3D
 
-*class* in `src/helix/render3d/MeshShape3D.hx`
+*class* in [`src/helix/render3d/MeshShape3D.hx`](../../src/helix/render3d/MeshShape3D.hx)
 
 What made a generated mesh (Mesh3D.shape): the generator's name, plane, cube, sphere, cylinder, cone, capsule or torus, and its arguments as it was called, by the generator's own parameter names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), the ones left at their defaults included, a count as a whole number. A scene file writes a Model3D's generated mesh from it; a mesh from arrays or from a file has none.
 
@@ -699,7 +673,7 @@ final arguments:Map<String, Float>
 
 ## Model3D
 
-*class* in `src/helix/render3d/Model3D.hx`
+*class* in [`src/helix/render3d/Model3D.hx`](../../src/helix/render3d/Model3D.hx)
 
 A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted (0xAARRGGBB, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows the joints it's bound to (bindSkeleton). Its mesh and material are its first part's.
 
@@ -737,37 +711,9 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin3D):Bool
 - `getJoint`: The node its joint index follows; null past them or unbound.
 - `bindSkeleton`: Binds it, a model of a skinned mesh, to a skeleton: each of skin's joints (its own skin when null) to the node of that name at or under skeleton, which must be on the same stage, so its vertices follow them. A piece of gear skinned in a file of its own follows a character this way, by joint name. False, changing nothing, for a mesh that isn't skinned, no skin, or a joint name the skeleton lacks.
 
-## ModelCache3D
-
-*class* in `src/helix/render3d/ModelCache3D.hx`
-
-Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through a TextureCache. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models3D static forwards to.
-
-```haxe
-function new(assets:IAssets, textures:TextureCache)
-function load(path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void):IRequest
-function find(path:String):Null<ModelFile3D>
-function isLoaded(path:String):Bool
-function isLoading(path:String):Bool
-var loadingCount(get, never):Int
-function put(path:String, file:ModelFile3D):Void
-function forget(path:String):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets, decoding images with textures.
-- `load`: Loads path (a .glb or .gltf) into a ModelFile3D: the file, then any buffers it keeps in files beside it, then its images (decoded from the file, or loaded from files beside it through the textures, which reload them when they change). One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends: loaded once its images are in (one that fails leaves its material untextured, with a warning), failed (else the log, with the path) for a load failure, a buffer that won't load, or a file it can't read. Neither runs once the request is cancelled (the shared load goes on for the others) or the service shuts down.
-- `find`: The file at path if it's loaded, else null.
-- `isLoaded`: Whether path is loaded.
-- `isLoading`: Whether path is loading.
-- `loadingCount`: How many files are loading.
-- `put`: Adds a file loaded some other way under path, as if loaded from there (a test's, a generated one).
-- `forget`: Forgets path: its file (the copies instantiated from it stay) or its failure, so it's loaded again when next asked for.
-- `shutdown`: Cancels every load (telling none of its callers) and forgets every file.
-
 ## ModelFile3D
 
-*class* in `src/helix/render3d/ModelFile3D.hx`
+*class* in [`src/helix/render3d/ModelFile3D.hx`](../../src/helix/render3d/ModelFile3D.hx)
 
 A model file read into what a Renderer3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file (ModelCache3D loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw together; each copy has lights and cameras of its own. Made by ModelCache3D; read, never changed after. Read: GLB and .gltf files, their buffers inside them, inline (data: URIs) or in files beside them, and their images in buffer views, inline or in files beside them; triangle primitives' positions, normals (worked out when missing), first texture coordinates and tangents (worked out when missing); metallic-roughness materials' base color and texture, metallic and roughness factors, normal map and its scale, emissive color (with KHR_materials_emissive_strength), alphaMode BLEND and doubleSided; nodes' names, translation, rotation and scale or matrix, and children; the default scene's roots; textures' samplers (filter and wrap); KHR_lights_punctual's directional, point and spot lights; cameras (a perspective one's yfov, znear and zfar, an orthographic one's ymag, znear and zfar; its aspectRatio or xmag is the viewport's business and isn't read); skins (each vertex's first four joints and weights, the joints by their nodes' names, their inverse bind matrices), each copy's skinned models bound to that copy's joints; animations as AnimationClips (clips), their tracks targeting nodes by name, so a file of animations alone plays on any skeleton with those names. Not read yet (warned once a file): morph targets (and animations of their weights), metallic-roughness, occlusion and emissive textures, alphaMode MASK, texture transforms (KHR_texture_transform beyond its texture coordinate set), a second texture coordinate set, and a second set of joints and weights (a vertex's fifth to eighth joints).
 
@@ -789,7 +735,7 @@ function instantiate(?name:String = ""):Node3D
 
 ## ModelPass3D
 
-*class* in `src/helix/render3d/ModelPass3D.hx`
+*class* in [`src/helix/render3d/ModelPass3D.hx`](../../src/helix/render3d/ModelPass3D.hx)
 
 An extra pass a model is drawn in after the stage's opaque models: the model again in one flat color, from the same records as its parts (static or skinned, instanced like it), either pushed out along its normals into a shell whose far side shows past its edges (an outline: helix.shader.Outline), or drawn only where something nearer hides it (a silhouette: helix.shader.Silhouette). Each kind's constructor adds it to its model. A stage draws its opaque models without silhouettes and its opaque sprites, then the silhouettes, then the opaque models with them (so a model's own parts never hide it), then every outline, then what's see-through.
 
@@ -807,7 +753,7 @@ function remove():Bool
 
 ## Models3D
 
-*class* in `src/helix/render3d/Models3D.hx`
+*class* in [`src/helix/render3d/Models3D.hx`](../../src/helix/render3d/Models3D.hx)
 
 Model files (glTF 2.0), loaded once and shared by path (ModelCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ModelCache3D's public members with their doc comments.
 
@@ -831,7 +777,7 @@ static function forget(path:String):Void
 
 ## Node3D
 
-*class* in `src/helix/render3d/Node3D.hx`
+*class* in [`src/helix/render3d/Node3D.hx`](../../src/helix/render3d/Node3D.hx)
 
 What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Model3D, DirectionalLight3D, PointLight3D, SpotLight3D, Camera3D, Sprite3D, Text3D, Particles3D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed.
 
@@ -907,7 +853,7 @@ var worldMatrix(get, never):Mat4
 
 ## Orbit3D
 
-*class* in `src/helix/render3d/Orbit3D.hx`
+*class* in [`src/helix/render3d/Orbit3D.hx`](../../src/helix/render3d/Orbit3D.hx)
 
 A circling camera: a point going round a target at a radius and a height, looking at the target. `update` advances it, `apply` places a camera there. At an angle of 0 the camera is on the target's +z side, and the angle grows toward +x. The examples' way of showing a model from all sides; a game moves its cameras its own way.
 
@@ -939,7 +885,7 @@ function apply(camera:Camera3D):Void
 
 ## Part3D
 
-*class* in `src/helix/render3d/Part3D.hx`
+*class* in [`src/helix/render3d/Part3D.hx`](../../src/helix/render3d/Part3D.hx)
 
 One piece of a Model3D: a mesh drawn with a material (a glTF primitive). A model's parts move together, as its node; each draws with the models alike in mesh and material.
 
@@ -955,7 +901,7 @@ var material:Material3D
 
 ## Particles3D
 
-*class* in `src/helix/render3d/Particles3D.hx`
+*class* in [`src/helix/render3d/Particles3D.hx`](../../src/helix/render3d/Particles3D.hx)
 
 An emitter of particles (helix.particle.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Renderer3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
 
@@ -987,7 +933,7 @@ var emitter(default, null):Emitter
 
 ## PickHit3D
 
-*class* in `src/helix/render3d/PickHit3D.hx`
+*class* in [`src/helix/render3d/PickHit3D.hx`](../../src/helix/render3d/PickHit3D.hx)
 
 What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's normal there in the world, facing back along the ray.
 
@@ -1009,7 +955,7 @@ function getNormal(axis:Int):Float
 
 ## PointLight3D
 
-*class* in `src/helix/render3d/PointLight3D.hx`
+*class* in [`src/helix/render3d/PointLight3D.hx`](../../src/helix/render3d/PointLight3D.hx)
 
 A light from its node's position in every direction, fading with distance, out to its range. It casts no shadows: it would need a map each way.
 
@@ -1023,13 +969,13 @@ var range(default, set):Float
 
 ## Projection3D
 
-*abstract* in `src/helix/render3d/Projection3D.hx`
+*abstract* in [`src/helix/render3d/Projection3D.hx`](../../src/helix/render3d/Projection3D.hx)
 
 How a Camera3D flattens the world onto its viewport: which of its two projections draws (Camera3D.projection).
 
 ## Ray3D
 
-*class* in `src/helix/render3d/Ray3D.hx`
+*class* in [`src/helix/render3d/Ray3D.hx`](../../src/helix/render3d/Ray3D.hx)
 
 A ray in the world: where it starts and the way it goes (a unit vector). Camera3D.computeRay makes one through a pixel; Renderer3D.pick follows one.
 
@@ -1063,7 +1009,7 @@ function hitHeight(y:Float):Float
 
 ## Renderer3D
 
-*class* in `src/helix/render3d/Renderer3D.hx`
+*class* in [`src/helix/render3d/Renderer3D.hx`](../../src/helix/render3d/Renderer3D.hx)
 
 What draws and picks a tree of 3D nodes (docs/DISPLAY_MODEL.md): each View3D's, never a game's, which shows a tree with a View3D. A draw (draw(camera), inside a frame) walks the tree as it is now (each world matrix worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material3D). Shadows: lights that cast them (Light3D.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its cone. EnvironmentMap3D: an environment map (Environments3D.load) lights its lit models as well (setEnvironment), diffuse light from all around and reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched. Surface shaders: a material's (Material3D.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's passes (ModelPass3D: outlines, silhouettes) are drawn from its records after the opaque models.
 
@@ -1129,7 +1075,7 @@ function destroy():Void
 
 ## Skin3D
 
-*class* in `src/helix/render3d/Skin3D.hx`
+*class* in [`src/helix/render3d/Skin3D.hx`](../../src/helix/render3d/Skin3D.hx)
 
 A skin: the joints a skinned mesh's vertices follow, by name, and each joint's inverse bind matrix (the mesh's space into the joint's, as it was bound). Shared by every model of a file showing it; a Model3D binds its joints to nodes by these names (Model3D.bindSkeleton), so a mesh skinned in one file can follow a skeleton from another with the same joint names. Read, never changed.
 
@@ -1149,7 +1095,7 @@ var getInverseBind(inline, null):(index:Int, i:Int) -> Float
 
 ## SpotLight3D
 
-*class* in `src/helix/render3d/SpotLight3D.hx`
+*class* in [`src/helix/render3d/SpotLight3D.hx`](../../src/helix/render3d/SpotLight3D.hx)
 
 A point light's falloff out to its range, within a cone around its node's -z: full inside its inner cone, fading to nothing at its outer. It may cast shadows (shadowCasting), over its cone out to its range (or its shadow distance, the nearer).
 
@@ -1169,7 +1115,7 @@ function setCone(inner:Float, outer:Float):Bool
 
 ## Sprite3D
 
-*class* in `src/helix/render3d/Sprite3D.hx`
+*class* in [`src/helix/render3d/Sprite3D.hx`](../../src/helix/render3d/Sprite3D.hx)
 
 A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by its alpha, unlit, tinted (0xAARRGGBB, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
 
@@ -1217,19 +1163,13 @@ function setAlphaMode(mode:AlphaMode, ?cutoff:Float = .5):Bool
 
 ## SpriteFacing3D
 
-*abstract* in `src/helix/render3d/SpriteFacing3D.hx`
+*abstract* in [`src/helix/render3d/SpriteFacing3D.hx`](../../src/helix/render3d/SpriteFacing3D.hx)
 
 How a 3D sprite or text faces.
 
-## SpriteKind3D
-
-*abstract* in `src/helix/render3d/Node3D.hx`
-
-Which of the kinds drawn through a renderer's sprites a node is (the engine's: Node3D.spriteKind).
-
 ## Sprites3D
 
-*class* in `src/helix/render3d/Sprites3D.hx`
+*class* in [`src/helix/render3d/Sprites3D.hx`](../../src/helix/render3d/Sprites3D.hx)
 
 A Renderer3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program), drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can reach), sorts them (opaque and masked ones by texture and effect; blended ones back to front; added ones by texture and effect), writes their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order into one upload, and draws each run of a texture and effect as one instanced draw (through the effect's sprite3D variant for a sprite with one): the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones last. A camera-facing sprite's axes are the camera's, uniforms of the draw.
 
@@ -1271,7 +1211,7 @@ function destroy():Void
 
 ## Text3D
 
-*class* in `src/helix/render3d/Text3D.hx`
+*class* in [`src/helix/render3d/Text3D.hx`](../../src/helix/render3d/Text3D.hx)
 
 A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until pickable is set: a label lets a pick through to what it's on.
 
@@ -1299,13 +1239,13 @@ var facing:SpriteFacing3D
 
 ## Tonemap
 
-*abstract* in `src/helix/render3d/Tonemap.hx`
+*abstract* in [`src/helix/render3d/Tonemap.hx`](../../src/helix/render3d/Tonemap.hx)
 
 How a stage brings lit color, which can run past 1 (bright lights, an HDR environment), into the 0..1 a screen shows, after its exposure.
 
 ## Track3D
 
-*class* in `src/helix/render3d/AnimationClip3D.hx`
+*class* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx)
 
 One node's motion along one path in a clip: the node by name, its keys' times (seconds, rising) and values.
 
@@ -1331,19 +1271,19 @@ function sample(seconds:Float, out:haxe.ds.Vector<Float>):Void
 
 ## TrackInterpolation3D
 
-*abstract* in `src/helix/render3d/AnimationClip3D.hx`
+*abstract* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx)
 
 How a track's keys run between them, glTF's three.
 
 ## TrackPath3D
 
-*abstract* in `src/helix/render3d/AnimationClip3D.hx`
+*abstract* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx)
 
 What a track moves: its node's position, rotation (a quaternion) or scale.
 
 ## View3D
 
-*class* in `src/helix/render3d/View3D.hx`
+*class* in [`src/helix/render3d/View3D.hx`](../../src/helix/render3d/View3D.hx)
 
 A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping; the light is the place's (Node3D.environment), unless the view's own environment overrides it. Drawn under every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's end. With a postProcess chain (View.postProcess) it's drawn into a texture instead and placed in the 2D's order like any 2D thing, so 2D drawn before it is under it. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it for itself.
 

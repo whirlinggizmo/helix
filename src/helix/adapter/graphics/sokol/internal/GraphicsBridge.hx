@@ -18,6 +18,7 @@ package helix.adapter.graphics.sokol.internal;
  <section if="macos"><vflag name="-framework" value="OpenGL"/></section>
 </target>')
 @:include("graphics_sokol.h")
+@:noCompletion
 extern class GraphicsBridge {
 	@:native("helix_setup") static function setup():Void;
 	@:native("helix_shutdown") static function shutdown():Void;

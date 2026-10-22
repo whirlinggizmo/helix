@@ -10,6 +10,7 @@ import haxe.io.Bytes;
 /** What either native graphics adapter (sokol_gfx's, SDL_GPU's) does the same: IGraphics passed to the C of shared/graphics.h as plain data
 	(GraphicsDeviceBridge), which each adapter's own C implements; it knows no program, layout or pipeline of HeliX's own. A call the C
 	refuses throws. An adapter sets its C up, builds programs from the dialect its C takes (createShader) and shuts down. */
+@:noCompletion
 abstract class NativeGraphics implements IGraphics {
 	/** The program's layout as the C reads it, a line each: attributes, uniform blocks, textures. */
 	static function layout(source:helix.graphics.ShaderSource):String {

@@ -5,6 +5,7 @@ import helix.adapter.shared.NativeInputSource;
 import helix.input.IInputSource;
 
 /** Native input through sokol_app: the sokol host's window events, and the OS's gamepads (evdev on Linux, XInput on Windows, none on macOS). */
+@:noCompletion
 class SokolInputSourceAdapter extends NativeInputSource implements IInputSource {
 	/** Sets up the native input bridge. */
 	public function new()

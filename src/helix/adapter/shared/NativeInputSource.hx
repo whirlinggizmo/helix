@@ -9,6 +9,7 @@ import helix.input.PadButton;
 /** What either native input source (sokol's or SDL3's) does the same: the window's queued events reported in order at poll (so a press and
 	release in one frame keep both edges), then the gamepads, all through the shared queue (input.h). An input adapter sets its source up,
 	moves it on each poll (pollSource) and shuts it down. */
+@:noCompletion
 abstract class NativeInputSource implements IInputSource {
 	var events:IInputEvents;
 	var buttons:Array<Bool> = [for (_ in PadButton.all) false];

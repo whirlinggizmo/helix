@@ -4,6 +4,7 @@ import helix.host.IWindow;
 
 /** The desktop window of either native host (sokol_app's or SDL's), through the C each implements (window.h). Moves are refused where the
 	compositor places windows (Wayland, XWayland). */
+@:noCompletion
 class NativeWindow implements IWindow {
 	/** The program's one native window. */
 	public function new() {}

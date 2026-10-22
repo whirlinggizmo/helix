@@ -16,6 +16,7 @@ import helix.texture.TextureFormat;
 	can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its
 	mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures static forwards to; the caller releases what it loads. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class TextureCache implements IReloadable {
 	static var VARIANTS:Array<{suffix:String, format:TextureFormat}> = [
 		{suffix: ".bc7.ktx", format: Bc7},

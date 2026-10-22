@@ -4,7 +4,7 @@
 
 ## BakedFont
 
-*typedef* in `src/helix/font/FontBaker.hx`
+*typedef* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
 
 A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 / padding a pixel.
 
@@ -20,7 +20,7 @@ A font's characters baked into one distance-field atlas: a byte a texel, 128 on 
 
 ## BakedGlyph
 
-*typedef* in `src/helix/font/FontBaker.hx`
+*typedef* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
 
 A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height. A glyph with nothing to draw (a space) has no size.
 
@@ -35,7 +35,7 @@ A baked glyph: its place in the atlas, its box's offset from the pen on the base
 
 ## Font
 
-*class* in `src/helix/font/Font.hx`
+*class* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx)
 
 A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
 
@@ -73,7 +73,7 @@ function destroy(?gpu:IGraphics):Void
 
 ## FontBaker
 
-*class* in `src/helix/font/FontBaker.hx`
+*class* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
 
 Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened into segments finer than a twentieth of a pixel, and each texel holds its signed distance to them (inside by the nonzero rule), so text drawn from it stays sharp from small to about four times the baked height. Glyphs are packed in rows, left to right.
 
@@ -83,31 +83,9 @@ static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding
 
 - `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
 
-## FontCache
-
-*class* in `src/helix/font/FontCache.hx`
-
-TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font.fromTrueType), the same on every target, and baked again in place when a file changes during development. The runner's is what the Fonts static forwards to; the caller releases what it loads.
-
-```haxe
-function new(assets:IAssets, gpu:IGraphics)
-function load(path:String, loaded:Font -> Void, ?failed:String -> Void):IRequest
-function getPath(font:Font):Null<String>
-function release(font:Font):Void
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets and uploads to gpu; shutdown shuts nothing down but this service.
-- `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
-- `getPath`: The file font was loaded from, or null for one this service didn't load.
-- `release`: Frees a font this service loaded, and stops reloading it.
-- `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font objects. A file that no longer reads leaves them as they were.
-- `shutdown`: Frees every font still loaded and takes no more loads: a load that lands after calls nothing. The runner's, at the program's end.
-
 ## Fonts
 
-*class* in `src/helix/font/Fonts.hx`
+*class* in [`src/helix/font/Fonts.hx`](../../src/helix/font/Fonts.hx)
 
 TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache's public members with their doc comments.
 
@@ -123,7 +101,7 @@ static function release(font:Font):Void
 
 ## Glyph
 
-*typedef* in `src/helix/font/Font.hx`
+*typedef* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx)
 
 Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels.
 
@@ -139,7 +117,7 @@ Where a glyph's texels are, and where it goes: x and y from the pen on the basel
 
 ## GlyphOutline
 
-*typedef* in `src/helix/font/TrueType.hx`
+*typedef* in [`src/helix/font/TrueType.hx`](../../src/helix/font/TrueType.hx)
 
 A glyph's outline in font units (y up): closed contours, each a list of points, x and y in turn, with whether each is on the curve; two off-curve points in a row have an on-curve point between them, as TrueType draws quadratic curves.
 
@@ -147,7 +125,7 @@ An alias of `Array<{points:Array<Float>, onCurve:Array<Bool>}>`.
 
 ## TrueType
 
-*class* in `src/helix/font/TrueType.hx`
+*class* in [`src/helix/font/TrueType.hx`](../../src/helix/font/TrueType.hx)
 
 A TrueType font file (glyf outlines) as read: its metrics, its characters' glyphs and their outlines, and the kerning between pairs (the GPOS table's pair adjustments, or the older kern table). Read in Haxe, the same on every target; Font bakes it into a texture. Throws, saying why, for a file it can't read: no glyf outlines (a CFF font), or a table missing or cut short.
 

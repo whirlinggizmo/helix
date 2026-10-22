@@ -4,7 +4,7 @@
 
 ## Audio
 
-*class* in `src/helix/audio/Audio.hx`
+*class* in [`src/helix/audio/Audio.hx`](../../src/helix/audio/Audio.hx)
 
 Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments, but for the buses and what plays through them, written here: the bus tree is plain engine data, there from the program's start, before the runner binds instance.
 
@@ -34,7 +34,7 @@ static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:Stri
 
 ## AudioClip
 
-*class* in `src/helix/audio/AudioClip.hx`
+*class* in [`src/helix/audio/AudioClip.hx`](../../src/helix/audio/AudioClip.hx)
 
 Fully decoded, reusable audio resource.
 
@@ -48,7 +48,7 @@ var path(default, null):Null<String>
 
 ## AudioDecodeResult
 
-*enum* in `src/helix/audio/AudioDecoding.hx`
+*enum* in [`src/helix/audio/AudioDecoding.hx`](../../src/helix/audio/AudioDecoding.hx)
 
 How a decode ended: mono 32-bit float PCM at 44100 Hz, samples -1 to 1; a failure message; or cancellation.
 
@@ -58,7 +58,7 @@ How a decode ended: mono 32-bit float PCM at 44100 Hz, samples -1 to 1; a failur
 
 ## AudioDecoding
 
-*class* in `src/helix/audio/AudioDecoding.hx`
+*class* in [`src/helix/audio/AudioDecoding.hx`](../../src/helix/audio/AudioDecoding.hx)
 
 Whole-file audio decoding, the same on every platform: a WAV (mono PCM16 at 44100 Hz, at most 4 seconds) decoded here, an Ogg (Vorbis, Opus) or MP3 by the platform's IAudioDecoder; at most 8 MiB encoded and 2Mi frames decoded; at most two at once, each completing exactly once on the host thread.
 
@@ -84,7 +84,7 @@ function shutdown():Void
 
 ## AudioPlayback
 
-*class* in `src/helix/audio/AudioPlayback.hx`
+*class* in [`src/helix/audio/AudioPlayback.hx`](../../src/helix/audio/AudioPlayback.hx)
 
 One playback, playing or paused, through a bus; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the page's first key or pointer press) it waits, its pause, volume, pitch and pan kept, and starts once audio runs. What the adapter hears is heardVolume, its own volume times its bus's heard volume, sent once a frame when either changed.
 
@@ -124,7 +124,7 @@ function poll():Void
 
 ## AudioResource
 
-*class* in `src/helix/audio/AudioResource.hx`
+*class* in [`src/helix/audio/AudioResource.hx`](../../src/helix/audio/AudioResource.hx)
 
 One owner plus active playback references. release() drops the owner's reference.
 
@@ -146,33 +146,9 @@ function release():Void
 - `releasePlayback`: Drops a playback's reference; the last reference destroys the backend resource.
 - `release`: Drops the owner's reference, once; the backend resource is destroyed when no playback still holds it.
 
-## AudioResources
-
-*class* in `src/helix/audio/AudioResources.hx`
-
-Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or packaged copy (or a remote URL where the platform plays one, else a download played as it arrives), their lifetimes counted, and playbacks, which wait while audio hasn't started. Plays on a platform's IAudio, which it polls; neither that nor the decoding is shut down by it.
-
-```haxe
-function new(assets:IAssets, backend:IAudio, decoding:AudioDecoding)
-function loadClip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
-function loadStream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
-function play(resource:AudioResource, ?loop:Bool = false, ?volume:Float = 1., ?bus:Bus):AudioPlayback
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function poll(delta:Float):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets, decodes with decoding (polled by its owner) and plays on backend (polled here).
-- `loadClip`: Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path) for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released.
-- `loadStream`: Opens path for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL where the backend plays one (a browser), else its download, played as it arrives and kept in the cache when it ends (IAssets.streamSource's download). One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a closed service, a missing asset, a failed download, or a source the backend cannot open.
-- `play`: Starts resource from the beginning at volume 0 to 1 through bus (Audio.effects when null), looping if asked; the playback holds the resource until it stops or finishes. While audio hasn't started (a browser before the page's first key or pointer press) the playback waits and starts once it runs; without an output, or with no free voice, it's finished at once. Throws for a closed service, a resource of another backend or already released by its owner, or a volume outside 0 to 1. A game plays through a bus (Bus.play, Audio.play).
-- `reloaded`: A clip's file changed: decode it, then give each clip from that path a new backend clip in place.
-- `poll`: Polls the backend, steps the buses' fades (from Audio.master) and the playbacks' by delta seconds (the frame's), sends each playback's heard volume to its voice when it changed, destroys replaced clips nothing still plays, drops disposed resources and finished playbacks, and runs queued completions. Call once per frame on the host thread.
-- `shutdown`: Cancels pending loads (telling none of their callers), stops every playback, releases the owner's reference on every resource, destroys replaced clips, and refuses later loads and plays.
-
 ## AudioStream
 
-*class* in `src/helix/audio/AudioStream.hx`
+*class* in [`src/helix/audio/AudioStream.hx`](../../src/helix/audio/AudioStream.hx)
 
 Progressively decoded resource. Stored and remote sources are independent policy.
 
@@ -184,7 +160,7 @@ function new(id:Int, backend:IAudio, releaseSource:() -> Void)
 
 ## Bus
 
-*class* in `src/helix/audio/Bus.hx`
+*class* in [`src/helix/audio/Bus.hx`](../../src/helix/audio/Bus.hx)
 
 A bus sounds are played through: a name, a parent, a volume, a mute and a fade, plain engine data. Audio.master is the root, Audio.music and Audio.effects are under it from the program's start, and Audio.addBus makes a game's own. A playback's heard volume is its own times its bus's heardVolume; the buses' fades advance and the heard volumes reach the voices once a frame (AudioResources.poll). A bus is held as a reference; its name is used only to save and load the volumes (Audio.saveBuses, Audio.loadBuses).
 
@@ -210,7 +186,7 @@ function all():Array<Bus>
 
 ## Fade
 
-*class* in `src/helix/audio/Fade.hx`
+*class* in [`src/helix/audio/Fade.hx`](../../src/helix/audio/Fade.hx)
 
 A volume (0 to 1) moving from one level to another over seconds along a curve (FadeCurve): linear in decibels so it sounds even, a silent end taken as FLOOR_DB, or linear in power for a crossfade; the last step lands on the end exactly. A bus's and a playback's fades each step one, once a frame.
 
@@ -232,13 +208,13 @@ function step(delta:Float):Float
 
 ## FadeCurve
 
-*abstract* in `src/helix/audio/FadeCurve.hx`
+*abstract* in [`src/helix/audio/FadeCurve.hx`](../../src/helix/audio/FadeCurve.hx)
 
 How a Fade moves between its levels: Decibels, linear in decibels, even to the ear for a fade to or from silence (a bus's and a playback's fades); Power, linear in power (the volume's square), so two sounds crossfaded this way, one out and one in, keep their sum's loudness through the middle (Audio.crossfade).
 
 ## IAudio
 
-*class* in `src/helix/audio/IAudio.hx`
+*class* in [`src/helix/audio/IAudio.hx`](../../src/helix/audio/IAudio.hx)
 
 Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's; lifetimes, volume checks, buses and fades, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its audio on the page's first key or pointer press and suspends it while the page is hidden or blurred; natively it runs once the device opens.
 
@@ -282,7 +258,7 @@ function shutdown():Void
 
 ## IAudioDecoder
 
-*class* in `src/helix/audio/IAudioDecoder.hx`
+*class* in [`src/helix/audio/IAudioDecoder.hx`](../../src/helix/audio/IAudioDecoder.hx)
 
 Compressed audio decoding on a platform: a whole Ogg (Vorbis, Opus) or MP3 file, mono or stereo, into mono 32-bit float PCM at 44100 Hz, samples -1 to 1 (mixed down and resampled as the platform can). Limits, the WAV path, queuing and cancellation are the shared AudioDecoding's.
 
@@ -296,7 +272,7 @@ function poll():Void
 
 ## Pcm
 
-*class* in `src/helix/audio/Pcm.hx`
+*class* in [`src/helix/audio/Pcm.hx`](../../src/helix/audio/Pcm.hx)
 
 The PCM format of clips: mono 32-bit float samples.
 
@@ -308,13 +284,13 @@ static function validate(samples:haxe.io.Bytes):Void
 
 ## PlayState
 
-*abstract* in `src/helix/audio/PlayState.hx`
+*abstract* in [`src/helix/audio/PlayState.hx`](../../src/helix/audio/PlayState.hx)
 
 Where a playback is: playing, paused, stopped (by stop(), or it never started), or complete (it played to its end).
 
 ## StreamOpenResult
 
-*enum* in `src/helix/audio/IAudio.hx`
+*enum* in [`src/helix/audio/IAudio.hx`](../../src/helix/audio/IAudio.hx)
 
 How opening a stream ended: its id, or a failure message.
 
@@ -323,7 +299,7 @@ How opening a stream ended: its id, or a failure message.
 
 ## Wav
 
-*class* in `src/helix/audio/Wav.hx`
+*class* in [`src/helix/audio/Wav.hx`](../../src/helix/audio/Wav.hx)
 
 Minimal, bounded RIFF decoder for mono PCM16/44100 assets.
 

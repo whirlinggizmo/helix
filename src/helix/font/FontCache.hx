@@ -12,6 +12,7 @@ import helix.graphics.IGraphics;
 	on every target, and baked again in place when a file changes during development. The runner's is what the Fonts static forwards to;
 	the caller releases what it loads. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class FontCache implements IReloadable {
 	var assets:IAssets;
 	var gpu:IGraphics;

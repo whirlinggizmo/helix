@@ -3,6 +3,7 @@ package helix.adapter.shared;
 import sys.thread.Deque;
 
 /** How a native adapter's threads hand work back to the host thread: post from any thread, deliver on the host thread (the adapter's poll). */
+@:noCompletion
 class Mailbox {
 	var deque = new Deque<Void->Void>();
 

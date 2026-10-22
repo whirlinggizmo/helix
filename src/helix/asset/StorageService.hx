@@ -33,6 +33,7 @@ enum StorageSourceResult {
 	refusing writes, at most two operations at once (or as many as it's made with), each completing exactly once on the host thread. The app's cache, and the packaged assets
 	read-only: the runner's cache is what the Storage static forwards to. */
 @:build(helix.macro.Facade.record())
+@:noCompletion
 class StorageService {
 	/** The largest file it stores or reads, in bytes. */
 	public static inline var MAX_BYTES = 8 * 1024 * 1024;

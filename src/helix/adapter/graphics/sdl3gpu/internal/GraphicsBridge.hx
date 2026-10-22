@@ -17,6 +17,7 @@ package helix.adapter.graphics.sdl3gpu.internal;
  <lib name="${HELIX_SDL3_LIBRARY}"/>
 </target>')
 @:include("graphics_sdl3gpu.h")
+@:noCompletion
 extern class GraphicsBridge {
 	@:native("helix_sdl3gpu_setup") static function setup():Int;
 	@:native("helix_sdl3gpu_shutdown") static function shutdown():Void;

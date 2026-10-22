@@ -3,6 +3,7 @@ package helix.adapter.host.dom;
 #if hotreload
 /** Development only (hotreload-hx): the dev server says which served files changed; those under the asset base are passed to changed, by
 	their asset path, to load again in place. */
+@:noCompletion
 class AssetWatcher {
 	var reloader:hotreload.Reloader;
 

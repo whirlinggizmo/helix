@@ -17,6 +17,7 @@ package helix.adapter.host.sokol.internal;
  <section if="macos"><vflag name="-framework" value="Cocoa"/><vflag name="-framework" value="QuartzCore"/><vflag name="-framework" value="OpenGL"/></section>
 </target>')
 @:include("host.h")
+@:noCompletion
 extern class HostBridge {
 	@:native("helix_run") static function run(init:cpp.Callable<Void->Void>, frame:cpp.Callable<Void->Void>, cleanup:cpp.Callable<Void->Void>,
 		sampleCount:Int):Void;

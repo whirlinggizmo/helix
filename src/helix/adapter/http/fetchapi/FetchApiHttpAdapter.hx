@@ -6,6 +6,7 @@ import helix.asset.IHttp;
 /** IHttp in a browser over fetch(): the body read as it arrives, abort through an AbortController. A request with conditional headers
 	(If-None-Match, If-Modified-Since) to another origin would need a CORS preflight, so there they're left out and the browser revalidates
 	its own copy instead (cache "no-cache"), answering 200. */
+@:noCompletion
 class FetchApiHttpAdapter implements IHttp {
 	var controllers:Array<js.html.AbortController> = [];
 
