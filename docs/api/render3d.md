@@ -1311,4 +1311,3 @@ function destroy():Void
 - `tonemap`: How lit color comes into the screen's 0..1 after the exposure (Khronos PBR Neutral to start).
 - `exposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is 0.
 - `drawnNodeCount`: How many models the last frame drew, the ones outside the camera's view culled.
-- `destroy`: Frees what it drew with (its GPU buffers); the tree is the app's.

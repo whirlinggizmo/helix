@@ -1,4 +1,6 @@
 import helix.graphics.Color;
+import helix.graphics.Graphics;
+import helix.graphics.PostProcess;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
@@ -16,14 +18,18 @@ import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
+import helix.shaders.Pixelate;
+import helix.shaders.Vignette;
 import helix.time.Time;
 
 /** Views on the stage (helix.render2d.View2D, helix.render3d.View3D; docs/DISPLAY_MODEL.md), nothing drawn by hand:
 	- a 2D world wider than the window, shown through a camera that scrolls across it (the arrows push it)
 	- the same world again in a minimap, a view inside a panel on the stage, its camera showing all of it, a frame over it marking what the big
 	  view sees
-	- a 3D view in a corner, a cube turning in its level's light (an Environment3D on the level's root), drawn under every 2D thing (the panel's edge overlaps it)
-	- the title straight on the stage, in pixels, over all of it */
+	- a 3D view in a corner, a cube turning in its level's light (an Environment3D on the level's root), pixelated by a chain of its own
+	  (View.postProcess), so drawn into a texture and placed in the 2D's order: the minimap's panel overlaps it (the panel's edge overlaps it)
+	- the title straight on the stage, in pixels, over all of it
+	- a vignette over everything, the stage's own chain (Stage.postProcess) */
 class App extends helix.App {
 	static inline var WORLD_WIDTH = 2400.;
 	static inline var WORLD_HEIGHT = 600.;
@@ -38,6 +44,9 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX views";
 		Stage.color = 0xff14161c;
+		// A vignette over everything the stage draws, a chain of the stage's own.
+		Stage.postProcess = new PostProcess(Graphics.instance);
+		Stage.postProcess.add(new Vignette(.6));
 		// The world: a ground and a row of posts, colors running along it.
 		world.addChild(Shape2D.rectangle(WORLD_WIDTH, 40, 0xff2f6b3a));
 		world.getChild(0).setPosition(0, WORLD_HEIGHT - 40);
@@ -65,15 +74,18 @@ class App extends helix.App {
 		level.addChild(cube);
 		eye.setView(0, 1.5, 3.5, 0, 0, 0);
 		var view3D = new View3D(level, eye, 240, 180);
+		// Pixelated by a chain of its own: drawn into a texture first, so it sits in the 2D's order (the panel below overlaps it).
+		view3D.postProcess = new PostProcess(Graphics.instance);
+		view3D.postProcess.add(new Pixelate(4));
 		view3D.setPosition(20, 60);
 		Stage.addChild(view3D);
 
 		// The minimap: a panel, and in it the same world through a camera showing all of it, the big view's sight marked.
 		var panel = Shape2D.rectangle(500, 140, 0xff23283a);
-		panel.setPosition(240, 200);
+		panel.setPosition(200, 200);
 		Stage.addChild(panel);
 		var map = new View2D(world, mapCamera, 480, 120);
-		map.setPosition(250, 210);
+		map.setPosition(210, 210);
 		Stage.addChild(map);
 		Stage.addChild(marker);
 
@@ -98,7 +110,7 @@ class App extends helix.App {
 		// The big view's sight, marked over the minimap, at the minimap's scale.
 		var scale = Math.min(480 / WORLD_WIDTH, 120 / WORLD_HEIGHT);
 		marker.setSize(seen * scale, Window.height * scale);
-		marker.setPosition(250 + scroll * scale, 210 + (WORLD_HEIGHT - Window.height) * scale);
+		marker.setPosition(210 + scroll * scale, 210 + (WORLD_HEIGHT - Window.height) * scale);
 		cube.setRotation(.4, Time.time * .8, 0);
 	}
 }

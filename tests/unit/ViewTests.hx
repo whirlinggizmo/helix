@@ -156,6 +156,18 @@ class ViewTests {
 		pointer.update();
 		check(pointer.hovered == box && pointer.hit3D != null, "and over the 3D under them, with its hit");
 		@:privateAccess helix.render2d.Stage.bind(null);
+
+		// A view with effects: drawn into a texture before the frame (from its second, at the size it was shown), then placed in the 2D's
+		// order; picked in the texture's space.
+		window.postProcess = new helix.graphics.PostProcess(gpu);
+		picks.draw(0);
+		check(@:privateAccess window.output == null, "The first frame: its size known, nothing drawn yet");
+		picks.draw(0);
+		var output = @:privateAccess window.output;
+		check(output != null && output.width == 200 && output.height == 200, "Then drawn into a texture its size");
+		check(picks.pick(400, 400) == target, "Picked through its texture's space");
+		window.destroy();
+		check(@:privateAccess window.output == null, "destroy frees its texture");
 		world3D.destroy();
 		picks.destroy();
 		view3D.destroy();

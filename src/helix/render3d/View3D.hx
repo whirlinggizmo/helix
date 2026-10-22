@@ -83,8 +83,27 @@ class View3D extends View {
 	override function pick3D(x:Float, y:Float, hit:Any):Null<Node> {
 		if (world == null)
 			return null;
+		// With a chain its camera's viewport is its texture: the point carried into it.
+		if (postProcess != null) {
+			x -= shownX;
+			y -= shownY;
+		}
 		var found = world.pick(camera, x, y, (hit : PickHit));
 		return found == null ? null : found.node;
+	}
+
+	override function drawInto(gpu:IGraphics, w:Int, h:Int, hdr:Bool, time:Float):Void {
+		if (world == null) {
+			world = new Stage3D(this.gpu != null ? this.gpu : gpu, content);
+			world.viewed = true;
+		}
+		world.viewEnvironment = environment;
+		camera.setViewport(w, h);
+		world.tonemap = tonemap;
+		world.exposure = exposure;
+		world.hdr = hdr;
+		world.time = time;
+		world.draw(camera);
 	}
 
 	override function prepare():Void
@@ -101,12 +120,13 @@ class View3D extends View {
 		camera.setViewportArea(areaX, areaY, areaWidth, areaHeight);
 		world.tonemap = tonemap;
 		world.exposure = exposure;
+		world.hdr = View.hdr;
 		world.time = time;
 		world.draw(camera);
 	}
 
-	/** Frees what it drew with (its GPU buffers); the tree is the app's. */
-	public function destroy():Void {
+	override public function destroy():Void {
+		super.destroy();
 		if (world != null)
 			world.destroy();
 		world = null;

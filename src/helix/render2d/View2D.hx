@@ -9,7 +9,8 @@ import helix.scene.Node;
 	(a minimap of the world); a world's emitters advance once a frame however many show them. */
 class View2D extends View {
 	var tree:Stage2D;
-	var pixels = new Camera2D();
+	// With a chain: the batch its tree is drawn into its texture with, the GPU's own.
+	var offscreen:Null<Batch2D>;
 
 	/** A view of content's children through camera (a new one at world 0, 0, zoom 1 unless given), width x height of its own units (0 for
 		the whole area of what shows it). */
@@ -30,16 +31,30 @@ class View2D extends View {
 		return content;
 
 	override function pickShown(x:Float, y:Float):Null<Node2D>
-		return tree.pick(camera, x, y);
+		return postProcess != null ? tree.pick(camera, x - shownX, y - shownY) : tree.pick(camera, x, y);
+
+	override public function destroy():Void {
+		super.destroy();
+		if (offscreen != null)
+			offscreen.destroy();
+		offscreen = null;
+	}
+
+	override function drawInto(gpu:helix.graphics.IGraphics, w:Int, h:Int, hdr:Bool, time:Float):Void {
+		if (offscreen == null)
+			offscreen = new Batch2D(gpu);
+		camera.setViewport(w, h);
+		offscreen.begin(camera);
+		tree.time = time;
+		tree.draw(offscreen, camera);
+		offscreen.end();
+	}
 
 	override function show(batch:Batch2D, outer:Camera2D, x:Int, y:Int, w:Int, h:Int, time:Float):Void {
 		camera.setViewport(outer.framebufferWidth, outer.framebufferHeight);
 		camera.setViewportArea(x, y, w, h);
-		// Clipped to its rectangle, given in framebuffer pixels through a camera whose world unit is one, from the top-left.
-		pixels.setViewport(outer.framebufferWidth, outer.framebufferHeight);
-		pixels.setPosition(outer.framebufferWidth / 2, outer.framebufferHeight / 2);
-		batch.resetTransform();
-		batch.camera = pixels;
+		// Clipped to its rectangle, given in framebuffer pixels.
+		placePixels(batch, outer);
 		batch.pushClip(x, y, w, h);
 		tree.time = time;
 		tree.draw(batch, camera);

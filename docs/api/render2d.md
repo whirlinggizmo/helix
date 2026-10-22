@@ -746,6 +746,7 @@ The stage: what the program shows, drawn by the runner after every update (Stage
 ```haxe
 static var instance(default, null):StageService
 static var color(get, set):Int
+static var postProcess(get, set):Null<PostProcess>
 static function addChild(node:Node2D):Void
 static function removeChild(node:Node2D):Bool
 static var childCount(get, never):Int
@@ -755,6 +756,7 @@ static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 
 - `instance`: The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `postProcess`: Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the screen.
 - `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
 - `childCount`: How many children the stage has.
@@ -798,6 +800,7 @@ The stage: the one thing the runner draws, after the app's update, every frame (
 ```haxe
 function new(gpu:IGraphics, presentation:Presentation)
 var color:Int
+var postProcess:Null<PostProcess>
 function addChild(node:Node2D):Void
 function removeChild(node:Node2D):Bool
 var childCount(get, never):Int
@@ -809,12 +812,13 @@ function destroy():Void
 
 - `new`: A stage drawn on gpu, its camera showing presentation's design units.
 - `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `postProcess`: Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the screen.
 - `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
 - `childCount`: How many children the stage has.
 - `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
 - `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
-- `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
+- `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it (through postProcess, when it has one: into its scene, then its effects presented on the screen). The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
 - `destroy`: Frees its batch.
 
 ## Text2D
@@ -970,10 +974,14 @@ What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a
 ```haxe
 var width:Float
 var height:Float
+var postProcess:Null<PostProcess>
+function destroy():Void
 ```
 
 - `width`: Its width in its own units; 0 or less for the whole area of what shows it.
 - `height`: Its height in its own units; 0 or less for the whole area of what shows it.
+- `postProcess`: Screen effects over what it shows (a pixelated game under a sharp HUD, a blurred world behind a menu), or null for none. With a chain, what it shows is drawn into a texture before the frame opens, the chain run over it, and the result drawn where the view is, in the 2D's order like any 2D thing (so a 3D view with a chain sits between 2D things), a frame behind its rectangle: it's drawn at the size the view was last shown at, and nothing shows the first frame.
+- `destroy`: Frees what it drew with (its texture for effects, its GPU buffers); the chain and the tree are the app's.
 
 ## View2D
 
@@ -985,6 +993,7 @@ A 2D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, plac
 function new(content:Node2D, ?camera:Camera2D, ?width:Float = 0., ?height:Float = 0.)
 var content(default, null):Node2D
 var camera:Camera2D
+function destroy():Void
 ```
 
 - `new`: A view of content's children through camera (a new one at world 0, 0, zoom 1 unless given), width x height of its own units (0 for the whole area of what shows it).

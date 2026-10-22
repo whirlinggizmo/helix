@@ -15,6 +15,7 @@ class StageService {
 	var camera = new Camera2D();
 	var batch:Null<Batch2D>;
 	var drawn3D:Array<View> = [];
+	var textured:Array<View> = [];
 
 	// The program's stage, made at its first use and drawn by the runner each frame (an optional part, helix.host.Part).
 
@@ -41,6 +42,12 @@ class StageService {
 
 	/** What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start. */
 	public var color:Int = 0xff000000;
+
+	/** Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the
+		stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D
+		views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the
+		screen. */
+	public var postProcess:Null<helix.graphics.PostProcess>;
 
 	/** Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to
 		the top, as Flash's addChild does (Node2D.addChild). */
@@ -80,7 +87,8 @@ class StageService {
 		return null;
 	}
 
-	/** Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner
+	/** Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it (through
+		postProcess, when it has one: into its scene, then its effects presented on the screen). The runner
 		calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's
 		paused); a program without one (a
 		test) calls it itself. */
@@ -92,15 +100,33 @@ class StageService {
 		// The 3D views the last frame reached draw their shadows before this one opens, as any pass into a texture must.
 		for (view in drawn3D)
 			view.prepare();
-		gpu.beginFrame(presentation.framebufferWidth, presentation.framebufferHeight, color);
+		// The views with a chain the last frame reached, drawn into their textures, as any pass into a texture must be, before the frame.
+		for (view in textured)
+			view.render(gpu, time);
+		var width = presentation.framebufferWidth,
+			height = presentation.framebufferHeight,
+			chain = postProcess;
+		if (chain != null) {
+			chain.beginScene(width, height, color);
+			View.hdr = chain.hdr;
+		} else
+			gpu.beginFrame(width, height, color);
 		batch.begin(camera);
 		View.deferred.resize(0);
+		View.textured.resize(0);
 		tree.draw(batch, camera);
+		textured = View.textured.copy();
 		// The 3D views the walk reached, drawn now: under every 2D thing, which the batch sends as it ends.
 		drawn3D = View.deferred.copy();
 		for (view in drawn3D)
 			view.drawDeferred();
 		batch.end();
+		if (chain != null) {
+			chain.endScene(time);
+			View.hdr = false;
+			gpu.beginFrame(width, height, 0xff000000);
+			chain.present();
+		}
 		gpu.endFrame();
 	}
 
