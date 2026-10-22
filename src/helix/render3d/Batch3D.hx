@@ -11,7 +11,11 @@ import haxe.io.Bytes;
 @:allow(helix)
 class Batch3D {
 	var gpu:IGraphics;
+	// The triangle and line vertices its data holds, and its GPU buffers' (which the next upload makes as big when they're less).
 	var capacity:Int;
+	var lineCapacity:Int;
+	var triangleBufferCapacity:Int;
+	var lineBufferCapacity:Int;
 	var triangles:Bytes;
 	var lines:Bytes;
 	var triangleBuffer:Int;
@@ -26,12 +30,13 @@ class Batch3D {
 	var transform = [1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 	var transformed = false;
 
-	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.  Without gpu, the program's (Graphics.instance). */
-	function new(?gpu:IGraphics, maxVertices = 65536) {
+	/** A batch with room for vertices triangle vertices and vertices line vertices a frame to start, each growing (twice as many) when a
+		frame needs more, with its own buffers on gpu; destroy frees them. Without gpu, the program's (Graphics.instance). */
+	function new(?gpu:IGraphics, vertices = 65536) {
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
-		capacity = maxVertices;
+		capacity = lineCapacity = triangleBufferCapacity = lineBufferCapacity = vertices > 6 ? vertices : 6;
 		triangles = Bytes.alloc(capacity * Color3DProgram.stride);
 		lines = Bytes.alloc(capacity * Color3DProgram.stride);
 		triangleBuffer = gpu.createBuffer(capacity * Color3DProgram.stride);
@@ -104,6 +109,17 @@ class Batch3D {
 	function end():Void {
 		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		camera.viewProjection.writeTo(uniforms);
+		// The GPU buffers as big as what grew this frame.
+		if (triangleBufferCapacity < capacity) {
+			gpu.destroyBuffer(triangleBuffer);
+			triangleBuffer = gpu.createBuffer(capacity * Color3DProgram.stride);
+			triangleBufferCapacity = capacity;
+		}
+		if (lineBufferCapacity < lineCapacity) {
+			gpu.destroyBuffer(lineBuffer);
+			lineBuffer = gpu.createBuffer(lineCapacity * Color3DProgram.stride);
+			lineBufferCapacity = lineCapacity;
+		}
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DProgram.stride);
 		gpu.updateBuffer(lineBuffer, lines, lineVertices * Color3DProgram.stride);
 		if (triangleVertices > 0) {
@@ -135,8 +151,13 @@ class Batch3D {
 	}
 
 	inline function vertex(x:Float, y:Float, z:Float, color:Int, brightness:Float):Void {
-		if (triangleVertices >= capacity)
-			throw "Batch3D capacity exceeded";
+		if (triangleVertices >= capacity) {
+			// Room for twice as many: the GPU buffer follows at the upload (end).
+			capacity *= 2;
+			var grown = Bytes.alloc(capacity * Color3DProgram.stride);
+			grown.blit(0, triangles, 0, triangleVertices * Color3DProgram.stride);
+			triangles = grown;
+		}
 		place(triangles, triangleVertices++, x, y, z, color, brightness);
 	}
 
@@ -152,8 +173,12 @@ class Batch3D {
 
 	/** A segment between two world points. */
 	function line(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void {
-		if (lineVertices + 2 > capacity)
-			throw "Batch3D capacity exceeded";
+		if (lineVertices + 2 > lineCapacity) {
+			lineCapacity *= 2;
+			var grown = Bytes.alloc(lineCapacity * Color3DProgram.stride);
+			grown.blit(0, lines, 0, lineVertices * Color3DProgram.stride);
+			lines = grown;
+		}
 		place(lines, lineVertices++, x0, y0, z0, color, 1);
 		place(lines, lineVertices++, x1, y1, z1, color, 1);
 	}

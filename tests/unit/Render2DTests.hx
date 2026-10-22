@@ -66,8 +66,14 @@ class CountingGraphics implements IGraphics {
 	function get_maxMsaaSamples():Int
 		return 1;
 
-	public function createBuffer(capacityBytes:Int):Int
-		return next++;
+	/** Each buffer's size as made, by handle. */
+	public var bufferBytes = new Map<Int, Int>();
+
+	public function createBuffer(capacityBytes:Int):Int {
+		var id = next++;
+		bufferBytes[id] = capacityBytes;
+		return id;
+	}
 
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int
 		return next++;
@@ -782,6 +788,24 @@ class Render2DTests {
 		sliceAndWrap();
 		rounded();
 		unsizedCamera();
+		// A batch with room for a few vertices grows to a frame's need: every rectangle uploaded, into a GPU buffer as big.
+		var growing = new CountingGraphics(),
+			small = new Batch2D(growing, 6),
+			view = new Camera2D();
+		view.setViewport(400, 300);
+		growing.beginFrame(400, 300, 0);
+		small.begin(view);
+		for (i in 0...1000)
+			small.rect(i % 40, Std.int(i / 40), 1, 1, 0xffffffff);
+		small.end();
+		var biggest = 0, fits = true;
+		for (handle => upload in growing.uploads) {
+			biggest = upload.length > biggest ? upload.length : biggest;
+			fits = fits && growing.bufferBytes.exists(handle) && upload.length <= growing.bufferBytes[handle];
+		}
+		check(biggest == 6000 * Sprite2DProgram.stride
+			&& fits, "A frame past a batch's room grows it: all 6000 vertices, in a buffer that holds them");
+
 		// Decals: a pool of sprites, the oldest put down again once full (last in the draw order), those next to be taken up faded.
 		var decals = new helix.render2d.Decals2D(Texture2D.fromRgba(1, 1, Bytes.alloc(4), new CountingGraphics()), 3);
 		check(decals.fadeCount == 0, "A quarter of 3 fades: none");

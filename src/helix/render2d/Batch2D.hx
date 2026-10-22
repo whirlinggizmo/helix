@@ -37,7 +37,9 @@ class Batch2D {
 	var font(default, null):Font;
 
 	var gpu:IGraphics;
+	// The vertices data holds, and the GPU buffer's (which the next upload makes as big when it's less).
 	var capacity:Int;
+	var bufferCapacity:Int;
 	var data:Bytes;
 	var buffer:Int;
 	var pipelines:Pipelines;
@@ -86,12 +88,13 @@ class Batch2D {
 	var b = 1.;
 	var a = 1.;
 
-	/** A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them.  Without gpu, the program's (Graphics.instance). */
-	function new(?gpu:IGraphics, maxVertices = 32768) {
+	/** A batch with room for vertices vertices a frame to start, growing (twice as many) when a frame needs more, with its own buffer,
+		pipeline and pixel font on gpu; cleanup frees them. Without gpu, the program's (Graphics.instance). */
+	function new(?gpu:IGraphics, vertices = 32768) {
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
-		capacity = maxVertices;
+		capacity = bufferCapacity = vertices > 6 ? vertices : 6;
 		data = Bytes.alloc(capacity * Sprite2DProgram.stride);
 		buffer = gpu.createBuffer(capacity * Sprite2DProgram.stride);
 		pipelines = Pipelines.of(gpu);
@@ -216,6 +219,12 @@ class Batch2D {
 		texture, camera and effect, each in its camera's viewport. Once a frame. */
 	function end():Void {
 		closeRun();
+		// The GPU buffer as big as what grew this frame.
+		if (bufferCapacity < capacity) {
+			gpu.destroyBuffer(buffer);
+			buffer = gpu.createBuffer(capacity * Sprite2DProgram.stride);
+			bufferCapacity = capacity;
+		}
 		gpu.updateBuffer(buffer, data, vertices * Sprite2DProgram.stride);
 		if (effectVertices > 0) {
 			if (effectBufferCapacity < effectCapacity) {
@@ -355,11 +364,16 @@ class Batch2D {
 	}
 
 	inline function vertex(x:Float, y:Float, u:Float, v:Float):Void {
-		if (vertices + effectVertices >= capacity)
-			throw "Batch2D capacity exceeded";
 		if (effect != null) {
 			effectVertex(x, y, u, v);
 			return;
+		}
+		if (vertices >= capacity) {
+			// Room for twice as many: the GPU buffer follows at the upload (end).
+			capacity *= 2;
+			var grown = Bytes.alloc(capacity * Sprite2DProgram.stride);
+			grown.blit(0, data, 0, vertices * Sprite2DProgram.stride);
+			data = grown;
 		}
 		var p = vertices++ * Sprite2DProgram.stride,
 			position = p + Sprite2DProgram.positionOffset,
@@ -417,7 +431,7 @@ class Batch2D {
 			useTexture(font.texture);
 
 	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is
-		a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
+		a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. */
 	function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
 		region(u0, v0, u1, v1);
@@ -433,7 +447,7 @@ class Batch2D {
 	}
 
 	/** texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it
-		(the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity. */
+		(the whole texture by default), tinted (0xAARRGGBB, white by default). */
 	function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, rotation = 0., tint = 0xffffffff, u0 = 0., v0 = 0., u1 = 1., v1 = 1.):Void {
 		useTexture(texture);
 		color(tint);
@@ -457,8 +471,7 @@ class Batch2D {
 
 	/** sheet's frame at index (SpriteSheet2D.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times
 		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white
-		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing.
-		Throws when the frame's vertices pass capacity. */
+		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. */
 	function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
 		var frame = sheet.getFrame(index);
 		if (frame == null)

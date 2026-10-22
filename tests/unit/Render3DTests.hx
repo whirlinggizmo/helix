@@ -350,6 +350,25 @@ class Render3DTests {
 		flags();
 		lightChoice();
 		cullingAndCasters();
+		// A 3D batch with room for a few vertices grows to a frame's need, its triangles and lines apart, into GPU buffers as big.
+		var gpu3 = new Render2DTests.CountingGraphics(),
+			small = new helix.render3d.Batch3D(gpu3, 6),
+			seen3 = new Camera3D();
+		seen3.setViewport(400, 300);
+		gpu3.beginFrame(400, 300, 0);
+		small.begin(seen3);
+		for (i in 0...500) {
+			small.triangle(i, 0, 0, i + 1, 0, 0, i, 1, 0, 0xffffffff);
+			small.line(i, 0, 0, i, 1, 0, 0xffffffff);
+		}
+		small.end();
+		var sizes = [for (handle => upload in gpu3.uploads) upload.length], fits3 = true;
+		for (handle => upload in gpu3.uploads)
+			fits3 = fits3 && upload.length <= gpu3.bufferBytes[handle];
+		sizes.sort((a, b) -> a - b);
+		check(sizes.length == 2 && sizes[0] == 1000 * Color3DProgram.stride && sizes[1] == 1500 * Color3DProgram.stride && fits3,
+			"A 3D batch past its room grows: 1000 line and 1500 triangle vertices, each in a buffer that holds them");
+
 		// Decals: a pool of flat sprites, the oldest put down again once full, those next to be taken up faded.
 		var decals = new helix.render3d.Decals3D(helix.texture.Texture2D.fromRgba(1, 1, haxe.io.Bytes.alloc(4), false, -1, -1, false,
 			new Render2DTests.CountingGraphics()), 4);
