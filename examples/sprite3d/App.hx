@@ -28,6 +28,7 @@ import helix.render3d.View3D;
 import helix.shader.SpriteDissolve;
 import helix.shader.SpriteFlash;
 import helix.shader.SpriteOutline;
+import helix.shader.SpriteRing;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit3D;
@@ -37,6 +38,7 @@ import helix.render3d.Orbit3D;
 	- trees, cut from the tile sheet, upright: they turn to the camera about y only, and stand on their bottom edge (pivot 0.5, 1)
 	- a flag on a sign post, as its node is turned (Free), and a coin flat on the ground (Ground)
 	- the coin's glow, added over everything (Add), and masked flames that cut out where their texels fade
+	- a ring round the coin, lying on the ground: a SpriteRing (dashed, turning, pulsing) drawn over a 1 x 1 white texture
 	Sprites are unlit and instanced: alike ones (a texture, an alpha mode, an effect) are one draw, and the readout counts them.
 	Sprite effects (helix.shader, as on 2D sprites): the trees share one SpriteOutline (1), read only inside each tree's cell of the sheet; the
 	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F. The flames shimmer (3) through the
@@ -120,6 +122,20 @@ class App extends helix.App {
 		var pedestal = new Model3D(Mesh3D.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
 		level.addChild(pedestal);
+
+		// A ring round the coin: drawn by its effect, the sprite's texture only a quad's, its tint the ring's color.
+		var white = haxe.io.Bytes.alloc(4);
+		white.fill(0, 4, 255);
+		var ring = new Sprite3D(helix.texture.Texture2D.fromRgba(1, 1, white), 0xc040e0ff);
+		ring.facing = Ground;
+		ring.setSpriteSize(1.6, 1.6);
+		ring.setPosition(-2, .01, 1.5);
+		var look = new SpriteRing();
+		look.dashes = 10;
+		look.spin = .1;
+		look.pulse = .1;
+		ring.effect = look;
+		level.addChild(ring);
 
 		logo = new Sprite3D(null);
 		logo.setSpriteSize(1.6, 1.6);

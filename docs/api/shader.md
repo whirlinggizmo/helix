@@ -342,6 +342,36 @@ var width(default, set):Float
 - `color`: The outline's color, 0xAARRGGBB (sRGB, its alpha how opaque), faded with each sprite's tint's alpha.
 - `width`: How far it reaches out from the shape, in the sprite's texels, 0 (none) to 32. Clamped to 0..32 (NaN is 0).
 
+## SpriteRing
+
+*class* in `src/helix/shader/SpriteRing.hx`
+
+A sprite effect of the library: a ring drawn across the sprite's quad, its color the sprite's tint: a selection under a unit, a target on the ground, a spell's reach, a range. Drawn, not sampled: the sprite's texture only gives the quad (a 1 x 1 white one does), and its size is the ring's. In 3D, a Sprite3D lying on the ground (facing Ground) gives a ring on flat ground. Its parts, each a property: the band between inner and outer, edges as soft as softness, a fill inside, dashes round it, spinning, and a pulse. Shared by the sprites given it (SpriteEffect): each ring of its own look has a SpriteRing of its own. Built on the program's GPU (Graphics) the first time one is made.
+
+```haxe
+function new()
+var inner(default, set):Float
+var outer(default, set):Float
+var softness(default, set):Float
+var fill(default, set):Float
+var dashes(default, set):Int
+var gap(default, set):Float
+var spin(default, set):Float
+var pulse(default, set):Float
+var pulseRate(default, set):Float
+```
+
+- `new`: A thin unbroken ring, still; set its properties for the rest.
+- `inner`: The band's inner edge, a fraction of the quad's half size (0 at its center, 1 at its sides): .8 by default.
+- `outer`: The band's outer edge, the same: .95 by default (a little in from the sides, so a soft edge and a pulse fit).
+- `softness`: How soft its edges are, a fraction of the quad's half size; never under a pixel. .02 by default.
+- `fill`: How much of the tint fills inside the band, 0 (a ring alone, the default) to 1 (a disc): a spell's area.
+- `dashes`: Dashes round it, a whole number: 0 (unbroken, the default), or how many: a range, a "can't go here".
+- `gap`: The gap's share of each dash, 0 to 1: .4 by default.
+- `spin`: How fast the dashes turn, in turns a second (negative, the other way): 0 by default.
+- `pulse`: How much it grows and shrinks as it pulses, 0 (still, the default) to 1 (by half its size each way): a destination that throbs.
+- `pulseRate`: Pulses a second: 1 by default.
+
 ## Tonemap
 
 *class* in `src/helix/shader/Tonemap.hx`

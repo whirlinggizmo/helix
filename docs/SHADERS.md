@@ -334,17 +334,16 @@ which.
 as its model draws), so a game sets them in `update` as often as it likes: a strength that fades, a color that pulses, a time of its own. The library's surface classes decode in Haxe (`helix.shader.LibrarySurface`) or in GLSL (`unlit.glsl`).
 
 **How bright a surface looks.** A surface is lit as glTF lights it: its diffuse is its color divided by π, times the light. A
-`DirectionalLight3D` of intensity 1 (its default) so lights a surface facing it to about a third of its color in light, which shows as
-roughly 60 to 70% of the color's value on screen; one of about 3 (π) shows the color as written, and the stage's ambient light (`Environment3D.setAmbient`) adds on top. The tone mapping (Neutral by default, on the
-`View3D`) then softens values near 1, so a fully saturated color lit straight on stops a little short of 255. To judge a surface shader's
-colors, light it with a sun of about 3 and a little ambient:
+`DirectionalLight3D` starts at intensity π, so a surface facing it shows its color as written; the stage's ambient light
+(`Environment3D.setAmbient`) adds on top, and the tone mapping (Neutral by default, on the `View3D`) then softens values near 1, so a fully
+saturated color lit straight on stops a little short of 255. A sun at 1 shows it at roughly 60 to 70% on screen. To judge a surface
+shader's colors, light it with the default sun and a little ambient:
 
 ```haxe
 var level = new Node3D(), camera = new Camera3D();      // helix.render3d
 level.environment = new Environment3D();
 level.environment.setAmbient(0xffffffff, .1);
-var sun = new DirectionalLight3D();
-sun.intensity = 3;
+var sun = new DirectionalLight3D();                      // intensity π: colors as written
 sun.setRotation(-.8, .5, 0);
 level.addChild(sun);
 var material = new Material3D();

@@ -180,7 +180,7 @@ class SceneFileTests {
 	// A small sample in any key order, with values at their defaults, writes the pinned canonical form.
 	static function canonical():Void {
 		var text = '{"nodes": [
-			{"name": "sun", "intensity": 1, "shadowCasting": true, "color": "#fff4e0ff", "rotation": [-0.6, 0.7, 0], "kind": "DirectionalLight3D",
+			{"name": "sun", "intensity": 3.141592653589793, "shadowCasting": true, "color": "#fff4e0ff", "rotation": [-0.6, 0.7, 0], "kind": "DirectionalLight3D",
 				"position": [0, 0, 0], "enabled": true},
 			{"name": "group", "kind": "Node3D", "visible": false, "scale": [1, 1, 1], "children": [
 				{"kind": "Model3D", "name": "cone", "file": "props/cone.glb", "position": [1, 0.5, 0.3333333333], "rotation": [-2.25, 0, 0],

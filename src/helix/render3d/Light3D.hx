@@ -1,8 +1,7 @@
 package helix.render3d;
 
 /** A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight3D, a PointLight3D or a SpotLight3D (a stage
-	never holds a bare Light3D). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is
-	about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node.
+	never holds a bare Light3D). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier (a directional light's π shows a surface facing it at its color as written). Under a model, a lamp's bulb, it moves with it; it has children as any node.
 
 	A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Renderer3D.drawShadows): from the models that cast
 	them onto those that receive them (Model3D.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the
@@ -15,7 +14,8 @@ abstract class Light3D extends Node3D {
 	/** Its color, 0xAARRGGBB. */
 	public var color:Int = 0xffffffff;
 
-	/** Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0). */
+	/** Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0). A directional light's starts at π (a surface facing it shows its
+		color as written), a point's and a spot's at 1. */
 	public var intensity(default, set):Float = 1.;
 
 	function set_intensity(value:Float):Float

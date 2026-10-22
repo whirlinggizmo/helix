@@ -34,6 +34,9 @@ import helix.host.ScreenShape;
 	- "tint": a white copy of the logo cycling through colors (a tint multiplies the texels, so it can't show on the black logo)
 	- "palette": a little creature made here as indexed pixels (its red channel a color's index), drawn in a palette's colors
 	- the logo once more in the corner, drawn by a Drawing2D (Flash's graphics) with the text, no sprite
+	- a selection ring under the sprite the pointer is over: a SpriteRing (dashed, turning, a faint fill) on a 1 x 1 white texture, at the
+	  sprite's position (its pivot), sized by its bounds in its own units (Node2D.computeBounds relative to itself: unturned), so it stays
+	  steady while the sprite turns, as a ring under a unit does
 	Sprite effects (helix.shader, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
 	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the
@@ -77,6 +80,9 @@ class App extends helix.App {
 	var tints:Array<Int> = [];
 	var sheetFrame = 0;
 	var hovered = -1;
+	// The ring under the hovered sprite, and the bounds it's sized by.
+	var selection:Sprite2D;
+	var selected = new helix.math.Bounds2D();
 	var outline:SpriteOutline;
 	var dissolve:SpriteDissolve;
 	var flash:SpriteFlash;
@@ -110,6 +116,20 @@ class App extends helix.App {
 				return Std.int(127 + 127 * Math.sin(a + phase));
 			tints.push(Color.fromChannels(channel(0), channel(2.1), channel(4.2)));
 		}
+		// Under the sprites, so it rings them: drawn by its effect, its texture only a quad's, its tint the ring's color.
+		var white = haxe.io.Bytes.alloc(4);
+		white.fill(0, 4, 255);
+		selection = new Sprite2D(helix.texture.Texture2D.fromRgba(1, 1, white), 0xffffe066);
+		var ring = new helix.shader.SpriteRing();
+		ring.inner = .8;
+		ring.outer = .92;
+		ring.fill = .12;
+		ring.dashes = 16;
+		ring.gap = .35;
+		ring.spin = .3;
+		selection.effect = ring;
+		selection.visible = false;
+		Stage.addChild(selection);
 		for (i in 0...NAMES.length) {
 			var sprite = new Sprite2D(null);
 			sprite.name = NAMES[i];
@@ -287,6 +307,16 @@ class App extends helix.App {
 			var grow = i == hovered ? 1.15 : 1;
 			// "flip" keeps its mirror.
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
+		}
+		// The ring at the hovered sprite's position (its pivot), sized by its bounds in its own units (unturned: steady while it turns), scaled
+		// as it is and a little wider.
+		var own = hovered >= 0 ? sprites[hovered].computeBounds(sprites[hovered], selected) : null;
+		selection.visible = own != null;
+		if (own != null) {
+			var sprite = sprites[hovered],
+				size = Math.max(own.width, own.height) * Math.abs(sprite.scaleY) * 1.4;
+			selection.setPosition(sprite.x, sprite.y);
+			selection.setSize(size, size);
 		}
 
 		drawing.clear();

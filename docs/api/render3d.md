@@ -213,7 +213,7 @@ The sun: everything lit from one direction, its node's -z (aim it with lookAt or
 function new()
 ```
 
-- `new`: A white directional light of intensity 1 shining down its -z.
+- `new`: A white directional light of intensity π shining down its -z: lit as glTF lights a surface (its diffuse its color over π), a surface facing it shows its own color, as written, before the ambient light and the tone mapping.
 
 ## Drawing3D
 
@@ -507,7 +507,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Light3D.hx`
 
-A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight3D, a PointLight3D or a SpotLight3D (a stage never holds a bare Light3D). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Renderer3D.drawShadows): from the models that cast them onto those that receive them (Model3D.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
+A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight3D, a PointLight3D or a SpotLight3D (a stage never holds a bare Light3D). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier (a directional light's π shows a surface facing it at its color as written). Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Renderer3D.drawShadows): from the models that cast them onto those that receive them (Model3D.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
 
 ```haxe
 var color:Int
@@ -523,7 +523,7 @@ function setShadowBias(constant:Float, slope:Float):Bool
 ```
 
 - `color`: Its color, 0xAARRGGBB.
-- `intensity`: Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0).
+- `intensity`: Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0). A directional light's starts at π (a surface facing it shows its color as written), a point's and a spot's at 1.
 - `shadowCasting`: Whether it casts shadows (always false for a point light: it would need a map each way).
 - `shadowDistance`: How far from the camera a directional light's shadows reach, in world units (50 by default); a spot's reach no further. Shorter is sharper: the map covers less. At least 1e-6 (0 or less, or NaN, is 1e-6) and finite (infinity is the largest finite Float).
 - `shadowMapSize`: Its shadow map's side in texels (2048 by default): a power of two from 256 to 4096, what it's given rounded down to one and into that range. A stage's casting lights share the largest asked for.

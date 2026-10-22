@@ -64,9 +64,9 @@ class SceneSchema3D {
 				new PropertySchema("shadowCasting", PropertyType.Flag, SceneValue.Flag(true)),
 				new PropertySchema("shadowReceiving", PropertyType.Flag, SceneValue.Flag(true))
 			]),
-		new KindSchema("DirectionalLight3D", light().concat(shadows())),
-		new KindSchema("PointLight3D", light().concat([range()])),
-		new KindSchema("SpotLight3D", light().concat(shadows()).concat([
+		new KindSchema("DirectionalLight3D", light(Math.PI).concat(shadows())),
+		new KindSchema("PointLight3D", light(1).concat([range()])),
+		new KindSchema("SpotLight3D", light(1).concat(shadows()).concat([
 			range(),
 			new PropertySchema("innerCone", PropertyType.Number(0, Math.PI / 2), SceneValue.Number(0.3)),
 			new PropertySchema("outerCone", PropertyType.Number(0, Math.PI / 2), SceneValue.Number(0.4))
@@ -179,11 +179,12 @@ class SceneSchema3D {
 		return null;
 	}
 
-	// What every light writes (Light3D's color and intensity), a fresh table each time, as each kind's table is its own.
-	static function light():Array<PropertySchema>
+	// What every light writes (Light3D's color and intensity, the kind's own default intensity), a fresh table each time, as each kind's table
+	// is its own.
+	static function light(intensity:Float):Array<PropertySchema>
 		return [
 			new PropertySchema("color", PropertyType.Color, SceneValue.Color(0xffffffff)),
-			new PropertySchema("intensity", PropertyType.Number(0), SceneValue.Number(1))
+			new PropertySchema("intensity", PropertyType.Number(0), SceneValue.Number(intensity))
 		];
 
 	// What a light that can cast shadows writes (a directional light or a spot; a point light casts none, so its table has none of these).
