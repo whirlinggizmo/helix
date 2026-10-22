@@ -1,9 +1,8 @@
 # The display model
 
-**Status:** designed with the user on 2026-10-22, the day before the ATL Gamedevs Jam; built on the branch `display-model`, merged into
-`main` only when the tests, the type check, every example in the browser and a native run are green. Until it merges, `main` is the old
-model (an `App.frame` that draws, `Stage2D`/`Stage3D`, the `Scenes` stack). Decision 145 records it; this document is the design, and the
-place to pick the work up from.
+**Status:** designed with the user on 2026-10-22, the day before the ATL Gamedevs Jam, and built on the branch `display-model` (steps 1 to
+8 below, each committed with its checks), merged into `main` once the native autopilots and the Windows build pass. Decision 145 records
+it; this document is the design, and the place to pick the work up from. Where the build departed from the first plan it says so below.
 
 ## Why
 
@@ -228,6 +227,14 @@ class Game extends helix.App {
   a prompt) with a behavior (wait, then go to the scene its `next` prop names): `Splash` and `Loading` shrink to default files and their
   behaviors, restyled in a file or an editor rather than subclassed.
 - **Regional environments:** the nearest ancestor's, several per view.
+- **Optional parts of the 3D renderer:** its sprites, text and particles (`Sprites3D`, `Emitter`) and its skinning (the skinned program, the
+  joint palette, the skinned shadow and pick paths) linked only into programs that use them, as views, drawings and emitters already are in
+  2D (`Node2D.drawOwn`): the lit-3D rung of the size ladder links them all today (134 KB gzipped).
+- **Sprite effects on text and drawings:** `Batch2D.effect` is set to none for a `Text2D` and a `Drawing2D`, so a flash or an outline can't
+  cover them (the sprite2d example's title no longer flashes).
+- **Presses for frame-driven screens:** in a fast autopilot (several ticks a frame) each tick ends its presses, so a screen that runs once a
+  frame (`Splash`, `Loading`, a `Transition`) misses one made in an earlier tick; the scenes example holds the press itself.
+- **A test harness publishing after the frame is drawn,** so a snapshot's draw counts are the frame's own, not the one before.
 - **Fixed steps built in:** an app option for the tick rate, a `tick()` override called at it, and the fraction between ticks readable in
   `update`, so no game makes a `Ticker` (Flash's `frameRate`); today a game advances a `Ticker` in `update` and places its nodes at the
   drawn position (`Body2D.getDrawnX(fraction)`).
