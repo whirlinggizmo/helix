@@ -58,6 +58,7 @@ var drawCallCount(get, never):Int
 var font(default, null):Font2D
 function begin(camera:Camera2D):Void
 var camera(default, set):Camera2D
+var alpha:Float
 var effect(default, set):Null<SpriteEffect>
 var time:Float
 var transformA(get, never):Float
@@ -101,6 +102,7 @@ function destroy():Void
 - `font`: The built-in pixel font, whose texture also has the white texel shapes use.
 - `begin`: Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls only fill it until end.
 - `camera`: The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one batch.
+- `alpha`: What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded). 1 at begin. Particles aren't faded by it.
 - `effect`: The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
 - `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it to the stage's time.
 - `transformA`: The transform's a: x's share of a point's x.
@@ -236,6 +238,40 @@ function apply(camera:Camera2D):Void
 - `snap`: Puts the view's center at x, y at once (a respawn, a new level), within its bounds at the next update.
 - `update`: Follows the target at targetX, targetY (world units) for dt seconds, seeing as much as camera shows (its viewport at its zoom), and advances the shake.
 - `apply`: Places camera at the followed point, thrown by the shake.
+
+## Drawing2D
+
+*class* in `src/helix/render2d/Drawing2D.hx`
+
+Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle, circleLines, line, polygon, polygonLines, drawText), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away. Calling clear and drawing again in update is immediate drawing, as Flash games did it. Not culled; picked by the box around what it holds.
+
+```haxe
+function new()
+var callCount(get, never):Int
+function clear():Void
+function rect(x:Float, y:Float, w:Float, h:Float, color:Int):Void
+function frame(x:Float, y:Float, w:Float, h:Float, width:Float, color:Int):Void
+function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, color:Int):Void
+function circle(x:Float, y:Float, radius:Float, color:Int):Void
+function circleLines(x:Float, y:Float, radius:Float, width:Float, color:Int):Void
+function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, color:Int):Void
+function polygon(points:Array<Float>, color:Int):Bool
+function polygonLines(points:Array<Float>, width:Float, color:Int):Bool
+function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
+```
+
+- `new`: A drawing holding nothing yet.
+- `callCount`: How many calls it holds.
+- `clear`: Takes everything drawn away.
+- `rect`: A filled rectangle, top-left at x, y, w x h.
+- `frame`: A rectangle's outline drawn inside its bounds, width wide.
+- `roundedRect`: A filled rectangle with corners of radius (clamped to half the shorter side).
+- `circle`: A filled circle centered on x, y.
+- `circleLines`: A circle's outline width wide, centered on the circle of radius around x, y.
+- `line`: A segment width wide from x0, y0 to x1, y1, square ended.
+- `polygon`: A filled polygon through points (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). False, holding nothing more, for fewer than 3 points or one that can't be filled.
+- `polygonLines`: A polygon's outline through points (copied), closed, width wide centered on its edges. False, holding nothing more, for fewer than 2 points.
+- `drawText`: One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's).
 
 ## Font2D
 
@@ -379,6 +415,7 @@ What a Stage2D holds: a transform in a tree, with children of its own kind. A ba
 
 ```haxe
 function new()
+var alpha(default, set):Float
 var parent(get, set):Null<Node2D>
 function getChild(index:Int):Null<Node2D>
 function find(name:String):Null<Node2D>
@@ -404,6 +441,7 @@ function toLocalY(x:Float, y:Float):Float
 ```
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
+- `alpha`: How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it.
 - `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
 - `getChild`: Its child at index, in drawing order; null past the end.
 - `find`: The first node named name below it (depth first, in drawing order), or null: found once and kept, never a path.

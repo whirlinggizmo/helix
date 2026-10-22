@@ -101,6 +101,7 @@ class Batch2D {
 		camera.fitFramebuffer();
 		@:bypassAccessor this.camera = camera;
 		@:bypassAccessor effect = null;
+		alpha = 1;
 		vertices = 0;
 		effectVertices = 0;
 		draws = 0;
@@ -123,6 +124,10 @@ class Batch2D {
 	/** The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one
 		batch. */
 	public var camera(default, set):Camera2D;
+
+	/** What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded).
+		1 at begin. Particles aren't faded by it. */
+	public var alpha:Float = 1.;
 
 	function set_camera(value:Camera2D):Camera2D {
 		if (value != camera) {
@@ -335,7 +340,7 @@ class Batch2D {
 		r = Color.getRed(value) / 255;
 		g = Color.getGreen(value) / 255;
 		b = Color.getBlue(value) / 255;
-		a = Color.getAlpha(value) / 255;
+		a = Color.getAlpha(value) / 255 * alpha;
 	}
 
 	inline function vertex(x:Float, y:Float, u:Float, v:Float):Void {
@@ -680,7 +685,7 @@ class Batch2D {
 		r = (Color.getRed(from) * (1 - t) + Color.getRed(to) * t) / 255;
 		g = (Color.getGreen(from) * (1 - t) + Color.getGreen(to) * t) / 255;
 		b = (Color.getBlue(from) * (1 - t) + Color.getBlue(to) * t) / 255;
-		a = (Color.getAlpha(from) * (1 - t) + Color.getAlpha(to) * t) / 255;
+		a = (Color.getAlpha(from) * (1 - t) + Color.getAlpha(to) * t) / 255 * alpha;
 		vertex(px, py, u, v);
 	}
 

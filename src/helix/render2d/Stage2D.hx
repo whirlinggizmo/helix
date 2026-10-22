@@ -22,6 +22,9 @@ class Stage2D {
 	var views:Array<Null<View>> = [];
 	// Whether each node in the order is paused, itself or by a node above it: its emitters held still.
 	var frozen:Array<Bool> = [];
+	// Each node's alpha times its parent's, from the batch's alpha as the draw began (a view's, nested).
+	var alphas:Array<Float> = [];
+	var drawings:Array<Null<Drawing2D>> = [];
 	// The camera the walk draws through, which a view it reaches shows its tree inside.
 	var walkCamera:Null<Camera2D>;
 	// The places where the clips a walk is inside end, innermost last; and for a pick, the clipping nodes, outermost first.
@@ -89,6 +92,7 @@ class Stage2D {
 		dt = Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime);
 		drawnTime = time;
 		var rootChanged = walkStart();
+		var incoming = batch.alpha, base = incoming * root.alpha;
 		var n = order.length, i = 0;
 		while (i < n) {
 			while (clipEnds.length > 0 && clipEnds[clipEnds.length - 1] <= i) {
@@ -102,6 +106,8 @@ class Stage2D {
 			}
 			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
 			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
+			alphas[i] = node.alpha * (p >= 0 ? alphas[p] : base);
+			batch.alpha = alphas[i];
 			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
 			if (node.visible)
 				drawNode(batch, i);
@@ -119,6 +125,7 @@ class Stage2D {
 			batch.popClip();
 		}
 		batch.effect = null;
+		batch.alpha = incoming;
 		batch.resetTransform();
 	}
 
@@ -128,6 +135,7 @@ class Stage2D {
 			rebuild();
 		moved.resize(order.length);
 		frozen.resize(order.length);
+		alphas.resize(order.length);
 		clipEnds.resize(0);
 		return root.update(false);
 	}
@@ -142,6 +150,7 @@ class Stage2D {
 		texts.resize(0);
 		emitters.resize(0);
 		views.resize(0);
+		drawings.resize(0);
 		for (i in 0...root.childCount)
 			list(root.getChild(i), -1);
 		builtStructure = root.structure;
@@ -158,6 +167,7 @@ class Stage2D {
 		texts.push(Std.downcast(node, Text2D));
 		emitters.push(Std.downcast(node, Particles2D));
 		views.push(Std.downcast(node, View));
+		drawings.push(Std.downcast(node, Drawing2D));
 		for (i in 0...node.childCount)
 			list(node.getChild(i), at);
 		endOf[at] = order.length;
@@ -219,6 +229,13 @@ class Stage2D {
 			count++;
 			batch.resetTransform();
 			batch.emitter(e);
+			return;
+		} else if (drawings[i] != null) {
+			// Its calls, where it is; not culled.
+			count++;
+			batch.effect = null;
+			batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
+			drawings[i].replay(batch);
 			return;
 		} else if (views[i] != null) {
 			// What it shows drawn now through its own camera (2D), or under the 2D before the batch ends (3D); not culled.
@@ -374,6 +391,8 @@ class Stage2D {
 	// Whether the own point x, y of the node at place i is on what it draws.
 	function hits(i:Int, x:Float, y:Float):Bool {
 		var sprite = sprites[i], shape = shapes[i], text = texts[i];
+		if (drawings[i] != null)
+			return drawings[i].holds(x, y, lastFont);
 		if (sprite != null) {
 			if (sprite.texture == null)
 				return false;

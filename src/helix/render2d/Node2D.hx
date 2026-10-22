@@ -27,6 +27,15 @@ class Node2D extends Node {
 	var wx = 0.;
 	var wy = 0.;
 
+	/** How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a
+		Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it. */
+	public var alpha(default, set):Float = 1.;
+
+	function set_alpha(value:Float):Float {
+		alpha = value > 0 ? (value < 1 ? value : 1) : 0;
+		return alpha;
+	}
+
 	/** A group at the origin, unturned and unscaled, with no children. */
 	public function new()
 		super();
