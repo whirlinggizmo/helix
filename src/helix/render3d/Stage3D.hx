@@ -63,6 +63,8 @@ class Stage3D {
 	var parentOf:Array<Int> = [];
 	var reached:Array<Bool> = [];
 	var moved:Array<Bool> = [];
+	// Whether each node reached is paused, itself or by a node above it: its emitters held still.
+	var frozen:Array<Bool> = [];
 	var models:Array<Model> = [];
 	var modelAt:Array<Int> = [];
 	var treeLights:Array<Light> = [];
@@ -1116,6 +1118,7 @@ class Stage3D {
 		var n = order.length;
 		reached.resize(n);
 		moved.resize(n);
+		frozen.resize(n);
 		// The root's own transform places everything on the stage.
 		var rootChanged = root.update(null, false);
 		for (i in 0...n) {
@@ -1125,6 +1128,7 @@ class Stage3D {
 				continue;
 			}
 			reached[i] = true;
+			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
 			moved[i] = node.update(p < 0 ? root.worldMatrix : order[p].worldMatrix, p < 0 ? rootChanged : moved[p]);
 			if (node.environment != null) {
 				if (foundEnvironment == null)
@@ -1152,9 +1156,10 @@ class Stage3D {
 			if (!gathering)
 				for (k in 0...emitters.length)
 					if (reached[emitterAt[k]]) {
+						var still = frozen[emitterAt[k]];
 						if (emitters[k].visible)
-							sprites.visitEmitter(emitters[k], eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
-						else
+							sprites.visitEmitter(emitters[k], eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, still);
+						else if (!still)
 							sprites.advanceEmitter(emitters[k]);
 					}
 			for (k in 0...treeLights.length)

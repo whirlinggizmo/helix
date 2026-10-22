@@ -6,7 +6,7 @@ import helix.assets.IRequest;
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorRegistry;
 import helix.behavior.BehaviorSchema;
-import helix.behavior.Behaviors;
+import helix.behavior.BehaviorPass;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
 import helix.render2d.Texture2D;
@@ -45,7 +45,7 @@ class SceneInstance {
 
 	// What was given and what's kept.
 	var file:SceneFile;
-	var pass:Behaviors;
+	var pass:BehaviorPass;
 	var readyCallback:Null<Void->Void>;
 	var waiter:Null<ReadyWaiter>;
 	var destroyed = false;
@@ -66,7 +66,7 @@ class SceneInstance {
 	var fonts:Array<Font2D> = [];
 	var environments:Array<Environment> = [];
 
-	function new(file:SceneFile, path:String, parent:Node3D, behaviors:Behaviors, ?ready:Void->Void) {
+	function new(file:SceneFile, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void) {
 		this.file = file;
 		this.path = path;
 		this.parent = parent;
@@ -80,7 +80,7 @@ class SceneInstance {
 	// file, loaded from path, instantiated under parent with its behaviors on behaviors (SceneFile.instantiate).
 
 	@:allow(helix.scene)
-	static function make(file:SceneFile, path:String, parent:Node3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance {
+	static function make(file:SceneFile, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance {
 		var instance = new SceneInstance(file, path, parent, behaviors, ready);
 		new SceneBuilder(instance, file, path, instance.root, [path], false, () -> instance.settle()).build();
 		return instance;

@@ -23,7 +23,7 @@ class StageService {
 		return helix.host.Host.installPart(runner -> {
 			var service = new StageService(helix.graphics.Graphics.instance, helix.host.Screen.instance);
 			runner.install({
-				draw: () -> service.draw(helix.time.Time.time),
+				draw: () -> service.draw(helix.time.Time.clock.time),
 				shutdown: () -> {
 					service.destroy();
 					Stage.bind(null);
@@ -64,7 +64,8 @@ class StageService {
 		return tree.drawnNodeCount;
 
 	/** Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner
-		calls it once a frame after the app's update, with the game's clock in seconds (emitters advance by it); a program without one (a
+		calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's
+		paused); a program without one (a
 		test) calls it itself. */
 	public function draw(time:Float):Void {
 		if (batch == null)

@@ -1,15 +1,15 @@
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorRegistry;
 import helix.behavior.BehaviorSchema;
-import helix.behavior.Behaviors;
+import helix.behavior.BehaviorPass;
 import helix.input.Input;
 import helix.render3d.Node3D;
 import helix.scene.Scene;
 import helix.scene.Scenes;
 
-/** Behaviors (helix.behavior): the schema the build macro generates from @:prop fields (names, types, defaults, a range, a superclass's
+/** BehaviorPass (helix.behavior): the schema the build macro generates from @:prop fields (names, types, defaults, a range, a superclass's
 	props, @:behavior's name), setting and reading props through the registry's entry (unknown names and wrong types refused, a class
-	that can't be made bare not registered); the pass (Behaviors): started on the first update after add, in order; updated only while
+	that can't be made bare not registered); the pass (BehaviorPass): started on the first update after add, in order; updated only while
 	enabled and under enabled nodes; stopped and dropped when done; safe to remove, add and clear from inside; found by class and by
 	node; and a Scene's pass ticked by Scenes.update before the scene's update and cleared as the scene exits. */
 class BehaviorTests {
@@ -105,7 +105,7 @@ class BehaviorTests {
 		check(Derived.schema().props[0].value == 1 && Base.schema().name == "Base", "An abstract base has a schema of its own");
 
 		// The pass.
-		var pass = new Behaviors();
+		var pass = new BehaviorPass();
 		var root = new Node3D(), group = new Node3D(), leaf = new Node3D();
 		root.addChild(group);
 		group.addChild(leaf);
@@ -127,6 +127,12 @@ class BehaviorTests {
 		pass.update(.1);
 		check(took() == "a.update", "or whose own node is disabled");
 		leaf.enabled = true;
+		group.paused = true;
+		pass.update(.1);
+		check(took() == "a.update", "One under a paused node waits (a level frozen under a menu)");
+		group.paused = false;
+		pass.update(.1);
+		check(took() == "a.update,b.update", "and goes on once it's unpaused");
 		// Done: stopped at the end of that update and dropped.
 		a.endAt = 1;
 		pass.update(.1);

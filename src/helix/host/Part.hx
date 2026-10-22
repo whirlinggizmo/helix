@@ -7,6 +7,10 @@ typedef Part = {
 	/** Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames). */
 	var ?poll:Void->Void;
 
+	/** Each frame, after the app's update and before the frame is drawn: the part's work for the frame, dt the game clock's delta (the
+		behaviors pass). */
+	var ?update:Float->Void;
+
 	/** Each frame, after the app's update: the part draws the frame, opening and closing it (the stage, StageService). One part draws. */
 	var ?draw:Void->Void;
 

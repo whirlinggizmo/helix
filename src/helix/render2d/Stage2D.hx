@@ -20,6 +20,8 @@ class Stage2D {
 	var texts:Array<Null<Text2D>> = [];
 	var emitters:Array<Null<Particles2D>> = [];
 	var views:Array<Null<View>> = [];
+	// Whether each node in the order is paused, itself or by a node above it: its emitters held still.
+	var frozen:Array<Bool> = [];
 	// The camera the walk draws through, which a view it reaches shows its tree inside.
 	var walkCamera:Null<Camera2D>;
 	// The places where the clips a walk is inside end, innermost last; and for a pick, the clipping nodes, outermost first.
@@ -99,11 +101,12 @@ class Stage2D {
 				continue;
 			}
 			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
+			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
 			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
 			if (node.visible)
 				drawNode(batch, i);
 			else if (emitters[i] != null)
-				advance(emitters[i]);
+				advance(emitters[i], frozen[i]);
 			if (node.clipWidth >= 0) {
 				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
@@ -124,6 +127,7 @@ class Stage2D {
 		if (builtStructure != root.structure)
 			rebuild();
 		moved.resize(order.length);
+		frozen.resize(order.length);
 		clipEnds.resize(0);
 		return root.update(false);
 	}
@@ -211,7 +215,7 @@ class Stage2D {
 		} else if (emitters[i] != null) {
 			// Not culled: particles reach past where it is.
 			var e = emitters[i].emitter;
-			advance(emitters[i]);
+			advance(emitters[i], frozen[i]);
 			count++;
 			batch.resetTransform();
 			batch.emitter(e);
@@ -275,12 +279,12 @@ class Stage2D {
 		}
 	}
 
-	// An emitter moved on by the time since the last draw, once a frame however many views show its tree.
-	function advance(particles:Particles2D):Void {
+	// An emitter moved on by the time since the last draw (none while paused), once a frame however many views show its tree.
+	function advance(particles:Particles2D, paused:Bool):Void {
 		if (particles.advancedAt == time)
 			return;
 		particles.advancedAt = time;
-		particles.emitter.advance(dt, particles.wx, particles.wy, 0);
+		particles.emitter.advance(paused ? 0 : dt, particles.wx, particles.wy, 0);
 	}
 
 	// Whether the box x, y, w, h of node's own units, placed by its world transform, reaches into the camera's view.

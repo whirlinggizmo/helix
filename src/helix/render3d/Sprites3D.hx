@@ -98,11 +98,12 @@ class Sprites3D {
 		nextEffectKey = 1;
 	}
 
-	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has
-		particles to draw. Not culled: particles reach past where it is. */
-	public function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, unless still (under a paused node:
+		held as it is), and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is. */
+	public function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float, still = false):Void {
 		var emitter = node.emitter, w = node.worldMatrix;
-		advanceEmitter(node);
+		if (!still)
+			advanceEmitter(node);
 		if (!emitter.drawable)
 			return;
 		if (emitterCount == emitters.length)

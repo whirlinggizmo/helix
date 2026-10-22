@@ -2,7 +2,7 @@ package helix.behavior;
 
 import helix.render3d.Node3D;
 
-/** What a game's logic on a node extends: a behavior drives the node a Behaviors pass gave it (node), from start to stop, its update
+/** What a game's logic on a node extends: a behavior drives the node a BehaviorPass pass gave it (node), from start to stop, its update
 	run each frame by the pass while it and its node are enabled, until it sets done. It is never on the node: nodes draw, behaviors act,
 	the pass runs them, and the game's state stays the truth (docs/DECISIONS.md, 61 and 130). Nothing else is on it: no signals, no
 	children, no lookups through the node; a behavior reaches the game as any code does, through statics, the scene, what it was given.
@@ -23,14 +23,14 @@ import helix.render3d.Node3D;
 class Behavior {
 	/** The pass it's in, from add until it's dropped, null outside: how a behavior reaches another through a node it was given
 		(`pass.on(node, Race)`), with no lookup through the node itself. Add refuses one already in a pass, anywhere. */
-	@:allow(helix.behavior.Behaviors)
-	public var pass(default, null):Null<Behaviors>;
+	@:allow(helix.behavior.BehaviorPass)
+	public var pass(default, null):Null<BehaviorPass>;
 
 	/** One in no pass yet. */
 	public function new() {}
 
 	/** The node it drives: set by the pass it's added to, before start, and null until then and once it's dropped. */
-	@:allow(helix.behavior.Behaviors)
+	@:allow(helix.behavior.BehaviorPass)
 	public var node(default, null):Null<Node3D>;
 
 	/** Whether its update runs: off, the pass skips it (start and stop still come). On to start. */

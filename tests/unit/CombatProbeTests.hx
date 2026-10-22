@@ -1,5 +1,5 @@
 import helix.behavior.Behavior;
-import helix.behavior.Behaviors;
+import helix.behavior.BehaviorPass;
 import helix.behavior.Phase;
 import helix.render3d.Node3D;
 
@@ -35,7 +35,7 @@ class CombatProbeTests {
 			"and the instance's phase is the class's, read through Behavior");
 
 		// The world: a knight with a shield (a child node) and a squire beside him, each warded against fire.
-		var pass = new Behaviors();
+		var pass = new BehaviorPass();
 		var root = new Node3D(),
 			knight = new Node3D(),
 			shield = new Node3D(),

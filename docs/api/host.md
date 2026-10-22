@@ -215,6 +215,7 @@ var product(default, null):String
 
 An optional part of the program: a service installed the first time a program uses it (its static class installs it, helix.macro.Facade), so a program that never uses it carries none of its code (docs/CONVENTIONS.md, "An optional part is installed by its first use"). The Runner walks its parts' hooks and never names one. Each hook may be null.
 
+- `update:Null<Float -> Void>`: Each frame, after the app's update and before the frame is drawn: the part's work for the frame, dt the game clock's delta (the behaviors pass).
 - `shutdown:Null<() -> Void>`: At the program's end, before the shared services close: the part closed and its static class unbound.
 - `poll:Null<() -> Void>`: Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames).
 - `frameEnded:Null<() -> Void>`: Each frame, after the app's and the frame drawn: what waits for the frame to be drawn (a screenshot).

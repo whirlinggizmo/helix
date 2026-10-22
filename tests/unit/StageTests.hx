@@ -4,7 +4,8 @@ import helix.render2d.Shape2D;
 import helix.render2d.StageService;
 
 /** The stage (helix.render2d.StageService): a frame drawn whole, cleared to its color, its children in order through the presentation's
-	camera; children added (again: to the top) and taken off; nothing drawn of an empty stage but the clear. */
+	camera; children added (again: to the top) and taken off; nothing drawn of an empty stage but the clear;
+	a paused node's emitter held still. */
 class StageTests {
 	static var checks = 0;
 
@@ -34,6 +35,22 @@ class StageTests {
 		check(stage.removeChild(back) && stage.childCount == 1 && !stage.removeChild(back), "A child taken off, once");
 		stage.draw(0);
 		check(stage.drawnNodeCount == 1, "What's left drawn");
+		// A paused node holds its emitters still, still drawn.
+		var sparks = new helix.particles.Emitter(null),
+			node = new helix.render2d.Particles2D(sparks);
+		sparks.rate = 100;
+		sparks.setLife(10, 10);
+		stage.addChild(node);
+		stage.draw(0);
+		stage.draw(1);
+		var made = sparks.particleCount;
+		check(made > 0, "An emitter on the stage moves on with the clock");
+		node.paused = true;
+		stage.draw(2);
+		check(sparks.particleCount == made && stage.drawnNodeCount == 2, "Paused: held as it is, still drawn");
+		node.paused = false;
+		stage.draw(3);
+		check(sparks.particleCount > made, "Unpaused: on again");
 		stage.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

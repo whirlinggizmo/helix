@@ -32,7 +32,7 @@ class Facade {
 		function of the service's class returning it), the service is an optional part (helix.host.Part): the forwarders reach it through
 		service(), which calls install the first time, so a program that never uses it carries none of it, and its class's install and
 		shutdown call bind. Fails, saying why, for a type that is neither, a class with no instance, or a member it can't forward (one with
-		type parameters, or without a declared type). */
+		type parameters that the class doesn't write by hand, or without a declared type). */
 	public static function build(of:Expr, ?exclude:Array<String>, ?install:Expr):Array<Field> {
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
@@ -91,6 +91,9 @@ class Facade {
 		for (member in members(source, of.pos)) {
 			if (declared.exists(member.name) || skip.contains(member.name))
 				continue;
+			if (member.generic == true)
+				Context.error('Facade: ${member.name} has type parameters, which a forwarder doesn\'t carry: write it in the static class by hand, or exclude it',
+					of.pos);
 			declared.set(member.name, true);
 			if (member.args != null)
 				made.push(method(member, pos));
@@ -112,8 +115,11 @@ class Facade {
 				continue;
 			switch field.kind {
 				case FFun(f):
-					if (f.params != null && f.params.length > 0)
-						Context.error('Facade: ${field.name} has type parameters, which a forwarder doesn\'t carry', field.pos);
+					// A generic method is kept by name only: the static class writes it by hand or excludes it (build refuses it otherwise).
+					if (f.params != null && f.params.length > 0) {
+						members.push({name: field.name, generic: true});
+						continue;
+					}
 					if (f.ret == null)
 						Context.error('Facade: declare ${field.name}\'s return type, for its forwarder', field.pos);
 					members.push({
@@ -337,6 +343,9 @@ class Facade {
 typedef Member = {
 	/** Its name. */
 	var name:String;
+
+	/** Whether it's a method with type parameters, which no forwarder carries: the static class writes it by hand. */
+	var ?generic:Bool;
 
 	/** Its doc comment, copied onto the forwarder. */
 	var ?doc:String;

@@ -6,11 +6,11 @@
 
 *class* in `src/helix/behavior/Behavior.hx`
 
-What a game's logic on a node extends: a behavior drives the node a Behaviors pass gave it (node), from start to stop, its update run each frame by the pass while it and its node are enabled, until it sets done. It is never on the node: nodes draw, behaviors act, the pass runs them, and the game's state stays the truth (docs/DECISIONS.md, 61 and 130). Nothing else is on it: no signals, no children, no lookups through the node; a behavior reaches the game as any code does, through statics, the scene, what it was given. Its props, the fields a scene file or an inspector sets, are `@:prop public var` fields with an initializer (`@:prop public var radius = 4.;`), of Int, Float, Bool, String, Array<Float>, a color (an Int marked `@:prop("color")`) or Node3D (a reference); an optional `@:range(min, max)` on the field gives an inspector its range. `@:phase(Late)` on the class says when in a frame it runs (Phase: Input, Simulate, Resolve, Late; Simulate without it). The build macro helix.macro.Behaviors runs on each subclass: it generates `schema()` and the typed setters the registry uses, and registers the class in BehaviorRegistry by its name, or the string in `@:behavior("Name")` on the class, as the program starts (so a class the game's code never names, one only a file names, must be in the build: a class path's `--macro include("pack")`, or an import). A class marked `@:abstract`, or whose constructor takes arguments, is built but not registered: it is a base for others. Across a hot reload, as docs/DECISIONS.md 130 says of closures: in the browser a reload re-points its methods as any class's, so an instance in a pass runs the new update from the next frame, keeping its fields; natively an old instance runs its old module until the pass is remade (a scene re-entered).
+What a game's logic on a node extends: a behavior drives the node a BehaviorPass pass gave it (node), from start to stop, its update run each frame by the pass while it and its node are enabled, until it sets done. It is never on the node: nodes draw, behaviors act, the pass runs them, and the game's state stays the truth (docs/DECISIONS.md, 61 and 130). Nothing else is on it: no signals, no children, no lookups through the node; a behavior reaches the game as any code does, through statics, the scene, what it was given. Its props, the fields a scene file or an inspector sets, are `@:prop public var` fields with an initializer (`@:prop public var radius = 4.;`), of Int, Float, Bool, String, Array<Float>, a color (an Int marked `@:prop("color")`) or Node3D (a reference); an optional `@:range(min, max)` on the field gives an inspector its range. `@:phase(Late)` on the class says when in a frame it runs (Phase: Input, Simulate, Resolve, Late; Simulate without it). The build macro helix.macro.Behaviors runs on each subclass: it generates `schema()` and the typed setters the registry uses, and registers the class in BehaviorRegistry by its name, or the string in `@:behavior("Name")` on the class, as the program starts (so a class the game's code never names, one only a file names, must be in the build: a class path's `--macro include("pack")`, or an import). A class marked `@:abstract`, or whose constructor takes arguments, is built but not registered: it is a base for others. Across a hot reload, as docs/DECISIONS.md 130 says of closures: in the browser a reload re-points its methods as any class's, so an instance in a pass runs the new update from the next frame, keeping its fields; natively an old instance runs its old module until the pass is remade (a scene re-entered).
 
 ```haxe
 function new()
-var pass(default, null):Null<Behaviors>
+var pass(default, null):Null<BehaviorPass>
 var node(default, null):Null<Node3D>
 var enabled:Bool
 var done:Bool
@@ -49,6 +49,38 @@ function getProp(behavior:Behavior, name:String):Dynamic
 - `make`: A new behavior of the class, its props at their defaults, in no pass.
 - `setProp`: Sets behavior's prop name to value. False, changing nothing, for a name the schema doesn't have, a value of the wrong type (a Float for an Int, a String for a number, a list with something but numbers in it, a node reference that isn't a Node3D or null), or a behavior that isn't of this class.
 - `getProp`: Behavior's prop name as it is now; null for a name the schema doesn't have or a behavior that isn't of this class.
+
+## BehaviorPass
+
+*class* in `src/helix/behavior/BehaviorPass.hx`
+
+A pass that runs behaviors: add puts a behavior on a node, update each frame starts the ones added since the last update (in order, so a scene file can attach many and they start together), then updates each enabled one whose node runs (enabled and not paused, with every node above it: a disabled or paused group stops what's under it, Node.paused) phase by phase, Input, Simulate, Resolve, Late (Phase, the class's `@:phase`), each phase's in the order added, then stops and drops the ones done. The program's one is Behaviors, run by the runner after the app's update and before the frame is drawn (docs/DISPLAY_MODEL.md); a test makes its own and updates it. Adding, removing and clearing inside a behavior's start, update or stop are safe: the pass walks copies, and a change takes effect from the next step. Behaviors don't signal each other. One that decides across entities is a resolver (a Combat in Resolve, found with find): the others report to it or queue on it, and it gathers what has a say on an entity with allUnder (gear on the entity's child nodes implementing an interface, an IDamageModifier) and applies them in an order of its own, so the order lives in one place a test can read.
+
+```haxe
+function new()
+function add(behavior:Behavior, node:Node3D):Bool
+function remove(behavior:Behavior):Bool
+var count(get, never):Int
+function find(cls:Class<T>):Null<T>
+function findAll(cls:Class<T>):Array<T>
+function on(node:Node3D, cls:Class<T>):Null<T>
+function of(node:Node3D):Array<Behavior>
+function allUnder(node:Node3D, cls:Class<T>):Array<T>
+function clear():Void
+function update(dt:Float):Void
+```
+
+- `new`: No behaviors yet.
+- `add`: Puts behavior on node: it starts on the next update. False, changing nothing, for one already in a pass (this or another) or a null node.
+- `remove`: Takes behavior out: stopped first if it had started. False when it isn't in this pass.
+- `count`: How many it holds: started, or waiting for the next update to start.
+- `find`: The first behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added), or null.
+- `findAll`: Every behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added).
+- `on`: The first behavior of class cls (or a subclass) on node, started ones first (by phase, then in the order added), or null: how a behavior given a node reference reaches the behavior on it.
+- `of`: The behaviors on node, started ones first (by phase, then in the order added).
+- `allUnder`: Every behavior of class or interface cls on node or on a node under it, started ones first (by phase, then in the order added), then the pending: how a resolver gathers what has a say on an entity, the gear on its child nodes implementing an interface (`allUnder(target, IDamageModifier)`). Each behavior's node is walked up to node; the tree isn't walked down.
+- `clear`: Takes every behavior out, stopping each started one (by phase, then in the order added).
+- `update`: A frame: starts the ones added since the last update, updates the enabled ones under enabled nodes by dt seconds (a clock's delta), every Input one, then every Simulate, Resolve and Late one, each phase's in the order added; then stops and drops the ones done. Once a frame.
 
 ## BehaviorProp
 
@@ -108,36 +140,36 @@ What a behavior class takes from a scene file or an inspector: its name (the cla
 
 *class* in `src/helix/behavior/Behaviors.hx`
 
-The pass that runs behaviors, beside a game's timers and tweens: add puts a behavior on a node, update each frame starts the ones added since the last update (in order, so a scene file can attach many and they start together), then updates each enabled one whose node is enabled (with every node above it: a disabled group stops what's under it) phase by phase, Input, Simulate, Resolve, Late (Phase, the class's `@:phase`), each phase's in the order added, then stops and drops the ones done. One pass per Scene (Scene.behaviors, which the Scenes stack updates before the scene's own update and clears as it exits); an app without a stack makes one and updates it, as it does a Tweens. Adding, removing and clearing inside a behavior's start, update or stop are safe: the pass walks copies, and a change takes effect from the next step. Behaviors don't signal each other. One that decides across entities is a resolver (a Combat in Resolve, found with find): the others report to it or queue on it, and it gathers what has a say on an entity with allUnder (gear on the entity's child nodes implementing an interface, an IDamageModifier) and applies them in an order of its own, so the order lives in one place a test can read.
+The program's behaviors: one pass (BehaviorPass) the runner updates after the app's update and before the frame is drawn, with the game's clock, so a behavior attached to a node on the stage runs with nothing more (docs/DISPLAY_MODEL.md); what a scene file attaches goes here unless it's given another pass. Installed by its first use. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from BehaviorPass's public members with their doc comments.
 
 ```haxe
-function new()
-function add(behavior:Behavior, node:Node3D):Bool
-function remove(behavior:Behavior):Bool
-var count(get, never):Int
-function find(cls:Class<T>):Null<T>
-function findAll(cls:Class<T>):Array<T>
-function on(node:Node3D, cls:Class<T>):Null<T>
-function of(node:Node3D):Array<Behavior>
-function allUnder(node:Node3D, cls:Class<T>):Array<T>
-function clear():Void
-function update(dt:Float):Void
+static var instance(default, null):BehaviorPass
+static var pass(get, never):BehaviorPass
+static function find(cls:Class<T>):Null<T>
+static function findAll(cls:Class<T>):Array<T>
+static function on(node:Node3D, cls:Class<T>):Null<T>
+static function allUnder(node:Node3D, cls:Class<T>):Array<T>
+static function add(behavior:Behavior, node:Node3D):Bool
+static function remove(behavior:Behavior):Bool
+static var count(get, never):Int
+static function of(node:Node3D):Array<Behavior>
+static function clear():Void
 ```
 
-- `new`: No behaviors yet.
+- `instance`: The pass forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
+- `pass`: The program's pass itself, installed if it wasn't: what SceneFile.instantiate attaches to unless given another.
+- `find`: The first behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added), or null.
+- `findAll`: Every behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added).
+- `on`: The first behavior of class cls (or a subclass) on node, started ones first (by phase, then in the order added), or null: how a behavior given a node reference reaches the behavior on it.
+- `allUnder`: Every behavior of class or interface cls on node or on a node under it, started ones first (by phase, then in the order added), then the pending: how a resolver gathers what has a say on an entity (BehaviorPass.allUnder).
 - `add`: Puts behavior on node: it starts on the next update. False, changing nothing, for one already in a pass (this or another) or a null node.
 - `remove`: Takes behavior out: stopped first if it had started. False when it isn't in this pass.
 - `count`: How many it holds: started, or waiting for the next update to start.
-- `find`: The first behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added), or null.
-- `findAll`: Every behavior of class cls (or a subclass) in it, started ones first (by phase, then in the order added).
-- `on`: The first behavior of class cls (or a subclass) on node, started ones first (by phase, then in the order added), or null: how a behavior given a node reference reaches the behavior on it.
 - `of`: The behaviors on node, started ones first (by phase, then in the order added).
-- `allUnder`: Every behavior of class or interface cls on node or on a node under it, started ones first (by phase, then in the order added), then the pending: how a resolver gathers what has a say on an entity, the gear on its child nodes implementing an interface (`allUnder(target, IDamageModifier)`). Each behavior's node is walked up to node; the tree isn't walked down.
 - `clear`: Takes every behavior out, stopping each started one (by phase, then in the order added).
-- `update`: A frame: starts the ones added since the last update, updates the enabled ones under enabled nodes by dt seconds (a clock's delta), every Input one, then every Simulate, Resolve and Late one, each phase's in the order added; then stops and drops the ones done. Once a frame.
 
 ## Phase
 
 *abstract* in `src/helix/behavior/Phase.hx`
 
-When in a frame a behavior runs: the Behaviors pass updates every behavior of one phase before any of the next, in this order, and within a phase in the order they were added (a scene file's order). A class says its phase with `@:phase(Late)` on the class; without it, Simulate, and a subclass has its base's. Fixed and few on purpose: a reader knows what a frame does from the class alone, and every target runs it alike (docs/DECISIONS.md 134).
+When in a frame a behavior runs: the BehaviorPass pass updates every behavior of one phase before any of the next, in this order, and within a phase in the order they were added (a scene file's order). A class says its phase with `@:phase(Late)` on the class; without it, Simulate, and a subclass has its base's. Fixed and few on purpose: a reader knows what a frame does from the class alone, and every target runs it alike (docs/DECISIONS.md 134).

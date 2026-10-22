@@ -1118,7 +1118,7 @@ function new(gpu:IGraphics)
 var drawnSpriteCount(get, never):Int
 var drawCallCount(get, never):Int
 function begin(dt:Float, time:Float):Void
-function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
+function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float, ?still:Bool = false):Void
 function advanceEmitter(node:Particles3D):Void
 function visitText(node:Text3D, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
 function visit(node:Sprite3D, planes:haxe.ds.Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void
@@ -1136,7 +1136,7 @@ function destroy():Void
 - `drawnSpriteCount`: Sprites drawn by the last draw (in view).
 - `drawCallCount`: Draws of the last draw: one a run of a texture and effect.
 - `begin`: Starts a draw at time, seconds of the stage's clock (what effects see), dt after the last: no sprites or emitters yet.
-- `visitEmitter`: Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is.
+- `visitEmitter`: Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, unless still (under a paused node: held as it is), and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is.
 - `advanceEmitter`: Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's).
 - `visitText`: Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended.
 - `visit`: Adds a sprite (its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth is along forward from the eye.

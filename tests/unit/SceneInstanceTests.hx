@@ -3,7 +3,7 @@ import haxe.io.Bytes;
 import helix.assets.Assets;
 import helix.assets.IAssets;
 import helix.behavior.Behavior;
-import helix.behavior.Behaviors;
+import helix.behavior.BehaviorPass;
 import helix.graphics.Graphics;
 import helix.graphics.IImageDecoder;
 import helix.graphics.ImageDecoding;
@@ -109,9 +109,9 @@ class SceneInstanceTests {
 	}
 
 	// A new stage and pass, the log cleared.
-	static function fresh():{stage:Stage3D, pass:Behaviors} {
+	static function fresh():{stage:Stage3D, pass:BehaviorPass} {
 		log = [];
-		return {stage: new Stage3D(gpu), pass: new Behaviors()};
+		return {stage: new Stage3D(gpu), pass: new BehaviorPass()};
 	}
 
 	static function main():Void {

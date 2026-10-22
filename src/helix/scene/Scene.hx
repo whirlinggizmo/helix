@@ -1,6 +1,6 @@
 package helix.scene;
 
-import helix.behavior.Behaviors;
+import helix.behavior.BehaviorPass;
 
 /** One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides,
 	so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is
@@ -11,12 +11,12 @@ import helix.behavior.Behaviors;
 class Scene {
 	/** A scene not on a stack yet, its behaviors pass empty. */
 	public function new() {
-		behaviors = new Behaviors();
+		behaviors = new BehaviorPass();
 	}
 
 	/** Its behaviors: the pass the stack updates before its update each frame it runs (not while it's under another scene, loading or the
 		window is unfocused) and clears before its exit. What a scene file instantiated onto this scene attaches its behaviors to. */
-	public var behaviors(default, null):Behaviors;
+	public var behaviors(default, null):BehaviorPass;
 
 	/** Its name: the class's, without its package, unless overridden; what an autopilot's probe reports. */
 	public var name(get, never):String;

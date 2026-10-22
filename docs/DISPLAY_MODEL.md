@@ -201,7 +201,9 @@ class Game extends helix.App {
    program links no 3D); nesting and the cycle check. Built over `Stage2D`/`Stage3D` as renderers, so every example runs throughout the
    branch; those classes go in step 8, with the examples.
 3. `Environment3D` on nodes, the view's photography and override; the scene file's root environment, its `stage` section gone.
-4. Behaviors as one pass over the stage; `paused`; `Scenes`/`Scene` removed; transitions and loading as helpers.
+4. Behaviors as the program's pass (`Behaviors`, over `BehaviorPass`), run by the runner after `update`; `paused` on nodes (behaviors
+   wait, emitters hold still, still drawn). `Scenes`/`Scene` go, and transitions and loading become helpers on the stage, in step 8 with
+   the two examples that use the stack (`scenes`, `scene-file`).
 5. The pointer through views; `Input.claim`, the UI claiming.
 6. `Drawing2D`, `Node2D.alpha`.
 7. Post-processing on the stage and on views (views drawn into textures).

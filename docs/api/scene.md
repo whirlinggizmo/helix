@@ -152,6 +152,7 @@ var name:String
 function find(name:String):Null<Node>
 var enabled(get, set):Bool
 var visible:Bool
+var paused:Bool
 var pickable:Bool
 var childCount(get, never):Int
 function getChild(index:Int):Null<Node>
@@ -161,6 +162,7 @@ function getChild(index:Int):Null<Node>
 - `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
 - `enabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
 - `visible`: Whether its own output is drawn: off, a model, sprite, shape, text or emitter isn't drawn (an emitter still moves on) and a light doesn't shine or cast; it stays placed, and its children are as they are. On to start.
+- `paused`: Whether it and everything under it are held still while still drawn: on, their behaviors don't update and their emitters don't move on (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start.
 - `pickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
 - `childCount`: How many children it has.
 - `getChild`: Its child at index, in drawing order; null past the end.
@@ -308,7 +310,7 @@ One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stac
 
 ```haxe
 function new()
-var behaviors(default, null):Behaviors
+var behaviors(default, null):BehaviorPass
 var name(get, never):String
 var scenes(default, null):Null<Scenes>
 var loader(get, never):Null<Loader>
@@ -390,7 +392,7 @@ static function capture(instance:SceneInstance):SceneFile
 var version:Int
 var environment:Null<SceneEnvironment>
 var nodes:Array<SceneNode>
-function instantiate(parent:Node3D, behaviors:Behaviors, ?ready:() -> Void):SceneInstance
+function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:() -> Void):SceneInstance
 var path(default, null):Null<String>
 function write():haxe.io.Bytes
 ```
@@ -402,7 +404,7 @@ function write():haxe.io.Bytes
 - `version`: The file's "helix-scene" version: VERSION, the only one read.
 - `environment`: Its environment section (the place's light, set on the node it's instantiated as), or null when the file has none.
 - `nodes`: Its nodes at the root, in drawing order.
-- `instantiate`: Makes the file's tree under parent, its behaviors on behaviors: a new group named after the file (its path without directory and extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
+- `instantiate`: Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
 - `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid environment or material value, and a property no table has, are not written.
 

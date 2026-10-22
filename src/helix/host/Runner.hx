@@ -199,6 +199,9 @@ class Runner {
 			app.init();
 		}
 		app.update(clock.delta);
+		for (part in parts)
+			if (part.update != null)
+				part.update(gameClock.delta);
 		// The stage draws the frame, once the app has used it. Until every example has moved onto the stage (docs/DISPLAY_MODEL.md, the
 		// order of work's last step), an app that draws its own frame and never uses the stage still runs: the stage, never installed,
 		// draws nothing.

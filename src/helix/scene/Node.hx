@@ -45,6 +45,10 @@ class Node {
 		and its children are as they are. On to start. */
 	public var visible:Bool = true;
 
+	/** Whether it and everything under it are held still while still drawn: on, their behaviors don't update and their emitters don't move
+		on (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start. */
+	public var paused:Bool = false;
+
 	/** Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to
 		it: hidden and pickable is a hit area. On to start, but for text. */
 	public var pickable:Bool = true;

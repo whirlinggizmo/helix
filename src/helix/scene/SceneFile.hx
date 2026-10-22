@@ -2,6 +2,7 @@ package helix.scene;
 
 import haxe.io.Bytes;
 import helix.assets.Failure;
+import helix.behavior.BehaviorPass;
 import helix.behavior.Behaviors;
 import helix.render3d.Node3D;
 import helix.scene.SceneSchema;
@@ -41,7 +42,7 @@ class SceneFile {
 		return file;
 	}
 
-	/** Makes the file's tree under parent, its behaviors on behaviors: a new group named after the file (its path without directory and
+	/** Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and
 		extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the
 		map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models
 		and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
@@ -50,8 +51,8 @@ class SceneFile {
 		naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are
 		each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers
 		where each node came from, for capture. */
-	public function instantiate(parent:Node3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance
-		return SceneInstance.make(this, path != null ? path : "scene", parent, behaviors, ready);
+	public function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance
+		return SceneInstance.make(this, path != null ? path : "scene", parent, behaviors != null ? behaviors : Behaviors.pass, ready);
 
 	/** The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by. */
 	public var path(default, null):Null<String>;

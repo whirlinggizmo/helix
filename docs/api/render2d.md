@@ -772,7 +772,7 @@ function destroy():Void
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
 - `childCount`: How many children the stage has.
 - `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
-- `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner calls it once a frame after the app's update, with the game's clock in seconds (emitters advance by it); a program without one (a test) calls it itself.
+- `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
 - `destroy`: Frees its batch.
 
 ## Text2D
