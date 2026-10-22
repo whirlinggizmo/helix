@@ -1,7 +1,8 @@
 # HeliX's CI: the checks a milestone ends with, on Linux, Windows and macOS (docs/ROADMAP.md, milestone 7). After wgrender-c's and libwgf's:
 #
 # - On every push and pull request (not for docs alone), on each system: the tool, package and unit tests, Trig's bits on the interpreter,
-#   Node and hxcpp, and an example's native build, since only a native build compiles the adapters' C (wgrender-c's "one example links").
+#   Node and hxcpp, and (pull requests only until after the jam, 2026-10-25) an example's native build, since only a native build compiles
+#   the adapters' C (wgrender-c's "one example links").
 #   Linux also type-checks every example on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform services in Chrome and natively, both autopilots, natively in a private X display, and
 #   the browser asset cache across visits (tools/check_cache.py);
@@ -86,6 +87,9 @@ jobs:
       - name: Tool, package and unit tests; Trig's bits on every target
         run: python helix.py test --native
       - name: An example's native build under each backend (the adapters' C), and in debug
+        # Left out of pushes until after the ATL Gamedevs Jam (2026-10-25), so a push runs in about 12 minutes, not 18; pull requests, the
+        # daily run and a run on demand build it, and the native service tests above still compile the adapters' C on every push.
+        if: github.event_name != 'push'
         run: |
           python tools/example.py asteroids build release-sokol-gl
           python tools/example.py asteroids build release-sdl3-gl
