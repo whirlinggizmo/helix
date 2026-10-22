@@ -16,7 +16,8 @@ import helix.render3d.View3D;
 /** Views (helix.render2d.View2D, helix.render3d.View3D) on the stage: a 2D view's camera given its rectangle in framebuffer pixels, scaled
 	with the view and filling what shows it at a size of 0; its tree drawn through its camera, clipped; views nested, their rectangles inside
 	the outer view's; a view showing a tree it's in skipped, not drawn forever; a tree two views show drawn by both; a 3D view drawn, its
-	camera given its rectangle, lit by its own environment, else its tree's first. */
+	camera given its rectangle, lit by its own environment, else its tree's first; picking through them, 2D before 3D, a paused tree passed
+	over, and the pointer reading the stage. */
 class ViewTests {
 	static var checks = 0;
 
@@ -115,6 +116,48 @@ class ViewTests {
 		check(@:privateAccess view3D.world.ambientIntensity == 1, "The view's own overrides the tree's");
 		check(!place.setAmbient(0xffffffff, -1) && !place.setMap(null, -1) && !place.setBackground(null, 2) && place.ambientIntensity == .4,
 			"An environment refuses a negative intensity and a blur past 1, changing nothing");
+
+		// Picking through the stage: a node on it, one a 2D view shows, a 3D view's model under the 2D, a paused tree passed over.
+		view3D.environment = null;
+		var picks = new StageService(gpu, presentation);
+		var button = Shape2D.rectangle(100, 40, 0xff3366cc),
+			shown = new Node2D(),
+			target = Shape2D.rectangle(50, 50, 0xffffffff);
+		button.setPosition(600, 500);
+		shown.addChild(target);
+		var window = new View2D(shown, new Camera2D(), 200, 200);
+		window.camera.setPosition(25, 25);
+		window.setPosition(300, 300);
+		var scene = new Node3D(),
+			eye3D = new Camera3D(),
+			box = new Model(Mesh.cube(2, 2, 2), new Material());
+		scene.addChild(box);
+		eye3D.setView(0, 0, 5, 0, 0, 0);
+		var world3D = new View3D(scene, eye3D, 0, 0, gpu);
+		picks.addChild(world3D);
+		picks.addChild(window);
+		picks.addChild(button);
+		picks.draw(0);
+		check(picks.pick(620, 510) == button, "A node on the stage");
+		check(picks.pick(400, 400) == target, "A node a 2D view shows, through its camera");
+		check(picks.pick(100, 100) == null && picks.pick(400, 300) == box, "Nothing, then a 3D view's model where no 2D is");
+		check(picks.pick(400, 400) == target, "2D before the 3D under it (the box is there too)");
+		shown.paused = true;
+		check(picks.pick(400, 400) == box, "A paused tree isn't picked: the 3D under it is");
+		shown.paused = false;
+		// The pointer, with no stages of its own, reads the stage.
+		var input = new helix.input.InputState(),
+			pointer = new helix.scene.Pointer(input);
+		@:privateAccess helix.render2d.Stage.bind(picks);
+		input.pointerEvent(400, 400, false);
+		pointer.update();
+		check(pointer.hovered == target && pointer.hit3D == null, "The pointer over the stage's views");
+		input.pointerEvent(400, 300, false);
+		pointer.update();
+		check(pointer.hovered == box && pointer.hit3D != null, "and over the 3D under them, with its hit");
+		@:privateAccess helix.render2d.Stage.bind(null);
+		world3D.destroy();
+		picks.destroy();
 		view3D.destroy();
 		stage.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));

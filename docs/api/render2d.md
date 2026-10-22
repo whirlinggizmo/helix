@@ -712,6 +712,7 @@ static function addChild(node:Node2D):Void
 static function removeChild(node:Node2D):Bool
 static var childCount(get, never):Int
 static var drawnNodeCount(get, never):Int
+static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 ```
 
 - `instance`: The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
@@ -720,6 +721,7 @@ static var drawnNodeCount(get, never):Int
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
 - `childCount`: How many children the stage has.
 - `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
 
 ## Stage2D
 
@@ -747,7 +749,7 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 - `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
 - `drawnNodeCount`: Nodes drawn by the last draw (in view).
 - `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
-- `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
+- `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
 ## StageService
 
@@ -762,6 +764,7 @@ function addChild(node:Node2D):Void
 function removeChild(node:Node2D):Bool
 var childCount(get, never):Int
 var drawnNodeCount(get, never):Int
+function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 function draw(time:Float):Void
 function destroy():Void
 ```
@@ -772,6 +775,7 @@ function destroy():Void
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
 - `childCount`: How many children the stage has.
 - `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
 - `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
 - `destroy`: Frees its batch.
 

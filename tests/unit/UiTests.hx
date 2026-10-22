@@ -798,7 +798,8 @@ class UiTests {
 		check(!ui.press("Locked") && !ui.press("Nothing"), "A disabled widget, or none of that name, isn't pressed");
 	}
 
-	// A text field: focused by a click, then typed in (spaces typed, not activating), Backspace, Enter, its limit; the keys the UI's meanwhile.
+	// A text field: focused by a click, then typed in (spaces typed, not activating, and claimed from the game), Backspace, Enter, its limit;
+	// the keys the UI's meanwhile.
 	static function typing(font:Font2D):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Stage2D(),
@@ -837,6 +838,8 @@ class UiTests {
 		check(name.text == "ab c" && name.changed, "Typed, a space among it");
 		frame(" ", Space);
 		check(name.text == "ab c " && !name.submitted, "Space types, not activates");
+		check(input.isClaimed(Space) && !input.isFramePressed(Space) && !input.isPressed(Space),
+			"The field claims the key: the game reading after sees no Space (no jump)");
 		frame(Backspace);
 		frame("defghijk");
 		check(name.text == "ab cdefg", "Backspace takes one off; typing stops at the limit: " + name.text);

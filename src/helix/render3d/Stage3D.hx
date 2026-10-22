@@ -1140,7 +1140,7 @@ class Stage3D {
 		if (picking) {
 			for (k in 0...models.length) {
 				var model = models[k];
-				if (reached[modelAt[k]] && model.pickable) {
+				if (reached[modelAt[k]] && !frozen[modelAt[k]] && model.pickable) {
 					if (model.jointCount > 0)
 						skinned.push(model);
 					else
@@ -1149,7 +1149,7 @@ class Stage3D {
 			}
 			if (pickCamera != null)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && flats[k].pickable)
+					if (reached[flatAt[k]] && !frozen[flatAt[k]] && flats[k].pickable)
 						pickBest = flatSprites[k] != null ? sprites.pickSprite(flatSprites[k], pickRay, pickBest,
 							pickHit) : sprites.pickText(flatTexts[k], pickRay, pickBest, pickHit);
 		} else {

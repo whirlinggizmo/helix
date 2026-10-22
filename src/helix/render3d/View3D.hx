@@ -75,6 +75,18 @@ class View3D extends View {
 		View.deferred.push(this);
 	}
 
+	override function pickShown(x:Float, y:Float):Null<helix.render2d.Node2D> {
+		View.picked3D.push(this);
+		return null;
+	}
+
+	override function pick3D(x:Float, y:Float, hit:Any):Null<Node> {
+		if (world == null)
+			return null;
+		var found = world.pick(camera, x, y, (hit : PickHit));
+		return found == null ? null : found.node;
+	}
+
 	override function prepare():Void
 		if (world != null)
 			world.drawShadows(camera);

@@ -302,13 +302,15 @@ class Stage2D {
 		(or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled
 		circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of
 		its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are
-		passed over, an unpickable one is passed while its children are hit, a hidden one is hit. World transforms are brought up to date; the
+		passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a
+		View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the
 		node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)). */
 	public function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
-		if (!(x >= camera.viewportX
-			&& x < camera.viewportX + camera.viewportWidth
-			&& y >= camera.viewportY
-			&& y < camera.viewportY + camera.viewportHeight))
+		if (root.paused
+			|| !(x >= camera.viewportX
+				&& x < camera.viewportX + camera.viewportWidth
+				&& y >= camera.viewportY
+				&& y < camera.viewportY + camera.viewportHeight))
 			return null;
 		var wx = camera.screenToWorldX(x),
 			wy = camera.screenToWorldY(y),
@@ -327,7 +329,18 @@ class Stage2D {
 				continue;
 			}
 			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
-			if (node.pickable && insideClips(wx, wy) && hits(i, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+			if (node.paused) {
+				// Paused: nothing under it is picked (a level frozen under a menu).
+				i = endOf[i];
+				continue;
+			}
+			if (views[i] != null) {
+				if (insideClips(wx, wy)) {
+					var inside = views[i].pickInside(x, y);
+					if (inside != null)
+						hit = inside;
+				}
+			} else if (node.pickable && insideClips(wx, wy) && hits(i, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
 				hit = node;
 			if (node.clipWidth >= 0) {
 				pickClips.push(node);

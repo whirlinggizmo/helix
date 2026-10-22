@@ -36,6 +36,19 @@ class InputTests {
 		input.consume();
 		input.keyEvent(Key.Space, true);
 		check(input.isDown(Key.Space) && !input.isPressed(Key.Space), "Repeat is no new press");
+		// A claimed key reads as up, unpressed and unreleased for the rest of the frame, its tick edges spent; free again the next frame.
+		input.endFrame();
+		input.keyEvent(Key.Space, false);
+		input.endFrame();
+		input.keyEvent(Key.A, true);
+		check(input.isPressed(Key.A) && !input.isClaimed(Key.A), "Pressed, not claimed");
+		input.claim(Key.A);
+		check(input.isClaimed(Key.A) && !input.isDown(Key.A) && !input.isPressed(Key.A) && !input.isFramePressed(Key.A),
+			"Claimed: not down, not pressed, for whoever reads after");
+		input.endFrame();
+		check(!input.isClaimed(Key.A) && input.isDown(Key.A) && !input.isPressed(Key.A), "The next frame: held again, its press spent");
+		input.keyEvent(Key.A, false);
+		input.endFrame();
 		check(Key.named("f12") == Key.F12
 			&& Key.all.length == 116
 			&& Key.named("menu") == Key.Menu

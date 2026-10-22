@@ -29,6 +29,9 @@ class View2D extends View {
 	override function getContent():Node
 		return content;
 
+	override function pickShown(x:Float, y:Float):Null<Node2D>
+		return tree.pick(camera, x, y);
+
 	override function show(batch:Batch2D, outer:Camera2D, x:Int, y:Int, w:Int, h:Int, time:Float):Void {
 		camera.setViewport(outer.framebufferWidth, outer.framebufferHeight);
 		camera.setViewportArea(x, y, w, h);

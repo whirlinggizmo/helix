@@ -142,7 +142,7 @@ function endFrame():Void
 
 *class* in `src/helix/input/IInput.hx`
 
-Keyboard, pointer, mouse buttons, wheel, typed text, touches and gamepads. Tick edges (isPressed, isReleased) are counted and survive polling and render frames; consume() after a simulation tick takes one of each, so every press is seen by exactly one tick, and two presses between ticks reach two ticks. Frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame.
+Keyboard, pointer, mouse buttons, wheel, typed text, touches and gamepads. Tick edges (isPressed, isReleased) are counted and survive polling and render frames; consume() after a simulation tick takes one of each, so every press is seen by exactly one tick, and two presses between ticks reach two ticks. Frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame. A key is claimed by what reads it first and uses it (claim: the UI's focused text field, a menu): for the rest of the frame it reads as up, unpressed and unreleased to everything after, so typing a space in a field doesn't make the player jump.
 
 ```haxe
 function isDown(key:Key):Bool
@@ -150,6 +150,8 @@ function isPressed(key:Key):Bool
 function isReleased(key:Key):Bool
 function isFramePressed(key:Key):Bool
 function isFrameReleased(key:Key):Bool
+function claim(key:Key):Void
+function isClaimed(key:Key):Bool
 var pointerX(get, never):Float
 var pointerY(get, never):Float
 var pointerDown(get, never):Bool
@@ -191,6 +193,8 @@ function unwatch(watcher:IInputWatcher):Bool
 - `isReleased`: The key came up: a tick edge, counted until consume() takes it.
 - `isFramePressed`: The key went down this frame: a frame edge.
 - `isFrameReleased`: The key came up this frame: a frame edge.
+- `claim`: Takes key for the rest of the frame: what reads it after sees it up, unpressed and unreleased (isDown, isPressed, isReleased and the frame edges false) until the frame ends, and its edges are spent, so no later tick sees them either. Whoever reads first and uses a key claims it: the UI does (Ui.update), so the game reads after it.
+- `isClaimed`: Whether key was claimed this frame (claim).
 - `pointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
 - `pointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
 - `pointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
@@ -299,6 +303,8 @@ static function isPressed(key:Key):Bool
 static function isReleased(key:Key):Bool
 static function isFramePressed(key:Key):Bool
 static function isFrameReleased(key:Key):Bool
+static function claim(key:Key):Void
+static function isClaimed(key:Key):Bool
 static var pointerX(get, never):Float
 static var pointerY(get, never):Float
 static var pointerDown(get, never):Bool
@@ -339,6 +345,8 @@ static function consume():Void
 - `isReleased`: The key came up: a tick edge, counted until consume() takes it.
 - `isFramePressed`: The key went down this frame: a frame edge.
 - `isFrameReleased`: The key came up this frame: a frame edge.
+- `claim`: Takes key for the rest of the frame: what reads it after sees it up, unpressed and unreleased (isDown, isPressed, isReleased and the frame edges false) until the frame ends, and its edges are spent, so no later tick sees them either. Whoever reads first and uses a key claims it: the UI does (Ui.update), so the game reads after it.
+- `isClaimed`: Whether key was claimed this frame (claim).
 - `pointerX`: The primary pointer, in framebuffer pixels: the mouse with its left button, or the first finger. -1 when it isn't over the window.
 - `pointerY`: The primary pointer's y, in framebuffer pixels down from the top. -1 when it isn't over the window.
 - `pointerDown`: Whether the primary pointer is down: the left mouse button held, or the first finger touching.
@@ -412,6 +420,8 @@ function isPressed(key:Key):Bool
 function isReleased(key:Key):Bool
 function isFramePressed(key:Key):Bool
 function isFrameReleased(key:Key):Bool
+function claim(key:Key):Void
+function isClaimed(key:Key):Bool
 var pointerX(get, never):Float
 var pointerY(get, never):Float
 var pointerDown(get, never):Bool

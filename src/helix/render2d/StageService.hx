@@ -63,6 +63,23 @@ class StageService {
 	function get_drawnNodeCount():Int
 		return tree.drawnNodeCount;
 
+	/** The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before
+		anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A
+		paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown. */
+	public function pick(x:Float, y:Float, ?hit:Any):Null<helix.scene.Node> {
+		View.picked3D.resize(0);
+		var found = tree.pick(camera, x, y);
+		if (found != null)
+			return found;
+		var i = View.picked3D.length;
+		while (i-- > 0) {
+			var node = View.picked3D[i].pick3D(x, y, hit);
+			if (node != null)
+				return node;
+		}
+		return null;
+	}
+
 	/** Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it. The runner
 		calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's
 		paused); a program without one (a

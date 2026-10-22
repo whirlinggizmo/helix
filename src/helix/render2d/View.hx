@@ -24,6 +24,16 @@ class View extends Node2D {
 	// Whether its refusal to draw inside itself has been logged.
 	var cycleLogged = false;
 
+	// Where it was last shown, in framebuffer pixels: what the pointer picks inside.
+	var shownX = 0;
+	var shownY = 0;
+	var shownWidth = 0;
+	var shownHeight = 0;
+
+	// The 3D views a pick passed over the point in, the topmost last: tried once nothing 2D was hit, 3D drawing under the 2D.
+	@:allow(helix.render2d.StageService)
+	static var picked3D:Array<View> = [];
+
 	// The trees being drawn, the outermost first: a view's tree among them is drawn inside itself.
 	static var drawing:Array<Node> = [];
 
@@ -39,6 +49,26 @@ class View extends Node2D {
 	// Draws what it shows into batch in framebuffer pixels x, y, w, h (from the top-left), at time, the walk's camera outer: a 2D view now,
 	// a 3D one deferred.
 	function show(batch:Batch2D, outer:Camera2D, x:Int, y:Int, w:Int, h:Int, time:Float):Void {}
+
+	// Called by the 2D pick at this view: what it shows under framebuffer pixel x, y, if it was shown there (a 2D view's node, or a 3D
+	// view noted for after the 2D, picked3D).
+
+	@:allow(helix.render2d.Stage2D)
+	function pickInside(x:Float, y:Float):Null<Node2D> {
+		if (!(x >= shownX && x < shownX + shownWidth && y >= shownY && y < shownY + shownHeight))
+			return null;
+		return pickShown(x, y);
+	}
+
+	// What it shows under x, y, inside its rectangle.
+	function pickShown(x:Float, y:Float):Null<Node2D>
+		return null;
+
+	// For a 3D view: the node under x, y in its tree, hit filled; null for none.
+
+	@:allow(helix.render2d.StageService)
+	function pick3D(x:Float, y:Float, hit:Any):Null<Node>
+		return null;
 
 	// For a 3D view: its shadows, before the frame opens.
 
@@ -88,6 +118,10 @@ class View extends Node2D {
 		bottom = bottom > outer.framebufferHeight ? outer.framebufferHeight : bottom;
 		if (right - left < 1 || bottom - top < 1)
 			return;
+		shownX = left;
+		shownY = top;
+		shownWidth = right - left;
+		shownHeight = bottom - top;
 		drawing.push(content);
 		show(batch, outer, left, top, right - left, bottom - top, time);
 		drawing.pop();

@@ -20,6 +20,7 @@ class InputState implements IInput {
 	var lifts:Array<Int> = [for (_ in 0...Key.COUNT) 0];
 	var framePushes:Array<Bool> = [for (_ in 0...Key.COUNT) false];
 	var frameLifts:Array<Bool> = [for (_ in 0...Key.COUNT) false];
+	var claimed:Array<Bool> = [for (_ in 0...Key.COUNT) false];
 	var mouseHeld = [false, false, false];
 	var mousePushes = [0, 0, 0];
 	var mouseLifts = [0, 0, 0];
@@ -43,7 +44,7 @@ class InputState implements IInput {
 	public function new() {}
 
 	public function isDown(key:Key):Bool
-		return held[key];
+		return held[key] && !claimed[key];
 
 	public function isPressed(key:Key):Bool
 		return pushes[key] > 0;
@@ -56,6 +57,17 @@ class InputState implements IInput {
 
 	public function isFrameReleased(key:Key):Bool
 		return frameLifts[key];
+
+	public function claim(key:Key):Void {
+		claimed[key] = true;
+		pushes[key] = 0;
+		lifts[key] = 0;
+		framePushes[key] = false;
+		frameLifts[key] = false;
+	}
+
+	public function isClaimed(key:Key):Bool
+		return claimed[key];
 
 	@:isVar public var pointerX(get, null):Float = -1.;
 
@@ -434,6 +446,7 @@ class InputState implements IInput {
 		for (i in 0...framePushes.length) {
 			framePushes[i] = false;
 			frameLifts[i] = false;
+			claimed[i] = false;
 		}
 		pointerFramePressed = false;
 		pointerFrameReleased = false;

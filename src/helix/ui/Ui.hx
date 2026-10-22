@@ -291,7 +291,9 @@ class Ui {
 		syncTextEntry();
 	}
 
-	/** Once a frame, after the pointer's update and before reading the widgets: moves focus, activates, and brings each widget up to date. */
+	/** Once a frame, after the pointer's update and before reading the widgets or the game's own keys: moves focus, activates, brings each
+		widget up to date, and claims the keys it used (IInput.claim: a focused text field every key pressed), so the game reading after
+		doesn't act on them too. */
 	public function update():Void {
 		if (guarded && !anyHeld())
 			guarded = false;
@@ -370,6 +372,7 @@ class Ui {
 		}
 		back = !guarded && (input.isFramePressed(Key.Escape) || pad(PadButton.East));
 		// Escape or East closes a popup rather than going back.
+		var escapedPopup = back && popup != null;
 		if (back && popup != null) {
 			closePopup();
 			back = false;
@@ -392,6 +395,7 @@ class Ui {
 			w.update(hovered && usable, held && usable, clicked, w == focused, activated && w == focused && usable, steps ? stepX : 0, steps ? stepY : 0);
 		}
 		pressing = null;
+		claimKeys(navigated, activated, escapedPopup);
 		placePopup();
 		// The ring around the focused widget, a little outside it, when keys or a pad moved focus.
 		ring.color = theme.focusColor;
@@ -409,6 +413,28 @@ class Ui {
 		} else
 			ring.visible = false;
 		syncTextEntry();
+	}
+
+	// The keys it used this frame, claimed for the rest of it (IInput.claim), so the game reading after doesn't act on them too: a focused
+	// text field takes every key pressed (typing); else, with a widget focused, the keys that moved focus or stepped it and the ones that
+	// activated it, and Escape when it closed a popup.
+	function claimKeys(navigated:Bool, activated:Bool, escapedPopup:Bool):Void {
+		if (focused != null && focused.enabled && focused.takesText()) {
+			for (k in 0...Key.COUNT)
+				if (input.isFramePressed(cast k))
+					input.claim(cast k);
+			return;
+		}
+		if (focused != null && navigated)
+			for (k in [Key.Tab, Key.Up, Key.Down, Key.Left, Key.Right])
+				if (input.isFramePressed(k))
+					input.claim(k);
+		if (focused != null && activated)
+			for (k in [Key.Enter, Key.Space])
+				if (input.isFramePressed(k))
+					input.claim(k);
+		if (escapedPopup)
+			input.claim(Key.Escape);
 	}
 
 	// The open popup laid out and placed by its anchor in the visible area: below it, or above when there's no room below and more above,

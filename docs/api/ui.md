@@ -641,7 +641,7 @@ function update():Void
 - `popup`: The open popup (a dropdown's list), or null.
 - `closePopup`: Closes the open popup, if one is: its owner sees it closed at its next update, as when a press off it or Escape closes it.
 - `reset`: A new screen begins: no focus, no popup open, and keys and buttons held now do nothing until they're let go.
-- `update`: Once a frame, after the pointer's update and before reading the widgets: moves focus, activates, and brings each widget up to date.
+- `update`: Once a frame, after the pointer's update and before reading the widgets or the game's own keys: moves focus, activates, brings each widget up to date, and claims the keys it used (IInput.claim: a focused text field every key pressed), so the game reading after doesn't act on them too.
 
 ## Widget
 

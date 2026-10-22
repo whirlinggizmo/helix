@@ -11,14 +11,17 @@ import helix.render3d.Stage3D;
 	stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once
 	a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's
 	released, the stages under it see nothing (captured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame
-	they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. */
+	they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. With no stages added, it looks at the
+	Stage (helix.render2d.Stage) and the views on it, in their drawing order (docs/DISPLAY_MODEL.md). */
 class Pointer {
 	var input:IInput;
 	var layers:Array<Layer> = [];
 	var pressedNow:Null<Any>;
 	var clickedNow:Null<Any>;
 	var hit = new PickHit();
-	var hitLayer:Null<Layer>;
+	// What the hovered node is in: a 2D tree (which captures a press) or a 3D one (hit3D).
+	var hovered2D = false;
+	var hovered3D = false;
 
 	/** The pointer of input. */
 	public function new(input:IInput)
@@ -45,7 +48,16 @@ class Pointer {
 		var x = input.pointerX, y = input.pointerY;
 		pressedNow = clickedNow = null;
 		hovered = null;
-		hitLayer = null;
+		hovered2D = hovered3D = false;
+		// No stages of its own: the stage's, topmost first, through its views (docs/DISPLAY_MODEL.md).
+		var stage = helix.render2d.Stage.instance;
+		if (layers.length == 0 && stage != null) {
+			var found = stage.pick(x, y, hit);
+			hovered2D = Std.isOfType(found, helix.render2d.Node2D);
+			// A captured pointer belongs to the 2D: the 3D under it sees nothing.
+			hovered3D = found != null && !hovered2D && !captured;
+			hovered = hovered2D || hovered3D ? found : null;
+		}
 		var i = layers.length;
 		while (hovered == null && i-- > 0) {
 			var l = layers[i];
@@ -54,12 +66,14 @@ class Pointer {
 				hovered = l.stage2D.pick(l.camera2D, x, y);
 			else if (!captured && l.stage3D.pick(l.camera3D, x, y, hit) != null)
 				hovered = hit.node;
-			if (hovered != null)
-				hitLayer = l;
+			if (hovered != null) {
+				hovered2D = l.stage2D != null;
+				hovered3D = l.stage3D != null;
+			}
 		}
 		if (input.pointerFramePressed) {
 			held = pressedNow = hovered;
-			captured = hitLayer != null && hitLayer.stage2D != null;
+			captured = hovered2D;
 		}
 		if (input.pointerFrameReleased) {
 			if (held != null && held == hovered)
@@ -98,7 +112,7 @@ class Pointer {
 	public var hit3D(get, never):Null<PickHit>;
 
 	function get_hit3D():Null<PickHit>
-		return hitLayer != null && hitLayer.stage3D != null ? hit : null;
+		return hovered3D ? hit : null;
 }
 
 /** A stage the pointer looks at, and the camera it's drawn through. */
