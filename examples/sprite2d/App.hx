@@ -35,8 +35,8 @@ import helix.host.ScreenShape;
 	- "palette": a little creature made here as indexed pixels (its red channel a color's index), drawn in a palette's colors
 	- the logo once more in the corner, drawn by a Drawing2D (Flash's graphics) with the text, no sprite
 	- a selection ring under the sprite the pointer is over: a SpriteRing (dashed, turning, a faint fill) on a 1 x 1 white texture, at the
-	  sprite's position (its pivot), sized by its bounds in its own units (Node2D.computeBounds relative to itself: unturned), so it stays
-	  steady while the sprite turns, as a ring under a unit does
+	  middle of the sprite's bounds in its own units (Node2D.computeBounds relative to itself: unturned) taken to the stage, sized by them,
+	  so it stays round its middle and steady while it turns about any pivot, as a ring under a unit does
 	- decals under everything where the pointer is dragged (Decals2D), each fading out after 4 seconds on the game's clock
 	Sprite effects (helix.shader, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
@@ -330,14 +330,14 @@ class App extends helix.App {
 			// "flip" keeps its mirror.
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
-		// The ring at the hovered sprite's position (its pivot), sized by its bounds in its own units (unturned: steady while it turns), scaled
-		// as it is and a little wider.
+		// The ring at the middle of the hovered sprite's bounds in its own units (unturned: steady while it turns), taken to the stage, so it
+		// stays round the sprite whatever its pivot; sized by them, scaled as it is and a little wider.
 		var own = hovered >= 0 ? sprites[hovered].computeBounds(sprites[hovered], selected) : null;
 		selection.visible = own != null;
 		if (own != null) {
 			var sprite = sprites[hovered],
 				size = Math.max(own.width, own.height) * Math.abs(sprite.scaleY) * 1.4;
-			selection.setPosition(sprite.x, sprite.y);
+			selection.setPosition(sprite.toWorldX(own.centerX, own.centerY), sprite.toWorldY(own.centerX, own.centerY));
 			selection.setSize(size, size);
 		}
 
