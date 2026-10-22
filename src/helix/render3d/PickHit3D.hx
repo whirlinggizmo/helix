@@ -1,7 +1,7 @@
 package helix.render3d;
 
-/** What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's
-	normal there in the world, facing back along the ray. */
+/** What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, the surface's
+	normal there in the world, facing back along the ray, and on a skinned model the joint that moves it there. */
 class PickHit3D {
 	var point = [0., 0, 0];
 	var local = [0., 0, 0];
@@ -12,6 +12,10 @@ class PickHit3D {
 
 	/** The node hit (a model, a sprite or a text), or null for no hit. */
 	public var node(default, null):Null<Node3D>;
+
+	/** On a skinned model, the joint that moves the surface hit most (its triangle's joints weighed at the point), which something stuck
+		there follows as the model is posed (Decals3D.placeOn); null for anything else. */
+	public var joint(default, null):Null<Node3D>;
 
 	/** How far along the ray, in world units from its start (a camera's near plane). */
 	public var distance(default, null):Float = 0.;
@@ -33,6 +37,7 @@ class PickHit3D {
 	function record(node:Node3D, distance:Float, px:Float, py:Float, pz:Float, lx:Float, ly:Float, lz:Float, nx:Float, ny:Float, nz:Float):Void {
 		this.node = node;
 		this.distance = distance;
+		joint = null;
 		point[0] = px;
 		point[1] = py;
 		point[2] = pz;
@@ -43,6 +48,12 @@ class PickHit3D {
 		normal[1] = ny;
 		normal[2] = nz;
 	}
+
+	// The joint moving the surface hit, after record.
+
+	@:allow(helix.render3d.Renderer3D)
+	function recordJoint(joint:Null<Node3D>):Void
+		this.joint = joint;
 
 	@:allow(helix.render3d.Renderer3D)
 	function clear():Void

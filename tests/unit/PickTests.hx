@@ -166,6 +166,23 @@ class PickTests {
 		var hit = stage.pick(c, 400, 300);
 		check(hit != null && hit.node == model && near(hit.getPoint(0), 40.6) && near(hit.getLocalPoint(0), 40.6),
 			"A skinned model is hit where its joints put it");
+		check(hit.joint == knee, "Its joint there: the knee, which moves that triangle");
+		// A decal stuck there rides the knee, sized as asked whatever the knee's scale.
+		knee.setScale(2, 2, 2);
+		var hole = new helix.render3d.Decals3D(helix.texture.Texture2D.fromRgba(1, 1, haxe.io.Bytes.alloc(4), false, -1, -1, false, new CountingGraphics()),
+			4).placeOn(hit, 0, .5);
+		check(hole.parent == knee
+			&& near(hole.computeWorld().get(0) * hole.spriteWidth, .5), "A decal on it goes under the knee, its size the world's");
+		knee.setPosition(50, 0, 0);
+		// Put .6 past the knee in the world, .3 in its space at its scale of 2.
+		check(Math.abs(hole.computeWorld().get(12) - 50.6) < 1e-9, "And moves with it");
+		knee.removeChild(hole);
+		knee.setScale(1, 1, 1);
+		knee.setPosition(40, 0, 0);
+		c.setView(.3, .3, 10, .3, .3, 0);
+		var onHip = stage.pick(c, 400, 300);
+		check(onHip != null && onHip.joint == hip, "The hip's triangle: the hip");
+		c.setView(40.6, .3, 10, 40.6, .3, 0);
 		c.setView(1.6, .3, 10, 1.6, .3, 0);
 		check(stage.pick(c, 400, 300) == null, "Not where it was bound (wgrender-c's 6e79587: ghost arms in the rest pose)");
 		// Gear swapped: the old part's model off the character, a new one (the strip a unit higher) bound to the same skeleton; the next pick

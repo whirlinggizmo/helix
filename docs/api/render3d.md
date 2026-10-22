@@ -209,7 +209,7 @@ final mips:Array<haxe.ds.Vector<Float>>
 
 *class* in [`src/helix/render3d/Decals3D.hx`](../../src/helix/render3d/Decals3D.hx)
 
-Marks left on the ground: skid marks, footsteps, scorch marks, a target ring under a spell. A fixed pool of a texture's sprites lying flat (SpriteFacing3D.Ground), drawn in one draw: each place puts one down, and once the pool is full the oldest is taken up and put down again, so a trail never grows past its capacity. Given a life (lifeSeconds), each mark fades out over fadeSeconds once it has lived it, on the game's clock (a paused game's marks stay as they are), and is taken up; without one it stays until the pool comes round to it. Either way the ones next to be taken up for reuse (fadeCount) fade by how soon, so a full pool's trail thins out where it ends instead of losing a mark at a time. In its own space, the ground its x-z plane: place it on a level's floor. A decal lies flat, lifted a little (lift) over the ground it's put on, so it doesn't flicker into it; on a slope it shows its edge sunk or floating. Decals are never picked: a click passes to the ground.
+Marks left on the ground: skid marks, footsteps, scorch marks, a target ring under a spell. A fixed pool of a texture's sprites lying flat (SpriteFacing3D.Ground), drawn in one draw: each place puts one down, and once the pool is full the oldest is taken up and put down again, so a trail never grows past its capacity. Given a life (lifeSeconds), each mark fades out over fadeSeconds once it has lived it, on the game's clock (a paused game's marks stay as they are), and is taken up; without one it stays until the pool comes round to it. Either way the ones next to be taken up for reuse (fadeCount) fade by how soon, so a full pool's trail thins out where it ends instead of losing a mark at a time. place puts one in its own space, the ground its x-z plane: place it on a level's floor. placeOn puts one on what a pick hit (a bullet hole in a wall, a scorch on a crate), on its face there and carried by its node as it moves. A decal lies flat, lifted a little (lift) off what it's put on, so it doesn't flicker into it; over an edge or a curve it shows sunk or standing off. Decals are never picked: a click passes to what's under them.
 
 ```haxe
 function new(texture:Texture2D, ?capacity:Int = 64)
@@ -223,6 +223,7 @@ var fadeCount(get, set):Int
 var lifeSeconds(get, set):Float
 var fadeSeconds(get, set):Float
 function place(x:Float, y:Float, z:Float, ?angle:Float = 0., ?size:Float = 0., ?tint:Int):Sprite3D
+function placeOn(hit:PickHit3D, ?angle:Float = 0., ?size:Float = 0., ?tint:Int):Null<Sprite3D>
 function clear():Void
 ```
 
@@ -237,6 +238,7 @@ function clear():Void
 - `lifeSeconds`: Seconds on the game's clock each decal stays as placed before it fades out (over fadeSeconds) and is taken up: 0 (the default, and for less) for as long as the pool lets it. Applies to every decal down, as old as each is.
 - `fadeSeconds`: Seconds a decal takes to fade out once it has lived its life (lifeSeconds): .5 to start; 0 (and for less) to vanish at once.
 - `place`: Puts a decal down at x, y, z (its own space; y the ground's height there), turned angle radians about y (its texture's top toward -z at 0), size world units across (0, the default, for the pool's size), tinted (0xAARRGGBB; null for the pool's tint). Returns its sprite, to set its region (a variant from an atlas) or effect now: it's the pool's, put down again once taken up, its region and effect cleared then.
+- `placeOn`: Puts a decal on what hit hit (a pick's: Pointer.hit3D, View3D's or Renderer3D's pick), lying on its face there (along the hit's normal, lifted lift off it), turned angle radians about the normal, size world units across as placed (0, the default, for the pool's size; whatever the node's scale), tinted (0xAARRGGBB; null for the pool's tint). It's put under the node hit, so it moves with it; on a skinned model, under the joint moving the surface there (hit.joint), so it rides the pose. Returns its sprite, as place does; null, putting nothing down, for a hit of nothing.
 - `clear`: Takes every decal up.
 
 ## DirectionalLight3D
@@ -969,11 +971,12 @@ var emitter(default, null):Emitter
 
 *class* in [`src/helix/render3d/PickHit3D.hx`](../../src/helix/render3d/PickHit3D.hx)
 
-What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's normal there in the world, facing back along the ray.
+What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, the surface's normal there in the world, facing back along the ray, and on a skinned model the joint that moves it there.
 
 ```haxe
 function new()
 var node(default, null):Null<Node3D>
+var joint(default, null):Null<Node3D>
 var distance(default, null):Float
 function getPoint(axis:Int):Float
 function getLocalPoint(axis:Int):Float
@@ -982,6 +985,7 @@ function getNormal(axis:Int):Float
 
 - `new`: No hit yet.
 - `node`: The node hit (a model, a sprite or a text), or null for no hit.
+- `joint`: On a skinned model, the joint that moves the surface hit most (its triangle's joints weighed at the point), which something stuck there follows as the model is posed (Decals3D.placeOn); null for anything else.
 - `distance`: How far along the ray, in world units from its start (a camera's near plane).
 - `getPoint`: Where in the world, axis 0 (x), 1 (y) or 2 (z).
 - `getLocalPoint`: Where in the node's own space (a skinned model's as posed), axis 0, 1 or 2.

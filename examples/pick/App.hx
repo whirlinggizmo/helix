@@ -31,7 +31,9 @@ import helix.render3d.Orbit3D;
 /** Every kind a View3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
 	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). A
 	helix.scene.Pointer with nothing added reads the stage, through the view to its tree; its hit3D is the hit. The hit's point is marked
-	and its normal drawn (a Drawing3D in the tree), and its node, distance and point shown. O stops the circling camera; Escape quits where
+	and its normal drawn (a Drawing3D in the tree), and its node, distance and point shown. The left button puts a bullet hole where it
+	points (Decals3D.placeOn: on the face hit, under the node hit, or on the character the joint moving her there), so the cube's turn
+	with it as it turns and hers ride her as she walks. O stops the circling camera; Escape quits where
 	quitting means anything. */
 class App extends helix.App {
 	var level = new Node3D();
@@ -42,6 +44,9 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var fps = new FpsOverlay();
 	var picked:Null<PickHit3D>;
+	// Bullet holes, on whatever they're put on; and the cube, turning, carrying its own.
+	var holes:helix.render3d.Decals3D;
+	var cube:Model3D;
 	var animator:Null<Animator3D>;
 	// The camera, circling.
 	var orbit = new Orbit3D(9, 5, .2, 1, .3);
@@ -66,11 +71,15 @@ class App extends helix.App {
 		var red = new Material3D(), blue = new Material3D();
 		red.baseColor = 0xffd2503c;
 		blue.baseColor = 0xff3c78d2;
-		var cube = new Model3D(Mesh3D.cube(1.2, 1.2, 1.2), red);
+		cube = new Model3D(Mesh3D.cube(1.2, 1.2, 1.2), red);
 		cube.name = "a cube";
 		cube.setPosition(-3, .6, 1);
 		cube.setRotation(0, .6, 0);
 		level.addChild(cube);
+		holes = new helix.render3d.Decals3D(helix.particle.Emitter.getDot(), 32);
+		holes.size = .18;
+		holes.tint = 0xf0100c0a;
+		level.addChild(holes);
 		var sphere = new Model3D(Mesh3D.sphere(.8), blue);
 		sphere.name = "a sphere";
 		sphere.setPosition(-1, .8, -1.5);
@@ -160,6 +169,7 @@ class App extends helix.App {
 		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		orbit.update(dt);
+		cube.setRotation(0, .6 + Time.clock.time * .4, 0);
 		if (animator != null)
 			animator.update(dt);
 		fps.update(dt, Time.frameCpu);
@@ -172,6 +182,8 @@ class App extends helix.App {
 		// What's under the pointer, through the stage to the view's tree, where the view was last drawn.
 		pointer.update();
 		picked = pointer.hit3D;
+		if (picked != null && Input.pointerFramePressed)
+			holes.placeOn(picked);
 
 		marks.clear();
 		if (picked != null) {
@@ -190,7 +202,7 @@ class App extends helix.App {
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
 		y += text.drawTextWrapped(line, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
-		text.drawTextWrapped("O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+		text.drawTextWrapped("O: the camera   [LMB] add decal" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 	}
 
 	override public function cleanup():Void

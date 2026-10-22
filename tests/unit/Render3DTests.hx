@@ -7,6 +7,7 @@ import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
 import helix.render3d.ModelFile3D.ImageSource3D;
 import helix.render3d.Node3D;
+import helix.render3d.PickHit3D;
 import helix.render3d.PointLight3D;
 import helix.render3d.Ray3D;
 import helix.render3d.SpotLight3D;
@@ -394,6 +395,37 @@ class Render3DTests {
 		@:privateAccess helix.scene.Flow.tick(10);
 		check(decals.count == 2 && older.tint == 0xffffffff, "No life: they stay");
 		decals.clear();
+		var level3 = new Node3D();
+		level3.addChild(decals);
+		// On what a pick hit: lying on its face (its up along the normal, lifted), under the node hit.
+		var box = new Node3D();
+		box.setPosition(2, 0, 0);
+		box.setRotation(0, Math.PI / 2, 0);
+		level3.addChild(box);
+		var hit = new PickHit3D();
+		check(decals.placeOn(hit) == null, "A hit of nothing puts nothing down");
+		@:privateAccess hit.record(box, 1, 2, 1, .5, 0, 0, 0, 0, 0, 1);
+		var hole = decals.placeOn(hit, 0, .2);
+		var at = hole.computeWorld();
+		check(hole.parent == box && near(at.get(12), 2) && near(at.get(13), 1) && Math.abs(at.get(14) - .51) < 1e-9, "On the box, lifted along the normal");
+		check(Math.abs(at.get(4)) < 1e-9 && Math.abs(at.get(5)) < 1e-9 && Math.abs(at.get(6) - 1) < 1e-9, "Facing out along the normal");
+		box.setPosition(5, 0, 0);
+		check(near(hole.computeWorld().get(12), 5), "Carried by the box as it moves");
+		@:privateAccess hit.record(box, 1, 2, -1, 0, 0, 0, 0, 0, -1, 0);
+		var under = decals.placeOn(hit).computeWorld();
+		check(Math.abs(under.get(5) + 1) < 1e-9, "Facing down, under it");
+		// Turned about the normal as place turns about y: on an unturned node, facing up, the same.
+		var floor = new Node3D();
+		level3.addChild(floor);
+		@:privateAccess hit.record(floor, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+		var a = decals.placeOn(hit, .7).computeWorld(),
+			b = decals.place(0, 0, 0, .7).computeWorld();
+		var same = true;
+		for (i in 0...12)
+			same = same && Math.abs(a.get(i) - b.get(i)) < 1e-9;
+		check(same, "Turned about the normal as place turns");
+		decals.clear();
+		check(box.childCount == 0 && floor.childCount == 0, "Cleared off what they were on");
 
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

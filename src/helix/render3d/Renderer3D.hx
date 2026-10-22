@@ -806,7 +806,7 @@ class Renderer3D {
 			for (i in 0...count)
 				for (c in 0...3)
 					positions[i * 3 + c] = vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.positionOffset + c * 4);
-		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0.;
+		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0., hitA = 0, hitB = 0, hitC = 0, hitU = 0., hitV = 0.;
 		var i = 0, n = mesh.indexCount;
 		while (i < n) {
 			var a = indices.getInt32(i * 4) * 3,
@@ -843,6 +843,11 @@ class Renderer3D {
 				continue;
 			found = true;
 			hitT = t;
+			hitA = a;
+			hitB = b;
+			hitC = c;
+			hitU = u;
+			hitV = v;
 			hnx = e1y * e2z - e1z * e2y;
 			hny = e1z * e2x - e1x * e2z;
 			hnz = e1x * e2y - e1y * e2x;
@@ -866,6 +871,36 @@ class Renderer3D {
 		}
 		pickBest = hitT;
 		pickHit.record(node, hitT, ox + dx * hitT, oy + dy * hitT, oz + dz * hitT, lox + ldx * hitT, loy + ldy * hitT, loz + ldz * hitT, nx, ny, nz);
+		if (isSkinned(node, mesh))
+			pickHit.recordJoint(heaviestJoint(node, mesh, [hitA, hitB, hitC], [1 - hitU - hitV, hitU, hitV]));
+	}
+
+	// The joint weighing most at a point of a skinned triangle: each of its vertices' joints by its weight there and the point's share of
+	// the vertex (corners, position indices three a vertex; shares, barycentric).
+	function heaviestJoint(node:Model3D, mesh:Mesh3D, corners:Array<Int>, shares:Array<Float>):Null<Node3D> {
+		var skin = mesh.skinData,
+			found:Array<Int> = [],
+			weights:Array<Float> = [];
+		for (k in 0...3) {
+			var s = Std.int(corners[k] / 3) * Skinned3DProgram.skinStride;
+			for (slot in 0...4) {
+				var weight = skin.getFloat(s + Skinned3DProgram.weightsOffset + slot * 4) * shares[k];
+				if (weight <= 0)
+					continue;
+				var j = Std.int(skin.getFloat(s + Skinned3DProgram.jointsOffset + slot * 4) + .5),
+					at = found.indexOf(j);
+				if (at < 0) {
+					found.push(j);
+					weights.push(weight);
+				} else
+					weights[at] += weight;
+			}
+		}
+		var best = -1;
+		for (i in 0...found.length)
+			if (best < 0 || weights[i] > weights[best])
+				best = i;
+		return best < 0 ? null : node.getJoint(found[best]);
 	}
 
 	// A skinned model's vertices as posed now, in its own space, into out: each moved by its joints' matrices as the GPU blends them.
