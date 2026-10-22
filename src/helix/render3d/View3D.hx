@@ -12,7 +12,8 @@ import helix.scene.Node;
 	children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping; the light is the place's (Node3D.environment), unless
 	the view's own environment overrides it. Drawn under
 	every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's
-	end. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it
+	end. With a postProcess chain (View.postProcess) it's drawn into a texture instead and placed in the 2D's order like any 2D thing, so 2D
+	drawn before it is under it. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it
 	for itself. */
 class View3D extends View {
 	var gpu:Null<IGraphics>;

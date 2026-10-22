@@ -16,6 +16,7 @@ Each milestone reimplements a part of the earlier frameworks (wgrender-c, libwgf
 ## Deferred until a game needs it
 
 - **Decided after measuring** (milestone 5 left them for numbers that call for them): a spatial index (both culling and picking walk every node; neither earlier framework needed one), visibility and pick masks, skipping the posing of characters out of view (libwgt: 400 models looking away 0.94 ms posed lazily, 16.1 posed; and its trap: culling by last frame's posed box never poses a culled model, so it never walks back into view), occlusion culling, per-instance picks. Also caching skinned poses for picks, if picking many characters is measured to cost.
+- **Publishing the haxelib:** waits until the API settles; once it's on lib.haxe.org, sweeping changes are harder to justify (the user, 2026-10-22). Until then games take it by `haxelib git` or `haxelib dev`. The archive will leave out `examples/`, and `init --example` will fetch an example by the installed version's tag (PACKAGING.md).
 - **The autopilot's UI:** probes that report which widgets are showing, and events recorded for scripts to wait on, beside `click`.
 - **An action bound to a UI widget:** the drawn touch button and the region it presses as one binding, when the UI asks for it.
 - **Animation layers:** an upper body's clip over a lower body's.
