@@ -140,7 +140,7 @@ def main():
     (SITE/'favicon.png').write_bytes((example.SHARED/'favicon.png').read_bytes())
     # The API reference beside the examples, at /api/ (tools/gen_apidoc.py, from the doc comments).
     import gen_apidoc
-    gen_apidoc.main()
+    gen_apidoc.generate()
     if (SITE/'api').exists():shutil.rmtree(SITE/'api')
     shutil.copytree(ROOT/'build/api',SITE/'api',ignore=shutil.ignore_patterns('xml','unused*'))
     weights=sizes(shots(a.browser,ordered))

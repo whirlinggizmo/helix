@@ -168,10 +168,14 @@ def markdown(xmls):
     return out
 
 def main():
-    version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     import cli
     p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when docs/api isn't what the sources give")
-    check=p.parse_args().check
+    generate(check=p.parse_args().check)
+
+def generate(check=False):
+    """docs/api and the HTML in build/api from the doc comments; with check, writes nothing and fails when docs/api isn't what they give.
+    What another tool calls (tools/pages.py): main reads the command line, this doesn't."""
+    version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
     # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.
     if not check and not (ROOT/'build/haxelib/dox'/version.replace('.',',')).is_dir():subprocess.run(['haxelib','--always','install','dox',version],env=env,check=True,stdout=subprocess.DEVNULL)
