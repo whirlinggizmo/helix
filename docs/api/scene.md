@@ -220,8 +220,8 @@ var enabled:Bool
 var visible:Bool
 var pickable:Bool
 var properties:Map<String, SceneValue>
-var material:Null<SceneMaterial>
-var mesh:Null<SceneMesh>
+var material:Null<SceneMaterial3D>
+var mesh:Null<SceneMesh3D>
 ```
 
 - `new`: Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a texture still loading), entry's value for the property stands in, when given.
@@ -469,10 +469,10 @@ static function make(kind:String):Null<Node3D>
 static function kindOf(node:Node3D):Null<String>
 static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool
 static function read(node:Node3D, name:String):Null<SceneValue>
-static function makeMesh(mesh:SceneMesh):Null<Mesh>
-static function readMesh(mesh:Mesh):Null<SceneMesh>
-static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance3D):Void
-static function readMaterial(model:Model):Null<SceneMaterial>
+static function makeMesh(mesh:SceneMesh3D):Null<Mesh>
+static function readMesh(mesh:Mesh):Null<SceneMesh3D>
+static function applyMaterial(model:Model, material:SceneMaterial3D, ?instance:SceneInstance3D):Void
+static function readMaterial(model:Model):Null<SceneMaterial3D>
 static function projectionOf(name:String):Null<Projection>
 static function projectionName(projection:Projection):String
 static function facingOf(name:String):Null<SpriteFacing>
@@ -496,9 +496,9 @@ static function alphaName(alpha:SpriteAlpha):String
 - `alphaOf`: The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name.
 - `alphaName`: An alpha mode's name as the file writes it.
 
-## SceneMaterial
+## SceneMaterial3D
 
-*class* in `src/helix/scene/SceneMaterial.hx`
+*class* in `src/helix/scene/SceneMaterial3D.hx`
 
 A material as a .scene3d file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
 
@@ -526,9 +526,9 @@ var doubleSided:Null<Bool>
 - `emissiveStrength`: How bright its emissive light is, 0 or more; null for unsaid.
 - `doubleSided`: Whether both sides of its triangles draw; null for unsaid.
 
-## SceneMesh
+## SceneMesh3D
 
-*class* in `src/helix/scene/SceneMesh.hx`
+*class* in `src/helix/scene/SceneMesh3D.hx`
 
 A generated mesh as a .scene3d file writes it on a Model ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
 
@@ -554,7 +554,7 @@ var name:Null<String>
 var kind:Null<String>
 var scene:Null<String>
 var file:Null<String>
-var mesh:Null<SceneMesh>
+var mesh:Null<SceneMesh3D>
 var position:Null<Array<Float>>
 var rotation:Null<Array<Float>>
 var scale:Null<Array<Float>>
@@ -562,7 +562,7 @@ var enabled:Null<Bool>
 var visible:Null<Bool>
 var pickable:Null<Bool>
 var properties:Map<String, SceneValue>
-var material:Null<SceneMaterial>
+var material:Null<SceneMaterial3D>
 var overrides:Map<String, SceneNode3D>
 var children:Array<SceneNode3D>
 var behaviors:Array<SceneBehavior>

@@ -210,11 +210,11 @@ class Game extends helix.App {
    the views' renderers), and the runner's allowance for an app drawing its own frame removed (`Graphics.beginFrame` and `endFrame` the
    runner's alone); a decision entry recording what was built and checked.
 9. Scene files named by kind, as the convention names 2D and 3D apart: `.scene` became `.scene3d` (its version key `helix-scene3d`), and
-   the classes holding 3D's own `SceneFile3D`, `SceneFiles3D`, `SceneFileCache3D`, `SceneInstance3D`, `SceneNode3D`, `SceneKinds3D` and
-   `SceneEnvironment3D`; what a 2D file will share (`SceneBehavior`, `SceneValue`, `SceneSchema`'s property types) and what has no 2D
-   counterpart (`SceneMaterial`, `SceneMesh`, as `Material` and `Mesh`) kept theirs. So 2D scene files arrive as `.scene2d` without renaming
-   again. A 2D scene shows a 3D one through a
-   `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
+   every class holding what only a `.scene3d` holds named by its file: `SceneFile3D`, `SceneFiles3D`, `SceneFileCache3D`,
+   `SceneInstance3D`, `SceneNode3D`, `SceneKinds3D`, `SceneEnvironment3D`, `SceneMaterial3D` and `SceneMesh3D` (a material or a mesh has no
+   2D counterpart yet, but the family is named by its file, and a 2D one may come); only what a 2D file will share (`SceneBehavior`,
+   `SceneValue`, `SceneSchema`'s property types) keeps a plain name. So 2D scene files arrive as `.scene2d` without renaming again. A 2D
+   scene shows a 3D one through a `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
 
 ## Later (ROADMAP)
 

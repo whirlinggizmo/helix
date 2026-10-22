@@ -305,7 +305,7 @@ class SceneKinds3D {
 
 	/** The mesh a file's mesh entry names, made by Mesh's generator of its shape with its arguments, an unsaid one the generator's default
 		(SceneSchema.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing. */
-	public static function makeMesh(mesh:SceneMesh):Null<Mesh> {
+	public static function makeMesh(mesh:SceneMesh3D):Null<Mesh> {
 		var schema = SceneSchema.shape(mesh.shape);
 		if (schema == null)
 			return null;
@@ -334,11 +334,11 @@ class SceneKinds3D {
 
 	/** Mesh as a file's mesh entry, from its record of what made it (Mesh.shape), every argument said (the writer leaves out those at the
 		generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have. */
-	public static function readMesh(mesh:Mesh):Null<SceneMesh> {
+	public static function readMesh(mesh:Mesh):Null<SceneMesh3D> {
 		var shape = mesh.shape;
 		if (shape == null || SceneSchema.shape(shape.name) == null)
 			return null;
-		var read = new SceneMesh(shape.name);
+		var read = new SceneMesh3D(shape.name);
 		for (argument in SceneSchema.shape(shape.name).arguments)
 			if (shape.arguments.exists(argument.name))
 				read.arguments.set(argument.name, shape.arguments.get(argument.name));
@@ -348,7 +348,7 @@ class SceneKinds3D {
 	/** Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none):
 		an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance,
 		when given, keeps them to release at its destroy. */
-	public static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance3D):Void {
+	public static function applyMaterial(model:Model, material:SceneMaterial3D, ?instance:SceneInstance3D):Void {
 		var made = new Material();
 		if (material.baseColor != null)
 			made.baseColor = material.baseColor;
@@ -372,11 +372,11 @@ class SceneKinds3D {
 
 	/** Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for
 		none or one that didn't come through Textures. Null for a model of no parts. */
-	public static function readMaterial(model:Model):Null<SceneMaterial> {
+	public static function readMaterial(model:Model):Null<SceneMaterial3D> {
 		var material = model.material;
 		if (material == null)
 			return null;
-		var read = new SceneMaterial();
+		var read = new SceneMaterial3D();
 		read.baseColor = material.baseColor;
 		read.metallic = material.metallic;
 		read.roughness = material.roughness;

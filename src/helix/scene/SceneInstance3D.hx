@@ -306,11 +306,11 @@ class NodeSnapshot {
 	public var properties:Map<String, SceneValue> = new Map();
 
 	/** A Model's material as read; null for another kind or a model of no parts. */
-	public var material:Null<SceneMaterial>;
+	public var material:Null<SceneMaterial3D>;
 
 	/** A Model's generated mesh as read from its record (Mesh.shape), else the entry's mesh when given; null for another kind or a mesh of
 		no record. */
-	public var mesh:Null<SceneMesh>;
+	public var mesh:Null<SceneMesh3D>;
 
 	/** Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a
 		texture still loading), entry's value for the property stands in, when given. */
@@ -1085,7 +1085,7 @@ private class SceneCapture {
 	}
 
 	// A texture that can't be read now (not yet loaded) is taken as the snapshot's, so a load under way isn't a change.
-	static function fillTextures(material:SceneMaterial, snapshot:Null<SceneMaterial>):Void {
+	static function fillTextures(material:SceneMaterial3D, snapshot:Null<SceneMaterial3D>):Void {
 		if (snapshot == null)
 			return;
 		if (material.texture == null)
@@ -1095,9 +1095,9 @@ private class SceneCapture {
 	}
 
 	// What differs in material from base (Material's defaults for null); null for nothing.
-	static function diffMaterial(material:SceneMaterial, base:Null<SceneMaterial>):Null<SceneMaterial> {
+	static function diffMaterial(material:SceneMaterial3D, base:Null<SceneMaterial3D>):Null<SceneMaterial3D> {
 		if (base == null) {
-			base = new SceneMaterial();
+			base = new SceneMaterial3D();
 			base.baseColor = 0xffffffff;
 			base.metallic = 0;
 			base.roughness = .5;
@@ -1106,7 +1106,7 @@ private class SceneCapture {
 			base.emissiveStrength = 1;
 			base.doubleSided = false;
 		}
-		var changed = new SceneMaterial(), any = false;
+		var changed = new SceneMaterial3D(), any = false;
 		if (material.baseColor != base.baseColor) {
 			changed.baseColor = material.baseColor;
 			any = true;
@@ -1198,7 +1198,7 @@ private class SceneCapture {
 	}
 
 	// Whether two mesh entries name one shape with the same arguments, an unsaid one at the generator's default.
-	static function sameMesh(a:SceneMesh, b:Null<SceneMesh>):Bool {
+	static function sameMesh(a:SceneMesh3D, b:Null<SceneMesh3D>):Bool {
 		if (b == null || a.shape != b.shape)
 			return false;
 		var schema = SceneSchema.shape(a.shape);

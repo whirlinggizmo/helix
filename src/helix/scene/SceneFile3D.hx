@@ -467,7 +467,7 @@ private class SceneReader {
 	}
 
 	// A Model's generated mesh: its shape, one of SceneSchema.shapes, and that shape's arguments, each a number, the required ones present.
-	function readMesh(value:Dynamic, where:String):Null<SceneMesh> {
+	function readMesh(value:Dynamic, where:String):Null<SceneMesh3D> {
 		if (!isObject(value)) {
 			refuse(where, "mesh: expected an object");
 			return null;
@@ -483,7 +483,7 @@ private class SceneReader {
 			refuse(at, 'unknown shape ${describe(shape)}');
 			return null;
 		}
-		var mesh = new SceneMesh(schema.name);
+		var mesh = new SceneMesh3D(schema.name);
 		for (key in Reflect.fields(value)) {
 			if (key == "shape")
 				continue;
@@ -501,12 +501,12 @@ private class SceneReader {
 		return mesh;
 	}
 
-	function readMaterial(value:Dynamic, where:String):Null<SceneMaterial> {
+	function readMaterial(value:Dynamic, where:String):Null<SceneMaterial3D> {
 		if (!isObject(value)) {
 			refuse(where, "material: expected an object");
 			return null;
 		}
-		var material = new SceneMaterial(), at = '$where material';
+		var material = new SceneMaterial3D(), at = '$where material';
 		for (key in Reflect.fields(value)) {
 			var item:Dynamic = Reflect.field(value, key);
 			switch key {
@@ -691,7 +691,7 @@ private class SceneWriter {
 		]);
 
 	// A generated mesh: its shape, then its arguments in the generator's order, an optional one at the generator's default left out.
-	function mesh(mesh:SceneMesh):Array<String> {
+	function mesh(mesh:SceneMesh3D):Array<String> {
 		var entries = [entry("shape", [string(mesh.shape)])];
 		var schema = SceneSchema.shape(mesh.shape);
 		if (schema != null)
@@ -703,7 +703,7 @@ private class SceneWriter {
 		return object(entries);
 	}
 
-	function material(material:SceneMaterial):Array<String> {
+	function material(material:SceneMaterial3D):Array<String> {
 		var entries = [];
 		if (material.baseColor != null)
 			entries.push(entry("baseColor", [color(material.baseColor)]));

@@ -19,7 +19,7 @@ class SceneNode3D {
 	public var file:Null<String>;
 
 	/** A Model's generated mesh, made by one of Mesh's generators as its first part; null for none. */
-	public var mesh:Null<SceneMesh>;
+	public var mesh:Null<SceneMesh3D>;
 
 	/** Its position, x, y, z in its parent's units; null for the origin. */
 	public var position:Null<Array<Float>>;
@@ -45,7 +45,7 @@ class SceneNode3D {
 	public var properties:Map<String, SceneValue> = new Map();
 
 	/** A Model's inline material, replacing the mesh's or the file's root material; null for none. */
-	public var material:Null<SceneMaterial>;
+	public var material:Null<SceneMaterial3D>;
 
 	/** By path from this node ("road/line"), what changes on the nodes its file or prefab makes: each an override node. */
 	public var overrides:Map<String, SceneNode3D> = new Map();

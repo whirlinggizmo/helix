@@ -33,7 +33,7 @@ import helix.scene.SceneFileCache3D;
 import helix.scene.SceneFiles3D;
 import helix.scene.SceneInstance3D;
 import helix.scene.SceneKinds3D;
-import helix.scene.SceneMaterial;
+import helix.scene.SceneMaterial3D;
 import helix.scene.SceneSchema;
 import helix.scene.SceneValue;
 
@@ -655,7 +655,7 @@ class SceneInstanceTests {
 			&& camera.near == .01
 			&& camera.far == .05,
 			"and a far under the near moves the near just under it");
-		var material = new SceneMaterial();
+		var material = new SceneMaterial3D();
 		material.baseColor = 0x78123456;
 		material.metallic = .25;
 		material.roughness = .75;
@@ -676,7 +676,7 @@ class SceneInstanceTests {
 			&& read.normalTexture == "mat_n.png" && read.normalScale == 2 && read.emissive == 0xffff8800 && read.emissiveStrength == 3
 			&& read.doubleSided == true,
 			"A material applied reads back every value, its textures by path");
-		var partial = new SceneMaterial();
+		var partial = new SceneMaterial3D();
 		partial.roughness = .1;
 		SceneKinds3D.applyMaterial(model, partial);
 		read = SceneKinds3D.readMaterial(model);

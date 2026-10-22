@@ -38,7 +38,7 @@ HeliX is Haxe through and through, and its API uses what Haxe gives: properties 
 - **One concept, one name across types:** a sprite's part of its texture is its region everywhere (`regionX`, `regionWidth`), not a region here and a source there.
 - **Adapter classes are `<Api><Contract>Adapter`**, words the API's name ends with and the contract's starts with written once (`WebAudioAdapter`, not `WebAudioAudioAdapter`); ARCHITECTURE.md has the directories, and `tools/check_adapters.py` checks both.
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation): `serveDirectory`, `assetDirectory`. Only a third party's own name keeps its word.
-- **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them.
+- **2D and 3D are named apart:** `Camera2D`, `Text2D`, `Batch2D`, so their 3D counterparts can sit beside them. A family named by a file of one kind carries the kind on every member, a counterpart or not: what a `.scene3d` holds is `SceneFile3D`, `SceneNode3D`, `SceneMaterial3D`, `SceneMesh3D`; only what both kinds' files share keeps a plain name (`SceneBehavior`, `SceneValue`). A class standing alone with no 2D counterpart (`Model`, `Mesh`, `Material`) needs no suffix.
 - **Capitals:** `2D` and `3D` keep a capital D. Acronyms are written as words, as in Haxe's standard library (`Json`, `Xml`, `Http`): `id`, `Url`, `IndexedDb`. Product names keep their own spelling (`WebGL2`, `Sokol`).
 
 ## Units

@@ -2,7 +2,7 @@ package helix.scene;
 
 /** A material as a .scene3d file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override
 	changes one value and leaves the rest. */
-class SceneMaterial {
+class SceneMaterial3D {
 	/** The base color, 0xAARRGGBB; null for unsaid. */
 	public var baseColor:Null<Int>;
 
