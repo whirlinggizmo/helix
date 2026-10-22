@@ -3,13 +3,14 @@ package helix.scene;
 import haxe.io.Bytes;
 import helix.assets.Failure;
 import helix.behavior.Behaviors;
-import helix.render3d.Stage3D;
+import helix.render3d.Node3D;
 import helix.scene.SceneSchema;
 
-/** A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its stage section and its nodes, each a SceneNode
+/** A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its environment section and its nodes, each a SceneNode
 	with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so
 	a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand
-	edit stays where it was made; instantiated onto a stage (instantiate) and captured back from a live instance (capture). */
+	edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a
+	tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree. */
 class SceneFile {
 	/** The format version read and written: the file's "helix-scene" value. */
 	public static inline var VERSION = 1;
@@ -17,18 +18,18 @@ class SceneFile {
 	/** The file's "helix-scene" version: VERSION, the only one read. */
 	public var version:Int = VERSION;
 
-	/** Its stage section, or null when the file has none. */
-	public var stage:Null<SceneStage>;
+	/** Its environment section (the place's light, set on the node it's instantiated as), or null when the file has none. */
+	public var environment:Null<SceneEnvironment>;
 
 	/** Its nodes at the root, in drawing order. */
 	public var nodes:Array<SceneNode> = [];
 
-	/** An empty file of the current version: no stage section, no nodes. */
+	/** An empty file of the current version: no environment section, no nodes. */
 	public function new() {}
 
 	/** The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or
-		the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section
-		or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
+		the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the environment
+		section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
 		has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a
 		Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a
 		required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind,
@@ -40,22 +41,22 @@ class SceneFile {
 		return file;
 	}
 
-	/** Makes the file's tree on stage, its behaviors on behaviors: the stage section applied (ambient, tonemap and exposure at once, the
-		environment and background once their files land through Environments), then every node at once under a new group named after the
-		file (its path without directory and extension) added to the stage's root, a Model's file and a prefab landing later through Models
+	/** Makes the file's tree under parent, its behaviors on behaviors: a new group named after the file (its path without directory and
+		extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the
+		map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models
 		and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
 		node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's
 		next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab
 		naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are
 		each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers
 		where each node came from, for capture. */
-	public function instantiate(stage:Stage3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance
-		return SceneInstance.make(this, path != null ? path : "scene", stage, behaviors, ready);
+	public function instantiate(parent:Node3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance
+		return SceneInstance.make(this, path != null ? path : "scene", parent, behaviors, ready);
 
 	/** The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by. */
 	public var path(default, null):Null<String>;
 
-	/** The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of
+	/** The file that would instantiate to what instance is now: the environment section from its root's environment (what isn't the default), each of
 		the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the
 		behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the
 		reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the
@@ -63,7 +64,7 @@ class SceneFile {
 		time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no
 		record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference
 		is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what
-		differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is
+		differs from the defaults, so the environment section holds what isn't the default, a behavior's prop at its schema default is
 		left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand
 		wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically. */
 	public static function capture(instance:SceneInstance):SceneFile
@@ -72,7 +73,7 @@ class SceneFile {
 	/** The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing
 		newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a
 		transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's
-		default, a mesh's argument at its generator's default, an unsaid stage or material value, and a property no table has, are not
+		default, a mesh's argument at its generator's default, an unsaid environment or material value, and a property no table has, are not
 		written. */
 	public function write():Bytes
 		return Bytes.ofString(new SceneWriter().write(this));
@@ -106,8 +107,8 @@ private class SceneReader {
 						file.version = SceneFile.VERSION;
 					else
 						refuse("helix-scene", 'version ${describe(value)} is not ${SceneFile.VERSION}');
-				case "stage":
-					file.stage = readStage(value);
+				case "environment":
+					file.environment = readEnvironment(value);
 				case "nodes":
 					file.nodes = readNodes(value, "nodes", "");
 				case _:
@@ -419,46 +420,39 @@ private class SceneReader {
 		return color;
 	}
 
-	function readStage(value:Dynamic):Null<SceneStage> {
+	function readEnvironment(value:Dynamic):Null<SceneEnvironment> {
 		if (!isObject(value)) {
-			refuse("stage", "expected an object");
+			refuse("environment", "expected an object");
 			return null;
 		}
-		var stage = new SceneStage();
+		var environment = new SceneEnvironment();
 		for (key in Reflect.fields(value)) {
 			var item:Dynamic = Reflect.field(value, key);
 			switch key {
 				case "ambient":
-					readSection(item, "stage ambient", ["color", "intensity"], (name, field) -> switch name {
-						case "color": stage.ambientColor = readColor(field, "stage ambient", name);
-						case _: stage.ambientIntensity = readFloat(field, "stage ambient", name);
+					readSection(item, "environment ambient", ["color", "intensity"], (name, field) -> switch name {
+						case "color": environment.ambientColor = readColor(field, "environment ambient", name);
+						case _: environment.ambientIntensity = readFloat(field, "environment ambient", name);
 					});
-				case "environment":
-					readSection(item, "stage environment", ["file", "intensity", "rotation"], (name, field) -> switch name {
-						case "file": stage.environmentFile = readText(field, "stage environment", name);
-						case "intensity": stage.environmentIntensity = readFloat(field, "stage environment", name);
-						case _: stage.environmentRotation = readFloat(field, "stage environment", name);
+				case "map":
+					readSection(item, "environment map", ["file", "intensity", "rotation"], (name, field) -> switch name {
+						case "file": environment.mapFile = readText(field, "environment map", name);
+						case "intensity": environment.mapIntensity = readFloat(field, "environment map", name);
+						case _: environment.rotation = readFloat(field, "environment map", name);
 					});
 				case "background":
-					readSection(item, "stage background", ["file", "blur"], (name, field) -> switch name {
-						case "file": stage.backgroundFile = readText(field, "stage background", name);
-						case _: stage.backgroundBlur = readFloat(field, "stage background", name);
+					readSection(item, "environment background", ["file", "blur"], (name, field) -> switch name {
+						case "file": environment.backgroundFile = readText(field, "environment background", name);
+						case _: environment.backgroundBlur = readFloat(field, "environment background", name);
 					});
-				case "tonemap":
-					if (Std.isOfType(item, String) && SceneSchema.tonemaps.indexOf(item) >= 0)
-						stage.tonemap = item;
-					else
-						refuse("stage", 'tonemap: expected ${SceneSchema.tonemaps.join(", ")}');
-				case "exposure":
-					stage.exposure = readFloat(item, "stage", key);
 				case _:
-					refuse("stage", 'unknown key $key');
+					refuse("environment", 'unknown key $key');
 			}
 		}
-		return stage;
+		return environment;
 	}
 
-	// A section of the stage: an object whose keys are among keys, each read by read.
+	// A section of the environment: an object whose keys are among keys, each read by read.
 	function readSection(value:Dynamic, where:String, keys:Array<String>, read:(String, Dynamic) -> Void):Void {
 		if (!isObject(value)) {
 			refuse(where, "expected an object");
@@ -587,41 +581,37 @@ private class SceneWriter {
 	/** file as canonical JSON text, with its trailing newline. */
 	public function write(file:SceneFile):String {
 		var entries = [entry("helix-scene", [Std.string(file.version)])];
-		if (file.stage != null)
-			entries.push(entry("stage", stage(file.stage)));
+		if (file.environment != null)
+			entries.push(entry("environment", environment(file.environment)));
 		entries.push(entry("nodes", array([for (n in file.nodes) node(n)])));
 		return object(entries).join("\n") + "\n";
 	}
 
-	function stage(stage:SceneStage):Array<String> {
+	function environment(environment:SceneEnvironment):Array<String> {
 		var entries = [];
 		var ambient = [];
-		if (stage.ambientColor != null)
-			ambient.push(entry("color", [color(stage.ambientColor)]));
-		if (stage.ambientIntensity != null)
-			ambient.push(entry("intensity", [number(stage.ambientIntensity)]));
+		if (environment.ambientColor != null)
+			ambient.push(entry("color", [color(environment.ambientColor)]));
+		if (environment.ambientIntensity != null)
+			ambient.push(entry("intensity", [number(environment.ambientIntensity)]));
 		if (ambient.length > 0)
 			entries.push(entry("ambient", object(ambient)));
-		var environment = [];
-		if (stage.environmentFile != null)
-			environment.push(entry("file", [string(stage.environmentFile)]));
-		if (stage.environmentIntensity != null)
-			environment.push(entry("intensity", [number(stage.environmentIntensity)]));
-		if (stage.environmentRotation != null)
-			environment.push(entry("rotation", [number(stage.environmentRotation)]));
-		if (environment.length > 0)
-			entries.push(entry("environment", object(environment)));
+		var map = [];
+		if (environment.mapFile != null)
+			map.push(entry("file", [string(environment.mapFile)]));
+		if (environment.mapIntensity != null)
+			map.push(entry("intensity", [number(environment.mapIntensity)]));
+		if (environment.rotation != null)
+			map.push(entry("rotation", [number(environment.rotation)]));
+		if (map.length > 0)
+			entries.push(entry("map", object(map)));
 		var background = [];
-		if (stage.backgroundFile != null)
-			background.push(entry("file", [string(stage.backgroundFile)]));
-		if (stage.backgroundBlur != null)
-			background.push(entry("blur", [number(stage.backgroundBlur)]));
+		if (environment.backgroundFile != null)
+			background.push(entry("file", [string(environment.backgroundFile)]));
+		if (environment.backgroundBlur != null)
+			background.push(entry("blur", [number(environment.backgroundBlur)]));
 		if (background.length > 0)
 			entries.push(entry("background", object(background)));
-		if (stage.tonemap != null)
-			entries.push(entry("tonemap", [string(stage.tonemap)]));
-		if (stage.exposure != null)
-			entries.push(entry("exposure", [number(stage.exposure)]));
 		return object(entries);
 	}
 

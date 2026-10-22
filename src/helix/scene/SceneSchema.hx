@@ -224,9 +224,6 @@ class SceneSchema {
 		])
 	];
 
-	/** What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value. */
-	public static final tonemaps = ["none", "neutral", "aces"];
-
 	/** What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value. */
 	public static final projections = ["perspective", "orthographic"];
 

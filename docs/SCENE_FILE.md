@@ -9,12 +9,10 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
 ```json
 {
   "helix-scene": 1,
-  "stage": {
+  "environment": {
     "ambient": {"color": "#ffffff", "intensity": 0.25},
-    "environment": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
-    "background": {"file": "sky/sky.hdr", "blur": 0},
-    "tonemap": "neutral",
-    "exposure": 0
+    "map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
+    "background": {"file": "sky/sky.hdr", "blur": 0}
   },
   "nodes": [
     {
@@ -71,7 +69,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
 }
 ```
 
-**`stage`** holds what `Stage3D` keeps apart from its tree: `ambient` (`setAmbient`), `environment` and `background` (files loaded through `Environments`, then `setEnvironment` and `setBackground`), `tonemap` and `exposure`; each absent when the stage's default. Only a file instantiated onto a stage applies it; a prefab's `stage` is logged and ignored.
+**`environment`** is the place's light (`Environment3D`, decision 145): `ambient` (`setAmbient`), `map` and `background` (files loaded through `Environments`, then `setMap` and `setBackground`); each absent when the default. It's set on the node the file is instantiated as (the instance's root group, or a prefab's node) as its `environment`, lighting what's under it; a `View3D` showing the tree is lit by it unless the view has its own. How a camera photographs the place (exposure, tone mapping) is the view's, not the file's. A scene is a tree of nodes: a level and a prefab are the same file used two ways.
 
 What a node entry holds:
 
@@ -97,13 +95,13 @@ What is not in the file: cameras' viewports (the app's) and anything 2D (after t
 
 ```haxe
 SceneFiles.load("scenes/track.scene", file -> {
-    instance = file.instantiate(stage, scene.behaviors, () -> trace("ready"));
+    instance = file.instantiate(level, behaviors, () -> trace("ready"));
 });
 ```
 
-`SceneFiles` parses a file once and shares it by path. `instantiate` applies the stage section, makes every node at once under a group named after the file on the stage's root, loads the models, prefabs and environment it names through their caches, attaches the behaviors to the pass once every load has landed (their references resolved then), and calls `ready` at the pass's next update. The `SceneInstance` gives `node(path)`, `pathOf(node)`, `props(node)`, its `behaviors`, `ready`, and `destroy()`. A missing model, prefab or environment is logged with the file's path and the node's, and the rest is made.
+`SceneFiles` parses a file once and shares it by path. `instantiate` makes a group named after the file under the node it's given (`level`, any `Node3D`), sets the environment section as its `environment`, makes every node at once under it, loads the models, prefabs and environment it names through their caches, attaches the behaviors to the pass once every load has landed (their references resolved then), and calls `ready` at the pass's next update. The `SceneInstance` gives `node(path)`, `pathOf(node)`, `props(node)`, its `behaviors`, `ready`, and `destroy()`. A missing model, prefab or environment is logged with the file's path and the node's, and the rest is made.
 
-`SceneFile.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the stage's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
+`SceneFile.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the environment's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
 
 `python3 tools/gltf2scene.py export.glb out.scene` makes a file from a Blender glTF export: one `Model` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
 

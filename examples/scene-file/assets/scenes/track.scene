@@ -1,11 +1,11 @@
 {
   "helix-scene": 1,
-  "stage": {
+  "environment": {
     "ambient": {
       "color": "#dfe8ff",
       "intensity": 0.2
     },
-    "environment": {
+    "map": {
       "file": "environments/venice_sunset_1k.hdr",
       "intensity": 0.55,
       "rotation": 2.2
@@ -13,9 +13,7 @@
     "background": {
       "file": "environments/venice_sunset_1k.hdr",
       "blur": 0.15
-    },
-    "tonemap": "aces",
-    "exposure": 0.2
+    }
   },
   "nodes": [
     {

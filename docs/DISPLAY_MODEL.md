@@ -76,7 +76,8 @@ what's drawn.
   one wins" rule); regional light (a cave) follows.
 - A `View3D`'s `environment`, when set, overrides. The background drawn behind is the view's override, else the environment of the node
   the view shows.
-- In the branch: one environment per view (its override, else its root's); others in the tree logged once. The nearest-ancestor meaning
+- In the branch: one environment per view (its override, else the first in its tree, the root's first, depth first, so a scene
+  file's group under the root lights it); others in the tree logged once. The nearest-ancestor meaning
   stays the definition, so regional light comes later without changing the API.
 - The scene file's `stage` section goes: environment, ambient light and background move onto the root node's entry as its environment;
   exposure and tone mapping, the camera's, go to the view.

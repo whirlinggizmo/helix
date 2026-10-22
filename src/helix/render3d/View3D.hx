@@ -7,7 +7,8 @@ import helix.render2d.View;
 import helix.scene.Node;
 
 /** A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's
-	children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping. Drawn under
+	children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping; the light is the place's (Node3D.environment), unless
+	the view's own environment overrides it. Drawn under
 	every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's
 	end. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it
 	for itself. */
@@ -37,6 +38,10 @@ class View3D extends View {
 
 	/** What it's seen through: its eye, projection and lens the app's, its viewport the view's rectangle. */
 	public var camera:Camera3D;
+
+	/** The light it shows its tree in, overriding the tree's (Node3D.environment), or null for the tree's own: a minimap's flat light, an
+		editor's preview. */
+	public var environment:Null<Environment3D>;
 
 	/** How lit color comes into the screen's 0..1 after the exposure (Khronos PBR Neutral to start). */
 	public var tonemap:Tonemap = Tonemap.Neutral;
@@ -75,8 +80,11 @@ class View3D extends View {
 			world.drawShadows(camera);
 
 	override function drawDeferred():Void {
-		if (world == null)
+		if (world == null) {
 			world = new Stage3D(gpu, content);
+			world.viewed = true;
+		}
+		world.viewEnvironment = environment;
 		camera.setViewport(framebufferWidth, framebufferHeight);
 		camera.setViewportArea(areaX, areaY, areaWidth, areaHeight);
 		world.tonemap = tonemap;

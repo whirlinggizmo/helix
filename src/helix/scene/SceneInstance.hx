@@ -17,10 +17,10 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Environment3D;
 import helix.scene.SceneValue;
 
-/** What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the stage's root holding
+/** What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the node it was put in, holding
 	every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed
 	(ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin
 	gave it, so SceneFile.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the
@@ -30,11 +30,11 @@ class SceneInstance {
 	public var path(default, null):String;
 
 	/** The node holding everything the file made: a group named after the file (its path without directory and extension), under the
-		stage's root. */
+		node it was instantiated in, lit by the file's environment section (its environment). */
 	public var root(default, null):Node3D;
 
-	/** The stage the file was instantiated onto, whose settings the file's stage section set. */
-	public var stage(default, null):Stage3D;
+	/** The node the file was instantiated in, its root's parent then. */
+	public var parent(default, null):Node3D;
 
 	/** The behaviors it attached, in the order the file gave them, prefabs' included. */
 	public var behaviors(default, null):Array<Behavior> = [];
@@ -66,22 +66,22 @@ class SceneInstance {
 	var fonts:Array<Font2D> = [];
 	var environments:Array<Environment> = [];
 
-	function new(file:SceneFile, path:String, stage:Stage3D, behaviors:Behaviors, ?ready:Void->Void) {
+	function new(file:SceneFile, path:String, parent:Node3D, behaviors:Behaviors, ?ready:Void->Void) {
 		this.file = file;
 		this.path = path;
-		this.stage = stage;
+		this.parent = parent;
 		this.pass = behaviors;
 		readyCallback = ready;
 		root = new Node3D();
 		root.name = baseName(path);
-		stage.add(root);
+		parent.addChild(root);
 	}
 
-	// file, loaded from path, instantiated onto stage with its behaviors on behaviors (SceneFile.instantiate).
+	// file, loaded from path, instantiated under parent with its behaviors on behaviors (SceneFile.instantiate).
 
 	@:allow(helix.scene)
-	static function make(file:SceneFile, path:String, stage:Stage3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance {
-		var instance = new SceneInstance(file, path, stage, behaviors, ready);
+	static function make(file:SceneFile, path:String, parent:Node3D, behaviors:Behaviors, ?ready:Void->Void):SceneInstance {
+		var instance = new SceneInstance(file, path, parent, behaviors, ready);
 		new SceneBuilder(instance, file, path, instance.root, [path], false, () -> instance.settle()).build();
 		return instance;
 	}
@@ -129,7 +129,7 @@ class SceneInstance {
 		return record == null ? null : record.props;
 	}
 
-	/** Takes it out: its behaviors from the pass (stopping the started ones), its root from the stage, and the textures, fonts and
+	/** Takes it out: its behaviors from the pass (stopping the started ones), its root from the node it was put in, and the textures, fonts and
 		environments it loaded released to their caches (the last release frees each). Its model and scene files stay in their caches, which
 		keep files until told to forget them. A load still under way is cancelled. */
 	public function destroy():Void {
@@ -378,15 +378,11 @@ private class SceneBuilder {
 		this.done = done;
 	}
 
-	/** Makes the tree: the stage section first (the top file's; a prefab's logged), then every node at once, the behaviors attached and
-		done called once every load has landed (during this call when there is nothing to wait for). */
+	/** Makes the tree: the environment section first, on the node the file is made under (the instance's root, a prefab's node), then every
+		node at once, the behaviors attached and done called once every load has landed (during this call when there is nothing to wait for). */
 	public function build():Void {
-		if (file.stage != null) {
-			if (prefab)
-				log("", 'the prefab $path\'s stage section is ignored');
-			else
-				applyStage(file.stage);
-		}
+		if (file.environment != null)
+			applyEnvironment(file.environment);
 		for (entry in file.nodes)
 			makeNode(entry, under);
 		building = false;
@@ -418,52 +414,43 @@ private class SceneBuilder {
 		done();
 	}
 
-	function applyStage(section:SceneStage):Void {
-		var stage = instance.stage;
-		if (section.ambientColor != null || section.ambientIntensity != null)
-			if (!stage.setAmbient(section.ambientColor != null ? section.ambientColor : stage.ambientColor,
-				section.ambientIntensity != null ? section.ambientIntensity : stage.ambientIntensity))
-				log("stage", "ambient refused");
-		if (section.tonemap != null) {
-			var tonemap = SceneKinds.tonemapOf(section.tonemap);
-			if (tonemap != null)
-				stage.tonemap = tonemap;
-			else
-				log("stage", 'tonemap ${section.tonemap} is unknown');
-		}
-		if (section.exposure != null)
-			stage.exposure = section.exposure;
-		var intensity = section.environmentIntensity != null ? section.environmentIntensity : stage.environmentIntensity,
-			rotation = section.environmentRotation != null ? section.environmentRotation : stage.environmentRotation;
-		if (section.environmentFile != null) {
+	// The file's environment section as the light of under, the node it's made under: the ambient light at once, the map and the
+	// background once their files land.
+	function applyEnvironment(section:SceneEnvironment):Void {
+		var environment = new Environment3D();
+		under.environment = environment;
+		if (!environment.setAmbient(section.ambientColor != null ? section.ambientColor : 0xffffffff,
+			section.ambientIntensity != null ? section.ambientIntensity : 0))
+			log("environment", "ambient refused");
+		var intensity = section.mapIntensity != null ? section.mapIntensity : 1.,
+			rotation = section.rotation != null ? section.rotation : 0.;
+		if (section.mapFile != null) {
 			wait();
-			var file = section.environmentFile;
-			instance.holdRequest(Environments.load(file, environment -> {
-				if (instance.holdEnvironment(environment) && !stage.setEnvironment(environment, intensity, rotation))
-					log("stage", "environment refused");
+			var file = section.mapFile;
+			instance.holdRequest(Environments.load(file, map -> {
+				if (instance.holdEnvironment(map) && !environment.setMap(map, intensity, rotation))
+					log("environment", "map refused");
 				landed();
 			}, message -> {
-				log("stage", 'environment $file: $message');
+				log("environment", 'map $file: $message');
 				landed();
 			}));
-		} else if (section.environmentIntensity != null || section.environmentRotation != null)
-			if (!stage.setEnvironment(stage.environment, intensity, rotation))
-				log("stage", "environment refused");
-		var blur = section.backgroundBlur != null ? section.backgroundBlur : stage.backgroundBlur;
+		} else if (!environment.setMap(null, intensity, rotation))
+			log("environment", "map refused");
+		var blur = section.backgroundBlur != null ? section.backgroundBlur : 0.;
 		if (section.backgroundFile != null) {
 			wait();
 			var file = section.backgroundFile;
-			instance.holdRequest(Environments.load(file, environment -> {
-				if (instance.holdEnvironment(environment) && !stage.setBackground(environment, blur))
-					log("stage", "background refused");
+			instance.holdRequest(Environments.load(file, map -> {
+				if (instance.holdEnvironment(map) && !environment.setBackground(map, blur))
+					log("environment", "background refused");
 				landed();
 			}, message -> {
-				log("stage", 'background $file: $message');
+				log("environment", 'background $file: $message');
 				landed();
 			}));
-		} else if (section.backgroundBlur != null)
-			if (!stage.setBackground(stage.background, blur))
-				log("stage", "background refused");
+		} else if (!environment.setBackground(null, blur))
+			log("environment", "background refused");
 	}
 
 	// A node from its entry under parent: made, placed, flagged, its properties and material applied, recorded, its children made, its
@@ -808,7 +795,7 @@ private class ReadyWaiter extends Behavior {
 	}
 }
 
-/** Writes an instance back as a file: the stage from the stage, each of the instance's own nodes from the live node, a node from a file
+/** Writes an instance back as a file: the environment from its root's, each of the instance's own nodes from the live node, a node from a file
 	or a prefab as the reference plus an override for every node under it whose values differ from what the file or prefab gave, and a
 	node a game added as its class with its properties. */
 private class SceneCapture {
@@ -825,7 +812,7 @@ private class SceneCapture {
 	/** The file that instantiates to what the instance is now. */
 	public function capture():SceneFile {
 		countNames(instance.root);
-		file.stage = captureStage(instance.stage);
+		file.environment = captureEnvironment(instance.root.environment);
 		for (i in 0...instance.root.childCount) {
 			var entry = captureNode(instance.root.getChild(i));
 			if (entry != null)
@@ -842,40 +829,34 @@ private class SceneCapture {
 		}
 	}
 
-	// The stage's settings that aren't its defaults; null when all are.
-	function captureStage(stage:Stage3D):Null<SceneStage> {
-		var section = new SceneStage(), any = false;
-		if (stage.ambientColor != 0xffffffff || stage.ambientIntensity != 0) {
-			section.ambientColor = stage.ambientColor;
-			section.ambientIntensity = stage.ambientIntensity;
+	// The environment's values that aren't the defaults; null for no environment, or one that's all defaults.
+	function captureEnvironment(environment:Null<Environment3D>):Null<SceneEnvironment> {
+		if (environment == null)
+			return null;
+		var section = new SceneEnvironment(), any = false;
+		if (environment.ambientColor != 0xffffffff || environment.ambientIntensity != 0) {
+			section.ambientColor = environment.ambientColor;
+			section.ambientIntensity = environment.ambientIntensity;
 			any = true;
 		}
-		if (stage.environment != null) {
-			section.environmentFile = stage.environment.path;
+		if (environment.map != null) {
+			section.mapFile = environment.map.path;
 			any = true;
 		}
-		if (stage.environmentIntensity != 1) {
-			section.environmentIntensity = stage.environmentIntensity;
+		if (environment.mapIntensity != 1) {
+			section.mapIntensity = environment.mapIntensity;
 			any = true;
 		}
-		if (stage.environmentRotation != 0) {
-			section.environmentRotation = stage.environmentRotation;
+		if (environment.rotation != 0) {
+			section.rotation = environment.rotation;
 			any = true;
 		}
-		if (stage.background != null) {
-			section.backgroundFile = stage.background.path;
+		if (environment.background != null) {
+			section.backgroundFile = environment.background.path;
 			any = true;
 		}
-		if (stage.backgroundBlur != 0) {
-			section.backgroundBlur = stage.backgroundBlur;
-			any = true;
-		}
-		if (stage.tonemap != Neutral) {
-			section.tonemap = SceneKinds.tonemapName(stage.tonemap);
-			any = true;
-		}
-		if (stage.exposure != 0) {
-			section.exposure = stage.exposure;
+		if (environment.backgroundBlur != 0) {
+			section.backgroundBlur = environment.backgroundBlur;
 			any = true;
 		}
 		return any ? section : null;

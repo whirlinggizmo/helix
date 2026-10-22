@@ -10,6 +10,7 @@ import helix.render2d.Text2D;
 import helix.render2d.View2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -21,7 +22,7 @@ import helix.time.Time;
 	- a 2D world wider than the window, shown through a camera that scrolls across it (the arrows push it)
 	- the same world again in a minimap, a view inside a panel on the stage, its camera showing all of it, a frame over it marking what the big
 	  view sees
-	- a 3D view in a corner, a cube turning, drawn under every 2D thing (the panel's edge overlaps it)
+	- a 3D view in a corner, a cube turning in its level's light (an Environment3D on the level's root), drawn under every 2D thing (the panel's edge overlaps it)
 	- the title straight on the stage, in pixels, over all of it */
 class App extends helix.App {
 	static inline var WORLD_WIDTH = 2400.;
@@ -50,12 +51,15 @@ class App extends helix.App {
 		var big = new View2D(world, worldCamera);
 		Stage.addChild(big);
 
-		// The 3D view: a cube under a sun.
+		// The 3D view: a cube under a sun, in its level's light.
 		var level = new Node3D(),
 			sun = new DirectionalLight(),
 			eye = new Camera3D();
+		// The place's light, on the level's root: a soft blue ambient under the sun.
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffa0b4dc, .35);
 		sun.lookAt(-.4, -1, -.3);
-		sun.intensity = 3;
+		sun.intensity = 2.5;
 		level.addChild(sun);
 		cube.material.baseColor = 0xffe8a33c;
 		level.addChild(cube);

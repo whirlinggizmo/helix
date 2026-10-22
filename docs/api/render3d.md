@@ -235,6 +235,38 @@ function destroy(gpu:IGraphics):Void
 - `irradiance`: Its irradiance: 9 coefficients, RGB each (27 floats), over pi.
 - `destroy`: Frees its cubes. Environments.release does it for one it loaded.
 
+## Environment3D
+
+*class* in `src/helix/render3d/Environment3D.hx`
+
+A place's light (docs/DISPLAY_MODEL.md): the ambient light reaching everything evenly, the environment map lighting and reflecting the lit models, and the background drawn behind them. Data, set as a 3D node's environment (Node3D.environment, where a scene file's "environment" section puts it) or as a view's, which overrides what it shows (View3D.environment). How a camera photographs the place (exposure, tone mapping) is the view's, not this. Unlit to start: no ambient light, no map, no background.
+
+```haxe
+function new()
+var ambientColor(default, null):Int
+var ambientIntensity(default, null):Float
+function setAmbient(color:Int, intensity:Float):Bool
+var map(default, null):Null<Environment>
+var mapIntensity(default, null):Float
+var rotation(default, null):Float
+function setMap(map:Null<Environment>, ?intensity:Float = 1., ?rotation:Float = 0.):Bool
+var background(default, null):Null<Environment>
+var backgroundBlur(default, null):Float
+function setBackground(map:Null<Environment>, ?blur:Float = 0.):Bool
+```
+
+- `new`: An environment of no light: no ambient light, no map, no background.
+- `ambientColor`: The ambient light's color, 0xAARRGGBB (sRGB). White to start.
+- `ambientIntensity`: The ambient light's intensity, 0 or more. 0 to start.
+- `setAmbient`: The light reaching everything evenly, from no direction: color 0xAARRGGBB (sRGB) times intensity. False, changing nothing, for an intensity under 0.
+- `map`: The environment map lighting and reflecting the lit models (Environments.load), or null.
+- `mapIntensity`: How strongly the map lights, and the background shows: 1 as its file has it.
+- `rotation`: How far the map, and the background, turn about +y, in radians.
+- `setMap`: Lights the lit models with map (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it) and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0 or a rotation that isn't finite.
+- `background`: The environment map drawn behind everything, or null.
+- `backgroundBlur`: How blurred the background is: 0 sharp to 1 its blurriest.
+- `setBackground`: Draws map (null: none) behind everything, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a few texels), turned and as bright as setMap says. False, changing nothing, for a blur outside 0..1.
+
 ## EnvironmentBake
 
 *class* in `src/helix/render3d/EnvironmentBake.hx`
@@ -777,6 +809,7 @@ What a 3D stage holds: a transform in a tree, with children of its own kind (God
 
 ```haxe
 function new()
+var environment:Null<Environment3D>
 function addChild(child:Node3D):Bool
 function addChildInPlace(child:Node3D):Bool
 function removeChild(child:Node3D):Bool
@@ -810,6 +843,7 @@ var worldMatrix(get, never):Mat4
 ```
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
+- `environment`: The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one in its tree (the root's, depth first); others are logged once and not used yet (docs/DISPLAY_MODEL.md: the nearest ancestor's will be the rule).
 - `addChild`: Makes child its last child, taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
 - `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or a zero scale on this or above it.
 - `removeChild`: Takes child from its children. False when it isn't one.
@@ -1257,12 +1291,13 @@ What a track moves: its node's position, rotation (a quaternion) or scale.
 
 *class* in `src/helix/render3d/View3D.hx`
 
-A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping. Drawn under every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's end. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it for itself.
+A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's children through camera in its rectangle (View). It holds the photography: the camera, the exposure and the tone mapping; the light is the place's (Node3D.environment), unless the view's own environment overrides it. Drawn under every 2D thing in the frame, as Flash's Stage3D content was under its display list: the 2D batch sends its draws once, at the frame's end. The view sizes the camera's viewport to its rectangle as it draws. Several views can show one tree (split screen); each draws it for itself.
 
 ```haxe
 function new(content:Node3D, ?camera:Camera3D, ?width:Float = 0., ?height:Float = 0., ?gpu:IGraphics)
 var content(default, null):Node3D
 var camera:Camera3D
+var environment:Null<Environment3D>
 var tonemap:Tonemap
 var exposure(default, set):Float
 var drawnNodeCount(get, never):Int
@@ -1272,6 +1307,7 @@ function destroy():Void
 - `new`: A view of content's children through camera (a new one unless given), width x height of its own units (0 for the whole area of what shows it), drawn on gpu (the program's, Graphics.instance, unless given).
 - `content`: The tree whose children it shows.
 - `camera`: What it's seen through: its eye, projection and lens the app's, its viewport the view's rectangle.
+- `environment`: The light it shows its tree in, overriding the tree's (Node3D.environment), or null for the tree's own: a minimap's flat light, an editor's preview.
 - `tonemap`: How lit color comes into the screen's 0..1 after the exposure (Khronos PBR Neutral to start).
 - `exposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is 0.
 - `drawnNodeCount`: How many models the last frame drew, the ones outside the camera's view culled.

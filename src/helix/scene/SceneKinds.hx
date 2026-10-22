@@ -389,16 +389,6 @@ class SceneKinds {
 		return read;
 	}
 
-	/** The tone mapping named name, "none", "neutral" or "aces" (SceneSchema.tonemaps); null for another name. */
-	public static function tonemapOf(name:String):Null<Tonemap> {
-		var index = SceneSchema.tonemaps.indexOf(name);
-		return index < 0 ? null : cast index;
-	}
-
-	/** Tonemap's name as the file writes it (SceneSchema.tonemaps). */
-	public static function tonemapName(tonemap:Tonemap):String
-		return SceneSchema.tonemaps[(tonemap : Int)];
-
 	/** The projection named name, "perspective" or "orthographic" (SceneSchema.projections); null for another name. */
 	public static function projectionOf(name:String):Null<Projection> {
 		var index = SceneSchema.projections.indexOf(name);

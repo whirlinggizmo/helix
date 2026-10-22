@@ -17,6 +17,7 @@ import helix.render2d.Stage2D;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Stage3D;
+import helix.render3d.Tonemap;
 import helix.scene.Scene;
 import helix.scene.SceneFile;
 import helix.scene.SceneFiles;
@@ -184,10 +185,13 @@ class Play extends Scene {
 		hud.add(line);
 		hud.add(help);
 		fallback.setView(0, 40, 60, 0, 0, 0);
+		// The photography: the camera's, not the place's (the file holds the place's light).
+		stage.tonemap = Aces;
+		stage.exposure = .2;
 		SceneFiles.load(TRACK, loaded -> place(loaded), message -> line.text = message);
 	}
 
-	// The file in: instantiated onto the stage, with this scene's pass.
+	// The file in: instantiated under the stage's root, with this scene's pass.
 	function place(loaded:SceneFile):Void {
 		file = loaded;
 		restart();
@@ -200,7 +204,7 @@ class Play extends Scene {
 		race = null;
 		car = null;
 		camera = null;
-		instance = file.instantiate(stage, behaviors, () -> ready());
+		instance = file.instantiate(stage.root, behaviors, () -> ready());
 	}
 
 	// Everything has landed and the behaviors have started: the camera and the behaviors the HUD and the probes read.

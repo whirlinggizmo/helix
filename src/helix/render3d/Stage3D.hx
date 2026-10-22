@@ -203,6 +203,34 @@ class Stage3D {
 		noEnvironment = gpu.createCubeTexture(1, [black], Rgba8);
 	}
 
+	// The place's light: a View3D's environment, else the first one in the tree (root's, depth first; a scene file's), set before each draw
+	// over what setAmbient, setEnvironment and setBackground said, which stand only for a stage no view draws and no environment is in;
+	// more than one in the tree logged once.
+	@:allow(helix.render3d.View3D)
+	var viewed = false;
+	@:allow(helix.render3d.View3D)
+	var viewEnvironment:Null<Environment3D>;
+	var foundEnvironment:Null<Environment3D>;
+	var moreEnvironments = false;
+	var moreLogged = false;
+
+	// Lit by environment's light (none for null).
+	function light(environment:Null<Environment3D>):Void {
+		if (moreEnvironments && viewEnvironment == null && !moreLogged) {
+			moreLogged = true;
+			trace("View3D: more than one environment in a tree; the first lights it (docs/DISPLAY_MODEL.md)");
+		}
+		if (environment == null) {
+			setAmbient(0xffffffff, 0);
+			setEnvironment(null);
+			setBackground(null);
+		} else {
+			setAmbient(environment.ambientColor, environment.ambientIntensity);
+			setEnvironment(environment.map, environment.mapIntensity, environment.rotation);
+			setBackground(environment.background, environment.backgroundBlur);
+		}
+	}
+
 	/** The node everything on the stage hangs from. */
 	public var root(default, null):Node3D;
 
@@ -874,7 +902,13 @@ class Stage3D {
 		lights.resize(0);
 		sprites.begin(Math.isNaN(drawnTime) ? 0 : Math.max(0, time - drawnTime), time);
 		drawnTime = time;
+		foundEnvironment = root.environment;
+		moreEnvironments = false;
 		walk();
+		if (viewed)
+			light(viewEnvironment != null ? viewEnvironment : foundEnvironment);
+		else if (foundEnvironment != null)
+			light(foundEnvironment);
 		drawn.resize(count);
 		for (i in 0...count)
 			drawn[i] = items[i];
@@ -1092,6 +1126,12 @@ class Stage3D {
 			}
 			reached[i] = true;
 			moved[i] = node.update(p < 0 ? root.worldMatrix : order[p].worldMatrix, p < 0 ? rootChanged : moved[p]);
+			if (node.environment != null) {
+				if (foundEnvironment == null)
+					foundEnvironment = node.environment;
+				else if (node.environment != foundEnvironment)
+					moreEnvironments = true;
+			}
 		}
 		if (picking) {
 			for (k in 0...models.length) {

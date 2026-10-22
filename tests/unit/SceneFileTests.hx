@@ -3,7 +3,7 @@ import helix.scene.SceneFile;
 import helix.scene.SceneSchema;
 import helix.scene.SceneValue;
 
-/** The .scene file (helix.scene.SceneFile): a sample with the stage section and every kind parses, writes, parses and writes the same
+/** The .scene file (helix.scene.SceneFile): a sample with the environment section and every kind parses, writes, parses and writes the same
 	bytes; a small sample writes the pinned canonical form (key order, defaults left out, colors, numbers); each refusal returns null; and
 	every kind's table reads and writes every property; every mesh shape reads and writes back, with and without its optional arguments. */
 class SceneFileTests {
@@ -42,17 +42,15 @@ class SceneFileTests {
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 
-	// The stage section, every kind, a file node with overrides (a property, a child added, a behavior attached), a prefab node, an inline
+	// The environment section, every kind, a file node with overrides (a property, a child added, a behavior attached), a prefab node, an inline
 	// material, a behavior with every value type and a reference, and node props: parse, write, parse, write gives equal bytes.
 	static function roundTrip():Void {
 		var text = '{
 			"helix-scene": 1,
-			"stage": {
+			"environment": {
 				"ambient": {"color": "#ffffff", "intensity": 0.25},
-				"environment": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
-				"background": {"file": "sky/sky.hdr", "blur": 0},
-				"tonemap": "neutral",
-				"exposure": 0
+				"map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
+				"background": {"file": "sky/sky.hdr", "blur": 0}
 			},
 			"nodes": [
 				{"kind": "Node3D", "name": "world", "enabled": false, "children": [
@@ -86,18 +84,16 @@ class SceneFileTests {
 		}';
 		var file = parse(text, "levels/track.scene");
 		check(file != null && file.version == 1 && file.nodes.length == 1, "The sample parses: version 1, one root node");
-		var stage = file.stage;
-		check(stage != null
-			&& stage.ambientColor == 0xffffffff
-			&& stage.ambientIntensity == 0.25
-			&& stage.environmentFile == "sky/sky.hdr"
-			&& stage.environmentIntensity == 0.7
-			&& stage.environmentRotation == 0
-			&& stage.backgroundFile == "sky/sky.hdr"
-			&& stage.backgroundBlur == 0
-			&& stage.tonemap == "neutral"
-			&& stage.exposure == 0,
-			"The stage section, every value");
+		var environment = file.environment;
+		check(environment != null
+			&& environment.ambientColor == 0xffffffff
+			&& environment.ambientIntensity == 0.25
+			&& environment.mapFile == "sky/sky.hdr"
+			&& environment.mapIntensity == 0.7
+			&& environment.rotation == 0
+			&& environment.backgroundFile == "sky/sky.hdr"
+			&& environment.backgroundBlur == 0,
+			"The environment section, every value");
 		var world = file.nodes[0];
 		check(world.kind == "Node3D" && world.name == "world" && world.enabled == false && world.visible == null && world.children.length == 10,
 			"The root group: its flag, the unsaid one null, its ten children");
@@ -189,16 +185,18 @@ class SceneFileTests {
 				{"kind": "Model", "name": "cone", "file": "props/cone.glb", "position": [1, 0.5, 0.3333333333], "rotation": [-2.25, 0, 0],
 					"tint": "#ffffff", "material": {"roughness": 0.3, "baseColor": "#ff880080"}, "props": {"team": 2, "name": "x"},
 					"behaviors": [{"kind": "Spin", "props": {"speed": 1}}]}]}],
-			"stage": {"tonemap": "aces", "ambient": {"intensity": 0.25, "color": "#ffffff"}}, "helix-scene": 1}';
+			"environment": {"background": {"blur": 0.5}, "ambient": {"intensity": 0.25, "color": "#ffffff"}}, "helix-scene": 1}';
 		var expected = [
 			'{',
 			'  "helix-scene": 1,',
-			'  "stage": {',
+			'  "environment": {',
 			'    "ambient": {',
 			'      "color": "#ffffff",',
 			'      "intensity": 0.25',
 			'    },',
-			'    "tonemap": "aces"',
+			'    "background": {',
+			'      "blur": 0.5',
+			'    }',
 			'  },',
 			'  "nodes": [',
 			'    {',
@@ -248,7 +246,7 @@ class SceneFileTests {
 			"The canonical form: fixed key order, a property at its default (intensity, tint) and an identity transform and a true flag left out, " +
 			"a color with alpha ff as #RRGGBB, numbers 1, 0.5, 0.333333 and -2.25, props sorted, a trailing newline");
 		var empty = new SceneFile();
-		check(empty.write().toString() == '{\n  "helix-scene": 1,\n  "nodes": []\n}\n', "An empty file: no stage, no nodes");
+		check(empty.write().toString() == '{\n  "helix-scene": 1,\n  "nodes": []\n}\n', "An empty file: no environment, no nodes");
 		check(SceneFile.parse(empty.write()) != null, "An empty file reads back");
 	}
 
@@ -294,9 +292,10 @@ class SceneFileTests {
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"kind": "A", "props": {"a": {"b": 1}}}]}]}',
 			"A behavior prop that is an object");
 		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "props": {"a": [1, "b"]}}]}', "A prop list holding text");
-		refused('{"helix-scene": 1, "stage": {"fog": 1}, "nodes": []}', "A stage with an unknown key");
-		refused('{"helix-scene": 1, "stage": {"ambient": {"colour": "#ffffff"}}, "nodes": []}', "A stage section with an unknown key");
-		refused('{"helix-scene": 1, "stage": {"tonemap": "filmic"}, "nodes": []}', "A tonemap the stage hasn't");
+		refused('{"helix-scene": 1, "environment": {"fog": 1}, "nodes": []}', "An environment with an unknown key");
+		refused('{"helix-scene": 1, "environment": {"ambient": {"colour": "#ffffff"}}, "nodes": []}', "An environment section with an unknown key");
+		refused('{"helix-scene": 1, "environment": {"tonemap": "aces"}, "nodes": []}', "Tone mapping is the view's, not the file's");
+		refused('{"helix-scene": 1, "stage": {}, "nodes": []}', "A stage section (gone: the environment is the place's light) is an unknown key");
 		refused('{"helix-scene": 1, "nodes": [], "extra": 1}', "An unknown key at the root");
 		check(parse('{"helix-scene": 1}') != null && parse('{"helix-scene": 1}').nodes.length == 0, "Nodes may be absent");
 	}

@@ -181,12 +181,10 @@ class SceneInstanceTests {
 
 	static final SAMPLE = '{
 		"helix-scene": 1,
-		"stage": {
+		"environment": {
 			"ambient": {"color": "#ffffff", "intensity": 0.25},
-			"environment": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
-			"background": {"file": "sky/sky.hdr", "blur": 0},
-			"tonemap": "neutral",
-			"exposure": 0
+			"map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
+			"background": {"file": "sky/sky.hdr", "blur": 0}
 		},
 		"nodes": [
 			{"kind": "Node3D", "name": "world", "enabled": false, "children": [
@@ -219,18 +217,19 @@ class SceneInstanceTests {
 		]
 	}';
 
-	static final CAR = '{"helix-scene": 1, "stage": {"exposure": 1}, "nodes": [
+	static final CAR = '{"helix-scene": 1, "environment": {"ambient": {"intensity": 1}}, "nodes": [
 		{"kind": "Model", "name": "body", "children": [{"kind": "Node3D", "name": "wheel", "visible": false}]}]}';
 
-	// The round-trip sample onto a stage: every node at its path, the prefab landing, the behaviors, ready, and capture.
+	// The round-trip sample under a stage's root: every node at its path, the prefab landing, the behaviors, ready, and capture.
 	static function sample():Void {
 		var file = parse(SAMPLE, "levels/track.scene");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
-		var instance = file.instantiate(stage, pass, () -> readyCalls++);
+		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
 		check(instance.root.parent == stage.root && instance.root.name == "track" && instance.path == "levels/track.scene",
-			"The instance's root is a group named after the file under the stage's root");
-		check(stage.ambientColor == 0xffffffff && stage.ambientIntensity == .25 && stage.tonemap == Neutral && stage.exposure == 0,
-			"The stage section's ambient, tonemap and exposure are set at once");
+			"The instance's root is a group named after the file under the node it was given");
+		var light = instance.root.environment;
+		check(light != null && light.ambientColor == 0xffffffff && light.ambientIntensity == .25 && stage.ambientIntensity == 0,
+			"The environment section is the root's environment, its ambient light at once; the stage untouched");
 		check(held.exists("sky/sky.hdr") && asked["sky/sky.hdr"] == 1, "The environment and the background share one load");
 		var world = instance.node("world");
 		check(world != null && !world.enabled && world.visible && world.childCount == 10, "The root group, disabled, with its ten children");
@@ -282,12 +281,12 @@ class SceneInstanceTests {
 		refuse("sky/sky.hdr", "not found");
 		check(logged(["levels/track.scene", "world/track", "track/track.glb", "not found"])
 			&& logged(["levels/track.scene", "world/cone_1", "props/cone.glb", "not found"])
-			&& logged(["levels/track.scene", "stage", "environment", "sky/sky.hdr"])
-			&& logged(["levels/track.scene", "stage", "background", "sky/sky.hdr"]),
+			&& logged(["levels/track.scene", "environment", "map", "sky/sky.hdr"])
+			&& logged(["levels/track.scene", "environment", "background", "sky/sky.hdr"]),
 			"A missing model and a missing environment are logged with the scene's path and the node's");
 		check(track.childCount == 0 && !instance.ready, "A missing model leaves its node empty; the prefab is still awaited");
 
-		// The prefab lands: made under its node, its override applied, its stage section ignored; then everything is ready.
+		// The prefab lands: made under its node, its override applied, its environment its node's; then everything is ready.
 		release("prefabs/car.scene", Bytes.ofString(CAR));
 		var body = Std.downcast(instance.node("world/car/body"), Model),
 			wheel = instance.node("world/car/body/wheel");
@@ -295,8 +294,8 @@ class SceneInstanceTests {
 		check(body.material != null
 			&& body.material.baseColor == 0xff2040c0
 			&& body.material.roughness == .5, "The override's material replaced the body's");
-		check(stage.exposure == 0
-			&& logged(["prefabs/car.scene", "stage section is ignored"]), "A prefab's stage section is logged and ignored");
+		check(car.environment != null && car.environment.ambientIntensity == 1 && light.ambientIntensity == .25,
+			"A prefab's environment lights its own node, the level's left as it was");
 		check(instance.ready && readyCalls == 0, "Ready once the prefab landed, the lambda not yet called");
 		check(instance.behaviors.length == 2 && pass.count == 3, "The behaviors are attached to the pass (and the one that tells ready)");
 		var chaser = Std.downcast(instance.behaviors[0], ChaseCamera),
@@ -318,15 +317,13 @@ class SceneInstanceTests {
 		check(log.length == 0, 'Nothing else was logged: $log');
 
 		// Capture of the untouched instance: the sample, minus what no file provided (the environment and the background never loaded, so
-		// the stage keeps its defaults there).
+		// the environment keeps its defaults there).
 		var expected = parse(SAMPLE, "levels/track.scene");
-		expected.stage.environmentFile = null;
-		expected.stage.environmentIntensity = null;
-		expected.stage.environmentRotation = null;
-		expected.stage.backgroundFile = null;
-		expected.stage.backgroundBlur = null;
-		expected.stage.tonemap = null;
-		expected.stage.exposure = null;
+		expected.environment.mapFile = null;
+		expected.environment.mapIntensity = null;
+		expected.environment.rotation = null;
+		expected.environment.backgroundFile = null;
+		expected.environment.backgroundBlur = null;
 		var captured = SceneFile.capture(instance).write().toString();
 		check(captured == expected.write().toString(), 'An untouched instance captures as its file:\n$captured');
 
@@ -354,7 +351,7 @@ class SceneInstanceTests {
 			&& same(carEntry.behaviors[0].props.get("topSpeed"), Number(80)), "A behavior's prop as it is now");
 		check(log.length == 0, 'Capture logged nothing: $log');
 
-		// Destroy: the behaviors out of the pass, the root out of the stage.
+		// Destroy: the behaviors out of the pass, the root out of the node it was put in.
 		instance.destroy();
 		check(instance.root.parent == null && pass.count == 0 && chaser.stopped && driver.stopped, "destroy stops the behaviors and takes the root out");
 		instance.destroy();
@@ -386,7 +383,7 @@ class SceneInstanceTests {
 		sceneFiles.put("p/loop.scene", parse(LOOP, "p/loop.scene"));
 		var file = parse(MAIN, "main.scene");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
-		var instance = file.instantiate(stage, pass, () -> readyCalls++);
+		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
 		check(instance.ready && readyCalls == 0, "With every prefab in the cache, ready at once, the lambda waiting for the pass");
 		var wheel = instance.node("one/wheel"),
 			hub = instance.node("one/wheel/hub"),
@@ -527,7 +524,7 @@ class SceneInstanceTests {
 		var later = parse('{"helix-scene": 1, "nodes": [{"scene": "p/late.scene", "name": "late"}]}', "later.scene");
 		made = fresh();
 		readyCalls = 0;
-		var waiting = later.instantiate(made.stage, made.pass, () -> readyCalls++);
+		var waiting = later.instantiate(made.stage.root, made.pass, () -> readyCalls++);
 		check(!waiting.ready && held.exists("p/late.scene"), "Not ready while a prefab loads");
 		made.pass.update(0);
 		check(readyCalls == 0, "and the lambda waits");
@@ -548,7 +545,7 @@ class SceneInstanceTests {
 				"nope/path": {"visible": false}}}]}';
 		var file = parse(text, "gun.scene");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
-		var instance = file.instantiate(stage, pass, () -> readyCalls++);
+		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
 		var gun = instance.node("gun");
 		check(gun != null && gun.y == 1 && gun.childCount == 0 && held.exists("guns/gun.glb") && !instance.ready, "The file's node waits empty");
 		release("guns/gun.glb", sys.io.File.getBytes("examples/assets/models/modular-women/Gun.glb"));
@@ -659,8 +656,6 @@ class SceneInstanceTests {
 			&& camera.near == .01
 			&& camera.far == .05,
 			"and a far under the near moves the near just under it");
-		check(SceneKinds.tonemapOf("aces") == Aces && SceneKinds.tonemapOf("filmic") == null && SceneKinds.tonemapName(None) == "none",
-			"Tone mappings by name");
 		var material = new SceneMaterial();
 		material.baseColor = 0x78123456;
 		material.metallic = .25;
@@ -703,7 +698,8 @@ class SceneInstanceTests {
 			{"kind": "Camera3D", "name": "flat", "position": [0, 12, 0], "projection": "orthographic", "orthographicHeight": 6, "near": 0,
 				"far": 20}
 		]}', "flags.scene");
-		var made = fresh(), instance = file.instantiate(made.stage, made.pass);
+		var made = fresh(),
+			instance = file.instantiate(made.stage.root, made.pass);
 		var quiet = instance.node("quiet"),
 			button = instance.node("button"),
 			ghost = instance.node("ghost");
@@ -743,7 +739,8 @@ class SceneInstanceTests {
 			{"kind": "Model", "name": "ground", "mesh": {"shape": "plane", "width": 400, "length": 400, "subdivisions": 2},
 				"material": {"baseColor": "#9bbf7c", "roughness": 1}, "shadowCasting": false}
 		]}', "meshes.scene");
-		var made = fresh(), instance = file.instantiate(made.stage, made.pass);
+		var made = fresh(),
+			instance = file.instantiate(made.stage.root, made.pass);
 		var box = Std.downcast(instance.node("box"), Model),
 			ground = Std.downcast(instance.node("ground"), Model);
 		check(box != null && box.mesh != null && box.mesh.vertexCount == 24 && box.mesh.maxY == 1 && box.mesh.maxZ == 1.5

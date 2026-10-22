@@ -6,6 +6,7 @@ import helix.render2d.Shape2D;
 import helix.render2d.StageService;
 import helix.render2d.View2D;
 import helix.render3d.Camera3D;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -15,7 +16,7 @@ import helix.render3d.View3D;
 /** Views (helix.render2d.View2D, helix.render3d.View3D) on the stage: a 2D view's camera given its rectangle in framebuffer pixels, scaled
 	with the view and filling what shows it at a size of 0; its tree drawn through its camera, clipped; views nested, their rectangles inside
 	the outer view's; a view showing a tree it's in skipped, not drawn forever; a tree two views show drawn by both; a 3D view drawn, its
-	camera given its rectangle. */
+	camera given its rectangle, lit by its own environment, else its tree's first. */
 class ViewTests {
 	static var checks = 0;
 
@@ -91,6 +92,29 @@ class ViewTests {
 		check(view3D.drawnNodeCount == 1, "Its tree drawn");
 		stage.draw(0);
 		check(view3D.drawnNodeCount == 1, "And again, its shadows prepared before the frame");
+		check(@:privateAccess view3D.world.ambientIntensity == 0, "No environment anywhere: no ambient light");
+
+		// The place's light: the root's, then the first in the tree, and the view's own over either.
+		var place = new Environment3D();
+		place.setAmbient(0xff8090a0, .4);
+		level.environment = place;
+		stage.draw(0);
+		check(@:privateAccess view3D.world.ambientIntensity == .4 && @:privateAccess view3D.world.ambientColor == 0xff8090a0,
+			"The root's environment lights it");
+		level.environment = null;
+		var group = new Node3D(), inner = new Environment3D();
+		inner.setAmbient(0xffffffff, .7);
+		group.environment = inner;
+		level.addChild(group);
+		stage.draw(0);
+		check(@:privateAccess view3D.world.ambientIntensity == .7, "Else the first in its tree (a scene file's group under the root)");
+		var flat = new Environment3D();
+		flat.setAmbient(0xffffffff, 1);
+		view3D.environment = flat;
+		stage.draw(0);
+		check(@:privateAccess view3D.world.ambientIntensity == 1, "The view's own overrides the tree's");
+		check(!place.setAmbient(0xffffffff, -1) && !place.setMap(null, -1) && !place.setBackground(null, 2) && place.ambientIntensity == .4,
+			"An environment refuses a negative intensity and a blur past 1, changing nothing");
 		view3D.destroy();
 		stage.destroy();
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));

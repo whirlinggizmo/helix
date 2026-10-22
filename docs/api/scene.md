@@ -350,11 +350,37 @@ var props:Map<String, SceneValue>
 - `kind`: The behavior class's name, as the registry knows it.
 - `props`: Its props by name: numbers, text, flags, lists, colors and references to nodes of the file.
 
+## SceneEnvironment
+
+*class* in `src/helix/scene/SceneEnvironment.hx`
+
+A .scene file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the place (exposure, tone mapping) is the view's (View3D), not the file's.
+
+```haxe
+function new()
+var ambientColor:Null<Int>
+var ambientIntensity:Null<Float>
+var mapFile:Null<String>
+var mapIntensity:Null<Float>
+var rotation:Null<Float>
+var backgroundFile:Null<String>
+var backgroundBlur:Null<Float>
+```
+
+- `new`: A section that says nothing.
+- `ambientColor`: The ambient light's color, 0xAARRGGBB; null for white.
+- `ambientIntensity`: The ambient light's intensity, 0 or more; null for 0.
+- `mapFile`: The environment map's file (an HDR, loaded through Environments), lighting and reflecting; null for none.
+- `mapIntensity`: How strongly the map lights, 1 as its file has it; null for 1.
+- `rotation`: How far the map and the background turn about +y, in radians; null for 0.
+- `backgroundFile`: The background's file (an HDR, loaded through Environments); null for none.
+- `backgroundBlur`: How blurred the background is, 0 sharp to 1; null for 0.
+
 ## SceneFile
 
 *class* in `src/helix/scene/SceneFile.hx`
 
-A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its stage section and its nodes, each a SceneNode with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated onto a stage (instantiate) and captured back from a live instance (capture).
+A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its environment section and its nodes, each a SceneNode with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree.
 
 ```haxe
 function new()
@@ -362,23 +388,23 @@ static var VERSION(inline, null):Int
 static function parse(bytes:haxe.io.Bytes, ?path:String):Null<SceneFile>
 static function capture(instance:SceneInstance):SceneFile
 var version:Int
-var stage:Null<SceneStage>
+var environment:Null<SceneEnvironment>
 var nodes:Array<SceneNode>
-function instantiate(stage:Stage3D, behaviors:Behaviors, ?ready:() -> Void):SceneInstance
+function instantiate(parent:Node3D, behaviors:Behaviors, ?ready:() -> Void):SceneInstance
 var path(default, null):Null<String>
 function write():haxe.io.Bytes
 ```
 
-- `new`: An empty file of the current version: no stage section, no nodes.
+- `new`: An empty file of the current version: no environment section, no nodes.
 - `VERSION`: The format version read and written: the file's "helix-scene" value.
-- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the stage section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind, a mesh or an empty path, or a behavior without a kind.
-- `capture`: The file that would instantiate to what instance is now: the stage section from its stage (what isn't the stage's default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the stage section holds what isn't the stage's default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
+- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the environment section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind, a mesh or an empty path, or a behavior without a kind.
+- `capture`: The file that would instantiate to what instance is now: the environment section from its root's environment (what isn't the default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the environment section holds what isn't the default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
 - `version`: The file's "helix-scene" version: VERSION, the only one read.
-- `stage`: Its stage section, or null when the file has none.
+- `environment`: Its environment section (the place's light, set on the node it's instantiated as), or null when the file has none.
 - `nodes`: Its nodes at the root, in drawing order.
-- `instantiate`: Makes the file's tree on stage, its behaviors on behaviors: the stage section applied (ambient, tonemap and exposure at once, the environment and background once their files land through Environments), then every node at once under a new group named after the file (its path without directory and extension) added to the stage's root, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
+- `instantiate`: Makes the file's tree under parent, its behaviors on behaviors: a new group named after the file (its path without directory and extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
-- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid stage or material value, and a property no table has, are not written.
+- `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid environment or material value, and a property no table has, are not written.
 
 ## SceneFileCache
 
@@ -438,13 +464,13 @@ static function forget(path:String):Void
 
 *class* in `src/helix/scene/SceneInstance.hx`
 
-What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the stage's root holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
+What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the node it was put in, holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
 
 ```haxe
 static function baseName(path:String):String
 var path(default, null):String
 var root(default, null):Node3D
-var stage(default, null):Stage3D
+var parent(default, null):Node3D
 var behaviors(default, null):Array<Behavior>
 var ready(default, null):Bool
 function node(path:String):Null<Node3D>
@@ -455,14 +481,14 @@ function destroy():Void
 
 - `baseName`: The file's name without directory and extension: "levels/track.scene" gives "track".
 - `path`: The file's path, as it was loaded.
-- `root`: The node holding everything the file made: a group named after the file (its path without directory and extension), under the stage's root.
-- `stage`: The stage the file was instantiated onto, whose settings the file's stage section set.
+- `root`: The node holding everything the file made: a group named after the file (its path without directory and extension), under the node it was instantiated in, lit by the file's environment section (its environment).
+- `parent`: The node the file was instantiated in, its root's parent then.
 - `behaviors`: The behaviors it attached, in the order the file gave them, prefabs' included.
 - `ready`: Whether every model, prefab, texture, font and environment the file names has landed or failed, and the behaviors are attached to the pass: false until then. The ready lambda given to instantiate follows at the pass's next update, once they have started.
 - `node`: The node at path, slash-separated names from the root (never the root's own name), through nodes a file or a prefab made; null for none. The first of two siblings named alike.
 - `pathOf`: Node's path from the root, as node takes it; null for the root itself or a node not under it.
 - `props`: The game's own values the file gave node ("props"), kept here, never on the node; null for a node the file didn't make.
-- `destroy`: Takes it out: its behaviors from the pass (stopping the started ones), its root from the stage, and the textures, fonts and environments it loaded released to their caches (the last release frees each). Its model and scene files stay in their caches, which keep files until told to forget them. A load still under way is cancelled.
+- `destroy`: Takes it out: its behaviors from the pass (stopping the started ones), its root from the node it was put in, and the textures, fonts and environments it loaded released to their caches (the last release frees each). Its model and scene files stay in their caches, which keep files until told to forget them. A load still under way is cancelled.
 
 ## SceneKinds
 
@@ -479,8 +505,6 @@ static function makeMesh(mesh:SceneMesh):Null<Mesh>
 static function readMesh(mesh:Mesh):Null<SceneMesh>
 static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance):Void
 static function readMaterial(model:Model):Null<SceneMaterial>
-static function tonemapOf(name:String):Null<Tonemap>
-static function tonemapName(tonemap:Tonemap):String
 static function projectionOf(name:String):Null<Projection>
 static function projectionName(projection:Projection):String
 static function facingOf(name:String):Null<SpriteFacing>
@@ -497,8 +521,6 @@ static function alphaName(alpha:SpriteAlpha):String
 - `readMesh`: Mesh as a file's mesh entry, from its record of what made it (Mesh.shape), every argument said (the writer leaves out those at the generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have.
 - `applyMaterial`: Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance, when given, keeps them to release at its destroy.
 - `readMaterial`: Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures. Null for a model of no parts.
-- `tonemapOf`: The tone mapping named name, "none", "neutral" or "aces" (SceneSchema.tonemaps); null for another name.
-- `tonemapName`: Tonemap's name as the file writes it (SceneSchema.tonemaps).
 - `projectionOf`: The projection named name, "perspective" or "orthographic" (SceneSchema.projections); null for another name.
 - `projectionName`: A projection's name as the file writes it (SceneSchema.projections).
 - `facingOf`: The facing named name, "camera", "upright", "ground" or "free"; null for another name.
@@ -609,7 +631,6 @@ The kinds a .scene file's nodes can be and what each writes flat beside its name
 ```haxe
 static var kinds(default, null):Array<KindSchema>
 static var shapes(default, null):Array<ShapeSchema>
-static final tonemaps(default, null):Array<String>
 static final projections(default, null):Array<String>
 static function kind(name:String):Null<KindSchema>
 static function shape(name:String):Null<ShapeSchema>
@@ -618,41 +639,10 @@ static function property(name:String):Null<PropertySchema>
 
 - `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
 - `shapes`: The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds calls the generator from it.
-- `tonemaps`: What the stage's "tonemap" may say: Tonemap's cases in lower case, in its order, so the index of a name is the case's value.
 - `projections`: What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value.
 - `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
 - `shape`: The table of the shape named name (as a mesh's "shape" has it), or null for a shape no generator makes.
 - `property`: The property named name on whichever kind has it first, or null for a name no kind has: for an override, whose node's kind is the model's or the prefab's to know, not the file's. A name means one type wherever it is (color is a color on a light and on text).
-
-## SceneStage
-
-*class* in `src/helix/scene/SceneStage.hx`
-
-A .scene file's stage section: what a Stage3D keeps apart from its tree (its ambient light, environment, background, tone mapping and exposure). Each null means the stage's default and is not written. Only a file instantiated onto a stage applies it; a prefab's is logged and ignored.
-
-```haxe
-function new()
-var ambientColor:Null<Int>
-var ambientIntensity:Null<Float>
-var environmentFile:Null<String>
-var environmentIntensity:Null<Float>
-var environmentRotation:Null<Float>
-var backgroundFile:Null<String>
-var backgroundBlur:Null<Float>
-var tonemap:Null<String>
-var exposure:Null<Float>
-```
-
-- `new`: A stage section saying nothing: every setting the stage's own.
-- `ambientColor`: The ambient light's color, 0xAARRGGBB; null for the stage's.
-- `ambientIntensity`: The ambient light's intensity, 0 or more; null for the stage's.
-- `environmentFile`: The environment's file (an HDR, loaded through Environments); null for none.
-- `environmentIntensity`: How strongly the environment lights, 1 as its file has it; null for the stage's.
-- `environmentRotation`: How far the environment and the background turn about +y, in radians; null for the stage's.
-- `backgroundFile`: The background's file (an HDR, loaded through Environments); null for none.
-- `backgroundBlur`: How blurred the background is, 0 sharp to 1; null for the stage's.
-- `tonemap`: The tone mapping, "none", "neutral" or "aces" (Tonemap's cases in lower case); null for the stage's.
-- `exposure`: The exposure in stops; null for the stage's.
 
 ## SceneValue
 
