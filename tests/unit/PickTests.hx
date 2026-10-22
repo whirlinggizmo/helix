@@ -94,7 +94,7 @@ class PickTests {
 		// See-through: hit only where its alpha reaches a half.
 		var glass = new Material();
 		glass.blended = true;
-		glass.baseColor = 0xffffff40;
+		glass.baseColor = 0x40ffffff;
 		child.material = glass;
 		check(stage.pick(c, 400, 300).node == front, "A faint see-through model isn't hit");
 		// Stretched: a slanted face's normal goes by the inverse transpose (the plane x + z = 0, x stretched 4 times: x / 4 + z = 0), a unit

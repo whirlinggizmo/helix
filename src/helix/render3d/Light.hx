@@ -1,7 +1,7 @@
 package helix.render3d;
 
 /** A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight, a PointLight or a SpotLight (a stage
-	never holds a bare Light). Its color is 0xRRGGBBAA (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is
+	never holds a bare Light). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is
 	about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node.
 
 	A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast
@@ -12,7 +12,7 @@ abstract class Light extends Node3D {
 	function new()
 		super();
 
-	/** Its color, 0xRRGGBBAA. */
+	/** Its color, 0xAARRGGBB. */
 	public var color:Int = 0xffffffff;
 
 	/** Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0). */
@@ -56,9 +56,9 @@ abstract class Light extends Node3D {
 	function set_shadowStrength(strength:Float):Float
 		return shadowStrength = strength > 0 ? (strength > 1 ? 1 : strength) : 0;
 
-	/** What its shadows leave of the surface's own color, 0xRRGGBBAA (sRGB, alpha ignored; black by default: nothing): a cold blue for a sunny
+	/** What its shadows leave of the surface's own color, 0xAARRGGBB (sRGB, alpha ignored; black by default: nothing): a cold blue for a sunny
 		day's shade. */
-	public var shadowColor:Int = 0x000000ff;
+	public var shadowColor:Int = 0xff000000;
 
 	/** Its shadows' depth bias, constant part, in shadow-map texels (1 by default). */
 	public var shadowBiasConstant(default, null):Float = 1.;

@@ -1,5 +1,6 @@
 package helix.scene;
 
+import helix.graphics.Color;
 import helix.render2d.Batch2D;
 
 /** How one scene gives way to the next on a Scenes stack: drawn over the frames for its seconds, the old scene under its first half and the
@@ -23,8 +24,8 @@ class Transition {
 
 /** A fade to a color and back: covered at the middle, where the scenes swap. */
 class Fade extends Transition {
-	/** A fade over seconds (half a second unless given) through color (black unless given, 0xRRGGBBAA, its alpha the cover at the middle). */
-	public function new(seconds = .5, color = 0x000000ff) {
+	/** A fade over seconds (half a second unless given) through color (black unless given, 0xAARRGGBB, its alpha the cover at the middle). */
+	public function new(seconds = .5, color = 0xff000000) {
 		super(seconds);
 		this.color = color;
 	}
@@ -34,7 +35,7 @@ class Fade extends Transition {
 
 	override public function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void {
 		var cover = progress < .5 ? progress * 2 : (1 - progress) * 2;
-		var alpha = Math.round((color & 0xff) * cover);
-		batch.rect(0, 0, width, height, (color & 0xffffff00) | alpha);
+		var alpha = Math.round(Color.getAlpha(color) * cover);
+		batch.rect(0, 0, width, height, Color.withAlpha(color, alpha));
 	}
 }

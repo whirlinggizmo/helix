@@ -134,34 +134,34 @@ class App extends helix.App {
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff12141c);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += batch.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += batch.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;
 		var track = onPad ? "the pad loop (ogg" : "A Hero Is Born (mp3";
 		y += batch.drawTextWrapped(music == null ? "music: loading..." : switch (music.state) {
 			case Playing: 'music: $track, streamed, looping)${crossfading > 0 ? ", crossfading" : ""}';
 			case Paused: "music: paused";
 			case Stopped: "music: couldn't start";
 			case Complete: "music: ended";
-		}, vx + 24, y, 18, vw - 48, 0x66bfffff) + 7.5;
+		}, vx + 24, y, 18, vw - 48, 0xff66bfff) + 7.5;
 		var host = Assets.host;
 		y += batch.drawTextWrapped(host == null ? "from the packaged files" : host.indexOf("://") < 0 ? "from beside the page" : 'from $host (played as it downloads, until cached)',
 			vx
 			+ 24, y, 16, vw
-			- 48, 0x66bfffff)
+			- 48, 0xff66bfff)
 			+ 7.5;
 		y += batch.drawTextWrapped('pitch ${semitones > 0 ? "+" : ""}$semitones semitones   pan ${pan == 0 ? "centre" : (pan < 0 ? "left " : "right ") + Math.round(Math.abs(pan) * 100) + "%"}   music bus ${Math.round(Audio.music.volume * 100)}%',
 			vx
 			+ 24, y, 16, vw
-			- 48, 0xf5f5f5ff)
+			- 48, 0xfff5f5f5)
 			+ 7.5;
-		y += batch.drawTextWrapped(click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0x00e430ff) + 17.5;
+		y += batch.drawTextWrapped(click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0xff00e430) + 17.5;
 		batch.drawTextWrapped("[SPACE] click   [M] pause   [F] fade bus   [C] crossfade   [LEFT/RIGHT] pan   [UP/DOWN] pitch   [0] reset   [S] stall 300 ms"
 			+ (Host.canQuit() ? "   [ESC] quit" : ""),
 			vx
 			+ 24, y, 16, vw
-			- 48, 0xc8c8c8ff);
+			- 48, 0xffc8c8c8);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		Graphics.endFrame();

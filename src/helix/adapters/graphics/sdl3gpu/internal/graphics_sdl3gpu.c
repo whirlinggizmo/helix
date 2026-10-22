@@ -510,7 +510,7 @@ static int frame_command(void){
 static void begin_recording(int kind,int flip,int w,int h){
  active=kind;flipped=flip;pass_width=w;pass_height=h;staging_used=0;upload_count=0;command_count=0;uniform_used=0;
 }
-static SDL_FColor color_of(uint32_t color){return (SDL_FColor){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
+static SDL_FColor color_of(uint32_t color){return (SDL_FColor){((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f,(color>>24)/255.f};}
 
 /* A depth-only pass into layer of map, cleared to the farthest and kept. Drawn flipped: a shadow map's rows run bottom first, as its lookups
    expect. */

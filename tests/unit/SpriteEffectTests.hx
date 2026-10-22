@@ -175,7 +175,7 @@ class SpriteEffectTests {
 		var batch = new Batch2D(gpu),
 			stage = new Stage2D(),
 			texture = Texture2D.fromRgba(gpu, 8, 8, Bytes.alloc(256)),
-			outline = new SpriteOutline(0xff0000ff, 2);
+			outline = new SpriteOutline(0xffff0000, 2);
 		for (i in 0...3) {
 			var sprite = new Sprite2D(texture);
 			sprite.setPosition(20 + i * 20, 20);
@@ -199,7 +199,7 @@ class SpriteEffectTests {
 
 	// The members the classes write, at the reflection's offsets (sprite_outline_params: outline_color 0, width 16).
 	static function outline(gpu:CountingGraphics):Void {
-		var effect = new SpriteOutline(0xff800040, 3);
+		var effect = new SpriteOutline(0x40ff8000, 3);
 		var block = drawn(gpu, effect)[2];
 		check(near(block.getFloat(0), 1) && near(block.getFloat(4), 128 / 255) && near(block.getFloat(8), 0) && near(block.getFloat(12), 64 / 255),
 			"SpriteOutline's color: sRGB values as given");
@@ -214,7 +214,7 @@ class SpriteEffectTests {
 	static function flash(gpu:CountingGraphics):Void {
 		var effect = new SpriteFlash();
 		check(near(drawn(gpu, effect, 1)[2].getFloat(12), 0), "No flash to start");
-		check(effect.trigger(0xff000080, .5) && !effect.trigger(0xffffffff, 0), "A trigger needs seconds above 0");
+		check(effect.trigger(0x80ff0000, .5) && !effect.trigger(0xffffffff, 0), "A trigger needs seconds above 0");
 		var block = drawn(gpu, effect, 10);
 		check(near(block[2].getFloat(0), 1) && near(block[2].getFloat(4), 0) && near(block[2].getFloat(12), 128 / 255), "All of it at the first draw");
 		check(near(drawn(gpu, effect, 10.25)[2].getFloat(12), 128 / 255 * .5), "Half way through, half of it");
@@ -232,7 +232,7 @@ class SpriteEffectTests {
 		effect.amount = .4;
 		effect.edgeWidth = .2;
 		effect.scale = 3;
-		effect.edgeColor = 0x00ff00ff;
+		effect.edgeColor = 0xff00ff00;
 		var batch = new Batch2D(gpu),
 			texture = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64));
 		frame(gpu, batch, () -> {

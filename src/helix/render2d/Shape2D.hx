@@ -1,6 +1,6 @@
 package helix.render2d;
 
-/** A flat shape in a color (0xRRGGBBAA), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by
+/** A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by
 	the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size,
 	pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn. */
 @:allow(helix.render2d.Stage2D)
@@ -51,14 +51,14 @@ class Shape2D extends Node2D {
 	/** Which shape it is. */
 	public var form(default, null):ShapeForm;
 
-	/** Its color, 0xRRGGBBAA: a shaded rectangle's at its start (its left edge, or its top). */
+	/** Its color, 0xAARRGGBB: a shaded rectangle's at its start (its left edge, or its top). */
 	public var color:Int = 0xffffffff;
 
 	/** How a filled rectangle is colored: Flat in color (the start), or shaded from color to endColor across or down it, each channel
 		linearly (alpha too, so a ramp to the same color at alpha 0 fades it out). An outlined rectangle and the other forms are drawn flat. */
 	public var shading:ShapeShading = Flat;
 
-	/** The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xRRGGBBAA. (0xffffffff to start.) */
+	/** The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xAARRGGBB. (0xffffffff to start.) */
 	public var endColor:Int = 0xffffffff;
 
 	/** A rectangle's width, in its own units. */

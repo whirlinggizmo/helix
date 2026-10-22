@@ -19,7 +19,7 @@ class Game extends helix.App {
 	}
 
 	override public function frame(dt:Float):Void {
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x202840ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		Graphics.endFrame();
 	}
 }

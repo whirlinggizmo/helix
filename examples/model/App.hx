@@ -58,7 +58,7 @@ class App extends helix.App {
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
-		ground.baseColor = 0x616164ff;
+		ground.baseColor = 0xff616164;
 		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), ground));
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
@@ -121,13 +121,13 @@ class App extends helix.App {
 			vy = Screen.visibleY,
 			vw = Screen.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(riding ? rideCamera : orbitCamera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped('HeliX glTF model: $caption', vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped('HeliX glTF model: $caption', vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = "D: drive   C: ride along   H: the headlights" + (Host.canQuit() ? "   ESC: quit" : "");
-		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

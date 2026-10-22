@@ -1121,7 +1121,7 @@ private class SceneCapture {
 			base.metallic = 0;
 			base.roughness = .5;
 			base.normalScale = 1;
-			base.emissive = 0x000000ff;
+			base.emissive = 0xff000000;
 			base.emissiveStrength = 1;
 			base.doubleSided = false;
 		}

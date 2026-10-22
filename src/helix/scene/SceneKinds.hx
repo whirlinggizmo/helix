@@ -27,7 +27,7 @@ import helix.scene.SceneValue;
 	applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh
 	made by Mesh's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
-	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA. */
+	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB. */
 class SceneKinds {
 	/** A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table

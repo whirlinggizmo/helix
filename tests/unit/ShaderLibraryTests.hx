@@ -137,7 +137,7 @@ class ShaderLibraryTests {
 		check(p != null && p.slot == 2 && p.type == "vec4" && p.elementCount == 1, "Its color is its own block's vec4");
 		var bytes = blocks(material)[p.slot];
 		check(near(bytes.getFloat(p.offset), 1) && near(bytes.getFloat(p.offset + 12), 1), "Written white from the start");
-		unlit.color = 0x336699cc;
+		unlit.color = 0xcc336699;
 		bytes = blocks(material)[p.slot];
 		check(near(bytes.getFloat(p.offset), 0x33 / 255)
 			&& near(bytes.getFloat(p.offset + 4), 0x66 / 255)
@@ -146,8 +146,8 @@ class ShaderLibraryTests {
 			"The color field writes its member at the reflection's offset, rgba 0 to 1");
 		check(near(blocks(other)[p.slot].getFloat(p.offset), 1), "Each material keeps its own color");
 		material.setShader(null);
-		unlit.color = 0xff0000ff;
-		check(material.shaderParameters == null && unlit.color == 0xff0000ff && !unlit.attached,
+		unlit.color = 0xffff0000;
+		check(material.shaderParameters == null && unlit.color == 0xffff0000 && !unlit.attached,
 			"With another shader on the material, the field writes nothing there");
 	}
 
@@ -159,10 +159,10 @@ class ShaderLibraryTests {
 		check(toon.bands == 3 && written(material, "bands") == 3, "Three bands by default, written");
 		toon.bands = 40;
 		check(toon.bands == 16 && written(material, "bands") == 16, "Bands held to 16");
-		toon.shadowColor = 0x80402000;
+		toon.shadowColor = 0x00804020;
 		check(near(written(material, "shadow_color"), linear(0x80)) && near(written(material, "shadow_color", 1), linear(0x40)),
 			"The shadow color written as linear light");
-		check(toon.rim.material == material && @:privateAccess material.rimColor == 0xffffff55, "Toon turns its material's rim on");
+		check(toon.rim.material == material && @:privateAccess material.rimColor == 0x55ffffff, "Toon turns its material's rim on");
 	}
 
 	static function dissolve(gpu:CountingGraphics):Void {
@@ -179,7 +179,7 @@ class ShaderLibraryTests {
 			&& near(written(material, "edge_width"), .001), "Amount written; a width held above 0");
 		dissolve.amount = 2;
 		check(dissolve.amount == 1, "Amount held to 1");
-		dissolve.edgeColor = 0xff000000;
+		dissolve.edgeColor = 0x00ff0000;
 		dissolve.edgeIntensity = 3;
 		check(near(written(material, "edge_color"), 3)
 			&& near(written(material, "edge_color", 1), 0), "The edge's color times its intensity");
@@ -199,7 +199,7 @@ class ShaderLibraryTests {
 		water.amplitude = -1;
 		water.shininess = 1e9;
 		check(written(material, "amplitude") == 0 && written(material, "shininess") == 2048, "Fields held to their ranges");
-		water.deepColor = 0x00ff00ff;
+		water.deepColor = 0xff00ff00;
 		check(near(written(material, "deep_color", 1), 1) && near(written(material, "deep_color"), 0), "Colors written as linear light");
 	}
 
@@ -222,9 +222,9 @@ class ShaderLibraryTests {
 		var u = drawn(gpu, stage, camera);
 		check(u.getFloat(92) == 0 && u.getFloat(96) == 0 && u.getFloat(108) == 3, "No flash and no rim by default");
 		var flash = new HitFlash(material),
-			rim = new Rim(material, 0xff000080, 5);
+			rim = new Rim(material, 0x80ff0000, 5);
 		check(!flash.trigger(0xffffffff, 0), "A flash over no time is refused");
-		check(flash.trigger(0xff0000ff, .5), "A flash triggered");
+		check(flash.trigger(0xffff0000, .5), "A flash triggered");
 		stage.time = 10;
 		u = drawn(gpu, stage, camera);
 		check(near(u.getFloat(80), 1) && near(u.getFloat(84), 0) && near(u.getFloat(92), 1), "All of it at the first draw after the trigger");
@@ -346,7 +346,7 @@ class ShaderLibraryTests {
 		for (model in [plain, seen, left, right])
 			stage.add(model);
 		var silhouette = new Silhouette(seen);
-		var outlines = [new Outline(left, 0x000000ff, .05), new Outline(right, 0x000000ff, .05)];
+		var outlines = [new Outline(left, 0xff000000, .05), new Outline(right, 0xff000000, .05)];
 		check(seen.passCount == 1 && seen.getPass(0) == silhouette && outlines[0].width == .05, "A pass adds itself to its model");
 		gpu.meshDraws = [];
 		gpu.meshPipelines = [];

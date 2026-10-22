@@ -86,12 +86,12 @@ class App extends helix.App {
 	// and how long it took. Returns the height drawn.
 	function caption(slot:Slot, x:Float, y:Float, width:Float):Float {
 		var name = fileName(slot.path), chosen = fileName(slot.chosen), top = y;
-		y += batch.drawTextWrapped(name, x, y, 16, width, 0xc8c8c8ff) + 2;
+		y += batch.drawTextWrapped(name, x, y, 16, width, 0xffc8c8c8) + 2;
 		if (slot.chosen != "" && chosen != name)
-			y += batch.drawTextWrapped('loaded $chosen', x, y, 14, width, 0x66bfffff) + 2;
+			y += batch.drawTextWrapped('loaded $chosen', x, y, 14, width, 0xff66bfff) + 2;
 		var t = slot.texture;
 		var line = t == null ? slot.status : '${t.width} x ${t.height}, GPU ${Math.round(t.byteCount / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
-		return y + batch.drawTextWrapped(line, x, y, 14, width, 0xc8c8c8ff) - top;
+		return y + batch.drawTextWrapped(line, x, y, 14, width, 0xffc8c8c8) - top;
 	}
 
 	// The slots in rows of columns from x, y, each size wide (twice, smooth then sharp, when both) and captioned under. Returns the bottom.
@@ -146,12 +146,12 @@ class App extends helix.App {
 			columns = shape == "portrait" ? 2 : 3,
 			pitch = 2 * size + 30;
 
-		Graphics.beginFrame(width, height, 0x262a36ff);
+		Graphics.beginFrame(width, height, 0xff262a36);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += batch.drawTextWrapped("HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		y += batch.drawTextWrapped("HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
 		y = grid(slots, true, vx + 20, y, size, columns, pitch) + 24;
-		y += batch.drawTextWrapped("compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 22;
+		y += batch.drawTextWrapped("compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
 		grid(compressed, false, vx + 20, y, size, columns, pitch);
 		fps.draw(batch, vx + 12, vy + 6);
 		batch.end();

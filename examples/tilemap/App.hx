@@ -161,9 +161,9 @@ class App extends helix.App {
 			pressed = null;
 		}
 		for (coin in coins)
-			coin.tint = coin == hovered ? 0xffe68cff : 0xffffffff;
+			coin.tint = coin == hovered ? 0xffffe68c : 0xffffffff;
 
-		Graphics.beginFrame(width, height, 0x181c26ff);
+		Graphics.beginFrame(width, height, 0xff181c26);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		batch.camera = hud;
@@ -173,11 +173,11 @@ class App extends helix.App {
 			help = 'drag or arrows to scroll, wheel to zoom, click the coins   (${stage.drawnNodeCount} of ${sprites.length} drawn)';
 		inline function tall(text:String, size:Float):Float
 			return batch.font.measureWrapped(text, size, vw - 40);
-		batch.rect(vx, vy, vw, 20 + tall(title, 20) + 1 + tall(status, 15) + 3 + tall(help, 15) + 1, 0x121418be);
+		batch.rect(vx, vy, vw, 20 + tall(title, 20) + 1 + tall(status, 15) + 3 + tall(help, 15) + 1, 0xbe121418);
 		var y = vy + 20;
-		y += batch.drawTextWrapped(title, vx + 20, y, 20, vw - 40, 0xebeef5ff) + 1;
-		y += batch.drawTextWrapped(status, vx + 20, y, 15, vw - 40, 0x8c929eff) + 3;
-		batch.drawTextWrapped(help, vx + 20, y, 15, vw - 40, 0x8c929eff);
+		y += batch.drawTextWrapped(title, vx + 20, y, 20, vw - 40, 0xffebeef5) + 1;
+		y += batch.drawTextWrapped(status, vx + 20, y, 15, vw - 40, 0xff8c929e) + 3;
+		batch.drawTextWrapped(help, vx + 20, y, 15, vw - 40, 0xff8c929e);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
 		Graphics.endFrame();

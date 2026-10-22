@@ -2,6 +2,7 @@ package helix.adapters.graphics.webgl2;
 
 import haxe.io.Bytes;
 import helix.graphics.BlendMode;
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.IGraphics.ReadPixelsResult;
 import helix.graphics.PipelineDesc;
@@ -531,7 +532,8 @@ class WebGL2GraphicsAdapter implements IGraphics {
 		inTarget = flipped = frameEnded = false;
 		frameWidth = width;
 		frameHeight = height;
-		open(width, height, (clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255, (clearColor & 255) / 255);
+		open(width, height, Color.getRed(clearColor) / 255, Color.getGreen(clearColor) / 255, Color.getBlue(clearColor) / 255,
+			Color.getAlpha(clearColor) / 255);
 	}
 
 	// Opens a pass on the bound framebuffer, width x height, cleared.

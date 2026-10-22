@@ -35,7 +35,7 @@ class App extends helix.App {
 	static inline var MINIMAP = 256;
 	static inline var LABEL_W = 256;
 	static inline var LABEL_H = 128;
-	static inline var BACKGROUND = 0x181a22ff;
+	static inline var BACKGROUND = 0xff181a22;
 
 	var stage:Stage3D;
 	var batch:Batch2D;
@@ -76,7 +76,7 @@ class App extends helix.App {
 
 		// The ground: a flattened sphere.
 		var ground = new Material();
-		ground.baseColor = 0x8a9689ff;
+		ground.baseColor = 0xff8a9689;
 		var floor = new Model(Mesh.sphere(.5, 32, 64), ground);
 		floor.setPosition(0, -.05, 0);
 		floor.setScale(8, .1, 8);
@@ -104,9 +104,9 @@ class App extends helix.App {
 
 	// A texture with a 2 unit frame and a caption above it, in the presentation's units.
 	function panel(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, caption:String):Void {
-		batch.rect(x - 2, y - 2, w + 4, h + 4, 0x5a606eff);
+		batch.rect(x - 2, y - 2, w + 4, h + 4, 0xff5a606e);
 		batch.image(texture, x, y, w, h);
-		batch.drawText(caption, x, y - 22, 16, 0xc8c8c8ff);
+		batch.drawText(caption, x, y - 22, 16, 0xffc8c8c8);
 	}
 
 	override public function frame(dt:Float):Void {
@@ -130,8 +130,8 @@ class App extends helix.App {
 		targetCamera.setViewport(LABEL_W, LABEL_H);
 		targetCamera.pixels(1);
 		batch.begin(targetCamera);
-		batch.drawText("HeliX", 20, 14, 64, 0xf5f5f5ff, Left, font);
-		batch.drawText('t = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffcb00ff);
+		batch.drawText("HeliX", 20, 14, 64, 0xfff5f5f5, Left, font);
+		batch.drawText('t = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffffcb00);
 		batch.end();
 		gpu.endTargetPass();
 
@@ -157,7 +157,7 @@ class App extends helix.App {
 		batch.begin(screen);
 		var top = vy
 			+ 36
-			+ batch.drawTextWrapped("HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xf5f5f5ff)
+			+ batch.drawTextWrapped("HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xfff5f5f5)
 			+ 36;
 		// The pixel view on the left and the other two in a column beside it; upright, all three in a column, the pixel view as wide as fits.
 		var x = vx + 24, pixelWidth = Math.min(PIXEL_W * PIXEL_SCALE, vw - 48), pixelHeight = pixelWidth * PIXEL_H / PIXEL_W;

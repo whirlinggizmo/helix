@@ -1,4 +1,5 @@
 import Render2DTests.CountingGraphics;
+import helix.graphics.Color;
 import helix.render2d.Font2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -63,7 +64,7 @@ class UiTests {
 		ui = new helix.ui.Ui(stage, camera, pointer, input);
 		var panel = ui.panel(),
 			volume = ui.slider("Volume", 0, 100, 0, 0, "volume"),
-			tint = ui.colorPicker(0xff0000ff, true, "tint"),
+			tint = ui.colorPicker(0xffff0000, true, "tint"),
 			area = ui.scrollArea(60, "area"),
 			list = ui.list([for (i in 0...20) 'Item $i'], 4, "items"),
 			pick = ui.dropdown(["Low", "Medium", "High"], 0, "pick"),
@@ -194,11 +195,11 @@ class UiTests {
 			"Down the row, spanning its height, half a gap either side");
 		check(line.color == theme.faceColor && upright.color == theme.faceColor && !line.pickable, "In the faces' color, never picked");
 		check(!across.focusable && !down.focusable, "Never focused");
-		theme.faceColor = 0x405060ff;
+		theme.faceColor = 0xff405060;
 		theme.focusWidth = 3;
 		theme.gap = 10;
 		frame();
-		check(line.color == 0x405060ff, "The theme changed: its color at the next frame");
+		check(line.color == 0xff405060, "The theme changed: its color at the next frame");
 		frame();
 		check(near(line.height, 3) && near(across.layout.height, 13) && near(upright.width, 3), "Arranged again: its new thickness and room");
 		// A game's sizing wins: a separator made narrower keeps its width in the panel's stretching column, at its start.
@@ -306,7 +307,7 @@ class UiTests {
 			name = ui.textField("abc"),
 			tile = ui.tile(null, "Part", 64),
 			levels = ui.list(["One", "Two", "Three"], 3),
-			picker = ui.colorPicker(0xff0000ff, true, "tint"),
+			picker = ui.colorPicker(0xffff0000, true, "tint"),
 			same = ui.button("Same"),
 			wide = ui.button("Wide"),
 			kept = ui.panel();
@@ -319,7 +320,7 @@ class UiTests {
 		wide.layout.widthSizing = Fixed(120);
 		kept.content.gap = 8;
 		kept.content.setPadding(startPadding, startPadding, startPadding, startPadding);
-		title.color = 0x123456ff;
+		title.color = 0xff123456;
 		volume.valueShown = true;
 		fixedBar.layout.setSizing(Grow(1), Fixed(10));
 		for (w in [title, plain, play, sound, volume, bar, fixedBar, name, tile, levels, same, wide])
@@ -374,10 +375,10 @@ class UiTests {
 			wasToggle = sound.layout.height,
 			wasSized = fixedBar.layout.height,
 			wasPicker = picker.layout.width;
-		theme.faceColor = 0x102030ff;
-		theme.panelColor = 0x405060ff;
-		theme.accentColor = 0x00ff00ff;
-		theme.focusColor = 0xff00ffff;
+		theme.faceColor = 0xff102030;
+		theme.panelColor = 0xff405060;
+		theme.accentColor = 0xff00ff00;
+		theme.focusColor = 0xffff00ff;
 		theme.focusWidth = 3;
 		theme.cornerRadius = 3;
 		theme.listCornerRadius = 12;
@@ -392,26 +393,26 @@ class UiTests {
 		theme.widgetHeight = 50;
 		theme.colorPickerWidth = 260;
 		frame();
-		check(playFace.color == 0x102030ff && playFace.cornerRadius == 3 && playLabel.textSize == 24,
+		check(playFace.color == 0xff102030 && playFace.cornerRadius == 3 && playLabel.textSize == 24,
 			"A button: its face's color and corners, its text's size");
-		check(panelFace.color == 0x405060ff && panelFace.cornerRadius == 3, "A panel: its color and corners");
-		check(listFace.color == 0x102030ff && listFace.cornerRadius == 12 && listRow.cornerRadius == 5 && listText.textSize == 24,
+		check(panelFace.color == 0xff405060 && panelFace.cornerRadius == 3, "A panel: its color and corners");
+		check(listFace.color == 0xff102030 && listFace.cornerRadius == 12 && listRow.cornerRadius == 5 && listText.textSize == 24,
 			"A list: its color, its corners, its rows' corners and text");
-		check(track.color == 0x102030ff
+		check(track.color == 0xff102030
 			&& track.cornerRadius == 5
-			&& @:privateAccess volume.fill.color == 0x00ff00ff
+			&& @:privateAccess volume.fill.color == 0xff00ff00
 			&& knob.radius == 10,
 			"A slider: its track's color and round ends, its fill, its handle's size");
-		check(checkMark.color == 0x00ff00ff && checkMark.width == 20 && checkMark.cornerRadius == 3 / 4, "A toggle: its mark's color, size and corners");
-		check(barTrack.color == 0x102030ff && barTrack.cornerRadius == 3, "A progress bar: its color and corners");
-		check(fieldText.textSize == 24 && caret.height == 28 && caret.color == 0xff00ffff, "A text field: its text's size, the caret's");
-		check(tileEdge.color == 0x00ff00ff && tileEdge.cornerRadius == 5 && @:privateAccess tile.label.textSize == 24 * .8, "A tile: its edge, its caption");
+		check(checkMark.color == 0xff00ff00 && checkMark.width == 20 && checkMark.cornerRadius == 3 / 4, "A toggle: its mark's color, size and corners");
+		check(barTrack.color == 0xff102030 && barTrack.cornerRadius == 3, "A progress bar: its color and corners");
+		check(fieldText.textSize == 24 && caret.height == 28 && caret.color == 0xffff00ff, "A text field: its text's size, the caret's");
+		check(tileEdge.color == 0xff00ff00 && tileEdge.cornerRadius == 5 && @:privateAccess tile.label.textSize == 24 * .8, "A tile: its edge, its caption");
 		check(hueKnob.radius == 10
 			&& swatch.radius == (10 + 1.5) * 2 + theme.gap / 4 && @:privateAccess picker.caption.textSize == 24 * .6,
 			"A color picker: its handles, its swatch and caption");
-		check(ring.visible && ring.color == 0xff00ffff && ring.outline == 3, "The focus ring: its color and width");
+		check(ring.visible && ring.color == 0xffff00ff && ring.outline == 3, "The focus ring: its color and width");
 		check(@:privateAccess title.node.textSize == 30
-			&& @:privateAccess title.node.color == 0x123456ff
+			&& @:privateAccess title.node.color == 0xff123456
 			&& @:privateAccess plain.node.textSize == 24
 			&& @:privateAccess plain.node.color == theme.textColor,
 			"A label: its own size and color kept, the theme's otherwise");
@@ -476,17 +477,17 @@ class UiTests {
 	// it (the dressing room's lit plinth, the camera close) brings it to a face's color hides every face on it, its text left floating.
 	static function contrast():Void {
 		var theme = new helix.ui.Theme();
-		for (backdrop in [0x000000ff, 0xffffffff]) {
+		for (backdrop in [0xff000000, 0xffffffff]) {
 			var panel = over(theme.panelColor, backdrop);
 			for (face in [theme.faceColor, theme.hoveredColor, theme.pressedColor])
 				check(difference(face, panel) >= 36, 'A face (${StringTools.hex(face, 8)}) apart from the panel over ${StringTools.hex(backdrop, 8)}');
 		}
 	}
 
-	// color (0xRRGGBBAA) blended by its alpha over an opaque backdrop.
+	// color (0xAARRGGBB) blended by its alpha over an opaque backdrop.
 	static function over(color:Int, backdrop:Int):Int {
-		var a = (color & 255) / 255, out = 0xff;
-		for (shift in [24, 16, 8])
+		var a = Color.getAlpha(color) / 255, out = 0xff000000;
+		for (shift in [16, 8, 0])
 			out |= Math.round(((color >>> shift) & 255) * a + ((backdrop >>> shift) & 255) * (1 - a)) << shift;
 		return out;
 	}
@@ -494,7 +495,7 @@ class UiTests {
 	// The summed difference of two colors' red, green and blue, 0 to 765.
 	static function difference(a:Int, b:Int):Int {
 		var sum = 0;
-		for (shift in [24, 16, 8])
+		for (shift in [16, 8, 0])
 			sum += Std.int(Math.abs(((a >>> shift) & 255) - ((b >>> shift) & 255)));
 		return sum;
 	}
@@ -849,31 +850,31 @@ class UiTests {
 	// back as it went in, and hex read in its forms and refused in others.
 	static function hsv():Void {
 		var C = helix.ui.ColorPicker;
-		check(C.fromHsv(0, 1, 1) == 0xff0000ff && C.fromHsv(1, 1, 1) == 0xff0000ff, "Hue 0 and 1: red");
-		check(C.fromHsv(1 / 6, 1, 1) == 0xffff00ff
-			&& C.fromHsv(2 / 6, 1, 1) == 0x00ff00ff
-			&& C.fromHsv(3 / 6, 1, 1) == 0x00ffffff
-			&& C.fromHsv(4 / 6, 1, 1) == 0x0000ffff
-			&& C.fromHsv(5 / 6, 1, 1) == 0xff00ffff,
+		check(C.fromHsv(0, 1, 1) == 0xffff0000 && C.fromHsv(1, 1, 1) == 0xffff0000, "Hue 0 and 1: red");
+		check(C.fromHsv(1 / 6, 1, 1) == 0xffffff00
+			&& C.fromHsv(2 / 6, 1, 1) == 0xff00ff00
+			&& C.fromHsv(3 / 6, 1, 1) == 0xff00ffff
+			&& C.fromHsv(4 / 6, 1, 1) == 0xff0000ff
+			&& C.fromHsv(5 / 6, 1, 1) == 0xffff00ff,
 			"The sixths: yellow, green, cyan, blue, magenta");
-		check(C.fromHsv(.3, 0, 1) == 0xffffffff && C.fromHsv(.3, .7, 0) == 0x000000ff && C.fromHsv(.3, 0, .5, 0x80) == 0x80808080,
+		check(C.fromHsv(.3, 0, 1) == 0xffffffff && C.fromHsv(.3, .7, 0) == 0xff000000 && C.fromHsv(.3, 0, .5, 0x80) == 0x80808080,
 			"White, black and a grey whatever the hue; alpha as given");
-		check(C.fromHsv(-1, 2, 2, 300) == 0xff0000ff && C.fromHsv(0, 1, 1, -5) == 0xff000000, "Out of range clamped");
+		check(C.fromHsv(-1, 2, 2, 300) == 0xffff0000 && C.fromHsv(0, 1, 1, -5) == 0x00ff0000, "Out of range clamped");
 		// Round trips: every 8-bit color of a sweep comes back from its HSV as it went in.
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Stage2D(),
 			camera = new helix.render2d.Camera2D();
-		var ui = new helix.ui.Ui(stage, camera, new helix.scene.Pointer(input), input), picker = ui.colorPicker(0x000000ff),
-			opaque = ui.colorPicker(0x123456ff, false), wrong = 0;
+		var ui = new helix.ui.Ui(stage, camera, new helix.scene.Pointer(input), input), picker = ui.colorPicker(0xff000000),
+			opaque = ui.colorPicker(0xff123456, false), wrong = 0;
 		var r = 0;
 		while (r < 256) {
 			var g = 0;
 			while (g < 256) {
 				var b = 0;
 				while (b < 256) {
-					var c = (r << 24) | (g << 16) | (b << 8) | ((r + g * 3 + b) & 255);
+					var c = Color.fromChannels(r, g, b, r + g * 3 + b);
 					picker.color = c;
-					if (picker.color != c || C.fromHsv(picker.hue, picker.saturation, picker.brightness, c & 255) != c)
+					if (picker.color != c || C.fromHsv(picker.hue, picker.saturation, picker.brightness, Color.getAlpha(c)) != c)
 						wrong++;
 					b += b == 0 || b == 254 ? 1 : 17;
 				}
@@ -883,44 +884,44 @@ class UiTests {
 		}
 		check(wrong == 0, 'Every color of the sweep back as it went in ($wrong not)');
 		// The hue kept through grey and black, the saturation through black.
-		picker.color = 0x3366ccff;
+		picker.color = 0xff3366cc;
 		var hue = picker.hue;
-		picker.color = 0x808080ff;
-		check(near(picker.hue, hue) && picker.saturation == 0 && picker.color == 0x808080ff, "A grey keeps the hue");
-		picker.color = 0x3366ccff;
+		picker.color = 0xff808080;
+		check(near(picker.hue, hue) && picker.saturation == 0 && picker.color == 0xff808080, "A grey keeps the hue");
+		picker.color = 0xff3366cc;
 		var saturation = picker.saturation;
-		picker.color = 0x000000ff;
+		picker.color = 0xff000000;
 		check(near(picker.hue, hue) && near(picker.saturation, saturation) && picker.brightness == 0, "Black keeps the hue and saturation");
 		picker.brightness = 0xcc / 255;
-		check(picker.color == 0x3366ccff, "Brightened again: the same color");
+		check(picker.color == 0xff3366cc, "Brightened again: the same color");
 		picker.hue = 1;
 		picker.saturation = 1;
 		picker.brightness = 1;
-		picker.color = 0xff0000ff;
+		picker.color = 0xffff0000;
 		check(picker.hue == 1, "Red assigned at hue 1 stays at 1 (the top of the bar), not 0");
-		check(opaque.color == 0x123456ff, "An opaque picker");
-		opaque.color = 0x12345600;
-		check(opaque.color == 0x123456ff, "Without alpha, alpha is 0xff whatever is assigned");
+		check(opaque.color == 0xff123456, "An opaque picker");
+		opaque.color = 0x00123456;
+		check(opaque.color == 0xff123456, "Without alpha, alpha is 0xff whatever is assigned");
 		// Hex.
-		check(C.parseHex("ff8800cc") == 0xff8800cc && C.parseHex("#FF8800") == 0xff8800ff && C.parseHex(" #aBcDeF12 ") == 0xabcdef12,
+		check(C.parseHex("ff8800cc") == 0xccff8800 && C.parseHex("#FF8800") == 0xffff8800 && C.parseHex(" #aBcDeF12 ") == 0x12abcdef,
 			"Hex: RRGGBBAA, RRGGBB as opaque, #, either case, spaces around");
 		check(C.parseHex("ff880") == null && C.parseHex("ff8800c") == null && C.parseHex("gg8800") == null && C.parseHex("") == null
 			&& C.parseHex("##ff8800") == null && C.parseHex("ff8800ccdd") == null,
 			"Hex: wrong lengths and digits refused");
-		check(C.formatHex(0xff8800cc, true) == "ff8800cc" && C.formatHex(0x0a0b0cff, false) == "0a0b0c", "Hex written lowercase");
+		check(C.formatHex(0xccff8800, true) == "ff8800cc" && C.formatHex(0xff0a0b0c, false) == "0a0b0c", "Hex written lowercase");
 		// Decimal channels.
-		check(C.parseRgba("255 136 0 204") == 0xff8800cc
-			&& C.parseRgba("255,136,0") == 0xff8800ff
-			&& C.parseRgba(" 1 , 2,3 ,  4 ") == 0x01020304
+		check(C.parseRgba("255 136 0 204") == 0xccff8800
+			&& C.parseRgba("255,136,0") == 0xffff8800
+			&& C.parseRgba(" 1 , 2,3 ,  4 ") == 0x04010203
 			&& C.parseRgba("0 0 0 0") == 0
-			&& C.parseRgba("007 08 9") == 0x070809ff,
+			&& C.parseRgba("007 08 9") == 0xff070809,
 			"RGBA: four or three channels apart by spaces or a comma, spaces around");
 		check(C.parseRgba("256 0 0") == null && C.parseRgba("1 2") == null && C.parseRgba("1 2 3 4 5") == null && C.parseRgba("1,,2,3") == null
 			&& C.parseRgba(",1 2 3") == null && C.parseRgba("1 2 3,") == null && C.parseRgba("1 2 3a") == null && C.parseRgba("1 2 -3") == null
 			&& C.parseRgba("0001 2 3") == null && C.parseRgba("") == null && C.parseRgba("1.5 2 3") == null,
 			"RGBA: out of range, too few or many channels, doubled or loose commas, other characters refused");
-		check(C.formatRgba(0xff8800cc, true) == "255 136 0 204"
-			&& C.formatRgba(0x0a0b0cff, false) == "10 11 12", "RGBA written apart by spaces");
+		check(C.formatRgba(0xccff8800, true) == "255 136 0 204"
+			&& C.formatRgba(0xff0a0b0c, false) == "10 11 12", "RGBA written apart by spaces");
 	}
 
 	// A color picker in a panel: the theme's width there, then grown as wide as the panel's column, its square edge to edge and as tall, the strip and the field's row under it;
@@ -938,7 +939,7 @@ class UiTests {
 		var ui = new helix.ui.Ui(stage, camera, pointer, input);
 		var panel = ui.panel(),
 			above = ui.button("Above"),
-			picker = ui.colorPicker(0xff0000ff, true, "tint"),
+			picker = ui.colorPicker(0xffff0000, true, "tint"),
 			below = ui.button("Below");
 		for (w in [above, picker, below])
 			panel.add(w);
@@ -1012,7 +1013,7 @@ class UiTests {
 			"Pressed in the square: saturation across, brightness up it, focus with it");
 		check(picker.color == helix.ui.ColorPicker.fromHsv(0, .5, .75), "The color from them");
 		frame(sx + side * 2, sy + side * 2, true);
-		check(picker.saturation == 1 && picker.brightness == 0 && picker.color == 0x000000ff, "Dragged past the corner: clamped, black");
+		check(picker.saturation == 1 && picker.brightness == 0 && picker.color == 0xff000000, "Dragged past the corner: clamped, black");
 		frame(sx + side * 2, sy + side * 2, false);
 		// The hue bar, left to right, between its round ends' centers (half its thickness in from its row's ends); dragged through black keeps
 		// it.
@@ -1022,7 +1023,7 @@ class UiTests {
 		var hy = hueRow.y + hueRow.height / 2;
 		frame(along(hueRow, .5), hy, true);
 		frame(along(hueRow, 2 / 3), hy, true);
-		check(near(picker.hue, 2 / 3) && !picker.changed && picker.color == 0x000000ff, "The hue moved through black: the color still black");
+		check(near(picker.hue, 2 / 3) && !picker.changed && picker.color == 0xff000000, "The hue moved through black: the color still black");
 		frame(along(hueRow, 2 / 3), sy - 100, true);
 		check(near(picker.hue, 2 / 3), "Dragged off the bar: still the hue, along it");
 		frame(hueRow.x - 50, sy + side * 3, true);
@@ -1032,18 +1033,19 @@ class UiTests {
 		frame(along(hueRow, 1), hueRow.y + 1, false);
 		check(picker.hue == 1, "At the right end's center, the top of its row: hue 1");
 		frame(sx + side, sy, true);
-		check(picker.color == 0xff0000ff, "Back to the square's top right: the full hue, red");
+		check(picker.color == 0xffff0000, "Back to the square's top right: the full hue, red");
 		frame(sx + side, sy, false);
 		// The alpha bar under it: clear at its left, opaque at its right.
 		frame(along(alphaRow, .5), alphaRow.y + alphaRow.height / 2, true);
 		frame(along(alphaRow, .5), alphaRow.y + alphaRow.height / 2, false);
-		check(picker.color == 0xff000080, "Half way along the alpha bar: alpha 0x80");
+		check(picker.color == 0x80ff0000, "Half way along the alpha bar: alpha 0x80");
 		frame([Up]);
-		check(picker.color & 255 == Math.round(.55 * 255), "Up: the part the pointer chose, alpha up a twentieth");
+		check(Color.getAlpha(picker.color) == Math.round(.55 * 255), "Up: the part the pointer chose, alpha up a twentieth");
 		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2, true);
 		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2 - 40, true);
 		frame(swatch.x + swatch.width / 2, swatch.y + swatch.height / 2 - 40, false);
-		check(picker.color & 255 == Math.round(.55 * 255) && ui.focused == picker, "Dragged from the swatch: nothing changes, focus kept");
+		check(Color.getAlpha(picker.color) == Math.round(.55 * 255)
+			&& ui.focused == picker, "Dragged from the swatch: nothing changes, focus kept");
 		// Keys: Enter steps through the parts (from the alpha bar to none, then the square), the arrows nudge the one stepped to.
 		frame([Enter]);
 		frame([Enter]);
@@ -1058,7 +1060,7 @@ class UiTests {
 		check(picker.hue == 1, "Up: up again");
 		frame([Enter]);
 		frame([Down]);
-		check(picker.color & 255 == 0x80, "Enter again, then Down: alpha down a twentieth");
+		check(Color.getAlpha(picker.color) == 0x80, "Enter again, then Down: alpha down a twentieth");
 		frame([Enter]);
 		frame([Down]);
 		check(ui.focused == field, "Enter once more lets the arrows go: Down moves focus on, to the field under the bars");
@@ -1070,7 +1072,7 @@ class UiTests {
 		check(ui.focused == field && ui.capturingKeys, "A click focuses the field");
 		for (i in 0...9)
 			frame([Backspace]);
-		check(field.text == "" && field.invalid && picker.color == was | 0xff,
+		check(field.text == "" && field.invalid && picker.color == Color.withAlpha(was, 255),
 			"Emptied: marked invalid; the color the last it named, its first six digits (opaque) on the way");
 		was = picker.color;
 		frame(null, null, null, null, "#33");
@@ -1078,15 +1080,15 @@ class UiTests {
 		check(field.invalid && picker.color == was, "Part of a color: marked invalid, the color unchanged");
 		frame(null, null, null, null, "66cc");
 		frame();
-		check(!field.invalid && picker.color == 0x3366ccff && field.text == "#3366cc", "RRGGBB with #: taken as opaque, the text left as typed");
+		check(!field.invalid && picker.color == 0xff3366cc && field.text == "#3366cc", "RRGGBB with #: taken as opaque, the text left as typed");
 		frame(null, null, null, null, "4");
 		frame(null, null, null, null, "0");
 		frame();
-		check(picker.color == 0x3366cc40, "RRGGBBAA: alpha too");
+		check(picker.color == 0x403366cc, "RRGGBBAA: alpha too");
 		frame([Backspace]);
 		frame(null, null, null, null, "x");
 		frame();
-		check(field.invalid && picker.color == 0x3366cc40, "A wrong digit: marked, the color kept");
+		check(field.invalid && picker.color == 0x403366cc, "A wrong digit: marked, the color kept");
 		frame([Tab]);
 		frame();
 		check(ui.focused == button && field.text == "3366cc40" && !field.invalid, "Left for the button after it: the field shows the color again");
@@ -1100,10 +1102,10 @@ class UiTests {
 			frame([Backspace]);
 		frame(null, null, null, null, "10, 20, 30");
 		frame();
-		check(!field.invalid && picker.color == 0x0a141eff, "Three channels apart by commas: taken as opaque");
+		check(!field.invalid && picker.color == 0xff0a141e, "Three channels apart by commas: taken as opaque");
 		frame(null, null, null, null, " 300");
 		frame();
-		check(field.invalid && picker.color == 0x0a141eff, "A channel past 255: marked, the color kept");
+		check(field.invalid && picker.color == 0xff0a141e, "A channel past 255: marked, the color kept");
 		frame([Tab]);
 		frame();
 		check(field.text == "10 20 30 255" && !field.invalid, "Left: the color in decimal again");
@@ -1120,12 +1122,12 @@ class UiTests {
 		frame(sx + 1, sy + 1, true);
 		frame(sx + 1, sy + 1, false);
 		click(button.layout);
-		check(picker.color == 0x0a141eff && !field.enabled && !button.enabled && picker.format == Hex,
+		check(picker.color == 0xff0a141e && !field.enabled && !button.enabled && picker.format == Hex,
 			"Disabled: not dragged, the field and the button with it");
 		ui.remove(picker);
 		check(ui.find("tint-text") == null && ui.find("tint-format") == null, "Removed with its field and its button");
 		// Without alpha: no alpha bar, a smaller swatch beside the hue bar, three channels; in a row, its own width.
-		var opaque = ui.colorPicker(0x112233ff, false, "plain"),
+		var opaque = ui.colorPicker(0xff112233, false, "plain"),
 			row = Layout2D.row();
 		panel.adopt(opaque);
 		row.add(opaque.layout);
@@ -1344,11 +1346,11 @@ class UiTests {
 			&& near(shortRows[0].face.width, lw - pad * 2 - 8 - pad), "A short list's bar Always: shown, its rows narrowed");
 		// The theme: its width, its track's color and its visibility at the next frame; a widget's own visibility kept.
 		ui.theme.scrollbarThickness = 12;
-		ui.theme.scrollbarTrackColor = 0x11223344;
+		ui.theme.scrollbarTrackColor = 0x44112233;
 		ui.theme.scrollbarVisibility = Never;
 		frame();
 		var track:Shape2D = @:privateAccess fitsBar.track;
-		check(near(fitsBar.width, 12) && track.color == 0x11223344 && near(track.width, 12), "The theme's thickness and color at the next frame");
+		check(near(fitsBar.width, 12) && track.color == 0x44112233 && near(track.width, 12), "The theme's thickness and color at the next frame");
 		check(fits.scrollbarShown && short.scrollbarShown && !list.scrollbarShown, "The theme's Never; the widgets' own Always kept");
 		ui.theme.scrollbarVisibility = null;
 		check(ui.theme.scrollbarVisibility == WhenNeeded, "A null visibility is WhenNeeded");
@@ -1380,8 +1382,8 @@ class UiTests {
 				case Disabled: 5;
 			}, "Each state picks its own color");
 		}
-		check(WidgetState.dim(0x2e3448ff) == 0x2e34487f
-			&& WidgetState.dim(0x11223300) == 0x11223300, "Dimmed: the color at half its alpha");
+		check(WidgetState.dim(0xff2e3448) == 0x7f2e3448
+			&& WidgetState.dim(0x00112233) == 0x00112233, "Dimmed: the color at half its alpha");
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Stage2D(),
 			camera = new helix.render2d.Camera2D();
@@ -1397,7 +1399,7 @@ class UiTests {
 			volume = ui.slider("Volume", 0, 10, 5, 1),
 			levels = ui.list([for (i in 0...20) 'Level ${i + 1}'], 4),
 			part = ui.tile(null, "Part", 64),
-			picker = ui.colorPicker(0xff0000ff, true, "tint");
+			picker = ui.colorPicker(0xffff0000, true, "tint");
 		off.enabled = false;
 		var column = Layout2D.column();
 		column.setSizing(Fixed(400), Grow(1));
@@ -1618,13 +1620,13 @@ class UiTests {
 			&& near(band.clipHeight, height),
 			"The band in the faces' color, its top corners the panel's, its bottom cut square (its face a corner taller, clipped)");
 		// The theme changed: at the next frame (its height once arranged again).
-		theme.faceColor = 0x102030ff;
-		theme.textColor = 0xa0b0c0ff;
+		theme.faceColor = 0xff102030;
+		theme.textColor = 0xffa0b0c0;
 		theme.cornerRadius = 4;
 		theme.textSize = 24;
 		theme.padding = 6;
 		frame();
-		check(bandFace.color == 0x102030ff && bandText.color == 0xa0b0c0ff && bandFace.cornerRadius == 4 && bandText.textSize == 24,
+		check(bandFace.color == 0xff102030 && bandText.color == 0xffa0b0c0 && bandFace.cornerRadius == 4 && bandText.textSize == 24,
 			"The theme changed: the band's look at the next frame");
 		frame();
 		check(near(bandLayout.height, 30) && near(panel.content.y, 30) && near(play.layout.y, 36), "Arranged again: its new height, its widgets under it");
@@ -1849,14 +1851,14 @@ class UiTests {
 		size.enabled = true;
 		// The theme changed: the face's color and the list's rows at the next frame.
 		click(cx, cy);
-		theme.faceColor = 0x203040ff;
+		theme.faceColor = 0xff203040;
 		theme.listRowHeight = 30;
 		frame(790, 300, false);
-		check(popFace.color == 0x203040ff
+		check(popFace.color == 0xff203040
 			&& near(size.popup.layout.height, sizes.length * 30 + pad * 2), "The theme's change at the next frame");
 		frame([helix.input.Key.Escape]);
 		frame(790, 300, false);
-		check(sizeFace.color == 0x203040ff, "Its face too");
+		check(sizeFace.color == 0xff203040, "Its face too");
 		// A width the game gave its layout is kept whatever the theme's text becomes; a hint while none is chosen.
 		var fitted = long.layout.width;
 		theme.textSize = 30;

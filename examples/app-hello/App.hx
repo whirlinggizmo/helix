@@ -40,24 +40,24 @@ class App extends helix.App {
 		var x = presentation.visibleX,
 			y = presentation.visibleY,
 			width = presentation.visibleWidth;
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xf5f5f5ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xfff5f5f5);
 		batch.begin(camera);
 		// filled and outlined rectangles
-		batch.rect(x + 40, y + 40, 200, 120, 0x66bfffff);
-		batch.frame(x + 40, y + 40, 200, 120, 1, 0x0052acff);
+		batch.rect(x + 40, y + 40, 200, 120, 0xff66bfff);
+		batch.frame(x + 40, y + 40, 200, 120, 1, 0xff0052ac);
 		// a line, a triangle, circles
-		batch.line(x + 40, y + 200, x + 240, y + 320, 1, 0xe62937ff);
-		batch.triangle(x + 320, y + 60, x + 280, y + 180, x + 360, y + 180, 0xffcb00ff);
-		batch.circle(x + 440, y + 120, 60, 0xc87affff);
-		batch.circleLines(x + 440, y + 120, 60, 1, 0x000000ff);
+		batch.line(x + 40, y + 200, x + 240, y + 320, 1, 0xffe62937);
+		batch.triangle(x + 320, y + 60, x + 280, y + 180, x + 360, y + 180, 0xffffcb00);
+		batch.circle(x + 440, y + 120, 60, 0xffc87aff);
+		batch.circleLines(x + 440, y + 120, 60, 1, 0xff000000);
 		// a marker that follows the mouse
 		if (input.pointerX >= 0)
-			batch.circle(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY), 8, 0xbe2137ff);
+			batch.circle(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY), 8, 0xffbe2137);
 		// text
-		batch.drawText("HeliX", x + 40, y + 360, 32, 0x505050ff);
-		var below = batch.drawTextWrapped(typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0x0052acff : 0x828282ff);
+		batch.drawText("HeliX", x + 40, y + 360, 32, 0xff505050);
+		var below = batch.drawTextWrapped(typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0xff0052ac : 0xff828282);
 		if (Host.canQuit())
-			batch.drawText("press Esc to quit", x + 40, y + 420 + below, 16, 0x828282ff);
+			batch.drawText("press Esc to quit", x + 40, y + 420 + below, 16, 0xff828282);
 		fps.draw(batch, x + 40, y + 12);
 		batch.end();
 		Graphics.endFrame();

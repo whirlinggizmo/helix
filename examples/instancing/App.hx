@@ -1,4 +1,5 @@
 import helix.debug.FpsOverlay;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -48,7 +49,7 @@ class App extends helix.App {
 		var hue = i / (SIDE * SIDE) * Math.PI * 2;
 		inline function channel(phase:Float):Int
 			return Std.int(120 + 135 * Math.sin(hue + phase));
-		return channel(0) << 24 | channel(2.1) << 16 | channel(4.2) << 8 | 255;
+		return Color.fromChannels(channel(0), channel(2.1), channel(4.2));
 	}
 
 	// One material for every cube, or one each: the same picture, batched or not.
@@ -70,7 +71,7 @@ class App extends helix.App {
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
-		stage.setAmbient(0xa0b4dcff, .35);
+		stage.setAmbient(0xffa0b4dc, .35);
 		// Framed for 16:9: the whole field across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
@@ -78,7 +79,7 @@ class App extends helix.App {
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		var ground = new Material();
-		ground.baseColor = 0xb4b8bfff;
+		ground.baseColor = 0xffb4b8bf;
 		ground.roughness = .9;
 		var floor = new Model(Mesh.plane(60, 60), ground);
 		floor.setPosition(0, -.6, 0);
@@ -96,7 +97,7 @@ class App extends helix.App {
 		// See-through copies of the same cube: same mesh, same material, alpha in the tint.
 		for (i in 0...GLASS) {
 			var glass = new Model(cube, shared);
-			glass.tint = 0xffffff6e;
+			glass.tint = 0x6effffff;
 			glass.setPosition(i * 2 - 4, 5.2, 5);
 			glass.setScale(2, 2, 2);
 			stage.add(glass);
@@ -145,16 +146,16 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		batch.drawTextWrapped('${stage.drawnNodeCount} models in ${stage.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
 			vx
 			+ 12,
 			y, 16, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

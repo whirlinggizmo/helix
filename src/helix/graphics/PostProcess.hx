@@ -101,7 +101,7 @@ class PostProcess {
 	}
 
 	/** Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to
-		clearColor (0xRRGGBBAA; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it.
+		clearColor (0xAARRGGBB; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it.
 		Which effects draw this frame is taken here. Throws inside another pass. */
 	public function beginScene(width:Int, height:Int, clearColor:Int):Void {
 		plan();
@@ -128,8 +128,8 @@ class PostProcess {
 			}
 			gpu.beginTargetPass(scene.handle, hdrClear[0], hdrClear[1], hdrClear[2], hdrClear[3]);
 		} else
-			gpu.beginTargetPass(scene.handle, (clearColor >>> 24) / 255, ((clearColor >>> 16) & 255) / 255, ((clearColor >>> 8) & 255) / 255,
-				(clearColor & 255) / 255);
+			gpu.beginTargetPass(scene.handle, Color.getRed(clearColor) / 255, Color.getGreen(clearColor) / 255, Color.getBlue(clearColor) / 255,
+				Color.getAlpha(clearColor) / 255);
 	}
 
 	/** Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR

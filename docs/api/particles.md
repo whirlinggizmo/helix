@@ -6,7 +6,7 @@
 
 *class* in `src/helix/particles/Emitter.hx`
 
-A particle emitter: many particles from one texture, each decided when it's born (where, how fast, how long it lives, how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them does. A node places it on a stage (a Particles3D, or Node2D.emitter), which advances it by the stage's clock each draw; particles stay where they were born when it moves (trails), face the camera, and aren't sorted among themselves. Its random numbers are its own (seed): the same seed and settings give the same particles. Colors are 0xRRGGBBAA, sRGB values, as sprites' are.
+A particle emitter: many particles from one texture, each decided when it's born (where, how fast, how long it lives, how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them does. A node places it on a stage (a Particles3D, or Node2D.emitter), which advances it by the stage's clock each draw; particles stay where they were born when it moves (trails), face the camera, and aren't sorted among themselves. Its random numbers are its own (seed): the same seed and settings give the same particles. Colors are 0xAARRGGBB, sRGB values, as sprites' are.
 
 ```haxe
 function new(texture:Null<Texture2D>, ?maxParticles:Int = 1024, ?flat:Bool = false)
@@ -126,12 +126,12 @@ function writeUniforms(out:haxe.io.Bytes, viewProjection:Mat4, axisX:Array<Float
 - `addSizeKey`: Adds a size key at t (0..1 of a life), in order: between keys the size moves in a line; before the first and after the last it holds. False past 8 keys, or for a t before the last key's or outside 0..1.
 - `colorKeyCount`: The color keys.
 - `getColorKeyTime`: Color key index's time, 0..1 of a life (0 for an index out of range).
-- `getColorKeyColor`: Color key index's color, 0xRRGGBBAA (0 for an index out of range).
+- `getColorKeyColor`: Color key index's color, 0xAARRGGBB (0 for an index out of range).
 - `setColor`: Color over life (alpha included, so a fade): start at birth to end at death. Replaces the color keys.
 - `clearColorKeys`: Clears the color keys.
 - `addColorKey`: Adds a color key at t, as addSizeKey.
 - `paletteColorCount`: The palette colors.
-- `getPaletteColor`: Palette color index, 0xRRGGBBAA (0 for an index out of range).
+- `getPaletteColor`: Palette color index, 0xAARRGGBB (0 for an index out of range).
 - `addPaletteColor`: Adds a palette color (at most 8): each particle picks one at birth, tinting its color over life (confetti from one emitter). False past 8.
 - `clearPalette`: Clears the palette: no tint.
 - `minSpin`: The slowest spin, radians a second.

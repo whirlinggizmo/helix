@@ -107,8 +107,8 @@ class SceneFileTests {
 			&& sun.rotation[0] == -0.6
 			&& sun.position == null
 			&& same(sun.properties.get("intensity"), Number(3.5))
-			&& same(sun.properties.get("color"), Color(0xfff4e0ff))
-			&& same(sun.properties.get("shadowColor"), Color(0x102040ff))
+			&& same(sun.properties.get("color"), Color(0xfffff4e0))
+			&& same(sun.properties.get("shadowColor"), Color(0xff102040))
 			&& same(sun.properties.get("shadowCasting"), Flag(true)),
 			"A light's properties: a color with alpha ff, a number, a flag");
 		var chase = world.children[3];
@@ -119,7 +119,7 @@ class SceneFileTests {
 			&& same(props.get("label"), Text("go"))
 			&& same(props.get("on"), Flag(false))
 			&& same(props.get("offset"), Numbers([0, 1.5, -6]))
-			&& same(props.get("tint"), Color(0xff000080)),
+			&& same(props.get("tint"), Color(0x80ff0000)),
 			"A behavior's props of every value type, the reference without its @");
 		var glow = world.children[4];
 		check(glow.pickable == false
@@ -142,9 +142,9 @@ class SceneFileTests {
 			"An override's property and flags, a true one kept");
 		check(line != null
 			&& line.material != null
-			&& line.material.baseColor == 0x2040c0ff
+			&& line.material.baseColor == 0xff2040c0
 			&& line.material.roughness == null
-			&& same(line.properties.get("tint"), Color(0x808080ff)),
+			&& same(line.properties.get("tint"), Color(0xff808080)),
 			"An override's material says only what it changes");
 		check(gate != null
 			&& gate.children.length == 1
@@ -158,18 +158,18 @@ class SceneFileTests {
 			&& cone.material.metallic == 0.1
 			&& cone.material.doubleSided == true
 			&& cone.material.normalTexture == "props/cone_n.png"
-			&& cone.material.emissive == 0xff0000ff
+			&& cone.material.emissive == 0xffff0000
 			&& cone.material.emissiveStrength == 2,
 			"An inline material");
 		check(same(cone.props.get("team"), Number(2))
 			&& same(cone.props.get("leader"), Reference("cone_1"))
-			&& same(cone.props.get("color"), Color(0xff0000ff))
+			&& same(cone.props.get("color"), Color(0xffff0000))
 			&& same(cone.props.get("path"), Numbers([1, 2, 3])),
 			"A node's own props");
 		var car = world.children[9];
 		check(car.kind == null
 			&& car.scene == "prefabs/car.scene"
-			&& car.overrides.get("body").material.baseColor == 0x2040c0ff
+			&& car.overrides.get("body").material.baseColor == 0xff2040c0
 			&& same(car.behaviors[0].props.get("topSpeed"), Number(60)),
 			"A prefab node");
 		var written = file.write();
@@ -436,7 +436,7 @@ class SceneFileTests {
 		}
 		var file = parse('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"segments": 32, "radius": 2, "shape": "sphere",
 			"rings": 8}, "material": {"baseColor": "#40a040"}}]}');
-		check(file != null && file.nodes[0].mesh.arguments.get("radius") == 2 && file.nodes[0].material.baseColor == 0x40a040ff,
+		check(file != null && file.nodes[0].mesh.arguments.get("radius") == 2 && file.nodes[0].material.baseColor == 0xff40a040,
 			"A mesh beside an inline material");
 		var written = file.write().toString();
 		check(written.indexOf('"segments"') < 0

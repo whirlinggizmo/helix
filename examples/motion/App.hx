@@ -1,5 +1,6 @@
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -37,14 +38,14 @@ class App extends helix.App {
 		{name: "bounceOut", f: Ease.bounceOut}
 	];
 	static var COLORS = [
-		0xe62937ff,
-		0xe8a33cff,
-		0xffcb00ff,
-		0x2fa36bff,
-		0x66bfffff,
-		0x5a7bffff,
-		0xc87affff,
-		0xf5f5f5ff
+		0xffe62937,
+		0xffe8a33c,
+		0xffffcb00,
+		0xff2fa36b,
+		0xff66bfff,
+		0xff5a7bff,
+		0xffc87aff,
+		0xfff5f5f5
 	];
 	static inline var FLOOR_WIDTH = 360;
 	static inline var FLOOR_Y = 200;
@@ -80,7 +81,7 @@ class App extends helix.App {
 			stage.add(square);
 			squares.push(square);
 			offsets.push(0);
-			var label = new Text2D(EASES[i].name, 13, 0x8a92a8ff);
+			var label = new Text2D(EASES[i].name, 13, 0xff8a92a8);
 			stage.add(label);
 			labels.push(label);
 			var tween = tweens.to(0, 300, 1.6, EASES[i].f, x -> offsets[i] = x);
@@ -96,11 +97,11 @@ class App extends helix.App {
 		}
 		path = Shape2D.polygon(samples);
 		path.outline = 1;
-		path.color = 0x3a4150ff;
+		path.color = 0xff3a4150;
 		stage.add(path);
-		ball = Shape2D.circle(12, 0x66bfffff);
+		ball = Shape2D.circle(12, 0xff66bfff);
 		stage.add(ball);
-		floor = Shape2D.rectangle(FLOOR_WIDTH, 6, 0x3a4150ff);
+		floor = Shape2D.rectangle(FLOOR_WIDTH, 6, 0xff3a4150);
 		stage.add(floor);
 		// Every half second, a spark: it falls by a tween (bounceOut onto the floor) and fades by another, gone when faded.
 		timers.every(.5, () -> {
@@ -171,22 +172,22 @@ class App extends helix.App {
 		caught = 0;
 		for (spark in sparks) {
 			spark.node.setPosition(floorX + spark.x, floorY - FLOOR_Y + spark.y);
-			spark.node.color = spark.color & 0xffffff00 | Math.round(spark.alpha * 255);
+			spark.node.color = Color.withAlpha(spark.color, Math.round(spark.alpha * 255));
 			// On the floor: a circle against the floor's rectangle.
 			if (Collide2D.rectCircle(floorX, floorY, FLOOR_WIDTH, 6, spark.node.x, spark.node.y, 5))
 				caught++;
 		}
 
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		Graphics.beginFrame(width, height, 0x0c0e16ff);
+		Graphics.beginFrame(width, height, 0xff0c0e16);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		batch.drawTextWrapped('Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
 			vx
 			+ 12, y, 15, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

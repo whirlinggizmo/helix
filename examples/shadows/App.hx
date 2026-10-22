@@ -33,7 +33,7 @@ import helix.render3d.Orbit;
 class App extends helix.App {
 	static var SIZES = [512, 1024, 2048, 4096];
 	// What a shadow keeps of the surface's color: nothing (physical), then two stylized tints.
-	static var TINTS = [0x000000ff, 0x1e3c64ff, 0x64321eff];
+	static var TINTS = [0xff000000, 0xff1e3c64, 0xff64321e];
 
 	var stage:Stage3D;
 	var batch:Batch2D;
@@ -51,7 +51,7 @@ class App extends helix.App {
 	var size = 1;
 	var tint = 0;
 
-	// A model of mesh at x, y, z in one color (0xRRGGBBAA), on the stage.
+	// A model of mesh at x, y, z in one color (0xAARRGGBB), on the stage.
 	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model {
 		var material = new Material();
 		material.baseColor = color;
@@ -70,8 +70,8 @@ class App extends helix.App {
 		var gpu = Graphics.instance;
 		batch = new Batch2D(gpu);
 		stage = new Stage3D(gpu);
-		stage.setAmbient(0x8caae1ff, .25);
-		sun.color = 0xfff4e0ff;
+		stage.setAmbient(0xff8caae1, .25);
+		sun.color = 0xfffff4e0;
 		sun.intensity = 3.2;
 		sun.shadowCasting = true;
 		sun.shadowDistance = distance;
@@ -79,7 +79,7 @@ class App extends helix.App {
 		sun.lookAt(-.75, -.85, -.35);
 		stage.add(sun);
 		// A second caster, circling: both share the map, so both use the same size.
-		spot.color = 0x96d2ffff;
+		spot.color = 0xff96d2ff;
 		spot.intensity = 260;
 		spot.range = 24;
 		spot.setCone(.3, .44);
@@ -88,21 +88,21 @@ class App extends helix.App {
 		spot.shadowDistance = 24;
 		stage.add(spot);
 		var glow = new Material();
-		glow.baseColor = 0x96d2ffff;
+		glow.baseColor = 0xff96d2ff;
 		glow.lit = false;
 		marker = new Model(Mesh.sphere(.16, 8, 16), glow);
 		marker.shadowCasting = false;
 		stage.add(marker);
 
-		place(Mesh.plane(40, 40), 0, 0, 0, 0xb0b4b8ff, .9);
+		place(Mesh.plane(40, 40), 0, 0, 0, 0xffb0b4b8, .9);
 		// A wall to throw a long shadow across the floor.
-		place(Mesh.cube(.5, 3, 7), -4.5, 1.5, 0, 0xc4bbb1ff, .85);
-		place(Mesh.torus(.7, .22, 48, 24), 2.6, 1.1, -1.6, 0xf3c27cff, .4);
-		place(Mesh.capsule(.4, 1.6, 16, 32), 1.2, .8, 1.8, 0x9ee0b2ff, .5);
-		place(Mesh.cube(1, 1, 1), 3.8, .5, 1.4, 0x95bdedff, .6);
+		place(Mesh.cube(.5, 3, 7), -4.5, 1.5, 0, 0xffc4bbb1, .85);
+		place(Mesh.torus(.7, .22, 48, 24), 2.6, 1.1, -1.6, 0xfff3c27c, .4);
+		place(Mesh.capsule(.4, 1.6, 16, 32), 1.2, .8, 1.8, 0xff9ee0b2, .5);
+		place(Mesh.cube(1, 1, 1), 3.8, .5, 1.4, 0xff95bded, .6);
 		// One that casts nothing, and one that nothing shadows.
-		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xf8ed95ff, .35).shadowCasting = false;
-		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xf395bcff, .35).shadowReceiving = false;
+		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xfff8ed95, .35).shadowCasting = false;
+		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xfff395bc, .35).shadowReceiving = false;
 		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 	}
 
@@ -166,24 +166,24 @@ class App extends helix.App {
 			vw = presentation.visibleWidth;
 
 		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0x7896c8ff);
+		Graphics.beginFrame(width, height, 0xff7896c8);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		y += batch.drawTextWrapped('[1] sun ${sun.shadowCasting ? "on" : "off"}   [2] spot ${spot.shadowCasting ? "on" : "off"}   '
 			+ '[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff)
+			- 24, 0xffc8c8c8)
 			+ 2;
 		y += batch.drawTextWrapped('UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   '
 			+ '${stage.shadowCasterCount} casters in ${stage.shadowDrawCallCount} draws',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0x9a9a9aff)
+			- 24, 0xff9a9a9a)
 			+ 2;
-		batch.drawTextWrapped("left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0x9a9a9aff);
+		batch.drawTextWrapped("left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0xff9a9a9a);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

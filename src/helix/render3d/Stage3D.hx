@@ -3,6 +3,7 @@ package helix.render3d;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.graphics.BlendMode;
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
@@ -211,13 +212,13 @@ class Stage3D {
 	public function remove(node:Node3D):Bool
 		return root.removeChild(node);
 
-	/** The ambient light's color, 0xRRGGBBAA (sRGB). */
+	/** The ambient light's color, 0xAARRGGBB (sRGB). */
 	public var ambientColor(default, null):Int = 0xffffffff;
 
 	/** The ambient light's intensity. */
 	public var ambientIntensity(default, null):Float = 0.;
 
-	/** The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0. */
+	/** The light reaching everything evenly, from no direction: color 0xAARRGGBB (sRGB) times intensity. False for an intensity under 0. */
 	public function setAmbient(color:Int, intensity:Float):Bool {
 		if (!(intensity >= 0))
 			return false;
@@ -383,9 +384,9 @@ class Stage3D {
 			shadowLayers[at + 22] = fit.far;
 			shadowLayers[at + 23] = fit.perspective ? 1 : 0;
 			var tint = light.shadowColor;
-			shadowLayers[at + 24] = linear(tint >>> 24);
-			shadowLayers[at + 25] = linear((tint >>> 16) & 255);
-			shadowLayers[at + 26] = linear((tint >>> 8) & 255);
+			shadowLayers[at + 24] = linear(Color.getRed(tint));
+			shadowLayers[at + 25] = linear(Color.getGreen(tint));
+			shadowLayers[at + 26] = linear(Color.getBlue(tint));
 			// The bias is in texels, what acne is made of; an orthographic map's depth units are its range.
 			shadowLayers[at + 27] = fit.far > fit.near ? fit.texelWorld / (fit.far - fit.near) : 0;
 			drawLayer(layer);
@@ -731,8 +732,8 @@ class Stage3D {
 
 	// Tests one part's triangles against the ray, after its box, which must be nearer than the best.
 	function pickPart(node:Model, mesh:Mesh, material:Material):Void {
-		var alpha = (node.tint & 255) / 255;
-		if ((material.blended || alpha < 1) && alpha * (material.baseColor & 255) / 255 < .5)
+		var alpha = Color.getAlpha(node.tint) / 255;
+		if ((material.blended || alpha < 1) && alpha * Color.getAlpha(material.baseColor) / 255 < .5)
 			return;
 		placeBox(node, mesh);
 		if (rayBox() >= pickBest)
@@ -997,10 +998,10 @@ class Stage3D {
 				last++;
 			var item = drawn[d.item], pass = d.pass, color = pass.color;
 			passUniforms[0].setFloat(64, pass.push);
-			passUniforms[1].setFloat(0, (color >>> 24) / 255);
-			passUniforms[1].setFloat(4, ((color >>> 16) & 255) / 255);
-			passUniforms[1].setFloat(8, ((color >>> 8) & 255) / 255);
-			passUniforms[1].setFloat(12, (color & 255) / 255);
+			passUniforms[1].setFloat(0, Color.getRed(color) / 255);
+			passUniforms[1].setFloat(4, Color.getGreen(color) / 255);
+			passUniforms[1].setFloat(8, Color.getBlue(color) / 255);
+			passUniforms[1].setFloat(12, Color.getAlpha(color) / 255);
 			var mesh = item.mesh, vertices = mesh.getPassVertexBuffer(gpu);
 			gpu.draw(pipelines.flat3D(item.skinned, behind, item.mirrored),
 				item.skinned ? [vertices, instanceBuffer, mesh.getSkinBuffer(gpu)] : [vertices, instanceBuffer], mesh.getIndexBuffer(gpu), 0, mesh.indexCount,
@@ -1212,7 +1213,7 @@ class Stage3D {
 
 	// A model's parts that cast, in view or not (see-through ones don't).
 	function gatherCaster(node:Model):Void {
-		if (!node.shadowCasting || node.tint & 255 < 255)
+		if (!node.shadowCasting || Color.getAlpha(node.tint) < 255)
 			return;
 		for (i in 0...node.partCount) {
 			var part = node.getPart(i), mesh = part.mesh;
@@ -1262,7 +1263,7 @@ class Stage3D {
 		item.mesh = mesh;
 		item.material = material;
 		item.skinned = isSkinned(node, mesh);
-		item.blended = item.material.blended || node.tint & 255 < 255;
+		item.blended = item.material.blended || Color.getAlpha(node.tint) < 255;
 		item.silhouetted = false;
 		if (!item.blended)
 			for (k in 0...node.passCount) {
@@ -1325,10 +1326,10 @@ class Stage3D {
 		for (k in 0...MODEL_LIGHTS)
 			out.setFloat(at + (k < 4 ? Lit3DProgram.lights0Offset + k * 4 : Lit3DProgram.lights1Offset + (k - 4) * 4), lights == null ? -1 : lights[k]);
 		var tint = node.tint;
-		out.setFloat(at + Lit3DProgram.tintOffset, linear(tint >>> 24));
-		out.setFloat(at + Lit3DProgram.tintOffset + 4, linear((tint >>> 16) & 255));
-		out.setFloat(at + Lit3DProgram.tintOffset + 8, linear((tint >>> 8) & 255));
-		out.setFloat(at + Lit3DProgram.tintOffset + 12, (tint & 255) / 255);
+		out.setFloat(at + Lit3DProgram.tintOffset, linear(Color.getRed(tint)));
+		out.setFloat(at + Lit3DProgram.tintOffset + 4, linear(Color.getGreen(tint)));
+		out.setFloat(at + Lit3DProgram.tintOffset + 8, linear(Color.getBlue(tint)));
+		out.setFloat(at + Lit3DProgram.tintOffset + 12, Color.getAlpha(tint) / 255);
 	}
 
 	// The table: the gathered lights that reach the drawn models most (each light's best score over them), at most TABLE_LIGHTS, in the order
@@ -1402,7 +1403,8 @@ class Stage3D {
 			var light = lights[l], color = light.color, w = light.worldMatrix, at = l * 10;
 			var point = Std.downcast(light, PointLight),
 				spot = Std.downcast(light, SpotLight);
-			lightData[at] = (.2126 * linear(color >>> 24) + .7152 * linear((color >>> 16) & 255) + .0722 * linear((color >>> 8) & 255)) * light.intensity;
+			lightData[at] = (.2126 * linear(Color.getRed(color)) + .7152 * linear(Color.getGreen(color)) +
+				.0722 * linear(Color.getBlue(color))) * light.intensity;
 			lightData[at + 1] = w.get(12);
 			lightData[at + 2] = w.get(13);
 			lightData[at + 3] = w.get(14);
@@ -1472,9 +1474,9 @@ class Stage3D {
 		u.setFloat(4, eyeY);
 		u.setFloat(8, eyeZ);
 		u.setFloat(12, 0);
-		u.setFloat(16, linear(ambientColor >>> 24) * ambientIntensity);
-		u.setFloat(20, linear((ambientColor >>> 16) & 255) * ambientIntensity);
-		u.setFloat(24, linear((ambientColor >>> 8) & 255) * ambientIntensity);
+		u.setFloat(16, linear(Color.getRed(ambientColor)) * ambientIntensity);
+		u.setFloat(20, linear(Color.getGreen(ambientColor)) * ambientIntensity);
+		u.setFloat(24, linear(Color.getBlue(ambientColor)) * ambientIntensity);
 		u.setFloat(28, 0);
 		for (i in 0...TABLE_LIGHTS) {
 			var position = LIGHT_POSITION + i * 16,
@@ -1512,9 +1514,9 @@ class Stage3D {
 			u.setFloat(cone + 8, shadowLights.indexOf(light));
 			u.setFloat(cone + 12, 0);
 			var color = light.color, intensity = light.intensity;
-			u.setFloat(radiance, linear(color >>> 24) * intensity);
-			u.setFloat(radiance + 4, linear((color >>> 16) & 255) * intensity);
-			u.setFloat(radiance + 8, linear((color >>> 8) & 255) * intensity);
+			u.setFloat(radiance, linear(Color.getRed(color)) * intensity);
+			u.setFloat(radiance + 4, linear(Color.getGreen(color)) * intensity);
+			u.setFloat(radiance + 8, linear(Color.getBlue(color)) * intensity);
 			u.setFloat(radiance + 12, 0);
 		}
 		// Each shadow layer: its matrix, then params, extra and tint (each four floats a layer).
@@ -1549,28 +1551,28 @@ class Stage3D {
 	// its emission and the normal map's strength, its hit flash (as much as shows at the stage's time) and its rim light.
 	function writeMaterial(material:Material, u:Bytes):Void {
 		var color = material.baseColor;
-		u.setFloat(MATERIAL, linear(color >>> 24));
-		u.setFloat(MATERIAL + 4, linear((color >>> 16) & 255));
-		u.setFloat(MATERIAL + 8, linear((color >>> 8) & 255));
-		u.setFloat(MATERIAL + 12, (color & 255) / 255);
+		u.setFloat(MATERIAL, linear(Color.getRed(color)));
+		u.setFloat(MATERIAL + 4, linear(Color.getGreen(color)));
+		u.setFloat(MATERIAL + 8, linear(Color.getBlue(color)));
+		u.setFloat(MATERIAL + 12, Color.getAlpha(color) / 255);
 		u.setFloat(MATERIAL + 16, material.metallic);
 		u.setFloat(MATERIAL + 20, material.roughness);
 		u.setFloat(MATERIAL + 24, material.lit ? 1 : 0);
 		u.setFloat(MATERIAL + 28, 0);
 		var emissive = material.emissive, strength = material.emissiveStrength;
-		u.setFloat(MATERIAL + 32, linear(emissive >>> 24) * strength);
-		u.setFloat(MATERIAL + 36, linear((emissive >>> 16) & 255) * strength);
-		u.setFloat(MATERIAL + 40, linear((emissive >>> 8) & 255) * strength);
+		u.setFloat(MATERIAL + 32, linear(Color.getRed(emissive)) * strength);
+		u.setFloat(MATERIAL + 36, linear(Color.getGreen(emissive)) * strength);
+		u.setFloat(MATERIAL + 40, linear(Color.getBlue(emissive)) * strength);
 		u.setFloat(MATERIAL + 44, material.normalTexture == null ? 0 : material.normalScale);
 		var flash = material.flashColor;
-		u.setFloat(MATERIAL + 48, linear(flash >>> 24));
-		u.setFloat(MATERIAL + 52, linear((flash >>> 16) & 255));
-		u.setFloat(MATERIAL + 56, linear((flash >>> 8) & 255));
-		u.setFloat(MATERIAL + 60, material.flashAt(time) * (flash & 255) / 255);
-		var rim = material.rimColor, strength = (rim & 255) / 255;
-		u.setFloat(MATERIAL + 64, linear(rim >>> 24) * strength);
-		u.setFloat(MATERIAL + 68, linear((rim >>> 16) & 255) * strength);
-		u.setFloat(MATERIAL + 72, linear((rim >>> 8) & 255) * strength);
+		u.setFloat(MATERIAL + 48, linear(Color.getRed(flash)));
+		u.setFloat(MATERIAL + 52, linear(Color.getGreen(flash)));
+		u.setFloat(MATERIAL + 56, linear(Color.getBlue(flash)));
+		u.setFloat(MATERIAL + 60, material.flashAt(time) * Color.getAlpha(flash) / 255);
+		var rim = material.rimColor, strength = Color.getAlpha(rim) / 255;
+		u.setFloat(MATERIAL + 64, linear(Color.getRed(rim)) * strength);
+		u.setFloat(MATERIAL + 68, linear(Color.getGreen(rim)) * strength);
+		u.setFloat(MATERIAL + 72, linear(Color.getBlue(rim)) * strength);
 		u.setFloat(MATERIAL + 76, material.rimPower);
 	}
 

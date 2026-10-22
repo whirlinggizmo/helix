@@ -3,6 +3,7 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.graphics.Shader;
@@ -56,11 +57,11 @@ class App extends helix.App {
 		"obbbeeebbeeebbbo", "obbbbbbbbbbbbbbo", "obbbbbbbbbbbbbbo", "obbboooooooobbbo", ".obbbbbbbbbbbbo.", ".obbbbbbbbbbbbo.", "..oobbbbbbbboo..",
 		"..o.oo....oo.o..", ".oo..........oo."
 	];
-	// Its palette: a row a variant, a column an index (none, outline, body, eyes); 0xRRGGBBAA.
+	// Its palette: a row a variant, a column an index (none, outline, body, eyes); 0xAARRGGBB.
 	static var PALETTE = [
-		[0x00000000, 0x1a2a1aff, 0x58c858ff, 0xf5f5f5ff],
-		[0x00000000, 0x2a1414ff, 0xe05050ff, 0xffe040ff],
-		[0x00000000, 0x141a30ff, 0x5078f0ff, 0xf5f5f5ff]
+		[0x00000000, 0xff1a2a1a, 0xff58c858, 0xfff5f5f5],
+		[0x00000000, 0xff2a1414, 0xffe05050, 0xffffe040],
+		[0x00000000, 0xff141a30, 0xff5078f0, 0xfff5f5f5]
 	];
 	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var HELD_TIME = 2.;
@@ -107,7 +108,7 @@ class App extends helix.App {
 			var a = i / 24 * Math.PI * 2;
 			inline function channel(phase:Float):Int
 				return Std.int(127 + 127 * Math.sin(a + phase));
-			tints.push(channel(0) << 24 | channel(2.1) << 16 | channel(4.2) << 8 | 255);
+			tints.push(Color.fromChannels(channel(0), channel(2.1), channel(4.2)));
 		}
 		for (i in 0...NAMES.length) {
 			var sprite = new Sprite2D(null);
@@ -133,12 +134,12 @@ class App extends helix.App {
 		for (row in 0...PALETTE.length)
 			for (column in 0...4)
 				for (channel in 0...4)
-					colors.set((row * 4 + column) * 4 + channel, (PALETTE[row][column] >>> (24 - channel * 8)) & 255);
+					colors.set((row * 4 + column) * 4 + channel, (Color.toRgba(PALETTE[row][column]) >>> (24 - channel * 8)) & 255);
 		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
 		sprites[5].texture = creature;
 		sprites[5].setSize(112, 112);
 		// The effects: the sheet and the spin share an outline (one draw); each other one has its own.
-		outline = new SpriteOutline(0xffb020ff, 8);
+		outline = new SpriteOutline(0xffffb020, 8);
 		dissolve = new SpriteDissolve();
 		flash = new SpriteFlash();
 		swap = new PaletteSwap(palette);
@@ -233,7 +234,7 @@ class App extends helix.App {
 			if (input.isFramePressed(Key.R))
 				swap.row = (swap.row + 1) % PALETTE.length;
 			if (input.isFramePressed(Key.F))
-				flash.trigger(0xff3020ff, .4);
+				flash.trigger(0xffff3020, .4);
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot.
 		var time = pilot != null ? HELD_TIME : Time.clock.time;
@@ -293,7 +294,7 @@ class App extends helix.App {
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		batch.begin(camera);
 		stage.draw(batch, camera);
 		if (logo != null)
@@ -302,17 +303,17 @@ class App extends helix.App {
 		var line = vy + 36;
 		batch.effect = flash;
 		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects", vx + 12, line, 16, vw - 96,
-			0xf5f5f5ff)
+			0xfff5f5f5)
 			+ 4;
 		batch.effect = null;
 		var on = (value:Bool) -> value ? "on" : "off";
 		line += batch.drawTextWrapped('[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash',
 			vx
 			+ 12, line, 16, vw
-			- 96, 0xc8c8c8ff)
+			- 96, 0xffc8c8c8)
 			+ 4;
 		batch.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', vx + 12,
-			line, 16, vw - 96, 0xc8c8c8ff);
+			line, 16, vw - 96, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

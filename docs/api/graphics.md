@@ -14,6 +14,32 @@ How a pipeline's colors meet what the framebuffer has: replacing it, blended ove
 
 What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major, its first 64 bytes) whose y row it negates in such a pass.
 
+## Color
+
+*class* in `src/helix/graphics/Color.hx`
+
+Colors as HeliX holds them: 0xAARRGGBB integers, alpha in the top byte, as Haxe's libraries write them and as an editor's color picker reads a literal. Each channel is 0 to 255. Text names a color the CSS way, #RRGGBB or #RRGGBBAA (a scene file, a color picker's field), converted by fromRgba and toRgba.
+
+```haxe
+static var fromChannels(inline, null):(red:Int, green:Int, blue:Int, ?alpha:Int) -> Int
+static var getRed(inline, null):(color:Int) -> Int
+static var getGreen(inline, null):(color:Int) -> Int
+static var getBlue(inline, null):(color:Int) -> Int
+static var getAlpha(inline, null):(color:Int) -> Int
+static var withAlpha(inline, null):(color:Int, alpha:Int) -> Int
+static var fromRgba(inline, null):(rgba:Int) -> Int
+static var toRgba(inline, null):(color:Int) -> Int
+```
+
+- `fromChannels`: The color of these channels, each 0 to 255 (only its low 8 bits are taken), alpha opaque unless given.
+- `getRed`: color's red, 0 to 255.
+- `getGreen`: color's green, 0 to 255.
+- `getBlue`: color's blue, 0 to 255.
+- `getAlpha`: color's alpha, 0 (clear) to 255 (opaque).
+- `withAlpha`: color with its alpha replaced by alpha, 0 to 255 (only its low 8 bits are taken).
+- `fromRgba`: The color an 0xRRGGBBAA integer names (the CSS order, as text writes it).
+- `toRgba`: color as an 0xRRGGBBAA integer (the CSS order, as text writes it).
+
 ## CullFace
 
 *abstract* in `src/helix/graphics/PipelineDesc.hx`
@@ -88,7 +114,7 @@ static function readPixels(target:Int, done:ReadPixelsResult -> Void):Void
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
 - `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to red, green, blue and alpha, as its texels store them (0 to 1 in an RGBA8 target; a half-float one holds values past 1, as an HDR scene's light), and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
-- `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
+- `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xAARRGGBB) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
 - `applyScissor`: Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as applyViewport), until resetScissor or the pass ends; a pass begins unclipped. Throws outside a pass or for a size below 0.
 - `resetScissor`: Draws everywhere in the pass again. Throws outside a pass.
@@ -168,7 +194,7 @@ function shutdown():Void
 - `beginShadowPass`: Starts a depth-only pass drawing into layer layer of map (a createShadowMap handle), for depth-only pipelines: clears it to the farthest and sets the viewport to all of it. Before the screen's pass, outside any other; endTargetPass ends it. Throws inside a pass, for a handle that isn't a shadow map or a layer it hasn't.
 - `beginTargetPass`: Starts a pass drawing into target (a createRenderTarget handle): clears it to red, green, blue and alpha, as its texels store them (0 to 1 in an RGBA8 target; a half-float one holds values past 1, as an HDR scene's light), and its depth (if it has one) to the farthest, and sets the viewport to all of it. Before the screen's pass, outside any other. Throws inside a pass or for a handle that isn't a render target.
 - `endTargetPass`: Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open.
-- `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
+- `beginFrame`: Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xAARRGGBB) and the depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less.
 - `applyViewport`: Draws from now on into x, y, w, h in framebuffer pixels from the bottom-left. Throws outside a frame or for a size of 0 or less.
 - `applyScissor`: Draws from now on only inside x, y, w, h in framebuffer pixels from the bottom-left (as applyViewport), until resetScissor or the pass ends; a pass begins unclipped. Throws outside a pass or for a size below 0.
 - `resetScissor`: Draws everywhere in the pass again. Throws outside a pass.
@@ -336,7 +362,7 @@ function destroy():Void
 - `sceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
 - `add`: Adds effect at the end of the chain. False, changing nothing, when it is in the chain already.
 - `remove`: Takes effect out of the chain, freeing its intermediates (the effect stays its owner's). False when it isn't in the chain.
-- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to clearColor (0xRRGGBBAA; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass.
+- `beginScene`: Starts the frame's scene: a target pass into a width x height texture (the screen's size; half floats in an HDR chain), cleared to clearColor (0xAARRGGBB; in an HDR chain to the light its tone mapping shows as clearColor). Draw it as the screen; endScene ends it. Which effects draw this frame is taken here. Throws inside another pass.
 - `endScene`: Ends the scene's pass and draws the effects but the last (each that was enabled at beginScene, in order, with the tone mapping in an HDR chain), each its intermediates and then from the one before's result into a texture of the chain, at time seconds; the last's intermediates too, its last pass waiting for present.
 - `present`: Draws the processed frame over the open screen pass's viewport: the last effect over the others' result, or the frame as it is.
 - `destroy`: Frees its textures and buffer; the effects stay their owner's.
@@ -549,7 +575,7 @@ var textureSlots(get, never):Map<Int, Texture2D>
 - `new`: The parameters of shader.
 - `setValues`: Sets parameter name (a float, or a vector's or matrix's first components, an array's elements' in turn) to values; the rest keep theirs. False when the shader has no such parameter or the values don't fit it.
 - `setFloat`: Sets a float parameter. False, changing nothing, when the shader has no such parameter.
-- `setColor`: Sets a vector parameter to a color 0xRRGGBBAA, each channel 0..1 as it is (not decoded from sRGB). False, changing nothing, when the shader has no such parameter or it has fewer than 4 components.
+- `setColor`: Sets a vector parameter to a color 0xAARRGGBB, each channel 0..1 as it is (not decoded from sRGB). False, changing nothing, when the shader has no such parameter or it has fewer than 4 components.
 - `getValues`: The values a parameter was set to, or null for one never set (its value is then 0).
 - `setTexture`: Binds texture to the shader's own texture name (sampled as the texture's sampling says). False when the shader has no such texture of its own.
 - `getTexture`: The texture bound to name, or null.

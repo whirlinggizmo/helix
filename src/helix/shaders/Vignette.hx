@@ -6,7 +6,7 @@ class Vignette extends LibraryScreenEffect {
 	public function new(strength = .4) {
 		super("vignette", VignettePacked.text());
 		this.strength = strength;
-		color = 0x000000ff;
+		color = 0xff000000;
 		radius = .4;
 		softness = .6;
 	}
@@ -17,7 +17,7 @@ class Vignette extends LibraryScreenEffect {
 	function set_strength(value:Float):Float
 		return strength = writeFloat("strength", value, 0, 1);
 
-	/** What the corners go toward, 0xRRGGBBAA (sRGB as the frame is, alpha ignored): black by default. */
+	/** What the corners go toward, 0xAARRGGBB (sRGB as the frame is, alpha ignored): black by default. */
 	public var color(default, set):Int;
 
 	function set_color(value:Int):Int {

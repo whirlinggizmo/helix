@@ -26,9 +26,9 @@ class Game extends helix.App {
 
 	override public function frame(dt:Float):Void {
 		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x202840ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0x66bfffff);
+		batch.rect(40, 40, 320, 160, 0xff66bfff);
 		batch.end();
 		Graphics.endFrame();
 	}

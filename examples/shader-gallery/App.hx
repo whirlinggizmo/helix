@@ -3,6 +3,7 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
@@ -99,11 +100,11 @@ class App extends helix.App {
 		"obbbeeebbeeebbbo", "obbbbbbbbbbbbbbo", "obbbbbbbbbbbbbbo", "obbboooooooobbbo", ".obbbbbbbbbbbbo.", ".obbbbbbbbbbbbo.", "..oobbbbbbbboo..",
 		"..o.oo....oo.o..", ".oo..........oo."
 	];
-	// Its palette: a row a variant, a column an index (none, outline, body, eyes); 0xRRGGBBAA.
+	// Its palette: a row a variant, a column an index (none, outline, body, eyes); 0xAARRGGBB.
 	static var PALETTE = [
-		[0x00000000, 0x1a2a1aff, 0x58c858ff, 0xf5f5f5ff],
-		[0x00000000, 0x2a1414ff, 0xe05050ff, 0xffe040ff],
-		[0x00000000, 0x141a30ff, 0x5078f0ff, 0xf5f5f5ff]
+		[0x00000000, 0xff1a2a1a, 0xff58c858, 0xfff5f5f5],
+		[0x00000000, 0xff2a1414, 0xffe05050, 0xffffe040],
+		[0x00000000, 0xff141a30, 0xff5078f0, 0xfff5f5f5]
 	];
 
 	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
@@ -165,30 +166,30 @@ class App extends helix.App {
 	var checker:Texture2D;
 
 	// The parameters the surface shaders and the rim are made with, so one made again (switching back to it) keeps what the sliders and
-	// pickers set; colors 0xRRGGBBAA.
-	var unlitColor = 0xff7f00ff;
+	// pickers set; colors 0xAARRGGBB.
+	var unlitColor = 0xffff7f00;
 	var toonBands = 3;
 	var toonRimPower = 3.;
-	var toonShadowColor = 0x3a4150ff;
-	var toonRimColor = 0xffffff55;
+	var toonShadowColor = 0xff3a4150;
+	var toonRimColor = 0x55ffffff;
 	var rimPower = 2.;
-	var rimColor = 0xffffffcc;
+	var rimColor = 0xccffffff;
 	var flashAmount = .6;
 	var flashColor = 0xffffffff;
 	var dissolveAmount = .45;
 	var dissolveEdge = .06;
 	var dissolveScale = 1.;
 	var dissolveIntensity = 4.;
-	var dissolveEdgeColor = 0xff7a1eff;
+	var dissolveEdgeColor = 0xffff7a1e;
 	var waterAmplitude = .04;
 	var waterWavelength = .6;
 	var waterShininess = 64.;
-	var waterDeepColor = 0x0b2a4aff;
-	var waterShallowColor = 0x2a8f96ff;
-	var waterSkyColor = 0xa0b8d8ff;
-	var outlineColor = 0x101018ff;
+	var waterDeepColor = 0xff0b2a4a;
+	var waterShallowColor = 0xff2a8f96;
+	var waterSkyColor = 0xffa0b8d8;
+	var outlineColor = 0xff101018;
 	var outlineWidth = .02;
-	var silhouetteColor = 0x3fa9ff99;
+	var silhouetteColor = 0x993fa9ff;
 
 	// What's loaded: the car, her skeleton and parts, the logos.
 	var carPlaced = false;
@@ -221,19 +222,19 @@ class App extends helix.App {
 		orbit.targetY = .7;
 		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
-		sun.color = 0xfff4e4ff;
+		sun.color = 0xfffff4e4;
 		sun.intensity = 2;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
 		stage.add(sun);
 		var floor = new Material();
-		floor.baseColor = 0x5c6066ff;
+		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
 		stage.add(new Model(Mesh.plane(12, 8), floor));
 		// The sphere in the middle, finely divided for the water's waves.
 		var ball = new Material();
-		ball.baseColor = 0x3b82f6ff;
+		ball.baseColor = 0xff3b82f6;
 		ball.roughness = .35;
 		var sphere = new Model(Mesh.sphere(.55, 64, 128), ball);
 		sphere.setPosition(.5, FLOOR_Y + .55, -.2);
@@ -242,7 +243,7 @@ class App extends helix.App {
 		models.push(sphere);
 		// The wall before her: the stage's own shading, her silhouette shows through it.
 		var brick = new Material();
-		brick.baseColor = 0x9a7b5cff;
+		brick.baseColor = 0xff9a7b5c;
 		brick.roughness = .9;
 		var wall = new Model(Mesh.cube(1.1, .6, .1), brick);
 		wall.setPosition(2.15, FLOOR_Y + .3, 1.1);
@@ -250,8 +251,8 @@ class App extends helix.App {
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
 			var glow = new Material();
-			glow.baseColor = 0x000000ff;
-			glow.setEmissive(i == 0 ? 0xffd9a0ff : 0x9fd8ffff, 10);
+			glow.baseColor = 0xff000000;
+			glow.setEmissive(i == 0 ? 0xffffd9a0 : 0xff9fd8ff, 10);
 			var bulb = new Model(Mesh.sphere(.14), glow);
 			bulb.shadowCasting = false;
 			bulb.setPosition(i == 0 ? -.9 : 1.4, 1.9, i == 0 ? -.9 : -1.2);
@@ -275,7 +276,7 @@ class App extends helix.App {
 		for (row in 0...PALETTE.length)
 			for (column in 0...4)
 				for (channel in 0...4)
-					colors.set((row * 4 + column) * 4 + channel, (PALETTE[row][column] >>> (24 - channel * 8)) & 255);
+					colors.set((row * 4 + column) * 4 + channel, (Color.toRgba(PALETTE[row][column]) >>> (24 - channel * 8)) & 255);
 		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
 		// A checkerboard of 8 x 8 texels, drawn sharp: hard edges of strong contrast, where Fxaa shows; in a clear ring a texel wide, where
 		// the sprite outline shows (drawn 10 texels across, so its squares are as large as the other sprites' texels would make them).
@@ -315,7 +316,7 @@ class App extends helix.App {
 			effect.enabled = false;
 			post.add(effect);
 		}
-		spriteOutline = new SpriteOutline(0xffb020ff, 4);
+		spriteOutline = new SpriteOutline(0xffffb020, 4);
 		spriteFlash = new SpriteFlash();
 		spriteDissolve = new SpriteDissolve();
 		spriteDissolve.amount = .45;
@@ -929,23 +930,23 @@ class App extends helix.App {
 
 		// The scene and the sprites into the chain's texture, the effects, then the menu over it, outside them.
 		stage.drawShadows(camera);
-		post.beginScene(width, height, 0x14161cff);
+		post.beginScene(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(view);
 		sprites.draw(batch, view);
 		batch.end();
 		post.endScene(time);
-		Graphics.beginFrame(width, height, 0x000000ff);
+		Graphics.beginFrame(width, height, 0xff000000);
 		post.present();
 		batch.begin(view);
 		menu.draw(batch, view);
 		var title = chosen < 0 ? "nothing chosen" : entries[chosen].kind + " shader " + entries[chosen].name + (shown ? "" : " (off)");
-		batch.drawTextWrapped('HeliX shader gallery: $title', vx + 16, vy + 36, 18, vw - 32, 0xf5f5f5ff);
+		batch.drawTextWrapped('HeliX shader gallery: $title', vx + 16, vy + 36, 18, vw - 32, 0xfff5f5f5);
 		batch.drawTextWrapped('PageDown / PageUp: next / previous  X: off and on  F: flash  O: camera${chosen >= 0 && entries[chosen].name == "PaletteSwap" ? "  R: next row" : ""}${status == "" ? "" : "   " + status}',
 			vx
 			+ 16, vy
 			+ 60, 14, vw
-			- 32, 0xc8c8c8ff);
+			- 32, 0xffc8c8c8);
 		fps.draw(batch, vx + 16, vy + 10);
 		batch.end();
 		Graphics.endFrame();
@@ -977,7 +978,7 @@ typedef Setting = {
 	widget:Null<Slider>
 }
 
-/** A color of a shader's: its text, its value (0xRRGGBBAA), whether its alpha means anything (its picker then has an alpha bar), what it sets,
+/** A color of a shader's: its text, its value (0xAARRGGBB), whether its alpha means anything (its picker then has an alpha bar), what it sets,
 	and once made its panel, the dropdown there choosing among the shader's colors (when it has several) and its picker. */
 typedef ColorSetting = {
 	label:String,

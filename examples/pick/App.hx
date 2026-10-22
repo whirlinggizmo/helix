@@ -57,13 +57,13 @@ class App extends helix.App {
 		sun.lookAt(-.4, -1, -.5);
 		stage.add(sun);
 		var ground = new Material();
-		ground.baseColor = 0x3a3f4aff;
+		ground.baseColor = 0xff3a3f4a;
 		var floor = new Model(Mesh.plane(14, 14), ground);
 		floor.name = "the ground";
 		stage.add(floor);
 		var red = new Material(), blue = new Material();
-		red.baseColor = 0xd2503cff;
-		blue.baseColor = 0x3c78d2ff;
+		red.baseColor = 0xffd2503c;
+		blue.baseColor = 0xff3c78d2;
 		var cube = new Model(Mesh.cube(1.2, 1.2, 1.2), red);
 		cube.name = "a cube";
 		cube.setPosition(-3, .6, 1);
@@ -73,7 +73,7 @@ class App extends helix.App {
 		sphere.name = "a sphere";
 		sphere.setPosition(-1, .8, -1.5);
 		stage.add(sphere);
-		var label = new Text3D("PICK ME", .5, 0xf5d25aff);
+		var label = new Text3D("PICK ME", .5, 0xfff5d25a);
 		label.name = "a text";
 		// Text lets picks through unless asked.
 		label.pickable = true;
@@ -92,7 +92,7 @@ class App extends helix.App {
 
 	// The logo's texture in: a sprite of it, pickable.
 	function placeLogo(texture:Texture2D):Void {
-		var logo = new Sprite3D(texture, 0x7ab4ffff);
+		var logo = new Sprite3D(texture, 0xff7ab4ff);
 		logo.name = "a sprite";
 		logo.setSpriteSize(1.4, 1.4);
 		logo.setPosition(-3, 2.6, -1);
@@ -168,25 +168,25 @@ class App extends helix.App {
 			vw = presentation.visibleWidth;
 		picked = stage.pick(camera, input.pointerX, input.pointerY, hit);
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		stage.draw(camera);
 		batch3D.begin(camera);
 		if (picked != null) {
 			var x = picked.getPoint(0),
 				y = picked.getPoint(1),
 				z = picked.getPoint(2);
-			batch3D.sphere(x, y, z, .06, 0xffe040ff);
-			batch3D.line(x, y, z, x + picked.getNormal(0) * .6, y + picked.getNormal(1) * .6, z + picked.getNormal(2) * .6, 0x40ff80ff);
+			batch3D.sphere(x, y, z, .06, 0xffffe040);
+			batch3D.line(x, y, z, x + picked.getNormal(0) * .6, y + picked.getNormal(1) * .6, z + picked.getNormal(2) * .6, 0xff40ff80);
 		}
 		batch3D.end();
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX pick: move the pointer over anything", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var line = picked == null ? "nothing under the pointer" : '${nameOf(picked.node)}   ${Math.round(picked.distance * 100) / 100} away   at '
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
-		y += batch.drawTextWrapped(line, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
-		batch.drawTextWrapped("O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped(line, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
+		batch.drawTextWrapped("O: the camera" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

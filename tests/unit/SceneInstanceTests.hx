@@ -235,9 +235,9 @@ class SceneInstanceTests {
 		var world = instance.node("world");
 		check(world != null && !world.enabled && world.visible && world.childCount == 10, "The root group, disabled, with its ten children");
 		var sun = Std.downcast(instance.node("world/sun"), DirectionalLight);
-		check(sun != null && near(sun.rotationX, -.6) && near(sun.rotationY, .7) && near(sun.rotationZ, 0) && sun.color == 0xfff4e0ff
+		check(sun != null && near(sun.rotationX, -.6) && near(sun.rotationY, .7) && near(sun.rotationZ, 0) && sun.color == 0xfffff4e0
 			&& sun.intensity == 3.5 && sun.shadowCasting && sun.shadowDistance == 35 && sun.shadowMapSize == 1024 && sun.shadowStrength == .8
-			&& sun.shadowColor == 0x102040ff,
+			&& sun.shadowColor == 0xff102040,
 			"A directional light: its rotation and every property");
 		var lamp = Std.downcast(instance.node("world/lamp"), PointLight);
 		check(lamp != null && lamp.x == 1 && lamp.y == 2 && lamp.z == 3 && lamp.range == 10 && lamp.intensity == 2, "A point light at its position");
@@ -248,11 +248,11 @@ class SceneInstanceTests {
 			&& near(chase.minAspect, 1.777778) && chase.projection == Perspective,
 			"A camera's projection, perspective unsaid");
 		var glow = Std.downcast(instance.node("world/glow"), Sprite3D);
-		check(glow != null && glow.tint == 0xffffff80 && glow.regionX == 8 && glow.regionWidth == 16 && glow.spriteWidth == 2 && glow.pivotX == 0
+		check(glow != null && glow.tint == 0x80ffffff && glow.regionX == 8 && glow.regionWidth == 16 && glow.spriteWidth == 2 && glow.pivotX == 0
 			&& glow.pivotY == 1 && glow.facing == Upright && glow.alphaMode == Add && glow.alphaCutoff == .25 && !glow.pickable && held.exists("fx/glow.png"),
 			"A sprite: region, size, pivot, facing, alpha, its flag, its texture asked for");
 		var label = Std.downcast(instance.node("world/label"), Text3D);
-		check(label != null && label.text == 'Start "here"\n' && label.textSize == .8 && label.color == 0x80ff80ff && label.pivotY == 0
+		check(label != null && label.text == 'Start "here"\n' && label.textSize == .8 && label.color == 0xff80ff80 && label.pivotY == 0
 			&& label.facing == Free && held.exists("fonts/ui.ttf"),
 			"A text: its value, size, color, pivot, facing, its font asked for");
 		var dust = Std.downcast(instance.node("world/dust"), Particles3D);
@@ -293,7 +293,7 @@ class SceneInstanceTests {
 			wheel = instance.node("world/car/body/wheel");
 		check(body != null && body.parent == car && wheel != null && !wheel.visible, "The prefab's nodes are under its node, as the prefab says");
 		check(body.material != null
-			&& body.material.baseColor == 0x2040c0ff
+			&& body.material.baseColor == 0xff2040c0
 			&& body.material.roughness == .5, "The override's material replaced the body's");
 		check(stage.exposure == 0
 			&& logged(["prefabs/car.scene", "stage section is ignored"]), "A prefab's stage section is logged and ignored");
@@ -308,7 +308,7 @@ class SceneInstanceTests {
 			&& chaser.label == "go"
 			&& !chaser.on
 			&& chaser.offset.join(",") == "0,1.5,-6"
-			&& chaser.tint == 0xff000080,
+			&& chaser.tint == 0x80ff0000,
 			"A behavior with every prop type, its reference resolved by name to the prefab node");
 		check(driver != null && driver.node == car && driver.topSpeed == 60, "A behavior on the prefab node");
 		pass.update(0);
@@ -346,7 +346,7 @@ class SceneInstanceTests {
 		check(bodyChange != null
 			&& same(bodyChange.properties.get("shadowCasting"), Flag(false))
 			&& bodyChange.material != null
-			&& bodyChange.material.baseColor == 0x2040c0ff
+			&& bodyChange.material.baseColor == 0xff2040c0
 			&& bodyChange.material.roughness == null,
 			"A prefab node's changed property joins its override, the material saying only what differs");
 		check(wheelChange != null && wheelChange.visible == true && wheelChange.position == null, "A flag turned back on is an override saying so");
@@ -484,7 +484,7 @@ class SceneInstanceTests {
 
 		// Changes under the prefabs and nodes added by the game.
 		hub.setPosition(2, 0, 0);
-		(cast m : Model).tint = 0xff0000ff;
+		(cast m : Model).tint = 0xffff0000;
 		var tag = new Text3D("tag");
 		tag.name = "tag";
 		wheel.addChild(tag);
@@ -500,7 +500,7 @@ class SceneInstanceTests {
 		var one = again.nodes[0];
 		check(one.overrides.get("wheel/hub").position.join(",") == "2,0,0", "A moved prefab node's override follows it");
 		var mChange = one.overrides.get("inner/m");
-		check(mChange != null && same(mChange.properties.get("tint"), Color(0xff0000ff)) && mChange.material == null,
+		check(mChange != null && same(mChange.properties.get("tint"), Color(0xffff0000)) && mChange.material == null,
 			"A nested prefab's model changed is an override by its path from the outer prefab");
 		var wheelChange = one.overrides.get("wheel");
 		check(wheelChange.children.length == 2
@@ -556,7 +556,7 @@ class SceneInstanceTests {
 			&& gun.childCount == 1
 			&& gun.getChild(0).name == "CharacterArmature", "The file's roots moved under the entry's node");
 		var model = Std.downcast(instance.node('gun/$pistol'), Model);
-		check(model != null && model.mesh != null && model.tint == 0x00ff00ff && !model.shadowCasting && model.shadowReceiving && !model.visible,
+		check(model != null && model.mesh != null && model.tint == 0xff00ff00 && !model.shadowCasting && model.shadowReceiving && !model.visible,
 			'The file\'s model got the entry\'s properties, then the override\'s: ${model == null ? "no model" : StringTools.hex(model.tint) + " " + model.mesh + " " + model.shadowCasting + " " + model.shadowReceiving + " " + model.visible} $log');
 		var foot = instance.node("gun/CharacterArmature/Root/Foot.L");
 		check(foot != null
@@ -662,13 +662,13 @@ class SceneInstanceTests {
 		check(SceneKinds.tonemapOf("aces") == Aces && SceneKinds.tonemapOf("filmic") == null && SceneKinds.tonemapName(None) == "none",
 			"Tone mappings by name");
 		var material = new SceneMaterial();
-		material.baseColor = 0x12345678;
+		material.baseColor = 0x78123456;
 		material.metallic = .25;
 		material.roughness = .75;
 		material.texture = "mat.png";
 		material.normalTexture = "mat_n.png";
 		material.normalScale = 2;
-		material.emissive = 0xff8800ff;
+		material.emissive = 0xffff8800;
 		material.emissiveStrength = 3;
 		material.doubleSided = true;
 		var model = new Model(Mesh.cube(1, 1, 1), new Material());
@@ -678,8 +678,8 @@ class SceneInstanceTests {
 		release("mat_n.png", pixel);
 		decoding.poll();
 		var read = SceneKinds.readMaterial(model);
-		check(model.material != before && read.baseColor == 0x12345678 && read.metallic == .25 && read.roughness == .75 && read.texture == "mat.png"
-			&& read.normalTexture == "mat_n.png" && read.normalScale == 2 && read.emissive == 0xff8800ff && read.emissiveStrength == 3
+		check(model.material != before && read.baseColor == 0x78123456 && read.metallic == .25 && read.roughness == .75 && read.texture == "mat.png"
+			&& read.normalTexture == "mat_n.png" && read.normalScale == 2 && read.emissive == 0xffff8800 && read.emissiveStrength == 3
 			&& read.doubleSided == true,
 			"A material applied reads back every value, its textures by path");
 		var partial = new SceneMaterial();
@@ -753,7 +753,7 @@ class SceneInstanceTests {
 			&& ground.mesh != null
 			&& ground.mesh.vertexCount == 16
 			&& ground.mesh.maxX == 200
-			&& ground.material.baseColor == 0x9bbf7cff
+			&& ground.material.baseColor == 0xff9bbf7c
 			&& ground.material.roughness == 1
 			&& !ground.shadowCasting,
 			"A plane of two subdivisions: 16 vertices, its size, the inline material");
@@ -788,7 +788,7 @@ class SceneInstanceTests {
 			case [_, Text, _]: Text("elsewhere");
 			case [_, Flag, Flag(v)]: Flag(!v);
 			case [_, Numbers(count), _]: Numbers([for (i in 0...count) i + 1.]);
-			case [_, Color, _]: Color(0x12345678);
+			case [_, Color, _]: Color(0x78123456);
 			case [_, Reference, _]: Reference("n");
 			case _: throw 'The table of ${property.name} has a type its default doesn\'t match';
 		}

@@ -9,7 +9,7 @@ class ModelPass {
 	/** The model it draws. */
 	public var model(default, null):Model;
 
-	/** Its color, 0xRRGGBBAA: a display color (sRGB, written as it is, as sprites' are), its alpha blending a silhouette over what hides it. */
+	/** Its color, 0xAARRGGBB: a display color (sRGB, written as it is, as sprites' are), its alpha blending a silhouette over what hides it. */
 	public var color:Int;
 
 	/** Whether it draws: true to start. */

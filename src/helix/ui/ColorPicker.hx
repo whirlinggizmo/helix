@@ -1,11 +1,12 @@
 package helix.ui;
 
+import helix.graphics.Color;
 import helix.render2d.Font2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
 
-/** A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and
+/** A color, 0xAARRGGBB, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and
 	brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of
 	the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta
 	and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field
@@ -32,8 +33,8 @@ class ColorPicker extends Widget {
 	// A key's step, as a fraction of the way.
 	static inline var STEP = 1 / 20;
 	// The checkerboard's light and dark squares under what has alpha.
-	static inline var LIGHT = 0xccccccff;
-	static inline var DARK = 0x888888ff;
+	static inline var LIGHT = 0xffcccccc;
+	static inline var DARK = 0xff888888;
 
 	var face:Shape2D;
 	var squareHue:Shape2D;
@@ -103,13 +104,13 @@ class ColorPicker extends Widget {
 		side = theme.colorPickerWidth;
 		face = rectangle(0);
 		face.pickable = true;
-		squareHue = rectangle(0xff0000ff);
+		squareHue = rectangle(0xffff0000);
 		whiteRamp = rectangle(0xffffffff);
 		whiteRamp.shading = Across;
-		whiteRamp.endColor = 0xffffff00;
+		whiteRamp.endColor = 0x00ffffff;
 		blackRamp = rectangle(0x00000000);
 		blackRamp.shading = Down;
-		blackRamp.endColor = 0x000000ff;
+		blackRamp.endColor = 0xff000000;
 		for (n in [face, squareHue, whiteRamp, blackRamp, hueGroup, alphaGroup, swatchGroup])
 			root.addChild(n);
 		// The hue bar: six bands, red through yellow, green, cyan, blue and magenta to red, between round ends of red.
@@ -120,8 +121,8 @@ class ColorPicker extends Widget {
 			hueBands.push(band);
 			hueGroup.addChild(band);
 		}
-		hueStart = end(hueGroup, false, 0xff0000ff);
-		hueEnd = end(hueGroup, true, 0xff0000ff);
+		hueStart = end(hueGroup, false, 0xffff0000);
+		hueEnd = end(hueGroup, true, 0xffff0000);
 		// The alpha bar: a checkerboard in its rounded shape, under the color from clear to opaque, its right end round in the opaque color.
 		alphaBase = Shape2D.polygon(capsule(0, 0, thickness * 2, thickness), LIGHT);
 		alphaBase.pickable = false;
@@ -140,7 +141,7 @@ class ColorPicker extends Widget {
 		swatchEdge.outline = 1.5;
 		swatchBase.visible = swatchChecks.enabled = hasAlpha;
 		// The handles: the square's a ring, the bars' discs, white over a dark shadow so they show on any color.
-		squareShadow = mark(Shape2D.circle(6, 0x00000090), 4);
+		squareShadow = mark(Shape2D.circle(6, 0x90000000), 4);
 		squareMark = mark(Shape2D.circle(6, 0xffffffff), 2);
 		hueKnob = new Handle(root, theme);
 		alphaKnob = new Handle(root, theme);
@@ -316,7 +317,7 @@ class ColorPicker extends Widget {
 	function formatText(color:Int):String
 		return format == Hex ? formatHex(color, hasAlpha) : formatRgba(color, hasAlpha);
 
-	/** Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black;
+	/** Its color, 0xAARRGGBB. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black;
 		without alpha, the alpha is 0xff whatever is assigned. */
 	public var color(get, set):Int;
 
@@ -325,15 +326,15 @@ class ColorPicker extends Widget {
 
 	function set_color(value:Int):Int {
 		if (!hasAlpha)
-			value = value | 0xff;
+			value = Color.withAlpha(value, 255);
 		// The color it shows already: nothing to work out (hue 1 and 0 are both red).
 		if (value == get_color())
 			return value;
-		var r = (value >>> 24) / 255,
-			g = ((value >>> 16) & 255) / 255,
-			b = ((value >>> 8) & 255) / 255;
+		var r = Color.getRed(value) / 255,
+			g = Color.getGreen(value) / 255,
+			b = Color.getBlue(value) / 255;
 		var max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b)), d = max - min;
-		a = (value & 255) / 255;
+		a = Color.getAlpha(value) / 255;
 		v = max;
 		if (max > 0)
 			s = d / max;
@@ -381,15 +382,15 @@ class ColorPicker extends Widget {
 	/** Whether its color changed this frame: dragged, nudged by keys or typed. */
 	public var changed(default, null):Bool = false;
 
-	/** The color 0xRRGGBBAA of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and
+	/** The color 0xAARRGGBB of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and
 		alpha (0 to 255), each channel rounded to the nearest of 255. */
 	public static function fromHsv(hue:Float, saturation:Float, brightness:Float, alpha = 0xff):Int {
 		hue = clamp(hue);
 		saturation = clamp(saturation);
 		brightness = clamp(brightness);
 		alpha = alpha < 0 ? 0 : alpha > 255 ? 255 : alpha;
-		return (channel(5, hue, saturation,
-			brightness) << 24) | (channel(3, hue, saturation, brightness) << 16) | (channel(1, hue, saturation, brightness) << 8) | alpha;
+		return Color.fromChannels(channel(5, hue, saturation, brightness), channel(3, hue, saturation, brightness), channel(1, hue, saturation, brightness),
+			alpha);
 	}
 
 	// One channel of an HSV color, 0 to 255: n 5 for red, 3 for green, 1 for blue.
@@ -399,7 +400,7 @@ class ColorPicker extends Widget {
 		return Math.round((brightness - brightness * saturation * f) * 255);
 	}
 
-	/** The color text names, 0xRRGGBBAA: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and
+	/** The color text names, 0xAARRGGBB: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and
 		with spaces around. Null for anything else. */
 	public static function parseHex(text:String):Null<Int> {
 		text = StringTools.trim(text);
@@ -417,14 +418,14 @@ class ColorPicker extends Widget {
 				return null;
 			value = (value << 4) | digit;
 		}
-		return text.length == 6 ? (value << 8) | 0xff : value;
+		return Color.fromRgba(text.length == 6 ? (value << 8) | 0xff : value);
 	}
 
 	/** color as lowercase hex, RRGGBBAA, or RRGGBB without alpha. */
 	public static function formatHex(color:Int, alpha:Bool):String
-		return alpha ? StringTools.hex(color, 8).toLowerCase() : StringTools.hex(color >>> 8, 6).toLowerCase();
+		return alpha ? StringTools.hex(Color.toRgba(color), 8).toLowerCase() : StringTools.hex(color & 0xffffff, 6).toLowerCase();
 
-	/** The color text names, 0xRRGGBBAA: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits),
+	/** The color text names, 0xAARRGGBB: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits),
 		apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else. */
 	public static function parseRgba(text:String):Null<Int> {
 		text = StringTools.trim(text);
@@ -454,13 +455,13 @@ class ColorPicker extends Widget {
 		values.push(value);
 		if (values.length != 3 && values.length != 4)
 			return null;
-		return (values[0] << 24) | (values[1] << 16) | (values[2] << 8) | (values.length == 4 ? values[3] : 0xff);
+		return Color.fromChannels(values[0], values[1], values[2], values.length == 4 ? values[3] : 255);
 	}
 
 	/** color's channels in decimal, 0 to 255 each, apart by a space: r g b a, or r g b without alpha. */
 	public static function formatRgba(color:Int, alpha:Bool):String {
-		var text = '${color >>> 24} ${(color >>> 16) & 255} ${(color >>> 8) & 255}';
-		return alpha ? '$text ${color & 255}' : text;
+		var text = '${Color.getRed(color)} ${Color.getGreen(color)} ${Color.getBlue(color)}';
+		return alpha ? '$text ${Color.getAlpha(color)}' : text;
 	}
 
 	static function clamp(value:Float):Float
@@ -638,7 +639,8 @@ class ColorPicker extends Widget {
 		}
 		hueStart.setPosition(r, middle);
 		hueEnd.setPosition(hw - r, middle);
-		var opaque = color | 0xff, clear = color & 0xffffff00;
+		var opaque = Color.withAlpha(color, 255),
+			clear = Color.withAlpha(color, 0);
 		if (alphaLayout != null) {
 			var aw = alphaLayout.width;
 			alphaRamp.setPosition(r, top);

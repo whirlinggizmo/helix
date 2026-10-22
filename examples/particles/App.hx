@@ -75,7 +75,7 @@ class App extends helix.App {
 		fountain.setVelocity(0, 9, 0, .22, .15);
 		fountain.setGravity(0, -9.8, 0);
 		fountain.setSize(.22, .12, .4);
-		fountain.setColor(0x96d2ffe6, 0x3c78ff00);
+		fountain.setColor(0xe696d2ff, 0x003c78ff);
 		fountain.setAlphaMode(Blend);
 		place(fountain, 0, .2, 0);
 		fountain.prewarm(2);
@@ -89,7 +89,7 @@ class App extends helix.App {
 		sparks.inheritVelocity = .4;
 		sparks.stretch = .04;
 		sparks.setSize(.08, .02, .5);
-		sparks.setColor(0xffdc78ff, 0xff3c0a00);
+		sparks.setColor(0xffffdc78, 0x00ff3c0a);
 		sparksNode = place(sparks, 3.5, 1.5, 0);
 
 		smoke = new Emitter(null, 512);
@@ -104,10 +104,10 @@ class App extends helix.App {
 		smoke.addSizeKey(.15, 1.4);
 		smoke.addSizeKey(1, 3.6);
 		smoke.clearColorKeys();
-		smoke.addColorKey(0, 0x28242200);
-		smoke.addColorKey(.1, 0x322e2cbe);
-		smoke.addColorKey(.5, 0x82828c78);
-		smoke.addColorKey(1, 0xaaaab400);
+		smoke.addColorKey(0, 0x00282422);
+		smoke.addColorKey(.1, 0xbe322e2c);
+		smoke.addColorKey(.5, 0x7882828c);
+		smoke.addColorKey(1, 0x00aaaab4);
 		smoke.setAlphaMode(Blend);
 		place(smoke, -5, 1.5, -2);
 		smoke.prewarm(5);
@@ -125,11 +125,11 @@ class App extends helix.App {
 		flame.addSizeKey(.3, 1.1);
 		flame.addSizeKey(1, .4);
 		flame.clearColorKeys();
-		flame.addColorKey(0, 0xffebbe00);
-		flame.addColorKey(.08, 0xffebbe6e);
-		flame.addColorKey(.25, 0xff962864);
-		flame.addColorKey(.65, 0xc8320f3c);
-		flame.addColorKey(1, 0x500f0500);
+		flame.addColorKey(0, 0x00ffebbe);
+		flame.addColorKey(.08, 0x6effebbe);
+		flame.addColorKey(.25, 0x64ff9628);
+		flame.addColorKey(.65, 0x3cc8320f);
+		flame.addColorKey(1, 0x00500f05);
 		place(flame, -5, .3, -2);
 		flame.prewarm(1);
 
@@ -142,8 +142,8 @@ class App extends helix.App {
 		confetti.drag = .8;
 		confetti.setSize(12, 6, .5);
 		confetti.setSpin(-8, 8);
-		confetti.setColor(0xffffffff, 0xffffff00);
-		for (c in [0xe62937ff, 0xffcb00ff, 0x00e430ff, 0x66bfffff, 0x873cbeff])
+		confetti.setColor(0xffffffff, 0x00ffffff);
+		for (c in [0xffe62937, 0xffffcb00, 0xff00e430, 0xff66bfff, 0xff873cbe])
 			confetti.addPaletteColor(c);
 		confetti.setAlphaMode(Blend);
 		confettiNode = new Particles2D(confetti);
@@ -200,17 +200,17 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x0e1018ff);
+		Graphics.beginFrame(width, height, 0xff0e1018);
 		grid.begin(camera);
-		grid.grid(24, 1, 0x50505aff);
+		grid.grid(24, 1, 0xff50505a);
 		grid.end();
 		stage.draw(camera);
 		batch.begin(hud);
 		flat.draw(batch, hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX particles", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
+		y += batch.drawTextWrapped("HeliX particles", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
 		batch.drawTextWrapped('click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.drawCallCount} draws', vx + 12, y, 16,
-			vw - 24, 0xc8c8c8ff);
+			vw - 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

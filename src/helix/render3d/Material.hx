@@ -1,10 +1,11 @@
 package helix.render3d;
 
+import helix.graphics.Color;
 import helix.graphics.Shader;
 import helix.graphics.ShaderParameters;
 import helix.render2d.Texture2D;
 
-/** How a model's surface looks: glTF's metallic-roughness model. A base color (0xRRGGBBAA, its color sRGB-encoded as the convention's colors
+/** How a model's surface looks: glTF's metallic-roughness model. A base color (0xAARRGGBB, its color sRGB-encoded as the convention's colors
 	are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how
 	rough (0..1) it is, an optional normal map (linear, tangent space, green up) and its strength, light it gives off (emissive), and
 	whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw
@@ -22,7 +23,7 @@ class Material {
 	/** White, not metallic, roughness 0.5, lit, untextured, giving off no light. */
 	public function new() {}
 
-	/** The base color, 0xRRGGBBAA. */
+	/** The base color, 0xAARRGGBB. */
 	public var baseColor:Int = 0xffffffff;
 
 	/** The base color texture, or null for none (white). */
@@ -61,13 +62,13 @@ class Material {
 		return value;
 	}
 
-	/** The light it gives off, 0xRRGGBBAA (sRGB, alpha ignored); black for none. */
-	public var emissive(default, null):Int = 0x000000ff;
+	/** The light it gives off, 0xAARRGGBB (sRGB, alpha ignored); black for none. */
+	public var emissive(default, null):Int = 0xff000000;
 
 	/** How bright its emissive light is: the color times this. */
 	public var emissiveStrength(default, null):Float = 1.;
 
-	/** Gives it light of its own, color (0xRRGGBBAA, sRGB) times strength, lit or not. False for a strength under 0. */
+	/** Gives it light of its own, color (0xAARRGGBB, sRGB) times strength, lit or not. False for a strength under 0. */
 	public function setEmissive(color:Int, strength = 1.):Bool {
 		if (!(strength >= 0))
 			return false;
@@ -102,14 +103,14 @@ class Material {
 		return parameters;
 
 	// The hit flash (helix.shaders.HitFlash) and rim light (helix.shaders.Rim) any material shows, drawn by the stage's lit program and every
-	// surface shader alike: off until one is attached. The flash: its color (0xRRGGBBAA, sRGB, its alpha how strong), how much of it (0..1),
+	// surface shader alike: off until one is attached. The flash: its color (0xAARRGGBB, sRGB, its alpha how strong), how much of it (0..1),
 	// and when fading, over how many seconds of the stage's time (0: held), from when a stage first drew it (NaN until then).
 	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashColor = 0xffffffff;
 	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashAmount = 0.;
 	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashSeconds = 0.;
 	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashStart = Math.NaN;
-	// The rim: its color (0xRRGGBBAA, sRGB, its alpha how strong; black for none) and power (how tight to the silhouette, above 0).
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimColor = 0x000000ff;
+	// The rim: its color (0xAARRGGBB, sRGB, its alpha how strong; black for none) and power (how tight to the silhouette, above 0).
+	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimColor = 0xff000000;
 	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimPower = 3.;
 
 	// How much of the flash shows at the stage's time: held, or fading from all of it to none over its seconds since a stage first drew it.
@@ -127,7 +128,7 @@ class Material {
 	public var blended(get, set):Bool;
 
 	function get_blended():Bool
-		return blendAlways || baseColor & 255 < 255;
+		return blendAlways || Color.getAlpha(baseColor) < 255;
 
 	function set_blended(value:Bool):Bool {
 		blendAlways = value;

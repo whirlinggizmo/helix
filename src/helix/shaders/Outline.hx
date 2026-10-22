@@ -22,9 +22,9 @@ class Outline extends ModelPass {
 		return value;
 	}
 
-	/** Outlines model in color (0xRRGGBBAA, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by
+	/** Outlines model in color (0xAARRGGBB, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by
 		default; under 0 is 0). */
-	public function new(model:Model, color = 0x000000ff, width = .02) {
+	public function new(model:Model, color = 0xff000000, width = .02) {
 		super(model, color, 0, false);
 		this.width = width;
 	}

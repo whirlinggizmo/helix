@@ -52,7 +52,7 @@ enum BehaviorPropType {
 	/** An `Array<Float>` (the type declared on the field). */
 	FloatsProp;
 
-	/** An `Int` holding a color, 0xRRGGBBAA, marked `@:prop("color")`: a file writes it `"#RRGGBB"` or `"#RRGGBBAA"`. */
+	/** An `Int` holding a color, 0xAARRGGBB, marked `@:prop("color")`: a file writes it `"#RRGGBB"` or `"#RRGGBBAA"`. */
 	ColorProp;
 
 	/** A `helix.render3d.Node3D`, a reference to a node of the file (`"@name"` or `"@path/from/root"`), null until resolved. */

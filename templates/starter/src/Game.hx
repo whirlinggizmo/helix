@@ -17,10 +17,10 @@ class Game extends helix.App {
 	override public function frame(dt:Float):Void {
 		// A world unit a logical pixel, from the top left: an unsized camera covers the framebuffer.
 		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x202840ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0x66bfffff);
-		batch.drawText("{title}", 60, 90, 48, 0x102030ff);
+		batch.rect(40, 40, 320, 160, 0xff66bfff);
+		batch.drawText("{title}", 60, 90, 48, 0xff102030);
 		batch.end();
 		Graphics.endFrame();
 	}

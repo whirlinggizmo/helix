@@ -122,32 +122,32 @@ class App extends helix.App {
 		// Framed for 16:9: everything on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		sun = new DirectionalLight();
-		sun.color = 0xfff4e4ff;
+		sun.color = 0xfffff4e4;
 		sun.intensity = 1.5;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
 		stage.add(sun);
 		lamp = new PointLight();
-		lamp.color = 0x78beffff;
+		lamp.color = 0xff78beff;
 		lamp.intensity = 9;
 		lamp.range = 8;
 		stage.add(lamp);
 		var glow = new Material();
 		glow.lit = false;
-		glow.baseColor = 0x87ceebff;
+		glow.baseColor = 0xff87ceeb;
 		marker = new Model(Mesh.sphere(.05), glow);
 		marker.shadowCasting = false;
 		stage.add(marker);
 		// The floor: drawn by the example's own shader once it's loaded (its squares' colors times the material's), the stage's shading until then.
-		floor.baseColor = 0x808084ff;
+		floor.baseColor = 0xff808084;
 		floor.roughness = .8;
 		var plane = new Model(Mesh.plane(8, 6), floor);
 		plane.setPosition(0, FLOOR_Y, 0);
 		stage.add(plane);
 		// Dissolving: both sides drawn, so the inside shows through the holes.
 		var dissolving = new Material();
-		dissolving.baseColor = 0x8c9bb4ff;
+		dissolving.baseColor = 0xff8c9bb4;
 		dissolving.doubleSided = true;
 		dissolve = new Dissolve(dissolving);
 		// Large holes: the noise's cells a quarter of a unit, four across the sphere.
@@ -163,13 +163,13 @@ class App extends helix.App {
 		// The library's Unlit: a flat color, no light, and nothing to load.
 		var flat = new Material();
 		unlit = new Unlit(flat);
-		unlit.color = 0xff8a00ff;
+		unlit.color = 0xffff8a00;
 		var cube = new Model(Mesh.cube(.3, .3, .3), flat);
 		cube.setPosition(0, 1.05, 0);
 		cube.setRotation(.5, .7, 0);
 		stage.add(cube);
 		// A low wall before the character, the stage's own shading: her silhouette shows through it.
-		wallMaterial.baseColor = 0x9a7b5cff;
+		wallMaterial.baseColor = 0xff9a7b5c;
 		wallMaterial.roughness = .9;
 		var wall = new Model(Mesh.cube(.9, .45, .08), wallMaterial);
 		wall.setPosition(-.85, FLOOR_Y + .225, 1.65);
@@ -216,7 +216,7 @@ class App extends helix.App {
 		var skinned = [], rigid = [];
 		node.collectModels(skinned, rigid);
 		for (model in rigid)
-			outlines.push(new Outline(model, 0x101018ff, .03));
+			outlines.push(new Outline(model, 0xff101018, .03));
 	}
 
 	// The character's skeleton in: her copy of it in front, holding her idle clip's first pose (or playing it), wearing the parts already in.
@@ -251,7 +251,7 @@ class App extends helix.App {
 			if (model.bindSkeleton(character)) {
 				model.parent = null;
 				character.addChild(model);
-				outlines.push(new Outline(model, 0x101018ff, .012));
+				outlines.push(new Outline(model, 0xff101018, .012));
 				silhouettes.push(new Silhouette(model));
 			} else
 				status = '${model.name} names a joint the skeleton hasn\'t';
@@ -333,7 +333,7 @@ class App extends helix.App {
 			}
 			if (input.isFramePressed(Key.F))
 				for (flash in flashes)
-					flash.trigger(0xff3020ff, .25);
+					flash.trigger(0xffff3020, .25);
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, her pose with it.
 		var time = pilot != null ? heldTime : Time.clock.time;
@@ -360,12 +360,12 @@ class App extends helix.App {
 			vw = presentation.visibleWidth;
 
 		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
 		y += batch.drawTextWrapped("HeliX shaders: the library's surface shaders and passes, and the example's own (the floor)", vx + 12, y, 20, vw - 24,
-			0xf5f5f5ff)
+			0xfff5f5f5)
 			+ 3;
 		var on = (value:Bool) -> value ? "on" : "off";
 		y += batch.drawTextWrapped('[1] sun ${on(sun.visible)}  [2] point light ${on(lamp.visible)}  [3] outlines ${on(outlines.length > 0 && outlines[0].enabled)}'
@@ -373,10 +373,10 @@ class App extends helix.App {
 			'  [4] silhouette ${on(silhouettes.length > 0 && silhouettes[0].enabled)}  [5] dissolve ${on(dissolving)}  [6] toon ${on(toonOn)}  [7] water ${on(waterOn)}  [C] close up  [F] flash',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff)
+			- 24, 0xffc8c8c8)
 			+ 4;
 		if (status != "")
-			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

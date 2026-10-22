@@ -27,12 +27,12 @@ var required(get, never):Bool
 A fade to a color and back: covered at the middle, where the scenes swap.
 
 ```haxe
-function new(?seconds:Float = .5, ?color:Int = 0x000000ff)
+function new(?seconds:Float = .5, ?color:Int = 0xff000000)
 var color(default, null):Int
 function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
 ```
 
-- `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xRRGGBBAA, its alpha the cover at the middle).
+- `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xAARRGGBB, its alpha the cover at the middle).
 - `color`: Its color.
 
 ## KindSchema
@@ -297,7 +297,7 @@ What a kind's property holds in a .scene file: the shape the parser checks a val
 - `Text`: Text: a path to an asset, or a named choice in lower case (a sprite's facing: "camera", "upright", "ground", "free").
 - `Flag`: A bool.
 - `Numbers(count:Int)`: A list of count numbers.
-- `Color`: A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xRRGGBBAA in memory.
+- `Color`: A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xAARRGGBB in memory.
 - `Reference`: A reference to a node of the file, "@name" or "@path/from/root" in the file.
 
 ## Scene
@@ -468,7 +468,7 @@ function destroy():Void
 
 *class* in `src/helix/scene/SceneKinds.hx`
 
-The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh made by Mesh's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xRRGGBBAA.
+The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh made by Mesh's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB.
 
 ```haxe
 static function make(kind:String):Null<Node3D>
@@ -526,13 +526,13 @@ var doubleSided:Null<Bool>
 ```
 
 - `new`: A material saying nothing.
-- `baseColor`: The base color, 0xRRGGBBAA; null for unsaid.
+- `baseColor`: The base color, 0xAARRGGBB; null for unsaid.
 - `metallic`: How metallic, 0..1; null for unsaid.
 - `roughness`: How rough, 0..1; null for unsaid.
 - `texture`: The base color texture's path; null for unsaid.
 - `normalTexture`: The normal map's path; null for unsaid.
 - `normalScale`: How strongly the normal map bends the surface, 0 or more; null for unsaid.
-- `emissive`: The light it gives off, 0xRRGGBBAA; null for unsaid.
+- `emissive`: The light it gives off, 0xAARRGGBB; null for unsaid.
 - `emissiveStrength`: How bright its emissive light is, 0 or more; null for unsaid.
 - `doubleSided`: Whether both sides of its triangles draw; null for unsaid.
 
@@ -644,7 +644,7 @@ var exposure:Null<Float>
 ```
 
 - `new`: A stage section saying nothing: every setting the stage's own.
-- `ambientColor`: The ambient light's color, 0xRRGGBBAA; null for the stage's.
+- `ambientColor`: The ambient light's color, 0xAARRGGBB; null for the stage's.
 - `ambientIntensity`: The ambient light's intensity, 0 or more; null for the stage's.
 - `environmentFile`: The environment's file (an HDR, loaded through Environments); null for none.
 - `environmentIntensity`: How strongly the environment lights, 1 as its file has it; null for the stage's.
@@ -664,7 +664,7 @@ A value as a .scene file holds it: a kind's property, a behavior's prop, or one 
 - `Text(value:String)`: Text: a path to an asset, a named choice ("camera"), or what a behavior wants.
 - `Flag(value:Bool)`: A bool.
 - `Numbers(values:Array<Float>)`: A list of numbers.
-- `Color(rgba:Int)`: A color, 0xRRGGBBAA; "#RRGGBB" in the file is alpha ff.
+- `Color(rgba:Int)`: A color, 0xAARRGGBB; "#RRGGBB" in the file is alpha ff.
 - `Reference(path:String)`: A reference to a node of the file: the name or path after the "@", resolved once every node is made.
 
 ## Scenes

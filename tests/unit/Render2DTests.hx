@@ -503,9 +503,9 @@ class Render2DTests {
 		batch.end();
 		check(Math.abs(gpu.uploaded.getFloat(0) - camera.clipX(10)) < 1e-6, "setTransform places what follows");
 		// A shaded rectangle: each vertex its color by how far across (or down) it is, alpha too; flat, outlined, it's one color.
-		var shaded = Shape2D.rectangle(10, 20, 0xff000000);
+		var shaded = Shape2D.rectangle(10, 20, 0x00ff0000);
 		shaded.shading = Across;
-		shaded.endColor = 0x0000ffff;
+		shaded.endColor = 0xff0000ff;
 		var shadedStage = new Stage2D();
 		shadedStage.add(shaded);
 		gpu.beginFrame(400, 300, 0);

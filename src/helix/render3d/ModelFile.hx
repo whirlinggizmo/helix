@@ -1,5 +1,6 @@
 package helix.render3d;
 
+import helix.graphics.Color;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
 import helix.render3d.Gltf.field;
@@ -152,7 +153,7 @@ class ModelFile {
 	}
 
 	static function color(rgba:Array<Float>):Int
-		return srgb(rgba[0]) << 24 | srgb(rgba[1]) << 16 | srgb(rgba[2]) << 8 | Math.round((rgba.length > 3 ? rgba[3] : 1) * 255);
+		return Color.fromChannels(srgb(rgba[0]), srgb(rgba[1]), srgb(rgba[2]), Math.round((rgba.length > 3 ? rgba[3] : 1) * 255));
 
 	function material(m:Dynamic):Material {
 		var material = new Material(),

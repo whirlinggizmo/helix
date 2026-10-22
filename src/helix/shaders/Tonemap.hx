@@ -1,5 +1,7 @@
 package helix.shaders;
 
+import helix.graphics.Color;
+
 /** An HDR chain's tone mapping, a screen effect of the library: the frame's light (a stage's after its exposure, drawn into a half-float scene
 	as sRGB values running past 1) brought into the screen's 0..1 by mode, as Stage3D does drawing straight to the screen, and written as the
 	screen's sRGB. It wants HDR itself (ScreenEffect.hdr). PostProcess adds one after the last effect wanting HDR, with its stage's mode, to a
@@ -26,13 +28,16 @@ class Tonemap extends LibraryScreenEffect {
 		return value;
 	}
 
-	/** Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xRRGGBBAA): red, green and blue as sRGB
+	/** Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xAARRGGBB): red, green and blue as sRGB
 		values running past 1, alpha as given, 0 to 1. PostProcess clears an HDR scene to it, so a background of clear color alone looks the
 		same with and without an HDR chain. Solved on the CPU (this tone mapping as the shader works it, one channel at a time by bisection,
 		round after round, as the modes mix the channels a little), no channel past MAX_LIGHT. A color the mode can't show comes as near as it
-		lets: Neutral desaturates what nears white, so a bright saturated color (0xff2000ff) is shown paler. */
+		lets: Neutral desaturates what nears white, so a bright saturated color (0xffff2000) is shown paler. */
 	public function computeHdrColor(color:Int, out:Array<Float>):Void {
-		var target = [for (shift in [24, 16, 8]) decode(((color >>> shift) & 255) / 255)];
+		var target = [
+			for (channel in [Color.getRed(color), Color.getGreen(color), Color.getBlue(color)])
+				decode(channel / 255)
+		];
 		var light = target.copy();
 		if (mode != helix.render3d.Tonemap.None)
 			for (round in 0...12)
@@ -51,7 +56,7 @@ class Tonemap extends LibraryScreenEffect {
 				}
 		for (c in 0...3)
 			out[c] = encode(light[c]);
-		out[3] = (color & 255) / 255;
+		out[3] = Color.getAlpha(color) / 255;
 	}
 
 	/** linear (red, green, blue light) tone mapped by mode as the shader does it, into 0..1, a new array. */

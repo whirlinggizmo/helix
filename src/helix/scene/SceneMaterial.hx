@@ -3,7 +3,7 @@ package helix.scene;
 /** A material as a .scene file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override
 	changes one value and leaves the rest. */
 class SceneMaterial {
-	/** The base color, 0xRRGGBBAA; null for unsaid. */
+	/** The base color, 0xAARRGGBB; null for unsaid. */
 	public var baseColor:Null<Int>;
 
 	/** How metallic, 0..1; null for unsaid. */
@@ -21,7 +21,7 @@ class SceneMaterial {
 	/** How strongly the normal map bends the surface, 0 or more; null for unsaid. */
 	public var normalScale:Null<Float>;
 
-	/** The light it gives off, 0xRRGGBBAA; null for unsaid. */
+	/** The light it gives off, 0xAARRGGBB; null for unsaid. */
 	public var emissive:Null<Int>;
 
 	/** How bright its emissive light is, 0 or more; null for unsaid. */

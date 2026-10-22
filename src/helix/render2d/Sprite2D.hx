@@ -1,7 +1,7 @@
 package helix.render2d;
 
 /** A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
-	center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
+	center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
 	corners' size as it's sized (setNineSlice). It may draw through an effect (effect). */
 @:allow(helix.render2d.Stage2D)
 class Sprite2D extends Node2D {
@@ -17,7 +17,7 @@ class Sprite2D extends Node2D {
 	var givenHeight = 0.;
 
 	/** A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted
-		(0xRRGGBBAA, white for none). */
+		(0xAARRGGBB, white for none). */
 	public function new(texture:Null<Texture2D>, tint = 0xffffffff) {
 		super();
 		this.texture = texture;
@@ -27,7 +27,7 @@ class Sprite2D extends Node2D {
 	/** Its texture, or null: it draws nothing. */
 	public var texture:Null<Texture2D>;
 
-	/** What its texels are multiplied by, 0xRRGGBBAA: white leaves them as they are. */
+	/** What its texels are multiplied by, 0xAARRGGBB: white leaves them as they are. */
 	public var tint:Int = 0xffffffff;
 
 	/** The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's

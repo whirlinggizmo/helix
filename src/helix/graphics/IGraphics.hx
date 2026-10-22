@@ -107,7 +107,7 @@ interface IGraphics {
 	/** Ends the pass beginTargetPass or beginShadowPass started; its target can be sampled from then on. Throws when no such pass is open. */
 	public function endTargetPass():Void;
 
-	/** Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xRRGGBBAA) and the
+	/** Starts the frame's screen pass on a width x height framebuffer, after its target passes: clears it to clearColor (0xAARRGGBB) and the
 		depth to the farthest, and sets the viewport to all of it. Throws inside a pass or for a size of 0 or less. */
 	public function beginFrame(width:Int, height:Int, clearColor:Int):Void;
 

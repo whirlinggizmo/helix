@@ -51,7 +51,7 @@ class App extends helix.App {
 		Window.requestSize(1000, 600);
 		camera.minAspect = 16 / 9;
 		stage = new Stage3D();
-		stage.setAmbient(0xc8d2ffff, .35);
+		stage.setAmbient(0xffc8d2ff, .35);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
 		sun.shadowCasting = true;
@@ -59,7 +59,7 @@ class App extends helix.App {
 		sun.lookAt(-.4, -1, -.6);
 		stage.add(sun);
 		var ground = new Material();
-		ground.baseColor = 0x5a5f6aff;
+		ground.baseColor = 0xff5a5f6a;
 		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(10, 10), ground));
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
@@ -143,18 +143,18 @@ class App extends helix.App {
 			vw = presentation.visibleWidth;
 
 		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += batch.drawTextWrapped('HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24, 0xf5f5f5ff)
+		y += batch.drawTextWrapped('HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24, 0xfff5f5f5)
 			+ 3;
-		y += batch.drawTextWrapped([for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 3;
+		y += batch.drawTextWrapped([for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 3;
 		batch.drawTextWrapped('F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
 			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y,
 			16, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

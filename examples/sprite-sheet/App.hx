@@ -97,9 +97,9 @@ class App extends helix.App {
 		blob.setPosition(left + walk, ground);
 		blob.scaleX = heading * SCALE;
 
-		Graphics.beginFrame(width, height, 0x1d2230ff);
+		Graphics.beginFrame(width, height, 0xff1d2230);
 		batch.begin(camera);
-		batch.rect(0, ground, width, 2, 0x4a5468ff);
+		batch.rect(0, ground, width, 2, 0xff4a5468);
 		stage.draw(batch, camera);
 		if (sheet != null) {
 			// Gears with no node: one animated, one bigger and turned as a whole.
@@ -107,12 +107,12 @@ class App extends helix.App {
 			batch.sheetFrame(sheet, gears.frame, width * .4, height * .25, SCALE * 1.5, SCALE * 1.5, Time.time * .5);
 			// The sheet itself, the blob's frame boxed where it's packed.
 			var t = sheet.texture, sx = width * .66, sy = height * .12, s = 2.;
-			batch.rect(sx, sy, t.width * s, t.height * s, 0x2a3142ff);
+			batch.rect(sx, sy, t.width * s, t.height * s, 0xff2a3142);
 			batch.image(t, sx, sy, t.width * s, t.height * s);
 			var f = sheet.getFrame(blobs.frame);
 			var fw = f.rotated ? f.height : f.width,
 				fh = f.rotated ? f.width : f.height;
-			batch.frame(sx + f.x * s, sy + f.y * s, fw * s, fh * s, 1, 0xffd040ff);
+			batch.frame(sx + f.x * s, sy + f.y * s, fw * s, fh * s, 1, 0xffffd040);
 		}
 		batch.camera = hud;
 		var vx = presentation.visibleX,
@@ -122,12 +122,12 @@ class App extends helix.App {
 			var f = sheet.getFrame(blobs.frame);
 			'walk frame ${blobs.frameIndex + 1} of ${blobs.animation.frames.length}: ${f.name}, ${f.width} x ${f.height} of ${f.sourceWidth} x ${f.sourceHeight}${f.rotated ? ", packed turned" : ""}';
 		};
-		batch.drawText("HeliX sprite-sheet: TexturePacker's JSON, trimmed and turned frames, animations", vx + 20, vy + 20, 20, 0xebeef5ff);
-		batch.drawText(status, vx + 20, vy + 46, 15, 0x8c929eff);
+		batch.drawText("HeliX sprite-sheet: TexturePacker's JSON, trimmed and turned frames, animations", vx + 20, vy + 20, 20, 0xffebeef5);
+		batch.drawText(status, vx + 20, vy + 46, 15, 0xff8c929e);
 		batch.drawText('speed ${speed}x${paused ? " (paused)" : ""}   ${pingPong ? "back and forth" : "forward"}   space pause, up/down speed, P back and forth',
 			vx
 			+ 20, vy
-			+ 66, 15, 0x8c929eff);
+			+ 66, 15, 0xff8c929e);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
 		Graphics.endFrame();

@@ -28,14 +28,14 @@ class ShaderParameters {
 	public function setFloat(name:String, value:Float):Bool
 		return setValues(name, [value]);
 
-	/** Sets a vector parameter to a color 0xRRGGBBAA, each channel 0..1 as it is (not decoded from sRGB). False, changing nothing,
+	/** Sets a vector parameter to a color 0xAARRGGBB, each channel 0..1 as it is (not decoded from sRGB). False, changing nothing,
 		when the shader has no such parameter or it has fewer than 4 components. */
 	public function setColor(name:String, color:Int):Bool
 		return setValues(name, [
-			(color >>> 24) / 255,
-			((color >>> 16) & 255) / 255,
-			((color >>> 8) & 255) / 255,
-			(color & 255) / 255
+			Color.getRed(color) / 255,
+			Color.getGreen(color) / 255,
+			Color.getBlue(color) / 255,
+			Color.getAlpha(color) / 255
 		]);
 
 	/** The values a parameter was set to, or null for one never set (its value is then 0). */

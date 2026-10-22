@@ -9,7 +9,7 @@ class Rim {
 	/** The material it lights. */
 	public var material(default, null):Material;
 
-	/** The rim's color, 0xRRGGBBAA (sRGB), its alpha how strong (0 none, 255 all of it). */
+	/** The rim's color, 0xAARRGGBB (sRGB), its alpha how strong (0 none, 255 all of it). */
 	public var color(get, set):Int;
 
 	function get_color():Int
@@ -32,8 +32,8 @@ class Rim {
 		return value;
 	}
 
-	/** Turns material's rim light on: color (0xRRGGBBAA, sRGB, its alpha how strong) and power (.1 to 64, clamped). */
-	public function new(material:Material, color = 0xffffff80, power = 3.) {
+	/** Turns material's rim light on: color (0xAARRGGBB, sRGB, its alpha how strong) and power (.1 to 64, clamped). */
+	public function new(material:Material, color = 0x80ffffff, power = 3.) {
 		this.material = material;
 		this.color = color;
 		this.power = power;

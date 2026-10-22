@@ -104,7 +104,7 @@ class Tile extends Widget {
 		face.color = state.face(theme);
 		edge.visible = selected;
 		edge.color = state == Disabled ? WidgetState.dim(theme.accentColor) : theme.accentColor;
-		picture.tint = state == Disabled ? 0x808080ff : 0xffffffff;
+		picture.tint = state == Disabled ? 0xff808080 : 0xffffffff;
 		label.color = state.text(theme);
 	}
 }

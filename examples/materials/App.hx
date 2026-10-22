@@ -1,4 +1,5 @@
 import helix.debug.FpsOverlay;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -37,11 +38,11 @@ class App extends helix.App {
 	var marker:Model;
 	var bottom:Array<Node3D> = [];
 
-	// A linear color (as the earlier frameworks' examples give them) as 0xRRGGBBAA, sRGB-encoded.
+	// A linear color (as the earlier frameworks' examples give them) as 0xAARRGGBB, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float, a = 1.):Int {
 		inline function encode(c:Float):Int
 			return Math.round((c <= .0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - .055) * 255);
-		return encode(r) << 24 | encode(g) << 16 | encode(b) << 8 | Math.round(a * 255);
+		return Color.fromChannels(encode(r), encode(g), encode(b), Math.round(a * 255));
 	}
 
 	static function pbr(base:Int, metallic:Float, roughness:Float):Material {
@@ -69,17 +70,17 @@ class App extends helix.App {
 		camera.minAspect = 16 / 9;
 
 		sun = new DirectionalLight();
-		sun.color = 0xfff4e4ff;
+		sun.color = 0xfffff4e4;
 		sun.intensity = 3;
 		sun.lookAt(-.4, -.7, -.6);
 		stage.add(sun);
 		lamp = new PointLight();
-		lamp.color = 0x78beffff;
+		lamp.color = 0xff78beff;
 		lamp.intensity = 8;
 		lamp.range = 10;
 		stage.add(lamp);
 		var glow = new Material();
-		glow.baseColor = 0x66bfffff;
+		glow.baseColor = 0xff66bfff;
 		glow.lit = false;
 		marker = new Model(Mesh.sphere(.06, 8, 16), glow);
 		stage.add(marker);
@@ -93,7 +94,7 @@ class App extends helix.App {
 			sphere(ball, x, 1.35, pbr(color(1, .77, .34), 1, roughness));
 		}
 		var unlit = new Material();
-		unlit.baseColor = 0x66bfffff;
+		unlit.baseColor = 0xff66bfff;
 		unlit.lit = false;
 		bottom.push(sphere(ball, -2 * SPACING, 0, unlit));
 		var emissive = pbr(color(.05, .05, .05), 0, .6);
@@ -135,15 +136,15 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xf5f5f5ff) + 4;
+		y += batch.drawTextWrapped("HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
 		batch.drawTextWrapped('roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
 			vx
 			+ 12, y, 15, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

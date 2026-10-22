@@ -1,5 +1,6 @@
 import helix.assets.Assets;
 import helix.debug.FpsOverlay;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.Shaders;
 import helix.host.Host;
@@ -61,11 +62,11 @@ class App extends helix.App {
 	var turning:Array<Node3D> = [];
 	var shaders:Shaders;
 
-	// A linear color as 0xRRGGBBAA, sRGB-encoded.
+	// A linear color as 0xAARRGGBB, sRGB-encoded.
 	static function color(r:Float, g:Float, b:Float):Int {
 		inline function encode(c:Float):Int
 			return Math.round((c <= .0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - .055) * 255);
-		return encode(r) << 24 | encode(g) << 16 | encode(b) << 8 | 255;
+		return Color.fromChannels(encode(r), encode(g), encode(b));
 	}
 
 	function sphere(mesh:Mesh, x:Float, y:Float, base:Int, metallic:Float, roughness:Float):Material {
@@ -179,13 +180,13 @@ class App extends helix.App {
 		var readoutY = vy + 36 + font.measureWrapped(title, 20, wrap) + 3,
 			bottom = readoutY + font.measureWrapped(readout, 16, wrap) - 2;
 
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(hud);
 		// A dark band behind the readout, which a bright sky would wash out.
-		batch.rect(vx, vy, vw, bottom - vy, 0x0000008c);
-		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, wrap, 0xf5f5f5ff);
-		batch.drawTextWrapped(readout, vx + 12, readoutY, 16, wrap, 0xc8c8c8ff);
+		batch.rect(vx, vy, vw, bottom - vy, 0x8c000000);
+		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, wrap, 0xfff5f5f5);
+		batch.drawTextWrapped(readout, vx + 12, readoutY, 16, wrap, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

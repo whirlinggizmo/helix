@@ -352,7 +352,7 @@ int helix_begin_shadow(uint32_t map,int layer){
   .stencil={.load_action=SG_LOADACTION_DONTCARE}},.attachments={.depth_stencil=shadow_maps[slot].layers[layer]},.label="helix-shadow-map"});
  return 1;
 }
-static sg_color color_of(uint32_t color){return (sg_color){(color>>24)/255.f,((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f};}
+static sg_color color_of(uint32_t color){return (sg_color){((color>>16)&255)/255.f,((color>>8)&255)/255.f,(color&255)/255.f,(color>>24)/255.f};}
 /* A pass into target, cleared to red, green, blue, alpha as its texels store them (and its depth, if it has one, to the farthest), before the
    screen's: drawn flipped where the backend's origin is the bottom left (GL). */
 int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){

@@ -8,7 +8,7 @@ import helix.graphics.SpriteEffect;
 	around its shape; what lies past its region in an atlas is never read. Shared by the sprites given it (SpriteEffect). Built on the
 	program's GPU (Graphics) the first time one is made. */
 class SpriteOutline extends SpriteEffect {
-	/** The outline's color, 0xRRGGBBAA (sRGB, its alpha how opaque), faded with each sprite's tint's alpha. */
+	/** The outline's color, 0xAARRGGBB (sRGB, its alpha how opaque), faded with each sprite's tint's alpha. */
 	public var color(default, set):Int;
 
 	function set_color(value:Int):Int {
@@ -27,8 +27,8 @@ class SpriteOutline extends SpriteEffect {
 		return value;
 	}
 
-	/** An outline of color (0xRRGGBBAA, black by default) width texels wide (1 by default). */
-	public function new(color = 0x000000ff, width = 1.) {
+	/** An outline of color (0xAARRGGBB, black by default) width texels wide (1 by default). */
+	public function new(color = 0xff000000, width = 1.) {
 		super(ShaderLibrary.get(Graphics.instance, "sprite_outline", SpriteOutlinePacked.text()));
 		this.color = color;
 		this.width = width;

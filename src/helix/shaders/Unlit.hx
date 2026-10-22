@@ -6,7 +6,7 @@ import helix.render3d.Material;
 	exposure and tone mapping as a material that isn't lit is. Made on a material, it is that material's surface shader from then on
 	(LibrarySurface). */
 class Unlit extends LibrarySurface {
-	/** What the material's base color and texture are multiplied by, 0xRRGGBBAA, its color sRGB as the material's are: white (the material
+	/** What the material's base color and texture are multiplied by, 0xAARRGGBB, its color sRGB as the material's are: white (the material
 		as it is) by default. */
 	public var color(default, set):Int;
 

@@ -41,19 +41,19 @@ class App extends helix.App {
 		stage.add(sun);
 
 		var ground = new Material();
-		ground.baseColor = 0x474a4dff;
+		ground.baseColor = 0xff474a4d;
 		ground.roughness = .9;
 		stage.add(new Model(Mesh.plane(12, 12), ground));
 
 		// Each shape, how high its center sits (so it rests on the floor), and its color.
 		var shapes:Array<{mesh:Mesh, y:Float, color:Int}> = [
-			{mesh: Mesh.plane(1, 1, 4), y: .01, color: 0xedededff},
-			{mesh: Mesh.cube(.9, .9, .9), y: .45, color: 0xf3957cff},
-			{mesh: Mesh.sphere(.5, 24, 48), y: .5, color: 0x7cc3f3ff},
-			{mesh: Mesh.cylinder(.45, 1, 40), y: .5, color: 0x95e79fff},
-			{mesh: Mesh.cone(.5, 1.1, 40), y: .55, color: 0xf9e17cff},
-			{mesh: Mesh.capsule(.35, 1.2, 16, 40), y: .6, color: 0xdb9fedff},
-			{mesh: Mesh.torus(.4, .15, 48, 24), y: .15, color: 0xf3bccbff}
+			{mesh: Mesh.plane(1, 1, 4), y: .01, color: 0xffededed},
+			{mesh: Mesh.cube(.9, .9, .9), y: .45, color: 0xfff3957c},
+			{mesh: Mesh.sphere(.5, 24, 48), y: .5, color: 0xff7cc3f3},
+			{mesh: Mesh.cylinder(.45, 1, 40), y: .5, color: 0xff95e79f},
+			{mesh: Mesh.cone(.5, 1.1, 40), y: .55, color: 0xfff9e17c},
+			{mesh: Mesh.capsule(.35, 1.2, 16, 40), y: .6, color: 0xffdb9fed},
+			{mesh: Mesh.torus(.4, .15, 48, 24), y: .15, color: 0xfff3bccb}
 		];
 		for (i in 0...shapes.length) {
 			var material = new Material();
@@ -85,13 +85,13 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = (orbit.running ? "O: stop the camera" : "O: turn the camera") + (Host.canQuit() ? "   ESC: quit" : "");
-		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

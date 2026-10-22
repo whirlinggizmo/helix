@@ -1,10 +1,11 @@
 package helix.render3d;
 
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import haxe.io.Bytes;
 
 /** Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame
-	has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xRRGGBBAA. Solid shapes are
+	has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xAARRGGBB. Solid shapes are
 	shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader. */
 class Batch3D {
 	var gpu:IGraphics;
@@ -101,10 +102,10 @@ class Batch3D {
 		data.setFloat(p, x);
 		data.setFloat(p + 4, y);
 		data.setFloat(p + 8, z);
-		data.setFloat(c, ((color >>> 24) / 255) * shade);
-		data.setFloat(c + 4, (((color >>> 16) & 255) / 255) * shade);
-		data.setFloat(c + 8, (((color >>> 8) & 255) / 255) * shade);
-		data.setFloat(c + 12, (color & 255) / 255);
+		data.setFloat(c, (Color.getRed(color) / 255) * shade);
+		data.setFloat(c + 4, (Color.getGreen(color) / 255) * shade);
+		data.setFloat(c + 8, (Color.getBlue(color) / 255) * shade);
+		data.setFloat(c + 12, Color.getAlpha(color) / 255);
 	}
 
 	/** The brightness of a surface facing nx, ny, nz (normalized). */

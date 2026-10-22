@@ -64,7 +64,7 @@ class App extends helix.App {
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x181c26ff);
+		Graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff181c26);
 		batch.begin(camera);
 		var row = vy + 12;
 		row += batch.drawTextWrapped("HeliX window   arrows: move   =/-: size   "
@@ -72,20 +72,20 @@ class App extends helix.App {
 			+ "   M: next monitor   H: hide",
 			vx
 			+ 12, row, 16, vw
-			- 24, 0xf5f5f5ff)
+			- 24, 0xfff5f5f5)
 			+ 12;
 		row += batch.drawTextWrapped('window: $width x $height at ($x, $y)   fullscreen: ' + (window.fullscreen ? "yes" : "no") + "   focused: "
 			+ (Window.focused ? "yes" : "no"),
-			vx + 12, row, 16, vw - 24, 0xc8c8c8ff)
+			vx + 12, row, 16, vw - 24, 0xffc8c8c8)
 			+ 4;
-		row += batch.drawTextWrapped(status, vx + 12, row, 16, vw - 24, 0xffcb00ff) + 12;
+		row += batch.drawTextWrapped(status, vx + 12, row, 16, vw - 24, 0xffffcb00) + 12;
 		for (m in 0...window.monitorCount) {
 			row += batch.drawTextWrapped((m == window.monitorIndex ? "> " : "  ")
 				+
 				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
 				vx
 				+ 12, row, 16, vw
-				- 24, 0xc8c8c8ff)
+				- 24, 0xffc8c8c8)
 				+ 2;
 		}
 		batch.end();

@@ -58,15 +58,15 @@ class App extends helix.App {
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x12141cff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff12141c);
 		batch.begin(camera);
 		var y = vy + 30;
-		y += batch.drawTextWrapped("HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xf5f5f5ff) + 15;
+		y += batch.drawTextWrapped("HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;
 		y += batch.drawTextWrapped(music == null ? "music: loading..." : music.state == Paused ? "music: paused" : "music: playing (mp3, looping)", vx + 24,
-			y, 18, vw - 48, 0x66bfffff)
+			y, 18, vw - 48, 0xff66bfff)
 			+ 7.5;
-		y += batch.drawTextWrapped(state, vx + 24, y, 14, vw - 48, 0xc8c8c8ff) + 22.5;
-		batch.drawTextWrapped("[M] toggle music" + (Host.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xc8c8c8ff);
+		y += batch.drawTextWrapped(state, vx + 24, y, 14, vw - 48, 0xffc8c8c8) + 22.5;
+		batch.drawTextWrapped("[M] toggle music" + (Host.canQuit() ? "   [ESC] quit" : ""), vx + 24, y, 16, vw - 48, 0xffc8c8c8);
 		fps.draw(batch, vx + 24, vy + 8);
 		batch.end();
 		Graphics.endFrame();

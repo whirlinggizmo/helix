@@ -4,7 +4,7 @@ package helix.scene;
 	exposure). Each null means the stage's default and is not written. Only a file instantiated onto a stage applies it; a prefab's is logged
 	and ignored. */
 class SceneStage {
-	/** The ambient light's color, 0xRRGGBBAA; null for the stage's. */
+	/** The ambient light's color, 0xAARRGGBB; null for the stage's. */
 	public var ambientColor:Null<Int>;
 
 	/** The ambient light's intensity, 0 or more; null for the stage's. */

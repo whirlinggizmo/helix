@@ -18,7 +18,7 @@ class SpriteDissolve extends SpriteEffect {
 		return value;
 	}
 
-	/** The edge's color, 0xRRGGBBAA (sRGB, its alpha how much of it over the sprite's): orange by default. */
+	/** The edge's color, 0xAARRGGBB (sRGB, its alpha how much of it over the sprite's): orange by default. */
 	public var edgeColor(default, set):Int;
 
 	function set_edgeColor(value:Int):Int {
@@ -60,7 +60,7 @@ class SpriteDissolve extends SpriteEffect {
 	public function new() {
 		super(ShaderLibrary.get(Graphics.instance, "sprite_dissolve", SpriteDissolvePacked.text()));
 		amount = 0;
-		edgeColor = 0xff7a1eff;
+		edgeColor = 0xffff7a1e;
 		edgeWidth = .1;
 		scale = 1;
 		noise = ShaderLibrary.getNoise(Graphics.instance);

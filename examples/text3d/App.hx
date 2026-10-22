@@ -47,7 +47,7 @@ class App extends helix.App {
 		var model = new Model(mesh, material);
 		model.setPosition(x, y, z);
 		stage.add(model);
-		var text = new Text3D(label, .4, 0xf5f5f5ff);
+		var text = new Text3D(label, .4, 0xfff5f5f5);
 		text.setPosition(x, labelHeight, z);
 		stage.add(text);
 		return model;
@@ -67,12 +67,12 @@ class App extends helix.App {
 		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
-		cube = labelled(Mesh.cube(1, 1, 1), 0x3b82f6ff, -3, .5, 0, "cube", 1.6);
-		labelled(Mesh.sphere(.6), 0xe5484dff, 0, .6, 0, "sphere", 1.8);
-		labelled(Mesh.cube(1.4, .9, .1), 0x46a758ff, 3, .45, 0, "panel", 1.5);
+		cube = labelled(Mesh.cube(1, 1, 1), 0xff3b82f6, -3, .5, 0, "cube", 1.6);
+		labelled(Mesh.sphere(.6), 0xffe5484d, 0, .6, 0, "sphere", 1.8);
+		labelled(Mesh.cube(1.4, .9, .1), 0xff46a758, 3, .45, 0, "panel", 1.5);
 		// A sign: a post, a board, and text on the board's face that turns with it.
 		var wood = new Material();
-		wood.baseColor = 0x8b5a2bff;
+		wood.baseColor = 0xff8b5a2b;
 		wood.roughness = .9;
 		sign = new Node3D();
 		sign.setPosition(0, 0, -3);
@@ -82,7 +82,7 @@ class App extends helix.App {
 		var board = new Model(Mesh.cube(2.2, .8, .08), wood);
 		board.setPosition(0, 1.6, 0);
 		sign.addChild(board);
-		signText = new Text3D("HeliX text", .45, 0xffe68cff);
+		signText = new Text3D("HeliX text", .45, 0xffffe68c);
 		signText.facing = Free;
 		signText.setPosition(0, 1.6, .05);
 		sign.addChild(signText);
@@ -113,30 +113,30 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		lines.begin(camera);
-		lines.grid(16, 1, 0x34373fff);
+		lines.grid(16, 1, 0xff34373f);
 		// Circles on the ground under each model, and a spiral around them all.
 		for (cx in [-3., 0, 3])
 			for (k in 0...48) {
 				var a = k / 48 * Math.PI * 2, b = (k + 1) / 48 * Math.PI * 2;
-				lines.line(cx + Math.cos(a), .01, Math.sin(a), cx + Math.cos(b), .01, Math.sin(b), 0x66bfffff);
+				lines.line(cx + Math.cos(a), .01, Math.sin(a), cx + Math.cos(b), .01, Math.sin(b), 0xff66bfff);
 			}
 		for (k in 0...200) {
 			var a = k * .12, b = (k + 1) * .12;
 			lines.line(Math.cos(a) * (1 + a * .25), .01, Math.sin(a) * (1 + a * .25), Math.cos(b) * (1 + b * .25), .01, Math.sin(b) * (1 + b * .25),
-				0xffcb00ff);
+				0xffffcb00);
 		}
 		lines.end();
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
 		y += batch.drawTextWrapped("HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
-			0xf5f5f5ff)
+			0xfff5f5f5)
 			+ 4;
 		batch.drawTextWrapped('${stage.drawnNodeCount} models and glyphs in ${stage.drawCallCount} draws   O: the camera', vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

@@ -118,7 +118,7 @@ class App extends helix.App {
 			ticker.advance(Time.clock.elapsed, () -> tick(Input.instance));
 		play.fps.update(dt, Time.frameCpu);
 		if (scenes.top == null) {
-			Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x14161cff);
+			Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff14161c);
 			Graphics.endFrame();
 		} else
 			scenes.draw();
@@ -179,8 +179,8 @@ class Play extends Scene {
 
 	override public function enter():Void {
 		batch = new Batch2D();
-		line = new Text2D("Loading the track", 22, 0xf5f5f5ff);
-		help = new Text2D("", 15, 0xc8c8c8ff);
+		line = new Text2D("Loading the track", 22, 0xfff5f5f5);
+		help = new Text2D("", 15, 0xffc8c8c8);
 		hud.add(line);
 		hud.add(help);
 		fallback.setView(0, 40, 60, 0, 0, 0);
@@ -235,7 +235,7 @@ class Play extends Scene {
 			help.text = "UP / DOWN drive, LEFT / RIGHT steer, R restart" + (Host.canQuit() ? ", ESC quit" : "");
 		}
 		stage.drawShadows(view);
-		Graphics.beginFrame(width, height, 0x7896c8ff);
+		Graphics.beginFrame(width, height, 0xff7896c8);
 		stage.draw(view);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);

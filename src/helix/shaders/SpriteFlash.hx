@@ -1,5 +1,6 @@
 package helix.shaders;
 
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.SpriteEffect;
 
@@ -13,7 +14,7 @@ class SpriteFlash extends SpriteEffect {
 	var start = Math.NaN;
 	var held = 0.;
 
-	/** The flash's color, 0xRRGGBBAA (sRGB, its alpha how strong at most). White by default. */
+	/** The flash's color, 0xAARRGGBB (sRGB, its alpha how strong at most). White by default. */
 	public var color(default, set):Int = 0xffffffff;
 
 	function set_color(value:Int):Int {
@@ -43,7 +44,7 @@ class SpriteFlash extends SpriteEffect {
 		write(0);
 	}
 
-	/** Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the batch's time from the next
+	/** Flashes color (0xAARRGGBB, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the batch's time from the next
 		draw. False, changing nothing, for seconds not above 0. */
 	public function trigger(color:Int, seconds:Float):Bool {
 		if (!(seconds > 0))
@@ -74,9 +75,9 @@ class SpriteFlash extends SpriteEffect {
 	// The flash's color, its alpha times how much of it now.
 	function write(now:Float):Void
 		parameters.setValues("flash", [
-			(color >>> 24) / 255,
-			((color >>> 16) & 255) / 255,
-			((color >>> 8) & 255) / 255,
-			(color & 255) / 255 * now
+			Color.getRed(color) / 255,
+			Color.getGreen(color) / 255,
+			Color.getBlue(color) / 255,
+			Color.getAlpha(color) / 255 * now
 		]);
 }

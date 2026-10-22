@@ -80,7 +80,7 @@ class App extends helix.App {
 	];
 
 	// The background to start, and the autopilot's window (its browser page's size), so its samples compare across targets.
-	static inline var BACKGROUND = 0x14161cff;
+	static inline var BACKGROUND = 0xff14161c;
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
 
@@ -199,7 +199,7 @@ class App extends helix.App {
 
 		var frame = panelImage();
 		main = ui.panel("main");
-		main.setFrame(frame, 6, 6, 6, 6, 0x262c3cff);
+		main.setFrame(frame, 6, 6, 6, 6, 0xff262c3c);
 		var title = ui.label("HeliX ui");
 		title.textSize = 32;
 		play = ui.button("Play", "play");
@@ -275,7 +275,7 @@ class App extends helix.App {
 			rows.push({action: action, bindings: bindings, rebind: rebind});
 		}
 		live = ui.label("");
-		live.color = 0x9aa2b8ff;
+		live.color = 0xff9aa2b8;
 		controls.add(live);
 		reset = ui.button("Reset", "reset");
 		backFromControls = ui.button("Back", "backFromControls");
@@ -304,7 +304,7 @@ class App extends helix.App {
 		levels.content.add(buttons);
 		bar = ui.progress(0);
 		corner = ui.label("");
-		corner.color = 0x9aa2b8ff;
+		corner.color = 0xff9aa2b8;
 		// The design: the panels centered, the bar along the bottom, the status in the corner.
 		layout = Layout2D.stack();
 		layout.setSizing(Grow(1), Grow(1));
@@ -433,7 +433,7 @@ class App extends helix.App {
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		if (ui == null) {
 			// The autopilot's script still loading.
-			Graphics.beginFrame(width, height, 0x14161cff);
+			Graphics.beginFrame(width, height, 0xff14161c);
 			Graphics.endFrame();
 			return;
 		}
@@ -539,8 +539,8 @@ class App extends helix.App {
 		Graphics.beginFrame(width, height, background.color);
 		batch.begin(camera);
 		stage.draw(batch, camera);
-		batch.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xc8d0e8ff, Center);
-		batch.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0x7a8298ff, Center);
+		batch.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xffc8d0e8, Center);
+		batch.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0xff7a8298, Center);
 		// The frame rate in the window's own pixels, in the same batch.
 		hud.setViewport(width, height);
 		hud.pixels(Window.pixelRatio);

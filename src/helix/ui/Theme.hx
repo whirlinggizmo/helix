@@ -2,7 +2,7 @@ package helix.ui;
 
 import helix.render2d.Font2D;
 
-/** How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change any value at any time (a settings screen, a reloaded
+/** How the UI's widgets look: their colors (0xAARRGGBB), font and sizes. Change any value at any time (a settings screen, a reloaded
 	stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame
 	with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given
 	another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value
@@ -11,15 +11,15 @@ import helix.render2d.Font2D;
 	setMargin), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's
 	nodes are never changed directly: its properties are the way. */
 class Theme {
-	var text:Int = 0xf0f2f8ff;
-	var disabledText:Int = 0x80869aff;
-	var invalidText:Int = 0xff7070ff;
-	var panel:Int = 0x1e2230ff;
-	var face:Int = 0x2e3448ff;
-	var hovered:Int = 0x3e4660ff;
-	var pressed:Int = 0x56607eff;
-	var accent:Int = 0x4c8ef0ff;
-	var focus:Int = 0xffd25aff;
+	var text:Int = 0xfff0f2f8;
+	var disabledText:Int = 0xff80869a;
+	var invalidText:Int = 0xffff7070;
+	var panel:Int = 0xff1e2230;
+	var face:Int = 0xff2e3448;
+	var hovered:Int = 0xff3e4660;
+	var pressed:Int = 0xff56607e;
+	var accent:Int = 0xff4c8ef0;
+	var focus:Int = 0xffffd25a;
 	var corner:Float = 8.;
 	var height:Float = 40.;
 
@@ -38,7 +38,7 @@ class Theme {
 		return value;
 	}
 
-	/** Text's color. (0xf0f2f8ff to start.) */
+	/** Text's color. (0xfff0f2f8 to start.) */
 	public var textColor(get, set):Int;
 
 	function get_textColor():Int
@@ -49,7 +49,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of text on a widget that can't be used now. (0x80869aff to start.) */
+	/** The color of text on a widget that can't be used now. (0xff80869a to start.) */
 	public var disabledTextColor(get, set):Int;
 
 	function get_disabledTextColor():Int
@@ -60,7 +60,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of a text field's text marked as not accepted (TextField.invalid). (0xff7070ff to start.) */
+	/** The color of a text field's text marked as not accepted (TextField.invalid). (0xffff7070 to start.) */
 	public var invalidTextColor(get, set):Int;
 
 	function get_invalidTextColor():Int
@@ -71,7 +71,7 @@ class Theme {
 		return value;
 	}
 
-	/** A panel's background color. (0x1e2230ff to start: opaque, so faces show on it whatever is behind.) */
+	/** A panel's background color. (0xff1e2230 to start: opaque, so faces show on it whatever is behind.) */
 	public var panelColor(get, set):Int;
 
 	function get_panelColor():Int
@@ -82,7 +82,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of a button's (and a toggle's box's, a track's) face at rest. (0x2e3448ff to start.) */
+	/** The color of a button's (and a toggle's box's, a track's) face at rest. (0xff2e3448 to start.) */
 	public var faceColor(get, set):Int;
 
 	function get_faceColor():Int
@@ -93,7 +93,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of a face under the pointer. (0x3e4660ff to start.) */
+	/** The color of a face under the pointer. (0xff3e4660 to start.) */
 	public var hoveredColor(get, set):Int;
 
 	function get_hoveredColor():Int
@@ -104,7 +104,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of a face held down. (0x56607eff to start.) */
+	/** The color of a face held down. (0xff56607e to start.) */
 	public var pressedColor(get, set):Int;
 
 	function get_pressedColor():Int
@@ -116,7 +116,7 @@ class Theme {
 	}
 
 	/** The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row.
-		(0x4c8ef0ff to start.) */
+		(0xff4c8ef0 to start.) */
 	public var accentColor(get, set):Int;
 
 	function get_accentColor():Int
@@ -127,7 +127,7 @@ class Theme {
 		return value;
 	}
 
-	/** The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffd25aff to start.) */
+	/** The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffffd25a to start.) */
 	public var focusColor(get, set):Int;
 
 	function get_focusColor():Int
@@ -226,11 +226,11 @@ class Theme {
 		return value;
 	}
 
-	/** A handle's color (a slider's, a color picker's bars'; Handle), 0xRRGGBBAA. (White to start.) */
+	/** A handle's color (a slider's, a color picker's bars'; Handle), 0xAARRGGBB. (White to start.) */
 	public var handleColor:Int = 0xffffffff;
 
-	/** The ring around a handle, so it shows on any color under it, 0xRRGGBBAA. (Black at half alpha to start.) */
-	public var handleShadowColor:Int = 0x00000080;
+	/** The ring around a handle, so it shows on any color under it, 0xAARRGGBB. (Black at half alpha to start.) */
+	public var handleShadowColor:Int = 0x80000000;
 
 	/** A handle's diameter in units (a slider's, a color picker's bars'; Handle). (14 to start.) At least 1 (under 1, or NaN, is 1). */
 	public var handleSize(default, set):Float = 14.;
@@ -251,9 +251,9 @@ class Theme {
 		return value;
 	}
 
-	/** A scrollbar's track's color, 0xRRGGBBAA, under its thumb (whose colors are a handle's: WidgetState.handle). (Black at a quarter alpha
+	/** A scrollbar's track's color, 0xAARRGGBB, under its thumb (whose colors are a handle's: WidgetState.handle). (Black at a quarter alpha
 		to start, so it shows on a list's face and a panel alike.) */
-	public var scrollbarTrackColor:Int = 0x00000040;
+	public var scrollbarTrackColor:Int = 0x40000000;
 
 	/** When a list's and a scroll area's scrollbars are drawn, unless the widget is given its own (scrollbarVisibility). (WhenNeeded to
 		start.) Null is WhenNeeded. */

@@ -15,7 +15,7 @@ class HitFlash {
 	public function new(material:Material)
 		this.material = material;
 
-	/** The flash's color, 0xRRGGBBAA (sRGB), its alpha how strong at most. White by default. */
+	/** The flash's color, 0xAARRGGBB (sRGB), its alpha how strong at most. White by default. */
 	public var color(get, set):Int;
 
 	function get_color():Int
@@ -40,7 +40,7 @@ class HitFlash {
 		return value;
 	}
 
-	/** Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the stage's time from the next
+	/** Flashes color (0xAARRGGBB, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the stage's time from the next
 		draw. False, changing nothing, for seconds not above 0. */
 	public function trigger(color:Int, seconds:Float):Bool {
 		if (!(seconds > 0))

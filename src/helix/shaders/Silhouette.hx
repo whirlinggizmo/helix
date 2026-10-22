@@ -8,7 +8,7 @@ import helix.render3d.ModelPass;
 	never hide it (layered clothes, hair over a head). Static or skinned, instanced like the model. Made on a model, it draws from then on;
 	remove takes it off. */
 class Silhouette extends ModelPass {
-	/** Shows model where it's hidden in color (0xRRGGBBAA, sRGB, blended by its alpha): a light blue at 60% by default. */
-	public function new(model:Model, color = 0x3fa9ff99)
+	/** Shows model where it's hidden in color (0xAARRGGBB, sRGB, blended by its alpha): a light blue at 60% by default. */
+	public function new(model:Model, color = 0x993fa9ff)
 		super(model, color, 0, true);
 }

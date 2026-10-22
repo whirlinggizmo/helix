@@ -151,7 +151,7 @@ class Ui {
 		return dropdown;
 	}
 
-	/** A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round
+	/** A color (0xAARRGGBB) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round
 		swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button
 		widgets of their own, named name + "-text" and name + "-format", after it in the focus order). Without alpha, its color's alpha is
 		always 0xff. */

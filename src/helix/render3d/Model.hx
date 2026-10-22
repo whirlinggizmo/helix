@@ -1,7 +1,7 @@
 package helix.render3d;
 
 /** A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted
-	(0xRRGGBBAA, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows
+	(0xAARRGGBB, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows
 	the joints it's bound to (bindSkeleton). Its mesh and material are its first part's. */
 class Model extends Node3D {
 	var parts:Array<Part> = [];
@@ -69,7 +69,7 @@ class Model extends Node3D {
 	public function getPass(index:Int):Null<ModelPass>
 		return index >= 0 && index < passes.length ? passes[index] : null;
 
-	/** Its tint, 0xRRGGBBAA. */
+	/** Its tint, 0xAARRGGBB. */
 	public var tint:Int = 0xffffffff;
 
 	/** Whether it casts shadows (from the lights that cast them; see-through models never do). True by default. */

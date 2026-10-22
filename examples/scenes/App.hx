@@ -113,7 +113,7 @@ class App extends helix.App {
 		} else
 			scenes.update(dt);
 		if (scenes.top == null) {
-			Graphics.beginFrame(width, height, 0x14161cff);
+			Graphics.beginFrame(width, height, 0xff14161c);
 			Graphics.endFrame();
 		} else
 			scenes.draw();
@@ -147,7 +147,7 @@ class Title extends Scene {
 	}
 
 	override public function draw():Void {
-		Draw.screen(camera, 0x1c1e26ff, "HeliX scenes", "Enter or tap: play" + (Host.canQuit() ? "   Escape: quit" : ""));
+		Draw.screen(camera, 0xff1c1e26, "HeliX scenes", "Enter or tap: play" + (Host.canQuit() ? "   Escape: quit" : ""));
 	}
 }
 
@@ -172,11 +172,11 @@ class Play extends Scene {
 	override public function update(dt:Float):Void {
 		time += dt;
 		if (scenes.input.isFramePressed(Key.Escape))
-			scenes.push(new Pause(), new Fade(.3, 0x00000080));
+			scenes.push(new Pause(), new Fade(.3, 0x80000000));
 	}
 
 	override public function draw():Void {
-		var p = Draw.screen(camera, 0x10281cff, "Playing", "Escape: pause");
+		var p = Draw.screen(camera, 0xff10281c, "Playing", "Escape: pause");
 		var vx = p.visibleX,
 			vy = p.visibleY,
 			vw = p.visibleWidth,
@@ -203,7 +203,7 @@ class Pause extends Scene {
 	override public function update(dt:Float):Void {
 		var input = scenes.input;
 		if (input.isFramePressed(Key.Escape))
-			scenes.pop(new Fade(.3, 0x00000080));
+			scenes.pop(new Fade(.3, 0x80000000));
 		else if (input.isFramePressed(Key.T)) {
 			scenes.pop();
 			scenes.replace(new Title(), new Fade(.6));
@@ -211,7 +211,7 @@ class Pause extends Scene {
 	}
 
 	override public function draw():Void {
-		Draw.screen(camera, 0x262c3cff, "Paused", "Escape: resume   T: title");
+		Draw.screen(camera, 0xff262c3c, "Paused", "Escape: resume   T: title");
 	}
 }
 
@@ -226,8 +226,8 @@ class Draw {
 		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, color);
 		App.batch.begin(camera);
 		var y = vy + 36;
-		y += App.batch.drawTextWrapped(title, vx + 12, y, 22, vw - 24, 0xf5f5f5ff) + 4;
-		App.batch.drawTextWrapped(help, vx + 12, y, 15, vw - 24, 0xc8c8c8ff);
+		y += App.batch.drawTextWrapped(title, vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 4;
+		App.batch.drawTextWrapped(help, vx + 12, y, 15, vw - 24, 0xffc8c8c8);
 		App.batch.end();
 		return p;
 	}

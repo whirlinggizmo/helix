@@ -30,10 +30,10 @@ class Game extends helix.App {
 
 	override public function frame(dt:Float):Void {
 		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x202840ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
 		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0x66bfffff);
-		batch.drawText("Hello", 60, 90, 48, 0x102030ff);
+		batch.rect(40, 40, 320, 160, 0xff66bfff);
+		batch.drawText("Hello", 60, 90, 48, 0xff102030);
 		if (logo != null)
 			batch.sprite(logo, 400, 300, 64, 64);
 		batch.end();

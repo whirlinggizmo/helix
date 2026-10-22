@@ -44,21 +44,21 @@ class App extends helix.App {
 		rock = Shape2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
 		rock.outline = 2;
 		world.add(rock);
-		var ring = Shape2D.circle(30, 0x66bfffff);
+		var ring = Shape2D.circle(30, 0xff66bfff);
 		ring.outline = 3;
 		ring.setPosition(-120, 0);
 		world.add(ring);
-		box = Shape2D.rectangle(50, 30, 0xbe2137ff);
+		box = Shape2D.rectangle(50, 30, 0xffbe2137);
 		box.setPivot(.5, .5);
 		box.setPosition(120, 0);
 		world.add(box);
 		// Rounded, filled and outlined.
-		card = Shape2D.rectangle(50, 30, 0x2fa36bff);
+		card = Shape2D.rectangle(50, 30, 0xff2fa36b);
 		card.cornerRadius = 10;
 		card.setPivot(.5, .5);
 		card.setPosition(120, 75);
 		world.add(card);
-		var frame = Shape2D.rectangle(60, 40, 0xe8a33cff);
+		var frame = Shape2D.rectangle(60, 40, 0xffe8a33c);
 		frame.cornerRadius = 12;
 		frame.outline = 3;
 		frame.setPivot(.5, .5);
@@ -72,13 +72,13 @@ class App extends helix.App {
 		// A group: its children turn with it.
 		orbit = new Node2D();
 		orbit.setPosition(0, -110);
-		orbit.addChild(Shape2D.circle(10, 0xffcb00ff));
+		orbit.addChild(Shape2D.circle(10, 0xffffcb00));
 		for (side in [-1, 1]) {
-			var moon = Shape2D.circle(5, 0xc8c8c8ff);
+			var moon = Shape2D.circle(5, 0xffc8c8c8);
 			moon.setPosition(side * 30, 0);
 			orbit.addChild(moon);
 		}
-		var spoke = Shape2D.line(-30, 0, 30, 0, 0x808080ff);
+		var spoke = Shape2D.line(-30, 0, 30, 0, 0xff808080);
 		orbit.getChild(0).addChild(spoke);
 		world.add(orbit);
 
@@ -88,12 +88,12 @@ class App extends helix.App {
 		emitter.setLife(.4, .9);
 		emitter.setVelocity(25, 0, 0, Math.PI, .6);
 		emitter.setSize(4, 0);
-		emitter.setColor(0xffcb00ff, 0xff3c0000);
+		emitter.setColor(0xffffcb00, 0x00ff3c00);
 		sparks = new Particles2D(emitter);
 		world.add(sparks);
 		Textures.load("textures/particle.png", true, texture -> emitter.texture = texture);
 
-		title = new Text2D("HeliX stage2d", 20, 0xf5f5f5ff);
+		title = new Text2D("HeliX stage2d", 20, 0xfff5f5f5);
 		hud.add(title);
 	}
 
@@ -123,7 +123,7 @@ class App extends helix.App {
 		worldCamera.setPosition(0, 0);
 		worldCamera.zoom = presentation.scaleX * (1.25 + .25 * Math.sin(time * .5));
 
-		Graphics.beginFrame(width, height, 0x0c0e16ff);
+		Graphics.beginFrame(width, height, 0xff0c0e16);
 		batch.begin(worldCamera);
 		world.draw(batch, worldCamera);
 		hud.draw(batch, hudCamera);
@@ -131,7 +131,7 @@ class App extends helix.App {
 			vx
 			+ 12, vy
 			+ 60, 14, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

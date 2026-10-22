@@ -1,5 +1,6 @@
 package helix.particles;
 
+import helix.graphics.Color;
 import helix.math.Random;
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
@@ -10,7 +11,7 @@ import helix.render3d.SpriteAlpha;
 	move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them
 	does. A node places it on a stage (a Particles3D, or Node2D.emitter), which advances it by the stage's clock each draw; particles stay where
 	they were born when it moves (trails), face the camera, and aren't sorted among themselves. Its random numbers are its own (seed): the
-	same seed and settings give the same particles. Colors are 0xRRGGBBAA, sRGB values, as sprites' are. */
+	same seed and settings give the same particles. Colors are 0xAARRGGBB, sRGB values, as sprites' are. */
 class Emitter {
 	static inline var RECORD = 48;
 	static inline var MAX_KEYS = 8;
@@ -330,7 +331,7 @@ class Emitter {
 	public function getColorKeyTime(index:Int):Float
 		return index >= 0 && index < colorTimes.length ? colorTimes[index] : 0;
 
-	/** Color key index's color, 0xRRGGBBAA (0 for an index out of range). */
+	/** Color key index's color, 0xAARRGGBB (0 for an index out of range). */
 	public function getColorKeyColor(index:Int):Int
 		return index >= 0 && index < colorValues.length ? colorValues[index] : 0;
 
@@ -361,7 +362,7 @@ class Emitter {
 	function get_paletteColorCount():Int
 		return palette.length;
 
-	/** Palette color index, 0xRRGGBBAA (0 for an index out of range). */
+	/** Palette color index, 0xAARRGGBB (0 for an index out of range). */
 	public function getPaletteColor(index:Int):Int
 		return index >= 0 && index < palette.length ? palette[index] : 0;
 
@@ -663,11 +664,11 @@ class Emitter {
 		keys(11, colorTimes);
 		for (i in 0...MAX_KEYS) {
 			var c = i < colorValues.length ? colorValues[i] : 0;
-			put(13 + i, (c >>> 24) / 255, ((c >>> 16) & 255) / 255, ((c >>> 8) & 255) / 255, (c & 255) / 255);
+			put(13 + i, Color.getRed(c) / 255, Color.getGreen(c) / 255, Color.getBlue(c) / 255, Color.getAlpha(c) / 255);
 		}
 		for (i in 0...8) {
 			var c = i < palette.length ? palette[i] : 0;
-			put(21 + i, (c >>> 24) / 255, ((c >>> 16) & 255) / 255, ((c >>> 8) & 255) / 255, (c & 255) / 255);
+			put(21 + i, Color.getRed(c) / 255, Color.getGreen(c) / 255, Color.getBlue(c) / 255, Color.getAlpha(c) / 255);
 		}
 	}
 

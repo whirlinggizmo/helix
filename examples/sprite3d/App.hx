@@ -113,7 +113,7 @@ class App extends helix.App {
 		sun.lookAt(-.5, -1, -.3);
 		stage.add(sun);
 		var stone = new Material();
-		stone.baseColor = 0x8a8f99ff;
+		stone.baseColor = 0xff8a8f99;
 		stone.roughness = .8;
 		var pedestal = new Model(Mesh.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
@@ -182,7 +182,7 @@ class App extends helix.App {
 	// The logo's texture in: the billboard draws it, tinted blue.
 	function useLogo(texture:Texture2D):Void {
 		logo.texture = texture;
-		logo.tint = 0x66bfffff;
+		logo.tint = 0xff66bfff;
 		loaded++;
 	}
 
@@ -196,7 +196,7 @@ class App extends helix.App {
 	// The flame sheet in: masked flames, cut out where their soft edges fade, a row of them behind the pedestal, and the coin's glow.
 	function light(texture:Texture2D):Void {
 		for (i in 0...5) {
-			var flame = new Sprite3D(texture, 0xffa040ff);
+			var flame = new Sprite3D(texture, 0xffffa040);
 			flame.setRegion(0, 0, 64, 64);
 			flame.setSpriteSize(.9, .9);
 			flame.setPivot(.5, 1);
@@ -210,7 +210,7 @@ class App extends helix.App {
 		if (heat != null)
 			shimmer();
 		// The coin's glow: a soft puff of the same sheet, gold, added over everything.
-		var glow = new Sprite3D(texture, 0xffd25aff);
+		var glow = new Sprite3D(texture, 0xffffd25a);
 		glow.setRegion(0, 0, 64, 64);
 		glow.setSpriteSize(1.4, 1.4);
 		glow.setPosition(-2, .5, 1.5);
@@ -268,21 +268,21 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		batch3D.begin(camera);
-		batch3D.grid(16, 1, 0x3c3f48ff);
+		batch3D.grid(16, 1, 0xff3c3f48);
 		batch3D.end();
 		stage.draw(camera);
 		batch.begin(hud);
 		var y = vy + 36;
 		y += batch.drawTextWrapped("HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18, vw - 24,
-			0xf5f5f5ff)
+			0xfff5f5f5)
 			+ 4;
 		var on = (value:Bool) -> value ? "on" : "off";
 		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

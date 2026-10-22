@@ -1,5 +1,7 @@
 package helix.ui;
 
+import helix.graphics.Color;
+
 /** The state a widget's part is drawn in, one at a time, picked by a fixed priority: Disabled (its widget can't be used), then Down (held by
 	the pointer), Over (under the pointer), Focused (its widget has focus, or the part is the one keys drive), else Normal. Every interactive
 	widget colors its parts through it (of, then pick, or the palettes face, handle and text over pick), so they answer the pointer, the keys
@@ -27,7 +29,7 @@ enum abstract WidgetState(Int) {
 	public static function of(enabled:Bool, down:Bool, over:Bool, focused:Bool):WidgetState
 		return !enabled ? Disabled : down ? Down : over ? Over : focused ? Focused : Normal;
 
-	/** Of the colors (0xRRGGBBAA) given for each state, the one for this state. */
+	/** Of the colors (0xAARRGGBB) given for each state, the one for this state. */
 	public function pick(normal:Int, over:Int, down:Int, focused:Int, disabled:Int):Int
 		return switch (cast this : WidgetState) {
 			case Disabled: disabled;
@@ -51,7 +53,7 @@ enum abstract WidgetState(Int) {
 	public function text(theme:Theme):Int
 		return pick(theme.textColor, theme.textColor, theme.textColor, theme.textColor, theme.disabledTextColor);
 
-	/** color (0xRRGGBBAA) dimmed as a disabled part is: its own color at half its alpha. */
+	/** color (0xAARRGGBB) dimmed as a disabled part is: its own color at half its alpha. */
 	public static function dim(color:Int):Int
-		return (color & 0xffffff00) | ((color & 0xff) >> 1);
+		return Color.withAlpha(color, Color.getAlpha(color) >> 1);
 }

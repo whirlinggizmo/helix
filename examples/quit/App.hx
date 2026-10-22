@@ -60,14 +60,14 @@ class App extends helix.App {
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0x1e2430ff);
+		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0xff1e2430);
 		batch.begin(camera);
 		var y = vy + 12;
-		y += batch.drawTextWrapped("HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xf5f5f5ff) + 8;
+		y += batch.drawTextWrapped("HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xfff5f5f5) + 8;
 		batch.drawTextWrapped(quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff);
+			- 24, 0xffc8c8c8);
 		batch.end();
 		Graphics.endFrame();
 	}

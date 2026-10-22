@@ -377,7 +377,7 @@ class Render3DTests {
 		pillar.setPosition(0, 1, 0);
 		stage.add(pillar);
 		var glass = new Model(Mesh.cube(1, 1, 1), new Material());
-		glass.tint = 0xffffff80;
+		glass.tint = 0x80ffffff;
 		glass.setPosition(3, 1, 0);
 		stage.add(glass);
 		var kept = new Model(Mesh.cube(1, 1, 1), new Material());

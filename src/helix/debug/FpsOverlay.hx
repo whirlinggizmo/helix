@@ -40,7 +40,7 @@ class FpsOverlay {
 		}
 	}
 
-	/** Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xRRGGBBAA. */
-	public function draw(batch:Batch2D, x:Float, y:Float, size = 16., color = 0x7fe07fff):Void
+	/** Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xAARRGGBB. */
+	public function draw(batch:Batch2D, x:Float, y:Float, size = 16., color = 0xff7fe07f):Void
 		batch.drawText(Std.int(rate + .5) + ' FPS  ' + (Math.round(milliseconds * 10) / 10) + ' ms', x, y, size, color);
 }

@@ -73,7 +73,7 @@ The types a `@:prop` field can have, as a scene file writes them: a number, a st
 - `BoolProp`: A `Bool`.
 - `StringProp`: A `String`.
 - `FloatsProp`: An `Array<Float>` (the type declared on the field).
-- `ColorProp`: An `Int` holding a color, 0xRRGGBBAA, marked `@:prop("color")`: a file writes it `"#RRGGBB"` or `"#RRGGBBAA"`.
+- `ColorProp`: An `Int` holding a color, 0xAARRGGBB, marked `@:prop("color")`: a file writes it `"#RRGGBB"` or `"#RRGGBBAA"`.
 - `NodeProp`: A `helix.render3d.Node3D`, a reference to a node of the file (`"@name"` or `"@path/from/root"`), null until resolved.
 
 ## BehaviorRegistry

@@ -22,7 +22,7 @@ class Chevron {
 	/** How far it reaches from its point toward its open end, in units, as last shaped: its arms' reach and their thickness. */
 	public var depth(default, null):Float = 0.;
 
-	/** Its color, 0xRRGGBBAA. */
+	/** Its color, 0xAARRGGBB. */
 	public var color(get, set):Int;
 
 	function get_color():Int

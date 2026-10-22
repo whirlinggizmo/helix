@@ -112,15 +112,15 @@ class App extends helix.App {
 		sun.lookAt(-.5, -1, -.4);
 		stage.add(sun);
 		lamp = new PointLight();
-		lamp.color = 0xff9a4aff;
+		lamp.color = 0xffff9a4a;
 		lamp.intensity = 12;
 		stage.add(lamp);
 		var floor = new Material();
-		floor.baseColor = 0x5c6066ff;
+		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
 		stage.add(new Model(Mesh.plane(14, 14), floor));
 		var shapes = [Mesh.sphere(.6), Mesh.cube(1, 1, 1), Mesh.torus(.5, .18), Mesh.cone(.5, 1.1)];
-		var colors = [0x3b82f6ff, 0xe5484dff, 0xf5b942ff, 0x46a758ff];
+		var colors = [0xff3b82f6, 0xffe5484d, 0xfff5b942, 0xff46a758];
 		for (i in 0...shapes.length) {
 			var material = new Material();
 			material.baseColor = colors[i];
@@ -133,8 +133,8 @@ class App extends helix.App {
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
 			var glow = new Material();
-			glow.baseColor = 0x000000ff;
-			glow.setEmissive(i == 0 ? 0xffd9a0ff : 0x9fd8ffff, 10);
+			glow.baseColor = 0xff000000;
+			glow.setEmissive(i == 0 ? 0xffffd9a0 : 0xff9fd8ff, 10);
 			var bulb = new Model(Mesh.sphere(.25), glow);
 			bulb.setPosition(i == 0 ? -1.6 : 1.9, 1.7, i == 0 ? 1.4 : -.8);
 			stage.add(bulb);
@@ -210,7 +210,7 @@ class App extends helix.App {
 	function makeSepia(shader:Shader):Void {
 		sepia = new ScreenEffect(Graphics.instance, shader);
 		sepia.parameters.setFloat("amount", .85);
-		sepia.parameters.setColor("paper", 0xffe2b0ff);
+		sepia.parameters.setColor("paper", 0xffffe2b0);
 		sepia.enabled = false;
 		var at = 0;
 		while (effects[at].name != "colorLut")
@@ -271,26 +271,26 @@ class App extends helix.App {
 			vw = presentation.visibleWidth;
 
 		// The scene into a texture, the effects but the last through more, then the screen; the HUD after, outside the effects.
-		post.beginScene(width, height, 0x14161cff);
+		post.beginScene(width, height, 0xff14161c);
 		stage.draw(camera);
 		post.endScene(time);
-		gpu.beginFrame(width, height, 0x000000ff);
+		gpu.beginFrame(width, height, 0xff000000);
 		post.present();
 		batch.begin(hud);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX postprocess: the shader library's screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
+		y += batch.drawTextWrapped("HeliX postprocess: the shader library's screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = [
 			for (e in effects)
 				'[${(e.key : Int) - (Key.Digit0 : Int)}] ${e.name} ${e.effect.enabled ? "on" : "off"}'
 		].join("  ");
-		y += batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xc8c8c8ff) + 4;
+		y += batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
 		y += batch.drawTextWrapped('[H] tone mapping first ${tonemap == null ? "off" : "on"}  HDR scene ${post.hdr ? "yes" : "no"}  [Up/Down] bloom ${Math.round(bloom.intensity * 100) / 100}  [O] camera',
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff)
+			- 24, 0xffc8c8c8)
 			+ 4;
 		if (status != "")
-			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xff8080ff);
+			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		gpu.endFrame();

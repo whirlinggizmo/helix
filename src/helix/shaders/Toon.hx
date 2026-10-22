@@ -16,7 +16,7 @@ class Toon extends LibrarySurface {
 		return value;
 	}
 
-	/** The least light the surface shows, its unlit side's, 0xRRGGBBAA (sRGB, alpha ignored): the material's color times this where no light
+	/** The least light the surface shows, its unlit side's, 0xAARRGGBB (sRGB, alpha ignored): the material's color times this where no light
 		reaches. A dark blue grey by default. */
 	public var shadowColor(default, set):Int;
 
@@ -33,7 +33,7 @@ class Toon extends LibrarySurface {
 	public function new(material:Material) {
 		super(material, "toon", ToonPacked.text());
 		bands = 3;
-		shadowColor = 0x3a4150ff;
-		rim = new Rim(material, 0xffffff55, 3);
+		shadowColor = 0xff3a4150;
+		rim = new Rim(material, 0x55ffffff, 3);
 	}
 }

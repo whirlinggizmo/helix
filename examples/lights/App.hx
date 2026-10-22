@@ -42,13 +42,13 @@ class App extends helix.App {
 		Window.title = "HeliX lights";
 		Window.requestSize(1000, 600);
 		stage = new Stage3D();
-		stage.setAmbient(0x5a6ea0ff, .05);
+		stage.setAmbient(0xff5a6ea0, .05);
 		camera.setView(0, 4.5, 10, 0, 1, 0);
 		// Framed for 16:9: all the row across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 
 		var figure = Mesh.capsule(.3, 1.7, 16, 32), skin = new Material();
-		skin.baseColor = 0xd8d8d8ff;
+		skin.baseColor = 0xffd8d8d8;
 		skin.roughness = .6;
 		for (i in 0...FIGURES) {
 			var node = new Model(figure, skin);
@@ -57,18 +57,18 @@ class App extends helix.App {
 		}
 
 		sun = new DirectionalLight();
-		sun.color = 0xffd2a0ff;
+		sun.color = 0xffffd2a0;
 		sun.intensity = 1.1;
 		sun.lookAt(-.4, -1, -.6);
 		stage.add(sun);
 
 		lamp = new PointLight();
-		lamp.color = 0x3cdcffff;
+		lamp.color = 0xff3cdcff;
 		lamp.intensity = 20;
 		lamp.range = 5;
 		stage.add(lamp);
 		var glow = new Material();
-		glow.baseColor = 0x3cdcffff;
+		glow.baseColor = 0xff3cdcff;
 		glow.lit = false;
 		marker = new Model(Mesh.sphere(.12, 8, 16), glow);
 		stage.add(marker);
@@ -115,15 +115,15 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x0c0d12ff);
+		Graphics.beginFrame(width, height, 0xff0c0d12);
 		grid.begin(camera);
-		grid.grid(20, 1, 0x282a32ff);
+		grid.grid(20, 1, 0xff282a32);
 		grid.end();
 		stage.draw(camera);
 		batch.begin(camera2D);
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xf5f5f5ff) + 3;
-		batch.drawTextWrapped('[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch.drawTextWrapped("HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		batch.drawTextWrapped('[1] sun ${onOff(sun)}   [2] point light ${onOff(lamp)}   [3] spotlight ${onOff(spot)}', vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

@@ -49,22 +49,22 @@ class App extends helix.App {
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0x1c1c26ff);
+		Graphics.beginFrame(width, height, 0xff1c1c26);
 		batch3D.begin(camera3D);
-		batch3D.grid(20, 1, 0x505050ff);
-		batch3D.line(0, 0, 0, 5, 0, 0, 0xe62937ff);
-		batch3D.line(0, 0, 0, 0, 5, 0, 0x00e430ff);
-		batch3D.line(0, 0, 0, 0, 0, 5, 0x0079f1ff);
-		batch3D.cube(0, 1, 0, 2, 2, 2, 0x66bfffff);
-		batch3D.cubeWires(0, 1, 0, 2.02, 2.02, 2.02, 0x0052acff);
-		batch3D.sphere(5, 1.5, 0, 1.5, 0xffcb00ff);
-		batch3D.sphere(-5, 1.5, 0, 1.5, 0xbe2137ff);
+		batch3D.grid(20, 1, 0xff505050);
+		batch3D.line(0, 0, 0, 5, 0, 0, 0xffe62937);
+		batch3D.line(0, 0, 0, 0, 5, 0, 0xff00e430);
+		batch3D.line(0, 0, 0, 0, 0, 5, 0xff0079f1);
+		batch3D.cube(0, 1, 0, 2, 2, 2, 0xff66bfff);
+		batch3D.cubeWires(0, 1, 0, 2.02, 2.02, 2.02, 0xff0052ac);
+		batch3D.sphere(5, 1.5, 0, 1.5, 0xffffcb00);
+		batch3D.sphere(-5, 1.5, 0, 1.5, 0xffbe2137);
 		batch3D.end();
 
 		batch2D.begin(camera2D);
 		var y = vy + 36;
-		y += batch2D.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xf5f5f5ff) + 4;
-		batch2D.drawTextWrapped("orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xc8c8c8ff);
+		y += batch2D.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
+		batch2D.drawTextWrapped("orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		fps.draw(batch2D, vx + 12, vy + 10);
 		batch2D.end();
 		Graphics.endFrame();

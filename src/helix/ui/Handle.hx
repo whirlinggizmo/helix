@@ -30,7 +30,7 @@ class Handle {
 		shadow.color = theme.handleShadowColor;
 	}
 
-	/** The disc's color, 0xRRGGBBAA: its owner's, by the handle's state (WidgetState.handle). */
+	/** The disc's color, 0xAARRGGBB: its owner's, by the handle's state (WidgetState.handle). */
 	public var color(get, set):Int;
 
 	function get_color():Int

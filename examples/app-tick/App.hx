@@ -77,22 +77,22 @@ class App extends helix.App {
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x181a22ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff181a22);
 		batch.begin(camera);
 		var y = vy + 20;
-		y += batch.drawTextWrapped("HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xf5f5f5ff) + 5;
+		y += batch.drawTextWrapped("HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xfff5f5f5) + 5;
 		y += batch.drawTextWrapped('frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
 			+ (Time.clock.paused ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
-			- 40, 0xc8c8c8ff)
+			- 40, 0xffc8c8c8)
 			+ 4;
-		y += batch.drawTextWrapped('Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xc8c8c8ff) + 36;
-		y += batch.drawTextWrapped("where the latest tick left it", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
-		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffa100ff);
+		y += batch.drawTextWrapped('Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xffc8c8c8) + 36;
+		y += batch.drawTextWrapped("where the latest tick left it", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
+		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffffa100);
 		y += SQUARE + 55;
-		y += batch.drawTextWrapped("between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0x828282ff) + 5;
-		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0x66bfffff);
+		y += batch.drawTextWrapped("between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
+		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0xff66bfff);
 		fps.draw(batch, vx + 20, vy + vh - 30);
 		batch.end();
 		Graphics.endFrame();

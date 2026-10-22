@@ -47,7 +47,7 @@ One unit per kind of value across the API, so nothing has to be converted at a c
 
 - **Angles are radians.** A positive angle turns from +x toward +y: clockwise on screen in 2D, where y grows downward. 3D is right-handed with +y up.
 - **Time is seconds**, as a `Float`. A value in another unit says so in its name (`WorkQueue.budgetMs`) or, where the name can't, in its doc comment (`Time.frameCpu` and `frameInterval` are milliseconds).
-- **Colors are `0xRRGGBBAA`** integers.
+- **Colors are `0xAARRGGBB`** integers, alpha in the top byte, as Haxe's libraries write them and as an editor's color picker reads a literal; `helix.graphics.Color` gets and sets their channels. Text writes a color the CSS way, `#RRGGBB` or `#RRGGBBAA` (a scene file, a color picker's field), converted by `Color.fromRgba` and `toRgba`.
 - **A simulation that must play alike on every target** (an autopilot's replay, lockstep, physics) takes its trigonometry from `helix.math.Trig`, never `Math`'s `sin`, `cos`, `tan`, `atan2`, `asin`, `acos`, `exp` or `log`, which differ in the last bit between the browser and native. Arithmetic, `sqrt`, `floor` and `pow` agree. Drawing may use `Math`.
 - **Positions and sizes name their space** in the doc comment: framebuffer pixels (`IWindow`'s framebuffer size, the pointer), logical pixels (the window), or world units (a camera's).
 

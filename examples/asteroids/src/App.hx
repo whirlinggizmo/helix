@@ -86,11 +86,11 @@ class App extends helix.App {
 		pointer = new Pointer(Input.instance);
 		pointer.addStage2D(hud, hudCamera);
 		var theme = new helix.ui.Theme();
-		theme.faceColor = 0x1f293dff;
-		theme.hoveredColor = 0x303d57ff;
-		theme.pressedColor = 0x46587aff;
-		theme.focusColor = 0x73d9ffff;
-		theme.textColor = 0xd9e6f7ff;
+		theme.faceColor = 0xff1f293d;
+		theme.hoveredColor = 0xff303d57;
+		theme.pressedColor = 0xff46587a;
+		theme.focusColor = 0xff73d9ff;
+		theme.textColor = 0xffd9e6f7;
 		theme.textSize = 22;
 		theme.widgetHeight = 52;
 		theme.gap = 12;

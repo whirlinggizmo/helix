@@ -15,7 +15,7 @@ enum PropertyType {
 	/** A list of count numbers. */
 	Numbers(count:Int);
 
-	/** A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xRRGGBBAA in memory. */
+	/** A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xAARRGGBB in memory. */
 	Color;
 
 	/** A reference to a node of the file, "@name" or "@path/from/root" in the file. */
@@ -271,7 +271,7 @@ class SceneSchema {
 			new PropertySchema("shadowDistance", PropertyType.Number(1e-6), SceneValue.Number(50)),
 			new PropertySchema("shadowMapSize", PropertyType.Number(256, 4096), SceneValue.Number(2048)),
 			new PropertySchema("shadowStrength", PropertyType.Number(0, 1), SceneValue.Number(1)),
-			new PropertySchema("shadowColor", PropertyType.Color, SceneValue.Color(0x000000ff))
+			new PropertySchema("shadowColor", PropertyType.Color, SceneValue.Color(0xff000000))
 		];
 
 	// A point light's and a spot's range: 0 for unlimited.

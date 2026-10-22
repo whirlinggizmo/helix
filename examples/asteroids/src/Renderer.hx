@@ -1,4 +1,5 @@
 import Game.Body;
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.host.Presentation;
 import helix.render2d.Batch2D;
@@ -8,8 +9,8 @@ import helix.render2d.Align2D;
 /** Draws a Game through Batch2D in world units: the Game.W x Game.H field, letterboxed in the framebuffer; then the score, the lives and
 	the menu's panel over it in the presentation's units, so they stay readable on a phone. */
 class Renderer {
-	/** The clear color, 0xRRGGBBAA, of the field and the bars around it. */
-	public static inline var BACKGROUND = 0x04060bff;
+	/** The clear color, 0xAARRGGBB, of the field and the bars around it. */
+	public static inline var BACKGROUND = 0xff04060b;
 
 	var gpu:IGraphics;
 	var batch:Batch2D;
@@ -21,7 +22,7 @@ class Renderer {
 	}
 
 	static function rgba(r:Float, g:Float, b:Float, a:Float = 1.):Int
-		return Math.round(r * 255) << 24 | Math.round(g * 255) << 16 | Math.round(b * 255) << 8 | Math.round(a * 255);
+		return Color.fromChannels(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), Math.round(a * 255));
 
 	function setColor(r:Float, g:Float, b:Float, a:Float = 1.):Void
 		color = rgba(r, g, b, a);

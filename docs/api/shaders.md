@@ -124,7 +124,7 @@ var noise(default, set):Texture2D
 
 - `new`: Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise repeating every unit.
 - `amount`: How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0).
-- `edgeColor`: The glowing edge's color, 0xRRGGBBAA (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered: a share of its pixels thrown away in a fixed pattern, so the model stays opaque and its shadow alike); opaque orange by default.
+- `edgeColor`: The glowing edge's color, 0xAARRGGBB (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered: a share of its pixels thrown away in a fixed pattern, so the model stays opaque and its shadow alike); opaque orange by default.
 - `edgeIntensity`: How bright the edge glows: its color times this, 0 or more (past 1 brighter than white light): 4 by default. Under 0, or NaN, is 0.
 - `edgeWidth`: How wide the edge glows, in the noise's values (0..1) past the threshold, .001 to 1: .08 by default. Clamped to .001..1 (NaN is .001).
 - `scale`: How many times the noise repeats per unit of the model's own space (its mesh's, before the model's placing and scale), above 0: 1 by default, the library's noise's 8 cells across then each an eighth of a unit. Under .001, or NaN, is .001.
@@ -164,9 +164,9 @@ function trigger(color:Int, seconds:Float):Bool
 
 - `new`: Shows material's hit flash: none until triggered or an amount is held.
 - `material`: The material it flashes.
-- `color`: The flash's color, 0xRRGGBBAA (sRGB), its alpha how strong at most. White by default.
+- `color`: The flash's color, 0xAARRGGBB (sRGB), its alpha how strong at most. White by default.
 - `amount`: How much of the flash is held, 0 to 1 (times its color's alpha): 0, none, by default. Assigning holds it, ending a fade; read during a fade, it's the fade's start, 1. Clamped to 0..1 (NaN is 0).
-- `trigger`: Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the stage's time from the next draw. False, changing nothing, for seconds not above 0.
+- `trigger`: Flashes color (0xAARRGGBB, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the stage's time from the next draw. False, changing nothing, for seconds not above 0.
 
 ## LibraryScreenEffect
 
@@ -195,11 +195,11 @@ var attached(get, never):Bool
 An outline round a model: a pass (ModelPass) drawing the model again after the stage's opaque models, pushed out by a width in world units, its front faces culled, so the far side of that shell shows as a band past the model's edges, in a flat color; depth tested, so what's nearer covers it. Static or skinned, instanced like the model. Each vertex is pushed along its normal averaged over the vertices at its place (Mesh.passVertices), so where a low-poly model's normals split at its hard edges the shell stays closed; a flat face between hard edges moves out less than the width (a cube's by .58 of it, its corners along their diagonals). A model's separate meshes are pushed apart each on its own. Made on a model, it draws from then on; remove takes it off.
 
 ```haxe
-function new(model:Model, ?color:Int = 0x000000ff, ?width:Float = .02)
+function new(model:Model, ?color:Int = 0xff000000, ?width:Float = .02)
 var width(get, set):Float
 ```
 
-- `new`: Outlines model in color (0xRRGGBBAA, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by default; under 0 is 0).
+- `new`: Outlines model in color (0xAARRGGBB, sRGB: black by default; its alpha ignored, an outline is opaque), width world units wide (.02 by default; under 0 is 0).
 - `width`: How far the outline reaches past the model's surface, world units, 0 or more. Under 0, or NaN, is 0.
 
 ## PaletteSwap
@@ -239,15 +239,15 @@ var cellSize(default, set):Int
 A material's rim light: a color brightest where its surface turns away from the viewer, round its edge, added to its light. Every material has one, off until a Rim turns it on, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too). A Rim is a view of its material's: two on one material share it.
 
 ```haxe
-function new(material:Material, ?color:Int = 0xffffff80, ?power:Float = 3.)
+function new(material:Material, ?color:Int = 0x80ffffff, ?power:Float = 3.)
 var material(default, null):Material
 var color(get, set):Int
 var power(get, set):Float
 ```
 
-- `new`: Turns material's rim light on: color (0xRRGGBBAA, sRGB, its alpha how strong) and power (.1 to 64, clamped).
+- `new`: Turns material's rim light on: color (0xAARRGGBB, sRGB, its alpha how strong) and power (.1 to 64, clamped).
 - `material`: The material it lights.
-- `color`: The rim's color, 0xRRGGBBAA (sRGB), its alpha how strong (0 none, 255 all of it).
+- `color`: The rim's color, 0xAARRGGBB (sRGB), its alpha how strong (0 none, 255 all of it).
 - `power`: How tight the rim keeps to the edge, .1 to 64: 1 spreads it over the surface, 3 a rim, 8 a thin line. Clamped to .1..64 (NaN is .1).
 
 ## ShaderLibrary
@@ -279,10 +279,10 @@ static function release(gpu:IGraphics):Void
 A model seen through what hides it: a pass (ModelPass) drawing the model's shape where something nearer hides it (depth greater), in a flat color blended by its alpha, over the stage's other opaque models and sprites; the model itself is drawn after it, so its own parts never hide it (layered clothes, hair over a head). Static or skinned, instanced like the model. Made on a model, it draws from then on; remove takes it off.
 
 ```haxe
-function new(model:Model, ?color:Int = 0x3fa9ff99)
+function new(model:Model, ?color:Int = 0x993fa9ff)
 ```
 
-- `new`: Shows model where it's hidden in color (0xRRGGBBAA, sRGB, blended by its alpha): a light blue at 60% by default.
+- `new`: Shows model where it's hidden in color (0xAARRGGBB, sRGB, blended by its alpha): a light blue at 60% by default.
 
 ## SpriteDissolve
 
@@ -301,7 +301,7 @@ var noise(default, set):Texture2D
 
 - `new`: Whole, an orange edge .1 wide, the library's noise once across.
 - `amount`: How much is burnt away, 0 (whole, by default) to 1 (gone). Clamped to 0..1 (NaN is 0).
-- `edgeColor`: The edge's color, 0xRRGGBBAA (sRGB, its alpha how much of it over the sprite's): orange by default.
+- `edgeColor`: The edge's color, 0xAARRGGBB (sRGB, its alpha how much of it over the sprite's): orange by default.
 - `edgeWidth`: How wide the edge glows, in the noise's values (0..1) past the threshold, .001 to 1: .1 by default. Clamped to .001..1 (NaN is .001).
 - `scale`: How many times the noise repeats across the sprite's region, above 0: 1 by default. Under .001, or NaN, is .001.
 - `noise`: The noise it burns along (its red channel, sampled as its sampling says: repeating, for scale to tile it): the library's by default.
@@ -321,9 +321,9 @@ function prepare(time:Float):Void
 ```
 
 - `new`: No flash until triggered or an amount is held.
-- `color`: The flash's color, 0xRRGGBBAA (sRGB, its alpha how strong at most). White by default.
+- `color`: The flash's color, 0xAARRGGBB (sRGB, its alpha how strong at most). White by default.
 - `amount`: How much of the flash is held, 0 to 1 (times its color's alpha): 0, none, by default. Assigning holds it, ending a fade; read during a fade, it's the fade's start, 1. Clamped to 0..1 (NaN is 0).
-- `trigger`: Flashes color (0xRRGGBBAA, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the batch's time from the next draw. False, changing nothing, for seconds not above 0.
+- `trigger`: Flashes color (0xAARRGGBB, sRGB, its alpha how strong) all at once, fading to nothing over seconds of the batch's time from the next draw. False, changing nothing, for seconds not above 0.
 - `prepare`: Brings a fade to time (seconds of the batch's clock): its start the first time after a trigger.
 
 ## SpriteOutline
@@ -333,13 +333,13 @@ function prepare(time:Float):Void
 A sprite effect of the library: the sprite's shape outlined in a color, a width of texels out from its edge (eight reads around each pixel: the sides and the diagonals). The outline is drawn where the sprite's region is see-through, so a sprite needs that much transparent margin around its shape; what lies past its region in an atlas is never read. Shared by the sprites given it (SpriteEffect). Built on the program's GPU (Graphics) the first time one is made.
 
 ```haxe
-function new(?color:Int = 0x000000ff, ?width:Float = 1.)
+function new(?color:Int = 0xff000000, ?width:Float = 1.)
 var color(default, set):Int
 var width(default, set):Float
 ```
 
-- `new`: An outline of color (0xRRGGBBAA, black by default) width texels wide (1 by default).
-- `color`: The outline's color, 0xRRGGBBAA (sRGB, its alpha how opaque), faded with each sprite's tint's alpha.
+- `new`: An outline of color (0xAARRGGBB, black by default) width texels wide (1 by default).
+- `color`: The outline's color, 0xAARRGGBB (sRGB, its alpha how opaque), faded with each sprite's tint's alpha.
 - `width`: How far it reaches out from the shape, in the sprite's texels, 0 (none) to 32. Clamped to 0..32 (NaN is 0).
 
 ## Tonemap
@@ -360,7 +360,7 @@ function computeHdrColor(color:Int, out:Array<Float>):Void
 - `MAX_LIGHT`: The most linear light computeHdrColor answers with, for a color the mode never reaches (Neutral never reaches 1): Neutral shows it as white written in 8 bits.
 - `map`: linear (red, green, blue light) tone mapped by mode as the shader does it, into 0..1, a new array.
 - `mode`: How the light comes into 0..1 (helix.render3d.Tonemap's modes, as Stage3D.tonemap): Khronos PBR Neutral to start.
-- `computeHdrColor`: Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xRRGGBBAA): red, green and blue as sRGB values running past 1, alpha as given, 0 to 1. PostProcess clears an HDR scene to it, so a background of clear color alone looks the same with and without an HDR chain. Solved on the CPU (this tone mapping as the shader works it, one channel at a time by bisection, round after round, as the modes mix the channels a little), no channel past MAX_LIGHT. A color the mode can't show comes as near as it lets: Neutral desaturates what nears white, so a bright saturated color (0xff2000ff) is shown paler.
+- `computeHdrColor`: Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xAARRGGBB): red, green and blue as sRGB values running past 1, alpha as given, 0 to 1. PostProcess clears an HDR scene to it, so a background of clear color alone looks the same with and without an HDR chain. Solved on the CPU (this tone mapping as the shader works it, one channel at a time by bisection, round after round, as the modes mix the channels a little), no channel past MAX_LIGHT. A color the mode can't show comes as near as it lets: Neutral desaturates what nears white, so a bright saturated color (0xffff2000) is shown paler.
 
 ## Toon
 
@@ -377,7 +377,7 @@ var rim(default, null):Rim
 
 - `new`: Makes Toon material's surface shader: 3 bands, the shadow color dark blue grey, a rim of light.
 - `bands`: How many levels of light there are, 1 to 16: 3 by default. Clamped to 1..16.
-- `shadowColor`: The least light the surface shows, its unlit side's, 0xRRGGBBAA (sRGB, alpha ignored): the material's color times this where no light reaches. A dark blue grey by default.
+- `shadowColor`: The least light the surface shows, its unlit side's, 0xAARRGGBB (sRGB, alpha ignored): the material's color times this where no light reaches. A dark blue grey by default.
 - `rim`: Its rim of light: the material's rim light (Rim), on to start, white at a third, power 3.
 
 ## Unlit
@@ -392,7 +392,7 @@ var color(default, set):Int
 ```
 
 - `new`: Makes Unlit material's surface shader, color white.
-- `color`: What the material's base color and texture are multiplied by, 0xRRGGBBAA, its color sRGB as the material's are: white (the material as it is) by default.
+- `color`: What the material's base color and texture are multiplied by, 0xAARRGGBB, its color sRGB as the material's are: white (the material as it is) by default.
 
 ## Vignette
 
@@ -410,7 +410,7 @@ var softness(default, set):Float
 
 - `new`: A black vignette of strength (0..1), from .4 of the way to a corner, softness .6.
 - `strength`: How far the corners go toward color, 0 (none) to 1 (all the way): .4 by default.
-- `color`: What the corners go toward, 0xRRGGBBAA (sRGB as the frame is, alpha ignored): black by default.
+- `color`: What the corners go toward, 0xAARRGGBB (sRGB as the frame is, alpha ignored): black by default.
 - `radius`: Where the shading starts, a share of the way from the middle to a corner, 0 to 1: .4 by default.
 - `softness`: How far past radius the shading takes to reach its strength, the same share, .001 (a hard edge) to 2: .6 by default.
 
@@ -435,7 +435,7 @@ var shininess(default, set):Float
 - `amplitude`: The waves' height in the model's units, 0 or more: .03 by default. Under 0, or NaN, is 0.
 - `wavelength`: The distance between crests in the model's units, .001 or more: .4 by default. Under .001, or NaN, is .001.
 - `waveSpeed`: How fast the crests travel, the model's units a second (by the stage's time): .2 by default.
-- `deepColor`: Its color looked straight into, 0xRRGGBBAA (sRGB, alpha ignored): a deep blue by default.
-- `shallowColor`: Its color toward grazing, 0xRRGGBBAA (sRGB, alpha ignored): a green blue by default.
-- `skyColor`: What it reflects at grazing angles when the stage has no environment, 0xRRGGBBAA (sRGB, alpha ignored): a pale sky by default.
+- `deepColor`: Its color looked straight into, 0xAARRGGBB (sRGB, alpha ignored): a deep blue by default.
+- `shallowColor`: Its color toward grazing, 0xAARRGGBB (sRGB, alpha ignored): a green blue by default.
+- `skyColor`: What it reflects at grazing angles when the stage has no environment, 0xAARRGGBB (sRGB, alpha ignored): a pale sky by default.
 - `shininess`: How tight the lights' glints are, 1 to 2048: 120 by default. Clamped to 1..2048 (NaN is 1).

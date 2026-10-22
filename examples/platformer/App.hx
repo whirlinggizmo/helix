@@ -201,7 +201,7 @@ class App extends helix.App {
 		var presentation = Screen.instance;
 		presentation.apply(hud);
 
-		Graphics.beginFrame(width, height, 0x1d2230ff);
+		Graphics.beginFrame(width, height, 0xff1d2230);
 		batch.begin(camera);
 		// The tiles in view.
 		if (tiles != null) {
@@ -228,11 +228,11 @@ class App extends helix.App {
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		batch.drawText("HeliX platformer: an arcade body, a sprite sheet, a following camera", vx + 20, vy + 20, 20, 0xebeef5ff);
+		batch.drawText("HeliX platformer: an arcade body, a sprite sheet, a following camera", vx + 20, vy + 20, 20, 0xffebeef5);
 		batch.drawText(failure != null ? 'failed: $failure' : 'gears $collected of $total   $saved   arrows or A, D to move, Space, Up, W or Z to jump, K to shake, R to start again',
 			vx
 			+ 20, vy
-			+ 46, 15, 0x8c929eff);
+			+ 46, 15, 0xff8c929e);
 		fps.draw(batch, vx + vw - 150, vy + 4);
 		batch.end();
 		Graphics.endFrame();

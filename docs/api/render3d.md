@@ -69,7 +69,7 @@ Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, a
 
 *class* in `src/helix/render3d/Batch3D.hx`
 
-Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xRRGGBBAA. Solid shapes are shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader.
+Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xAARRGGBB. Solid shapes are shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader.
 
 ```haxe
 function new(?gpu:IGraphics, ?maxVertices:Int = 65536)
@@ -445,7 +445,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Light.hx`
 
-A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight, a PointLight or a SpotLight (a stage never holds a bare Light). Its color is 0xRRGGBBAA (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast them onto those that receive them (Model.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
+A light, shining from its node's place and orientation once it is on a stage: a DirectionalLight, a PointLight or a SpotLight (a stage never holds a bare Light). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node. A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast them onto those that receive them (Model.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer).
 
 ```haxe
 var color:Int
@@ -460,13 +460,13 @@ var shadowBiasSlope(default, null):Float
 function setShadowBias(constant:Float, slope:Float):Bool
 ```
 
-- `color`: Its color, 0xRRGGBBAA.
+- `color`: Its color, 0xAARRGGBB.
 - `intensity`: Its intensity, a multiplier: 0 or more (under 0, or NaN, is 0).
 - `shadowCasting`: Whether it casts shadows (always false for a point light: it would need a map each way).
 - `shadowDistance`: How far from the camera a directional light's shadows reach, in world units (50 by default); a spot's reach no further. Shorter is sharper: the map covers less. At least 1e-6 (0 or less, or NaN, is 1e-6) and finite (infinity is the largest finite Float).
 - `shadowMapSize`: Its shadow map's side in texels (2048 by default): a power of two from 256 to 4096, what it's given rounded down to one and into that range. A stage's casting lights share the largest asked for.
 - `shadowStrength`: How much of its light a shadow takes away, clamped to 0..1 (1 by default; NaN is 0).
-- `shadowColor`: What its shadows leave of the surface's own color, 0xRRGGBBAA (sRGB, alpha ignored; black by default: nothing): a cold blue for a sunny day's shade.
+- `shadowColor`: What its shadows leave of the surface's own color, 0xAARRGGBB (sRGB, alpha ignored; black by default: nothing): a cold blue for a sunny day's shade.
 - `shadowBiasConstant`: Its shadows' depth bias, constant part, in shadow-map texels (1 by default).
 - `shadowBiasSlope`: Its shadows' depth bias, slope part: texels more where the light grazes a surface (4 by default).
 - `setShadowBias`: Sets its shadows' depth bias in texels: constant everywhere, plus slope where the light grazes. More stops a surface shadowing itself in stripes ("acne"); too much lifts a shadow off its caster's foot. False, changing nothing, for a negative or infinite one.
@@ -511,7 +511,7 @@ function writeTo(bytes:haxe.io.Bytes, ?offset:Int = 0):Void
 
 *class* in `src/helix/render3d/Material.hx`
 
-How a model's surface looks: glTF's metallic-roughness model. A base color (0xRRGGBBAA, its color sRGB-encoded as the convention's colors are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how rough (0..1) it is, an optional normal map (linear, tangent space, green up) and its strength, light it gives off (emissive), and whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw together.
+How a model's surface looks: glTF's metallic-roughness model. A base color (0xAARRGGBB, its color sRGB-encoded as the convention's colors are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how rough (0..1) it is, an optional normal map (linear, tangent space, green up) and its strength, light it gives off (emissive), and whether lights shade it at all. Shared by any number of models: models alike in mesh and material draw together.
 
 ```haxe
 function new()
@@ -533,16 +533,16 @@ var blended(get, set):Bool
 ```
 
 - `new`: White, not metallic, roughness 0.5, lit, untextured, giving off no light.
-- `baseColor`: The base color, 0xRRGGBBAA.
+- `baseColor`: The base color, 0xAARRGGBB.
 - `texture`: The base color texture, or null for none (white).
 - `metallic`: How metallic, 0..1. Clamped to 0..1 (NaN is 0).
 - `roughness`: How rough, 0..1. Clamped to 0..1 (NaN is 0).
 - `lit`: Whether lights shade it; unlit, it shows its color as it is.
 - `normalTexture`: The normal map (linear, tangent space, green up), or null for none. Load it linear (not sRGB), with mipmaps.
 - `normalScale`: How strongly the normal map bends the surface: 1 as it is, 0 flat. 0 or more (under 0, or NaN, is 0).
-- `emissive`: The light it gives off, 0xRRGGBBAA (sRGB, alpha ignored); black for none.
+- `emissive`: The light it gives off, 0xAARRGGBB (sRGB, alpha ignored); black for none.
 - `emissiveStrength`: How bright its emissive light is: the color times this.
-- `setEmissive`: Gives it light of its own, color (0xRRGGBBAA, sRGB) times strength, lit or not. False for a strength under 0.
+- `setEmissive`: Gives it light of its own, color (0xAARRGGBB, sRGB) times strength, lit or not. False for a strength under 0.
 - `doubleSided`: Whether both sides of its triangles draw (the back with its normal turned toward the viewer), for open surfaces, leaves, cloth, or a surface a shader cuts holes in; otherwise back faces are culled.
 - `shader`: The app's surface shader it draws with, or null for the stage's own shading.
 - `setShader`: Draws it with an app's surface shader (a .hxshader of kind surface: its own fragment stage, and maybe a vertex hook), which gets the material's values and textures and the stage's lights; null goes back to the stage's own shading. False, changing nothing, for a shader of another kind. Its parameters (shaderParameters) start empty when the shader changes.
@@ -637,7 +637,7 @@ final arguments:Map<String, Float>
 
 *class* in `src/helix/render3d/Model.hx`
 
-A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted (0xRRGGBBAA, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows the joints it's bound to (bindSkeleton). Its mesh and material are its first part's.
+A model: its parts, each a mesh drawn with a material (a glTF node with several primitives is one model of several parts), tinted (0xAARRGGBB, white for none; its alpha below 255 makes it see-through), casting and receiving shadows. A model of a skinned mesh follows the joints it's bound to (bindSkeleton). Its mesh and material are its first part's.
 
 ```haxe
 function new(?mesh:Mesh, ?material:Material)
@@ -666,7 +666,7 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin):Bool
 - `material`: Its first part's material, or null with no parts. Assigned to a model with no parts, it makes that part (with no mesh).
 - `passCount`: How many extra passes it's drawn in (ModelPass: helix.shaders.Outline and Silhouette add themselves).
 - `getPass`: Its extra pass at index, in the order added; null past the end.
-- `tint`: Its tint, 0xRRGGBBAA.
+- `tint`: Its tint, 0xAARRGGBB.
 - `shadowCasting`: Whether it casts shadows (from the lights that cast them; see-through models never do). True by default.
 - `shadowReceiving`: Whether shadows fall on it. True by default.
 - `skin`: Its skin (its mesh's joints by name), or null: a model of a skinned mesh without one draws in its bind pose.
@@ -739,7 +739,7 @@ function remove():Bool
 ```
 
 - `model`: The model it draws.
-- `color`: Its color, 0xRRGGBBAA: a display color (sRGB, written as it is, as sprites' are), its alpha blending a silhouette over what hides it.
+- `color`: Its color, 0xAARRGGBB: a display color (sRGB, written as it is, as sprites' are), its alpha blending a silhouette over what hides it.
 - `enabled`: Whether it draws: true to start.
 - `remove`: Takes it off its model, which draws it no more. False when it was taken off before.
 
@@ -1017,7 +1017,7 @@ function setCone(inner:Float, outer:Float):Bool
 
 *class* in `src/helix/render3d/Sprite3D.hx`
 
-A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
+A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by its alpha, unlit, tinted (0xAARRGGBB, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own (Ground, Free).
 
 ```haxe
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
@@ -1041,9 +1041,9 @@ var alphaCutoff(get, never):Float
 function setAlphaMode(mode:SpriteAlpha, ?cutoff:Float = .5):Bool
 ```
 
-- `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xRRGGBBAA, white for none).
+- `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xAARRGGBB, white for none).
 - `texture`: Its texture, or null.
-- `tint`: Its tint, 0xRRGGBBAA (sRGB).
+- `tint`: Its tint, 0xAARRGGBB (sRGB).
 - `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect; its shader's sprite3D variant, its alpha mode applied as ever), or null (the default) for the framework's sprite program. Shared, as a 2D sprite's: the sprites given one draw with its values at the stage's time, and alike ones beside each other in the draw order (a texture, an alpha mode, an effect) are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
 - `regionX`: Its region's left, in texels.
@@ -1156,9 +1156,9 @@ function destroy():Void
 - `root`: The node everything on the stage hangs from.
 - `add`: Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself).
 - `remove`: Takes node from the stage's root. False when it isn't one of the root's children.
-- `ambientColor`: The ambient light's color, 0xRRGGBBAA (sRGB).
+- `ambientColor`: The ambient light's color, 0xAARRGGBB (sRGB).
 - `ambientIntensity`: The ambient light's intensity.
-- `setAmbient`: The light reaching everything evenly, from no direction: color 0xRRGGBBAA (sRGB) times intensity. False for an intensity under 0.
+- `setAmbient`: The light reaching everything evenly, from no direction: color 0xAARRGGBB (sRGB) times intensity. False for an intensity under 0.
 - `environment`: The environment lighting the lit models, or null.
 - `environmentIntensity`: How strongly the environment lights them, and the background shows: 1 as its file has it.
 - `environmentRotation`: How far the environment, and the background, turn about +y, in radians.
@@ -1185,7 +1185,7 @@ function destroy():Void
 
 *class* in `src/helix/render3d/Text3D.hx`
 
-A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's pivot at its position (its center by default), facing the camera, in a color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until pickable is set: a label lets a pick through to what it's on.
+A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until pickable is set: a label lets a pick through to what it's on.
 
 ```haxe
 function new(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font2D)
@@ -1202,7 +1202,7 @@ var facing:SpriteFacing
 - `new`: value, size world units tall (a size of 0 or less is 0.5), in color, in font (null: the stage's built-in one).
 - `text`: Its text.
 - `textSize`: Its size, world units tall. At least 1e-6 (0 or less, or NaN, is 1e-6).
-- `color`: Its color, 0xRRGGBBAA (sRGB).
+- `color`: Its color, 0xAARRGGBB (sRGB).
 - `font`: Its font, or null for the stage's built-in one.
 - `setPivot`: Sets the point of its block at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its bottom-right (0.5, 0.5, its center, by default).
 - `pivotX`: Its pivot's x fraction.

@@ -31,7 +31,7 @@ class Label extends Widget {
 	/** Its text's height in units, or null (to start) for the theme's textSize: a value is kept whatever the theme becomes. */
 	public var textSize:Null<Float> = null;
 
-	/** Its text's color, 0xRRGGBBAA, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes. */
+	/** Its text's color, 0xAARRGGBB, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes. */
 	public var color:Null<Int> = null;
 
 	override function readTheme(theme:Theme):Void {

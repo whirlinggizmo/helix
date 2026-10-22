@@ -49,7 +49,7 @@ A baked glyph: its place in the atlas, its box's offset from the pen on the base
 
 *class* in `src/helix/render2d/Batch2D.hx`
 
-Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
+Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
 
 ```haxe
 function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
@@ -116,19 +116,19 @@ function destroy():Void
 - `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
 - `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
 - `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
-- `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xRRGGBBAA, white by default). Throws when the frame's vertices pass capacity.
-- `sheetFrame`: sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xRRGGBBAA, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
+- `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity.
+- `sheetFrame`: sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
 - `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
 - `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
 - `emitter`: Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An emitter with nothing to draw draws nothing.
-- `drawText`: Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted color (0xRRGGBBAA), in font or the batch's built-in one. Characters without a glyph are skipped.
+- `drawText`: Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped.
 - `drawTextWrapped`: Draws text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
 - `rect`: A filled rectangle in world units, top-left at x, y.
 - `triangle`: A filled triangle through three world points.
 - `line`: A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0.
 - `frame`: Rectangle outline drawn inside its bounds.
 - `roundedRect`: A filled rectangle with corners of radius world units (clamped to half the shorter side), with segments for their size on screen.
-- `gradientRect`: A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from one color to the other (0xRRGGBBAA), each channel linearly: across it, from its left edge to its right, or down, from its top to its bottom.
+- `gradientRect`: A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from one color to the other (0xAARRGGBB), each channel linearly: across it, from its left edge to its right, or down, from its top to its bottom.
 - `roundedFrame`: A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers.
 - `circle`: A filled circle in world units, centered on x, y, with segments for its size on screen.
 - `circleLines`: Circle outline drawn inside its radius.
@@ -459,7 +459,7 @@ static function triangulate(points:Array<Float>):Array<Int>
 
 *class* in `src/helix/render2d/Shape2D.hx`
 
-A flat shape in a color (0xRRGGBBAA), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size, pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn.
+A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size, pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn.
 
 ```haxe
 static function rectangle(width:Float, height:Float, ?color:Int = 0xffffffff):Shape2D
@@ -488,9 +488,9 @@ function setPoints(value:Array<Float>):Bool
 - `line`: A line from x0, y0 to x1, y1 in its own units, as wide as its outline (1 to start).
 - `polygon`: A filled polygon through points in its own units (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). Null for fewer than 3 points or an odd count.
 - `form`: Which shape it is.
-- `color`: Its color, 0xRRGGBBAA: a shaded rectangle's at its start (its left edge, or its top).
+- `color`: Its color, 0xAARRGGBB: a shaded rectangle's at its start (its left edge, or its top).
 - `shading`: How a filled rectangle is colored: Flat in color (the start), or shaded from color to endColor across or down it, each channel linearly (alpha too, so a ramp to the same color at alpha 0 fades it out). An outlined rectangle and the other forms are drawn flat.
-- `endColor`: The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xRRGGBBAA. (0xffffffff to start.)
+- `endColor`: The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xAARRGGBB. (0xffffffff to start.)
 - `width`: A rectangle's width, in its own units.
 - `height`: A rectangle's height, in its own units.
 - `setSize`: Sizes a rectangle, in its own units; below 0 is 0.
@@ -519,7 +519,7 @@ How a filled rectangle is colored.
 
 *class* in `src/helix/render2d/Sprite2D.hx`
 
-A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xRRGGBBAA). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
+A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
 
 ```haxe
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
@@ -547,9 +547,9 @@ var nineSliceBottom(get, never):Float
 var nineSlice(get, never):Bool
 ```
 
-- `new`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted (0xRRGGBBAA, white for none).
+- `new`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted (0xAARRGGBB, white for none).
 - `texture`: Its texture, or null: it draws nothing.
-- `tint`: What its texels are multiplied by, 0xRRGGBBAA: white leaves them as they are.
+- `tint`: What its texels are multiplied by, 0xAARRGGBB: white leaves them as they are.
 - `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows no sheet's frame after (setFrame).
 - `setFrame`: Shows sheet's frame at index (a SpriteAnimator given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
@@ -731,7 +731,7 @@ function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
 
 *class* in `src/helix/render2d/Text2D.hx`
 
-A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xRRGGBBAA) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font2D.measure measures it.
+A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font2D.measure measures it.
 
 ```haxe
 function new(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font2D)
@@ -750,7 +750,7 @@ function measureHeight(font:Font2D):Float
 - `new`: value, size units tall (0 or less, or NaN, is 1e-6), in color, aligned on its position by align, in font (null: the batch's built-in one).
 - `text`: Its text.
 - `textSize`: Its size, units tall (ascent to descent). At least 1e-6 (0 or less, or NaN, is 1e-6).
-- `color`: Its color, 0xRRGGBBAA.
+- `color`: Its color, 0xAARRGGBB.
 - `align`: Which point of it its position's x is: its left edge, center or right edge.
 - `font`: Its font, or null for the drawing batch's built-in one.
 - `wrapWidth`: Its wrap width in its own units: 0 for one line.

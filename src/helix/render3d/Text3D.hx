@@ -3,7 +3,7 @@ package helix.render3d;
 import helix.render2d.Font2D;
 
 /** A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's
-	pivot at its position (its center by default), facing the camera, in a color (0xRRGGBBAA, sRGB). Unlit and blended, as sprites are, and
+	pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and
 	sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until pickable is set: a label lets a pick
 	through to what it's on. */
 class Text3D extends Node3D {
@@ -34,7 +34,7 @@ class Text3D extends Node3D {
 		return value;
 	}
 
-	/** Its color, 0xRRGGBBAA (sRGB). */
+	/** Its color, 0xAARRGGBB (sRGB). */
 	public var color:Int;
 
 	/** Its font, or null for the stage's built-in one. */

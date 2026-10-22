@@ -1,3 +1,4 @@
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
@@ -107,14 +108,14 @@ class App extends helix.App {
 				ring[2] = 1;
 			}
 
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x161921ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff161921);
 		batch.begin(camera);
 		if (logo != null)
 			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
 		if (tiles != null) {
 			var w = tiles.width, h = tiles.height;
 			// The coin: 16x16 texels at 42, 22 in the tile sheet.
-			batch.sprite(tiles, coinX, coinY, COIN, COIN, 0, coinHeld ? 0xffe696ff : 0xffffffff, 42 / w, 22 / h, 58 / w, 38 / h);
+			batch.sprite(tiles, coinX, coinY, COIN, COIN, 0, coinHeld ? 0xffffe696 : 0xffffffff, 42 / w, 22 / h, 58 / w, 38 / h);
 		}
 		for (i in 0...FINGERS) {
 			var ring = lifted[i];
@@ -142,12 +143,12 @@ class App extends helix.App {
 		y += batch.drawTextWrapped('logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y, 18,
 			vw - 32, 0xffffffff)
 			+ 1.5;
-		batch.drawTextWrapped("two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0x969eafff);
+		batch.drawTextWrapped("two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0xff969eaf);
 		batch.end();
 		Graphics.endFrame();
 	}
 
 	/** A finger's color, by its id, with alpha. */
 	static function color(id:Int, alpha:Int):Int
-		return ((90 + 20 * id) << 24) | ((200 - 15 * id) << 16) | ((120 + 17 * id) << 8) | alpha;
+		return Color.fromChannels(90 + 20 * id, 200 - 15 * id, 120 + 17 * id, alpha);
 }

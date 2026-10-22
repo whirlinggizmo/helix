@@ -1,6 +1,6 @@
 package helix.render2d;
 
-/** A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xRRGGBBAA) and a font (null: the drawing batch's
+/** A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's
 	built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of
 	lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text
 	without a node; Font2D.measure measures it. */
@@ -33,7 +33,7 @@ class Text2D extends Node2D {
 		return size;
 	}
 
-	/** Its color, 0xRRGGBBAA. */
+	/** Its color, 0xAARRGGBB. */
 	public var color:Int;
 
 	/** Which point of it its position's x is: its left edge, center or right edge. */

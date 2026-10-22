@@ -540,7 +540,7 @@ private class SceneReader {
 		return material;
 	}
 
-	/** "#RRGGBB" or "#RRGGBBAA" (either case) as 0xRRGGBBAA; null for anything else. */
+	/** "#RRGGBB" or "#RRGGBBAA" (either case, the CSS order) as a color, 0xAARRGGBB; null for anything else. */
 	public static function parseColor(text:String):Null<Int> {
 		if ((text.length != 7 && text.length != 9) || text.charAt(0) != "#")
 			return null;
@@ -553,7 +553,7 @@ private class SceneReader {
 				return null;
 			value = (value << 4) | digit;
 		}
-		return text.length == 7 ? (value << 8) | 0xff : value;
+		return helix.graphics.Color.fromRgba(text.length == 7 ? (value << 8) | 0xff : value);
 	}
 
 	static function isObject(value:Dynamic):Bool
@@ -823,10 +823,13 @@ private class SceneWriter {
 		return "[" + [for (v in values) number(v)].join(", ") + "]";
 
 	// "#rrggbb" when the alpha is ff, else "#rrggbbaa", quoted.
-	static function color(rgba:Int):String {
-		var text = "#" + hex(rgba >>> 24) + hex((rgba >> 16) & 0xff) + hex((rgba >> 8) & 0xff);
-		if (rgba & 0xff != 0xff)
-			text += hex(rgba & 0xff);
+	static function color(value:Int):String {
+		var text = "#"
+			+ hex(helix.graphics.Color.getRed(value))
+			+ hex(helix.graphics.Color.getGreen(value))
+			+ hex(helix.graphics.Color.getBlue(value));
+		if (helix.graphics.Color.getAlpha(value) != 0xff)
+			text += hex(helix.graphics.Color.getAlpha(value));
 		return '"$text"';
 	}
 

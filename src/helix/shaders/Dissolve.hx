@@ -21,7 +21,7 @@ class Dissolve extends LibrarySurface {
 		return value;
 	}
 
-	/** The glowing edge's color, 0xRRGGBBAA (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered:
+	/** The glowing edge's color, 0xAARRGGBB (sRGB): its alpha how much of the edge shows, what's behind the model through the rest (dithered:
 		a share of its pixels thrown away in a fixed pattern, so the model stays opaque and its shadow alike); opaque orange by default. */
 	public var edgeColor(default, set):Int;
 
@@ -76,7 +76,7 @@ class Dissolve extends LibrarySurface {
 	public function new(material:Material) {
 		super(material, "dissolve", DissolvePacked.text());
 		amount = 0;
-		edgeColor = 0xff7a1eff;
+		edgeColor = 0xffff7a1e;
 		edgeWidth = .08;
 		scale = 1;
 		noise = ShaderLibrary.getNoise(Graphics.instance);

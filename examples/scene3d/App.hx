@@ -28,14 +28,14 @@ import helix.render3d.Orbit;
 	asked of a helix.scene.Pointer each frame; nothing is told to the nodes. Escape quits where quitting means anything. */
 class App extends helix.App {
 	static var COLORS = [
-		0xe0523aff,
-		0xe0a33aff,
-		0xc8d23aff,
-		0x5ad23aff,
-		0x3ad2b4ff,
-		0x3a8ce0ff,
-		0x6a4ae0ff,
-		0xd24ab4ff
+		0xffe0523a,
+		0xffe0a33a,
+		0xffc8d23a,
+		0xff5ad23a,
+		0xff3ad2b4,
+		0xff3a8ce0,
+		0xff6a4ae0,
+		0xffd24ab4
 	];
 
 	var stage:Stage3D;
@@ -66,7 +66,7 @@ class App extends helix.App {
 		sun.lookAt(-.4, -1, -.3);
 		stage.add(sun);
 		var ground = new Material();
-		ground.baseColor = 0x3a3f4aff;
+		ground.baseColor = 0xff3a3f4a;
 		// The ground isn't something to pick: the pointer passes it (an unpickable node).
 		var floor = new Model(Mesh.plane(16, 16), ground);
 		floor.pickable = false;
@@ -81,7 +81,7 @@ class App extends helix.App {
 			shapes.push(cube);
 		}
 		var white = new Material();
-		white.baseColor = 0xe8e8f0ff;
+		white.baseColor = 0xffe8e8f0;
 		var sphere = new Model(Mesh.sphere(1), white);
 		sphere.name = "sphere";
 		sphere.setPosition(0, 1, 0);
@@ -93,9 +93,9 @@ class App extends helix.App {
 		stage.add(spinner);
 		shapes.push(spinner);
 		// The HUD: a button over the world (placed each frame, under the title), and what's selected.
-		button = Shape2D.rectangle(170, 36, 0x2a3040ff);
+		button = Shape2D.rectangle(170, 36, 0xff2a3040);
 		hud.add(button);
-		label = new Text2D("", 16, 0xf5f5f5ff);
+		label = new Text2D("", 16, 0xfff5f5f5);
 		hud.add(label);
 		pointer = new Pointer(Input.instance);
 		pointer.addStage3D(stage, camera);
@@ -133,30 +133,30 @@ class App extends helix.App {
 					selected.push(shape);
 			}
 		for (shape in shapes)
-			shape.tint = selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xc8c8c8ff : 0x8c8c8cff;
-		button.color = pointer.isDown(button) ? 0x56607aff : pointer.isHovered(button) ? 0x3c4458ff : 0x2a3040ff;
+			shape.tint = selected.indexOf(shape) >= 0 ? 0xffffffff : pointer.isHovered(shape) ? 0xffc8c8c8 : 0xff8c8c8c;
+		button.color = pointer.isDown(button) ? 0xff56607a : pointer.isHovered(button) ? 0xff3c4458 : 0xff2a3040;
 		label.text = orbit.running ? "stop the camera" : "start the camera";
 		orbit.update(dt);
 		spin += dt;
 		spinner.setRotation(spin * .7, spin, 0);
 		fps.update(dt, Time.frameCpu);
 
-		Graphics.beginFrame(width, height, 0x1c1e26ff);
+		Graphics.beginFrame(width, height, 0xff1c1e26);
 		stage.draw(camera);
 		batch.begin(hudCamera);
 		hud.draw(batch, hudCamera);
 		var hovered:Null<Node3D> = Std.isOfType(pointer.hovered, Node3D) ? cast pointer.hovered : null;
-		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, vw - 24, 0xf5f5f5ff);
+		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, vw - 24, 0xfff5f5f5);
 		var y = buttonY + 36 + 10;
 		y += batch.drawTextWrapped('under the pointer: ${hovered != null ? hovered.name : pointer.isHovered(button) ? "the button" : "nothing"}'
 			+ '   selected: ${selected.length == 0 ? "none" : [for (s in selected) s.name].join(", ")}'
 			+ (pointer.captured ? "   (the HUD has the pointer)" : ""),
 			vx
 			+ 12, y, 16, vw
-			- 24, 0xc8c8c8ff)
+			- 24, 0xffc8c8c8)
 			+ 4;
 		if (Host.canQuit())
-			batch.drawText("ESC: quit", vx + 12, y, 16, 0xc8c8c8ff);
+			batch.drawText("ESC: quit", vx + 12, y, 16, 0xffc8c8c8);
 		fps.draw(batch, vx + 12, vy + 10);
 		batch.end();
 		Graphics.endFrame();

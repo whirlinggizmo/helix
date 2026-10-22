@@ -41,14 +41,14 @@ function new()
 var frameRate(get, never):Float
 var frameMs(get, never):Float
 function update(dt:Float, cpu:Float):Void
-function draw(batch:Batch2D, x:Float, y:Float, ?size:Float = 16., ?color:Int = 0x7fe07fff):Void
+function draw(batch:Batch2D, x:Float, y:Float, ?size:Float = 16., ?color:Int = 0xff7fe07f):Void
 ```
 
 - `new`: An overlay showing 0 until half a second of frames has been seen.
 - `frameRate`: Frames a second over the last half second.
 - `frameMs`: The frame's average cost in milliseconds over the last half second.
 - `update`: dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.frameCpu).
-- `draw`: Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xRRGGBBAA.
+- `draw`: Draws the rate and cost with the top-left at x, y; size is the glyph height and color is 0xAARRGGBB.
 
 ## ITestHarness
 

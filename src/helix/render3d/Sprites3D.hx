@@ -2,6 +2,7 @@ package helix.render3d;
 
 import haxe.ds.Vector;
 import haxe.io.Bytes;
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.graphics.SpriteEffect;
@@ -239,7 +240,7 @@ class Sprites3D {
 	public function pickSprite(node:Sprite3D, ray:Ray, best:Float, hit:PickHit):Float {
 		if (node.texture == null)
 			return best;
-		if ((node.alphaMode == Blend || node.alphaMode == Add) && (node.tint & 255) < 128)
+		if ((node.alphaMode == Blend || node.alphaMode == Add) && Color.getAlpha(node.tint) < 128)
 			return best;
 		return pickQuad(node, node.facing, node.pivotX, node.pivotY, node.spriteWidth, node.spriteHeight, ray, best, hit);
 	}
@@ -247,7 +248,7 @@ class Sprites3D {
 	/** Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without
 		text, or a faint one (its color's alpha under a half), isn't hit. */
 	public function pickText(node:Text3D, ray:Ray, best:Float, hit:PickHit):Float {
-		if (node.text.length == 0 || (node.color & 255) < 128)
+		if (node.text.length == 0 || Color.getAlpha(node.color) < 128)
 			return best;
 		var font = node.font != null ? node.font : builtIn();
 		return pickQuad(node, node.facing, node.pivotX, node.pivotY, font.measure(node.text, node.textSize), node.textSize, ray, best, hit);
@@ -473,7 +474,7 @@ class Sprites3D {
 		else
 			put(Sprite3DProgram.upOffset, sy > 0 ? w.get(4) / sy : 0, sy > 0 ? w.get(5) / sy : 1, sy > 0 ? w.get(6) / sy : 0, alpha);
 		var tint = item.tint;
-		put(Sprite3DProgram.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255, (tint & 255) / 255);
+		put(Sprite3DProgram.tintOffset, Color.getRed(tint) / 255, Color.getGreen(tint) / 255, Color.getBlue(tint) / 255, Color.getAlpha(tint) / 255);
 	}
 
 	// A glyph: a sprite with its own axes (the text's plane), its top-left at its place in the text, tinted as the text (a distance field
@@ -512,8 +513,8 @@ class Sprites3D {
 		put(Sprite3DProgram.rightOffset, right[0], right[1], right[2], 0);
 		put(Sprite3DProgram.upOffset, up[0], up[1], up[2], 0);
 		var tint = item.tint;
-		put(Sprite3DProgram.tintOffset, (tint >>> 24) / 255, ((tint >>> 16) & 255) / 255, ((tint >>> 8) & 255) / 255,
-			(tint & 255) / 255 + (item.distanceField ? 2 : 0));
+		put(Sprite3DProgram.tintOffset, Color.getRed(tint) / 255, Color.getGreen(tint) / 255, Color.getBlue(tint) / 255,
+			Color.getAlpha(tint) / 255 + (item.distanceField ? 2 : 0));
 	}
 
 	// Draws drawn[from..to) as runs of a texture and effect through phase's pipeline: the framework's, or the effect's sprite3D variant's.
@@ -592,7 +593,7 @@ private class SpriteItem {
 	/** How it faces: its sprite's or text's. */
 	public var facing:SpriteFacing = Camera;
 
-	/** Its tint, 0xRRGGBBAA: its sprite's, or its text's color. */
+	/** Its tint, 0xAARRGGBB: its sprite's, or its text's color. */
 	public var tint = 0xffffffff;
 
 	/** Its texture. */

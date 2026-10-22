@@ -1,3 +1,4 @@
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.host.Presentation;
 import helix.render2d.Batch2D;
@@ -7,13 +8,13 @@ import helix.render2d.Camera2D;
 	readable where cells are small (a phone on its side). */
 class Renderer {
 	public static final colors = [
-		0x3fd0e0ff,
-		0xf0d040ff,
-		0xa050e0ff,
-		0x50d060ff,
-		0xe04848ff,
-		0x4870e8ff,
-		0xf09030ff
+		0xff3fd0e0,
+		0xfff0d040,
+		0xffa050e0,
+		0xff50d060,
+		0xffe04848,
+		0xff4870e8,
+		0xfff09030
 	];
 
 	/** The least text size, in the presentation's units. */
@@ -34,7 +35,7 @@ class Renderer {
 			var v = (color >>> shift) & 255;
 			return Std.int(amount >= 0 ? v + (255 - v) * amount : v * (1 + amount)) << shift;
 		}
-		return channel(24) | channel(16) | channel(8) | (color & 255);
+		return channel(16) | channel(8) | channel(0) | Color.withAlpha(0, Color.getAlpha(color));
 	}
 
 	// A text size in cells, at least the readable one.
@@ -64,29 +65,29 @@ class Renderer {
 	}
 
 	function panel(box:Array<Float>, label:String):Void {
-		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0x141b2bff);
-		batch.drawText(label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0x8090a8ff, Center);
+		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff141b2b);
+		batch.drawText(label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0xff8090a8, Center);
 	}
 
 	function button(box:Array<Float>, label:String, size:Float):Void {
-		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0x22304aff);
-		batch.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xe0e8f4ff, Center);
+		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff22304a);
+		batch.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xffe0e8f4, Center);
 	}
 
 	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units. */
 	public function render(game:Game, layout:Layout, camera:Camera2D, presentation:Presentation, tick:Int):Void {
 		least = READABLE * presentation.scaleX / camera.zoom;
-		gpu.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0x0a0e18ff);
+		gpu.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0xff0a0e18);
 		batch.begin(camera);
 		var fx = layout.fieldX,
 			fy = layout.fieldY,
 			visible = Game.H - Game.HIDDEN;
-		batch.rect(fx - .15, fy - .15, Game.W + .3, visible + .3, 0x2a3550ff);
-		batch.rect(fx, fy, Game.W, visible, 0x05070dff);
+		batch.rect(fx - .15, fy - .15, Game.W + .3, visible + .3, 0xff2a3550);
+		batch.rect(fx, fy, Game.W, visible, 0xff05070d);
 		for (x in 1...Game.W)
-			batch.rect(fx + x - .01, fy, .02, visible, 0x111827ff);
+			batch.rect(fx + x - .01, fy, .02, visible, 0xff111827);
 		for (y in 1...visible)
-			batch.rect(fx, fy + y - .01, Game.W, .02, 0x111827ff);
+			batch.rect(fx, fy + y - .01, Game.W, .02, 0xff111827);
 		for (y in Game.HIDDEN...Game.H) {
 			var flash = game.clearing.indexOf(y) >= 0;
 			for (x in 0...Game.W) {
@@ -101,7 +102,7 @@ class Renderer {
 			for (i in 0...4) {
 				var y = ghost + c[i * 2 + 1] - Game.HIDDEN;
 				if (y >= 0)
-					batch.frame(fx + game.px + c[i * 2] + .06, fy + y + .06, .88, .88, .08, (colors[game.piece] & 0xffffff00) | 0x90);
+					batch.frame(fx + game.px + c[i * 2] + .06, fy + y + .06, .88, .88, .08, Color.withAlpha(colors[game.piece], 0x90));
 			}
 			for (i in 0...4) {
 				var y = game.py + c[i * 2 + 1] - Game.HIDDEN;
@@ -125,28 +126,28 @@ class Renderer {
 				preview(game.queue[i], [layout.nextBox[0], layout.nextBox[1] + .5 + i * slot, layout.nextBox[2], slot],
 					i == 0 ? (layout.portrait ? 0.6 : .8) : .6);
 		var sx = layout.scoreX, sy = layout.scoreY;
-		batch.drawText(Std.string(game.score), sx, sy, 1, 0xf0f4faff, Center);
-		batch.drawText("LEVEL " + game.level, sx, sy + 1.3, size(.4), 0x8090a8ff, Center);
-		batch.drawText("LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0x8090a8ff, Center);
+		batch.drawText(Std.string(game.score), sx, sy, 1, 0xfff0f4fa, Center);
+		batch.drawText("LEVEL " + game.level, sx, sy + 1.3, size(.4), 0xff8090a8, Center);
+		batch.drawText("LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0xff8090a8, Center);
 		if (game.state == "playing")
 			button(layout.pauseBox, "II", .7);
 		if (game.state != "playing") {
-			batch.rect(fx, fy, Game.W, visible, 0x05070dd0);
+			batch.rect(fx, fy, Game.W, visible, 0xd005070d);
 			var cy = fy + visible * .3;
 			var title = switch game.state {
 				case "paused": "PAUSED";
 				case "over": "GAME OVER";
 				default: "BLOCKS";
 			};
-			batch.drawText(title, fx + Game.W / 2, cy, 1.2, 0xf0f4faff, Center);
+			batch.drawText(title, fx + Game.W / 2, cy, 1.2, 0xfff0f4fa, Center);
 			if (game.best > 0)
-				batch.drawText("BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0x8090a8ff, Center);
+				batch.drawText("BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0xff8090a8, Center);
 			if (tick % 60 < 40)
 				batch.drawTextWrapped(game.state == "paused" ? "TAP OR ENTER TO RESUME" : "TAP OR ENTER TO PLAY", fx
 					+ Game.W / 2, cy
 					+ 3.5, size(.4),
 					Game.W
-					- .5, 0xe0e8f4ff, Center);
+					- .5, 0xffe0e8f4, Center);
 			if (game.state == "title") {
 				var help = [
 					"TAP: TURN   DRAG: MOVE",
@@ -156,7 +157,7 @@ class Renderer {
 				// Wrapped to the well, stacked by the lines' heights.
 				var y = cy + 6;
 				for (line in help)
-					y += Math.max(.8, batch.drawTextWrapped(line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0x8090a8ff, Center));
+					y += Math.max(.8, batch.drawTextWrapped(line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0xff8090a8, Center));
 			}
 		}
 		batch.end();

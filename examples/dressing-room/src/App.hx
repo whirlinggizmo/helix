@@ -178,7 +178,7 @@ class App extends helix.App {
 		stage = new Stage3D(gpu);
 		studio = new Stage3D(gpu);
 		for (s in [stage, studio]) {
-			s.setAmbient(0xd8e0ffff, .3);
+			s.setAmbient(0xffd8e0ff, .3);
 			var key = new DirectionalLight();
 			key.intensity = 2.2;
 			key.lookAt(-.5, -.8, -.6);
@@ -191,11 +191,11 @@ class App extends helix.App {
 		}
 		// The turntable: a low disc on a dark floor.
 		var floor = new Material();
-		floor.baseColor = 0x22252eff;
+		floor.baseColor = 0xff22252e;
 		floor.roughness = .95;
 		stage.add(new Model(Mesh.plane(30, 30), floor));
 		var plinth = new Material();
-		plinth.baseColor = 0x8a8f9cff;
+		plinth.baseColor = 0xff8a8f9c;
 		plinth.roughness = .4;
 		plinth.metallic = .2;
 		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
@@ -749,15 +749,15 @@ class App extends helix.App {
 
 		frameRoom(presentation, width, height, dt);
 		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0x14161cff);
+		Graphics.beginFrame(width, height, 0xff14161c);
 		stage.draw(camera);
 		batch.begin(camera2D);
 		screen.draw(batch, camera2D);
-		caption(status, vx + 24, portrait ? panelLayout.y - 30 : vy + vh - 40, 18, 0xc8d0e8ff);
+		caption(status, vx + 24, portrait ? panelLayout.y - 30 : vy + vh - 40, 18, 0xffc8d0e8);
 		caption(portrait ? "drag: turn   pinch: zoom   double-tap: focus" : "drag: turn   wheel: zoom   double-click: focus   T: turntable   Q / E: slot   arrows, Enter, or a pad",
 			vx
 			+ 24, vy
-			+ 24, 16, 0x8a92a8ff);
+			+ 24, 16, 0xff8a92a8);
 		batch.end();
 		hud.setViewport(width, height);
 		hud.pixels(Window.pixelRatio);

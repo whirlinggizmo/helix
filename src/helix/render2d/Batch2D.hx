@@ -1,5 +1,6 @@
 package helix.render2d;
 
+import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.BlendMode;
 import helix.graphics.Pipelines;
@@ -9,7 +10,7 @@ import helix.render3d.SpriteAlpha;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
-	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xRRGGBBAA. A transform (setTransform)
+	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform)
 	places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a
 	sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own. */
 class Batch2D {
@@ -331,10 +332,10 @@ class Batch2D {
 	}
 
 	inline function color(value:Int):Void {
-		r = (value >>> 24) / 255;
-		g = ((value >>> 16) & 255) / 255;
-		b = ((value >>> 8) & 255) / 255;
-		a = (value & 255) / 255;
+		r = Color.getRed(value) / 255;
+		g = Color.getGreen(value) / 255;
+		b = Color.getBlue(value) / 255;
+		a = Color.getAlpha(value) / 255;
 	}
 
 	inline function vertex(x:Float, y:Float, u:Float, v:Float):Void {
@@ -416,7 +417,7 @@ class Batch2D {
 	}
 
 	/** texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it
-		(the whole texture by default), tinted (0xRRGGBBAA, white by default). Throws when the frame's vertices pass capacity. */
+		(the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity. */
 	public function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, rotation = 0., tint = 0xffffffff, u0 = 0., v0 = 0., u1 = 1.,
 			v1 = 1.):Void {
 		useTexture(texture);
@@ -440,7 +441,7 @@ class Batch2D {
 	}
 
 	/** sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times
-		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xRRGGBBAA, white
+		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white
 		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing.
 		Throws when the frame's vertices pass capacity. */
 	public function sheetFrame(sheet:SpriteSheet, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
@@ -561,7 +562,7 @@ class Batch2D {
 	}
 
 	/** Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted
-		color (0xRRGGBBAA), in font or the batch's built-in one. Characters without a glyph are skipped. */
+		color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped. */
 	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
 		if (font == null)
 			font = this.font;
@@ -645,7 +646,7 @@ class Batch2D {
 	}
 
 	/** A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from
-		one color to the other (0xRRGGBBAA), each channel linearly: across it, from its left edge to its right, or down, from its top to its
+		one color to the other (0xAARRGGBB), each channel linearly: across it, from its left edge to its right, or down, from its top to its
 		bottom. */
 	public function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void {
 		if (w <= 0 || h <= 0)
@@ -676,10 +677,10 @@ class Batch2D {
 	function shadedVertex(px:Float, py:Float, x:Float, y:Float, w:Float, h:Float, from:Int, to:Int, down:Bool, u:Float, v:Float):Void {
 		var t = down ? (py - y) / h : (px - x) / w;
 		t = t < 0 ? 0 : t > 1 ? 1 : t;
-		r = ((from >>> 24) * (1 - t) + (to >>> 24) * t) / 255;
-		g = (((from >>> 16) & 255) * (1 - t) + ((to >>> 16) & 255) * t) / 255;
-		b = (((from >>> 8) & 255) * (1 - t) + ((to >>> 8) & 255) * t) / 255;
-		a = ((from & 255) * (1 - t) + (to & 255) * t) / 255;
+		r = (Color.getRed(from) * (1 - t) + Color.getRed(to) * t) / 255;
+		g = (Color.getGreen(from) * (1 - t) + Color.getGreen(to) * t) / 255;
+		b = (Color.getBlue(from) * (1 - t) + Color.getBlue(to) * t) / 255;
+		a = (Color.getAlpha(from) * (1 - t) + Color.getAlpha(to) * t) / 255;
 		vertex(px, py, u, v);
 	}
 

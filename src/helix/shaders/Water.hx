@@ -37,7 +37,7 @@ class Water extends LibrarySurface {
 		return value;
 	}
 
-	/** Its color looked straight into, 0xRRGGBBAA (sRGB, alpha ignored): a deep blue by default. */
+	/** Its color looked straight into, 0xAARRGGBB (sRGB, alpha ignored): a deep blue by default. */
 	public var deepColor(default, set):Int;
 
 	function set_deepColor(value:Int):Int {
@@ -46,7 +46,7 @@ class Water extends LibrarySurface {
 		return value;
 	}
 
-	/** Its color toward grazing, 0xRRGGBBAA (sRGB, alpha ignored): a green blue by default. */
+	/** Its color toward grazing, 0xAARRGGBB (sRGB, alpha ignored): a green blue by default. */
 	public var shallowColor(default, set):Int;
 
 	function set_shallowColor(value:Int):Int {
@@ -55,7 +55,7 @@ class Water extends LibrarySurface {
 		return value;
 	}
 
-	/** What it reflects at grazing angles when the stage has no environment, 0xRRGGBBAA (sRGB, alpha ignored): a pale sky by default. */
+	/** What it reflects at grazing angles when the stage has no environment, 0xAARRGGBB (sRGB, alpha ignored): a pale sky by default. */
 	public var skyColor(default, set):Int;
 
 	function set_skyColor(value:Int):Int {
@@ -80,9 +80,9 @@ class Water extends LibrarySurface {
 		amplitude = .03;
 		wavelength = .4;
 		waveSpeed = .2;
-		deepColor = 0x0b2a4aff;
-		shallowColor = 0x2a8f96ff;
-		skyColor = 0xa0b8d8ff;
+		deepColor = 0xff0b2a4a;
+		shallowColor = 0xff2a8f96;
+		skyColor = 0xffa0b8d8;
 		shininess = 120;
 	}
 }

@@ -116,11 +116,11 @@ class App extends helix.App {
 		if (Host.canQuit() && input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0x1c1e26ff);
+		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff1c1e26);
 		batch.begin(camera);
-		batch.drawTextWrapped("HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xf5f5f5ff);
-		batch.drawTextWrapped(from, vx + 12, fromY, 16, vw - 24, 0xc8c8c8ff);
-		batch.drawTextWrapped(state, vx + 12, stateY, 16, vw - 24, 0xffcb00ff);
+		batch.drawTextWrapped("HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xfff5f5f5);
+		batch.drawTextWrapped(from, vx + 12, fromY, 16, vw - 24, 0xffc8c8c8);
+		batch.drawTextWrapped(state, vx + 12, stateY, 16, vw - 24, 0xffffcb00);
 		button("Fetch asset", vx + 12, buttonY, inside(x, y, vx + 12, buttonY));
 		button("Clear cache", vx + 204, buttonY, inside(x, y, vx + 204, buttonY));
 		if (logo != null)
@@ -137,7 +137,7 @@ class App extends helix.App {
 		return x >= left && x < left + BUTTON_WIDTH && y >= top && y < top + BUTTON_HEIGHT;
 
 	function button(label:String, x:Float, y:Float, hover:Bool):Void {
-		batch.roundedRect(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, 6, hover ? 0x3d4a66ff : 0x2b3448ff);
-		batch.drawText(label, x + BUTTON_WIDTH / 2, y + 11, 17, 0xf5f5f5ff, Center);
+		batch.roundedRect(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, 6, hover ? 0xff3d4a66 : 0xff2b3448);
+		batch.drawText(label, x + BUTTON_WIDTH / 2, y + 11, 17, 0xfff5f5f5, Center);
 	}
 }

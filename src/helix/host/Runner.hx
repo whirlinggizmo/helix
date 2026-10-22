@@ -189,7 +189,7 @@ class Runner {
 		if (!started) {
 			// Until the config has come: a blank frame, then the app begun.
 			if (configPending) {
-				adapters.graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0x000000ff);
+				adapters.graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff000000);
 				adapters.graphics.endFrame();
 				input.endFrame();
 				frameCpu = (host.time - now) * 1000;

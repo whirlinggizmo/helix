@@ -53,7 +53,7 @@ class BehaviorTests {
 		check(on.type == BoolProp && on.value == true, "A Bool");
 		check(label.type == StringProp && label.value == "x", "A String");
 		check(points.type == FloatsProp && (points.value : Array<Float>).join(",") == "1,2", "A declared Array<Float> with its list");
-		check(tint.type == ColorProp && tint.value == 0xff0000ff, "An Int marked a color");
+		check(tint.type == ColorProp && tint.value == 0xffff0000, "An Int marked a color");
 		check(target.type == NodeProp && target.value == null, "A Node3D reference, null to start");
 		check(bias.type == FloatProp && bias.value == -.5 && bias.min == -1 && bias.max == 1, "A negative default and range");
 
@@ -79,11 +79,11 @@ class BehaviorTests {
 		var list:Dynamic = [3, 4.5];
 		check(entry.setProp(made, "points", list)
 			&& (entry.getProp(made, "points") : Array<Float>).join(",") == "3,4.5", "A list of numbers");
-		check(entry.setProp(made, "tint", 0x00ff00ff) && entry.getProp(made, "tint") == 0x00ff00ff, "A color");
+		check(entry.setProp(made, "tint", 0xff00ff00) && entry.getProp(made, "tint") == 0xff00ff00, "A color");
 		check(entry.setProp(made, "target", node) && entry.getProp(made, "target") == node, "A node reference");
 		check(entry.setProp(made, "target", null) && entry.getProp(made, "target") == null, "which can be null");
 		var probe:Probe = cast made;
-		check(probe.count == 7 && probe.speed == 4 && !probe.on && probe.label == "y" && probe.points.length == 2 && probe.tint == 0x00ff00ff,
+		check(probe.count == 7 && probe.speed == 4 && !probe.on && probe.label == "y" && probe.points.length == 2 && probe.tint == 0xff00ff00,
 			"The fields hold what was set");
 		check(!entry.setProp(made, "nothing", 1) && entry.getProp(made, "nothing") == null, "An unknown prop is refused, read as null");
 		check(!entry.setProp(made, "count", 1.5) && !entry.setProp(made, "count", "1") && probe.count == 7, "A wrong type for an Int is refused");
@@ -198,7 +198,7 @@ private class Probe extends Behavior {
 	@:prop public var on = true;
 	@:prop public var label = "x";
 	@:prop public var points:Array<Float> = [1, 2];
-	@:prop("color") public var tint = 0xff0000ff;
+	@:prop("color") public var tint = 0xffff0000;
 	@:prop public var target:Node3D = null;
 	@:range(-1, 1) @:prop public var bias:Float = -.5;
 }

@@ -16,7 +16,7 @@ enum SceneValue {
 	/** A list of numbers. */
 	Numbers(values:Array<Float>);
 
-	/** A color, 0xRRGGBBAA; "#RRGGBB" in the file is alpha ff. */
+	/** A color, 0xAARRGGBB; "#RRGGBB" in the file is alpha ff. */
 	Color(rgba:Int);
 
 	/** A reference to a node of the file: the name or path after the "@", resolved once every node is made. */

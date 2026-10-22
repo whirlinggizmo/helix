@@ -3,12 +3,12 @@ package helix.render3d;
 import helix.render2d.Texture2D;
 
 /** A sprite: a texture (or a region of it) on a quad, 1 x 1 world units by default, its pivot at its position, facing the camera, blended by
-	its alpha, unlit, tinted (0xRRGGBBAA, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own
+	its alpha, unlit, tinted (0xAARRGGBB, sRGB, as 2D sprites are). Its scale scales it; its rotation turns it only when its facing is its own
 	(Ground, Free). */
 class Sprite3D extends Node3D {
 	var cutoff = .5;
 
-	/** A sprite of texture (null for none yet: it draws nothing), tinted (0xRRGGBBAA, white for none). */
+	/** A sprite of texture (null for none yet: it draws nothing), tinted (0xAARRGGBB, white for none). */
 	public function new(texture:Null<Texture2D>, tint = 0xffffffff) {
 		super();
 		this.texture = texture;
@@ -18,7 +18,7 @@ class Sprite3D extends Node3D {
 	/** Its texture, or null. */
 	public var texture:Null<Texture2D>;
 
-	/** Its tint, 0xRRGGBBAA (sRGB). */
+	/** Its tint, 0xAARRGGBB (sRGB). */
 	public var tint:Int = 0xffffffff;
 
 	/** The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's

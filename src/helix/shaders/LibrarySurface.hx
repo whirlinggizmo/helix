@@ -1,5 +1,6 @@
 package helix.shaders;
 
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.Shader;
 import helix.render3d.Material;
@@ -32,14 +33,14 @@ class LibrarySurface {
 		if (attached)
 			material.shaderParameters.setFloat(name, value);
 
-	// Writes a color parameter as linear light: color (0xRRGGBBAA, sRGB) decoded, times scale, its alpha as it is; while attached.
+	// Writes a color parameter as linear light: color (0xAARRGGBB, sRGB) decoded, times scale, its alpha as it is; while attached.
 	function writeLinear(name:String, color:Int, scale = 1.):Void
 		if (attached)
 			material.shaderParameters.setValues(name, [
-				linear(color >>> 24) * scale,
-				linear((color >>> 16) & 255) * scale,
-				linear((color >>> 8) & 255) * scale,
-				(color & 255) / 255
+				linear(Color.getRed(color)) * scale,
+				linear(Color.getGreen(color)) * scale,
+				linear(Color.getBlue(color)) * scale,
+				Color.getAlpha(color) / 255
 			]);
 
 	// An sRGB channel (0..255) as linear light.

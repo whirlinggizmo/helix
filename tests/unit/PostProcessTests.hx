@@ -1,4 +1,5 @@
 import Render2DTests.CountingGraphics;
+import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
@@ -63,9 +64,9 @@ class PostProcessTests {
 	// A frame of post at width x height, the passes counted from its start.
 	static function frame(post:PostProcess, width:Int, height:Int):Void {
 		gpu.targetPasses = [];
-		post.beginScene(width, height, 0x000000ff);
+		post.beginScene(width, height, 0xff000000);
 		post.endScene(1);
-		gpu.beginFrame(width, height, 0x000000ff);
+		gpu.beginFrame(width, height, 0xff000000);
 		post.present();
 	}
 
@@ -82,12 +83,12 @@ class PostProcessTests {
 	static function hdrClear():Void {
 		var tonemap = new Tonemap();
 		var colors = [
-			0x14161cff,
-			0x000000ff,
-			0x808080ff,
-			0x87ceebff,
-			0xc04020ff,
-			0x2a2f3c80,
+			0xff14161c,
+			0xff000000,
+			0xff808080,
+			0xff87ceeb,
+			0xffc04020,
+			0x802a2f3c,
 			0xffffffff
 		];
 		for (mode in [
@@ -101,15 +102,15 @@ class PostProcessTests {
 				tonemap.computeHdrColor(color, out);
 				var shown = Tonemap.map(mode, [for (c in 0...3) decode(out[c])]);
 				for (c in 0...3) {
-					var asked = (color >>> (24 - 8 * c)) & 255;
+					var asked = (Color.toRgba(color) >>> (24 - 8 * c)) & 255;
 					check(Math.abs(encode(shown[c]) * 255 - asked) <= .5, 'Mode $mode shows ${StringTools.hex(color, 8)}\'s channel $c as given');
 				}
-				check(out[3] == (color & 255) / 255, "The alpha is the color's");
+				check(out[3] == Color.getAlpha(color) / 255, "The alpha is the color's");
 			}
 		}
 		tonemap.mode = Neutral;
 		var dark = [];
-		tonemap.computeHdrColor(0x14161cff, dark);
+		tonemap.computeHdrColor(0xff14161c, dark);
 		check(dark[0] > 0x14 / 255 && dark[2] > 0x1c / 255, "Neutral's toe darkens, so its clear is lighter than the color");
 		var white = [];
 		tonemap.computeHdrColor(0xffffffff, white);
@@ -122,20 +123,20 @@ class PostProcessTests {
 		post.add(bright);
 		gpu.targetPasses = [];
 		gpu.targetClears = [];
-		post.beginScene(800, 600, 0x14161cff);
+		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
 		check(gpu.targetClears[0][0] == dark[0] && gpu.targetClears[0][2] == dark[2], "An HDR scene is cleared to the light Neutral shows as its color");
 		stage.tonemap = Aces;
 		gpu.targetClears = [];
-		post.beginScene(800, 600, 0x14161cff);
+		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
 		var aces = [];
 		tonemap.mode = Aces;
-		tonemap.computeHdrColor(0x14161cff, aces);
+		tonemap.computeHdrColor(0xff14161c, aces);
 		check(gpu.targetClears[0][0] == aces[0] && aces[0] != dark[0], "Its clear is worked out again for the mode");
 		bright.enabled = false;
 		gpu.targetClears = [];
-		post.beginScene(800, 600, 0x14161cff);
+		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
 		check(gpu.targetClears[0][0] == 0x14 / 255 && gpu.targetClears[0][1] == 0x16 / 255 && gpu.targetClears[0][3] == 1,
 			"An 8-bit scene is cleared to its color as given");
@@ -243,7 +244,7 @@ class PostProcessTests {
 		hdrPost.add(bright);
 		hdrPost.add(after);
 		gpu.targetPasses = [];
-		hdrPost.beginScene(800, 600, 0x000000ff);
+		hdrPost.beginScene(800, 600, 0xff000000);
 		check(hdrPost.hdr && stage.hdr, "An effect wanting HDR draws the scene HDR, its stage told so");
 		hdrPost.endScene(1);
 		check(!stage.hdr, "The stage is told only while the scene is drawn");
@@ -417,7 +418,7 @@ class PostProcessTests {
 			&& near(written(vignette, "softness", 24), .6)
 			&& written(vignette, "color", 0, 3) == 1,
 			"Vignette's fields");
-		vignette.color = 0xff800000;
+		vignette.color = 0x00ff8000;
 		vignette.softness = 0;
 		check(near(written(vignette, "color", 0), 1)
 			&& near(written(vignette, "color", 0, 1), 0x80 / 255)

@@ -250,7 +250,7 @@ class Behaviors {
 				field.pos);
 		if (color) {
 			if (kind != "IntProp")
-				Context.error('Behaviors: a color prop is an Int (0xRRGGBBAA): $where', field.pos);
+				Context.error('Behaviors: a color prop is an Int (0xAARRGGBB): $where', field.pos);
 			kind = "ColorProp";
 		}
 		var min:Null<Float> = null, max:Null<Float> = null;

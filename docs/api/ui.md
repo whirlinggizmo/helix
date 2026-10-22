@@ -44,7 +44,7 @@ function setPosition(x:Float, y:Float):Void
 
 - `new`: Makes a chevron under parent, pointing up (up) or down, shaped by setSize.
 - `depth`: How far it reaches from its point toward its open end, in units, as last shaped: its arms' reach and their thickness.
-- `color`: Its color, 0xRRGGBBAA.
+- `color`: Its color, 0xAARRGGBB.
 - `visible`: Whether it's drawn.
 - `setSize`: Shapes it for a face height units tall: its arms reaching .18 of it out to each side and back from its point, .08 of it thick (at least 1.5 units). Made again only when height changed.
 - `setPosition`: Puts its point at x, y, in its parent's units.
@@ -62,7 +62,7 @@ How a color picker's text field writes and reads its color (ColorPicker.format).
 
 *class* in `src/helix/ui/ColorPicker.hx`
 
-A color, 0xRRGGBBAA, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide, following the theme until the game sizes its layout's width itself, kept in a column stretching its children, a panel's), or what a column gives it sized Grow(1); the square takes a new width a frame later. Ask color, and changed once a frame.
+A color, 0xAARRGGBB, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and brightness (bottom to top) in the hue, edge to edge across the picker and as tall as it's wide; under it a strip of a round swatch of the color (over a checkerboard, as its alpha shows it) beside thin bars, the hue's (left to right red, yellow, green, cyan, blue, magenta and red again) and with alpha the alpha's under it (clear at the left, opaque at the right), each with a round handle; then a text field writing the color in its format (textField, a TextField of its own), a button beside it cycling the format (formatButton) and the format's name under the field. The pointer drags in the square or a bar, the part it went down on, wherever it moves after. With focus, Enter, Space or a pad's South steps through the parts the arrows and the D-pad drive: the square (Left and Right saturation, Up and Down brightness), the hue bar, the alpha bar (Right and Up raise, Left and Down lower) and none, when they move focus again; each step a twentieth of the way. The part they drive has its handle in the theme's focus color. The field takes the color in its format (Hex: RRGGBBAA or RRGGBB, with or without a leading #, in either case; Rgba: r g b a or r g b, 0 to 255 each, apart by spaces or a comma), without alpha meaning 0xff: the color follows it as typed, text naming no color is marked invalid (TextField.invalid) and changes nothing, and once the field loses focus it shows the color again. Its hue (and saturation) are kept where the color doesn't say them: dragging through grey or black doesn't lose the hue. It's as wide as its layout is given: theme.colorPickerWidth (layout sized Fixed that wide, following the theme until the game sizes its layout's width itself, kept in a column stretching its children, a panel's), or what a column gives it sized Grow(1); the square takes a new width a frame later. Ask color, and changed once a frame.
 
 ```haxe
 static function fromHsv(hue:Float, saturation:Float, brightness:Float, ?alpha:Int = 0xff):Int
@@ -80,15 +80,15 @@ var brightness(get, set):Float
 var changed(default, null):Bool
 ```
 
-- `fromHsv`: The color 0xRRGGBBAA of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and alpha (0 to 255), each channel rounded to the nearest of 255.
-- `parseHex`: The color text names, 0xRRGGBBAA: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and with spaces around. Null for anything else.
+- `fromHsv`: The color 0xAARRGGBB of hue (0 to 1 around, red at both ends), saturation and brightness (0 to 1 each; out of range clamped) and alpha (0 to 255), each channel rounded to the nearest of 255.
+- `parseHex`: The color text names, 0xAARRGGBB: RRGGBBAA, or RRGGBB meaning alpha 0xff, hex digits in either case, with or without a leading # and with spaces around. Null for anything else.
 - `formatHex`: color as lowercase hex, RRGGBBAA, or RRGGBB without alpha.
-- `parseRgba`: The color text names, 0xRRGGBBAA: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits), apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else.
+- `parseRgba`: The color text names, 0xAARRGGBB: r g b a, or r g b meaning alpha 255, each a whole number 0 to 255 in decimal (at most 3 digits), apart by spaces, a comma, or a comma with spaces around it, with spaces around the whole. Null for anything else.
 - `formatRgba`: color's channels in decimal, 0 to 255 each, apart by a space: r g b a, or r g b without alpha.
 - `textField`: Its text field: the color in its format, typed in (a widget of its own, named after the picker with "-text"). Its layout is the picker's to size and pad, whatever the theme.
 - `formatButton`: The button beside its text field cycling its format (a widget of its own, named after the picker with "-format"): clicked, or activated with focus by Enter, Space or a pad's South.
 - `format`: How its text field writes and reads the color: Hex (to start) or Rgba. The field shows the color in it at once, its caption under it naming it (HEX, RGBA, or RGB without alpha).
-- `color`: Its color, 0xRRGGBBAA. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black; without alpha, the alpha is 0xff whatever is assigned.
+- `color`: Its color, 0xAARRGGBB. Assigning one keeps the hue where the color doesn't say it (a grey, black), and the saturation where it's black; without alpha, the alpha is 0xff whatever is assigned.
 - `hue`: Its hue, 0 to 1 around (red at 0 and 1, then yellow, green, cyan, blue and magenta at sixths); kept through greys and black. Clamped to 0 to 1.
 - `saturation`: Its saturation, 0 (grey) to 1 (the full hue); kept through black. Clamped to 0 to 1.
 - `brightness`: Its brightness (HSV's value), 0 (black) to 1. Clamped to 0 to 1.
@@ -138,7 +138,7 @@ function setPosition(x:Float, y:Float):Void
 
 - `new`: Makes a handle in theme's look under parent.
 - `readTheme`: Takes its size and its ring's color from theme (its disc's color is its owner's to set: color). Its owner calls it as it reads the theme, every frame, so a changed theme shows at once.
-- `color`: The disc's color, 0xRRGGBBAA: its owner's, by the handle's state (WidgetState.handle).
+- `color`: The disc's color, 0xAARRGGBB: its owner's, by the handle's state (WidgetState.handle).
 - `visible`: Whether it's drawn.
 - `setPosition`: Centers it on x, y in its parent's units.
 
@@ -156,7 +156,7 @@ var color:Null<Int>
 
 - `text`: Its text.
 - `textSize`: Its text's height in units, or null (to start) for the theme's textSize: a value is kept whatever the theme becomes.
-- `color`: Its text's color, 0xRRGGBBAA, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes.
+- `color`: Its text's color, 0xAARRGGBB, or null (to start) for the theme's textColor: a value is kept whatever the theme becomes.
 
 ## Layout2D
 
@@ -473,7 +473,7 @@ var invalid:Bool
 
 *class* in `src/helix/ui/Theme.hx`
 
-How the UI's widgets look: their colors (0xRRGGBBAA), font and sizes. Change any value at any time (a settings screen, a reloaded stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's sizing, padding, gap and margin are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's nodes are never changed directly: its properties are the way.
+How the UI's widgets look: their colors (0xAARRGGBB), font and sizes. Change any value at any time (a settings screen, a reloaded stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame with no widget made again; a size that moves the layout shows once the layout is next arranged (Layout2D.arrange). Ui.theme can also be given another theme whole. Every value is the theme's or the game's, decided by what the game set, never guessed from the value: a theme's value applies unless the game set that value itself, and a game's setting wins, as an inline style wins over a stylesheet. A widget's layout's sizing, padding, gap and margin are the game's once set through Layout2D (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin), even to what the theme has; a widget's own look properties (Label.textSize, Label.color) are null for the theme's, a value for the game's. A widget's nodes are never changed directly: its properties are the way.
 
 ```haxe
 function new()
@@ -510,15 +510,15 @@ var widgetHeight(get, set):Float
 - `new`: The colors and sizes as each getter says to start.
 - `font`: The font text is drawn in, or null for the stage's (the batch's built-in one).
 - `textSize`: Text's height in units. (18 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
-- `textColor`: Text's color. (0xf0f2f8ff to start.)
-- `disabledTextColor`: The color of text on a widget that can't be used now. (0x80869aff to start.)
-- `invalidTextColor`: The color of a text field's text marked as not accepted (TextField.invalid). (0xff7070ff to start.)
-- `panelColor`: A panel's background color. (0x1e2230ff to start: opaque, so faces show on it whatever is behind.)
-- `faceColor`: The color of a button's (and a toggle's box's, a track's) face at rest. (0x2e3448ff to start.)
-- `hoveredColor`: The color of a face under the pointer. (0x3e4660ff to start.)
-- `pressedColor`: The color of a face held down. (0x56607eff to start.)
-- `accentColor`: The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row. (0x4c8ef0ff to start.)
-- `focusColor`: The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffd25aff to start.)
+- `textColor`: Text's color. (0xfff0f2f8 to start.)
+- `disabledTextColor`: The color of text on a widget that can't be used now. (0xff80869a to start.)
+- `invalidTextColor`: The color of a text field's text marked as not accepted (TextField.invalid). (0xffff7070 to start.)
+- `panelColor`: A panel's background color. (0xff1e2230 to start: opaque, so faces show on it whatever is behind.)
+- `faceColor`: The color of a button's (and a toggle's box's, a track's) face at rest. (0xff2e3448 to start.)
+- `hoveredColor`: The color of a face under the pointer. (0xff3e4660 to start.)
+- `pressedColor`: The color of a face held down. (0xff56607e to start.)
+- `accentColor`: The color of what's on, filled or chosen: a toggle's mark, a slider's fill and knob, a progress bar's fill, a list's selected row. (0xff4c8ef0 to start.)
+- `focusColor`: The color of the ring around the focused widget, shown when focus was moved by keys or a pad. (0xffffd25a to start.)
 - `focusWidth`: The focus ring's width in units. (2 to start.) 0 or more (under 0, or NaN, is 0).
 - `listCornerRadius`: The radius of a list's corners in units, its frame's (cornerRadius for the others); 0 for square. (0 to start.) 0 or more (under 0, or NaN, is 0).
 - `listPadding`: Room between a list's frame and its rows in units, so a chosen row's band keeps clear of the frame's round corners. (4 to start.) 0 or more (under 0, or NaN, is 0).
@@ -528,11 +528,11 @@ var widgetHeight(get, set):Float
 - `padding`: Room inside a button or panel, around its content, in units. (8 to start.) 0 or more (under 0, or NaN, is 0).
 - `gap`: Room between widgets in a panel, in units. (8 to start.) 0 or more (under 0, or NaN, is 0).
 - `trackThickness`: A slider's track and a color picker's bars, their thickness in units. (6 to start.) At least 1 (under 1, or NaN, is 1).
-- `handleColor`: A handle's color (a slider's, a color picker's bars'; Handle), 0xRRGGBBAA. (White to start.)
-- `handleShadowColor`: The ring around a handle, so it shows on any color under it, 0xRRGGBBAA. (Black at half alpha to start.)
+- `handleColor`: A handle's color (a slider's, a color picker's bars'; Handle), 0xAARRGGBB. (White to start.)
+- `handleShadowColor`: The ring around a handle, so it shows on any color under it, 0xAARRGGBB. (Black at half alpha to start.)
 - `handleSize`: A handle's diameter in units (a slider's, a color picker's bars'; Handle). (14 to start.) At least 1 (under 1, or NaN, is 1).
 - `scrollbarThickness`: A scrollbar's width in units (a list's, a scroll area's; Scrollbar), apart from a slider's trackThickness. (8 to start.) At least 1 (under 1, or NaN, is 1).
-- `scrollbarTrackColor`: A scrollbar's track's color, 0xRRGGBBAA, under its thumb (whose colors are a handle's: WidgetState.handle). (Black at a quarter alpha to start, so it shows on a list's face and a panel alike.)
+- `scrollbarTrackColor`: A scrollbar's track's color, 0xAARRGGBB, under its thumb (whose colors are a handle's: WidgetState.handle). (Black at a quarter alpha to start, so it shows on a list's face and a panel alike.)
 - `scrollbarVisibility`: When a list's and a scroll area's scrollbars are drawn, unless the widget is given its own (scrollbarVisibility). (WhenNeeded to start.) Null is WhenNeeded.
 - `colorPickerWidth`: A color picker's width (its square's side) in units, unless its layout is given another. (200 to start.) At least 1 (under 1, or NaN, is 1).
 - `widgetHeight`: A button's (and a slider's, a field's) height in units. (40 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6).
@@ -629,7 +629,7 @@ function update():Void
 - `list`: A list of items rows tall, scrolled by the wheel, a drag or its scrollbar, an item chosen by the pointer or Up and Down.
 - `scrollArea`: A window height units tall onto a column of widgets (add them: ScrollArea.add), scrolled up and down by the wheel over it, a drag, its scrollbar and keys, as wide as its layout is given (Grow, to start).
 - `dropdown`: A choice of one of items (or none: selected -1, clamped to the items), shown on a face with a chevron and chosen from a list opening over everything (Dropdown), as wide as its widest item to start.
-- `colorPicker`: A color (0xRRGGBBAA) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button widgets of their own, named name + "-text" and name + "-format", after it in the focus order). Without alpha, its color's alpha is always 0xff.
+- `colorPicker`: A color (0xAARRGGBB) chosen on a square of saturation and brightness, a bar of hue and, with alpha, a bar of alpha, shown in a round swatch and typed in a text field under them as hex or decimal channels, a button beside it cycling which (the field and the button widgets of their own, named name + "-text" and name + "-format", after it in the focus order). Without alpha, its color's alpha is always 0xff.
 - `remove`: Takes widget out, its nodes off the stage.
 - `find`: The widget named name (Widget.name), or null.
 - `press`: Uses the widget named name as a click would (a button clicked, a toggle switched, a list's choice activated), at the next update, when it's shown, enabled and can be: as a test or an autopilot does, by name rather than by place. False, doing nothing, when there's no such widget or it isn't usable now.
