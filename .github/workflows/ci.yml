@@ -11,7 +11,7 @@
 #   both autopilots under SDL_GPU through Metal, in a window on the runner's virtual GPU.
 # - Builds are named <platform>-<config>-<backend> (docs/CONVENTIONS.md, Build), given to the tools as <config>-<backend>, the platform the
 #   runner's: release-sokol-gl, release-sdl3-gl and release-sdl3-gpu natively, release-webgl2 in the browser; their results in out/.
-# - On every push to main: the examples' site (tools/pages.py), deployed to GitHub Pages.
+# - The examples' site (tools/pages.py) is deployed by .github/workflows/pages.yml, daily and on demand, not here.
 # - Windows' and macOS' runners have no GPU for sokol's GL 4.1, so no GL window opens there (libwgf's finding); a window on Windows is
 #   tools/remote_windows.py's, on a machine with one. Linux runs SDL_GPU's Vulkan through Mesa's software driver, lavapipe.
 # - The native backends, sokol-gl, sdl3-gl and sdl3-gpu (docs/ROADMAP.md, milestone 8); SDL_GPU's shaders need glslang and
@@ -226,43 +226,6 @@ jobs:
           name: autopilot-results
           path: build/results
           if-no-files-found: ignore
-
-  pages:
-    name: the examples' site (GitHub Pages)
-    # Every example built for the web, a thumbnail of each, and the index (tools/pages.py), deployed as the repository's Pages site.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "26"
-      - uses: krdlab/setup-haxe@v2
-        with:
-          haxe-version: 4.3.7
-      - name: Python and Node packages, and Chromium
-        run: |
-          python -m pip install PyYAML==6.0.1
-          npm install --prefix build/tools terser@5.44.1 playwright@1.64.0 pngjs@7.0.0
-          (cd build/tools && npx playwright install --with-deps chromium)
-          echo "CHROME=$(node -e "console.log(require('./build/tools/node_modules/playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
-      - name: The site
-        run: python tools/pages.py --browser "$CHROME"
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: out/js/release-webgl2/site
-      - id: deploy
-        uses: actions/deploy-pages@v4
 
   mac-gpu:
     name: SDL_GPU on CI's Mac (Metal, daily)

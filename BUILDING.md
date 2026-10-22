@@ -156,7 +156,7 @@ python3 tools/measure_sizes.py [--write] [--check]   # the web size ladder (test
 
 `release` is what ships: full dead-code elimination and the analyzer's optimizations, and Terser in the browser. `debug` is for finding faults: Haxe's `-debug` (a source map beside `app.js`; natively hxcpp's debug runtime, its stack traces with lines and its null checks, `HXCPP_CHECK_POINTER`, the program `Main-debug` before it's named for its example), the standard library's dead-code elimination, no optimizer or Terser, and natively the adapters' C unoptimized with its assertions and sokol_gfx's validation on. `dev` serves the browser's build with hot reload built in (`js-<config>-webgl2-dev`, `debug` unless told `release-webgl2`), in a directory of its own no build writes, so building or replaying the example while it runs never replaces the page it serves.
 
-The examples' site is built and deployed to GitHub Pages on every push to main (CI's `pages` job): <https://whirlinggizmo.github.io/helix/>.
+The examples' site is built and deployed to GitHub Pages daily and on demand (`.github/workflows/pages.yml`: `gh workflow run pages`, about 15 minutes): <https://whirlinggizmo.github.io/helix/>.
 
 SDL_GPU picks its backend (Direct3D 12 on Windows, Metal on macOS, Vulkan elsewhere); `SDL_GPU_DRIVER=vulkan` (or `direct3d12`, `metal`) chooses another. On a machine without a Vulkan GPU, such as the private display, Mesa's software driver runs it: `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json` (package `mesa-vulkan-drivers`).
 
