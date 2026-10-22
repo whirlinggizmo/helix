@@ -1,5 +1,5 @@
-"""Checks of tools/gltf2scene.py: the fixture export (tests/fixtures/gltf2scene) converts to the .scene beside it byte for byte, and what the
-tool writes parses and writes back the same bytes under the Haxe interpreter (helix.scene.SceneFile); the same export as a GLB; every kind's
+"""Checks of tools/gltf2scene.py: the fixture export (tests/fixtures/gltf2scene) converts to the .scene3d beside it byte for byte, and what the
+tool writes parses and writes back the same bytes under the Haxe interpreter (helix.scene.SceneFile3D); the same export as a GLB; every kind's
 property in an override, in the writer's order, the tool's list matching SceneSchema.hx; each value's form; a flag beside a behavior; an export without custom
 properties; the refusals (a name two siblings share, a node on a path without one); and --check."""
 import argparse
@@ -18,17 +18,17 @@ import gltf2scene
 
 argparse.ArgumentParser(description=__doc__).parse_args()
 FIXTURES = ROOT / 'tests/fixtures/gltf2scene'
-# The generated code SceneFile's dependencies compile against (generated/, committed), made current when a source is newer.
+# The generated code SceneFile3D's dependencies compile against (generated/, committed), made current when a source is newer.
 import gen_code
 gen_code.generate(sdl_gpu=False)
 
-ROUND_TRIP = '''import helix.scene.SceneFile;
+ROUND_TRIP = '''import helix.scene.SceneFile3D;
 import sys.io.File;
 
 class RoundTrip {
 	static function main():Void {
 		var args = Sys.args();
-		var file = SceneFile.parse(File.getBytes(args[0]), args[0]);
+		var file = SceneFile3D.parse(File.getBytes(args[0]), args[0]);
 		if (file == null)
 			Sys.exit(1);
 		File.saveBytes(args[1], file.write());
@@ -73,9 +73,9 @@ class Gltf2SceneTests(unittest.TestCase):
         return gltf2scene.convert(path, **kw)
 
     def round_trip(self, data):
-        """data parsed and written back by SceneFile under the interpreter."""
+        """data parsed and written back by SceneFile3D under the interpreter."""
         (self.dir / 'RoundTrip.hx').write_text(ROUND_TRIP, encoding='utf-8')
-        given, written = self.dir / 'given.scene', self.dir / 'written.scene'
+        given, written = self.dir / 'given.scene3d', self.dir / 'written.scene3d'
         given.write_bytes(data)
         subprocess.run(['haxe', '-cp', 'src', '-cp', 'generated/shaders', '-cp', 'generated/fonts', '-cp', str(self.dir),
             '--run', 'RoundTrip', str(given), str(written)], cwd=ROOT, check=True)
@@ -83,12 +83,12 @@ class Gltf2SceneTests(unittest.TestCase):
 
     def test_fixture(self):
         data = gltf2scene.convert(FIXTURES / 'track.gltf')
-        self.assertEqual(data, (FIXTURES / 'track.scene').read_bytes())
+        self.assertEqual(data, (FIXTURES / 'track.scene3d').read_bytes())
         self.assertEqual(self.round_trip(data), data)
 
     def test_glb(self):
         text = (FIXTURES / 'track.gltf').read_text(encoding='utf-8')
-        self.assertEqual(self.convert(text, '.glb', file='models/track.gltf', name='track'), (FIXTURES / 'track.scene').read_bytes())
+        self.assertEqual(self.convert(text, '.glb', file='models/track.gltf', name='track'), (FIXTURES / 'track.scene3d').read_bytes())
         with self.assertRaises(SystemExit):
             self.convert(text[:40], '.glb')
 
@@ -122,7 +122,7 @@ class Gltf2SceneTests(unittest.TestCase):
 
     def test_no_properties(self):
         data = self.convert(gltf([{'name': 'a', 'children': [1]}, {'name': 'b'}]), name='empty', file='props/empty.glb')
-        self.assertEqual(data.decode('utf-8'), '{\n  "helix-scene": 1,\n  "nodes": [\n    {\n      "kind": "Model",\n      "name": "empty",\n'
+        self.assertEqual(data.decode('utf-8'), '{\n  "helix-scene3d": 1,\n  "nodes": [\n    {\n      "kind": "Model",\n      "name": "empty",\n'
             '      "file": "props/empty.glb"\n    }\n  ]\n}\n')
         self.assertEqual(self.round_trip(data), data)
 
@@ -146,11 +146,11 @@ class Gltf2SceneTests(unittest.TestCase):
 
     def test_check(self):
         tool, export = ROOT / 'tools/gltf2scene.py', FIXTURES / 'track.gltf'
-        self.assertEqual(subprocess.run([sys.executable, tool, export, FIXTURES / 'track.scene', '--check'], cwd=ROOT).returncode, 0)
-        stale = self.dir / 'stale.scene'
+        self.assertEqual(subprocess.run([sys.executable, tool, export, FIXTURES / 'track.scene3d', '--check'], cwd=ROOT).returncode, 0)
+        stale = self.dir / 'stale.scene3d'
         self.assertEqual(subprocess.run([sys.executable, tool, export, stale, '--check'], cwd=ROOT, capture_output=True).returncode, 1)
         subprocess.run([sys.executable, tool, export, stale], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
-        self.assertEqual(stale.read_bytes(), (FIXTURES / 'track.scene').read_bytes())
+        self.assertEqual(stale.read_bytes(), (FIXTURES / 'track.scene3d').read_bytes())
         stale.write_bytes(stale.read_bytes().replace(b'"index": 3', b'"index": 4'))
         self.assertEqual(subprocess.run([sys.executable, tool, export, stale, '--check'], cwd=ROOT, capture_output=True).returncode, 1)
 

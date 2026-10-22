@@ -1,5 +1,5 @@
 {
-  "helix-scene": 1,
+  "helix-scene3d": 1,
   "nodes": [
     {
       "kind": "Model",

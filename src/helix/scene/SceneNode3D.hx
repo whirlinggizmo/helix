@@ -1,18 +1,18 @@
 package helix.scene;
 
-/** A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its
+/** A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its
 	transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children,
 	the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a
-	property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to
+	property its class's. An override is a SceneNode3D too, with no name, kind or scene: only what it changes, plus children and behaviors to
 	add. Phase 3 of the file's plan makes live nodes from these and captures them back. */
-class SceneNode {
+class SceneNode3D {
 	/** Its name, unique among its siblings (paths depend on it); null for an override. */
 	public var name:Null<String>;
 
 	/** The class it is (Node3D for a group, else a kind's name from SceneSchema); null for a prefab node or an override. */
 	public var kind:Null<String>;
 
-	/** The .scene file instantiated here as a prefab; null for a node of a kind or an override. */
+	/** The .scene3d file instantiated here as a prefab; null for a node of a kind or an override. */
 	public var scene:Null<String>;
 
 	/** A Model's glTF, instantiated under it; null for none. A Model has a file or a mesh, never both. */
@@ -48,10 +48,10 @@ class SceneNode {
 	public var material:Null<SceneMaterial>;
 
 	/** By path from this node ("road/line"), what changes on the nodes its file or prefab makes: each an override node. */
-	public var overrides:Map<String, SceneNode> = new Map();
+	public var overrides:Map<String, SceneNode3D> = new Map();
 
 	/** The nodes under it, in drawing order; under an override, the nodes added. */
-	public var children:Array<SceneNode> = [];
+	public var children:Array<SceneNode3D> = [];
 
 	/** The behaviors attached to it when the scene is instantiated. */
 	public var behaviors:Array<SceneBehavior> = [];

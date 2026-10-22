@@ -1,4 +1,4 @@
-"""Lays the scene-file example's track and writes it as assets/scenes/track.scene: a closed loop of Kenney's Racing Kit pieces
+"""Lays the scene-file example's track and writes it as assets/scenes/track.scene3d: a closed loop of Kenney's Racing Kit pieces
 (assets/kit) walked piece by piece from a layout string, with the barriers along the straights' outsides, a gantry over the start line,
 the scenery, the checkpoints on the centerline, the sun, the car and the chase camera. Run it after changing the layout; the numbers in
 the file are its output, so the loop closes by construction (the script refuses to write one that doesn't).
@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE.parent / 'assets' / 'scenes' / 'track.scene'
+OUT = HERE.parent / 'assets' / 'scenes' / 'track.scene3d'
 TILE = 16.
 ROAD_HEIGHT = 2.  # The road pieces' y scale: 0.02 x 2, a 4 cm step.
 # The loop: S<n> a straight of n tiles, L<k> a left corner of k tiles a side, R<k> a right one.
@@ -196,7 +196,7 @@ def main():
     sx, sz, h, n = straights[0]
     fx, fz = forward(h)
     scene = {
-        'helix-scene': 1,
+        'helix-scene3d': 1,
         'stage': {
             'ambient': {'color': '#dfe8ff', 'intensity': .2},
             'environment': {'file': 'environments/venice_sunset_1k.hdr', 'intensity': .55, 'rotation': 2.2},
@@ -217,7 +217,7 @@ def main():
             {'kind': 'Node3D', 'name': 'scenery', 'children': scenery(straights, corners)},
             {'kind': 'Node3D', 'name': 'race', 'behaviors': [{'kind': 'Race', 'props': {'car': '@car', 'countdown': 3}}]},
             {'kind': 'Node3D', 'name': 'checkpoints', 'children': checkpoints(straights, corners)},
-            {'scene': 'scenes/car.scene', 'name': 'car', 'position': [num(sx + fx * 6), .04, num(sz + fz * 6)], 'rotation': [0, num(wrap(h)), 0],
+            {'scene': 'scenes/car.scene3d', 'name': 'car', 'position': [num(sx + fx * 6), .04, num(sz + fz * 6)], 'rotation': [0, num(wrap(h)), 0],
              'behaviors': [{'kind': 'Car', 'props': {'race': '@race'}}]},
             {'kind': 'Camera3D', 'name': 'chase', 'position': [num(sx - fx * 8), 4, num(sz - fz * 8)], 'fovY': .9, 'far': 600,
              'behaviors': [{'kind': 'ChaseCamera', 'props': {'target': '@car', 'distance': 9, 'height': 3.5, 'lag': .25}}]},

@@ -9,7 +9,7 @@ class Behaviors {
 	/** The pass forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again. */
 	@:hot public static var instance(default, null):BehaviorPass;
 
-	/** The program's pass itself, installed if it wasn't: what SceneFile.instantiate attaches to unless given another. */
+	/** The program's pass itself, installed if it wasn't: what SceneFile3D.instantiate attaches to unless given another. */
 	public static var pass(get, never):BehaviorPass;
 
 	static function get_pass():BehaviorPass

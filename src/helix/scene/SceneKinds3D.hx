@@ -28,7 +28,7 @@ import helix.scene.SceneValue;
 	made by Mesh's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
 	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB. */
-class SceneKinds {
+class SceneKinds3D {
 	/** A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table
 		has. */
@@ -74,7 +74,7 @@ class SceneKinds {
 		texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it
 		loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named
 		choice no enum has, or a value the class refuses. */
-	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance):Bool {
+	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool {
 		var model = Std.downcast(node, Model);
 		if (model != null)
 			return switch [name, value] {
@@ -348,7 +348,7 @@ class SceneKinds {
 	/** Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none):
 		an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance,
 		when given, keeps them to release at its destroy. */
-	public static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance):Void {
+	public static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance3D):Void {
 		var made = new Material();
 		if (material.baseColor != null)
 			made.baseColor = material.baseColor;
@@ -429,7 +429,7 @@ class SceneKinds {
 	}
 
 	// path's texture through Textures ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
-	static function loadTexture(path:String, instance:Null<SceneInstance>, set:Null<Texture2D>->Void):Void {
+	static function loadTexture(path:String, instance:Null<SceneInstance3D>, set:Null<Texture2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
@@ -444,7 +444,7 @@ class SceneKinds {
 	}
 
 	// path's font through Fonts ("" for none, set at once), into set when it lands; the instance keeps it.
-	static function loadFont(path:String, instance:Null<SceneInstance>, set:Null<Font2D>->Void):Void {
+	static function loadFont(path:String, instance:Null<SceneInstance3D>, set:Null<Font2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;

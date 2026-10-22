@@ -1,6 +1,6 @@
 package helix.scene;
 
-/** A value as a .scene file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text,
+/** A value as a .scene3d file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text,
 	a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a
 	node of the file, "@name" or "@path/from/root". */
 enum SceneValue {

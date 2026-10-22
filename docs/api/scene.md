@@ -169,17 +169,17 @@ function getChild(index:Int):Null<Node>
 
 ## NodeOrigin
 
-*enum* in `src/helix/scene/SceneInstance.hx`
+*enum* in `src/helix/scene/SceneInstance3D.hx`
 
 Where a node of an instance came from.
 
-- `Entry(entry:SceneNode)`: The file's own entry: made from it, or added under a file's or a prefab's node by an override's children.
+- `Entry(entry:SceneNode3D)`: The file's own entry: made from it, or added under a file's or a prefab's node by an override's children.
 - `FileNode(file:String, innerPath:String)`: A model file (a Model entry's "file") made it: the file's path and the node's path inside it, from the entry's node.
 - `Prefab(scene:String, innerPath:String)`: A prefab (a "scene" entry) made it: the prefab's path and the node's path inside it, from the entry's node.
 
 ## NodeRecord
 
-*class* in `src/helix/scene/SceneInstance.hx`
+*class* in `src/helix/scene/SceneInstance3D.hx`
 
 What an instance keeps of a node: its origin, the values the origin gave it (its snapshot, taken before any override), the game's props, and for an entry with a file or a prefab, whether its overrides have been applied (false while the file loads, or for one that failed: its overrides are then kept as written).
 
@@ -189,7 +189,7 @@ final node:Node3D
 final kind:Null<String>
 var origin:NodeOrigin
 var owner:Null<Node3D>
-var entry:Null<SceneNode>
+var entry:Null<SceneNode3D>
 var snapshot:NodeSnapshot
 var props:Null<Map<String, SceneValue>>
 var overridesApplied:Bool
@@ -207,12 +207,12 @@ var overridesApplied:Bool
 
 ## NodeSnapshot
 
-*class* in `src/helix/scene/SceneInstance.hx`
+*class* in `src/helix/scene/SceneInstance3D.hx`
 
 A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model, its material and its generated mesh.
 
 ```haxe
-function new(node:Node3D, ?entry:SceneNode)
+function new(node:Node3D, ?entry:SceneNode3D)
 var position:Array<Float>
 var rotation:Array<Float>
 var scale:Array<Float>
@@ -293,7 +293,7 @@ final defaultValue:SceneValue
 
 *enum* in `src/helix/scene/SceneSchema.hx`
 
-What a kind's property holds in a .scene file: the shape the parser checks a value against, the writer writes, and an inspector makes a control for.
+What a kind's property holds in a .scene3d file: the shape the parser checks a value against, the writer writes, and an inspector makes a control for.
 
 - `Number(?min:Float, ?max:Float)`: A number, held from min to max where given (null for no bound), as the class clamps it.
 - `Text`: Text: a path to an asset, or a named choice in lower case (a sprite's facing: "camera", "upright", "ground", "free").
@@ -306,7 +306,7 @@ What a kind's property holds in a .scene file: the shape the parser checks a val
 
 *class* in `src/helix/scene/SceneBehavior.hx`
 
-A behavior as a .scene file attaches it to a node: the behavior class's name and its props by name, as data. The file says which behaviors a node gets; at run time they live in the behaviors pass, never on the node.
+A behavior as a .scene3d file attaches it to a node: the behavior class's name and its props by name, as data. The file says which behaviors a node gets; at run time they live in the behaviors pass, never on the node.
 
 ```haxe
 function new(kind:String)
@@ -318,11 +318,11 @@ var props:Map<String, SceneValue>
 - `kind`: The behavior class's name, as the registry knows it.
 - `props`: Its props by name: numbers, text, flags, lists, colors and references to nodes of the file.
 
-## SceneEnvironment
+## SceneEnvironment3D
 
-*class* in `src/helix/scene/SceneEnvironment.hx`
+*class* in `src/helix/scene/SceneEnvironment3D.hx`
 
-A .scene file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the place (exposure, tone mapping) is the view's (View3D), not the file's.
+A .scene3d file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the place (exposure, tone mapping) is the view's (View3D), not the file's.
 
 ```haxe
 function new()
@@ -344,56 +344,56 @@ var backgroundBlur:Null<Float>
 - `backgroundFile`: The background's file (an HDR, loaded through Environments); null for none.
 - `backgroundBlur`: How blurred the background is, 0 sharp to 1; null for 0.
 
-## SceneFile
+## SceneFile3D
 
-*class* in `src/helix/scene/SceneFile.hx`
+*class* in `src/helix/scene/SceneFile3D.hx`
 
-A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its environment section and its nodes, each a SceneNode with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree.
+A .scene3d file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene3d"), its environment section and its nodes, each a SceneNode3D with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree.
 
 ```haxe
 function new()
 static var VERSION(inline, null):Int
-static function parse(bytes:haxe.io.Bytes, ?path:String):Null<SceneFile>
-static function capture(instance:SceneInstance):SceneFile
+static function parse(bytes:haxe.io.Bytes, ?path:String):Null<SceneFile3D>
+static function capture(instance:SceneInstance3D):SceneFile3D
 var version:Int
-var environment:Null<SceneEnvironment>
-var nodes:Array<SceneNode>
-function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:() -> Void):SceneInstance
+var environment:Null<SceneEnvironment3D>
+var nodes:Array<SceneNode3D>
+function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:() -> Void):SceneInstance3D
 var path(default, null):Null<String>
 function write():haxe.io.Bytes
 ```
 
 - `new`: An empty file of the current version: no environment section, no nodes.
-- `VERSION`: The format version read and written: the file's "helix-scene" value.
-- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the environment section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind, a mesh or an empty path, or a behavior without a kind.
+- `VERSION`: The format version read and written: the file's "helix-scene3d" value.
+- `parse`: The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or the key, for a file that isn't a JSON object, a missing or other "helix-scene3d" version, an unknown key at the root, in the environment section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind, a mesh or an empty path, or a behavior without a kind.
 - `capture`: The file that would instantiate to what instance is now: the environment section from its root's environment (what isn't the default), each of the instance's own nodes from the live node (its kind, name, transform, flags, properties, material where the file gave one, the behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what differs from the defaults, so the environment section holds what isn't the default, a behavior's prop at its schema default is left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically.
-- `version`: The file's "helix-scene" version: VERSION, the only one read.
+- `version`: The file's "helix-scene3d" version: VERSION, the only one read.
 - `environment`: Its environment section (the place's light, set on the node it's instantiated as), or null when the file has none.
 - `nodes`: Its nodes at the root, in drawing order.
-- `instantiate`: Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
+- `instantiate`: Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models and SceneFiles3D (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers where each node came from, for capture.
 - `path`: The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by.
 - `write`: The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing newline, numbers with at most six decimals and no trailing zeros, written alike on every target. Absent keys mean defaults: a transform at identity, a node's flag at its kind's own default (an override's is written whenever said), a property at its class's default, a mesh's argument at its generator's default, an unsaid environment or material value, and a property no table has, are not written.
 
-## SceneFileCache
+## SceneFileCache3D
 
-*class* in `src/helix/scene/SceneFileCache.hx`
+*class* in `src/helix/scene/SceneFileCache3D.hx`
 
-Scene files (.scene) loaded through the assets into SceneFiles, parsed once and shared by path, as ModelCache is for models: a path asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models, prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched twice. The runner's is what the SceneFiles static forwards to.
+Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache is for models: a path asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models, prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched twice. The runner's is what the SceneFiles3D static forwards to.
 
 ```haxe
 function new(assets:IAssets)
-function load(path:String, loaded:SceneFile -> Void, ?failed:String -> Void):IRequest
-function find(path:String):Null<SceneFile>
+function load(path:String, loaded:SceneFile3D -> Void, ?failed:String -> Void):IRequest
+function find(path:String):Null<SceneFile3D>
 function isLoaded(path:String):Bool
 function isLoading(path:String):Bool
 var loadingCount(get, never):Int
-function put(path:String, file:SceneFile):Void
+function put(path:String, file:SceneFile3D):Void
 function forget(path:String):Void
 function shutdown():Void
 ```
 
 - `new`: Loads through assets.
-- `load`: Loads path (a .scene) into a SceneFile, parsed with SceneFile.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
+- `load`: Loads path (a .scene3d) into a SceneFile3D, parsed with SceneFile3D.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.
 - `isLoading`: Whether path is loading.
@@ -402,25 +402,25 @@ function shutdown():Void
 - `forget`: Forgets path: its file (the instances made from it stay) or its failure, so it's loaded again when next asked for.
 - `shutdown`: Cancels every load (telling none of its callers) and forgets every file.
 
-## SceneFiles
+## SceneFiles3D
 
-*class* in `src/helix/scene/SceneFiles.hx`
+*class* in `src/helix/scene/SceneFiles3D.hx`
 
-Scene files (.scene), parsed once and shared by path (SceneFileCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SceneFileCache's public members with their doc comments.
+Scene files (.scene3d), parsed once and shared by path (SceneFileCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SceneFileCache3D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):SceneFileCache
-static function load(path:String, loaded:SceneFile -> Void, ?failed:String -> Void):IRequest
-static function find(path:String):Null<SceneFile>
+static var instance(default, null):SceneFileCache3D
+static function load(path:String, loaded:SceneFile3D -> Void, ?failed:String -> Void):IRequest
+static function find(path:String):Null<SceneFile3D>
 static function isLoaded(path:String):Bool
 static function isLoading(path:String):Bool
 static var loadingCount(get, never):Int
-static function put(path:String, file:SceneFile):Void
+static function put(path:String, file:SceneFile3D):Void
 static function forget(path:String):Void
 ```
 
 - `instance`: The scene files forwarded to: the runner's from its init to its cleanup, null outside them. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `load`: Loads path (a .scene) into a SceneFile, parsed with SceneFile.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
+- `load`: Loads path (a .scene3d) into a SceneFile3D, parsed with SceneFile3D.parse under its path. One of loaded or failed runs once: during this call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed (else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down.
 - `find`: The file at path if it's loaded, else null.
 - `isLoaded`: Whether path is loaded.
 - `isLoading`: Whether path is loading.
@@ -428,11 +428,11 @@ static function forget(path:String):Void
 - `put`: Adds a file parsed some other way under path, as if loaded from there (a test's, a generated one).
 - `forget`: Forgets path: its file (the instances made from it stay) or its failure, so it's loaded again when next asked for.
 
-## SceneInstance
+## SceneInstance3D
 
-*class* in `src/helix/scene/SceneInstance.hx`
+*class* in `src/helix/scene/SceneInstance3D.hx`
 
-What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the node it was put in, holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
+What instantiating a .scene3d file gives (SceneFile3D.instantiate): its root, a group named after the file under the node it was put in, holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile3D.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
 
 ```haxe
 static function baseName(path:String):String
@@ -447,7 +447,7 @@ function props(node:Node3D):Null<Map<String, SceneValue>>
 function destroy():Void
 ```
 
-- `baseName`: The file's name without directory and extension: "levels/track.scene" gives "track".
+- `baseName`: The file's name without directory and extension: "levels/track.scene3d" gives "track".
 - `path`: The file's path, as it was loaded.
 - `root`: The node holding everything the file made: a group named after the file (its path without directory and extension), under the node it was instantiated in, lit by the file's environment section (its environment).
 - `parent`: The node the file was instantiated in, its root's parent then.
@@ -458,20 +458,20 @@ function destroy():Void
 - `props`: The game's own values the file gave node ("props"), kept here, never on the node; null for a node the file didn't make.
 - `destroy`: Takes it out: its behaviors from the pass (stopping the started ones), its root from the node it was put in, and the textures, fonts and environments it loaded released to their caches (the last release frees each). Its model and scene files stay in their caches, which keep files until told to forget them. A load still under way is cancelled.
 
-## SceneKinds
+## SceneKinds3D
 
-*class* in `src/helix/scene/SceneKinds.hx`
+*class* in `src/helix/scene/SceneKinds3D.hx`
 
 The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh made by Mesh's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB.
 
 ```haxe
 static function make(kind:String):Null<Node3D>
 static function kindOf(node:Node3D):Null<String>
-static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance):Bool
+static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool
 static function read(node:Node3D, name:String):Null<SceneValue>
 static function makeMesh(mesh:SceneMesh):Null<Mesh>
 static function readMesh(mesh:Mesh):Null<SceneMesh>
-static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance):Void
+static function applyMaterial(model:Model, material:SceneMaterial, ?instance:SceneInstance3D):Void
 static function readMaterial(model:Model):Null<SceneMaterial>
 static function projectionOf(name:String):Null<Projection>
 static function projectionName(projection:Projection):String
@@ -500,7 +500,7 @@ static function alphaName(alpha:SpriteAlpha):String
 
 *class* in `src/helix/scene/SceneMaterial.hx`
 
-A material as a .scene file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
+A material as a .scene3d file writes it inline on a Model: Material's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
 
 ```haxe
 function new()
@@ -530,7 +530,7 @@ var doubleSided:Null<Bool>
 
 *class* in `src/helix/scene/SceneMesh.hx`
 
-A generated mesh as a .scene file writes it on a Model ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
+A generated mesh as a .scene3d file writes it on a Model ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
 
 ```haxe
 function new(shape:String)
@@ -542,11 +542,11 @@ var arguments:Map<String, Float>
 - `shape`: The shape's name, one of SceneSchema.shapes.
 - `arguments`: Its arguments by name, those said; one absent is the generator's default.
 
-## SceneNode
+## SceneNode3D
 
-*class* in `src/helix/scene/SceneNode.hx`
+*class* in `src/helix/scene/SceneNode3D.hx`
 
-A node as a .scene file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
+A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode3D too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
 
 ```haxe
 function new(?kind:String, ?name:String)
@@ -563,8 +563,8 @@ var visible:Null<Bool>
 var pickable:Null<Bool>
 var properties:Map<String, SceneValue>
 var material:Null<SceneMaterial>
-var overrides:Map<String, SceneNode>
-var children:Array<SceneNode>
+var overrides:Map<String, SceneNode3D>
+var children:Array<SceneNode3D>
 var behaviors:Array<SceneBehavior>
 var props:Map<String, SceneValue>
 var isOverride(get, never):Bool
@@ -573,7 +573,7 @@ var isOverride(get, never):Bool
 - `new`: A node of kind (null for a prefab node or an override), named name (null for an override), everything else at its default.
 - `name`: Its name, unique among its siblings (paths depend on it); null for an override.
 - `kind`: The class it is (Node3D for a group, else a kind's name from SceneSchema); null for a prefab node or an override.
-- `scene`: The .scene file instantiated here as a prefab; null for a node of a kind or an override.
+- `scene`: The .scene3d file instantiated here as a prefab; null for a node of a kind or an override.
 - `file`: A Model's glTF, instantiated under it; null for none. A Model has a file or a mesh, never both.
 - `mesh`: A Model's generated mesh, made by one of Mesh's generators as its first part; null for none.
 - `position`: Its position, x, y, z in its parent's units; null for the origin.
@@ -594,7 +594,7 @@ var isOverride(get, never):Bool
 
 *class* in `src/helix/scene/SceneSchema.hx`
 
-The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the shapes a Model's "mesh" can name (shapes): Mesh's generators with their arguments and defaults.
+The kinds a .scene3d file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the shapes a Model's "mesh" can name (shapes): Mesh's generators with their arguments and defaults.
 
 ```haxe
 static var kinds(default, null):Array<KindSchema>
@@ -606,7 +606,7 @@ static function property(name:String):Null<PropertySchema>
 ```
 
 - `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
-- `shapes`: The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds calls the generator from it.
+- `shapes`: The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds3D calls the generator from it.
 - `projections`: What a camera's "projection" may say: Projection's cases in lower case, in its order, so the index of a name is the case's value.
 - `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
 - `shape`: The table of the shape named name (as a mesh's "shape" has it), or null for a shape no generator makes.
@@ -616,7 +616,7 @@ static function property(name:String):Null<PropertySchema>
 
 *enum* in `src/helix/scene/SceneValue.hx`
 
-A value as a .scene file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text, a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a node of the file, "@name" or "@path/from/root".
+A value as a .scene3d file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text, a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a node of the file, "@name" or "@path/from/root".
 
 - `Number(value:Float)`: A number.
 - `Text(value:String)`: Text: a path to an asset, a named choice ("camera"), or what a behavior wants.

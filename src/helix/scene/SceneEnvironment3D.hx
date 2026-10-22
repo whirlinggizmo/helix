@@ -1,9 +1,9 @@
 package helix.scene;
 
-/** A .scene file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its
+/** A .scene3d file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its
 	root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the
 	place (exposure, tone mapping) is the view's (View3D), not the file's. */
-class SceneEnvironment {
+class SceneEnvironment3D {
 	/** The ambient light's color, 0xAARRGGBB; null for white. */
 	public var ambientColor:Null<Int>;
 

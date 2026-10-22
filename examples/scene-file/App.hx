@@ -17,16 +17,16 @@ import helix.render3d.Camera3D;
 import helix.render3d.Node3D;
 import helix.render3d.Tonemap;
 import helix.render3d.View3D;
-import helix.scene.SceneFile;
-import helix.scene.SceneFiles;
-import helix.scene.SceneInstance;
+import helix.scene.SceneFile3D;
+import helix.scene.SceneFiles3D;
+import helix.scene.SceneInstance3D;
 import helix.time.Ticker;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** A racer slice entirely from a scene file (helix.scene.SceneFile) and behaviors (helix.behavior): scenes/track.scene holds the place's
+/** A racer slice entirely from a scene file (helix.scene.SceneFile3D) and behaviors (helix.behavior): scenes/track.scene3d holds the place's
 	light (its environment: the sky and the ambient light), the sun with its shadows, a closed loop of Kenney's Racing Kit pieces with
-	barriers, a gantry and scenery (laid by tools/gen_loop.py), eight checkpoints, the race, the car (a prefab, scenes/car.scene, the kit's
+	barriers, a gantry and scenery (laid by tools/gen_loop.py), eight checkpoints, the race, the car (a prefab, scenes/car.scene3d, the kit's
 	sports car) and the chase camera; nothing of the world is in code. The file is instantiated under a Node3D shown by a View3D on the
 	stage, which holds the photography (ACES tone mapping, the exposure) and looks through the file's chase camera; the HUD is text on the
 	stage over it. The behaviors (Car, ChaseCamera, Checkpoint, Race) drive it, run by a BehaviorPass of the app's own at a fixed 60 Hz
@@ -142,15 +142,15 @@ class App extends helix.App {
 	}
 }
 
-/** The level: the track's file loaded through SceneFiles and instantiated under a Node3D with its own pass, shown on the stage by a View3D
+/** The level: the track's file loaded through SceneFiles3D and instantiated under a Node3D with its own pass, shown on the stage by a View3D
 	through the camera the file made (the Camera3D named chase); a HUD line over it, on the stage. R destroys the instance and makes it
 	again. */
 class Play {
 	/** The track's file. */
-	public static inline var TRACK = "scenes/track.scene";
+	public static inline var TRACK = "scenes/track.scene3d";
 
 	/** The file instantiated, or null until it has loaded. */
-	public var instance(default, null):Null<SceneInstance>;
+	public var instance(default, null):Null<SceneInstance3D>;
 
 	/** The race's behavior, once the instance is ready; null before. */
 	public var race(default, null):Null<Race>;
@@ -161,7 +161,7 @@ class Play {
 	var level = new Node3D();
 	var view:View3D;
 	var behaviors = new BehaviorPass();
-	var file:Null<SceneFile>;
+	var file:Null<SceneFile3D>;
 	var fallback = new Camera3D();
 	var fps = new FpsOverlay();
 	var line = new Text2D("Loading the track", 22, 0xfff5f5f5);
@@ -179,11 +179,11 @@ class Play {
 		Stage.addChild(line);
 		Stage.addChild(help);
 		Stage.addChild(fps);
-		SceneFiles.load(TRACK, loaded -> place(loaded), message -> line.text = message);
+		SceneFiles3D.load(TRACK, loaded -> place(loaded), message -> line.text = message);
 	}
 
 	// The file in: instantiated under the level's root, with the level's pass.
-	function place(loaded:SceneFile):Void {
+	function place(loaded:SceneFile3D):Void {
 		file = loaded;
 		restart();
 	}

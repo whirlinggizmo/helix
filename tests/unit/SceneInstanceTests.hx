@@ -28,21 +28,21 @@ import helix.render3d.SpotLight;
 import helix.render3d.Sprite3D;
 import helix.render3d.Renderer3D;
 import helix.render3d.Text3D;
-import helix.scene.SceneFile;
-import helix.scene.SceneFileCache;
-import helix.scene.SceneFiles;
-import helix.scene.SceneInstance;
-import helix.scene.SceneKinds;
+import helix.scene.SceneFile3D;
+import helix.scene.SceneFileCache3D;
+import helix.scene.SceneFiles3D;
+import helix.scene.SceneInstance3D;
+import helix.scene.SceneKinds3D;
 import helix.scene.SceneMaterial;
 import helix.scene.SceneSchema;
 import helix.scene.SceneValue;
 
-/** A .scene file instantiated (helix.scene.SceneFile.instantiate, SceneInstance) and captured back (SceneFile.capture): the cache
-	(SceneFileCache) sharing loads and remembering refusals; the round-trip sample onto a test stage, every node at its path with its
+/** A .scene3d file instantiated (helix.scene.SceneFile3D.instantiate, SceneInstance3D) and captured back (SceneFile3D.capture): the cache
+	(SceneFileCache3D) sharing loads and remembering refusals; the round-trip sample onto a test stage, every node at its path with its
 	transform, flags and properties, a prefab served by the test's assets with its override applied, a behavior made from the registry with
 	every prop type and a reference resolved by name and by path, what's missing or unknown logged and the rest made, ready after the
 	prefab lands; a prefab turning a flag back on, adding children and behaviors, one naming itself refused; a model file's nodes under
-	their entry with its properties and an override by path; the live side of every kind's table (SceneKinds) applying and reading back;
+	their entry with its properties and an override by path; the live side of every kind's table (SceneKinds3D) applying and reading back;
 	capture of an untouched instance byte-equal, and changes as overrides; generated meshes made, captured byte-equal, and one made in code
 	captured as a mesh entry; and destroy taking everything out. */
 class SceneInstanceTests {
@@ -53,7 +53,7 @@ class SceneInstanceTests {
 	public static var asked:Map<String, Int> = [];
 	static var gpu:CountingGraphics;
 	static var decoding:ImageDecoding;
-	static var sceneFiles:SceneFileCache;
+	static var sceneFiles:SceneFileCache3D;
 
 	static function check(value:Bool, message:String):Void {
 		if (!value)
@@ -91,8 +91,8 @@ class SceneInstanceTests {
 		load.failed(message);
 	}
 
-	static function parse(text:String, path:String):SceneFile {
-		var file = SceneFile.parse(Bytes.ofString(text), path);
+	static function parse(text:String, path:String):SceneFile3D {
+		var file = SceneFile3D.parse(Bytes.ofString(text), path);
 		if (file == null)
 			throw 'The test\'s file $path doesn\'t parse: $log';
 		return file;
@@ -121,14 +121,14 @@ class SceneInstanceTests {
 		var assets = new Held();
 		decoding = new ImageDecoding(new StubDecoder());
 		var textures = new TextureCache(assets, decoding, gpu);
-		sceneFiles = new SceneFileCache(assets);
+		sceneFiles = new SceneFileCache3D(assets);
 		@:privateAccess Graphics.bind(gpu);
 		@:privateAccess Assets.bind(assets);
 		@:privateAccess Textures.bind(textures);
 		@:privateAccess Fonts.bind(new FontCache(assets, gpu));
 		@:privateAccess Models.bind(new ModelCache(assets, textures));
 		@:privateAccess Environments.bind(new EnvironmentCache(assets, decoding, gpu));
-		@:privateAccess SceneFiles.bind(sceneFiles);
+		@:privateAccess SceneFiles3D.bind(sceneFiles);
 		cache();
 		sample();
 		prefabs();
@@ -142,45 +142,44 @@ class SceneInstanceTests {
 	// The cache: one load shared, a parsed file kept, a refusal remembered until forgotten, shutdown cancelling.
 	static function cache():Void {
 		var got = [], failed = [];
-		sceneFiles.load("a.scene", f -> got.push(f), m -> failed.push(m));
-		sceneFiles.load("a.scene", f -> got.push(f), m -> failed.push(m));
-		check(asked["a.scene"] == 1
-			&& sceneFiles.isLoading("a.scene")
-			&& sceneFiles.loadingCount == 1
-			&& !sceneFiles.isLoaded("a.scene"),
+		sceneFiles.load("a.scene3d", f -> got.push(f), m -> failed.push(m));
+		sceneFiles.load("a.scene3d", f -> got.push(f), m -> failed.push(m));
+		check(asked["a.scene3d"] == 1 && sceneFiles.isLoading("a.scene3d") && sceneFiles.loadingCount == 1 && !sceneFiles.isLoaded("a.scene3d"),
 			"Two loads of a file ask for it once");
-		release("a.scene", Bytes.ofString('{"helix-scene": 1, "nodes": [{"kind": "Node3D", "name": "g"}]}'));
-		check(got.length == 2 && got[0] == got[1] && got[0].path == "a.scene" && got[0].nodes[0].name == "g",
+		release("a.scene3d", Bytes.ofString('{"helix-scene3d": 1, "nodes": [{"kind": "Node3D", "name": "g"}]}'));
+		check(got.length == 2 && got[0] == got[1] && got[0].path == "a.scene3d" && got[0].nodes[0].name == "g",
 			"and both get the one file, parsed under its path");
-		check(sceneFiles.isLoaded("a.scene") && sceneFiles.find("a.scene") == got[0] && !sceneFiles.isLoading("a.scene"), "which is kept");
-		sceneFiles.load("a.scene", f -> got.push(f));
-		check(got.length == 3 && asked["a.scene"] == 1, "A later load has it at once");
-		sceneFiles.load("bad.scene", f -> got.push(f), m -> failed.push(m));
-		release("bad.scene", Bytes.ofString('{"helix-scene": 1, "nodes": [{"kind": "Blob", "name": "g"}]}'));
-		check(failed.length == 1 && failed[0].indexOf("bad.scene") >= 0 && logged(["bad.scene", "unknown kind"]),
+		check(sceneFiles.isLoaded("a.scene3d")
+			&& sceneFiles.find("a.scene3d") == got[0]
+			&& !sceneFiles.isLoading("a.scene3d"), "which is kept");
+		sceneFiles.load("a.scene3d", f -> got.push(f));
+		check(got.length == 3 && asked["a.scene3d"] == 1, "A later load has it at once");
+		sceneFiles.load("bad.scene3d", f -> got.push(f), m -> failed.push(m));
+		release("bad.scene3d", Bytes.ofString('{"helix-scene3d": 1, "nodes": [{"kind": "Blob", "name": "g"}]}'));
+		check(failed.length == 1 && failed[0].indexOf("bad.scene3d") >= 0 && logged(["bad.scene3d", "unknown kind"]),
 			"A refused file fails with its reason, its problems logged");
-		sceneFiles.load("bad.scene", f -> got.push(f), m -> failed.push(m));
-		check(failed.length == 2 && asked["bad.scene"] == 1, "The refusal is remembered");
-		sceneFiles.forget("bad.scene");
-		sceneFiles.load("bad.scene", f -> got.push(f), m -> failed.push(m));
-		check(asked["bad.scene"] == 2, "until forgotten");
-		refuse("bad.scene", "not found");
+		sceneFiles.load("bad.scene3d", f -> got.push(f), m -> failed.push(m));
+		check(failed.length == 2 && asked["bad.scene3d"] == 1, "The refusal is remembered");
+		sceneFiles.forget("bad.scene3d");
+		sceneFiles.load("bad.scene3d", f -> got.push(f), m -> failed.push(m));
+		check(asked["bad.scene3d"] == 2, "until forgotten");
+		refuse("bad.scene3d", "not found");
 		check(failed.length == 3 && failed[2].indexOf("not found") >= 0, "A load that fails fails the callers");
-		sceneFiles.load("gone.scene", f -> got.push(f));
-		check(logged(["gone.scene", "not found"]) == false, "Nothing logged yet");
-		refuse("gone.scene", "not found");
-		check(logged(["gone.scene", "not found"]), "A failure with no failed lambda is logged with the path");
+		sceneFiles.load("gone.scene3d", f -> got.push(f));
+		check(logged(["gone.scene3d", "not found"]) == false, "Nothing logged yet");
+		refuse("gone.scene3d", "not found");
+		check(logged(["gone.scene3d", "not found"]), "A failure with no failed lambda is logged with the path");
 		var told = false;
-		sceneFiles.load("never.scene", f -> told = true, m -> told = true);
+		sceneFiles.load("never.scene3d", f -> told = true, m -> told = true);
 		sceneFiles.shutdown();
-		check(!told && !sceneFiles.isLoading("never.scene") && !held.exists("never.scene") && !sceneFiles.isLoaded("a.scene"),
+		check(!told && !sceneFiles.isLoading("never.scene3d") && !held.exists("never.scene3d") && !sceneFiles.isLoaded("a.scene3d"),
 			"Shutting down cancels loads, telling no one, and forgets files");
-		sceneFiles = new SceneFileCache(new Held());
-		@:privateAccess SceneFiles.bind(sceneFiles);
+		sceneFiles = new SceneFileCache3D(new Held());
+		@:privateAccess SceneFiles3D.bind(sceneFiles);
 	}
 
 	static final SAMPLE = '{
-		"helix-scene": 1,
+		"helix-scene3d": 1,
 		"environment": {
 			"ambient": {"color": "#ffffff", "intensity": 0.25},
 			"map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
@@ -211,21 +210,21 @@ class SceneInstanceTests {
 					"material": {"baseColor": "#ff8800", "metallic": 0.1, "roughness": 0.3, "texture": "props/cone.png",
 						"normalTexture": "props/cone_n.png", "normalScale": 0.5, "emissive": "#ff0000", "emissiveStrength": 2, "doubleSided": true},
 					"props": {"team": 2, "role": "obstacle", "path": [1, 2, 3], "hot": true, "color": "#ff0000", "leader": "@cone_1"}},
-				{"scene": "prefabs/car.scene", "name": "car", "position": [0, 0.5, 12],
+				{"scene": "prefabs/car.scene3d", "name": "car", "position": [0, 0.5, 12],
 					"overrides": {"body": {"material": {"baseColor": "#2040c0"}}}, "behaviors": [{"kind": "Car", "props": {"topSpeed": 60}}]}
 			]}
 		]
 	}';
 
-	static final CAR = '{"helix-scene": 1, "environment": {"ambient": {"intensity": 1}}, "nodes": [
+	static final CAR = '{"helix-scene3d": 1, "environment": {"ambient": {"intensity": 1}}, "nodes": [
 		{"kind": "Model", "name": "body", "children": [{"kind": "Node3D", "name": "wheel", "visible": false}]}]}';
 
 	// The round-trip sample under a stage's root: every node at its path, the prefab landing, the behaviors, ready, and capture.
 	static function sample():Void {
-		var file = parse(SAMPLE, "levels/track.scene");
+		var file = parse(SAMPLE, "levels/track.scene3d");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
 		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
-		check(instance.root.parent == stage.root && instance.root.name == "track" && instance.path == "levels/track.scene",
+		check(instance.root.parent == stage.root && instance.root.name == "track" && instance.path == "levels/track.scene3d",
 			"The instance's root is a group named after the file under the node it was given");
 		var light = instance.root.environment;
 		check(light != null && light.ambientColor == 0xffffffff && light.ambientIntensity == .25 && stage.ambientIntensity == 0,
@@ -260,7 +259,7 @@ class SceneInstanceTests {
 			cone = instance.node("world/cone_1"),
 			car = instance.node("world/car");
 		check(track != null && Type.getClass(track) == Node3D && track.scaleX == 2 && track.childCount == 0 && held.exists("track/track.glb")
-			&& cone != null && cone.x == 12 && held.exists("props/cone.glb") && car != null && car.y == .5 && held.exists("prefabs/car.scene"),
+			&& cone != null && cone.x == 12 && held.exists("props/cone.glb") && car != null && car.y == .5 && held.exists("prefabs/car.scene3d"),
 			"A file node and a prefab node are placeholders at their transforms while their files load");
 		check(!instance.ready && readyCalls == 0 && instance.behaviors.length == 0 && pass.count == 0, "Nothing is ready or attached yet");
 		var props = instance.props(cone);
@@ -279,15 +278,15 @@ class SceneInstanceTests {
 		refuse("track/track.glb", "not found");
 		refuse("props/cone.glb", "not found");
 		refuse("sky/sky.hdr", "not found");
-		check(logged(["levels/track.scene", "world/track", "track/track.glb", "not found"])
-			&& logged(["levels/track.scene", "world/cone_1", "props/cone.glb", "not found"])
-			&& logged(["levels/track.scene", "environment", "map", "sky/sky.hdr"])
-			&& logged(["levels/track.scene", "environment", "background", "sky/sky.hdr"]),
+		check(logged(["levels/track.scene3d", "world/track", "track/track.glb", "not found"])
+			&& logged(["levels/track.scene3d", "world/cone_1", "props/cone.glb", "not found"])
+			&& logged(["levels/track.scene3d", "environment", "map", "sky/sky.hdr"])
+			&& logged(["levels/track.scene3d", "environment", "background", "sky/sky.hdr"]),
 			"A missing model and a missing environment are logged with the scene's path and the node's");
 		check(track.childCount == 0 && !instance.ready, "A missing model leaves its node empty; the prefab is still awaited");
 
 		// The prefab lands: made under its node, its override applied, its environment its node's; then everything is ready.
-		release("prefabs/car.scene", Bytes.ofString(CAR));
+		release("prefabs/car.scene3d", Bytes.ofString(CAR));
 		var body = Std.downcast(instance.node("world/car/body"), Model),
 			wheel = instance.node("world/car/body/wheel");
 		check(body != null && body.parent == car && wheel != null && !wheel.visible, "The prefab's nodes are under its node, as the prefab says");
@@ -318,13 +317,13 @@ class SceneInstanceTests {
 
 		// Capture of the untouched instance: the sample, minus what no file provided (the environment and the background never loaded, so
 		// the environment keeps its defaults there).
-		var expected = parse(SAMPLE, "levels/track.scene");
+		var expected = parse(SAMPLE, "levels/track.scene3d");
 		expected.environment.mapFile = null;
 		expected.environment.mapIntensity = null;
 		expected.environment.rotation = null;
 		expected.environment.backgroundFile = null;
 		expected.environment.backgroundBlur = null;
-		var captured = SceneFile.capture(instance).write().toString();
+		var captured = SceneFile3D.capture(instance).write().toString();
 		check(captured == expected.write().toString(), 'An untouched instance captures as its file:\n$captured');
 
 		// Changes: a property, a hidden file node, a behavior attached by the file to the prefab's node read back with its props.
@@ -333,11 +332,11 @@ class SceneInstanceTests {
 		body.shadowCasting = false;
 		wheel.visible = true;
 		driver.topSpeed = 80;
-		var again = SceneFile.capture(instance);
+		var again = SceneFile3D.capture(instance);
 		var lampEntry = again.nodes[0].children[1],
 			carEntry = again.nodes[0].children[9];
 		check(same(lampEntry.properties.get("intensity"), Number(5)), "A changed property is captured");
-		check(carEntry.visible == false && carEntry.scene == "prefabs/car.scene", "A hidden prefab node is captured hidden, as the reference");
+		check(carEntry.visible == false && carEntry.scene == "prefabs/car.scene3d", "A hidden prefab node is captured hidden, as the reference");
 		var bodyChange = carEntry.overrides.get("body"),
 			wheelChange = carEntry.overrides.get("body/wheel");
 		check(bodyChange != null
@@ -358,30 +357,30 @@ class SceneInstanceTests {
 		check(pass.count == 0, "twice does nothing more");
 	}
 
-	static final MAIN = '{"helix-scene": 1, "nodes": [
-		{"scene": "p/one.scene", "name": "one", "overrides": {
+	static final MAIN = '{"helix-scene3d": 1, "nodes": [
+		{"scene": "p/one.scene3d", "name": "one", "overrides": {
 			"wheel": {"visible": true, "children": [{"kind": "PointLight", "name": "bulb", "behaviors": [{"kind": "Gate"}]}],
 				"behaviors": [{"kind": "Checkpoint", "props": {"index": 3}}]},
 			"wheel/hub": {"position": [1, 0, 0]},
 			"nope/path": {"visible": false}}},
-		{"scene": "p/loop.scene", "name": "loop"},
+		{"scene": "p/loop.scene3d", "name": "loop"},
 		{"kind": "Node3D", "name": "g", "behaviors": [{"kind": "Nothing"},
 			{"kind": "Checkpoint", "props": {"index": 1.5, "bogus": 1, "target": "@one/wheel"}}, {"kind": "Checkpoint", "props": {"target": 5}}]}
 	]}';
-	static final ONE = '{"helix-scene": 1, "nodes": [
+	static final ONE = '{"helix-scene3d": 1, "nodes": [
 		{"kind": "Node3D", "name": "wheel", "visible": false, "children": [{"kind": "Node3D", "name": "hub"}],
 			"behaviors": [{"kind": "Gate"}, {"kind": "Checkpoint", "props": {"target": "@hub"}}]},
-		{"scene": "p/two.scene", "name": "inner"}]}';
-	static final TWO = '{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m"}, {"kind": "Node3D", "name": "hub"}]}';
-	static final LOOP = '{"helix-scene": 1, "nodes": [{"scene": "p/loop.scene", "name": "again"}]}';
+		{"scene": "p/two.scene3d", "name": "inner"}]}';
+	static final TWO = '{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m"}, {"kind": "Node3D", "name": "hub"}]}';
+	static final LOOP = '{"helix-scene3d": 1, "nodes": [{"scene": "p/loop.scene3d", "name": "again"}]}';
 
 	// Prefabs: one nested in another, overrides turning a flag back on and adding children and behaviors, a self-naming one refused, an
 	// unknown behavior and a bad prop logged, references by path and within a prefab, and capture of it all.
 	static function prefabs():Void {
-		sceneFiles.put("p/one.scene", parse(ONE, "p/one.scene"));
-		sceneFiles.put("p/two.scene", parse(TWO, "p/two.scene"));
-		sceneFiles.put("p/loop.scene", parse(LOOP, "p/loop.scene"));
-		var file = parse(MAIN, "main.scene");
+		sceneFiles.put("p/one.scene3d", parse(ONE, "p/one.scene3d"));
+		sceneFiles.put("p/two.scene3d", parse(TWO, "p/two.scene3d"));
+		sceneFiles.put("p/loop.scene3d", parse(LOOP, "p/loop.scene3d"));
+		var file = parse(MAIN, "main.scene3d");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
 		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
 		check(instance.ready && readyCalls == 0, "With every prefab in the cache, ready at once, the lambda waiting for the pass");
@@ -394,14 +393,14 @@ class SceneInstanceTests {
 		check(m != null && Std.isOfType(m, Model) && m.parent == instance.node("one/inner"), "A prefab's own prefab lands under its node");
 		check(instance.node("loop/again") != null
 			&& instance.node("loop/again").childCount == 0
-			&& logged(["main.scene", "loop/again", "p/loop.scene", "names itself"]),
+			&& logged(["main.scene3d", "loop/again", "p/loop.scene3d", "names itself"]),
 			"A prefab naming itself is refused and logged, its node left empty");
-		check(logged(["main.scene", "one/nope/path", "names no node"]), "An override's path naming no node is logged");
-		check(logged(["main.scene", "g", "Nothing", "not registered"]), "An unknown behavior is logged");
-		check(logged(["main.scene", "g", "Checkpoint.bogus", "not a prop"])
-			&& logged(["main.scene", "g", "Checkpoint.target", "wrong shape"]),
+		check(logged(["main.scene3d", "one/nope/path", "names no node"]), "An override's path naming no node is logged");
+		check(logged(["main.scene3d", "g", "Nothing", "not registered"]), "An unknown behavior is logged");
+		check(logged(["main.scene3d", "g", "Checkpoint.bogus", "not a prop"])
+			&& logged(["main.scene3d", "g", "Checkpoint.target", "wrong shape"]),
 			"A prop the behavior hasn't, and a value of the wrong shape, are logged");
-		check(logged(["main.scene", "@hub names 2 nodes", "first is taken"]), "A name two nodes have (the nested prefab's too) is logged");
+		check(logged(["main.scene3d", "@hub names 2 nodes", "first is taken"]), "A name two nodes have (the nested prefab's too) is logged");
 		check(log.length == 0, 'Nothing else logged: $log');
 		var kinds = [
 			for (b in instance.behaviors)
@@ -420,10 +419,10 @@ class SceneInstanceTests {
 		// Capture: the prefabs' own nodes and behaviors are theirs; the overrides hold what the file added or changed.
 		var expected = [
 			'{',
-			'  "helix-scene": 1,',
+			'  "helix-scene3d": 1,',
 			'  "nodes": [',
 			'    {',
-			'      "scene": "p/one.scene",',
+			'      "scene": "p/one.scene3d",',
 			'      "name": "one",',
 			'      "overrides": {',
 			'        "wheel": {',
@@ -454,7 +453,7 @@ class SceneInstanceTests {
 			'      }',
 			'    },',
 			'    {',
-			'      "scene": "p/loop.scene",',
+			'      "scene": "p/loop.scene3d",',
 			'      "name": "loop"',
 			'    },',
 			'    {',
@@ -476,7 +475,7 @@ class SceneInstanceTests {
 			'  ]',
 			'}'
 		].join("\n") + "\n";
-		var captured = SceneFile.capture(instance).write().toString();
+		var captured = SceneFile3D.capture(instance).write().toString();
 		check(captured == expected, 'The prefabs capture as their references and overrides:\n$captured');
 
 		// Changes under the prefabs and nodes added by the game.
@@ -493,7 +492,7 @@ class SceneInstanceTests {
 		box.name = "box";
 		box.material.roughness = .2;
 		instance.root.addChild(box);
-		var again = SceneFile.capture(instance);
+		var again = SceneFile3D.capture(instance);
 		var one = again.nodes[0];
 		check(one.overrides.get("wheel/hub").position.join(",") == "2,0,0", "A moved prefab node's override follows it");
 		var mChange = one.overrides.get("inner/m");
@@ -513,22 +512,22 @@ class SceneInstanceTests {
 		check(boxEntry.kind == "Model" && boxEntry.file == null && boxEntry.material != null && boxEntry.material.roughness == .2
 			&& boxEntry.material.baseColor == null,
 			"A model made in code from arrays is written without a file or a mesh, its material as it differs from the default");
-		check(logged(["main.scene", "box", "has no file"]) && log.length == 0, "and logged once");
-		SceneFile.capture(instance);
-		check(logged(["main.scene", "box", "has no file"]), "once per capture");
+		check(logged(["main.scene3d", "box", "has no file"]) && log.length == 0, "and logged once");
+		SceneFile3D.capture(instance);
+		check(logged(["main.scene3d", "box", "has no file"]), "once per capture");
 
 		instance.destroy();
 		check(pass.count == 0 && instance.root.parent == null, "destroy takes everything out");
 
 		// Ready waits for a prefab served later.
-		var later = parse('{"helix-scene": 1, "nodes": [{"scene": "p/late.scene", "name": "late"}]}', "later.scene");
+		var later = parse('{"helix-scene3d": 1, "nodes": [{"scene": "p/late.scene3d", "name": "late"}]}', "later.scene3d");
 		made = fresh();
 		readyCalls = 0;
 		var waiting = later.instantiate(made.stage.root, made.pass, () -> readyCalls++);
-		check(!waiting.ready && held.exists("p/late.scene"), "Not ready while a prefab loads");
+		check(!waiting.ready && held.exists("p/late.scene3d"), "Not ready while a prefab loads");
 		made.pass.update(0);
 		check(readyCalls == 0, "and the lambda waits");
-		release("p/late.scene", Bytes.ofString(TWO));
+		release("p/late.scene3d", Bytes.ofString(TWO));
 		check(waiting.ready && waiting.node("late/m") != null && readyCalls == 0, "Ready once it lands");
 		made.pass.update(0);
 		check(readyCalls == 1, "and the lambda at the next update");
@@ -538,12 +537,12 @@ class SceneInstanceTests {
 	// A model file: its nodes moved under the entry's node, the entry's Model properties on every model, an override by the file's path.
 	static function modelFile():Void {
 		var pistol = "CharacterArmature/Root/Body/Hips/Abdomen/Torso/Chest/Shoulder.R/UpperArm.R/LowerArm.R/Wrist.R/Middle1.R/Pistol";
-		var text = '{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "gun", "file": "guns/gun.glb", "position": [0, 1, 0], "tint": "#ff0000",
+		var text = '{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "gun", "file": "guns/gun.glb", "position": [0, 1, 0], "tint": "#ff0000",
 			"shadowCasting": false, "overrides": {
 				"$pistol": {"visible": false, "tint": "#00ff00"},
 				"CharacterArmature/Root/Foot.L": {"position": [5, 0, 0], "children": [{"kind": "Node3D", "name": "marker"}]},
 				"nope/path": {"visible": false}}}]}';
-		var file = parse(text, "gun.scene");
+		var file = parse(text, "gun.scene3d");
 		var made = fresh(), stage = made.stage, pass = made.pass, readyCalls = 0;
 		var instance = file.instantiate(stage.root, pass, () -> readyCalls++);
 		var gun = instance.node("gun");
@@ -561,12 +560,12 @@ class SceneInstanceTests {
 			&& foot.find("marker") != null
 			&& instance.pathOf(foot.find("marker")) == "gun/CharacterArmature/Root/Foot.L/marker",
 			"An override moves a file's node and adds a child under it");
-		check(logged(["gun.scene", "gun/nope/path", "names no node"]) && log.length == 0, "A path naming no node is logged");
+		check(logged(["gun.scene3d", "gun/nope/path", "names no node"]) && log.length == 0, "A path naming no node is logged");
 		pass.update(0);
 		check(readyCalls == 1, "Ready after the model landed");
 		var expected = [
 			'{',
-			'  "helix-scene": 1,',
+			'  "helix-scene3d": 1,',
 			'  "nodes": [',
 			'    {',
 			'      "kind": "Model",',
@@ -594,7 +593,7 @@ class SceneInstanceTests {
 			'  ]',
 			'}'
 		].join("\n") + "\n";
-		var captured = SceneFile.capture(instance).write().toString();
+		var captured = SceneFile3D.capture(instance).write().toString();
 		check(captured == expected, 'A file node captures as its reference and the overrides that differ (the one naming no node dropped):\n$captured');
 		instance.destroy();
 	}
@@ -602,18 +601,18 @@ class SceneInstanceTests {
 	// Every kind's table: each property applied to a live node reads back equal, and the same for a material.
 	static function kinds():Void {
 		log = [];
-		check(SceneKinds.make("Blob") == null
-			&& SceneKinds.kindOf(new Node3D()) == "Node3D"
-			&& SceneKinds.kindOf(new SpotLight()) == "SpotLight",
+		check(SceneKinds3D.make("Blob") == null
+			&& SceneKinds3D.kindOf(new Node3D()) == "Node3D"
+			&& SceneKinds3D.kindOf(new SpotLight()) == "SpotLight",
 			"Kinds by name and by class");
 		var ttf = sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"),
 			pixel = Bytes.alloc(4);
 		for (kind in SceneSchema.kinds) {
-			var node = SceneKinds.make(kind.name);
-			check(node != null && SceneKinds.kindOf(node) == kind.name, '${kind.name} is made and known by its class');
+			var node = SceneKinds3D.make(kind.name);
+			check(node != null && SceneKinds3D.kindOf(node) == kind.name, '${kind.name} is made and known by its class');
 			for (property in kind.properties) {
 				var value = away(property);
-				check(SceneKinds.apply(node, property.name, value), '${kind.name}.${property.name} applies');
+				check(SceneKinds3D.apply(node, property.name, value), '${kind.name}.${property.name} applies');
 			}
 			// What the paths asked for lands.
 			for (path in ["elsewhere.png", "normal.png"])
@@ -623,36 +622,36 @@ class SceneInstanceTests {
 				release("fonts/test.ttf", ttf);
 			decoding.poll();
 			for (property in kind.properties) {
-				var read = SceneKinds.read(node, property.name);
+				var read = SceneKinds3D.read(node, property.name);
 				check(read != null && same(read, away(property)), '${kind.name}.${property.name} reads back what was applied: $read');
 			}
-			check(!SceneKinds.apply(node, "colour", Color(0))
-				&& SceneKinds.read(node, "colour") == null, 'A property ${kind.name} hasn\'t is refused');
+			check(!SceneKinds3D.apply(node, "colour", Color(0))
+				&& SceneKinds3D.read(node, "colour") == null, 'A property ${kind.name} hasn\'t is refused');
 			if (kind.properties.length > 0)
-				check(!SceneKinds.apply(node, kind.properties[0].name, Reference("x")), "and a value of the wrong shape");
+				check(!SceneKinds3D.apply(node, kind.properties[0].name, Reference("x")), "and a value of the wrong shape");
 		}
 		var sprite = new Sprite3D(null);
-		check(!SceneKinds.apply(sprite, "facing", Text("sideways")) && !SceneKinds.apply(sprite, "alphaMode", Text("solid")),
+		check(!SceneKinds3D.apply(sprite, "facing", Text("sideways")) && !SceneKinds3D.apply(sprite, "alphaMode", Text("solid")),
 			"A named choice no enum has is refused");
 		var lamp = new PointLight();
-		check(!SceneKinds.apply(lamp, "shadowCasting", Flag(true)) && SceneKinds.read(lamp, "shadowDistance") == null,
+		check(!SceneKinds3D.apply(lamp, "shadowCasting", Flag(true)) && SceneKinds3D.read(lamp, "shadowDistance") == null,
 			"A point light's shadow properties aren't its to apply or read");
 		var camera = new Camera3D();
-		check(!SceneKinds.apply(camera, "projection", Text("isometric"))
-			&& SceneKinds.projectionOf("orthographic") == Orthographic
-			&& SceneKinds.projectionName(Perspective) == "perspective",
+		check(!SceneKinds3D.apply(camera, "projection", Text("isometric"))
+			&& SceneKinds3D.projectionOf("orthographic") == Orthographic
+			&& SceneKinds3D.projectionName(Perspective) == "perspective",
 			"Projections by name");
-		check(SceneKinds.apply(camera, "near", Number(2000))
+		check(SceneKinds3D.apply(camera, "near", Number(2000))
 			&& camera.near == 2000
 			&& camera.far > 2000
-			&& SceneKinds.apply(camera, "far", Number(5000))
+			&& SceneKinds3D.apply(camera, "far", Number(5000))
 			&& camera.far == 5000
 			&& camera.near == 2000,
 			"A near past the far moves the far just past it, so the far then said lands too");
-		check(SceneKinds.apply(camera, "far", Number(.05))
+		check(SceneKinds3D.apply(camera, "far", Number(.05))
 			&& camera.far == .05
 			&& camera.near < .05
-			&& SceneKinds.apply(camera, "near", Number(.01))
+			&& SceneKinds3D.apply(camera, "near", Number(.01))
 			&& camera.near == .01
 			&& camera.far == .05,
 			"and a far under the near moves the near just under it");
@@ -668,36 +667,36 @@ class SceneInstanceTests {
 		material.doubleSided = true;
 		var model = new Model(Mesh.cube(1, 1, 1), new Material());
 		var before = model.material;
-		SceneKinds.applyMaterial(model, material);
+		SceneKinds3D.applyMaterial(model, material);
 		release("mat.png", pixel);
 		release("mat_n.png", pixel);
 		decoding.poll();
-		var read = SceneKinds.readMaterial(model);
+		var read = SceneKinds3D.readMaterial(model);
 		check(model.material != before && read.baseColor == 0x78123456 && read.metallic == .25 && read.roughness == .75 && read.texture == "mat.png"
 			&& read.normalTexture == "mat_n.png" && read.normalScale == 2 && read.emissive == 0xffff8800 && read.emissiveStrength == 3
 			&& read.doubleSided == true,
 			"A material applied reads back every value, its textures by path");
 		var partial = new SceneMaterial();
 		partial.roughness = .1;
-		SceneKinds.applyMaterial(model, partial);
-		read = SceneKinds.readMaterial(model);
+		SceneKinds3D.applyMaterial(model, partial);
+		read = SceneKinds3D.readMaterial(model);
 		check(read.roughness == .1 && read.baseColor == 0xffffffff && read.texture == null && read.metallic == 0,
 			"A material saying one value is that value over the defaults");
-		check(SceneKinds.readMaterial(new Model()) == null, "A model of no parts has no material to read");
+		check(SceneKinds3D.readMaterial(new Model()) == null, "A model of no parts has no material to read");
 		check(log.length == 0, 'Nothing logged: $log');
 	}
 
 	// An unsaid flag is the kind's own default (a Text3D unpickable), a said one is applied and captured as said away from it; a camera
 	// of each projection applied and read back.
 	static function flagsAndCameras():Void {
-		var file = parse('{"helix-scene": 1, "nodes": [
+		var file = parse('{"helix-scene3d": 1, "nodes": [
 			{"kind": "Text3D", "name": "quiet", "text": "a"},
 			{"kind": "Text3D", "name": "button", "text": "b", "pickable": true},
 			{"kind": "Model", "name": "ghost", "pickable": false},
 			{"kind": "Camera3D", "name": "eye", "position": [0, 1, 8], "projection": "perspective", "fovY": 1, "near": 0.5, "far": 50},
 			{"kind": "Camera3D", "name": "flat", "position": [0, 12, 0], "projection": "orthographic", "orthographicHeight": 6, "near": 0,
 				"far": 20}
-		]}', "flags.scene");
+		]}', "flags.scene3d");
 		var made = fresh(),
 			instance = file.instantiate(made.stage.root, made.pass);
 		var quiet = instance.node("quiet"),
@@ -711,7 +710,7 @@ class SceneInstanceTests {
 		check(eye != null && eye.projection == Perspective && eye.fovY == 1 && eye.near == .5 && eye.far == 50, "A perspective camera from a file");
 		check(flat != null && flat.projection == Orthographic && flat.orthographicHeight == 6 && flat.near == 0 && flat.far == 20,
 			"An orthographic camera from a file, its near 0");
-		var captured = SceneFile.capture(instance);
+		var captured = SceneFile3D.capture(instance);
 		check(captured.write().compare(file.write()) == 0, "The untouched instance captures to its file: flags and projections alike");
 		var written = captured.write().toString();
 		var quietAt = written.indexOf('"name": "quiet"'),
@@ -734,11 +733,11 @@ class SceneInstanceTests {
 	// Generated meshes: a cube and a plane from a file, made by Mesh's generators with the inline material, captured byte-equal; a sphere
 	// made in code captured as a mesh entry.
 	static function meshes():Void {
-		var file = parse('{"helix-scene": 1, "nodes": [
+		var file = parse('{"helix-scene3d": 1, "nodes": [
 			{"kind": "Model", "name": "box", "position": [0, 1, 0], "mesh": {"shape": "cube", "width": 1, "height": 2, "length": 3}},
 			{"kind": "Model", "name": "ground", "mesh": {"shape": "plane", "width": 400, "length": 400, "subdivisions": 2},
 				"material": {"baseColor": "#9bbf7c", "roughness": 1}, "shadowCasting": false}
-		]}', "meshes.scene");
+		]}', "meshes.scene3d");
 		var made = fresh(),
 			instance = file.instantiate(made.stage.root, made.pass);
 		var box = Std.downcast(instance.node("box"), Model),
@@ -756,11 +755,11 @@ class SceneInstanceTests {
 			"A plane of two subdivisions: 16 vertices, its size, the inline material");
 		check(ground.mesh.shape != null && ground.mesh.shape.name == "plane" && ground.mesh.shape.arguments.get("subdivisions") == 2,
 			"The mesh records what made it");
-		check(SceneFile.capture(instance).write().compare(file.write()) == 0, "The untouched instance captures to its file");
+		check(SceneFile3D.capture(instance).write().compare(file.write()) == 0, "The untouched instance captures to its file");
 		var ball = new Model(Mesh.sphere(2));
 		ball.name = "ball";
 		instance.root.addChild(ball);
-		var captured = SceneFile.capture(instance);
+		var captured = SceneFile3D.capture(instance);
 		var entry = captured.nodes[2];
 		check(entry.kind == "Model" && entry.name == "ball" && entry.file == null && entry.mesh != null && entry.mesh.shape == "sphere"
 			&& entry.mesh.arguments.get("radius") == 2,

@@ -1,4 +1,4 @@
-"""A Blender glTF export as a .scene file (helix.scene.SceneFile): one Model node named after the export, its file pointing at the glb,
+"""A Blender glTF export as a .scene3d file (helix.scene.SceneFile3D): one Model node named after the export, its file pointing at the glb,
 and the export's custom properties as overrides by node path. Blender exports each object's custom properties as its node's extras when
 "Custom Properties" is on; the path to a node is the names down the glTF's tree from the scene's roots joined by "/", so a name used twice
 among siblings is an error. Nothing of the model's geometry, transforms, lights, cameras or materials is written: the file is the model's,
@@ -11,9 +11,9 @@ The custom properties the tool reads (any other extra is ignored):
   helix_<name>                    without helix_behavior, the kind's property <name>, written as given (the loader checks it)
   helix_props_<name>              the node's props map, the game's own values
 
-Written canonically, as SceneFile.write would, so parse then write gives the same bytes and a hand edit stays where it was made.
+Written canonically, as SceneFile3D.write would, so parse then write gives the same bytes and a hand edit stays where it was made.
 
-  python3 tools/gltf2scene.py <export.glb or .gltf> <out.scene> [--file models/<export>.glb] [--name <root node name>] [--check]"""
+  python3 tools/gltf2scene.py <export.glb or .gltf> <out.scene3d> [--file models/<export>.glb] [--name <root node name>] [--check]"""
 import argparse
 import json
 import math
@@ -24,7 +24,7 @@ import sys
 
 PREFIX='helix_'
 FLAGS=('enabled','visible','pickable')
-# An override's properties in the order SceneFile writes them: SceneSchema.kinds, each kind's table, a name once where it first appears.
+# An override's properties in the order SceneFile3D writes them: SceneSchema.kinds, each kind's table, a name once where it first appears.
 # The test checks the names against SceneSchema.hx and the order through the interpreter.
 PROPERTIES=['tint','shadowCasting','shadowReceiving','color','intensity','shadowDistance','shadowMapSize','shadowStrength','shadowColor',
     'range','innerCone','outerCone','projection','fovY','near','far','orthographicHeight','minAspect','texture','regionX','regionY',
@@ -115,7 +115,7 @@ def value(v,where):
     sys.exit(f'{where}: expected a number, text, a bool, a list of numbers, a color or a reference ({v!r})')
 
 def number(v):
-    """A number as SceneFile writes one: an integer-valued one without a point, else with at most six decimals and no trailing zeros, by
+    """A number as SceneFile3D writes one: an integer-valued one without a point, else with at most six decimals and no trailing zeros, by
     the same integer arithmetic on the rounded fraction; one that is not finite is 0."""
     if isinstance(v,int):return str(v)
     if not math.isfinite(v):return '0'
@@ -127,13 +127,13 @@ def number(v):
     return '-'+text if negative and text!='0' else text
 
 def string(text):
-    """text quoted as SceneFile writes it: JSON's escapes for the quote, the backslash and control characters, everything else as it is."""
+    """text quoted as SceneFile3D writes it: JSON's escapes for the quote, the backslash and control characters, everything else as it is."""
     escapes={'"':'\\"','\\':'\\\\','\n':'\\n','\r':'\\r','\t':'\\t','\b':'\\b','\f':'\\f'}
     return '"'+''.join(escapes.get(c,c if ord(c)>=0x20 else f'\\u{ord(c):04x}') for c in text)+'"'
 
 def lines(entries):
     """An object's lines from its (key, value) entries, a value being text (one line), a list of entries (an object) or a list of entry
-    lists (a list of objects): two-space indentation, a comma after all but the last, as SceneFile lays them out."""
+    lists (a list of objects): two-space indentation, a comma after all but the last, as SceneFile3D lays them out."""
     if not entries:return ['{}']
     out=['{']
     for i,(key,v) in enumerate(entries):
@@ -153,17 +153,17 @@ def lines(entries):
     return out
 
 def convert(gltf_path,file=None,name=None):
-    """The .scene's bytes for the export at gltf_path: a Model node named name (the export's stem) with file (models/<export's name>) and
+    """The .scene3d's bytes for the export at gltf_path: a Model node named name (the export's stem) with file (models/<export's name>) and
     its custom properties as overrides."""
     gltf_path=Path(gltf_path);gltf=read(gltf_path)
     root=[('kind',string('Model')),('name',string(name or gltf_path.stem)),('file',string(file or f'models/{gltf_path.name}'))]
     found=properties(gltf,str(gltf_path))
     if found:root.append(('overrides',[(path,override(extras,f'{gltf_path}: {path}')) for path,extras in sorted(found.items())]))
-    return ('\n'.join(lines([('helix-scene','1'),('nodes',[root])]))+'\n').encode('utf-8')
+    return ('\n'.join(lines([('helix-scene3d','1'),('nodes',[root])]))+'\n').encode('utf-8')
 
 def main():
     p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('gltf',help='the export, a .glb or a .gltf');p.add_argument('out',help='the .scene to write')
+    p.add_argument('gltf',help='the export, a .glb or a .gltf');p.add_argument('out',help='the .scene3d to write')
     p.add_argument('--file',help="the model's path as the scene names it (default: models/<the export's name>)")
     p.add_argument('--name',help="the Model node's name (default: the export's stem)")
     p.add_argument('--check',action='store_true',help='write nothing; exit 1 when out differs from what would be written')

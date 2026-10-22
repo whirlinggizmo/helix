@@ -5,16 +5,16 @@ import helix.assets.IAssets;
 import helix.assets.IRequest;
 import helix.assets.Request;
 
-/** Scene files (.scene) loaded through the assets into SceneFiles, parsed once and shared by path, as ModelCache is for models: a path
+/** Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache is for models: a path
 	asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models,
 	prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched
-	twice. The runner's is what the SceneFiles static forwards to. */
+	twice. The runner's is what the SceneFiles3D static forwards to. */
 @:build(helix.macro.Facade.record())
-class SceneFileCache {
+class SceneFileCache3D {
 	var assets:IAssets;
-	var files:Map<String, SceneFile> = [];
+	var files:Map<String, SceneFile3D> = [];
 	var failures:Map<String, String> = [];
-	var waiting:Map<String, Array<{request:Request, loaded:SceneFile->Void, failed:Null<String->Void>}>> = [];
+	var waiting:Map<String, Array<{request:Request, loaded:SceneFile3D->Void, failed:Null<String->Void>}>> = [];
 	var loads:Map<String, IRequest> = [];
 
 	/** Loads through assets. */
@@ -22,11 +22,11 @@ class SceneFileCache {
 		this.assets = assets;
 	}
 
-	/** Loads path (a .scene) into a SceneFile, parsed with SceneFile.parse under its path. One of loaded or failed runs once: during this
+	/** Loads path (a .scene3d) into a SceneFile3D, parsed with SceneFile3D.parse under its path. One of loaded or failed runs once: during this
 		call when the file is loaded already (or failed before; forget clears a failure), else on the host thread when its load ends; failed
 		(else the log, with the path) for a load failure or a file the parser refuses, with its reason (each problem the parser found is
 		logged as well). Neither runs once the request is cancelled (the shared load goes on for the others) or the cache shuts down. */
-	public function load(path:String, loaded:SceneFile->Void, ?failed:String->Void):IRequest {
+	public function load(path:String, loaded:SceneFile3D->Void, ?failed:String->Void):IRequest {
 		var settled = new Request(() -> {});
 		if (files.exists(path)) {
 			settled.finish();
@@ -53,7 +53,7 @@ class SceneFileCache {
 		}
 		waiting[path] = [caller];
 		var read:Request = null;
-		function done(file:Null<SceneFile>, message:Null<String>):Void {
+		function done(file:Null<SceneFile3D>, message:Null<String>):Void {
 			loads.remove(path);
 			if (file != null)
 				files[path] = file;
@@ -78,7 +78,7 @@ class SceneFileCache {
 		loading = assets.load(path, bytes -> {
 			if (read.settled)
 				return;
-			var file = SceneFile.parse(bytes, path);
+			var file = SceneFile3D.parse(bytes, path);
 			if (read.finish())
 				done(file, file == null ? Failure.named(path, "the parser refused it (its problems are logged)") : null);
 		}, message -> if (read.finish()) done(null, Failure.named(path, message)));
@@ -88,7 +88,7 @@ class SceneFileCache {
 	}
 
 	/** The file at path if it's loaded, else null. */
-	public function find(path:String):Null<SceneFile>
+	public function find(path:String):Null<SceneFile3D>
 		return files[path];
 
 	/** Whether path is loaded. */
@@ -110,7 +110,7 @@ class SceneFileCache {
 	}
 
 	/** Adds a file parsed some other way under path, as if loaded from there (a test's, a generated one). */
-	public function put(path:String, file:SceneFile):Void {
+	public function put(path:String, file:SceneFile3D):Void {
 		files[path] = file;
 		failures.remove(path);
 	}

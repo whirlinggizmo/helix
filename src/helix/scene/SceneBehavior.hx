@@ -1,6 +1,6 @@
 package helix.scene;
 
-/** A behavior as a .scene file attaches it to a node: the behavior class's name and its props by name, as data. The file says which
+/** A behavior as a .scene3d file attaches it to a node: the behavior class's name and its props by name, as data. The file says which
 	behaviors a node gets; at run time they live in the behaviors pass, never on the node. */
 class SceneBehavior {
 	/** The behavior class's name, as the registry knows it. */

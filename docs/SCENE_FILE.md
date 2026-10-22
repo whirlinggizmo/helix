@@ -1,6 +1,6 @@
 # The scene file
 
-The `.scene` file is HeliX's own: JSON, one tree, read by `helix.scene.SceneFile` and instantiated under a `Node3D`, its behaviors on the program's pass (`Behaviors`) unless given another ([ARCHITECTURE.md](ARCHITECTURE.md), "The scene file"; why it is shaped so: [DECISIONS.md](DECISIONS.md) 132). This page is the format. The `scene-file` example is a racer slice written entirely in one, and `tools/gltf2scene.py` writes one from a Blender export.
+The `.scene3d` file is HeliX's own: JSON, one tree, read by `helix.scene.SceneFile3D` and instantiated under a `Node3D`, its behaviors on the program's pass (`Behaviors`) unless given another ([ARCHITECTURE.md](ARCHITECTURE.md), "The scene file"; why it is shaped so: [DECISIONS.md](DECISIONS.md) 132). This page is the format. The `scene-file` example is a racer slice written entirely in one, and `tools/gltf2scene.py` writes one from a Blender export.
 
 ## The file
 
@@ -8,7 +8,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
 
 ```json
 {
-  "helix-scene": 1,
+  "helix-scene3d": 1,
   "environment": {
     "ambient": {"color": "#ffffff", "intensity": 0.25},
     "map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
@@ -51,7 +51,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
       "material": {"baseColor": "#9bbf7c", "roughness": 1}
     },
     {
-      "scene": "prefabs/car.scene",
+      "scene": "prefabs/car.scene3d",
       "name": "car",
       "position": [0, 0.5, 12],
       "overrides": {"body": {"material": {"baseColor": "#2040c0"}}},
@@ -81,11 +81,11 @@ What a node entry holds:
 - **`file`** on a `Model`: a glTF, loaded through `Models` and instantiated under this node, which becomes the file's root (its parts, skin and name). Its materials are the file's.
 - **`mesh`** on a `Model`, in place of `file`: a mesh made by one of `Mesh`'s generators as the model's one part, `{"shape": "plane", "width": 400, "length": 400}`. `shape` is `plane`, `cube`, `sphere`, `cylinder`, `cone`, `capsule` or `torus`, and its numbers are the generator's own arguments by name, in its order: `width`, `length`, `subdivisions` (plane); `width`, `height`, `length` (cube); `radius`, `rings`, `segments` (sphere); `radius`, `height`, `segments` (cylinder, cone); `radius`, `height`, `rings`, `segments` (capsule); `radius`, `thickness`, `rings`, `segments` (torus). An optional one is absent when the generator's default; an unknown shape or key, a missing required number or one that isn't a number is refused. A `Model` has a `file` or a `mesh`, never both, or neither (a model of no parts until code gives it one). Its material is the inline `material`, else a default one. A `Model` made in code with a generated mesh is captured as a `mesh` entry too: the mesh keeps a record of what made it (`Mesh.shape`).
 - **`material`** on a `Model`: an inline material (`baseColor`, `metallic`, `roughness`, `texture`, `normalTexture`, `emissive`, `doubleSided`), replacing the mesh's or the file's root material.
-- **`scene`**: another file instantiated here as a prefab. A prefab file is an ordinary `.scene`; a file naming itself, directly or through another, is refused.
+- **`scene`**: another file instantiated here as a prefab. A prefab file is an ordinary `.scene3d`; a file naming itself, directly or through another, is refused.
 - **`overrides`**: by path from this node (`road/line`), for nodes a `file` or `scene` made. Each is an entry without `name` or `kind`: properties and transform keys change the node, `children` adds new nodes under it, `behaviors` attach to it. No block is needed for a parent on the path (the first lesson above).
 - **`children`**: nodes under this one.
 - **`behaviors`**: a list of `{"kind": "...", "props": {...}}` attached to this node when the scene is instantiated. They are written under the node because that is how a hand reads them; at run time they live in the pass, never on the node.
-- **`props`**: a plain map of values for the game (`"props": {"team": 2}`), kept by the `SceneInstance` by node, not on the node.
+- **`props`**: a plain map of values for the game (`"props": {"team": 2}`), kept by the `SceneInstance3D` by node, not on the node.
 
 A behavior's prop value is a number, a string, a bool, a list of numbers, a color, or `"@name"` or `"@path/from/root"`: a reference to a node of this instance, resolved once every node is made, by name first (a prefab's subtree before the whole instance) then as a path from the root. A prefab's own file can reference only its own nodes: a behavior that needs a node of the enclosing file is written in that file, on the prefab's node, as the example's car is.
 
@@ -94,16 +94,16 @@ What is not in the file: cameras' viewports (the app's) and anything 2D (after t
 ## Loading, saving, converting
 
 ```haxe
-SceneFiles.load("scenes/track.scene", file -> {
+SceneFiles3D.load("scenes/track.scene3d", file -> {
     instance = file.instantiate(level, behaviors, () -> trace("ready"));
 });
 ```
 
-`SceneFiles` parses a file once and shares it by path. `instantiate` makes a group named after the file under the node it's given (`level`, any `Node3D`), sets the environment section as its `environment`, makes every node at once under it, loads the models, prefabs and environment it names through their caches, attaches the behaviors to the pass once every load has landed (their references resolved then), and calls `ready` at the pass's next update. The `SceneInstance` gives `node(path)`, `pathOf(node)`, `props(node)`, its `behaviors`, `ready`, and `destroy()`. A missing model, prefab or environment is logged with the file's path and the node's, and the rest is made.
+`SceneFiles3D` parses a file once and shares it by path. `instantiate` makes a group named after the file under the node it's given (`level`, any `Node3D`), sets the environment section as its `environment`, makes every node at once under it, loads the models, prefabs and environment it names through their caches, attaches the behaviors to the pass once every load has landed (their references resolved then), and calls `ready` at the pass's next update. The `SceneInstance3D` gives `node(path)`, `pathOf(node)`, `props(node)`, its `behaviors`, `ready`, and `destroy()`. A missing model, prefab or environment is logged with the file's path and the node's, and the rest is made.
 
-`SceneFile.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the environment's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
+`SceneFile3D.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the environment's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
 
-`python3 tools/gltf2scene.py export.glb out.scene` makes a file from a Blender glTF export: one `Model` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
+`python3 tools/gltf2scene.py export.glb out.scene3d` makes a file from a Blender glTF export: one `Model` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
 
 ## Behaviors
 

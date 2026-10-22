@@ -20,12 +20,12 @@ import helix.render3d.Node3D;
 import helix.render3d.Environment3D;
 import helix.scene.SceneValue;
 
-/** What instantiating a .scene file gives (SceneFile.instantiate): its root, a group named after the file under the node it was put in, holding
+/** What instantiating a .scene3d file gives (SceneFile3D.instantiate): its root, a group named after the file under the node it was put in, holding
 	every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed
 	(ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin
-	gave it, so SceneFile.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the
+	gave it, so SceneFile3D.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the
 	reference plus what differs. destroy takes it all out again. */
-class SceneInstance {
+class SceneInstance3D {
 	/** The file's path, as it was loaded. */
 	public var path(default, null):String;
 
@@ -44,7 +44,7 @@ class SceneInstance {
 	public var ready(default, null):Bool = false;
 
 	// What was given and what's kept.
-	var file:SceneFile;
+	var file:SceneFile3D;
 	var pass:BehaviorPass;
 	var readyCallback:Null<Void->Void>;
 	var waiter:Null<ReadyWaiter>;
@@ -66,7 +66,7 @@ class SceneInstance {
 	var fonts:Array<Font2D> = [];
 	var environments:Array<Environment> = [];
 
-	function new(file:SceneFile, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void) {
+	function new(file:SceneFile3D, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void) {
 		this.file = file;
 		this.path = path;
 		this.parent = parent;
@@ -77,16 +77,16 @@ class SceneInstance {
 		parent.addChild(root);
 	}
 
-	// file, loaded from path, instantiated under parent with its behaviors on behaviors (SceneFile.instantiate).
+	// file, loaded from path, instantiated under parent with its behaviors on behaviors (SceneFile3D.instantiate).
 
 	@:allow(helix.scene)
-	static function make(file:SceneFile, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance {
-		var instance = new SceneInstance(file, path, parent, behaviors, ready);
+	static function make(file:SceneFile3D, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance3D {
+		var instance = new SceneInstance3D(file, path, parent, behaviors, ready);
 		new SceneBuilder(instance, file, path, instance.root, [path], false, () -> instance.settle()).build();
 		return instance;
 	}
 
-	/** The file's name without directory and extension: "levels/track.scene" gives "track". */
+	/** The file's name without directory and extension: "levels/track.scene3d" gives "track". */
 	public static function baseName(path:String):String {
 		var name = path.split("/").pop();
 		var dot = name.lastIndexOf(".");
@@ -225,17 +225,17 @@ class SceneInstance {
 		});
 	}
 
-	// The file that instantiates to what the tree is now (SceneFile.capture).
+	// The file that instantiates to what the tree is now (SceneFile3D.capture).
 
 	@:allow(helix.scene)
-	function capture():SceneFile
+	function capture():SceneFile3D
 		return new SceneCapture(this).capture();
 }
 
 /** Where a node of an instance came from. */
 enum NodeOrigin {
 	/** The file's own entry: made from it, or added under a file's or a prefab's node by an override's children. */
-	Entry(entry:SceneNode);
+	Entry(entry:SceneNode3D);
 
 	/** A model file (a Model entry's "file") made it: the file's path and the node's path inside it, from the entry's node. */
 	FileNode(file:String, innerPath:String);
@@ -261,7 +261,7 @@ class NodeRecord {
 	public var owner:Null<Node3D>;
 
 	/** The entry it was made from, when one was (a prefab's node keeps its prefab's entry); null for a model file's node. */
-	public var entry:Null<SceneNode>;
+	public var entry:Null<SceneNode3D>;
 
 	/** Its values as its origin gave them, before overrides. */
 	public var snapshot:NodeSnapshot;
@@ -314,18 +314,18 @@ class NodeSnapshot {
 
 	/** Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a
 		texture still loading), entry's value for the property stands in, when given. */
-	public function new(node:Node3D, ?entry:SceneNode) {
+	public function new(node:Node3D, ?entry:SceneNode3D) {
 		position = [node.x, node.y, node.z];
 		rotation = [node.rotationX, node.rotationY, node.rotationZ];
 		scale = [node.scaleX, node.scaleY, node.scaleZ];
 		enabled = node.enabled;
 		visible = node.visible;
 		pickable = node.pickable;
-		var kind = SceneKinds.kindOf(node);
+		var kind = SceneKinds3D.kindOf(node);
 		var schema = kind == null ? null : SceneSchema.kind(kind);
 		if (schema != null)
 			for (property in schema.properties) {
-				var value = SceneKinds.read(node, property.name);
+				var value = SceneKinds3D.read(node, property.name);
 				if (value == null && entry != null)
 					value = entry.properties.get(property.name);
 				if (value != null)
@@ -333,10 +333,10 @@ class NodeSnapshot {
 			}
 		var model = Std.downcast(node, Model);
 		if (model != null) {
-			mesh = model.mesh == null ? null : SceneKinds.readMesh(model.mesh);
+			mesh = model.mesh == null ? null : SceneKinds3D.readMesh(model.mesh);
 			if (mesh == null && entry != null)
 				mesh = entry.mesh;
-			material = SceneKinds.readMaterial(model);
+			material = SceneKinds3D.readMaterial(model);
 			if (material != null && entry != null && entry.material != null) {
 				if (material.texture == null)
 					material.texture = entry.material.texture;
@@ -350,8 +350,8 @@ class NodeSnapshot {
 /** Makes one file's tree for an instance: the top file under the instance's root, a prefab under its node (a nested builder, counting
 	its loads toward the one above it). Every node is made at once; a model file or a prefab lands later, when its overrides apply. */
 private class SceneBuilder {
-	final instance:SceneInstance;
-	final file:SceneFile;
+	final instance:SceneInstance3D;
+	final file:SceneFile3D;
 	final path:String;
 	// The node this file's nodes go under, and the paths of the files being instantiated above and including this one (a prefab naming one
 	// of them is refused).
@@ -368,7 +368,7 @@ private class SceneBuilder {
 
 	/** A builder of file (loaded from path) for instance, its nodes under under; stack holds the paths being instantiated above it and
 		its own; prefab says its nodes are a prefab's; done runs once every node is made and every load has landed. */
-	public function new(instance:SceneInstance, file:SceneFile, path:String, under:Node3D, stack:Array<String>, prefab:Bool, done:Void->Void) {
+	public function new(instance:SceneInstance3D, file:SceneFile3D, path:String, under:Node3D, stack:Array<String>, prefab:Bool, done:Void->Void) {
 		this.instance = instance;
 		this.file = file;
 		this.path = path;
@@ -416,7 +416,7 @@ private class SceneBuilder {
 
 	// The file's environment section as the light of under, the node it's made under: the ambient light at once, the map and the
 	// background once their files land.
-	function applyEnvironment(section:SceneEnvironment):Void {
+	function applyEnvironment(section:SceneEnvironment3D):Void {
 		var environment = new Environment3D();
 		under.environment = environment;
 		if (!environment.setAmbient(section.ambientColor != null ? section.ambientColor : 0xffffffff,
@@ -455,13 +455,13 @@ private class SceneBuilder {
 
 	// A node from its entry under parent: made, placed, flagged, its properties and material applied, recorded, its children made, its
 	// behaviors queued; a file or a prefab asked for. Null for a kind no table has (logged).
-	function makeNode(entry:SceneNode, parent:Node3D):Null<Node3D> {
+	function makeNode(entry:SceneNode3D, parent:Node3D):Null<Node3D> {
 		var node:Node3D;
 		var nodePath = pathIn(parent, entry.name);
 		if (entry.scene != null || entry.file != null)
 			node = new Node3D();
 		else {
-			node = SceneKinds.make(entry.kind);
+			node = SceneKinds3D.make(entry.kind);
 			if (node == null) {
 				log(nodePath, 'unknown kind ${entry.kind}');
 				return null;
@@ -474,14 +474,14 @@ private class SceneBuilder {
 			applyProperties(node, entry, nodePath);
 			var model = Std.downcast(node, Model);
 			if (model != null && entry.mesh != null) {
-				var mesh = SceneKinds.makeMesh(entry.mesh);
+				var mesh = SceneKinds3D.makeMesh(entry.mesh);
 				if (mesh != null)
 					model.mesh = mesh;
 				else
 					log(nodePath, 'mesh ${entry.mesh.shape} refused');
 			}
 			if (model != null && entry.material != null)
-				SceneKinds.applyMaterial(model, entry.material, instance);
+				SceneKinds3D.applyMaterial(model, entry.material, instance);
 		}
 		parent.addChild(node);
 		var record = new NodeRecord(node, entry.kind, Entry(entry), new NodeSnapshot(node, entry));
@@ -510,7 +510,7 @@ private class SceneBuilder {
 		return names.join("/");
 	}
 
-	function applyTransform(node:Node3D, entry:SceneNode):Void {
+	function applyTransform(node:Node3D, entry:SceneNode3D):Void {
 		if (entry.position != null)
 			node.setPosition(entry.position[0], entry.position[1], entry.position[2]);
 		if (entry.rotation != null)
@@ -521,7 +521,7 @@ private class SceneBuilder {
 
 	// The entry's flags on node: an entry's unsaid flag is its kind's own default (SceneSchema's table: a Text3D unpickable, as made in
 	// code; a file or a prefab node a plain group's, all true); an override's unsaid flag changes nothing.
-	function applyFlags(node:Node3D, entry:SceneNode):Void {
+	function applyFlags(node:Node3D, entry:SceneNode3D):Void {
 		if (entry.isOverride) {
 			if (entry.enabled != null)
 				node.enabled = entry.enabled;
@@ -538,8 +538,8 @@ private class SceneBuilder {
 	}
 
 	// The entry's properties on node, in its kind's table order (an override's in the table of the node's own kind); one refused is logged.
-	function applyProperties(node:Node3D, entry:SceneNode, nodePath:String):Void {
-		var kind = SceneKinds.kindOf(node);
+	function applyProperties(node:Node3D, entry:SceneNode3D, nodePath:String):Void {
+		var kind = SceneKinds3D.kindOf(node);
 		var schema = kind == null ? null : SceneSchema.kind(kind);
 		var applied = new Map<String, Bool>();
 		if (schema != null)
@@ -548,7 +548,7 @@ private class SceneBuilder {
 				if (value == null)
 					continue;
 				applied.set(property.name, true);
-				if (!SceneKinds.apply(node, property.name, value, instance))
+				if (!SceneKinds3D.apply(node, property.name, value, instance))
 					log(nodePath, '${property.name} refused');
 			}
 		for (name in entry.properties.keys())
@@ -557,7 +557,7 @@ private class SceneBuilder {
 	}
 
 	// The entry's glTF through Models: its nodes moved under node when it lands.
-	function loadModel(entry:SceneNode, node:Node3D, record:NodeRecord):Void {
+	function loadModel(entry:SceneNode3D, node:Node3D, record:NodeRecord):Void {
 		wait();
 		var nodePath = pathIn(node.parent, node.name);
 		instance.holdRequest(Models.load(entry.file, file -> {
@@ -571,7 +571,7 @@ private class SceneBuilder {
 
 	// The file's nodes under node (the placeholder becomes the file's root), the entry's Model properties and material on every model,
 	// each node recorded as the file gave it, then the entry's overrides.
-	function placeModel(entry:SceneNode, node:Node3D, record:NodeRecord, file:ModelFile, nodePath:String):Void {
+	function placeModel(entry:SceneNode3D, node:Node3D, record:NodeRecord, file:ModelFile, nodePath:String):Void {
 		var made = file.instantiate();
 		var moved = [for (i in 0...made.childCount) made.getChild(i)];
 		for (child in moved)
@@ -582,11 +582,11 @@ private class SceneBuilder {
 		for (model in models) {
 			for (name in ["tint", "shadowCasting", "shadowReceiving"]) {
 				var value = entry.properties.get(name);
-				if (value != null && !SceneKinds.apply(model, name, value, instance))
+				if (value != null && !SceneKinds3D.apply(model, name, value, instance))
 					log(nodePath, '$name refused');
 			}
 			if (entry.material != null)
-				SceneKinds.applyMaterial(model, entry.material, instance);
+				SceneKinds3D.applyMaterial(model, entry.material, instance);
 		}
 		for (child in moved)
 			recordFrom(child, node, entry.file, true);
@@ -608,7 +608,7 @@ private class SceneBuilder {
 		var inner = pathUnder(node, owner);
 		var record = instance.records.get(node);
 		if (record == null) {
-			record = new NodeRecord(node, SceneKinds.kindOf(node), isFile ? FileNode(source, inner) : Prefab(source, inner), new NodeSnapshot(node));
+			record = new NodeRecord(node, SceneKinds3D.kindOf(node), isFile ? FileNode(source, inner) : Prefab(source, inner), new NodeSnapshot(node));
 			instance.records.set(node, record);
 		} else {
 			record.origin = isFile ? FileNode(source, inner) : Prefab(source, inner);
@@ -630,8 +630,8 @@ private class SceneBuilder {
 		return names.join("/");
 	}
 
-	// The entry's prefab through SceneFiles: instantiated under node when it lands, by a builder of its own, then the entry's overrides.
-	function loadPrefab(entry:SceneNode, node:Node3D, record:NodeRecord):Void {
+	// The entry's prefab through SceneFiles3D: instantiated under node when it lands, by a builder of its own, then the entry's overrides.
+	function loadPrefab(entry:SceneNode3D, node:Node3D, record:NodeRecord):Void {
 		wait();
 		var nodePath = pathIn(node.parent, node.name);
 		if (stack.indexOf(entry.scene) >= 0) {
@@ -639,7 +639,7 @@ private class SceneBuilder {
 			landed();
 			return;
 		}
-		instance.holdRequest(SceneFiles.load(entry.scene, file -> {
+		instance.holdRequest(SceneFiles3D.load(entry.scene, file -> {
 			var inner = new SceneBuilder(instance, file, entry.scene, node, stack.concat([entry.scene]), true, () -> {
 				for (i in 0...node.childCount)
 					recordFrom(node.getChild(i), node, entry.scene, false);
@@ -655,7 +655,7 @@ private class SceneBuilder {
 	}
 
 	// The entry's overrides by path from node: each on the node it names (one naming none is logged and skipped).
-	function applyOverrides(entry:SceneNode, node:Node3D, nodePath:String):Void {
+	function applyOverrides(entry:SceneNode3D, node:Node3D, nodePath:String):Void {
 		for (path in entry.overrides.keys()) {
 			var target = find(node, path);
 			var targetPath = '$nodePath/$path';
@@ -670,7 +670,7 @@ private class SceneBuilder {
 			var model = Std.downcast(target, Model);
 			if (changes.material != null) {
 				if (model != null)
-					SceneKinds.applyMaterial(model, changes.material, instance);
+					SceneKinds3D.applyMaterial(model, changes.material, instance);
 				else
 					log(targetPath, "a material belongs to a Model");
 			}
@@ -799,18 +799,18 @@ private class ReadyWaiter extends Behavior {
 	or a prefab as the reference plus an override for every node under it whose values differ from what the file or prefab gave, and a
 	node a game added as its class with its properties. */
 private class SceneCapture {
-	final instance:SceneInstance;
-	final file = new SceneFile();
+	final instance:SceneInstance3D;
+	final file = new SceneFile3D();
 	// Names used more than once in the instance: a reference to such a node is written as its path.
 	var names = new Map<String, Int>();
 	var warnedCodeModel = false;
 
 	/** A capture of instance. */
-	public function new(instance:SceneInstance)
+	public function new(instance:SceneInstance3D)
 		this.instance = instance;
 
 	/** The file that instantiates to what the instance is now. */
-	public function capture():SceneFile {
+	public function capture():SceneFile3D {
 		countNames(instance.root);
 		file.environment = captureEnvironment(instance.root.environment);
 		for (i in 0...instance.root.childCount) {
@@ -830,10 +830,10 @@ private class SceneCapture {
 	}
 
 	// The environment's values that aren't the defaults; null for no environment, or one that's all defaults.
-	function captureEnvironment(environment:Null<Environment3D>):Null<SceneEnvironment> {
+	function captureEnvironment(environment:Null<Environment3D>):Null<SceneEnvironment3D> {
 		if (environment == null)
 			return null;
-		var section = new SceneEnvironment(), any = false;
+		var section = new SceneEnvironment3D(), any = false;
 		if (environment.ambientColor != 0xffffffff || environment.ambientIntensity != 0) {
 			section.ambientColor = environment.ambientColor;
 			section.ambientIntensity = environment.ambientIntensity;
@@ -863,7 +863,7 @@ private class SceneCapture {
 	}
 
 	// node as an entry: from its record when the file made it, else from its class.
-	function captureNode(node:Node3D):Null<SceneNode> {
+	function captureNode(node:Node3D):Null<SceneNode3D> {
 		var record = instance.records.get(node);
 		var source = record == null ? null : switch record.origin {
 			case Entry(entry): entry;
@@ -871,12 +871,12 @@ private class SceneCapture {
 		}
 		if (source != null && (source.file != null || source.scene != null))
 			return captureReference(node, record, source);
-		var entry = new SceneNode();
+		var entry = new SceneNode3D();
 		entry.name = node.name;
 		if (source != null)
 			entry.kind = source.kind;
 		else {
-			entry.kind = SceneKinds.kindOf(node);
+			entry.kind = SceneKinds3D.kindOf(node);
 			if (entry.kind == null) {
 				Failure.report(instance.path, '${instance.pathOf(node)}: a node of a class no table has is left out', null);
 				return null;
@@ -884,7 +884,7 @@ private class SceneCapture {
 		}
 		var model = Std.downcast(node, Model);
 		if (model != null && model.mesh != null) {
-			entry.mesh = SceneKinds.readMesh(model.mesh);
+			entry.mesh = SceneKinds3D.readMesh(model.mesh);
 			// The file's own mesh entry while the mesh is still what it made, so an untouched one is written as it was.
 			if (entry.mesh != null
 				&& source != null
@@ -903,14 +903,14 @@ private class SceneCapture {
 		var schema = SceneSchema.kind(entry.kind);
 		if (schema != null)
 			for (property in schema.properties) {
-				var value = SceneKinds.read(node, property.name);
+				var value = SceneKinds3D.read(node, property.name);
 				if (value == null && record != null)
 					value = record.snapshot.properties.get(property.name);
 				if (value != null)
 					entry.properties.set(property.name, value);
 			}
 		if (model != null && (source == null || source.material != null)) {
-			var material = SceneKinds.readMaterial(model);
+			var material = SceneKinds3D.readMaterial(model);
 			if (material != null) {
 				if (record != null)
 					fillTextures(material, record.snapshot.material);
@@ -931,8 +931,8 @@ private class SceneCapture {
 	// An entry with a file or a prefab: the reference, its own values from the entry, its live transform and flags, then the overrides:
 	// as written while the file hasn't landed, else one for each node under it that differs from what the file gave; the nodes added
 	// under its own node are its children.
-	function captureReference(node:Node3D, record:NodeRecord, source:SceneNode):SceneNode {
-		var entry = new SceneNode();
+	function captureReference(node:Node3D, record:NodeRecord, source:SceneNode3D):SceneNode3D {
+		var entry = new SceneNode3D();
 		entry.name = node.name;
 		entry.kind = source.kind;
 		entry.scene = source.scene;
@@ -962,7 +962,7 @@ private class SceneCapture {
 
 	// A node under a reference node: one the file or prefab made becomes an override where it differs, and its own children go on; any
 	// other is a child added under owner (at its top) or under the file's node (in that node's override).
-	function captureUnder(node:Node3D, owner:Node3D, reference:SceneNode):Void {
+	function captureUnder(node:Node3D, owner:Node3D, reference:SceneNode3D):Void {
 		var record = instance.records.get(node);
 		var fromSource = record != null && record.owner == owner && switch record.origin {
 			case Entry(_): false;
@@ -982,7 +982,7 @@ private class SceneCapture {
 		var behaviors = captureBehaviors(node);
 		if (behaviors.length > 0) {
 			if (changes == null)
-				changes = new SceneNode();
+				changes = new SceneNode3D();
 			changes.behaviors = behaviors;
 		}
 		if (changes != null) {
@@ -994,17 +994,17 @@ private class SceneCapture {
 	}
 
 	// The override at path on reference, made when there is none yet.
-	function overrideFor(reference:SceneNode, path:String):SceneNode {
+	function overrideFor(reference:SceneNode3D, path:String):SceneNode3D {
 		var found = reference.overrides.get(path);
 		if (found == null) {
-			found = new SceneNode();
+			found = new SceneNode3D();
 			reference.overrides.set(path, found);
 		}
 		return found;
 	}
 
 	// from's values onto into (an override made for added children before its node's diff was taken).
-	static function merge(into:SceneNode, from:SceneNode):Void {
+	static function merge(into:SceneNode3D, from:SceneNode3D):Void {
 		into.position = from.position;
 		into.rotation = from.rotation;
 		into.scale = from.scale;
@@ -1028,8 +1028,8 @@ private class SceneCapture {
 	}
 
 	// What differs on node from its snapshot, as an override; null for nothing.
-	function diff(node:Node3D, record:NodeRecord):Null<SceneNode> {
-		var snapshot = record.snapshot, changes = new SceneNode(), any = false;
+	function diff(node:Node3D, record:NodeRecord):Null<SceneNode3D> {
+		var snapshot = record.snapshot, changes = new SceneNode3D(), any = false;
 		var position = [node.x, node.y, node.z],
 			rotation = [node.rotationX, node.rotationY, node.rotationZ],
 			scale = [node.scaleX, node.scaleY, node.scaleZ];
@@ -1060,7 +1060,7 @@ private class SceneCapture {
 		var schema = record.kind == null ? null : SceneSchema.kind(record.kind);
 		if (schema != null)
 			for (property in schema.properties) {
-				var value = SceneKinds.read(node, property.name);
+				var value = SceneKinds3D.read(node, property.name);
 				if (value == null)
 					continue;
 				var was = snapshot.properties.get(property.name);
@@ -1071,7 +1071,7 @@ private class SceneCapture {
 			}
 		var model = Std.downcast(node, Model);
 		if (model != null) {
-			var material = SceneKinds.readMaterial(model);
+			var material = SceneKinds3D.readMaterial(model);
 			if (material != null) {
 				fillTextures(material, snapshot.material);
 				var changed = diffMaterial(material, snapshot.material);
@@ -1167,7 +1167,7 @@ private class SceneCapture {
 	}
 
 	// node's flags as they are, each said: the writer leaves out one at the kind's own default (a Text3D's pickable false).
-	static function writeFlags(entry:SceneNode, node:Node3D):Void {
+	static function writeFlags(entry:SceneNode3D, node:Node3D):Void {
 		entry.enabled = node.enabled;
 		entry.visible = node.visible;
 		entry.pickable = node.pickable;
@@ -1228,7 +1228,7 @@ private class SceneCapture {
 		return true;
 	}
 
-	static function writeTransform(entry:SceneNode, node:Node3D):Void {
+	static function writeTransform(entry:SceneNode3D, node:Node3D):Void {
 		entry.position = [node.x, node.y, node.z];
 		entry.rotation = [node.rotationX, node.rotationY, node.rotationZ];
 		entry.scale = [node.scaleX, node.scaleY, node.scaleZ];

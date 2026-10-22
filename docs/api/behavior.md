@@ -157,7 +157,7 @@ static function clear():Void
 ```
 
 - `instance`: The pass forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
-- `pass`: The program's pass itself, installed if it wasn't: what SceneFile.instantiate attaches to unless given another.
+- `pass`: The program's pass itself, installed if it wasn't: what SceneFile3D.instantiate attaches to unless given another.
 - `find`: The first behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added), or null.
 - `findAll`: Every behavior of class cls (or a subclass) in the pass, started ones first (by phase, then in the order added).
 - `on`: The first behavior of class cls (or a subclass) on node, started ones first (by phase, then in the order added), or null: how a behavior given a node reference reaches the behavior on it.

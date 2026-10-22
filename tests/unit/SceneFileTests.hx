@@ -1,9 +1,9 @@
 import haxe.io.Bytes;
-import helix.scene.SceneFile;
+import helix.scene.SceneFile3D;
 import helix.scene.SceneSchema;
 import helix.scene.SceneValue;
 
-/** The .scene file (helix.scene.SceneFile): a sample with the environment section and every kind parses, writes, parses and writes the same
+/** The .scene3d file (helix.scene.SceneFile3D): a sample with the environment section and every kind parses, writes, parses and writes the same
 	bytes; a small sample writes the pinned canonical form (key order, defaults left out, colors, numbers); each refusal returns null; and
 	every kind's table reads and writes every property; every mesh shape reads and writes back, with and without its optional arguments. */
 class SceneFileTests {
@@ -15,11 +15,11 @@ class SceneFileTests {
 		checks++;
 	}
 
-	static function parse(text:String, ?path:String):Null<SceneFile>
-		return SceneFile.parse(Bytes.ofString(text), path != null ? path : "test.scene");
+	static function parse(text:String, ?path:String):Null<SceneFile3D>
+		return SceneFile3D.parse(Bytes.ofString(text), path != null ? path : "test.scene3d");
 
 	static function refused(text:String, message:String):Void
-		check(parse(text, "refused.scene") == null, message);
+		check(parse(text, "refused.scene3d") == null, message);
 
 	// Whether two values are the same, a list by its numbers (an enum's equals compares a list by reference).
 	static function same(a:Null<SceneValue>, b:SceneValue):Bool {
@@ -46,7 +46,7 @@ class SceneFileTests {
 	// material, a behavior with every value type and a reference, and node props: parse, write, parse, write gives equal bytes.
 	static function roundTrip():Void {
 		var text = '{
-			"helix-scene": 1,
+			"helix-scene3d": 1,
 			"environment": {
 				"ambient": {"color": "#ffffff", "intensity": 0.25},
 				"map": {"file": "sky/sky.hdr", "intensity": 0.7, "rotation": 0},
@@ -77,12 +77,12 @@ class SceneFileTests {
 						"material": {"baseColor": "#ff8800", "metallic": 0.1, "roughness": 0.3, "texture": "props/cone.png",
 							"normalTexture": "props/cone_n.png", "normalScale": 0.5, "emissive": "#ff0000", "emissiveStrength": 2, "doubleSided": true},
 						"props": {"team": 2, "role": "obstacle", "path": [1, 2, 3], "hot": true, "color": "#ff0000", "leader": "@cone_1"}},
-					{"scene": "prefabs/car.scene", "name": "car", "position": [0, 0.5, 12],
+					{"scene": "prefabs/car.scene3d", "name": "car", "position": [0, 0.5, 12],
 						"overrides": {"body": {"material": {"baseColor": "#2040c0"}}}, "behaviors": [{"kind": "Car", "props": {"topSpeed": 60}}]}
 				]}
 			]
 		}';
-		var file = parse(text, "levels/track.scene");
+		var file = parse(text, "levels/track.scene3d");
 		check(file != null && file.version == 1 && file.nodes.length == 1, "The sample parses: version 1, one root node");
 		var environment = file.environment;
 		check(environment != null
@@ -164,12 +164,12 @@ class SceneFileTests {
 			"A node's own props");
 		var car = world.children[9];
 		check(car.kind == null
-			&& car.scene == "prefabs/car.scene"
+			&& car.scene == "prefabs/car.scene3d"
 			&& car.overrides.get("body").material.baseColor == 0xff2040c0
 			&& same(car.behaviors[0].props.get("topSpeed"), Number(60)),
 			"A prefab node");
 		var written = file.write();
-		var again = SceneFile.parse(written, "again.scene");
+		var again = SceneFile3D.parse(written, "again.scene3d");
 		check(again != null, "What was written parses");
 		check(again.write().compare(written) == 0, "Parse, write, parse, write gives equal bytes");
 		check(written.toString().indexOf('"text": "Start \\"here\\"\\n"') >= 0, "Text is escaped as JSON");
@@ -185,10 +185,10 @@ class SceneFileTests {
 				{"kind": "Model", "name": "cone", "file": "props/cone.glb", "position": [1, 0.5, 0.3333333333], "rotation": [-2.25, 0, 0],
 					"tint": "#ffffff", "material": {"roughness": 0.3, "baseColor": "#ff880080"}, "props": {"team": 2, "name": "x"},
 					"behaviors": [{"kind": "Spin", "props": {"speed": 1}}]}]}],
-			"environment": {"background": {"blur": 0.5}, "ambient": {"intensity": 0.25, "color": "#ffffff"}}, "helix-scene": 1}';
+			"environment": {"background": {"blur": 0.5}, "ambient": {"intensity": 0.25, "color": "#ffffff"}}, "helix-scene3d": 1}';
 		var expected = [
 			'{',
-			'  "helix-scene": 1,',
+			'  "helix-scene3d": 1,',
 			'  "environment": {',
 			'    "ambient": {',
 			'      "color": "#ffffff",',
@@ -245,59 +245,60 @@ class SceneFileTests {
 		check(written == expected,
 			"The canonical form: fixed key order, a property at its default (intensity, tint) and an identity transform and a true flag left out, " +
 			"a color with alpha ff as #RRGGBB, numbers 1, 0.5, 0.333333 and -2.25, props sorted, a trailing newline");
-		var empty = new SceneFile();
-		check(empty.write().toString() == '{\n  "helix-scene": 1,\n  "nodes": []\n}\n', "An empty file: no environment, no nodes");
-		check(SceneFile.parse(empty.write()) != null, "An empty file reads back");
+		var empty = new SceneFile3D();
+		check(empty.write().toString() == '{\n  "helix-scene3d": 1,\n  "nodes": []\n}\n', "An empty file: no environment, no nodes");
+		check(SceneFile3D.parse(empty.write()) != null, "An empty file reads back");
 	}
 
 	// Each refusal returns null.
 	static function refusals():Void {
 		var sun = '{"kind": "DirectionalLight", "name": "sun"}';
 		refused('{"nodes": [$sun]}', "No version");
-		refused('{"helix-scene": 2, "nodes": [$sun]}', "Another version");
-		refused('{"helix-scene": "1", "nodes": [$sun]}', "A version that isn't a number");
+		refused('{"helix-scene3d": 2, "nodes": [$sun]}', "Another version");
+		refused('{"helix-scene3d": "1", "nodes": [$sun]}', "A version that isn't a number");
 		refused('[1, 2]', "Not an object");
 		refused('not json', "Not JSON");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight"}]}', "A node without a name");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": ""}]}', "A node with an empty name");
-		refused('{"helix-scene": 1, "nodes": [$sun, $sun]}', "Two siblings with one name");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Node3D", "name": "g", "children": [$sun, $sun]}]}', "Two children with one name");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Node3D", "scene": "a.scene", "name": "x"}]}', "A node with both kind and scene");
-		refused('{"helix-scene": 1, "nodes": [{"name": "x"}]}', "A node with neither kind nor scene");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Blob", "name": "x"}]}', "An unknown kind");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "colour": "#ffffff"}]}', "An unknown key on a node");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "range": 5}]}', "Another kind's property");
-		refused('{"helix-scene": 1, "nodes": [{"scene": "a.scene", "name": "x", "intensity": 5}]}', "A property on a prefab node");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "intensity": "bright"}]}', "A number that is text");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "position": [1, 2]}]}', "A position of two numbers");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "color": "red"}]}', "A color that isn't hex");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "color": "#ff"}]}', "A color too short");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "visible": 1}]}', "A flag that is a number");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "shadowCasting": "yes"}]}', "A flag that is text");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"": {"visible": false}}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight"}]}', "A node without a name");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": ""}]}', "A node with an empty name");
+		refused('{"helix-scene3d": 1, "nodes": [$sun, $sun]}', "Two siblings with one name");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Node3D", "name": "g", "children": [$sun, $sun]}]}', "Two children with one name");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Node3D", "scene": "a.scene3d", "name": "x"}]}', "A node with both kind and scene");
+		refused('{"helix-scene3d": 1, "nodes": [{"name": "x"}]}', "A node with neither kind nor scene");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Blob", "name": "x"}]}', "An unknown kind");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "colour": "#ffffff"}]}', "An unknown key on a node");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "range": 5}]}', "Another kind's property");
+		refused('{"helix-scene3d": 1, "nodes": [{"scene": "a.scene3d", "name": "x", "intensity": 5}]}', "A property on a prefab node");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "intensity": "bright"}]}', "A number that is text");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "position": [1, 2]}]}', "A position of two numbers");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "color": "red"}]}', "A color that isn't hex");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "color": "#ff"}]}', "A color too short");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "visible": 1}]}', "A flag that is a number");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "shadowCasting": "yes"}]}', "A flag that is text");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"": {"visible": false}}}]}',
 			"An override with an empty path");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"name": "b"}}}]}', "An override with a name");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"kind": "Node3D"}}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"name": "b"}}}]}',
+			"An override with a name");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"kind": "Node3D"}}}]}',
 			"An override with a kind");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"colour": "#ffffff"}}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"colour": "#ffffff"}}}]}',
 			"An override with a key no kind has");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Node3D", "name": "x", "overrides": {"a": {"visible": false}}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Node3D", "name": "x", "overrides": {"a": {"visible": false}}}]}',
 			"Overrides on a node with no file and no scene");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "file": "a.glb"}]}', "A file on a light");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Camera3D", "name": "x", "material": {"roughness": 1}}]}', "A material on a camera");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "PointLight", "name": "x", "shadowCasting": true}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "DirectionalLight", "name": "x", "file": "a.glb"}]}', "A file on a light");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Camera3D", "name": "x", "material": {"roughness": 1}}]}', "A material on a camera");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "PointLight", "name": "x", "shadowCasting": true}]}',
 			"A shadow on a point light, which casts none: an unknown key, not dropped");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "material": {"shiny": 1}}]}', "A material with an unknown key");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"props": {"a": 1}}]}]}', "A behavior without a kind");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"kind": "A", "props": {"a": {"b": 1}}}]}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "material": {"shiny": 1}}]}', "A material with an unknown key");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"props": {"a": 1}}]}]}', "A behavior without a kind");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "behaviors": [{"kind": "A", "props": {"a": {"b": 1}}}]}]}',
 			"A behavior prop that is an object");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "props": {"a": [1, "b"]}}]}', "A prop list holding text");
-		refused('{"helix-scene": 1, "environment": {"fog": 1}, "nodes": []}', "An environment with an unknown key");
-		refused('{"helix-scene": 1, "environment": {"ambient": {"colour": "#ffffff"}}, "nodes": []}', "An environment section with an unknown key");
-		refused('{"helix-scene": 1, "environment": {"tonemap": "aces"}, "nodes": []}', "Tone mapping is the view's, not the file's");
-		refused('{"helix-scene": 1, "stage": {}, "nodes": []}', "A stage section (gone: the environment is the place's light) is an unknown key");
-		refused('{"helix-scene": 1, "nodes": [], "extra": 1}', "An unknown key at the root");
-		check(parse('{"helix-scene": 1}') != null && parse('{"helix-scene": 1}').nodes.length == 0, "Nodes may be absent");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "props": {"a": [1, "b"]}}]}', "A prop list holding text");
+		refused('{"helix-scene3d": 1, "environment": {"fog": 1}, "nodes": []}', "An environment with an unknown key");
+		refused('{"helix-scene3d": 1, "environment": {"ambient": {"colour": "#ffffff"}}, "nodes": []}', "An environment section with an unknown key");
+		refused('{"helix-scene3d": 1, "environment": {"tonemap": "aces"}, "nodes": []}', "Tone mapping is the view's, not the file's");
+		refused('{"helix-scene3d": 1, "stage": {}, "nodes": []}', "A stage section (gone: the environment is the place's light) is an unknown key");
+		refused('{"helix-scene3d": 1, "nodes": [], "extra": 1}', "An unknown key at the root");
+		check(parse('{"helix-scene3d": 1}') != null && parse('{"helix-scene3d": 1}').nodes.length == 0, "Nodes may be absent");
 	}
 
 	// Every kind's table reads and writes every property: each set away from its default survives a parse, a write and a parse.
@@ -322,17 +323,17 @@ class SceneFileTests {
 			var keys = [];
 			for (property in kind.properties)
 				keys.push('"${property.name}": ' + away(property));
-			var text = '{"helix-scene": 1, "nodes": [{"kind": "${kind.name}", "name": "n"' + (keys.length > 0 ? ", " + keys.join(", ") : "") + "}]}";
-			var file = parse(text, kind.name + ".scene");
+			var text = '{"helix-scene3d": 1, "nodes": [{"kind": "${kind.name}", "name": "n"' + (keys.length > 0 ? ", " + keys.join(", ") : "") + "}]}";
+			var file = parse(text, kind.name + ".scene3d");
 			check(file != null, 'Every ${kind.name} property reads');
 			var written = file.write();
-			var again = SceneFile.parse(written, kind.name + ".scene");
+			var again = SceneFile3D.parse(written, kind.name + ".scene3d");
 			check(again != null && again.write().compare(written) == 0, 'Every ${kind.name} property writes and reads back');
 			for (property in kind.properties)
 				check(again.nodes[0].properties.get(property.name) != null
 					&& !same(again.nodes[0].properties.get(property.name), property.defaultValue),
 					'${kind.name}.${property.name} is kept away from its default');
-			var bare = parse('{"helix-scene": 1, "nodes": [{"kind": "${kind.name}", "name": "n"}]}');
+			var bare = parse('{"helix-scene3d": 1, "nodes": [{"kind": "${kind.name}", "name": "n"}]}');
 			check(bare != null && !bare.nodes[0].properties.keys().hasNext(), 'A bare ${kind.name} has no properties set');
 		}
 	}
@@ -352,7 +353,7 @@ class SceneFileTests {
 
 	// A flag unsaid is the kind's own default and isn't written; one said away from it is written; one said at it vanishes.
 	static function flags():Void {
-		var file = parse('{"helix-scene": 1, "nodes": [
+		var file = parse('{"helix-scene3d": 1, "nodes": [
 			{"kind": "Text3D", "name": "quiet"},
 			{"kind": "Text3D", "name": "button", "pickable": true},
 			{"kind": "Text3D", "name": "plain", "pickable": false},
@@ -381,14 +382,14 @@ class SceneFileTests {
 		check(flagsOf("plain") == "", "A Text3D said unpickable is at its default: left out");
 		check(flagsOf("ghost") == '"pickable": false', "A Model said unpickable is written so");
 		check(flagsOf("solid") == "", "A Model's flags said true are its defaults: left out");
-		var again = SceneFile.parse(file.write());
+		var again = SceneFile3D.parse(file.write());
 		check(again != null && again.nodes[1].pickable == true && again.nodes[2].pickable == null && again.nodes[3].pickable == false,
 			"What was written reads back: the said-at-default flag now unsaid");
 	}
 
 	// A camera's projection: a named choice, perspective unless said, written when orthographic.
 	static function cameras():Void {
-		var file = parse('{"helix-scene": 1, "nodes": [
+		var file = parse('{"helix-scene3d": 1, "nodes": [
 			{"kind": "Camera3D", "name": "eye", "projection": "perspective", "fovY": 1},
 			{"kind": "Camera3D", "name": "flat", "projection": "orthographic", "orthographicHeight": 6, "near": 0, "far": 20}
 		]}');
@@ -402,7 +403,7 @@ class SceneFileTests {
 			"Perspective is the default, left out; orthographic is written");
 		check(written.indexOf('"near": 0,') >= 0
 			&& written.indexOf('"orthographicHeight": 6') >= 0, "An orthographic camera's near 0 and height");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Camera3D", "name": "x", "projection": 1}]}', "A projection that isn't text");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Camera3D", "name": "x", "projection": 1}]}', "A projection that isn't text");
 	}
 
 	// A Model's generated mesh: every shape with its required arguments only and with every argument, byte-equal through a parse and a
@@ -417,11 +418,11 @@ class SceneFileTests {
 					for (i in 0...said.length)
 						'"${said[i].name}": ' + (said[i].required ? Std.string(i + 2) : Std.string(Std.int(said[i].defaultValue) + 3))
 				];
-				var text = '{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "${shape.name}", ' + keys.join(", ") + '}}]}';
-				var file = parse(text, shape.name + ".scene");
+				var text = '{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "${shape.name}", ' + keys.join(", ") + '}}]}';
+				var file = parse(text, shape.name + ".scene3d");
 				check(file != null && file.nodes[0].mesh != null && file.nodes[0].mesh.shape == shape.name, 'A ${shape.name} reads');
 				var written = file.write();
-				var again = SceneFile.parse(written);
+				var again = SceneFile3D.parse(written);
 				check(again != null && again.write().compare(written) == 0, 'A ${shape.name} writes back byte-equal');
 				var expected = ['"shape": "${shape.name}"'].concat(keys);
 				var lines = written.toString().split("\n");
@@ -433,7 +434,7 @@ class SceneFileTests {
 				check(at >= 0 && got.join("|") == expected.join("|"), 'A ${shape.name}\'s arguments in the generator\'s order: $got');
 			}
 		}
-		var file = parse('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"segments": 32, "radius": 2, "shape": "sphere",
+		var file = parse('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"segments": 32, "radius": 2, "shape": "sphere",
 			"rings": 8}, "material": {"baseColor": "#40a040"}}]}');
 		check(file != null && file.nodes[0].mesh.arguments.get("radius") == 2 && file.nodes[0].material.baseColor == 0xff40a040,
 			"A mesh beside an inline material");
@@ -442,18 +443,18 @@ class SceneFileTests {
 			&& written.indexOf('"rings": 8') >= 0
 			&& written.indexOf('"mesh"') < written.indexOf('"material"'),
 			"An argument at its default is left out; the mesh before the material");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "file": "a.glb", "mesh": {"shape": "cube", "width": 1, "height": 1, "length": 1}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "file": "a.glb", "mesh": {"shape": "cube", "width": 1, "height": 1, "length": 1}}]}',
 			"A Model with both a file and a mesh");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "blob"}}]}', "An unknown shape");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"width": 1}}]}', "A mesh without a shape");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere"}}]}', "A sphere missing its radius");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": "big"}}]}', "A number that is text");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": 1, "width": 2}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "blob"}}]}', "An unknown shape");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"width": 1}}]}', "A mesh without a shape");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere"}}]}', "A sphere missing its radius");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": "big"}}]}', "A number that is text");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": {"shape": "sphere", "radius": 1, "width": 2}}]}',
 			"An argument the shape hasn't");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": "plane"}]}', "A mesh that isn't an object");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "PointLight", "name": "m", "mesh": {"shape": "sphere", "radius": 1}}]}', "A mesh on a light");
-		refused('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"mesh": {"shape": "sphere", "radius": 1}}}}]}',
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m", "mesh": "plane"}]}', "A mesh that isn't an object");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "PointLight", "name": "m", "mesh": {"shape": "sphere", "radius": 1}}]}', "A mesh on a light");
+		refused('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "x", "file": "a.glb", "overrides": {"a": {"mesh": {"shape": "sphere", "radius": 1}}}}]}',
 			"A mesh in an override");
-		check(parse('{"helix-scene": 1, "nodes": [{"kind": "Model", "name": "m"}]}') != null, "A Model with neither a file nor a mesh");
+		check(parse('{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m"}]}') != null, "A Model with neither a file nor a mesh");
 	}
 }

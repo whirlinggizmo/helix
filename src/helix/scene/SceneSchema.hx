@@ -1,6 +1,6 @@
 package helix.scene;
 
-/** What a kind's property holds in a .scene file: the shape the parser checks a value against, the writer writes, and an inspector makes a
+/** What a kind's property holds in a .scene3d file: the shape the parser checks a value against, the writer writes, and an inspector makes a
 	control for. */
 enum PropertyType {
 	/** A number, held from min to max where given (null for no bound), as the class clamps it. */
@@ -124,7 +124,7 @@ class ShapeSchema {
 	}
 }
 
-/** The kinds a .scene file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that
+/** The kinds a .scene3d file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that
 	says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its
 	controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class
 	starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the
@@ -182,7 +182,7 @@ class SceneSchema {
 	];
 
 	/** The shapes a Model's "mesh" can name, one table per generator of Mesh with its arguments in the generator's order and the generator's
-		defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds calls the
+		defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds3D calls the
 		generator from it. */
 	public static var shapes(default, null):Array<ShapeSchema> = [
 		new ShapeSchema("plane", [

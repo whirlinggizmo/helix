@@ -23,8 +23,8 @@ import helix.render2d.TextureCache;
 import helix.render2d.Textures;
 import helix.render3d.ModelCache;
 import helix.render3d.Models;
-import helix.scene.SceneFileCache;
-import helix.scene.SceneFiles;
+import helix.scene.SceneFileCache3D;
+import helix.scene.SceneFiles3D;
 import helix.time.Clock;
 import helix.time.Time;
 
@@ -52,7 +52,7 @@ class Runner {
 	var textures:TextureCache;
 	var fonts:FontCache;
 	var models:ModelCache;
-	var sceneFiles:SceneFileCache;
+	var sceneFiles:SceneFileCache3D;
 	var screenshots:ScreenshotService;
 	// The optional parts installed by their first use, in that order.
 	var parts:Array<Part> = [];
@@ -143,7 +143,7 @@ class Runner {
 		textures = new TextureCache(resources, decoding, a.graphics);
 		fonts = new FontCache(resources, a.graphics);
 		models = new ModelCache(resources, textures);
-		sceneFiles = new SceneFileCache(resources);
+		sceneFiles = new SceneFileCache3D(resources);
 		screenshots = new ScreenshotService(a.graphics, a.export, a.name, presentation);
 		Graphics.bind(a.graphics);
 		Input.bind(input.input);
@@ -157,7 +157,7 @@ class Runner {
 		Textures.bind(textures);
 		Fonts.bind(fonts);
 		Models.bind(models);
-		SceneFiles.bind(sceneFiles);
+		SceneFiles3D.bind(sceneFiles);
 		TestHarness.bind(a.harness);
 		Screenshots.bind(screenshots);
 		// config.json beside the program, read now so a deployed game's settings change without a build; the app's init waits for it (a
@@ -260,7 +260,7 @@ class Runner {
 		Textures.bind(null);
 		Fonts.bind(null);
 		Models.bind(null);
-		SceneFiles.bind(null);
+		SceneFiles3D.bind(null);
 		TestHarness.bind(null);
 		Screenshots.bind(null);
 		Host.bind(null);

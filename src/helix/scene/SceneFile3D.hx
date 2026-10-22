@@ -7,35 +7,35 @@ import helix.behavior.Behaviors;
 import helix.render3d.Node3D;
 import helix.scene.SceneSchema;
 
-/** A .scene file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene"), its environment section and its nodes, each a SceneNode
+/** A .scene3d file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene3d"), its environment section and its nodes, each a SceneNode3D
 	with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so
 	a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand
 	edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a
 	tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree. */
-class SceneFile {
-	/** The format version read and written: the file's "helix-scene" value. */
+class SceneFile3D {
+	/** The format version read and written: the file's "helix-scene3d" value. */
 	public static inline var VERSION = 1;
 
-	/** The file's "helix-scene" version: VERSION, the only one read. */
+	/** The file's "helix-scene3d" version: VERSION, the only one read. */
 	public var version:Int = VERSION;
 
 	/** Its environment section (the place's light, set on the node it's instantiated as), or null when the file has none. */
-	public var environment:Null<SceneEnvironment>;
+	public var environment:Null<SceneEnvironment3D>;
 
 	/** Its nodes at the root, in drawing order. */
-	public var nodes:Array<SceneNode> = [];
+	public var nodes:Array<SceneNode3D> = [];
 
 	/** An empty file of the current version: no environment section, no nodes. */
 	public function new() {}
 
 	/** The file in bytes (JSON), parsed; path names it in the log. Null, with every problem logged through Failure naming the node's path or
-		the key, for a file that isn't a JSON object, a missing or other "helix-scene" version, an unknown key at the root, in the environment
+		the key, for a file that isn't a JSON object, a missing or other "helix-scene3d" version, an unknown key at the root, in the environment
 		section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
 		has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a
 		Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a
 		required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind,
 		a mesh or an empty path, or a behavior without a kind. */
-	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile> {
+	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile3D> {
 		var file = new SceneReader(path != null ? path : "scene").read(bytes);
 		if (file != null)
 			file.path = path;
@@ -45,14 +45,14 @@ class SceneFile {
 	/** Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and
 		extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the
 		map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models
-		and SceneFiles (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
+		and SceneFiles3D (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
 		node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's
 		next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab
 		naming itself (directly or through another), an unknown behavior, a refused prop or property, and an override naming no node are
 		each logged through Failure with this file's path and the node's, the rest made, and ready still comes. The instance remembers
 		where each node came from, for capture. */
-	public function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance
-		return SceneInstance.make(this, path != null ? path : "scene", parent, behaviors != null ? behaviors : Behaviors.pass, ready);
+	public function instantiate(parent:Node3D, ?behaviors:BehaviorPass, ?ready:Void->Void):SceneInstance3D
+		return SceneInstance3D.make(this, path != null ? path : "scene", parent, behaviors != null ? behaviors : Behaviors.pass, ready);
 
 	/** The path it was parsed under, as parse was given it; "scene" for none. What instantiate names the instance by. */
 	public var path(default, null):Null<String>;
@@ -68,7 +68,7 @@ class SceneFile {
 		differs from the defaults, so the environment section holds what isn't the default, a behavior's prop at its schema default is
 		left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand
 		wrote into the file vanishes on capture. Capturing an untouched instance gives the file it was made from, written canonically. */
-	public static function capture(instance:SceneInstance):SceneFile
+	public static function capture(instance:SceneInstance3D):SceneFile3D
 		return @:privateAccess instance.capture();
 
 	/** The file as canonical JSON: keys in a fixed order, two-space indentation, one key per line, number lists on one line, a trailing
@@ -91,23 +91,23 @@ private class SceneReader {
 		this.path = path;
 
 	/** bytes as a file, or null with every problem logged. */
-	public function read(bytes:Bytes):Null<SceneFile> {
+	public function read(bytes:Bytes):Null<SceneFile3D> {
 		var root:Dynamic = try haxe.Json.parse(bytes.toString()) catch (_:Dynamic) null;
 		if (!isObject(root)) {
 			refuse("file", "not a JSON object");
 			return null;
 		}
-		var file = new SceneFile();
-		if (!Reflect.hasField(root, "helix-scene"))
-			refuse("file", 'no helix-scene version; ${SceneFile.VERSION} is read');
+		var file = new SceneFile3D();
+		if (!Reflect.hasField(root, "helix-scene3d"))
+			refuse("file", 'no helix-scene3d version; ${SceneFile3D.VERSION} is read');
 		for (key in Reflect.fields(root)) {
 			var value:Dynamic = Reflect.field(root, key);
 			switch key {
-				case "helix-scene":
-					if (isNumber(value) && (value : Float) == SceneFile.VERSION)
-						file.version = SceneFile.VERSION;
+				case "helix-scene3d":
+					if (isNumber(value) && (value : Float) == SceneFile3D.VERSION)
+						file.version = SceneFile3D.VERSION;
 					else
-						refuse("helix-scene", 'version ${describe(value)} is not ${SceneFile.VERSION}');
+						refuse("helix-scene3d", 'version ${describe(value)} is not ${SceneFile3D.VERSION}');
 				case "environment":
 					file.environment = readEnvironment(value);
 				case "nodes":
@@ -125,7 +125,7 @@ private class SceneReader {
 	}
 
 	// A list of nodes, siblings under parentPath ("" at the root, else the parent's path and a slash), each named once among them.
-	function readNodes(value:Dynamic, where:String, parentPath:String):Array<SceneNode> {
+	function readNodes(value:Dynamic, where:String, parentPath:String):Array<SceneNode3D> {
 		var nodes = [];
 		if (!Std.isOfType(value, Array)) {
 			refuse(where, "expected a list of nodes");
@@ -147,12 +147,12 @@ private class SceneReader {
 	}
 
 	// One node (or, as an override, what changes on one): where names it until its name is known, parentPath leads its path.
-	function readNode(value:Dynamic, where:String, parentPath:String, overriding:Bool):Null<SceneNode> {
+	function readNode(value:Dynamic, where:String, parentPath:String, overriding:Bool):Null<SceneNode3D> {
 		if (!isObject(value)) {
 			refuse(where, overriding ? "expected an override object" : "expected a node object");
 			return null;
 		}
-		var node = new SceneNode();
+		var node = new SceneNode3D();
 		var kind:Dynamic = Reflect.field(value, "kind"),
 			scene:Dynamic = Reflect.field(value, "scene"),
 			name:Dynamic = Reflect.field(value, "name"),
@@ -255,7 +255,7 @@ private class SceneReader {
 		return node;
 	}
 
-	function readOverrides(value:Dynamic, node:SceneNode, where:String):Void {
+	function readOverrides(value:Dynamic, node:SceneNode3D, where:String):Void {
 		if (!isObject(value)) {
 			refuse(where, "expected overrides, an object by path");
 			return;
@@ -421,12 +421,12 @@ private class SceneReader {
 		return color;
 	}
 
-	function readEnvironment(value:Dynamic):Null<SceneEnvironment> {
+	function readEnvironment(value:Dynamic):Null<SceneEnvironment3D> {
 		if (!isObject(value)) {
 			refuse("environment", "expected an object");
 			return null;
 		}
-		var environment = new SceneEnvironment();
+		var environment = new SceneEnvironment3D();
 		for (key in Reflect.fields(value)) {
 			var item:Dynamic = Reflect.field(value, key);
 			switch key {
@@ -580,15 +580,15 @@ private class SceneWriter {
 	public function new() {}
 
 	/** file as canonical JSON text, with its trailing newline. */
-	public function write(file:SceneFile):String {
-		var entries = [entry("helix-scene", [Std.string(file.version)])];
+	public function write(file:SceneFile3D):String {
+		var entries = [entry("helix-scene3d", [Std.string(file.version)])];
 		if (file.environment != null)
 			entries.push(entry("environment", environment(file.environment)));
 		entries.push(entry("nodes", array([for (n in file.nodes) node(n)])));
 		return object(entries).join("\n") + "\n";
 	}
 
-	function environment(environment:SceneEnvironment):Array<String> {
+	function environment(environment:SceneEnvironment3D):Array<String> {
 		var entries = [];
 		var ambient = [];
 		if (environment.ambientColor != null)
@@ -616,7 +616,7 @@ private class SceneWriter {
 		return object(entries);
 	}
 
-	function node(node:SceneNode):Array<String> {
+	function node(node:SceneNode3D):Array<String> {
 		var entries = [];
 		var overriding = node.isOverride;
 		if (node.scene != null)

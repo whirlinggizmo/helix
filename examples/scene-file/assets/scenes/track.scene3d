@@ -1,5 +1,5 @@
 {
-  "helix-scene": 1,
+  "helix-scene3d": 1,
   "environment": {
     "ambient": {
       "color": "#dfe8ff",
@@ -1311,7 +1311,7 @@
       ]
     },
     {
-      "scene": "scenes/car.scene",
+      "scene": "scenes/car.scene3d",
       "name": "car",
       "position": [
         0,

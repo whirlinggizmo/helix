@@ -1,7 +1,7 @@
 # The display model
 
 **Status:** designed with the user on 2026-10-22, the day before the ATL Gamedevs Jam, and built on the branch `display-model` (steps 1 to
-8 below, each committed with its checks), merged into `main` once the native autopilots and the Windows build pass. Decision 145 records
+9 below, each committed with its checks), merged into `main` once the native autopilots and the Windows build pass. Decision 145 records
 it; this document is the design, and the place to pick the work up from. Where the build departed from the first plan it says so below.
 
 ## Why
@@ -59,13 +59,13 @@ what's drawn.
 
 ### Scenes: trees of nodes, saved or live
 
-- A scene is a tree of nodes. Saved, it is a `.scene` file; live, it is the nodes loaded from one, under the node they were put in.
+- A scene is a tree of nodes. Saved, it is a `.scene3d` file; live, it is the nodes loaded from one, under the node they were put in.
 - A level and a prefab are the same thing used two ways: a scene file loaded as the root of what a view shows, or put inside another
   tree, as often as wanted. Neither word is a class. (Godot's meaning of "scene"; Flash's MovieClip symbol in the library.)
 - No `Scene2D`/`Scene3D` classes and no `Stage2D`/`Stage3D`: a view shows a node. What those classes held per tree (the clock, picking's
   tables, the draw counts) moves to the view drawing it or to the subtree it describes.
-- `SceneFile` (a scene as read) and `SceneInstance` (a scene put into a tree) keep their names. Scene files are 3D now; 2D ones are
-  roadmap.
+- `SceneFile3D` (a scene as read) and `SceneInstance3D` (a scene put into a tree), named by kind as the convention names 2D and 3D
+  apart (step 9). Scene files are 3D now; 2D ones (`.scene2d`) are roadmap.
 
 ### `Environment3D`: the place's light, on a node
 
@@ -160,7 +160,7 @@ class Game extends helix.App {
 
 	override function init() {
 		Stage.color = 0xff14161c;
-		level = SceneFiles.load("levels/track.scene");    // its root carries its environment; its behaviors run the race
+		level = SceneFiles3D.load("levels/track.scene3d"); // its root carries its environment; its behaviors run the race
 		view = new View3D(level, new Camera3D());
 		Stage.addChild(view);
 		Stage.addChild(score);                            // over the 3D, in pixels
@@ -209,9 +209,11 @@ class Game extends helix.App {
 8. Every example, the starter, the tests and the docs moved over; `Stage2D`/`Stage3D` as public classes gone (their drawing kept as
    the views' renderers), and the runner's allowance for an app drawing its own frame removed (`Graphics.beginFrame` and `endFrame` the
    runner's alone); a decision entry recording what was built and checked.
-
-9. Scene files named by kind, as the convention names 2D and 3D apart: `.scene` becomes `.scene3d` (and `SceneFile`, `SceneInstance`,
-   `SceneFiles` their 3D names), so 2D scene files arrive as `.scene2d` without renaming again. A 2D scene shows a 3D one through a
+9. Scene files named by kind, as the convention names 2D and 3D apart: `.scene` became `.scene3d` (its version key `helix-scene3d`), and
+   the classes holding 3D's own `SceneFile3D`, `SceneFiles3D`, `SceneFileCache3D`, `SceneInstance3D`, `SceneNode3D`, `SceneKinds3D` and
+   `SceneEnvironment3D`; what a 2D file will share (`SceneBehavior`, `SceneValue`, `SceneSchema`'s property types) and what has no 2D
+   counterpart (`SceneMaterial`, `SceneMesh`, as `Material` and `Mesh`) kept theirs. So 2D scene files arrive as `.scene2d` without renaming
+   again. A 2D scene shows a 3D one through a
    `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
 
 ## Later (ROADMAP)
