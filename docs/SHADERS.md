@@ -375,9 +375,8 @@ shader has neither; `gl_FragCoord` gives the pixel in every kind.
 - **At load:** `Shaders.load` calls its failure lambda (or logs, with the path) for a file it can't read, one packed for another format
   (pack it again), or a program the GPU didn't build, with the compiler's log.
 
-The packer's messages name the source file. sokol-shdc's own errors carry a line number counted in the text the packer compiles, which
-puts the kind's framework stages before the game's source, so the number is larger than the line in the file; find the line by the
-identifier in the message (`'undefined_thing' : undeclared identifier`).
+The packer's messages name the source file, and sokol-shdc's errors name the source's own line (`shaders/wave.glsl:12:4: error: ...`), though
+what it compiles puts the framework's block first; an error in the framework's part, which a source rarely causes, says so instead.
 
 ## The library's shaders as references
 

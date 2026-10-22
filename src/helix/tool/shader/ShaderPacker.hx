@@ -116,18 +116,26 @@ class ShaderPacker {
 		if (!fragment.match(source))
 			fail('$sourcePath: the fragment stage must be "@fs fs"');
 		var fragmentBody = fragment.matched(1);
+		// The line (from 1) of the source each piece starts on: the fragment body on its "@fs fs" line.
+		var fragmentLine = lineOf(source, fragment.matchedPos().pos);
 		var kind = found[0];
 		// The vertex hook block comes first, as the framework's vertex stage includes it.
 		var hookBlock = ~/@block\s+vertex\b[\s\S]*?@end/;
-		var hook:String, rest:String;
+		// What sokol-shdc compiles, piece by piece: each the line of the source it starts on, or 0 for the framework's, so its errors are
+		// told as the source's lines (placed).
+		var hook:Array<Piece>, rest:Array<Piece>;
 		if (hookBlock.match(source)) {
 			if (kind != "helix_surface")
 				fail('$sourcePath: only a surface shader has a vertex hook');
-			hook = hookBlock.matched(0);
-			rest = hookBlock.matchedLeft() + hookBlock.matchedRight();
+			var at = hookBlock.matchedPos();
+			hook = [{text: hookBlock.matched(0), line: lineOf(source, at.pos)}];
+			rest = [
+				{text: hookBlock.matchedLeft(), line: 1},
+				{text: hookBlock.matchedRight(), line: lineOf(source, at.pos + at.len)}
+			];
 		} else {
-			hook = kind == "helix_surface" ? NO_VERTEX_HOOK : "";
-			rest = source;
+			hook = [{text: kind == "helix_surface" ? NO_VERTEX_HOOK : "", line: 0}];
+			rest = [{text: source, line: 1}];
 		}
 		var programs:Array<{
 			name:String,
@@ -166,7 +174,11 @@ class ShaderPacker {
 				});
 				// The caster's fragment stage: the app's, over the caster's block (its output writes nothing).
 				var body = ~/@include_block\s+helix_surface\b/.replace(fragmentBody, "@include_block helix_surface_caster");
-				rest += '\n@fs helix_caster_fs$body@end\n';
+				rest = rest.concat([
+					{text: "\n@fs helix_caster_fs", line: 0},
+					{text: body, line: fragmentLine},
+					{text: "@end\n", line: 0}
+				]);
 			}
 			extra = File.getContent(srcPath("src/helix/graphics/shaders/skinning.glsl")) + "\n";
 		} else if (kind == "helix_sprite") {
@@ -178,17 +190,17 @@ class ShaderPacker {
 			});
 			// The variant's fragment stage: the app's, over the block whose output applies the sprite's alpha mode.
 			var body = ~/@include_block\s+helix_sprite\b/.replace(fragmentBody, "@include_block helix_sprite_3d");
-			rest += '\n@fs helix_sprite3d_fs$body@end\n';
+			rest = rest.concat([
+				{text: "\n@fs helix_sprite3d_fs", line: 0},
+				{text: body, line: fragmentLine},
+				{text: "@end\n", line: 0}
+			]);
 		}
-		var full = hook
-			+ "\n"
-			+ extra
-			+ kindText(kind)
-			+ "\n"
-			+ rest
-			+ "\n"
-			+ [for (p in programs) '@program ${p.name} ${p.vs} ${p.fs}\n'].join("");
-		var reflected = compile(sourcePath, full);
+		var pieces = hook.concat([{text: "\n" + extra + kindText(kind) + "\n", line: 0}]).concat(rest).concat([
+			{text: "\n" + [for (p in programs) '@program ${p.name} ${p.vs} ${p.fs}\n'].join(""), line: 0}
+		]);
+		var full = [for (p in pieces) p.text].join("");
+		var reflected = compile(sourcePath, full, placed(pieces));
 		var fields:Array<JsonField> = [
 			{key: "helixShader", value: JInt(FORMAT)},
 			{key: "kind", value: JString(kind.substr("helix_".length))},
@@ -369,9 +381,50 @@ class ShaderPacker {
 		]);
 	}
 
+	// The line (from 1) of text that offset is on.
+	static function lineOf(text:String, offset:Int):Int {
+		var line = 1;
+		for (i in 0...offset)
+			if (StringTools.fastCodeAt(text, i) == "\n".code)
+				line++;
+		return line;
+	}
+
+	// For each line of the pieces joined (from index 1), the source's line it is, or 0 for the framework's: a piece starting mid-line (the
+	// last didn't end one) leaves that line as the last placed it.
+	static function placed(pieces:Array<Piece>):Array<Int> {
+		var lines = [0, 0], line = 1, atStart = true;
+		for (piece in pieces) {
+			var own = 0;
+			for (i in 0...piece.text.length) {
+				if (atStart) {
+					lines[line] = piece.line > 0 ? piece.line + own : 0;
+					atStart = false;
+				}
+				if (StringTools.fastCodeAt(piece.text, i) == "\n".code) {
+					line++;
+					own++;
+					atStart = true;
+				}
+			}
+		}
+		return lines;
+	}
+
+	// sokol-shdc's output with the compiled file's name as sourcePath and its lines as the source's (lines: placed's), one in the framework's
+	// part said so: "glsl:197:9" becomes "sourcePath:9:9", or "sourcePath (the framework's part, line 197 of what was compiled):9".
+	static function told(output:String, glsl:String, sourcePath:String, lines:Null<Array<Int>>):String {
+		var marked = StringTools.replace(output, glsl + ":", "\x01");
+		return ~/\x01(\d+)/g.map(marked, m -> {
+			var at = Std.parseInt(m.matched(1));
+			var line = lines != null && at < lines.length ? lines[at] : -1;
+			line > 0 ? '$sourcePath:$line' : line == 0 ? '$sourcePath (the framework\'s part, line $at of what was compiled)' : '$sourcePath:$at';
+		}).split(glsl).join(sourcePath);
+	}
+
 	// full compiled by sokol-shdc (its C header and its reflection, both dialects): each program's reflection by name, with its dialects'
 	// sources read in (dialects: {glsl410, glsl300es}, each {vertex, fragment}).
-	function compile(sourcePath:String, full:String):Map<String, Dynamic> {
+	function compile(sourcePath:String, full:String, ?lines:Array<Int>):Map<String, Dynamic> {
 		if (shdc == null)
 			shdc = Shdc.path(root);
 		var scratch = Scratch.make("helix-shader-");
@@ -384,7 +437,7 @@ class ShaderPacker {
 			]) {
 				var done = Scratch.run(shdc, ["-i", glsl].concat(args).concat(["-l", "glsl410:glsl300es", "--no-log-cmdline"]));
 				if (done.code != 0)
-					fail(StringTools.replace('$sourcePath: sokol-shdc failed\n${done.out}${done.err}', glsl, sourcePath));
+					fail('$sourcePath: sokol-shdc failed\n' + told('${done.out}${done.err}', glsl, sourcePath, lines));
 			}
 			var reflectionPath = Path.join([scratch, "shader_reflection.yaml"]);
 			var reflection:Dynamic = Reflection.parse(File.getContent(reflectionPath), reflectionPath);
@@ -687,4 +740,10 @@ class ShaderPacker {
 			directory = parent;
 		}
 	}
+}
+
+/** A piece of what sokol-shdc compiles: its text and the source's line it starts on (0: the framework's). */
+private typedef Piece = {
+	var text:String;
+	var line:Int;
 }

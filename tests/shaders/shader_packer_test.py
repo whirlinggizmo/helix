@@ -93,6 +93,23 @@ class PackShaderTests(unittest.TestCase):
     def test_unsupported_member_refused(self):
         self.refused(EFFECT.replace('float strength;', 'int strength;').replace('c.rgb * strength', 'c.rgb * float(strength)'))
 
+    def told(self, source):
+        """What packing source says when sokol-shdc refuses it."""
+        with self.assertRaises(SystemExit) as refusal:
+            self.pack(source)
+        return str(refusal.exception.code)
+
+    def test_errors_name_the_source_line(self):
+        # The compiler sees the framework's block before the source; its errors are told as the source's lines.
+        sprite = '// a sprite\n@fs fs\n@include_block helix_sprite\nvoid main() {\n    vec4 own = helix_sprite_color();\n    float bad = own.rgb;\n' \
+            '    helix_output(own.rgb, own.a);\n}\n@end\n'
+        self.assertRegex(self.told(sprite), r'shader\.glsl:6:\d+: error')
+        hooked = '@block vertex\nvoid helix_vertex(inout vec3 position, inout vec3 normal) {\n    position.y += 0.1;\n}\nint bad = 1.5;\n@end\n' \
+            '@fs fs\n@include_block helix_surface\nvoid main() {\n    vec4 base = helix_base();\n    helix_output(helix_shade(base.rgb), base.a);\n}\n@end\n'
+        self.assertRegex(self.told(hooked), r'shader\.glsl:5:\d+: error')
+        fragment = hooked.replace('int bad = 1.5;', 'float fine = 1.5;').replace('    vec4 base = helix_base();\n', '    vec4 base = helix_base();\n    float wrong = base.rgb;\n')
+        self.assertRegex(self.told(fragment), r'shader\.glsl:11:\d+: error')
+
 
 SURFACE = '''@fs fs
 @include_block helix_surface
