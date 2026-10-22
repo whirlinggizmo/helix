@@ -1,5 +1,5 @@
 /* Pixelate (helix.shader.Pixelate): the frame in square cells, each the color at its middle. A screen effect of the library: packed into the
- * program by tools/pack_shader.py. */
+ * program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform pixelate_params {

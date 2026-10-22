@@ -1,5 +1,5 @@
 /* Vignette (helix.shader.Vignette): the frame shaded toward a color (black, say) from a radius out to its corners. A screen effect of the
- * library: packed into the program by tools/pack_shader.py. */
+ * library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform vignette_params {

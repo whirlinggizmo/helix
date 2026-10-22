@@ -3,7 +3,7 @@
  * Call of Duty: Advanced Warfare, each group of four weighted by its brightness so a lone bright texel doesn't flicker), then down a chain of
  * halving sizes with the same filter; each level is added to the one below it drawn larger through a 3 x 3 tent, back up to half the frame,
  * and that is added to the frame times the intensity, encoded again as the frame was. One program for every step, chosen by `mode` (the
- * same for the whole draw, so the branches are uniform). A screen effect of the library: packed into the program by tools/pack_shader.py. */
+ * same for the whole draw, so the branches are uniform). A screen effect of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform bloom_params {

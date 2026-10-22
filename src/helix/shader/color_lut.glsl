@@ -2,7 +2,7 @@
  * squares left to right, red runs across a square, green down it; each texel's color what that color becomes. A color is read between the
  * two squares its blue falls between, each read half a texel in from the square's edges, so the filtering never reaches into the next
  * square. Over the tone-mapped frame, its sRGB values as they are. A screen effect of the library: packed into the program by
- * tools/pack_shader.py. */
+ * ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform color_lut_params {

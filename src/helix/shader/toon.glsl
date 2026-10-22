@@ -1,6 +1,6 @@
 /* Toon (helix.shader.Toon): the stage's lights in a few flat bands over the material's base color (their shadows banded with them), the
  * unlit side no darker than a shadow color, the material's emission; its rim is the material's rim light (helix.shader.Rim), which Toon
- * turns on. A surface shader of the library: packed into the program by tools/pack_shader.py. */
+ * turns on. A surface shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_surface
 layout(binding=2) uniform toon_params {

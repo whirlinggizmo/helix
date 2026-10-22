@@ -2,7 +2,7 @@
  * in its own space, is below a threshold rising with the amount, a glowing edge along the cut, as see-through as its alpha says (dithered:
  * a share of its pixels thrown away in a fixed 4 x 4 pattern, so the model stays opaque and unsorted). Its discard reaches its shadow (the caster the
  * packer makes for it), which reads the same noise at the same places. A surface shader of the library: packed into the program by
- * tools/pack_shader.py. */
+ * ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_surface
 layout(binding=2) uniform dissolve_params {

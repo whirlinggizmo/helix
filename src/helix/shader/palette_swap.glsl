@@ -1,6 +1,6 @@
 /* PaletteSwap (helix.shader.PaletteSwap): a sprite drawn in a palette's colors, its red channel (0..255) the column of a palette texture's
  * row, the row a variant; the sprite's alpha kept, both times the tint. Both read texel by texel at exact texel centers, whatever their
- * sampling, so an index is never blended with its neighbor. A sprite shader of the library: packed into the program by tools/pack_shader.py. */
+ * sampling, so an index is never blended with its neighbor. A sprite shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_sprite
 layout(binding=2) uniform palette_swap_params {

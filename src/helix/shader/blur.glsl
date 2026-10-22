@@ -1,7 +1,7 @@
 /* Blur (helix.shader.Blur): a Gaussian blur in two passes, across then down, each 17 taps spread over the radius either side (its standard
  * deviation a third of the radius). The first pass draws into a texture a fraction of the frame's size, which the second reads drawn
  * larger. Its taps are written out with their weights (no array indexed by a loop), as some mobile GPUs' compilers want. A screen effect of
- * the library: packed into the program by tools/pack_shader.py. */
+ * the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform blur_params {

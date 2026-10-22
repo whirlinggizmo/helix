@@ -1,5 +1,5 @@
 /* Unlit (helix.shader.Unlit): the material's base color and texture times a color, and its emission, with no light; the stage's exposure and
- * tone mapping apply, as to a material that isn't lit. A surface shader of the library: packed into the program by tools/pack_shader.py. */
+ * tone mapping apply, as to a material that isn't lit. A surface shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_surface
 layout(binding=2) uniform unlit_params {

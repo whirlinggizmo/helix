@@ -1,5 +1,5 @@
 /* SpriteDissolve (helix.shader.SpriteDissolve): a sprite burnt away where a noise texture, laid across its region, is below a threshold rising
- * with the amount, a glowing edge along the cut. A sprite shader of the library: packed into the program by tools/pack_shader.py. */
+ * with the amount, a glowing edge along the cut. A sprite shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_sprite
 layout(binding=2) uniform sprite_dissolve_params {

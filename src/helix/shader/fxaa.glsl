@@ -2,7 +2,7 @@
  * frame: where the luma's contrast around a pixel passes a threshold, the edge's direction and its ends are found and the pixel is read from
  * across it by how far it is from the nearer end, plus a share of a blur for edges thinner than a pixel. Its luma is worked out here from the
  * frame's sRGB values (Rec. 601's weights), so the frame needs none in its alpha. Its steps are written out (no loop or array), as some
- * mobile GPUs' compilers want. A screen effect of the library: packed into the program by tools/pack_shader.py. */
+ * mobile GPUs' compilers want. A screen effect of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform fxaa_params {

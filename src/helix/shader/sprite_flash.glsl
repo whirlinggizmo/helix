@@ -1,5 +1,5 @@
 /* SpriteFlash (helix.shader.SpriteFlash): a color mixed over a sprite's, its alpha kept, as a hit flashes it. A sprite shader of the library:
- * packed into the program by tools/pack_shader.py. */
+ * packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_sprite
 layout(binding=2) uniform sprite_flash_params {

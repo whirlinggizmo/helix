@@ -1,6 +1,6 @@
 /* CRT (helix.shader.Crt): an old monitor's picture: its glass curved (the frame bent outward, black beyond it), dark lines between its rows,
  * an aperture grille (columns of red, green and blue), and a flicker. The grille's channel is chosen arithmetically, not by an index. A
- * screen effect of the library: packed into the program by tools/pack_shader.py. */
+ * screen effect of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform crt_params {

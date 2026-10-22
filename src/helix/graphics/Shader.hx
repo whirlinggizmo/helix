@@ -33,7 +33,7 @@ private typedef ShaderFile = {
 	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
-	/** The .hxshader format it reads (src/helix/src/helix/tool/shader/ShaderPacker.hx's FORMAT). */
+	/** The .hxshader format it reads (src/helix/tool/shader/ShaderPacker.hx's FORMAT). */
 	public static inline var FORMAT = 2;
 
 	var gpu:IGraphics;

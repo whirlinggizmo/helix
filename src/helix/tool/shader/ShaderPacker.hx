@@ -20,7 +20,7 @@ import helix.tool.shared.Files;
 	  their shadows, the material's base color and textures, its hit flash and rim light (applied by helix_output), where it is on the model
 	  at rest (helix_model_position, helix_model_normal: its own space before skinning and the hook, alike in every variant); optionally a
 	  vertex hook, `@block vertex` defining `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing).
-	- `@include_block helix_sprite`: a sprite's (helix.graphics.SpriteEffect: Sprite2D.effect, Batch2D.effect, Sprite3D.effect): its texture,
+	- `@include_block helix_sprite`: a sprite's (helix.graphics.SpriteEffect: Node2D.effect, Batch2D.effect, Sprite3D.effect): its texture,
 	  region and tint, the texel size and the time (the kind's vertex stage and block are src/helix/graphics/shaders/effect2d.glsl's).
 
 	A surface shader is packed with its variants: a skinned one (the same fragment stage over a vertex stage moving each vertex by its joints

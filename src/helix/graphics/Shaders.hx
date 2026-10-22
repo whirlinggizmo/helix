@@ -7,7 +7,7 @@ import helix.asset.IReloadable;
 import helix.asset.IRequest;
 import helix.asset.Request;
 
-/** Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in
+/** Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx; how one is written: docs/SHADERS.md) loaded through the assets and built on the GPU, and built again in
 	place when a file changes during development. The caller releases what it loads. */
 class Shaders implements IReloadable {
 	// What it was given, or null for the program's, read when used.

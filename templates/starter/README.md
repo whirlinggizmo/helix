@@ -12,7 +12,9 @@ haxe hxml/build.native.hxml       # the native build (hxcpp), out/native/Main; i
 ```
 
 `common.hxml` holds what every build shares; the build steps are macros in `helix.tool` (`Build`, `Watchers`, `WebServer`). `favicon.svg` is the page's icon: put
-the game's own there. The shader compiler is fetched the first time a shader is packed; `haxelib run helix setup` fetches it ahead,
+the game's own there. A shader of the game's own goes in `shaders/<name>.glsl` (make the directory): every build packs it into `assets/shaders/<name>.hxshader`,
+the dev loop again as it changes, and the game loads it with `new Shaders().load("shaders/<name>.hxshader", ...)`; HeliX's
+`docs/SHADERS.md` says how one is written. The shader compiler is fetched the first time a shader is packed; `haxelib run helix setup` fetches it ahead,
 before going offline say.
 
 ## The libraries, the game's own

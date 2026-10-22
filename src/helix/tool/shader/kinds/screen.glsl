@@ -17,7 +17,7 @@ void main() {
 // The frame being drawn over (its color values as the framebuffer holds them, sRGB; before an HDR chain's tone mapping, past 1 too), its
 // size and the time.
 layout(binding=1) uniform helix_screen_params {
-    vec4 helix_screen_info; // xy the frame's size in pixels, z seconds since the effect began
+    vec4 helix_screen_info; // xy the frame's size in pixels, z seconds: the stage's time
 };
 layout(binding=0) uniform texture2D helix_screen_texture;
 layout(binding=0) uniform sampler helix_screen_sampler;

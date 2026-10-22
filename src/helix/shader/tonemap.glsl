@@ -1,7 +1,7 @@
 /* Tonemap (helix.shader.Tonemap): an HDR scene's tone mapping, at the end of a PostProcess chain. The frame holds a stage's light after its
  * exposure as sRGB values running past 1 (the sRGB curve carried on); it is decoded to linear light, brought into 0..1 by the stage's mode
  * as Stage3D does drawing straight to the screen (0 none, clamped; 1 Khronos PBR Neutral; 2 ACES, Narkowicz's fit) and written as the
- * screen's sRGB. A screen effect of the library: packed into the program by tools/pack_shader.py. */
+ * screen's sRGB. A screen effect of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform tonemap_params {

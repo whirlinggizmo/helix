@@ -1,6 +1,6 @@
 /* SpriteOutline (helix.shader.SpriteOutline): a sprite's shape outlined in a color, a width of texels out from its edge, where its region is
  * see-through. Eight reads around each pixel (the sides and the diagonals), each only inside the sprite's region, so a neighbor in an atlas
- * never shows. A sprite shader of the library: packed into the program by tools/pack_shader.py. */
+ * never shows. A sprite shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_sprite
 layout(binding=2) uniform sprite_outline_params {

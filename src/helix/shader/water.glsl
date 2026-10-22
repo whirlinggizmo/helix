@@ -1,7 +1,7 @@
 /* Water (helix.shader.Water): a vertex hook moves the surface along its normals in travelling waves, tilting the normals with their slopes;
  * the fragment stage colors it deep where it's looked into and shallow toward grazing, lights it, reflects the stage's environment (or a sky
  * color without one) at grazing angles (Fresnel) and adds the lights' glints. Its waves reach its shadow (the caster the packer makes for it).
- * A surface shader of the library: packed into the program by tools/pack_shader.py. */
+ * A surface shader of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @block vertex
 layout(binding=3) uniform water_waves {
     float amplitude;  // the waves' height, model-space units

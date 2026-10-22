@@ -12,7 +12,7 @@
  *             opaque, 0 as is (blended or added by the pipeline)
  * i_tint      rgba, sRGB values; an alpha over 1.5 marks a distance-field texture (text: alpha 0.5 is the outline), tinted by the alpha less 2,
  *             as the 2D sprites' does
- * Its vertex stage is a sprite shader's too (tools/pack_shader.py: a sprite effect on a Stage3D's sprite, Shader.sprite3D), so its outputs
+ * Its vertex stage is a sprite shader's too (src/helix/tool/shader/ShaderPacker.hx: a sprite effect on a Sprite3D, Shader.sprite3D), so its outputs
  * are the sprite kind's (src/helix/graphics/shaders/effect2d.glsl's helix_sprite block reads them) and its block is named as the framework's. */
 @vs sprite3d_vs
 layout(binding=0) uniform helix_sprite3d_vs_params {

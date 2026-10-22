@@ -1,5 +1,5 @@
 /* Chromatic aberration (helix.shader.ChromaticAberration): red and blue read from a little inward and outward of where green is, more toward
- * the frame's edges, as a cheap lens splits colors. A screen effect of the library: packed into the program by tools/pack_shader.py. */
+ * the frame's edges, as a cheap lens splits colors. A screen effect of the library: packed into the program by ShaderPacker (tools/gen_code.py). */
 @fs fs
 @include_block helix_screen
 layout(binding=2) uniform chromatic_aberration_params {

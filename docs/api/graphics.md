@@ -495,7 +495,7 @@ var textureSlots(get, never):Array<Int>
 function destroy():Void
 ```
 
-- `FORMAT`: The .hxshader format it reads (src/helix/src/helix/tool/shader/ShaderPacker.hx's FORMAT).
+- `FORMAT`: The .hxshader format it reads (src/helix/tool/shader/ShaderPacker.hx's FORMAT).
 - `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu (the program's, Graphics, when not given). Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
 - `handle`: The IGraphics shader handle.
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Renderer3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
@@ -599,7 +599,7 @@ A texture a program samples: its binding slot (its sampler's too), its stage, th
 
 *class* in `src/helix/graphics/Shaders.hx`
 
-Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
+Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx; how one is written: docs/SHADERS.md) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
 
 ```haxe
 function new(?assets:IAssets, ?gpu:IGraphics)
@@ -617,7 +617,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 *class* in `src/helix/graphics/SpriteEffect.hx`
 
-A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Sprite2D.effect, Batch2D.effect, and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shader (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
+A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Node2D.effect: a sprite's, a shape's, a text's or a drawing's own drawing; Batch2D.effect; and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shader (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
 
 ```haxe
 function new(shader:Shader)
