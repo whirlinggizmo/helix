@@ -7,15 +7,15 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
-import helix.render3d.PointLight;
+import helix.render3d.PointLight3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
@@ -32,9 +32,9 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
-	var sun:DirectionalLight;
-	var lamp:PointLight;
-	var marker:Model;
+	var sun:DirectionalLight3D;
+	var lamp:PointLight3D;
+	var marker:Model3D;
 	var bottom:Array<Node3D> = [];
 
 	// A linear color (as the earlier frameworks' examples give them) as 0xAARRGGBB, sRGB-encoded.
@@ -44,16 +44,16 @@ class App extends helix.App {
 		return Color.fromChannels(encode(r), encode(g), encode(b), Math.round(a * 255));
 	}
 
-	static function pbr(base:Int, metallic:Float, roughness:Float):Material {
-		var material = new Material();
+	static function pbr(base:Int, metallic:Float, roughness:Float):Material3D {
+		var material = new Material3D();
 		material.baseColor = base;
 		material.metallic = metallic;
 		material.roughness = roughness;
 		return material;
 	}
 
-	function sphere(mesh:Mesh, x:Float, y:Float, material:Material):Model {
-		var node = new Model(mesh, material);
+	function sphere(mesh:Mesh3D, x:Float, y:Float, material:Material3D):Model3D {
+		var node = new Model3D(mesh, material);
 		node.setPosition(x, y, 0);
 		level.addChild(node);
 		return node;
@@ -69,31 +69,31 @@ class App extends helix.App {
 		// Framed for 16:9: all five columns across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 
-		sun = new DirectionalLight();
+		sun = new DirectionalLight3D();
 		sun.color = 0xfffff4e4;
 		sun.intensity = 3;
 		sun.lookAt(-.4, -.7, -.6);
 		level.addChild(sun);
-		lamp = new PointLight();
+		lamp = new PointLight3D();
 		lamp.color = 0xff78beff;
 		lamp.intensity = 8;
 		lamp.range = 10;
 		level.addChild(lamp);
-		var glow = new Material();
+		var glow = new Material3D();
 		glow.baseColor = 0xff66bfff;
 		glow.lit = false;
-		marker = new Model(Mesh.sphere(.06, 8, 16), glow);
+		marker = new Model3D(Mesh3D.sphere(.06, 8, 16), glow);
 		level.addChild(marker);
 
 		// Rows of roughness steps: red plastic, then gold.
-		var ball = Mesh.sphere(.5, 24, 48);
+		var ball = Mesh3D.sphere(.5, 24, 48);
 		for (c in 0...COLUMNS) {
 			var x = (c - (COLUMNS - 1) / 2) * SPACING,
 				roughness = c / (COLUMNS - 1);
 			sphere(ball, x, 2.7, pbr(color(.8, .05, .04), 0, roughness));
 			sphere(ball, x, 1.35, pbr(color(1, .77, .34), 1, roughness));
 		}
-		var unlit = new Material();
+		var unlit = new Material3D();
 		unlit.baseColor = 0xff66bfff;
 		unlit.lit = false;
 		bottom.push(sphere(ball, -2 * SPACING, 0, unlit));
@@ -101,7 +101,7 @@ class App extends helix.App {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
+		Textures2D.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
 		Stage.addChild(new View3D(level, camera));

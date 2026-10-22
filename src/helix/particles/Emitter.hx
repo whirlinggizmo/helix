@@ -4,7 +4,7 @@ import helix.graphics.Color;
 import helix.math.Random;
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
-import helix.render3d.SpriteAlpha;
+import helix.render3d.SpriteAlpha3D;
 
 /** A particle emitter: many particles from one texture, each decided when it's born (where, how fast, how long it lives,
 	how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag
@@ -418,7 +418,7 @@ class Emitter {
 		return cutoff;
 
 	/** How it uses its texels' alpha (Add by default: glows, sparks, fire), and a Mask's cutoff. False for a cutoff outside 0..1. */
-	public function setAlphaMode(mode:SpriteAlpha, cutoff = .5):Bool {
+	public function setAlphaMode(mode:SpriteAlpha3D, cutoff = .5):Bool {
 		if (!(cutoff >= 0 && cutoff <= 1))
 			return false;
 		alphaMode = mode;
@@ -427,7 +427,7 @@ class Emitter {
 	}
 
 	/** How it uses its texels' alpha. */
-	public var alphaMode(default, null):SpriteAlpha = Add;
+	public var alphaMode(default, null):SpriteAlpha3D = Add;
 
 	/** Where its random numbers start (the seed it was last given, or its own, unseeded): the same seed and settings give the same
 		particles. 0 is taken as 1 (the generator needs a seed other than 0). */

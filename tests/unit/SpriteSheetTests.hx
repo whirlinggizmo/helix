@@ -3,12 +3,12 @@ import haxe.io.Bytes;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.SpriteAnimator;
-import helix.render2d.SpriteSheet;
+import helix.render2d.SpriteAnimator2D;
+import helix.render2d.SpriteSheet2D;
 import helix.render2d.Renderer2D;
 import helix.render2d.Texture2D;
 
-/** Sprite sheets (helix.render2d.SpriteSheet) and their animations (SpriteAnimator): TexturePacker's hash with trimmed, rotated and pivoted
+/** Sprite sheets (helix.render2d.SpriteSheet2D) and their animations (SpriteAnimator2D): TexturePacker's hash with trimmed, rotated and pivoted
 	frames in the file's order, animations from numbered names; Aseprite's array with tags, directions and durations; a hash's order on every
 	target; a grid; refusals; playing forward, back and forth, once and looping, with the frames an update reached; and a trimmed, rotated frame
 	drawn upright where it was, by the batch and by a sprite. */
@@ -51,7 +51,7 @@ class SpriteSheetTests {
 		var texture = Texture2D.fromRgba(gpu, 32, 16, Bytes.alloc(32 * 16 * 4));
 
 		// TexturePacker's hash.
-		var sheet = SpriteSheet.parse(texture, packed, .125);
+		var sheet = SpriteSheet2D.parse(texture, packed, .125);
 		check(sheet.frameCount == 4 && sheet.getFrame(0).name == "run_02.png" && sheet.getFrame(2).name == "frame",
 			"A hash's frames in the file's order, a frame named as a field too");
 		var run2 = sheet.getFrame(0);
@@ -66,13 +66,13 @@ class SpriteSheetTests {
 		check(sheet.findFrame("idle.png") == 3 && sheet.findFrame("nothing") == -1 && sheet.getFrame(4) == null, "Frames found by name");
 
 		// Aseprite's array.
-		var hero = SpriteSheet.parse(texture, drawn);
+		var hero = SpriteSheet2D.parse(texture, drawn);
 		check(hero.animationNames.join(",") == "walk,back,blink,hero", "Tags, then the numbered frames' animation");
 		check(near(hero.getFrame(1).duration, .2), "Aseprite's durations, in seconds");
 		check(hero.findAnimation("walk").direction == PingPong && hero.findAnimation("back").direction == Reverse, "Tags' directions");
 
 		// A hash's order: Aseprite's tags count frames in it.
-		var ordered = SpriteSheet.parse(texture,
+		var ordered = SpriteSheet2D.parse(texture,
 			'{"frames": {"zeta": {"frame": {"x": 0, "y": 0, "w": 1, "h": 1}}, "alpha \\"1\\"": {"frame": {"x": 1, "y": 0, "w": 1, "h": 1}}},
 			"meta": {"frameTags": [{"name": "first", "from": 0, "to": 0}]}}');
 		check(ordered.getFrame(0).name == "zeta"
@@ -89,16 +89,16 @@ class SpriteSheetTests {
 			'{"frames": [{"frame": {"x": 0, "y": 0, "w": 1, "h": 1}}], "meta": {"frameTags": [{"name": "t", "from": 0, "to": 3}]}}'
 		])
 			try
-				SpriteSheet.parse(texture, text)
+				SpriteSheet2D.parse(texture, text)
 			catch (e:Dynamic)
 				threw++;
 		check(threw == 4, "Not JSON, no frames, a frame without a rectangle and a tag past the frames are refused");
 
 		// A grid: 1 texel in from the edges, 2 apart.
 		var gridTexture = Texture2D.fromRgba(gpu, 34, 18, Bytes.alloc(34 * 18 * 4));
-		var grid = SpriteSheet.grid(gridTexture, 8, 8, 0, .1, 1, 2);
+		var grid = SpriteSheet2D.grid(gridTexture, 8, 8, 0, .1, 1, 2);
 		check(grid.frameCount == 3 && grid.getFrame(2).x == 21 && grid.getFrame(2).y == 1 && grid.getFrame(1).name == "1", "A grid's whole cells");
-		check(SpriteSheet.grid(gridTexture, 8, 8, 2).frameCount == 2, "A grid's count");
+		check(SpriteSheet2D.grid(gridTexture, 8, 8, 2).frameCount == 2, "A grid's count");
 		check(grid.addAnimation("spin", [2, 0], PingPong)
 			&& !grid.addAnimation("bad", [3])
 			&& !grid.addAnimation("none", [])
@@ -106,7 +106,7 @@ class SpriteSheetTests {
 			"Animations added by frame, refused past them");
 
 		// Playing back and forth: 0 1 2 1, 0 for 0.1 s, 1 for 0.2, 2 for 0.1.
-		var animator = new SpriteAnimator(hero);
+		var animator = new SpriteAnimator2D(hero);
 		check(animator.frame == -1 && !animator.play("nothing"), "Nothing plays at first; an unknown name is refused");
 		check(animator.play("walk") && animator.frame == 0 && animator.entered(0), "Playing starts on its first frame");
 		animator.update(.05);
@@ -167,7 +167,7 @@ class SpriteSheetTests {
 			"A mirrored sprite draws, mirrored about its pivot");
 		batch.end();
 		sprite.scaleX = 1;
-		var shown = new SpriteAnimator(sheet, sprite);
+		var shown = new SpriteAnimator2D(sheet, sprite);
 		shown.play("run");
 		check(sprite.frame == sheet.getFrame(1), "An animator shows its frame on its sprite");
 		sprite.setRegion(0, 0, 0, 0);

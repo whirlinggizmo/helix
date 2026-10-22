@@ -1,21 +1,21 @@
-import helix.render3d.ModelCache;
-import helix.render3d.ModelFile;
+import helix.render3d.ModelCache3D;
+import helix.render3d.ModelFile3D;
 import helix.render3d.Node3D;
 
-/** What a character wears, by slot ("head", "body", "hand" ... the game names them): a part file for each, from the ModelCache every character
-	shares. The dressing room's own, game code over the framework's pieces, as a Babylon playground's Actor is over its engine: ModelCache (a file loaded once), Node3D.collectModels and Model.bindSkeleton (a part's skinned models follow the character's joints by name),
+/** What a character wears, by slot ("head", "body", "hand" ... the game names them): a part file for each, from the ModelCache3D every character
+	shares. The dressing room's own, game code over the framework's pieces, as a Babylon playground's Actor is over its engine: ModelCache3D (a file loaded once), Node3D.collectModels and Model3D.bindSkeleton (a part's skinned models follow the character's joints by name),
 	and Node3D.findAttachment (its rigid models, a sword, a gun, a hat, hang from the character's joint named as the one their file hangs them from,
 	keeping their offset, or from a joint the choice names, a socket). The policy is this class's: choices may come before the skeleton, and in
 	any order while files load; each slot wears its latest choice once both its file and the skeleton are in, a choice overtaken while its file
 	loads is dropped, and a part that can't be worn leaves its slot empty, saying why. */
 class Outfit {
-	var models:ModelCache;
+	var models:ModelCache3D;
 	var chosen:Map<String, Choice> = [];
 	var worn:Map<String, Worn> = [];
 	var errors:Map<String, String> = [];
 
 	/** An outfit drawing its parts from models, for a skeleton given later (skeleton). */
-	public function new(models:ModelCache)
+	public function new(models:ModelCache3D)
 		this.models = models;
 
 	/** The skeleton parts are worn on (a character's root, its joints at or under it), or null before it's given; assigning one wears

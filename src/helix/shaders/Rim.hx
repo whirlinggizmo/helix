@@ -1,13 +1,13 @@
 package helix.shaders;
 
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A material's rim light: a color brightest where its surface turns away from the viewer, round its edge, added to its light. Every material
 	has one, off until a Rim turns it on, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows
 	it through helix_output too). A Rim is a view of its material's: two on one material share it. */
 class Rim {
 	/** The material it lights. */
-	public var material(default, null):Material;
+	public var material(default, null):Material3D;
 
 	/** The rim's color, 0xAARRGGBB (sRGB), its alpha how strong (0 none, 255 all of it). */
 	public var color(get, set):Int;
@@ -33,7 +33,7 @@ class Rim {
 	}
 
 	/** Turns material's rim light on: color (0xAARRGGBB, sRGB, its alpha how strong) and power (.1 to 64, clamped). */
-	public function new(material:Material, color = 0x80ffffff, power = 3.) {
+	public function new(material:Material3D, color = 0x80ffffff, power = 3.) {
 		this.material = material;
 		this.color = color;
 		this.power = power;

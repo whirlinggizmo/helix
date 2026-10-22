@@ -89,7 +89,7 @@ class Widget {
 	}
 
 	// Whether sizing is Fixed(units).
-	static function isFixed(sizing:Layout2D.Sizing, units:Float):Bool
+	static function isFixed(sizing:Layout2D.Sizing2D, units:Float):Bool
 		return switch sizing {
 			case Fixed(u): u == units;
 			case _: false;

@@ -16,14 +16,14 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
@@ -32,7 +32,7 @@ import helix.shaders.SpriteFlash;
 import helix.shaders.SpriteOutline;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Textured sprites in a 3D level shown by a View3D, under a circling camera, over a grid (a Drawing3D) and a lit pedestal:
 	- the logo, facing the camera as it circles, bobbing over the pedestal (blended by its alpha)
@@ -56,7 +56,7 @@ class App extends helix.App {
 	var logo:Sprite3D;
 	var sign:Sprite3D;
 	// The camera, circling.
-	var orbit = new Orbit(8, 3.5, .3, 1);
+	var orbit = new Orbit3D(8, 3.5, .3, 1);
 	var trees:Array<Sprite3D> = [];
 	var tileSprites:Array<Sprite3D> = [];
 	var flames:Array<Sprite3D> = [];
@@ -113,14 +113,14 @@ class App extends helix.App {
 		var grid = new Drawing3D();
 		grid.grid(16, 1, 0xff3c3f48);
 		level.addChild(grid);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.3);
 		level.addChild(sun);
-		var stone = new Material();
+		var stone = new Material3D();
 		stone.baseColor = 0xff8a8f99;
 		stone.roughness = .8;
-		var pedestal = new Model(Mesh.cylinder(.6, 1), stone);
+		var pedestal = new Model3D(Mesh3D.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
 		level.addChild(pedestal);
 
@@ -148,9 +148,9 @@ class App extends helix.App {
 		coin.facing = Ground;
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
-		Textures.load("textures/tiles.png", false, texture -> useTiles(texture));
-		Textures.load("textures/flame.png", true, texture -> light(texture));
+		Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
+		Textures2D.load("textures/tiles.png", false, texture -> useTiles(texture));
+		Textures2D.load("textures/flame.png", true, texture -> light(texture));
 		logo.effect = flash;
 		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));

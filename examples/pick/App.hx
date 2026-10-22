@@ -7,26 +7,26 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
-import helix.render3d.Animator;
+import helix.render2d.Textures2D;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
-import helix.render3d.PickHit;
+import helix.render3d.PickHit3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Text3D;
 import helix.render3d.View3D;
 import helix.scene.Pointer;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Every kind a View3D picks, under the pointer (the earlier frameworks' pick): a cube, a sphere, a sprite and a text made pickable (their
 	quads as drawn), a car from a glTF file (its triangles), and a walking character (her triangles as posed now, not as bound). A
@@ -41,10 +41,10 @@ class App extends helix.App {
 	var pointer:Pointer;
 	var camera = new Camera3D();
 	var fps = new FpsOverlay();
-	var picked:Null<PickHit>;
-	var animator:Null<Animator>;
+	var picked:Null<PickHit3D>;
+	var animator:Null<Animator3D>;
 	// The camera, circling.
-	var orbit = new Orbit(9, 5, .2, 1, .3);
+	var orbit = new Orbit3D(9, 5, .2, 1, .3);
 
 	override public function init():Void {
 		Window.title = "HeliX pick";
@@ -54,24 +54,24 @@ class App extends helix.App {
 		level.environment.setAmbient(0xffffffff, .3);
 		// Framed for 16:9: everything pickable in view on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2.5;
 		sun.lookAt(-.4, -1, -.5);
 		level.addChild(sun);
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xff3a3f4a;
-		var floor = new Model(Mesh.plane(14, 14), ground);
+		var floor = new Model3D(Mesh3D.plane(14, 14), ground);
 		floor.name = "the ground";
 		level.addChild(floor);
-		var red = new Material(), blue = new Material();
+		var red = new Material3D(), blue = new Material3D();
 		red.baseColor = 0xffd2503c;
 		blue.baseColor = 0xff3c78d2;
-		var cube = new Model(Mesh.cube(1.2, 1.2, 1.2), red);
+		var cube = new Model3D(Mesh3D.cube(1.2, 1.2, 1.2), red);
 		cube.name = "a cube";
 		cube.setPosition(-3, .6, 1);
 		cube.setRotation(0, .6, 0);
 		level.addChild(cube);
-		var sphere = new Model(Mesh.sphere(.8), blue);
+		var sphere = new Model3D(Mesh3D.sphere(.8), blue);
 		sphere.name = "a sphere";
 		sphere.setPosition(-1, .8, -1.5);
 		level.addChild(sphere);
@@ -81,13 +81,13 @@ class App extends helix.App {
 		label.pickable = true;
 		label.setPosition(1, 2.4, -2);
 		level.addChild(label);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> placeLogo(texture));
-		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+		Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> placeLogo(texture));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		// The character: a skeleton and its clips, her outfit bound to it by joint name, walking in place.
-		var files = new Map<String, ModelFile>(),
+		var files = new Map<String, ModelFile3D>(),
 			names = ["Animations", "Casual_Body", "Casual_Head", "Casual_Legs", "Casual_Feet"];
 		for (name in names)
-			Models.load('models/modular-women/$name.glb', file -> gather(files, name, file, names.length));
+			Models3D.load('models/modular-women/$name.glb', file -> gather(files, name, file, names.length));
 		level.addChild(marks);
 		view = new View3D(level, camera);
 		Stage.addChild(view);
@@ -108,7 +108,7 @@ class App extends helix.App {
 	}
 
 	// The car's file in: a copy of it, turned a little.
-	function placeCar(file:ModelFile):Void {
+	function placeCar(file:ModelFile3D):Void {
 		var car = file.instantiate("a car");
 		car.setPosition(3, 0, 1);
 		car.setRotation(0, -.8, 0);
@@ -116,13 +116,13 @@ class App extends helix.App {
 	}
 
 	// One of the character's files in, kept by name: she's dressed once all count of them are.
-	function gather(files:Map<String, ModelFile>, name:String, file:ModelFile, count:Int):Void {
+	function gather(files:Map<String, ModelFile3D>, name:String, file:ModelFile3D, count:Int):Void {
 		files[name] = file;
 		if (Lambda.count(files) == count)
 			dress(files);
 	}
 
-	function dress(files:Map<String, ModelFile>):Void {
+	function dress(files:Map<String, ModelFile3D>):Void {
 		var animations = files["Animations"],
 			character = animations.instantiate("a character");
 		character.setPosition(.8, 0, .8);
@@ -134,12 +134,12 @@ class App extends helix.App {
 					model.name = "a character's " + part.split("_")[1].toLowerCase();
 					character.addChild(model);
 				}
-		animator = new Animator(character);
+		animator = new Animator3D(character);
 		animator.play(animations.getClip("Walk"));
 	}
 
-	static function skinned(node:Node3D):Array<Model> {
-		var model = Std.downcast(node, Model);
+	static function skinned(node:Node3D):Array<Model3D> {
+		var model = Std.downcast(node, Model3D);
 		var out = model != null && model.mesh.skinned ? [model] : [];
 		for (i in 0...node.childCount)
 			out = out.concat(skinned(node.getChild(i)));

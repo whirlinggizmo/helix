@@ -41,7 +41,7 @@ what's drawn.
 - `Drawing2D` (new): Flash's `graphics`, a node holding drawing calls, stateless: `fillRect(x, y, w, h, color)`, `fillCircle`, `line`,
   `text`, `clear()`. Calling `clear()` and drawing again in `update` is immediate drawing, as Flash games did it, so no draw hook is
   needed anywhere; `Batch2D` becomes the engine's, not the game's.
-- 3D nodes as today: `Node3D`, `Model`, lights, `Sprite3D`, `Text3D`, particles.
+- 3D nodes as today: `Node3D`, `Model3D`, lights, `Sprite3D`, `Text3D`, particles.
 
 ### `View2D` / `View3D`: content shown through a camera
 
@@ -128,7 +128,7 @@ Radians, seconds, colors `0xAARRGGBB` (decision 144), world units through a view
 | `rotation` in degrees | radians | One unit per kind (CONVENTIONS). |
 | `0xRRGGBB` plus `alpha` | `0xAARRGGBB` | The order Haxe's libraries and the editor's color picker use. |
 | `Sprite`: a container to draw on | `Node2D` (+ `Drawing2D`); `Sprite2D` is an image | A sprite is an image everywhere else in games. |
-| `MovieClip` timelines | `SpriteAnimator`, tweens; timelines later as data | Frame scripts are where Flash got tangled; see below. |
+| `MovieClip` timelines | `SpriteAnimator2D`, tweens; timelines later as data | Frame scripts are where Flash got tangled; see below. |
 | Scenes: sections of the timeline | Scene files: trees, levels and prefabs alike | Godot's and Unity's meaning, the one game developers hold now. |
 
 ## Examples
@@ -213,14 +213,14 @@ class Game extends helix.App {
    every class holding what only a `.scene3d` holds named by its file: `SceneFile3D`, `SceneFiles3D`, `SceneFileCache3D`,
    `SceneInstance3D`, `SceneNode3D`, `SceneKinds3D`, `SceneEnvironment3D`, `SceneMaterial3D` and `SceneMesh3D` (a material or a mesh has no
    2D counterpart yet, but the family is named by its file, and a 2D one may come); only what a 2D file will share (`SceneBehavior`,
-   `SceneValue`, `SceneSchema`'s property types) keeps a plain name. So 2D scene files arrive as `.scene2d` without renaming again. A 2D
+   `SceneValue`, `SceneSchema3D`'s property types) keeps a plain name. So 2D scene files arrive as `.scene2d` without renaming again. A 2D
    scene shows a 3D one through a `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
 
 ## Later (ROADMAP)
 
 - **Timelines:** what Flash's artists understood best, kept as data so rule 61 holds: keyframed tracks per child node (`x`, `y`,
   `rotation`, `alpha`, `visible`, the sheet frame; each child's track a Flash layer), labels naming spans, markers the game asks about
-  (`clip.entered("hit")`) in place of frame scripts, played by a player as `SpriteAnimator` and the 3D `Animator` are (glTF's clips are
+  (`clip.entered("hit")`) in place of frame scripts, played by a player as `SpriteAnimator2D` and the 3D `Animator3D` are (glTF's clips are
   the same shape), saved in the scene file with the nodes they move. Authoring wants the scene editor.
 - **2D under 3D:** views drawn into textures in display order (the same path as post-processing on views).
 - **Fonts:** the built-in one only where text is drawn; glyphs from the browser's rasterizer.

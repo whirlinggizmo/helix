@@ -24,8 +24,8 @@ class Environment3D {
 		return true;
 	}
 
-	/** The environment map lighting and reflecting the lit models (Environments.load), or null. */
-	public var map(default, null):Null<Environment>;
+	/** The environment map lighting and reflecting the lit models (Environments3D.load), or null. */
+	public var map(default, null):Null<EnvironmentMap3D>;
 
 	/** How strongly the map lights, and the background shows: 1 as its file has it. */
 	public var mapIntensity(default, null):Float = 1.;
@@ -36,7 +36,7 @@ class Environment3D {
 	/** Lights the lit models with map (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it) and its
 		turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0 or a rotation that isn't
 		finite. */
-	public function setMap(map:Null<Environment>, intensity = 1., rotation = 0.):Bool {
+	public function setMap(map:Null<EnvironmentMap3D>, intensity = 1., rotation = 0.):Bool {
 		if (!(intensity >= 0) || !Math.isFinite(rotation))
 			return false;
 		this.map = map;
@@ -46,14 +46,14 @@ class Environment3D {
 	}
 
 	/** The environment map drawn behind everything, or null. */
-	public var background(default, null):Null<Environment>;
+	public var background(default, null):Null<EnvironmentMap3D>;
 
 	/** How blurred the background is: 0 sharp to 1 its blurriest. */
 	public var backgroundBlur(default, null):Float = 0.;
 
 	/** Draws map (null: none) behind everything, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a few texels), turned and as
 		bright as setMap says. False, changing nothing, for a blur outside 0..1. */
-	public function setBackground(map:Null<Environment>, blur = 0.):Bool {
+	public function setBackground(map:Null<EnvironmentMap3D>, blur = 0.):Bool {
 		if (!(blur >= 0 && blur <= 1))
 			return false;
 		background = map;

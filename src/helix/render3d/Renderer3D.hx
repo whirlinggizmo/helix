@@ -13,22 +13,22 @@ import helix.render2d.Texture2D;
 	worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the
 	camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after
 	them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as
-	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material).
+	one instanced draw. Lit by its lights and its ambient light, glTF metallic-roughness (Material3D).
 
-	Shadows: lights that cast them (Light.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of
+	Shadows: lights that cast them (Light3D.shadowCasting, up to the four the stage lights by) each draw the models that cast into a layer of
 	a shadow map, in drawShadows, which comes before the frame's screen pass (beginFrame) as any pass into a texture does; draw then reads the
 	maps the last drawShadows made. A directional light's map is a square over what the camera sees out to its shadow distance, its texels
 	the same size and in the same places in the world as the camera moves and turns, so its shadows' edges hold still; a spot's covers its
 	cone.
 
-	Environment: an environment map (Environments.load) lights its lit models as well (setEnvironment), diffuse light from all around and
+	EnvironmentMap3D: an environment map (Environments3D.load) lights its lit models as well (setEnvironment), diffuse light from all around and
 	reflections sharp to blurred by roughness, and can stand behind everything (setBackground). Its lit color, which can run past 1, comes
 	into what a screen shows by its exposure and tone mapping (exposure, tonemap: Khronos PBR Neutral at 0 EV to start), or in an HDR
 	scene (hdr) past 1 for a PostProcess chain to tone map; its sprites, text and particles are display colors, untouched.
 
-	Surface shaders: a material's (Material.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their
+	Surface shaders: a material's (Material3D.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their
 	shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's
-	passes (ModelPass: outlines, silhouettes) are drawn from its records after the opaque models. */
+	passes (ModelPass3D: outlines, silhouettes) are drawn from its records after the opaque models. */
 class Renderer3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
 	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
@@ -66,9 +66,9 @@ class Renderer3D {
 	var moved:Array<Bool> = [];
 	// Whether each node reached is paused, itself or by a node above it: its emitters held still.
 	var frozen:Array<Bool> = [];
-	var models:Array<Model> = [];
+	var models:Array<Model3D> = [];
 	var modelAt:Array<Int> = [];
-	var treeLights:Array<Light> = [];
+	var treeLights:Array<Light3D> = [];
 	var treeLightAt:Array<Int> = [];
 	var flats:Array<Node3D> = [];
 	var flatAt:Array<Int> = [];
@@ -93,7 +93,7 @@ class Renderer3D {
 	var items:Array<Item> = [];
 	var drawn:Array<Item> = [];
 	var count = 0;
-	var lights:Array<Light> = [];
+	var lights:Array<Light3D> = [];
 	var planes = new Vector<Float>(24);
 	var inverse = new Mat4();
 	var eyeX = 0.;
@@ -124,7 +124,7 @@ class Renderer3D {
 	var shadedCasterCapacity = 16;
 	var shadedCasterBuffer:Int;
 	var shadedCasterRecords:Bytes;
-	// The models' passes of a draw (ModelPass): each an item's place in the draw and one of its model's passes, sorted into runs.
+	// The models' passes of a draw (ModelPass3D): each an item's place in the draw and one of its model's passes, sorted into runs.
 	var passDraws:Array<PassDraw> = [];
 	var passDrawCount = 0;
 	var passUniforms = [
@@ -132,18 +132,18 @@ class Renderer3D {
 		Bytes.alloc(Flat3DProgram.fragmentUniformBytes)
 	];
 	// The joints of the pass's skinned models, and the skinned models the walk met, placed once it has posed every joint.
-	var palette:JointPalette;
+	var palette:JointPalette3D;
 	// Picking: the walk testing what it meets against a ray, the nearest hit so far, a skinned model's vertices posed on the CPU.
 	var picking = false;
-	var pickRay = new Ray();
-	var pickHit:PickHit;
+	var pickRay = new Ray3D();
+	var pickHit:PickHit3D;
 	var pickBest = 0.;
 	var pickCamera:Null<Camera3D>;
 	var pickInverse = new Mat4();
-	var pickPalette:JointPalette;
+	var pickPalette:JointPalette3D;
 	var posedVertices = new Vector<Float>(0);
-	var skinned:Array<Model> = [];
-	var skinnedParts:Array<Part> = [];
+	var skinned:Array<Model3D> = [];
+	var skinnedParts:Array<Part3D> = [];
 	var posed = new Vector<Float>(6);
 	// The shadow map (layers of the size the last drawShadows needed), and a map of one texel that stands in when there are none.
 	var shadowMap = 0;
@@ -151,11 +151,11 @@ class Renderer3D {
 	var shadowMapLayers = 0;
 	var noShadows:Int;
 	// The lights the last drawShadows gave a layer, in layer order, and what each layer's readers need.
-	var shadowLights:Array<Light> = [];
+	var shadowLights:Array<Light3D> = [];
 	var shadowLayers = new Vector<Float>(SHADOW_LIGHTS * LAYER_FLOATS);
 	// The table this draw's shaders read; for choosing it, each gathered light's constants, its best score, its place in the table, each
 	// model's scores, and a model's best eight so far.
-	var table:Array<Light> = [];
+	var table:Array<Light3D> = [];
 	var lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
 	var cones = new Vector<Float>(GATHERED_LIGHTS * 2);
 	var best = new Vector<Float>(GATHERED_LIGHTS);
@@ -204,8 +204,8 @@ class Renderer3D {
 		skinnedCasterRecords = Bytes.alloc(skinnedCasterCapacity * Skinneddepth3DProgram.instanceStride);
 		shadedCasterBuffer = gpu.createBuffer(shadedCasterCapacity * Lit3DProgram.instanceStride);
 		shadedCasterRecords = Bytes.alloc(shadedCasterCapacity * Lit3DProgram.instanceStride);
-		palette = new JointPalette(gpu);
-		pickPalette = new JointPalette(gpu);
+		palette = new JointPalette3D(gpu);
+		pickPalette = new JointPalette3D(gpu);
 		noShadows = gpu.createShadowMap(1, 1);
 		var black = Bytes.alloc(6 * 4);
 		for (face in 0...6)
@@ -268,7 +268,7 @@ class Renderer3D {
 	}
 
 	/** The environment lighting the lit models, or null. */
-	public var environment(default, null):Null<Environment>;
+	public var environment(default, null):Null<EnvironmentMap3D>;
 
 	/** How strongly the environment lights them, and the background shows: 1 as its file has it. */
 	public var environmentIntensity(default, null):Float = 1.;
@@ -278,7 +278,7 @@ class Renderer3D {
 
 	/** Lights the lit models with environment (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it)
 		and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0. */
-	public function setEnvironment(environment:Null<Environment>, intensity = 1., rotation = 0.):Bool {
+	public function setEnvironment(environment:Null<EnvironmentMap3D>, intensity = 1., rotation = 0.):Bool {
 		if (!(intensity >= 0) || !Math.isFinite(rotation))
 			return false;
 		this.environment = environment;
@@ -288,7 +288,7 @@ class Renderer3D {
 	}
 
 	/** The environment drawn behind everything, or null. */
-	public var background(default, null):Null<Environment>;
+	public var background(default, null):Null<EnvironmentMap3D>;
 
 	/** How blurred the background is: 0 sharp to 1 its blurriest. */
 	public var backgroundBlur(default, null):Float = 0.;
@@ -296,7 +296,7 @@ class Renderer3D {
 	/** Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a
 		few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside
 		0..1. */
-	public function setBackground(environment:Null<Environment>, blur = 0.):Bool {
+	public function setBackground(environment:Null<EnvironmentMap3D>, blur = 0.):Bool {
 		if (!(blur >= 0 && blur <= 1))
 			return false;
 		background = environment;
@@ -370,7 +370,7 @@ class Renderer3D {
 		return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
 	}
 
-	/** Draws the shadows of its casting lights (Light.shadowCasting; the first four lights found) for what camera sees: each light's casters
+	/** Draws the shadows of its casting lights (Light3D.shadowCasting; the first four lights found) for what camera sees: each light's casters
 		into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move;
 		draws after use them. With no casting light or no caster, there are no shadows. */
 	public function drawShadows(camera:Camera3D):Void {
@@ -411,7 +411,7 @@ class Renderer3D {
 		for (layer in 0...shadowLights.length) {
 			var light = shadowLights[layer],
 				at = layer * LAYER_FLOATS,
-				spot = Std.downcast(light, SpotLight);
+				spot = Std.downcast(light, SpotLight3D);
 			var fit = spot != null ? fitSpot(spot, size) : fitDirectional(light, camera, size);
 			for (i in 0...16)
 				shadowLayers[at + i] = lightViewProjection.get(i);
@@ -436,7 +436,7 @@ class Renderer3D {
 	// Fits a directional light's map to what camera sees out to its shadow distance, into lightViewProjection: a square around the view's slice
 	// from the near plane, as wide as the slice's bounding sphere (so its texels keep their size as the camera turns), its corner snapped to
 	// whole texels of a light space fixed to the world (so its shadows don't crawl as the camera moves), from SHADOW_PULLBACK behind the slice.
-	function fitDirectional(node:Light, camera:Camera3D, size:Int):{
+	function fitDirectional(node:Light3D, camera:Camera3D, size:Int):{
 		texelWorld:Float,
 		near:Float,
 		far:Float,
@@ -520,7 +520,7 @@ class Renderer3D {
 
 	// Fits a spot's map to its cone into lightViewProjection: a perspective from its position down its axis, a little wider than the cone, out to
 	// its range (or its shadow distance, the nearer).
-	function fitSpot(light:SpotLight, size:Int):{
+	function fitSpot(light:SpotLight3D, size:Int):{
 		texelWorld:Float,
 		near:Float,
 		far:Float,
@@ -706,7 +706,7 @@ class Renderer3D {
 	}
 
 	// A mesh's buffers as a lit draw takes them: its vertices, the instance records, and a skinned draw's skin.
-	function meshBuffers(mesh:Mesh, instances:Int, skinned:Bool):Array<Int>
+	function meshBuffers(mesh:Mesh3D, instances:Int, skinned:Bool):Array<Int>
 		return skinned ? [mesh.getVertexBuffer(gpu), instances, mesh.getSkinBuffer(gpu)] : [mesh.getVertexBuffer(gpu), instances];
 
 	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into
@@ -714,18 +714,18 @@ class Renderer3D {
 		disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a
 		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
 		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
-	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit):Null<PickHit>
+	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit3D):Null<PickHit3D>
 		return camera.computeRay(x, y, pickRay) ? pickAlong(pickRay, camera, hit) : null;
 
 	/** The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as
 		camera shows them: without a camera, only models are hit. */
-	public function pickAlong(ray:Ray, ?camera:Camera3D, ?hit:PickHit):Null<PickHit> {
+	public function pickAlong(ray:Ray3D, ?camera:Camera3D, ?hit:PickHit3D):Null<PickHit3D> {
 		pickCamera = camera;
 		if (builtStructure != root.structure)
 			rebuild();
 		if (camera != null && sprites != null)
 			sprites.preparePick(camera);
-		var result = hit != null ? hit : new PickHit();
+		var result = hit != null ? hit : new PickHit3D();
 		result.clear();
 		if (ray != pickRay)
 			pickRay.set(ray.originX, ray.originY, ray.originZ, ray.directionX, ray.directionY, ray.directionZ);
@@ -765,7 +765,7 @@ class Renderer3D {
 	}
 
 	// Tests a model's parts' triangles against the ray, each in the model's own space, keeping the nearest hit.
-	function pickModel(node:Model):Void
+	function pickModel(node:Model3D):Void
 		for (i in 0...node.partCount) {
 			var part = node.getPart(i);
 			if (part.mesh != null)
@@ -773,7 +773,7 @@ class Renderer3D {
 		}
 
 	// Tests one part's triangles against the ray, after its box, which must be nearer than the best.
-	function pickPart(node:Model, mesh:Mesh, material:Material):Void {
+	function pickPart(node:Model3D, mesh:Mesh3D, material:Material3D):Void {
 		var alpha = Color.getAlpha(node.tint) / 255;
 		if ((material.blended || alpha < 1) && alpha * Color.getAlpha(material.baseColor) / 255 < .5)
 			return;
@@ -869,7 +869,7 @@ class Renderer3D {
 	}
 
 	// A skinned model's vertices as posed now, in its own space, into out: each moved by its joints' matrices as the GPU blends them.
-	function pose(node:Model, mesh:Mesh, out:Vector<Float>):Void {
+	function pose(node:Model3D, mesh:Mesh3D, out:Vector<Float>):Void {
 		pickPalette.clear();
 		var base = pickPalette.add(node),
 			vertices = mesh.vertices,
@@ -1000,7 +1000,7 @@ class Renderer3D {
 			shown[k].drawOwn(camera, this, k == 0, k == shown.length - 1);
 	}
 
-	// The draw's passes (ModelPass): each enabled pass of each drawn item's model, sorted so alike ones (in kind, mesh, color and push) of items
+	// The draw's passes (ModelPass3D): each enabled pass of each drawn item's model, sorted so alike ones (in kind, mesh, color and push) of items
 	// next to each other in the draw are a run, drawn as one from the items' records.
 	function gatherPasses():Void {
 		passDrawCount = 0;
@@ -1051,7 +1051,7 @@ class Renderer3D {
 	}
 
 	// Draws the gathered passes that draw behind what hides them (silhouettes) or not (outlines), a run of alike ones a draw, through the flat
-	// program from the items' records and their meshes' pass vertices (Mesh.passVertices: normals averaged where they split).
+	// program from the items' records and their meshes' pass vertices (Mesh3D.passVertices: normals averaged where they split).
 	function drawPasses(behind:Bool, viewProjection:Mat4):Void {
 		viewProjection.writeTo(passUniforms[0]);
 		var k = 0;
@@ -1119,11 +1119,11 @@ class Renderer3D {
 		var at = order.length;
 		order.push(node);
 		parentOf.push(parent);
-		var model = Std.downcast(node, Model);
+		var model = Std.downcast(node, Model3D);
 		if (model != null) {
 			models.push(model);
 			modelAt.push(at);
-		} else if (Std.isOfType(node, Light)) {
+		} else if (Std.isOfType(node, Light3D)) {
 			treeLights.push(cast node);
 			treeLightAt.push(at);
 		} else if (node.spriteKind != None) {
@@ -1226,7 +1226,7 @@ class Renderer3D {
 	}
 
 	// A part whose mesh follows the joints its model is bound to (a skinned mesh not bound draws as bound, still).
-	static inline function isSkinned(node:Model, mesh:Mesh):Bool
+	static inline function isSkinned(node:Model3D, mesh:Mesh3D):Bool
 		return node.jointCount > 0 && mesh.skinned;
 
 	// The six planes of m's view (Gribb and Hartmann), each ax + by + cz + d >= 0 inside, into out.
@@ -1262,8 +1262,8 @@ class Renderer3D {
 	var boxRY = 0.;
 	var boxRZ = 0.;
 
-	function placeBox(node:Model, mesh:Mesh):Void {
-		if (isSkinned(node, mesh) && JointPalette.computePosedBox(node, mesh, posed)) {
+	function placeBox(node:Model3D, mesh:Mesh3D):Void {
+		if (isSkinned(node, mesh) && JointPalette3D.computePosedBox(node, mesh, posed)) {
 			boxX = posed[0];
 			boxY = posed[1];
 			boxZ = posed[2];
@@ -1288,7 +1288,7 @@ class Renderer3D {
 	}
 
 	// A model's parts that cast, in view or not (see-through ones don't).
-	function gatherCaster(node:Model):Void {
+	function gatherCaster(node:Model3D):Void {
 		if (!node.shadowCasting || Color.getAlpha(node.tint) < 255)
 			return;
 		for (i in 0...node.partCount) {
@@ -1298,7 +1298,7 @@ class Renderer3D {
 		}
 	}
 
-	function gatherPart(node:Model, mesh:Mesh, material:Material):Void {
+	function gatherPart(node:Model3D, mesh:Mesh3D, material:Material3D):Void {
 		placeBox(node, mesh);
 		if (casterCount == casters.length)
 			casters.push(new Caster());
@@ -1319,14 +1319,14 @@ class Renderer3D {
 	}
 
 	// A model's parts in view, each an item.
-	function visitModel(node:Model):Void
+	function visitModel(node:Model3D):Void
 		for (i in 0...node.partCount) {
 			var part = node.getPart(i);
 			if (part.mesh != null)
 				visitPart(node, part.mesh, part.material);
 		}
 
-	function visitPart(node:Model, mesh:Mesh, material:Material):Void {
+	function visitPart(node:Model3D, mesh:Mesh3D, material:Material3D):Void {
 		var w = node.worldMatrix;
 		placeBox(node, mesh);
 		var cx = boxX, cy = boxY, cz = boxZ;
@@ -1386,7 +1386,7 @@ class Renderer3D {
 	// A model's record (Lit3DProgram's) at index in out: the world matrix's rows, the normals' matrix's rows (the inverse transpose's; the
 	// first's w the tangents' handedness, the second's whether shadows fall on it, the third's a skinned model's first joint), its lights (the
 	// table's entries, -1 past the last; none without lights) and its tint (linear).
-	function writeInstance(out:Bytes, index:Int, node:Model, skinned:Bool, jointBase:Int, lights:Null<Array<Int>>):Void {
+	function writeInstance(out:Bytes, index:Int, node:Model3D, skinned:Bool, jointBase:Int, lights:Null<Array<Int>>):Void {
 		var w = node.worldMatrix, r = inverse, at = index * Lit3DProgram.instanceStride;
 		inverse.makeInverse(w);
 		for (row in 0...3)
@@ -1477,8 +1477,8 @@ class Renderer3D {
 			lightData = new Vector<Float>(GATHERED_LIGHTS * 10);
 		for (l in 0...n) {
 			var light = lights[l], color = light.color, w = light.worldMatrix, at = l * 10;
-			var point = Std.downcast(light, PointLight),
-				spot = Std.downcast(light, SpotLight);
+			var point = Std.downcast(light, PointLight3D),
+				spot = Std.downcast(light, SpotLight3D);
 			lightData[at] = (.2126 * linear(Color.getRed(color)) + .7152 * linear(Color.getGreen(color)) +
 				.0722 * linear(Color.getBlue(color))) * light.intensity;
 			lightData[at + 1] = w.get(12);
@@ -1570,8 +1570,8 @@ class Renderer3D {
 			}
 			var light = table[i],
 				w = light.worldMatrix,
-				point = Std.downcast(light, PointLight),
-				spot = Std.downcast(light, SpotLight);
+				point = Std.downcast(light, PointLight3D),
+				spot = Std.downcast(light, SpotLight3D);
 			var dx = -w.get(8),
 				dy = -w.get(9),
 				dz = -w.get(10),
@@ -1612,7 +1612,7 @@ class Renderer3D {
 		u.setFloat(TONEMAP + 8, hdr ? 1 : 0);
 		u.setFloat(TONEMAP + 12, 0);
 		u.setFloat(ENVIRONMENT, environment != null ? environmentIntensity : 0);
-		u.setFloat(ENVIRONMENT + 4, EnvironmentBake.MIP_COUNT - 1);
+		u.setFloat(ENVIRONMENT + 4, EnvironmentBake3D.MIP_COUNT - 1);
 		u.setFloat(ENVIRONMENT + 8, Math.cos(environmentRotation));
 		u.setFloat(ENVIRONMENT + 12, Math.sin(environmentRotation));
 		var irradiance = environment != null ? environment.irradiance : null;
@@ -1620,12 +1620,12 @@ class Renderer3D {
 			for (c in 0...4)
 				u.setFloat(IRRADIANCE + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
 		if (environment != null && brdf == null)
-			brdf = Texture2D.fromRgba(gpu, EnvironmentBake.BRDF_SIZE, EnvironmentBake.BRDF_SIZE, EnvironmentBake.brdfTable, true);
+			brdf = Texture2D.fromRgba(gpu, EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.brdfTable, true);
 	}
 
 	// The material's part of the fragment uniforms in u (lit3d_fs_members' from MATERIAL): its base color, metallic, roughness and whether lit,
 	// its emission and the normal map's strength, its hit flash (as much as shows at the stage's time) and its rim light.
-	function writeMaterial(material:Material, u:Bytes):Void {
+	function writeMaterial(material:Material3D, u:Bytes):Void {
 		var color = material.baseColor;
 		u.setFloat(MATERIAL, linear(Color.getRed(color)));
 		u.setFloat(MATERIAL + 4, linear(Color.getGreen(color)));
@@ -1654,7 +1654,7 @@ class Renderer3D {
 
 	// A surface shader program's textures and their samplings by slot: the material's base color and normal map, shadows (the stage's maps, or
 	// a stand-in), the environment and the BRDF table, the joints (its skinned variants'), then its own (white where unset).
-	function surfaceTextures(program:helix.graphics.Shader, material:Material, shadows:Int):{textures:Array<Int>, samplings:Array<Sampling>} {
+	function surfaceTextures(program:helix.graphics.Shader, material:Material3D, shadows:Int):{textures:Array<Int>, samplings:Array<Sampling>} {
 		var base = material.texture != null ? material.texture : white, normal = material.normalTexture != null ? material.normalTexture : flat,
 			own = material.shaderParameters.textureSlots, textures = [], samplings = [];
 		for (slot in program.textureSlots) {
@@ -1686,7 +1686,7 @@ class Renderer3D {
 
 	// A surface shader program's uniform blocks: the stage's (vertex, a view-projection's 64 bytes, then the time; the fragment uniforms, then
 	// the time), and the material's own values in its own blocks.
-	function surfaceBlocks(program:helix.graphics.Shader, material:Material, vertex:Bytes):Array<Null<Bytes>> {
+	function surfaceBlocks(program:helix.graphics.Shader, material:Material3D, vertex:Bytes):Array<Null<Bytes>> {
 		var blocks = [for (size in program.blockSizes) size > 0 ? Bytes.alloc(size) : null],
 			u = fragmentUniforms;
 		if (blocks.length > 0 && blocks[0] != null) {
@@ -1778,13 +1778,13 @@ class Renderer3D {
 /** A model's part in view this draw. Pooled. */
 private class Item {
 	/** The model. */
-	public var node:Model;
+	public var node:Model3D;
 
 	/** Its part's mesh. */
-	public var mesh:Mesh;
+	public var mesh:Mesh3D;
 
 	/** Its part's material. */
-	public var material:Material;
+	public var material:Material3D;
 
 	/** Whether it is see-through (its material's or its tint's alpha). */
 	public var blended = false;
@@ -1792,7 +1792,7 @@ private class Item {
 	/** Whether its placement mirrors it, so its front faces wind clockwise. */
 	public var mirrored = false;
 
-	/** Whether it's opaque and its model has a silhouette (ModelPass behind): drawn after the silhouettes, so its own parts never hide it. */
+	/** Whether it's opaque and its model has a silhouette (ModelPass3D behind): drawn after the silhouettes, so its own parts never hide it. */
 	public var silhouetted = false;
 
 	/** Whether it follows joints (Renderer3D.isSkinned). */
@@ -1832,13 +1832,13 @@ private class Item {
 	public function new() {}
 }
 
-/** One of a model's passes (ModelPass) in a draw: its item's place in the draw, and the pass. Pooled. */
+/** One of a model's passes (ModelPass3D) in a draw: its item's place in the draw, and the pass. Pooled. */
 private class PassDraw {
 	/** Its item's place in the draw (and its record's in the instance buffer). */
 	public var item = 0;
 
 	/** The pass. */
-	public var pass:ModelPass;
+	public var pass:ModelPass3D;
 
 	/** An empty one, filled by the draw. */
 	public function new() {}
@@ -1847,13 +1847,13 @@ private class PassDraw {
 /** A model's part that casts shadows, gathered by drawShadows. Pooled. */
 private class Caster {
 	/** The model. */
-	public var node:Model;
+	public var node:Model3D;
 
 	/** Its part's mesh. */
-	public var mesh:Mesh;
+	public var mesh:Mesh3D;
 
 	/** Its part's material. */
-	public var material:Material;
+	public var material:Material3D;
 
 	/** The program drawing its shadow: its material's surface shader's caster (Shader.caster, its skinned variant's for a skinned part); null
 		for the framework's. */

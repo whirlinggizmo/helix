@@ -1,6 +1,6 @@
 """Checks of tools/gltf2scene.py: the fixture export (tests/fixtures/gltf2scene) converts to the .scene3d beside it byte for byte, and what the
 tool writes parses and writes back the same bytes under the Haxe interpreter (helix.scene.SceneFile3D); the same export as a GLB; every kind's
-property in an override, in the writer's order, the tool's list matching SceneSchema.hx; each value's form; a flag beside a behavior; an export without custom
+property in an override, in the writer's order, the tool's list matching SceneSchema3D.hx; each value's form; a flag beside a behavior; an export without custom
 properties; the refusals (a name two siblings share, a node on a path without one); and --check."""
 import argparse
 import json
@@ -93,7 +93,7 @@ class Gltf2SceneTests(unittest.TestCase):
             self.convert(text[:40], '.glb')
 
     def test_every_property(self):
-        names = re.findall(r'new PropertySchema\("(\w+)"', (ROOT / 'src/helix/scene/SceneSchema.hx').read_text(encoding='utf-8'))
+        names = re.findall(r'new PropertySchema\("(\w+)"', (ROOT / 'src/helix/scene/SceneSchema3D.hx').read_text(encoding='utf-8'))
         self.assertEqual(set(names), set(gltf2scene.PROPERTIES))
         self.assertEqual(len(set(gltf2scene.PROPERTIES)), len(gltf2scene.PROPERTIES))
         extras = {f'helix_{name}': TYPED.get(name, 0.5) for name in reversed(gltf2scene.PROPERTIES)}
@@ -122,7 +122,7 @@ class Gltf2SceneTests(unittest.TestCase):
 
     def test_no_properties(self):
         data = self.convert(gltf([{'name': 'a', 'children': [1]}, {'name': 'b'}]), name='empty', file='props/empty.glb')
-        self.assertEqual(data.decode('utf-8'), '{\n  "helix-scene3d": 1,\n  "nodes": [\n    {\n      "kind": "Model",\n      "name": "empty",\n'
+        self.assertEqual(data.decode('utf-8'), '{\n  "helix-scene3d": 1,\n  "nodes": [\n    {\n      "kind": "Model3D",\n      "name": "empty",\n'
             '      "file": "props/empty.glb"\n    }\n  ]\n}\n')
         self.assertEqual(self.round_trip(data), data)
 

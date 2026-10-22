@@ -2,7 +2,7 @@
   "helix-scene3d": 1,
   "nodes": [
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "sedan",
       "file": "models/car-kit/sedan-sports-headlights.gltf"
     }

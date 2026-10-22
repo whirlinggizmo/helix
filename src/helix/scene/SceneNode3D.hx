@@ -1,6 +1,6 @@
 package helix.scene;
 
-/** A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model's glTF or generated mesh, its
+/** A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model3D's glTF or generated mesh, its
 	transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children,
 	the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a
 	property its class's. An override is a SceneNode3D too, with no name, kind or scene: only what it changes, plus children and behaviors to
@@ -9,16 +9,16 @@ class SceneNode3D {
 	/** Its name, unique among its siblings (paths depend on it); null for an override. */
 	public var name:Null<String>;
 
-	/** The class it is (Node3D for a group, else a kind's name from SceneSchema); null for a prefab node or an override. */
+	/** The class it is (Node3D for a group, else a kind's name from SceneSchema3D); null for a prefab node or an override. */
 	public var kind:Null<String>;
 
 	/** The .scene3d file instantiated here as a prefab; null for a node of a kind or an override. */
 	public var scene:Null<String>;
 
-	/** A Model's glTF, instantiated under it; null for none. A Model has a file or a mesh, never both. */
+	/** A Model3D's glTF, instantiated under it; null for none. A Model3D has a file or a mesh, never both. */
 	public var file:Null<String>;
 
-	/** A Model's generated mesh, made by one of Mesh's generators as its first part; null for none. */
+	/** A Model3D's generated mesh, made by one of Mesh3D's generators as its first part; null for none. */
 	public var mesh:Null<SceneMesh3D>;
 
 	/** Its position, x, y, z in its parent's units; null for the origin. */
@@ -40,11 +40,11 @@ class SceneNode3D {
 	/** Whether a pick can hit it (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for an override. */
 	public var pickable:Null<Bool>;
 
-	/** Its kind's properties by name (intensity, fovY, tint), from its kind's table in SceneSchema; one absent is the class's default.
+	/** Its kind's properties by name (intensity, fovY, tint), from its kind's table in SceneSchema3D; one absent is the class's default.
 		An override's name any kind's property. */
 	public var properties:Map<String, SceneValue> = new Map();
 
-	/** A Model's inline material, replacing the mesh's or the file's root material; null for none. */
+	/** A Model3D's inline material, replacing the mesh's or the file's root material; null for none. */
 	public var material:Null<SceneMaterial3D>;
 
 	/** By path from this node ("road/line"), what changes on the nodes its file or prefab makes: each an override node. */

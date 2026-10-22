@@ -17,7 +17,7 @@ typedef Glyph2D = {
 }
 
 /** A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any
-	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning;
+	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts2D loads them from files), with its kerning;
 	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for. */
 class Font2D {
 	var glyphs:Array<Null<Glyph2D>>;
@@ -120,7 +120,7 @@ class Font2D {
 		return [for (c in 32...256) if (c < 127 || c >= 160) c];
 
 	/** A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance
-		field with padding pixels around each glyph (FontBaker), sharp from small text to about four times pixelHeight. Throws, saying why, for a
+		field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a
 		file it can't read. The caller destroys it. */
 	public static function fromTrueType(gpu:IGraphics, data:Bytes, pixelHeight = 32., padding = 6):Font2D {
 		var font = new Font2D(null, [], 0, 0, 0, true);
@@ -129,7 +129,7 @@ class Font2D {
 	}
 
 	/** The file changed: baked again in place, at the size it was baked at. */
-	@:allow(helix.render2d.FontCache)
+	@:allow(helix.render2d.FontCache2D)
 	function replaceTrueType(gpu:IGraphics, data:Bytes):Void {
 		var old = texture;
 		bakeTrueType(gpu, data, size, 6);
@@ -138,7 +138,7 @@ class Font2D {
 
 	function bakeTrueType(gpu:IGraphics, data:Bytes, pixelHeight:Float, padding:Int):Void {
 		var file = new TrueType(data);
-		var baked = FontBaker.bake(file, bakedCodes(), pixelHeight, padding, 512);
+		var baked = FontBaker2D.bake(file, bakedCodes(), pixelHeight, padding, 512);
 		var width = baked.width,
 			height = baked.height,
 			rgba = Bytes.alloc(width * height * 4);

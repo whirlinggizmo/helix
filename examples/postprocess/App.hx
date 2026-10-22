@@ -18,15 +18,15 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
-import helix.render3d.PointLight;
+import helix.render3d.PointLight3D;
 import helix.render3d.View3D;
 import helix.shaders.Bloom;
 import helix.shaders.Blur;
@@ -39,7 +39,7 @@ import helix.shaders.Tonemap;
 import helix.shaders.Vignette;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Screen effects over the finished frame (PostProcess, ScreenEffect): a chain in the order a game would build one, and how to write an
 	effect of one's own; every library effect alone, with its parameters, is the shader-gallery example's. The frame is an ordinary lit
@@ -78,7 +78,7 @@ class App extends helix.App {
 	var sepia:Null<ScreenEffect>;
 	// The chain's effects by name, in its order, and their keys.
 	var effects:Array<{name:String, effect:ScreenEffect, key:Key}> = [];
-	var lamp:PointLight;
+	var lamp:PointLight3D;
 	// The HDR scene's tone mapping first in the chain, when it's on.
 	var tonemap:Null<Tonemap>;
 	var placed = false;
@@ -91,7 +91,7 @@ class App extends helix.App {
 	static inline var PILOT_HEIGHT = 600;
 
 	// The camera, circling.
-	var orbit = new Orbit(9, 4.5, .2, .5);
+	var orbit = new Orbit3D(9, 4.5, .2, .5);
 	var status = "loading the example's shader";
 
 	override public function init():Void {
@@ -111,39 +111,44 @@ class App extends helix.App {
 		level.environment.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
 		level.addChild(sun);
-		lamp = new PointLight();
+		lamp = new PointLight3D();
 		lamp.color = 0xffff9a4a;
 		lamp.intensity = 12;
 		level.addChild(lamp);
-		var floor = new Material();
+		var floor = new Material3D();
 		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
-		level.addChild(new Model(Mesh.plane(14, 14), floor));
-		var shapes = [Mesh.sphere(.6), Mesh.cube(1, 1, 1), Mesh.torus(.5, .18), Mesh.cone(.5, 1.1)];
+		level.addChild(new Model3D(Mesh3D.plane(14, 14), floor));
+		var shapes = [
+			Mesh3D.sphere(.6),
+			Mesh3D.cube(1, 1, 1),
+			Mesh3D.torus(.5, .18),
+			Mesh3D.cone(.5, 1.1)
+		];
 		var colors = [0xff3b82f6, 0xffe5484d, 0xfff5b942, 0xff46a758];
 		for (i in 0...shapes.length) {
-			var material = new Material();
+			var material = new Material3D();
 			material.baseColor = colors[i];
 			material.roughness = .35;
-			var model = new Model(shapes[i], material);
+			var model = new Model3D(shapes[i], material);
 			var a = i / shapes.length * Math.PI * 2 + .4;
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
 			level.addChild(model);
 		}
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
-			var glow = new Material();
+			var glow = new Material3D();
 			glow.baseColor = 0xff000000;
 			glow.setEmissive(i == 0 ? 0xffffd9a0 : 0xff9fd8ff, 10);
-			var bulb = new Model(Mesh.sphere(.25), glow);
+			var bulb = new Model3D(Mesh3D.sphere(.25), glow);
 			bulb.setPosition(i == 0 ? -1.6 : 1.9, 1.7, i == 0 ? 1.4 : -.8);
 			level.addChild(bulb);
 		}
-		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 
 		// The library's effects, in the chain's order; the example's own shader (Sepia) takes its place when it loads.
 		bloom = new Bloom();
@@ -213,7 +218,7 @@ class App extends helix.App {
 		}
 
 	// The car's file in: a copy of it in the middle.
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		var car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
 		level.addChild(car);

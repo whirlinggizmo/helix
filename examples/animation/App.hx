@@ -6,24 +6,24 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render3d.Animator;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and her parts from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
-	names (Model.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's), in a level shown by a View3D,
+	names (Model3D.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's), in a level shown by a View3D,
 	her clip's name and the keys on the stage over it. 1 to 8 play a clip, crossfading from
 	the one before over a quarter second (F: cut instead); Space pauses. O stops the circling camera; Escape quits where quitting means anything. */
 class App extends helix.App {
@@ -37,14 +37,14 @@ class App extends helix.App {
 	var fps = new FpsOverlay();
 	var character:Null<Node3D>;
 	// Her parts' files as they land, bound to her skeleton once both are in.
-	var parts:Array<ModelFile> = [];
-	var animator:Null<Animator>;
-	var animations:Null<ModelFile>;
+	var parts:Array<ModelFile3D> = [];
+	var animator:Null<Animator3D>;
+	var animations:Null<ModelFile3D>;
 	var status = "loading";
 	var fade = true;
 	var paused = false;
 	// The camera, circling.
-	var orbit = new Orbit(3, 1.6, .3, .9);
+	var orbit = new Orbit3D(3, 1.6, .3, .9);
 
 	override public function init():Void {
 		Window.title = "HeliX animation";
@@ -53,21 +53,21 @@ class App extends helix.App {
 		Stage.color = 0xff1c1e26;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffc8d2ff, .35);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2.5;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 8;
 		sun.lookAt(-.4, -1, -.6);
 		level.addChild(sun);
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xff5a5f6a;
 		ground.roughness = .9;
-		level.addChild(new Model(Mesh.plane(10, 10), ground));
+		level.addChild(new Model3D(Mesh3D.plane(10, 10), ground));
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)
-			Models.load(DIR + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
+			Models3D.load(DIR + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
 		// The skeleton: the animations file's, which has no meshes.
-		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = 'Animations: $message');
+		Models3D.load(DIR + "Animations.glb", file -> place(file), message -> status = 'Animations: $message');
 		Stage.addChild(new View3D(level, camera));
 		Stage.addChild(hud);
 		Stage.addChild(fps);
@@ -75,23 +75,23 @@ class App extends helix.App {
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her, so they follow her clips.
 	// A part's file in: kept, and worn if she's here.
-	function addPart(file:ModelFile):Void {
+	function addPart(file:ModelFile3D):Void {
 		parts.push(file);
 		wear(file);
 	}
 
 	// The skeleton's file in: her copy of it in the level, animated, wearing the parts already in.
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		animations = file;
 		character = file.instantiate("character");
 		level.addChild(character);
-		animator = new Animator(character);
+		animator = new Animator3D(character);
 		for (file in parts)
 			wear(file);
 		play(0);
 	}
 
-	function wear(file:ModelFile):Void {
+	function wear(file:ModelFile3D):Void {
 		if (character == null)
 			return;
 		var copy = file.instantiate("part"), skinned = [], rigid = [];

@@ -14,18 +14,18 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render3d.AnimationClip;
-import helix.render3d.Animator;
+import helix.render3d.AnimationClip3D;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
-import helix.render3d.PointLight;
+import helix.render3d.PointLight3D;
 import helix.shaders.Dissolve;
 import helix.shaders.HitFlash;
 import helix.shaders.Outline;
@@ -68,14 +68,14 @@ class App extends helix.App {
 	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var shaders:Shaders;
-	var sun:DirectionalLight;
-	var lamp:PointLight;
-	var marker:Model;
-	var floor = new Material();
-	var wallMaterial = new Material();
+	var sun:DirectionalLight3D;
+	var lamp:PointLight3D;
+	var marker:Model3D;
+	var floor = new Material3D();
+	var wallMaterial = new Material3D();
 	var dissolve:Dissolve;
 	var dissolving = true;
-	var sea = new Material();
+	var sea = new Material3D();
 	var waterOn = true;
 	var status = "loading";
 	var unlit:Unlit;
@@ -87,9 +87,9 @@ class App extends helix.App {
 	var outlines:Array<Outline> = [];
 	// The character: her skeleton (the animations file's), her parts as they land, her clip, her materials' toon shading and flashes.
 	var character:Null<Node3D>;
-	var parts:Array<ModelFile> = [];
-	var animator:Null<Animator>;
-	var idle:Null<AnimationClip>;
+	var parts:Array<ModelFile3D> = [];
+	var animator:Null<Animator3D>;
+	var idle:Null<AnimationClip3D>;
 	var worn = 0;
 	var silhouettes:Array<Silhouette> = [];
 	var toons:Array<Toon> = [];
@@ -124,65 +124,65 @@ class App extends helix.App {
 		aim();
 		// Framed for 16:9: everything on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		sun = new DirectionalLight();
+		sun = new DirectionalLight3D();
 		sun.color = 0xfffff4e4;
 		sun.intensity = 1.5;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
 		level.addChild(sun);
-		lamp = new PointLight();
+		lamp = new PointLight3D();
 		lamp.color = 0xff78beff;
 		lamp.intensity = 9;
 		lamp.range = 8;
 		level.addChild(lamp);
-		var glow = new Material();
+		var glow = new Material3D();
 		glow.lit = false;
 		glow.baseColor = 0xff87ceeb;
-		marker = new Model(Mesh.sphere(.05), glow);
+		marker = new Model3D(Mesh3D.sphere(.05), glow);
 		marker.shadowCasting = false;
 		level.addChild(marker);
 		// The floor: drawn by the example's own shader once it's loaded (its squares' colors times the material's), the stage's shading until then.
 		floor.baseColor = 0xff808084;
 		floor.roughness = .8;
-		var plane = new Model(Mesh.plane(8, 6), floor);
+		var plane = new Model3D(Mesh3D.plane(8, 6), floor);
 		plane.setPosition(0, FLOOR_Y, 0);
 		level.addChild(plane);
 		// Dissolving: both sides drawn, so the inside shows through the holes.
-		var dissolving = new Material();
+		var dissolving = new Material3D();
 		dissolving.baseColor = 0xff8c9bb4;
 		dissolving.doubleSided = true;
 		dissolve = new Dissolve(dissolving);
 		// Large holes: the noise's cells a quarter of a unit, four across the sphere.
 		dissolve.scale = .5;
-		var sphere = new Model(Mesh.sphere(.5, 32, 64), dissolving);
+		var sphere = new Model3D(Mesh3D.sphere(.5, 32, 64), dissolving);
 		sphere.setPosition(0, .1, 0);
 		level.addChild(sphere);
 		// Water, finely divided so its waves are smooth.
 		new Water(sea);
-		var rippling = new Model(Mesh.sphere(.5, 96, 192), sea);
+		var rippling = new Model3D(Mesh3D.sphere(.5, 96, 192), sea);
 		rippling.setPosition(1.9, .1, 0);
 		level.addChild(rippling);
 		// The library's Unlit: a flat color, no light, and nothing to load.
-		var flat = new Material();
+		var flat = new Material3D();
 		unlit = new Unlit(flat);
 		unlit.color = 0xffff8a00;
-		var cube = new Model(Mesh.cube(.3, .3, .3), flat);
+		var cube = new Model3D(Mesh3D.cube(.3, .3, .3), flat);
 		cube.setPosition(0, 1.05, 0);
 		cube.setRotation(.5, .7, 0);
 		level.addChild(cube);
 		// A low wall before the character, the stage's own shading: her silhouette shows through it.
 		wallMaterial.baseColor = 0xff9a7b5c;
 		wallMaterial.roughness = .9;
-		var wall = new Model(Mesh.cube(.9, .45, .08), wallMaterial);
+		var wall = new Model3D(Mesh3D.cube(.9, .45, .08), wallMaterial);
 		wall.setPosition(-.85, FLOOR_Y + .225, 1.65);
 		level.addChild(wall);
 		flashes.push(new HitFlash(wallMaterial));
 
-		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		for (name in PARTS)
-			Models.load(WOMEN + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
-		Models.load(WOMEN + "Animations.glb", file -> placeCharacter(file), message -> status = 'Animations: $message');
+			Models3D.load(WOMEN + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
+		Models3D.load(WOMEN + "Animations.glb", file -> placeCharacter(file), message -> status = 'Animations: $message');
 		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/checker.hxshader", shader -> useChecker(shader), message -> status = message);
 	}
@@ -207,7 +207,7 @@ class App extends helix.App {
 		}
 
 	// The car's file in: a copy of it on the left, toon shaded and outlined, every model of it.
-	function placeCar(file:ModelFile):Void {
+	function placeCar(file:ModelFile3D):Void {
 		carPlaced = true;
 		var node = file.instantiate("car");
 		node.setPosition(-1.9, FLOOR_Y, 0);
@@ -223,14 +223,14 @@ class App extends helix.App {
 	}
 
 	// The character's skeleton in: her copy of it in front, holding her idle clip's first pose (or playing it), wearing the parts already in.
-	function placeCharacter(file:ModelFile):Void {
+	function placeCharacter(file:ModelFile3D):Void {
 		var node = file.instantiate("character");
 		node.setPosition(-.85, FLOOR_Y, 1.25);
 		node.setScale(.55, .55, .55);
 		node.setRotation(0, .5, 0);
 		level.addChild(node);
 		character = node;
-		animator = new Animator(node);
+		animator = new Animator3D(node);
 		idle = file.getClip("Idle");
 		if (idle != null)
 			animator.play(idle);
@@ -239,13 +239,13 @@ class App extends helix.App {
 	}
 
 	// A part's file in: kept, and worn if she's here.
-	function addPart(file:ModelFile):Void {
+	function addPart(file:ModelFile3D):Void {
 		parts.push(file);
 		wear(file);
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her; toon shaded, outlined, seen through the wall, flashing.
-	function wear(file:ModelFile):Void {
+	function wear(file:ModelFile3D):Void {
 		if (character == null)
 			return;
 		var copy = file.instantiate("part"), skinned = [], rigid = [];

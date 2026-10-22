@@ -2,7 +2,7 @@
 
 [Back to the index](README.md)
 
-## Alignment
+## Alignment2D
 
 *enum* in `src/helix/ui/Layout2D.hx`
 
@@ -165,7 +165,7 @@ var color:Null<Int>
 A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a share of its parent, with padding, gaps, margins and alignment (Clay's model, in Haxe, with CSS's margins). Padding is room inside a layout, around its children; a gap is room between a row's or column's children, the same between each; a margin is room outside one layout, per side, keeping its neighbours and its parent's padding edge away from it. A layout may place a node: arrange() writes its position (by its pivot) and, for a sprite or rectangle, its size, once a frame. Layouts only lay out; what's drawn is the nodes'. A widget's layout takes its sizing, padding, gap and margin from the theme (Theme) until the game sets that value itself (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline style wins over a stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's.
 
 ```haxe
-function new(direction:Layout2DDirection, ?node:Node2D)
+function new(direction:LayoutDirection2D, ?node:Node2D)
 static function row(?node:Node2D):Layout2D
 static function column(?node:Node2D):Layout2D
 static function stack(?node:Node2D):Layout2D
@@ -175,9 +175,9 @@ function add(child:Layout2D):Void
 function remove(child:Layout2D):Bool
 var children(get, never):Array<Layout2D>
 var node(default, null):Null<Node2D>
-var widthSizing(get, set):Sizing
-var heightSizing(get, set):Sizing
-function setSizing(width:Sizing, height:Sizing):Void
+var widthSizing(get, set):Sizing2D
+var heightSizing(get, set):Sizing2D
+function setSizing(width:Sizing2D, height:Sizing2D):Void
 var paddingLeft(default, null):Float
 var paddingTop(default, null):Float
 var paddingRight(default, null):Float
@@ -189,14 +189,14 @@ var marginTop(default, null):Float
 var marginRight(default, null):Float
 var marginBottom(default, null):Float
 function setMargin(left:Float, top:Float, right:Float, bottom:Float):Bool
-var mainAlign(default, null):Alignment
-var crossAlign(default, null):Alignment
-function setAlign(main:Alignment, cross:Alignment):Void
-var anchorX(get, never):Null<Alignment>
-var anchorY(get, never):Null<Alignment>
+var mainAlign(default, null):Alignment2D
+var crossAlign(default, null):Alignment2D
+function setAlign(main:Alignment2D, cross:Alignment2D):Void
+var anchorX(get, never):Null<Alignment2D>
+var anchorY(get, never):Null<Alignment2D>
 var anchorOffsetX(get, never):Float
 var anchorOffsetY(get, never):Float
-function setAnchor(horizontal:Alignment, vertical:Alignment, ?offsetX:Float = 0., ?offsetY:Float = 0.):Void
+function setAnchor(horizontal:Alignment2D, vertical:Alignment2D, ?offsetX:Float = 0., ?offsetY:Float = 0.):Void
 var x(default, null):Float
 var y(default, null):Float
 var width(get, never):Float
@@ -240,7 +240,7 @@ var height(get, never):Float
 - `width`: Its width as last arranged.
 - `height`: Its height as last arranged.
 
-## Layout2DDirection
+## LayoutDirection2D
 
 *enum* in `src/helix/ui/Layout2D.hx`
 
@@ -418,7 +418,7 @@ var vertical(default, null):Bool
 
 - `vertical`: Whether it's a vertical line, down a row; false for a horizontal one, across a column.
 
-## Sizing
+## Sizing2D
 
 *enum* in `src/helix/ui/Layout2D.hx`
 

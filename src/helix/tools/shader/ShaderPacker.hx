@@ -16,7 +16,7 @@ import helix.tools.shared.Files;
 	A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
 
 	- `@include_block helix_screen`: a screen effect, drawn over a whole finished frame (helix.graphics.ScreenEffect).
-	- `@include_block helix_surface`: a material's surface on a Renderer3D (helix.render3d.Material.setShader): lit models, the stage's lights and
+	- `@include_block helix_surface`: a material's surface on a Renderer3D (helix.render3d.Material3D.setShader): lit models, the stage's lights and
 	  their shadows, the material's base color and textures, its hit flash and rim light (applied by helix_output), where it is on the model
 	  at rest (helix_model_position, helix_model_normal: its own space before skinning and the hook, alike in every variant); optionally a
 	  vertex hook, `@block vertex` defining `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing).

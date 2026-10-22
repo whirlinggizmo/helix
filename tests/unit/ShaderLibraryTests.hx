@@ -4,12 +4,12 @@ import helix.graphics.Graphics;
 import helix.graphics.PipelineDesc;
 import helix.graphics.Shader;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
-import helix.render3d.Skin;
+import helix.render3d.Skin3D;
 import helix.render3d.Renderer3D;
 import helix.shaders.Dissolve;
 import helix.shaders.HitFlash;
@@ -115,20 +115,20 @@ class ShaderLibraryTests {
 	}
 
 	// The material's parameters' bytes as a draw writes them: by slot, null for a slot the shader lacks.
-	static function blocks(material:Material):Array<Null<Bytes>> {
+	static function blocks(material:Material3D):Array<Null<Bytes>> {
 		var out = [for (size in material.shader.blockSizes) size > 0 ? Bytes.alloc(size) : null];
 		material.shaderParameters.write(out);
 		return out;
 	}
 
 	// The value parameter name was written as, its component i.
-	static function written(material:Material, name:String, i = 0):Float {
+	static function written(material:Material3D, name:String, i = 0):Float {
 		var p = material.shader.getParameter(name);
 		return blocks(material)[p.slot].getFloat(p.offset + i * 4);
 	}
 
 	static function unlit(gpu:CountingGraphics):Void {
-		var material = new Material(), other = new Material();
+		var material = new Material3D(), other = new Material3D();
 		var unlit = new Unlit(material), alike = new Unlit(other);
 		check(material.shader != null && material.shader.kind == "surface", "Unlit is its material's surface shader");
 		check(other.shader == material.shader, "Two materials share the library's one");
@@ -152,7 +152,7 @@ class ShaderLibraryTests {
 	}
 
 	static function toon():Void {
-		var material = new Material(), toon = new Toon(material);
+		var material = new Material3D(), toon = new Toon(material);
 		var bands = material.shader.getParameter("bands"),
 			shadow = material.shader.getParameter("shadow_color");
 		check(bands.slot == 2 && bands.offset == 16 && shadow.slot == 2 && shadow.offset == 0, "Toon's parameters where its block has them");
@@ -166,7 +166,7 @@ class ShaderLibraryTests {
 	}
 
 	static function dissolve(gpu:CountingGraphics):Void {
-		var material = new Material(), dissolve = new Dissolve(material);
+		var material = new Material3D(), dissolve = new Dissolve(material);
 		check(material.shader.caster != null, "Dissolve casts its own shadow (it discards)");
 		var amount = material.shader.getParameter("amount"),
 			edge = material.shader.getParameter("edge_color"),
@@ -189,7 +189,7 @@ class ShaderLibraryTests {
 	}
 
 	static function water():Void {
-		var material = new Material(), water = new Water(material);
+		var material = new Material3D(), water = new Water(material);
 		check(material.shader.caster != null, "Water casts its own shadow (its waves move it)");
 		var amplitude = material.shader.getParameter("amplitude"),
 			shininess = material.shader.getParameter("shininess");
@@ -213,11 +213,11 @@ class ShaderLibraryTests {
 
 	static function flashAndRim(gpu:CountingGraphics):Void {
 		var stage = new Renderer3D(gpu),
-			material = new Material(),
+			material = new Material3D(),
 			camera = new Camera3D();
 		camera.setViewport(800, 600);
 		camera.setView(0, 0, 5, 0, 0, 0);
-		stage.add(new Model(Mesh.cube(1, 1, 1), material));
+		stage.add(new Model3D(Mesh3D.cube(1, 1, 1), material));
 		// The material's flash and rim in the stage's fragment block, after its emission: the flash's rgb and amount, the rim's rgb and power.
 		var u = drawn(gpu, stage, camera);
 		check(u.getFloat(92) == 0 && u.getFloat(96) == 0 && u.getFloat(108) == 3, "No flash and no rim by default");
@@ -250,11 +250,11 @@ class ShaderLibraryTests {
 	}
 
 	// A model of a mesh skinned to two joints, bound to a skeleton of its own on stage.
-	static function skinnedModel(stage:Renderer3D, material:Material):Model {
+	static function skinnedModel(stage:Renderer3D, material:Material3D):Model3D {
 		var positions = [0., 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 1, 0];
-		var mesh = Mesh.fromArrays(positions, null, null, null, null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+		var mesh = Mesh3D.fromArrays(positions, null, null, null, null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
 			[1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
-		var skin = new Skin(["hip", "knee"], [
+		var skin = new Skin3D(["hip", "knee"], [
 			1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1
 		]);
 		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
@@ -263,7 +263,7 @@ class ShaderLibraryTests {
 		knee.setPosition(1, 0, 0);
 		hip.addChild(knee);
 		character.addChild(hip);
-		var model = new Model(mesh, material);
+		var model = new Model3D(mesh, material);
 		character.addChild(model);
 		model.bindSkeleton(character, skin);
 		stage.add(character);
@@ -273,7 +273,7 @@ class ShaderLibraryTests {
 	// A skinned model draws through its material's surface shader's skinned variant, with the skin's buffer and the joints at slot 5.
 	static function skinned(gpu:CountingGraphics):Void {
 		var stage = new Renderer3D(gpu),
-			material = new Material(),
+			material = new Material3D(),
 			camera = new Camera3D();
 		camera.setViewport(800, 600);
 		camera.setView(1, 0, 5, 1, 0, 0);
@@ -294,20 +294,20 @@ class ShaderLibraryTests {
 	static function casters(gpu:CountingGraphics):Void {
 		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
-			sun = new DirectionalLight();
+			sun = new DirectionalLight3D();
 		camera.setViewport(800, 600);
 		camera.setView(0, 2, 6, 0, 0, 0);
 		sun.shadowCasting = true;
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
-		var cut = new Material(),
-			plain = new Material(),
-			banded = new Material();
+		var cut = new Material3D(),
+			plain = new Material3D(),
+			banded = new Material3D();
 		new Dissolve(cut);
 		new Toon(banded);
-		var cube = Mesh.cube(1, 1, 1);
+		var cube = Mesh3D.cube(1, 1, 1);
 		for (material in [cut, cut, plain, banded])
-			stage.add(new Model(cube, material));
+			stage.add(new Model3D(cube, material));
 		gpu.meshDraws = [];
 		gpu.meshPipelines = [];
 		stage.drawShadows(camera);
@@ -333,14 +333,14 @@ class ShaderLibraryTests {
 	static function passes(gpu:CountingGraphics):Void {
 		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
-			material = new Material();
+			material = new Material3D();
 		camera.setViewport(800, 600);
 		camera.setView(0, 0, 8, 0, 0, 0);
-		var cube = Mesh.cube(1, 1, 1);
-		var plain = new Model(cube, material),
-			seen = new Model(Mesh.sphere(.5), material),
-			left = new Model(cube, material),
-			right = new Model(cube, material);
+		var cube = Mesh3D.cube(1, 1, 1);
+		var plain = new Model3D(cube, material),
+			seen = new Model3D(Mesh3D.sphere(.5), material),
+			left = new Model3D(cube, material),
+			right = new Model3D(cube, material);
 		left.setPosition(-2, 0, 0);
 		right.setPosition(2, 0, 0);
 		for (model in [plain, seen, left, right])
@@ -385,7 +385,7 @@ class ShaderLibraryTests {
 	// A pass's vertices: each normal averaged over the vertices at its position, so an outline's shell stays closed at a hard edge; drawn
 	// from their own buffer, static or skinned.
 	static function passVertices(gpu:CountingGraphics):Void {
-		var cube = Mesh.cube(1, 1, 1), data = cube.passVertices, corners = true, kept = true;
+		var cube = Mesh3D.cube(1, 1, 1), data = cube.passVertices, corners = true, kept = true;
 		var third = 1 / Math.sqrt(3);
 		for (i in 0...cube.vertexCount) {
 			var at = i * Flat3DProgram.stride, lit = i * Lit3DProgram.stride;
@@ -399,7 +399,7 @@ class ShaderLibraryTests {
 		check(cube.vertexCount == 24 && kept, "A pass's vertices keep the mesh's positions, one a vertex");
 		check(corners, "A cube's three faces at a corner share one normal there, out along the diagonal: its shell doesn't crack");
 		check(cube.passVertices == data, "Worked out once");
-		var sphere = Mesh.sphere(.5), smooth = true;
+		var sphere = Mesh3D.sphere(.5), smooth = true;
 		for (i in 0...sphere.vertexCount)
 			for (c in 0...3)
 				smooth = smooth
@@ -407,15 +407,15 @@ class ShaderLibraryTests {
 						- sphere.vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.normalOffset + c * 4)) < 1e-5;
 		check(smooth, "A smooth mesh's normals stay as they are");
 		// Two faces back to back at the same place: their normals cancel, so each keeps its own.
-		var sheet = Mesh.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0], [0., 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1], null,
-			null, null);
+		var sheet = Mesh3D.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0], [0., 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1],
+			null, null, null);
 		check(near(sheet.passVertices.getFloat(Flat3DProgram.normalOffset + 8), 1)
 			&& near(sheet.passVertices.getFloat(3 * Flat3DProgram.stride + Flat3DProgram.normalOffset + 8), -1),
 			"Normals cancelling out leave each vertex its own");
 
 		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
-			material = new Material();
+			material = new Material3D();
 		camera.setViewport(800, 600);
 		camera.setView(1, 0, 5, 1, 0, 0);
 		var model = skinnedModel(stage, material);

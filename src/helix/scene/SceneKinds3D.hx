@@ -2,43 +2,43 @@ package helix.scene;
 
 import helix.particles.Emitter;
 import helix.render2d.Font2D;
-import helix.render2d.Fonts;
+import helix.render2d.Fonts2D;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Light;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.Light3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
-import helix.render3d.PointLight;
-import helix.render3d.Projection;
-import helix.render3d.SpotLight;
+import helix.render3d.PointLight3D;
+import helix.render3d.Projection3D;
+import helix.render3d.SpotLight3D;
 import helix.render3d.Sprite3D;
-import helix.render3d.SpriteAlpha;
-import helix.render3d.SpriteFacing;
+import helix.render3d.SpriteAlpha3D;
+import helix.render3d.SpriteFacing3D;
 import helix.render3d.Text3D;
 import helix.render3d.Tonemap;
 import helix.scene.SceneValue;
 
-/** The live side of SceneSchema's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property
-	applied to a live node from a file's value and read back from it, a Model's inline material applied and read, and its generated mesh
-	made by Mesh's generators and read back from the mesh's record. What the tables
+/** The live side of SceneSchema3D's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property
+	applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh
+	made by Mesh3D's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
-	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB. */
+	projection, the stage's tonemap), a texture or a font from its path through Textures2D and Fonts2D, a color as 0xAARRGGBB. */
 class SceneKinds3D {
-	/** A new node of kind, as SceneSchema's tables name the classes: a bare Node3D for "Node3D", a Model of no parts, a light, a camera, a
+	/** A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table
 		has. */
 	public static function make(kind:String):Null<Node3D> {
 		return switch kind {
 			case "Node3D": new Node3D();
-			case "Model": new Model();
-			case "DirectionalLight": new DirectionalLight();
-			case "PointLight": new PointLight();
-			case "SpotLight": new SpotLight();
+			case "Model3D": new Model3D();
+			case "DirectionalLight3D": new DirectionalLight3D();
+			case "PointLight3D": new PointLight3D();
+			case "SpotLight3D": new SpotLight3D();
 			case "Camera3D": new Camera3D();
 			case "Sprite3D": new Sprite3D(null);
 			case "Text3D": new Text3D("");
@@ -49,14 +49,14 @@ class SceneKinds3D {
 
 	/** The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has. */
 	public static function kindOf(node:Node3D):Null<String> {
-		if (Std.isOfType(node, Model))
-			return "Model";
-		if (Std.isOfType(node, DirectionalLight))
-			return "DirectionalLight";
-		if (Std.isOfType(node, PointLight))
-			return "PointLight";
-		if (Std.isOfType(node, SpotLight))
-			return "SpotLight";
+		if (Std.isOfType(node, Model3D))
+			return "Model3D";
+		if (Std.isOfType(node, DirectionalLight3D))
+			return "DirectionalLight3D";
+		if (Std.isOfType(node, PointLight3D))
+			return "PointLight3D";
+		if (Std.isOfType(node, SpotLight3D))
+			return "SpotLight3D";
 		if (Std.isOfType(node, Camera3D))
 			return "Camera3D";
 		if (Std.isOfType(node, Sprite3D))
@@ -71,11 +71,11 @@ class SceneKinds3D {
 	/** Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each
 		through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to
 		keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A
-		texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it
+		texture's or a font's path loads through Textures2D or Fonts2D and lands when it does ("" for none); instance, when given, keeps what it
 		loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named
 		choice no enum has, or a value the class refuses. */
 	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool {
-		var model = Std.downcast(node, Model);
+		var model = Std.downcast(node, Model3D);
 		if (model != null)
 			return switch [name, value] {
 				case ["tint", Color(c)]:
@@ -89,10 +89,10 @@ class SceneKinds3D {
 					true;
 				case _: false;
 			}
-		var light = Std.downcast(node, Light);
+		var light = Std.downcast(node, Light3D);
 		if (light != null) {
-			var spot = Std.downcast(node, SpotLight),
-				point = Std.downcast(node, PointLight);
+			var spot = Std.downcast(node, SpotLight3D),
+				point = Std.downcast(node, PointLight3D);
 			return switch [name, value] {
 				case ["color", Color(c)]:
 					light.color = c;
@@ -230,7 +230,7 @@ class SceneKinds3D {
 		property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet
 		landed), or one that didn't come through the caches. */
 	public static function read(node:Node3D, name:String):Null<SceneValue> {
-		var model = Std.downcast(node, Model);
+		var model = Std.downcast(node, Model3D);
 		if (model != null)
 			return switch name {
 				case "tint": Color(model.tint);
@@ -238,10 +238,10 @@ class SceneKinds3D {
 				case "shadowReceiving": Flag(model.shadowReceiving);
 				case _: null;
 			}
-		var light = Std.downcast(node, Light);
+		var light = Std.downcast(node, Light3D);
 		if (light != null) {
-			var spot = Std.downcast(node, SpotLight),
-				point = Std.downcast(node, PointLight);
+			var spot = Std.downcast(node, SpotLight3D),
+				point = Std.downcast(node, PointLight3D);
 			return switch name {
 				case "color": Color(light.color);
 				case "intensity": Number(light.intensity);
@@ -293,7 +293,7 @@ class SceneKinds3D {
 				case "textSize": Number(text.textSize);
 				case "color": Color(text.color);
 				case "font":
-					var path = text.font == null ? null : Fonts.getPath(text.font);
+					var path = text.font == null ? null : Fonts2D.getPath(text.font);
 					path == null ? null : Text(path);
 				case "pivotX": Number(text.pivotX);
 				case "pivotY": Number(text.pivotY);
@@ -303,10 +303,10 @@ class SceneKinds3D {
 		return null;
 	}
 
-	/** The mesh a file's mesh entry names, made by Mesh's generator of its shape with its arguments, an unsaid one the generator's default
-		(SceneSchema.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing. */
-	public static function makeMesh(mesh:SceneMesh3D):Null<Mesh> {
-		var schema = SceneSchema.shape(mesh.shape);
+	/** The mesh a file's mesh entry names, made by Mesh3D's generator of its shape with its arguments, an unsaid one the generator's default
+		(SceneSchema3D.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing. */
+	public static function makeMesh(mesh:SceneMesh3D):Null<Mesh3D> {
+		var schema = SceneSchema3D.shape(mesh.shape);
 		if (schema == null)
 			return null;
 		var values = [];
@@ -321,35 +321,35 @@ class SceneKinds3D {
 		inline function count(i:Int):Int
 			return Std.int(values[i]);
 		return switch mesh.shape {
-			case "plane": Mesh.plane(values[0], values[1], count(2));
-			case "cube": Mesh.cube(values[0], values[1], values[2]);
-			case "sphere": Mesh.sphere(values[0], count(1), count(2));
-			case "cylinder": Mesh.cylinder(values[0], values[1], count(2));
-			case "cone": Mesh.cone(values[0], values[1], count(2));
-			case "capsule": Mesh.capsule(values[0], values[1], count(2), count(3));
-			case "torus": Mesh.torus(values[0], values[1], count(2), count(3));
+			case "plane": Mesh3D.plane(values[0], values[1], count(2));
+			case "cube": Mesh3D.cube(values[0], values[1], values[2]);
+			case "sphere": Mesh3D.sphere(values[0], count(1), count(2));
+			case "cylinder": Mesh3D.cylinder(values[0], values[1], count(2));
+			case "cone": Mesh3D.cone(values[0], values[1], count(2));
+			case "capsule": Mesh3D.capsule(values[0], values[1], count(2), count(3));
+			case "torus": Mesh3D.torus(values[0], values[1], count(2), count(3));
 			case _: null;
 		}
 	}
 
-	/** Mesh as a file's mesh entry, from its record of what made it (Mesh.shape), every argument said (the writer leaves out those at the
+	/** Mesh as a file's mesh entry, from its record of what made it (Mesh3D.shape), every argument said (the writer leaves out those at the
 		generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have. */
-	public static function readMesh(mesh:Mesh):Null<SceneMesh3D> {
+	public static function readMesh(mesh:Mesh3D):Null<SceneMesh3D> {
 		var shape = mesh.shape;
-		if (shape == null || SceneSchema.shape(shape.name) == null)
+		if (shape == null || SceneSchema3D.shape(shape.name) == null)
 			return null;
 		var read = new SceneMesh3D(shape.name);
-		for (argument in SceneSchema.shape(shape.name).arguments)
+		for (argument in SceneSchema3D.shape(shape.name).arguments)
 			if (shape.arguments.exists(argument.name))
 				read.arguments.set(argument.name, shape.arguments.get(argument.name));
 		return read;
 	}
 
-	/** Gives model a new material carrying material's values, the rest Material's defaults, as its first part's (made when it has none):
-		an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance,
+	/** Gives model a new material carrying material's values, the rest Material3D's defaults, as its first part's (made when it has none):
+		an inline material replaces the mesh's or the file's. Its textures load through Textures2D by path and land when they do; instance,
 		when given, keeps them to release at its destroy. */
-	public static function applyMaterial(model:Model, material:SceneMaterial3D, ?instance:SceneInstance3D):Void {
-		var made = new Material();
+	public static function applyMaterial(model:Model3D, material:SceneMaterial3D, ?instance:SceneInstance3D):Void {
+		var made = new Material3D();
 		if (material.baseColor != null)
 			made.baseColor = material.baseColor;
 		if (material.metallic != null)
@@ -370,9 +370,9 @@ class SceneKinds3D {
 		model.material = made;
 	}
 
-	/** Model's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for
-		none or one that didn't come through Textures. Null for a model of no parts. */
-	public static function readMaterial(model:Model):Null<SceneMaterial3D> {
+	/** Model3D's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for
+		none or one that didn't come through Textures2D. Null for a model of no parts. */
+	public static function readMaterial(model:Model3D):Null<SceneMaterial3D> {
 		var material = model.material;
 		if (material == null)
 			return null;
@@ -380,8 +380,8 @@ class SceneKinds3D {
 		read.baseColor = material.baseColor;
 		read.metallic = material.metallic;
 		read.roughness = material.roughness;
-		read.texture = material.texture == null ? null : Textures.getPath(material.texture);
-		read.normalTexture = material.normalTexture == null ? null : Textures.getPath(material.normalTexture);
+		read.texture = material.texture == null ? null : Textures2D.getPath(material.texture);
+		read.normalTexture = material.normalTexture == null ? null : Textures2D.getPath(material.normalTexture);
 		read.normalScale = material.normalScale;
 		read.emissive = material.emissive;
 		read.emissiveStrength = material.emissiveStrength;
@@ -389,34 +389,34 @@ class SceneKinds3D {
 		return read;
 	}
 
-	/** The projection named name, "perspective" or "orthographic" (SceneSchema.projections); null for another name. */
-	public static function projectionOf(name:String):Null<Projection> {
-		var index = SceneSchema.projections.indexOf(name);
+	/** The projection named name, "perspective" or "orthographic" (SceneSchema3D.projections); null for another name. */
+	public static function projectionOf(name:String):Null<Projection3D> {
+		var index = SceneSchema3D.projections.indexOf(name);
 		return index < 0 ? null : cast index;
 	}
 
-	/** A projection's name as the file writes it (SceneSchema.projections). */
-	public static function projectionName(projection:Projection):String
-		return SceneSchema.projections[(projection : Int)];
+	/** A projection's name as the file writes it (SceneSchema3D.projections). */
+	public static function projectionName(projection:Projection3D):String
+		return SceneSchema3D.projections[(projection : Int)];
 
 	/** The facing named name, "camera", "upright", "ground" or "free"; null for another name. */
-	public static function facingOf(name:String):Null<SpriteFacing> {
+	public static function facingOf(name:String):Null<SpriteFacing3D> {
 		var index = FACINGS.indexOf(name);
 		return index < 0 ? null : cast index;
 	}
 
 	/** A facing's name as the file writes it. */
-	public static function facingName(facing:SpriteFacing):String
+	public static function facingName(facing:SpriteFacing3D):String
 		return FACINGS[(facing : Int)];
 
 	/** The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name. */
-	public static function alphaOf(name:String):Null<SpriteAlpha> {
+	public static function alphaOf(name:String):Null<SpriteAlpha3D> {
 		var index = ALPHAS.indexOf(name);
 		return index < 0 ? null : cast index;
 	}
 
 	/** An alpha mode's name as the file writes it. */
-	public static function alphaName(alpha:SpriteAlpha):String
+	public static function alphaName(alpha:SpriteAlpha3D):String
 		return ALPHAS[(alpha : Int)];
 
 	static final FACINGS = ["camera", "upright", "ground", "free"];
@@ -424,17 +424,17 @@ class SceneKinds3D {
 
 	// A sprite's texture as a value: its path, or null for none or one the cache didn't give.
 	static function texturePath(texture:Null<Texture2D>):Null<SceneValue> {
-		var path = texture == null ? null : Textures.getPath(texture);
+		var path = texture == null ? null : Textures2D.getPath(texture);
 		return path == null ? null : Text(path);
 	}
 
-	// path's texture through Textures ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
+	// path's texture through Textures2D ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
 	static function loadTexture(path:String, instance:Null<SceneInstance3D>, set:Null<Texture2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
 		}
-		var request = Textures.load(path, true, texture -> {
+		var request = Textures2D.load(path, true, texture -> {
 			if (instance != null && !instance.holdTexture(texture))
 				return;
 			set(texture);
@@ -443,13 +443,13 @@ class SceneKinds3D {
 			instance.holdRequest(request);
 	}
 
-	// path's font through Fonts ("" for none, set at once), into set when it lands; the instance keeps it.
+	// path's font through Fonts2D ("" for none, set at once), into set when it lands; the instance keeps it.
 	static function loadFont(path:String, instance:Null<SceneInstance3D>, set:Null<Font2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
 		}
-		var request = Fonts.load(path, font -> {
+		var request = Fonts2D.load(path, font -> {
 			if (instance != null && !instance.holdFont(font))
 				return;
 			set(font);

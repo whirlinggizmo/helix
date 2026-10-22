@@ -1,6 +1,6 @@
 package helix.render2d;
 
-/** A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
+/** A sprite: a texture (or a region of it, or a SpriteSheet2D's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its
 	center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its
 	corners' size as it's sized (setNineSlice). It may draw through an effect (effect). */
 @:allow(helix.render2d.Renderer2D)
@@ -49,10 +49,10 @@ class Sprite2D extends Node2D {
 		sourceHeight = height;
 	}
 
-	/** Shows sheet's frame at index (a SpriteAnimator given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's
+	/** Shows sheet's frame at index (a SpriteAnimator2D given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's
 		whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated
 		one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't. */
-	public function setFrame(sheet:SpriteSheet, index:Int):Bool {
+	public function setFrame(sheet:SpriteSheet2D, index:Int):Bool {
 		var next = sheet.getFrame(index);
 		if (next == null)
 			return false;
@@ -64,7 +64,7 @@ class Sprite2D extends Node2D {
 	}
 
 	/** The sheet's frame it shows (setFrame), or null: it shows its region. */
-	public var frame(default, null):Null<SpriteFrame>;
+	public var frame(default, null):Null<SpriteFrame2D>;
 
 	/** Its region's left, in texels. */
 	public var regionX(get, never):Float;

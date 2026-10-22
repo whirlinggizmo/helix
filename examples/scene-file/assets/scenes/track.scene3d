@@ -17,7 +17,7 @@
   },
   "nodes": [
     {
-      "kind": "DirectionalLight",
+      "kind": "DirectionalLight3D",
       "name": "sun",
       "rotation": [
         -0.64,
@@ -33,7 +33,7 @@
       "shadowStrength": 0.9
     },
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "ground",
       "mesh": {
         "shape": "plane",
@@ -56,7 +56,7 @@
       "name": "track",
       "children": [
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_0",
           "file": "kit/roadStartPositions.glb",
           "position": [
@@ -77,7 +77,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_1",
           "file": "kit/roadStraightLong.glb",
           "position": [
@@ -98,7 +98,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_2",
           "file": "kit/roadCornerLarge.glb",
           "position": [
@@ -119,7 +119,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_3",
           "file": "kit/roadStraightLong.glb",
           "position": [
@@ -140,7 +140,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_4",
           "file": "kit/roadCornerLarge.glb",
           "position": [
@@ -161,7 +161,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_5",
           "file": "kit/roadStraightLong.glb",
           "position": [
@@ -182,7 +182,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_6",
           "file": "kit/roadStraightLong.glb",
           "position": [
@@ -203,7 +203,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_7",
           "file": "kit/roadCornerLarge.glb",
           "position": [
@@ -224,7 +224,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_8",
           "file": "kit/roadStraightLong.glb",
           "position": [
@@ -245,7 +245,7 @@
           "shadowCasting": false
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "road_9",
           "file": "kit/roadCornerLarge.glb",
           "position": [
@@ -272,7 +272,7 @@
       "name": "barriers",
       "children": [
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_0",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -292,7 +292,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_1",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -312,7 +312,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_2",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -332,7 +332,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_3",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -352,7 +352,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_4",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -372,7 +372,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_5",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -392,7 +392,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_6",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -412,7 +412,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_7",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -432,7 +432,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_8",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -452,7 +452,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_9",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -472,7 +472,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_10",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -492,7 +492,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "barrier_11",
           "file": "kit/barrierWall.glb",
           "position": [
@@ -518,7 +518,7 @@
       "name": "scenery",
       "children": [
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "gantry",
           "file": "kit/overhead.glb",
           "position": [
@@ -538,7 +538,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "flag_left",
           "file": "kit/flagCheckers.glb",
           "position": [
@@ -558,7 +558,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "flag_right",
           "file": "kit/flagCheckers.glb",
           "position": [
@@ -578,7 +578,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "grandstand",
           "file": "kit/grandStand.glb",
           "position": [
@@ -598,7 +598,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "light_1",
           "file": "kit/lightPostLarge.glb",
           "position": [
@@ -618,7 +618,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "light_3",
           "file": "kit/lightPostLarge.glb",
           "position": [
@@ -638,7 +638,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tower_0",
           "file": "kit/bannerTowerGreen.glb",
           "position": [
@@ -658,7 +658,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_0_0",
           "file": "kit/pylon.glb",
           "position": [
@@ -673,7 +673,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_0_1",
           "file": "kit/pylon.glb",
           "position": [
@@ -688,7 +688,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_0_2",
           "file": "kit/pylon.glb",
           "position": [
@@ -703,7 +703,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_0_0",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -718,7 +718,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_0_1",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -733,7 +733,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_0_2",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -748,7 +748,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_0_3",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -763,7 +763,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tower_1",
           "file": "kit/bannerTowerRed.glb",
           "position": [
@@ -783,7 +783,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_1_0",
           "file": "kit/pylon.glb",
           "position": [
@@ -798,7 +798,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_1_1",
           "file": "kit/pylon.glb",
           "position": [
@@ -813,7 +813,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_1_2",
           "file": "kit/pylon.glb",
           "position": [
@@ -828,7 +828,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_1_0",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -843,7 +843,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_1_1",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -858,7 +858,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_1_2",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -873,7 +873,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_1_3",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -888,7 +888,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tower_2",
           "file": "kit/bannerTowerGreen.glb",
           "position": [
@@ -908,7 +908,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_2_0",
           "file": "kit/pylon.glb",
           "position": [
@@ -923,7 +923,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_2_1",
           "file": "kit/pylon.glb",
           "position": [
@@ -938,7 +938,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_2_2",
           "file": "kit/pylon.glb",
           "position": [
@@ -953,7 +953,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_2_0",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -968,7 +968,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_2_1",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -983,7 +983,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_2_2",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -998,7 +998,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_2_3",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -1013,7 +1013,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tower_3",
           "file": "kit/bannerTowerRed.glb",
           "position": [
@@ -1033,7 +1033,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_3_0",
           "file": "kit/pylon.glb",
           "position": [
@@ -1048,7 +1048,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_3_1",
           "file": "kit/pylon.glb",
           "position": [
@@ -1063,7 +1063,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "pylon_3_2",
           "file": "kit/pylon.glb",
           "position": [
@@ -1078,7 +1078,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_3_0",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -1093,7 +1093,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_3_1",
           "file": "kit/treeSmall.glb",
           "position": [
@@ -1108,7 +1108,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_3_2",
           "file": "kit/treeLarge.glb",
           "position": [
@@ -1123,7 +1123,7 @@
           ]
         },
         {
-          "kind": "Model",
+          "kind": "Model3D",
           "name": "tree_3_3",
           "file": "kit/treeSmall.glb",
           "position": [

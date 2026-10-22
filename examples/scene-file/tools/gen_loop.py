@@ -50,7 +50,7 @@ def num(v):
 
 
 def piece(name, file, x, z, yaw, scale, y=0., **more):
-    node = {'kind': 'Model', 'name': name, 'file': f'kit/{file}.glb', 'position': [num(x), num(y), num(z)]}
+    node = {'kind': 'Model3D', 'name': name, 'file': f'kit/{file}.glb', 'position': [num(x), num(y), num(z)]}
     if yaw != 0:
         node['rotation'] = [0, num(wrap(yaw)), 0]
     node['scale'] = [num(s) for s in scale]
@@ -207,10 +207,10 @@ def main():
         'nodes': [
             # The sun 37 degrees up, shining toward -x and +z: a car heading down the first straight (-z) throws its shadow toward the
             # chase camera behind it.
-            {'kind': 'DirectionalLight', 'name': 'sun', 'rotation': [-.64, 2.11, 0], 'color': '#fff1dc', 'intensity': 3.5,
+            {'kind': 'DirectionalLight3D', 'name': 'sun', 'rotation': [-.64, 2.11, 0], 'color': '#fff1dc', 'intensity': 3.5,
              'shadowCasting': True, 'shadowDistance': 70, 'shadowMapSize': 2048, 'shadowColor': '#24304a', 'shadowStrength': .9},
             # The ground: a generated plane under everything, grass green and rough (the kit has no plain grass tile).
-            {'kind': 'Model', 'name': 'ground', 'mesh': {'shape': 'plane', 'width': 480, 'length': 480}, 'position': [0, -.01, 0],
+            {'kind': 'Model3D', 'name': 'ground', 'mesh': {'shape': 'plane', 'width': 480, 'length': 480}, 'position': [0, -.01, 0],
              'shadowCasting': False, 'material': {'baseColor': '#9bbf7c', 'roughness': 1}},
             {'kind': 'Node3D', 'name': 'track', 'children': road},
             {'kind': 'Node3D', 'name': 'barriers', 'children': barriers(straights)},

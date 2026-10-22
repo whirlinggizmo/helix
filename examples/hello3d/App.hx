@@ -10,7 +10,7 @@ import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Node3D;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 
@@ -22,7 +22,7 @@ class App extends helix.App {
 	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second, starting on the +x side.
-	var orbit = new Orbit(16, 9, .4, 1, Math.PI / 2);
+	var orbit = new Orbit3D(16, 9, .4, 1, Math.PI / 2);
 
 	override public function init():Void {
 		Window.title = "HeliX hello3d";

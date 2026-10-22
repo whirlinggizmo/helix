@@ -16,7 +16,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
   },
   "nodes": [
     {
-      "kind": "DirectionalLight",
+      "kind": "DirectionalLight3D",
       "name": "sun",
       "rotation": [-0.6, 0.7, 0],
       "color": "#fff4e0",
@@ -25,7 +25,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
       "shadowDistance": 35
     },
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "track",
       "file": "track/track.glb",
       "overrides": {
@@ -38,14 +38,14 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
       }
     },
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "cone_1",
       "file": "props/cone.glb",
       "position": [12, 0, -3],
       "material": {"baseColor": "#ff8800", "roughness": 0.3}
     },
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "ground",
       "mesh": {"shape": "plane", "width": 400, "length": 400},
       "material": {"baseColor": "#9bbf7c", "roughness": 1}
@@ -69,7 +69,7 @@ JSON, HeliX's own, one tree. Written with sorted keys, two-space indentation, nu
 }
 ```
 
-**`environment`** is the place's light (`Environment3D`, decision 145): `ambient` (`setAmbient`), `map` and `background` (files loaded through `Environments`, then `setMap` and `setBackground`); each absent when the default. It's set on the node the file is instantiated as (the instance's root group, or a prefab's node) as its `environment`, lighting what's under it; a `View3D` showing the tree is lit by it unless the view has its own. How a camera photographs the place (exposure, tone mapping) is the view's, not the file's. A scene is a tree of nodes: a level and a prefab are the same file used two ways.
+**`environment`** is the place's light (`Environment3D`, decision 145): `ambient` (`setAmbient`), `map` and `background` (files loaded through `Environments3D`, then `setMap` and `setBackground`); each absent when the default. It's set on the node the file is instantiated as (the instance's root group, or a prefab's node) as its `environment`, lighting what's under it; a `View3D` showing the tree is lit by it unless the view has its own. How a camera photographs the place (exposure, tone mapping) is the view's, not the file's. A scene is a tree of nodes: a level and a prefab are the same file used two ways.
 
 What a node entry holds:
 
@@ -78,9 +78,9 @@ What a node entry holds:
 - **the transform**: `position` `[x, y, z]`, `rotation` `[x, y, z]` radians (Euler, as `setRotation` takes), `scale` `[x, y, z]`; each absent when identity. (A quaternion isn't written: `rotation` is what a hand edits.)
 - **the flags**: `enabled`, `visible`, `pickable`, absent when the kind's own default (true, but a `Text3D` starts unpickable); an override's written whenever said.
 - **the kind's properties**, flat beside the above, named as the class names them (`intensity`, `shadowCasting`, `projection` and `fovY`, `range`, `tint`, `text`): one table per kind lists them with their type and default, and both the reader and the writer go through that table, so nothing can be written that can't be read. Colors are `"#RRGGBB"` or `"#RRGGBBAA"`, the CSS order (in memory a color is `0xAARRGGBB`).
-- **`file`** on a `Model`: a glTF, loaded through `Models` and instantiated under this node, which becomes the file's root (its parts, skin and name). Its materials are the file's.
-- **`mesh`** on a `Model`, in place of `file`: a mesh made by one of `Mesh`'s generators as the model's one part, `{"shape": "plane", "width": 400, "length": 400}`. `shape` is `plane`, `cube`, `sphere`, `cylinder`, `cone`, `capsule` or `torus`, and its numbers are the generator's own arguments by name, in its order: `width`, `length`, `subdivisions` (plane); `width`, `height`, `length` (cube); `radius`, `rings`, `segments` (sphere); `radius`, `height`, `segments` (cylinder, cone); `radius`, `height`, `rings`, `segments` (capsule); `radius`, `thickness`, `rings`, `segments` (torus). An optional one is absent when the generator's default; an unknown shape or key, a missing required number or one that isn't a number is refused. A `Model` has a `file` or a `mesh`, never both, or neither (a model of no parts until code gives it one). Its material is the inline `material`, else a default one. A `Model` made in code with a generated mesh is captured as a `mesh` entry too: the mesh keeps a record of what made it (`Mesh.shape`).
-- **`material`** on a `Model`: an inline material (`baseColor`, `metallic`, `roughness`, `texture`, `normalTexture`, `emissive`, `doubleSided`), replacing the mesh's or the file's root material.
+- **`file`** on a `Model3D`: a glTF, loaded through `Models3D` and instantiated under this node, which becomes the file's root (its parts, skin and name). Its materials are the file's.
+- **`mesh`** on a `Model3D`, in place of `file`: a mesh made by one of `Mesh3D`'s generators as the model's one part, `{"shape": "plane", "width": 400, "length": 400}`. `shape` is `plane`, `cube`, `sphere`, `cylinder`, `cone`, `capsule` or `torus`, and its numbers are the generator's own arguments by name, in its order: `width`, `length`, `subdivisions` (plane); `width`, `height`, `length` (cube); `radius`, `rings`, `segments` (sphere); `radius`, `height`, `segments` (cylinder, cone); `radius`, `height`, `rings`, `segments` (capsule); `radius`, `thickness`, `rings`, `segments` (torus). An optional one is absent when the generator's default; an unknown shape or key, a missing required number or one that isn't a number is refused. A `Model3D` has a `file` or a `mesh`, never both, or neither (a model of no parts until code gives it one). Its material is the inline `material`, else a default one. A `Model3D` made in code with a generated mesh is captured as a `mesh` entry too: the mesh keeps a record of what made it (`Mesh3D.shape`).
+- **`material`** on a `Model3D`: an inline material (`baseColor`, `metallic`, `roughness`, `texture`, `normalTexture`, `emissive`, `doubleSided`), replacing the mesh's or the file's root material.
 - **`scene`**: another file instantiated here as a prefab. A prefab file is an ordinary `.scene3d`; a file naming itself, directly or through another, is refused.
 - **`overrides`**: by path from this node (`road/line`), for nodes a `file` or `scene` made. Each is an entry without `name` or `kind`: properties and transform keys change the node, `children` adds new nodes under it, `behaviors` attach to it. No block is needed for a parent on the path (the first lesson above).
 - **`children`**: nodes under this one.
@@ -103,7 +103,7 @@ SceneFiles3D.load("scenes/track.scene3d", file -> {
 
 `SceneFile3D.capture(instance)` writes the file that would instantiate to what the instance is now: a file or prefab node as its reference plus what differs from what the file gave, a reference as `@name` when the name is unique, and nothing at its default (the environment's, a kind's, a behavior's prop), so a canonical file comes back byte for byte and a hand-written default vanishes.
 
-`python3 tools/gltf2scene.py export.glb out.scene3d` makes a file from a Blender glTF export: one `Model` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
+`python3 tools/gltf2scene.py export.glb out.scene3d` makes a file from a Blender glTF export: one `Model3D` node with the glb as its `file`, and the objects' custom properties as overrides by node path: `helix_behavior` with its `helix_<prop>` props, `helix_enabled`, `helix_visible` and `helix_pickable` the node's flags, any other `helix_<name>` the kind's property, `helix_props_<name>` the node's props. Lights and cameras come with the model: the glTF reader instantiates them.
 
 ## Behaviors
 

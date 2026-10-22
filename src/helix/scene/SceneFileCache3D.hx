@@ -5,7 +5,7 @@ import helix.assets.IAssets;
 import helix.assets.IRequest;
 import helix.assets.Request;
 
-/** Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache is for models: a path
+/** Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache3D is for models: a path
 	asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models,
 	prefabs, textures and environments are loaded through their own caches as the file is instantiated, so a level's models aren't fetched
 	twice. The runner's is what the SceneFiles3D static forwards to. */

@@ -12,12 +12,12 @@ import helix.render2d.Camera2D;
 import helix.render2d.CameraFollow2D;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.SpriteAnimator;
-import helix.render2d.SpriteSheet;
+import helix.render2d.SpriteAnimator2D;
+import helix.render2d.SpriteSheet2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render2d.View2D;
 import helix.time.Ticker;
 import helix.time.Time;
@@ -71,10 +71,10 @@ class App extends helix.App {
 	var ticker:Ticker;
 	var follow:CameraFollow2D;
 	var player = new Body2D(2, 10, .8, .7);
-	var sheet:Null<SpriteSheet>;
+	var sheet:Null<SpriteSheet2D>;
 	var tiles:Null<Texture2D>;
-	var looks:Null<SpriteAnimator>;
-	var spin:Null<SpriteAnimator>;
+	var looks:Null<SpriteAnimator2D>;
+	var spin:Null<SpriteAnimator2D>;
 	var gears:Array<{x:Float, y:Float}> = [];
 	var collected = 0;
 	var total = 0;
@@ -106,10 +106,10 @@ class App extends helix.App {
 		follow.setDeadZone(2, 1.5);
 		follow.smoothing = 6;
 		follow.setBounds(0, 0, LEVEL[0].length, LEVEL.length);
-		SpriteSheet.load("sheets/gizmos.json", loaded -> {
+		SpriteSheet2D.load("sheets/gizmos.json", loaded -> {
 			sheet = loaded;
-			looks = new SpriteAnimator(loaded);
-			spin = new SpriteAnimator(loaded);
+			looks = new SpriteAnimator2D(loaded);
+			spin = new SpriteAnimator2D(loaded);
 			spin.play("gear");
 			for (_ in 0...total) {
 				var gear = new Sprite2D(null);
@@ -118,7 +118,7 @@ class App extends helix.App {
 				gearLayer.addChild(gear);
 			}
 		}, message -> failure = message);
-		Textures.load("textures/tiles.png", false, loaded -> {
+		Textures2D.load("textures/tiles.png", false, loaded -> {
 			tiles = loaded;
 			lay(loaded);
 		}, message -> failure = message);
@@ -266,6 +266,6 @@ class App extends helix.App {
 		if (sheet != null)
 			sheet.destroy();
 		if (tiles != null)
-			Textures.release(tiles);
+			Textures2D.release(tiles);
 	}
 }

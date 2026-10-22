@@ -7,9 +7,9 @@ import helix.render2d.StageService;
 import helix.render2d.View2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 
@@ -83,7 +83,7 @@ class ViewTests {
 
 		// A 3D view: its tree drawn under the 2D, through its camera sized to its rectangle.
 		var level = new Node3D(), eye = new Camera3D();
-		level.addChild(new Model(Mesh.cube(1, 1, 1), new Material()));
+		level.addChild(new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()));
 		eye.setView(0, 2, 5, 0, 0, 0);
 		var view3D = new View3D(level, eye, 320, 240, gpu);
 		view3D.setPosition(40, 30);
@@ -143,7 +143,7 @@ class ViewTests {
 		window.setPosition(300, 300);
 		var scene = new Node3D(),
 			eye3D = new Camera3D(),
-			box = new Model(Mesh.cube(2, 2, 2), new Material());
+			box = new Model3D(Mesh3D.cube(2, 2, 2), new Material3D());
 		scene.addChild(box);
 		eye3D.setView(0, 0, 5, 0, 0, 0);
 		var world3D = new View3D(scene, eye3D, 0, 0, gpu);

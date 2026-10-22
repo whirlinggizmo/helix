@@ -8,23 +8,23 @@ import helix.graphics.Graphics;
 import helix.graphics.IImageDecoder;
 import helix.graphics.ImageDecoding;
 import helix.graphics.ImageDecoding.ImageDecodeResult;
-import helix.render2d.FontCache;
-import helix.render2d.Fonts;
-import helix.render2d.TextureCache;
-import helix.render2d.Textures;
+import helix.render2d.FontCache2D;
+import helix.render2d.Fonts2D;
+import helix.render2d.TextureCache2D;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.EnvironmentCache;
-import helix.render3d.Environments;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelCache;
-import helix.render3d.Models;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.EnvironmentCache3D;
+import helix.render3d.Environments3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelCache3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
-import helix.render3d.PointLight;
-import helix.render3d.SpotLight;
+import helix.render3d.PointLight3D;
+import helix.render3d.SpotLight3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Renderer3D;
 import helix.render3d.Text3D;
@@ -34,7 +34,8 @@ import helix.scene.SceneFiles3D;
 import helix.scene.SceneInstance3D;
 import helix.scene.SceneKinds3D;
 import helix.scene.SceneMaterial3D;
-import helix.scene.SceneSchema;
+import helix.scene.KindSchema;
+import helix.scene.SceneSchema3D;
 import helix.scene.SceneValue;
 
 /** A .scene3d file instantiated (helix.scene.SceneFile3D.instantiate, SceneInstance3D) and captured back (SceneFile3D.capture): the cache
@@ -120,14 +121,14 @@ class SceneInstanceTests {
 		gpu = new CountingGraphics();
 		var assets = new Held();
 		decoding = new ImageDecoding(new StubDecoder());
-		var textures = new TextureCache(assets, decoding, gpu);
+		var textures = new TextureCache2D(assets, decoding, gpu);
 		sceneFiles = new SceneFileCache3D(assets);
 		@:privateAccess Graphics.bind(gpu);
 		@:privateAccess Assets.bind(assets);
-		@:privateAccess Textures.bind(textures);
-		@:privateAccess Fonts.bind(new FontCache(assets, gpu));
-		@:privateAccess Models.bind(new ModelCache(assets, textures));
-		@:privateAccess Environments.bind(new EnvironmentCache(assets, decoding, gpu));
+		@:privateAccess Textures2D.bind(textures);
+		@:privateAccess Fonts2D.bind(new FontCache2D(assets, gpu));
+		@:privateAccess Models3D.bind(new ModelCache3D(assets, textures));
+		@:privateAccess Environments3D.bind(new EnvironmentCache3D(assets, decoding, gpu));
 		@:privateAccess SceneFiles3D.bind(sceneFiles);
 		cache();
 		sample();
@@ -187,10 +188,10 @@ class SceneInstanceTests {
 		},
 		"nodes": [
 			{"kind": "Node3D", "name": "world", "enabled": false, "children": [
-				{"kind": "DirectionalLight", "name": "sun", "rotation": [-0.6, 0.7, 0], "color": "#fff4e0", "intensity": 3.5,
+				{"kind": "DirectionalLight3D", "name": "sun", "rotation": [-0.6, 0.7, 0], "color": "#fff4e0", "intensity": 3.5,
 					"shadowCasting": true, "shadowDistance": 35, "shadowMapSize": 1024, "shadowStrength": 0.8, "shadowColor": "#102040"},
-				{"kind": "PointLight", "name": "lamp", "position": [1, 2, 3], "range": 10, "intensity": 2},
-				{"kind": "SpotLight", "name": "spot", "range": 20, "innerCone": 0.2, "outerCone": 0.5, "shadowCasting": true},
+				{"kind": "PointLight3D", "name": "lamp", "position": [1, 2, 3], "range": 10, "intensity": 2},
+				{"kind": "SpotLight3D", "name": "spot", "range": 20, "innerCone": 0.2, "outerCone": 0.5, "shadowCasting": true},
 				{"kind": "Camera3D", "name": "chase", "position": [0, 3, -8], "fovY": 0.9, "near": 0.5, "far": 500, "minAspect": 1.777778,
 					"behaviors": [{"kind": "ChaseCamera", "props": {"target": "@car", "speed": 1.5, "label": "go", "on": false,
 						"offset": [0, 1.5, -6], "tint": "#ff000080"}}]},
@@ -200,13 +201,13 @@ class SceneInstanceTests {
 				{"kind": "Text3D", "name": "label", "text": "Start \\"here\\"\\n", "textSize": 0.8, "color": "#80ff80", "font": "fonts/ui.ttf",
 					"pivotY": 0, "facing": "free"},
 				{"kind": "Particles3D", "name": "dust", "position": [0, 0.1, 0], "visible": false},
-				{"kind": "Model", "name": "track", "file": "track/track.glb", "scale": [2, 2, 2], "shadowReceiving": false, "overrides": {
+				{"kind": "Model3D", "name": "track", "file": "track/track.glb", "scale": [2, 2, 2], "shadowReceiving": false, "overrides": {
 					"road": {"shadowCasting": false, "visible": false, "pickable": true},
 					"road/line": {"tint": "#808080", "position": [0, 0, 0], "material": {"baseColor": "#2040c0"}},
 					"gates/gate_0": {"children": [{"kind": "Node3D", "name": "checkpoint", "position": [0, 2, 0],
 						"behaviors": [{"kind": "Checkpoint", "props": {"index": 0}}]}], "behaviors": [{"kind": "Gate"}]}
 				}},
-				{"kind": "Model", "name": "cone_1", "file": "props/cone.glb", "position": [12, 0, -3], "tint": "#ff8800", "shadowCasting": false,
+				{"kind": "Model3D", "name": "cone_1", "file": "props/cone.glb", "position": [12, 0, -3], "tint": "#ff8800", "shadowCasting": false,
 					"material": {"baseColor": "#ff8800", "metallic": 0.1, "roughness": 0.3, "texture": "props/cone.png",
 						"normalTexture": "props/cone_n.png", "normalScale": 0.5, "emissive": "#ff0000", "emissiveStrength": 2, "doubleSided": true},
 					"props": {"team": 2, "role": "obstacle", "path": [1, 2, 3], "hot": true, "color": "#ff0000", "leader": "@cone_1"}},
@@ -217,7 +218,7 @@ class SceneInstanceTests {
 	}';
 
 	static final CAR = '{"helix-scene3d": 1, "environment": {"ambient": {"intensity": 1}}, "nodes": [
-		{"kind": "Model", "name": "body", "children": [{"kind": "Node3D", "name": "wheel", "visible": false}]}]}';
+		{"kind": "Model3D", "name": "body", "children": [{"kind": "Node3D", "name": "wheel", "visible": false}]}]}';
 
 	// The round-trip sample under a stage's root: every node at its path, the prefab landing, the behaviors, ready, and capture.
 	static function sample():Void {
@@ -232,14 +233,14 @@ class SceneInstanceTests {
 		check(held.exists("sky/sky.hdr") && asked["sky/sky.hdr"] == 1, "The environment and the background share one load");
 		var world = instance.node("world");
 		check(world != null && !world.enabled && world.visible && world.childCount == 10, "The root group, disabled, with its ten children");
-		var sun = Std.downcast(instance.node("world/sun"), DirectionalLight);
+		var sun = Std.downcast(instance.node("world/sun"), DirectionalLight3D);
 		check(sun != null && near(sun.rotationX, -.6) && near(sun.rotationY, .7) && near(sun.rotationZ, 0) && sun.color == 0xfffff4e0
 			&& sun.intensity == 3.5 && sun.shadowCasting && sun.shadowDistance == 35 && sun.shadowMapSize == 1024 && sun.shadowStrength == .8
 			&& sun.shadowColor == 0xff102040,
 			"A directional light: its rotation and every property");
-		var lamp = Std.downcast(instance.node("world/lamp"), PointLight);
+		var lamp = Std.downcast(instance.node("world/lamp"), PointLight3D);
 		check(lamp != null && lamp.x == 1 && lamp.y == 2 && lamp.z == 3 && lamp.range == 10 && lamp.intensity == 2, "A point light at its position");
-		var spot = Std.downcast(instance.node("world/spot"), SpotLight);
+		var spot = Std.downcast(instance.node("world/spot"), SpotLight3D);
 		check(spot != null && spot.range == 20 && near(spot.innerCone, .2) && near(spot.outerCone, .5) && spot.shadowCasting, "A spot's cones");
 		var chase = Std.downcast(instance.node("world/chase"), Camera3D);
 		check(chase != null && chase.y == 3 && chase.z == -8 && near(chase.fovY, .9) && chase.near == .5 && chase.far == 500
@@ -287,7 +288,7 @@ class SceneInstanceTests {
 
 		// The prefab lands: made under its node, its override applied, its environment its node's; then everything is ready.
 		release("prefabs/car.scene3d", Bytes.ofString(CAR));
-		var body = Std.downcast(instance.node("world/car/body"), Model),
+		var body = Std.downcast(instance.node("world/car/body"), Model3D),
 			wheel = instance.node("world/car/body/wheel");
 		check(body != null && body.parent == car && wheel != null && !wheel.visible, "The prefab's nodes are under its node, as the prefab says");
 		check(body.material != null
@@ -359,7 +360,7 @@ class SceneInstanceTests {
 
 	static final MAIN = '{"helix-scene3d": 1, "nodes": [
 		{"scene": "p/one.scene3d", "name": "one", "overrides": {
-			"wheel": {"visible": true, "children": [{"kind": "PointLight", "name": "bulb", "behaviors": [{"kind": "Gate"}]}],
+			"wheel": {"visible": true, "children": [{"kind": "PointLight3D", "name": "bulb", "behaviors": [{"kind": "Gate"}]}],
 				"behaviors": [{"kind": "Checkpoint", "props": {"index": 3}}]},
 			"wheel/hub": {"position": [1, 0, 0]},
 			"nope/path": {"visible": false}}},
@@ -371,7 +372,7 @@ class SceneInstanceTests {
 		{"kind": "Node3D", "name": "wheel", "visible": false, "children": [{"kind": "Node3D", "name": "hub"}],
 			"behaviors": [{"kind": "Gate"}, {"kind": "Checkpoint", "props": {"target": "@hub"}}]},
 		{"scene": "p/two.scene3d", "name": "inner"}]}';
-	static final TWO = '{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "m"}, {"kind": "Node3D", "name": "hub"}]}';
+	static final TWO = '{"helix-scene3d": 1, "nodes": [{"kind": "Model3D", "name": "m"}, {"kind": "Node3D", "name": "hub"}]}';
 	static final LOOP = '{"helix-scene3d": 1, "nodes": [{"scene": "p/loop.scene3d", "name": "again"}]}';
 
 	// Prefabs: one nested in another, overrides turning a flag back on and adding children and behaviors, a self-naming one refused, an
@@ -388,9 +389,9 @@ class SceneInstanceTests {
 			hub = instance.node("one/wheel/hub"),
 			bulb = instance.node("one/wheel/bulb"),
 			m = instance.node("one/inner/m");
-		check(wheel != null && wheel.visible && hub != null && hub.x == 1 && bulb != null && Std.isOfType(bulb, PointLight) && bulb.parent == wheel,
+		check(wheel != null && wheel.visible && hub != null && hub.x == 1 && bulb != null && Std.isOfType(bulb, PointLight3D) && bulb.parent == wheel,
 			"The prefab's flag turned back on, its node moved, a child added under it");
-		check(m != null && Std.isOfType(m, Model) && m.parent == instance.node("one/inner"), "A prefab's own prefab lands under its node");
+		check(m != null && Std.isOfType(m, Model3D) && m.parent == instance.node("one/inner"), "A prefab's own prefab lands under its node");
 		check(instance.node("loop/again") != null
 			&& instance.node("loop/again").childCount == 0
 			&& logged(["main.scene3d", "loop/again", "p/loop.scene3d", "names itself"]),
@@ -429,7 +430,7 @@ class SceneInstanceTests {
 			'          "visible": true,',
 			'          "children": [',
 			'            {',
-			'              "kind": "PointLight",',
+			'              "kind": "PointLight3D",',
 			'              "name": "bulb",',
 			'              "behaviors": [',
 			'                {',
@@ -480,15 +481,15 @@ class SceneInstanceTests {
 
 		// Changes under the prefabs and nodes added by the game.
 		hub.setPosition(2, 0, 0);
-		(cast m : Model).tint = 0xffff0000;
+		(cast m : Model3D).tint = 0xffff0000;
 		var tag = new Text3D("tag");
 		tag.name = "tag";
 		wheel.addChild(tag);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.name = "sun";
 		sun.intensity = 2;
 		instance.root.addChild(sun);
-		var box = new Model(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null), new Material());
+		var box = new Model3D(Mesh3D.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null), new Material3D());
 		box.name = "box";
 		box.material.roughness = .2;
 		instance.root.addChild(box);
@@ -505,11 +506,11 @@ class SceneInstanceTests {
 			&& same(wheelChange.children[1].properties.get("text"), Text("tag")),
 			"A node the game added under a prefab's node joins the override's children");
 		check(again.nodes.length == 5
-			&& again.nodes[3].kind == "DirectionalLight"
+			&& again.nodes[3].kind == "DirectionalLight3D"
 			&& same(again.nodes[3].properties.get("intensity"), Number(2)),
 			"A light the game added at the top is captured by its class");
 		var boxEntry = again.nodes[4];
-		check(boxEntry.kind == "Model" && boxEntry.file == null && boxEntry.material != null && boxEntry.material.roughness == .2
+		check(boxEntry.kind == "Model3D" && boxEntry.file == null && boxEntry.material != null && boxEntry.material.roughness == .2
 			&& boxEntry.material.baseColor == null,
 			"A model made in code from arrays is written without a file or a mesh, its material as it differs from the default");
 		check(logged(["main.scene3d", "box", "has no file"]) && log.length == 0, "and logged once");
@@ -534,10 +535,10 @@ class SceneInstanceTests {
 		waiting.destroy();
 	}
 
-	// A model file: its nodes moved under the entry's node, the entry's Model properties on every model, an override by the file's path.
+	// A model file: its nodes moved under the entry's node, the entry's Model3D properties on every model, an override by the file's path.
 	static function modelFile():Void {
 		var pistol = "CharacterArmature/Root/Body/Hips/Abdomen/Torso/Chest/Shoulder.R/UpperArm.R/LowerArm.R/Wrist.R/Middle1.R/Pistol";
-		var text = '{"helix-scene3d": 1, "nodes": [{"kind": "Model", "name": "gun", "file": "guns/gun.glb", "position": [0, 1, 0], "tint": "#ff0000",
+		var text = '{"helix-scene3d": 1, "nodes": [{"kind": "Model3D", "name": "gun", "file": "guns/gun.glb", "position": [0, 1, 0], "tint": "#ff0000",
 			"shadowCasting": false, "overrides": {
 				"$pistol": {"visible": false, "tint": "#00ff00"},
 				"CharacterArmature/Root/Foot.L": {"position": [5, 0, 0], "children": [{"kind": "Node3D", "name": "marker"}]},
@@ -551,7 +552,7 @@ class SceneInstanceTests {
 		check(instance.ready
 			&& gun.childCount == 1
 			&& gun.getChild(0).name == "CharacterArmature", "The file's roots moved under the entry's node");
-		var model = Std.downcast(instance.node('gun/$pistol'), Model);
+		var model = Std.downcast(instance.node('gun/$pistol'), Model3D);
 		check(model != null && model.mesh != null && model.tint == 0xff00ff00 && !model.shadowCasting && model.shadowReceiving && !model.visible,
 			'The file\'s model got the entry\'s properties, then the override\'s: ${model == null ? "no model" : StringTools.hex(model.tint) + " " + model.mesh + " " + model.shadowCasting + " " + model.shadowReceiving + " " + model.visible} $log');
 		var foot = instance.node("gun/CharacterArmature/Root/Foot.L");
@@ -568,7 +569,7 @@ class SceneInstanceTests {
 			'  "helix-scene3d": 1,',
 			'  "nodes": [',
 			'    {',
-			'      "kind": "Model",',
+			'      "kind": "Model3D",',
 			'      "name": "gun",',
 			'      "file": "guns/gun.glb",',
 			'      "position": [0, 1, 0],',
@@ -603,11 +604,11 @@ class SceneInstanceTests {
 		log = [];
 		check(SceneKinds3D.make("Blob") == null
 			&& SceneKinds3D.kindOf(new Node3D()) == "Node3D"
-			&& SceneKinds3D.kindOf(new SpotLight()) == "SpotLight",
+			&& SceneKinds3D.kindOf(new SpotLight3D()) == "SpotLight3D",
 			"Kinds by name and by class");
 		var ttf = sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"),
 			pixel = Bytes.alloc(4);
-		for (kind in SceneSchema.kinds) {
+		for (kind in SceneSchema3D.kinds) {
 			var node = SceneKinds3D.make(kind.name);
 			check(node != null && SceneKinds3D.kindOf(node) == kind.name, '${kind.name} is made and known by its class');
 			for (property in kind.properties) {
@@ -633,7 +634,7 @@ class SceneInstanceTests {
 		var sprite = new Sprite3D(null);
 		check(!SceneKinds3D.apply(sprite, "facing", Text("sideways")) && !SceneKinds3D.apply(sprite, "alphaMode", Text("solid")),
 			"A named choice no enum has is refused");
-		var lamp = new PointLight();
+		var lamp = new PointLight3D();
 		check(!SceneKinds3D.apply(lamp, "shadowCasting", Flag(true)) && SceneKinds3D.read(lamp, "shadowDistance") == null,
 			"A point light's shadow properties aren't its to apply or read");
 		var camera = new Camera3D();
@@ -665,7 +666,7 @@ class SceneInstanceTests {
 		material.emissive = 0xffff8800;
 		material.emissiveStrength = 3;
 		material.doubleSided = true;
-		var model = new Model(Mesh.cube(1, 1, 1), new Material());
+		var model = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		var before = model.material;
 		SceneKinds3D.applyMaterial(model, material);
 		release("mat.png", pixel);
@@ -682,7 +683,7 @@ class SceneInstanceTests {
 		read = SceneKinds3D.readMaterial(model);
 		check(read.roughness == .1 && read.baseColor == 0xffffffff && read.texture == null && read.metallic == 0,
 			"A material saying one value is that value over the defaults");
-		check(SceneKinds3D.readMaterial(new Model()) == null, "A model of no parts has no material to read");
+		check(SceneKinds3D.readMaterial(new Model3D()) == null, "A model of no parts has no material to read");
 		check(log.length == 0, 'Nothing logged: $log');
 	}
 
@@ -692,7 +693,7 @@ class SceneInstanceTests {
 		var file = parse('{"helix-scene3d": 1, "nodes": [
 			{"kind": "Text3D", "name": "quiet", "text": "a"},
 			{"kind": "Text3D", "name": "button", "text": "b", "pickable": true},
-			{"kind": "Model", "name": "ghost", "pickable": false},
+			{"kind": "Model3D", "name": "ghost", "pickable": false},
 			{"kind": "Camera3D", "name": "eye", "position": [0, 1, 8], "projection": "perspective", "fovY": 1, "near": 0.5, "far": 50},
 			{"kind": "Camera3D", "name": "flat", "position": [0, 12, 0], "projection": "orthographic", "orthographicHeight": 6, "near": 0,
 				"far": 20}
@@ -704,7 +705,7 @@ class SceneInstanceTests {
 			ghost = instance.node("ghost");
 		check(quiet != null && !quiet.pickable && quiet.enabled && quiet.visible, "A Text3D with no flag said is unpickable, as made in code");
 		check(button != null && button.pickable, "A Text3D said pickable is");
-		check(ghost != null && !ghost.pickable && ghost.visible, "A Model said unpickable is");
+		check(ghost != null && !ghost.pickable && ghost.visible, "A Model3D said unpickable is");
 		var eye = Std.downcast(instance.node("eye"), Camera3D),
 			flat = Std.downcast(instance.node("flat"), Camera3D);
 		check(eye != null && eye.projection == Perspective && eye.fovY == 1 && eye.near == .5 && eye.far == 50, "A perspective camera from a file");
@@ -718,7 +719,7 @@ class SceneInstanceTests {
 			ghostAt = written.indexOf('"name": "ghost"');
 		check(written.substring(quietAt, buttonAt).indexOf('"pickable"') < 0, "The unsaid flag at the kind's default isn't written");
 		check(written.substring(buttonAt, ghostAt).indexOf('"pickable": true') >= 0, "The Text3D's pickable true is");
-		check(written.substring(ghostAt).indexOf('"pickable": false') >= 0, "and the Model's pickable false");
+		check(written.substring(ghostAt).indexOf('"pickable": false') >= 0, "and the Model3D's pickable false");
 		check(same(captured.nodes[4].properties.get("projection"), Text("orthographic"))
 			&& same(captured.nodes[4].properties.get("near"), Number(0))
 			&& same(captured.nodes[3].properties.get("projection"), Text("perspective"))
@@ -730,18 +731,18 @@ class SceneInstanceTests {
 		check(log.length == 0, 'Nothing logged: $log');
 	}
 
-	// Generated meshes: a cube and a plane from a file, made by Mesh's generators with the inline material, captured byte-equal; a sphere
+	// Generated meshes: a cube and a plane from a file, made by Mesh3D's generators with the inline material, captured byte-equal; a sphere
 	// made in code captured as a mesh entry.
 	static function meshes():Void {
 		var file = parse('{"helix-scene3d": 1, "nodes": [
-			{"kind": "Model", "name": "box", "position": [0, 1, 0], "mesh": {"shape": "cube", "width": 1, "height": 2, "length": 3}},
-			{"kind": "Model", "name": "ground", "mesh": {"shape": "plane", "width": 400, "length": 400, "subdivisions": 2},
+			{"kind": "Model3D", "name": "box", "position": [0, 1, 0], "mesh": {"shape": "cube", "width": 1, "height": 2, "length": 3}},
+			{"kind": "Model3D", "name": "ground", "mesh": {"shape": "plane", "width": 400, "length": 400, "subdivisions": 2},
 				"material": {"baseColor": "#9bbf7c", "roughness": 1}, "shadowCasting": false}
 		]}', "meshes.scene3d");
 		var made = fresh(),
 			instance = file.instantiate(made.stage.root, made.pass);
-		var box = Std.downcast(instance.node("box"), Model),
-			ground = Std.downcast(instance.node("ground"), Model);
+		var box = Std.downcast(instance.node("box"), Model3D),
+			ground = Std.downcast(instance.node("ground"), Model3D);
 		check(box != null && box.mesh != null && box.mesh.vertexCount == 24 && box.mesh.maxY == 1 && box.mesh.maxZ == 1.5
 			&& box.material.baseColor == 0xffffffff,
 			"A cube from the file: 24 vertices, its size, a default material");
@@ -756,17 +757,17 @@ class SceneInstanceTests {
 		check(ground.mesh.shape != null && ground.mesh.shape.name == "plane" && ground.mesh.shape.arguments.get("subdivisions") == 2,
 			"The mesh records what made it");
 		check(SceneFile3D.capture(instance).write().compare(file.write()) == 0, "The untouched instance captures to its file");
-		var ball = new Model(Mesh.sphere(2));
+		var ball = new Model3D(Mesh3D.sphere(2));
 		ball.name = "ball";
 		instance.root.addChild(ball);
 		var captured = SceneFile3D.capture(instance);
 		var entry = captured.nodes[2];
-		check(entry.kind == "Model" && entry.name == "ball" && entry.file == null && entry.mesh != null && entry.mesh.shape == "sphere"
+		check(entry.kind == "Model3D" && entry.name == "ball" && entry.file == null && entry.mesh != null && entry.mesh.shape == "sphere"
 			&& entry.mesh.arguments.get("radius") == 2,
-			"A Model made in code with a generated mesh captures as a mesh entry");
+			"A Model3D made in code with a generated mesh captures as a mesh entry");
 		check(captured.write().toString().indexOf('"mesh": {\n        "shape": "sphere",\n        "radius": 2\n      }') >= 0,
 			"written with its defaults left out");
-		check(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).shape == null, "A mesh from arrays has no record");
+		check(Mesh3D.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).shape == null, "A mesh from arrays has no record");
 		instance.destroy();
 		check(log.length == 0, 'Nothing logged: $log');
 	}

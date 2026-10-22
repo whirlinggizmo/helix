@@ -54,9 +54,9 @@ class Text3D extends Node3D {
 	public var pivotY(default, null):Float = .5;
 
 	/** How it faces. */
-	public var facing:SpriteFacing = Camera;
+	public var facing:SpriteFacing3D = Camera;
 
-	override function get_spriteKind():Node3D.SpriteKind
+	override function get_spriteKind():Node3D.SpriteKind3D
 		return Flat;
 
 	override function attachSprites(renderer:Renderer3D):Void
@@ -66,6 +66,6 @@ class Text3D extends Node3D {
 			forwardZ:Float, still:Bool):Void
 		(sprites : Sprites3D).visitText(this, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ);
 
-	override function pickSprites(sprites:Any, ray:Ray, best:Float, hit:PickHit):Float
+	override function pickSprites(sprites:Any, ray:Ray3D, best:Float, hit:PickHit3D):Float
 		return (sprites : Sprites3D).pickText(this, ray, best, hit);
 }

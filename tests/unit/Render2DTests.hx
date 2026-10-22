@@ -13,7 +13,7 @@ import helix.render2d.Text2D;
 import helix.render2d.Polygon2D;
 import helix.render2d.Renderer2D;
 import helix.render2d.Texture2D;
-import helix.render3d.Model;
+import helix.render3d.Model3D;
 import helix.render3d.Sprite3D;
 
 /** Graphics that only counts: handles, and the draws and viewports of a frame, sorted by what their pipeline draws: a 2D batch's
@@ -584,7 +584,7 @@ class Render2DTests {
 			"Level sizes: blocks of 4x4, or 4 bytes a texel");
 
 		// "name.ktx" tries the variants this GPU samples (here ASTC only), then the PNG; a variant named outright is tried alone.
-		var textures = new helix.render2d.TextureCache(null, null, gpu);
+		var textures = new helix.render2d.TextureCache2D(null, null, gpu);
 		check(textures.getCandidates("a/b.ktx").join(",") == "a/b.astc.ktx,a/b.png", "name.ktx: this GPU's variants, then name.png");
 		check(textures.getCandidates("a/b.bc7.ktx").join(",") == "a/b.bc7.ktx" && textures.getCandidates("a/b.png").join(",") == "a/b.png",
 			"Other paths are themselves");
@@ -597,7 +597,7 @@ class Render2DTests {
 			&& komika.getOutline(komika.getGlyphIndex(" ".code)).length == 0, "A letter has an outline, a space none");
 		var h = komika.getGlyphIndex("H".code);
 		check(komika.getKerning(a, v) < 0 && komika.getKerning(h, h) == 0, "GPOS kerning closes AV and leaves HH");
-		var baked = helix.render2d.FontBaker.bake(komika, [for (c in 32...127) c], 32, 6, 512);
+		var baked = helix.render2d.FontBaker2D.bake(komika, [for (c in 32...127) c], 32, 6, 512);
 		var fits = true;
 		for (g in baked.glyphs)
 			fits = fits && g.x + g.width <= baked.width && g.y + g.height < baked.height;
@@ -716,10 +716,10 @@ class Render2DTests {
 		check(refused, "A shader of another kind isn't a screen effect");
 		// A mirrored model (a negative scale) draws through another pipeline than an ordinary one: its front faces wind the other way.
 		var stage3D = new helix.render3d.Renderer3D(gpu),
-			cube = helix.render3d.Mesh.cube(1, 1, 1),
-			material = new helix.render3d.Material();
-		var plain = new Model(cube, material),
-			mirrored = new Model(cube, material);
+			cube = helix.render3d.Mesh3D.cube(1, 1, 1),
+			material = new helix.render3d.Material3D();
+		var plain = new Model3D(cube, material),
+			mirrored = new Model3D(cube, material);
 		plain.setPosition(-2, 0, 0);
 		mirrored.setPosition(2, 0, 0);
 		mirrored.setScale(-1, 1, 1);
@@ -734,7 +734,7 @@ class Render2DTests {
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
 		var spriteTexture = Texture2D.fromRgba(gpu, 1, 1, Bytes.alloc(4));
-		var modes:Array<helix.render3d.SpriteAlpha> = [Add, Blend, Opaque, Blend, Add];
+		var modes:Array<helix.render3d.SpriteAlpha3D> = [Add, Blend, Opaque, Blend, Add];
 		for (mode in modes) {
 			var s3 = new Sprite3D(spriteTexture);
 			s3.setAlphaMode(mode);
@@ -747,12 +747,12 @@ class Render2DTests {
 		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.drawnNodeCount == 7,
 			"Sprites draw opaque, then blended, then added, each phase a draw through its own pipeline");
 		stage3D.destroy();
-		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
+		// Textures2D: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
 		// others theirs; another filter is another texture; the last release frees it.
 		var heldAssets = new HeldAssets(),
 			images = new WhiteImages(),
 			decoding = new helix.graphics.ImageDecoding(images),
-			shared = new helix.render2d.TextureCache(heldAssets, decoding, gpu);
+			shared = new helix.render2d.TextureCache2D(heldAssets, decoding, gpu);
 		var got:Array<Texture2D> = [];
 		shared.load("a.png", true, texture -> got.push(texture));
 		var given = shared.load("a.png", true, texture -> got.push(texture));

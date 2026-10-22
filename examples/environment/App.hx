@@ -10,28 +10,28 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Environment;
+import helix.render3d.EnvironmentMap3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Environments;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Environments3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.Tonemap;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Image-based light, a background and tone mapping: the material spheres (red plastic above, gold below, roughness 0 to 1 left to right), a
 	normal-mapped sphere, a pearl (a surface shader of the example's own that lets the engine shade it) and a car, lit by an environment alone,
 	no lights and no ambient light: an Environment3D on the level's root, its map lighting and its background behind, the exposure and the
 	tone mapping the View3D's. Metals mirror the world around them; rougher
-	surfaces blur it. Each environment is a 1K .hdr from Poly Haven, prepared as it loads a few milliseconds a frame (Environments); until it's
+	surfaces blur it. Each environment is a 1K .hdr from Poly Haven, prepared as it loads a few milliseconds a frame (Environments3D); until it's
 	ready the level is lit by nothing, and the readout says how long it took.
 
 	E: environment (sunset, studio, none); B: background (sharp, soft, blurred, off); T: tone mapping (Neutral, ACES, none); UP / DOWN:
@@ -53,7 +53,7 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var text = new Drawing2D();
 	var fps = new FpsOverlay();
-	var environments:Array<Null<Environment>> = [null, null];
+	var environments:Array<Null<EnvironmentMap3D>> = [null, null];
 	var loadMs:Array<Float> = [0, 0];
 	var current = 0;
 	var blur = 1;
@@ -61,7 +61,7 @@ class App extends helix.App {
 	var exposure = 0.;
 	var rotation = 0.;
 	// The camera, circling.
-	var orbit = new Orbit(7.5, 1.8, .15, 1.2);
+	var orbit = new Orbit3D(7.5, 1.8, .15, 1.2);
 	var turning:Array<Node3D> = [];
 	var shaders:Shaders;
 
@@ -72,12 +72,12 @@ class App extends helix.App {
 		return Color.fromChannels(encode(r), encode(g), encode(b));
 	}
 
-	function sphere(mesh:Mesh, x:Float, y:Float, base:Int, metallic:Float, roughness:Float):Material {
-		var material = new Material();
+	function sphere(mesh:Mesh3D, x:Float, y:Float, base:Int, metallic:Float, roughness:Float):Material3D {
+		var material = new Material3D();
 		material.baseColor = base;
 		material.metallic = metallic;
 		material.roughness = roughness;
-		var node = new Model(mesh, material);
+		var node = new Model3D(mesh, material);
 		node.setPosition(x, y, 0);
 		level.addChild(node);
 		turning.push(node);
@@ -91,7 +91,7 @@ class App extends helix.App {
 		level.environment = light;
 		// Framed for 16:9: every column of spheres on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var ball = Mesh.sphere(.5, 32, 64);
+		var ball = Mesh3D.sphere(.5, 32, 64);
 		for (c in 0...COLUMNS) {
 			var x = (c - (COLUMNS - 1) / 2) * SPACING,
 				roughness = c / (COLUMNS - 1);
@@ -99,15 +99,15 @@ class App extends helix.App {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
+		Textures2D.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
 		shaders = new Shaders(Assets.instance, Graphics.instance);
 		shaders.load("shaders/pearl.hxshader", shader -> pearl.setShader(shader));
-		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		for (i in 0...PATHS.length) {
 			var started = Time.time;
-			Environments.load(PATHS[i], environment -> prepared(i, environment, started));
+			Environments3D.load(PATHS[i], environment -> prepared(i, environment, started));
 		}
 		view = new View3D(level, camera);
 		Stage.addChild(view);
@@ -116,7 +116,7 @@ class App extends helix.App {
 	}
 
 	// The car's file in: a copy of it turning beside the spheres.
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		var car = file.instantiate("car");
 		car.setPosition(2.7, -.5, .2);
 		car.setScale(1.1, 1.1, 1.1);
@@ -125,7 +125,7 @@ class App extends helix.App {
 	}
 
 	// Environment i prepared, its load begun at started: kept, with how long it took.
-	function prepared(i:Int, environment:Environment, started:Float):Void {
+	function prepared(i:Int, environment:EnvironmentMap3D, started:Float):Void {
 		environments[i] = environment;
 		loadMs[i] = (Time.time - started) * 1000;
 		// Said in the log too, so a run without a screen shows how long the bake took.
@@ -195,7 +195,7 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		for (environment in environments)
 			if (environment != null)
-				Environments.release(environment);
+				Environments3D.release(environment);
 		view.destroy();
 	}
 }

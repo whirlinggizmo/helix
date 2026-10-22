@@ -4,7 +4,7 @@ import helix.input.IInput;
 import helix.render2d.Camera2D;
 import helix.render2d.Renderer2D;
 import helix.render3d.Camera3D;
-import helix.render3d.PickHit;
+import helix.render3d.PickHit3D;
 import helix.render3d.Renderer3D;
 
 /** The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The
@@ -18,7 +18,7 @@ class Pointer {
 	var layers:Array<Layer> = [];
 	var pressedNow:Null<Any>;
 	var clickedNow:Null<Any>;
-	var hit = new PickHit();
+	var hit = new PickHit3D();
 	// What the hovered node is in: a 2D tree (which captures a press) or a 3D one (hit3D).
 	var hovered2D = false;
 	var hovered3D = false;
@@ -111,9 +111,9 @@ class Pointer {
 	public var captured(default, null):Bool = false;
 
 	/** The last hit in a 3D stage (its point, normal, distance), when the hovered node is a 3D stage's; null otherwise. */
-	public var hit3D(get, never):Null<PickHit>;
+	public var hit3D(get, never):Null<PickHit3D>;
 
-	function get_hit3D():Null<PickHit>
+	function get_hit3D():Null<PickHit3D>
 		return hovered3D ? hit : null;
 }
 

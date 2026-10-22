@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.graphics.TextureFormat;
 
 /** A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps
-	(https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures loads them. */
+	(https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures2D loads them. */
 class Ktx {
 	static inline var HEADER = 64;
 	static var IDENTIFIER = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];

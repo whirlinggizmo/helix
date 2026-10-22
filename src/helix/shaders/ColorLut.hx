@@ -6,7 +6,7 @@ import helix.render2d.Texture2D;
 /** A color grade, a screen effect of the library: the frame's colors looked up in a 32 x 32 x 32 color cube (a LUT) laid out as a strip of
 	SIZE squares, 1024 x 32 texels: blue chooses a square left to right, red runs across it, green down it, and each texel holds what that
 	color becomes (sRGB). A grade is made by grading identity()'s strip in an image editor with the game's look and loading the PNG (linear
-	sampling; Textures.load). Put it after the tone mapping, as the colors it grades are the screen's. */
+	sampling; Textures2D.load). Put it after the tone mapping, as the colors it grades are the screen's. */
 class ColorLut extends LibraryScreenEffect {
 	/** The cube's size: SIZE values of each channel, so the strip is SIZE * SIZE x SIZE texels. */
 	public static inline var SIZE = 32;

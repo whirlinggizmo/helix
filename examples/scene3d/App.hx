@@ -9,17 +9,17 @@ import helix.render2d.Shape2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.scene.Pointer;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** A scene under the pointer (the earlier frameworks' scene3d): eight shapes in a ring about a sphere, a cube turning above them, under a
 	circling camera, shown by a View3D on the stage. The shape under the pointer lightens; a click selects it or lets it go. A HUD over the
@@ -44,13 +44,13 @@ class App extends helix.App {
 	var pointer:Pointer;
 	var fps = new FpsOverlay();
 	var hud = new Drawing2D();
-	var shapes:Array<Model> = [];
-	var selected:Array<Model> = [];
-	var spinner:Model;
+	var shapes:Array<Model3D> = [];
+	var selected:Array<Model3D> = [];
+	var spinner:Model3D;
 	var button:Shape2D;
 	var label:Text2D;
 	// The camera, circling.
-	var orbit = new Orbit(10, 6, .25, 1);
+	var orbit = new Orbit3D(10, 6, .25, 1);
 	var spin = 0.;
 
 	override public function init():Void {
@@ -61,33 +61,33 @@ class App extends helix.App {
 		camera.minAspect = 16 / 9;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .25);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2.5;
 		sun.lookAt(-.4, -1, -.3);
 		level.addChild(sun);
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xff3a3f4a;
 		// The ground isn't something to pick: the pointer passes it (an unpickable node).
-		var floor = new Model(Mesh.plane(16, 16), ground);
+		var floor = new Model3D(Mesh3D.plane(16, 16), ground);
 		floor.pickable = false;
 		level.addChild(floor);
 		for (i in 0...8) {
-			var a = i / 8 * Math.PI * 2, material = new Material();
+			var a = i / 8 * Math.PI * 2, material = new Material3D();
 			material.baseColor = COLORS[i];
-			var cube = new Model(Mesh.cube(1, 1, 1), material);
+			var cube = new Model3D(Mesh3D.cube(1, 1, 1), material);
 			cube.name = 'cube ${i + 1}';
 			cube.setPosition(4 * Math.cos(a), .5, 4 * Math.sin(a));
 			level.addChild(cube);
 			shapes.push(cube);
 		}
-		var white = new Material();
+		var white = new Material3D();
 		white.baseColor = 0xffe8e8f0;
-		var sphere = new Model(Mesh.sphere(1), white);
+		var sphere = new Model3D(Mesh3D.sphere(1), white);
 		sphere.name = "sphere";
 		sphere.setPosition(0, 1, 0);
 		level.addChild(sphere);
 		shapes.push(sphere);
-		spinner = new Model(Mesh.cube(.8, .8, .8), white);
+		spinner = new Model3D(Mesh3D.cube(.8, .8, .8), white);
 		spinner.name = "spinner";
 		spinner.setPosition(0, 3, 0);
 		level.addChild(spinner);

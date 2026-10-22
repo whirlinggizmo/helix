@@ -13,7 +13,7 @@ class Shape2D extends Node2D {
 	var circleRadius = 0.;
 	var corners = 0.;
 
-	function new(form:ShapeForm, color:Int) {
+	function new(form:ShapeForm2D, color:Int) {
 		super();
 		this.form = form;
 		this.color = color;
@@ -49,14 +49,14 @@ class Shape2D extends Node2D {
 	}
 
 	/** Which shape it is. */
-	public var form(default, null):ShapeForm;
+	public var form(default, null):ShapeForm2D;
 
 	/** Its color, 0xAARRGGBB: a shaded rectangle's at its start (its left edge, or its top). */
 	public var color:Int = 0xffffffff;
 
 	/** How a filled rectangle is colored: Flat in color (the start), or shaded from color to endColor across or down it, each channel
 		linearly (alpha too, so a ramp to the same color at alpha 0 fades it out). An outlined rectangle and the other forms are drawn flat. */
-	public var shading:ShapeShading = Flat;
+	public var shading:ShapeShading2D = Flat;
 
 	/** The color a shaded rectangle reaches at its end (its right edge, or its bottom), 0xAARRGGBB. (0xffffffff to start.) */
 	public var endColor:Int = 0xffffffff;
@@ -149,7 +149,7 @@ class Shape2D extends Node2D {
 }
 
 /** How a filled rectangle is colored. */
-enum abstract ShapeShading(Int) {
+enum abstract ShapeShading2D(Int) {
 	/** In its color alone. */
 	var Flat = 0;
 
@@ -161,7 +161,7 @@ enum abstract ShapeShading(Int) {
 }
 
 /** Which shape a Shape2D is. */
-enum abstract ShapeForm(Int) {
+enum abstract ShapeForm2D(Int) {
 	/** A rectangle, filled or outlined, its corners square or rounded. */
 	var Rectangle = 0;
 

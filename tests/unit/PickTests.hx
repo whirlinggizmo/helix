@@ -1,12 +1,12 @@
 import Render2DTests.CountingGraphics;
 import helix.render3d.Camera3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
-import helix.render3d.PickHit;
-import helix.render3d.Ray;
-import helix.render3d.Skin;
+import helix.render3d.PickHit3D;
+import helix.render3d.Ray3D;
+import helix.render3d.Skin3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Renderer3D;
 import helix.render3d.Text3D;
@@ -42,7 +42,7 @@ class PickTests {
 	}
 
 	static function rays():Void {
-		var c = camera(), ray = new Ray();
+		var c = camera(), ray = new Ray3D();
 		check(c.computeRay(400, 300, ray) && near(ray.directionZ, -1) && near(ray.originX, 0) && near(ray.originZ, 10 - c.near),
 			"The middle pixel looks straight ahead, from the near plane");
 		check(c.computeRay(800 - 1e-6, 300, ray) && ray.directionX > 0, "Right of the middle, to the right");
@@ -66,8 +66,8 @@ class PickTests {
 
 	static function models():Void {
 		var stage = new Renderer3D(new CountingGraphics()), c = camera();
-		var front = new Model(Mesh.cube(2, 2, 2), new Material()),
-			back = new Model(Mesh.cube(2, 2, 2), new Material());
+		var front = new Model3D(Mesh3D.cube(2, 2, 2), new Material3D()),
+			back = new Model3D(Mesh3D.cube(2, 2, 2), new Material3D());
 		front.setPosition(0, 0, 2);
 		back.setPosition(0, 0, -2);
 		stage.add(back);
@@ -82,7 +82,7 @@ class PickTests {
 		front.pickable = false;
 		check(stage.pick(c, 400, 300).node == back, "An unpickable one lets the ray through");
 		front.pickable = true;
-		var child = new Model(Mesh.cube(1, 1, 1), new Material());
+		var child = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		child.setPosition(0, 0, 3);
 		front.addChild(child);
 		front.pickable = false;
@@ -92,14 +92,14 @@ class PickTests {
 		front.enabled = true;
 		front.pickable = true;
 		// See-through: hit only where its alpha reaches a half.
-		var glass = new Material();
+		var glass = new Material3D();
 		glass.blended = true;
 		glass.baseColor = 0x40ffffff;
 		child.material = glass;
 		check(stage.pick(c, 400, 300).node == front, "A faint see-through model isn't hit");
 		// Stretched: a slanted face's normal goes by the inverse transpose (the plane x + z = 0, x stretched 4 times: x / 4 + z = 0), a unit
 		// vector toward the camera.
-		var slab = new Model(Mesh.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material());
+		var slab = new Model3D(Mesh3D.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material3D());
 		slab.setScale(4, 1, 1);
 		var side = new Renderer3D(new CountingGraphics());
 		side.add(slab);
@@ -113,19 +113,19 @@ class PickTests {
 		inside.setViewport(800, 600);
 		inside.setView(0, 0, 0, 0, 0, -1);
 		var room = new Renderer3D(new CountingGraphics());
-		room.add(new Model(Mesh.cube(2, 2, 2), new Material()));
+		room.add(new Model3D(Mesh3D.cube(2, 2, 2), new Material3D()));
 		var fromInside = room.pick(inside, 400, 300);
 		check(fromInside != null && fromInside.getNormal(2) > 0, "From inside, the normal faces back along the ray");
-		var kept = new PickHit();
+		var kept = new PickHit3D();
 		check(stage.pick(c, 400, 300, kept) == kept && stage.pick(c, 10, 10, kept) == null && kept.node == null,
 			"A given hit is filled in, and cleared on a miss");
 	}
 
 	static function skinned():Void {
 		// A strip along x on two joints, the knee at x 1; posed with the knee at x 40, it's there, not where it was bound.
-		var mesh = Mesh.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 1, 0], null, null, null, null,
+		var mesh = Mesh3D.fromArrays([0., 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 1, 0], null, null, null, null,
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
-		var skin = new Skin(["hip", "knee"], [
+		var skin = new Skin3D(["hip", "knee"], [
 			1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1
 		]);
 		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
@@ -134,7 +134,7 @@ class PickTests {
 		knee.setPosition(1, 0, 0);
 		hip.addChild(knee);
 		character.addChild(hip);
-		var model = new Model(mesh, new Material());
+		var model = new Model3D(mesh, new Material3D());
 		character.addChild(model);
 		model.bindSkeleton(character, skin);
 		var stage = new Renderer3D(new CountingGraphics());
@@ -151,9 +151,9 @@ class PickTests {
 		// Gear swapped: the old part's model off the character, a new one (the strip a unit higher) bound to the same skeleton; the next pick
 		// tests the new one as posed, and the old is gone.
 		character.removeChild(model);
-		var gear = Mesh.fromArrays([0., 1, 0, 1, 1, 0, 0, 2, 0, 1, 1, 0, 2, 1, 0, 1, 2, 0], null, null, null, null,
+		var gear = Mesh3D.fromArrays([0., 1, 0, 1, 1, 0, 0, 2, 0, 1, 1, 0, 2, 1, 0, 1, 2, 0], null, null, null, null,
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
-		var worn = new Model(gear, new Material());
+		var worn = new Model3D(gear, new Material3D());
 		check(worn.bindSkeleton(character, skin), "The new part binds to the same skeleton");
 		character.addChild(worn);
 		c.setView(40.6, .3, 10, 40.6, .3, 0);
@@ -192,7 +192,7 @@ class PickTests {
 		hit = stage.pick(c, at[0], at[1]);
 		check(hit != null && hit.node == label, "A text by its block");
 		// In front of a model, the sprite wins; behind it, the model does.
-		var box = new Model(Mesh.cube(1, 1, 1), new Material());
+		var box = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		box.setPosition(3, 0, -2);
 		stage.add(box);
 		at = pixel(c, 3, 0, 0);
@@ -205,7 +205,7 @@ class PickTests {
 	// The pointer over a world and a HUD: hover, press, a click released over what was pressed, a drag released elsewhere, and capture.
 	static function pointer():Void {
 		var gpu = new CountingGraphics(), world = new Renderer3D(gpu), c = camera(), input = new helix.input.InputState();
-		var cube = new Model(Mesh.cube(2, 2, 2), new Material());
+		var cube = new Model3D(Mesh3D.cube(2, 2, 2), new Material3D());
 		world.add(cube);
 		var hud = new helix.render2d.Renderer2D(),
 			hudCamera = new helix.render2d.Camera2D();

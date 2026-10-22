@@ -5,21 +5,21 @@ import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
-import helix.render2d.Fonts;
+import helix.render2d.Fonts2D;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.Text3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Text in the world, and 3D lines, in a View3D on the stage: labels facing the camera above a cube, a sphere and a panel (the built-in
 	font), a sign whose text turns with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground by a Drawing3D's
@@ -34,16 +34,16 @@ class App extends helix.App {
 	var fps = new FpsOverlay();
 	var sign:Node3D;
 	var signText:Text3D;
-	var cube:Model;
+	var cube:Model3D;
 	// The camera, circling.
-	var orbit = new Orbit(9, 4, .25, .8);
+	var orbit = new Orbit3D(9, 4, .25, .8);
 
 	// A model of mesh in color at x, y, z, with a label above it, facing the camera.
-	function labelled(mesh:Mesh, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model {
-		var material = new Material();
+	function labelled(mesh:Mesh3D, color:Int, x:Float, y:Float, z:Float, label:String, labelHeight:Float):Model3D {
+		var material = new Material3D();
 		material.baseColor = color;
 		material.roughness = .5;
-		var model = new Model(mesh, material);
+		var model = new Model3D(mesh, material);
 		model.setPosition(x, y, z);
 		level.addChild(model);
 		var text = new Text3D(label, .4, 0xfff5f5f5);
@@ -60,23 +60,23 @@ class App extends helix.App {
 		Stage.color = 0xff1c1e26;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .3);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.4);
 		level.addChild(sun);
-		cube = labelled(Mesh.cube(1, 1, 1), 0xff3b82f6, -3, .5, 0, "cube", 1.6);
-		labelled(Mesh.sphere(.6), 0xffe5484d, 0, .6, 0, "sphere", 1.8);
-		labelled(Mesh.cube(1.4, .9, .1), 0xff46a758, 3, .45, 0, "panel", 1.5);
+		cube = labelled(Mesh3D.cube(1, 1, 1), 0xff3b82f6, -3, .5, 0, "cube", 1.6);
+		labelled(Mesh3D.sphere(.6), 0xffe5484d, 0, .6, 0, "sphere", 1.8);
+		labelled(Mesh3D.cube(1.4, .9, .1), 0xff46a758, 3, .45, 0, "panel", 1.5);
 		// A sign: a post, a board, and text on the board's face that turns with it.
-		var wood = new Material();
+		var wood = new Material3D();
 		wood.baseColor = 0xff8b5a2b;
 		wood.roughness = .9;
 		sign = new Node3D();
 		sign.setPosition(0, 0, -3);
-		var post = new Model(Mesh.cube(.12, 1.6, .12), wood);
+		var post = new Model3D(Mesh3D.cube(.12, 1.6, .12), wood);
 		post.setPosition(0, .8, 0);
 		sign.addChild(post);
-		var board = new Model(Mesh.cube(2.2, .8, .08), wood);
+		var board = new Model3D(Mesh3D.cube(2.2, .8, .08), wood);
 		board.setPosition(0, 1.6, 0);
 		sign.addChild(board);
 		signText = new Text3D("HeliX text", .45, 0xffffe68c);
@@ -84,7 +84,7 @@ class App extends helix.App {
 		signText.setPosition(0, 1.6, .05);
 		sign.addChild(signText);
 		level.addChild(sign);
-		Fonts.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
+		Fonts2D.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
 		// The ground's lines: a grid, circles under each model, and a spiral around them all.
 		var lines = new Drawing3D();
 		lines.grid(16, 1, 0xff34373f);

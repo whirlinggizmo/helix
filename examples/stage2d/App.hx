@@ -13,7 +13,7 @@ import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render2d.View2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
@@ -69,7 +69,7 @@ class App extends helix.App {
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
 		world.addChild(sprite);
-		Textures.load("textures/tiles.png", false, texture -> sprite.texture = texture);
+		Textures2D.load("textures/tiles.png", false, texture -> sprite.texture = texture);
 		// A group: its children turn with it.
 		orbit = new Node2D();
 		orbit.setPosition(0, -110);
@@ -92,7 +92,7 @@ class App extends helix.App {
 		emitter.setColor(0xffffcb00, 0x00ff3c00);
 		sparks = new Particles2D(emitter);
 		world.addChild(sparks);
-		Textures.load("textures/particle.png", true, texture -> emitter.texture = texture);
+		Textures2D.load("textures/particle.png", true, texture -> emitter.texture = texture);
 
 		title = new Text2D("HeliX stage2d", 20, 0xfff5f5f5);
 		view = new View2D(world, worldCamera);

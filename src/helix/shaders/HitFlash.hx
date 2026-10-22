@@ -1,6 +1,6 @@
 package helix.shaders;
 
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time
 	(Renderer3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn
@@ -9,10 +9,10 @@ import helix.render3d.Material;
 	it. */
 class HitFlash {
 	/** The material it flashes. */
-	public var material(default, null):Material;
+	public var material(default, null):Material3D;
 
 	/** Shows material's hit flash: none until triggered or an amount is held. */
-	public function new(material:Material)
+	public function new(material:Material3D)
 		this.material = material;
 
 	/** The flash's color, 0xAARRGGBB (sRGB), its alpha how strong at most. White by default. */

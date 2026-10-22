@@ -7,25 +7,25 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
-import helix.render3d.SpotLight;
+import helix.render3d.SpotLight3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
-/** Lights casting shadows. The sun casts (DirectionalLight.shadowCasting): each frame, before the frame's own pass, the View3D showing the level
+/** Lights casting shadows. The sun casts (DirectionalLight3D.shadowCasting): each frame, before the frame's own pass, the View3D showing the level
 	draws everything that casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The level is a floor, a wall, some
 	generated shapes and a car, so the shadows fall across each other and across themselves. A spot circling overhead casts through its own
-	cone: two lights casting at once, a layer of the map each. The ball on the left casts nothing (Model.shadowCasting), so it floats; the one
-	on the right receives nothing (Model.shadowReceiving), so the wall's shadow passes over it; the spot's marker casts nothing either.
+	cone: two lights casting at once, a layer of the map each. The ball on the left casts nothing (Model3D.shadowCasting), so it floats; the one
+	on the right receives nothing (Model3D.shadowReceiving), so the wall's shadow passes over it; the spot's marker casts nothing either.
 
 	1 / 2: the sun's / the spot's shadows on and off; UP / DOWN: the sun's shadow distance (less covers less with the same map, so the shadows
 	sharpen); [ / ]: depth bias (too little stripes lit surfaces, "acne"; too much lifts a shadow off its caster); M: map size (512 to 4096);
@@ -41,11 +41,11 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var text = new Drawing2D();
 	var fps = new FpsOverlay();
-	var sun = new DirectionalLight();
-	var spot = new SpotLight();
-	var marker:Model;
+	var sun = new DirectionalLight3D();
+	var spot = new SpotLight3D();
+	var marker:Model3D;
 	// The camera, circling.
-	var orbit = new Orbit(11, 5, .18, 1.2);
+	var orbit = new Orbit3D(11, 5, .18, 1.2);
 	var distance = 30.;
 	var bias = 1.;
 	var strength = 1.;
@@ -53,11 +53,11 @@ class App extends helix.App {
 	var tint = 0;
 
 	// A model of mesh at x, y, z in one color (0xAARRGGBB), in the level.
-	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model {
-		var material = new Material();
+	function place(mesh:Mesh3D, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model3D {
+		var material = new Material3D();
 		material.baseColor = color;
 		material.roughness = roughness;
-		var node = new Model(mesh, material);
+		var node = new Model3D(mesh, material);
 		node.setPosition(x, y, z);
 		level.addChild(node);
 		return node;
@@ -88,23 +88,23 @@ class App extends helix.App {
 		spot.shadowMapSize = SIZES[size];
 		spot.shadowDistance = 24;
 		level.addChild(spot);
-		var glow = new Material();
+		var glow = new Material3D();
 		glow.baseColor = 0xff96d2ff;
 		glow.lit = false;
-		marker = new Model(Mesh.sphere(.16, 8, 16), glow);
+		marker = new Model3D(Mesh3D.sphere(.16, 8, 16), glow);
 		marker.shadowCasting = false;
 		level.addChild(marker);
 
-		place(Mesh.plane(40, 40), 0, 0, 0, 0xffb0b4b8, .9);
+		place(Mesh3D.plane(40, 40), 0, 0, 0, 0xffb0b4b8, .9);
 		// A wall to throw a long shadow across the floor.
-		place(Mesh.cube(.5, 3, 7), -4.5, 1.5, 0, 0xffc4bbb1, .85);
-		place(Mesh.torus(.7, .22, 48, 24), 2.6, 1.1, -1.6, 0xfff3c27c, .4);
-		place(Mesh.capsule(.4, 1.6, 16, 32), 1.2, .8, 1.8, 0xff9ee0b2, .5);
-		place(Mesh.cube(1, 1, 1), 3.8, .5, 1.4, 0xff95bded, .6);
+		place(Mesh3D.cube(.5, 3, 7), -4.5, 1.5, 0, 0xffc4bbb1, .85);
+		place(Mesh3D.torus(.7, .22, 48, 24), 2.6, 1.1, -1.6, 0xfff3c27c, .4);
+		place(Mesh3D.capsule(.4, 1.6, 16, 32), 1.2, .8, 1.8, 0xff9ee0b2, .5);
+		place(Mesh3D.cube(1, 1, 1), 3.8, .5, 1.4, 0xff95bded, .6);
 		// One that casts nothing, and one that nothing shadows.
-		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xfff8ed95, .35).shadowCasting = false;
-		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xfff395bc, .35).shadowReceiving = false;
-		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+		place(Mesh3D.sphere(.6, 24, 48), -2, .6, 2.4, 0xfff8ed95, .35).shadowCasting = false;
+		place(Mesh3D.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xfff395bc, .35).shadowReceiving = false;
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		view = new View3D(level, camera);
 		Stage.addChild(view);
 		Stage.addChild(text);
@@ -112,7 +112,7 @@ class App extends helix.App {
 	}
 
 	// The car's file in: a copy of it among the shapes, turned a little.
-	function placeCar(file:ModelFile):Void {
+	function placeCar(file:ModelFile3D):Void {
 		var car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
 		car.setRotation(0, .6, 0);

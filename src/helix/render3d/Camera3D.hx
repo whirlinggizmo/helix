@@ -132,9 +132,9 @@ class Camera3D extends Node3D {
 	/** Which projection draws, Perspective to start: a perspective view sees fovY, an orthographic one orthographicHeight, both kept whichever
 		draws, with near and far either way. Perspective holds near above 0: switching to it with a near of 0 or less raises near to 1e-6, and far
 		to 2e-6 when it was no more. */
-	public var projection(default, set):Projection = Perspective;
+	public var projection(default, set):Projection3D = Perspective;
 
-	function set_projection(value:Projection):Projection {
+	function set_projection(value:Projection3D):Projection3D {
 		projection = value;
 		if (value == Perspective && !(near > 0)) {
 			near = LEAST;
@@ -301,7 +301,7 @@ class Camera3D extends Node3D {
 	/** The ray through framebuffer pixel x, y (from the framebuffer's top-left, as the pointer is) into ray: from the near plane, away from the
 		camera, through the same matrices the stage draws with (perspective or orthographic, the viewport's shape). False, leaving ray as it
 		was, for a point outside the viewport area (a pointer off the window, -1, -1, among them). */
-	public function computeRay(x:Float, y:Float, ray:Ray):Bool {
+	public function computeRay(x:Float, y:Float, ray:Ray3D):Bool {
 		if (!(x >= viewportX && x < viewportX + viewportWidth && y >= viewportY && y < viewportY + viewportHeight))
 			return false;
 		// Normalized device coordinates: -1 to 1 across the viewport, y up.

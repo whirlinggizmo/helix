@@ -156,7 +156,7 @@ class Pipelines {
 			depthOnly: true
 		}));
 
-	/** A model's flat pass (Flat3DProgram, or Skinnedflat3DProgram for a skinned model), from its mesh's pass vertices (Mesh.passVertices) and
+	/** A model's flat pass (Flat3DProgram, or Skinnedflat3DProgram for a skinned model), from its mesh's pass vertices (Mesh3D.passVertices) and
 		the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a
 		silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a
 		mirrored placement's) or not. */

@@ -7,15 +7,15 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
-import helix.render3d.PointLight;
-import helix.render3d.SpotLight;
+import helix.render3d.PointLight3D;
+import helix.render3d.SpotLight3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
@@ -31,10 +31,10 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
-	var sun:DirectionalLight;
-	var lamp:PointLight;
-	var marker:Model;
-	var spot:SpotLight;
+	var sun:DirectionalLight3D;
+	var lamp:PointLight3D;
+	var marker:Model3D;
+	var spot:SpotLight3D;
 
 	override public function init():Void {
 		Window.title = "HeliX lights";
@@ -46,33 +46,33 @@ class App extends helix.App {
 		// Framed for 16:9: all the row across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 
-		var figure = Mesh.capsule(.3, 1.7, 16, 32), skin = new Material();
+		var figure = Mesh3D.capsule(.3, 1.7, 16, 32), skin = new Material3D();
 		skin.baseColor = 0xffd8d8d8;
 		skin.roughness = .6;
 		for (i in 0...FIGURES) {
-			var node = new Model(figure, skin);
+			var node = new Model3D(figure, skin);
 			node.setPosition(-4 + 2 * i, .85, i % 2 == 1 ? -.8 : .8);
 			level.addChild(node);
 		}
 
-		sun = new DirectionalLight();
+		sun = new DirectionalLight3D();
 		sun.color = 0xffffd2a0;
 		sun.intensity = 1.1;
 		sun.lookAt(-.4, -1, -.6);
 		level.addChild(sun);
 
-		lamp = new PointLight();
+		lamp = new PointLight3D();
 		lamp.color = 0xff3cdcff;
 		lamp.intensity = 20;
 		lamp.range = 5;
 		level.addChild(lamp);
-		var glow = new Material();
+		var glow = new Material3D();
 		glow.baseColor = 0xff3cdcff;
 		glow.lit = false;
-		marker = new Model(Mesh.sphere(.12, 8, 16), glow);
+		marker = new Model3D(Mesh3D.sphere(.12, 8, 16), glow);
 		level.addChild(marker);
 
-		spot = new SpotLight();
+		spot = new SpotLight3D();
 		spot.setCone(.14, .28);
 		spot.intensity = 125;
 		spot.setPosition(0, 6, 2);

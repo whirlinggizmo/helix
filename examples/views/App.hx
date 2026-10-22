@@ -11,11 +11,11 @@ import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.render2d.View2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.shaders.Pixelate;
@@ -38,7 +38,7 @@ class App extends helix.App {
 	var worldCamera = new Camera2D();
 	var mapCamera = new Camera2D();
 	var marker = Shape2D.rectangle(1, 1, 0xffffd040);
-	var cube = new Model(Mesh.cube(1, 1, 1), new Material());
+	var cube = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 	var scroll = 0.;
 
 	override public function init():Void {
@@ -62,7 +62,7 @@ class App extends helix.App {
 
 		// The 3D view: a cube under a sun, in its level's light.
 		var level = new Node3D(),
-			sun = new DirectionalLight(),
+			sun = new DirectionalLight3D(),
 			eye = new Camera3D();
 		// The place's light, on the level's root: a soft blue ambient under the sun.
 		level.environment = new Environment3D();

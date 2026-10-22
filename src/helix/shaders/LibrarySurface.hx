@@ -3,20 +3,20 @@ package helix.shaders;
 import helix.graphics.Color;
 import helix.graphics.Graphics;
 import helix.graphics.Shader;
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** What the shader library's surface shader classes share (Unlit, Toon, Dissolve, Water): made on a material, the class's shader is that
-	material's surface shader from then on (Material.setShader), built on the program's GPU (Graphics) the first time a material asks for it,
-	and its fields write their parameters into the material's (Material.shaderParameters) while the material keeps it: with another shader
+	material's surface shader from then on (Material3D.setShader), built on the program's GPU (Graphics) the first time a material asks for it,
+	and its fields write their parameters into the material's (Material3D.shaderParameters) while the material keeps it: with another shader
 	on the material since, a field changes nothing there. Every library surface shader shows the material's hit flash and rim light
 	(HitFlash, Rim), as the stage's own shading does. */
 class LibrarySurface {
 	/** The material it draws. */
-	public var material(default, null):Material;
+	public var material(default, null):Material3D;
 
 	var shader:Shader;
 
-	function new(material:Material, name:String, text:String) {
+	function new(material:Material3D, name:String, text:String) {
 		this.material = material;
 		shader = ShaderLibrary.get(Graphics.instance, name, text);
 		material.setShader(shader);

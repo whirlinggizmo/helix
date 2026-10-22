@@ -7,7 +7,7 @@ import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 
 /** How a layout's width or height is decided. */
-enum Sizing {
+enum Sizing2D {
 	/** This many units. */
 	Fixed(units:Float);
 
@@ -22,7 +22,7 @@ enum Sizing {
 }
 
 /** Where layouts go in the room they have, along an axis. */
-enum Alignment {
+enum Alignment2D {
 	/** At its start: the left, or the top. */
 	Start;
 
@@ -39,7 +39,7 @@ enum Alignment {
 }
 
 /** How a layout lays its children out. */
-enum Layout2DDirection {
+enum LayoutDirection2D {
 	/** Left to right. */
 	Row;
 
@@ -59,12 +59,12 @@ enum Layout2DDirection {
 	setPadding, gap, setMargin): from then on the game's value is kept whatever the theme becomes, even one equal to the theme's, as an inline
 	style wins over a stylesheet. Each value is decided apart: a game sizing a button's width leaves its height the theme's. */
 class Layout2D {
-	var direction:Layout2DDirection;
+	var direction:LayoutDirection2D;
 	var childLayouts:Array<Layout2D> = [];
-	var widthRule:Sizing = Fit;
-	var heightRule:Sizing = Fit;
-	var selfX:Null<Alignment>;
-	var selfY:Null<Alignment>;
+	var widthRule:Sizing2D = Fit;
+	var heightRule:Sizing2D = Fit;
+	var selfX:Null<Alignment2D>;
+	var selfY:Null<Alignment2D>;
 	var offsetX = 0.;
 	var offsetY = 0.;
 	// Which of its values a game set (setSizing, widthSizing, heightSizing, setPadding, gap, setMargin): the theme's (themeSizing,
@@ -84,7 +84,7 @@ class Layout2D {
 	var h = 0.;
 
 	/** A layout placing its children direction's way, placing node (or none). */
-	public function new(direction:Layout2DDirection, ?node:Node2D) {
+	public function new(direction:LayoutDirection2D, ?node:Node2D) {
 		this.direction = direction;
 		this.node = node;
 	}
@@ -124,31 +124,31 @@ class Layout2D {
 
 	/** How its width is decided (Fit, to start, or what the widget it places takes from the theme). Assigning it makes it the game's: the
 		theme no longer changes it. */
-	public var widthSizing(get, set):Sizing;
+	public var widthSizing(get, set):Sizing2D;
 
-	function get_widthSizing():Sizing
+	function get_widthSizing():Sizing2D
 		return widthRule;
 
-	function set_widthSizing(value:Sizing):Sizing {
+	function set_widthSizing(value:Sizing2D):Sizing2D {
 		widthRule = value;
 		gameWidth = askedWidth = true;
 		return value;
 	}
 
 	/** How its height is decided, as widthSizing. */
-	public var heightSizing(get, set):Sizing;
+	public var heightSizing(get, set):Sizing2D;
 
-	function get_heightSizing():Sizing
+	function get_heightSizing():Sizing2D
 		return heightRule;
 
-	function set_heightSizing(value:Sizing):Sizing {
+	function set_heightSizing(value:Sizing2D):Sizing2D {
 		heightRule = value;
 		gameHeight = askedHeight = true;
 		return value;
 	}
 
 	/** How its width and height are decided, both made the game's (widthSizing and heightSizing). */
-	public function setSizing(width:Sizing, height:Sizing):Void {
+	public function setSizing(width:Sizing2D, height:Sizing2D):Void {
 		set_widthSizing(width);
 		set_heightSizing(height);
 	}
@@ -237,7 +237,7 @@ class Layout2D {
 	// Its width's and height's sizing from the theme (null: that way's left be).
 
 	@:allow(helix.ui)
-	function themeSizing(width:Null<Sizing>, height:Null<Sizing>):Void {
+	function themeSizing(width:Null<Sizing2D>, height:Null<Sizing2D>):Void {
 		if (width != null && !gameWidth) {
 			widthRule = width;
 			askedWidth = true;
@@ -274,31 +274,31 @@ class Layout2D {
 	}
 
 	/** Where its children go along its row or column. */
-	public var mainAlign(default, null):Alignment = Start;
+	public var mainAlign(default, null):Alignment2D = Start;
 
 	/** Where its children go across its row or column. */
-	public var crossAlign(default, null):Alignment = Start;
+	public var crossAlign(default, null):Alignment2D = Start;
 
 	/** Where its children go: along a row or column (main: Start, Center or End when none grows) and across it (cross; Stretch filling it
 		with the children that grow across or whose size across nobody set, the rest keeping their size at their anchor across or its start);
 		Start both, to start. */
-	public function setAlign(main:Alignment, cross:Alignment):Void {
+	public function setAlign(main:Alignment2D, cross:Alignment2D):Void {
 		mainAlign = main;
 		crossAlign = cross;
 	}
 
 	/** Where it goes across a stack, or null for its stack's alignment; across a column stretching its children (crossAlign Stretch) when
 		it keeps its own width, where it goes across it (null: its start). */
-	public var anchorX(get, never):Null<Alignment>;
+	public var anchorX(get, never):Null<Alignment2D>;
 
-	function get_anchorX():Null<Alignment>
+	function get_anchorX():Null<Alignment2D>
 		return selfX;
 
 	/** Where it goes down a stack, or null for its stack's alignment; down a row stretching its children when it keeps its own height, as
 		anchorX across a column. */
-	public var anchorY(get, never):Null<Alignment>;
+	public var anchorY(get, never):Null<Alignment2D>;
 
-	function get_anchorY():Null<Alignment>
+	function get_anchorY():Null<Alignment2D>
 		return selfY;
 
 	/** How far it's moved right from its anchor. */
@@ -315,7 +315,7 @@ class Layout2D {
 
 	/** Where it goes in a stack (horizontally, vertically; Stretch fills that way), moved by offsetX, offsetY: anchored to an edge, a corner
 		or the middle. */
-	public function setAnchor(horizontal:Alignment, vertical:Alignment, offsetX = 0., offsetY = 0.):Void {
+	public function setAnchor(horizontal:Alignment2D, vertical:Alignment2D, offsetX = 0., offsetY = 0.):Void {
 		selfX = horizontal;
 		selfY = vertical;
 		this.offsetX = offsetX;
@@ -352,7 +352,7 @@ class Layout2D {
 		root.place(font);
 	}
 
-	static function sized(sizing:Sizing, fit:Float, room:Float):Float
+	static function sized(sizing:Sizing2D, fit:Float, room:Float):Float
 		return switch sizing {
 			case Fixed(units): units;
 			case Fit: fit;
@@ -403,7 +403,7 @@ class Layout2D {
 	}
 
 	// What a child asks for before the room is shared: fixed or fitted, nothing yet for growing or a share.
-	static function own(sizing:Sizing, fit:Float):Float
+	static function own(sizing:Sizing2D, fit:Float):Float
 		return switch sizing {
 			case Fixed(units): units;
 			case Fit: fit;
@@ -517,7 +517,7 @@ class Layout2D {
 		}
 	}
 
-	static function offset(alignment:Alignment, room:Float, size:Float):Float
+	static function offset(alignment:Alignment2D, room:Float, size:Float):Float
 		return switch alignment {
 			case Center: (room - size) / 2;
 			case End: room - size;

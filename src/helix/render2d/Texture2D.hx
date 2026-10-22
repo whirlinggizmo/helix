@@ -85,7 +85,7 @@ class Texture2D {
 		return new Texture2D(gpu.createRenderTarget(width, height, format, depth), width, height, format, 1, new Sampling(linear));
 
 	/** A new image in place of this one (a hot reload): the same object and sampling, a new GPU texture of levels. */
-	@:allow(helix.render2d.TextureCache)
+	@:allow(helix.render2d.TextureCache2D)
 	function replace(gpu:IGraphics, width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat):Void {
 		var old = handle;
 		handle = gpu.createTexture(width, height, levels, format);

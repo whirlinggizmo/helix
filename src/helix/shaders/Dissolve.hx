@@ -2,7 +2,7 @@ package helix.shaders;
 
 import helix.graphics.Graphics;
 import helix.render2d.Texture2D;
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with
 	amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is laid over the model at rest in its own space
@@ -73,7 +73,7 @@ class Dissolve extends LibrarySurface {
 	}
 
 	/** Makes Dissolve material's surface shader: whole, an orange edge .08 wide, the library's noise repeating every unit. */
-	public function new(material:Material) {
+	public function new(material:Material3D) {
 		super(material, "dissolve", DissolvePacked.text());
 		amount = 0;
 		edgeColor = 0xffff7a1e;

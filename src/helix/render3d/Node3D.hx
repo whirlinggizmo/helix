@@ -4,7 +4,7 @@ import helix.scene.Node;
 
 /** What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing,
 	only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of
-	things together, or a pivot to turn them about. The framework's kinds are its classes (Model, DirectionalLight, PointLight, SpotLight,
+	things together, or a pivot to turn them about. The framework's kinds are its classes (Model3D, DirectionalLight3D, PointLight3D, SpotLight3D,
 	Camera3D, Sprite3D, Text3D, Particles3D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the
 	node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation (a unit quaternion, set from angles or by lookAt) and
 	a scale, relative to its parent; its world matrix is worked out when a stage draws it, only after it or a node above it changed. */
@@ -41,9 +41,9 @@ class Node3D extends Node {
 	// Whether it's a kind drawn through the renderer's sprites (Sprite3D and Text3D flat, Particles3D an emitter), and which: linked only
 	// into a program that makes one. Listed, it makes the renderer's sprites if they aren't yet (attachSprites).
 	@:allow(helix.render3d.Renderer3D)
-	var spriteKind(get, never):SpriteKind;
+	var spriteKind(get, never):SpriteKind3D;
 
-	function get_spriteKind():SpriteKind
+	function get_spriteKind():SpriteKind3D
 		return None;
 
 	// Gives renderer its sprites (Renderer3D.sprites) if it has none.
@@ -66,7 +66,7 @@ class Node3D extends Node {
 	// Tested against ray as sprites draws it: the distance along it, recorded in hit when nearer than best, else best.
 
 	@:allow(helix.render3d.Renderer3D)
-	function pickSprites(sprites:Any, ray:Ray, best:Float, hit:PickHit):Float
+	function pickSprites(sprites:Any, ray:Ray3D, best:Float, hit:PickHit3D):Float
 		return best;
 
 	/** The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its
@@ -171,8 +171,8 @@ class Node3D extends Node {
 	/** The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a
 		rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only
 		models are taken: with findAttachment, how a game dresses a character from files of their own (the examples' Outfit). */
-	public function collectModels(skinned:Array<Model>, rigid:Array<Model>):Void {
-		var model = Std.downcast(this, Model);
+	public function collectModels(skinned:Array<Model3D>, rigid:Array<Model3D>):Void {
+		var model = Std.downcast(this, Model3D);
 		if (model != null && model.mesh != null) {
 			if (model.mesh.skinned)
 				skinned.push(model);
@@ -191,7 +191,7 @@ class Node3D extends Node {
 		nearest ancestor below this named as a joint skeleton has (an importer may split one mesh into several models, so the piece may be above
 		model, and its siblings go with it), and that joint, which the piece keeps its offset from. A file whose models sit under no joint gives the
 		node just under this as the piece and null as the joint, for a socket the game chooses. Null when model isn't under this. */
-	public function findAttachment(model:Model, skeleton:Node3D):Null<Attachment> {
+	public function findAttachment(model:Model3D, skeleton:Node3D):Null<Attachment3D> {
 		var piece:Node3D = model, above = model.parent;
 		while (above != null && above != this && jointOf(skeleton, above.name) == null) {
 			piece = above;
@@ -531,14 +531,14 @@ class Node3D extends Node {
 }
 
 /** Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none. */
-typedef Attachment = {
+typedef Attachment3D = {
 	final piece:Node3D;
 	final joint:Null<Node3D>;
 }
 
 /** Which of the kinds drawn through a renderer's sprites a node is (the engine's: Node3D.spriteKind). */
 @:noCompletion
-enum abstract SpriteKind(Int) {
+enum abstract SpriteKind3D(Int) {
 	/** None of them. */
 	var None;
 

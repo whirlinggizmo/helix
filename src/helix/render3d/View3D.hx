@@ -109,7 +109,7 @@ class View3D extends View {
 			x -= shownX;
 			y -= shownY;
 		}
-		var found = world.pick(camera, x, y, (hit : PickHit));
+		var found = world.pick(camera, x, y, (hit : PickHit3D));
 		return found == null ? null : found.node;
 	}
 

@@ -1,6 +1,6 @@
 package helix.shaders;
 
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A library surface shader: the stage's lights in a few flat bands over the material's base color and texture (their shadows banded with
 	them), its unlit side no darker than a shadow color, and its emission; with a rim of light round its edge (the material's Rim, which it
@@ -30,7 +30,7 @@ class Toon extends LibrarySurface {
 	public var rim(default, null):Rim;
 
 	/** Makes Toon material's surface shader: 3 bands, the shadow color dark blue grey, a rim of light. */
-	public function new(material:Material) {
+	public function new(material:Material3D) {
 		super(material, "toon", ToonPacked.text());
 		bands = 3;
 		shadowColor = 0xff3a4150;

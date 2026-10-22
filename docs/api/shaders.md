@@ -66,7 +66,7 @@ var amount(default, set):Float
 
 *class* in `src/helix/shaders/ColorLut.hx`
 
-A color grade, a screen effect of the library: the frame's colors looked up in a 32 x 32 x 32 color cube (a LUT) laid out as a strip of SIZE squares, 1024 x 32 texels: blue chooses a square left to right, red runs across it, green down it, and each texel holds what that color becomes (sRGB). A grade is made by grading identity()'s strip in an image editor with the game's look and loading the PNG (linear sampling; Textures.load). Put it after the tone mapping, as the colors it grades are the screen's.
+A color grade, a screen effect of the library: the frame's colors looked up in a 32 x 32 x 32 color cube (a LUT) laid out as a strip of SIZE squares, 1024 x 32 texels: blue chooses a square left to right, red runs across it, green down it, and each texel holds what that color becomes (sRGB). A grade is made by grading identity()'s strip in an image editor with the game's look and loading the PNG (linear sampling; Textures2D.load). Put it after the tone mapping, as the colors it grades are the screen's.
 
 ```haxe
 function new(?lut:Texture2D)
@@ -113,7 +113,7 @@ var flicker(default, set):Float
 A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is laid over the model at rest in its own space (helix_model_position: a skinned model's bind pose), read along the three planes of that space and blended by the surface's facing (triplanar), so the holes stay where they are on the body as it moves and animates, whatever its texture coordinates, and every GPU reads the same noise. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Made on a material, it is that material's surface shader from then on (LibrarySurface); make the material doubleSided to see its inside through the holes.
 
 ```haxe
-function new(material:Material)
+function new(material:Material3D)
 var amount(default, set):Float
 var edgeColor(default, set):Int
 var edgeIntensity(default, set):Float
@@ -155,8 +155,8 @@ var edgeThresholdMin(default, set):Float
 A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time (Renderer3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too), mixed in after the exposure, so the tone mapping applies to it as to the light. A HitFlash is a view of its material's: two on one material share it.
 
 ```haxe
-function new(material:Material)
-var material(default, null):Material
+function new(material:Material3D)
+var material(default, null):Material3D
 var color(get, set):Int
 var amount(get, set):Float
 function trigger(color:Int, seconds:Float):Bool
@@ -178,10 +178,10 @@ What the shader library's screen effects share (Bloom, Fxaa, Blur, Vignette, Col
 
 *class* in `src/helix/shaders/LibrarySurface.hx`
 
-What the shader library's surface shader classes share (Unlit, Toon, Dissolve, Water): made on a material, the class's shader is that material's surface shader from then on (Material.setShader), built on the program's GPU (Graphics) the first time a material asks for it, and its fields write their parameters into the material's (Material.shaderParameters) while the material keeps it: with another shader on the material since, a field changes nothing there. Every library surface shader shows the material's hit flash and rim light (HitFlash, Rim), as the stage's own shading does.
+What the shader library's surface shader classes share (Unlit, Toon, Dissolve, Water): made on a material, the class's shader is that material's surface shader from then on (Material3D.setShader), built on the program's GPU (Graphics) the first time a material asks for it, and its fields write their parameters into the material's (Material3D.shaderParameters) while the material keeps it: with another shader on the material since, a field changes nothing there. Every library surface shader shows the material's hit flash and rim light (HitFlash, Rim), as the stage's own shading does.
 
 ```haxe
-var material(default, null):Material
+var material(default, null):Material3D
 var attached(get, never):Bool
 ```
 
@@ -192,10 +192,10 @@ var attached(get, never):Bool
 
 *class* in `src/helix/shaders/Outline.hx`
 
-An outline round a model: a pass (ModelPass) drawing the model again after the stage's opaque models, pushed out by a width in world units, its front faces culled, so the far side of that shell shows as a band past the model's edges, in a flat color; depth tested, so what's nearer covers it. Static or skinned, instanced like the model. Each vertex is pushed along its normal averaged over the vertices at its place (Mesh.passVertices), so where a low-poly model's normals split at its hard edges the shell stays closed; a flat face between hard edges moves out less than the width (a cube's by .58 of it, its corners along their diagonals). A model's separate meshes are pushed apart each on its own. Made on a model, it draws from then on; remove takes it off.
+An outline round a model: a pass (ModelPass3D) drawing the model again after the stage's opaque models, pushed out by a width in world units, its front faces culled, so the far side of that shell shows as a band past the model's edges, in a flat color; depth tested, so what's nearer covers it. Static or skinned, instanced like the model. Each vertex is pushed along its normal averaged over the vertices at its place (Mesh3D.passVertices), so where a low-poly model's normals split at its hard edges the shell stays closed; a flat face between hard edges moves out less than the width (a cube's by .58 of it, its corners along their diagonals). A model's separate meshes are pushed apart each on its own. Made on a model, it draws from then on; remove takes it off.
 
 ```haxe
-function new(model:Model, ?color:Int = 0xff000000, ?width:Float = .02)
+function new(model:Model3D, ?color:Int = 0xff000000, ?width:Float = .02)
 var width(get, set):Float
 ```
 
@@ -239,8 +239,8 @@ var cellSize(default, set):Int
 A material's rim light: a color brightest where its surface turns away from the viewer, round its edge, added to its light. Every material has one, off until a Rim turns it on, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too). A Rim is a view of its material's: two on one material share it.
 
 ```haxe
-function new(material:Material, ?color:Int = 0x80ffffff, ?power:Float = 3.)
-var material(default, null):Material
+function new(material:Material3D, ?color:Int = 0x80ffffff, ?power:Float = 3.)
+var material(default, null):Material3D
 var color(get, set):Int
 var power(get, set):Float
 ```
@@ -276,10 +276,10 @@ static function release(gpu:IGraphics):Void
 
 *class* in `src/helix/shaders/Silhouette.hx`
 
-A model seen through what hides it: a pass (ModelPass) drawing the model's shape where something nearer hides it (depth greater), in a flat color blended by its alpha, over the stage's other opaque models and sprites; the model itself is drawn after it, so its own parts never hide it (layered clothes, hair over a head). Static or skinned, instanced like the model. Made on a model, it draws from then on; remove takes it off.
+A model seen through what hides it: a pass (ModelPass3D) drawing the model's shape where something nearer hides it (depth greater), in a flat color blended by its alpha, over the stage's other opaque models and sprites; the model itself is drawn after it, so its own parts never hide it (layered clothes, hair over a head). Static or skinned, instanced like the model. Made on a model, it draws from then on; remove takes it off.
 
 ```haxe
-function new(model:Model, ?color:Int = 0x993fa9ff)
+function new(model:Model3D, ?color:Int = 0x993fa9ff)
 ```
 
 - `new`: Shows model where it's hidden in color (0xAARRGGBB, sRGB, blended by its alpha): a light blue at 60% by default.
@@ -369,7 +369,7 @@ function computeHdrColor(color:Int, out:Array<Float>):Void
 A library surface shader: the stage's lights in a few flat bands over the material's base color and texture (their shadows banded with them), its unlit side no darker than a shadow color, and its emission; with a rim of light round its edge (the material's Rim, which it turns on). Made on a material, it is that material's surface shader from then on (LibrarySurface).
 
 ```haxe
-function new(material:Material)
+function new(material:Material3D)
 var bands(default, set):Int
 var shadowColor(default, set):Int
 var rim(default, null):Rim
@@ -387,7 +387,7 @@ var rim(default, null):Rim
 A library surface shader: a material drawn without light, its base color and texture times color, and its emission, under the stage's exposure and tone mapping as a material that isn't lit is. Made on a material, it is that material's surface shader from then on (LibrarySurface).
 
 ```haxe
-function new(material:Material)
+function new(material:Material3D)
 var color(default, set):Int
 ```
 
@@ -421,7 +421,7 @@ var softness(default, set):Float
 A library surface shader: travelling waves moving the surface along its normals (a vertex hook: the model needs vertices enough to show them), colored deep where it's looked into and shallow toward grazing, lit by the stage's lights with their glints, reflecting the stage's environment (or a sky color without one) at grazing angles; its shadow moves with its waves. The material's base color's alpha is its alpha (a blended material is see-through). Made on a material, it is that material's surface shader from then on (LibrarySurface).
 
 ```haxe
-function new(material:Material)
+function new(material:Material3D)
 var amplitude(default, set):Float
 var wavelength(default, set):Float
 var waveSpeed(default, set):Float

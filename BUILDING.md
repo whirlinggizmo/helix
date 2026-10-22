@@ -173,7 +173,7 @@ python3 tools/format.py --check           # haxe-formatter, pinned
 python3 tools/check_docs.py                 # public API without a doc comment
 python3 tools/gen_code.py --check           # the generated code (generated/, committed) is what the sources give; --regenerate remakes it
 python3 tools/gen_apidoc.py                   # the API reference: docs/api (committed, checked by the tests) and build/api/index.html
-python3 tools/gltf2scene.py export.glb out.scene3d   # a Blender glTF export as a .scene3d: one Model node, its custom properties as overrides; --check
+python3 tools/gltf2scene.py export.glb out.scene3d   # a Blender glTF export as a .scene3d: one Model3D node, its custom properties as overrides; --check
 python3 tools/fbx2glb.py in.fbx out/ --opaque --smooth-angle 75   # FBX files or directories as GLBs, by Blender run headless (examples/assets/CREDITS.md)
 python3 helix.py test --native
 python3 helix.py services --browser /path/to/chromium --native

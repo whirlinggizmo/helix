@@ -1,15 +1,15 @@
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Light;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.Light3D;
 import helix.render3d.Mat4;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile.ImageSource;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D.ImageSource3D;
 import helix.render3d.Node3D;
-import helix.render3d.PointLight;
-import helix.render3d.Ray;
-import helix.render3d.SpotLight;
+import helix.render3d.PointLight3D;
+import helix.render3d.Ray3D;
+import helix.render3d.SpotLight3D;
 
 /** Mat4 and Camera3D: projection, view and their product, checked by where they put known points. */
 class Render3DTests {
@@ -60,7 +60,7 @@ class Render3DTests {
 		check(near(shifted[0] / shifted[3], .5) && near(shifted[1] / shifted[3], -.25) && near(deeper[0] / deeper[3], .5) && near(deeper[1] / deeper[3], -.25),
 			"A lens shift moves the axis across the viewport at every depth");
 		check(near(top[1] / top[3], .75), "A lens shift keeps the field of view's height");
-		var axisRay = new Ray();
+		var axisRay = new Ray3D();
 		check(camera.computeRay(600, 250, axisRay)
 			&& near(axisRay.directionX, 0)
 			&& near(axisRay.directionY, 0)
@@ -81,13 +81,13 @@ class Render3DTests {
 		check(near(product.get(0), 1) && near(product.get(15), 1), "The identity times itself");
 		// Every generated shape: each triangle faces the way its vertices' normals do (counter-clockwise from outside), and the box is right.
 		for (shape in [
-			Mesh.plane(2, 3, 2),
-			Mesh.cube(1, 2, 3),
-			Mesh.sphere(.5, 8, 12),
-			Mesh.cylinder(.5, 1, 12),
-			Mesh.cone(.5, 1, 12),
-			Mesh.capsule(.3, 1.2, 8, 12),
-			Mesh.torus(.4, .1, 12, 8)
+			Mesh3D.plane(2, 3, 2),
+			Mesh3D.cube(1, 2, 3),
+			Mesh3D.sphere(.5, 8, 12),
+			Mesh3D.cylinder(.5, 1, 12),
+			Mesh3D.cone(.5, 1, 12),
+			Mesh3D.capsule(.3, 1.2, 8, 12),
+			Mesh3D.torus(.4, .1, 12, 8)
 		]) {
 			var v = shape.vertices, ix = shape.indices, facing = true;
 			for (t in 0...Std.int(shape.indexCount / 3)) {
@@ -110,7 +110,7 @@ class Render3DTests {
 			check(facing, "Generated triangles face out, counter-clockwise");
 		}
 		// Tangents: unit length, perpendicular to the normal, along increasing u (a sphere's u runs around it from +x toward -z, left to right seen from outside).
-		var ball = Mesh.sphere(1, 8, 16),
+		var ball = Mesh3D.sphere(1, 8, 16),
 			bv = ball.vertices,
 			tangentsOk = true;
 		for (i in 0...ball.vertexCount) {
@@ -128,13 +128,13 @@ class Render3DTests {
 		check(tangentsOk, "Tangents are unit length, perpendicular to their normals, with a sign");
 		var equator = (4 * 17 + 0) * Lit3DProgram.stride + Lit3DProgram.tangentOffset; // ring 4 of 8 (the equator), segment 0: at +x
 		check(Math.abs(bv.getFloat(equator + 8) + 1) < 1e-5, "At the equator's +x, the tangent follows u toward -z");
-		var box = Mesh.cube(1, 2, 3);
+		var box = Mesh3D.cube(1, 2, 3);
 		check(near(box.minX, -.5) && near(box.maxY, 1) && near(box.maxZ, 1.5) && box.indexCount == 36, "A cube's box and triangles");
 		// Vertices are float32: 0.6 comes back as 0.6000000238.
-		var capsule = Mesh.capsule(.3, 1.2);
+		var capsule = Mesh3D.capsule(.3, 1.2);
 		check(Math.abs(capsule.maxY - .6) < 1e-6 && Math.abs(capsule.minY + .6) < 1e-6, "A capsule is its height from end to end");
 		// Nodes: a child's world is its parent's times its own, recomputed when the parent moves.
-		var parent = new Node3D(), child = new Model(box, new Material());
+		var parent = new Node3D(), child = new Model3D(box, new Material3D());
 		parent.addChild(child);
 		parent.setPosition(1, 2, 3);
 		child.setPosition(0, 1, 0);
@@ -145,7 +145,7 @@ class Render3DTests {
 		check(child.computeWorldBounds(bounds) && near(bounds[0], .5) && near(bounds[3], 1.5) && near(bounds[1], 2) && near(bounds[4], 4)
 			&& near(bounds[2], 1.5) && near(bounds[5], 4.5),
 			"A rigid model's world bounds are its vertices placed through its parents");
-		check(!new Model().computeWorldBounds(bounds) && near(bounds[0], .5), "A model with no vertices has no bounds, out left alone");
+		check(!new Model3D().computeWorldBounds(bounds) && near(bounds[0], .5), "A model with no vertices has no bounds, out left alone");
 		parent.setPosition(0, 0, 0);
 		var changed = @:privateAccess parent.update(null, false);
 		@:privateAccess child.update(parent.worldMatrix, changed);
@@ -193,28 +193,28 @@ class Render3DTests {
 		check(held.parent == holder && near(world.get(12), 10 + 2 * 3) && near(world.get(13), 4), "parent = keeps its local transform");
 		held.parent = null;
 		check(held.parent == null && holder.childCount == 0, "parent = null takes it from its parent");
-		var spot = new SpotLight();
+		var spot = new SpotLight3D();
 		check(spot.setCone(.1, .2) && !spot.setCone(.3, .2) && !spot.setCone(.1, Math.PI / 2) && spot.outerCone == .2, "A spot's cones: inner <= outer < pi/2");
 		spot.intensity = -1;
 		spot.range = -1;
 		check(spot.intensity == 0 && spot.range == 0, "A light's negative intensity and range are 0");
 		// A glTF file read whole: the toy car (examples/assets/models/toy_car.glb).
-		var file = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.read(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
+		var file = @:privateAccess new helix.render3d.ModelFile3D(helix.render3d.Gltf.read(sys.io.File.getBytes("examples/assets/models/toy_car.glb")));
 		var car = file.instantiate("car");
-		var wheel = Std.downcast(car.find("wheel_rl"), Model),
-			beam = Std.downcast(car.find("headlight_l_beam"), SpotLight),
-			cabin = Std.downcast(car.find("cabin"), Model);
+		var wheel = Std.downcast(car.find("wheel_rl"), Model3D),
+			beam = Std.downcast(car.find("headlight_l_beam"), SpotLight3D),
+			cabin = Std.downcast(car.find("cabin"), Model3D);
 		check(wheel != null && wheel.mesh.indexCount > 0, "A model file's models are found by name");
 		check(beam != null && near(beam.outerCone, .5), "KHR_lights_punctual becomes lights of their kinds");
 		check(cabin != null && cabin.material.blended && file.warnings.length == 0, "alphaMode BLEND, and nothing the file uses is unread");
 		check(@:privateAccess file.images().length == 1, "One embedded image, the paint's");
 		var again = file.instantiate();
-		check(Std.downcast(again.find("wheel_rl"), Model).mesh == wheel.mesh && again.find("headlight_l_beam") != beam,
+		check(Std.downcast(again.find("wheel_rl"), Model3D).mesh == wheel.mesh && again.find("headlight_l_beam") != beam,
 			"Copies share meshes and materials, not lights");
 		check(!new Node3D().setMatrix([1, 0, 0, 0])
-			&& near(Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).vertices.getFloat(Lit3DProgram.normalOffset + 8), 1),
+			&& near(Mesh3D.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null).vertices.getFloat(Lit3DProgram.normalOffset + 8), 1),
 			"Missing normals are worked out (a triangle in x, y faces +z)");
-		var sided = new Material();
+		var sided = new Material3D();
 		check(!sided.doubleSided, "Materials draw one side by default");
 		sided.doubleSided = true;
 		check(sided.doubleSided, "A material can draw both sides");
@@ -271,7 +271,7 @@ class Render3DTests {
 		var apart = helix.render3d.Gltf.read(haxe.io.Bytes.ofString(gltfText("tri.bin")));
 		check(apart.missingBuffers.length == 1 && apart.missingBuffers[0].uri == "tri.bin", "A buffer in a file of its own waits for it");
 		apart.setBuffer(0, data);
-		var triangle = @:privateAccess new helix.render3d.ModelFile(apart);
+		var triangle = @:privateAccess new helix.render3d.ModelFile3D(apart);
 		check(triangle.instantiate().find("tri") != null, "With its buffer set, the model builds");
 		var sources = @:privateAccess triangle.images();
 		check(sources.length == 1
@@ -284,7 +284,7 @@ class Render3DTests {
 			"URIs resolve beside the model, inside the assets");
 		// Cameras: a perspective one and an orthographic one as Camera3D nodes at their nodes' transforms, a node with a mesh and a camera the
 		// model with the camera a child of its name plus "_camera", and each copy with cameras of its own.
-		var rig = @:privateAccess new helix.render3d.ModelFile(helix.render3d.Gltf.read(haxe.io.Bytes.ofString(haxe.Json.stringify({
+		var rig = @:privateAccess new helix.render3d.ModelFile3D(helix.render3d.Gltf.read(haxe.io.Bytes.ofString(haxe.Json.stringify({
 			asset: {version: "2.0"},
 			buffers: [
 				{byteLength: 36, uri: "data:application/octet-stream;base64," + haxe.crypto.Base64.encode(data)}
@@ -322,7 +322,7 @@ class Render3DTests {
 		var set = rig.instantiate("set"),
 			eye = Std.downcast(set.find("eye"), Camera3D),
 			flat = Std.downcast(set.find("flat"), Camera3D),
-			body = Std.downcast(set.find("body"), Model);
+			body = Std.downcast(set.find("body"), Model3D);
 		check(eye != null && near(eye.fovY, .9) && near(eye.near, .2) && near(eye.far, 50) && eye.projection == Perspective,
 			"A perspective camera node is a Camera3D with the file's yfov, znear and zfar");
 		check(near(eye.x, 1) && near(eye.y, 2) && near(eye.z, 3) && near(eye.eyeX, 1) && near(eye.forwardZ, -1) && near(eye.upY, 1),
@@ -349,11 +349,11 @@ class Render3DTests {
 	// Shadows: which lights cast and how their settings take, which models cast into a layer, what the lit shader is told, and a sun's map holding
 	// its texels in place as the camera moves.
 	static function shadows():Void {
-		var point = new PointLight(), spot = new SpotLight();
+		var point = new PointLight3D(), spot = new SpotLight3D();
 		point.shadowCasting = true;
 		spot.shadowCasting = true;
 		check(!point.shadowCasting && spot.shadowCasting, "A point light doesn't cast; a spot does");
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.shadowCasting = true;
 		check(sun.shadowCasting, "The sun casts when asked");
 		var sizes = [];
@@ -372,15 +372,15 @@ class Render3DTests {
 			stage = new helix.render3d.Renderer3D(gpu);
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
-		stage.add(new Model(Mesh.plane(20, 20), new Material()));
-		var pillar = new Model(Mesh.cube(.5, 2, .5), new Material());
+		stage.add(new Model3D(Mesh3D.plane(20, 20), new Material3D()));
+		var pillar = new Model3D(Mesh3D.cube(.5, 2, .5), new Material3D());
 		pillar.setPosition(0, 1, 0);
 		stage.add(pillar);
-		var glass = new Model(Mesh.cube(1, 1, 1), new Material());
+		var glass = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		glass.tint = 0x80ffffff;
 		glass.setPosition(3, 1, 0);
 		stage.add(glass);
-		var kept = new Model(Mesh.cube(1, 1, 1), new Material());
+		var kept = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		check(kept.shadowCasting, "A model casts by default");
 		kept.shadowCasting = false;
 		check(!kept.shadowCasting, "A model told not to doesn't");
@@ -426,7 +426,7 @@ class Render3DTests {
 		check(gpu.shadowPasses.length == 0 && fs.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_SPOT + 8) == -1,
 			"With no casting light, no passes and no shadows");
 		// A spot: a perspective map whose cone holds what it points at.
-		var spot = new SpotLight();
+		var spot = new SpotLight3D();
 		spot.setCone(.3, .5);
 		spot.range = 30;
 		spot.shadowCasting = true;
@@ -445,12 +445,12 @@ class Render3DTests {
 	static function flags():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Renderer3D(gpu);
-		var group = new Model(Mesh.cube(1, 1, 1), new Material()),
-			child = new Model(Mesh.cube(1, 1, 1), new Material());
+		var group = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()),
+			child = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		child.setPosition(2, 0, 0);
 		group.addChild(child);
 		stage.add(group);
-		var lamp = new PointLight();
+		var lamp = new PointLight3D();
 		stage.add(lamp);
 		var view = new Camera3D();
 		view.setViewport(800, 600);
@@ -471,10 +471,10 @@ class Render3DTests {
 		check(draw() == 2 && group.pickable, "Enabled again, both drawn");
 		// The stage's lists of kinds follow the tree: a model of two parts added under a node already on it draws both; taken off, or under a
 		// node off the stage, nothing; moved back, both again.
-		var two = new Model(Mesh.cube(1, 1, 1), new Material()),
+		var two = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()),
 			holder = new Node3D(),
 			aside = new Node3D();
-		two.addPart(Mesh.sphere(.5), new Material());
+		two.addPart(Mesh3D.sphere(.5), new Material3D());
 		child.addChild(holder);
 		holder.addChild(two);
 		check(two.partCount == 2 && draw() == 4, "A model's parts draw each, added under a node on the stage");
@@ -490,8 +490,8 @@ class Render3DTests {
 	static function lightChoice():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Renderer3D(gpu);
-		var left = new Model(Mesh.cube(1, 1, 1), new Material()),
-			right = new Model(Mesh.cube(1, 1, 1), new Material());
+		var left = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()),
+			right = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		left.setPosition(-10, 0, 0);
 		right.setPosition(10, 0, 0);
 		stage.add(left);
@@ -499,7 +499,7 @@ class Render3DTests {
 		// Twenty lamps of range 3: ten by the right model, then ten by the left, the left's nearest last.
 		var lamps = [];
 		for (k in 0...20) {
-			var lamp = new PointLight();
+			var lamp = new PointLight3D();
 			lamp.range = 3;
 			lamp.setPosition(k < 10 ? 10 : -10, 1 + (k % 10) * .1, 0);
 			if (k == 19)
@@ -512,10 +512,10 @@ class Render3DTests {
 		view.setView(0, 5, 30, 0, 0, 0);
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
-		var table:Array<Light> = @:privateAccess stage.table;
+		var table:Array<Light3D> = @:privateAccess stage.table;
 		check(table.length == 16, "Twenty lamps reaching the models: a table of 16");
 		var items:Array<Dynamic> = @:privateAccess stage.drawn;
-		function lightsOf(model:Model):Array<Light> {
+		function lightsOf(model:Model3D):Array<Light3D> {
 			for (item in items)
 				if (item.node == model)
 					return [for (t in (item.lights : Array<Int>)) if (t >= 0) table[t]];
@@ -527,21 +527,21 @@ class Render3DTests {
 		check([for (l in lightsOf(right)) if (l.x != 10) l].length == 0, "The right model: only lamps that reach it");
 		// The old limit: the first four found lit everything, so a model by the fifth lamp went dark.
 		var stage2 = new helix.render3d.Renderer3D(gpu),
-			far = new Model(Mesh.cube(1, 1, 1), new Material());
+			far = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		far.setPosition(50, 0, 0);
 		stage2.add(far);
 		for (k in 0...5) {
-			var lamp = new PointLight();
+			var lamp = new PointLight3D();
 			lamp.range = 2;
 			lamp.setPosition(k < 4 ? -50 : 50, 1, 0);
 			stage2.add(lamp);
 		}
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		stage2.add(sun);
 		view.setView(50, 5, 20, 50, 0, 0);
 		stage2.draw(view);
 		var only:Array<Dynamic> = @:privateAccess stage2.drawn,
-			t2:Array<Light> = @:privateAccess stage2.table;
+			t2:Array<Light3D> = @:privateAccess stage2.table;
 		var lit = [for (t in (only[0].lights : Array<Int>)) if (t >= 0) t2[t]];
 		check(lit.length == 2 && lit[0].x == 50 && lit[1] == sun, "The fifth lamp lights the model beside it, the sun everything; lamps out of range don't");
 		var u = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
@@ -554,15 +554,15 @@ class Render3DTests {
 	static function cullingAndCasters():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
 			stage = new helix.render3d.Renderer3D(gpu);
-		var floor = new Model(Mesh.plane(10, 10), new Material()),
-			high = new Model(Mesh.cube(1, 1, 1), new Material()),
-			aside = new Model(Mesh.cube(1, 1, 1), new Material());
+		var floor = new Model3D(Mesh3D.plane(10, 10), new Material3D()),
+			high = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()),
+			aside = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		high.setPosition(0, 40, 0);
 		aside.setPosition(200, 1, 0);
 		stage.add(floor);
 		stage.add(high);
 		stage.add(aside);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.shadowCasting = true;
 		// Straight down: up can't be +y then (lookAt would refuse), so it's -z.
 		check(sun.lookAt(0, -1, 0, 0, 0, -1), "A sun aimed straight down");

@@ -1,6 +1,6 @@
 package helix.shaders;
 
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A library surface shader: a material drawn without light, its base color and texture times color, and its emission, under the stage's
 	exposure and tone mapping as a material that isn't lit is. Made on a material, it is that material's surface shader from then on
@@ -18,7 +18,7 @@ class Unlit extends LibrarySurface {
 	}
 
 	/** Makes Unlit material's surface shader, color white. */
-	public function new(material:Material) {
+	public function new(material:Material3D) {
 		super(material, "unlit", UnlitPacked.text());
 		color = 0xffffffff;
 	}

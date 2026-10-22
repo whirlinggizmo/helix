@@ -5,11 +5,11 @@ import helix.graphics.Sampling;
 import helix.graphics.ShaderSource;
 import helix.graphics.TextureFormat;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.PointLight;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.PointLight3D;
 import helix.render3d.Renderer3D;
 
 /** A Renderer3D's work on the CPU, frame after frame, against a GPU that does nothing (after libwgf's shadowbench): `StageBench <case> <models>
@@ -29,19 +29,19 @@ class StageBench {
 			frames = Std.parseInt(args[2]);
 		var stage = new Renderer3D(new NullGraphics()),
 			side = Math.ceil(Math.sqrt(models));
-		var shared = Mesh.cube(1, 1, 1), material = new Material();
+		var shared = Mesh3D.cube(1, 1, 1), material = new Material3D();
 		for (i in 0...models) {
-			var node = new Model(kind == "each" ? Mesh.cube(1, 1, 1) : shared, material);
+			var node = new Model3D(kind == "each" ? Mesh3D.cube(1, 1, 1) : shared, material);
 			node.setPosition((i % side - side / 2) * 2, 0, (Std.int(i / side) - side / 2) * 2);
 			stage.add(node);
 		}
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.shadowCasting = kind == "shadows";
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
 		var lamps = kind == "lights" ? 64 : 4;
 		for (k in 0...lamps) {
-			var lamp = new PointLight();
+			var lamp = new PointLight3D();
 			lamp.range = 8;
 			lamp.setPosition((k % 8 - 4) * side / 4, 2, (Std.int(k / 8) % 8 - 4) * side / 4);
 			stage.add(lamp);

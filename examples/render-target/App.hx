@@ -9,18 +9,18 @@ import helix.input.Key;
 import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
 import helix.render2d.Font2D;
-import helix.render2d.Fonts;
+import helix.render2d.Fonts2D;
 import helix.render2d.Node2D;
 import helix.render2d.Stage;
 import helix.render2d.View2D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.shaders.Pixelate;
@@ -59,8 +59,8 @@ class App extends helix.App {
 	var fps = new FpsOverlay();
 	var font:Null<Font2D>;
 	var car:Null<Node3D>;
-	var globe:Model;
-	var wrap:Material;
+	var globe:Model3D;
+	var wrap:Material3D;
 
 	override public function init():Void {
 		Window.title = "HeliX render targets";
@@ -70,7 +70,7 @@ class App extends helix.App {
 
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .25);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
 		level.addChild(sun);
@@ -83,16 +83,16 @@ class App extends helix.App {
 		top.far = 50;
 
 		// The ground: a flattened sphere.
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xff8a9689;
-		var floor = new Model(Mesh.sphere(.5, 32, 64), ground);
+		var floor = new Model3D(Mesh3D.sphere(.5, 32, 64), ground);
 		floor.setPosition(0, -.05, 0);
 		floor.setScale(8, .1, 8);
 		level.addChild(floor);
 		// The globe wears the label: its view's texture, drawn into each frame, used as any texture.
-		wrap = new Material();
+		wrap = new Material3D();
 		wrap.lit = false;
-		globe = new Model(Mesh.sphere(.5, 32, 64), wrap);
+		globe = new Model3D(Mesh3D.sphere(.5, 32, 64), wrap);
 		globe.setPosition(-2.2, 1.2, 0);
 		globe.setScale(1.6, 1.6, 1.6);
 		level.addChild(globe);
@@ -118,13 +118,13 @@ class App extends helix.App {
 		Stage.addChild(minimap);
 		Stage.addChild(fps);
 
-		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		// The built-in font until it has loaded.
-		Fonts.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
+		Fonts2D.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
 	}
 
 	// The car's file in: a copy of it in the level the views show.
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		car = file.instantiate("car");
 		car.setScale(.9, .9, .9);
 		level.addChild(car);

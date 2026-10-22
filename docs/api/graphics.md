@@ -311,7 +311,7 @@ function screen(shader:Int, blend:BlendMode):Int
 - `skinned3D`: Skinned lit models (Skinned3DProgram: Lit3D's buffers and the skin), as lit3d's variants.
 - `surface`: An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DProgram's buffers) drawing lit models, as lit3d's variants.
 - `surfaceCaster`: A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DProgram's buffers), from the lit models' records: depth only, nothing culled, as the framework's casters.
-- `flat3D`: A model's flat pass (Flat3DProgram, or Skinnedflat3DProgram for a skinned model), from its mesh's pass vertices (Mesh.passVertices) and the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
+- `flat3D`: A model's flat pass (Flat3DProgram, or Skinnedflat3DProgram for a skinned model), from its mesh's pass vertices (Mesh3D.passVertices) and the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a mirrored placement's) or not.
 - `sprite3D`: 3D sprites (Sprite3DProgram).
 - `spriteEffect3D`: A sprite effect's Renderer3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DProgram), as sprite3D's.
 - `particle3D`: Particles (Particle3DProgram).
@@ -552,7 +552,7 @@ One of a shader's own parameters: its uniform block's slot, its byte offset ther
 
 *class* in `src/helix/graphics/ShaderParameters.hx`
 
-An app's shader's own parameters and textures, set by name and kept across the shader's reloads (a name the reloaded shader lacks is kept and ignored), written into its uniform blocks at their std140 offsets when something draws with it. ScreenEffect and Material have one.
+An app's shader's own parameters and textures, set by name and kept across the shader's reloads (a name the reloaded shader lacks is kept and ignored), written into its uniform blocks at their std140 offsets when something draws with it. ScreenEffect and Material3D have one.
 
 ```haxe
 function new(shader:Shader)

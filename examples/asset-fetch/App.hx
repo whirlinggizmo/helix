@@ -8,7 +8,7 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
@@ -62,13 +62,13 @@ class App extends helix.App {
 	/** Loads the logo again, watching whether it's downloaded or read from the cache. */
 	function fetch():Void {
 		if (logo != null)
-			Textures.release(logo);
+			Textures2D.release(logo);
 		logo = null;
 		waiting = true;
 		state = 'fetching $TEXTURE...';
 		var downloaded = false;
 		// Now cached: the texture reads it from there.
-		Assets.ensure(TEXTURE, _ -> Textures.load(TEXTURE, true, texture -> show(texture, downloaded), message -> fail(message)), message -> fail(message),
+		Assets.ensure(TEXTURE, _ -> Textures2D.load(TEXTURE, true, texture -> show(texture, downloaded), message -> fail(message)), message -> fail(message),
 			progress -> if (progress.phase == "downloading") downloaded = true);
 	}
 

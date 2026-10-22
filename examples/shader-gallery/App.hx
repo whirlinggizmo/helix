@@ -21,18 +21,18 @@ import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render2d.View2D;
-import helix.render3d.AnimationClip;
-import helix.render3d.Animator;
+import helix.render3d.AnimationClip3D;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.shaders.Bloom;
@@ -64,7 +64,7 @@ import helix.ui.Panel;
 import helix.ui.Slider;
 import helix.ui.Ui;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
 	its colors on color pickers (helix.ui's ColorPicker).
@@ -126,7 +126,7 @@ class App extends helix.App {
 	var sceneView:View2D;
 	var post:PostProcess;
 	var camera = new Camera3D();
-	var orbit = new Orbit(6.4, 2.4, .25, 0);
+	var orbit = new Orbit3D(6.4, 2.4, .25, 0);
 	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var ui:Null<Ui>;
@@ -140,9 +140,9 @@ class App extends helix.App {
 	var shown = true;
 
 	// What the shaders go on: the materials and models of the car, the sphere and her, and her skinned models (the silhouette's).
-	var materials:Array<Material> = [];
-	var models:Array<Model> = [];
-	var skinned:Array<Model> = [];
+	var materials:Array<Material3D> = [];
+	var models:Array<Model3D> = [];
+	var skinned:Array<Model3D> = [];
 	var rowSprites:Array<Sprite2D> = [];
 
 	// The surface shaders' last made (their fields write the materials' parameters), and the passes, effects and sprite effects, made once.
@@ -201,9 +201,9 @@ class App extends helix.App {
 	// What's loaded: the car, her skeleton and parts, the logos.
 	var carPlaced = false;
 	var character:Null<Node3D>;
-	var parts:Array<ModelFile> = [];
+	var parts:Array<ModelFile3D> = [];
 	var worn = 0;
-	var animator:Null<Animator>;
+	var animator:Null<Animator3D>;
 	var logos = 0;
 	var pilot:Null<Autopilot>;
 	// Whether an autopilot was asked for: the time, her pose and the camera are held from the first frame, before its script is in.
@@ -238,47 +238,47 @@ class App extends helix.App {
 		orbit.targetX = .5;
 		orbit.targetY = .7;
 		camera.minAspect = 16 / 9;
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.color = 0xfffff4e4;
 		sun.intensity = 2;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
 		level.addChild(sun);
-		var floor = new Material();
+		var floor = new Material3D();
 		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
-		level.addChild(new Model(Mesh.plane(12, 8), floor));
+		level.addChild(new Model3D(Mesh3D.plane(12, 8), floor));
 		// The sphere in the middle, finely divided for the water's waves.
-		var ball = new Material();
+		var ball = new Material3D();
 		ball.baseColor = 0xff3b82f6;
 		ball.roughness = .35;
-		var sphere = new Model(Mesh.sphere(.55, 64, 128), ball);
+		var sphere = new Model3D(Mesh3D.sphere(.55, 64, 128), ball);
 		sphere.setPosition(.5, FLOOR_Y + .55, -.2);
 		level.addChild(sphere);
 		addMaterial(ball);
 		models.push(sphere);
 		// The wall before her: the default shading, her silhouette shows through it.
-		var brick = new Material();
+		var brick = new Material3D();
 		brick.baseColor = 0xff9a7b5c;
 		brick.roughness = .9;
-		var wall = new Model(Mesh.cube(1.1, .6, .1), brick);
+		var wall = new Model3D(Mesh3D.cube(1.1, .6, .1), brick);
 		wall.setPosition(2.15, FLOOR_Y + .3, 1.1);
 		level.addChild(wall);
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
-			var glow = new Material();
+			var glow = new Material3D();
 			glow.baseColor = 0xff000000;
 			glow.setEmissive(i == 0 ? 0xffffd9a0 : 0xff9fd8ff, 10);
-			var bulb = new Model(Mesh.sphere(.14), glow);
+			var bulb = new Model3D(Mesh3D.sphere(.14), glow);
 			bulb.shadowCasting = false;
 			bulb.setPosition(i == 0 ? -.9 : 1.4, 1.9, i == 0 ? -.9 : -1.2);
 			level.addChild(bulb);
 		}
-		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		for (name in PARTS)
-			Models.load(WOMEN + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
-		Models.load(WOMEN + "Animations.glb", file -> placeCharacter(file), message -> status = 'Animations: $message');
+			Models3D.load(WOMEN + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
+		Models3D.load(WOMEN + "Animations.glb", file -> placeCharacter(file), message -> status = 'Animations: $message');
 
 		// The sprite row: the logo twice and the creature, made here as indexed pixels (its red channel an index), with its palette.
 		var pixels = Bytes.alloc(16 * 16 * 4);
@@ -314,8 +314,8 @@ class App extends helix.App {
 			rowSprites.push(sprite);
 			scene.addChild(sprite);
 		}
-		Textures.load(LOGO, true, texture -> useLogo(0, texture));
-		Textures.load(WHITE_LOGO, true, texture -> useLogo(1, texture));
+		Textures2D.load(LOGO, true, texture -> useLogo(0, texture));
+		Textures2D.load(WHITE_LOGO, true, texture -> useLogo(1, texture));
 
 		// The screen effects in the chain, each off until chosen; the sprite effects.
 		bloom = new Bloom();
@@ -388,7 +388,7 @@ class App extends helix.App {
 		}
 
 	// A material the surface shaders go on.
-	function addMaterial(material:Material):Void
+	function addMaterial(material:Material3D):Void
 		materials.push(material);
 
 	// A logo in: sprite i of the row draws it.
@@ -398,7 +398,7 @@ class App extends helix.App {
 	}
 
 	// The car's file in: a copy of it on the left, its materials and models the shaders'.
-	function placeCar(file:ModelFile):Void {
+	function placeCar(file:ModelFile3D):Void {
 		var node = file.instantiate("car");
 		node.setPosition(-1.2, FLOOR_Y, -.3);
 		node.setRotation(0, .7, 0);
@@ -414,15 +414,15 @@ class App extends helix.App {
 	}
 
 	// Her skeleton in: on the right behind the wall, holding her idle clip's first pose (playing it unless piloted), wearing the parts in.
-	function placeCharacter(file:ModelFile):Void {
+	function placeCharacter(file:ModelFile3D):Void {
 		var node = file.instantiate("character");
 		node.setPosition(2.15, FLOOR_Y, .55);
 		node.setScale(.8, .8, .8);
 		node.setRotation(0, -.3, 0);
 		level.addChild(node);
 		character = node;
-		animator = new Animator(node);
-		var idle:Null<AnimationClip> = file.getClip("Idle");
+		animator = new Animator3D(node);
+		var idle:Null<AnimationClip3D> = file.getClip("Idle");
 		if (idle != null)
 			animator.play(idle);
 		for (part in parts)
@@ -430,13 +430,13 @@ class App extends helix.App {
 	}
 
 	// A part's file in: kept, and worn if she's here.
-	function addPart(file:ModelFile):Void {
+	function addPart(file:ModelFile3D):Void {
 		parts.push(file);
 		wear(file);
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her; its materials and models the shaders'.
-	function wear(file:ModelFile):Void {
+	function wear(file:ModelFile3D):Void {
 		if (character == null)
 			return;
 		var copy = file.instantiate("part"), skinnedModels = [], rigid = [];
@@ -754,7 +754,7 @@ class App extends helix.App {
 		};
 
 	// A surface shader (or term) put on every material: make called with each.
-	function surface(make:Material->Void):Void
+	function surface(make:Material3D->Void):Void
 		for (m in materials)
 			make(m);
 
@@ -765,13 +765,13 @@ class App extends helix.App {
 			if (s != rowSprites[2])
 				s.effect = effect;
 
-	function newUnlit(m:Material):Unlit {
+	function newUnlit(m:Material3D):Unlit {
 		var u = new Unlit(m);
 		u.color = unlitColor;
 		return u;
 	}
 
-	function newToon(m:Material):Toon {
+	function newToon(m:Material3D):Toon {
 		var t = new Toon(m);
 		t.bands = toonBands;
 		t.rim.power = toonRimPower;
@@ -780,7 +780,7 @@ class App extends helix.App {
 		return t;
 	}
 
-	function newDissolve(m:Material):Dissolve {
+	function newDissolve(m:Material3D):Dissolve {
 		var d = new Dissolve(m);
 		d.amount = dissolveAmount;
 		d.edgeWidth = dissolveEdge;
@@ -790,7 +790,7 @@ class App extends helix.App {
 		return d;
 	}
 
-	function newWater(m:Material):Water {
+	function newWater(m:Material3D):Water {
 		var w = new Water(m);
 		w.amplitude = waterAmplitude;
 		w.wavelength = waterWavelength;
@@ -802,7 +802,7 @@ class App extends helix.App {
 	}
 
 	// The flash held on a material, in the flash's color.
-	function holdFlash(m:Material):Void {
+	function holdFlash(m:Material3D):Void {
 		var flash = new HitFlash(m);
 		flash.color = flashColor;
 		flash.amount = flashAmount;

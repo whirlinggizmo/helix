@@ -5,10 +5,11 @@ import helix.assets.Failure;
 import helix.behavior.BehaviorPass;
 import helix.behavior.Behaviors;
 import helix.render3d.Node3D;
-import helix.scene.SceneSchema;
+import helix.scene.KindSchema;
+import helix.scene.SceneSchema3D;
 
 /** A .scene3d file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene3d"), its environment section and its nodes, each a SceneNode3D
-	with its kind's properties as SceneSchema's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so
+	with its kind's properties as SceneSchema3D's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so
 	a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand
 	edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a
 	tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree. */
@@ -32,7 +33,7 @@ class SceneFile3D {
 		the key, for a file that isn't a JSON object, a missing or other "helix-scene3d" version, an unknown key at the root, in the environment
 		section or in a material, a node without a name, two siblings with one name, a node with both "kind" and "scene" or neither, a kind no table
 		has, a key no table has on a node or an override, a value of the wrong shape, a file, a mesh or a material on a kind that isn't a
-		Model, a Model with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a
+		Model3D, a Model3D with both a file and a mesh, a mesh without a shape or of a shape no generator makes, with a key its shape hasn't, a
 		required argument missing or one that isn't a number, overrides on a node with no file and no scene, an override with a name, a kind,
 		a mesh or an empty path, or a behavior without a kind. */
 	public static function parse(bytes:Bytes, ?path:String):Null<SceneFile3D> {
@@ -44,7 +45,7 @@ class SceneFile3D {
 
 	/** Makes the file's tree under parent, its behaviors on behaviors (the program's, Behaviors, unless given another): a new group named after the file (its path without directory and
 		extension) added as parent's last child, lit by the environment section (its Node3D.environment: the ambient light at once, the
-		map and background once their files land through Environments), then every node at once under the group, a Model's file and a prefab landing later through Models
+		map and background once their files land through Environments3D), then every node at once under the group, a Model3D's file and a prefab landing later through Models3D
 		and SceneFiles3D (their nodes moved under the entry's node, which is then the file's root, the entry's overrides applied by path), each
 		node's behaviors made from BehaviorRegistry and attached once everything has landed. ready, when given, is called at the pass's
 		next update after that, once the behaviors have started: never inside this call. A missing model, prefab or environment, a prefab
@@ -62,8 +63,8 @@ class SceneFile3D {
 		behaviors the instance attached with their props away from their defaults, its props), a node from a model file or a prefab as the
 		reference plus an override for every node under it whose values differ from what the file gave (what differs only, with the
 		children and behaviors attached there; a file that hasn't landed keeps its overrides as written), and a node a game added at run
-		time as its class with its properties (a Model whose mesh came from one of Mesh's generators as its mesh entry; one whose mesh has no
-		record of what made it, from arrays or a file, has no file and loads back as an empty Model: logged once). A reference
+		time as its class with its properties (a Model3D whose mesh came from one of Mesh3D's generators as its mesh entry; one whose mesh has no
+		record of what made it, from arrays or a file, has no file and loads back as an empty Model3D: logged once). A reference
 		is written as the node's name when one node of the instance has it, else its path. The defaults rule: a capture says only what
 		differs from the defaults, so the environment section holds what isn't the default, a behavior's prop at its schema default is
 		left out, a kind's property at its class's default is left out, and a flag at its kind's own default is left out; a default a hand
@@ -176,7 +177,7 @@ private class SceneReader {
 			else if (!Reflect.hasField(value, "kind") && !Reflect.hasField(value, "scene"))
 				refuse(where, "a node needs a kind or a scene");
 			if (Reflect.hasField(value, "kind")) {
-				if (Std.isOfType(kind, String) && SceneSchema.kind(kind) != null)
+				if (Std.isOfType(kind, String) && SceneSchema3D.kind(kind) != null)
 					node.kind = kind;
 				else
 					refuse(where, 'unknown kind ${describe(kind)}');
@@ -188,15 +189,15 @@ private class SceneReader {
 					refuse(where, "expected a scene, a file's path");
 			}
 			if (Reflect.hasField(value, "file")) {
-				if (node.kind != "Model")
-					refuse(where, "a file belongs to a Model");
+				if (node.kind != "Model3D")
+					refuse(where, "a file belongs to a Model3D");
 				else if (Std.isOfType(file, String) && (file : String) != "")
 					node.file = file;
 				else
 					refuse(where, "expected a file, a glTF's path");
 			}
 		}
-		var schema = node.kind != null ? SceneSchema.kind(node.kind) : null;
+		var schema = node.kind != null ? SceneSchema3D.kind(node.kind) : null;
 		for (key in Reflect.fields(value)) {
 			var item:Dynamic = Reflect.field(value, key);
 			switch key {
@@ -204,10 +205,10 @@ private class SceneReader {
 				case "mesh":
 					if (overriding)
 						continue;
-					if (node.kind != "Model")
-						refuse(where, "a mesh belongs to a Model");
+					if (node.kind != "Model3D")
+						refuse(where, "a mesh belongs to a Model3D");
 					else if (Reflect.hasField(value, "file"))
-						refuse(where, "a Model has a file or a mesh, not both");
+						refuse(where, "a Model3D has a file or a mesh, not both");
 					else
 						node.mesh = readMesh(item, where);
 				case "position":
@@ -223,10 +224,10 @@ private class SceneReader {
 				case "pickable":
 					node.pickable = readBool(item, where, key);
 				case "material":
-					if (overriding || node.kind == "Model")
+					if (overriding || node.kind == "Model3D")
 						node.material = readMaterial(item, where);
 					else
-						refuse(where, "a material belongs to a Model");
+						refuse(where, "a material belongs to a Model3D");
 				case "overrides":
 					if (overriding || node.file != null || node.scene != null)
 						readOverrides(item, node, where);
@@ -242,7 +243,7 @@ private class SceneReader {
 					else
 						refuse(where, "expected props, an object of values");
 				case _:
-					var property = schema != null ? schema.property(key) : overriding ? SceneSchema.property(key) : null;
+					var property = schema != null ? schema.property(key) : overriding ? SceneSchema3D.property(key) : null;
 					if (property == null) {
 						refuse(where, 'unknown key $key');
 						continue;
@@ -466,7 +467,7 @@ private class SceneReader {
 				refuse(where, 'unknown key $key');
 	}
 
-	// A Model's generated mesh: its shape, one of SceneSchema.shapes, and that shape's arguments, each a number, the required ones present.
+	// A Model3D's generated mesh: its shape, one of SceneSchema3D.shapes, and that shape's arguments, each a number, the required ones present.
 	function readMesh(value:Dynamic, where:String):Null<SceneMesh3D> {
 		if (!isObject(value)) {
 			refuse(where, "mesh: expected an object");
@@ -478,7 +479,7 @@ private class SceneReader {
 			return null;
 		}
 		var shape:Dynamic = Reflect.field(value, "shape");
-		var schema = Std.isOfType(shape, String) ? SceneSchema.shape(shape) : null;
+		var schema = Std.isOfType(shape, String) ? SceneSchema3D.shape(shape) : null;
 		if (schema == null) {
 			refuse(at, 'unknown shape ${describe(shape)}');
 			return null;
@@ -638,7 +639,7 @@ private class SceneWriter {
 			entries.push(entry("scale", [numbers(node.scale)]));
 		// A node's flag at its kind's own default is left out (a file or a prefab node's are a plain group's, true); an override's is
 		// written whenever said, since its base is the file's.
-		var schema = node.kind != null ? SceneSchema.kind(node.kind) : null;
+		var schema = node.kind != null ? SceneSchema3D.kind(node.kind) : null;
 		for (flag in [
 			{key: "enabled", value: node.enabled, kinds: schema == null || schema.enabled},
 			{key: "visible", value: node.visible, kinds: schema == null || schema.visible},
@@ -654,7 +655,7 @@ private class SceneWriter {
 			}
 		} else if (overriding) {
 			var written = new Map<String, Bool>();
-			for (kind in SceneSchema.kinds)
+			for (kind in SceneSchema3D.kinds)
 				for (property in kind.properties) {
 					var held = node.properties.get(property.name);
 					if (held != null && !written.exists(property.name)) {
@@ -693,7 +694,7 @@ private class SceneWriter {
 	// A generated mesh: its shape, then its arguments in the generator's order, an optional one at the generator's default left out.
 	function mesh(mesh:SceneMesh3D):Array<String> {
 		var entries = [entry("shape", [string(mesh.shape)])];
-		var schema = SceneSchema.shape(mesh.shape);
+		var schema = SceneSchema3D.shape(mesh.shape);
 		if (schema != null)
 			for (argument in schema.arguments) {
 				var held = mesh.arguments.get(argument.name);

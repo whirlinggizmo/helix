@@ -1,20 +1,20 @@
 import Render2DTests.CountingGraphics;
 import haxe.ds.Vector;
-import helix.render3d.AnimationClip;
-import helix.render3d.Animator;
+import helix.render3d.AnimationClip3D;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
 import helix.render3d.Gltf;
-import helix.render3d.JointPalette;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
+import helix.render3d.JointPalette3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
 import helix.render3d.Node3D;
-import helix.render3d.Skin;
+import helix.render3d.Skin3D;
 import helix.render3d.Renderer3D;
 
 /** Skinning and skeletal animation: tracks' sampling, skins and clips read from glTF (Quaternius's modular women, the animation example's),
-	the Animator's binding, refusal and crossfade, joint matrices, and a posed model's culling box. */
+	the Animator3D's binding, refusal and crossfade, joint matrices, and a posed model's culling box. */
 class AnimationTests {
 	static var checks = 0;
 
@@ -27,8 +27,8 @@ class AnimationTests {
 	static function near(a:Float, b:Float):Bool
 		return Math.abs(a - b) < 1e-5;
 
-	static function file(name:String):ModelFile
-		return @:privateAccess new ModelFile(Gltf.read(sys.io.File.getBytes('examples/assets/models/modular-women/$name.glb')));
+	static function file(name:String):ModelFile3D
+		return @:privateAccess new ModelFile3D(Gltf.read(sys.io.File.getBytes('examples/assets/models/modular-women/$name.glb')));
 
 	public static function main():Void {
 		tracks();
@@ -41,28 +41,28 @@ class AnimationTests {
 
 	static function tracks():Void {
 		var out = new Vector<Float>(4);
-		var move = new Track("a", Translation, Linear, [0, 1], [0, 0, 0, 10, 20, 30]);
+		var move = new Track3D("a", Translation, Linear, [0, 1], [0, 0, 0, 10, 20, 30]);
 		move.sample(.25, out);
 		check(near(out[0], 2.5) && near(out[1], 5) && near(out[2], 7.5), "Linear between keys");
 		move.sample(-1, out);
 		check(out[0] == 0, "Held before the first key");
 		move.sample(5, out);
 		check(out[0] == 10, "Held after the last");
-		var step = new Track("a", Translation, Step, [0, 1], [0, 0, 0, 10, 0, 0]);
+		var step = new Track3D("a", Translation, Step, [0, 1], [0, 0, 0, 10, 0, 0]);
 		step.sample(.99, out);
 		check(out[0] == 0, "A step holds until the next key");
 		// A cubic spline with flat tangents eases: a quarter of the way in time is less than a quarter of the way.
-		var cubic = new Track("a", Translation, CubicSpline, [0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0]);
+		var cubic = new Track3D("a", Translation, CubicSpline, [0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0]);
 		cubic.sample(.25, out);
 		check(near(out[0], 10 * (3 * .0625 - 2 * .015625)), "A cubic spline through its values, flat tangents");
 		// q and -q are one rotation: halfway takes the short way, and stays normalized.
 		var s = Math.sqrt(.5);
-		var turn = new Track("a", Rotation, Linear, [0, 1], [0, 0, 0, 1, 0, -s, 0, -s]);
+		var turn = new Track3D("a", Rotation, Linear, [0, 1], [0, 0, 0, 1, 0, -s, 0, -s]);
 		turn.sample(.5, out);
 		var length = Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2] + out[3] * out[3]);
 		check(near(length, 1) && Math.abs(out[1]) < Math.abs(out[3]), "Rotation slerps the short way, normalized");
 		var threw = try {
-			new Track("a", Translation, Linear, [0, 1], [0, 0, 0]);
+			new Track3D("a", Translation, Linear, [0, 1], [0, 0, 0]);
 			false;
 		} catch (_:Dynamic)
 			true;
@@ -71,7 +71,7 @@ class AnimationTests {
 
 	static function weights():Void {
 		// One triangle, its first vertex weighted .25 to joint 1 alone (normalized to 1), its second unweighted (follows joint 0).
-		var mesh = Mesh.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null, [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+		var mesh = Mesh3D.fromArrays([0, 0, 0, 1, 0, 0, 0, 1, 0], null, null, null, null, [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
 			[.25, 0, 0, 0, 0, 0, 0, 0, .5, .5, 0, 0]);
 		var skin = mesh.skinData;
 		check(skin.getFloat(Skinned3DProgram.weightsOffset) == 1, "Weights normalized to sum to 1");
@@ -90,8 +90,8 @@ class AnimationTests {
 		check(body.warnings.length == 0, "Skins read without warnings: " + body.warnings.join("; "));
 		var a = body.instantiate("a"), b = body.instantiate("b");
 		// A node with a mesh is one model, its primitives its parts.
-		var modelA = Std.downcast(a.find("Casual_Body"), Model),
-			modelB = Std.downcast(b.find("Casual_Body"), Model);
+		var modelA = Std.downcast(a.find("Casual_Body"), Model3D),
+			modelB = Std.downcast(b.find("Casual_Body"), Model3D);
 		check(modelA != null && modelB != null && modelA.partCount > 0, "The file's skinned node is a model");
 		if (modelA == null || modelB == null)
 			return;
@@ -102,7 +102,7 @@ class AnimationTests {
 		var skeleton = animations.instantiate("character");
 		check(modelB.bindSkeleton(skeleton) && modelB.getJoint(3) == skeleton.find(modelB.skin.getJointName(3)),
 			"A part binds to another file's skeleton by joint name");
-		var partial = new Skin(["Hips", "NoSuchBone"]);
+		var partial = new Skin3D(["Hips", "NoSuchBone"]);
 		check(!modelB.bindSkeleton(skeleton, partial) && modelB.jointCount == 62, "A missing joint is refused, the binding kept");
 	}
 
@@ -113,11 +113,11 @@ class AnimationTests {
 		b.name = "b";
 		a.addChild(b);
 		b.setPosition(2, 0, 0);
-		var one = new AnimationClip("one", [new Track("b", Translation, Linear, [0, 1], [0, 0, 0, 0, 0, 0])]);
-		var two = new AnimationClip("two", [new Track("b", Translation, Linear, [0, 1], [10, 0, 0, 10, 0, 0])]);
-		var three = new AnimationClip("three", [new Track("a", Translation, Linear, [0, 1], [0, 5, 0, 0, 5, 0])]);
-		var ghost = new AnimationClip("ghost", [new Track("nobody", Translation, Linear, [0], [0, 0, 0])]);
-		var animator = new Animator(a);
+		var one = new AnimationClip3D("one", [new Track3D("b", Translation, Linear, [0, 1], [0, 0, 0, 0, 0, 0])]);
+		var two = new AnimationClip3D("two", [new Track3D("b", Translation, Linear, [0, 1], [10, 0, 0, 10, 0, 0])]);
+		var three = new AnimationClip3D("three", [new Track3D("a", Translation, Linear, [0, 1], [0, 5, 0, 0, 5, 0])]);
+		var ghost = new AnimationClip3D("ghost", [new Track3D("nobody", Translation, Linear, [0], [0, 0, 0])]);
+		var animator = new Animator3D(a);
 		check(!animator.play(ghost) && animator.clip == null, "A clip moving a node the root hasn't is refused");
 		check(animator.play(one), "A clip binds by name");
 		animator.update(.1);
@@ -139,7 +139,7 @@ class AnimationTests {
 		animator.speed = Math.NaN;
 		check(animator.speed == 0, "A speed not finite is taken as 0");
 		// A queued clip: it waits for a one-shot's end, then fades in from its last frame; play and stop drop it; behind a loop it waits.
-		var queuer = new Animator(a);
+		var queuer = new Animator3D(a);
 		check(queuer.queue(two) && queuer.clip == two && queuer.queued == null, "Queued with nothing playing, it plays at once");
 		queuer.play(one, false);
 		check(queuer.queue(two, true, .5) && queuer.queued == two && !queuer.queue(ghost) && queuer.queued == two,
@@ -169,10 +169,10 @@ class AnimationTests {
 	static function joints():Void {
 		// A strip from x 0 to 2 along two joints: joint 0 at the origin weighting x <= 1, joint 1 at x 1 weighting beyond, bound in place.
 		var positions = [0., 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 1, 0];
-		var mesh = Mesh.fromArrays(positions, null, null, null, null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+		var mesh = Mesh3D.fromArrays(positions, null, null, null, null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
 			[1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
 		// Joint 1's inverse bind takes the mesh's space to the joint's: a move of -1 along x.
-		var skin = new Skin(["hip", "knee"], [
+		var skin = new Skin3D(["hip", "knee"], [
 			1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1
 		]);
 		check(near(skin.getBindPosition(1, 0), 1) && near(skin.getBindPosition(0, 0), 0), "A joint's bind position, its inverse bind's inverse");
@@ -185,7 +185,7 @@ class AnimationTests {
 		knee.setPosition(1, 0, 0);
 		hip.addChild(knee);
 		character.addChild(hip);
-		var model = new Model(mesh, new Material());
+		var model = new Model3D(mesh, new Material3D());
 		character.addChild(model);
 		check(model.bindSkeleton(character, skin) && model.jointCount == 2, "Bound to its joints");
 		stage.add(character);
@@ -197,7 +197,7 @@ class AnimationTests {
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
 		check(stage.drawnNodeCount == 1, "A model posed out of its rest box is drawn where its joints are");
-		var palette:JointPalette = @:privateAccess stage.palette,
+		var palette:JointPalette3D = @:privateAccess stage.palette,
 			data = @:privateAccess palette.data;
 		// Joint 1's matrix: the model's space moved to the knee at x 40, its inverse bind's -1 applied: x + 39.
 		check(palette.jointCount == 2 && near(data.getFloat(48 + 12), 39) && near(data.getFloat(48), 1) && near(data.getFloat(12), 0),
@@ -205,7 +205,7 @@ class AnimationTests {
 		var record = @:privateAccess stage.records;
 		check(record.getFloat(Lit3DProgram.normal2Offset + 12) == 0, "The model's first joint in its record");
 		var box = new Vector<Float>(6);
-		check(JointPalette.computePosedBox(model, model.mesh, box)
+		check(JointPalette3D.computePosedBox(model, model.mesh, box)
 			&& box[0] + box[3] > 41
 			&& box[0] - box[3] < 0, "The posed box holds both joints' reach");
 		var bounds = new Vector<Float>(6);

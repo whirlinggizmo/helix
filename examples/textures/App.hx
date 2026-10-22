@@ -8,7 +8,7 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
@@ -63,7 +63,7 @@ class App extends helix.App {
 
 	function load(path:String):Slot {
 		var slot = new Slot(path, Time.time);
-		Textures.load(path, true, texture -> loaded(slot, texture), message -> failed(slot, message));
+		Textures2D.load(path, true, texture -> loaded(slot, texture), message -> failed(slot, message));
 		return slot;
 	}
 
@@ -71,7 +71,7 @@ class App extends helix.App {
 	function loaded(slot:Slot, texture:Texture2D):Void {
 		slot.texture = texture;
 		slot.took = Time.time - slot.asked;
-		slot.chosen = Textures.getPath(texture);
+		slot.chosen = Textures2D.getPath(texture);
 	}
 
 	// slot's texture failed: said beside it, and why in the log.
@@ -155,6 +155,6 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		for (slot in slots.concat(compressed))
 			if (slot.texture != null)
-				Textures.release(slot.texture);
+				Textures2D.release(slot.texture);
 	}
 }

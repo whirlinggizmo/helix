@@ -5,22 +5,22 @@ import helix.host.ScreenShape;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.AnimationDirection;
+import helix.render2d.AnimationDirection2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.SpriteAnimator;
-import helix.render2d.SpriteSheet;
+import helix.render2d.SpriteAnimator2D;
+import helix.render2d.SpriteSheet2D;
 import helix.render2d.Stage;
 import helix.render2d.View2D;
 import helix.time.Time;
 
 /** A sprite sheet (the shared sheets/gizmos.json and .png, TexturePacker's JSON Hash, made by tools/gen_sprite_sheet.py: trimmed frames, five of them
 	packed turned a quarter) and its animations, found from the frames' numbered names ("walk_01.png": "walk"):
-	- a blob walking in low hops, a Sprite2D a SpriteAnimator shows its frames on, walking to and fro: facing its way by a negative x scale,
+	- a blob walking in low hops, a Sprite2D a SpriteAnimator2D shows its frames on, walking to and fro: facing its way by a negative x scale,
 	  its feet on the ground by its frames' pivot
-	- gears, Sprite2Ds shown a frame by setFrame with no animator of their own, following one SpriteAnimator: one bigger and turned as a whole
+	- gears, Sprite2Ds shown a frame by setFrame with no animator of their own, following one SpriteAnimator2D: one bigger and turned as a whole
 	- the sheet's texture beside them, an image in a Drawing2D, the blob's frame boxed in it (a turned frame's box is tall where the frame is
 	  wide)
 	The world is in framebuffer pixels, shown by a View2D; the text is on the stage.
@@ -36,12 +36,12 @@ class App extends helix.App {
 	var sheetImage = new Drawing2D();
 	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
-	var sheet:Null<SpriteSheet>;
+	var sheet:Null<SpriteSheet2D>;
 	var blob = new Sprite2D(null);
 	var gear = new Sprite2D(null);
 	var bigGear = new Sprite2D(null);
-	var blobs:Null<SpriteAnimator>;
-	var gears:Null<SpriteAnimator>;
+	var blobs:Null<SpriteAnimator2D>;
+	var gears:Null<SpriteAnimator2D>;
 	var walk = 0.;
 	var heading = 1.;
 	var paused = false;
@@ -65,13 +65,13 @@ class App extends helix.App {
 		Stage.addChild(new View2D(world, camera));
 		Stage.addChild(hud);
 		Stage.addChild(fps);
-		SpriteSheet.load("sheets/gizmos.json", loaded -> {
+		SpriteSheet2D.load("sheets/gizmos.json", loaded -> {
 			sheet = loaded;
 			var frames = loaded.findAnimation("walk").frames;
-			loaded.addAnimation("walk-pingpong", frames, AnimationDirection.PingPong);
-			blobs = new SpriteAnimator(loaded, blob);
+			loaded.addAnimation("walk-pingpong", frames, AnimationDirection2D.PingPong);
+			blobs = new SpriteAnimator2D(loaded, blob);
 			blobs.play("walk");
-			gears = new SpriteAnimator(loaded);
+			gears = new SpriteAnimator2D(loaded);
 			gears.play("gear");
 		}, message -> failure = message);
 	}

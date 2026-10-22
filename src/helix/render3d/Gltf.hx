@@ -5,7 +5,7 @@ import haxe.io.Bytes;
 /** A glTF 2.0 file as read: its JSON document and its buffers, from a GLB (the binary container: a JSON chunk and a BIN chunk, its first
 	buffer) or a .gltf (the JSON alone), with the reading of its accessors. A buffer inside the file (the GLB's, or a base64 data: URI) is read
 	here; one in a file of its own (a uri beside the model) is the loader's to fetch and set (missingBuffers, setBuffer). Only what a
-	ModelFile needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read. */
+	ModelFile3D needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read. */
 class Gltf {
 	static inline var JSON_CHUNK = 0x4E4F534A;
 	static inline var BIN_CHUNK = 0x004E4942;

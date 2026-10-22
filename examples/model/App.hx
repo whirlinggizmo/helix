@@ -7,19 +7,19 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
+import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
-import helix.render3d.SpotLight;
+import helix.render3d.SpotLight3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** A glTF model in a lit level shown by a View3D, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
 	on its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its wheels and headlights are
@@ -35,13 +35,13 @@ class App extends helix.App {
 	var fps = new FpsOverlay();
 	// The camera going round the level, and where it goes.
 	var orbitCamera = new Camera3D();
-	var orbit = new Orbit(7, 3, .25, .5);
+	var orbit = new Orbit3D(7, 3, .25, .5);
 	// The camera riding along: under the car once it's in, so it goes where the car goes.
 	var rideCamera = new Camera3D();
 	var riding = false;
 	var car:Null<Node3D>;
 	var wheels:Array<Node3D> = [];
-	var headlights:Array<SpotLight> = [];
+	var headlights:Array<SpotLight3D> = [];
 	var driving = false;
 	// Where round its circle the car is, in radians, and how far its wheels have turned.
 	var driveAngle = 0.;
@@ -54,14 +54,14 @@ class App extends helix.App {
 		Stage.color = 0xff14161c;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .2);
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
 		level.addChild(sun);
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xff616164;
 		ground.roughness = .9;
-		level.addChild(new Model(Mesh.plane(14, 14), ground));
+		level.addChild(new Model3D(Mesh3D.plane(14, 14), ground));
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
 		orbitCamera.minAspect = 16 / 9;
 		rideCamera.minAspect = 16 / 9;
@@ -70,19 +70,19 @@ class App extends helix.App {
 		Stage.addChild(hud);
 		Stage.addChild(fps);
 
-		Models.load(MODEL, file -> place(file), message -> caption = message);
+		Models3D.load(MODEL, file -> place(file), message -> caption = message);
 	}
 
-	// The car's file in. instantiate makes a tree of the file's nodes under a Node3D named "car", each named as in Blender: a Model for each node
-	// with a mesh (wheel-front-left, wheel-front-right, wheel-back-left, wheel-back-right and body), the spoiler a Model under the body, and the
+	// The car's file in. instantiate makes a tree of the file's nodes under a Node3D named "car", each named as in Blender: a Model3D for each node
+	// with a mesh (wheel-front-left, wheel-front-right, wheel-back-left, wheel-back-right and body), the spoiler a Model3D under the body, and the
 	// body's two lights, headlight-left and headlight-right, SpotLights under it shining ahead (the car's +z).
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
 		for (name in ["wheel-front-left", "wheel-front-right", "wheel-back-left", "wheel-back-right"])
 			wheels.push(car.find(name));
 		for (name in ["headlight-left", "headlight-right"])
-			headlights.push(cast(car.find(name), SpotLight));
+			headlights.push(cast(car.find(name), SpotLight3D));
 		level.addChild(car);
 		// Behind the car and above it, looking ahead, in its own units: a child, so the car carries it.
 		rideCamera.setView(0, 1.8, -4.5, 0, .4, 2);

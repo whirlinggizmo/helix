@@ -6,7 +6,7 @@ import helix.graphics.BlendMode;
 import helix.graphics.Pipelines;
 import helix.graphics.Sampling;
 import helix.graphics.SpriteEffect;
-import helix.render3d.SpriteAlpha;
+import helix.render3d.SpriteAlpha3D;
 import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
@@ -452,11 +452,11 @@ class Batch2D {
 		vertex(dx, dy, u0, v1);
 	}
 
-	/** sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times
+	/** sheet's frame at index (SpriteSheet2D.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times
 		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white
 		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing.
 		Throws when the frame's vertices pass capacity. */
-	public function sheetFrame(sheet:SpriteSheet, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
+	public function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
 		var frame = sheet.getFrame(index);
 		if (frame == null)
 			return;
@@ -477,7 +477,7 @@ class Batch2D {
 	// frame of texture filling the box x, y, width x height (its whole picture's, untrimmed): its texels where trimming left them, upright.
 
 	@:allow(helix.render2d.Renderer2D)
-	function frameQuad(texture:Texture2D, frame:SpriteFrame, x:Float, y:Float, width:Float, height:Float, tint:Int):Void {
+	function frameQuad(texture:Texture2D, frame:SpriteFrame2D, x:Float, y:Float, width:Float, height:Float, tint:Int):Void {
 		useTexture(texture);
 		var sx = width / frame.sourceWidth, sy = height / frame.sourceHeight;
 		var qx = x + frame.offsetX * sx,

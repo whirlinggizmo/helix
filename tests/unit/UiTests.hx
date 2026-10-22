@@ -4,8 +4,8 @@ import helix.render2d.Font2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
 import helix.ui.Layout2D;
-import helix.ui.Layout2D.Layout2DDirection;
-import helix.ui.Layout2D.Sizing;
+import helix.ui.Layout2D.LayoutDirection2D;
+import helix.ui.Layout2D.Sizing2D;
 import helix.ui.WidgetState;
 
 /** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, margins, alignment and anchors, and the nodes
@@ -457,7 +457,7 @@ class UiTests {
 	}
 
 	// A layout laid out direction's way (a stack when not given), sized width x height.
-	static function sized(width:Sizing, height:Sizing, ?direction:Layout2DDirection):Layout2D {
+	static function sized(width:Sizing2D, height:Sizing2D, ?direction:LayoutDirection2D):Layout2D {
 		var made = new Layout2D(direction != null ? direction : Stack);
 		made.setSizing(width, height);
 		return made;

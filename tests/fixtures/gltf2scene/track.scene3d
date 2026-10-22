@@ -2,7 +2,7 @@
   "helix-scene3d": 1,
   "nodes": [
     {
-      "kind": "Model",
+      "kind": "Model3D",
       "name": "track",
       "file": "models/track.gltf",
       "overrides": {

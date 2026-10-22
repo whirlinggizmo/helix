@@ -9,7 +9,7 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Particles2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Node3D;
@@ -17,7 +17,7 @@ import helix.render3d.Particles3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. In a 3D level shown by a View3D, over a grid (a Drawing3D): a fountain
 	(blended drops under gravity), sparks (added, from a point circling the fountain: they trail behind it, are thrown along by it, slowed by
@@ -45,7 +45,7 @@ class App extends helix.App {
 	var confettiNode:Particles2D;
 	var paused = false;
 	// The camera, circling.
-	var orbit = new Orbit(ORBIT, 6, .15, 3);
+	var orbit = new Orbit3D(ORBIT, 6, .15, 3);
 
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node3D {
 		var node = new Particles3D(emitter);
@@ -149,8 +149,8 @@ class App extends helix.App {
 		Stage.addChild(text);
 		Stage.addChild(fps);
 
-		Textures.load("textures/particle.png", true, texture -> dot(texture));
-		Textures.load("textures/flame.png", true, texture -> flame.texture = texture);
+		Textures2D.load("textures/particle.png", true, texture -> dot(texture));
+		Textures2D.load("textures/flame.png", true, texture -> flame.texture = texture);
 	}
 
 	// The particle texture in: every emitter but the flame draws it, and a first burst of confetti shows it.

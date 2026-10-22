@@ -15,8 +15,8 @@ class Particles3D extends Node3D {
 	/** Its emitter. */
 	public var emitter(default, null):Emitter;
 
-	override function get_spriteKind():Node3D.SpriteKind
-		return Node3D.SpriteKind.Emitter;
+	override function get_spriteKind():Node3D.SpriteKind3D
+		return Node3D.SpriteKind3D.Emitter;
 
 	override function attachSprites(renderer:Renderer3D):Void
 		Sprites3D.attach(renderer);

@@ -8,7 +8,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
@@ -44,8 +44,8 @@ class App extends helix.App {
 		if (!quitting && Time.time >= quitAt) {
 			quitting = true;
 			// Only in flight at the quit: loads begun and never used.
-			Textures.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
-			Textures.load("textures/tiles.png", false, _ -> {});
+			Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, _ -> {});
+			Textures2D.load("textures/tiles.png", false, _ -> {});
 			Audio.loadStream("audio/music/a_hero_is_born.mp3", _ -> {});
 			// A long synchronous frame.
 			var busyUntil = Time.time + .5;

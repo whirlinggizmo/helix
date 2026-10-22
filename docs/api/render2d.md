@@ -8,15 +8,15 @@
 
 Which point of a line of text its x names: its left edge, center or right edge.
 
-## AnimationDirection
+## AnimationDirection2D
 
-*abstract* in `src/helix/render2d/AnimationDirection.hx`
+*abstract* in `src/helix/render2d/AnimationDirection2D.hx`
 
-Which way a SpriteAnimation plays through its frames (Aseprite's tag directions).
+Which way a SpriteAnimation2D plays through its frames (Aseprite's tag directions).
 
-## BakedFont
+## BakedFont2D
 
-*typedef* in `src/helix/render2d/FontBaker.hx`
+*typedef* in `src/helix/render2d/FontBaker2D.hx`
 
 A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 / padding a pixel.
 
@@ -25,14 +25,14 @@ A font's characters baked into one distance-field atlas: a byte a texel, 128 on 
 - `pixelHeight:Float`
 - `lineGap:Float`
 - `height:Int`
-- `glyphs:Array<BakedGlyph>`
+- `glyphs:Array<BakedGlyph2D>`
 - `field:haxe.io.Bytes`
 - `descent:Float`
 - `ascent:Float`
 
-## BakedGlyph
+## BakedGlyph2D
 
-*typedef* in `src/helix/render2d/FontBaker.hx`
+*typedef* in `src/helix/render2d/FontBaker2D.hx`
 
 A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height. A glyph with nothing to draw (a space) has no size.
 
@@ -76,7 +76,7 @@ function useTexture(value:Texture2D):Void
 var samplingOverride:Null<Sampling>
 function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, ?distanceField:Bool = false):Void
 function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?tint:Int = 0xffffffff, ?u0:Float = 0., ?v0:Float = 0., ?u1:Float = 1., ?v1:Float = 1.):Void
-function sheetFrame(sheet:SpriteSheet, index:Int, x:Float, y:Float, ?scaleX:Float = 1., ?scaleY:Float = 1., ?rotation:Float = 0., ?tint:Int = 0xffffffff):Void
+function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, ?scaleX:Float = 1., ?scaleY:Float = 1., ?rotation:Float = 0., ?tint:Int = 0xffffffff):Void
 function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function emitter(emitter:Emitter):Void
@@ -121,7 +121,7 @@ function destroy():Void
 - `samplingOverride`: How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in one frame (a Sprite2D's sampling, Drawing2D.image's).
 - `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
 - `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity.
-- `sheetFrame`: sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
+- `sheetFrame`: sheet's frame at index (SpriteSheet2D.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
 - `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
 - `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
 - `emitter`: Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An emitter with nothing to draw draws nothing.
@@ -294,7 +294,7 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 
 *class* in `src/helix/render2d/Font2D.hx`
 
-A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
+A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts2D loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
 
 ```haxe
 static function fromTrueType(gpu:IGraphics, data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6):Font2D
@@ -313,7 +313,7 @@ function measureWrapped(text:String, size:Float, width:Float, ?lineHeight:Float 
 function destroy(gpu:IGraphics):Void
 ```
 
-- `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. The caller destroys it.
+- `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. The caller destroys it.
 - `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md).
 - `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes.
 - `texture`: The texture holding every glyph, with a white texel for untextured shapes.
@@ -328,23 +328,23 @@ function destroy(gpu:IGraphics):Void
 - `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
 - `destroy`: Frees the font's texture on gpu, the adapter that made it.
 
-## FontBaker
+## FontBaker2D
 
-*class* in `src/helix/render2d/FontBaker.hx`
+*class* in `src/helix/render2d/FontBaker2D.hx`
 
 Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened into segments finer than a twentieth of a pixel, and each texel holds its signed distance to them (inside by the nonzero rule), so text drawn from it stays sharp from small to about four times the baked height. Glyphs are packed in rows, left to right.
 
 ```haxe
-static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont
+static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont2D
 ```
 
 - `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
 
-## FontCache
+## FontCache2D
 
-*class* in `src/helix/render2d/FontCache.hx`
+*class* in `src/helix/render2d/FontCache2D.hx`
 
-TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font2D.fromTrueType), the same on every target, and baked again in place when a file changes during development. The runner's is what the Fonts static forwards to; the caller releases what it loads.
+TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font2D.fromTrueType), the same on every target, and baked again in place when a file changes during development. The runner's is what the Fonts2D static forwards to; the caller releases what it loads.
 
 ```haxe
 function new(assets:IAssets, gpu:IGraphics)
@@ -362,14 +362,14 @@ function shutdown():Void
 - `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font2D objects. A file that no longer reads leaves them as they were.
 - `shutdown`: Frees every font still loaded and takes no more loads: a load that lands after calls nothing. The runner's, at the program's end.
 
-## Fonts
+## Fonts2D
 
-*class* in `src/helix/render2d/Fonts.hx`
+*class* in `src/helix/render2d/Fonts2D.hx`
 
-TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache's public members with their doc comments.
+TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache2D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):FontCache
+static var instance(default, null):FontCache2D
 static function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
 static function getPath(font:Font2D):Null<String>
 static function release(font:Font2D):Void
@@ -408,7 +408,7 @@ An alias of `Array<{points:Array<Float>, onCurve:Array<Bool>}>`.
 
 *class* in `src/helix/render2d/Ktx.hx`
 
-A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps (https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures loads them.
+A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps (https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures2D loads them.
 
 ```haxe
 static function read(bytes:haxe.io.Bytes):Ktx
@@ -549,9 +549,9 @@ static function rectangle(width:Float, height:Float, ?color:Int = 0xffffffff):Sh
 static function circle(radius:Float, ?color:Int = 0xffffffff):Shape2D
 static function line(x0:Float, y0:Float, x1:Float, y1:Float, ?color:Int = 0xffffffff):Shape2D
 static function polygon(points:Array<Float>, ?color:Int = 0xffffffff):Null<Shape2D>
-var form(default, null):ShapeForm
+var form(default, null):ShapeForm2D
 var color:Int
-var shading:ShapeShading
+var shading:ShapeShading2D
 var endColor:Int
 var width(get, never):Float
 var height(get, never):Float
@@ -586,13 +586,13 @@ function setPoints(value:Array<Float>):Bool
 - `points`: A polygon's points or a line's ends, x and y in turn (a copy); empty for a rectangle or circle.
 - `setPoints`: Gives a polygon new points (as polygon() takes them, copied) or a line new ends (4 floats). False, changing nothing, for a rectangle or circle or a wrong count.
 
-## ShapeForm
+## ShapeForm2D
 
 *abstract* in `src/helix/render2d/Shape2D.hx`
 
 Which shape a Shape2D is.
 
-## ShapeShading
+## ShapeShading2D
 
 *abstract* in `src/helix/render2d/Shape2D.hx`
 
@@ -602,7 +602,7 @@ How a filled rectangle is colored.
 
 *class* in `src/helix/render2d/Sprite2D.hx`
 
-A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
+A sprite: a texture (or a region of it, or a SpriteSheet2D's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
 
 ```haxe
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
@@ -611,8 +611,8 @@ var tint:Int
 var sampling:Null<Sampling>
 var effect:Null<SpriteEffect>
 function setRegion(x:Float, y:Float, width:Float, height:Float):Void
-function setFrame(sheet:SpriteSheet, index:Int):Bool
-var frame(default, null):Null<SpriteFrame>
+function setFrame(sheet:SpriteSheet2D, index:Int):Bool
+var frame(default, null):Null<SpriteFrame2D>
 var regionX(get, never):Float
 var regionY(get, never):Float
 var regionWidth(get, never):Float
@@ -637,7 +637,7 @@ var nineSlice(get, never):Bool
 - `sampling`: How its texture is sampled, in place of the texture's own (Texture2D.sampling), or null for the texture's: the same texture drawn sharp here and smooth elsewhere.
 - `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows no sheet's frame after (setFrame).
-- `setFrame`: Shows sheet's frame at index (a SpriteAnimator given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
+- `setFrame`: Shows sheet's frame at index (a SpriteAnimator2D given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
 - `frame`: The sheet's frame it shows (setFrame), or null: it shows its region.
 - `regionX`: Its region's left, in texels.
 - `regionY`: Its region's top, in texels.
@@ -656,17 +656,17 @@ var nineSlice(get, never):Bool
 - `nineSliceBottom`: Its nine-slice's bottom inset, texels.
 - `nineSlice`: Whether it draws as a nine-slice frame.
 
-## SpriteAnimation
+## SpriteAnimation2D
 
-*class* in `src/helix/render2d/SpriteAnimation.hx`
+*class* in `src/helix/render2d/SpriteAnimation2D.hx`
 
-A named run of a SpriteSheet's frames, played by a SpriteAnimator: an Aseprite tag, or frames whose names differ only by a number. Each frame shows for its own duration.
+A named run of a SpriteSheet2D's frames, played by a SpriteAnimator2D: an Aseprite tag, or frames whose names differ only by a number. Each frame shows for its own duration.
 
 ```haxe
-function new(name:String, frames:Array<Int>, direction:AnimationDirection)
+function new(name:String, frames:Array<Int>, direction:AnimationDirection2D)
 final name:String
 final frames:Array<Int>
-final direction:AnimationDirection
+final direction:AnimationDirection2D
 ```
 
 - `new`: An animation named name over the sheet's frames, played in direction.
@@ -674,18 +674,18 @@ final direction:AnimationDirection
 - `frames`: The sheet's frames it shows, by index, in order.
 - `direction`: Which way it plays through them.
 
-## SpriteAnimator
+## SpriteAnimator2D
 
-*class* in `src/helix/render2d/SpriteAnimator.hx`
+*class* in `src/helix/render2d/SpriteAnimator2D.hx`
 
-Plays a SpriteSheet's animations: which frame shows, each for its own duration, in its animation's direction, looping or once. Call update once a frame; frame is the sheet's frame to draw (Batch2D.sheetFrame), and a sprite given to it shows that frame itself. entered says which of the animation's frames the last update reached, a footstep's sound on the frame its foot lands.
+Plays a SpriteSheet2D's animations: which frame shows, each for its own duration, in its animation's direction, looping or once. Call update once a frame; frame is the sheet's frame to draw (Batch2D.sheetFrame), and a sprite given to it shows that frame itself. entered says which of the animation's frames the last update reached, a footstep's sound on the frame its foot lands.
 
 ```haxe
-function new(sheet:SpriteSheet, ?sprite:Sprite2D)
-var sheet(default, null):SpriteSheet
+function new(sheet:SpriteSheet2D, ?sprite:Sprite2D)
+var sheet(default, null):SpriteSheet2D
 var sprite:Null<Sprite2D>
 var speed(default, set):Float
-var animation(get, never):Null<SpriteAnimation>
+var animation(get, never):Null<SpriteAnimation2D>
 var frame(get, never):Int
 var frameIndex(get, never):Int
 var finished(get, never):Bool
@@ -700,7 +700,7 @@ function update(seconds:Float):Void
 - `sprite`: The sprite showing its frame, or null.
 - `speed`: How fast time runs: 1 as the sheet's durations say, 2 twice as fast, 0 held. Below 0, or not finite, is taken as 0.
 - `animation`: The animation playing (or finished and holding its last frame), or null.
-- `frame`: The sheet's frame showing, by index (SpriteSheet.getFrame), or -1 with no animation.
+- `frame`: The sheet's frame showing, by index (SpriteSheet2D.getFrame), or -1 with no animation.
 - `frameIndex`: The frame showing by its place in the animation (0 its first), or -1 with no animation.
 - `finished`: Whether an animation played once has reached its end (it holds its last frame); false while one loops, or with none.
 - `play`: Plays the sheet's animation named name from its start, looping or once; playing the one already playing (not finished) goes on where it is, looping as now asked. False, changing nothing, for a name the sheet hasn't.
@@ -708,11 +708,11 @@ function update(seconds:Float):Void
 - `entered`: Whether the last update (or the play that started it) reached the animation's frame at index (its place in the animation, 0 its first), though a long update may have passed it already.
 - `update`: Advances time by seconds (times speed): the frames whose durations it passes go by, an animation played once stops on its last.
 
-## SpriteFrame
+## SpriteFrame2D
 
-*class* in `src/helix/render2d/SpriteFrame.hx`
+*class* in `src/helix/render2d/SpriteFrame2D.hx`
 
-One frame of a SpriteSheet: where it is in the sheet's texture and how it is drawn. A trimmed frame (its transparent edges cut off when packed) keeps its place in the whole picture: its texels are drawn offsetX, offsetY in from the top-left of a sourceWidth x sourceHeight box. A rotated frame was packed turned a quarter turn clockwise; it is drawn upright.
+One frame of a SpriteSheet2D: where it is in the sheet's texture and how it is drawn. A trimmed frame (its transparent edges cut off when packed) keeps its place in the whole picture: its texels are drawn offsetX, offsetY in from the top-left of a sourceWidth x sourceHeight box. A rotated frame was packed turned a quarter turn clockwise; it is drawn upright.
 
 ```haxe
 function new(name:String, x:Int, y:Int, width:Int, height:Int, rotated:Bool, offsetX:Int, offsetY:Int, sourceWidth:Int, sourceHeight:Int, pivotX:Float, pivotY:Float, duration:Float)
@@ -748,31 +748,31 @@ var hasPivot(get, never):Bool
 - `duration`: How long it shows when its animation plays, in seconds.
 - `hasPivot`: Whether its file gives it a pivot.
 
-## SpriteSheet
+## SpriteSheet2D
 
-*class* in `src/helix/render2d/SpriteSheet.hx`
+*class* in `src/helix/render2d/SpriteSheet2D.hx`
 
-A texture holding many pictures (an atlas), with where each one is (its frames) and the runs of them that animate (its animations). Read from the JSON TexturePacker and Aseprite write (their "JSON Hash" and "JSON Array" layouts: trimmed and rotated frames, pivots, Aseprite's tags and frame durations), or cut from a grid of equal cells. Without tags, frames whose names differ only by a number make an animation ("run_01.png", "run_02.png": "run"). A Sprite2D shows a frame (Sprite2D.setFrame), a Batch2D draws one (Batch2D.sheetFrame), a SpriteAnimator plays them.
+A texture holding many pictures (an atlas), with where each one is (its frames) and the runs of them that animate (its animations). Read from the JSON TexturePacker and Aseprite write (their "JSON Hash" and "JSON Array" layouts: trimmed and rotated frames, pivots, Aseprite's tags and frame durations), or cut from a grid of equal cells. Without tags, frames whose names differ only by a number make an animation ("run_01.png", "run_02.png": "run"). A Sprite2D shows a frame (Sprite2D.setFrame), a Batch2D draws one (Batch2D.sheetFrame), a SpriteAnimator2D plays them.
 
 ```haxe
-static function parse(texture:Texture2D, text:String, ?secondsPerFrame:Float = .1):SpriteSheet
-static function grid(texture:Texture2D, frameWidth:Int, frameHeight:Int, ?count:Int = 0, ?secondsPerFrame:Float = .1, ?margin:Int = 0, ?spacing:Int = 0):SpriteSheet
-static function load(path:String, loaded:SpriteSheet -> Void, ?failed:String -> Void, ?linear:Bool = false, ?secondsPerFrame:Float = .1):IRequest
+static function parse(texture:Texture2D, text:String, ?secondsPerFrame:Float = .1):SpriteSheet2D
+static function grid(texture:Texture2D, frameWidth:Int, frameHeight:Int, ?count:Int = 0, ?secondsPerFrame:Float = .1, ?margin:Int = 0, ?spacing:Int = 0):SpriteSheet2D
+static function load(path:String, loaded:SpriteSheet2D -> Void, ?failed:String -> Void, ?linear:Bool = false, ?secondsPerFrame:Float = .1):IRequest
 var texture(default, null):Texture2D
 var reloadCount(default, null):Int
 var frameCount(get, never):Int
-function getFrame(index:Int):Null<SpriteFrame>
+function getFrame(index:Int):Null<SpriteFrame2D>
 function findFrame(name:String):Int
 var animationNames(get, never):Array<String>
-function findAnimation(name:String):Null<SpriteAnimation>
-function addAnimation(name:String, frames:Array<Int>, ?direction:AnimationDirection = Forward):Bool
+function findAnimation(name:String):Null<SpriteAnimation2D>
+function addAnimation(name:String, frames:Array<Int>, ?direction:AnimationDirection2D = Forward):Bool
 function destroy():Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 ```
 
 - `parse`: A sheet over texture from a TexturePacker or Aseprite JSON file's text; a frame without its own duration shows for secondsPerFrame. Throws, saying why, for text it can't read.
 - `grid`: A sheet over texture cut into cells of frameWidth x frameHeight texels, left to right then down, margin texels in from its edges and spacing texels apart: count of them (every whole cell for 0), named by number from "0", each shown for secondsPerFrame. It has no animations until given them (addAnimation).
-- `load`: Loads a TexturePacker or Aseprite JSON file at path and the image it names (its meta.image, beside it), sampled smoothly when linear, else sharp for pixel art (TextureCache.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it changes during development, as the image does. One of loaded or failed runs once (failed, else the log, for a file that doesn't load or read, or an image that doesn't), neither once the request is cancelled. destroy frees what it loaded.
+- `load`: Loads a TexturePacker or Aseprite JSON file at path and the image it names (its meta.image, beside it), sampled smoothly when linear, else sharp for pixel art (TextureCache2D.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it changes during development, as the image does. One of loaded or failed runs once (failed, else the log, for a file that doesn't load or read, or an image that doesn't), neither once the request is cancelled. destroy frees what it loaded.
 - `texture`: Its texture.
 - `reloadCount`: How many times its file has been read again (a hot reload): an animator playing it finds its animation again by name.
 - `frameCount`: How many frames it has.
@@ -781,7 +781,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 - `animationNames`: Its animations' names, in the order its file gives them.
 - `findAnimation`: Its animation named name, or null.
 - `addAnimation`: Adds an animation named name over its frames by index, played in direction, in place of one of that name. False, changing nothing, for no frames or an index it hasn't.
-- `destroy`: Frees what load loaded (its texture through Textures) and stops reading its file again; a sheet made from a texture leaves the texture to its maker.
+- `destroy`: Frees what load loaded (its texture through Textures2D) and stops reading its file again; a sheet made from a texture leaves the texture to its maker.
 - `reloaded`: Its file changed: its frames and animations are read again (its image reloads on its own). A file that doesn't read leaves it as it was, and throws.
 
 ## Stage
@@ -818,7 +818,7 @@ static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 - `vertexCount`: How many vertices the last frame's 2D took (Batch2D.vertexCount).
 - `drawCallCount`: How many draws the last frame's 2D took (Batch2D.drawCallCount).
 - `drawnNodeCount`: How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped.
-- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
+- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit3D, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
 
 ## StageService
 
@@ -856,7 +856,7 @@ function destroy():Void
 - `vertexCount`: How many vertices the last frame's 2D took (Batch2D.vertexCount).
 - `drawCallCount`: How many draws the last frame's 2D took (Batch2D.drawCallCount).
 - `drawnNodeCount`: How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped.
-- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
+- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit3D, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
 - `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it (through postProcess, when it has one: into its scene, then its effects presented on the screen). The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
 - `destroy`: Frees its batch.
 
@@ -928,11 +928,11 @@ function destroy(gpu:IGraphics):Void
 - `whiteV`: V of the center of an opaque white texel, or -1 when it has none.
 - `destroy`: Frees the GPU texture on gpu, the adapter that made it.
 
-## TextureCache
+## TextureCache2D
 
-*class* in `src/helix/render2d/TextureCache.hx`
+*class* in `src/helix/render2d/TextureCache2D.hx`
 
-Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures static forwards to; the caller releases what it loads.
+Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures2D static forwards to; the caller releases what it loads.
 
 ```haxe
 function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
@@ -954,14 +954,14 @@ function shutdown():Void
 - `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
 - `shutdown`: Refuses new loads; the textures already loaded stay until released.
 
-## Textures
+## Textures2D
 
-*class* in `src/helix/render2d/Textures.hx`
+*class* in `src/helix/render2d/Textures2D.hx`
 
-Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache's public members with their doc comments.
+Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache2D's public members with their doc comments.
 
 ```haxe
-static var instance(default, null):TextureCache
+static var instance(default, null):TextureCache2D
 static function getCandidates(path:String):Array<String>
 static function getPath(texture:Texture2D):Null<String>
 static function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest

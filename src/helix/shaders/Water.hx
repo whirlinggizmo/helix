@@ -1,6 +1,6 @@
 package helix.shaders;
 
-import helix.render3d.Material;
+import helix.render3d.Material3D;
 
 /** A library surface shader: travelling waves moving the surface along its normals (a vertex hook: the model needs vertices enough to show
 	them), colored deep where it's looked into and shallow toward grazing, lit by the stage's lights with their glints, reflecting the stage's
@@ -75,7 +75,7 @@ class Water extends LibrarySurface {
 	}
 
 	/** Makes Water material's surface shader, its waves and colors at their defaults. */
-	public function new(material:Material) {
+	public function new(material:Material3D) {
 		super(material, "water", WaterPacked.text());
 		amplitude = .03;
 		wavelength = .4;

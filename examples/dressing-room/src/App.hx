@@ -17,18 +17,18 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render3d.AnimationClip;
-import helix.render3d.Animator;
+import helix.render3d.AnimationClip3D;
+import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Environment;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.EnvironmentMap3D;
 import helix.render3d.Environment3D;
-import helix.render3d.Environments;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.Environments3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.time.Time;
@@ -105,11 +105,11 @@ class App extends helix.App {
 	var room = new Node3D();
 	var view:View3D;
 	var camera = new Camera3D();
-	var animations:Null<ModelFile>;
+	var animations:Null<ModelFile3D>;
 	var character:Null<Node3D>;
-	var animator:Null<Animator>;
+	var animator:Null<Animator3D>;
 	var outfit:Outfit;
-	var environment:Null<Environment>;
+	var environment:Null<EnvironmentMap3D>;
 	// The pictures: a tree of its own (the studio, lit as the room is) with a second character, dressed in one part at a time, its view drawn
 	// into each tile's texture when the picture is wanted, not shown on the stage.
 	var studio = new Node3D();
@@ -134,7 +134,7 @@ class App extends helix.App {
 	// The Animation dropdown and the clips it offers, in its order; the play button and the triangle drawn on it (the built-in font has no play
 	// glyph), and the Loop toggle.
 	var clipChoice:Dropdown;
-	var clipList:Array<AnimationClip> = [];
+	var clipList:Array<AnimationClip3D> = [];
 	var playButton:Button;
 	var playIcon:Shape2D;
 	var looping:Toggle;
@@ -153,7 +153,7 @@ class App extends helix.App {
 	var framing = "Whole";
 	var dragFrom:Null<Float> = null;
 	var gestures = new PointerGestures();
-	var key:DirectionalLight;
+	var key:DirectionalLight3D;
 	var focusX = 0.;
 	var focus = 1.;
 	var focusZ = 0.;
@@ -181,7 +181,7 @@ class App extends helix.App {
 			tree.environment.setAmbient(0xffd8e0ff, .3);
 		}
 		for (inRoom in [true, false]) {
-			var key = new DirectionalLight();
+			var key = new DirectionalLight3D();
 			key.intensity = 2.2;
 			key.lookAt(-.5, -.8, -.6);
 			if (inRoom) {
@@ -193,23 +193,23 @@ class App extends helix.App {
 				studio.addChild(key);
 		}
 		// The turntable: a low disc on a dark floor.
-		var floor = new Material();
+		var floor = new Material3D();
 		floor.baseColor = 0xff22252e;
 		floor.roughness = .95;
-		room.addChild(new Model(Mesh.plane(30, 30), floor));
-		var plinth = new Material();
+		room.addChild(new Model3D(Mesh3D.plane(30, 30), floor));
+		var plinth = new Material3D();
 		plinth.baseColor = 0xff8a8f9c;
 		plinth.roughness = .4;
 		plinth.metallic = .2;
-		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
+		var disc = new Model3D(Mesh3D.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		room.addChild(disc);
-		outfit = new Outfit(Models.instance);
-		modelOutfit = new Outfit(Models.instance);
-		Environments.load("environments/studio_small_09_1k.hdr", value -> light(value));
+		outfit = new Outfit(Models3D.instance);
+		modelOutfit = new Outfit(Models3D.instance);
+		Environments3D.load("environments/studio_small_09_1k.hdr", value -> light(value));
 		// Her look before she's here: the Outfit wears it once the skeleton arrives.
 		dress(["Casual", "Casual", "Casual", "Casual"], null);
-		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = message);
+		Models3D.load(DIR + "Animations.glb", file -> place(file), message -> status = message);
 		view = new View3D(room, camera);
 		studioView = new View3D(studio, shot);
 		Stage.addChild(view);
@@ -219,24 +219,24 @@ class App extends helix.App {
 
 	// The panel on the right: the slots' tabs, a grid of ten tiles, the Animation row, and Random, Reset and the turntable.
 	// The studio's environment in: it lights the room and the pictures.
-	function light(value:Environment):Void {
+	function light(value:EnvironmentMap3D):Void {
 		environment = value;
 		for (tree in [room, studio])
 			tree.environment.setMap(value, .9);
 	}
 
 	// The skeleton's file in: her copy in the room, animated and wearing her outfit, and the pictures' copy in the studio.
-	function place(file:ModelFile):Void {
+	function place(file:ModelFile3D):Void {
 		animations = file;
 		character = file.instantiate("character");
 		character.setPosition(0, .06, 0);
 		room.addChild(character);
-		animator = new Animator(character);
+		animator = new Animator3D(character);
 		outfit.skeleton = character;
 		model = file.instantiate("model");
 		studio.addChild(model);
 		// The pictures' character holds still, in the idle pose's first frame.
-		var still = new Animator(model);
+		var still = new Animator3D(model);
 		var idle = file.getClip("Idle");
 		if (idle != null) {
 			still.play(idle, false);
@@ -252,17 +252,17 @@ class App extends helix.App {
 	}
 
 	// A clip's first word, its name after the armature's ("CharacterArmature|Idle_Sword": "Idle").
-	static function firstWord(clip:AnimationClip):String {
+	static function firstWord(clip:AnimationClip3D):String {
 		var name = clip.name.substr(clip.name.lastIndexOf("|") + 1);
 		return name.split("_")[0];
 	}
 
-	static function isIdle(clip:AnimationClip):Bool
+	static function isIdle(clip:AnimationClip3D):Bool
 		return firstWord(clip) == "Idle";
 
 	// Whether a clip loops, by its name: idles, walks and runs go on (Idle_Gun_Shoot, Run_Left); the rest (a wave, a slash, a roll, a hit,
 	// Death) play once.
-	static function isLooping(clip:AnimationClip):Bool
+	static function isLooping(clip:AnimationClip3D):Bool
 		return ["Idle", "Walk", "Run"].indexOf(firstWord(clip)) >= 0;
 
 	// A clip's name to show, as the file spells it but readable: the armature's part dropped, words apart at underscores and where a capital
@@ -398,7 +398,7 @@ class App extends helix.App {
 	}
 
 	// Her idle for what she holds: the sword's, the gun's, or her plain one empty-handed.
-	function getIdle():Null<AnimationClip> {
+	function getIdle():Null<AnimationClip3D> {
 		if (animations == null)
 			return null;
 		var held = outfit.getChoice("Hand");
@@ -441,7 +441,7 @@ class App extends helix.App {
 				tile.texture = thumbs[p];
 			else {
 				wanted.push({slot: s, path: p});
-				Models.load(p, _ -> {});
+				Models3D.load(p, _ -> {});
 			}
 		}
 		for (t in tabs)
@@ -458,8 +458,8 @@ class App extends helix.App {
 		for (w in wanted.copy()) {
 			if (taken >= 2)
 				break;
-			if (!Models.isLoaded(w.path)) {
-				if (!Models.isLoading(w.path))
+			if (!Models3D.isLoaded(w.path)) {
+				if (!Models3D.isLoading(w.path))
 					wanted.remove(w);
 				continue;
 			}
@@ -591,7 +591,7 @@ class App extends helix.App {
 			out[3 + a] = Math.NEGATIVE_INFINITY;
 		}
 		function walk(node:Node3D) {
-			var model = Std.downcast(node, Model);
+			var model = Std.downcast(node, Model3D);
 			if (model != null && model.computeWorldBounds(box))
 				for (a in 0...3) {
 					out[a] = Math.min(out[a], box[a]);
@@ -606,7 +606,7 @@ class App extends helix.App {
 	}
 
 	// A clip chosen: Loop set to its own way (isLooping), and played.
-	function chooseClip(chosen:Null<AnimationClip>):Void {
+	function chooseClip(chosen:Null<AnimationClip3D>):Void {
 		if (chosen == null)
 			return;
 		looping.on = isLooping(chosen);
@@ -615,7 +615,7 @@ class App extends helix.App {
 
 	// Plays clip from its start, faded in (at once, held at its first frame, under the autopilot): the plain Idle her idle for what she holds;
 	// on while Loop is, or else once, back to her idle after.
-	function animate(chosen:Null<AnimationClip>):Void {
+	function animate(chosen:Null<AnimationClip3D>):Void {
 		if (animations == null || animator == null || chosen == null)
 			return;
 		var idle = getIdle();
@@ -740,7 +740,7 @@ class App extends helix.App {
 		if (animator != null)
 			animator.update(piloted ? 0 : dt);
 		takePictures();
-		var loading = Models.loadingCount;
+		var loading = Models3D.loadingCount;
 		status = character == null ? "Loading her" : loading > 0 ? 'Loading $loading part${loading == 1 ? "" : "s"}' : 'Dressing: $slot';
 		for (s in SLOTS) {
 			var error = outfit.getError(s);

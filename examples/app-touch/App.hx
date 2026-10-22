@@ -9,7 +9,7 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.render2d.Textures;
+import helix.render2d.Textures2D;
 import helix.host.ScreenShape;
 
 /** Fingers, the two-finger gesture, and the pointer: every finger gets a numbered ring (its id) while it's down, and a fading one where it lifted;
@@ -53,9 +53,9 @@ class App extends helix.App {
 		Stage.addChild(logo);
 		Stage.addChild(coin);
 		Stage.addChild(drawing);
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo.texture = texture);
+		Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo.texture = texture);
 		// Pixel art: nearest, no smoothing.
-		Textures.load("textures/tiles.png", false, (texture:Texture2D) -> coin.texture = texture);
+		Textures2D.load("textures/tiles.png", false, (texture:Texture2D) -> coin.texture = texture);
 	}
 
 	/** Scales and turns the logo about x, y, so the point under the fingers stays put. */

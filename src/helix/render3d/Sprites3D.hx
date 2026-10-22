@@ -238,7 +238,7 @@ class Sprites3D {
 	/** Tests a sprite against ray as the camera given to preparePick shows it (its quad, facing as drawn): the distance along the ray, recorded
 		in hit when nearer than best, else best. A sprite without a texture, or a see-through one (blended or added, its tint's alpha under a
 		half), isn't hit. */
-	public function pickSprite(node:Sprite3D, ray:Ray, best:Float, hit:PickHit):Float {
+	public function pickSprite(node:Sprite3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
 		if (node.texture == null)
 			return best;
 		if ((node.alphaMode == Blend || node.alphaMode == Add) && Color.getAlpha(node.tint) < 128)
@@ -248,7 +248,7 @@ class Sprites3D {
 
 	/** Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without
 		text, or a faint one (its color's alpha under a half), isn't hit. */
-	public function pickText(node:Text3D, ray:Ray, best:Float, hit:PickHit):Float {
+	public function pickText(node:Text3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
 		if (node.text.length == 0 || Color.getAlpha(node.color) < 128)
 			return best;
 		var font = node.font != null ? node.font : builtIn();
@@ -256,7 +256,7 @@ class Sprites3D {
 	}
 
 	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.
-	function pickQuad(node:Node3D, facing:SpriteFacing, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray, best:Float, hit:PickHit):Float {
+	function pickQuad(node:Node3D, facing:SpriteFacing3D, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray3D, best:Float, hit:PickHit3D):Float {
 		var w = node.worldMatrix;
 		var sx = length(w, 0),
 			sy = length(w, 4),
@@ -480,7 +480,7 @@ class Sprites3D {
 
 	// A glyph: a sprite with its own axes (the text's plane), its top-left at its place in the text, tinted as the text (a distance field
 	// marked in the alpha).
-	function writeGlyph(at:Int, item:SpriteItem, w:Mat4, facing:SpriteFacing, sx:Float, sy:Float, sz:Float):Void {
+	function writeGlyph(at:Int, item:SpriteItem, w:Mat4, facing:SpriteFacing3D, sx:Float, sy:Float, sz:Float):Void {
 		var right:Array<Float>, up:Array<Float>, height = sy;
 		switch facing {
 			case Camera:
@@ -614,7 +614,7 @@ private class SpriteItem {
 	public var sprite:Null<Sprite3D>;
 
 	/** How it faces: its sprite's or text's. */
-	public var facing:SpriteFacing = Camera;
+	public var facing:SpriteFacing3D = Camera;
 
 	/** Its tint, 0xAARRGGBB: its sprite's, or its text's color. */
 	public var tint = 0xffffffff;

@@ -1,15 +1,15 @@
 import haxe.io.Bytes;
 import helix.assets.IAssets;
 import helix.render3d.Gltf;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelCache;
-import helix.render3d.ModelFile;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelCache3D;
+import helix.render3d.ModelFile3D;
 import helix.render3d.Node3D;
 
-/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through a ModelCache, over the framework's queries
-	(Node3D.collectModels, Model.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
+/** Characters dressed by slot (the examples' Outfit, examples/shared/src) from part files shared through a ModelCache3D, over the framework's queries
+	(Node3D.collectModels, Model3D.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
 	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
 	shared by many characters. */
 class OutfitTests {
@@ -27,12 +27,12 @@ class OutfitTests {
 	static function bytes(name:String):Bytes
 		return sys.io.File.getBytes('examples/assets/models/modular-women/$name.glb');
 
-	static function file(name:String):ModelFile
-		return @:privateAccess new ModelFile(Gltf.read(bytes(name)));
+	static function file(name:String):ModelFile3D
+		return @:privateAccess new ModelFile3D(Gltf.read(bytes(name)));
 
 	// Models over assets that answer only when the test releases a path (the part files carry no images, so no textures are needed).
-	static function models():ModelCache
-		return new ModelCache(new Held(), null);
+	static function models():ModelCache3D
+		return new ModelCache3D(new Held(), null);
 
 	// Lets path's held load end with bytes.
 	static function release(path:String, bytes:Bytes):Void {
@@ -72,7 +72,7 @@ class OutfitTests {
 		outfit.skeleton = character;
 		var head = outfit.getNodes("head");
 		check(outfit.getWorn("head") == "Casual_Head" && head.length > 0 && !outfit.pending, "and is worn once it's given");
-		var headModel:Model = cast head[0];
+		var headModel:Model3D = cast head[0];
 		check(head[0].parent == character && under(headModel.getJoint(0), character), "Its models are bound to the character's joints");
 
 		// Swapped: the old part comes off.
@@ -121,7 +121,7 @@ class OutfitTests {
 		}
 		check(asked["Shared_Feet"] == 1, "Characters asking for one part share its load");
 		release("Shared_Feet", bytes("Casual_Feet"));
-		var feet = [for (o in others) (cast o.getNodes("feet")[0] : Model)];
+		var feet = [for (o in others) (cast o.getNodes("feet")[0] : Model3D)];
 		check(feet[0] != feet[1] && feet[1] != feet[2] && feet[0].mesh == feet[1].mesh, "and each wears its own nodes over the same meshes");
 		check(under(feet[2].getJoint(0), skeletons[2]) && !under(feet[2].getJoint(0), skeletons[0]), "each bound to its own skeleton");
 
@@ -164,7 +164,7 @@ class OutfitTests {
 
 		// A file whose models sit under no joint: the piece is the whole file, hung at a socket.
 		var loose = new Node3D(),
-			gem = new Model(Mesh.plane(.1, .1), new Material());
+			gem = new Model3D(Mesh3D.plane(.1, .1), new Material3D());
 		gem.name = "gem";
 		var holder = new Node3D();
 		holder.name = "holder";
@@ -172,7 +172,7 @@ class OutfitTests {
 		loose.addChild(holder);
 		var at = loose.findAttachment(gem, character);
 		check(at != null && at.piece == holder && at.joint == null, "A model under no joint of the skeleton's is a piece at the file's top, with no joint");
-		check(loose.findAttachment(new Model(), character) == null, "A model not under the file has no attachment");
+		check(loose.findAttachment(new Model3D(), character) == null, "A model not under the file has no attachment");
 
 		// Shutting the models down cancels what's still loading, telling no one.
 		var told = false;

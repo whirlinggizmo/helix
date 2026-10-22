@@ -8,18 +8,18 @@ import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.render3d.DirectionalLight;
-import helix.render3d.Material;
-import helix.render3d.Mesh;
-import helix.render3d.Model;
-import helix.render3d.ModelFile;
-import helix.render3d.Models;
+import helix.render3d.DirectionalLight3D;
+import helix.render3d.Material3D;
+import helix.render3d.Mesh3D;
+import helix.render3d.Model3D;
+import helix.render3d.ModelFile3D;
+import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.Environment3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
-import helix.render3d.Orbit;
+import helix.render3d.Orbit3D;
 
 /** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a View3D's drawing does when models agree on
 	everything but where they stand and their tint. A field of 400 cubes shares one mesh and one material, so it is one draw; six cars share one file, so
@@ -37,12 +37,12 @@ class App extends helix.App {
 	var camera = new Camera3D();
 	var readout = new Drawing2D();
 	var fps = new FpsOverlay();
-	var shared = new Material();
-	var cubes:Array<Model> = [];
+	var shared = new Material3D();
+	var cubes:Array<Model3D> = [];
 	var cars:Array<Node3D> = [];
 	var ownMaterials = false;
 	// The camera, circling on the game's clock.
-	var orbit = new Orbit(22, 12, .15, 1);
+	var orbit = new Orbit3D(22, 12, .15, 1);
 
 	// A colour around the hue circle for cube i.
 	static function tint(i:Int):Int {
@@ -57,7 +57,7 @@ class App extends helix.App {
 		for (cube in cubes) {
 			var material = shared;
 			if (own) {
-				material = new Material();
+				material = new Material3D();
 				material.roughness = .5;
 			}
 			cube.material = material;
@@ -77,40 +77,40 @@ class App extends helix.App {
 		Stage.addChild(fps);
 		// Framed for 16:9: the whole field across on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var sun = new DirectionalLight();
+		var sun = new DirectionalLight3D();
 		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
 		level.addChild(sun);
-		var ground = new Material();
+		var ground = new Material3D();
 		ground.baseColor = 0xffb4b8bf;
 		ground.roughness = .9;
-		var floor = new Model(Mesh.plane(60, 60), ground);
+		var floor = new Model3D(Mesh3D.plane(60, 60), ground);
 		floor.setPosition(0, -.6, 0);
 		level.addChild(floor);
 
 		// The field: one mesh, one material, a tint each.
-		var cube = Mesh.cube(.6, .6, .6);
+		var cube = Mesh3D.cube(.6, .6, .6);
 		shared.roughness = .5;
 		for (i in 0...SIDE * SIDE) {
-			var node = new Model(cube, shared);
+			var node = new Model3D(cube, shared);
 			node.tint = tint(i);
 			cubes.push(node);
 			level.addChild(node);
 		}
 		// See-through copies of the same cube: same mesh, same material, alpha in the tint.
 		for (i in 0...GLASS) {
-			var glass = new Model(cube, shared);
+			var glass = new Model3D(cube, shared);
 			glass.tint = 0x6effffff;
 			glass.setPosition(i * 2 - 4, 5.2, 5);
 			glass.setScale(2, 2, 2);
 			level.addChild(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
-		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
+		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 	}
 
 	// The car's file in: six copies of it in a row.
-	function place(file:ModelFile):Void
+	function place(file:ModelFile3D):Void
 		for (i in 0...CARS) {
 			var car = file.instantiate('car $i');
 			car.setPosition(i * 2.4 - 6, -.6, -2);

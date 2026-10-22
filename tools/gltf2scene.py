@@ -1,4 +1,4 @@
-"""A Blender glTF export as a .scene3d file (helix.scene.SceneFile3D): one Model node named after the export, its file pointing at the glb,
+"""A Blender glTF export as a .scene3d file (helix.scene.SceneFile3D): one Model3D node named after the export, its file pointing at the glb,
 and the export's custom properties as overrides by node path. Blender exports each object's custom properties as its node's extras when
 "Custom Properties" is on; the path to a node is the names down the glTF's tree from the scene's roots joined by "/", so a name used twice
 among siblings is an error. Nothing of the model's geometry, transforms, lights, cameras or materials is written: the file is the model's,
@@ -24,8 +24,8 @@ import sys
 
 PREFIX='helix_'
 FLAGS=('enabled','visible','pickable')
-# An override's properties in the order SceneFile3D writes them: SceneSchema.kinds, each kind's table, a name once where it first appears.
-# The test checks the names against SceneSchema.hx and the order through the interpreter.
+# An override's properties in the order SceneFile3D writes them: SceneSchema3D.kinds, each kind's table, a name once where it first appears.
+# The test checks the names against SceneSchema3D.hx and the order through the interpreter.
 PROPERTIES=['tint','shadowCasting','shadowReceiving','color','intensity','shadowDistance','shadowMapSize','shadowStrength','shadowColor',
     'range','innerCone','outerCone','projection','fovY','near','far','orthographicHeight','minAspect','texture','regionX','regionY',
     'regionWidth','regionHeight','spriteWidth','spriteHeight','pivotX','pivotY','facing','alphaMode','alphaCutoff','text','textSize','font']
@@ -153,10 +153,10 @@ def lines(entries):
     return out
 
 def convert(gltf_path,file=None,name=None):
-    """The .scene3d's bytes for the export at gltf_path: a Model node named name (the export's stem) with file (models/<export's name>) and
+    """The .scene3d's bytes for the export at gltf_path: a Model3D node named name (the export's stem) with file (models/<export's name>) and
     its custom properties as overrides."""
     gltf_path=Path(gltf_path);gltf=read(gltf_path)
-    root=[('kind',string('Model')),('name',string(name or gltf_path.stem)),('file',string(file or f'models/{gltf_path.name}'))]
+    root=[('kind',string('Model3D')),('name',string(name or gltf_path.stem)),('file',string(file or f'models/{gltf_path.name}'))]
     found=properties(gltf,str(gltf_path))
     if found:root.append(('overrides',[(path,override(extras,f'{gltf_path}: {path}')) for path,extras in sorted(found.items())]))
     return ('\n'.join(lines([('helix-scene3d','1'),('nodes',[root])]))+'\n').encode('utf-8')
@@ -165,7 +165,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('gltf',help='the export, a .glb or a .gltf');p.add_argument('out',help='the .scene3d to write')
     p.add_argument('--file',help="the model's path as the scene names it (default: models/<the export's name>)")
-    p.add_argument('--name',help="the Model node's name (default: the export's stem)")
+    p.add_argument('--name',help="the Model3D node's name (default: the export's stem)")
     p.add_argument('--check',action='store_true',help='write nothing; exit 1 when out differs from what would be written')
     a=p.parse_args()
     data=convert(a.gltf,a.file,a.name);out=Path(a.out)

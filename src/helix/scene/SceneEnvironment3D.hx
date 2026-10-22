@@ -10,7 +10,7 @@ class SceneEnvironment3D {
 	/** The ambient light's intensity, 0 or more; null for 0. */
 	public var ambientIntensity:Null<Float>;
 
-	/** The environment map's file (an HDR, loaded through Environments), lighting and reflecting; null for none. */
+	/** The environment map's file (an HDR, loaded through Environments3D), lighting and reflecting; null for none. */
 	public var mapFile:Null<String>;
 
 	/** How strongly the map lights, 1 as its file has it; null for 1. */
@@ -19,7 +19,7 @@ class SceneEnvironment3D {
 	/** How far the map and the background turn about +y, in radians; null for 0. */
 	public var rotation:Null<Float>;
 
-	/** The background's file (an HDR, loaded through Environments); null for none. */
+	/** The background's file (an HDR, loaded through Environments3D); null for none. */
 	public var backgroundFile:Null<String>;
 
 	/** How blurred the background is, 0 sharp to 1; null for 0. */

@@ -1,6 +1,6 @@
 package helix.render2d;
 
-import helix.render2d.Shape2D.ShapeShading;
+import helix.render2d.Shape2D.ShapeShading2D;
 
 /** What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts
 	nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children
