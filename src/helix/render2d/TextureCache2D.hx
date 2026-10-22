@@ -166,7 +166,7 @@ class TextureCache2D implements IReloadable {
 				}
 				child = images.decode(bytes, decoded -> switch decoded {
 					case Decoded(width, height, rgba):
-						if (request.finish()) done(file, Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear), null);
+						if (request.finish()) done(file, Texture2D.fromRgba(width, height, rgba, linear, -1, -1, linear, gpu), null);
 					case Failed(message):
 						if (!request.settled) fail(message);
 					case Cancelled:
@@ -183,7 +183,7 @@ class TextureCache2D implements IReloadable {
 		var ktx = Ktx.read(bytes);
 		if (!gpu.canSample(ktx.format))
 			throw "This GPU can't sample its format";
-		return Texture2D.fromLevels(gpu, ktx.width, ktx.height, ktx.levels, ktx.format, new Sampling(linear));
+		return Texture2D.fromLevels(ktx.width, ktx.height, ktx.levels, ktx.format, new Sampling(linear), gpu);
 	}
 
 	/** Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but
@@ -199,7 +199,7 @@ class TextureCache2D implements IReloadable {
 		}
 		child = images.decode(encoded, result -> switch result {
 			case Decoded(width, height, rgba):
-				if (request.finish()) decoded(Texture2D.fromRgba(gpu, width, height, rgba, linear, -1, -1, linear));
+				if (request.finish()) decoded(Texture2D.fromRgba(width, height, rgba, linear, -1, -1, linear, gpu));
 			case Failed(message):
 				if (request.finish()) Failure.report("an image in memory", message, failed);
 			case Cancelled:

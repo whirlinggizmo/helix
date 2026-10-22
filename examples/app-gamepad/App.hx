@@ -31,22 +31,20 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		for (i in 0...input.padCount)
-			if (input.getPad(i).isFramePressed(PadButton.South))
+		for (i in 0...Input.padCount)
+			if (Input.getPad(i).isFramePressed(PadButton.South))
 				deadzone = (deadzone + 1) % DEADZONES.length;
 		// The design for the window's shape: the text wrapped to what's visible of it, and as many panels across as fit, the rest in rows below.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		drawing.clear();
 		var connected = 0;
-		for (i in 0...input.padCount)
-			if (input.getPad(i).connected)
+		for (i in 0...Input.padCount)
+			if (Input.getPad(i).connected)
 				connected++;
 		var y = vy + 12;
 		y += drawing.drawTextWrapped('HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
@@ -55,8 +53,8 @@ class App extends helix.App {
 		if (connected == 0)
 			drawing.drawTextWrapped("No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		var columns = Std.int(Math.max(1, Math.floor((vw - 12) / 245))), placed = 0;
-		for (i in 0...input.padCount) {
-			var pad = input.getPad(i);
+		for (i in 0...Input.padCount) {
+			var pad = Input.getPad(i);
 			if (!pad.connected)
 				continue;
 			pad.deadzone = DEADZONES[deadzone];

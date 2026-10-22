@@ -26,13 +26,12 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Backspace) && typed.length > 0)
+		if (Input.isFramePressed(Key.Backspace) && typed.length > 0)
 			typed = typed.substr(0, typed.length - 1);
-		if (typed.length + input.text.length < 64)
-			typed += input.text;
+		if (typed.length + Input.text.length < 64)
+			typed += Input.text;
 		fps.update(dt, Time.frameCpu);
 		// The drawing in the design for the window's shape, from the visible area's top-left corner.
 		ScreenShape.update();
@@ -50,8 +49,8 @@ class App extends helix.App {
 		drawing.circleLines(x + 440, y + 120, 60, 1, 0xff000000);
 		// a marker that follows the mouse
 		var camera = Stage.camera;
-		if (input.pointerX >= 0)
-			drawing.circle(camera.screenToWorldX(input.pointerX), camera.screenToWorldY(input.pointerY), 8, 0xffbe2137);
+		if (Input.pointerX >= 0)
+			drawing.circle(camera.screenToWorldX(Input.pointerX), camera.screenToWorldY(Input.pointerY), 8, 0xffbe2137);
 		// text
 		drawing.drawText("HeliX", x + 40, y + 360, 32, 0xff505050);
 		var below = drawing.drawTextWrapped(typed != "" ? typed : "type something", x + 40, y + 410, 16, width - 80, typed != "" ? 0xff0052ac : 0xff828282);

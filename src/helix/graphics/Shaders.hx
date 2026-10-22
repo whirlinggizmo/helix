@@ -10,14 +10,25 @@ import helix.assets.Request;
 /** Apps' shaders (.hxshader files, packed from GLSL by src/helix/tools/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in
 	place when a file changes during development. The caller releases what it loads. */
 class Shaders implements IReloadable {
-	var assets:IAssets;
-	var gpu:IGraphics;
+	// What it was given, or null for the program's, read when used.
+	var givenAssets:Null<IAssets>;
+	var givenGpu:Null<IGraphics>;
+	var assets(get, never):IAssets;
+	var gpu(get, never):IGraphics;
+
+	function get_assets():IAssets
+		return givenAssets != null ? givenAssets : helix.assets.Assets.instance;
+
+	function get_gpu():IGraphics
+		return givenGpu != null ? givenGpu : Graphics.instance;
+
 	var entries:Array<{path:String, shader:Shader}> = [];
 
-	/** Loads through assets and builds on gpu. */
-	public function new(assets:IAssets, gpu:IGraphics) {
-		this.assets = assets;
-		this.gpu = gpu;
+	/** Loads through assets and builds on gpu: the program's (Assets, Graphics) for those not given, read as they're used, so a cache made
+		before the program runs (a field's initial value) works. */
+	public function new(?assets:IAssets, ?gpu:IGraphics) {
+		givenAssets = assets;
+		givenGpu = gpu;
 	}
 
 	/** Loads path (a .hxshader) into a shader. One of loaded or failed runs once on the host thread, and neither once the request is
@@ -29,7 +40,7 @@ class Shaders implements IReloadable {
 		loading = assets.load(path, bytes -> {
 			if (request.settled)
 				return;
-			var shader = try Shader.fromText(gpu, bytes.toString()) catch (e:Dynamic) {
+			var shader = try Shader.fromText(bytes.toString(), gpu) catch (e:Dynamic) {
 				if (request.finish())
 					Failure.report(path, '$path: $e', failed);
 				return;

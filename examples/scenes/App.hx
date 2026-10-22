@@ -236,11 +236,10 @@ class Page extends Node2D {
 
 	/** Draws it again for the visible area as it is now. */
 	public function layout():Void {
-		var p = Screen.instance;
-		var vx = p.visibleX,
-			vy = p.visibleY,
-			vw = p.visibleWidth,
-			vh = p.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		drawing.clear();
 		drawing.rect(vx, vy, vw, vh, color);
 		var y = vy + 36;
@@ -276,11 +275,10 @@ class Play extends Page {
 
 	override public function layout():Void {
 		super.layout();
-		var p = Screen.instance;
-		var vx = p.visibleX,
-			vy = p.visibleY,
-			vw = p.visibleWidth,
-			vh = p.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		// The logo bouncing across, the tiles sheet in the corner.
 		logo.setPosition(vx + 60 + (vw - 120 - 120) * (.5 + .5 * Math.sin(time * 1.2)), vy + vh * .45 + Ease.bounceOut((time * .7) % 1) * 80 - 40);
 		tiles.setPosition(vx + vw - 140, vy + vh - 140);

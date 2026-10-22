@@ -1,5 +1,4 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.host.Host;
 import helix.host.Screen;
@@ -66,7 +65,6 @@ class App extends helix.App {
 		Window.title = "HeliX render targets";
 		Window.requestSize(1000, 560);
 		Stage.color = BACKGROUND;
-		var gpu = Graphics.instance;
 
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .25);
@@ -101,19 +99,19 @@ class App extends helix.App {
 		var label = new Node2D();
 		label.addChild(labelText);
 		labelView = new View2D(label, labelCamera, LABEL_W, LABEL_H);
-		labelView.postProcess = new PostProcess(gpu);
+		labelView.postProcess = new PostProcess();
 		labelView.color = 0xff1e3c8c;
 		// The panels' frames and captions, under the views.
 		Stage.addChild(panels);
 		Stage.addChild(labelView);
 		pixelView = new View3D(level, camera, PIXEL_W * PIXEL_SCALE, PIXEL_H * PIXEL_SCALE);
-		pixelView.postProcess = new PostProcess(gpu);
+		pixelView.postProcess = new PostProcess();
 		pixelView.color = BACKGROUND;
 		pixelate = new Pixelate(PIXEL_SCALE);
 		pixelView.postProcess.add(pixelate);
 		Stage.addChild(pixelView);
 		minimap = new View3D(level, top, MINIMAP, MINIMAP);
-		minimap.postProcess = new PostProcess(gpu);
+		minimap.postProcess = new PostProcess();
 		minimap.color = 0xff0c0e12;
 		Stage.addChild(minimap);
 		Stage.addChild(fps);
@@ -163,10 +161,10 @@ class App extends helix.App {
 		wrap.texture = labelView.texture;
 
 		// The screen, in the design for the window's shape.
-		var shape = ScreenShape.update(), presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var shape = ScreenShape.update();
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		panels.clear();
 		var top = vy
 			+ 36

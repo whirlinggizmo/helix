@@ -71,20 +71,18 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		text.clear();
 		var y = vy + 36;
 		y += text.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;

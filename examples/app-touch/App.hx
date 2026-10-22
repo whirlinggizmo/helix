@@ -69,39 +69,37 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
 		// The design for the window's shape; the logo and the coin start in the middle of what's visible of it, and go back there when
 		// the shape changes (a phone turned), as they might be past the new edges.
 		var shape = ScreenShape.update();
-		var presentation = Screen.instance;
-		presentation.apply(camera);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		Screen.apply(camera);
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		if (shape != shaped) {
 			shaped = shape;
 			logoX = coinX = vx + vw / 2;
 			logoY = vy + vh * .45;
 			coinY = vy + vh * .8;
 		}
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// Two fingers move the logo; the wheel zooms it about the mouse.
-		if (input.touchGesture) {
-			logoX += input.getTouchGesturePanX() / presentation.scaleX;
-			logoY += input.getTouchGesturePanY() / presentation.scaleY;
-			transformLogo(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), input.getTouchGestureScale(),
-				input.getTouchGestureRotation());
+		if (Input.touchGesture) {
+			logoX += Input.getTouchGesturePanX() / Screen.scaleX;
+			logoY += Input.getTouchGesturePanY() / Screen.scaleY;
+			transformLogo(camera.screenToWorldX(Input.touchGestureCenterX), camera.screenToWorldY(Input.touchGestureCenterY), Input.getTouchGestureScale(),
+				Input.getTouchGestureRotation());
 		}
-		var mouseX = camera.screenToWorldX(input.pointerX),
-			mouseY = camera.screenToWorldY(input.pointerY);
-		if (input.wheelY != 0)
-			transformLogo(mouseX, mouseY, Math.pow(1.1, input.wheelY), 0);
+		var mouseX = camera.screenToWorldX(Input.pointerX),
+			mouseY = camera.screenToWorldY(Input.pointerY);
+		if (Input.wheelY != 0)
+			transformLogo(mouseX, mouseY, Math.pow(1.1, Input.wheelY), 0);
 		// The pointer (the mouse, or one finger) drags the coin: picked where it was before this frame moved it.
-		if (input.pointerFramePressed)
+		if (Input.pointerFramePressed)
 			coinHeld = Math.abs(mouseX - coinX) < COIN / 2 && Math.abs(mouseY - coinY) < COIN / 2;
-		else if (!input.pointerDown)
+		else if (!Input.pointerDown)
 			coinHeld = false;
 		if (coinHeld) {
 			coinX = mouseX;
@@ -110,7 +108,7 @@ class App extends helix.App {
 		// Where fingers lifted: a ring that fades.
 		for (ring in lifted)
 			ring[2] = Math.max(ring[2] - .033, 0);
-		for (touch in input.touches)
+		for (touch in Input.touches)
 			if (touch.released && touch.id >= 0) {
 				var ring = lifted[touch.id % FINGERS];
 				ring[0] = camera.screenToWorldX(touch.x);
@@ -129,7 +127,7 @@ class App extends helix.App {
 			if (ring[2] > 0)
 				drawing.circleLines(ring[0], ring[1], RING * (2 - ring[2]), 1, color(i, Std.int(200 * ring[2])));
 		}
-		for (touch in input.touches) {
+		for (touch in Input.touches) {
 			if (!touch.down)
 				continue;
 			var x = camera.screenToWorldX(touch.x),
@@ -139,13 +137,13 @@ class App extends helix.App {
 			drawing.circleLines(x, y, RING, 1, color(id, 255));
 			drawing.drawText(Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
 		}
-		if (input.touchGesture)
-			drawing.circle(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), 6, 0xffffffff);
+		if (Input.touchGesture)
+			drawing.circle(camera.screenToWorldX(Input.touchGestureCenterX), camera.screenToWorldY(Input.touchGestureCenterY), 6, 0xffffffff);
 		var fingers = 0;
-		for (touch in input.touches)
+		for (touch in Input.touches)
 			if (touch.down)
 				fingers++;
-		var y = vy + 16, counts = 'fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"),
+		var y = vy + 16, counts = 'fingers: $fingers   pointer: ' + (Input.pointerDown ? "down" : "up"),
 			placed = 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg';
 		y += drawing.drawTextWrapped(counts, vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
 		y += drawing.drawTextWrapped(placed, vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;

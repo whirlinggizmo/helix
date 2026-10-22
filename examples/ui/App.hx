@@ -9,14 +9,12 @@ import helix.audio.Bus;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Actions;
 import helix.input.Anchor;
-import helix.input.Binding;
 import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadAxis;
@@ -140,8 +138,8 @@ class App extends helix.App {
 		Window.title = "HeliX ui";
 		Stage.color = BACKGROUND;
 		if (Host.getOption("audio", "1") != "0") {
-			Audio.instance.loadStream("audio/music/a_hero_is_born.mp3", stream -> playMusic(stream));
-			Audio.instance.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
+			Audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> playMusic(stream));
+			Audio.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
 		}
 		var script = Host.getOption("autopilot", "");
 		if (script == "") {
@@ -174,7 +172,7 @@ class App extends helix.App {
 		this.ui = ui;
 		Stage.addChild(text);
 		Stage.addChild(fps);
-		actions = new Actions(Input.instance);
+		actions = new Actions();
 		actions.bind("jump", Keyboard(Key.Space));
 		actions.bind("jump", Pad(PadButton.South));
 		actions.bind("move", KeyboardPair(Key.Left, Key.Right));
@@ -377,7 +375,7 @@ class App extends helix.App {
 				pixels.set(at + 2, value);
 				pixels.set(at + 3, cut ? 0 : 255);
 			}
-		return Texture2D.fromRgba(Graphics.instance, size, size, pixels);
+		return Texture2D.fromRgba(size, size, pixels);
 	}
 
 	function show(which:String):Void {
@@ -435,11 +433,10 @@ class App extends helix.App {
 		}
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		for (row in rows)
 			row.bindings.text = actions.capturing && rebinding == row.action ? "Press a key or button..." : describe(row.action);
 		Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
@@ -527,7 +524,7 @@ class App extends helix.App {
 		text.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xffc8d0e8, Center);
 		text.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0xff7a8298, Center);
 		// The frame rate in the window's own pixels: its place and size in the design's units, a logical pixel being pixelRatio / scaleX of them.
-		var pixel = Window.pixelRatio / presentation.scaleX;
+		var pixel = Window.pixelRatio / Screen.scaleX;
 		fps.size = 16 * pixel;
 		fps.setPosition(vx + 12 * pixel, vy + 10 * pixel);
 		if (pilot != null && pilot.done && !published) {

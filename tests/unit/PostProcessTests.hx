@@ -23,7 +23,7 @@ import helix.shaders.Vignette;
 /** An effect of several passes: intermediates at the fractions given, each drawn into from the one before (the first from the frame). */
 class Steps extends ScreenEffect {
 	public function new(gpu:CountingGraphics, shader:Shader, fractions:Array<Float>) {
-		super(gpu, shader);
+		super(shader, false, gpu);
 		intermediates = fractions;
 	}
 
@@ -117,7 +117,7 @@ class PostProcessTests {
 		check(white[0] == white[1] && white[0] > 2, "White under Neutral is the most light it answers");
 
 		var post = new PostProcess(gpu);
-		var bright = new ScreenEffect(gpu, shader);
+		var bright = new ScreenEffect(shader, gpu);
 		bright.hdr = true;
 		post.add(bright);
 		gpu.targetPasses = [];
@@ -183,7 +183,7 @@ class PostProcessTests {
 				}
 			]
 		});
-		shader = Shader.fromText(gpu, text);
+		shader = Shader.fromText(text, gpu);
 
 		// No effect: the scene alone, RGBA8 with depth at the screen's size, copied to the screen.
 		var post = new PostProcess(gpu);
@@ -197,14 +197,14 @@ class PostProcessTests {
 		check(gpu.draws.length == 1 && gpu.draws[0].vertices == 6, "The scene is copied to the screen as it is");
 
 		// Two effects, 8 bits: the first draws into a texture of the chain without depth, the last over the screen.
-		var a = new ScreenEffect(gpu, shader),
-			b = new ScreenEffect(gpu, shader);
+		var a = new ScreenEffect(shader, gpu),
+			b = new ScreenEffect(shader, gpu);
 		check(post.add(a) && post.add(b) && !post.add(a), "Effects are added once");
 		frame(post, 800, 600);
 		check(!post.hdr && gpu.targetPasses.length == 2 && pass(0).format == Rgba8 && pass(0).depth, "An 8-bit chain's scene is RGBA8 with depth");
 		check(pass(1).width == 800 && pass(1).height == 600 && pass(1).format == Rgba8 && !pass(1).depth,
 			"The chain's textures are the screen's size, RGBA8, without depth");
-		var c = new ScreenEffect(gpu, shader);
+		var c = new ScreenEffect(shader, gpu);
 		post.add(c);
 		frame(post, 800, 600);
 		check(gpu.targetPasses.length == 3 && gpu.targetPasses[1] != gpu.targetPasses[2] && !pass(2).depth,
@@ -241,7 +241,7 @@ class PostProcessTests {
 		var hdrPost = new PostProcess(gpu);
 		var bright = new Steps(gpu, shader, [.5]);
 		bright.hdr = true;
-		var after = new ScreenEffect(gpu, shader);
+		var after = new ScreenEffect(shader, gpu);
 		hdrPost.add(bright);
 		hdrPost.add(after);
 		gpu.targetPasses = [];
@@ -328,10 +328,10 @@ class PostProcessTests {
 		check(@:privateAccess post.steps[1] == tonemap, "The tone mapping follows the bloom");
 
 		// Its steps by hand: what each reads.
-		var source = Texture2D.renderTarget(gpu, 64, 64, true, Rgba16f, false);
+		var source = Texture2D.renderTarget(64, 64, true, Rgba16f, false, gpu);
 		var levels = [
 			for (f in bloom.intermediates)
-				Texture2D.renderTarget(gpu, Std.int(Math.max(1, Math.floor(64 * f))), Std.int(Math.max(1, Math.floor(64 * f))), true, Rgba16f, false)
+				Texture2D.renderTarget(Std.int(Math.max(1, Math.floor(64 * f))), Std.int(Math.max(1, Math.floor(64 * f))), true, Rgba16f, false, gpu)
 		];
 		check(levels.length == 2 * Bloom.LEVELS - 1
 			&& bloom.intermediates[Bloom.LEVELS] == .5, "Its intermediates: the levels down, then up");
@@ -355,7 +355,7 @@ class PostProcessTests {
 			&& near(drawn.uniforms[2].getFloat(8), 3),
 			"Its last pass adds the first level coming up to the frame");
 		check(near(drawn.uniforms[2].getFloat(20), 1 / Bloom.LEVELS), "Its intensity over the levels summed");
-		var flat = Texture2D.renderTarget(gpu, 64, 64, true, Rgba8, false);
+		var flat = Texture2D.renderTarget(64, 64, true, Rgba8, false, gpu);
 		bloom.toneMappedThreshold = .7;
 		bloom.drawIntermediates(new ScreenFrame(flat, 64, 64, 1, levels));
 		check(near(gpu.screen.uniforms[2].getFloat(12), .7), "A tone-mapped frame is thresholded at toneMappedThreshold");
@@ -397,8 +397,8 @@ class PostProcessTests {
 		blur.resolution = 0;
 		blur.radius = 1000;
 		check(blur.intermediates[0] == 1 / 16 && blur.radius == 128, "Blur's fields held to their ranges");
-		var source = Texture2D.renderTarget(gpu, 800, 600, true, Rgba8, false),
-			half = Texture2D.renderTarget(gpu, 400, 300, true, Rgba8, false);
+		var source = Texture2D.renderTarget(800, 600, true, Rgba8, false, gpu),
+			half = Texture2D.renderTarget(400, 300, true, Rgba8, false, gpu);
 		blur.radius = 16;
 		var screenFrame = new ScreenFrame(source, 800, 600, 0, [half]);
 		blur.drawIntermediates(screenFrame);
@@ -450,7 +450,7 @@ class PostProcessTests {
 		var slot = grade.shader.getTextureSlot("lut_texture");
 		check(slot == 1 && grade.parameters.getTexture("lut_texture") == ShaderLibrary.getIdentityLut(gpu) && grade.lut == null,
 			"ColorLut grades through the library's identity until given a LUT, at slot 1");
-		var own = Texture2D.fromRgba(gpu, 1024, 32, ColorLut.identity(), true);
+		var own = Texture2D.fromRgba(1024, 32, ColorLut.identity(), true, gpu);
 		grade.lut = own;
 		grade.amount = 2;
 		check(grade.parameters.getTexture("lut_texture") == own && grade.amount == 1 && written(grade, "amount", 0) == 1,

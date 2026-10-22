@@ -15,7 +15,6 @@ import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Node3D;
-import helix.render3d.Tonemap;
 import helix.render3d.View3D;
 import helix.scene.SceneFile3D;
 import helix.scene.SceneFiles3D;
@@ -53,7 +52,7 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX scene-file";
 		Window.requestSize(1200, 675);
-		ticker = new Ticker(Input.instance);
+		ticker = new Ticker();
 		ticker.maxSteps = 6;
 		fast = Host.getOption("fast", "0") == "1";
 		var script = Host.getOption("autopilot", "");
@@ -220,10 +219,9 @@ class Play {
 	public function update(dt:Float):Void {
 		fps.update(dt, Time.frameCpu);
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		line.setPosition(vx + 12, vy + 36);
 		help.setPosition(vx + 12, vy + 66);
 		fps.setPosition(vx + vw - 150, vy + 10);

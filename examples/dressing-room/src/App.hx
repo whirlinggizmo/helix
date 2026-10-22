@@ -2,10 +2,8 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.TestHarness;
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.host.Host;
-import helix.host.Presentation;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
@@ -204,8 +202,8 @@ class App extends helix.App {
 		var disc = new Model3D(Mesh3D.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
 		room.addChild(disc);
-		outfit = new Outfit(Models3D.instance);
-		modelOutfit = new Outfit(Models3D.instance);
+		outfit = new Outfit();
+		modelOutfit = new Outfit();
 		Environments3D.load("environments/studio_small_09_1k.hdr", value -> light(value));
 		// Her look before she's here: the Outfit wears it once the skeleton arrives.
 		dress(["Casual", "Casual", "Casual", "Casual"], null);
@@ -467,7 +465,7 @@ class App extends helix.App {
 			for (s in SLOTS)
 				modelOutfit.choose(s, null);
 			modelOutfit.choose(w.slot, w.path);
-			var texture = Texture2D.renderTarget(Graphics.instance, THUMB, THUMB);
+			var texture = Texture2D.renderTarget(THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
 			studioView.drawToTexture(texture, 0xff2a2f3c);
 			thumbs[w.path] = texture;
@@ -529,17 +527,17 @@ class App extends helix.App {
 	// upright), less the text's lines, and centered there by a lens shift, so she is seen square on wherever the panel leaves room; the whole
 	// window drawn. For the hand, the framing follows what she holds as she turns. Where it looks and how far away ease toward the framing's (at
 	// once under the autopilot); the zoom scales the distance, held between ZOOM_IN and ROOM_REACH times her whole framing's.
-	function frameRoom(presentation:Presentation, width:Int, height:Int, dt:Float):Void {
+	function frameRoom(width:Int, height:Int, dt:Float):Void {
 		var panelLayout = panel.layout,
-			vx = presentation.visibleX,
-			vy = presentation.visibleY;
-		var left = vx, right = portrait ? vx + presentation.visibleWidth : panelLayout.x, top = vy + TEXT_ROOM,
-			bottom = (portrait ? panelLayout.y : vy + presentation.visibleHeight) - TEXT_ROOM;
+			vx = Screen.visibleX,
+			vy = Screen.visibleY;
+		var left = vx, right = portrait ? vx + Screen.visibleWidth : panelLayout.x, top = vy + TEXT_ROOM,
+			bottom = (portrait ? panelLayout.y : vy + Screen.visibleHeight) - TEXT_ROOM;
 		// The free area in framebuffer pixels, at least a pixel each way.
-		var x0 = presentation.toPixelsX(left),
-			x1 = Math.max(x0 + 1, presentation.toPixelsX(right)),
-			y0 = presentation.toPixelsY(top),
-			y1 = Math.max(y0 + 1, presentation.toPixelsY(bottom));
+		var x0 = Screen.toPixelsX(left),
+			x1 = Math.max(x0 + 1, Screen.toPixelsX(right)),
+			y0 = Screen.toPixelsY(top),
+			y1 = Math.max(y0 + 1, Screen.toPixelsY(bottom));
 		camera.setViewport(width, height);
 		camera.fovY = ROOM_FOV;
 		camera.near = .05;
@@ -654,22 +652,20 @@ class App extends helix.App {
 		open(SLOTS[(SLOTS.indexOf(slot) + direction + SLOTS.length) % SLOTS.length]);
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
 		// The autopilot's tick: it presses nothing, only waits and samples the frame.
 		if (pilot != null && !pilot.done)
 			pilot.advance(name -> probe(name));
-		var window = Window.instance, presentation = Screen.instance;
-		var width = window.framebufferWidth, height = window.framebufferHeight;
+		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		var wanted = ScreenShape.update();
 		if (wanted != shaped)
 			shape(wanted);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
 		ui.update();
-		gestures.update(input, Time.time, false);
+		gestures.update(Time.time, false);
 		for (i in 0...tabs.length)
 			if (tabs[i].clicked) {
 				open(SLOTS[i]);
@@ -680,11 +676,11 @@ class App extends helix.App {
 				}
 			}
 		if (!ui.capturingKeys || ui.focused == null) {
-			if (input.isFramePressed(Key.Q))
+			if (Input.isFramePressed(Key.Q))
 				step(-1);
-			if (input.isFramePressed(Key.E))
+			if (Input.isFramePressed(Key.E))
 				step(1);
-			if (input.isFramePressed(Key.T))
+			if (Input.isFramePressed(Key.T))
 				turntable.on = !turntable.on;
 		}
 		var offered = choices(slot);
@@ -713,20 +709,20 @@ class App extends helix.App {
 		// pinch zooms.
 		var panelLayout = panel.layout;
 		function inRoom(x:Float, y:Float):Bool
-			return portrait ? presentation.toUnitsY(y) < panelLayout.y : presentation.toUnitsX(x) < panelLayout.x;
-		if (input.pointerFramePressed && inRoom(input.pointerX, input.pointerY))
-			dragFrom = input.pointerX;
+			return portrait ? Screen.toUnitsY(y) < panelLayout.y : Screen.toUnitsX(x) < panelLayout.x;
+		if (Input.pointerFramePressed && inRoom(Input.pointerX, Input.pointerY))
+			dragFrom = Input.pointerX;
 		if (gestures.doubleTapped && !piloted && inRoom(gestures.startX, gestures.startY))
 			focusAt(gestures.x, gestures.y);
-		if (!input.pointerDown)
+		if (!Input.pointerDown)
 			dragFrom = null;
 		if (dragFrom != null) {
-			turn += (input.pointerX - dragFrom) * .01;
-			dragFrom = input.pointerX;
+			turn += (Input.pointerX - dragFrom) * .01;
+			dragFrom = Input.pointerX;
 		}
 		// The wheel over the room zooms, a tenth a notch (wheelY counts notches, up closer); fingers spreading come closer as much as they spread.
-		var notches = inRoom(input.pointerX, input.pointerY) ? input.wheelY : 0.;
-		var pinch = input.getTouchGestureScale(true);
+		var notches = inRoom(Input.pointerX, Input.pointerY) ? Input.wheelY : 0.;
+		var pinch = Input.getTouchGestureScale(true);
 		// Held to its limits as the room is framed.
 		zoom = zoom * Math.pow(.9, notches) / (pinch > 0 ? pinch : 1);
 		if (piloted) {
@@ -749,7 +745,7 @@ class App extends helix.App {
 		}
 		fps.update(dt, Time.frameCpu);
 
-		frameRoom(presentation, width, height, dt);
+		frameRoom(width, height, dt);
 		captions.clear();
 		caption(status, vx + 24, portrait ? panelLayout.y - 30 : vy + vh - 40, 18, 0xffc8d0e8);
 		caption(portrait ? "drag: turn   pinch: zoom   double-tap: focus" : "drag: turn   wheel: zoom   double-click: focus   T: turntable   Q / E: slot   arrows, Enter, or a pad",
@@ -758,8 +754,8 @@ class App extends helix.App {
 			+ 24, 16, 0xff8a92a8);
 		// The frame rate 130 logical pixels from the right edge and 8 down, sized in logical pixels whatever the design's scale.
 		var ratio = Window.pixelRatio;
-		fps.setPosition(presentation.toUnitsX(width - 130 * ratio), presentation.toUnitsY(8 * ratio));
-		fps.setScale(ratio / presentation.scaleX, ratio / presentation.scaleY);
+		fps.setPosition(Screen.toUnitsX(width - 130 * ratio), Screen.toUnitsY(8 * ratio));
+		fps.setScale(ratio / Screen.scaleX, ratio / Screen.scaleY);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({game: {slot: slot}, autopilot: pilot.snapshot});
@@ -781,6 +777,6 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		studioView.destroy();
 		for (t in thumbs)
-			t.destroy(Graphics.instance);
+			t.destroy();
 	}
 }

@@ -180,7 +180,7 @@ class View extends Node2D {
 			output = null;
 		}
 		if (output == null) {
-			output = Texture2D.renderTarget(gpu, w, h, true, Rgba8, false);
+			output = Texture2D.renderTarget(w, h, true, Rgba8, false, gpu);
 			outputGpu = gpu;
 		}
 		// A 3D view's shadows first: passes into textures don't nest.

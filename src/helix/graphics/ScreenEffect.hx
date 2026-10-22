@@ -12,9 +12,10 @@ class ScreenEffect {
 	var gpu:IGraphics;
 	var alpha:Bool;
 
-	/** An effect drawing with shader (kind screen) on gpu, blended over what's there when alpha, else replacing it. Throws for a shader of another
-		kind. */
-	public function new(gpu:IGraphics, shader:Shader, alpha = false) {
+	/** An effect drawing with shader (kind screen), blended over what's there when alpha, else replacing it, on gpu (the program's, Graphics,
+		when not given). Throws for a shader of another kind. */
+	public function new(shader:Shader, alpha = false, ?gpu:IGraphics) {
+		gpu = gpu != null ? gpu : Graphics.instance;
 		if (shader.kind != "screen")
 			throw 'A ${shader.kind} shader is not a screen effect';
 		this.gpu = gpu;

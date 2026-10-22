@@ -48,7 +48,7 @@ class SpriteSheetTests {
 
 	static function main():Void {
 		var gpu = new CountingGraphics();
-		var texture = Texture2D.fromRgba(gpu, 32, 16, Bytes.alloc(32 * 16 * 4));
+		var texture = Texture2D.fromRgba(32, 16, Bytes.alloc(32 * 16 * 4), gpu);
 
 		// TexturePacker's hash.
 		var sheet = SpriteSheet2D.parse(texture, packed, .125);
@@ -95,7 +95,7 @@ class SpriteSheetTests {
 		check(threw == 4, "Not JSON, no frames, a frame without a rectangle and a tag past the frames are refused");
 
 		// A grid: 1 texel in from the edges, 2 apart.
-		var gridTexture = Texture2D.fromRgba(gpu, 34, 18, Bytes.alloc(34 * 18 * 4));
+		var gridTexture = Texture2D.fromRgba(34, 18, Bytes.alloc(34 * 18 * 4), gpu);
 		var grid = SpriteSheet2D.grid(gridTexture, 8, 8, 0, .1, 1, 2);
 		check(grid.frameCount == 3 && grid.getFrame(2).x == 21 && grid.getFrame(2).y == 1 && grid.getFrame(1).name == "1", "A grid's whole cells");
 		check(SpriteSheet2D.grid(gridTexture, 8, 8, 2).frameCount == 2, "A grid's count");

@@ -446,7 +446,7 @@ class Render2DTests {
 		check(held.parent == null && holder.childCount == 0, "parent = null takes it from its parent");
 
 		// A mirrored sprite covers the same box; a sprite with no texture draws nothing.
-		var texture = Texture2D.fromRgba(gpu, 4, 2, Bytes.alloc(32));
+		var texture = Texture2D.fromRgba(4, 2, Bytes.alloc(32), gpu);
 		var sprite = new Sprite2D(texture);
 		check(sprite.width == 4 && sprite.height == 2, "A sprite with no size is its texture's size in texels");
 		sprite.setRegion(1, 0, 2, 2);
@@ -604,7 +604,7 @@ class Render2DTests {
 		check(fits
 			&& baked.field.get(baked.width * baked.height - 1) == 255, "Glyphs fit the atlas above its free row; the white texel is set");
 		check(Math.abs(baked.ascent - baked.descent - 32) < 1e-9, "The baked height is ascent to descent");
-		var font = helix.render2d.Font2D.fromTrueType(gpu, sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
+		var font = helix.render2d.Font2D.fromTrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"), gpu);
 		check(font.getGlyph(0xE9) != null && font.getGlyph(0x7F) == null && font.getKerning("A".code, "V".code) < 0,
 			"A loaded font has Latin-1 and kerning in font pixels");
 		check(font.measure("AV", 32) < font.measure("A", 32) + font.measure("V", 32), "Kerning narrows a measured pair");
@@ -690,8 +690,8 @@ class Render2DTests {
 				}
 			]
 		});
-		var shader = helix.graphics.Shader.fromText(gpu, text),
-			effect = new helix.graphics.ScreenEffect(gpu, shader);
+		var shader = helix.graphics.Shader.fromText(text, gpu),
+			effect = new helix.graphics.ScreenEffect(shader, false, gpu);
 		check(effect.parameters.setFloat("strength", .5)
 			&& effect.parameters.setValues("shift", [1, 2, 3])
 			&& effect.parameters.setValues("weights", [0, 0, 0, 0, 7])
@@ -707,10 +707,10 @@ class Render2DTests {
 			"Values land at their std140 offsets");
 		check(info.getFloat(0) == 640 && info.getFloat(4) == 480 && info.getFloat(8) == 2.5, "Block 1 holds the frame's size and the time");
 		check(gpu.screen.textures.length == 2 && gpu.screen.textures[1] == texture.handle, "An unset texture is drawn as the frame");
-		var other = helix.graphics.Shader.fromText(gpu, StringTools.replace(text, '"screen"', '"surface"'));
+		var other = helix.graphics.Shader.fromText(StringTools.replace(text, '"screen"', '"surface"'), gpu);
 		var refused = false;
 		try
-			new helix.graphics.ScreenEffect(gpu, other)
+			new helix.graphics.ScreenEffect(other, false, gpu)
 		catch (e:Dynamic)
 			refused = true;
 		check(refused, "A shader of another kind isn't a screen effect");
@@ -733,7 +733,7 @@ class Render2DTests {
 			"A mirrored model is its own run, through another pipeline");
 		// Sprites: opaque ones draw before the see-through phase, blended ones after them, added ones last, each phase through its own pipeline;
 		// sprites of one texture in a phase are one draw.
-		var spriteTexture = Texture2D.fromRgba(gpu, 1, 1, Bytes.alloc(4));
+		var spriteTexture = Texture2D.fromRgba(1, 1, Bytes.alloc(4), gpu);
 		var modes:Array<helix.graphics.AlphaMode> = [Add, Blend, Opaque, Blend, Add];
 		for (mode in modes) {
 			var s3 = new Sprite3D(spriteTexture);
@@ -951,7 +951,7 @@ class Render2DTests {
 			"A word wider than a line, broken between its letters");
 		check(font.wrap("one\ntwo", 16, 1000).join("|") == "one|two", "A line break breaks");
 		// Nine quads, the corners keeping their texels' size; a frame too small shrinks them alike.
-		var texture = Texture2D.fromRgba(gpu, 16, 16, haxe.io.Bytes.alloc(16 * 16 * 4));
+		var texture = Texture2D.fromRgba(16, 16, haxe.io.Bytes.alloc(16 * 16 * 4), gpu);
 		gpu.beginFrame(400, 300, 0);
 		batch.begin(camera);
 		batch.nineSlice(texture, 10, 10, 200, 100, 4, 4, 4, 4);

@@ -6,12 +6,19 @@ import helix.input.IInput;
 	too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. fraction is how far the frame is
 	between the last tick and the next, for drawing between them. */
 class Ticker {
-	var input:IInput;
+	// The input given, or null for the program's (Input), read when used.
+	var given:Null<IInput>;
+	var input(get, never):IInput;
+
+	function get_input():IInput
+		return given != null ? given : helix.input.Input.instance;
+
 	var accumulator = 0.;
 
-	/** Ticks at rate a second (clamped as the rate property is), consuming input's tick edges after each. */
-	public function new(input:IInput, rate = 60.) {
-		this.input = input;
+	/** Ticks at rate a second (clamped as the rate property is), consuming input's tick edges after each: the program's (Input) when not
+		given, read as it's used, so a ticker made before the program runs (a field's initial value) works. */
+	public function new(rate = 60., ?input:IInput) {
+		given = input;
 		this.rate = rate;
 	}
 

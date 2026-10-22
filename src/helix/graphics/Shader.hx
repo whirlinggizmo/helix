@@ -45,9 +45,10 @@ class Shader {
 	function new(gpu:IGraphics)
 		this.gpu = gpu;
 
-	/** Builds a shader, and its variants, from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that
-		doesn't build. The caller destroys it. */
-	public static function fromText(gpu:IGraphics, text:String):Shader {
+	/** Builds a shader, and its variants, from a .hxshader's text on gpu (the program's, Graphics, when not given). Throws, saying why, for a
+		file it can't read or a program that doesn't build. The caller destroys it. */
+	public static function fromText(text:String, ?gpu:IGraphics):Shader {
+		gpu = gpu != null ? gpu : Graphics.instance;
 		var file = read(text);
 		build(gpu, file);
 		var shader = new Shader(gpu);

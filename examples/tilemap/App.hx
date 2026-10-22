@@ -114,48 +114,46 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		var height = Window.framebufferHeight;
 		var unitsPerPixel = seen / height;
 
 		// Scroll: drag, or the arrow keys.
-		var px = input.pointerX, py = input.pointerY;
-		if (input.pointerDown && lastX >= 0 && px >= 0) {
+		var px = Input.pointerX, py = Input.pointerY;
+		if (Input.pointerDown && lastX >= 0 && px >= 0) {
 			centerX -= (px - lastX) * unitsPerPixel;
 			centerY -= (py - lastY) * unitsPerPixel;
 		}
 		lastX = px;
 		lastY = py;
 		var speed = seen * .6 * dt;
-		if (input.isDown(Key.Left))
+		if (Input.isDown(Key.Left))
 			centerX -= speed;
-		if (input.isDown(Key.Right))
+		if (Input.isDown(Key.Right))
 			centerX += speed;
-		if (input.isDown(Key.Up))
+		if (Input.isDown(Key.Up))
 			centerY -= speed;
-		if (input.isDown(Key.Down))
+		if (Input.isDown(Key.Down))
 			centerY += speed;
 		// Zoom: fewer world units seen is closer.
-		seen = Math.max(4, Math.min(32, seen - input.wheelY * 1.5));
+		seen = Math.max(4, Math.min(32, seen - Input.wheelY * 1.5));
 		centerX = Math.max(0, Math.min(WORLD_W, centerX));
 		centerY = Math.max(0, Math.min(WORLD_H, centerY));
 		camera.zoom = height / seen;
 		camera.setPosition(centerX, centerY);
 		// The HUD in the design for the window's shape, along the top of what's visible of it; the world keeps its own camera.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 
 		// Coins: hover lights them up, a click collects them.
 		var hovered = px >= 0 ? coinAt(camera.screenToWorldX(px), camera.screenToWorldY(py)) : null;
-		if (input.pointerFramePressed)
+		if (Input.pointerFramePressed)
 			pressed = hovered;
-		if (input.pointerFrameReleased) {
+		if (Input.pointerFrameReleased) {
 			if (pressed != null && pressed == hovered) {
 				hovered.visible = false;
 				collected++;

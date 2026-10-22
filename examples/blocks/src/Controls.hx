@@ -52,7 +52,7 @@ class Controls {
 	function touch(input:IInput, tick:Int, game:Game, layout:Layout, camera:Camera2D):Void {
 		var g = gestures, a = actions, cell = camera.zoom;
 		g.maxTapDistance = cell * .4;
-		g.update(input, tick / 60, true);
+		g.update(tick / 60, true, input);
 		if (g.pressed) {
 			anchorX = g.x;
 			anchorY = g.y;

@@ -175,7 +175,7 @@ class PickTests {
 	static function sprites():Void {
 		var gpu = new CountingGraphics(), stage = new Renderer3D(gpu), c = camera();
 		c.setView(0, 4, 10, 0, 0, 0);
-		var logo = new Sprite3D(helix.render2d.Texture2D.fromRgba(gpu, 2, 2, haxe.io.Bytes.alloc(16)));
+		var logo = new Sprite3D(helix.render2d.Texture2D.fromRgba(2, 2, haxe.io.Bytes.alloc(16), gpu));
 		logo.setSpriteSize(2, 2);
 		logo.setPosition(3, 0, 0);
 		stage.add(logo);

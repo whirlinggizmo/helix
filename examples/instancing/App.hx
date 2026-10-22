@@ -120,10 +120,9 @@ class App extends helix.App {
 		}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Space))
+		if (Input.isFramePressed(Key.Space))
 			setMaterials(!ownMaterials);
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
@@ -141,10 +140,9 @@ class App extends helix.App {
 			cars[i].setRotation(0, Math.PI + Math.sin(time + i * .35) * .6, 0);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 
 		readout.clear();
 		var y = vy + 36;

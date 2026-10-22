@@ -43,19 +43,17 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.D) && komika != null)
+		if (Input.isFramePressed(Key.D) && komika != null)
 			useKomika = !useKomika;
 		fps.update(dt, Time.frameCpu);
 		// The specimen in the design for the window's shape, its lines wrapped to what's visible of it; upright, the kerned line goes under the
 		// title instead of beside the specimen.
 		var shape = ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var x = vx + 40, wrap = vw - 80, y = vy + (shape == "portrait" ? 220 : 200);
 		text.clear();
 		// A centered title, measured.

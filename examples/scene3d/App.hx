@@ -102,19 +102,17 @@ class App extends helix.App {
 		hud.pickable = false;
 		Stage.addChild(hud);
 		Stage.addChild(fps);
-		pointer = new Pointer(Input.instance);
+		pointer = new Pointer();
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The HUD in the design for the window's shape; the button sits under the title, however many lines it wraps to.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var title = "HeliX scene3d: click shapes to select them";
 		var buttonY = vy + 36 + Stage.font.measureWrapped(title, 20, vw - 24) + 6;
 		button.setPosition(vx + 12, buttonY);

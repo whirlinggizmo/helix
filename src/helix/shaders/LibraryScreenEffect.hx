@@ -8,7 +8,7 @@ import helix.graphics.ScreenEffect;
 	its kind, and whose fields write its parameters, each held to its range. PostProcess chains them as any effect (PostProcess.add). */
 class LibraryScreenEffect extends ScreenEffect {
 	function new(name:String, text:String) {
-		super(Graphics.instance, ShaderLibrary.get(Graphics.instance, name, text));
+		super(ShaderLibrary.get(Graphics.instance, name, text));
 	}
 
 	// value held to min..max (NaN is min), written as the float parameter name: what the field keeps.

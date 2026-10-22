@@ -115,18 +115,17 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		if (animator != null) {
 			for (i in 0...CLIPS.length)
-				if (input.isFramePressed(cast((Key.Digit1 : Int) + i)))
+				if (Input.isFramePressed(cast((Key.Digit1 : Int) + i)))
 					play(i);
-			if (input.isFramePressed(Key.F))
+			if (Input.isFramePressed(Key.F))
 				fade = !fade;
-			if (input.isFramePressed(Key.Space)) {
+			if (Input.isFramePressed(Key.Space)) {
 				paused = !paused;
 				animator.speed = paused ? 0 : 1;
 			}
@@ -137,10 +136,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		hud.clear();
 		var y = vy + 36, title = 'HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}',
 			clips = [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  ");

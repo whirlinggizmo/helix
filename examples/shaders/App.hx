@@ -2,14 +2,12 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
@@ -114,7 +112,6 @@ class App extends helix.App {
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1000, 600);
-		var gpu = Graphics.instance;
 		Stage.color = 0xff14161c;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .15);
@@ -183,7 +180,7 @@ class App extends helix.App {
 		for (name in PARTS)
 			Models3D.load(WOMEN + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
 		Models3D.load(WOMEN + "Animations.glb", file -> placeCharacter(file), message -> status = 'Animations: $message');
-		shaders = new Shaders(Assets.instance, gpu);
+		shaders = new Shaders();
 		shaders.load("shaders/checker.hxshader", shader -> useChecker(shader), message -> status = message);
 	}
 
@@ -295,46 +292,41 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
-		var input:Null<IInput> = Input.instance;
-		if (pilot != null) {
-			input = pilot.done ? null : pilot.advance(name -> probe(name));
-			if (pilot.awaitingFrame)
-				input = null;
-		}
-		if (input != null) {
-			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		// Read the program's input (the autopilot's while it plays: a tick a frame, none while a sample waits for its frame, none once done).
+		var reading = pilot == null || (!pilot.done && pilot.advance(name -> probe(name)) != null && !pilot.awaitingFrame);
+		if (reading) {
+			if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 				Host.quit();
-			if (input.isFramePressed(Key.Digit1))
+			if (Input.isFramePressed(Key.Digit1))
 				sun.visible = !sun.visible;
-			if (input.isFramePressed(Key.Digit2)) {
+			if (Input.isFramePressed(Key.Digit2)) {
 				lamp.visible = !lamp.visible;
 				marker.visible = lamp.visible;
 			}
-			if (input.isFramePressed(Key.Digit3))
+			if (Input.isFramePressed(Key.Digit3))
 				for (outline in outlines)
 					outline.enabled = !outline.enabled;
-			if (input.isFramePressed(Key.Digit4))
+			if (Input.isFramePressed(Key.Digit4))
 				for (silhouette in silhouettes)
 					silhouette.enabled = !silhouette.enabled;
-			if (input.isFramePressed(Key.Digit5))
+			if (Input.isFramePressed(Key.Digit5))
 				dissolving = !dissolving;
-			if (input.isFramePressed(Key.Digit6))
+			if (Input.isFramePressed(Key.Digit6))
 				toonCharacter(!toonOn);
-			if (input.isFramePressed(Key.Digit7)) {
+			if (Input.isFramePressed(Key.Digit7)) {
 				waterOn = !waterOn;
 				if (waterOn)
 					new Water(sea);
 				else
 					sea.setShader(null);
 			}
-			if (pilot != null && input.isFramePressed(Key.T))
+			if (pilot != null && Input.isFramePressed(Key.T))
 				heldTime += .5;
-			if (input.isFramePressed(Key.C)) {
+			if (Input.isFramePressed(Key.C)) {
 				closeUp = !closeUp;
 				aim();
 			}
-			if (input.isFramePressed(Key.F))
+			if (Input.isFramePressed(Key.F))
 				for (flash in flashes)
 					flash.trigger(0xffff3020, .25);
 		}
@@ -355,10 +347,9 @@ class App extends helix.App {
 		marker.setPosition(lx, ly, lz);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		fps.setPosition(vx + 12, vy + 10);
 		hud.clear();
 		var y = vy + 36;

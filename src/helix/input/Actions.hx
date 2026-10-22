@@ -111,9 +111,10 @@ class Actions implements IInputWatcher {
 	var captureArmed = false;
 	var captureAxes:Array<Int> = [];
 
-	/** Actions read from input, their touch regions placed on presentation's visible area (Screen.instance's when null). */
-	public function new(input:IInput, ?presentation:Presentation) {
-		this.input = input;
+	/** Actions read from input, the program's (Input) when not given, their touch regions placed on presentation's visible area (Screen's
+		when null). Made in init or later when given none: before the program runs there's no input to watch, and it reads every action as up. */
+	public function new(?input:IInput, ?presentation:Presentation) {
+		this.input = input != null ? input : Input.instance;
 		this.presentation = presentation;
 	}
 

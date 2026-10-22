@@ -27,60 +27,59 @@ class App extends helix.App {
 		status = what + ": " + (ok ? "done" : "not supported here");
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance, window = Window.instance, width = window.width, height = window.height, x = window.x, y = window.y;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		var width = Window.width, height = Window.height, x = Window.x, y = Window.y;
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Left))
-			report("move", window.requestPosition(x - 50, y));
-		if (input.isFramePressed(Key.Right))
-			report("move", window.requestPosition(x + 50, y));
-		if (input.isFramePressed(Key.Up))
-			report("move", window.requestPosition(x, y - 50));
-		if (input.isFramePressed(Key.Down))
-			report("move", window.requestPosition(x, y + 50));
-		if (input.isFramePressed(Key.Equal))
-			report("grow", window.requestSize(Std.int(width * 1.1), Std.int(height * 1.1)));
-		if (input.isFramePressed(Key.Minus))
-			report("shrink", window.requestSize(Std.int(width / 1.1), Std.int(height / 1.1)));
+		if (Input.isFramePressed(Key.Left))
+			report("move", Window.requestPosition(x - 50, y));
+		if (Input.isFramePressed(Key.Right))
+			report("move", Window.requestPosition(x + 50, y));
+		if (Input.isFramePressed(Key.Up))
+			report("move", Window.requestPosition(x, y - 50));
+		if (Input.isFramePressed(Key.Down))
+			report("move", Window.requestPosition(x, y + 50));
+		if (Input.isFramePressed(Key.Equal))
+			report("grow", Window.requestSize(Std.int(width * 1.1), Std.int(height * 1.1)));
+		if (Input.isFramePressed(Key.Minus))
+			report("shrink", Window.requestSize(Std.int(width / 1.1), Std.int(height / 1.1)));
 		// A request: fullscreen() answers on a later frame.
-		if (input.isFramePressed(Key.F)) {
-			status = "fullscreen: " + (window.requestFullscreen(!window.fullscreen) ? "asked for" : "not supported here");
+		if (Input.isFramePressed(Key.F)) {
+			status = "fullscreen: " + (Window.requestFullscreen(!Window.fullscreen) ? "asked for" : "not supported here");
 		}
-		if (input.isFramePressed(Key.H)) {
-			window.requestVisible(false);
+		if (Input.isFramePressed(Key.H)) {
+			Window.requestVisible(false);
 			hiddenFor = 2;
 			report("hide for 2 s", true);
 		}
 		if (hiddenFor > 0 && (hiddenFor -= dt) <= 0) {
-			window.requestVisible(true);
+			Window.requestVisible(true);
 			report("show", true);
 		}
-		if (input.isFramePressed(Key.M))
-			report("monitor", window.requestMonitorIndex((window.monitorIndex + 1) % window.monitorCount));
+		if (Input.isFramePressed(Key.M))
+			report("monitor", Window.requestMonitorIndex((Window.monitorIndex + 1) % Window.monitorCount));
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		text.clear();
 		var row = vy + 12;
 		row += text.drawTextWrapped("HeliX window   arrows: move   =/-: size   "
-			+ (window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)")
+			+ (Window.canFullscreen() ? "F: fullscreen" : "(no fullscreen here)")
 			+ "   M: next monitor   H: hide",
 			vx
 			+ 12, row, 16, vw
 			- 24, 0xfff5f5f5)
 			+ 12;
-		row += text.drawTextWrapped('window: $width x $height at ($x, $y)   fullscreen: ' + (window.fullscreen ? "yes" : "no") + "   focused: "
+		row += text.drawTextWrapped('window: $width x $height at ($x, $y)   fullscreen: ' + (Window.fullscreen ? "yes" : "no") + "   focused: "
 			+ (Window.focused ? "yes" : "no"),
 			vx + 12, row, 16, vw - 24, 0xffc8c8c8)
 			+ 4;
 		row += text.drawTextWrapped(status, vx + 12, row, 16, vw - 24, 0xffffcb00) + 12;
-		for (m in 0...window.monitorCount) {
-			row += text.drawTextWrapped((m == window.monitorIndex ? "> " : "  ")
+		for (m in 0...Window.monitorCount) {
+			row += text.drawTextWrapped((m == Window.monitorIndex ? "> " : "  ")
 				+
-				'monitor $m "${window.getMonitorName(m)}": ${window.getMonitorWidth(m)} x ${window.getMonitorHeight(m)} at (${window.getMonitorX(m)}, ${window.getMonitorY(m)})',
+				'monitor $m "${Window.getMonitorName(m)}": ${Window.getMonitorWidth(m)} x ${Window.getMonitorHeight(m)} at (${Window.getMonitorX(m)}, ${Window.getMonitorY(m)})',
 				vx
 				+ 12, row, 16, vw
 				- 24, 0xffc8c8c8)

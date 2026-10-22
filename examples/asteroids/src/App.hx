@@ -1,7 +1,6 @@
 import helix.time.Ticker;
 import helix.debug.Autopilot;
 import helix.assets.Assets;
-import helix.audio.Audio;
 import helix.debug.TestHarness;
 import helix.graphics.Screenshots;
 import helix.host.Host;
@@ -75,13 +74,13 @@ class App extends helix.App {
 		Stage.addChild(hud);
 		renderer = new Renderer(field, hud);
 		menus();
-		ticker = new Ticker(Input.instance);
+		ticker = new Ticker();
 		ticker.maxSteps = 6;
 		var script = Host.getOption("autopilot", "");
 		pilotReady = script == "";
 		if (!pilotReady)
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
-		sounds = new Sounds(Audio.instance, error -> {
+		sounds = new Sounds(error -> {
 			if (error != null)
 				throw 'Sound load failed: ' + error;
 			soundReady = true;
@@ -129,7 +128,7 @@ class App extends helix.App {
 		}
 		play.text = ready ? "PLAY" : "LOADING";
 		play.enabled = ready;
-		Layout2D.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, ui.font);
+		Layout2D.arrange(layout, Renderer.getHudX(), Renderer.getHudY(), Game.W, Game.H, ui.font);
 		ui.update();
 		if (play.clicked || again.clicked)
 			wantStart = true;
@@ -209,7 +208,7 @@ class App extends helix.App {
 				sounds.play(game, false, false);
 		}
 		updateMenu();
-		renderer.render(game, Screen.instance);
+		renderer.render(game);
 		if (pilot != null && pilot.done) {
 			TestHarness.publish(inspect());
 			pilot = null;

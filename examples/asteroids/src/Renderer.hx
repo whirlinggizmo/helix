@@ -1,6 +1,6 @@
 import Game.Body;
 import helix.graphics.Color;
-import helix.host.Presentation;
+import helix.host.Screen;
 import helix.render2d.Align2D;
 import helix.render2d.Drawing2D;
 
@@ -58,14 +58,14 @@ class Renderer {
 	}
 
 	/** The HUD's design is the field's, centered in the presentation's visible area: the menu's panel and buttons keep their places in it. */
-	public static function getHudX(presentation:Presentation):Float
-		return presentation.visibleX + (presentation.visibleWidth - Game.W) / 2;
+	public static function getHudX():Float
+		return Screen.visibleX + (Screen.visibleWidth - Game.W) / 2;
 
-	public static function getHudY(presentation:Presentation):Float
-		return presentation.visibleY + (presentation.visibleHeight - Game.H) / 2;
+	public static function getHudY():Float
+		return Screen.visibleY + (Screen.visibleHeight - Game.H) / 2;
 
-	/** Draws game again: the field in world units, then the score, the lives and the menu's panel in presentation's units (the stage's). */
-	public function render(game:Game, presentation:Presentation):Void {
+	/** Draws game again: the field in world units, then the score, the lives and the menu's panel in the presentation's units (the stage's). */
+	public function render(game:Game):Void {
 		field.clear();
 		hud.clear();
 		drawing = field;
@@ -94,10 +94,10 @@ class Renderer {
 			drawing.line(x - c * 12 + t * 11, y - t * 12 - c * 11, x + c * 18, y + t * 18, 2, color);
 		}
 		drawing = hud;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
-		var x = getHudX(presentation), y = getHudY(presentation);
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
+		var x = getHudX(), y = getHudY();
 		if (game.state != "title") {
 			setColor(.9, .93, .97);
 			text(Std.string(game.score), vx + 24, vy + 20, 3);

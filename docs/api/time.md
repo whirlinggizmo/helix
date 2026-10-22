@@ -37,7 +37,7 @@ function resume():Void
 A fixed-rate simulation inside the frame callback, fed a clock's elapsed time (Clock.elapsed: paused or scaled there, so the ticks are too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. fraction is how far the frame is between the last tick and the next, for drawing between them.
 
 ```haxe
-function new(input:IInput, ?rate:Float = 60.)
+function new(?rate:Float = 60., ?input:IInput)
 var rate(default, set):Float
 var delta(default, null):Float
 var fraction(default, null):Float
@@ -45,7 +45,7 @@ var maxSteps(default, set):Int
 function advance(elapsed:Float, tick:() -> Void):Int
 ```
 
-- `new`: Ticks at rate a second (clamped as the rate property is), consuming input's tick edges after each.
+- `new`: Ticks at rate a second (clamped as the rate property is), consuming input's tick edges after each: the program's (Input) when not given, read as it's used, so a ticker made before the program runs (a field's initial value) works.
 - `rate`: Ticks a second. At least 1e-6 (0 or less, or NaN, is 1e-6).
 - `delta`: Seconds a tick simulates.
 - `fraction`: How far the frame is from the last tick to the next, from 0 to under 1.

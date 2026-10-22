@@ -346,7 +346,7 @@ static function encode(width:Int, height:Int, rgba:haxe.io.Bytes):haxe.io.Bytes
 Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same with the chain HDR or not.
 
 ```haxe
-function new(gpu:IGraphics)
+function new(?gpu:IGraphics)
 var hdr(default, null):Bool
 var sceneTexture(get, never):Null<Texture2D>
 function add(effect:ScreenEffect):Bool
@@ -357,7 +357,7 @@ function present():Void
 function destroy():Void
 ```
 
-- `new`: Effects drawn on gpu, over a scene (the stage's, Stage.postProcess, or a view's, View.postProcess).
+- `new`: Effects drawn on gpu (the program's, Graphics, when not given), over a scene (the stage's, Stage.postProcess, or a view's, View.postProcess).
 - `hdr`: Whether this frame's scene (the last beginScene's) is drawn in half floats: an enabled effect wants HDR and the GPU draws them.
 - `sceneTexture`: The texture the scene is drawn into (the last beginScene's), or null before one.
 - `add`: Adds effect at the end of the chain. False, changing nothing, when it is in the chain already.
@@ -395,7 +395,7 @@ How a draw samples a texture: its filter (linear, smooth and through its mipmaps
 A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (parameters), kept across the shader's reloads. PostProcess chains them (PostProcess.add); drawPass draws its shader once into the open pass. An effect of several passes (a subclass: a blur, a bloom's downsample chain) asks for intermediates, draws into them before its last pass (drawIntermediates, each step a ScreenEffect of its own drawn with drawInto) and reads more than one of them through its own textures (parameters.setTexture).
 
 ```haxe
-function new(gpu:IGraphics, shader:Shader, ?alpha:Bool = false)
+function new(shader:Shader, ?alpha:Bool = false, ?gpu:IGraphics)
 var shader(default, null):Shader
 var parameters(default, null):ShaderParameters
 var enabled:Bool
@@ -407,7 +407,7 @@ function drawInto(target:Texture2D, source:Texture2D, time:Float):Void
 function drawPass(source:Texture2D, width:Int, height:Int, time:Float):Void
 ```
 
-- `new`: An effect drawing with shader (kind screen) on gpu, blended over what's there when alpha, else replacing it. Throws for a shader of another kind.
+- `new`: An effect drawing with shader (kind screen), blended over what's there when alpha, else replacing it, on gpu (the program's, Graphics, when not given). Throws for a shader of another kind.
 - `shader`: Its shader.
 - `parameters`: Its shader's own parameters and textures, set by name.
 - `enabled`: Whether PostProcess draws it.
@@ -503,7 +503,7 @@ An app's shader loaded from a .hxshader (src/helix/tools/shader/ShaderPacker.hx;
 
 ```haxe
 static var FORMAT(inline, null):Int
-static function fromText(gpu:IGraphics, text:String):Shader
+static function fromText(text:String, ?gpu:IGraphics):Shader
 var handle(default, null):Int
 var kind(default, null):String
 var skinned(default, null):Null<Shader>
@@ -518,7 +518,7 @@ function destroy():Void
 ```
 
 - `FORMAT`: The .hxshader format it reads (src/helix/src/helix/tools/shader/ShaderPacker.hx's FORMAT).
-- `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu. Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
+- `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu (the program's, Graphics, when not given). Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
 - `handle`: The IGraphics shader handle.
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Renderer3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
 - `skinned`: The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot 5) before its vertex hook, its fragment stage, parameters and textures this one's. Null for a screen or sprite shader. Its caster draws skinned casters.
@@ -624,13 +624,13 @@ A texture a program samples: its binding slot (its sampler's too), its stage, th
 Apps' shaders (.hxshader files, packed from GLSL by src/helix/tools/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
 
 ```haxe
-function new(assets:IAssets, gpu:IGraphics)
+function new(?assets:IAssets, ?gpu:IGraphics)
 function load(path:String, loaded:Shader -> Void, ?failed:String -> Void):IRequest
 function release(shader:Shader):Void
 function reloaded(path:String, bytes:haxe.io.Bytes):Void
 ```
 
-- `new`: Loads through assets and builds on gpu.
+- `new`: Loads through assets and builds on gpu: the program's (Assets, Graphics) for those not given, read as they're used, so a cache made before the program runs (a field's initial value) works.
 - `load`: Loads path (a .hxshader) into a shader. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once its program is built; failed (else the log, with the path) for a load failure, a file it can't read or a program that doesn't build (with the compiler's log).
 - `release`: Frees a shader this service loaded (after the pipelines made with it), and stops reloading it.
 - `reloaded`: The file behind loaded shaders changed: they're built again in place. One that no longer builds stays as it was, its log traced.

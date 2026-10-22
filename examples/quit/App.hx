@@ -37,8 +37,7 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (input.isFramePressed(Key.Q) || Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Input.isFramePressed(Key.Q) || Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The quit, before this frame is drawn: its text says so, and it's the frame the canvas keeps.
 		if (!quitting && Time.time >= quitAt) {

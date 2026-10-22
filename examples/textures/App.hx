@@ -135,10 +135,9 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 		// The design for the window's shape: three textures a row across, smaller and two a row upright, so it all fits a phone either way.
 		var shape = ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var size = shape == "landscape" ? 150 : 120,
 			columns = shape == "portrait" ? 2 : 3,
 			pitch = 2 * size + 30;

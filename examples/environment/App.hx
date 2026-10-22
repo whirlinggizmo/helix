@@ -1,7 +1,5 @@
-import helix.assets.Assets;
 import helix.debug.FpsOverlay;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.graphics.Shaders;
 import helix.host.Host;
 import helix.host.Screen;
@@ -102,7 +100,7 @@ class App extends helix.App {
 		Textures2D.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
-		shaders = new Shaders(Assets.instance, Graphics.instance);
+		shaders = new Shaders();
 		shaders.load("shaders/pearl.hxshader", shader -> pearl.setShader(shader));
 		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		for (i in 0...PATHS.length) {
@@ -133,24 +131,23 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.E))
+		if (Input.isFramePressed(Key.E))
 			current = (current + 1) % NAMES.length;
-		if (input.isFramePressed(Key.B))
+		if (Input.isFramePressed(Key.B))
 			blur = (blur + 1) % BLUR_NAMES.length;
-		if (input.isFramePressed(Key.T))
+		if (Input.isFramePressed(Key.T))
 			tonemap = (tonemap + 1) % TONEMAPS.length;
-		if (input.isFramePressed(Key.Up))
+		if (Input.isFramePressed(Key.Up))
 			exposure += .5;
-		if (input.isFramePressed(Key.Down))
+		if (Input.isFramePressed(Key.Down))
 			exposure -= .5;
-		if (input.isDown(Key.Left))
+		if (Input.isDown(Key.Left))
 			rotation -= dt;
-		if (input.isDown(Key.Right))
+		if (Input.isDown(Key.Right))
 			rotation += dt;
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
@@ -171,10 +168,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var title = "HeliX environment: image-based light, a background and tone mapping";
 		var state = current == PATHS.length ? "" : environment == null ? " (preparing)" : ' (ready in ${Math.round(loadMs[current])} ms)';
 		var readout = '[E] ${NAMES[current]}$state   [B] background ${BLUR_NAMES[blur]}   [T] ${TONEMAP_NAMES[tonemap]}   '

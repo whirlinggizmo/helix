@@ -200,7 +200,7 @@ class ViewTests {
 		only.destroy();
 
 		// A picture taken when asked: a 3D tree drawn into a texture, its camera sized to it; a view's clear color and texture.
-		var picture = helix.render2d.Texture2D.renderTarget(gpu, 64, 48);
+		var picture = helix.render2d.Texture2D.renderTarget(64, 48, gpu);
 		var portrait = new View3D(scene, new Camera3D(), 0, 0, gpu);
 		portrait.camera.setView(0, 0, 5, 0, 0, 0);
 		gpu.targetPasses = [];

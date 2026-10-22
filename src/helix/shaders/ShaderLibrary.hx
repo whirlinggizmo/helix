@@ -23,7 +23,7 @@ class ShaderLibrary {
 			all.set(gpu, shaders = new Map());
 		var entry = shaders[name];
 		if (entry == null)
-			shaders[name] = entry = {shader: Shader.fromText(gpu, text), text: text};
+			shaders[name] = entry = {shader: Shader.fromText(text, gpu), text: text};
 		return entry.shader;
 	}
 
@@ -40,7 +40,7 @@ class ShaderLibrary {
 	public static function getNoise(gpu:IGraphics):Texture2D {
 		var texture = noises.get(gpu);
 		if (texture == null) {
-			texture = Texture2D.fromRgba(gpu, NOISE_SIZE, NOISE_SIZE, noisePixels(), true);
+			texture = Texture2D.fromRgba(NOISE_SIZE, NOISE_SIZE, noisePixels(), true, gpu);
 			texture.sampling = new Sampling(true, Repeat, Repeat);
 			noises.set(gpu, texture);
 		}
@@ -55,7 +55,7 @@ class ShaderLibrary {
 	public static function getIdentityLut(gpu:IGraphics):Texture2D {
 		var texture = luts.get(gpu);
 		if (texture == null) {
-			texture = Texture2D.fromRgba(gpu, ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, ColorLut.identity(), true);
+			texture = Texture2D.fromRgba(ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, ColorLut.identity(), true, gpu);
 			luts.set(gpu, texture);
 		}
 		return texture;

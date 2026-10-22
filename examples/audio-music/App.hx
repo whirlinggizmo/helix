@@ -48,13 +48,12 @@ class App extends helix.App {
 		Stage.color = 0xff12141c;
 		Stage.addChild(text);
 		Stage.addChild(fps);
-		var audio = Audio.instance;
-		audio.loadStream(HERO, stream -> {
+		Audio.loadStream(HERO, stream -> {
 			hero = stream;
 			music = start(stream, .5);
 		});
-		audio.loadStream(PAD, stream -> pad = stream);
-		audio.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
+		Audio.loadStream(PAD, stream -> pad = stream);
+		Audio.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
 	}
 
 	// Plays stream through the music bus from its start, looping, at volume, with the pitch and pan set.
@@ -94,45 +93,43 @@ class App extends helix.App {
 		};
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (input.isFramePressed(Key.Space) && click != null)
+		if (Input.isFramePressed(Key.Space) && click != null)
 			Audio.play(click);
-		if (input.isFramePressed(Key.S)) {
+		if (Input.isFramePressed(Key.S)) {
 			// A deliberately slow frame.
 			var until = Time.time + .3;
 			while (Time.time < until) {}
 		}
-		if (input.isFramePressed(Key.M) && music != null && !music.pause())
+		if (Input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (input.isFramePressed(Key.F)) {
+		if (Input.isFramePressed(Key.F)) {
 			busFadedOut = !busFadedOut;
 			Audio.music.fade(busFadedOut ? 0 : 1, FADE);
 		}
 		crossfading = Math.max(0, crossfading - dt);
-		if (input.isFramePressed(Key.C))
+		if (Input.isFramePressed(Key.C))
 			swap();
-		if (input.isFramePressed(Key.Left) || input.isFramePressed(Key.Right)) {
-			pan = Math.max(-1, Math.min(1, pan + (input.isFramePressed(Key.Left) ? -.25 : .25)));
+		if (Input.isFramePressed(Key.Left) || Input.isFramePressed(Key.Right)) {
+			pan = Math.max(-1, Math.min(1, pan + (Input.isFramePressed(Key.Left) ? -.25 : .25)));
 			shape();
 		}
-		if (input.isFramePressed(Key.Up) || input.isFramePressed(Key.Down)) {
-			semitones = Std.int(Math.max(-12, Math.min(12, semitones + (input.isFramePressed(Key.Up) ? 1 : -1))));
+		if (Input.isFramePressed(Key.Up) || Input.isFramePressed(Key.Down)) {
+			semitones = Std.int(Math.max(-12, Math.min(12, semitones + (Input.isFramePressed(Key.Up) ? 1 : -1))));
 			shape();
 		}
-		if (input.isFramePressed(Key.Digit0)) {
+		if (Input.isFramePressed(Key.Digit0)) {
 			semitones = 0;
 			pan = 0;
 			shape();
 		}
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		text.clear();
 		var y = vy + 30;
 		y += text.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;

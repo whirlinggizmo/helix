@@ -120,34 +120,33 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Digit1))
+		if (Input.isFramePressed(Key.Digit1))
 			sun.shadowCasting = !sun.shadowCasting;
-		if (input.isFramePressed(Key.Digit2))
+		if (Input.isFramePressed(Key.Digit2))
 			spot.shadowCasting = !spot.shadowCasting;
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
-		if (input.isFramePressed(Key.S)) {
+		if (Input.isFramePressed(Key.S)) {
 			strength = strength > .9 ? .65 : strength > .5 ? .35 : 1;
 			sun.shadowStrength = strength;
 		}
-		if (input.isFramePressed(Key.T)) {
+		if (Input.isFramePressed(Key.T)) {
 			tint = (tint + 1) % TINTS.length;
 			sun.shadowColor = TINTS[tint];
 		}
-		if (input.isFramePressed(Key.M)) {
+		if (Input.isFramePressed(Key.M)) {
 			size = (size + 1) % SIZES.length;
 			sun.shadowMapSize = SIZES[size];
 			spot.shadowMapSize = SIZES[size];
 		}
-		if (input.isDown(Key.Up) != input.isDown(Key.Down)) {
-			distance = Math.max(2, Math.min(distance + (input.isDown(Key.Up) ? 20 : -20) * dt, 200));
+		if (Input.isDown(Key.Up) != Input.isDown(Key.Down)) {
+			distance = Math.max(2, Math.min(distance + (Input.isDown(Key.Up) ? 20 : -20) * dt, 200));
 			sun.shadowDistance = distance;
 		}
-		if (input.isDown(Key.LeftBracket) != input.isDown(Key.RightBracket)) {
-			bias = Math.max(0, Math.min(bias + (input.isDown(Key.RightBracket) ? 4 : -4) * dt, 16));
+		if (Input.isDown(Key.LeftBracket) != Input.isDown(Key.RightBracket)) {
+			bias = Math.max(0, Math.min(bias + (Input.isDown(Key.RightBracket) ? 4 : -4) * dt, 16));
 			sun.setShadowBias(bias, bias * 4);
 		}
 		// The game's clock: paused, the motion stops.
@@ -162,10 +161,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 
 		text.clear();
 		var y = vy + 36;

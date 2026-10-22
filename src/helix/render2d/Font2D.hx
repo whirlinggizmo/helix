@@ -121,8 +121,9 @@ class Font2D {
 
 	/** A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance
 		field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a
-		file it can't read. The caller destroys it. */
-	public static function fromTrueType(gpu:IGraphics, data:Bytes, pixelHeight = 32., padding = 6):Font2D {
+		file it can't read. On gpu, the program's (Graphics) when not given. The caller destroys it. */
+	public static function fromTrueType(data:Bytes, pixelHeight = 32., padding = 6, ?gpu:IGraphics):Font2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		var font = new Font2D(null, [], 0, 0, 0, true);
 		font.bakeTrueType(gpu, data, pixelHeight, padding);
 		return font;
@@ -148,7 +149,7 @@ class Font2D {
 			rgba.set(i * 4 + 2, 255);
 			rgba.set(i * 4 + 3, baked.field.get(i));
 		}
-		texture = Texture2D.fromRgba(gpu, width, height, rgba, true, width - 1, height - 1, true);
+		texture = Texture2D.fromRgba(width, height, rgba, true, width - 1, height - 1, true, gpu);
 		glyphs = [];
 		for (g in baked.glyphs) {
 			while (glyphs.length < g.code - 32)
@@ -173,8 +174,10 @@ class Font2D {
 		kerning = new Map();
 	}
 
-	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). */
-	public static function builtIn(gpu:IGraphics):Font2D {
+	/** The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). On gpu,
+		the program's (Graphics) when not given. */
+	public static function builtIn(?gpu:IGraphics):Font2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		var field = haxe.zip.InflateImpl.run(new haxe.io.BytesInput(haxe.crypto.Base64.decode(GeneratedFont.atlas)));
 		var width = GeneratedFont.width, height = GeneratedFont.height;
 		var rgba = Bytes.alloc(width * height * 4);
@@ -184,7 +187,7 @@ class Font2D {
 			rgba.set(i * 4 + 2, 255);
 			rgba.set(i * 4 + 3, field.get(i));
 		}
-		var texture = Texture2D.fromRgba(gpu, width, height, rgba, true, GeneratedFont.whiteX, GeneratedFont.whiteY, true);
+		var texture = Texture2D.fromRgba(width, height, rgba, true, GeneratedFont.whiteX, GeneratedFont.whiteY, true, gpu);
 		var glyphs:Array<Null<Glyph2D>> = [];
 		for (n in 0...95) {
 			var g = GeneratedFont.glyphs, i = n * 6;
@@ -321,8 +324,10 @@ class Font2D {
 			"z" => "00000/00000/11111/00010/00100/01000/11111"
 		];
 
-	/** The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes. */
-	public static function pixel(gpu:IGraphics):Font2D {
+	/** The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes. On gpu, the
+		program's (Graphics) when not given. */
+	public static function pixel(?gpu:IGraphics):Font2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		var font = new Font2D(bake(gpu), pixelGlyphs(), 7, 7, 0, false);
 		live.push({font: font, gpu: gpu});
 		return font;
@@ -339,8 +344,9 @@ class Font2D {
 			old.destroy(entry.gpu);
 		}
 
-	/** Frees the font's texture on gpu, the adapter that made it. */
-	public function destroy(gpu:IGraphics):Void {
+	/** Frees the font's texture on gpu, the adapter that made it: the program's (Graphics) when not given. */
+	public function destroy(?gpu:IGraphics):Void {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		texture.destroy(gpu);
 		live = live.filter(e -> e.font != this);
 	}
@@ -363,6 +369,6 @@ class Font2D {
 		}
 		for (k in 0...4)
 			bytes.set((63 * 128 + 127) * 4 + k, 255);
-		return Texture2D.fromRgba(gpu, 128, 64, bytes, false, 127, 63);
+		return Texture2D.fromRgba(128, 64, bytes, false, 127, 63, gpu);
 	}
 }

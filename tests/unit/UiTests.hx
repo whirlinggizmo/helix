@@ -280,7 +280,7 @@ class UiTests {
 		frame([Enter]);
 		check(cells[1].clicked, "Enter activates the focused tile");
 		check(cells[2].texture == null, "A tile without its picture yet");
-		var picture = helix.render2d.Texture2D.fromRgba(new CountingGraphics(), 2, 2, haxe.io.Bytes.alloc(16));
+		var picture = helix.render2d.Texture2D.fromRgba(2, 2, haxe.io.Bytes.alloc(16), new CountingGraphics());
 		cells[2].texture = picture;
 		check(cells[2].texture == picture && cells[2].caption == "Part 2", "shows it once it comes");
 	}

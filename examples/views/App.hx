@@ -1,5 +1,4 @@
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.host.Window;
 import helix.input.Input;
@@ -45,7 +44,7 @@ class App extends helix.App {
 		Window.title = "HeliX views";
 		Stage.color = 0xff14161c;
 		// A vignette over everything the stage draws, a chain of the stage's own.
-		Stage.postProcess = new PostProcess(Graphics.instance);
+		Stage.postProcess = new PostProcess();
 		Stage.postProcess.add(new Vignette(.6));
 		// The world: a ground and a row of posts, colors running along it.
 		world.addChild(Shape2D.rectangle(WORLD_WIDTH, 40, 0xff2f6b3a));
@@ -75,7 +74,7 @@ class App extends helix.App {
 		eye.setView(0, 1.5, 3.5, 0, 0, 0);
 		var view3D = new View3D(level, eye, 240, 180);
 		// Pixelated by a chain of its own: drawn into a texture first, so it sits in the 2D's order (the panel below overlaps it).
-		view3D.postProcess = new PostProcess(Graphics.instance);
+		view3D.postProcess = new PostProcess();
 		view3D.postProcess.add(new Pixelate(4));
 		view3D.setPosition(20, 60);
 		Stage.addChild(view3D);

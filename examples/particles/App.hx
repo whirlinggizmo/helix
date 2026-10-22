@@ -157,8 +157,7 @@ class App extends helix.App {
 	function dot(texture:Texture2D):Void {
 		for (e in [fountain, sparks, smoke, confetti])
 			e.texture = texture;
-		var presentation = Screen.instance;
-		burst(presentation.visibleX + presentation.visibleWidth / 2, presentation.visibleY + presentation.visibleHeight / 3);
+		burst(Screen.visibleX + Screen.visibleWidth / 2, Screen.visibleY + Screen.visibleHeight / 3);
 	}
 
 	// A burst of confetti at x, y units: no trail from where the last one was.
@@ -169,21 +168,19 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Space)) {
+		if (Input.isFramePressed(Key.Space)) {
 			paused = !paused;
 			for (e in [fountain, sparks, smoke, flame])
 				e.emitting = !paused;
 		}
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		// The HUD and the confetti in the design for the window's shape; the pointer comes back in its units.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		if (input.pointerFramePressed)
-			burst(presentation.toUnitsX(input.pointerX), presentation.toUnitsY(input.pointerY));
+		if (Input.pointerFramePressed)
+			burst(Screen.toUnitsX(Input.pointerX), Screen.toUnitsY(Input.pointerY));
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
 		orbit.update(dt);
@@ -191,9 +188,9 @@ class App extends helix.App {
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
 		fps.update(dt, Time.frameCpu);
 		orbit.apply(camera);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var title = "HeliX particles";
 		text.clear();
 		var y = vy + 36;

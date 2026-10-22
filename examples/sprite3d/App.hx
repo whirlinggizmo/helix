@@ -2,7 +2,6 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
@@ -10,7 +9,6 @@ import helix.graphics.SpriteEffect;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
@@ -106,7 +104,6 @@ class App extends helix.App {
 			Window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var gpu = Graphics.instance;
 		Stage.color = 0xff1c1e26;
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .3);
@@ -152,7 +149,7 @@ class App extends helix.App {
 		Textures2D.load("textures/tiles.png", false, texture -> useTiles(texture));
 		Textures2D.load("textures/flame.png", true, texture -> light(texture));
 		logo.effect = flash;
-		shaders = new Shaders(Assets.instance, gpu);
+		shaders = new Shaders();
 		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));
 		view = new View3D(level, camera);
 		Stage.addChild(view);
@@ -229,32 +226,27 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
-		var input:Null<IInput> = Input.instance;
-		if (pilot != null) {
-			input = pilot.done ? null : pilot.advance(name -> probe(name));
-			if (pilot.awaitingFrame)
-				input = null;
-		}
-		if (input != null) {
-			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		// Read the program's input (the autopilot's while it plays: a tick a frame, none while a sample waits for its frame, none once done).
+		var reading = pilot == null || (!pilot.done && pilot.advance(name -> probe(name)) != null && !pilot.awaitingFrame);
+		if (reading) {
+			if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 				Host.quit();
-			if (input.isFramePressed(Key.O))
+			if (Input.isFramePressed(Key.O))
 				orbit.running = !orbit.running;
-			if (input.isFramePressed(Key.Digit1)) {
+			if (Input.isFramePressed(Key.Digit1)) {
 				outlined = !outlined;
 				for (tree in trees)
 					tree.effect = outlined ? outline : null;
 			}
-			if (input.isFramePressed(Key.Digit2)) {
+			if (Input.isFramePressed(Key.Digit2)) {
 				dissolving = !dissolving;
 				sign.effect = dissolving ? dissolve : null;
 			}
-			if (input.isFramePressed(Key.Digit3)) {
+			if (Input.isFramePressed(Key.Digit3)) {
 				shimmering = !shimmering;
 				shimmer();
 			}
-			if (input.isFramePressed(Key.F))
+			if (Input.isFramePressed(Key.F))
 				flash.trigger(0xffffffff, .4);
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, the camera with it.
@@ -268,10 +260,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		hud.clear();
 		var y = vy + 36, title = "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added";
 		y += hud.drawTextWrapped(title, vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;

@@ -95,7 +95,7 @@ class App extends helix.App {
 		text.pickable = false;
 		Stage.addChild(text);
 		Stage.addChild(fps);
-		pointer = new Pointer(Input.instance);
+		pointer = new Pointer();
 	}
 
 	// The logo's texture in: a sprite of it, pickable.
@@ -155,10 +155,9 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
 		orbit.update(dt);
 		if (animator != null)
@@ -167,10 +166,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		// What's under the pointer, through the stage to the view's tree, where the view was last drawn.
 		pointer.update();
 		picked = pointer.hit3D;

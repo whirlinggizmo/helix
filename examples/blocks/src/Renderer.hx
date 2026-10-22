@@ -1,5 +1,5 @@
 import helix.graphics.Color;
-import helix.host.Presentation;
+import helix.host.Screen;
 import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
 
@@ -71,9 +71,10 @@ class Renderer {
 		drawing.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xffe0e8f4, Center);
 	}
 
-	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units: the drawing cleared and drawn again. */
-	public function render(game:Game, layout:Layout, camera:Camera2D, presentation:Presentation, tick:Int):Void {
-		least = READABLE * presentation.scaleX / camera.zoom;
+	/** Draws game laid out by layout, seen through camera, its text sized by the presentation's units (Screen's): the drawing cleared and drawn
+		again. */
+	public function render(game:Game, layout:Layout, camera:Camera2D, tick:Int):Void {
+		least = READABLE * Screen.scaleX / camera.zoom;
 		drawing.clear();
 		var fx = layout.fieldX,
 			fy = layout.fieldY,

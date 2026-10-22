@@ -4,7 +4,6 @@ import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.graphics.Shader;
 import helix.graphics.Shaders;
@@ -12,7 +11,6 @@ import helix.graphics.SpriteEffect;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Camera2D;
@@ -102,7 +100,6 @@ class App extends helix.App {
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(900, 520);
-		var gpu = Graphics.instance;
 		Stage.color = 0xff1c1e26;
 		// Colors are values, so cycle a list of them.
 		for (i in 0...24) {
@@ -130,13 +127,13 @@ class App extends helix.App {
 				pixels.set((y * 16 + x) * 4, index);
 				pixels.set((y * 16 + x) * 4 + 3, index == 0 ? 0 : 255);
 			}
-		creature = Texture2D.fromRgba(gpu, 16, 16, pixels);
+		creature = Texture2D.fromRgba(16, 16, pixels);
 		var colors = Bytes.alloc(PALETTE.length * 4 * 4);
 		for (row in 0...PALETTE.length)
 			for (column in 0...4)
 				for (channel in 0...4)
 					colors.set((row * 4 + column) * 4 + channel, (Color.toRgba(PALETTE[row][column]) >>> (24 - channel * 8)) & 255);
-		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
+		palette = Texture2D.fromRgba(4, PALETTE.length, colors);
 		sprites[5].texture = creature;
 		sprites[5].setSize(112, 112);
 		// The effects: the sheet and the spin share an outline (one draw); each other one has its own.
@@ -151,7 +148,7 @@ class App extends helix.App {
 		sprites[5].effect = swap;
 		Textures2D.load(LOGO, true, texture -> useLogo(texture));
 		Textures2D.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
-		shaders = new Shaders(Assets.instance, gpu);
+		shaders = new Shaders();
 		shaders.load("shaders/wave.hxshader", shader -> useWave(shader));
 		Stage.addChild(drawing);
 		Stage.addChild(fps);
@@ -208,35 +205,30 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
-		var input:Null<IInput> = Input.instance;
-		if (pilot != null) {
-			input = pilot.done ? null : pilot.advance(name -> probe(name));
-			if (pilot.awaitingFrame)
-				input = null;
-		}
-		if (input != null) {
-			if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		// Read the program's input (the autopilot's while it plays: a tick a frame, none while a sample waits for its frame, none once done).
+		var reading = pilot == null || (!pilot.done && pilot.advance(name -> probe(name)) != null && !pilot.awaitingFrame);
+		if (reading) {
+			if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 				Host.quit();
-			if (input.isFramePressed(Key.Digit1)) {
+			if (Input.isFramePressed(Key.Digit1)) {
 				outlined = !outlined;
 				sprites[0].effect = sprites[1].effect = outlined ? outline : null;
 			}
-			if (input.isFramePressed(Key.Digit2)) {
+			if (Input.isFramePressed(Key.Digit2)) {
 				dissolving = !dissolving;
 				sprites[4].effect = dissolving ? dissolve : null;
 			}
-			if (input.isFramePressed(Key.Digit3)) {
+			if (Input.isFramePressed(Key.Digit3)) {
 				swapped = !swapped;
 				sprites[5].effect = swapped ? swap : null;
 			}
-			if (input.isFramePressed(Key.Digit4)) {
+			if (Input.isFramePressed(Key.Digit4)) {
 				waving = !waving;
 				sprites[2].effect = waving ? wave : null;
 			}
-			if (input.isFramePressed(Key.R))
+			if (Input.isFramePressed(Key.R))
 				swap.row = (swap.row + 1) % PALETTE.length;
-			if (input.isFramePressed(Key.F))
+			if (Input.isFramePressed(Key.F))
 				flash.trigger(0xffff3020, .4);
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot.
@@ -246,12 +238,11 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
 		var shape = ScreenShape.update();
-		var presentation = Screen.instance;
-		presentation.apply(camera);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		Screen.apply(camera);
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		var top = vy + (shape == "portrait" ? 160 : 110), tall = vy + vh - top;
 		inline function place(i:Int, across:Float, down:Float)
 			sprites[i].setPosition(vx + vw * across, top + tall * down);
@@ -279,11 +270,10 @@ class App extends helix.App {
 		sprites[4].tint = tints[Std.int(time * 6) % tints.length];
 
 		// Hover: the topmost sprite under the pointer, the last drawn first, as the last frame placed them.
-		var pointer = Input.instance;
-		var x = camera.screenToWorldX(pointer.pointerX),
-			y = camera.screenToWorldY(pointer.pointerY);
+		var x = camera.screenToWorldX(Input.pointerX),
+			y = camera.screenToWorldY(Input.pointerY);
 		hovered = -1;
-		if (pilot == null && pointer.pointerX >= 0) {
+		if (pilot == null && Input.pointerX >= 0) {
 			var i = sprites.length;
 			while (i-- > 0 && hovered < 0)
 				if (isOver(i, x, y))
@@ -326,8 +316,8 @@ class App extends helix.App {
 	}
 
 	override public function cleanup():Void {
-		creature.destroy(Graphics.instance);
-		palette.destroy(Graphics.instance);
+		creature.destroy();
+		palette.destroy();
 		if (wave != null)
 			shaders.release(wave.shader);
 	}

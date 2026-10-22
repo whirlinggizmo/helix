@@ -65,8 +65,9 @@ class EnvironmentMap3D {
 		gpu.destroyTexture(oldBackground);
 	}
 
-	/** Frees its cubes. Environments3D.release does it for one it loaded. */
-	public function destroy(gpu:IGraphics):Void {
+	/** Frees its cubes on gpu, the program's (Graphics) when not given. Environments3D.release does it for one it loaded. */
+	public function destroy(?gpu:IGraphics):Void {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		gpu.destroyTexture(lighting);
 		gpu.destroyTexture(background);
 	}

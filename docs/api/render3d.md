@@ -376,7 +376,7 @@ var lightingTexture(get, never):Int
 var backgroundTexture(get, never):Int
 var backgroundMipCount(get, never):Int
 var irradiance(default, null):haxe.ds.Vector<Float>
-function destroy(gpu:IGraphics):Void
+function destroy(?gpu:IGraphics):Void
 ```
 
 - `fromBake`: An environment of a finished bake, its cubes uploaded to gpu: the file it came from is path. Throws where gpu can't sample half floats.
@@ -385,7 +385,7 @@ function destroy(gpu:IGraphics):Void
 - `backgroundTexture`: The background cube's handle.
 - `backgroundMipCount`: The background cube's mips: blur 1 is its last.
 - `irradiance`: Its irradiance: 9 coefficients, RGB each (27 floats), over pi.
-- `destroy`: Frees its cubes. Environments3D.release does it for one it loaded.
+- `destroy`: Frees its cubes on gpu, the program's (Graphics) when not given. Environments3D.release does it for one it loaded.
 
 ## Environments3D
 

@@ -94,7 +94,7 @@ class App extends helix.App {
 		Stage.addChild(title);
 		Stage.addChild(status);
 		Stage.addChild(fps);
-		ticker = new Ticker(Input.instance);
+		ticker = new Ticker();
 		player.gravity = 40;
 		player.maxFallSpeed = 18;
 		for (row in 0...LEVEL.length)
@@ -181,13 +181,13 @@ class App extends helix.App {
 
 	// One step of the game: input, the body, the gears; the camera's shake for what it felt.
 	function tick():Void {
-		var input = Input.instance, dt = ticker.delta;
-		var move = (input.isDown(Key.Right) || input.isDown(Key.D) ? 1 : 0) - (input.isDown(Key.Left) || input.isDown(Key.A) ? 1 : 0);
+		var dt = ticker.delta;
+		var move = (Input.isDown(Key.Right) || Input.isDown(Key.D) ? 1 : 0) - (Input.isDown(Key.Left) || Input.isDown(Key.A) ? 1 : 0);
 		player.velocityX = move * RUN;
 		if (move != 0)
 			facing = move;
-		var jump = input.isPressed(Key.Space) || input.isPressed(Key.Up) || input.isPressed(Key.W) || input.isPressed(Key.Z);
-		var held = input.isDown(Key.Space) || input.isDown(Key.Up) || input.isDown(Key.W) || input.isDown(Key.Z);
+		var jump = Input.isPressed(Key.Space) || Input.isPressed(Key.Up) || Input.isPressed(Key.W) || Input.isPressed(Key.Z);
+		var held = Input.isDown(Key.Space) || Input.isDown(Key.Up) || Input.isDown(Key.W) || Input.isDown(Key.Z);
 		jumpBuffered = jump ? BUFFER : Math.max(0, jumpBuffered - dt);
 		if (jumpBuffered > 0 && player.airTime < COYOTE) {
 			player.velocityY = -JUMP;
@@ -202,7 +202,7 @@ class App extends helix.App {
 			follow.shake(.35);
 		if (player.blockedAbove)
 			follow.shake(.2);
-		if (input.isPressed(Key.K))
+		if (Input.isPressed(Key.K))
 			follow.shake(.8);
 		var i = gears.length;
 		while (i-- > 0)
@@ -212,13 +212,12 @@ class App extends helix.App {
 				follow.shake(.15);
 				save();
 			}
-		if (input.isPressed(Key.R))
+		if (Input.isPressed(Key.R))
 			restart();
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		ticker.advance(Time.clock.elapsed, tick);
@@ -252,10 +251,9 @@ class App extends helix.App {
 			body.setPosition(px, py);
 		}
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		title.setPosition(vx + 20, vy + 20);
 		status.text = failure != null ? 'failed: $failure' : 'gears $collected of $total   $saved   arrows or A, D to move, Space, Up, W or Z to jump, K to shake, R to start again';
 		status.setPosition(vx + 20, vy + 46);

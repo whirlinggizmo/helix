@@ -35,7 +35,7 @@ class App extends helix.App {
 		Stage.color = 0xff1c1e26;
 		Stage.addChild(page);
 		Stage.addChild(fps);
-		var assets = Assets.instance, url = assets.host;
+		var url = Assets.host;
 		if (url == null) {
 			source = "the packaged files";
 			fetch();
@@ -46,12 +46,12 @@ class App extends helix.App {
 		} else {
 			asking = true;
 			state = 'asking $url...';
-			assets.pingHost(url, TEXTURE, 2, answered -> {
+			Assets.pingHost(url, TEXTURE, 2, answered -> {
 				asking = false;
 				if (answered)
 					source = url;
 				else {
-					assets.setHost(null);
+					Assets.setHost(null);
 					source = 'the packaged files ($url didn\'t answer)';
 				}
 				fetch();
@@ -93,17 +93,16 @@ class App extends helix.App {
 		});
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
 		// The design for the window's shape: the text wrapped to what's visible of it, the buttons under it (laid out before the pointer is
 		// tested against them), the logo centered below.
 		ScreenShape.update();
-		var presentation = Screen.instance, font = Stage.font;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var font = Stage.font;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		fps.update(dt, Time.frameCpu);
 		fps.setPosition(vx + 12, vy + 8);
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		var from = "from: " + (asking ? "..." : source);
 		var titleY = vy + 40;
@@ -111,12 +110,12 @@ class App extends helix.App {
 		var stateY = fromY + font.measureWrapped(from, 16, vw - 24) + 10;
 		var buttonY = stateY + font.measureWrapped(state, 16, vw - 24) + 20;
 		var camera = Stage.camera;
-		var x = camera.screenToWorldX(input.pointerX),
-			y = camera.screenToWorldY(input.pointerY);
-		var clicked = input.pointerFramePressed;
-		if ((input.isFramePressed(Key.F) || clicked && inside(x, y, vx + 12, buttonY)) && !waiting && !asking)
+		var x = camera.screenToWorldX(Input.pointerX),
+			y = camera.screenToWorldY(Input.pointerY);
+		var clicked = Input.pointerFramePressed;
+		if ((Input.isFramePressed(Key.F) || clicked && inside(x, y, vx + 12, buttonY)) && !waiting && !asking)
 			fetch();
-		if (input.isFramePressed(Key.C) || clicked && inside(x, y, vx + 204, buttonY))
+		if (Input.isFramePressed(Key.C) || clicked && inside(x, y, vx + 204, buttonY))
 			clearCache();
 		page.clear();
 		page.drawTextWrapped("HeliX asset fetch", vx + 12, titleY, 24, vw - 24, 0xfff5f5f5);

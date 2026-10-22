@@ -62,8 +62,9 @@ class Texture2D {
 
 	/** Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an
 		opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without
-		shimmering. The caller destroys it. */
-	public static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:Bytes, linear = false, whiteX = -1, whiteY = -1, mipmaps = false):Texture2D {
+		shimmering. On gpu, the program's (Graphics) when not given. The caller destroys it. */
+	public static function fromRgba(width:Int, height:Int, rgba:Bytes, linear = false, whiteX = -1, whiteY = -1, mipmaps = false, ?gpu:IGraphics):Texture2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		var levels = mipmaps ? helix.graphics.Mipmaps.build(width, height, rgba) : [rgba];
 		var texture = new Texture2D(gpu.createTexture(width, height, levels), width, height, Rgba8, levels.length, new Sampling(linear));
 		if (whiteX >= 0) {
@@ -74,15 +75,20 @@ class Texture2D {
 	}
 
 	/** Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws
-		when the GPU can't sample format (IGraphics.canSample). The caller destroys it. */
-	public static function fromLevels(gpu:IGraphics, width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat, sampling:Sampling):Texture2D
+		when the GPU can't sample format (IGraphics.canSample). On gpu, the program's (Graphics) when not given. The caller destroys it. */
+	public static function fromLevels(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat, sampling:Sampling, ?gpu:IGraphics):Texture2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		return new Texture2D(gpu.createTexture(width, height, levels, format), width, height, format, levels.length, sampling);
+	}
 
 	/** A render target width x height of format: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled
 		linear (smooth) or nearest (sharp: a low-resolution view shown larger); with depth a depth buffer and the screen's multisampling, without
-		neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). The caller destroys it. */
-	public static function renderTarget(gpu:IGraphics, width:Int, height:Int, linear = true, format:TextureFormat = Rgba8, depth = true):Texture2D
+		neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). On gpu, the program's (Graphics)
+		when not given. The caller destroys it. */
+	public static function renderTarget(width:Int, height:Int, linear = true, format:TextureFormat = Rgba8, depth = true, ?gpu:IGraphics):Texture2D {
+		gpu = gpu != null ? gpu : helix.graphics.Graphics.instance;
 		return new Texture2D(gpu.createRenderTarget(width, height, format, depth), width, height, format, 1, new Sampling(linear));
+	}
 
 	/** A new image in place of this one (a hot reload): the same object and sampling, a new GPU texture of levels. */
 	@:allow(helix.render2d.TextureCache2D)
@@ -96,7 +102,7 @@ class Texture2D {
 		gpu.destroyTexture(old);
 	}
 
-	/** Frees the GPU texture on gpu, the adapter that made it. */
-	public function destroy(gpu:IGraphics):Void
-		gpu.destroyTexture(handle);
+	/** Frees the GPU texture on gpu, the adapter that made it: the program's (Graphics) when not given. */
+	public function destroy(?gpu:IGraphics):Void
+		(gpu != null ? gpu : helix.graphics.Graphics.instance).destroyTexture(handle);
 }

@@ -9,7 +9,7 @@
 What the player means ("jump", "steer", "fire"), bound by name to keys, pad buttons and axes, mouse buttons and touch regions, and read as one: a game asks for "jump", never for Space or the south button, and a player can rebind it (capture) and keep it (save, load). Each binding gives a value from -1 to 1 (Binding), and the action is the binding pushed furthest, across every pad: axis its value, value how far (0 to 1), isDown while any binding is pushed to its limit (0.5, or a pad axis's non-zero threshold). Pressed and released come per tick (isPressed, isReleased) and per frame (isFramePressed, isFrameReleased), as IInput's do: an action is pressed when it is down and wasn't as the last tick (or frame) ended, or when a key, button or finger of it went down since (IInput's own edges, so a tap shorter than a tick is still a press, and two taps reach two ticks). The map keeps whether each action was down itself, told by the input as each tick and frame ends (IInput.watch), so a game makes no extra calls. A finger's edges are frame edges only (IInput has no tick edges for touches): a tap shorter than a frame reaches isFramePressed, not isPressed. An action never bound reads as up and 0, so a game's code may run before its bindings load. Built on IInput, so whatever drives the input drives the actions: the autopilot's input given to it (input) replays them.
 
 ```haxe
-function new(input:IInput, ?presentation:Presentation)
+function new(?input:IInput, ?presentation:Presentation)
 static var VERSION(inline, null):Int
 static var CAPTURE_THRESHOLD(inline, null):Float
 static function describe(binding:Binding):String
@@ -38,7 +38,7 @@ function tickEnded():Void
 function frameEnded():Void
 ```
 
-- `new`: Actions read from input, their touch regions placed on presentation's visible area (Screen.instance's when null).
+- `new`: Actions read from input, the program's (Input) when not given, their touch regions placed on presentation's visible area (Screen's when null). Made in init or later when given none: before the program runs there's no input to watch, and it reads every action as up.
 - `VERSION`: The saved format's version (save, load).
 - `CAPTURE_THRESHOLD`: How far past it a pad axis must go for capture to take it: half way, as down is for a binding without a threshold.
 - `describe`: The text a remap screen shows for binding: "Space", "Left / Right", "Pad south", "D-pad left / D-pad right", "Left stick X", "Left stick left" (a stick with a side), "Right trigger", "Left mouse", "Touch".
@@ -528,7 +528,7 @@ var startX(default, null):Float
 var startY(default, null):Float
 var flickVelocityX(get, never):Float
 var flickVelocityY(get, never):Float
-function update(input:IInput, now:Float, perTick:Bool):Void
+function update(now:Float, perTick:Bool, ?input:IInput):Void
 ```
 
 - `new`: Gestures with a tap's limits: slop in framebuffer pixels, tapSeconds in seconds, clamped as maxTapDistance and maxTapDuration are.
@@ -548,7 +548,7 @@ function update(input:IInput, now:Float, perTick:Bool):Void
 - `startY`: Where the current or last press began, y in framebuffer pixels.
 - `flickVelocityX`: Velocity over the last tenth of a second before release, pixels per second.
 - `flickVelocityY`: Vertical velocity as flickVelocityX, down positive.
-- `update`: Reads the pointer: once per tick with perTick, its tick edges, before the input is consumed; or once per frame without, its frame edges. now is the time in seconds.
+- `update`: Reads the pointer of input, the program's (Input) when not given: once per tick with perTick, its tick edges, before the input is consumed; or once per frame without, its frame edges. now is the time in seconds.
 
 ## Touch
 

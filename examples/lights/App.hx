@@ -90,14 +90,13 @@ class App extends helix.App {
 		return node.visible ? "on " : "off";
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (input.isFramePressed(Key.Digit1))
+		if (Input.isFramePressed(Key.Digit1))
 			sun.visible = !sun.visible;
-		if (input.isFramePressed(Key.Digit2))
+		if (Input.isFramePressed(Key.Digit2))
 			lamp.visible = !lamp.visible;
-		if (input.isFramePressed(Key.Digit3))
+		if (Input.isFramePressed(Key.Digit3))
 			spot.visible = !spot.visible;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
@@ -110,10 +109,9 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		hud.clear();
 		var y = vy + 36;
 		y += hud.drawTextWrapped("HeliX lights: directional, point, spot", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;

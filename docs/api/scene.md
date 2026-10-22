@@ -242,7 +242,7 @@ var mesh:Null<SceneMesh3D>
 The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's released, the stages under it see nothing (captured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. With no stages added, it looks at the Stage (helix.render2d.Stage) and the views on it, in their drawing order (docs/DISPLAY_MODEL.md).
 
 ```haxe
-function new(input:IInput)
+function new(?input:IInput)
 function addRenderer2D(renderer:Renderer2D, camera:Camera2D):Void
 function addRenderer3D(renderer:Renderer3D, camera:Camera3D):Void
 function remove(renderer:Any):Void
@@ -257,7 +257,7 @@ var captured(default, null):Bool
 var hit3D(get, never):Null<PickHit3D>
 ```
 
-- `new`: The pointer of input.
+- `new`: The pointer of input, or of the program's (Input) when not given, read as it's used, so a pointer made before the program runs (a field's initial value) works.
 - `addRenderer2D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
 - `addRenderer3D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
 - `remove`: Stops looking at renderer (2D or 3D); what it held lets go.

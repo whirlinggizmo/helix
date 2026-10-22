@@ -53,10 +53,9 @@ class App extends helix.App {
 		orbit.apply(camera3D);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		text.clear();
 		var y = vy + 36;
 		y += text.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;

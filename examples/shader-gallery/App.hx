@@ -4,15 +4,12 @@ import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
-import helix.graphics.ScreenEffect;
 import helix.graphics.Screenshots;
 import helix.graphics.SpriteEffect;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Camera2D;
@@ -219,13 +216,12 @@ class App extends helix.App {
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1100, 640);
-		var gpu = Graphics.instance;
 		// Under the autopilot the stage is drawn at a held time from the start, so what moves with it (the water's waves) is drawn the same
 		// on every target.
 		if (piloted)
 			Stage.heldTime = HELD_TIME;
 		Stage.color = 0xff14161c;
-		post = new PostProcess(gpu);
+		post = new PostProcess();
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .2);
 		view3D = new View3D(level, camera);
@@ -288,13 +284,13 @@ class App extends helix.App {
 				pixels.set((y * 16 + x) * 4, index);
 				pixels.set((y * 16 + x) * 4 + 3, index == 0 ? 0 : 255);
 			}
-		creature = Texture2D.fromRgba(gpu, 16, 16, pixels);
+		creature = Texture2D.fromRgba(16, 16, pixels);
 		var colors = Bytes.alloc(PALETTE.length * 4 * 4);
 		for (row in 0...PALETTE.length)
 			for (column in 0...4)
 				for (channel in 0...4)
 					colors.set((row * 4 + column) * 4 + channel, (Color.toRgba(PALETTE[row][column]) >>> (24 - channel * 8)) & 255);
-		palette = Texture2D.fromRgba(gpu, 4, PALETTE.length, colors);
+		palette = Texture2D.fromRgba(4, PALETTE.length, colors);
 		// A checkerboard of 8 x 8 texels, drawn sharp: hard edges of strong contrast, where Fxaa shows; in a clear ring a texel wide, where
 		// the sprite outline shows (drawn 10 texels across, so its squares are as large as the other sprites' texels would make them).
 		var squares = Bytes.alloc(10 * 10 * 4);
@@ -307,7 +303,7 @@ class App extends helix.App {
 				squares.set(i * 4 + c, light ? 0xf0 : 0x20);
 			squares.set(i * 4 + 3, inside ? 255 : 0);
 		}
-		checker = Texture2D.fromRgba(gpu, 10, 10, squares);
+		checker = Texture2D.fromRgba(10, 10, squares);
 		for (i in 0...4) {
 			var sprite = new Sprite2D(i == 2 ? creature : i == 3 ? checker : null);
 			sprite.setSize(i == 3 ? 140 : 112, i == 3 ? 140 : 112);
@@ -324,7 +320,7 @@ class App extends helix.App {
 		fxaa = new Fxaa();
 		blur = new Blur(6);
 		vignette = new Vignette(.6);
-		grade = Texture2D.fromRgba(gpu, ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, tealAndOrange(), true);
+		grade = Texture2D.fromRgba(ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, tealAndOrange(), true);
 		colorLut = new ColorLut(grade);
 		crt = new Crt();
 		aberration = new ChromaticAberration(6);
@@ -864,13 +860,8 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
-		var input:Null<IInput> = pilot != null ? null : Input.instance;
-		if (pilot != null && !pilot.done) {
-			input = pilot.advance(name -> probe(name));
-			if (pilot.awaitingFrame)
-				input = null;
-		}
+		// Read the program's input (the autopilot's while it plays: a tick a frame, none while a sample waits for its frame, none once done).
+		var reading = pilot == null || (!pilot.done && pilot.advance(name -> probe(name)) != null && !pilot.awaitingFrame);
 		// The design for the window's shape, the menu laid out in what's visible of it.
 		ScreenShape.update();
 		var vx = Screen.visibleX,
@@ -878,8 +869,8 @@ class App extends helix.App {
 			vw = Screen.visibleWidth,
 			vh = Screen.visibleHeight;
 		// The effects' view sees the stage's design units, as the stage does.
-		Screen.instance.apply(sceneCamera);
-		if (ui != null && input != null) {
+		Screen.apply(sceneCamera);
+		if (ui != null && reading) {
 			helix.ui.Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
 			ui.update();
 			if (list.changed)
@@ -904,31 +895,31 @@ class App extends helix.App {
 			}
 			if (!ui.capturingKeys) {
 				var count = entries.length;
-				if (input.isFramePressed(Key.PageDown))
+				if (Input.isFramePressed(Key.PageDown))
 					choose(entries[chosen < 0 ? 0 : (chosen + 1) % count].name);
-				if (input.isFramePressed(Key.PageUp))
+				if (Input.isFramePressed(Key.PageUp))
 					choose(entries[chosen <= 0 ? count - 1 : chosen - 1].name);
 			}
-			if (input.isFramePressed(Key.R) && !ui.capturingKeys && chosen >= 0 && entries[chosen].name == "PaletteSwap") {
+			if (Input.isFramePressed(Key.R) && !ui.capturingKeys && chosen >= 0 && entries[chosen].name == "PaletteSwap") {
 				paletteSwap.row = (paletteSwap.row + 1) % PALETTE.length;
 				var rowSlider = entries[chosen].sliders[0].widget;
 				if (rowSlider != null)
 					rowSlider.value = paletteSwap.row;
 			}
-			if (input.isFramePressed(Key.X) && chosen >= 0) {
+			if (Input.isFramePressed(Key.X) && chosen >= 0) {
 				shown = !shown;
 				allOff();
 				if (shown)
 					entries[chosen].on();
 			}
-			if (input.isFramePressed(Key.F)) {
+			if (Input.isFramePressed(Key.F)) {
 				for (m in materials)
 					new HitFlash(m).trigger(flashColor, .3);
 				spriteFlash.trigger(spriteFlash.color, .3);
 			}
-			if (input.isFramePressed(Key.O))
+			if (Input.isFramePressed(Key.O))
 				orbit.running = !orbit.running;
-			if (Host.canQuit() && input.isFramePressed(Key.Escape) && !ui.capturingKeys)
+			if (Host.canQuit() && Input.isFramePressed(Key.Escape) && !ui.capturingKeys)
 				Host.quit();
 		}
 		// Her pose and the camera: held under the autopilot, as the stage's time is.
@@ -965,7 +956,7 @@ class App extends helix.App {
 		sceneView.postProcess = null;
 		post.destroy();
 		for (t in [grade, creature, palette, checker])
-			t.destroy(Graphics.instance);
+			t.destroy();
 		sceneView.destroy();
 		view3D.destroy();
 	}

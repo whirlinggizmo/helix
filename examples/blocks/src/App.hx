@@ -3,7 +3,6 @@ import helix.assets.Assets;
 import helix.debug.TestHarness;
 import helix.graphics.Screenshots;
 import helix.host.Host;
-import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.time.Time;
@@ -35,7 +34,7 @@ class App extends helix.App {
 		var world = new Node2D();
 		world.addChild(renderer.drawing);
 		Stage.addChild(new View2D(world, camera));
-		ticker = new Ticker(Input.instance);
+		ticker = new Ticker();
 		ticker.maxSteps = 6;
 		var script = Host.getOption("autopilot", "");
 		if (script != "")
@@ -90,6 +89,6 @@ class App extends helix.App {
 		ticker.advance(Time.clock.elapsed, () -> if (!stopped) step());
 		// The well's camera fits the layout; the presentation only sizes its text.
 		ScreenShape.update();
-		renderer.render(game, layout, camera, Screen.instance, ticks);
+		renderer.render(game, layout, camera, ticks);
 	}
 }

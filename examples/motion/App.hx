@@ -129,19 +129,19 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance, clock = Time.clock;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		var clock = Time.clock;
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
-		if (input.isFramePressed(Key.Space))
+		if (Input.isFramePressed(Key.Space))
 			if (clock.paused)
 				clock.resume();
 			else
 				clock.pause();
-		if (input.isFramePressed(Key.Minus))
+		if (Input.isFramePressed(Key.Minus))
 			clock.timeScale = Math.max(.125, clock.timeScale / 2);
-		if (input.isFramePressed(Key.Equal))
+		if (Input.isFramePressed(Key.Equal))
 			clock.timeScale = Math.min(4, clock.timeScale * 2);
-		if (input.isFramePressed(Key.R))
+		if (Input.isFramePressed(Key.R))
 			deal();
 		// Everything moves by the clock's delta: paused, it all stops.
 		tweens.update(clock.delta);
@@ -152,11 +152,10 @@ class App extends helix.App {
 
 		// Laid out in the design for the window's shape: the squares down the left, the path and the floor on the right (below, upright).
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
-		var upright = presentation.portrait;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
+		var upright = Screen.portrait;
 		var left = vx + 120, top = vy + 100;
 		for (i in 0...squares.length) {
 			var y = top + i * 40;

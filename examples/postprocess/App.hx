@@ -2,7 +2,6 @@ import helix.assets.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
 import helix.graphics.Screenshots;
@@ -11,7 +10,6 @@ import helix.graphics.Shaders;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
@@ -105,8 +103,7 @@ class App extends helix.App {
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1000, 600);
-		var gpu = Graphics.instance;
-		post = new PostProcess(gpu);
+		post = new PostProcess();
 		level.environment = new Environment3D();
 		level.environment.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
@@ -152,7 +149,7 @@ class App extends helix.App {
 
 		// The library's effects, in the chain's order; the example's own shader (Sepia) takes its place when it loads.
 		bloom = new Bloom();
-		grade = Texture2D.fromRgba(gpu, ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, tealAndOrange(), true);
+		grade = Texture2D.fromRgba(ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, tealAndOrange(), true);
 		colorLut = new ColorLut(grade);
 		var vignette = new Vignette(.5);
 		var chain:Array<{name:String, effect:ScreenEffect, key:Key}> = [
@@ -171,7 +168,7 @@ class App extends helix.App {
 		}
 		rebuild();
 
-		shaders = new Shaders(Assets.instance, gpu);
+		shaders = new Shaders();
 		shaders.load("shaders/sepia.hxshader", shader -> makeSepia(shader), message -> status = message);
 
 		// The level through the chain, then the text over it, outside the effects.
@@ -227,7 +224,7 @@ class App extends helix.App {
 
 	// The example's shader in: its effect, toned toward old paper, after the grade.
 	function makeSepia(shader:Shader):Void {
-		sepia = new ScreenEffect(Graphics.instance, shader);
+		sepia = new ScreenEffect(shader);
 		sepia.parameters.setFloat("amount", .85);
 		sepia.parameters.setColor("paper", 0xffffe2b0);
 		sepia.enabled = false;
@@ -262,15 +259,10 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
-		var input:Null<IInput> = Input.instance;
-		if (pilot != null) {
-			input = pilot.done ? null : pilot.advance(name -> probe(name));
-			if (pilot.awaitingFrame)
-				input = null;
-		}
-		if (input != null)
-			control(input, dt);
+		// Read the program's input (the autopilot's while it plays: a tick a frame, none while a sample waits for its frame, none once done).
+		var reading = pilot == null || (!pilot.done && pilot.advance(name -> probe(name)) != null && !pilot.awaitingFrame);
+		if (reading)
+			control(dt);
 		// The game's clock: paused, the motion stops.
 		var time = pilot != null || Host.getOption("autopilot", "") != "" ? HELD_TIME : Time.clock.time;
 		orbit.update(dt);
@@ -279,10 +271,9 @@ class App extends helix.App {
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 
 		hud.clear();
 		var y = vy + 36, title = "HeliX postprocess: the shader library's screen effects over the finished frame";
@@ -306,19 +297,19 @@ class App extends helix.App {
 	}
 
 	// The keys, from the window or the autopilot.
-	function control(input:IInput, dt:Float):Void {
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+	function control(dt:Float):Void {
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		for (e in effects)
-			if (input.isFramePressed(e.key))
+			if (Input.isFramePressed(e.key))
 				e.effect.enabled = !e.effect.enabled;
-		if (input.isFramePressed(Key.H))
+		if (Input.isFramePressed(Key.H))
 			toggleTonemap();
-		if (input.isFramePressed(Key.O))
+		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
-		if (input.isDown(Key.Up))
+		if (Input.isDown(Key.Up))
 			bloom.intensity = bloom.intensity + dt;
-		if (input.isDown(Key.Down))
+		if (Input.isDown(Key.Down))
 			bloom.intensity = bloom.intensity - dt;
 	}
 
@@ -326,6 +317,6 @@ class App extends helix.App {
 		if (sepia != null)
 			shaders.release(sepia.shader);
 		post.destroy();
-		grade.destroy(Graphics.instance);
+		grade.destroy();
 	}
 }

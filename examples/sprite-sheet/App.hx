@@ -77,8 +77,7 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
@@ -86,16 +85,15 @@ class App extends helix.App {
 		camera.zoom = 1;
 		camera.setPosition(width / 2, height / 2);
 		ScreenShape.update();
-		var presentation = Screen.instance;
 
 		var speed = blobs == null ? 1. : blobs.speed;
-		if (input.isFramePressed(Key.Space))
+		if (Input.isFramePressed(Key.Space))
 			paused = !paused;
-		if (input.isFramePressed(Key.Up))
+		if (Input.isFramePressed(Key.Up))
 			speed = Math.min(4, speed * 2);
-		if (input.isFramePressed(Key.Down))
+		if (Input.isFramePressed(Key.Down))
 			speed = Math.max(.125, speed / 2);
-		if (input.isFramePressed(Key.P) && blobs != null) {
+		if (Input.isFramePressed(Key.P) && blobs != null) {
 			pingPong = !pingPong;
 			blobs.play(pingPong ? "walk-pingpong" : "walk");
 		}
@@ -134,9 +132,9 @@ class App extends helix.App {
 				fh = f.rotated ? f.width : f.height;
 			sheetImage.frame(sx + f.x * s, sy + f.y * s, fw * s, fh * s, 1, 0xffffd040);
 		}
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		var status = failure != null ? 'failed: $failure' : sheet == null ? "loading" : {
 			var f = sheet.getFrame(blobs.frame);
 			'walk frame ${blobs.frameIndex + 1} of ${blobs.animation.frames.length}: ${f.name}, ${f.width} x ${f.height} of ${f.sourceWidth} x ${f.sourceHeight}${f.rotated ? ", packed turned" : ""}';

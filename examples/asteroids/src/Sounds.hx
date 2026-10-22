@@ -1,4 +1,4 @@
-import helix.audio.AudioResources;
+import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
 
@@ -17,18 +17,16 @@ class Sounds {
 	var loaded = 0;
 
 	var clips:Array<AudioClip> = [for (_ in 0...8) null];
-	var audio:AudioResources;
 	var loop:AudioPlayback;
 	var thrustVolume = 0.;
 	var closed = false;
 	var complete:Null<String>->Void;
 
-	public function new(audio:AudioResources, complete:Null<String>->Void) {
-		this.audio = audio;
+	public function new(complete:Null<String>->Void) {
 		this.complete = complete;
 		for (i in 0...names.length) {
 			var index = i;
-			audio.loadClip("audio/sfx/" + names[i] + ".ogg", clip -> add(index, clip), message -> fail(message));
+			Audio.loadClip("audio/sfx/" + names[i] + ".ogg", clip -> add(index, clip), message -> fail(message));
 		}
 	}
 
@@ -55,12 +53,12 @@ class Sounds {
 	public function play(game:Game, enabled:Bool, focused:Bool = true):Void {
 		if (enabled && focused)
 			for (kind in game.sounds)
-				audio.play(clips[kind], false, kind == 1 ? 0.5 : 0.75);
+				Audio.play(clips[kind], false, kind == 1 ? 0.5 : 0.75);
 		var thrust = enabled && focused && game.state == "playing" && game.thrusting && game.respawnDelay == 0;
 		if (thrust) {
 			if (loop == null || loop.finished) {
 				thrustVolume = 0;
-				loop = audio.play(clips[7], true, 0);
+				loop = Audio.play(clips[7], true, 0);
 			}
 			thrustVolume = Math.min(.65, thrustVolume + .13);
 			loop.volume = thrustVolume;

@@ -66,7 +66,7 @@ class SpriteEffectTests {
 		var texts = PackedShaders.texts();
 		for (name in ["sprite_outline", "sprite_flash", "sprite_dissolve", "palette_swap"]) {
 			check(texts.exists(name), 'The library\'s $name is packed');
-			var shader = Shader.fromText(gpu, texts[name]());
+			var shader = Shader.fromText(texts[name](), gpu);
 			check(shader.kind == "sprite" && shader.skinned == null && shader.caster == null, '$name is a sprite shader, without a surface\'s variants');
 			var source:helix.graphics.ShaderSource = @:privateAccess shader.source;
 			check(source.attributes.join(",") == "position,uv,color,region", '$name reads the effect2d program\'s vertices');
@@ -91,8 +91,8 @@ class SpriteEffectTests {
 	// Runs split where the effect changes; one effect shared stays one draw; without one, a batch draws as it did.
 	static function batching(gpu:CountingGraphics):Void {
 		var batch = new Batch2D(gpu),
-			texture = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64)),
-			other = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64)),
+			texture = Texture2D.fromRgba(4, 4, Bytes.alloc(64), gpu),
+			other = Texture2D.fromRgba(4, 4, Bytes.alloc(64), gpu),
 			outline = new SpriteOutline(),
 			flash = new SpriteFlash();
 		var plain = Pipelines.of(gpu).sprite2D(Alpha);
@@ -141,7 +141,7 @@ class SpriteEffectTests {
 	// texture's size and the batch's time.
 	static function regions(gpu:CountingGraphics):Void {
 		var batch = new Batch2D(gpu),
-			texture = Texture2D.fromRgba(gpu, 64, 32, Bytes.alloc(64 * 32 * 4)),
+			texture = Texture2D.fromRgba(64, 32, Bytes.alloc(64 * 32 * 4), gpu),
 			effect = new SpriteOutline();
 		batch.time = 2.5;
 		frame(gpu, batch, () -> {
@@ -174,7 +174,7 @@ class SpriteEffectTests {
 	static function stage(gpu:CountingGraphics):Void {
 		var batch = new Batch2D(gpu),
 			stage = new Renderer2D(),
-			texture = Texture2D.fromRgba(gpu, 8, 8, Bytes.alloc(256)),
+			texture = Texture2D.fromRgba(8, 8, Bytes.alloc(256), gpu),
 			outline = new SpriteOutline(0xffff0000, 2);
 		for (i in 0...3) {
 			var sprite = new Sprite2D(texture);
@@ -234,7 +234,7 @@ class SpriteEffectTests {
 		effect.scale = 3;
 		effect.edgeColor = 0xff00ff00;
 		var batch = new Batch2D(gpu),
-			texture = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64));
+			texture = Texture2D.fromRgba(4, 4, Bytes.alloc(64), gpu);
 		frame(gpu, batch, () -> {
 			batch.effect = effect;
 			batch.sprite(texture, 10, 10, 4, 4);
@@ -253,10 +253,10 @@ class SpriteEffectTests {
 
 	// palette_swap_params: row 0; the palette at slot 1.
 	static function palette(gpu:CountingGraphics):Void {
-		var colors = Texture2D.fromRgba(gpu, 4, 3, Bytes.alloc(48)),
+		var colors = Texture2D.fromRgba(4, 3, Bytes.alloc(48), gpu),
 			effect = new PaletteSwap(colors, 2);
 		var batch = new Batch2D(gpu),
-			texture = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64));
+			texture = Texture2D.fromRgba(4, 4, Bytes.alloc(64), gpu);
 		frame(gpu, batch, () -> {
 			batch.effect = effect;
 			batch.sprite(texture, 10, 10, 4, 4);
@@ -272,7 +272,7 @@ class SpriteEffectTests {
 	static function stage3D(gpu:CountingGraphics):Void {
 		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
-			texture = Texture2D.fromRgba(gpu, 8, 4, Bytes.alloc(128));
+			texture = Texture2D.fromRgba(8, 4, Bytes.alloc(128), gpu);
 		camera.setViewport(800, 600);
 		camera.setView(0, 0, 10, 0, 0, 0);
 		var outline = new SpriteOutline(), flash = new SpriteFlash(), sprites = [];
@@ -326,7 +326,7 @@ class SpriteEffectTests {
 	// The uniform blocks of a sprite drawn through effect at time.
 	static function drawn(gpu:CountingGraphics, effect:SpriteEffect, time = 0.):Array<Null<Bytes>> {
 		var batch = new Batch2D(gpu),
-			texture = Texture2D.fromRgba(gpu, 4, 4, Bytes.alloc(64));
+			texture = Texture2D.fromRgba(4, 4, Bytes.alloc(64), gpu);
 		batch.time = time;
 		frame(gpu, batch, () -> {
 			batch.effect = effect;

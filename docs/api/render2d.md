@@ -297,9 +297,9 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts2D loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
 
 ```haxe
-static function fromTrueType(gpu:IGraphics, data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6):Font2D
-static function builtIn(gpu:IGraphics):Font2D
-static function pixel(gpu:IGraphics):Font2D
+static function fromTrueType(data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6, ?gpu:IGraphics):Font2D
+static function builtIn(?gpu:IGraphics):Font2D
+static function pixel(?gpu:IGraphics):Font2D
 var texture(default, null):Texture2D
 var size(default, null):Float
 var ascent(default, null):Float
@@ -310,12 +310,12 @@ function getKerning(left:Int, right:Int):Float
 function measure(text:String, size:Float):Float
 function wrap(text:String, size:Float, width:Float):Array<String>
 function measureWrapped(text:String, size:Float, width:Float, ?lineHeight:Float = 1.25):Float
-function destroy(gpu:IGraphics):Void
+function destroy(?gpu:IGraphics):Void
 ```
 
-- `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. The caller destroys it.
-- `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md).
-- `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes.
+- `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. On gpu, the program's (Graphics) when not given. The caller destroys it.
+- `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). On gpu, the program's (Graphics) when not given.
+- `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes. On gpu, the program's (Graphics) when not given.
 - `texture`: The texture holding every glyph, with a white texel for untextured shapes.
 - `size`: The height the font was made at, ascent to descent, in font pixels: a text's size scales this.
 - `ascent`: How far the tallest glyphs reach above the baseline, in font pixels.
@@ -326,7 +326,7 @@ function destroy(gpu:IGraphics):Void
 - `measure`: How far text moves the pen at size (world units, ascent to descent): its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as nothing.
 - `wrap`: text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its letters; a line break ("\n") always breaks. Lines keep no trailing spaces.
 - `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
-- `destroy`: Frees the font's texture on gpu, the adapter that made it.
+- `destroy`: Frees the font's texture on gpu, the adapter that made it: the program's (Graphics) when not given.
 
 ## FontBaker2D
 
@@ -899,9 +899,9 @@ function measureHeight(font:Font2D):Float
 A GPU texture with its size, its format and how it is sampled (Sampling: linear or nearest, and its wrap), which a draw reads when it takes the texture, so one texture can be drawn smooth and then sharp. whiteU/whiteV name an opaque white texel, -1 when it has none, for untextured shapes.
 
 ```haxe
-static function fromRgba(gpu:IGraphics, width:Int, height:Int, rgba:haxe.io.Bytes, ?linear:Bool = false, ?whiteX:Int = -1, ?whiteY:Int = -1, ?mipmaps:Bool = false):Texture2D
-static function fromLevels(gpu:IGraphics, width:Int, height:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat, sampling:Sampling):Texture2D
-static function renderTarget(gpu:IGraphics, width:Int, height:Int, ?linear:Bool = true, ?format:TextureFormat = Rgba8, ?depth:Bool = true):Texture2D
+static function fromRgba(width:Int, height:Int, rgba:haxe.io.Bytes, ?linear:Bool = false, ?whiteX:Int = -1, ?whiteY:Int = -1, ?mipmaps:Bool = false, ?gpu:IGraphics):Texture2D
+static function fromLevels(width:Int, height:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat, sampling:Sampling, ?gpu:IGraphics):Texture2D
+static function renderTarget(width:Int, height:Int, ?linear:Bool = true, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?gpu:IGraphics):Texture2D
 var handle(default, null):Int
 var width(default, null):Int
 var height(default, null):Int
@@ -911,12 +911,12 @@ var byteCount(get, never):Int
 var sampling:Sampling
 var whiteU(default, null):Float
 var whiteV(default, null):Float
-function destroy(gpu:IGraphics):Void
+function destroy(?gpu:IGraphics):Void
 ```
 
-- `fromRgba`: Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without shimmering. The caller destroys it.
-- `fromLevels`: Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws when the GPU can't sample format (IGraphics.canSample). The caller destroys it.
-- `renderTarget`: A render target width x height of format: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger); with depth a depth buffer and the screen's multisampling, without neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). The caller destroys it.
+- `fromRgba`: Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without shimmering. On gpu, the program's (Graphics) when not given. The caller destroys it.
+- `fromLevels`: Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws when the GPU can't sample format (IGraphics.canSample). On gpu, the program's (Graphics) when not given. The caller destroys it.
+- `renderTarget`: A render target width x height of format: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger); with depth a depth buffer and the screen's multisampling, without neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). On gpu, the program's (Graphics) when not given. The caller destroys it.
 - `handle`: The IGraphics handle, for draws.
 - `width`: Width in texels.
 - `height`: Height in texels.
@@ -926,7 +926,7 @@ function destroy(gpu:IGraphics):Void
 - `sampling`: How draws sample it, from the next draw that takes it on.
 - `whiteU`: U of the center of an opaque white texel, or -1 when it has none.
 - `whiteV`: V of the center of an opaque white texel, or -1 when it has none.
-- `destroy`: Frees the GPU texture on gpu, the adapter that made it.
+- `destroy`: Frees the GPU texture on gpu, the adapter that made it: the program's (Graphics) when not given.
 
 ## TextureCache2D
 

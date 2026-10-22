@@ -67,7 +67,7 @@ class ShaderLibraryTests {
 		for (name in ["unlit", "toon", "dissolve", "water", "tonemap"])
 			check(texts.exists(name), 'The library\'s $name is packed, by its file\'s stem');
 		for (name => text in texts) {
-			var shader = Shader.fromText(gpu, text());
+			var shader = Shader.fromText(text(), gpu);
 			check(shader.kind == "surface" || shader.kind == "screen" || shader.kind == "sprite", '$name packs as a kind the framework has');
 			check((shader.kind == "surface") == (shader.skinned != null), '$name: a surface shader has a skinned variant, a screen or sprite shader none');
 			if (shader.kind == "surface") {
@@ -89,7 +89,7 @@ class ShaderLibraryTests {
 		stale.helixShader = 1;
 		var refused = false;
 		try
-			Shader.fromText(gpu, haxe.Json.stringify(stale))
+			Shader.fromText(haxe.Json.stringify(stale), gpu)
 		catch (e:Dynamic)
 			refused = true;
 		check(refused, "A file of another format is refused");

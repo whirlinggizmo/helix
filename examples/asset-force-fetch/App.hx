@@ -46,18 +46,16 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (input.isFramePressed(Key.M) && music != null && !music.pause())
+		if (Input.isFramePressed(Key.M) && music != null && !music.pause())
 			music.resume();
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		text.clear();
 		var y = vy + 30;
 		y += text.drawTextWrapped("HeliX audio + force fetch", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;

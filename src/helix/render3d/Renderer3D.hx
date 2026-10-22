@@ -188,14 +188,14 @@ class Renderer3D {
 		pipelines = helix.graphics.Pipelines.of(gpu);
 		var pixel = Bytes.alloc(4);
 		pixel.fill(0, 4, 255);
-		white = Texture2D.fromRgba(gpu, 1, 1, pixel);
+		white = Texture2D.fromRgba(1, 1, pixel, gpu);
 		// A normal map's "straight out": the default, which the shader skips anyway when a material has none.
 		var normal = Bytes.alloc(4);
 		normal.set(0, 128);
 		normal.set(1, 128);
 		normal.set(2, 255);
 		normal.set(3, 255);
-		flat = Texture2D.fromRgba(gpu, 1, 1, normal, true);
+		flat = Texture2D.fromRgba(1, 1, normal, true, gpu);
 		instanceBuffer = gpu.createBuffer(capacity * Lit3DProgram.instanceStride);
 		records = Bytes.alloc(capacity * Lit3DProgram.instanceStride);
 		casterBuffer = gpu.createBuffer(casterCapacity * Depth3DProgram.instanceStride);
@@ -1620,7 +1620,7 @@ class Renderer3D {
 			for (c in 0...4)
 				u.setFloat(IRRADIANCE + k * 16 + c * 4, irradiance != null && c < 3 ? irradiance[k * 3 + c] : 0);
 		if (environment != null && brdf == null)
-			brdf = Texture2D.fromRgba(gpu, EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.brdfTable, true);
+			brdf = Texture2D.fromRgba(EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.BRDF_SIZE, EnvironmentBake3D.brdfTable, true, gpu);
 	}
 
 	// The material's part of the fragment uniforms in u (lit3d_fs_members' from MATERIAL): its base color, metallic, roughness and whether lit,

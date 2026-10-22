@@ -137,7 +137,7 @@ class InputTests {
 		check(touched.activated, "A finger down activates");
 
 		// Ticker: fixed steps, a pause, bounded catch-up, and input consumed per tick.
-		var ticker = new Ticker(input, 10), ticks = 0;
+		var ticker = new Ticker(10, input), ticks = 0;
 		input.keyEvent(Key.A, true);
 		input.keyEvent(Key.A, false);
 		var seen = 0;
@@ -159,11 +159,11 @@ class InputTests {
 		function tap(x:Float, y:Float, gap:Float):Bool {
 			clock += gap;
 			pad.pointerEvent(x, y, true);
-			gestures.update(pad, clock, false);
+			gestures.update(clock, false, pad);
 			pad.endFrame();
 			clock += .05;
 			pad.pointerEvent(x, y, false);
-			gestures.update(pad, clock, false);
+			gestures.update(clock, false, pad);
 			pad.endFrame();
 			return gestures.tapped && gestures.doubleTapped;
 		}
@@ -183,10 +183,10 @@ class InputTests {
 			ticked.pointerEvent(50, 50, true);
 			ticked.pointerEvent(50, 50, false);
 		}
-		perTick.update(ticked, 0, true);
+		perTick.update(0, true, ticked);
 		ticked.consume();
 		check(perTick.tapped && !perTick.doubleTapped, "The first tick takes the first tap");
-		perTick.update(ticked, 1 / 60, true);
+		perTick.update(1 / 60, true, ticked);
 		ticked.consume();
 		check(perTick.doubleTapped, "The second tick the second, a double tap");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));

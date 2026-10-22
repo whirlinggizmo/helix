@@ -116,9 +116,11 @@ class PointerGestures {
 	function get_flickVelocityY():Float
 		return flickY;
 
-	/** Reads the pointer: once per tick with perTick, its tick edges, before the input is consumed; or once per frame without, its frame
-		edges. now is the time in seconds. */
-	public function update(input:IInput, now:Float, perTick:Bool):Void {
+	/** Reads the pointer of input, the program's (Input) when not given: once per tick with perTick, its tick edges, before the input is
+		consumed; or once per frame without, its frame edges. now is the time in seconds. */
+	public function update(now:Float, perTick:Bool, ?input:IInput):Void {
+		if (input == null)
+			input = Input.instance;
 		pressed = false;
 		released = false;
 		tapped = false;

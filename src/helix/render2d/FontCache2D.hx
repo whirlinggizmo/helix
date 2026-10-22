@@ -32,7 +32,7 @@ class FontCache2D implements IReloadable {
 		loading = assets.load(path, bytes -> {
 			if (request.settled || !live)
 				return;
-			var font = try Font2D.fromTrueType(gpu, bytes) catch (e:Dynamic) {
+			var font = try Font2D.fromTrueType(bytes, gpu) catch (e:Dynamic) {
 				if (request.finish())
 					Failure.report(path, '$path: $e', failed);
 				return;

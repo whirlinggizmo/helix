@@ -44,7 +44,7 @@ class App extends helix.App {
 		Stage.addChild(stepped);
 		Stage.addChild(smooth);
 		Stage.addChild(fps);
-		ticker = new Ticker(Input.instance, 10);
+		ticker = new Ticker(10);
 	}
 
 	function tick():Void {
@@ -60,15 +60,14 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var input = Input.instance;
-		if (input.isFramePressed(Key.Enter))
+		if (Input.isFramePressed(Key.Enter))
 			framePresses++;
-		if (input.isFramePressed(Key.Space))
+		if (Input.isFramePressed(Key.Space))
 			if (Time.clock.paused)
 				Time.clock.resume();
 			else
 				Time.clock.pause();
-		if (Host.canQuit() && input.isFramePressed(Key.Escape))
+		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		ticker.advance(Time.clock.elapsed, () -> tick());
 		var t = ticker.fraction;
@@ -76,11 +75,10 @@ class App extends helix.App {
 		// The text and the squares in the design for the window's shape: the text wrapped to what's visible of it, and the squares' track
 		// (LEFT to RIGHT) drawn across the visible width.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
 		text.clear();
 		var y = vy + 20;

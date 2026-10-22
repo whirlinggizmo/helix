@@ -14,7 +14,13 @@ import helix.render3d.Renderer3D;
 	they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. With no stages added, it looks at the
 	Stage (helix.render2d.Stage) and the views on it, in their drawing order (docs/DISPLAY_MODEL.md). */
 class Pointer {
-	var input:IInput;
+	// The input given, or null for the program's (Input), read when used: one an autopilot plays is the program's while it plays.
+	var given:Null<IInput>;
+	var input(get, never):IInput;
+
+	function get_input():IInput
+		return given != null ? given : helix.input.Input.instance;
+
 	var layers:Array<Layer> = [];
 	var pressedNow:Null<Any>;
 	var clickedNow:Null<Any>;
@@ -23,9 +29,10 @@ class Pointer {
 	var hovered2D = false;
 	var hovered3D = false;
 
-	/** The pointer of input. */
-	public function new(input:IInput)
-		this.input = input;
+	/** The pointer of input, or of the program's (Input) when not given, read as it's used, so a pointer made before the program runs (a
+		field's initial value) works. */
+	public function new(?input:IInput)
+		given = input;
 
 	/** Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at
 		the stage). */

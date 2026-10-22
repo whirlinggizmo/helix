@@ -116,14 +116,13 @@ class App extends helix.App {
 		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);
 		// The HUD in the design for the window's shape; the world zooms at the design's scale, so it fits a phone held upright too.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
 		title.setPosition(vx + 12, vy + 32);
 		fps.setPosition(vx + 12, vy + 10);
 		worldCamera.setPosition(0, 0);
-		worldCamera.zoom = presentation.scaleX * (1.25 + .25 * Math.sin(time * .5));
+		worldCamera.zoom = Screen.scaleX * (1.25 + .25 * Math.sin(time * .5));
 		info.clear();
 		info.drawTextWrapped('immediate text, over the world: ${view.drawnNodeCount} world nodes drawn, ${Graphics.msaaSamples} of ${Graphics.maxMsaaSamples} MSAA samples a pixel',
 			vx
