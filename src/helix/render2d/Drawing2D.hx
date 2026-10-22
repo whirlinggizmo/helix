@@ -82,11 +82,10 @@ class Drawing2D extends Node2D {
 		include(x - radius, y - radius, x + radius, y + radius);
 	}
 
-	/** A circle's outline width wide, centered on the circle of radius around x, y. */
+	/** A circle's outline width wide, drawn inside the circle of radius around x, y (from radius - width out to radius). */
 	public function circleLines(x:Float, y:Float, radius:Float, width:Float, color:Int):Void {
 		add(CircleLines, [x, y, radius, width], color);
-		var reach = radius + width / 2;
-		include(x - reach, y - reach, x + reach, y + reach);
+		include(x - radius, y - radius, x + radius, y + radius);
 	}
 
 	/** A segment width wide from x0, y0 to x1, y1, square ended. */

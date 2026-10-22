@@ -122,6 +122,28 @@ var popup(default, null):Popup
 - `highlightedIndex`: The index of the item its list highlights (the one Enter would choose), or -1; meaningful while it's open.
 - `popup`: Its list, the popup it opens: where it was last placed (Popup.x, y, placedAbove) and its size (Popup.layout).
 
+## FullscreenButton2D
+
+*class* in [`src/helix/ui/FullscreenButton2D.hx`](../../src/helix/ui/FullscreenButton2D.hx)
+
+An icon that toggles fullscreen: four corner brackets, pointing out while windowed and in while fullscreen, brighter under the pointer. On the stage at the visible area's top right, margin in, whatever the window's shape; hidden where the window can't go fullscreen (Window.canFullscreen: a page that may not). A click on it asks (Window.requestFullscreen), which the browser grants as it follows a click. It needs no Ui: add it to the stage, over the game, and call update once a frame.
+
+```haxe
+function new(?size:Float = 18., ?color:Int = 0xc0e8e8e8)
+var size(default, null):Float
+var color:Int
+var margin:Float
+var hovered(default, null):Bool
+function update():Bool
+```
+
+- `new`: An icon size stage units across (18 unless given), in color (0xAARRGGBB, a light gray unless given).
+- `size`: Its size across, the stage's units.
+- `color`: Its color, 0xAARRGGBB; drawn opaque under the pointer.
+- `margin`: How far in from the visible area's top-right corner it sits, the stage's units: 10 to start.
+- `hovered`: Whether the pointer is over it, as of the last update: a game skips its own click there.
+- `update`: Places it, draws it for the window's state, and asks for fullscreen or a window when it's clicked: once a frame, after ScreenShape.update when the game uses it. Whether it was clicked.
+
 ## Handle
 
 *class* in [`src/helix/ui/Handle.hx`](../../src/helix/ui/Handle.hx)

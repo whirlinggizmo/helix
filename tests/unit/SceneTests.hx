@@ -68,6 +68,67 @@ class SceneTests {
 		check(ended && !fade.running && Stage.childCount == 1 && level.parent != null, "Done: its cover off, done called");
 		check(new Transition(1).run(() -> {}) && throws(() -> new Transition(0)), "A transition of no time is refused");
 		frame(2);
+		// A delay, a hold and an ease: nothing drawn until the delay is out, swapped at the middle and held covered, each half along its curve.
+		var seenProgress:Array<Float> = [];
+		var timed = new Probe(1, seenProgress), swappedAt = false, over = false;
+		timed.delay = .5;
+		timed.hold = .25;
+		timed.coverEase = t -> helix.tween.Ease.quadIn(t);
+		timed.uncoverEase = t -> helix.tween.Ease.quadOut(t);
+		timed.delay = -1;
+		check(timed.delay == 0, "A delay below 0 is none");
+		timed.delay = .5;
+		timed.run(() -> swappedAt = true, () -> over = true);
+		frame(.4);
+		check(seenProgress.length == 0 && timed.running, "Waiting out its delay: nothing drawn");
+		frame(.35);
+		check(Math.abs(seenProgress[seenProgress.length - 1] - .5 * .25) < 1e-9 && !swappedAt,
+			"Covering along its ease: halfway through the time, quadIn a quarter of the way");
+		frame(.3);
+		check(swappedAt && seenProgress[seenProgress.length - 1] == .5, "Swapped at the middle, then held covered");
+		frame(.2);
+		check(seenProgress[seenProgress.length - 1] == .5 && !over, "Still held");
+		frame(.3);
+		check(Math.abs(seenProgress[seenProgress.length - 1] - (.5 + .5 * helix.tween.Ease.quadOut((1.05 - .75) / .5))) < 1e-9 && !over,
+			"Uncovering after the hold, along its own ease (quadOut)");
+		frame(.3);
+		check(over && !timed.running, "Done after delay, both halves and the hold");
+		// The time split unevenly: a quick close, a slow open.
+		var split = new Probe(1, seenProgress),
+			splitSwapped = false,
+			splitDone = false;
+		split.coverSeconds = .2;
+		split.uncoverSeconds = .8;
+		check(split.seconds == 1, "Its seconds the two halves together");
+		split.coverSeconds = -1;
+		check(split.coverSeconds == 0, "A half below 0 is none");
+		split.coverSeconds = .2;
+		split.run(() -> splitSwapped = true, () -> splitDone = true);
+		frame(.1);
+		check(Math.abs(seenProgress[seenProgress.length - 1] - .25) < 1e-9
+			&& !splitSwapped, "Halfway through a .2 second close: a quarter");
+		frame(.15);
+		check(splitSwapped && !splitDone, "Swapped after .2 seconds");
+		frame(.4);
+		check(Math.abs(seenProgress[seenProgress.length - 1] - (.5 + .5 * (.25 + .4 - .2) / .8)) < 1e-9 && !splitDone, "Opening over .8");
+		frame(.4);
+		check(splitDone, "Done after the two");
+		// A hold between an uneven close and open: covered from the swap through the hold, then opening.
+		var holding = new Probe(1, seenProgress),
+			holdSwapped = false,
+			holdDone = false;
+		holding.coverSeconds = .2;
+		holding.uncoverSeconds = .8;
+		holding.hold = .5;
+		holding.run(() -> holdSwapped = true, () -> holdDone = true);
+		frame(.3);
+		check(holdSwapped && holding.progress == .5, "Swapped and covered after the close");
+		frame(.35);
+		check(holding.progress == .5 && !holdDone, "Still covered through the hold");
+		frame(.2);
+		check(holding.progress > .5 && !holdDone, "Opening once the hold is out");
+		frame(.8);
+		check(holdDone, "Done after the close, the hold and the open");
 
 		// The loading screen: shown until its loader is done, then off, then called.
 		var loader = new Loader();
@@ -136,6 +197,37 @@ class SceneTests {
 			frame(coins.stagger);
 		check(got.join(",") == "0,1,2,3,4" && finished && !coins.running && Stage.childCount == before, "All in, in turn: done, off the stage");
 		Stage.removeChild(score);
+
+		// The wipes, drawn into a cover over a 100 x 50 area at a progress, judged by what they cover.
+		var cover = new helix.render2d.Drawing2D(),
+			seen = new helix.math.Bounds2D();
+		function covered(t:Transition, progress:Float):Null<helix.math.Bounds2D> {
+			cover.clear();
+			t.draw(cover, 0, 0, 100, 50, progress);
+			return cover.computeBounds(cover, seen);
+		}
+		inline function spans(b:Null<helix.math.Bounds2D>, minX:Float, maxX:Float, minY:Float, maxY:Float):Bool
+			return b != null && Math.abs(b.minX - minX) < 1e-6 && Math.abs(b.maxX - maxX) < 1e-6 && Math.abs(b.minY - minY) < 1e-6
+				&& Math.abs(b.maxY - maxY) < 1e-6;
+		var left = new helix.scene.Transition.Slide(1, Left);
+		check(spans(covered(left, .25), 50, 100, 0, 50), "A slide left comes in from the right");
+		check(spans(covered(left, .75), 0, 50, 0, 50), "And goes on out to the left");
+		check(spans(covered(new helix.scene.Transition.Slide(1, Left, true), .75), 50, 100, 0, 50), "Or back out the way it came");
+		check(spans(covered(new helix.scene.Transition.Slide(1, Down), .25), 0, 100, 0, 25), "A slide down comes in from the top");
+		var corner = covered(new helix.scene.Transition.Slide(1, DownRight), .1);
+		check(corner != null && corner.minX == 0 && corner.minY == 0 && corner.maxX < 50 && corner.maxY < 50, "A diagonal one comes in from its corner");
+		check(spans(covered(new helix.scene.Transition.Iris(1), .5), 0, 0 + 100, 0, 50)
+			&& spans(covered(new helix.scene.Transition.Diamond(1), .5), 0, 100, 0, 50),
+			"An iris and a diamond cover all at the middle");
+		var iris = new helix.scene.Transition.Iris(1);
+		iris.setPoint(90, 10);
+		var open = covered(iris, .4);
+		check(open != null && open.maxX > 100 && open.minY < 0, "On a point near a corner, its cover reaches past it to close there");
+		var noise = new helix.scene.Transition.Noise(1, 10);
+		check(covered(noise, 0) == null && spans(covered(noise, .4999), 0, 100, 0, 50) && covered(noise, 1) == null,
+			"Noise: nothing at the start, all just before the middle, nothing at the end");
+		var part = covered(noise, .2);
+		check(part != null, "Noise part way: some squares");
 
 		// The loader by itself.
 		var loader = new Loader();
@@ -214,4 +306,17 @@ private class Held implements IAssets {
 
 	function get_busy():Bool
 		return false;
+}
+
+/** A transition recording each progress it's drawn at. */
+class Probe extends Transition {
+	var seen:Array<Float>;
+
+	public function new(seconds:Float, seen:Array<Float>) {
+		super(seconds);
+		this.seen = seen;
+	}
+
+	override public function draw(cover:helix.render2d.Drawing2D, x:Float, y:Float, width:Float, height:Float, progress:Float):Void
+		seen.push(progress);
 }

@@ -176,7 +176,7 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 - `frame`: A rectangle's outline drawn inside its bounds, width wide.
 - `roundedRect`: A filled rectangle with corners of radius (clamped to half the shorter side).
 - `circle`: A filled circle centered on x, y.
-- `circleLines`: A circle's outline width wide, centered on the circle of radius around x, y.
+- `circleLines`: A circle's outline width wide, drawn inside the circle of radius around x, y (from radius - width out to radius).
 - `line`: A segment width wide from x0, y0 to x1, y1, square ended.
 - `polygon`: A filled polygon through points (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). False, holding nothing more, for fewer than 3 points or one that can't be filled.
 - `polygonLines`: A polygon's outline through points (copied), closed, width wide centered on its edges. False, holding nothing more, for fewer than 2 points.
