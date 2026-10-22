@@ -125,6 +125,7 @@ class Facade {
 					members.push({
 						name: field.name,
 						doc: field.doc,
+						hidden: field.meta != null && Lambda.exists(field.meta, m -> m.name == ":noCompletion"),
 						args: [
 							for (a in f.args)
 								{
@@ -149,6 +150,7 @@ class Facade {
 					members.push({
 						name: field.name,
 						doc: field.doc,
+						hidden: field.meta != null && Lambda.exists(field.meta, m -> m.name == ":noCompletion"),
 						t: Context.resolveType(t, field.pos),
 						read: read,
 						write: write
@@ -212,6 +214,7 @@ class Facade {
 						{
 							name: field.name,
 							doc: field.doc,
+							hidden: field.meta.has(":noCompletion"),
 							args: [
 								for (a in args)
 									{
@@ -230,6 +233,7 @@ class Facade {
 				{
 					name: field.name,
 					doc: field.doc,
+					hidden: field.meta.has(":noCompletion"),
 					t: field.type,
 					read: read.match(AccNormal | AccCall | AccInline),
 					write: write.match(AccNormal | AccCall)
@@ -288,6 +292,7 @@ class Facade {
 		return {
 			name: name,
 			doc: member.doc,
+			meta: member.hidden == true ? [{name: ":noCompletion", pos: pos}] : [],
 			access: [APublic, AStatic],
 			kind: FFun({
 				args: [
@@ -314,6 +319,7 @@ class Facade {
 			{
 				name: name,
 				doc: member.doc,
+				meta: member.hidden == true ? [{name: ":noCompletion", pos: pos}] : [],
 				access: [APublic, AStatic],
 				kind: FProp(member.read ? "get" : "never", member.write ? "set" : "never", t),
 				pos: pos,
@@ -349,6 +355,9 @@ typedef Member = {
 
 	/** Its doc comment, copied onto the forwarder. */
 	var ?doc:String;
+
+	/** Whether it's the engine's own (@:noCompletion), which its forwarder is then too: left out of completion and the API reference. */
+	var ?hidden:Bool;
 
 	/** A method's arguments: each one's name, whether it may be left out, its default and its type. */
 	var ?args:Array<{

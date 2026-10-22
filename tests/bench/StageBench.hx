@@ -21,6 +21,7 @@ import helix.render3d.Renderer3D;
 	lights      in view, 64 lamps among them
 	shadows     in view, the sun casting
 	pick        a pick through the middle of the grid each frame, no draw */
+@:access(helix)
 class StageBench {
 	static function main():Void {
 		var args = commandLine(),
@@ -83,6 +84,7 @@ class StageBench {
 }
 
 /** A GPU that does nothing: handles counted up, every call accepted. */
+@:access(helix)
 class NullGraphics implements IGraphics {
 	var next = 1;
 

@@ -45,6 +45,31 @@ def public_types(file):
     return {n.get('path'):n for n in ET.parse(file).getroot()
         if (n.get('path') or '').startswith('helix.') and '._' not in n.get('path') and n.get('private')!='1' and not hidden(n)}
 
+def hidden_paths(file):
+    """The paths of a description's hidden types: helix's marked @:noCompletion."""
+    return {n.get('path') for n in ET.parse(file).getroot() if (n.get('path') or '').startswith('helix.') and hidden(n)}
+
+def leaks(file):
+    """Each shown member whose signature names a hidden type, 'Type.member: Hidden', so the reference never points at what it leaves
+    out: such a member is the engine's too (hide it, or make it private), or the type isn't. An optional argument may: a game leaves it out."""
+    secret=hidden_paths(file);found=[]
+    def named(node):
+        for e in node.iter():
+            if e.get('path') in secret:yield e.get('path')
+    def signature(member):
+        """What a game meets of a member: its type, but for a method's optional arguments (left out, as a GPU or backend for tests)."""
+        kids=[c for c in member if c.tag not in ('haxe_doc','meta')]
+        if not kids:return []
+        t=kids[0]
+        if member.get('set')!='method' or t.tag!='f':return [t]
+        names=t.get('a','').split(':') if t.get('a') else [];parts=list(t)
+        return [k for n,k in zip(names,parts[:-1]) if not n.startswith('?')]+parts[-1:]
+    for path,node in sorted(public_types(file).items()):
+        for member in node:
+            if member.tag in ('haxe_doc','meta') or member.get('public')!='1' or hidden(member):continue
+            for name in sorted({n for part in signature(member) for n in named(part)}):found.append(f'{path}.{member.tag}: {name}')
+    return found
+
 def same_on_both(js,cpp):
     """Fails unless both targets describe the same documented types, each with the same public members as written."""
     a=public_types(js);b=public_types(cpp)
@@ -184,6 +209,8 @@ def generate(check=False):
     if OUT.exists() and not check:shutil.rmtree(OUT)
     describe('js');describe('cpp')
     same_on_both(OUT/'xml/js.xml',OUT/'xml/cpp.xml')
+    leaked=leaks(OUT/'xml/js.xml')
+    if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
     pages=markdown(OUT/'xml/js.xml')
     if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]

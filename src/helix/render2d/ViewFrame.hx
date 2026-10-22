@@ -37,6 +37,7 @@ class ViewFrame {
 }
 
 /** A chain's calls (PostProcess's beginScene, endScene, present and hdr), through the object, so a hot reload reaches the new code. */
+@:noCompletion
 typedef ChainCalls = {
 	var begin:(Int, Int, Int) -> Void;
 	var end:Float->Void;

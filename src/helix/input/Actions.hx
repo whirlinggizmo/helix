@@ -135,6 +135,7 @@ class Actions implements IInputWatcher {
 
 	/** Whose visible area and units touch regions are in: null for Screen's (Screen.instance), read as each finger is. Without either (a
 		unit test with no runner) a touch region reads nothing; a test gives its own Presentation, whose None mode is logical pixels. */
+	@:noCompletion
 	public var presentation:Null<Presentation>;
 
 	/** The actions, in the order first bound; an action cleared or unbound to nothing stays. */

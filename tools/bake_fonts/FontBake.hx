@@ -9,6 +9,7 @@ import sys.io.File;
 
 	out.r8 holds one byte a texel, row by row (its last texel fully inside: the white texel); out.json the atlas size and, per glyph, its place
 	in the atlas, its offset from the pen on the baseline, and its advance, in pixels at the baked height. */
+@:access(helix)
 class FontBake {
 	static function main():Void {
 		var args = Sys.args();

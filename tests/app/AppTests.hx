@@ -4,6 +4,7 @@ import helix.macro.AppBuild;
 
 /** A game as a user writes one: helix.App's build (helix.macro.AppBuild) writes its springboards into it. Never constructed here, since
 	the constructor would start the backend's profile; made empty instead. */
+@:access(helix)
 class Game extends helix.App {
 	public var inits = 0;
 	public var updates = 0;
@@ -26,6 +27,7 @@ class Game extends helix.App {
 	that must be refused): the springboards the build writes reach the app in hotApp, and another app once hotApp is re-pointed, as a native reload does;
 	the backend table; AppOptions' defaults; a Springboard's three calls. */
 @:access(helix.App)
+@:access(helix)
 class AppTests {
 	static var checks = 0;
 

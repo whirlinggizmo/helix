@@ -8,6 +8,7 @@ import helix.asset.StorageService.StorageWriteResult;
 /** Files kept by key on a platform (a directory, IndexedDB). Keys are valid asset paths (the shared StorageService checks them); limits, read-only
 	refusal, queuing and cancellation are the shared StorageService's. Each answer arrives on the host thread, never during the call that asked, and
 	is never Cancelled. */
+@:noCompletion
 interface IStore {
 	/** The file under key: Stored, Missing, or Failed (an I/O error, or a file over maxBytes). */
 	public function read(key:String, maxBytes:Int, done:StorageResult->Void):Void;

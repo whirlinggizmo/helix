@@ -4,11 +4,14 @@ import haxe.io.Bytes;
 
 /** A glyph's outline in font units (y up): closed contours, each a list of points, x and y in turn, with whether each is on the curve; two
 	off-curve points in a row have an on-curve point between them, as TrueType draws quadratic curves. */
+@:noCompletion
 typedef GlyphOutline = Array<{points:Array<Float>, onCurve:Array<Bool>}>;
 
 /** A TrueType font file (glyf outlines) as read: its metrics, its characters' glyphs and their outlines, and the kerning between pairs (the
 	GPOS table's pair adjustments, or the older kern table). Read in Haxe, the same on every target; Font bakes it into a texture. Throws,
 	saying why, for a file it can't read: no glyf outlines (a CFF font), or a table missing or cut short. */
+@:noCompletion
+@:allow(helix)
 class TrueType {
 	var data:Bytes;
 	var tables = new Map<String, {offset:Int, length:Int}>();
@@ -19,19 +22,19 @@ class TrueType {
 	var cmapFormat = -1;
 
 	/** Font units in an em: what the metrics below are counted in. */
-	public final unitsPerEm:Int;
+	final unitsPerEm:Int;
 
 	/** How far the font reaches above the baseline, in font units. */
-	public final ascent:Int;
+	final ascent:Int;
 
 	/** How far it reaches below the baseline, in font units: 0 or negative. */
-	public final descent:Int;
+	final descent:Int;
 
 	/** The extra space between lines, in font units. */
-	public final lineGap:Int;
+	final lineGap:Int;
 
 	/** Reads a TrueType file (the first font of a collection). */
-	public function new(data:Bytes) {
+	function new(data:Bytes) {
 		this.data = data;
 		var at = 0;
 		if (data.length >= 12 && data.getString(0, 4) == "ttcf")
@@ -107,7 +110,7 @@ class TrueType {
 	}
 
 	/** The glyph of character code, or 0 (the missing glyph) when the font has none. */
-	public function getGlyphIndex(code:Int):Int {
+	function getGlyphIndex(code:Int):Int {
 		var at = cmapOffset;
 		if (cmapFormat == 12) {
 			var groups = u32(at + 12), low = 0, high = groups - 1;
@@ -145,7 +148,7 @@ class TrueType {
 	}
 
 	/** How far the pen moves after glyph, in font units. */
-	public function getAdvance(glyph:Int):Int {
+	function getAdvance(glyph:Int):Int {
 		var hmtx = table("hmtx");
 		return u16(hmtx + (glyph < metricCount ? glyph : metricCount - 1) * 4);
 	}
@@ -163,7 +166,7 @@ class TrueType {
 	}
 
 	/** glyph's outline in font units, y up: empty for a glyph with none (a space). Composite glyphs are assembled from their parts. */
-	public function getOutline(glyph:Int):GlyphOutline {
+	function getOutline(glyph:Int):GlyphOutline {
 		var out:GlyphOutline = [];
 		addOutline(glyph, [1, 0, 0, 1, 0, 0], out, 0);
 		return out;
@@ -282,7 +285,7 @@ class TrueType {
 
 	/** The horizontal kerning between glyphs left and right, in font units: added to left's advance (usually negative, closing the pair). From
 		GPOS pair adjustments when the font has them, else its kern table; 0 for none. */
-	public function getKerning(left:Int, right:Int):Int {
+	function getKerning(left:Int, right:Int):Int {
 		if (tables.exists("GPOS")) {
 			var gpos = gposKerning(left, right);
 			if (gpos != null)

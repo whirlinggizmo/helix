@@ -2,6 +2,7 @@ import helix.core.Jobs;
 import helix.host.FrameClock;
 import helix.host.Identity;
 
+@:access(helix)
 class HostTests {
 	static var checks = 0;
 

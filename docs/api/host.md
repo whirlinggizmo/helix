@@ -2,27 +2,6 @@
 
 [Back to the index](README.md)
 
-## Adapters
-
-*typedef* in [`src/helix/host/Adapters.hx`](../../src/helix/host/Adapters.hx)
-
-A profile's choice of adapter for each platform contract, which the Runner builds the app's services over.
-
-- `storage:IStore`: The writable cache downloaded assets are kept in.
-- `saves:() -> IStore`: Opens the store the game's saves are kept in, apart from the cache (which a game may clear): called once, by the first use of Saves, so a game that saves nothing opens nothing.
-- `packaged:IStore`: The assets shipped with the build, read when base is null (read-only).
-- `name:String`: The program's name, beginning the names of the files it makes (Identity.product).
-- `manifest:Null<String>`: The root asset manifest's path under base (IAssets.setManifest), or null for none.
-- `input:IInputSource`: Keyboard, mouse, touch and gamepads.
-- `images:IImageDecoder`: Image decoding.
-- `http:IHttp`: HTTP downloads.
-- `harness:ITestHarness`: Where results go for the check that launched the program.
-- `graphics:IGraphics`: The GPU.
-- `export:IExport`: Where files made for the user (screenshots) go.
-- `base:Null<String>`: The URL prefix assets are fetched from; null reads them from packaged instead.
-- `audioDecoder:IAudioDecoder`: Compressed audio decoding.
-- `audio:IAudio`: Sound output.
-
 ## Config
 
 *class* in [`src/helix/host/Config.hx`](../../src/helix/host/Config.hx)
@@ -48,28 +27,6 @@ function getString(name:String):Null<String>
 - `profileNames`: The profiles the file has, in name order, "default" among them when it does.
 - `get`: The value at name (dotted into nested objects) in the profile, else in the default; null for none. A number, a string, a bool, an array or an object, as the JSON has it.
 - `getString`: The value at name as text: a string as it is, a number or bool as JSON writes it ("1.5", "true"); null for none or an object.
-
-## FrameClock
-
-*class* in [`src/helix/host/FrameClock.hx`](../../src/helix/host/FrameClock.hx)
-
-A host's frame timing, the same on every target, measured on the host's own clock between frames that ran (not a smoothed estimate, whose sum drifts from wall time). Each frame has two measures: the delta, the dt IApp.update is passed, held between MIN_DELTA and MAX_DELTA for animation; and the elapsed time, unheld, for a fixed-rate simulation (Ticker), which bounds its own catch-up.
-
-```haxe
-function new()
-static var MIN_DELTA(inline, null):Float
-static var MAX_DELTA(inline, null):Float
-function frame(now:Float):Void
-var delta(default, null):Float
-var elapsed(default, null):Float
-```
-
-- `new`: A clock with no frame yet.
-- `MIN_DELTA`: The least delta, in seconds.
-- `MAX_DELTA`: The most delta, in seconds: past a longer stall (a hidden tab, a debugger) animation moves on by this much.
-- `frame`: Starts a frame at now, seconds on the host's clock (IHost.time).
-- `delta`: This frame's delta in seconds: the time since the last frame, held between MIN_DELTA and MAX_DELTA, and 1/60 on the first, which has nothing to measure from.
-- `elapsed`: This frame's elapsed time in seconds: the time since the last frame, unheld, and 0 on the first.
 
 ## Host
 
@@ -101,92 +58,6 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 - `quit`: Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
 - `loadConfig`: Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131).
 
-## IHost
-
-*class* in [`src/helix/host/IHost.hx`](../../src/helix/host/IHost.hx)
-
-The host: what runs the program on a platform (a browser page's frame callbacks, a native process's app loop). It owns the loop, the clock, quitting, the window and where run options come from, and nothing else: the Runner it pumps builds and runs everything the app sees (the static classes it binds: Window, Input, Graphics and the others).
-
-```haxe
-function run(init:() -> Void, frame:() -> Void, cleanup:() -> Void):Void
-var time(get, never):Float
-var window(get, never):IWindow
-function canQuit():Bool
-function quit():Void
-function getOption(name:String):Null<String>
-function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
-function reportBusy(busy:Bool):Void
-```
-
-- `run`: Runs the program: init once, when the window and the GPU exist; frame once a display refresh; cleanup once, when it closes (the window closed, quit, or a browser page going away). Natively it returns only after the window closes.
-- `time`: Seconds on a monotonic clock.
-- `window`: The window the program draws in (the page, on the web).
-- `canQuit`: Whether quitting closes anything, so whether an app should offer a quit key: not in a browser page, where quit stops the program but the page stays.
-- `quit`: Closes after the current frame: cleanup runs. Natively the window closes; in a browser page the frames stop and the canvas keeps its last one.
-- `getOption`: A run option as the platform passes it, or null when it isn't given: in a browser the URL query parameter name, natively the environment variable HELIX_ and name in capitals.
-- `loadConfig`: Reads the game's config.json, the one beside the program (beside the page on the web, where the page says it has one; beside the executable natively), and gives done its bytes, or null when there is none: none is no error, the defaults stand. Fetched fresh each start, outside the asset cache, so a deployed game's settings change without a build (DECISIONS 131).
-- `reportBusy`: Tells the platform whether the program's services are still loading (Host.busy), for the tools driving it: an App says so after each frame, and false at its cleanup, when its pageState option is on. A browser page says it on its window (window.helixBusy), so a tool captures the page once it has settled (tools/pages_shots.cjs); natively nothing listens, and nothing is done.
-
-## IWindow
-
-*class* in [`src/helix/host/IWindow.hx`](../../src/helix/host/IWindow.hx)
-
-The window the app draws in: title, size, place, fullscreen, visibility and the monitors, in logical pixels. Names follow docs/CONVENTIONS.md: a value is a property; can says whether to offer an action at all; request asks for what the platform may refuse or grant later, returning whether it asked, never whether it was granted, and the property answers on a later frame. A request that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows.
-
-```haxe
-var framebufferWidth(get, never):Int
-var framebufferHeight(get, never):Int
-var pixelRatio(get, never):Float
-var focused(get, never):Bool
-var title(get, set):String
-var width(get, never):Int
-var height(get, never):Int
-function requestSize(width:Int, height:Int):Bool
-function canMove():Bool
-var x(get, never):Int
-var y(get, never):Int
-function requestPosition(x:Int, y:Int):Bool
-function canFullscreen():Bool
-var fullscreen(get, never):Bool
-function requestFullscreen(enabled:Bool):Bool
-var visible(get, never):Bool
-function requestVisible(visible:Bool):Bool
-var monitorCount(get, never):Int
-var monitorIndex(get, never):Int
-function requestMonitorIndex(index:Int):Bool
-function getMonitorName(index:Int):String
-function getMonitorX(index:Int):Int
-function getMonitorY(index:Int):Int
-function getMonitorWidth(index:Int):Int
-function getMonitorHeight(index:Int):Int
-```
-
-- `framebufferWidth`: The drawable area's width in framebuffer pixels (the width and height sizes are logical pixels).
-- `framebufferHeight`: The drawable area's height in framebuffer pixels.
-- `pixelRatio`: Framebuffer pixels per logical pixel.
-- `focused`: Whether the window has the keyboard and is shown: false while it's in the background, minimized, or (on the web) the page is hidden.
-- `title`: The title bar's text (the document's title, on the web).
-- `width`: The window's inner width in logical pixels (the viewport's, on the web).
-- `height`: The window's inner height in logical pixels (the viewport's, on the web).
-- `requestSize`: Asks for an inner size in logical pixels; width and height answer on a later frame, with what the window manager gave (it may give another size, or none). False, asking nothing, where a program can't size its window (the web), or for a size under 1.
-- `canMove`: Whether requestPosition and requestMonitorIndex can ask: not on the web, nor where the compositor places windows (XWayland).
-- `x`: The window's left edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's.
-- `y`: The window's top edge on the desktop in logical pixels; natively 0 where it can't move (canMove), on the web the browser window's.
-- `requestPosition`: Asks for the window's left and top edges on the desktop in logical pixels; x and y answer on a later frame, with what the window manager gave. False, asking nothing, where the window can't move (canMove).
-- `canFullscreen`: Whether requestFullscreen can ask: always natively; on the web, where the page may go fullscreen.
-- `fullscreen`: Whether the window is fullscreen now (the canvas, on the web).
-- `requestFullscreen`: Asks for fullscreen or a window; fullscreen answers on a later frame. False where it can't ask (canFullscreen). On the web the browser grants it only soon after a key press or click.
-- `visible`: Whether the window is shown (the canvas, on the web).
-- `requestVisible`: Asks to show or hide the window (the canvas, on the web); visible answers on a later frame (natively, once the window manager has shown it). Always asks: true.
-- `monitorCount`: How many monitors there are, at least 1; the web sees one screen.
-- `monitorIndex`: The monitor holding the window.
-- `requestMonitorIndex`: Asks for the window on monitor index; monitorIndex answers on a later frame. False, asking nothing, for an index out of range, or where the window can't move (canMove).
-- `getMonitorName`: "" for an index out of range, as the other monitor getters answer 0.
-- `getMonitorX`: The monitor's left edge on the desktop in logical pixels; 0 for an index out of range, and on the web.
-- `getMonitorY`: The monitor's top edge on the desktop in logical pixels; 0 for an index out of range, and on the web.
-- `getMonitorWidth`: The monitor's width in logical pixels; 0 for an index out of range.
-- `getMonitorHeight`: The monitor's height in logical pixels; 0 for an index out of range.
-
 ## Identity
 
 *class* in [`src/helix/host/Identity.hx`](../../src/helix/host/Identity.hx)
@@ -205,19 +76,6 @@ var product(default, null):String
 - `company`: The company, cleaned; "DefaultCompany" unless given.
 - `product`: The product, cleaned: the program's own name.
 
-## Part
-
-*typedef* in [`src/helix/host/Part.hx`](../../src/helix/host/Part.hx)
-
-An optional part of the program: a service installed the first time a program uses it (its static class installs it, helix.macro.Facade), so a program that never uses it carries none of its code (docs/CONVENTIONS.md, "An optional part is installed by its first use"). The Runner walks its parts' hooks and never names one. Each hook may be null.
-
-- `update:Null<Float -> Void>`: Each frame, after the app's update and before the frame is drawn: the part's work for the frame, dt the game clock's delta (the behaviors pass).
-- `shutdown:Null<() -> Void>`: At the program's end, before the shared services close: the part closed and its static class unbound.
-- `poll:Null<() -> Void>`: Each frame, before the app's: the part's work in progress advanced (loads, preparation spread over frames).
-- `frameEnded:Null<() -> Void>`: Each frame, after the app's and the frame drawn: what waits for the frame to be drawn (a screenshot).
-- `draw:Null<() -> Void>`: Each frame, after the app's update: the part draws the frame, opening and closing it (the stage, StageService). One part draws.
-- `busy:Null<() -> Bool>`: Whether the part is loading or preparing anything (Host.busy).
-
 ## PresentationMode
 
 *enum* in [`src/helix/host/Presentation.hx`](../../src/helix/host/Presentation.hx)
@@ -230,40 +88,6 @@ How a game's design is fitted to the window (Godot's stretch modes and aspects).
 - `Fill`: Scaled alike, as small as covers the window, centered; what's past the window's edges is cropped.
 - `Expand`: Scaled as Fit is, but the visible area grows past the design to the window's edges, centered on it: the design is the least the game shows, and a layout arranged into the visible area keeps to the window's edges.
 - `Integer`: As Fit, at a whole number of framebuffer pixels to a unit (at least 1), for pixel art; bars around it.
-
-## Runner
-
-*class* in [`src/helix/host/Runner.hx`](../../src/helix/host/Runner.hx)
-
-What a host pumps: at its init it builds the app's services over a profile's adapters (and the engine's shared services over those) and binds the static classes the app reaches them by (Window, Input, Graphics, Audio, Assets, Time and the others), each frame it runs them in their order (the shared services' polls, input's, the presentation refitted to the window and the game's clock advanced, the app's update, the stage drawn, input's frame end) with the clock and timings, and at its cleanup it closes them in theirs (the shared services, the app's cleanup, audio, input, the framework's pipelines, the GPU) and unbinds the statics: the platform's services are the runner's to close, never the app's. The same on every platform: a host owns only the loop, the clock and the window.
-
-```haxe
-function new(host:IHost, compose:() -> Adapters)
-function run(app:IApp):Void
-var host(default, null):IHost
-var clock(default, null):FrameClock
-var frameCpu(default, null):Float
-var frameInterval(default, null):Float
-var busy(get, never):Bool
-var assets(get, never):AssetService
-var images(get, never):ImageDecoding
-var platform(get, never):Adapters
-function install(part:Part):Void
-function assetChanged(path:String):Void
-```
-
-- `new`: A runner for host, building its services from compose's adapters when the host starts (natively the GPU exists only then).
-- `run`: Runs app on the host: its init once the services are filled and the game's config has come, its frame once a display refresh, its cleanup at the end. Natively it returns only after the window closes.
-- `host`: The host it runs on.
-- `clock`: The frame clock.
-- `frameCpu`: The last frame's CPU time in milliseconds.
-- `frameInterval`: Milliseconds between the last two frames' starts (0 for the first).
-- `busy`: Whether the shared services are loading anything (Host.busy).
-- `assets`: The assets, for an optional part built over them.
-- `images`: The image decoder, for an optional part built over it.
-- `platform`: The adapters the program runs on, for an optional part built over them.
-- `install`: Adds an optional part, its hooks run from now until the program's end. Its static class calls it, at the part's first use.
-- `assetChanged`: The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it.
 
 ## Screen
 

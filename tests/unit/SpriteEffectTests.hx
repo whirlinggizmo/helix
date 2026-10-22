@@ -24,6 +24,7 @@ import helix.shader.SpriteOutline;
 	one); the framework's block holds the texture's size and the batch's time; and each library class's fields write their parameters where the
 	shader's reflection puts them, a flash fading over the batch's time; and a Renderer3D's sprites draw through an effect's sprite3D variant, split
 	by effect as by texture, at the stage's time. */
+@:access(helix)
 class SpriteEffectTests {
 	static var checks = 0;
 

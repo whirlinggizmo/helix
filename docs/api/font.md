@@ -2,37 +2,6 @@
 
 [Back to the index](README.md)
 
-## BakedFont
-
-*typedef* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
-
-A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 / padding a pixel.
-
-- `width:Int`
-- `scale:Float`
-- `pixelHeight:Float`
-- `lineGap:Float`
-- `height:Int`
-- `glyphs:Array<BakedGlyph>`
-- `field:haxe.io.Bytes`
-- `descent:Float`
-- `ascent:Float`
-
-## BakedGlyph
-
-*typedef* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
-
-A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height. A glyph with nothing to draw (a space) has no size.
-
-- `yOffset:Int`
-- `y:Int`
-- `xOffset:Int`
-- `x:Int`
-- `width:Int`
-- `height:Int`
-- `code:Int`
-- `advance:Float`
-
 ## Font
 
 *class* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx)
@@ -71,18 +40,6 @@ function destroy(?gpu:IGraphics):Void
 - `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
 - `destroy`: Frees the font's texture on gpu, the adapter that made it: the program's (Graphics) when not given.
 
-## FontBaker
-
-*class* in [`src/helix/font/FontBaker.hx`](../../src/helix/font/FontBaker.hx)
-
-Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened into segments finer than a twentieth of a pixel, and each texel holds its signed distance to them (inside by the nonzero rule), so text drawn from it stays sharp from small to about four times the baked height. Glyphs are packed in rows, left to right.
-
-```haxe
-static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont
-```
-
-- `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
-
 ## Fonts
 
 *class* in [`src/helix/font/Fonts.hx`](../../src/helix/font/Fonts.hx)
@@ -114,39 +71,3 @@ Where a glyph's texels are, and where it goes: x and y from the pen on the basel
 - `u0:Float`
 - `height:Float`
 - `advance:Float`
-
-## GlyphOutline
-
-*typedef* in [`src/helix/font/TrueType.hx`](../../src/helix/font/TrueType.hx)
-
-A glyph's outline in font units (y up): closed contours, each a list of points, x and y in turn, with whether each is on the curve; two off-curve points in a row have an on-curve point between them, as TrueType draws quadratic curves.
-
-An alias of `Array<{points:Array<Float>, onCurve:Array<Bool>}>`.
-
-## TrueType
-
-*class* in [`src/helix/font/TrueType.hx`](../../src/helix/font/TrueType.hx)
-
-A TrueType font file (glyf outlines) as read: its metrics, its characters' glyphs and their outlines, and the kerning between pairs (the GPOS table's pair adjustments, or the older kern table). Read in Haxe, the same on every target; Font bakes it into a texture. Throws, saying why, for a file it can't read: no glyf outlines (a CFF font), or a table missing or cut short.
-
-```haxe
-function new(data:haxe.io.Bytes)
-final unitsPerEm:Int
-final ascent:Int
-final descent:Int
-final lineGap:Int
-function getGlyphIndex(code:Int):Int
-function getAdvance(glyph:Int):Int
-function getOutline(glyph:Int):GlyphOutline
-function getKerning(left:Int, right:Int):Int
-```
-
-- `new`: Reads a TrueType file (the first font of a collection).
-- `unitsPerEm`: Font units in an em: what the metrics below are counted in.
-- `ascent`: How far the font reaches above the baseline, in font units.
-- `descent`: How far it reaches below the baseline, in font units: 0 or negative.
-- `lineGap`: The extra space between lines, in font units.
-- `getGlyphIndex`: The glyph of character code, or 0 (the missing glyph) when the font has none.
-- `getAdvance`: How far the pen moves after glyph, in font units.
-- `getOutline`: glyph's outline in font units, y up: empty for a glyph with none (a space). Composite glyphs are assembled from their parts.
-- `getKerning`: The horizontal kerning between glyphs left and right, in font units: added to left's advance (usually negative, closing the pair). From GPOS pair adjustments when the font has them, else its kern table; 0 for none.

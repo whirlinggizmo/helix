@@ -3,10 +3,12 @@ package helix.texture;
 import haxe.io.Bytes;
 
 /** Mipmap chains for IGraphics.createTexture, built the same on every target so their images match. */
+@:noCompletion
+@:allow(helix)
 class Mipmaps {
 	/** rgba (width x height RGBA8) and each level below it, half the size of the last (at least 1), down to 1x1: each texel the rounded average of
 		the 2x2 above it, an odd edge repeating its last row or column. */
-	public static function build(width:Int, height:Int, rgba:Bytes):Array<Bytes> {
+	static function build(width:Int, height:Int, rgba:Bytes):Array<Bytes> {
 		var levels = [rgba], sw = width, sh = height;
 		while (sw > 1 || sh > 1) {
 			var src = levels[levels.length - 1],

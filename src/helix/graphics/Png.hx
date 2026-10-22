@@ -7,6 +7,8 @@ import haxe.io.BytesBuffer;
 /** PNG encoding in Haxe, the same bytes on every target: RGBA8 rows filtered as PNG suggests (the filter of the smallest sum, row by row),
 	then deflated with LZ77 matching and the fixed Huffman codes. Smaller than stored data by about as much as a dynamic-code encoder for
 	flat, synthetic images (a game's frame); larger for noisy ones. */
+@:noCompletion
+@:allow(helix)
 class Png {
 	static inline var WINDOW = 32768;
 	static inline var HASH_BITS = 15;
@@ -29,7 +31,7 @@ class Png {
 
 	/** The PNG file of a width x height RGBA8 image, rows top first (rgba holds at least width * height * 4 bytes). Throws for a size of 0 or
 		less or rgba too short. */
-	public static function encode(width:Int, height:Int, rgba:Bytes):Bytes {
+	static function encode(width:Int, height:Int, rgba:Bytes):Bytes {
 		if (width <= 0 || height <= 0 || rgba.length < width * height * 4)
 			throw "Invalid image";
 		var out = new BytesBuffer();

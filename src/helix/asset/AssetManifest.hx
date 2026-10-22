@@ -5,12 +5,14 @@ import haxe.io.Bytes;
 /** One directory's asset manifest (tools/gen_manifest.py writes them): the hash of each file in it, and of each subdirectory's own manifest,
 	so an unchanged directory is known unchanged from its parent alone, as git knows a tree. The JSON is
 	`{"manifest": 1, "files": {"name": "sha256:<64 hex>"}, "dirs": {"name": "sha256:<64 hex>"}}`; other top-level keys are ignored. */
+@:noCompletion
+@:allow(helix)
 class AssetManifest {
 	/** The hash of each file, by name. */
-	public final files:Map<String, String>;
+	final files:Map<String, String>;
 
 	/** The hash of each subdirectory's manifest, by name. */
-	public final dirs:Map<String, String>;
+	final dirs:Map<String, String>;
 
 	function new(files:Map<String, String>, dirs:Map<String, String>) {
 		this.files = files;
@@ -19,7 +21,7 @@ class AssetManifest {
 
 	/** The manifest in bytes, or null for anything that isn't one exactly: not JSON, another version, a hash that isn't "sha256:" and 64
 		lower-case hex digits, or a name that is empty, "." or "..", or holds a "/". A manifest wrong anywhere is trusted nowhere. */
-	public static function parse(bytes:Bytes):Null<AssetManifest> {
+	static function parse(bytes:Bytes):Null<AssetManifest> {
 		var value:Dynamic = try haxe.Json.parse(bytes.toString()) catch (_:Dynamic) null;
 		if (value == null || Reflect.field(value, "manifest") != 1)
 			return null;
@@ -43,16 +45,17 @@ class AssetManifest {
 	}
 
 	/** Whether value is a hash as manifests write them: "sha256:" and 64 lower-case hex digits. */
-	public static function isHash(value:String):Bool
+	static function isHash(value:String):Bool
 		return ~/^sha256:[0-9a-f]{64}$/.match(value);
 
 	/** bytes' hash as manifests write it. */
-	public static function hash(bytes:Bytes):String
+	static function hash(bytes:Bytes):String
 		return "sha256:" + haxe.crypto.Sha256.make(bytes).toHex();
 }
 
 /** What the cache keeps beside a downloaded file: the response's validators (its ETag and Last-Modified), until when the copy is fresh
 	(seconds since 1970, from Cache-Control: max-age, or a year for immutable; no time at all otherwise), and the hash of the bytes kept. */
+@:noCompletion
 typedef CacheRecord = {
 	@:optional final etag:String;
 	@:optional final lastModified:String;
@@ -65,9 +68,11 @@ typedef CacheRecord = {
 }
 
 /** Reading and writing CacheRecords. */
+@:noCompletion
+@:allow(helix)
 class CacheRecords {
 	/** The record in bytes, or null when they aren't one (or are from before records were kept). */
-	public static function parse(bytes:Bytes):Null<CacheRecord> {
+	static function parse(bytes:Bytes):Null<CacheRecord> {
 		var value:Dynamic = try haxe.Json.parse(bytes.toString()) catch (_:Dynamic) null;
 		if (value == null || !Std.isOfType(value.hash, String) || !Std.isOfType(value.freshUntil, Float))
 			return null;
@@ -82,7 +87,7 @@ class CacheRecords {
 
 	/** The record for a response's headers (lower-case names) at now (seconds since 1970), for bytes of hash, from source when that isn't
 		the path's own URL. */
-	public static function of(headers:Map<String, String>, hash:String, now:Float, ?source:String):CacheRecord
+	static function of(headers:Map<String, String>, hash:String, now:Float, ?source:String):CacheRecord
 		return {
 			etag: headers["etag"],
 			lastModified: headers["last-modified"],
@@ -93,7 +98,7 @@ class CacheRecords {
 
 	/** How long a response stays fresh by its Cache-Control, in seconds: its max-age, a year for immutable without one, none when it says
 		no-store or no-cache, or says nothing. */
-	public static function freshSeconds(control:Null<String>):Float {
+	static function freshSeconds(control:Null<String>):Float {
 		if (control == null)
 			return 0;
 		var seconds = 0., immutable = false;
@@ -113,6 +118,6 @@ class CacheRecords {
 	}
 
 	/** The record as bytes to keep. */
-	public static function encode(record:CacheRecord):Bytes
+	static function encode(record:CacheRecord):Bytes
 		return Bytes.ofString(haxe.Json.stringify(record));
 }

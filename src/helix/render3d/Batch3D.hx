@@ -7,6 +7,8 @@ import haxe.io.Bytes;
 /** Immediate 3D drawing in world units through a Camera3D, inside a frame (IGraphics.beginFrame to endFrame), depth-tested against what the frame
 	has drawn in 3D so far. A batch is two uploads and at most two draws: its triangles, then its lines. Colors are 0xAARRGGBB. Solid shapes are
 	shaded on the CPU by one fixed light from above (setLight), with no lighting in the shader. */
+@:noCompletion
+@:allow(helix)
 class Batch3D {
 	var gpu:IGraphics;
 	var capacity:Int;
@@ -25,7 +27,7 @@ class Batch3D {
 	var transformed = false;
 
 	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.  Without gpu, the program's (Graphics.instance). */
-	public function new(?gpu:IGraphics, maxVertices = 65536) {
+	function new(?gpu:IGraphics, maxVertices = 65536) {
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
@@ -39,32 +41,32 @@ class Batch3D {
 	}
 
 	/** Vertices of the frame drawn last, triangles' and lines'. */
-	public var vertexCount(get, never):Int;
+	var vertexCount(get, never):Int;
 
 	function get_vertexCount():Int
 		return triangleVertices + lineVertices;
 
 	/** Draws of the frame drawn last: up to two. */
-	public var drawCallCount(get, never):Int;
+	var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
 		return draws;
 
 	/** The direction toward the light, x (normalized). */
-	public var lightX(default, null):Float = .3;
+	var lightX(default, null):Float = .3;
 
 	/** The direction toward the light, y (normalized). */
-	public var lightY(default, null):Float = .9;
+	var lightY(default, null):Float = .9;
 
 	/** The direction toward the light, z (normalized). */
-	public var lightZ(default, null):Float = .3;
+	var lightZ(default, null):Float = .3;
 
 	/** The brightness of a face turned away from the light, 0 to 1. */
-	public var ambient(default, null):Float = .35;
+	var ambient(default, null):Float = .35;
 
 	/** The light solid shapes are shaded by: from the direction x, y, z (toward the light, normalized here), with ambient the brightness of a face
 		turned away (0 to 1). False, changing nothing, for a zero direction or an ambient outside 0 to 1. */
-	public function setLight(x:Float, y:Float, z:Float, ambient:Float):Bool {
+	function setLight(x:Float, y:Float, z:Float, ambient:Float):Bool {
 		var length = Math.sqrt(x * x + y * y + z * z);
 		if (length == 0 || !(ambient >= 0 && ambient <= 1))
 			return false;
@@ -76,21 +78,21 @@ class Batch3D {
 	}
 
 	/** Places what follows by m (a node's world matrix: a Drawing3D drawn where its node is): every point carried through it. */
-	public function setTransform(m:Mat4):Void {
+	function setTransform(m:Mat4):Void {
 		for (i in 0...16)
 			transform[i] = m.get(i);
 		transformed = true;
 	}
 
 	/** What follows is drawn where it's given, in world units. */
-	public function resetTransform():Void {
+	function resetTransform():Void {
 		if (transformed)
 			transform = [1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 		transformed = false;
 	}
 
 	/** Starts collecting a batch seen through camera; later calls only fill it until end. */
-	public function begin(camera:Camera3D):Void {
+	function begin(camera:Camera3D):Void {
 		this.camera = camera;
 		resetTransform();
 		triangleVertices = 0;
@@ -99,7 +101,7 @@ class Batch3D {
 	}
 
 	/** Draws the batch in the open frame, in the camera's viewport: its triangles, then its lines. Once a frame. */
-	public function end():Void {
+	function end():Void {
 		gpu.applyViewport(camera.viewportX, camera.framebufferHeight - camera.viewportY - camera.viewportHeight, camera.viewportWidth, camera.viewportHeight);
 		camera.viewProjection.writeTo(uniforms);
 		gpu.updateBuffer(triangleBuffer, triangles, triangleVertices * Color3DProgram.stride);
@@ -149,7 +151,7 @@ class Batch3D {
 	}
 
 	/** A segment between two world points. */
-	public function line(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void {
+	function line(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void {
 		if (lineVertices + 2 > capacity)
 			throw "Batch3D capacity exceeded";
 		place(lines, lineVertices++, x0, y0, z0, color, 1);
@@ -157,7 +159,7 @@ class Batch3D {
 	}
 
 	/** A filled triangle through three world points, unshaded. */
-	public function triangle(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, x2:Float, y2:Float, z2:Float, color:Int):Void {
+	function triangle(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, x2:Float, y2:Float, z2:Float, color:Int):Void {
 		vertex(x0, y0, z0, color, 1);
 		vertex(x1, y1, z1, color, 1);
 		vertex(x2, y2, z2, color, 1);
@@ -176,7 +178,7 @@ class Batch3D {
 	}
 
 	/** A solid box centered on x, y, z, width along x, height along y, depth along z, each face shaded by the light. */
-	public function cube(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void {
+	function cube(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void {
 		var x0 = x - width / 2,
 			x1 = x + width / 2,
 			y0 = y - height / 2,
@@ -192,7 +194,7 @@ class Batch3D {
 	}
 
 	/** A box's twelve edges, centered on x, y, z, as cube's. */
-	public function cubeWires(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void {
+	function cubeWires(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float, color:Int):Void {
 		var x0 = x - width / 2,
 			x1 = x + width / 2,
 			y0 = y - height / 2,
@@ -212,7 +214,7 @@ class Batch3D {
 	}
 
 	/** A solid sphere centered on x, y, z, of rings bands from pole to pole and slices around, each vertex shaded by its normal. */
-	public function sphere(x:Float, y:Float, z:Float, radius:Float, color:Int, rings = 16, slices = 24):Void {
+	function sphere(x:Float, y:Float, z:Float, radius:Float, color:Int, rings = 16, slices = 24):Void {
 		for (ring in 0...rings) {
 			var a0 = Math.PI * ring / rings, a1 = Math.PI * (ring + 1) / rings;
 			var y0 = Math.cos(a0),
@@ -243,7 +245,7 @@ class Batch3D {
 	}
 
 	/** A square grid on the y = 0 plane centered on the origin: slices cells a side, each spacing world units. */
-	public function grid(slices:Int, spacing:Float, color:Int):Void {
+	function grid(slices:Int, spacing:Float, color:Int):Void {
 		var half = slices * spacing / 2;
 		for (i in 0...slices + 1) {
 			var at = -half + i * spacing;
@@ -253,7 +255,7 @@ class Batch3D {
 	}
 
 	/** Frees the buffers made by new; the batch is unusable after. */
-	public function destroy():Void {
+	function destroy():Void {
 		gpu.destroyBuffer(triangleBuffer);
 		gpu.destroyBuffer(lineBuffer);
 	}

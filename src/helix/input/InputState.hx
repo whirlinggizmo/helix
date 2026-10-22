@@ -403,6 +403,7 @@ class InputState implements IInput {
 		wheelY = 0;
 	}
 
+	@:noCompletion
 	public function watch(watcher:IInputWatcher):Bool {
 		if (watcher == null || watchers.indexOf(watcher) >= 0)
 			return false;
@@ -410,6 +411,7 @@ class InputState implements IInput {
 		return true;
 	}
 
+	@:noCompletion
 	public function unwatch(watcher:IInputWatcher):Bool
 		return watchers.remove(watcher);
 

@@ -10,6 +10,7 @@ import helix.audio.AudioStream;
 import helix.texture.Texture2D;
 import helix.texture.Textures;
 import helix.render3d.EnvironmentMap3D;
+import helix.render3d.Models3D;
 import helix.render3d.Environments3D;
 import helix.render3d.ModelCache3D;
 import helix.render3d.ModelFile3D;
@@ -115,9 +116,9 @@ class Loader {
 		return Environments3D.load(path, both.loaded, both.failed);
 	}
 
-	/** A model file through models (Models3D.instance, or a ModelCache3D of the test's). */
-	public function model(models:ModelCache3D, path:String, loaded:ModelFile3D->Void, ?failed:String->Void):IRequest {
+	/** A model file through Models3D (or models, a cache of a test's). */
+	public function model(path:String, loaded:ModelFile3D->Void, ?failed:String->Void, ?models:ModelCache3D):IRequest {
 		var both = counted(path, loaded, failed);
-		return models.load(path, both.loaded, both.failed);
+		return models != null ? models.load(path, both.loaded, both.failed) : Models3D.load(path, both.loaded, both.failed);
 	}
 }

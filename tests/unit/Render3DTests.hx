@@ -13,6 +13,7 @@ import helix.render3d.Ray3D;
 import helix.render3d.SpotLight3D;
 
 /** Mat4 and Camera3D: projection, view and their product, checked by where they put known points. */
+@:access(helix)
 class Render3DTests {
 	static var checks = 0;
 

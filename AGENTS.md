@@ -5,6 +5,7 @@ HeliX is a Haxe game framework: Haxe → JS for the browser, Haxe → hxcpp/C++ 
 ## Rules
 
 - **Follow docs/CONVENTIONS.md.** It covers names (properties for values, classes for kinds, static classes for the program's services, methods named for what they do, every type of one kind ending in `2D` or `3D`, checked by `tools/check_names.py`), units (radians, seconds, 0xAARRGGBB, named spaces), capitals and layout. Every public type and member gets a doc comment. Run the formatter rather than laying code out by hand.
+- **Mark the engine's own.** A public type or member a game never names is `@:noCompletion` (an engine-only class's members private under `@:allow(helix)`), so the API reference shows only what a game writes against: docs/CONVENTIONS.md says how; `gen_apidoc` and `check_adapters` catch some slips, not a new type left unmarked.
 - **No backward compatibility.** When an API changes, change every caller in the same commit. No aliases, shims or deprecated wrappers.
 - **Check prior work first.** Before writing a feature, read how the earlier Whirling Gizmo C frameworks did it (`../wgrender-c`, `../libwgf`). Their platform quirks were hard-won, for example gamepad mapping by driver, touch gestures, mipmaps, and cache locations. Write HeliX's own code; don't copy large chunks.
 - **Don't name libwgf in HeliX.** Code, examples, conventions and API docs don't refer to it. It is going away. Only historical entries in docs/DECISIONS.md name it.

@@ -4,6 +4,7 @@ import haxe.io.Bytes;
 
 /** A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height.
 	A glyph with nothing to draw (a space) has no size. */
+@:noCompletion
 typedef BakedGlyph = {
 	final code:Int;
 	final x:Int;
@@ -26,6 +27,7 @@ private typedef Shape = {
 
 /** A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 /
 	padding a pixel. */
+@:noCompletion
 typedef BakedFont = {
 	final width:Int;
 	final height:Int;
@@ -41,12 +43,14 @@ typedef BakedFont = {
 /** Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened
 	into segments finer than a twentieth of a pixel, and each texel holds its signed distance to them (inside by the nonzero rule), so text drawn
 	from it stays sharp from small to about four times the baked height. Glyphs are packed in rows, left to right. */
+@:noCompletion
+@:allow(helix)
 class FontBaker {
 	static inline var ON_EDGE = 128;
 
 	/** Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas
 		atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel). */
-	public static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont {
+	static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont {
 		var scale = pixelHeight / (font.ascent - font.descent);
 		var fields:Array<Bytes> = [], glyphs:Array<BakedGlyph> = [];
 		var x = 0, y = 0, rowHeight = 0;

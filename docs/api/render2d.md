@@ -14,102 +14,6 @@ Which point of a line of text its x names: its left edge, center or right edge.
 
 Which way a SpriteAnimation2D plays through its frames (Aseprite's tag directions).
 
-## Batch2D
-
-*class* in [`src/helix/render2d/Batch2D.hx`](../../src/helix/render2d/Batch2D.hx)
-
-Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Renderer2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
-
-```haxe
-function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
-var vertexCount(get, never):Int
-var drawCallCount(get, never):Int
-var font(default, null):Font
-function begin(camera:Camera2D):Void
-var camera(default, set):Camera2D
-var alpha:Float
-var effect(default, set):Null<SpriteEffect>
-var time:Float
-var transformA(get, never):Float
-var transformB(get, never):Float
-var transformC(get, never):Float
-var transformD(get, never):Float
-var transformX(get, never):Float
-var transformY(get, never):Float
-function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void
-function resetTransform():Void
-function end():Void
-function pushClip(x:Float, y:Float, w:Float, h:Float):Void
-function popClip():Void
-function useTexture(value:Texture2D):Void
-var samplingOverride:Null<Sampling>
-function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, ?distanceField:Bool = false):Void
-function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?tint:Int = 0xffffffff, ?u0:Float = 0., ?v0:Float = 0., ?u1:Float = 1., ?v1:Float = 1.):Void
-function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, ?scaleX:Float = 1., ?scaleY:Float = 1., ?rotation:Float = 0., ?tint:Int = 0xffffffff):Void
-function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
-function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
-function emitter(emitter:Emitter):Void
-function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font):Void
-function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font):Float
-function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void
-function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void
-function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void
-function frame(x:Float, y:Float, w:Float, h:Float, width:Float, tint:Int):Void
-function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void
-function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void
-function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void
-function circle(x:Float, y:Float, radius:Float, tint:Int):Void
-function circleLines(x:Float, y:Float, radius:Float, width:Float, tint:Int):Void
-function triangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, width:Float, tint:Int):Void
-function polygon(points:Array<Float>, tint:Int, ?triangles:Array<Int>):Void
-function polygonLines(points:Array<Float>, width:Float, tint:Int):Void
-function destroy():Void
-```
-
-- `new`: A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them. Without gpu, the program's (Graphics.instance).
-- `vertexCount`: Vertices of the frame drawn last, those drawn through effects among them.
-- `drawCallCount`: Draws of the frame drawn last: one per run of a texture, camera and effect.
-- `font`: The built-in pixel font, whose texture also has the white texel shapes use.
-- `begin`: Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls only fill it until end.
-- `camera`: The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one batch.
-- `alpha`: What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded). 1 at begin. Particles aren't faded by it.
-- `effect`: The effect what follows is drawn through (a sprite shader: helix.shader' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
-- `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Renderer2D's draw sets it to the stage's time.
-- `transformA`: The transform's a: x's share of a point's x.
-- `transformB`: The transform's b: x's share of a point's y.
-- `transformC`: The transform's c: y's share of a point's x.
-- `transformD`: The transform's d: y's share of a point's y.
-- `transformX`: The transform's x offset, world units.
-- `transformY`: The transform's y offset, world units.
-- `setTransform`: Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units.
-- `resetTransform`: What follows is drawn where it is given, in world units.
-- `end`: Draws the batch in the open frame: one upload of every vertex (and one of those drawn through effects) and one draw per run of a texture, camera and effect, each in its camera's viewport. Once a frame.
-- `pushClip`: Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a turned one's bounds), within any clip already pushed, until popClip.
-- `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
-- `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
-- `samplingOverride`: How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in one frame (a Sprite2D's sampling, Drawing2D.image's).
-- `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
-- `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity.
-- `sheetFrame`: sheet's frame at index (SpriteSheet2D.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
-- `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
-- `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
-- `emitter`: Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An emitter with nothing to draw draws nothing.
-- `drawText`: Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped.
-- `drawTextWrapped`: Draws text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
-- `rect`: A filled rectangle in world units, top-left at x, y.
-- `triangle`: A filled triangle through three world points.
-- `line`: A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0.
-- `frame`: Rectangle outline drawn inside its bounds.
-- `roundedRect`: A filled rectangle with corners of radius world units (clamped to half the shorter side), with segments for their size on screen.
-- `gradientRect`: A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from one color to the other (0xAARRGGBB), each channel linearly: across it, from its left edge to its right, or down, from its top to its bottom.
-- `roundedFrame`: A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers.
-- `circle`: A filled circle in world units, centered on x, y, with segments for its size on screen.
-- `circleLines`: Circle outline drawn inside its radius.
-- `triangleLines`: Triangle outline drawn along its edges.
-- `polygon`: A filled polygon through points (x and y in turn, at least 3), convex or not, as triangles of their indices (Polygon2D.triangulate's, three a triangle; worked out here when null: keep them for a polygon drawn every frame).
-- `polygonLines`: A polygon's outline, closed, width world units wide centered on its edges, its corners mitered (a miter longer than twice the width is cut to that). Nothing for fewer than 2 points.
-- `destroy`: Frees the buffers and font made by new; the batch is unusable after.
-
 ## Camera2D
 
 *class* in [`src/helix/render2d/Camera2D.hx`](../../src/helix/render2d/Camera2D.hx)
@@ -209,17 +113,6 @@ function apply(camera:Camera2D):Void
 - `snap`: Puts the view's center at x, y at once (a respawn, a new level), within its bounds at the next update.
 - `update`: Follows the target at targetX, targetY (world units) for dt seconds, seeing as much as camera shows (its viewport at its zoom), and advances the shake.
 - `apply`: Places camera at the followed point, thrown by the shake.
-
-## ChainCalls
-
-*typedef* in [`src/helix/render2d/ViewFrame.hx`](../../src/helix/render2d/ViewFrame.hx)
-
-A chain's calls (PostProcess's beginScene, endScene, present and hdr), through the object, so a hot reload reaches the new code.
-
-- `present:() -> Void`
-- `hdr:() -> Bool`
-- `end:Float -> Void`
-- `begin:(Int, Int, Int) -> Void`
 
 ## Decals2D
 
@@ -398,34 +291,6 @@ static function triangulate(points:Array<Float>):Array<Int>
 
 - `doubleArea`: Twice the signed area of the polygon through points: above 0 when its points go clockwise on screen (y down).
 - `triangulate`: The triangles filling the simple polygon through points (at least 3, not crossing itself), as indices of points, three a triangle, by ear clipping; either winding. A polygon that crosses itself is filled as far as clipping gets.
-
-## Renderer2D
-
-*class* in [`src/helix/render2d/Renderer2D.hx`](../../src/helix/render2d/Renderer2D.hx)
-
-What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs.
-
-```haxe
-function new(?root:Node2D)
-var root(default, null):Node2D
-function add(node:Node2D):Bool
-function remove(node:Node2D):Bool
-var time:Float
-var font(get, never):Null<Font>
-var drawnNodeCount(get, never):Int
-function draw(batch:Batch2D, camera:Camera2D):Void
-function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
-```
-
-- `new`: An empty stage, or one drawing root's children (a View2D's tree).
-- `root`: The node everything on the stage hangs from.
-- `add`: Adds node to the stage, as the root's last child: drawn over what is there.
-- `remove`: Takes node from the stage's root.
-- `time`: The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw.
-- `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
-- `drawnNodeCount`: Nodes drawn by the last draw (in view).
-- `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
-- `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
 ## Shape2D
 

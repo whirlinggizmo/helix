@@ -5,6 +5,7 @@ import helix.render3d.Hdr;
 
 /** Environment maps' CPU half: the direction mappings, the irradiance, the cubes and their prefiltering, half floats, the BRDF table, .hdr
 	decoding and a whole bake. */
+@:access(helix)
 class EnvironmentTests {
 	static var checks = 0;
 

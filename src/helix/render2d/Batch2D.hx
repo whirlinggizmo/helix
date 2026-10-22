@@ -15,24 +15,26 @@ import helix.texture.Texture2D;
 	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform)
 	places what follows, so a shape or text can be drawn turned and scaled; a Renderer2D draws its nodes so. What is drawn with an effect (effect: a
 	sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own. */
+@:noCompletion
+@:allow(helix)
 class Batch2D {
 	var vertices = 0;
 	var draws = 0;
 
 	/** Vertices of the frame drawn last, those drawn through effects among them. */
-	public var vertexCount(get, never):Int;
+	var vertexCount(get, never):Int;
 
 	function get_vertexCount():Int
 		return vertices + effectVertices;
 
 	/** Draws of the frame drawn last: one per run of a texture, camera and effect. */
-	public var drawCallCount(get, never):Int;
+	var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
 		return draws;
 
 	/** The built-in pixel font, whose texture also has the white texel shapes use. */
-	public var font(default, null):Font;
+	var font(default, null):Font;
 
 	var gpu:IGraphics;
 	var capacity:Int;
@@ -85,7 +87,7 @@ class Batch2D {
 	var a = 1.;
 
 	/** A batch of up to maxVertices vertices a frame, with its own buffer, pipeline and pixel font on gpu; cleanup frees them.  Without gpu, the program's (Graphics.instance). */
-	public function new(?gpu:IGraphics, maxVertices = 32768) {
+	function new(?gpu:IGraphics, maxVertices = 32768) {
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
 		this.gpu = gpu;
@@ -99,7 +101,7 @@ class Batch2D {
 
 	/** Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls
 		only fill it until end. */
-	public function begin(camera:Camera2D):Void {
+	function begin(camera:Camera2D):Void {
 		camera.fitFramebuffer();
 		@:bypassAccessor this.camera = camera;
 		@:bypassAccessor effect = null;
@@ -126,11 +128,11 @@ class Batch2D {
 
 	/** The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one
 		batch. */
-	public var camera(default, set):Camera2D;
+	var camera(default, set):Camera2D;
 
 	/** What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded).
 		1 at begin. Particles aren't faded by it. */
-	public var alpha:Float = 1.;
+	var alpha:Float = 1.;
 
 	function set_camera(value:Camera2D):Camera2D {
 		if (value != camera) {
@@ -145,7 +147,7 @@ class Batch2D {
 		default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its
 		region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next
 		stays one draw, as one texture does; its parameters are read as end draws. */
-	public var effect(default, set):Null<SpriteEffect>;
+	var effect(default, set):Null<SpriteEffect>;
 
 	function set_effect(value:Null<SpriteEffect>):Null<SpriteEffect> {
 		if (value != effect) {
@@ -158,46 +160,46 @@ class Batch2D {
 
 	/** The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Renderer2D's draw sets it
 		to the stage's time. */
-	public var time:Float = 0.;
+	var time:Float = 0.;
 
 	/** The transform's a: x's share of a point's x. */
-	public var transformA(get, never):Float;
+	var transformA(get, never):Float;
 
 	function get_transformA():Float
 		return ta;
 
 	/** The transform's b: x's share of a point's y. */
-	public var transformB(get, never):Float;
+	var transformB(get, never):Float;
 
 	function get_transformB():Float
 		return tb;
 
 	/** The transform's c: y's share of a point's x. */
-	public var transformC(get, never):Float;
+	var transformC(get, never):Float;
 
 	function get_transformC():Float
 		return tc;
 
 	/** The transform's d: y's share of a point's y. */
-	public var transformD(get, never):Float;
+	var transformD(get, never):Float;
 
 	function get_transformD():Float
 		return td;
 
 	/** The transform's x offset, world units. */
-	public var transformX(get, never):Float;
+	var transformX(get, never):Float;
 
 	function get_transformX():Float
 		return tx;
 
 	/** The transform's y offset, world units. */
-	public var transformY(get, never):Float;
+	var transformY(get, never):Float;
 
 	function get_transformY():Float
 		return ty;
 
 	/** Places what follows: a point x, y it is given is drawn at a * x + c * y + tx, b * x + d * y + ty in world units. */
-	public function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void {
+	function setTransform(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Void {
 		ta = a;
 		tb = b;
 		tc = c;
@@ -207,12 +209,12 @@ class Batch2D {
 	}
 
 	/** What follows is drawn where it is given, in world units. */
-	public function resetTransform():Void
+	function resetTransform():Void
 		setTransform(1, 0, 0, 1, 0, 0);
 
 	/** Draws the batch in the open frame: one upload of every vertex (and one of those drawn through effects) and one draw per run of a
 		texture, camera and effect, each in its camera's viewport. Once a frame. */
-	public function end():Void {
+	function end():Void {
 		closeRun();
 		gpu.updateBuffer(buffer, data, vertices * Sprite2DProgram.stride);
 		if (effectVertices > 0) {
@@ -269,7 +271,7 @@ class Batch2D {
 
 	/** Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a
 		turned one's bounds), within any clip already pushed, until popClip. */
-	public function pushClip(x:Float, y:Float, w:Float, h:Float):Void {
+	function pushClip(x:Float, y:Float, w:Float, h:Float):Void {
 		closeRun();
 		var lx = Math.POSITIVE_INFINITY,
 			ly = Math.POSITIVE_INFINITY,
@@ -302,7 +304,7 @@ class Batch2D {
 	}
 
 	/** Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed. */
-	public function popClip():Void {
+	function popClip():Void {
 		if (clips.length == 0)
 			return;
 		closeRun();
@@ -316,7 +318,7 @@ class Batch2D {
 	}
 
 	/** Later quads sample this texture, as its sampling is now (Texture2D.sampling). */
-	public function useTexture(value:Texture2D):Void {
+	function useTexture(value:Texture2D):Void {
 		var wanted = samplingOverride != null ? samplingOverride : value.sampling;
 		if (value != texture || wanted != sampling) {
 			closeRun();
@@ -327,7 +329,7 @@ class Batch2D {
 
 	/** How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in
 		one frame (a Sprite2D's sampling, Drawing2D.image's). */
-	public var samplingOverride:Null<Sampling>;
+	var samplingOverride:Null<Sampling>;
 
 	function closeRun():Void {
 		var end = effect == null ? vertices : effectVertices;
@@ -416,7 +418,7 @@ class Batch2D {
 
 	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is
 		a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
-	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
+	function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
 		region(u0, v0, u1, v1);
 		// The 2D shader reads an alpha over 1 as "the texture's alpha is a distance field", tinted by the alpha less 2.
@@ -432,8 +434,7 @@ class Batch2D {
 
 	/** texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it
 		(the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity. */
-	public function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, rotation = 0., tint = 0xffffffff, u0 = 0., v0 = 0., u1 = 1.,
-			v1 = 1.):Void {
+	function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, rotation = 0., tint = 0xffffffff, u0 = 0., v0 = 0., u1 = 1., v1 = 1.):Void {
 		useTexture(texture);
 		color(tint);
 		region(u0, v0, u1, v1);
@@ -458,7 +459,7 @@ class Batch2D {
 		scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white
 		by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing.
 		Throws when the frame's vertices pass capacity. */
-	public function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
+	function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, scaleX = 1., scaleY = 1., rotation = 0., tint = 0xffffffff):Void {
 		var frame = sheet.getFrame(index);
 		if (frame == null)
 			return;
@@ -509,7 +510,7 @@ class Batch2D {
 	/** texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x
 		sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is
 		now. */
-	public function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
+	function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
 			sourceHeight = 0.):Void {
 		useTexture(texture);
 		var tw = texture.width, th = texture.height;
@@ -525,8 +526,8 @@ class Batch2D {
 		width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk
 		alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from
 		one image. */
-	public function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float,
-			tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0., sourceHeight = 0.):Void {
+	function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float, tint = 0xffffffff,
+			sourceX = 0., sourceY = 0., sourceWidth = 0., sourceHeight = 0.):Void {
 		useTexture(texture);
 		var tw = texture.width, th = texture.height;
 		if (!(sourceWidth > 0 && sourceHeight > 0)) {
@@ -556,7 +557,7 @@ class Batch2D {
 	/** Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places
 		are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An
 		emitter with nothing to draw draws nothing. */
-	public function emitter(emitter:helix.particle.Emitter):Void {
+	function emitter(emitter:helix.particle.Emitter):Void {
 		if (!emitter.drawable)
 			return;
 		closeRun();
@@ -577,7 +578,7 @@ class Batch2D {
 
 	/** Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted
 		color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped. */
-	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font):Void {
+	function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font):Void {
 		if (font == null)
 			font = this.font;
 		var unit = size / font.size;
@@ -602,8 +603,7 @@ class Batch2D {
 
 	/** Draws text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as
 		drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen). */
-	public function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25,
-			?font:Font):Float {
+	function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25, ?font:Font):Float {
 		var f = font == null ? this.font : font, row = 0;
 		for (line in f.wrap(text, size, width))
 			drawText(line, x, y + size * lineHeight * row++, size, color, align, font);
@@ -611,14 +611,14 @@ class Batch2D {
 	}
 
 	/** A filled rectangle in world units, top-left at x, y. */
-	public function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
+	function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void {
 		solid();
 		var u = texture.whiteU, v = texture.whiteV;
 		quad(x, y, w, h, u, v, u, v, tint);
 	}
 
 	/** A filled triangle through three world points. */
-	public function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void {
+	function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void {
 		solid();
 		var u = texture.whiteU, v = texture.whiteV;
 		color(tint);
@@ -629,7 +629,7 @@ class Batch2D {
 	}
 
 	/** A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0. */
-	public function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void {
+	function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void {
 		var dx = x1 - x0, dy = y1 - y0, length = Math.sqrt(dx * dx + dy * dy);
 		if (length == 0)
 			return;
@@ -639,7 +639,7 @@ class Batch2D {
 	}
 
 	/** Rectangle outline drawn inside its bounds. */
-	public function frame(x:Float, y:Float, w:Float, h:Float, width:Float, tint:Int):Void {
+	function frame(x:Float, y:Float, w:Float, h:Float, width:Float, tint:Int):Void {
 		rect(x, y, w, width, tint);
 		rect(x, y + h - width, w, width, tint);
 		rect(x, y + width, width, h - 2 * width, tint);
@@ -647,7 +647,7 @@ class Batch2D {
 	}
 
 	/** A filled rectangle with corners of radius world units (clamped to half the shorter side), with segments for their size on screen. */
-	public function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void {
+	function roundedRect(x:Float, y:Float, w:Float, h:Float, radius:Float, tint:Int):Void {
 		if (radius <= 0 || w <= 0 || h <= 0) {
 			rect(x, y, w, h, tint);
 			return;
@@ -662,7 +662,7 @@ class Batch2D {
 	/** A filled rectangle in world units, top-left at x, y, its corners of radius (clamped to half the shorter side; 0 for square), shaded from
 		one color to the other (0xAARRGGBB), each channel linearly: across it, from its left edge to its right, or down, from its top to its
 		bottom. */
-	public function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void {
+	function gradientRect(x:Float, y:Float, w:Float, h:Float, radius:Float, from:Int, to:Int, down:Bool):Void {
 		if (w <= 0 || h <= 0)
 			return;
 		solid();
@@ -699,7 +699,7 @@ class Batch2D {
 	}
 
 	/** A rounded rectangle's outline drawn inside its bounds, width wide: its inside's corners a radius less width, sharing their centers. */
-	public function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void {
+	function roundedFrame(x:Float, y:Float, w:Float, h:Float, radius:Float, width:Float, tint:Int):Void {
 		if (radius <= 0) {
 			frame(x, y, w, h, width, tint);
 			return;
@@ -746,7 +746,7 @@ class Batch2D {
 		return Std.int(Math.max(12, Math.min(256, Math.PI * 2 * radius * Math.sqrt(Math.abs(ta * td - tb * tc)) * Math.max(camera.zoom, camera.zoomY) / 2.5)));
 
 	/** A filled circle in world units, centered on x, y, with segments for its size on screen. */
-	public function circle(x:Float, y:Float, radius:Float, tint:Int):Void {
+	function circle(x:Float, y:Float, radius:Float, tint:Int):Void {
 		var n = segments(radius);
 		for (i in 0...n) {
 			var p = i * Math.PI * 2 / n, q = (i + 1) * Math.PI * 2 / n;
@@ -755,7 +755,7 @@ class Batch2D {
 	}
 
 	/** Circle outline drawn inside its radius. */
-	public function circleLines(x:Float, y:Float, radius:Float, width:Float, tint:Int):Void {
+	function circleLines(x:Float, y:Float, radius:Float, width:Float, tint:Int):Void {
 		var n = segments(radius), inner = Math.max(0, radius - width);
 		for (i in 0...n) {
 			var p = i * Math.PI * 2 / n,
@@ -770,7 +770,7 @@ class Batch2D {
 	}
 
 	/** Triangle outline drawn along its edges. */
-	public function triangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, width:Float, tint:Int):Void {
+	function triangleLines(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, width:Float, tint:Int):Void {
 		line(x0, y0, x1, y1, width, tint);
 		line(x1, y1, x2, y2, width, tint);
 		line(x2, y2, x0, y0, width, tint);
@@ -778,7 +778,7 @@ class Batch2D {
 
 	/** A filled polygon through points (x and y in turn, at least 3), convex or not, as triangles of their indices (Polygon2D.triangulate's, three
 		a triangle; worked out here when null: keep them for a polygon drawn every frame). */
-	public function polygon(points:Array<Float>, tint:Int, ?triangles:Array<Int>):Void {
+	function polygon(points:Array<Float>, tint:Int, ?triangles:Array<Int>):Void {
 		if (triangles == null)
 			triangles = Polygon2D.triangulate(points);
 		var i = 0;
@@ -793,7 +793,7 @@ class Batch2D {
 
 	/** A polygon's outline, closed, width world units wide centered on its edges, its corners mitered (a miter longer than twice the width is cut
 		to that). Nothing for fewer than 2 points. */
-	public function polygonLines(points:Array<Float>, width:Float, tint:Int):Void {
+	function polygonLines(points:Array<Float>, width:Float, tint:Int):Void {
 		var n = points.length >> 1;
 		if (n < 2)
 			return;
@@ -839,7 +839,7 @@ class Batch2D {
 	}
 
 	/** Frees the buffers and font made by new; the batch is unusable after. */
-	public function destroy():Void {
+	function destroy():Void {
 		gpu.destroyBuffer(buffer);
 		if (particles != null)
 			particles.destroy();

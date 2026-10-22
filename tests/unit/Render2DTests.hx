@@ -18,6 +18,7 @@ import helix.render3d.Sprite3D;
 
 /** Graphics that only counts: handles, and the draws and viewports of a frame, sorted by what their pipeline draws: a 2D batch's
 	(unindexed, with buffers), a screen effect's or background's (no buffers), or a mesh's (indexed). */
+@:access(helix)
 class CountingGraphics implements IGraphics {
 	var next = 1;
 	var pipelineDescs = new Map<Int, PipelineDesc>();
@@ -219,6 +220,7 @@ class CountingGraphics implements IGraphics {
 }
 
 /** Assets whose loads complete when flush says, counting them. Only load and the subscriptions do anything. */
+@:access(helix)
 class HeldAssets implements helix.asset.IAssets {
 	public var loads = 0;
 	public var held:Array<Void->Void> = [];
@@ -287,6 +289,7 @@ class HeldAssets implements helix.asset.IAssets {
 }
 
 /** A decoder answering at once with one white texel, counting decodes. */
+@:access(helix)
 class WhiteImages implements helix.graphics.IImageDecoder {
 	public var decodes = 0;
 
@@ -304,6 +307,7 @@ class WhiteImages implements helix.graphics.IImageDecoder {
 
 /** Polygon2D, Node2D's transforms and kinds, and Renderer2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
 @:access(helix.host.Screen)
+@:access(helix)
 class Render2DTests {
 	static var checks = 0;
 

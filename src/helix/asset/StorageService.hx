@@ -19,6 +19,7 @@ enum StorageWriteResult {
 }
 
 /** A lease on a stored file for streaming: location is a file path or URL the audio adapter opens, and release, called once, ends the lease. */
+@:noCompletion
 typedef Lease = {final location:String; final release:Void->Void;}
 
 /** How leasing a stored file ended: the lease, Missing, a failure message, or cancellation. */

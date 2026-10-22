@@ -5,6 +5,7 @@ package helix.app;
 	the new module and migrates the app object held in the class's `@:hot static`, so the Runner, compiled once into the executable,
 	reaches the newest code and the migrated object without knowing either; in the browser every call reaches the new code anyway, and the
 	lambdas cost nothing. */
+@:noCompletion
 class Springboard implements IApp {
 	final initCall:Void->Void;
 	final updateCall:Float->Void;

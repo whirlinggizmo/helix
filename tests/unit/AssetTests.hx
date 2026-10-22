@@ -2,6 +2,7 @@ import helix.asset.AssetPath;
 import helix.audio.Wav;
 
 /** WAV decoding and asset paths. Reads tests/fixtures/tone.wav (tools/gen_fixtures.py). */
+@:access(helix)
 class AssetTests {
 	static var checks = 0;
 

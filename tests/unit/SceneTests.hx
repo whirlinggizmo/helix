@@ -17,6 +17,7 @@ import helix.time.Time;
 	off at its end; the loading screen shown until its loader is done, held for a press when asked; the splash leaving after its seconds and a
 	press, or after its most wait; and the Loader's counting, progress and failures over held loads. Their frames are ticked here by hand
 	(Flow.tick), the stage bound as the runner would; nothing is drawn but the stage's own walk. */
+@:access(helix)
 class SceneTests {
 	static var checks = 0;
 	public static var log:Array<String> = [];
@@ -158,6 +159,7 @@ class SceneTests {
 }
 
 /** Assets whose loads the test releases by path. */
+@:access(helix)
 private class Held implements IAssets {
 	public function new() {}
 

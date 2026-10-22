@@ -1,6 +1,7 @@
 package helix.input;
 
 /** What an IInputSource reports to: the platform's input events as they are. Positions are framebuffer pixels from the top left. */
+@:noCompletion
 interface IInputEvents {
 	/** A key went down (true) or up (false); a repeat may report down again. */
 	public function key(key:Key, down:Bool):Void;

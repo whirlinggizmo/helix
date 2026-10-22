@@ -4,6 +4,7 @@ package helix.host;
 	Names follow docs/CONVENTIONS.md: a value is a property; can says whether to offer an action at all; request asks for what the platform
 	may refuse or grant later, returning whether it asked, never whether it was granted, and the property answers on a later frame. A request
 	that can't act here refuses, returning false: the web can't move or size its window, and under XWayland the compositor places windows. */
+@:noCompletion
 interface IWindow {
 	/** The drawable area's width in framebuffer pixels (the width and height sizes are logical pixels). */
 	var framebufferWidth(get, never):Int;

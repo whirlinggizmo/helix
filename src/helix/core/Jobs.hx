@@ -6,6 +6,8 @@ import helix.asset.IRequest;
 	maxActive running at once, each settling exactly once on the host thread (with its result, or as cancelled: by its request, or when the
 	pool shuts down), its completion run at a later poll, never during the call that settled it. An operation's start runs on the host thread
 	when a slot is free; it settles its Job when the platform answers, and may set an abort for cancelling it while it runs. */
+@:noCompletion
+@:allow(helix)
 class Jobs {
 	var maxActive:Int;
 	var active = 0;
@@ -14,16 +16,16 @@ class Jobs {
 	var queue = new WorkQueue();
 
 	/** A pool running at most maxActive operations at once (clamped to at least 1). */
-	public function new(maxActive:Int)
+	function new(maxActive:Int)
 		this.maxActive = maxActive < 1 ? 1 : maxActive;
 
 	/** Whether it takes operations: false once shut down. */
-	public var live(default, null):Bool = true;
+	var live(default, null):Bool = true;
 
 	/** Queues an operation: start runs on the host thread at a poll once a slot is free, given the operation's Job; complete runs exactly once
 		on the host thread, at a poll after it settles, with the result its Job finished with, or with cancelled when its request is cancelled
 		or the pool shuts down; with refused (cancelled when not given) for one added after the pool shut down. */
-	public function add<T>(start:Job<T>->Void, complete:T->Void, cancelled:T, ?refused:T):IRequest {
+	function add<T>(start:Job<T>->Void, complete:T->Void, cancelled:T, ?refused:T):IRequest {
 		var job:Job<T> = null, request:JobRequest<T> = null;
 		request = new JobRequest<T>(this, complete, cancelled);
 		job = new Job<T>(this, request);
@@ -48,31 +50,31 @@ class Jobs {
 	}
 
 	/** Whether an operation is waiting, running, or its completion not yet run. */
-	public var busy(get, never):Bool;
+	var busy(get, never):Bool;
 
 	function get_busy():Bool
 		return active > 0 || waiting.length > 0 || !queue.empty;
 
 	/** Runs f on the host thread at the next poll, in order with the completions: a running operation's progress, for one. */
-	public function post(f:Void->Void):Void
+	function post(f:Void->Void):Void
 		queue.add(f);
 
 	/** Starts queued operations while slots are free and runs completions; the owning service calls it once a frame. */
-	public function poll():Void {
+	function poll():Void {
 		while (live && active < maxActive && waiting.length > 0)
 			waiting.shift().start();
 		queue.poll();
 	}
 
 	/** The operations running now, for a service checking them each frame (a timeout, say). */
-	public var running(get, never):Array<Job<Dynamic>>;
+	var running(get, never):Array<Job<Dynamic>>;
 
 	function get_running():Array<Job<Dynamic>>
 		return [for (r in runningList) r.job];
 
 	/** Cancels every operation, queued or running (each completes with its cancelled value at the next poll, and a running one's abort runs),
 		refuses later ones, and runs the completions. */
-	public function shutdown():Void {
+	function shutdown():Void {
 		live = false;
 		for (r in runningList.copy())
 			r.request.cancel();
@@ -98,6 +100,8 @@ class Jobs {
 
 /** A running operation, as its adapter sees it: it finishes it once with its result, on the host thread, and may set what cancelling it while
 	it runs does. */
+@:noCompletion
+@:allow(helix)
 class Job<T> {
 	var pool:Jobs;
 	var request:JobRequest<T>;
@@ -115,21 +119,21 @@ class Job<T> {
 	}
 
 	/** Settles it with result: its completion runs at the next poll. Nothing once it has settled (finished, or cancelled). */
-	public function finish(result:T):Void
+	function finish(result:T):Void
 		request.settle(result);
 
 	/** Whether it has finished or been cancelled: a platform answer arriving after is dropped. */
-	public var settled(get, never):Bool;
+	var settled(get, never):Bool;
 
 	function get_settled():Bool
 		return request.settled;
 
 	/** What cancelling it while it runs does on the platform (abort a transfer, release a lease that arrives late), or null: run once, on
 		the host thread. */
-	public var abort:Null<Void->Void>;
+	var abort:Null<Void->Void>;
 
 	/** Seconds since it started running. */
-	public var runningSeconds(get, never):Float;
+	var runningSeconds(get, never):Float;
 
 	function get_runningSeconds():Float
 		return haxe.Timer.stamp() - startedAt;
@@ -146,6 +150,8 @@ class Job<T> {
 /** The IRequest a Jobs operation's caller holds. */
 @:allow(helix.core.Jobs)
 @:allow(helix.core.Job)
+@:noCompletion
+@:allow(helix)
 class JobRequest<T> implements IRequest {
 	var pool:Jobs;
 	var complete:T->Void;
@@ -160,7 +166,7 @@ class JobRequest<T> implements IRequest {
 	}
 
 	/** Whether it has settled. */
-	public var settled(get, never):Bool;
+	var settled(get, never):Bool;
 
 	function get_settled():Bool
 		return done;

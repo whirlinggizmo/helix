@@ -29,6 +29,8 @@ import helix.texture.Texture2D;
 	Surface shaders: a material's (Material3D.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their
 	shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's
 	passes (ModelPass3D: outlines, silhouettes) are drawn from its records after the opaque models. */
+@:noCompletion
+@:allow(helix)
 class Renderer3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
 	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
@@ -180,7 +182,7 @@ class Renderer3D {
 
 	/** An empty stage drawing on gpu, unlit: no lights and no ambient light until they're added.  Without gpu, the program's (Graphics.instance).
 		With root, it draws root's children (a View3D's tree) rather than a root of its own. */
-	public function new(?gpu:IGraphics, ?root:Node3D) {
+	function new(?gpu:IGraphics, ?root:Node3D) {
 		this.root = root == null ? new Node3D() : root;
 		if (gpu == null)
 			gpu = helix.graphics.Graphics.instance;
@@ -242,24 +244,24 @@ class Renderer3D {
 	}
 
 	/** The node everything on the stage hangs from. */
-	public var root(default, null):Node3D;
+	var root(default, null):Node3D;
 
 	/** Adds node to the stage, as the root's last child. False for one of the root's ancestors (the root itself). */
-	public function add(node:Node3D):Bool
+	function add(node:Node3D):Bool
 		return root.addChild(node);
 
 	/** Takes node from the stage's root. False when it isn't one of the root's children. */
-	public function remove(node:Node3D):Bool
+	function remove(node:Node3D):Bool
 		return root.removeChild(node);
 
 	/** The ambient light's color, 0xAARRGGBB (sRGB). */
-	public var ambientColor(default, null):Int = 0xffffffff;
+	var ambientColor(default, null):Int = 0xffffffff;
 
 	/** The ambient light's intensity. */
-	public var ambientIntensity(default, null):Float = 0.;
+	var ambientIntensity(default, null):Float = 0.;
 
 	/** The light reaching everything evenly, from no direction: color 0xAARRGGBB (sRGB) times intensity. False for an intensity under 0. */
-	public function setAmbient(color:Int, intensity:Float):Bool {
+	function setAmbient(color:Int, intensity:Float):Bool {
 		if (!(intensity >= 0))
 			return false;
 		ambientColor = color;
@@ -268,17 +270,17 @@ class Renderer3D {
 	}
 
 	/** The environment lighting the lit models, or null. */
-	public var environment(default, null):Null<EnvironmentMap3D>;
+	var environment(default, null):Null<EnvironmentMap3D>;
 
 	/** How strongly the environment lights them, and the background shows: 1 as its file has it. */
-	public var environmentIntensity(default, null):Float = 1.;
+	var environmentIntensity(default, null):Float = 1.;
 
 	/** How far the environment, and the background, turn about +y, in radians. */
-	public var environmentRotation(default, null):Float = 0.;
+	var environmentRotation(default, null):Float = 0.;
 
 	/** Lights the lit models with environment (null: none) as well as the lights and the ambient light: its intensity (1 as its file has it)
 		and its turn about +y (radians), which the background shares. False, changing nothing, for an intensity under 0. */
-	public function setEnvironment(environment:Null<EnvironmentMap3D>, intensity = 1., rotation = 0.):Bool {
+	function setEnvironment(environment:Null<EnvironmentMap3D>, intensity = 1., rotation = 0.):Bool {
 		if (!(intensity >= 0) || !Math.isFinite(rotation))
 			return false;
 		this.environment = environment;
@@ -288,15 +290,15 @@ class Renderer3D {
 	}
 
 	/** The environment drawn behind everything, or null. */
-	public var background(default, null):Null<EnvironmentMap3D>;
+	var background(default, null):Null<EnvironmentMap3D>;
 
 	/** How blurred the background is: 0 sharp to 1 its blurriest. */
-	public var backgroundBlur(default, null):Float = 0.;
+	var backgroundBlur(default, null):Float = 0.;
 
 	/** Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a
 		few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside
 		0..1. */
-	public function setBackground(environment:Null<EnvironmentMap3D>, blur = 0.):Bool {
+	function setBackground(environment:Null<EnvironmentMap3D>, blur = 0.):Bool {
 		if (!(blur >= 0 && blur <= 1))
 			return false;
 		background = environment;
@@ -305,16 +307,16 @@ class Renderer3D {
 	}
 
 	/** How lit color comes into the screen's 0..1 after the exposure. In an HDR scene (hdr) the chain's tone mapping applies it instead. */
-	public var tonemap:Tonemap = Tonemap.Neutral;
+	var tonemap:Tonemap = Tonemap.Neutral;
 
 	/** Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values
 		running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shader.Tonemap), which
 		its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to
 		endScene when its scene is HDR. */
-	public var hdr:Bool = false;
+	var hdr:Bool = false;
 
 	/** The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is taken as 0. */
-	public var exposure(default, set):Float = 0.;
+	var exposure(default, set):Float = 0.;
 
 	function set_exposure(value:Float):Float {
 		value = Math.isFinite(value) ? value : 0;
@@ -323,11 +325,11 @@ class Renderer3D {
 	}
 
 	/** The seconds surface shaders see (helix_time): what the app last set. */
-	public var time:Float = 0.;
+	var time:Float = 0.;
 
 	/** Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. Culls, or
 		draws everything (to measure what culling saves). */
-	public var culling:Bool = true;
+	var culling:Bool = true;
 
 	// m's view's planes into out; with culling off, planes everything is inside.
 	function viewPlanes(m:Mat4, out:Vector<Float>):Void {
@@ -342,25 +344,25 @@ class Renderer3D {
 	}
 
 	/** Models' parts and sprites drawn by the last draw (in view). */
-	public var drawnNodeCount(get, never):Int;
+	var drawnNodeCount(get, never):Int;
 
 	function get_drawnNodeCount():Int
 		return count + (sprites != null ? sprites.drawnSpriteCount() : 0);
 
 	/** Draws of the last draw: one a run of alike models' parts, or of sprites of one texture. */
-	public var drawCallCount(get, never):Int;
+	var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
 		return draws + (sprites != null ? sprites.drawCallCount() : 0);
 
 	/** Draws into shadow maps by the last drawShadows: one a run of casting parts alike in mesh, in each light's layer. */
-	public var shadowDrawCallCount(get, never):Int;
+	var shadowDrawCallCount(get, never):Int;
 
 	function get_shadowDrawCallCount():Int
 		return shadowDraws;
 
 	/** Casting parts drawn into shadow maps by the last drawShadows, counted in each light's layer they reach. */
-	public var shadowCasterCount(get, never):Int;
+	var shadowCasterCount(get, never):Int;
 
 	function get_shadowCasterCount():Int
 		return shadowCasters;
@@ -373,7 +375,7 @@ class Renderer3D {
 	/** Draws the shadows of its casting lights (Light3D.shadowCasting; the first four lights found) for what camera sees: each light's casters
 		into its layer of the shadow map, a pass each. Outside any pass, before the frame's screen pass (beginFrame), each frame shadows move;
 		draws after use them. With no casting light or no caster, there are no shadows. */
-	public function drawShadows(camera:Camera3D):Void {
+	function drawShadows(camera:Camera3D):Void {
 		shadowDraws = 0;
 		shadowCasters = 0;
 		shadowLights.resize(0);
@@ -714,12 +716,12 @@ class Renderer3D {
 		disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a
 		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
 		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
-	public function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit3D):Null<PickHit3D>
+	function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit3D):Null<PickHit3D>
 		return camera.computeRay(x, y, pickRay) != null ? pickAlong(pickRay, camera, hit) : null;
 
 	/** The nearest model, sprite or text along ray, as pick says, into hit (a new one when not given); null for none. Sprites and text face as
 		camera shows them: without a camera, only models are hit. */
-	public function pickAlong(ray:Ray3D, ?camera:Camera3D, ?hit:PickHit3D):Null<PickHit3D> {
+	function pickAlong(ray:Ray3D, ?camera:Camera3D, ?hit:PickHit3D):Null<PickHit3D> {
 		pickCamera = camera;
 		if (builtStructure != root.structure)
 			rebuild();
@@ -935,7 +937,7 @@ class Renderer3D {
 	}
 
 	/** Draws the stage in the open frame, through camera, in its viewport. */
-	public function draw(camera:Camera3D):Void {
+	function draw(camera:Camera3D):Void {
 		var viewProjection = camera.viewProjection;
 		viewPlanes(viewProjection, planes);
 		eyeX = camera.eyeX;
@@ -1784,7 +1786,7 @@ class Renderer3D {
 
 	/** Frees the stage's own GPU objects (its instance buffers, shadow maps, BRDF table and stand-in textures); meshes, textures and
 		environments are their owners' to free, and the pipelines the GPU's (Pipelines). */
-	public function destroy():Void {
+	function destroy():Void {
 		if (sprites != null)
 			sprites.destroy();
 		sprites = null;

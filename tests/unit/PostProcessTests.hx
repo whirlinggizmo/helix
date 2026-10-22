@@ -21,6 +21,7 @@ import helix.shader.Tonemap;
 import helix.shader.Vignette;
 
 /** An effect of several passes: intermediates at the fractions given, each drawn into from the one before (the first from the frame). */
+@:access(helix)
 class Steps extends ScreenEffect {
 	public function new(gpu:CountingGraphics, shader:Shader, fractions:Array<Float>) {
 		super(shader, false, gpu);
@@ -40,6 +41,7 @@ class Steps extends ScreenEffect {
 	that only counts: an 8-bit chain, intermediates at fractions of the screen, an HDR chain with its tone mapping added (and without half
 	floats, none), the order kept through add and remove, and sizes following the screen; Bloom's chain of levels, down and back up; the
 	library's screen effects' fields written where their shaders' reflection puts them, held to their ranges; the identity LUT's texels. */
+@:access(helix)
 class PostProcessTests {
 	static var checks = 0;
 

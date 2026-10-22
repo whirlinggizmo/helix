@@ -2,6 +2,7 @@ package helix.scene;
 
 /** What a kind's property holds in a .scene3d file: the shape the parser checks a value against, the writer writes, and an inspector makes a
 	control for. */
+@:noCompletion
 enum PropertyType {
 	/** A number, held from min to max where given (null for no bound), as the class clamps it. */
 	Number(?min:Float, ?max:Float);
@@ -23,6 +24,7 @@ enum PropertyType {
 }
 
 /** One property of a kind: its name as the class names it, its type, and the class's default, which the writer leaves out of the file. */
+@:noCompletion
 class PropertySchema {
 	/** Its name, as the class names the property (intensity, fovY, shadowCasting). */
 	public final name:String;
@@ -43,6 +45,7 @@ class PropertySchema {
 
 /** One kind's table: its name, as the file's "kind" names the class, its properties in the order the writer writes them, and what the class
 	starts its flags at (an unsaid flag in a file means the kind's own default, and a flag at it isn't written). */
+@:noCompletion
 class KindSchema {
 	/** The class's name: Model3D, DirectionalLight3D, Camera3D. */
 	public final name:String;

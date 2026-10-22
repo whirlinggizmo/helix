@@ -6,15 +6,17 @@ import haxe.io.Bytes;
 /** A Radiance .hdr image (RGBE, "#?RADIANCE" or "#?RGBE", 32-bit_rle_rgbe, flat or run-length encoded scanlines, "-Y height +X width": the
 	orientation every .hdr environment uses) read into linear RGB floats, three a pixel, rows top first, a band of rows at a time (readRows), so a
 	large one can be read across frames. */
+@:noCompletion
+@:allow(helix)
 class Hdr {
 	/** Its width in pixels. */
-	public final width:Int;
+	final width:Int;
 
 	/** Its height in pixels. */
-	public final height:Int;
+	final height:Int;
 
 	/** Its pixels: linear RGB, three floats each, rows top first; complete once every row is read. */
-	public final rgb:Vector<Float>;
+	final rgb:Vector<Float>;
 
 	var bytes:Bytes;
 	var position:Int;
@@ -33,11 +35,11 @@ class Hdr {
 	}
 
 	/** Whether bytes start as a .hdr this reads. */
-	public static function isHdr(bytes:Bytes):Bool
+	static function isHdr(bytes:Bytes):Bool
 		return header(bytes) != null;
 
 	/** Starts reading a .hdr: its size known, its rows read by readRows. Throws for bytes that aren't one it reads. */
-	public static function begin(bytes:Bytes):Hdr {
+	static function begin(bytes:Bytes):Hdr {
 		var found = header(bytes);
 		if (found == null)
 			throw "Not a Radiance .hdr it reads";
@@ -45,20 +47,20 @@ class Hdr {
 	}
 
 	/** A whole .hdr read at once. Throws for one that isn't, or is broken. */
-	public static function read(bytes:Bytes):Hdr {
+	static function read(bytes:Bytes):Hdr {
 		var hdr = begin(bytes);
 		while (!hdr.readRows(hdr.height)) {}
 		return hdr;
 	}
 
 	/** Whether every row is read. */
-	public var done(get, never):Bool;
+	var done(get, never):Bool;
 
 	function get_done():Bool
 		return row == height;
 
 	/** Reads up to count more rows; true once every row is read. Throws for data that ends early or is broken. */
-	public function readRows(count:Int):Bool {
+	function readRows(count:Int):Bool {
 		var end = row + count < height ? row + count : height;
 		while (row < end) {
 			readRow(row);

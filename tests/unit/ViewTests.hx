@@ -18,6 +18,7 @@ import helix.render3d.View3D;
 	the outer view's; a view showing a tree it's in skipped, not drawn forever; a tree two views show drawn by both; a 3D view drawn, its
 	camera given its rectangle, lit by its own environment, else its tree's first; picking through them, 2D before 3D, a paused tree passed
 	over, and the pointer reading the stage. */
+@:access(helix)
 class ViewTests {
 	static var checks = 0;
 

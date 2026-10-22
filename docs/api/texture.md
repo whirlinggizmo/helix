@@ -2,38 +2,6 @@
 
 [Back to the index](README.md)
 
-## Ktx
-
-*class* in [`src/helix/texture/Ktx.hx`](../../src/helix/texture/Ktx.hx)
-
-A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps (https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures loads them.
-
-```haxe
-static function read(bytes:haxe.io.Bytes):Ktx
-final format:TextureFormat
-final width:Int
-final height:Int
-final levels:Array<haxe.io.Bytes>
-```
-
-- `read`: Reads a KTX 1 file. Throws, saying why, for anything but a little-endian, 2D, BC7, ASTC 4x4 or ETC2 RGBA8 one whose levels are all there.
-- `format`: The texels' format.
-- `width`: Width in texels.
-- `height`: Height in texels.
-- `levels`: The image, then its mipmaps, each format.levelBytes of its size.
-
-## Mipmaps
-
-*class* in [`src/helix/texture/Mipmaps.hx`](../../src/helix/texture/Mipmaps.hx)
-
-Mipmap chains for IGraphics.createTexture, built the same on every target so their images match.
-
-```haxe
-static function build(width:Int, height:Int, rgba:haxe.io.Bytes):Array<haxe.io.Bytes>
-```
-
-- `build`: rgba (width x height RGBA8) and each level below it, half the size of the last (at least 1), down to 1x1: each texel the rounded average of the 2x2 above it, an odd edge repeating its last row or column.
-
 ## Sampling
 
 *abstract* in [`src/helix/texture/Sampling.hx`](../../src/helix/texture/Sampling.hx)

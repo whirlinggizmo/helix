@@ -7,6 +7,8 @@ import helix.graphics.IGraphics;
 /** The joints of a draw's skinned models, one data texture for them all (as skinning.glsl reads it: 1024 texels a row, three a joint, each
 	joint's matrix's top three rows): a model's joints from its base, each the model's own space moved by the joint as posed, its inverse bind
 	matrix applied (inverse(model world) × joint world × inverse bind). Renderer3D fills it once a pass and uploads it; also, a posed model's box. */
+@:noCompletion
+@:allow(helix)
 class JointPalette3D {
 	static inline var ROW = 1024;
 
@@ -18,24 +20,24 @@ class JointPalette3D {
 	var product = new Vector<Float>(16);
 
 	/** A palette uploading to gpu. */
-	public function new(gpu:IGraphics)
+	function new(gpu:IGraphics)
 		this.gpu = gpu;
 
 	/** The data texture (0 before the first upload). */
-	public var texture(default, null):Int = 0;
+	var texture(default, null):Int = 0;
 
 	/** How many joints since the last clear. */
-	public var jointCount(get, never):Int;
+	var jointCount(get, never):Int;
 
 	function get_jointCount():Int
 		return count;
 
 	/** Empties it, for a pass. */
-	public function clear():Void
+	function clear():Void
 		count = 0;
 
 	/** Adds model's joints as posed now (its world matrix and its joints' up to date) and returns its base: the joint its first is. */
-	public function add(model:Model3D):Int {
+	function add(model:Model3D):Int {
 		var base = count, joints = model.jointCount, skin = model.skin;
 		var needed = Std.int(Math.ceil((count + joints) * 3 / ROW)) * ROW * 16;
 		if (data == null || data.length < needed) {
@@ -70,11 +72,11 @@ class JointPalette3D {
 
 	/** Element row (0 to 2), col (0 to 3) of joint index's matrix as added (from a model's base): what the GPU skins with, for skinning on the
 		CPU (a pick). */
-	public inline function getMatrix(index:Int, row:Int, col:Int):Float
+	inline function getMatrix(index:Int, row:Int, col:Int):Float
 		return data.getFloat(index * 48 + row * 16 + col * 4);
 
 	/** Uploads what was added, making the texture taller when it must. */
-	public function upload():Void {
+	function upload():Void {
 		if (count == 0)
 			return;
 		var needed = Std.int(Math.ceil(count * 3 / ROW));
@@ -93,7 +95,7 @@ class JointPalette3D {
 	}
 
 	/** Destroys the texture. */
-	public function destroy():Void {
+	function destroy():Void {
 		if (texture != 0)
 			gpu.destroyTexture(texture);
 		texture = rows = 0;
@@ -102,7 +104,7 @@ class JointPalette3D {
 	/** A skinned model's part's box as posed into out (center x, y, z, then its reach along each world axis): the joints it follows where
 		they are, each padded by how far mesh's vertices reach from it (Mesh3D.getJointReach, scaled as the joint scales them), padded again by 2%
 		of the box's diagonal (at least 0.01). False when no joint weights a vertex (use mesh's box). */
-	public static function computePosedBox(model:Model3D, mesh:Mesh3D, out:Vector<Float>):Bool {
+	static function computePosedBox(model:Model3D, mesh:Mesh3D, out:Vector<Float>):Bool {
 		var skin = model.skin, reach = mesh.getJointReach(skin);
 		var loX = Math.POSITIVE_INFINITY,
 			loY = Math.POSITIVE_INFINITY,

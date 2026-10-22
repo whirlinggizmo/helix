@@ -13,6 +13,7 @@ import helix.render3d.Node3D;
 	(Node3D.collectModels, Model3D.bindSkeleton and Node3D.findAttachment), with Quaternius's modular women (the dressing-room and animation examples'): parts
 	bound to the skeleton by joint name, held parts at a socket, choices before the skeleton and overtaken while loading, failures, and one load
 	shared by many characters. */
+@:access(helix)
 class OutfitTests {
 	static var checks = 0;
 	// The loads the test's assets hold until released, by path, and how many each was asked for.
@@ -191,6 +192,7 @@ class OutfitTests {
 }
 
 /** Assets whose loads wait until the test releases them, counting how often each path is asked for. */
+@:access(helix)
 private class Held implements IAssets {
 	public function new() {}
 

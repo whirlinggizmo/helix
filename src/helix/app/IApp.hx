@@ -1,6 +1,7 @@
 package helix.app;
 
 /** What the Runner drives. It calls through the object each time, so after a hot reload its new methods are what run. */
+@:noCompletion
 interface IApp {
 	/** Once, before the first frame, with the app's services bound (Window, Input, Graphics and the others). */
 	public function init():Void;

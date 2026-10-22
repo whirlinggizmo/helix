@@ -7,6 +7,8 @@ import helix.graphics.PipelineDesc;
 	the first time it's asked for, then kept. Drawing code asks for its pipeline at each draw and never keeps the handle, so a program built
 	again (an app's shader reloaded, or in development a framework program whose source changed) has its pipelines made again behind it.
 	This is the framework's knowledge of its pipelines; an adapter knows none of it. */
+@:noCompletion
+@:allow(helix)
 class Pipelines {
 	// Kept across a hot reload, so the reload's rebuild finds every GPU's pipelines.
 	@:hot static var all = new haxe.ds.ObjectMap<IGraphics, Pipelines>();
@@ -22,7 +24,7 @@ class Pipelines {
 		this.gpu = gpu;
 
 	/** gpu's, made the first time it's asked for. */
-	public static function of(gpu:IGraphics):Pipelines {
+	static function of(gpu:IGraphics):Pipelines {
 		var found = all.get(gpu);
 		if (found == null) {
 			found = new Pipelines(gpu);
@@ -32,7 +34,7 @@ class Pipelines {
 	}
 
 	/** Frees gpu's pipelines and framework programs, before the adapter shuts down. */
-	public static function release(gpu:IGraphics):Void {
+	static function release(gpu:IGraphics):Void {
 		var found = all.get(gpu);
 		if (found == null)
 			return;
@@ -44,7 +46,7 @@ class Pipelines {
 	}
 
 	/** Destroys the pipelines made over shader (an app's, before it is destroyed or replaced); asked for again, they're made again. */
-	public function forgetShader(shader:Int):Void {
+	function forgetShader(shader:Int):Void {
 		var keys = byShader.get(shader);
 		if (keys == null)
 			return;
@@ -104,16 +106,16 @@ class Pipelines {
 		};
 
 	/** 2D sprites and shapes: Sprite2DProgram's vertices in clip space (its block the clip scale), no depth. */
-	public function sprite2D(blend:BlendMode):Int
+	function sprite2D(blend:BlendMode):Int
 		return pipeline(program("sprite2d", () -> Sprite2DProgram.source()), blend, s -> describe(s, Sprite2DProgram.buffers(), blend, ClipScale));
 
 	/** Vertex-colored 3D triangles (Color3DProgram, the view-projection its block), depth tested and written. */
-	public function color3D():Int
+	function color3D():Int
 		return pipeline(program("color3d", () -> Color3DProgram.source()), 0,
 			s -> describe(s, Color3DProgram.buffers(), Opaque, ViewProjection, {depthTest: LessEqual, depthWrite: true}));
 
 	/** Color3D's vertices as lines, two each. */
-	public function lines3D():Int
+	function lines3D():Int
 		return pipeline(program("color3d", () -> Color3DProgram.source()), 1,
 			s -> describe(s, Color3DProgram.buffers(), Opaque, ViewProjection, {primitive: Lines, depthTest: LessEqual, depthWrite: true}));
 
@@ -131,24 +133,24 @@ class Pipelines {
 		return (blend : Int) + (doubleSided ? 4 : 0) + (clockwise ? 8 : 0);
 
 	/** Lit models (Lit3DProgram): blended or not, double sided or not, front faces clockwise (a mirrored placement's) or not. */
-	public function lit3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
+	function lit3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
 		return pipeline(program("lit3d", () -> Lit3DProgram.source()), variant(blend, doubleSided, clockwise),
 			s -> lit(s, Lit3DProgram.buffers(), blend, doubleSided, clockwise));
 
 	/** Skinned lit models (Skinned3DProgram: Lit3D's buffers and the skin), as lit3d's variants. */
-	public function skinned3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
+	function skinned3D(blend:BlendMode, doubleSided:Bool, clockwise:Bool):Int
 		return pipeline(program("skinned3d", () -> Skinned3DProgram.source()), variant(blend, doubleSided, clockwise),
 			s -> lit(s, Skinned3DProgram.buffers(), blend, doubleSided, clockwise));
 
 	/** An app's surface shader (its handle; for a skinned model its skinned variant's, over Skinned3DProgram's buffers) drawing lit models, as
 		lit3d's variants. */
-	public function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool, skinned:Bool):Int
+	function surface(shader:Int, blend:BlendMode, doubleSided:Bool, clockwise:Bool, skinned:Bool):Int
 		return pipeline(shader, variant(blend, doubleSided, clockwise),
 			s -> lit(s, skinned ? Skinned3DProgram.buffers() : Lit3DProgram.buffers(), blend, doubleSided, clockwise));
 
 	/** A surface shader's shadow caster (its handle: Shader.caster's, or its skinned variant's caster for a skinned model, over Skinned3DProgram's
 		buffers), from the lit models' records: depth only, nothing culled, as the framework's casters. */
-	public function surfaceCaster(shader:Int, skinned:Bool):Int
+	function surfaceCaster(shader:Int, skinned:Bool):Int
 		return pipeline(shader, 0, s -> describe(s, skinned ? Skinned3DProgram.buffers() : Lit3DProgram.buffers(), Opaque, ViewProjection, {
 			indexed: true,
 			depthTest: LessEqual,
@@ -160,7 +162,7 @@ class Pipelines {
 		the lit models' instance records: an outline's shell (front faces culled, depth tested and written, opaque), or with behind, a
 		silhouette (only where something nearer was drawn: depth greater, not written, blended, back faces culled); front faces clockwise (a
 		mirrored placement's) or not. */
-	public function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int {
+	function flat3D(skinned:Bool, behind:Bool, clockwise:Bool):Int {
 		var options = {
 			indexed: true,
 			depthTest: behind ? Greater : LessEqual,
@@ -180,19 +182,19 @@ class Pipelines {
 		return describe(shader, buffers, blend, ViewProjection, {indexed: true, depthTest: LessEqual, depthWrite: blend == Opaque});
 
 	/** 3D sprites (Sprite3DProgram). */
-	public function sprite3D(blend:BlendMode):Int
+	function sprite3D(blend:BlendMode):Int
 		return pipeline(program("sprite3d", () -> Sprite3DProgram.source()), blend, s -> quads(s, Sprite3DProgram.buffers(), blend));
 
 	/** A sprite effect's Renderer3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DProgram), as sprite3D's. */
-	public function spriteEffect3D(shader:Int, blend:BlendMode):Int
+	function spriteEffect3D(shader:Int, blend:BlendMode):Int
 		return pipeline(shader, blend, s -> quads(s, Sprite3DProgram.buffers(), blend));
 
 	/** Particles (Particle3DProgram). */
-	public function particle3D(blend:BlendMode):Int
+	function particle3D(blend:BlendMode):Int
 		return pipeline(program("particle3d", () -> Particle3DProgram.source()), blend, s -> quads(s, Particle3DProgram.buffers(), blend));
 
 	/** Shadow-map casters (Depth3DProgram): depth only, nothing culled (a one-sided floor still casts). */
-	public function depth3D():Int
+	function depth3D():Int
 		return pipeline(program("depth3d", () -> Depth3DProgram.source()), 0, s -> describe(s, Depth3DProgram.buffers(), Opaque, ViewProjection, {
 			indexed: true,
 			depthTest: LessEqual,
@@ -201,7 +203,7 @@ class Pipelines {
 		}));
 
 	/** Skinned shadow-map casters (Skinneddepth3DProgram). */
-	public function skinnedDepth3D():Int
+	function skinnedDepth3D():Int
 		return pipeline(program("skinneddepth3d", () -> Skinneddepth3DProgram.source()), 0,
 			s -> describe(s, Skinneddepth3DProgram.buffers(), Opaque, ViewProjection, {
 				indexed: true,
@@ -211,16 +213,16 @@ class Pipelines {
 			}));
 
 	/** An environment behind a 3D scene (Background3DProgram): one triangle at the far plane, depth tested (less or equal) and not written. */
-	public function background3D():Int
+	function background3D():Int
 		return pipeline(program("background3d", () -> Background3DProgram.source()), 0, s -> describe(s, [], Opaque, ClipScale, {depthTest: LessEqual}));
 
 	/** A sprite effect's shader (its handle: SpriteEffect.shader's) drawing 2D sprites: Effect2DProgram's vertices in clip space (block 0 the
 		clip scale), no depth. */
-	public function spriteEffect(shader:Int, blend:BlendMode):Int
+	function spriteEffect(shader:Int, blend:BlendMode):Int
 		return pipeline(shader, blend, s -> describe(s, Effect2DProgram.buffers(), blend, ClipScale));
 
 	/** An app's screen effect (its handle): one triangle over the viewport, no depth. */
-	public function screen(shader:Int, blend:BlendMode):Int
+	function screen(shader:Int, blend:BlendMode):Int
 		return pipeline(shader, blend, s -> describe(s, [], blend, ClipScale));
 
 	#if hotreload

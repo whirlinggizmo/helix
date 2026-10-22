@@ -36,15 +36,18 @@ class Pointer {
 
 	/** Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at
 		the stage). */
+	@:noCompletion
 	public function addRenderer2D(renderer:Renderer2D, camera:Camera2D):Void
 		layers.push(new Layer(renderer, camera, null, null));
 
 	/** Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at
 		the stage). */
+	@:noCompletion
 	public function addRenderer3D(renderer:Renderer3D, camera:Camera3D):Void
 		layers.push(new Layer(null, null, renderer, camera));
 
 	/** Stops looking at renderer (2D or 3D); what it held lets go. */
+	@:noCompletion
 	public function remove(renderer:Any):Void {
 		layers = [for (l in layers) if (l.renderer2D != renderer && l.renderer3D != renderer) l];
 		hovered = held = pressedNow = clickedNow = null;

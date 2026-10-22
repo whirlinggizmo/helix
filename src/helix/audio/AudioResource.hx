@@ -7,6 +7,7 @@ class AudioResource {
 	public var id(default, null):Int;
 
 	/** The audio adapter that owns the backend resource. */
+	@:noCompletion
 	public var backend(default, null):IAudio;
 
 	/** Whether the owner and every playback have released it, so its backend resource is destroyed. */
@@ -17,6 +18,7 @@ class AudioResource {
 	var destroy:Void->Void;
 
 	/** Owns backend resource id with the owner's reference; destroy runs when the last reference is released. */
+	@:noCompletion
 	public function new(id:Int, backend:IAudio, destroy:Void->Void) {
 		this.id = id;
 		this.backend = backend;

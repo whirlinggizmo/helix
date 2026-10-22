@@ -12,6 +12,7 @@ import helix.texture.Texture2D;
 	frames in the file's order, animations from numbered names; Aseprite's array with tags, directions and durations; a hash's order on every
 	target; a grid; refusals; playing forward, back and forth, once and looping, with the frames an update reached; and a trimmed, rotated frame
 	drawn upright where it was, by the batch and by a sprite. */
+@:access(helix)
 class SpriteSheetTests {
 	static var checks = 0;
 

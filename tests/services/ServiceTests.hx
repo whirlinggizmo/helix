@@ -9,6 +9,7 @@ import helix.audio.AudioPlayback;
 import haxe.io.Bytes;
 
 /** Same asynchronous behavior checks run under JS/browser and hxcpp/native. */
+@:access(helix)
 class ServiceTests {
 	static var checks = 0;
 	static var env:ServiceEnvironment;

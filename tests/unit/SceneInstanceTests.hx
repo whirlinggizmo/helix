@@ -46,6 +46,7 @@ import helix.scene.SceneValue;
 	their entry with its properties and an override by path; the live side of every kind's table (SceneKinds3D) applying and reading back;
 	capture of an untouched instance byte-equal, and changes as overrides; generated meshes made, captured byte-equal, and one made in code
 	captured as a mesh entry; and destroy taking everything out. */
+@:access(helix)
 class SceneInstanceTests {
 	static var checks = 0;
 	static var log:Array<String> = [];
@@ -793,6 +794,7 @@ class SceneInstanceTests {
 }
 
 /** Follows a target: a prop of every type. */
+@:access(helix)
 private class ChaseCamera extends Behavior {
 	@:prop public var target:Node3D = null;
 	@:prop public var speed = 1.;
@@ -812,6 +814,7 @@ private class ChaseCamera extends Behavior {
 }
 
 /** Drives the car. */
+@:access(helix)
 private class Car extends Behavior {
 	@:prop public var topSpeed = 0.;
 
@@ -826,15 +829,18 @@ private class Car extends Behavior {
 }
 
 /** A gate's checkpoint, with a target. */
+@:access(helix)
 private class Checkpoint extends Behavior {
 	@:prop public var index = -1;
 	@:prop public var target:Node3D = null;
 }
 
 /** A gate. */
+@:access(helix)
 private class Gate extends Behavior {}
 
 /** Assets whose loads wait until the test releases them, counting how often each path is asked for. */
+@:access(helix)
 private class Held implements IAssets {
 	public function new() {}
 
@@ -893,6 +899,7 @@ private class Held implements IAssets {
 }
 
 /** Decodes anything as one white pixel. */
+@:access(helix)
 private class StubDecoder implements IImageDecoder {
 	public function new() {}
 

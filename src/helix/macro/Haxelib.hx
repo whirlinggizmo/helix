@@ -21,6 +21,7 @@ import sys.io.Process;
 	  (hxcpp picks 32-bit on Windows from a 64-bit process, which has no `PROCESSOR_ARCHITEW6432`).
 
 	The repository's own builds list the class paths and the defines themselves (`tools/example.py`), which is also what the dev loop watches. */
+@:noCompletion
 class Haxelib {
 	#if macro
 	/** Adds the generated code's class paths, the SDL_GPU dialects' define for an sdl3-gpu build and, natively, this machine's

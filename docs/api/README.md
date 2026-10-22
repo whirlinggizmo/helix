@@ -2,26 +2,24 @@
 
 Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it's stale. A file a package, each type with its public members. Every type here is on both of HeliX's Haxe targets, js (the browser) and cpp (native); the engine's own types beneath them (@:noCompletion: the adapters, profiles and services behind the static classes), which a game never names, are left out.
 
-- [`helix.app`](app.md): AppOptions, IApp, Springboard
-- [`helix.asset`](asset.md): AssetCacheMode, AssetManifest, AssetPath, AssetProgress, Assets, AudioLocation, CacheRecord, CacheRecords, EnsureOptions, ExportResult, Failure, Fetch, FetchPart, FetchProgress, FetchRequest, FetchResponse, FetchResult, GrowingSource, IAssets, IExport, IHttp, IReloadable, IRequest, IStore, Lease, Request, Saves, Storage, StorageResult, StorageSourceResult, StorageWriteResult
-- [`helix.audio`](audio.md): Audio, AudioClip, AudioDecodeResult, AudioDecoding, AudioPlayback, AudioResource, AudioStream, Bus, Fade, FadeCurve, IAudio, IAudioDecoder, Pcm, PlayState, StreamOpenResult, Wav
+- [`helix.app`](app.md): AppOptions
+- [`helix.asset`](asset.md): AssetCacheMode, AssetPath, AssetProgress, Assets, EnsureOptions, ExportResult, Failure, Fetch, FetchPart, FetchProgress, FetchRequest, FetchResponse, FetchResult, IReloadable, IRequest, Saves, Storage, StorageResult, StorageSourceResult, StorageWriteResult
+- [`helix.audio`](audio.md): Audio, AudioClip, AudioPlayback, AudioResource, AudioStream, Bus, Fade, FadeCurve, PlayState, StreamOpenResult
 - [`helix.behavior`](behavior.md): Behavior, BehaviorEntry, BehaviorPass, BehaviorProp, BehaviorPropType, BehaviorRegistry, BehaviorSchema, Behaviors, Phase
 - [`helix.collision`](collision.md): Body2D, Collide2D, Hit2D, Move2D, SpatialHash2D
-- [`helix.core`](core.md): Job, JobRequest, Jobs, WorkQueue
-- [`helix.debug`](debug.md): Autopilot, FpsOverlay, ITestHarness, TestHarness
-- [`helix.font`](font.md): BakedFont, BakedGlyph, Font, FontBaker, Fonts, Glyph, GlyphOutline, TrueType
-- [`helix.graphics`](graphics.md): AlphaMode, BlendMode, ClipFlip, Color, CullFace, DepthTest, Graphics, GraphicsUnavailable, IGraphics, IImageDecoder, ImageDecodeResult, ImageDecoding, PipelineDesc, Pipelines, Png, PostProcess, Primitive, ReadPixelsResult, ScreenEffect, ScreenFrame, ScreenshotResult, Screenshots, SdlGpuStages, Shader, ShaderBlock, ShaderParameter, ShaderParameters, ShaderSource, ShaderStages, ShaderTexture, Shaders, SpriteEffect, VertexAttribute, VertexBuffer
+- [`helix.debug`](debug.md): Autopilot, FpsOverlay, TestHarness
+- [`helix.font`](font.md): Font, Fonts, Glyph
+- [`helix.graphics`](graphics.md): AlphaMode, BlendMode, ClipFlip, Color, DepthTest, Graphics, PostProcess, ScreenEffect, ScreenFrame, ScreenshotResult, Screenshots, Shader, ShaderParameter, ShaderParameters, Shaders, SpriteEffect
 - [`helix`](helix.md): App
-- [`helix.host`](host.md): Adapters, Config, FrameClock, Host, IHost, IWindow, Identity, Part, PresentationMode, Runner, Screen, ScreenShape, Window, WindowOptions
-- [`helix.input`](input.md): Actions, Anchor, Binding, Gamepad, IInput, IInputEvents, IInputSource, IInputWatcher, Input, InputRouter, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
-- [`helix.macro`](macro.md): AppBuild, Haxelib
+- [`helix.host`](host.md): Config, Host, Identity, PresentationMode, Screen, ScreenShape, Window, WindowOptions
+- [`helix.input`](input.md): Actions, Anchor, Binding, Gamepad, IInput, Input, InputState, Key, MouseButton, PadAxis, PadButton, PointerGestures, Touch
 - [`helix.math`](math.md): Bounds2D, Bounds3D, Curve, CurveKind, Interpolate, Point2D, Point3D, Random, Trig
 - [`helix.particle`](particle.md): Emitter, ParticlePreset
-- [`helix.render2d`](render2d.md): Align2D, AnimationDirection2D, Batch2D, Camera2D, CameraFollow2D, ChainCalls, Decals2D, Drawing2D, Node2D, Particles2D, Polygon2D, Renderer2D, Shape2D, ShapeForm2D, ShapeShading2D, Sprite2D, SpriteAnimation2D, SpriteAnimator2D, SpriteFrame2D, SpriteSheet2D, Stage, Text2D, View, View2D
-- [`helix.render3d`](render3d.md): AnimationClip3D, Animator3D, Attachment3D, Batch3D, Camera3D, CubeMap3D, Decals3D, DirectionalLight3D, Drawing3D, Environment3D, EnvironmentBake3D, EnvironmentMap3D, Environments3D, Gltf, Hdr, ImageSource3D, JointPalette3D, Light3D, Mat4, Material3D, Mesh3D, MeshShape3D, Model3D, ModelFile3D, ModelPass3D, Models3D, Node3D, Orbit3D, Part3D, Particles3D, PickHit3D, PointLight3D, Projection3D, Ray3D, Renderer3D, Skin3D, SpotLight3D, Sprite3D, SpriteFacing3D, Sprites3D, Text3D, Tonemap, Track3D, TrackInterpolation3D, TrackPath3D, View3D
-- [`helix.scene`](scene.md): ArgumentSchema3D, Collect2D, Fade, KindSchema, Loader, Loading, Node, NodeOrigin3D, NodeRecord3D, NodeSnapshot3D, Pointer, PropertySchema, PropertyType, SceneBehavior, SceneEnvironment3D, SceneFile3D, SceneFiles3D, SceneInstance3D, SceneKinds3D, SceneMaterial3D, SceneMesh3D, SceneNode3D, SceneSchema3D, SceneValue, ShapeSchema3D, Splash, Transition
-- [`helix.shader`](shader.md): Bloom, Blur, ChromaticAberration, ColorLut, Crt, Dissolve, Fxaa, HitFlash, LibraryScreenEffect, LibrarySurface, Outline, PaletteSwap, Pixelate, Rim, ShaderLibrary, Silhouette, SpriteDissolve, SpriteFlash, SpriteOutline, SpriteRing, Tonemap, Toon, Unlit, Vignette, Water
-- [`helix.texture`](texture.md): Ktx, Mipmaps, Sampling, Texture2D, TextureFormat, Textures, Wrap
+- [`helix.render2d`](render2d.md): Align2D, AnimationDirection2D, Camera2D, CameraFollow2D, Decals2D, Drawing2D, Node2D, Particles2D, Polygon2D, Shape2D, ShapeForm2D, ShapeShading2D, Sprite2D, SpriteAnimation2D, SpriteAnimator2D, SpriteFrame2D, SpriteSheet2D, Stage, Text2D, View, View2D
+- [`helix.render3d`](render3d.md): AnimationClip3D, Animator3D, Attachment3D, Camera3D, CubeMap3D, Decals3D, DirectionalLight3D, Drawing3D, Environment3D, EnvironmentBake3D, EnvironmentMap3D, Environments3D, ImageSource3D, Light3D, Mat4, Material3D, Mesh3D, MeshShape3D, Model3D, ModelFile3D, ModelPass3D, Models3D, Node3D, Orbit3D, Part3D, Particles3D, PickHit3D, PointLight3D, Projection3D, Ray3D, Skin3D, SpotLight3D, Sprite3D, SpriteFacing3D, Text3D, Tonemap, Track3D, TrackInterpolation3D, TrackPath3D, View3D
+- [`helix.scene`](scene.md): Collect2D, Fade, Loader, Loading, Node, Pointer, SceneBehavior, SceneEnvironment3D, SceneFile3D, SceneFiles3D, SceneInstance3D, SceneMaterial3D, SceneMesh3D, SceneNode3D, SceneValue, Splash, Transition
+- [`helix.shader`](shader.md): Bloom, Blur, ChromaticAberration, ColorLut, Crt, Dissolve, Fxaa, HitFlash, LibraryScreenEffect, LibrarySurface, Outline, PaletteSwap, Pixelate, Rim, Silhouette, SpriteDissolve, SpriteFlash, SpriteOutline, SpriteRing, Tonemap, Toon, Unlit, Vignette, Water
+- [`helix.texture`](texture.md): Sampling, Texture2D, TextureFormat, Textures, Wrap
 - [`helix.time`](time.md): Clock, Ticker, Time, Timer, Timers
 - [`helix.tool`](tool.md): Build, Watchers, WebServer
 - [`helix.tween`](tween.md): Ease, Tween, Tweens

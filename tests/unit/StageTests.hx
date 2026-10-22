@@ -6,6 +6,7 @@ import helix.render2d.StageService;
 /** The stage (helix.render2d.StageService): a frame drawn whole, cleared to its color, its children in order through the presentation's
 	camera; children added (again: to the top) and taken off; nothing drawn of an empty stage but the clear;
 	a paused node's emitter held still. */
+@:access(helix)
 class StageTests {
 	static var checks = 0;
 

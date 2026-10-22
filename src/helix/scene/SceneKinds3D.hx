@@ -28,6 +28,7 @@ import helix.scene.SceneValue;
 	made by Mesh3D's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
 	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB. */
+@:noCompletion
 class SceneKinds3D {
 	/** A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table

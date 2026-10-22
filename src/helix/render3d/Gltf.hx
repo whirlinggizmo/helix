@@ -6,12 +6,14 @@ import haxe.io.Bytes;
 	buffer) or a .gltf (the JSON alone), with the reading of its accessors. A buffer inside the file (the GLB's, or a base64 data: URI) is read
 	here; one in a file of its own (a uri beside the model) is the loader's to fetch and set (missingBuffers, setBuffer). Only what a
 	ModelFile3D needs is interpreted; the document stays as parsed. Throws, saying why, for a file it can't read. */
+@:noCompletion
+@:allow(helix)
 class Gltf {
 	static inline var JSON_CHUNK = 0x4E4F534A;
 	static inline var BIN_CHUNK = 0x004E4942;
 
 	/** The document: glTF's JSON, as parsed. */
-	public final document:Dynamic;
+	final document:Dynamic;
 
 	var buffers:Array<Null<Bytes>> = [];
 
@@ -31,7 +33,7 @@ class Gltf {
 	}
 
 	/** Reads a GLB, or a .gltf (its JSON, as UTF-8 bytes): by its first bytes. */
-	public static function read(bytes:Bytes):Gltf {
+	static function read(bytes:Bytes):Gltf {
 		if (bytes.length >= 4 && bytes.getString(0, 4) == "glTF")
 			return readGlb(bytes);
 		var text = bytes.toString(), at = 0;
@@ -43,7 +45,7 @@ class Gltf {
 	}
 
 	/** Reads a GLB file. */
-	public static function readGlb(bytes:Bytes):Gltf {
+	static function readGlb(bytes:Bytes):Gltf {
 		if (bytes.length < 20 || bytes.getString(0, 4) != "glTF")
 			throw "Not a GLB file";
 		if (bytes.getInt32(4) != 2)
@@ -69,7 +71,7 @@ class Gltf {
 	}
 
 	/** The bytes of a base64 data: URI, or null for any other uri (a file's). Throws for a data: URI that isn't base64. */
-	public static function dataUri(uri:String):Null<Bytes> {
+	static function dataUri(uri:String):Null<Bytes> {
 		if (!StringTools.startsWith(uri, "data:"))
 			return null;
 		var comma = uri.indexOf(",");
@@ -79,7 +81,7 @@ class Gltf {
 	}
 
 	/** The buffers that are files of their own, not read yet: each its index and uri. */
-	public var missingBuffers(get, never):Array<{index:Int, uri:String}>;
+	var missingBuffers(get, never):Array<{index:Int, uri:String}>;
 
 	function get_missingBuffers():Array<{index:Int, uri:String}> {
 		var list = this.list("buffers");
@@ -90,12 +92,12 @@ class Gltf {
 	}
 
 	/** Buffer index's bytes, or null while it waits for its file (or for an index out of range). */
-	public function getBuffer(index:Int):Null<Bytes>
+	function getBuffer(index:Int):Null<Bytes>
 		return index >= 0 && index < buffers.length ? buffers[index] : null;
 
 	/** Sets buffer index to bytes, the file its uri names. False, changing nothing, for an index out of range or bytes shorter than its
 		byteLength. */
-	public function setBuffer(index:Int, bytes:Bytes):Bool {
+	function setBuffer(index:Int, bytes:Bytes):Bool {
 		var all = list("buffers");
 		if (index < 0 || index >= all.length)
 			return false;
@@ -107,11 +109,11 @@ class Gltf {
 	}
 
 	/** A field of a JSON object, or null. */
-	public static function field(object:Dynamic, name:String):Dynamic
+	static function field(object:Dynamic, name:String):Dynamic
 		return object == null ? null : Reflect.field(object, name);
 
 	/** The array named name in the document, or an empty one. */
-	public function list(name:String):Array<Dynamic> {
+	function list(name:String):Array<Dynamic> {
 		var value:Dynamic = field(document, name);
 		return value == null ? [] : value;
 	}
@@ -144,7 +146,7 @@ class Gltf {
 	}
 
 	/** The bytes of buffer view index, copied: an embedded image's file. */
-	public function viewBytes(index:Int):Bytes {
+	function viewBytes(index:Int):Bytes {
 		var v = view(index);
 		return v.bytes.sub(v.offset, v.length);
 	}
@@ -161,7 +163,7 @@ class Gltf {
 
 	/** Accessor index's values, every component of every element in order, as floats: normalized integers scaled to 0..1 (unsigned) or -1..1
 		(signed), others as they are. Throws for a sparse accessor, an unknown type, or one running past its view. */
-	public function floats(index:Int):Array<Float> {
+	function floats(index:Int):Array<Float> {
 		var accessors = list("accessors");
 		if (index < 0 || index >= accessors.length)
 			throw 'No accessor $index';
@@ -213,6 +215,6 @@ class Gltf {
 	}
 
 	/** Accessor index's values as integers: indices (unsigned 8, 16 or 32 bits). */
-	public function ints(index:Int):Array<Int>
+	function ints(index:Int):Array<Int>
 		return [for (x in floats(index)) Std.int(x)];
 }

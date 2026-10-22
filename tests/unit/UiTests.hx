@@ -11,6 +11,7 @@ import helix.ui.WidgetState;
 /** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, margins, alignment and anchors, and the nodes
 	placed by their pivots; the widgets used by keys, the pointer and typing, and their parts drawn by their states; the color picker's HSV, hex
 	and input; a panel's title; the popup layer and the dropdown opening on it. */
+@:access(helix)
 class UiTests {
 	static var checks = 0;
 

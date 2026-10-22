@@ -26,6 +26,7 @@ import helix.shader.Water;
 	GPU's release; each library class's fields write their parameters where the shader's reflection puts them; the hit flash and rim reach the
 	stage's uniforms; a skinned model draws through a surface shader's skinned variant; a dissolving shadow is drawn by its caster; and a
 	model's passes come in their order, instanced. */
+@:access(helix)
 class ShaderLibraryTests {
 	static var checks = 0;
 

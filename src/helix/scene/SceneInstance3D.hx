@@ -233,6 +233,7 @@ class SceneInstance3D {
 }
 
 /** Where a node of an instance came from. */
+@:noCompletion
 enum NodeOrigin3D {
 	/** The file's own entry: made from it, or added under a file's or a prefab's node by an override's children. */
 	Entry(entry:SceneNode3D);
@@ -247,6 +248,7 @@ enum NodeOrigin3D {
 /** What an instance keeps of a node: its origin, the values the origin gave it (its snapshot, taken before any override), the game's
 	props, and for an entry with a file or a prefab, whether its overrides have been applied (false while the file loads, or for one that
 	failed: its overrides are then kept as written). */
+@:noCompletion
 class NodeRecord3D {
 	/** The node. */
 	public final node:Node3D;
@@ -283,6 +285,7 @@ class NodeRecord3D {
 
 /** A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model3D, its material and its generated
 	mesh. */
+@:noCompletion
 class NodeSnapshot3D {
 	/** Its position, x, y, z. */
 	public var position:Array<Float>;

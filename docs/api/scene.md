@@ -2,24 +2,6 @@
 
 [Back to the index](README.md)
 
-## ArgumentSchema3D
-
-*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
-
-One argument of a mesh generator (Mesh3D.plane's width, Mesh3D.sphere's rings): its name as the generator's parameter is named, and the generator's default, null for one it requires. A count (rings, segments, subdivisions) is a whole number; a file's number is rounded toward zero for it.
-
-```haxe
-function new(name:String, ?defaultValue:Float)
-final name:String
-final defaultValue:Null<Float>
-var required(get, never):Bool
-```
-
-- `new`: An argument name, with the generator's default or none.
-- `name`: Its name, as the generator names the parameter (width, radius, segments).
-- `defaultValue`: The generator's default, which the writer leaves out of the file; null for an argument the generator requires.
-- `required`: Whether the generator requires it: a file leaving it out is refused.
-
 ## Collect2D
 
 *class* in [`src/helix/scene/Collect2D.hx`](../../src/helix/scene/Collect2D.hx)
@@ -67,30 +49,6 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 - `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xAARRGGBB, its alpha the cover at the middle).
 - `color`: Its color.
 
-## KindSchema
-
-*class* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
-
-One kind's table: its name, as the file's "kind" names the class, its properties in the order the writer writes them, and what the class starts its flags at (an unsaid flag in a file means the kind's own default, and a flag at it isn't written).
-
-```haxe
-function new(name:String, properties:Array<PropertySchema>, ?enabled:Bool = true, ?visible:Bool = true, ?pickable:Bool = true)
-final name:String
-final properties:Array<PropertySchema>
-final enabled:Bool
-final visible:Bool
-final pickable:Bool
-function property(name:String):Null<PropertySchema>
-```
-
-- `new`: A kind name with properties, its flags starting at enabled, visible and pickable (each true unless said).
-- `name`: The class's name: Model3D, DirectionalLight3D, Camera3D.
-- `properties`: Its properties, in writing order: a parent class's first (a light's before a spot's range and cones).
-- `enabled`: What the class starts Node.enabled at: true for every kind.
-- `visible`: What the class starts Node.visible at: true for every kind.
-- `pickable`: What the class starts Node.pickable at: false for a Text3D (a label lets a pick through to what it names), true elsewhere.
-- `property`: Its property named name, or null for one it hasn't.
-
 ## Loader
 
 *class* in [`src/helix/scene/Loader.hx`](../../src/helix/scene/Loader.hx)
@@ -110,7 +68,7 @@ function texture(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:Str
 function clip(path:String, loaded:AudioClip -> Void, ?failed:String -> Void):IRequest
 function stream(path:String, loaded:AudioStream -> Void, ?failed:String -> Void):IRequest
 function environment(path:String, loaded:EnvironmentMap3D -> Void, ?failed:String -> Void):IRequest
-function model(models:ModelCache3D, path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void):IRequest
+function model(path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void, ?models:ModelCache3D):IRequest
 ```
 
 - `new`: No loads yet: done, at progress 1.
@@ -125,7 +83,7 @@ function model(models:ModelCache3D, path:String, loaded:ModelFile3D -> Void, ?fa
 - `clip`: A sound clip through Audio.
 - `stream`: A sound stream through Audio.
 - `environment`: An environment through Environments3D (loaded once it's prepared).
-- `model`: A model file through models (Models3D.instance, or a ModelCache3D of the test's).
+- `model`: A model file through Models3D (or models, a cache of a test's).
 
 ## Loading
 
@@ -185,74 +143,6 @@ function getChild(index:Int):Null<Node>
 - `childCount`: How many children it has.
 - `getChild`: Its child at index, in drawing order; null past the end.
 
-## NodeOrigin3D
-
-*enum* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
-
-Where a node of an instance came from.
-
-- `Entry(entry:SceneNode3D)`: The file's own entry: made from it, or added under a file's or a prefab's node by an override's children.
-- `FileNode(file:String, innerPath:String)`: A model file (a Model3D entry's "file") made it: the file's path and the node's path inside it, from the entry's node.
-- `Prefab(scene:String, innerPath:String)`: A prefab (a "scene" entry) made it: the prefab's path and the node's path inside it, from the entry's node.
-
-## NodeRecord3D
-
-*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
-
-What an instance keeps of a node: its origin, the values the origin gave it (its snapshot, taken before any override), the game's props, and for an entry with a file or a prefab, whether its overrides have been applied (false while the file loads, or for one that failed: its overrides are then kept as written).
-
-```haxe
-function new(node:Node3D, kind:Null<String>, origin:NodeOrigin3D, snapshot:NodeSnapshot3D)
-final node:Node3D
-final kind:Null<String>
-var origin:NodeOrigin3D
-var owner:Null<Node3D>
-var entry:Null<SceneNode3D>
-var snapshot:NodeSnapshot3D
-var props:Null<Map<String, SceneValue>>
-var overridesApplied:Bool
-```
-
-- `new`: A record of node from origin with snapshot.
-- `node`: The node.
-- `kind`: Its kind, as SceneSchema3D's tables name it; null for a class no table has.
-- `origin`: Where it came from.
-- `owner`: The entry's node whose file or prefab made it; null for an entry's own node.
-- `entry`: The entry it was made from, when one was (a prefab's node keeps its prefab's entry); null for a model file's node.
-- `snapshot`: Its values as its origin gave them, before overrides.
-- `props`: The game's own values the file gave it; null for a node a file or a prefab made.
-- `overridesApplied`: For an entry with a file or a prefab: whether its overrides were applied.
-
-## NodeSnapshot3D
-
-*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
-
-A node's values as a file sees them: its transform, flags, its kind's properties and, for a Model3D, its material and its generated mesh.
-
-```haxe
-function new(node:Node3D, ?entry:SceneNode3D)
-var position:Array<Float>
-var rotation:Array<Float>
-var scale:Array<Float>
-var enabled:Bool
-var visible:Bool
-var pickable:Bool
-var properties:Map<String, SceneValue>
-var material:Null<SceneMaterial3D>
-var mesh:Null<SceneMesh3D>
-```
-
-- `new`: Node's values now: its transform and flags, every property of its kind that reads, and its material. Where read gives nothing yet (a texture still loading), entry's value for the property stands in, when given.
-- `position`: Its position, x, y, z.
-- `rotation`: Its rotation, Euler x, y, z in radians as Node3D reads them back.
-- `scale`: Its scale, x, y, z.
-- `enabled`: Node.enabled.
-- `visible`: Node.visible.
-- `pickable`: Node.pickable.
-- `properties`: Its kind's properties by name, those readable.
-- `material`: A Model3D's material as read; null for another kind or a model of no parts.
-- `mesh`: A Model3D's generated mesh as read from its record (Mesh3D.shape), else the entry's mesh when given; null for another kind or a mesh of no record.
-
 ## Pointer
 
 *class* in [`src/helix/scene/Pointer.hx`](../../src/helix/scene/Pointer.hx)
@@ -261,9 +151,6 @@ The pointer over stages: which node it's over, and what it pressed and clicked, 
 
 ```haxe
 function new(?input:IInput)
-function addRenderer2D(renderer:Renderer2D, camera:Camera2D):Void
-function addRenderer3D(renderer:Renderer3D, camera:Camera3D):Void
-function remove(renderer:Any):Void
 function update():Void
 var hovered(default, null):Null<Any>
 function isHovered(node:Any):Bool
@@ -276,9 +163,6 @@ var hit3D(get, never):Null<PickHit3D>
 ```
 
 - `new`: The pointer of input, or of the program's (Input) when not given, read as it's used, so a pointer made before the program runs (a field's initial value) works.
-- `addRenderer2D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
-- `addRenderer3D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
-- `remove`: Stops looking at renderer (2D or 3D); what it held lets go.
 - `update`: Once a frame, after input is polled and before the stages' nodes are read: picks under the pointer, topmost stage first, and works out the frame's press and click.
 - `hovered`: The node under the pointer, topmost stage first, or null.
 - `isHovered`: Whether node is under the pointer.
@@ -288,37 +172,6 @@ var hit3D(get, never):Null<PickHit3D>
 - `held`: The node held (isDown), or null.
 - `captured`: Whether a press on a 2D stage holds the pointer: the stages under it, and the app's own world controls, should leave it be.
 - `hit3D`: The last hit in a 3D stage (its point, normal, distance), when the hovered node is a 3D stage's; null otherwise.
-
-## PropertySchema
-
-*class* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
-
-One property of a kind: its name as the class names it, its type, and the class's default, which the writer leaves out of the file.
-
-```haxe
-function new(name:String, type:PropertyType, defaultValue:SceneValue)
-final name:String
-final type:PropertyType
-final defaultValue:SceneValue
-```
-
-- `new`: A property name of type type, whose class starts it at defaultValue.
-- `name`: Its name, as the class names the property (intensity, fovY, shadowCasting).
-- `type`: The shape of its value.
-- `defaultValue`: What the class starts with: a value equal to it is not written, and an absent key means it.
-
-## PropertyType
-
-*enum* in [`src/helix/scene/KindSchema.hx`](../../src/helix/scene/KindSchema.hx)
-
-What a kind's property holds in a .scene3d file: the shape the parser checks a value against, the writer writes, and an inspector makes a control for.
-
-- `Number(?min:Float, ?max:Float)`: A number, held from min to max where given (null for no bound), as the class clamps it.
-- `Text`: Text: a path to an asset, or a named choice in lower case (a sprite's facing: "camera", "upright", "ground", "free").
-- `Flag`: A bool.
-- `Numbers(count:Int)`: A list of count numbers.
-- `Color`: A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xAARRGGBB in memory.
-- `Reference`: A reference to a node of the file, "@name" or "@path/from/root" in the file.
 
 ## SceneBehavior
 
@@ -446,44 +299,6 @@ function destroy():Void
 - `props`: The game's own values the file gave node ("props"), kept here, never on the node; null for a node the file didn't make.
 - `destroy`: Takes it out: its behaviors from the pass (stopping the started ones), its root from the node it was put in, and the textures, fonts and environments it loaded released to their caches (the last release frees each). Its model and scene files stay in their caches, which keep files until told to forget them. A load still under way is cancelled.
 
-## SceneKinds3D
-
-*class* in [`src/helix/scene/SceneKinds3D.hx`](../../src/helix/scene/SceneKinds3D.hx)
-
-The live side of SceneSchema3D's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh made by Mesh3D's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB.
-
-```haxe
-static function make(kind:String):Null<Node3D>
-static function kindOf(node:Node3D):Null<String>
-static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool
-static function read(node:Node3D, name:String):Null<SceneValue>
-static function makeMesh(mesh:SceneMesh3D):Null<Mesh3D>
-static function readMesh(mesh:Mesh3D):Null<SceneMesh3D>
-static function applyMaterial(model:Model3D, material:SceneMaterial3D, ?instance:SceneInstance3D):Void
-static function readMaterial(model:Model3D):Null<SceneMaterial3D>
-static function projectionOf(name:String):Null<Projection3D>
-static function projectionName(projection:Projection3D):String
-static function facingOf(name:String):Null<SpriteFacing3D>
-static function facingName(facing:SpriteFacing3D):String
-static function alphaOf(name:String):Null<AlphaMode>
-static function alphaName(alpha:AlphaMode):String
-```
-
-- `make`: A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table has.
-- `kindOf`: The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has.
-- `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
-- `read`: Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet landed), or one that didn't come through the caches.
-- `makeMesh`: The mesh a file's mesh entry names, made by Mesh3D's generator of its shape with its arguments, an unsaid one the generator's default (SceneSchema3D.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing.
-- `readMesh`: Mesh as a file's mesh entry, from its record of what made it (Mesh3D.shape), every argument said (the writer leaves out those at the generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have.
-- `applyMaterial`: Gives model a new material carrying material's values, the rest Material3D's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance, when given, keeps them to release at its destroy.
-- `readMaterial`: Model3D's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures. Null for a model of no parts.
-- `projectionOf`: The projection named name, "perspective" or "orthographic" (SceneSchema3D.projections); null for another name.
-- `projectionName`: A projection's name as the file writes it (SceneSchema3D.projections).
-- `facingOf`: The facing named name, "camera", "upright", "ground" or "free"; null for another name.
-- `facingName`: A facing's name as the file writes it.
-- `alphaOf`: The alpha mode named name, "opaque", "mask", "blend" or "add"; null for another name.
-- `alphaName`: An alpha mode's name as the file writes it.
-
 ## SceneMaterial3D
 
 *class* in [`src/helix/scene/SceneMaterial3D.hx`](../../src/helix/scene/SceneMaterial3D.hx)
@@ -578,28 +393,6 @@ var isOverride(get, never):Bool
 - `props`: The game's own values by name, kept by the instance for this node, never on the live node.
 - `isOverride`: Whether it is an override: no name, no kind and no prefab, only what changes on a node another file made.
 
-## SceneSchema3D
-
-*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
-
-The kinds a .scene3d file's nodes can be and what each writes flat beside its name and transform: one table per kind, the one place that says it, so the parser checks keys and shapes against it, the writer writes in its order leaving defaults out, and an inspector reads its controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the shapes a Model3D's "mesh" can name (shapes): Mesh3D's generators with their arguments and defaults.
-
-```haxe
-static var kinds(default, null):Array<KindSchema>
-static var shapes(default, null):Array<ShapeSchema3D>
-static final projections(default, null):Array<String>
-static function kind(name:String):Null<KindSchema>
-static function shape(name:String):Null<ShapeSchema3D>
-static function property(name:String):Null<PropertySchema>
-```
-
-- `kinds`: Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own).
-- `shapes`: The shapes a Model3D's "mesh" can name, one table per generator of Mesh3D with its arguments in the generator's order and the generator's defaults: the parser checks a mesh's keys against it, the writer writes them in its order leaving defaults out, and SceneKinds3D calls the generator from it.
-- `projections`: What a camera's "projection" may say: Projection3D's cases in lower case, in its order, so the index of a name is the case's value.
-- `kind`: The table of the kind named name (as the file's "kind" has it), or null for a kind the file can't hold.
-- `shape`: The table of the shape named name (as a mesh's "shape" has it), or null for a shape no generator makes.
-- `property`: The property named name on whichever kind has it first, or null for a name no kind has: for an override, whose node's kind is the model's or the prefab's to know, not the file's. A name means one type wherever it is (color is a color on a light and on text).
-
 ## SceneValue
 
 *enum* in [`src/helix/scene/SceneValue.hx`](../../src/helix/scene/SceneValue.hx)
@@ -612,24 +405,6 @@ A value as a .scene3d file holds it: a kind's property, a behavior's prop, or on
 - `Numbers(values:Array<Float>)`: A list of numbers.
 - `Color(rgba:Int)`: A color, 0xAARRGGBB; "#RRGGBB" in the file is alpha ff.
 - `Reference(path:String)`: A reference to a node of the file: the name or path after the "@", resolved once every node is made.
-
-## ShapeSchema3D
-
-*class* in [`src/helix/scene/SceneSchema3D.hx`](../../src/helix/scene/SceneSchema3D.hx)
-
-One shape a Model3D's "mesh" can name: Mesh3D's generator of that name and its arguments in the generator's order, the required ones first.
-
-```haxe
-function new(name:String, arguments:Array<ArgumentSchema3D>)
-final name:String
-final arguments:Array<ArgumentSchema3D>
-function argument(name:String):Null<ArgumentSchema3D>
-```
-
-- `new`: A shape name taking arguments.
-- `name`: The generator's name: plane, cube, sphere, cylinder, cone, capsule or torus.
-- `arguments`: Its arguments in the generator's order, which the writer keeps.
-- `argument`: Its argument named name, or null for one it hasn't.
 
 ## Splash
 

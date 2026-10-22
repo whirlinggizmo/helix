@@ -6,6 +6,7 @@ package helix.input;
 	- losing focus lets go of everything, and while unfocused presses, text, the wheel and pads are ignored (releases and moves still count);
 	- text is ignored while Control or Super is held (a shortcut, not typing); Alt isn't, because AltGr and macOS's Option type characters;
 	- the first four connected gamepads fill the four slots in the platform's order, and the rest of the slots are empty. */
+@:noCompletion
 class InputRouter implements IInputEvents {
 	var state = new InputState();
 	var focused = true;

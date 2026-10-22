@@ -5,21 +5,23 @@ import helix.texture.TextureFormat;
 
 /** A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps
 	(https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures loads them. */
+@:noCompletion
+@:allow(helix)
 class Ktx {
 	static inline var HEADER = 64;
 	static var IDENTIFIER = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];
 
 	/** The texels' format. */
-	public final format:TextureFormat;
+	final format:TextureFormat;
 
 	/** Width in texels. */
-	public final width:Int;
+	final width:Int;
 
 	/** Height in texels. */
-	public final height:Int;
+	final height:Int;
 
 	/** The image, then its mipmaps, each format.levelBytes of its size. */
-	public final levels:Array<Bytes>;
+	final levels:Array<Bytes>;
 
 	function new(format:TextureFormat, width:Int, height:Int, levels:Array<Bytes>) {
 		this.format = format;
@@ -29,7 +31,7 @@ class Ktx {
 	}
 
 	/** Reads a KTX 1 file. Throws, saying why, for anything but a little-endian, 2D, BC7, ASTC 4x4 or ETC2 RGBA8 one whose levels are all there. */
-	public static function read(bytes:Bytes):Ktx {
+	static function read(bytes:Bytes):Ktx {
 		if (bytes.length < HEADER)
 			throw "Not a KTX 1 file";
 		for (i in 0...IDENTIFIER.length)

@@ -233,6 +233,7 @@ class Mesh3D {
 	}
 
 	/** Its pass vertices (passVertices) as a static vertex buffer on gpu, made the first time it's asked for. */
+	@:noCompletion
 	public function getPassVertexBuffer(gpu:IGraphics):Int {
 		upload(gpu);
 		if (passBuffer == 0)
@@ -241,18 +242,21 @@ class Mesh3D {
 	}
 
 	/** A skinned mesh's static skin buffer on gpu, made the first time it's asked for; 0 for one that isn't skinned. */
+	@:noCompletion
 	public function getSkinBuffer(gpu:IGraphics):Int {
 		upload(gpu);
 		return skinBuffer;
 	}
 
 	/** Its static vertex buffer on gpu, made the first time it's asked for. */
+	@:noCompletion
 	public function getVertexBuffer(gpu:IGraphics):Int {
 		upload(gpu);
 		return vertexBuffer;
 	}
 
 	/** Its static index buffer on gpu, made the first time it's asked for. */
+	@:noCompletion
 	public function getIndexBuffer(gpu:IGraphics):Int {
 		upload(gpu);
 		return indexBuffer;

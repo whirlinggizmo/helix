@@ -11,13 +11,15 @@ import helix.texture.Texture2D;
 	and no asset, and a shader nothing uses is left out of the build. Each is built the first time it's asked for on a GPU and kept, shared
 	by everything drawing with it, until the runner releases the GPU's. In development a hot reload brings the shaders packed again from
 	changed sources, and each built is built again in place, as Shaders does an app's. */
+@:noCompletion
+@:allow(helix)
 class ShaderLibrary {
 	// Kept across a hot reload, so the reload's rebuild finds every GPU's shaders.
 	@:hot static var all = new haxe.ds.ObjectMap<IGraphics, Map<String, {shader:Shader, text:String}>>();
 
 	/** The library shader name (its source's file stem: "unlit") on gpu, built from text (its packed .hxshader, <Name>Packed.text()) the first
 		time it's asked for there. Throws, saying why, for a program that doesn't build. */
-	public static function get(gpu:IGraphics, name:String, text:String):Shader {
+	static function get(gpu:IGraphics, name:String, text:String):Shader {
 		var shaders = all.get(gpu);
 		if (shaders == null)
 			all.set(gpu, shaders = new Map());
@@ -31,13 +33,13 @@ class ShaderLibrary {
 	@:hot static var noises = new haxe.ds.ObjectMap<IGraphics, Texture2D>();
 
 	/** The size of the library's noise texture, texels a side. */
-	public static inline var NOISE_SIZE = 128;
+	static inline var NOISE_SIZE = 128;
 
 	/** The library's noise texture on gpu (Dissolve's unless a game gives its own), made the first time it's asked for there: NOISE_SIZE
 		texels a side, tiling, smooth value noise of three octaves in its red, green and blue alike, its values spread evenly over 0..1 (so a
 		threshold at t keeps the share 1 - t of it); the same texels on every target. Sampled linear, repeating. The library frees it with its
 		shaders. */
-	public static function getNoise(gpu:IGraphics):Texture2D {
+	static function getNoise(gpu:IGraphics):Texture2D {
 		var texture = noises.get(gpu);
 		if (texture == null) {
 			texture = Texture2D.fromRgba(NOISE_SIZE, NOISE_SIZE, noisePixels(), true, gpu);
@@ -52,7 +54,7 @@ class ShaderLibrary {
 
 	/** The identity color LUT on gpu (ColorLut's until a game gives its own grade), made the first time it's asked for there from
 		ColorLut.identity(): every color itself. Sampled linear, clamped. The library frees it with its shaders. */
-	public static function getIdentityLut(gpu:IGraphics):Texture2D {
+	static function getIdentityLut(gpu:IGraphics):Texture2D {
 		var texture = luts.get(gpu);
 		if (texture == null) {
 			texture = Texture2D.fromRgba(ColorLut.SIZE * ColorLut.SIZE, ColorLut.SIZE, ColorLut.identity(), true, gpu);
@@ -62,7 +64,7 @@ class ShaderLibrary {
 	}
 
 	/** The noise texture's texels (getNoise), RGBA8, rows top first. */
-	public static function noisePixels():Bytes {
+	static function noisePixels():Bytes {
 		var n = NOISE_SIZE, values = [for (_ in 0...n * n) 0.];
 		var period = 8, weight = 1.;
 		for (_ in 0...3) {
@@ -109,7 +111,7 @@ class ShaderLibrary {
 	}
 
 	/** Frees gpu's library shaders, the pipelines made over them, its noise texture and its identity LUT, before the adapter shuts down. */
-	public static function release(gpu:IGraphics):Void {
+	static function release(gpu:IGraphics):Void {
 		for (textures in [noises, luts]) {
 			var texture = textures.get(gpu);
 			if (texture != null) {

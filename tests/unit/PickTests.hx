@@ -13,6 +13,7 @@ import helix.render3d.Text3D;
 
 /** Picking: the ray through a pixel (perspective, orthographic, a viewport area), the nearest model along it, its point, distance and
 	normal, the three flags, a see-through model, and a skinned one picked where it's posed, not at rest. */
+@:access(helix)
 class PickTests {
 	static var checks = 0;
 

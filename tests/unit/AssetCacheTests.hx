@@ -10,6 +10,7 @@ import helix.asset.StorageService;
 
 /** A host in memory: files by path, each with its headers, answering as a server does (304 to a matching If-None-Match), or not at all while
 	offline. It counts the requests for each path and keeps the headers each was sent with. */
+@:access(helix)
 private class Host implements IHttp {
 	public var files:Map<String, {body:Bytes, headers:Map<String, String>}> = [];
 	public var requests:Map<String, Int> = [];
@@ -94,6 +95,7 @@ private class Host implements IHttp {
 }
 
 /** A store in memory, kept across services as a browser's IndexedDB is across visits. */
+@:access(helix)
 private class Memory implements IStore {
 	public var files:Map<String, Bytes> = [];
 
@@ -137,6 +139,7 @@ private class Memory implements IStore {
 
 /** The asset cache's rules (AssetService): revalidation by the host's headers, and the manifest tree. Each "visit" is a new service over the
 	same store, as a page loaded again. */
+@:access(helix)
 class AssetCacheTests {
 	static var checks = 0;
 	static var host:Host;

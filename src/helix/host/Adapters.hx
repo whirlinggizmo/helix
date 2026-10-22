@@ -11,6 +11,7 @@ import helix.graphics.IImageDecoder;
 import helix.input.IInputSource;
 
 /** A profile's choice of adapter for each platform contract, which the Runner builds the app's services over. */
+@:noCompletion
 typedef Adapters = {
 	/** The GPU. */
 	final graphics:IGraphics;

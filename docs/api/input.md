@@ -14,7 +14,6 @@ static var VERSION(inline, null):Int
 static var CAPTURE_THRESHOLD(inline, null):Float
 static function describe(binding:Binding):String
 var input(default, set):Null<IInput>
-var presentation:Null<Presentation>
 var names(get, never):Array<String>
 var capturing(default, null):Bool
 var captureTouchSize(default, set):Float
@@ -43,7 +42,6 @@ function frameEnded():Void
 - `CAPTURE_THRESHOLD`: How far past it a pad axis must go for capture to take it: half way, as down is for a binding without a threshold.
 - `describe`: The text a remap screen shows for binding: "Space", "Left / Right", "Pad south", "D-pad left / D-pad right", "Left stick X", "Left stick left" (a stick with a side), "Right trigger", "Left mouse", "Touch".
 - `input`: The input the actions are read from, which tells the map as each tick and frame ends; null reads every action as up. Assigning stops watching the input before: a game playing an autopilot's script gives it the script's input, and an Actions given up is given null.
-- `presentation`: Whose visible area and units touch regions are in: null for Screen's (Screen.instance), read as each finger is. Without either (a unit test with no runner) a touch region reads nothing; a test gives its own Presentation, whose None mode is logical pixels.
 - `names`: The actions, in the order first bound; an action cleared or unbound to nothing stays.
 - `capturing`: Whether capture is waiting for a press; while it is, every action reads as up.
 - `captureTouchSize`: The width and height of a touch region capture makes, centered where the finger landed, in the game's units (Screen's). At least 1; 96 to begin with.
@@ -184,8 +182,6 @@ function isPadDown(button:PadButton):Bool
 function isPadPressed(button:PadButton):Bool
 function getPadAxis(axis:PadAxis):Float
 function consume():Void
-function watch(watcher:IInputWatcher):Bool
-function unwatch(watcher:IInputWatcher):Bool
 ```
 
 - `isDown`: Whether the key is held now.
@@ -227,68 +223,6 @@ function unwatch(watcher:IInputWatcher):Bool
 - `isPadPressed`: A connected pad's button went down: a counted tick edge, as a key's.
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
 - `consume`: Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges.
-- `watch`: Plumbing for what is built on the input, not for a game (the Input static leaves it out): tells watcher as each tick and each frame ends (consume, and the frame's end), before their edges are cleared, which is how an action map (Actions) keeps its own previous states without calls from the game. False, changing nothing, for a watcher already told.
-- `unwatch`: Plumbing, as watch: stops telling watcher; false for one not told.
-
-## IInputEvents
-
-*class* in [`src/helix/input/IInputEvents.hx`](../../src/helix/input/IInputEvents.hx)
-
-What an IInputSource reports to: the platform's input events as they are. Positions are framebuffer pixels from the top left.
-
-```haxe
-function key(key:Key, down:Bool):Void
-function text(chars:String):Void
-function mouseButton(button:MouseButton, down:Bool, x:Float, y:Float):Void
-function mouseMove(x:Float, y:Float):Void
-function mouseLeave():Void
-function wheel(x:Float, y:Float):Void
-function touch(id:Int, x:Float, y:Float, down:Bool):Void
-function focus(focused:Bool):Void
-function pad(name:String, buttons:Array<Bool>, axes:Array<Float>):Void
-```
-
-- `key`: A key went down (true) or up (false); a repeat may report down again.
-- `text`: Characters typed, after the keyboard layout.
-- `mouseButton`: A mouse button went down or up with the mouse at x, y. A source may report every button's state on each event.
-- `mouseMove`: The mouse moved to x, y.
-- `mouseLeave`: The mouse left the window, or the platform took it over (a cancelled pointer).
-- `wheel`: The wheel turned, in notches; up and right are positive.
-- `touch`: A finger touched (down true), moved (true) or lifted (false), at x, y.
-- `focus`: The window gained (true) or lost (false) the input: lost while it is unfocused or hidden.
-- `pad`: A connected gamepad's state at poll: its name, each PadButton's state by number and each PadAxis's value by number (sticks -1..1, triggers 0..1). The arrays are read during the call only.
-
-## IInputSource
-
-*class* in [`src/helix/input/IInputSource.hx`](../../src/helix/input/IInputSource.hx)
-
-A platform's input: its keyboard, mouse, touch, focus and gamepad events reported as they are, in order, to the shared InputRouter, which makes the input an app reads from them. Edges, the pointer, focus policy and pad slots are the router's.
-
-```haxe
-function start(events:IInputEvents):Void
-function poll():Void
-function setTextEntry(on:Bool):Void
-function shutdown():Void
-```
-
-- `start`: Reports to events from now on, on the host thread: as the platform's events arrive, or at poll. Called once, before the first poll.
-- `poll`: Before the app's frame: reports what arrived since the last poll, then every connected gamepad's state, in the platform's order.
-- `setTextEntry`: Asks the platform for typed text while on (SDL3's text input; a soft keyboard where the platform has one), and no longer when off. The router calls it before a poll, as the app's text entry (IInput.setTextEntry) changes; off until then.
-- `shutdown`: Releases the platform's input, after the app's cleanup.
-
-## IInputWatcher
-
-*class* in [`src/helix/input/IInputWatcher.hx`](../../src/helix/input/IInputWatcher.hx)
-
-Told by an IInput (watch) as a tick's edges and a frame's end, before they are cleared: what keeps a state of its own from tick to tick and frame to frame over the input, as an action map (Actions) keeps whether each action was down.
-
-```haxe
-function tickEnded():Void
-function frameEnded():Void
-```
-
-- `tickEnded`: A simulation tick ended: the input's consume() is taking one of each tick edge, after this.
-- `frameEnded`: The frame ended: its frame edges, text, wheel and lifted touches end after this.
 
 ## Input
 
@@ -378,33 +312,6 @@ static function consume():Void
 - `getPadAxis`: The first connected pad's axis, past the dead zone as Gamepad.getAxis gives it.
 - `consume`: Call after each simulation tick: takes one of each counted tick edge and clears the pads' tick edges.
 
-## InputRouter
-
-*class* in [`src/helix/input/InputRouter.hx`](../../src/helix/input/InputRouter.hx)
-
-Makes the input an app reads (an InputState) from a platform's events, the same on every platform: - the primary pointer is the mouse with its left button, or the first finger down; a second finger lets it go, off the window, so a pinch never drops or clicks anything, and the pointer stays let go until every finger lifts; - losing focus lets go of everything, and while unfocused presses, text, the wheel and pads are ignored (releases and moves still count); - text is ignored while Control or Super is held (a shortcut, not typing); Alt isn't, because AltGr and macOS's Option type characters; - the first four connected gamepads fill the four slots in the platform's order, and the rest of the slots are empty.
-
-```haxe
-function new()
-var input(get, never):IInput
-function poll(source:IInputSource):Void
-function endFrame():Void
-function key(key:Key, down:Bool):Void
-function text(chars:String):Void
-function mouseButton(button:MouseButton, down:Bool, x:Float, y:Float):Void
-function mouseMove(x:Float, y:Float):Void
-function mouseLeave():Void
-function wheel(x:Float, y:Float):Void
-function touch(id:Int, x:Float, y:Float, down:Bool):Void
-function focus(value:Bool):Void
-function pad(name:String, buttons:Array<Bool>, axes:Array<Float>):Void
-```
-
-- `new`: Focused, with nothing held.
-- `input`: The input the app reads.
-- `poll`: Before the app's frame: tells source when the app's text entry changed, has it report what arrived, then empties the pad slots no connected pad reported into.
-- `endFrame`: After the app's frame: the frame's edges, text, wheel and lifted touches end.
-
 ## InputState
 
 *class* in [`src/helix/input/InputState.hx`](../../src/helix/input/InputState.hx)
@@ -460,8 +367,6 @@ function getTouchGesturePanY(?perTick:Bool = false):Float
 function getTouchGestureScale(?perTick:Bool = false):Float
 function getTouchGestureRotation(?perTick:Bool = false):Float
 function clear():Void
-function watch(watcher:IInputWatcher):Bool
-function unwatch(watcher:IInputWatcher):Bool
 function consume():Void
 function endFrame():Void
 ```

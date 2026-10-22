@@ -3,6 +3,7 @@ import helix.graphics.Png;
 
 /** The PNG encoder, checked by decoding its files again: chunks and their CRCs, the zlib stream through Haxe's own inflater, every filter
 	undone, the pixels compared. */
+@:access(helix)
 class PngTests {
 	static var checks = 0;
 

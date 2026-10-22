@@ -18,6 +18,7 @@ class EnvironmentMap3D {
 	}
 
 	/** An environment of a finished bake, its cubes uploaded to gpu: the file it came from is path. Throws where gpu can't sample half floats. */
+	@:noCompletion
 	public static function fromBake(gpu:IGraphics, path:String, bake:EnvironmentBake3D):EnvironmentMap3D
 		return new EnvironmentMap3D(gpu, path, bake);
 

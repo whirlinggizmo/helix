@@ -3,6 +3,7 @@ package helix.audio;
 import haxe.io.Bytes;
 
 /** The PCM format of clips: mono 32-bit float samples. */
+@:noCompletion
 class Pcm {
 	/** Throws unless samples is non-empty, a whole number of 4-byte floats, and every sample is finite and -1 to 1. */
 	public static function validate(samples:Bytes):Void {

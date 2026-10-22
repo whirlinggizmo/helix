@@ -7,6 +7,8 @@ import helix.font.Font;
 	nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children
 	in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose
 	bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs. */
+@:noCompletion
+@:allow(helix)
 class Renderer2D {
 	// The tree in drawing order (depth first, the root's children down), each node's parent's place in it (-1 for the root's children) and the
 	// place just past its last descendant, remade when the root's count of adds and removes moves; beside each, the node as its kind (null
@@ -40,32 +42,32 @@ class Renderer2D {
 	var lastFont:Null<Font>;
 
 	/** An empty stage, or one drawing root's children (a View2D's tree). */
-	public function new(?root:Node2D) {
+	function new(?root:Node2D) {
 		this.root = root == null ? new Node2D() : root;
 	}
 
 	/** The node everything on the stage hangs from. */
-	public var root(default, null):Node2D;
+	var root(default, null):Node2D;
 
 	/** Adds node to the stage, as the root's last child: drawn over what is there. */
-	public function add(node:Node2D):Bool
+	function add(node:Node2D):Bool
 		return root.addChild(node);
 
 	/** Takes node from the stage's root. */
-	public function remove(node:Node2D):Bool
+	function remove(node:Node2D):Bool
 		return root.removeChild(node);
 
 	/** The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw. */
-	public var time:Float = 0.;
+	var time:Float = 0.;
 
 	/** The font a text without its own was last drawn in (the batch's), or null before a draw. */
-	public var font(get, never):Null<Font>;
+	var font(get, never):Null<Font>;
 
 	function get_font():Null<Font>
 		return lastFont;
 
 	/** Nodes drawn by the last draw (in view). */
-	public var drawnNodeCount(get, never):Int;
+	var drawnNodeCount(get, never):Int;
 
 	function get_drawnNodeCount():Int
 		return count;
@@ -73,7 +75,7 @@ class Renderer2D {
 	/** Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time
 		(batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date
 		after it, for toLocalX and the like. */
-	public function draw(batch:Batch2D, camera:Camera2D):Void {
+	function draw(batch:Batch2D, camera:Camera2D):Void {
 		batch.camera = camera;
 		batch.time = time;
 		walkCamera = camera;
@@ -257,7 +259,7 @@ class Renderer2D {
 		passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a
 		View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the
 		node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)). */
-	public function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
+	function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
 		if (root.paused
 			|| !(x >= camera.viewportX
 				&& x < camera.viewportX + camera.viewportWidth

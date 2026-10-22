@@ -15,6 +15,8 @@ import helix.texture.Texture2D;
 	into one upload, and draws each run of a texture and effect as one instanced draw (through the effect's sprite3D variant for a sprite with
 	one): the opaque ones after the opaque models, the blended ones among the see-through models (fed to it back to front), the added ones
 	last. A camera-facing sprite's axes are the camera's, uniforms of the draw. */
+@:noCompletion
+@:allow(helix)
 class Sprites3D {
 	static inline var RECORD_FLOATS = 24;
 
@@ -56,7 +58,7 @@ class Sprites3D {
 	var upright = [1., 0, 0];
 
 	/** Sprites on gpu: their quad and instance buffer. */
-	public function new(gpu:IGraphics) {
+	function new(gpu:IGraphics) {
 		this.gpu = gpu;
 		pipelines = helix.graphics.Pipelines.of(gpu);
 		var quad = Bytes.alloc(4 * Sprite3DProgram.stride), at = 0;
@@ -76,19 +78,19 @@ class Sprites3D {
 	}
 
 	/** Sprites drawn by the last draw (in view). */
-	public var drawnSpriteCount(get, never):Int;
+	var drawnSpriteCount(get, never):Int;
 
 	function get_drawnSpriteCount():Int
 		return count;
 
 	/** Draws of the last draw: one a run of a texture and effect. */
-	public var drawCallCount(get, never):Int;
+	var drawCallCount(get, never):Int;
 
 	function get_drawCallCount():Int
 		return draws;
 
 	/** Starts a draw at time, seconds of the stage's clock (what effects see), dt after the last: no sprites or emitters yet. */
-	public function begin(dt:Float, time:Float):Void {
+	function begin(dt:Float, time:Float):Void {
 		count = 0;
 		draws = 0;
 		emitterCount = 0;
@@ -100,7 +102,7 @@ class Sprites3D {
 
 	/** Advances node's emitter (its world matrix up to date) by the draw's dt, where the node is now, unless still (under a paused node:
 		held as it is), and adds it to the draw when it has particles to draw. Not culled: particles reach past where it is. */
-	public function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float, still = false):Void {
+	function visitEmitter(node:Particles3D, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float, still = false):Void {
 		var emitter = node.emitter, w = node.worldMatrix;
 		if (!still)
 			advanceEmitter(node);
@@ -120,7 +122,7 @@ class Sprites3D {
 	}
 
 	/** Moves an emitter node's particles on by this draw's time, at its place, without drawing them (a hidden emitter's). */
-	public function advanceEmitter(node:Particles3D):Void {
+	function advanceEmitter(node:Particles3D):Void {
 		var w = node.worldMatrix;
 		node.emitter.advance(dt, w.get(12), w.get(13), w.get(14));
 	}
@@ -142,7 +144,7 @@ class Sprites3D {
 	}
 
 	/** Adds a text's glyphs (its world matrix up to date) unless it is out of view: each a sprite in the text's plane, blended. */
-	public function visitText(node:Text3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	function visitText(node:Text3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var text = node.text;
 		if (text.length == 0)
 			return;
@@ -194,7 +196,7 @@ class Sprites3D {
 
 	/** Adds a sprite (its world matrix up to date) unless it is out of view: planes are the camera's six (a, b, c, d each), and its depth
 		is along forward from the eye. */
-	public function visit(node:Sprite3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	function visit(node:Sprite3D, planes:Vector<Float>, eyeX:Float, eyeY:Float, eyeZ:Float, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		var texture = node.texture;
 		if (texture == null)
 			return;
@@ -232,13 +234,13 @@ class Sprites3D {
 	}
 
 	/** Takes camera's axes for the picks that follow (pickSprite, pickText), as it shows the sprites now. */
-	public function preparePick(camera:Camera3D):Void
+	function preparePick(camera:Camera3D):Void
 		cameraAxes(camera, camera.forwardX, camera.forwardY, camera.forwardZ);
 
 	/** Tests a sprite against ray as the camera given to preparePick shows it (its quad, facing as drawn): the distance along the ray, recorded
 		in hit when nearer than best, else best. A sprite without a texture, or a see-through one (blended or added, its tint's alpha under a
 		half), isn't hit. */
-	public function pickSprite(node:Sprite3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
+	function pickSprite(node:Sprite3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
 		if (node.texture == null)
 			return best;
 		if ((node.alphaMode == Blend || node.alphaMode == Add) && Color.getAlpha(node.tint) < 128)
@@ -248,7 +250,7 @@ class Sprites3D {
 
 	/** Tests a text against ray as the camera given to preparePick shows it (its whole block, facing as drawn), as pickSprite. A text without
 		text, or a faint one (its color's alpha under a half), isn't hit. */
-	public function pickText(node:Text3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
+	function pickText(node:Text3D, ray:Ray3D, best:Float, hit:PickHit3D):Float {
 		if (node.text.length == 0 || Color.getAlpha(node.color) < 128)
 			return best;
 		var font = node.font != null ? node.font : builtIn();
@@ -328,7 +330,7 @@ class Sprites3D {
 
 	/** Sorts the sprites collected, writes their records into one upload and the draw's uniforms: viewProjection, and the camera's right and up
 		(from forward and its up), and the upright facing's right. */
-	public function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
+	function prepare(viewProjection:Mat4, camera:Camera3D, forwardX:Float, forwardY:Float, forwardZ:Float):Void {
 		cameraAxes(camera, forwardX, forwardY, forwardZ);
 		viewProjection.writeTo(uniforms);
 		var values = cameraRight.concat([0]).concat(cameraUp).concat([0]).concat(upright).concat([0]);
@@ -539,7 +541,7 @@ class Sprites3D {
 	}
 
 	/** Draws the opaque and masked sprites, then emitters. */
-	public function drawOpaque():Void {
+	function drawOpaque():Void {
 		drawRange(0, blendStart, 0);
 		for (i in 0...emitterBlendStart)
 			drawEmitter(emitters[i]);
@@ -547,7 +549,7 @@ class Sprites3D {
 
 	/** Draws the blended sprites and emitters farther than depth along the view not yet drawn, back to front together: called before each
 		see-through model run. */
-	public function drawBlendedBeyond(depth:Float):Void
+	function drawBlendedBeyond(depth:Float):Void
 		while (true) {
 			var sprite = nextBlend < addStart ? drawn[nextBlend].depth : Math.NEGATIVE_INFINITY,
 				emitter = nextEmitter < emitterAddStart ? emitters[nextEmitter].depth : Math.NEGATIVE_INFINITY;
@@ -565,7 +567,7 @@ class Sprites3D {
 		}
 
 	/** Draws the blended sprites and emitters left, then the added ones. */
-	public function drawRest():Void {
+	function drawRest():Void {
 		drawBlendedBeyond(Math.NEGATIVE_INFINITY);
 		drawRange(addStart, count, 2);
 		for (i in emitterAddStart...emitterCount)
@@ -573,7 +575,7 @@ class Sprites3D {
 	}
 
 	/** Frees its buffers and built-in font. */
-	public function destroy():Void {
+	function destroy():Void {
 		if (font != null)
 			font.destroy(gpu);
 		gpu.destroyBuffer(corners);

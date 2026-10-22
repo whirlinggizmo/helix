@@ -250,28 +250,6 @@ var power(get, set):Float
 - `color`: The rim's color, 0xAARRGGBB (sRGB), its alpha how strong (0 none, 255 all of it).
 - `power`: How tight the rim keeps to the edge, .1 to 64: 1 spreads it over the surface, 3 a rim, 8 a thin line. Clamped to .1..64 (NaN is .1).
 
-## ShaderLibrary
-
-*class* in [`src/helix/shader/ShaderLibrary.hx`](../../src/helix/shader/ShaderLibrary.hx)
-
-The shader library's programs on each GPU. A library shader's source (src/helix/shader/*.glsl) is packed at build time into generated Haxe holding its .hxshader (src/helix/tool/shader/ShaderPacker.hx: <Name>Packed.text()), so a class in helix.shader gets its shader at once, with no load and no asset, and a shader nothing uses is left out of the build. Each is built the first time it's asked for on a GPU and kept, shared by everything drawing with it, until the runner releases the GPU's. In development a hot reload brings the shaders packed again from changed sources, and each built is built again in place, as Shaders does an app's.
-
-```haxe
-static function get(gpu:IGraphics, name:String, text:String):Shader
-static var NOISE_SIZE(inline, null):Int
-static function getNoise(gpu:IGraphics):Texture2D
-static function getIdentityLut(gpu:IGraphics):Texture2D
-static function noisePixels():haxe.io.Bytes
-static function release(gpu:IGraphics):Void
-```
-
-- `get`: The library shader name (its source's file stem: "unlit") on gpu, built from text (its packed .hxshader, <Name>Packed.text()) the first time it's asked for there. Throws, saying why, for a program that doesn't build.
-- `NOISE_SIZE`: The size of the library's noise texture, texels a side.
-- `getNoise`: The library's noise texture on gpu (Dissolve's unless a game gives its own), made the first time it's asked for there: NOISE_SIZE texels a side, tiling, smooth value noise of three octaves in its red, green and blue alike, its values spread evenly over 0..1 (so a threshold at t keeps the share 1 - t of it); the same texels on every target. Sampled linear, repeating. The library frees it with its shaders.
-- `getIdentityLut`: The identity color LUT on gpu (ColorLut's until a game gives its own grade), made the first time it's asked for there from ColorLut.identity(): every color itself. Sampled linear, clamped. The library frees it with its shaders.
-- `noisePixels`: The noise texture's texels (getNoise), RGBA8, rows top first.
-- `release`: Frees gpu's library shaders, the pipelines made over them, its noise texture and its identity LUT, before the adapter shuts down.
-
 ## Silhouette
 
 *class* in [`src/helix/shader/Silhouette.hx`](../../src/helix/shader/Silhouette.hx)

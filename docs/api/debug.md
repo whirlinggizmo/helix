@@ -52,18 +52,6 @@ function update(dt:Float, cpu:Float):Void
 - `frameMs`: The frame's average cost in milliseconds over the last half second.
 - `update`: dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.frameCpu).
 
-## ITestHarness
-
-*class* in [`src/helix/debug/ITestHarness.hx`](../../src/helix/debug/ITestHarness.hx)
-
-How a program hands its result to the check that launched it (an autopilot's final state, a test's checks). A test hook only: a game's profile can plug in one that does nothing.
-
-```haxe
-function publish(value:Dynamic):Void
-```
-
-- `publish`: Hands value (JSON-able) to the check: window.result in a browser; natively a JSON line on stdout, also written to the file HELIX_RESULT names.
-
 ## TestHarness
 
 *class* in [`src/helix/debug/TestHarness.hx`](../../src/helix/debug/TestHarness.hx)

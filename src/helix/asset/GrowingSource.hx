@@ -6,31 +6,33 @@ import haxe.io.Bytes;
 	native output's decoder reads what has arrived. The whole file's room is taken at the start (its length is known), so the bytes never move
 	and what has arrived is the first received of them. Host thread only: the service writes from the fetch's parts, which arrive there, and the
 	reader copies from it there. */
+@:noCompletion
+@:allow(helix)
 class GrowingSource {
 	/** The file's bytes, total long: the first received of them have arrived, the rest are zero. */
-	public var bytes(default, null):Bytes;
+	var bytes(default, null):Bytes;
 
 	/** How many bytes have arrived, 0 to total. */
-	public var received(default, null) = 0;
+	var received(default, null) = 0;
 
 	/** The file's length in bytes (the response's Content-Length). */
-	public var total(default, null):Int;
+	var total(default, null):Int;
 
 	/** Whether the whole file has arrived. */
-	public var done(default, null) = false;
+	var done(default, null) = false;
 
 	/** Why the download failed, or null while it hasn't: then no more will arrive. */
-	public var failure(default, null):Null<String> = null;
+	var failure(default, null):Null<String> = null;
 
 	/** A file of total bytes (at least 0), none arrived yet. */
-	public function new(total:Int) {
+	function new(total:Int) {
 		this.total = total;
 		bytes = Bytes.alloc(total);
 		done = total == 0;
 	}
 
 	/** A source with the whole of bytes arrived. */
-	public static function of(bytes:Bytes):GrowingSource {
+	static function of(bytes:Bytes):GrowingSource {
 		var source = new GrowingSource(0);
 		source.bytes = bytes;
 		source.total = source.received = bytes.length;

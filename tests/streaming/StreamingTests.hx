@@ -17,6 +17,7 @@ import helix.audio.AudioResources;
 	asset service plays while it downloads, to its end, and is kept in the cache; one without a Content-Length is answered whole; one the server
 	drops halfway ends its voice and is logged. Args: the server's URL, the cache directory. Played through SDL3's dummy driver (no sound): its
 	device thread pulls the mixer in real time, as a device would. Prints one JSON line. */
+@:access(helix)
 class StreamingTests {
 	static var checks = 0;
 	static var logged:Array<String> = [];

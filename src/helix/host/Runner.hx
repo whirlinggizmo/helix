@@ -35,6 +35,8 @@ import helix.time.Time;
 	unbinds the statics: the
 	platform's services are the runner's to close, never the app's. The same on
 	every platform: a host owns only the loop, the clock and the window. */
+@:noCompletion
+@:allow(helix)
 class Runner {
 	var compose:Void->Adapters;
 	var adapters:Adapters;
@@ -60,7 +62,7 @@ class Runner {
 	var closed = false;
 
 	/** A runner for host, building its services from compose's adapters when the host starts (natively the GPU exists only then). */
-	public function new(host:IHost, compose:Void->Adapters) {
+	function new(host:IHost, compose:Void->Adapters) {
 		this.host = host;
 		this.compose = compose;
 		Host.bind(host);
@@ -69,25 +71,25 @@ class Runner {
 
 	/** Runs app on the host: its init once the services are filled and the game's config has come, its frame once a display refresh, its
 		cleanup at the end. Natively it returns only after the window closes. */
-	public function run(app:IApp):Void {
+	function run(app:IApp):Void {
 		this.app = app;
 		host.run(() -> init(), () -> frame(), () -> cleanup());
 	}
 
 	/** The host it runs on. */
-	public var host(default, null):IHost;
+	var host(default, null):IHost;
 
 	/** The frame clock. */
-	public var clock(default, null):FrameClock = new FrameClock();
+	var clock(default, null):FrameClock = new FrameClock();
 
 	/** The last frame's CPU time in milliseconds. */
-	public var frameCpu(default, null):Float = 0.;
+	var frameCpu(default, null):Float = 0.;
 
 	/** Milliseconds between the last two frames' starts (0 for the first). */
-	public var frameInterval(default, null):Float = 0.;
+	var frameInterval(default, null):Float = 0.;
 
 	/** Whether the shared services are loading anything (Host.busy). */
-	public var busy(get, never):Bool;
+	var busy(get, never):Bool;
 
 	function get_busy():Bool
 		return resources != null && (resources.busy || decoding.busy || audioDecoding.busy || partsBusy());
@@ -100,29 +102,29 @@ class Runner {
 	}
 
 	/** The assets, for an optional part built over them. */
-	public var assets(get, never):AssetService;
+	var assets(get, never):AssetService;
 
 	function get_assets():AssetService
 		return resources;
 
 	/** The image decoder, for an optional part built over it. */
-	public var images(get, never):ImageDecoding;
+	var images(get, never):ImageDecoding;
 
 	function get_images():ImageDecoding
 		return decoding;
 
 	/** The adapters the program runs on, for an optional part built over them. */
-	public var platform(get, never):Adapters;
+	var platform(get, never):Adapters;
 
 	function get_platform():Adapters
 		return adapters;
 
 	/** Adds an optional part, its hooks run from now until the program's end. Its static class calls it, at the part's first use. */
-	public function install(part:Part):Void
+	function install(part:Part):Void
 		parts.push(part);
 
 	/** The file at path (an asset path) changed: its assets load again in place. A development host's file watcher calls it. */
-	public function assetChanged(path:String):Void
+	function assetChanged(path:String):Void
 		if (resources != null)
 			resources.changed(path);
 

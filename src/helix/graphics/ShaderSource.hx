@@ -1,6 +1,7 @@
 package helix.graphics;
 
 /** One program's source for one backend dialect: its vertex and fragment stages. */
+@:noCompletion
 typedef ShaderStages = {
 	final vertex:String;
 	final fragment:String;
@@ -8,6 +9,7 @@ typedef ShaderStages = {
 
 /** A uniform block a program declares: its binding slot, its stage ("vertex" or "fragment"), its size in bytes, and its name in the GLSL,
 	which flattens it to an array of vec4s. */
+@:noCompletion
 typedef ShaderBlock = {
 	final slot:Int;
 	final stage:String;
@@ -19,6 +21,7 @@ typedef ShaderBlock = {
 /** A texture a program samples: its binding slot (its sampler's too), its stage, the GLSL name of the pair, and its kind: a shadow map (a
 	depth array read through a comparison sampler), a cubemap, a data texture (RGBA32F read texel by texel, never filtered), or a plain 2D
 	texture when none of them. */
+@:noCompletion
 typedef ShaderTexture = {
 	final slot:Int;
 	final stage:String;
@@ -30,6 +33,7 @@ typedef ShaderTexture = {
 
 /** A program in SDL_GPU's dialects (src/helix/tool/shader/GpuShaders.hx), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal
 	(entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main). */
+@:noCompletion
 typedef SdlGpuStages = {
 	final spirv:ShaderStages;
 	final msl:ShaderStages;
@@ -41,6 +45,7 @@ typedef SdlGpuStages = {
 	dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (src/helix/tool/shader/ShaderPacker.hx, SDL_GPU's dialects only
 	when packed for those builds);
 	IGraphics.createShader builds either the same way. */
+@:noCompletion
 typedef ShaderSource = {
 	final attributes:Array<String>;
 

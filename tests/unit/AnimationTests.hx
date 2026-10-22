@@ -15,6 +15,7 @@ import helix.render3d.Renderer3D;
 
 /** Skinning and skeletal animation: tracks' sampling, skins and clips read from glTF (Quaternius's modular women, the animation example's),
 	the Animator3D's binding, refusal and crossfade, joint matrices, and a posed model's culling box. */
+@:access(helix)
 class AnimationTests {
 	static var checks = 0;
 

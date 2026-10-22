@@ -21,6 +21,7 @@ import haxe.macro.Expr;
 	  defines it from the backend, helix.macro.Haxelib, and the repository's builds pass it) too.
 
 	A subclass can't declare a field of those names. */
+@:noCompletion
 class AppBuild {
 	/** The backends a build may name with -D helix-backend=, each the name of a build's backend (docs/CONVENTIONS.md): the browser's
 		webgl2, and natively sokol-gl, sdl3-gl and sdl3-gpu. */

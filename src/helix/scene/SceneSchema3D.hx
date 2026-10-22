@@ -5,6 +5,7 @@ import helix.scene.KindSchema;
 /** One argument of a mesh generator (Mesh3D.plane's width, Mesh3D.sphere's rings): its name as the generator's parameter is named, and the
 	generator's default, null for one it requires. A count (rings, segments, subdivisions) is a whole number; a file's number is rounded
 	toward zero for it. */
+@:noCompletion
 class ArgumentSchema3D {
 	/** Its name, as the generator names the parameter (width, radius, segments). */
 	public final name:String;
@@ -27,6 +28,7 @@ class ArgumentSchema3D {
 
 /** One shape a Model3D's "mesh" can name: Mesh3D's generator of that name and its arguments in the generator's order, the required ones
 	first. */
+@:noCompletion
 class ShapeSchema3D {
 	/** The generator's name: plane, cube, sphere, cylinder, cone, capsule or torus. */
 	public final name:String;
@@ -54,6 +56,7 @@ class ShapeSchema3D {
 	controls from it; nothing can be written that can't be read. The names are the classes' own (helix.render3d), the defaults what each class
 	starts with. A kind without properties (Node3D, a group; Particles3D, whose emitter is set in code) is still a kind. Beside the kinds, the
 	shapes a Model3D's "mesh" can name (shapes): Mesh3D's generators with their arguments and defaults. */
+@:noCompletion
 class SceneSchema3D {
 	/** Every kind's table, in the order the writer takes an override's properties (a node's own kind orders its own). */
 	public static var kinds(default, null):Array<KindSchema> = [
