@@ -8,7 +8,7 @@ import helix.render3d.AnimationClip.TrackPath;
 /** Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a
 	clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play()
 	crossfades from the clip before over the seconds given; a node the clips don't both move blends with its rest pose (where it was when the
-	Animator first moved it). queue() plays a clip next, when the one playing ends (a one-shot back to its idle). update() advances the time and poses the nodes; a Stage3D draws them as they're left. One clip plays at a time
+	Animator first moved it). queue() plays a clip next, when the one playing ends (a one-shot back to its idle). update() advances the time and poses the nodes; a Renderer3D draws them as they're left. One clip plays at a time
 	(layers, playing an upper body's clip over a lower body's, aren't here yet). */
 class Animator {
 	var root:Node3D;

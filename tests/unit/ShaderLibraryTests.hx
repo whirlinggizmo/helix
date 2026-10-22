@@ -10,7 +10,7 @@ import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.Skin;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 import helix.shaders.Dissolve;
 import helix.shaders.HitFlash;
 import helix.shaders.Outline;
@@ -204,7 +204,7 @@ class ShaderLibraryTests {
 	}
 
 	// A stage drawing one cube of material through camera: the fragment block of its draw.
-	static function drawn(gpu:CountingGraphics, stage:Stage3D, camera:Camera3D):Bytes {
+	static function drawn(gpu:CountingGraphics, stage:Renderer3D, camera:Camera3D):Bytes {
 		gpu.meshDraws = [];
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(camera);
@@ -212,7 +212,7 @@ class ShaderLibraryTests {
 	}
 
 	static function flashAndRim(gpu:CountingGraphics):Void {
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			material = new Material(),
 			camera = new Camera3D();
 		camera.setViewport(800, 600);
@@ -250,7 +250,7 @@ class ShaderLibraryTests {
 	}
 
 	// A model of a mesh skinned to two joints, bound to a skeleton of its own on stage.
-	static function skinnedModel(stage:Stage3D, material:Material):Model {
+	static function skinnedModel(stage:Renderer3D, material:Material):Model {
 		var positions = [0., 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 1, 0];
 		var mesh = Mesh.fromArrays(positions, null, null, null, null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
 			[1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
@@ -272,7 +272,7 @@ class ShaderLibraryTests {
 
 	// A skinned model draws through its material's surface shader's skinned variant, with the skin's buffer and the joints at slot 5.
 	static function skinned(gpu:CountingGraphics):Void {
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			material = new Material(),
 			camera = new Camera3D();
 		camera.setViewport(800, 600);
@@ -292,7 +292,7 @@ class ShaderLibraryTests {
 
 	// Shadows: a shader with a discard draws its casters itself, never reading the map it draws into; another's are the framework's.
 	static function casters(gpu:CountingGraphics):Void {
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
 			sun = new DirectionalLight();
 		camera.setViewport(800, 600);
@@ -331,7 +331,7 @@ class ShaderLibraryTests {
 
 	// A model's passes: its silhouette before it (so its own parts never hide it), every outline after the opaque models, alike ones instanced.
 	static function passes(gpu:CountingGraphics):Void {
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
 			material = new Material();
 		camera.setViewport(800, 600);
@@ -413,7 +413,7 @@ class ShaderLibraryTests {
 			&& near(sheet.passVertices.getFloat(3 * Flat3DProgram.stride + Flat3DProgram.normalOffset + 8), -1),
 			"Normals cancelling out leave each vertex its own");
 
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
 			material = new Material();
 		camera.setViewport(800, 600);

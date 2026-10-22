@@ -2,10 +2,10 @@ package helix.scene;
 
 import helix.input.IInput;
 import helix.render2d.Camera2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Renderer2D;
 import helix.render3d.Camera3D;
 import helix.render3d.PickHit;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 
 /** The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The
 	stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once
@@ -27,17 +27,19 @@ class Pointer {
 	public function new(input:IInput)
 		this.input = input;
 
-	/** Looks at stage through camera, above the stages added before it. */
-	public function addStage2D(stage:Stage2D, camera:Camera2D):Void
-		layers.push(new Layer(stage, camera, null, null));
+	/** Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at
+		the stage). */
+	public function addRenderer2D(renderer:Renderer2D, camera:Camera2D):Void
+		layers.push(new Layer(renderer, camera, null, null));
 
-	/** Looks at stage through camera, above the stages added before it. */
-	public function addStage3D(stage:Stage3D, camera:Camera3D):Void
-		layers.push(new Layer(null, null, stage, camera));
+	/** Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at
+		the stage). */
+	public function addRenderer3D(renderer:Renderer3D, camera:Camera3D):Void
+		layers.push(new Layer(null, null, renderer, camera));
 
-	/** Stops looking at stage (2D or 3D); what it held lets go. */
-	public function remove(stage:Any):Void {
-		layers = [for (l in layers) if (l.stage2D != stage && l.stage3D != stage) l];
+	/** Stops looking at renderer (2D or 3D); what it held lets go. */
+	public function remove(renderer:Any):Void {
+		layers = [for (l in layers) if (l.renderer2D != renderer && l.renderer3D != renderer) l];
 		hovered = held = pressedNow = clickedNow = null;
 		captured = false;
 	}
@@ -62,13 +64,13 @@ class Pointer {
 		while (hovered == null && i-- > 0) {
 			var l = layers[i];
 			// A captured pointer belongs to the 2D stages: the world under them sees nothing.
-			if (l.stage2D != null)
-				hovered = l.stage2D.pick(l.camera2D, x, y);
-			else if (!captured && l.stage3D.pick(l.camera3D, x, y, hit) != null)
+			if (l.renderer2D != null)
+				hovered = l.renderer2D.pick(l.camera2D, x, y);
+			else if (!captured && l.renderer3D.pick(l.camera3D, x, y, hit) != null)
 				hovered = hit.node;
 			if (hovered != null) {
-				hovered2D = l.stage2D != null;
-				hovered3D = l.stage3D != null;
+				hovered2D = l.renderer2D != null;
+				hovered3D = l.renderer3D != null;
 			}
 		}
 		if (input.pointerFramePressed) {
@@ -118,22 +120,22 @@ class Pointer {
 /** A stage the pointer looks at, and the camera it's drawn through. */
 private class Layer {
 	/** A 2D stage, or null. */
-	public var stage2D:Null<Stage2D>;
+	public var renderer2D:Null<Renderer2D>;
 
 	/** Its camera. */
 	public var camera2D:Null<Camera2D>;
 
 	/** A 3D stage, or null. */
-	public var stage3D:Null<Stage3D>;
+	public var renderer3D:Null<Renderer3D>;
 
 	/** Its camera. */
 	public var camera3D:Null<Camera3D>;
 
 	/** A layer of one stage. */
-	public function new(stage2D:Null<Stage2D>, camera2D:Null<Camera2D>, stage3D:Null<Stage3D>, camera3D:Null<Camera3D>) {
-		this.stage2D = stage2D;
+	public function new(renderer2D:Null<Renderer2D>, camera2D:Null<Camera2D>, renderer3D:Null<Renderer3D>, camera3D:Null<Camera3D>) {
+		this.renderer2D = renderer2D;
 		this.camera2D = camera2D;
-		this.stage3D = stage3D;
+		this.renderer3D = renderer3D;
 		this.camera3D = camera3D;
 	}
 }

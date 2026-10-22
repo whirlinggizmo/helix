@@ -1,6 +1,6 @@
 package helix.render3d;
 
-/** What a pick hit (Stage3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's
+/** What a pick hit (Renderer3D.pick): the node, how far along the ray, the point in the world and in the node's own space, and the surface's
 	normal there in the world, facing back along the ray. */
 class PickHit {
 	var point = [0., 0, 0];
@@ -28,7 +28,7 @@ class PickHit {
 	public function getNormal(axis:Int):Float
 		return normal[axis];
 
-	@:allow(helix.render3d.Stage3D)
+	@:allow(helix.render3d.Renderer3D)
 	@:allow(helix.render3d.Sprites3D)
 	function record(node:Node3D, distance:Float, px:Float, py:Float, pz:Float, lx:Float, ly:Float, lz:Float, nx:Float, ny:Float, nz:Float):Void {
 		this.node = node;
@@ -44,7 +44,7 @@ class PickHit {
 		normal[2] = nz;
 	}
 
-	@:allow(helix.render3d.Stage3D)
+	@:allow(helix.render3d.Renderer3D)
 	function clear():Void
 		node = null;
 }

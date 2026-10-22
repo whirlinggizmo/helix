@@ -1,6 +1,5 @@
 import helix.time.Ticker;
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -8,14 +7,16 @@ import helix.input.Input;
 import helix.time.Time;
 import helix.input.Key;
 import helix.math.Interpolate;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
 import helix.host.ScreenShape;
+import helix.render2d.Drawing2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Stage;
 
 /** Fixed-rate simulation (ticks) against drawing (frames). A deliberately slow 10 Hz tick moves two squares at the same speed: the top one is drawn
 	where the latest tick left it, so it steps; the bottom one between its last two ticks, by the tick fraction, so it moves smoothly at any frame rate.
 	Space pauses the game's clock (Time.clock), and so the ticks, while frames go on; Enter counts presses in the tick and in the frame, which always match, as each press is
-	seen by exactly one tick. Escape quits where quitting means anything. */
+	seen by exactly one tick. Escape quits where quitting means anything.
+	The squares are Shape2Ds on the stage, placed at the end of update where they're drawn; the text a Drawing2D drawn again each update. */
 class App extends helix.App {
 	static inline var WIDTH = 800;
 	static inline var HEIGHT = 450;
@@ -24,8 +25,9 @@ class App extends helix.App {
 	static inline var RIGHT = WIDTH - 80;
 	static inline var SPEED = 240.;
 
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	var text = new Drawing2D();
+	var stepped = Shape2D.rectangle(SQUARE, SQUARE, 0xffffa100);
+	var smooth = Shape2D.rectangle(SQUARE, SQUARE, 0xff66bfff);
 	var fps = new FpsOverlay();
 	var ticker:Ticker;
 	var previousX = LEFT * 1.;
@@ -37,7 +39,11 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX tick";
 		Window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D();
+		Stage.color = 0xff181a22;
+		Stage.addChild(text);
+		Stage.addChild(stepped);
+		Stage.addChild(smooth);
+		Stage.addChild(fps);
 		ticker = new Ticker(Input.instance, 10);
 	}
 
@@ -71,31 +77,27 @@ class App extends helix.App {
 		// (LEFT to RIGHT) drawn across the visible width.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
 		var scale = (vw - 2 * LEFT - SQUARE) / (RIGHT - LEFT);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff181a22);
-		batch.begin(camera);
+		text.clear();
 		var y = vy + 20;
-		y += batch.drawTextWrapped("HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xfff5f5f5) + 5;
-		y += batch.drawTextWrapped('frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
+		y += text.drawTextWrapped("HeliX tick: a 10 Hz simulation, drawn every frame", vx + 20, y, 20, vw - 40, 0xfff5f5f5) + 5;
+		y += text.drawTextWrapped('frame delta ${fixed(dt, 4)} s   tick fraction ${fixed(t, 2)}   ticks $ticks   '
 			+ (Time.clock.paused ? "paused (Space resumes)" : "running (Space pauses)"),
 			vx
 			+ 20, y, 16, vw
 			- 40, 0xffc8c8c8)
 			+ 4;
-		y += batch.drawTextWrapped('Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xffc8c8c8) + 36;
-		y += batch.drawTextWrapped("where the latest tick left it", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
-		batch.rect(vx + LEFT + (x - LEFT) * scale, y, SQUARE, SQUARE, 0xffffa100);
+		y += text.drawTextWrapped('Enter presses: tick $tickPresses, frame $framePresses', vx + 20, y, 16, vw - 40, 0xffc8c8c8) + 36;
+		y += text.drawTextWrapped("where the latest tick left it", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
+		stepped.setPosition(vx + LEFT + (x - LEFT) * scale, y);
 		y += SQUARE + 55;
-		y += batch.drawTextWrapped("between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
-		batch.rect(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y, SQUARE, SQUARE, 0xff66bfff);
-		fps.draw(batch, vx + 20, vy + vh - 30);
-		batch.end();
-		Graphics.endFrame();
+		y += text.drawTextWrapped("between the last two ticks, by the tick fraction", vx + 20, y, 16, vw - 40, 0xff828282) + 5;
+		smooth.setPosition(vx + LEFT + (Interpolate.lerp(previousX, x, t) - LEFT) * scale, y);
+		fps.setPosition(vx + 20, vy + vh - 30);
 	}
 
 	static function fixed(value:Float, places:Int):String {

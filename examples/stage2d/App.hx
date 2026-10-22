@@ -5,28 +5,29 @@ import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Particles2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
+import helix.render2d.Stage;
 import helix.render2d.Text2D;
-import helix.render2d.Stage2D;
 import helix.render2d.Textures;
+import helix.render2d.View2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** A 2D world on a Stage2D seen through a zooming camera, and a HUD stage over it in the design for the window's shape: a polygon rock turning in outline, a ring,
-	a box turning about its center, a rounded one turning with it and a rounded outline, a sprite of a loaded texture, a group (a hub with two
-	moons) turning as one, and a particle emitter circling and trailing (drawn by the GPU at its place in the stage's order); then immediate
-	text over both. Both stages draw into one batch, each through its own camera. Escape quits where quitting means anything. */
+/** The stage and a view on it (docs/DISPLAY_MODEL.md): a 2D world of nodes shown by a View2D through a zooming camera, and the HUD over it
+	straight on the stage, in the design for the window's shape. In the world: a polygon rock turning in outline, a ring, a box turning about
+	its center, a rounded one turning with it and a rounded outline, a sprite of a loaded texture, a group (a hub with two moons) turning as
+	one, and a particle emitter circling and trailing (drawn by the GPU at its place in the world's order); then on the stage a title, and
+	text drawn again each update by a Drawing2D over both. Escape quits where quitting means anything. */
 class App extends helix.App {
-	var world = new Stage2D();
-	var hud = new Stage2D();
-	var batch:Batch2D;
+	var world = new Node2D();
 	var worldCamera = new Camera2D();
-	var hudCamera = new Camera2D();
+	var view:View2D;
+	var info = new Drawing2D();
 	var fps = new FpsOverlay();
 	var rock:Shape2D;
 	var box:Shape2D;
@@ -39,35 +40,35 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX stage2d";
 		Window.requestSize(800, 450);
-		batch = new Batch2D();
+		Stage.color = 0xff0c0e16;
 
 		rock = Shape2D.polygon([0, -40, 28, -30, 40, -4, 30, 26, 6, 40, -24, 30, -40, 6, -30, -24]);
 		rock.outline = 2;
-		world.add(rock);
+		world.addChild(rock);
 		var ring = Shape2D.circle(30, 0xff66bfff);
 		ring.outline = 3;
 		ring.setPosition(-120, 0);
-		world.add(ring);
+		world.addChild(ring);
 		box = Shape2D.rectangle(50, 30, 0xffbe2137);
 		box.setPivot(.5, .5);
 		box.setPosition(120, 0);
-		world.add(box);
+		world.addChild(box);
 		// Rounded, filled and outlined.
 		card = Shape2D.rectangle(50, 30, 0xff2fa36b);
 		card.cornerRadius = 10;
 		card.setPivot(.5, .5);
 		card.setPosition(120, 75);
-		world.add(card);
+		world.addChild(card);
 		var frame = Shape2D.rectangle(60, 40, 0xffe8a33c);
 		frame.cornerRadius = 12;
 		frame.outline = 3;
 		frame.setPivot(.5, .5);
 		frame.setPosition(-120, 75);
-		world.add(frame);
+		world.addChild(frame);
 		sprite = new Sprite2D(null);
 		sprite.setSize(64, 64);
 		sprite.setPosition(0, 110);
-		world.add(sprite);
+		world.addChild(sprite);
 		Textures.load("textures/tiles.png", false, texture -> sprite.texture = texture);
 		// A group: its children turn with it.
 		orbit = new Node2D();
@@ -80,7 +81,7 @@ class App extends helix.App {
 		}
 		var spoke = Shape2D.line(-30, 0, 30, 0, 0xff808080);
 		orbit.getChild(0).addChild(spoke);
-		world.add(orbit);
+		world.addChild(orbit);
 
 		// An emitter: every way, 10 to 40 a second, shrinking from gold to a clear orange.
 		var emitter = new helix.particles.Emitter(null, 512, true);
@@ -90,11 +91,15 @@ class App extends helix.App {
 		emitter.setSize(4, 0);
 		emitter.setColor(0xffffcb00, 0x00ff3c00);
 		sparks = new Particles2D(emitter);
-		world.add(sparks);
+		world.addChild(sparks);
 		Textures.load("textures/particle.png", true, texture -> emitter.texture = texture);
 
 		title = new Text2D("HeliX stage2d", 20, 0xfff5f5f5);
-		hud.add(title);
+		view = new View2D(world, worldCamera);
+		Stage.addChild(view);
+		Stage.addChild(title);
+		Stage.addChild(info);
+		Stage.addChild(fps);
 	}
 
 	override public function update(dt:Float):Void {
@@ -109,34 +114,21 @@ class App extends helix.App {
 		sprite.rotation = -time * .3;
 		orbit.rotation = time * 1.5;
 		sparks.setPosition(Math.cos(time * 1.5) * 160, Math.sin(time * 1.5) * 80);
-		world.time = time;
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The HUD in the design for the window's shape; the world zooms at the design's scale, so it fits a phone held upright too.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hudCamera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 		title.setPosition(vx + 12, vy + 32);
-		worldCamera.setViewport(width, height);
+		fps.setPosition(vx + 12, vy + 10);
 		worldCamera.setPosition(0, 0);
 		worldCamera.zoom = presentation.scaleX * (1.25 + .25 * Math.sin(time * .5));
-
-		Graphics.beginFrame(width, height, 0xff0c0e16);
-		batch.begin(worldCamera);
-		world.draw(batch, worldCamera);
-		hud.draw(batch, hudCamera);
-		batch.drawTextWrapped('immediate text, over the stages: ${world.drawnNodeCount} world nodes drawn, ${Graphics.msaaSamples} of ${Graphics.maxMsaaSamples} MSAA samples a pixel',
+		info.clear();
+		info.drawTextWrapped('immediate text, over the world: ${view.drawnNodeCount} world nodes drawn, ${Graphics.msaaSamples} of ${Graphics.maxMsaaSamples} MSAA samples a pixel',
 			vx
 			+ 12, vy
 			+ 60, 14, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
 	}
-
-	override public function cleanup():Void
-		batch.destroy();
 }

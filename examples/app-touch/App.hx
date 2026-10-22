@@ -1,12 +1,13 @@
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Sprite2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.host.ScreenShape;
@@ -14,16 +15,18 @@ import helix.host.ScreenShape;
 /** Fingers, the two-finger gesture, and the pointer: every finger gets a numbered ring (its id) while it's down, and a fading one where it lifted;
 	two fingers pan, pinch and twist the logo about the point between them, so it stays under the fingers; one finger is also the pointer: drag the
 	coin. A second finger lets the drag go, so a pinch never drops the coin somewhere. Without a touch screen: drag with the mouse, and the wheel
-	zooms the logo about the mouse. Escape quits where quitting means anything. */
+	zooms the logo about the mouse. The logo and the coin are sprites on the stage, the rings and the text a drawing over them made again
+	each update. Escape quits where quitting means anything. */
 class App extends helix.App {
 	static inline var RING = 38.;
 	static inline var COIN = 96.;
 	static inline var FINGERS = 8;
 
-	var batch:Batch2D;
+	// The stage's units, fitted as the stage's camera is: what the pointer and the fingers are taken into.
 	var camera = new Camera2D();
-	var logo:Null<Texture2D>;
-	var tiles:Null<Texture2D>;
+	var logo = new Sprite2D(null);
+	var coin = new Sprite2D(null);
+	var drawing = new Drawing2D();
 
 	/** The window's shape the logo and the coin were placed for: they go back to the middle when it changes. */
 	var shaped = "";
@@ -42,10 +45,17 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX touch";
 		Window.requestSize(900, 700);
-		batch = new Batch2D();
-		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo = texture);
+		Stage.color = 0xff161921;
+		logo.setSize(240, 240);
+		// The coin: 16x16 texels at 42, 22 in the tile sheet.
+		coin.setRegion(42, 22, 16, 16);
+		coin.setSize(COIN, COIN);
+		Stage.addChild(logo);
+		Stage.addChild(coin);
+		Stage.addChild(drawing);
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> logo.texture = texture);
 		// Pixel art: nearest, no smoothing.
-		Textures.load("textures/tiles.png", false, texture -> tiles = texture);
+		Textures.load("textures/tiles.png", false, (texture:Texture2D) -> coin.texture = texture);
 	}
 
 	/** Scales and turns the logo about x, y, so the point under the fingers stays put. */
@@ -108,19 +118,16 @@ class App extends helix.App {
 				ring[2] = 1;
 			}
 
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff161921);
-		batch.begin(camera);
-		if (logo != null)
-			batch.sprite(logo, logoX, logoY, 240 * logoScale, 240 * logoScale, logoRotation);
-		if (tiles != null) {
-			var w = tiles.width, h = tiles.height;
-			// The coin: 16x16 texels at 42, 22 in the tile sheet.
-			batch.sprite(tiles, coinX, coinY, COIN, COIN, 0, coinHeld ? 0xffffe696 : 0xffffffff, 42 / w, 22 / h, 58 / w, 38 / h);
-		}
+		logo.setPosition(logoX, logoY);
+		logo.setScale(logoScale, logoScale);
+		logo.rotation = logoRotation;
+		coin.setPosition(coinX, coinY);
+		coin.tint = coinHeld ? 0xffffe696 : 0xffffffff;
+		drawing.clear();
 		for (i in 0...FINGERS) {
 			var ring = lifted[i];
 			if (ring[2] > 0)
-				batch.circleLines(ring[0], ring[1], RING * (2 - ring[2]), 1, color(i, Std.int(200 * ring[2])));
+				drawing.circleLines(ring[0], ring[1], RING * (2 - ring[2]), 1, color(i, Std.int(200 * ring[2])));
 		}
 		for (touch in input.touches) {
 			if (!touch.down)
@@ -128,24 +135,21 @@ class App extends helix.App {
 			var x = camera.screenToWorldX(touch.x),
 				y = camera.screenToWorldY(touch.y),
 				id = touch.id % FINGERS;
-			batch.circle(x, y, RING, color(id, 90));
-			batch.circleLines(x, y, RING, 1, color(id, 255));
-			batch.drawText(Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
+			drawing.circle(x, y, RING, color(id, 90));
+			drawing.circleLines(x, y, RING, 1, color(id, 255));
+			drawing.drawText(Std.string(touch.id), x - 6, y - RING - 26, 22, color(id, 255));
 		}
 		if (input.touchGesture)
-			batch.circle(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), 6, 0xffffffff);
+			drawing.circle(camera.screenToWorldX(input.touchGestureCenterX), camera.screenToWorldY(input.touchGestureCenterY), 6, 0xffffffff);
 		var fingers = 0;
 		for (touch in input.touches)
 			if (touch.down)
 				fingers++;
-		var y = vy + 16;
-		y += batch.drawTextWrapped('fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"), vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
-		y += batch.drawTextWrapped('logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg', vx + 16, y, 18,
-			vw - 32, 0xffffffff)
-			+ 1.5;
-		batch.drawTextWrapped("two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0xff969eaf);
-		batch.end();
-		Graphics.endFrame();
+		var y = vy + 16, counts = 'fingers: $fingers   pointer: ' + (input.pointerDown ? "down" : "up"),
+			placed = 'logo: scale ${Math.round(logoScale * 100) / 100}, turn ${Math.round(logoRotation * 180 / Math.PI)} deg';
+		y += drawing.drawTextWrapped(counts, vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
+		y += drawing.drawTextWrapped(placed, vx + 16, y, 18, vw - 32, 0xffffffff) + 1.5;
+		drawing.drawTextWrapped("two fingers: pan, pinch, twist the logo; one finger drags the coin", vx + 16, y, 16, vw - 32, 0xff969eaf);
 	}
 
 	/** A finger's color, by its id, with alpha. */

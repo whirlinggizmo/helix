@@ -16,7 +16,7 @@ import helix.tools.shared.Files;
 	A shader is a fragment stage `@fs fs` that includes one framework block, which decides its kind and supplies the rest:
 
 	- `@include_block helix_screen`: a screen effect, drawn over a whole finished frame (helix.graphics.ScreenEffect).
-	- `@include_block helix_surface`: a material's surface on a Stage3D (helix.render3d.Material.setShader): lit models, the stage's lights and
+	- `@include_block helix_surface`: a material's surface on a Renderer3D (helix.render3d.Material.setShader): lit models, the stage's lights and
 	  their shadows, the material's base color and textures, its hit flash and rim light (applied by helix_output), where it is on the model
 	  at rest (helix_model_position, helix_model_normal: its own space before skinning and the hook, alike in every variant); optionally a
 	  vertex hook, `@block vertex` defining `void helix_vertex(inout vec3 position, inout vec3 normal)` (model space, as posed, before placing).
@@ -26,7 +26,7 @@ import helix.tools.shared.Files;
 	A surface shader is packed with its variants: a skinned one (the same fragment stage over a vertex stage moving each vertex by its joints
 	first), and, for a shader with a vertex hook or a `discard`, its shadow casters, static and skinned (the depth pass drawn with the hook,
 	and the fragment stage run for what it discards, its output writing nothing), so its shadow moves and opens as it does; a shader with
-	neither casts through the framework's depth program. A sprite shader is packed with a variant drawing a Stage3D's sprites: the same
+	neither casts through the framework's depth program. A sprite shader is packed with a variant drawing a Renderer3D's sprites: the same
 	fragment stage over the framework's sprite3d vertex stage, its output applying the sprite's alpha mode.
 
 	Its own parameters are uniform blocks at binding 2 and up (float, vec2, vec3, vec4 and mat4 members, and arrays of vec4 and mat4), set by
@@ -37,7 +37,7 @@ import helix.tools.shared.Files;
 	(the surface kind's vertex stage, {name} it, {skin_inputs} and {skin_call} what its skinned one adds: surface_skin_inputs.glsl and
 	SKIN_CALL, which src/helix/graphics/shaders/skinning.glsl supplies), surface_fs.glsl (the surface kind's fragment block less its output),
 	surface_output.glsl (its output: rim light, hit flash, tone mapping and sRGB, or an HDR scene's light) and sprite3d_output.glsl (the
-	sprite kind's output in its Stage3D variant, applying the alpha mode). */
+	sprite kind's output in its Renderer3D variant, applying the alpha mode). */
 class ShaderPacker {
 	/** The .hxshader format written (helix.graphics.Shader.FORMAT). */
 	public static inline final FORMAT = 2;
@@ -76,7 +76,7 @@ class ShaderPacker {
 	// A shadow caster's output: the fragment stage runs for what it discards alone, writing nothing (the depth pass has no color).
 	static final CASTER_OUTPUT = "void helix_output(vec3 color, float alpha) {}\n";
 	static final NO_VERTEX_HOOK = "\n@block vertex\nvoid helix_vertex(inout vec3 position, inout vec3 normal) {}\n@end\n";
-	// effect2d.glsl's helix_sprite output, which the Stage3D variant's replaces.
+	// effect2d.glsl's helix_sprite output, which the Renderer3D variant's replaces.
 	static final SPRITE_OUTPUT = "void helix_output(vec3 color, float alpha) { helix_frag_color = vec4(color, alpha); }";
 	// std140: each member's size and alignment in bytes; an array's elements are each 16 aligned.
 	static final TYPES = [
@@ -455,7 +455,7 @@ class ShaderPacker {
 			fail('$effect: no helix_sprite block');
 		var block = blockPattern.matched(0);
 		if (block.indexOf(SPRITE_OUTPUT) < 0)
-			fail('$effect: helix_sprite\'s output must read "$SPRITE_OUTPUT", which its Stage3D variant replaces');
+			fail('$effect: helix_sprite\'s output must read "$SPRITE_OUTPUT", which its Renderer3D variant replaces');
 		var block3d = StringTools.replace(~/@block\s+helix_sprite\b/.replace(block, "@block helix_sprite_3d"), SPRITE_OUTPUT, kindFile("sprite3d_output.glsl"));
 		var vertex3d = ~/@vs\s+sprite3d_vs\b[\s\S]*?@end/;
 		vertex3d.match(File.getContent(srcPath("src/helix/graphics/shaders/sprite3d.glsl")));

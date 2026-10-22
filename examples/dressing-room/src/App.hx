@@ -13,16 +13,16 @@ import helix.input.Key;
 import helix.input.PointerGestures;
 import helix.math.Interpolate;
 import helix.math.Random;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Shape2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render3d.AnimationClip;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Environment;
+import helix.render3d.Environment3D;
 import helix.render3d.Environments;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
@@ -30,8 +30,7 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
-import helix.scene.Pointer;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.ui.Layout2D;
 import helix.ui.Button;
@@ -43,10 +42,11 @@ import helix.ui.Toggle;
 import helix.ui.Ui;
 import helix.host.ScreenShape;
 
-/** A character creator's dressing room: a character on a turntable in a studio's light, dressed slot by slot (head, body, legs, feet, and
+/** A character creator's dressing room: a character on a turntable in a studio's light (a View3D on the stage, the light the room's
+	Environment3D), under a UI on the stage (Ui), dressed slot by slot (head, body, legs, feet, and
 	what she holds) from Quaternius's Ultimate Modular Women, ten outfits whose parts mix freely. Each slot's parts are tiles, their pictures
 	rendered from the parts themselves (render targets) as their files load; a slot's files load only when its tab is opened, through the
-	Models the program shares (here the one on the stage and the one the pictures are taken of), and an Outfit (this example's, over the
+	Models the program shares (here the one in the room and the one the pictures are taken of), and an Outfit (this example's, over the
 	framework's binding and attachment queries) wears each choice on
 	the skeleton by joint name, a held part at a joint. The camera starts on her whole and stays where it's put while she's dressed: drag to turn
 	her, the wheel or a pinch to zoom (from close in to well back in the room), a double click or a double tap on her to frame the part under it
@@ -101,27 +101,28 @@ class App extends helix.App {
 	// Units kept clear above and below the framing in the free area, for the hint and the status lines.
 	static inline var TEXT_ROOM = 56;
 
-	var stage:Stage3D;
+	// The room: her on the turntable in the studio's light (the room's environment), shown by a view filling the stage, under the panel.
+	var room = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
 	var animations:Null<ModelFile>;
 	var character:Null<Node3D>;
 	var animator:Null<Animator>;
 	var outfit:Outfit;
 	var environment:Null<Environment>;
-	// The pictures: a stage of its own with a second character, dressed in one part at a time, drawn into each tile's texture.
-	var studio:Stage3D;
+	// The pictures: a tree of its own (the studio, lit as the room is) with a second character, dressed in one part at a time, its view drawn
+	// into each tile's texture when the picture is wanted, not shown on the stage.
+	var studio = new Node3D();
+	var studioView:View3D;
 	var model:Null<Node3D>;
 	var modelOutfit:Outfit;
 	var shot = new Camera3D();
 	var thumbs:Map<String, Texture2D> = [];
 	var wanted:Array<{slot:String, path:String}> = [];
-	// The 2D screen.
+	// The 2D screen, on the stage over the room: the UI, the play button's triangle, the hint and status lines (a drawing made again each
+	// update), and the frame rate in the top right corner, in logical pixels.
 	var ui:Ui;
-	var screen = new Stage2D();
-	var camera2D = new Camera2D();
-	var hud = new Camera2D();
-	var pointer:Pointer;
-	var batch:Batch2D;
+	var captions = new Drawing2D();
 	var fps = new FpsOverlay();
 	var layout:Layout2D;
 	var panel:Panel;
@@ -174,62 +175,66 @@ class App extends helix.App {
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1280, 720);
-		var gpu = Graphics.instance;
-		stage = new Stage3D(gpu);
-		studio = new Stage3D(gpu);
-		for (s in [stage, studio]) {
-			s.setAmbient(0xffd8e0ff, .3);
+		Stage.color = 0xff14161c;
+		for (tree in [room, studio]) {
+			tree.environment = new Environment3D();
+			tree.environment.setAmbient(0xffd8e0ff, .3);
+		}
+		for (inRoom in [true, false]) {
 			var key = new DirectionalLight();
 			key.intensity = 2.2;
 			key.lookAt(-.5, -.8, -.6);
-			if (s == stage) {
+			if (inRoom) {
 				this.key = key;
 				key.shadowCasting = true;
 				key.shadowDistance = 5;
-			}
-			s.add(key);
+				room.addChild(key);
+			} else
+				studio.addChild(key);
 		}
 		// The turntable: a low disc on a dark floor.
 		var floor = new Material();
 		floor.baseColor = 0xff22252e;
 		floor.roughness = .95;
-		stage.add(new Model(Mesh.plane(30, 30), floor));
+		room.addChild(new Model(Mesh.plane(30, 30), floor));
 		var plinth = new Material();
 		plinth.baseColor = 0xff8a8f9c;
 		plinth.roughness = .4;
 		plinth.metallic = .2;
 		var disc = new Model(Mesh.cylinder(.8, .06, 64), plinth);
 		disc.setPosition(0, .03, 0);
-		stage.add(disc);
+		room.addChild(disc);
 		outfit = new Outfit(Models.instance);
 		modelOutfit = new Outfit(Models.instance);
 		Environments.load("environments/studio_small_09_1k.hdr", value -> light(value));
 		// Her look before she's here: the Outfit wears it once the skeleton arrives.
 		dress(["Casual", "Casual", "Casual", "Casual"], null);
 		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = message);
-		batch = new Batch2D(gpu);
+		view = new View3D(room, camera);
+		studioView = new View3D(studio, shot);
+		Stage.addChild(view);
 		buildScreen();
 		open("Body");
 	}
 
 	// The panel on the right: the slots' tabs, a grid of ten tiles, the Animation row, and Random, Reset and the turntable.
-	// The studio's environment in: it lights both stages.
+	// The studio's environment in: it lights the room and the pictures.
 	function light(value:Environment):Void {
 		environment = value;
-		for (s in [stage, studio])
-			s.setEnvironment(value, .9);
+		for (tree in [room, studio])
+			tree.environment.setMap(value, .9);
 	}
 
-	// The skeleton's file in: her copy on the stage, animated and wearing her outfit, and the pictures' copy in the studio.
+	// The skeleton's file in: her copy in the room, animated and wearing her outfit, and the pictures' copy in the studio.
 	function place(file:ModelFile):Void {
 		animations = file;
 		character = file.instantiate("character");
 		character.setPosition(0, .06, 0);
-		stage.add(character);
+		room.addChild(character);
 		animator = new Animator(character);
 		outfit.skeleton = character;
 		model = file.instantiate("model");
-		studio.add(model);
+		studio.addChild(model);
 		// The pictures' character holds still, in the idle pose's first frame.
 		var still = new Animator(model);
 		var idle = file.getClip("Idle");
@@ -284,9 +289,7 @@ class App extends helix.App {
 	}
 
 	function buildScreen():Void {
-		pointer = new Pointer(Input.instance);
-		pointer.addStage2D(screen, camera2D);
-		ui = new Ui(screen, camera2D, pointer, Input.instance);
+		ui = new Ui();
 		panel = ui.panel("wardrobe");
 		title = ui.label("Dressing room");
 		title.textSize = 26;
@@ -334,7 +337,7 @@ class App extends helix.App {
 		var side = ui.theme.textSize * .4;
 		playIcon = Shape2D.polygon([-side * .8, -side, side, 0, -side * .8, side], ui.theme.textColor);
 		playIcon.pickable = false;
-		screen.add(playIcon);
+		Stage.addChild(playIcon);
 		var actions = Layout2D.row();
 		actions.gap = ui.theme.gap;
 		random = ui.button("Random");
@@ -351,6 +354,10 @@ class App extends helix.App {
 		layout.setSizing(Grow(1), Grow(1));
 		layout.setPadding(12, 12, 12, 12);
 		layout.add(panel.layout);
+		// The lines over the room aren't picked: a double click through them frames what's under them.
+		captions.pickable = false;
+		Stage.addChild(captions);
+		Stage.addChild(fps);
 	}
 
 	// The panel for the window's shape (ScreenShape's designs): on the right as wide as its widest row, or upright along the bottom (five tiles still fit across the
@@ -462,9 +469,7 @@ class App extends helix.App {
 			modelOutfit.choose(w.slot, w.path);
 			var texture = Texture2D.renderTarget(Graphics.instance, THUMB, THUMB);
 			aim(modelOutfit.getNodes(w.slot), w.slot == "Hand");
-			Graphics.beginTargetPass(texture.handle, 0x2a / 255, 0x2f / 255, 0x3c / 255, 1);
-			studio.draw(shot);
-			Graphics.endTargetPass();
+			studioView.drawToTexture(texture, 0xff2a2f3c);
 			thumbs[w.path] = texture;
 			taken++;
 		}
@@ -567,9 +572,8 @@ class App extends helix.App {
 
 	// Frames the part under framebuffer pixel x, y (its slot's framing), or her whole for the room or nothing; the zoom back to 1.
 	function focusAt(x:Float, y:Float):Void {
-		var hit = stage.pick(camera, x, y);
 		framing = "Whole";
-		var node = hit == null ? null : hit.node;
+		var node = Std.downcast(Stage.pick(x, y), Node3D);
 		while (node != null && framing == "Whole") {
 			for (s in SLOTS)
 				if (outfit.getNodes(s).indexOf(node) >= 0)
@@ -659,13 +663,11 @@ class App extends helix.App {
 		var wanted = ScreenShape.update();
 		if (wanted != shaped)
 			shape(wanted);
-		presentation.apply(camera2D);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
-		Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
-		pointer.update();
+		Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
 		ui.update();
 		gestures.update(input, Time.time, false);
 		for (i in 0...tabs.length)
@@ -748,23 +750,16 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 
 		frameRoom(presentation, width, height, dt);
-		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(camera2D);
-		screen.draw(batch, camera2D);
+		captions.clear();
 		caption(status, vx + 24, portrait ? panelLayout.y - 30 : vy + vh - 40, 18, 0xffc8d0e8);
 		caption(portrait ? "drag: turn   pinch: zoom   double-tap: focus" : "drag: turn   wheel: zoom   double-click: focus   T: turntable   Q / E: slot   arrows, Enter, or a pad",
 			vx
 			+ 24, vy
 			+ 24, 16, 0xff8a92a8);
-		batch.end();
-		hud.setViewport(width, height);
-		hud.pixels(Window.pixelRatio);
-		batch.begin(hud);
-		fps.draw(batch, width / Window.pixelRatio - 130, 8);
-		batch.end();
-		Graphics.endFrame();
+		// The frame rate 130 logical pixels from the right edge and 8 down, sized in logical pixels whatever the design's scale.
+		var ratio = Window.pixelRatio;
+		fps.setPosition(presentation.toUnitsX(width - 130 * ratio), presentation.toUnitsY(8 * ratio));
+		fps.setScale(ratio / presentation.scaleX, ratio / presentation.scaleY);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({game: {slot: slot}, autopilot: pilot.snapshot});
@@ -777,15 +772,14 @@ class App extends helix.App {
 	// a padding wider each way, so it reads over the lit room whatever is behind it.
 	function caption(text:String, x:Float, y:Float, size:Float, color:Int):Void {
 		var theme = ui.theme, pad = theme.padding / 2;
-		var font = theme.font != null ? theme.font : batch.font;
-		batch.roundedRect(x - pad * 2, y - pad, font.measure(text, size) + pad * 4, size + pad * 2, theme.cornerRadius, (theme.panelColor & ~0xff) | 0xd0);
-		batch.drawText(text, x, y, size, color, Left, font);
+		var font = theme.font != null ? theme.font : ui.font;
+		captions.roundedRect(x - pad * 2, y - pad, font.measure(text, size) + pad * 4, size + pad * 2, theme.cornerRadius,
+			(theme.panelColor & 0xffffff) | 0xd0000000);
+		captions.drawText(text, x, y, size, color, Left, font);
 	}
 
 	override public function cleanup():Void {
-		stage.destroy();
-		studio.destroy();
-		batch.destroy();
+		studioView.destroy();
 		for (t in thumbs)
 			t.destroy(Graphics.instance);
 	}

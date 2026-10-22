@@ -6,10 +6,9 @@ import helix.input.PadButton;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
-import helix.render2d.Stage2D;
 import helix.scene.Pointer;
 
-/** A screen's widgets on a Stage2D, used by the pointer, keys and pads alike: made here,
+/** A screen's widgets on the stage, used by the pointer, keys and pads alike: made here,
 	placed by their layouts (Layout2D.arrange), asked what happened. update() once a frame, after the pointer's:
 
 	- Arrows and a pad's D-pad move focus to the nearest widget that way on screen (by the layouts' last arrangement: a grid of tiles moves in
@@ -27,10 +26,12 @@ import helix.scene.Pointer;
 	  let go (not even reaching a world under the UI: the pointer is captured), Escape or East closes it instead of going back (backPressed
 	  stays false), Tab doesn't move focus, and its owner keeps focus and takes the arrows, Enter, Space and South (capturingKeys is true).
 
-	The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them and the open popup above it. The pointer
-	must be looking at the stage, through camera. */
+	The widgets' nodes are under one node (root) on the stage, in the order made, the ring above them and the open popup above it: what's
+	added to the stage after it draws over it. */
 class Ui {
-	var stage:Stage2D;
+	// Whether it made its pointer (looking at the stage): then it updates it, at the start of its own update.
+	var ownsPointer = false;
+	var givenFont:Null<helix.render2d.Font2D>;
 	// The pointer and the widgets, and whether the ring shows (keys or a pad moved focus): read by a scroll area too (what's under the
 	// pointer, which widgets are inside it, whether to scroll the focused one into view).
 	@:allow(helix.ui)
@@ -52,12 +53,18 @@ class Ui {
 	var layer:Node2D;
 	var scrim:Shape2D;
 
-	/** A UI on stage (drawn through camera, which pointer looks at), read from input, in theme's look (a new Theme when not given). */
-	public function new(stage:Stage2D, camera:Camera2D, pointer:Pointer, input:IInput, ?theme:Theme) {
-		this.stage = stage;
-		this.camera = camera;
+	/** A UI on the stage (Stage, docs/DISPLAY_MODEL.md), in theme's look (a new Theme when not given): drawn through the stage's camera,
+		with a pointer of its own looking at the stage (updated by update), read from Input. Given parent, camera, pointer and input, it's
+		under parent instead (a UI in a View2D's tree, a test), drawn through camera, which pointer must look at (the app updates that
+		pointer before update), read from input. */
+	public function new(?theme:Theme, ?parent:Node2D, ?camera:Camera2D, ?pointer:Pointer, ?input:IInput) {
+		this.input = input != null ? input : helix.input.Input.instance;
+		if (pointer == null) {
+			pointer = new Pointer(this.input);
+			ownsPointer = true;
+		}
+		this.camera = camera != null ? camera : helix.render2d.Stage.camera;
 		this.pointer = pointer;
-		this.input = input;
 		this.theme = theme;
 		ring = Shape2D.rectangle(1, 1, this.theme.focusColor);
 		ring.outline = this.theme.focusWidth;
@@ -70,7 +77,10 @@ class Ui {
 		scrim.enabled = false;
 		layer.addChild(scrim);
 		root.addChild(layer);
-		stage.add(root);
+		if (parent != null)
+			parent.addChild(root);
+		else
+			helix.render2d.Stage.addChild(root);
 	}
 
 	/** Its look, read by every widget (and the focus ring) at each update: a value changed, or another theme assigned (a settings screen
@@ -86,11 +96,18 @@ class Ui {
 	/** The node its widgets are under. */
 	public var root(default, null):Node2D = new Node2D();
 
-	/** The font text is drawn in without the theme's: the stage's last (the batch's built-in), once drawn. */
-	public var font(get, never):Null<helix.render2d.Font2D>;
+	/** The font text is drawn in without the theme's: the one assigned, else the stage's (the built-in one, there from the first frame). */
+	public var font(get, set):Null<helix.render2d.Font2D>;
 
-	function get_font():Null<helix.render2d.Font2D>
-		return stage.font;
+	function get_font():Null<helix.render2d.Font2D> {
+		if (givenFont != null)
+			return givenFont;
+		var stage = helix.render2d.Stage.instance;
+		return stage != null ? stage.font : null;
+	}
+
+	function set_font(value:Null<helix.render2d.Font2D>):Null<helix.render2d.Font2D>
+		return givenFont = value;
 
 	/** The camera it's drawn through. */
 	public var camera(default, null):Camera2D;
@@ -291,10 +308,12 @@ class Ui {
 		syncTextEntry();
 	}
 
-	/** Once a frame, after the pointer's update and before reading the widgets or the game's own keys: moves focus, activates, brings each
+	/** Once a frame, after the pointer's update (its own pointer's, which it updates first) and before reading the widgets or the game's own keys: moves focus, activates, brings each
 		widget up to date, and claims the keys it used (IInput.claim: a focused text field every key pressed), so the game reading after
 		doesn't act on them too. */
 	public function update():Void {
+		if (ownsPointer)
+			pointer.update();
 		if (guarded && !anyHeld())
 			guarded = false;
 		// The pointer moving or pressing hides the ring and hands back the keys.
@@ -458,7 +477,7 @@ class Ui {
 		scrim.setSize(right - left, bottom - top);
 		if (popup == null)
 			return;
-		Layout2D.arrange(popup.layout, 0, 0, right - left, bottom - top, theme.font != null ? theme.font : stage.font);
+		Layout2D.arrange(popup.layout, 0, 0, right - left, bottom - top, theme.font != null ? theme.font : font);
 		var w = popup.layout.width,
 			h = popup.layout.height,
 			below = popup.anchorY + popup.anchorHeight,

@@ -202,12 +202,17 @@ class Runner {
 		for (part in parts)
 			if (part.update != null)
 				part.update(gameClock.delta);
-		// The stage draws the frame, once the app has used it. Until every example has moved onto the stage (docs/DISPLAY_MODEL.md, the
-		// order of work's last step), an app that draws its own frame and never uses the stage still runs: the stage, never installed,
-		// draws nothing.
+		// The frame is the runner's: the stage draws it once the app has used it (docs/DISPLAY_MODEL.md); else it's cleared to black.
+		var drawn = false;
 		for (part in parts)
-			if (part.draw != null)
+			if (part.draw != null) {
 				part.draw();
+				drawn = true;
+			}
+		if (!drawn) {
+			adapters.graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff000000);
+			adapters.graphics.endFrame();
+		}
 		screenshots.frameEnded();
 		for (part in parts)
 			if (part.frameEnded != null)

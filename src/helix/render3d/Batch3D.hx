@@ -20,6 +20,9 @@ class Batch3D {
 	var triangleVertices = 0;
 	var lineVertices = 0;
 	var draws = 0;
+	// The transform every point is placed by (column-major, as Mat4), and whether it's other than none.
+	var transform = [1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+	var transformed = false;
 
 	/** A batch of up to maxVertices triangle vertices and maxVertices line vertices a frame, with its own buffers on gpu; destroy frees them.  Without gpu, the program's (Graphics.instance). */
 	public function new(?gpu:IGraphics, maxVertices = 65536) {
@@ -72,9 +75,24 @@ class Batch3D {
 		return true;
 	}
 
+	/** Places what follows by m (a node's world matrix: a Drawing3D drawn where its node is): every point carried through it. */
+	public function setTransform(m:Mat4):Void {
+		for (i in 0...16)
+			transform[i] = m.get(i);
+		transformed = true;
+	}
+
+	/** What follows is drawn where it's given, in world units. */
+	public function resetTransform():Void {
+		if (transformed)
+			transform = [1., 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+		transformed = false;
+	}
+
 	/** Starts collecting a batch seen through camera; later calls only fill it until end. */
 	public function begin(camera:Camera3D):Void {
 		this.camera = camera;
+		resetTransform();
 		triangleVertices = 0;
 		lineVertices = 0;
 		draws = 0;
@@ -117,15 +135,25 @@ class Batch3D {
 	inline function vertex(x:Float, y:Float, z:Float, color:Int, brightness:Float):Void {
 		if (triangleVertices >= capacity)
 			throw "Batch3D capacity exceeded";
-		put(triangles, triangleVertices++, x, y, z, color, brightness);
+		place(triangles, triangleVertices++, x, y, z, color, brightness);
+	}
+
+	// A point put at index of data, carried through the transform first.
+	inline function place(data:Bytes, index:Int, x:Float, y:Float, z:Float, color:Int, brightness:Float):Void {
+		if (transformed) {
+			var t = transform;
+			put(data, index, t[0] * x + t[4] * y + t[8] * z + t[12], t[1] * x + t[5] * y + t[9] * z + t[13], t[2] * x + t[6] * y + t[10] * z + t[14], color,
+				brightness);
+		} else
+			put(data, index, x, y, z, color, brightness);
 	}
 
 	/** A segment between two world points. */
 	public function line(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void {
 		if (lineVertices + 2 > capacity)
 			throw "Batch3D capacity exceeded";
-		put(lines, lineVertices++, x0, y0, z0, color, 1);
-		put(lines, lineVertices++, x1, y1, z1, color, 1);
+		place(lines, lineVertices++, x0, y0, z0, color, 1);
+		place(lines, lineVertices++, x1, y1, z1, color, 1);
 	}
 
 	/** A filled triangle through three world points, unshaded. */

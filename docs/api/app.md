@@ -17,6 +17,7 @@ var manifest:Null<String>
 var window:WindowOptions
 var devKeys:Bool
 var pageState:Bool
+var pauseOnBlur:Bool
 ```
 
 - `new`: The defaults: product "Game" by "DefaultCompany", the assets beside the program, no manifest, a window of 4 samples a pixel, and the development extras on in a debug build (-debug) and off otherwise.
@@ -27,6 +28,7 @@ var pageState:Bool
 - `window`: The window as it opens: the multisampling samples a pixel.
 - `devKeys`: The development keys around every frame: F9 saves a screenshot of the frame (a download in a browser, a file in the user's pictures natively), logged where it went. On in a debug build (-debug), off otherwise, unless set. A game chooses its own keys for what it ships.
 - `pageState`: Whether the page is told the program's state, for the tools driving it: in a browser, window.helixBusy says after each frame whether the services are still loading (Host.busy), and false once the program has quit, so a tool captures the page once it has settled (tools/pages_shots.cjs); natively nothing. On in a debug build (-debug), off otherwise, unless set.
+- `pauseOnBlur`: Whether the game's clock (Time.clock) pauses while the window doesn't have the focus, and goes on when it's back: a game left in another tab or behind another window waits. On unless set off; a clock the game paused itself stays paused either way.
 
 ## IApp
 

@@ -2,13 +2,13 @@ package helix.render2d;
 
 import helix.scene.Node;
 
-/** What a Stage2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for
+/** What a Renderer2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for
 	its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a
 	pivot to turn them about. The framework's kinds are its classes (Sprite2D, Shape2D, Text2D, Particles2D), each holding only its own data;
 	a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a
 	position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked
 	out when a stage draws it, only after it or a node above it changed. Any node can clip its children (setClip). */
-@:allow(helix.render2d.Stage2D)
+@:allow(helix.render2d.Renderer2D)
 class Node2D extends Node {
 	var px = 0.;
 	var py = 0.;
@@ -35,6 +35,28 @@ class Node2D extends Node {
 		alpha = value > 0 ? (value < 1 ? value : 1) : 0;
 		return alpha;
 	}
+
+	// A kind that draws itself, not the walk (an emitter, a drawing, a view: each linked only into a program that makes one): into batch,
+	// through camera, at the walk's time with dt since its last draw, held still when frozen (under a paused node), shown only when shown (an
+	// emitter moves on hidden too). Whether it is one; a group isn't.
+
+	@:allow(helix.render2d.Renderer2D)
+	function drawOwn(batch:Batch2D, camera:Camera2D, time:Float, dt:Float, frozen:Bool, shown:Bool):Bool
+		return false;
+
+	// Whether it picks itself (pickOwn) rather than by the walk's areas for its kind.
+	@:allow(helix.render2d.Renderer2D)
+	var picksOwn(get, never):Bool;
+
+	function get_picksOwn():Bool
+		return false;
+
+	// A kind that picks itself: what it has under framebuffer pixel x, y (its own point lx, ly; font for text without its own), itself or a
+	// node it shows, or null.
+
+	@:allow(helix.render2d.Renderer2D)
+	function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font2D>):Null<Node2D>
+		return null;
 
 	/** A group at the origin, unturned and unscaled, with no children. */
 	public function new()
@@ -277,7 +299,7 @@ class Node2D extends Node {
 	}
 
 	/** Brings its world transform up to date from its parent's when it or its parent changed; whether it changed. A stage calls this as it walks. */
-	function update(parentChanged:Bool):Bool {
+	function updateWorld(parentChanged:Bool):Bool {
 		if (!localDirty && !parentChanged)
 			return false;
 		localDirty = false;

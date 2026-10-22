@@ -1,13 +1,12 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.graphics.Sampling;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.time.Time;
@@ -28,10 +27,11 @@ private class Slot {
 	}
 }
 
-/** Textures from image files, each drawn large twice, smooth (linear) then sharp (nearest): one texture whose sampling changes between the
-	draws, with its size, GPU memory and how long it took from asking to having it. The tile sheet draws as its cells, cut from their gutters.
+/** Textures from image files, each drawn large twice, smooth (linear) then sharp (nearest): one texture, its sampling given to each draw (Drawing2D.image's
+	sampling), with its size, GPU memory and how long it took from asking to having it. The tile sheet draws as its cells, cut from their gutters.
 	Below, the logo and the flame again as "name.ktx": compressed for this GPU (name.bc7.ktx on desktops, name.astc.ktx on phones,
-	name.etc2.ktx on older phones), else name.png, as the tile sheet, which has no compressed files, shows. Escape quits where quitting means anything. */
+	name.etc2.ktx on older phones), else name.png, as the tile sheet, which has no compressed files, shows. All of it is a Drawing2D drawn
+	again each update, the tile sheet's cells by their source rectangles. Escape quits where quitting means anything. */
 class App extends helix.App {
 	static var PATHS = ["sprites/logo/wg-logo-bw-alpha.png", "textures/flame.png", "textures/tiles.png"];
 	static var KTX_PATHS = ["sprites/logo/wg-logo-bw-alpha.ktx", "textures/flame.ktx", "textures/tiles.ktx"];
@@ -44,8 +44,7 @@ class App extends helix.App {
 		[2, 22, 16, 32], [22, 22, 16, 32], [42, 22, 16, 16], [62, 22, 16, 16]
 	];
 
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	var drawing = new Drawing2D();
 	var fps = new FpsOverlay();
 	var slots:Array<Slot> = [];
 	var compressed:Array<Slot> = [];
@@ -53,7 +52,9 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX textures";
 		Window.requestSize(1010, 610);
-		batch = new Batch2D();
+		Stage.color = 0xff262a36;
+		Stage.addChild(drawing);
+		Stage.addChild(fps);
 		for (path in PATHS)
 			slots.push(load(path));
 		for (path in KTX_PATHS)
@@ -86,12 +87,12 @@ class App extends helix.App {
 	// and how long it took. Returns the height drawn.
 	function caption(slot:Slot, x:Float, y:Float, width:Float):Float {
 		var name = fileName(slot.path), chosen = fileName(slot.chosen), top = y;
-		y += batch.drawTextWrapped(name, x, y, 16, width, 0xffc8c8c8) + 2;
+		y += drawing.drawTextWrapped(name, x, y, 16, width, 0xffc8c8c8) + 2;
 		if (slot.chosen != "" && chosen != name)
-			y += batch.drawTextWrapped('loaded $chosen', x, y, 14, width, 0xff66bfff) + 2;
+			y += drawing.drawTextWrapped('loaded $chosen', x, y, 14, width, 0xff66bfff) + 2;
 		var t = slot.texture;
 		var line = t == null ? slot.status : '${t.width} x ${t.height}, GPU ${Math.round(t.byteCount / 1024)} KB, ready in ${Math.round(slot.took * 1000)} ms';
-		return y + batch.drawTextWrapped(line, x, y, 14, width, 0xffc8c8c8) - top;
+		return y + drawing.drawTextWrapped(line, x, y, 14, width, 0xffc8c8c8) - top;
 	}
 
 	// The slots in rows of columns from x, y, each size wide (twice, smooth then sharp, when both) and captioned under. Returns the bottom.
@@ -102,31 +103,29 @@ class App extends helix.App {
 				y = bottom + 20;
 			var left = x + (i % columns) * pitch, texture = list[i].texture;
 			if (texture != null) {
-				// Sampling is the texture's, read as each draw takes it: one texture, drawn smooth, then sharp.
+				// One texture, each draw given its sampling: smooth, then sharp (or the texture's own, alone).
+				drawOne(i, texture, left, y, size, both ? Sampling.LINEAR : null);
 				if (both)
-					texture.sampling = Sampling.LINEAR;
-				drawOne(i, texture, left, y, size);
-				if (both) {
-					texture.sampling = Sampling.NEAREST;
-					drawOne(i, texture, left + size + 10, y, size);
-				}
+					drawOne(i, texture, left + size + 10, y, size, Sampling.NEAREST);
 			}
 			bottom = Math.max(bottom, y + size + 16 + caption(list[i], left, y + size + 16, pitch - 20));
 		}
 		return bottom;
 	}
 
-	// One texture width wide at x, y: the tile sheet as its cells set edge to edge, anything else whole.
-	function drawOne(index:Int, texture:Texture2D, x:Float, y:Float, width:Float):Void {
+	// One texture width wide at x, y, sampled by sampling (null for the texture's): the tile sheet as its cells set edge to edge, anything
+	// else whole.
+	function drawOne(index:Int, texture:Texture2D, x:Float, y:Float, width:Float, sampling:Null<Sampling>):Void {
 		if (index != TILES) {
-			batch.image(texture, x, y, width, width);
+			drawing.image(texture, x, y, width, width, 0xffffffff, 0, 0, 0, 0, sampling);
 			return;
 		}
 		// The cells span 64 by 48 texels.
 		var scale = width / 64;
 		for (c in 0...CELLS.length) {
 			var cell = CELLS[c], column = c % 4, top = c < 4 ? 0 : 16;
-			batch.image(texture, x + column * 16 * scale, y + top * scale, cell[2] * scale, cell[3] * scale, 0xffffffff, cell[0], cell[1], cell[2], cell[3]);
+			drawing.image(texture, x + column * 16 * scale, y + top * scale, cell[2] * scale, cell[3] * scale, 0xffffffff, cell[0], cell[1], cell[2], cell[3],
+				sampling);
 		}
 	}
 
@@ -134,11 +133,9 @@ class App extends helix.App {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape: three textures a row across, smaller and two a row upright, so it all fits a phone either way.
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
@@ -146,22 +143,18 @@ class App extends helix.App {
 			columns = shape == "portrait" ? 2 : 3,
 			pitch = 2 * size + 30;
 
-		Graphics.beginFrame(width, height, 0xff262a36);
-		batch.begin(camera);
+		drawing.clear();
 		var y = vy + 30;
-		y += batch.drawTextWrapped("HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
+		y += drawing.drawTextWrapped("HeliX textures: smooth (linear) and sharp (nearest) sampling", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
 		y = grid(slots, true, vx + 20, y, size, columns, pitch) + 24;
-		y += batch.drawTextWrapped("compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
+		y += drawing.drawTextWrapped("compressed: as name.ktx, this GPU's variant or else the PNG", vx + 12, y, 22, vw - 24, 0xfff5f5f5) + 22;
 		grid(compressed, false, vx + 20, y, size, columns, pitch);
-		fps.draw(batch, vx + 12, vy + 6);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 12, vy + 6);
 	}
 
 	override public function cleanup():Void {
 		for (slot in slots.concat(compressed))
 			if (slot.texture != null)
 				Textures.release(slot.texture);
-		batch.destroy();
 	}
 }

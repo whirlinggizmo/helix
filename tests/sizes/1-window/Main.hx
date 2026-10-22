@@ -1,6 +1,5 @@
-// The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a window cleared each frame.
+// The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a window cleared, nothing drawn.
 import helix.app.AppOptions;
-import helix.graphics.Graphics;
 import helix.host.Window;
 
 /** The entry point: Game on the backend the build names. */
@@ -12,14 +11,8 @@ class Main {
 	}
 }
 
-/** This rung's game: a window cleared each frame. */
+/** This rung's game: a window, cleared by the runner; nothing on the stage. */
 class Game extends helix.App {
-	override public function init():Void {
+	override public function init():Void
 		Window.title = "1-window";
-	}
-
-	override public function update(dt:Float):Void {
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
-		Graphics.endFrame();
-	}
 }

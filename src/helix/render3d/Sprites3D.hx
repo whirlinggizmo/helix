@@ -8,7 +8,7 @@ import helix.graphics.Sampling;
 import helix.graphics.SpriteEffect;
 import helix.render2d.Texture2D;
 
-/** A Stage3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
+/** A Renderer3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
 	drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
 	reach), sorts them (opaque and masked ones by texture and effect; blended ones back to front; added ones by texture and effect), writes
 	their records (where the pivot goes and the facing, size and pivot, texture region, their own axes, the alpha mode, the tint) in that order

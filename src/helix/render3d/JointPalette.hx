@@ -6,7 +6,7 @@ import helix.graphics.IGraphics;
 
 /** The joints of a draw's skinned models, one data texture for them all (as skinning.glsl reads it: 1024 texels a row, three a joint, each
 	joint's matrix's top three rows): a model's joints from its base, each the model's own space moved by the joint as posed, its inverse bind
-	matrix applied (inverse(model world) × joint world × inverse bind). Stage3D fills it once a pass and uploads it; also, a posed model's box. */
+	matrix applied (inverse(model world) × joint world × inverse bind). Renderer3D fills it once a pass and uploads it; also, a posed model's box. */
 class JointPalette {
 	static inline var ROW = 1024;
 

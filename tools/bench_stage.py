@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A Stage3D's work on the CPU by case and model count, natively (hxcpp) and in V8 (Node)
+"""A Renderer3D's work on the CPU by case and model count, natively (hxcpp) and in V8 (Node)
 (tests/bench/StageBench.hx: a GPU that does nothing, so this is the stage's own work: walking, culling, choosing lights, sorting, records).
 
 Measured in user-mode CPU cycles (perf stat, pinned to one core), since this machine's clock is clamped and milliseconds mean nothing; each

@@ -8,11 +8,12 @@ import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.Environment;
+import helix.render3d.Environment3D;
 import helix.render3d.Environments;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
@@ -20,17 +21,18 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
 import helix.render3d.Tonemap;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
 /** Image-based light, a background and tone mapping: the material spheres (red plastic above, gold below, roughness 0 to 1 left to right), a
-	normal-mapped sphere, a pearl (a surface shader of the example's own that lets the stage shade it) and a car, lit by an environment alone,
-	no lights and no ambient light. Metals mirror the world around them; rougher
+	normal-mapped sphere, a pearl (a surface shader of the example's own that lets the engine shade it) and a car, lit by an environment alone,
+	no lights and no ambient light: an Environment3D on the level's root, its map lighting and its background behind, the exposure and the
+	tone mapping the View3D's. Metals mirror the world around them; rougher
 	surfaces blur it. Each environment is a 1K .hdr from Poly Haven, prepared as it loads a few milliseconds a frame (Environments); until it's
-	ready the stage is lit by nothing, and the readout says how long it took.
+	ready the level is lit by nothing, and the readout says how long it took.
 
 	E: environment (sunset, studio, none); B: background (sharp, soft, blurred, off); T: tone mapping (Neutral, ACES, none); UP / DOWN:
 	exposure, half a stop a press; LEFT / RIGHT: turn the environment; O: orbit the camera or hold it; Escape: quit, where quitting means
@@ -45,10 +47,11 @@ class App extends helix.App {
 	static var TONEMAPS = [Tonemap.Neutral, Tonemap.Aces, Tonemap.None];
 	static var TONEMAP_NAMES = ["Neutral", "ACES", "none"];
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var light = new Environment3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	var environments:Array<Null<Environment>> = [null, null];
 	var loadMs:Array<Float> = [0, 0];
@@ -76,7 +79,7 @@ class App extends helix.App {
 		material.roughness = roughness;
 		var node = new Model(mesh, material);
 		node.setPosition(x, y, 0);
-		stage.add(node);
+		level.addChild(node);
 		turning.push(node);
 		return material;
 	}
@@ -84,8 +87,8 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX environment";
 		Window.requestSize(1000, 700);
-		batch = new Batch2D();
-		stage = new Stage3D();
+		Stage.color = 0xff14161c;
+		level.environment = light;
 		// Framed for 16:9: every column of spheres on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var ball = Mesh.sphere(.5, 32, 64);
@@ -106,6 +109,10 @@ class App extends helix.App {
 			var started = Time.time;
 			Environments.load(PATHS[i], environment -> prepared(i, environment, started));
 		}
+		view = new View3D(level, camera);
+		Stage.addChild(view);
+		Stage.addChild(text);
+		Stage.addChild(fps);
 	}
 
 	// The car's file in: a copy of it turning beside the spheres.
@@ -113,7 +120,7 @@ class App extends helix.App {
 		var car = file.instantiate("car");
 		car.setPosition(2.7, -.5, .2);
 		car.setScale(1.1, 1.1, 1.1);
-		stage.add(car);
+		level.addChild(car);
 		turning.push(car);
 	}
 
@@ -156,18 +163,15 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 
 		var environment = current < PATHS.length ? environments[current] : null;
-		stage.setEnvironment(environment, 1, rotation);
-		stage.setBackground(blur < BLURS.length ? environment : null, blur < BLURS.length ? BLURS[blur] : 0);
-		stage.tonemap = TONEMAPS[tonemap];
-		stage.exposure = exposure;
+		light.setMap(environment, 1, rotation);
+		light.setBackground(blur < BLURS.length ? environment : null, blur < BLURS.length ? BLURS[blur] : 0);
+		view.tonemap = TONEMAPS[tonemap];
+		view.exposure = exposure;
 
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
@@ -176,27 +180,22 @@ class App extends helix.App {
 		var readout = '[E] ${NAMES[current]}$state   [B] background ${BLUR_NAMES[blur]}   [T] ${TONEMAP_NAMES[tonemap]}   '
 			+ 'UP/DOWN exposure ${exposure >= 0 ? "+" : ""}$exposure EV   LEFT/RIGHT turn   [O] camera';
 		// The band's height is the readout's, wrapped.
-		var wrap = vw - 24, font = batch.font;
+		var wrap = vw - 24, font = Stage.font;
 		var readoutY = vy + 36 + font.measureWrapped(title, 20, wrap) + 3,
 			bottom = readoutY + font.measureWrapped(readout, 16, wrap) - 2;
 
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(hud);
+		text.clear();
 		// A dark band behind the readout, which a bright sky would wash out.
-		batch.rect(vx, vy, vw, bottom - vy, 0x8c000000);
-		batch.drawTextWrapped(title, vx + 12, vy + 36, 20, wrap, 0xfff5f5f5);
-		batch.drawTextWrapped(readout, vx + 12, readoutY, 16, wrap, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		text.rect(vx, vy, vw, bottom - vy, 0x8c000000);
+		text.drawTextWrapped(title, vx + 12, vy + 36, 20, wrap, 0xfff5f5f5);
+		text.drawTextWrapped(readout, vx + 12, readoutY, 16, wrap, 0xffc8c8c8);
+		fps.setPosition(vx + 12, vy + 10);
 	}
 
 	override public function cleanup():Void {
 		for (environment in environments)
 			if (environment != null)
 				Environments.release(environment);
-		stage.destroy();
-		batch.destroy();
+		view.destroy();
 	}
 }

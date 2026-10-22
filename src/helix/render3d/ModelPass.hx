@@ -16,8 +16,8 @@ class ModelPass {
 	public var enabled:Bool = true;
 
 	// How far it pushes the model out along its normals, in world units (0 or more); and whether it draws only where the model is hidden.
-	@:allow(helix.render3d.Stage3D) var push:Float;
-	@:allow(helix.render3d.Stage3D) var behind:Bool;
+	@:allow(helix.render3d.Renderer3D) var push:Float;
+	@:allow(helix.render3d.Renderer3D) var behind:Bool;
 
 	function new(model:Model, color:Int, push:Float, behind:Bool) {
 		this.model = model;

@@ -1,11 +1,11 @@
 // The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one + a sound loaded and played.
 import helix.app.AppOptions;
 import helix.audio.Audio;
-import helix.graphics.Graphics;
 import helix.host.Window;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
-import helix.render2d.Texture2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Sprite2D;
+import helix.render2d.Stage;
+import helix.render2d.Text2D;
 import helix.render2d.Textures;
 
 /** The entry point: Game on the backend the build names. */
@@ -19,26 +19,21 @@ class Main {
 
 /** This rung's game: + a sound loaded and played. */
 class Game extends helix.App {
-	var batch:Batch2D;
-	var camera = new Camera2D();
-	var logo:Texture2D;
-
 	override public function init():Void {
 		Window.title = "5-audio";
-		batch = new Batch2D();
-		Textures.load("sprites/logo.png", true, texture -> logo = texture);
+		Stage.color = 0xff202840;
+		var box = Shape2D.rectangle(320, 160, 0xff66bfff);
+		box.setPosition(40, 40);
+		Stage.addChild(box);
+		var hello = new Text2D("Hello", 48, 0xff102030);
+		hello.setPosition(60, 90);
+		Stage.addChild(hello);
+		Textures.load("sprites/logo.png", true, texture -> {
+			var logo = new Sprite2D(texture);
+			logo.setPosition(400, 300);
+			logo.setSize(64, 64);
+			Stage.addChild(logo);
+		});
 		Audio.instance.loadClip("audio/click.ogg", clip -> Audio.play(clip));
-	}
-
-	override public function update(dt:Float):Void {
-		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
-		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0xff66bfff);
-		batch.drawText("Hello", 60, 90, 48, 0xff102030);
-		if (logo != null)
-			batch.sprite(logo, 400, 300, 64, 64);
-		batch.end();
-		Graphics.endFrame();
 	}
 }

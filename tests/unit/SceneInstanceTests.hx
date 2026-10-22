@@ -26,7 +26,7 @@ import helix.render3d.Particles3D;
 import helix.render3d.PointLight;
 import helix.render3d.SpotLight;
 import helix.render3d.Sprite3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 import helix.render3d.Text3D;
 import helix.scene.SceneFile;
 import helix.scene.SceneFileCache;
@@ -109,9 +109,9 @@ class SceneInstanceTests {
 	}
 
 	// A new stage and pass, the log cleared.
-	static function fresh():{stage:Stage3D, pass:BehaviorPass} {
+	static function fresh():{stage:Renderer3D, pass:BehaviorPass} {
 		log = [];
-		return {stage: new Stage3D(gpu), pass: new BehaviorPass()};
+		return {stage: new Renderer3D(gpu), pass: new BehaviorPass()};
 	}
 
 	static function main():Void {

@@ -2,11 +2,11 @@ package helix.render2d;
 
 import helix.render2d.Shape2D.ShapeShading;
 
-/** A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, camera). A draw walks the tree as it is now, depth first, a
-	parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something
-	changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into
-	runs. A frame composes its stages in the order it draws them: a backdrop, the world, then a HUD, each through its own camera. */
-class Stage2D {
+/** What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts
+	nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children
+	in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose
+	bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs. */
+class Renderer2D {
 	// The tree in drawing order (depth first, the root's children down), each node's parent's place in it (-1 for the root's children) and the
 	// place just past its last descendant, remade when the root's count of adds and removes moves; beside each, the node as its kind (null
 	// for another), its class asked once here, not each walk. Every walk then goes down the order.
@@ -18,13 +18,10 @@ class Stage2D {
 	var sprites:Array<Null<Sprite2D>> = [];
 	var shapes:Array<Null<Shape2D>> = [];
 	var texts:Array<Null<Text2D>> = [];
-	var emitters:Array<Null<Particles2D>> = [];
-	var views:Array<Null<View>> = [];
 	// Whether each node in the order is paused, itself or by a node above it: its emitters held still.
 	var frozen:Array<Bool> = [];
 	// Each node's alpha times its parent's, from the batch's alpha as the draw began (a view's, nested).
 	var alphas:Array<Float> = [];
-	var drawings:Array<Null<Drawing2D>> = [];
 	// The camera the walk draws through, which a view it reaches shows its tree inside.
 	var walkCamera:Null<Camera2D>;
 	// The places where the clips a walk is inside end, innermost last; and for a pick, the clipping nodes, outermost first.
@@ -104,15 +101,15 @@ class Stage2D {
 				i = endOf[i];
 				continue;
 			}
-			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
+			moved[i] = node.updateWorld(p < 0 ? rootChanged : moved[p]);
 			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
 			alphas[i] = node.alpha * (p >= 0 ? alphas[p] : base);
 			batch.alpha = alphas[i];
 			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
 			if (node.visible)
 				drawNode(batch, i);
-			else if (emitters[i] != null)
-				advance(emitters[i], frozen[i]);
+			else
+				node.drawOwn(batch, walkCamera, time, dt, frozen[i], false);
 			if (node.clipWidth >= 0) {
 				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
@@ -137,7 +134,7 @@ class Stage2D {
 		frozen.resize(order.length);
 		alphas.resize(order.length);
 		clipEnds.resize(0);
-		return root.update(false);
+		return root.updateWorld(false);
 	}
 
 	// The tree in drawing order and each node as its kind, again: after an add or a remove anywhere under the root.
@@ -148,9 +145,6 @@ class Stage2D {
 		sprites.resize(0);
 		shapes.resize(0);
 		texts.resize(0);
-		emitters.resize(0);
-		views.resize(0);
-		drawings.resize(0);
 		for (i in 0...root.childCount)
 			list(root.getChild(i), -1);
 		builtStructure = root.structure;
@@ -165,9 +159,6 @@ class Stage2D {
 		sprites.push(Std.downcast(node, Sprite2D));
 		shapes.push(Std.downcast(node, Shape2D));
 		texts.push(Std.downcast(node, Text2D));
-		emitters.push(Std.downcast(node, Particles2D));
-		views.push(Std.downcast(node, View));
-		drawings.push(Std.downcast(node, Drawing2D));
 		for (i in 0...node.childCount)
 			list(node.getChild(i), at);
 		endOf[at] = order.length;
@@ -222,28 +213,13 @@ class Stage2D {
 			w = text.measureWidth(font);
 			h = text.measureHeight(font);
 			x = text.align == Center ? -w / 2 : text.align == Right ? -w : 0;
-		} else if (emitters[i] != null) {
-			// Not culled: particles reach past where it is.
-			var e = emitters[i].emitter;
-			advance(emitters[i], frozen[i]);
-			count++;
-			batch.resetTransform();
-			batch.emitter(e);
-			return;
-		} else if (drawings[i] != null) {
-			// Its calls, where it is; not culled.
-			count++;
+		} else {
+			// A kind that draws itself (an emitter, a drawing, a view), not culled; a group draws nothing.
 			batch.effect = null;
-			batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
-			drawings[i].replay(batch);
+			if (node.drawOwn(batch, walkCamera, time, dt, frozen[i], true))
+				count++;
 			return;
-		} else if (views[i] != null) {
-			// What it shows drawn now through its own camera (2D), or under the 2D before the batch ends (3D); not culled.
-			count++;
-			views[i].reach(batch, walkCamera, time);
-			return;
-		} else
-			return;
+		}
 		if (!inView(node, x, y, w, h))
 			return;
 		count++;
@@ -251,6 +227,7 @@ class Stage2D {
 		batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 		if (sprite != null) {
 			var t = sprite.texture, tw = t.width, th = t.height;
+			batch.samplingOverride = sprite.sampling;
 			var sx = sprite.drawnRegionX(), sy = sprite.drawnRegionY();
 			if (sprite.frame != null)
 				batch.frameQuad(t, sprite.frame, x, y, w, h, sprite.tint);
@@ -261,6 +238,7 @@ class Stage2D {
 				batch.useTexture(t);
 				batch.quad(x, y, w, h, sx / tw, sy / th, (sx + sprite.regionWidth) / tw, (sy + sprite.regionHeight) / th, sprite.tint);
 			}
+			batch.samplingOverride = null;
 		} else if (shape != null) {
 			var o = shape.outlineWidth;
 			switch shape.form {
@@ -294,14 +272,6 @@ class Stage2D {
 			else
 				batch.drawText(text.text, 0, 0, text.textSize, text.color, text.align, text.font);
 		}
-	}
-
-	// An emitter moved on by the time since the last draw (none while paused), once a frame however many views show its tree.
-	function advance(particles:Particles2D, paused:Bool):Void {
-		if (particles.advancedAt == time)
-			return;
-		particles.advancedAt = time;
-		particles.emitter.advance(paused ? 0 : dt, particles.wx, particles.wy, 0);
 	}
 
 	// Whether the box x, y, w, h of node's own units, placed by its world transform, reaches into the camera's view.
@@ -345,15 +315,15 @@ class Stage2D {
 				i = endOf[i];
 				continue;
 			}
-			moved[i] = node.update(p < 0 ? rootChanged : moved[p]);
+			moved[i] = node.updateWorld(p < 0 ? rootChanged : moved[p]);
 			if (node.paused) {
 				// Paused: nothing under it is picked (a level frozen under a menu).
 				i = endOf[i];
 				continue;
 			}
-			if (views[i] != null) {
+			if (node.picksOwn) {
 				if (insideClips(wx, wy)) {
-					var inside = views[i].pickInside(x, y);
+					var inside = node.pickOwn(x, y, node.toLocalX(wx, wy), node.toLocalY(wx, wy), lastFont);
 					if (inside != null)
 						hit = inside;
 				}
@@ -391,8 +361,6 @@ class Stage2D {
 	// Whether the own point x, y of the node at place i is on what it draws.
 	function hits(i:Int, x:Float, y:Float):Bool {
 		var sprite = sprites[i], shape = shapes[i], text = texts[i];
-		if (drawings[i] != null)
-			return drawings[i].holds(x, y, lastFont);
 		if (sprite != null) {
 			if (sprite.texture == null)
 				return false;

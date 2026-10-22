@@ -1,27 +1,28 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
+import helix.render3d.Node3D;
 import helix.render3d.SpotLight;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Lights casting shadows. The sun casts (DirectionalLight.shadowCasting): each frame, before the frame's own pass, drawShadows draws everything that
-	casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The stage is a floor, a wall, some
+/** Lights casting shadows. The sun casts (DirectionalLight.shadowCasting): each frame, before the frame's own pass, the View3D showing the level
+	draws everything that casts into a depth map as the sun sees it, and the lit shading darkens what is behind something. The level is a floor, a wall, some
 	generated shapes and a car, so the shadows fall across each other and across themselves. A spot circling overhead casts through its own
 	cone: two lights casting at once, a layer of the map each. The ball on the left casts nothing (Model.shadowCasting), so it floats; the one
 	on the right receives nothing (Model.shadowReceiving), so the wall's shadow passes over it; the spot's marker casts nothing either.
@@ -35,10 +36,10 @@ class App extends helix.App {
 	// What a shadow keeps of the surface's color: nothing (physical), then two stylized tints.
 	static var TINTS = [0xff000000, 0xff1e3c64, 0xff64321e];
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sun = new DirectionalLight();
 	var spot = new SpotLight();
@@ -51,33 +52,33 @@ class App extends helix.App {
 	var size = 1;
 	var tint = 0;
 
-	// A model of mesh at x, y, z in one color (0xAARRGGBB), on the stage.
+	// A model of mesh at x, y, z in one color (0xAARRGGBB), in the level.
 	function place(mesh:Mesh, x:Float, y:Float, z:Float, color:Int, roughness:Float):Model {
 		var material = new Material();
 		material.baseColor = color;
 		material.roughness = roughness;
 		var node = new Model(mesh, material);
 		node.setPosition(x, y, z);
-		stage.add(node);
+		level.addChild(node);
 		return node;
 	}
 
 	override public function init():Void {
 		Window.title = "HeliX shadows";
 		Window.requestSize(1000, 600);
-		// Framed for 16:9: the whole stage on a phone held upright too.
+		// Framed for 16:9: the whole level on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xff8caae1, .25);
+		Stage.color = 0xff7896c8;
+		// The place's light, on the level's root: a soft blue ambient under the lights.
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xff8caae1, .25);
 		sun.color = 0xfffff4e0;
 		sun.intensity = 3.2;
 		sun.shadowCasting = true;
 		sun.shadowDistance = distance;
 		sun.shadowMapSize = SIZES[size];
 		sun.lookAt(-.75, -.85, -.35);
-		stage.add(sun);
+		level.addChild(sun);
 		// A second caster, circling: both share the map, so both use the same size.
 		spot.color = 0xff96d2ff;
 		spot.intensity = 260;
@@ -86,13 +87,13 @@ class App extends helix.App {
 		spot.shadowCasting = true;
 		spot.shadowMapSize = SIZES[size];
 		spot.shadowDistance = 24;
-		stage.add(spot);
+		level.addChild(spot);
 		var glow = new Material();
 		glow.baseColor = 0xff96d2ff;
 		glow.lit = false;
 		marker = new Model(Mesh.sphere(.16, 8, 16), glow);
 		marker.shadowCasting = false;
-		stage.add(marker);
+		level.addChild(marker);
 
 		place(Mesh.plane(40, 40), 0, 0, 0, 0xffb0b4b8, .9);
 		// A wall to throw a long shadow across the floor.
@@ -104,6 +105,10 @@ class App extends helix.App {
 		place(Mesh.sphere(.6, 24, 48), -2, .6, 2.4, 0xfff8ed95, .35).shadowCasting = false;
 		place(Mesh.sphere(.6, 24, 48), -2.6, .6, -1.2, 0xfff395bc, .35).shadowReceiving = false;
 		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
+		view = new View3D(level, camera);
+		Stage.addChild(view);
+		Stage.addChild(text);
+		Stage.addChild(fps);
 	}
 
 	// The car's file in: a copy of it among the shapes, turned a little.
@@ -111,7 +116,7 @@ class App extends helix.App {
 		var car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
 		car.setRotation(0, .6, 0);
-		stage.add(car);
+		level.addChild(car);
 	}
 
 	override public function update(dt:Float):Void {
@@ -148,49 +153,56 @@ class App extends helix.App {
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
 		fps.update(dt, Time.frameCpu);
-		// The spot circles overhead, aimed at the middle of the stage.
+		// The spot circles overhead, aimed at the middle of the level.
 		var sx = 7 * Math.sin(time * .35), sz = 7 * Math.cos(time * .35);
 		spot.setPosition(sx, 6.5, sz);
 		spot.lookAt(0, 0, 0);
 		marker.setPosition(sx, 6.5, sz);
 		orbit.update(dt);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0xff7896c8);
-		stage.draw(camera);
-		batch.begin(hud);
+		text.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX shadows: lights casting into a depth map", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
-		y += batch.drawTextWrapped('[1] sun ${sun.shadowCasting ? "on" : "off"}   [2] spot ${spot.shadowCasting ? "on" : "off"}   '
-			+ '[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
-			vx
-			+ 12, y, 16, vw
-			- 24, 0xffc8c8c8)
-			+ 2;
-		y += batch.drawTextWrapped('UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   '
-			+ '${stage.shadowCasterCount} casters in ${stage.shadowDrawCallCount} draws',
-			vx
-			+ 12, y, 16, vw
-			- 24, 0xff9a9a9a)
-			+ 2;
-		batch.drawTextWrapped("left ball casts nothing; right ball receives nothing", vx + 12, y, 16, vw - 24, 0xff9a9a9a);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		var lines = [
+			{
+				text: "HeliX shadows: lights casting into a depth map",
+				size: 20,
+				color: 0xfff5f5f5,
+				gap: 3
+			},
+			{
+				text: '[1] sun ${sun.shadowCasting ? "on" : "off"}   [2] spot ${spot.shadowCasting ? "on" : "off"}   ' +
+				'[M] map ${SIZES[size]}   [S] strength ${strength}   [T] tint',
+				size: 16,
+				color: 0xffc8c8c8,
+				gap: 2
+			},
+			{
+				text: 'UP/DOWN distance ${Math.round(distance)}   [ ] bias ${Math.round(bias * 10) / 10}   [O] camera   ' +
+				'${view.shadowCasterCount} casters in ${view.shadowDrawCallCount} draws',
+				size: 16,
+				color: 0xff9a9a9a,
+				gap: 2
+			},
+			{
+				text: "left ball casts nothing; right ball receives nothing",
+				size: 16,
+				color: 0xff9a9a9a,
+				gap: 0
+			}
+		];
+		for (line in lines) {
+			y += text.drawTextWrapped(line.text, vx + 12, y, line.size, vw - 24, line.color) + line.gap;
+		}
+		fps.setPosition(vx + 12, vy + 10);
 	}
 
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
-	}
+	override public function cleanup():Void
+		view.destroy();
 }

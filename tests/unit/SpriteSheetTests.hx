@@ -5,7 +5,7 @@ import helix.render2d.Camera2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.SpriteAnimator;
 import helix.render2d.SpriteSheet;
-import helix.render2d.Stage2D;
+import helix.render2d.Renderer2D;
 import helix.render2d.Texture2D;
 
 /** Sprite sheets (helix.render2d.SpriteSheet) and their animations (SpriteAnimator): TexturePacker's hash with trimmed, rotated and pivoted
@@ -147,7 +147,7 @@ class SpriteSheetTests {
 		batch.end();
 
 		// And by a sprite, which takes the frame's size and pivot; an animator given it shows its frames.
-		var stage = new Stage2D(), sprite = new Sprite2D(null);
+		var stage = new Renderer2D(), sprite = new Sprite2D(null);
 		sprite.setPosition(100, 100);
 		stage.add(sprite);
 		check(sprite.setFrame(sheet, 0) && sprite.texture == texture && sprite.width == 8 && sprite.pivotY == 1, "A sprite showing a frame");

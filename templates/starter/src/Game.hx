@@ -1,27 +1,23 @@
-import helix.graphics.Graphics;
 import helix.host.Window;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Stage;
+import helix.render2d.Text2D;
 
-/** The game: init once the services are bound, update once a display refresh, cleanup as the window closes. What needs a service (a
-	Batch2D, a texture) is made in init, not in a field initializer: the object exists before HeliX does. */
+/** The game: init once the services are bound, update once a display refresh (the game's logic), cleanup as the window closes. What's on
+	the stage is drawn after each update, with nothing drawn by hand (docs/DISPLAY_MODEL.md in HeliX). What needs a service (a texture, a
+	sound) is made in init, not in a field initializer: the object exists before HeliX does. */
 class Game extends helix.App {
-	var batch:Batch2D;
-	var camera = new Camera2D();
-
 	override public function init():Void {
 		Window.title = "{title}";
-		batch = new Batch2D();
+		Stage.color = 0xff202840;
+		// A world unit is a logical pixel, from the top left.
+		var panel = Shape2D.rectangle(320, 160, 0xff66bfff);
+		panel.setPosition(40, 40);
+		Stage.addChild(panel);
+		var greeting = new Text2D("{title}", 48, 0xff102030);
+		greeting.setPosition(60, 90);
+		Stage.addChild(greeting);
 	}
 
-	override public function update(dt:Float):Void {
-		// A world unit a logical pixel, from the top left: an unsized camera covers the framebuffer.
-		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
-		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0xff66bfff);
-		batch.drawText("{title}", 60, 90, 48, 0xff102030);
-		batch.end();
-		Graphics.endFrame();
-	}
+	override public function update(dt:Float):Void {}
 }

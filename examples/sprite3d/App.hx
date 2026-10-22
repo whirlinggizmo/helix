@@ -13,18 +13,20 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
-import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Drawing3D;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Sprite3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Node3D;
+import helix.render3d.View3D;
 import helix.shaders.SpriteDissolve;
 import helix.shaders.SpriteFlash;
 import helix.shaders.SpriteOutline;
@@ -32,7 +34,7 @@ import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Textured sprites on a 3D stage, under a circling camera, over a grid (Batch3D) and a lit pedestal:
+/** Textured sprites in a 3D level shown by a View3D, under a circling camera, over a grid (a Drawing3D) and a lit pedestal:
 	- the logo, facing the camera as it circles, bobbing over the pedestal (blended by its alpha)
 	- trees, cut from the tile sheet, upright: they turn to the camera about y only, and stand on their bottom edge (pivot 0.5, 1)
 	- a flag on a sign post, as its node is turned (Free), and a coin flat on the ground (Ground)
@@ -43,14 +45,13 @@ import helix.render3d.Orbit;
 	example's own sprite shader, shaders/heat.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its
 	parameters set by name.
 	O stops the camera; Escape quits where quitting means anything. Options: autopilot (a script under assets/: the time and the camera are then
-	held, the window the autopilot's page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is
-	done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
+	held, the stage's with it (Stage.heldTime), the window the autopilot's page's size, so its samples of the frame compare across targets)
+	and autoclose (1: quit once the script is done); the probes are ready (the textures and the heat in), outline, dissolving and shimmering. */
 class App extends helix.App {
-	var stage:Stage3D;
-	var batch3D:Batch3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var logo:Sprite3D;
 	var sign:Sprite3D;
@@ -73,7 +74,7 @@ class App extends helix.App {
 	var piloted = false;
 	var published = false;
 
-	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	// The time the autopilot holds the level at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var HELD_TIME = 2.;
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
@@ -85,7 +86,7 @@ class App extends helix.App {
 		sprite.setSpriteSize(width, height);
 		sprite.setPosition(x, 0, z);
 		tileSprites.push(sprite);
-		stage.add(sprite);
+		level.addChild(sprite);
 		return sprite;
 	}
 
@@ -98,30 +99,34 @@ class App extends helix.App {
 		if (script != "") {
 			piloted = true;
 			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
+			// The stage drawn at the held time too: its effects' clock.
+			Stage.heldTime = HELD_TIME;
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1000, 600);
 		// Framed for 16:9: the pedestal and the trees around it on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		batch3D = new Batch3D(gpu);
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xffffffff, .3);
+		Stage.color = 0xff1c1e26;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .3);
+		var grid = new Drawing3D();
+		grid.grid(16, 1, 0xff3c3f48);
+		level.addChild(grid);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.3);
-		stage.add(sun);
+		level.addChild(sun);
 		var stone = new Material();
 		stone.baseColor = 0xff8a8f99;
 		stone.roughness = .8;
 		var pedestal = new Model(Mesh.cylinder(.6, 1), stone);
 		pedestal.setPosition(0, .5, 0);
-		stage.add(pedestal);
+		level.addChild(pedestal);
 
 		logo = new Sprite3D(null);
 		logo.setSpriteSize(1.6, 1.6);
-		stage.add(logo);
+		level.addChild(logo);
 		// Trees: upright, standing on their bottom edge.
 		for (i in 0...6) {
 			var a = i / 6 * Math.PI * 2 + .3;
@@ -149,6 +154,10 @@ class App extends helix.App {
 		logo.effect = flash;
 		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));
+		view = new View3D(level, camera);
+		Stage.addChild(view);
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 	}
 
 	// The example's own shader in: the flames shimmer, its parameters set by name.
@@ -204,7 +213,7 @@ class App extends helix.App {
 			flame.setAlphaMode(Mask, .4);
 			flame.setPosition(i * .8 - 1.6, 0, -2.5);
 			flames.push(flame);
-			stage.add(flame);
+			level.addChild(flame);
 		}
 		// The heat, when it came in first.
 		if (heat != null)
@@ -215,7 +224,7 @@ class App extends helix.App {
 		glow.setSpriteSize(1.4, 1.4);
 		glow.setPosition(-2, .5, 1.5);
 		glow.setAlphaMode(Add);
-		stage.add(glow);
+		level.addChild(glow);
 		loaded++;
 	}
 
@@ -250,42 +259,28 @@ class App extends helix.App {
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, the camera with it.
 		var time = piloted ? HELD_TIME : Time.clock.time;
-		stage.time = time;
 		orbit.update(piloted ? 0 : dt);
 		// Half gone at the autopilot's held time, coming and going.
 		dissolve.amount = .5 + .45 * Math.sin((time - HELD_TIME) * .9);
 		fps.update(dt, Time.frameCpu);
 		logo.setPosition(0, 2.1 + Math.sin(time * 2) * .2, 0);
 		sign.setRotation(0, Math.sin(time) * .8, 0);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff1c1e26);
-		batch3D.begin(camera);
-		batch3D.grid(16, 1, 0xff3c3f48);
-		batch3D.end();
-		stage.draw(camera);
-		batch.begin(hud);
-		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added", vx + 12, y, 18, vw - 24,
-			0xfff5f5f5)
-			+ 4;
+		hud.clear();
+		var y = vy + 36, title = "HeliX sprite3d: sprites facing the camera, upright, flat and free; masked, blended and added";
+		y += hud.drawTextWrapped(title, vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
 		var on = (value:Bool) -> value ? "on" : "off";
-		batch.drawTextWrapped('${stage.drawnNodeCount} models and sprites in ${stage.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash',
+		hud.drawTextWrapped('${view.drawnNodeCount} models and sprites in ${view.drawCallCount} draws   O: the camera  [1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] heat ${on(shimmering)}  [F] flash',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 12, vy + 10);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({
@@ -298,9 +293,6 @@ class App extends helix.App {
 	}
 
 	override public function cleanup():Void {
-		stage.destroy();
-		batch3D.destroy();
-		batch.destroy();
 		if (heat != null)
 			shaders.release(heat.shader);
 	}

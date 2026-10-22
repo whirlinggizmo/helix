@@ -1,37 +1,36 @@
 import helix.debug.FpsOverlay;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** glTF metallic-roughness materials made in code, one sphere mesh under them all. Top row: plastic (metallic 0), roughness 0 to 1 left to
-	right; middle row: gold (metallic 1), the same steps; bottom row: unlit, emissive, normal mapped and see-through, turning so the normal map
-	moves. A sun, an orbiting blue point light (its marker an unlit sphere) and a little ambient light. 1 toggles the sun, 2 the lamp; Escape
-	quits where quitting means anything. */
+/** glTF metallic-roughness materials made in code, one sphere mesh under them all, in a level shown by a View3D. Top row: plastic
+	(metallic 0), roughness 0 to 1 left to right; middle row: gold (metallic 1), the same steps; bottom row: unlit, emissive, normal mapped and
+	see-through, turning so the normal map moves. A sun, an orbiting blue point light (its marker an unlit sphere) and a little ambient light
+	(an Environment3D on the level's root). 1 toggles the sun, 2 the lamp; Escape quits where quitting means anything. */
 class App extends helix.App {
 	static inline var COLUMNS = 5;
 	static inline var SPACING = 1.35;
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
-	var camera2D = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sun:DirectionalLight;
 	var lamp:PointLight;
@@ -56,15 +55,16 @@ class App extends helix.App {
 	function sphere(mesh:Mesh, x:Float, y:Float, material:Material):Model {
 		var node = new Model(mesh, material);
 		node.setPosition(x, y, 0);
-		stage.add(node);
+		level.addChild(node);
 		return node;
 	}
 
 	override public function init():Void {
 		Window.title = "HeliX materials";
 		Window.requestSize(1000, 700);
-		stage = new Stage3D();
-		stage.setAmbient(0xffffffff, .12);
+		Stage.color = 0xff14161c;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .12);
 		camera.setView(0, 1.6, 7.5, 0, 1.2, 0);
 		// Framed for 16:9: all five columns across on a phone held upright too.
 		camera.minAspect = 16 / 9;
@@ -73,17 +73,17 @@ class App extends helix.App {
 		sun.color = 0xfffff4e4;
 		sun.intensity = 3;
 		sun.lookAt(-.4, -.7, -.6);
-		stage.add(sun);
+		level.addChild(sun);
 		lamp = new PointLight();
 		lamp.color = 0xff78beff;
 		lamp.intensity = 8;
 		lamp.range = 10;
-		stage.add(lamp);
+		level.addChild(lamp);
 		var glow = new Material();
 		glow.baseColor = 0xff66bfff;
 		glow.lit = false;
 		marker = new Model(Mesh.sphere(.06, 8, 16), glow);
-		stage.add(marker);
+		level.addChild(marker);
 
 		// Rows of roughness steps: red plastic, then gold.
 		var ball = Mesh.sphere(.5, 24, 48);
@@ -104,7 +104,9 @@ class App extends helix.App {
 		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
-		batch = new Batch2D();
+		Stage.addChild(new View3D(level, camera));
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 	}
 
 	override public function update(dt:Float):Void {
@@ -126,32 +128,19 @@ class App extends helix.App {
 		for (node in bottom)
 			node.setRotation(0, time * .5, 0);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera2D);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(camera2D);
-		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX materials: metallic-roughness, unlit, emissive, normal map, blend", vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
-		batch.drawTextWrapped('roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
+		hud.clear();
+		var y = vy + 36, title = "HeliX materials: metallic-roughness, unlit, emissive, normal map, blend";
+		y += hud.drawTextWrapped(title, vx + 12, y, 18, vw - 24, 0xfff5f5f5) + 4;
+		hud.drawTextWrapped('roughness 0 -> 1 (left to right)   rows: plastic, gold   [1] sun ${sun.visible ? "on" : "off"}  [2] lamp ${lamp.visible ? "on" : "off"}',
 			vx
 			+ 12, y, 15, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
+		fps.setPosition(vx + 12, vy + 10);
 	}
 }

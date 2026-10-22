@@ -4,14 +4,13 @@ import helix.audio.AudioPlayback;
 import helix.assets.Assets;
 import helix.audio.AudioStream;
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
@@ -28,8 +27,7 @@ class App extends helix.App {
 	static inline var CROSSFADE = 3.;
 	static inline var FADE = 2.;
 
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	var click:Null<AudioClip>;
 	// The two tracks, kept for playing again; the one heard, and its playback.
@@ -47,7 +45,9 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX audio";
 		Window.requestSize(720, 360);
-		batch = new Batch2D();
+		Stage.color = 0xff12141c;
+		Stage.addChild(text);
+		Stage.addChild(fps);
 		var audio = Audio.instance;
 		audio.loadStream(HERO, stream -> {
 			hero = stream;
@@ -130,40 +130,36 @@ class App extends helix.App {
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff12141c);
-		batch.begin(camera);
+		text.clear();
 		var y = vy + 30;
-		y += batch.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;
+		y += text.drawTextWrapped("HeliX audio", vx + 24, y, 28, vw - 48, 0xfff5f5f5) + 15;
 		var track = onPad ? "the pad loop (ogg" : "A Hero Is Born (mp3";
-		y += batch.drawTextWrapped(music == null ? "music: loading..." : switch (music.state) {
+		y += text.drawTextWrapped(music == null ? "music: loading..." : switch (music.state) {
 			case Playing: 'music: $track, streamed, looping)${crossfading > 0 ? ", crossfading" : ""}';
 			case Paused: "music: paused";
 			case Stopped: "music: couldn't start";
 			case Complete: "music: ended";
 		}, vx + 24, y, 18, vw - 48, 0xff66bfff) + 7.5;
 		var host = Assets.host;
-		y += batch.drawTextWrapped(host == null ? "from the packaged files" : host.indexOf("://") < 0 ? "from beside the page" : 'from $host (played as it downloads, until cached)',
+		y += text.drawTextWrapped(host == null ? "from the packaged files" : host.indexOf("://") < 0 ? "from beside the page" : 'from $host (played as it downloads, until cached)',
 			vx
 			+ 24, y, 16, vw
 			- 48, 0xff66bfff)
 			+ 7.5;
-		y += batch.drawTextWrapped('pitch ${semitones > 0 ? "+" : ""}$semitones semitones   pan ${pan == 0 ? "centre" : (pan < 0 ? "left " : "right ") + Math.round(Math.abs(pan) * 100) + "%"}   music bus ${Math.round(Audio.music.volume * 100)}%',
+		y += text.drawTextWrapped('pitch ${semitones > 0 ? "+" : ""}$semitones semitones   pan ${pan == 0 ? "centre" : (pan < 0 ? "left " : "right ") + Math.round(Math.abs(pan) * 100) + "%"}   music bus ${Math.round(Audio.music.volume * 100)}%',
 			vx
 			+ 24, y, 16, vw
 			- 48, 0xfff5f5f5)
 			+ 7.5;
-		y += batch.drawTextWrapped(click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0xff00e430) + 17.5;
-		batch.drawTextWrapped("[SPACE] click   [M] pause   [F] fade bus   [C] crossfade   [LEFT/RIGHT] pan   [UP/DOWN] pitch   [0] reset   [S] stall 300 ms"
+		y += text.drawTextWrapped(click != null ? "click: ready (ogg)" : "click: loading...", vx + 24, y, 18, vw - 48, 0xff00e430) + 17.5;
+		text.drawTextWrapped("[SPACE] click   [M] pause   [F] fade bus   [C] crossfade   [LEFT/RIGHT] pan   [UP/DOWN] pitch   [0] reset   [S] stall 300 ms"
 			+ (Host.canQuit() ? "   [ESC] quit" : ""),
 			vx
 			+ 24, y, 16, vw
 			- 48, 0xffc8c8c8);
-		fps.draw(batch, vx + 24, vy + 8);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 24, vy + 8);
 	}
 }

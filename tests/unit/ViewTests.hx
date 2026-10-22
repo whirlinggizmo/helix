@@ -117,6 +117,19 @@ class ViewTests {
 		check(!place.setAmbient(0xffffffff, -1) && !place.setMap(null, -1) && !place.setBackground(null, 2) && place.ambientIntensity == .4,
 			"An environment refuses a negative intensity and a blur past 1, changing nothing");
 
+		// A Drawing3D: drawn where its node is, after the models, by the renderer's batch.
+		var debug = new helix.render3d.Drawing3D();
+		debug.grid(4, 1, 0xff404040);
+		debug.cubeWires(0, 1, 0, 1, 1, 1, 0xffffff00);
+		debug.setPosition(2, 0, 0);
+		level.addChild(debug);
+		stage.draw(0);
+		var batch3:helix.render3d.Batch3D = @:privateAccess view3D.world.ownBatch;
+		check(debug.callCount == 2 && batch3 != null && batch3.vertexCount > 0, "A Drawing3D drawn by the view's renderer");
+		var data:haxe.io.Bytes = @:privateAccess batch3.lines;
+		check(Math.abs(data.getFloat(Color3DProgram.positionOffset) - (2 - 2)) < 1e-5, "Carried by its node's transform (the grid's first line at x -2 + 2)");
+		level.removeChild(debug);
+
 		// Picking through the stage: a node on it, one a 2D view shows, a 3D view's model under the 2D, a paused tree passed over.
 		view3D.environment = null;
 		var picks = new StageService(gpu, presentation);
@@ -168,6 +181,40 @@ class ViewTests {
 		check(picks.pick(400, 400) == target, "Picked through its texture's space");
 		window.destroy();
 		check(@:privateAccess window.output == null, "destroy frees its texture");
+		// A 3D view inside a view with effects: drawn into that view's scene with its 2D, not on the screen under everything.
+		var holder = new Node2D(),
+			inner3D = new View3D(scene, new Camera3D(), 100, 100, gpu);
+		inner3D.camera.setView(0, 0, 5, 0, 0, 0);
+		holder.addChild(inner3D);
+		var effected = new View2D(holder, new Camera2D(), 200, 200);
+		effected.camera.setPosition(100, 100);
+		effected.postProcess = new helix.graphics.PostProcess(gpu);
+		var only = new StageService(gpu, presentation);
+		only.addChild(effected);
+		only.draw(0);
+		only.draw(0);
+		check(inner3D.drawnNodeCount == 1 && inner3D.camera.viewportWidth == 100 && @:privateAccess only.shadows.length == 0,
+			"Drawn into the view's texture (its camera sized there), not deferred to the screen");
+		effected.destroy();
+		inner3D.destroy();
+		only.destroy();
+
+		// A picture taken when asked: a 3D tree drawn into a texture, its camera sized to it; a view's clear color and texture.
+		var picture = helix.render2d.Texture2D.renderTarget(gpu, 64, 48);
+		var portrait = new View3D(scene, new Camera3D(), 0, 0, gpu);
+		portrait.camera.setView(0, 0, 5, 0, 0, 0);
+		gpu.targetPasses = [];
+		portrait.drawToTexture(picture, 0xff102030);
+		check(gpu.targetPasses.length == 1
+			&& gpu.targetPasses[0] == picture.handle
+			&& portrait.camera.viewportWidth == 64
+			&& portrait.drawnNodeCount == 1,
+			"drawToTexture: one pass into the target, the camera sized to it, the tree drawn");
+		var tinted = new View2D(shown, new Camera2D(), 50, 50);
+		tinted.color = 0xff336699;
+		tinted.postProcess = new helix.graphics.PostProcess(gpu);
+		check(tinted.texture == null, "No texture before its first");
+		portrait.destroy();
 		world3D.destroy();
 		picks.destroy();
 		view3D.destroy();

@@ -11,7 +11,7 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Node3D;
 import helix.render3d.Skin;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 
 /** Skinning and skeletal animation: tracks' sampling, skins and clips read from glTF (Quaternius's modular women, the animation example's),
 	the Animator's binding, refusal and crossfade, joint matrices, and a posed model's culling box. */
@@ -178,7 +178,7 @@ class AnimationTests {
 		check(near(skin.getBindPosition(1, 0), 1) && near(skin.getBindPosition(0, 0), 0), "A joint's bind position, its inverse bind's inverse");
 		var reach = mesh.getJointReach(skin);
 		check(near(reach[0], 1) && near(reach[1], 1), "Each joint reaches as far as the vertices it weights");
-		var gpu = new CountingGraphics(), stage = new Stage3D(gpu);
+		var gpu = new CountingGraphics(), stage = new Renderer3D(gpu);
 		var character = new Node3D(), hip = new Node3D(), knee = new Node3D();
 		hip.name = "hip";
 		knee.name = "knee";

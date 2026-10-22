@@ -30,7 +30,7 @@ private typedef ShaderFile = {
 /** An app's shader loaded from a .hxshader (src/helix/tools/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program):
 	its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures
 	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
-	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Stage3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
+	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
 	/** The .hxshader format it reads (src/helix/src/helix/tools/shader/ShaderPacker.hx's FORMAT). */
@@ -172,7 +172,7 @@ class Shader {
 	/** The IGraphics shader handle. */
 	public var handle(default, null):Int;
 
-	/** Its kind: "screen" (a screen effect), "surface" (a Stage3D material's) or "sprite" (a 2D sprite's: a SpriteEffect). */
+	/** Its kind: "screen" (a screen effect), "surface" (a Renderer3D material's) or "sprite" (a 2D sprite's: a SpriteEffect). */
 	public var kind(default, null):String;
 
 	/** The same surface shader drawing skinned models: its vertex stage moves each vertex by its joints (the stage's joint texture, at slot
@@ -185,7 +185,7 @@ class Shader {
 		screen or sprite shader. */
 	public var caster(default, null):Null<Shader>;
 
-	/** The same sprite shader drawing a Stage3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage
+	/** The same sprite shader drawing a Renderer3D's sprites (Sprite3D.effect): its fragment stage over the framework's 3D sprite vertex stage
 		(Sprite3DProgram's records, block 0 the sprites' uniforms), its output applying each sprite's alpha mode; its parameters and textures this
 		one's. Null for a screen or surface shader. */
 	public var sprite3D(default, null):Null<Shader>;

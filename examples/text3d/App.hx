@@ -1,37 +1,36 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
-import helix.render2d.Font2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Fonts;
-import helix.render3d.Batch3D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Drawing3D;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
 import helix.render3d.Text3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Text in the world, and 3D lines: labels facing the camera above a cube, a sphere and a panel (the built-in font), a sign whose text turns
-	with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground with Batch3D's lines. Text is sharp at any distance
+/** Text in the world, and 3D lines, in a View3D on the stage: labels facing the camera above a cube, a sphere and a panel (the built-in
+	font), a sign whose text turns with its node (Komika, loaded from a file), and circles and a spiral drawn on the ground by a Drawing3D's
+	lines. Text is sharp at any distance
 	(a distance-field font), unlit and blended, laid out with the font's advances and kerning. O stops the camera; Escape quits where quitting
 	means anything. */
 class App extends helix.App {
-	var stage:Stage3D;
-	var lines:Batch3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sign:Node3D;
 	var signText:Text3D;
@@ -46,10 +45,10 @@ class App extends helix.App {
 		material.roughness = .5;
 		var model = new Model(mesh, material);
 		model.setPosition(x, y, z);
-		stage.add(model);
+		level.addChild(model);
 		var text = new Text3D(label, .4, 0xfff5f5f5);
 		text.setPosition(x, labelHeight, z);
-		stage.add(text);
+		level.addChild(text);
 		return model;
 	}
 
@@ -58,15 +57,13 @@ class App extends helix.App {
 		Window.requestSize(1000, 600);
 		// Framed for 16:9: all three models and their labels on a phone held upright too.
 		camera.minAspect = 16 / 9;
-		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		lines = new Batch3D(gpu);
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xffffffff, .3);
+		Stage.color = 0xff1c1e26;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .3);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 		cube = labelled(Mesh.cube(1, 1, 1), 0xff3b82f6, -3, .5, 0, "cube", 1.6);
 		labelled(Mesh.sphere(.6), 0xffe5484d, 0, .6, 0, "sphere", 1.8);
 		labelled(Mesh.cube(1.4, .9, .1), 0xff46a758, 3, .45, 0, "panel", 1.5);
@@ -86,8 +83,26 @@ class App extends helix.App {
 		signText.facing = Free;
 		signText.setPosition(0, 1.6, .05);
 		sign.addChild(signText);
-		stage.add(sign);
+		level.addChild(sign);
 		Fonts.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
+		// The ground's lines: a grid, circles under each model, and a spiral around them all.
+		var lines = new Drawing3D();
+		lines.grid(16, 1, 0xff34373f);
+		for (cx in [-3., 0, 3])
+			for (k in 0...48) {
+				var a = k / 48 * Math.PI * 2, b = (k + 1) / 48 * Math.PI * 2;
+				lines.line(cx + Math.cos(a), .01, Math.sin(a), cx + Math.cos(b), .01, Math.sin(b), 0xff66bfff);
+			}
+		for (k in 0...200) {
+			var a = k * .12, b = (k + 1) * .12;
+			lines.line(Math.cos(a) * (1 + a * .25), .01, Math.sin(a) * (1 + a * .25), Math.cos(b) * (1 + b * .25), .01, Math.sin(b) * (1 + b * .25),
+				0xffffcb00);
+		}
+		level.addChild(lines);
+		view = new View3D(level, camera);
+		Stage.addChild(view);
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 	}
 
 	override public function update(dt:Float):Void {
@@ -102,49 +117,19 @@ class App extends helix.App {
 		fps.update(dt, Time.frameCpu);
 		cube.setRotation(0, time * .8, 0);
 		sign.setRotation(0, Math.sin(time * .7) * .9, 0);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff1c1e26);
-		lines.begin(camera);
-		lines.grid(16, 1, 0xff34373f);
-		// Circles on the ground under each model, and a spiral around them all.
-		for (cx in [-3., 0, 3])
-			for (k in 0...48) {
-				var a = k / 48 * Math.PI * 2, b = (k + 1) / 48 * Math.PI * 2;
-				lines.line(cx + Math.cos(a), .01, Math.sin(a), cx + Math.cos(b), .01, Math.sin(b), 0xff66bfff);
-			}
-		for (k in 0...200) {
-			var a = k * .12, b = (k + 1) * .12;
-			lines.line(Math.cos(a) * (1 + a * .25), .01, Math.sin(a) * (1 + a * .25), Math.cos(b) * (1 + b * .25), .01, Math.sin(b) * (1 + b * .25),
-				0xffffcb00);
-		}
-		lines.end();
-		stage.draw(camera);
-		batch.begin(hud);
+		fps.setPosition(vx + 12, vy + 10);
+		hud.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
+		y += hud.drawTextWrapped("HeliX text3d: labels facing the camera, a sign's text turning with it, lines on the ground", vx + 12, y, 18, vw - 24,
 			0xfff5f5f5)
 			+ 4;
-		batch.drawTextWrapped('${stage.drawnNodeCount} models and glyphs in ${stage.drawCallCount} draws   O: the camera', vx
-			+ 12, y, 16, vw
-			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		lines.destroy();
-		batch.destroy();
+		hud.drawTextWrapped('${view.drawnNodeCount} models and glyphs in ${view.drawCallCount} draws   O: the camera', vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 	}
 }

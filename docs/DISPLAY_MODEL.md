@@ -211,6 +211,10 @@ class Game extends helix.App {
    the views' renderers), and the runner's allowance for an app drawing its own frame removed (`Graphics.beginFrame` and `endFrame` the
    runner's alone); a decision entry recording what was built and checked.
 
+9. Scene files named by kind, as the convention names 2D and 3D apart: `.scene` becomes `.scene3d` (and `SceneFile`, `SceneInstance`,
+   `SceneFiles` their 3D names), so 2D scene files arrive as `.scene2d` without renaming again. A 2D scene shows a 3D one through a
+   `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
+
 ## Later (ROADMAP)
 
 - **Timelines:** what Flash's artists understood best, kept as data so rule 61 holds: keyframed tracks per child node (`x`, `y`,
@@ -219,7 +223,10 @@ class Game extends helix.App {
   the same shape), saved in the scene file with the nodes they move. Authoring wants the scene editor.
 - **2D under 3D:** views drawn into textures in display order (the same path as post-processing on views).
 - **Fonts:** the built-in one only where text is drawn; glyphs from the browser's rasterizer.
-- **2D scene files.**
+- **2D scene files (`.scene2d`), and screens as scene files.** With behaviors attachable to any node (not only `Node3D`) and a helper
+  that loads a scene file and swaps it onto the stage through a transition, a splash or a loading screen is a `.scene2d` (a panel, a logo,
+  a prompt) with a behavior (wait, then go to the scene its `next` prop names): `Splash` and `Loading` shrink to default files and their
+  behaviors, restyled in a file or an editor rather than subclassed.
 - **Regional environments:** the nearest ancestor's, several per view.
 - **Fixed steps built in:** an app option for the tick rate, a `tick()` override called at it, and the fraction between ticks readable in
   `update`, so no game makes a `Ticker` (Flash's `frameRate`); today a game advances a `Ticker` in `update` and places its nodes at the

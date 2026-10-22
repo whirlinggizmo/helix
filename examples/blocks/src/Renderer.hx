@@ -1,10 +1,9 @@
 import helix.graphics.Color;
-import helix.graphics.IGraphics;
 import helix.host.Presentation;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 
-/** Draws a Game through Batch2D in cell units. Its text is never smaller than READABLE of the presentation's units, so the labels stay
+/** Draws a Game into a Drawing2D in cell units, cleared and drawn again each update; the app shows it through the well's camera. Its text is never smaller than READABLE of the presentation's units, so the labels stay
 	readable where cells are small (a phone on its side). */
 class Renderer {
 	public static final colors = [
@@ -20,15 +19,13 @@ class Renderer {
 	/** The least text size, in the presentation's units. */
 	static inline var READABLE = 15;
 
-	var gpu:IGraphics;
-	var batch:Batch2D;
+	/** What it draws into, in cells: the app puts it under the world a View2D shows. */
+	public var drawing(default, null) = new Drawing2D();
+
 	// The least text size in cells, this frame.
 	var least = 0.;
 
-	public function new(gpu:IGraphics, batch:Batch2D) {
-		this.gpu = gpu;
-		this.batch = batch;
-	}
+	public function new() {}
 
 	static function shade(color:Int, amount:Float):Int {
 		inline function channel(shift:Int):Int {
@@ -44,9 +41,9 @@ class Renderer {
 
 	function block(x:Float, y:Float, size:Float, color:Int):Void {
 		var edge = size * .14;
-		batch.rect(x, y, size, size, shade(color, -.45));
-		batch.rect(x, y, size - edge, size - edge, shade(color, .35));
-		batch.rect(x + edge, y + edge, size - 2 * edge, size - 2 * edge, color);
+		drawing.rect(x, y, size, size, shade(color, -.45));
+		drawing.rect(x, y, size - edge, size - edge, shade(color, .35));
+		drawing.rect(x + edge, y + edge, size - 2 * edge, size - 2 * edge, color);
 	}
 
 	/** A piece centered in a box, at a given cell size. */
@@ -65,29 +62,28 @@ class Renderer {
 	}
 
 	function panel(box:Array<Float>, label:String):Void {
-		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff141b2b);
-		batch.drawText(label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0xff8090a8, Center);
+		drawing.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff141b2b);
+		drawing.drawText(label, box[0] + box[2] / 2, box[1] + .2, size(.45), 0xff8090a8, Center);
 	}
 
 	function button(box:Array<Float>, label:String, size:Float):Void {
-		batch.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff22304a);
-		batch.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xffe0e8f4, Center);
+		drawing.roundedRect(box[0], box[1], box[2], box[3], .3, 0xff22304a);
+		drawing.drawText(label, box[0] + box[2] / 2, box[1] + (box[3] - size) / 2, size, 0xffe0e8f4, Center);
 	}
 
-	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units. */
+	/** Draws game laid out by layout, seen through camera, its text sized by presentation's units: the drawing cleared and drawn again. */
 	public function render(game:Game, layout:Layout, camera:Camera2D, presentation:Presentation, tick:Int):Void {
 		least = READABLE * presentation.scaleX / camera.zoom;
-		gpu.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0xff0a0e18);
-		batch.begin(camera);
+		drawing.clear();
 		var fx = layout.fieldX,
 			fy = layout.fieldY,
 			visible = Game.H - Game.HIDDEN;
-		batch.rect(fx - .15, fy - .15, Game.W + .3, visible + .3, 0xff2a3550);
-		batch.rect(fx, fy, Game.W, visible, 0xff05070d);
+		drawing.rect(fx - .15, fy - .15, Game.W + .3, visible + .3, 0xff2a3550);
+		drawing.rect(fx, fy, Game.W, visible, 0xff05070d);
 		for (x in 1...Game.W)
-			batch.rect(fx + x - .01, fy, .02, visible, 0xff111827);
+			drawing.rect(fx + x - .01, fy, .02, visible, 0xff111827);
 		for (y in 1...visible)
-			batch.rect(fx, fy + y - .01, Game.W, .02, 0xff111827);
+			drawing.rect(fx, fy + y - .01, Game.W, .02, 0xff111827);
 		for (y in Game.HIDDEN...Game.H) {
 			var flash = game.clearing.indexOf(y) >= 0;
 			for (x in 0...Game.W) {
@@ -102,7 +98,7 @@ class Renderer {
 			for (i in 0...4) {
 				var y = ghost + c[i * 2 + 1] - Game.HIDDEN;
 				if (y >= 0)
-					batch.frame(fx + game.px + c[i * 2] + .06, fy + y + .06, .88, .88, .08, Color.withAlpha(colors[game.piece], 0x90));
+					drawing.frame(fx + game.px + c[i * 2] + .06, fy + y + .06, .88, .88, .08, Color.withAlpha(colors[game.piece], 0x90));
 			}
 			for (i in 0...4) {
 				var y = game.py + c[i * 2 + 1] - Game.HIDDEN;
@@ -126,24 +122,24 @@ class Renderer {
 				preview(game.queue[i], [layout.nextBox[0], layout.nextBox[1] + .5 + i * slot, layout.nextBox[2], slot],
 					i == 0 ? (layout.portrait ? 0.6 : .8) : .6);
 		var sx = layout.scoreX, sy = layout.scoreY;
-		batch.drawText(Std.string(game.score), sx, sy, 1, 0xfff0f4fa, Center);
-		batch.drawText("LEVEL " + game.level, sx, sy + 1.3, size(.4), 0xff8090a8, Center);
-		batch.drawText("LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0xff8090a8, Center);
+		drawing.drawText(Std.string(game.score), sx, sy, 1, 0xfff0f4fa, Center);
+		drawing.drawText("LEVEL " + game.level, sx, sy + 1.3, size(.4), 0xff8090a8, Center);
+		drawing.drawText("LINES " + game.lines, sx, sy + 1.3 + Math.max(.6, size(.4) * 1.25), size(.4), 0xff8090a8, Center);
 		if (game.state == "playing")
 			button(layout.pauseBox, "II", .7);
 		if (game.state != "playing") {
-			batch.rect(fx, fy, Game.W, visible, 0xd005070d);
+			drawing.rect(fx, fy, Game.W, visible, 0xd005070d);
 			var cy = fy + visible * .3;
 			var title = switch game.state {
 				case "paused": "PAUSED";
 				case "over": "GAME OVER";
 				default: "BLOCKS";
 			};
-			batch.drawText(title, fx + Game.W / 2, cy, 1.2, 0xfff0f4fa, Center);
+			drawing.drawText(title, fx + Game.W / 2, cy, 1.2, 0xfff0f4fa, Center);
 			if (game.best > 0)
-				batch.drawText("BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0xff8090a8, Center);
+				drawing.drawText("BEST " + game.best, fx + Game.W / 2, cy + 2, size(.5), 0xff8090a8, Center);
 			if (tick % 60 < 40)
-				batch.drawTextWrapped(game.state == "paused" ? "TAP OR ENTER TO RESUME" : "TAP OR ENTER TO PLAY", fx
+				drawing.drawTextWrapped(game.state == "paused" ? "TAP OR ENTER TO RESUME" : "TAP OR ENTER TO PLAY", fx
 					+ Game.W / 2, cy
 					+ 3.5, size(.4),
 					Game.W
@@ -157,10 +153,8 @@ class Renderer {
 				// Wrapped to the well, stacked by the lines' heights.
 				var y = cy + 6;
 				for (line in help)
-					y += Math.max(.8, batch.drawTextWrapped(line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0xff8090a8, Center));
+					y += Math.max(.8, drawing.drawTextWrapped(line, fx + Game.W / 2, y, size(.35), Game.W - .5, 0xff8090a8, Center));
 			}
 		}
-		batch.end();
-		gpu.endFrame();
 	}
 }

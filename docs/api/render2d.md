@@ -49,7 +49,7 @@ A baked glyph: its place in the atlas, its box's offset from the pen on the base
 
 *class* in `src/helix/render2d/Batch2D.hx`
 
-Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
+Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform) places what follows, so a shape or text can be drawn turned and scaled; a Renderer2D draws its nodes so. What is drawn with an effect (effect: a sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own.
 
 ```haxe
 function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
@@ -73,6 +73,7 @@ function end():Void
 function pushClip(x:Float, y:Float, w:Float, h:Float):Void
 function popClip():Void
 function useTexture(value:Texture2D):Void
+var samplingOverride:Null<Sampling>
 function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, ?distanceField:Bool = false):Void
 function sprite(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?tint:Int = 0xffffffff, ?u0:Float = 0., ?v0:Float = 0., ?u1:Float = 1., ?v1:Float = 1.):Void
 function sheetFrame(sheet:SpriteSheet, index:Int, x:Float, y:Float, ?scaleX:Float = 1., ?scaleY:Float = 1., ?rotation:Float = 0., ?tint:Int = 0xffffffff):Void
@@ -104,7 +105,7 @@ function destroy():Void
 - `camera`: The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one batch.
 - `alpha`: What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded). 1 at begin. Particles aren't faded by it.
 - `effect`: The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
-- `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it to the stage's time.
+- `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Renderer2D's draw sets it to the stage's time.
 - `transformA`: The transform's a: x's share of a point's x.
 - `transformB`: The transform's b: x's share of a point's y.
 - `transformC`: The transform's c: y's share of a point's x.
@@ -117,6 +118,7 @@ function destroy():Void
 - `pushClip`: Clips what follows to the rectangle x, y, w, h of the world units it would be drawn in now (through the transform and the camera; a turned one's bounds), within any clip already pushed, until popClip.
 - `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
 - `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
+- `samplingOverride`: How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in one frame (a Sprite2D's sampling, Drawing2D.image's).
 - `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
 - `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity.
 - `sheetFrame`: sheet's frame at index (SpriteSheet.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
@@ -239,11 +241,22 @@ function apply(camera:Camera2D):Void
 - `update`: Follows the target at targetX, targetY (world units) for dt seconds, seeing as much as camera shows (its viewport at its zoom), and advances the shake.
 - `apply`: Places camera at the followed point, thrown by the shake.
 
+## ChainCalls
+
+*typedef* in `src/helix/render2d/ViewFrame.hx`
+
+A chain's calls (PostProcess's beginScene, endScene, present and hdr), through the object, so a hot reload reaches the new code.
+
+- `present:() -> Void`
+- `hdr:() -> Bool`
+- `end:Float -> Void`
+- `begin:(Int, Int, Int) -> Void`
+
 ## Drawing2D
 
 *class* in `src/helix/render2d/Drawing2D.hx`
 
-Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle, circleLines, line, polygon, polygonLines, drawText), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away. Calling clear and drawing again in update is immediate drawing, as Flash games did it. Not culled; picked by the box around what it holds.
+Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle, circleLines, line, polygon, polygonLines, image, drawText, drawTextWrapped), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away. Calling clear and drawing again in update is immediate drawing, as Flash games did it. Not culled; picked by the box around what it holds.
 
 ```haxe
 function new()
@@ -257,6 +270,8 @@ function circleLines(x:Float, y:Float, radius:Float, width:Float, color:Int):Voi
 function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, color:Int):Void
 function polygon(points:Array<Float>, color:Int):Bool
 function polygonLines(points:Array<Float>, width:Float, color:Int):Bool
+function image(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0., ?sampling:Sampling):Void
+function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font2D):Float
 function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
 ```
 
@@ -271,6 +286,8 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 - `line`: A segment width wide from x0, y0 to x1, y1, square ended.
 - `polygon`: A filled polygon through points (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). False, holding nothing more, for fewer than 3 points or one that can't be filled.
 - `polygonLines`: A polygon's outline through points (copied), closed, width wide centered on its edges. False, holding nothing more, for fewer than 2 points.
+- `image`: texture drawn top-left at x, y, w x h, tinted (white by default): its region sourceX, sourceY, sourceWidth x sourceHeight in texels, or all of it when sourceWidth or sourceHeight is 0 or less; sampled as sampling says, or as the texture's sampling is when drawn when null.
+- `drawTextWrapped`: Text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font (null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's when no font is known: none given and no stage running).
 - `drawText`: One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's).
 
 ## Font2D
@@ -411,7 +428,7 @@ final levels:Array<haxe.io.Bytes>
 
 *class* in `src/helix/render2d/Node2D.hx`
 
-What a Stage2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Sprite2D, Shape2D, Text2D, Particles2D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked out when a stage draws it, only after it or a node above it changed. Any node can clip its children (setClip).
+What a Renderer2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Sprite2D, Shape2D, Text2D, Particles2D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked out when a stage draws it, only after it or a node above it changed. Any node can clip its children (setClip).
 
 ```haxe
 function new()
@@ -469,7 +486,7 @@ function toLocalY(x:Float, y:Float):Float
 
 *class* in `src/helix/render2d/Particles2D.hx`
 
-An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Stage2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
+An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Renderer2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
 
 ```haxe
 function new(emitter:Emitter)
@@ -492,6 +509,34 @@ static function triangulate(points:Array<Float>):Array<Int>
 
 - `doubleArea`: Twice the signed area of the polygon through points: above 0 when its points go clockwise on screen (y down).
 - `triangulate`: The triangles filling the simple polygon through points (at least 3, not crossing itself), as indices of points, three a triangle, by ear clipping; either winding. A polygon that crosses itself is filled as far as clipping gets.
+
+## Renderer2D
+
+*class* in `src/helix/render2d/Renderer2D.hx`
+
+What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs.
+
+```haxe
+function new(?root:Node2D)
+var root(default, null):Node2D
+function add(node:Node2D):Bool
+function remove(node:Node2D):Bool
+var time:Float
+var font(get, never):Null<Font2D>
+var drawnNodeCount(get, never):Int
+function draw(batch:Batch2D, camera:Camera2D):Void
+function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
+```
+
+- `new`: An empty stage, or one drawing root's children (a View2D's tree).
+- `root`: The node everything on the stage hangs from.
+- `add`: Adds node to the stage, as the root's last child: drawn over what is there.
+- `remove`: Takes node from the stage's root.
+- `time`: The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw.
+- `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
+- `drawnNodeCount`: Nodes drawn by the last draw (in view).
+- `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
+- `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
 ## Shape2D
 
@@ -563,6 +608,7 @@ A sprite: a texture (or a region of it, or a SpriteSheet's frame) drawn as a rec
 function new(texture:Null<Texture2D>, ?tint:Int = 0xffffffff)
 var texture:Null<Texture2D>
 var tint:Int
+var sampling:Null<Sampling>
 var effect:Null<SpriteEffect>
 function setRegion(x:Float, y:Float, width:Float, height:Float):Void
 function setFrame(sheet:SpriteSheet, index:Int):Bool
@@ -588,6 +634,7 @@ var nineSlice(get, never):Bool
 - `new`: A sprite of texture (null for none yet: it draws nothing), the whole texture at its size in texels, turning about its center, tinted (0xAARRGGBB, white for none).
 - `texture`: Its texture, or null: it draws nothing.
 - `tint`: What its texels are multiplied by, 0xAARRGGBB: white leaves them as they are.
+- `sampling`: How its texture is sampled, in place of the texture's own (Texture2D.sampling), or null for the texture's: the same texture drawn sharp here and smooth elsewhere.
 - `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows no sheet's frame after (setFrame).
 - `setFrame`: Shows sheet's frame at index (a SpriteAnimator given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
@@ -746,50 +793,32 @@ The stage: what the program shows, drawn by the runner after every update (Stage
 ```haxe
 static var instance(default, null):StageService
 static var color(get, set):Int
+static var heldTime(get, set):Null<Float>
 static var postProcess(get, set):Null<PostProcess>
 static function addChild(node:Node2D):Void
 static function removeChild(node:Node2D):Bool
+static var camera(get, never):Camera2D
+static var font(get, never):Font2D
 static var childCount(get, never):Int
+static var vertexCount(get, never):Int
+static var drawCallCount(get, never):Int
 static var drawnNodeCount(get, never):Int
 static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 ```
 
 - `instance`: The stage forwarded to: installed by its first use (an optional part, helix.host.Part) until the program's end, null before and after. Kept across a hot reload (@:hot): set once by the runner, nothing would set it again.
 - `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `heldTime`: The time the stage and its views draw at when set (emitters, sprite and screen effects, water), held there: an autopilot's samples, the same on every target. Null, to start, for the game's clock (Time.clock).
 - `postProcess`: Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the screen.
 - `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
+- `camera`: The camera the stage is drawn through: the presentation's design units (Screen), refitted at each draw.
+- `font`: The font a text without its own is drawn in: the stage batch's (the built-in one), there from the stage's first use, so text can be measured and laid out before the first frame.
 - `childCount`: How many children the stage has.
-- `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+- `vertexCount`: How many vertices the last frame's 2D took (Batch2D.vertexCount).
+- `drawCallCount`: How many draws the last frame's 2D took (Batch2D.drawCallCount).
+- `drawnNodeCount`: How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped.
 - `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
-
-## Stage2D
-
-*class* in `src/helix/render2d/Stage2D.hx`
-
-A retained 2D scene: nodes under a root, drawn into a Batch2D by draw(batch, camera). A draw walks the tree as it is now, depth first, a parent before its children and children in order, so later ones draw over earlier ones (each world transform worked out only where something changed); it skips the nodes whose bounds are outside the camera's view, and draws the rest through the batch, which joins alike ones into runs. A frame composes its stages in the order it draws them: a backdrop, the world, then a HUD, each through its own camera.
-
-```haxe
-function new(?root:Node2D)
-var root(default, null):Node2D
-function add(node:Node2D):Bool
-function remove(node:Node2D):Bool
-var time:Float
-var font(get, never):Null<Font2D>
-var drawnNodeCount(get, never):Int
-function draw(batch:Batch2D, camera:Camera2D):Void
-function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
-```
-
-- `new`: An empty stage, or one drawing root's children (a View2D's tree).
-- `root`: The node everything on the stage hangs from.
-- `add`: Adds node to the stage, as the root's last child: drawn over what is there.
-- `remove`: Takes node from the stage's root.
-- `time`: The stage's clock, seconds: what the app last set. Its emitters advance by how far it moved since the last draw.
-- `font`: The font a text without its own was last drawn in (the batch's), or null before a draw.
-- `drawnNodeCount`: Nodes drawn by the last draw (in view).
-- `draw`: Draws the stage into batch (begun in this frame), through camera, in its viewport, its sprites through their effects at the stage's time (batch.time is set to it); the batch is left seen through camera, with no transform and no effect. Node world transforms are up to date after it, for toLocalX and the like.
-- `pick`: The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none (or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)).
 
 ## StageService
 
@@ -800,10 +829,15 @@ The stage: the one thing the runner draws, after the app's update, every frame (
 ```haxe
 function new(gpu:IGraphics, presentation:Presentation)
 var color:Int
-var postProcess:Null<PostProcess>
+var heldTime:Null<Float>
+var postProcess(default, set):Null<PostProcess>
 function addChild(node:Node2D):Void
 function removeChild(node:Node2D):Bool
+var camera(default, null):Camera2D
+var font(get, never):Font2D
 var childCount(get, never):Int
+var vertexCount(get, never):Int
+var drawCallCount(get, never):Int
 var drawnNodeCount(get, never):Int
 function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 function draw(time:Float):Void
@@ -812,11 +846,16 @@ function destroy():Void
 
 - `new`: A stage drawn on gpu, its camera showing presentation's design units.
 - `color`: What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start.
+- `heldTime`: The time the stage and its views draw at when set (emitters, sprite and screen effects, water), held there: an autopilot's samples, the same on every target. Null, to start, for the game's clock (Time.clock).
 - `postProcess`: Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the screen.
 - `addChild`: Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to the top, as Flash's addChild does (Node2D.addChild).
 - `removeChild`: Takes node off the stage. False, changing nothing, for a node that isn't one of its children.
+- `camera`: The camera the stage is drawn through: the presentation's design units (Screen), refitted at each draw.
+- `font`: The font a text without its own is drawn in: the stage batch's (the built-in one), there from the stage's first use, so text can be measured and laid out before the first frame.
 - `childCount`: How many children the stage has.
-- `drawnNodeCount`: How many nodes the last frame drew, the ones outside the view skipped.
+- `vertexCount`: How many vertices the last frame's 2D took (Batch2D.vertexCount).
+- `drawCallCount`: How many draws the last frame's 2D took (Batch2D.drawCallCount).
+- `drawnNodeCount`: How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped.
 - `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
 - `draw`: Draws the frame: opens it, cleared to color, draws the stage's children through the presentation's camera, and closes it (through postProcess, when it has one: into its scene, then its effects presented on the screen). The runner calls it once a frame after the app's update, with the game's clock in seconds (Time.clock: emitters advance by it, still while it's paused); a program without one (a test) calls it itself.
 - `destroy`: Frees its batch.
@@ -974,13 +1013,17 @@ What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a
 ```haxe
 var width:Float
 var height:Float
-var postProcess:Null<PostProcess>
+var postProcess(default, set):Null<PostProcess>
+var color:Int
+var texture(get, never):Null<Texture2D>
 function destroy():Void
 ```
 
 - `width`: Its width in its own units; 0 or less for the whole area of what shows it.
 - `height`: Its height in its own units; 0 or less for the whole area of what shows it.
 - `postProcess`: Screen effects over what it shows (a pixelated game under a sharp HUD, a blurred world behind a menu), or null for none. With a chain, what it shows is drawn into a texture before the frame opens, the chain run over it, and the result drawn where the view is, in the 2D's order like any 2D thing (so a 3D view with a chain sits between 2D things), a frame behind its rectangle: it's drawn at the size the view was last shown at, and nothing shows the first frame.
+- `color`: With a chain, what its scene is cleared to before what it shows is drawn into it, 0xAARRGGBB: clear to start, so what's under the view shows through; a color for a background its effects work on (a bloom halo, a vignette), as the stage's color is for the stage's chain.
+- `texture`: With a chain, the texture its effects' result was last drawn into, what the view shows (a material can wear it: a live label); null before its first, or without a chain.
 - `destroy`: Frees what it drew with (its texture for effects, its GPU buffers); the chain and the tree are the app's.
 
 ## View2D
@@ -993,9 +1036,33 @@ A 2D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, plac
 function new(content:Node2D, ?camera:Camera2D, ?width:Float = 0., ?height:Float = 0.)
 var content(default, null):Node2D
 var camera:Camera2D
+var drawnNodeCount(get, never):Int
 function destroy():Void
 ```
 
 - `new`: A view of content's children through camera (a new one at world 0, 0, zoom 1 unless given), width x height of its own units (0 for the whole area of what shows it).
 - `content`: The tree whose children it shows.
 - `camera`: What it's seen through: its position and zoom the app's, its viewport the view's rectangle.
+- `drawnNodeCount`: How many nodes the last frame drew of its tree, the ones outside the camera's view skipped.
+
+## ViewFrame
+
+*class* in `src/helix/render2d/ViewFrame.hx`
+
+What a frame's views hand the stage as the walk reaches them, as functions, so the stage names no view and a program that makes none carries none of their code (docs/DISPLAY_MODEL.md); and a chain's calls, made only when one is set. The engine's, not a game's.
+
+```haxe
+static var drawsUnder:Array<() -> Void>
+static var shadows:Array<() -> Void>
+static var renders:Array<(IGraphics, Float) -> Void>
+static var picks3D:Array<(Float, Float, Any) -> Null<Node>>
+static var hdr:Bool
+static function callsOf(chain:Null<PostProcess>):Null<ChainCalls>
+```
+
+- `drawsUnder`: The 3D views' draws, under the 2D, before the batch ends: this frame's.
+- `shadows`: The 3D views' shadows, drawn before the next frame opens.
+- `renders`: The views with a chain, drawn into their textures before the next frame opens.
+- `picks3D`: The 3D views a pick passed over the point in, the topmost last: what each has under x, y, the hit filled.
+- `hdr`: Whether the frame's 3D is drawn into an HDR scene (the chain it's drawn into wants it): the 3D views write their light untone-mapped.
+- `callsOf`: chain's calls, or null for none: made only where a chain is set, so a program setting none carries none of PostProcess.

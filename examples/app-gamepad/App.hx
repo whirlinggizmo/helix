@@ -1,4 +1,3 @@
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -7,8 +6,8 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadAxis;
 import helix.input.PadButton;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.host.ScreenShape;
 
 /** Every connected gamepad, live: up to four side by side, each with its name, both sticks (the dot is where the stick points, past the dead
@@ -20,14 +19,15 @@ class App extends helix.App {
 	static inline var HEIGHT = 420;
 	static final DEADZONES = [.1, .2, .3, 0.];
 
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	// Everything shown, drawn again each update.
+	var drawing = new Drawing2D();
 	var deadzone = 0;
 
 	override public function init():Void {
 		Window.title = "HeliX gamepad";
 		Window.requestSize(WIDTH, HEIGHT);
-		batch = new Batch2D();
+		Stage.color = 0xff181c26;
+		Stage.addChild(drawing);
 	}
 
 	override public function update(dt:Float):Void {
@@ -40,22 +40,20 @@ class App extends helix.App {
 		// The design for the window's shape: the text wrapped to what's visible of it, and as many panels across as fit, the rest in rows below.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff181c26);
-		batch.begin(camera);
+		drawing.clear();
 		var connected = 0;
 		for (i in 0...input.padCount)
 			if (input.getPad(i).connected)
 				connected++;
 		var y = vy + 12;
-		y += batch.drawTextWrapped('HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
+		y += drawing.drawTextWrapped('HeliX gamepad   $connected connected   dead zone ${DEADZONES[deadzone]} (South cycles it)', vx + 12, y, 16, vw - 24,
 			0xfff5f5f5)
 			+ 12;
 		if (connected == 0)
-			batch.drawTextWrapped("No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+			drawing.drawTextWrapped("No gamepad: connect one, then press a button on it.", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
 		var columns = Std.int(Math.max(1, Math.floor((vw - 12) / 245))), placed = 0;
 		for (i in 0...input.padCount) {
 			var pad = input.getPad(i);
@@ -65,15 +63,13 @@ class App extends helix.App {
 			drawPad(pad, i, vx + 12 + placed % columns * 245, y + Std.int(placed / columns) * 370);
 			placed++;
 		}
-		batch.end();
-		Graphics.endFrame();
 	}
 
 	/** One pad's panel, its top-left at x, y. */
 	function drawPad(pad:Gamepad, index:Int, x:Float, y:Float):Void {
-		batch.roundedRect(x, y, 235, 360, 8, 0xff232a38);
+		drawing.roundedRect(x, y, 235, 360, 8, 0xff232a38);
 		var name = pad.name;
-		batch.drawText('pad $index: ' + (name.length > 26 ? name.substr(0, 25) + "~" : name), x + 10, y + 10, 13, 0xffc8c8c8);
+		drawing.drawText('pad $index: ' + (name.length > 26 ? name.substr(0, 25) + "~" : name), x + 10, y + 10, 13, 0xffc8c8c8);
 		// Triggers as bars, filling upward.
 		trigger(pad.getAxis(PadAxis.LeftTrigger), x + 14, y + 40);
 		trigger(pad.getAxis(PadAxis.RightTrigger), x + 207, y + 40);
@@ -96,29 +92,29 @@ class App extends helix.App {
 		// The raw axes, for checking a mapping.
 		var row = y + 260.;
 		for (axis in PadAxis.all) {
-			batch.drawText(axisName(axis) + ' ${fixed(pad.getRawAxis(axis))}', x + 10, row, 12, 0xff8a93a6);
+			drawing.drawText(axisName(axis) + ' ${fixed(pad.getRawAxis(axis))}', x + 10, row, 12, 0xff8a93a6);
 			row += 15;
 		}
 	}
 
 	function trigger(value:Float, x:Float, y:Float):Void {
-		batch.frame(x, y, 14, 60, 1, 0xff8a93a6);
-		batch.rect(x + 1, y + 1 + 58 * (1 - value), 12, 58 * value, 0xff66bfff);
+		drawing.frame(x, y, 14, 60, 1, 0xff8a93a6);
+		drawing.rect(x + 1, y + 1 + 58 * (1 - value), 12, 58 * value, 0xff66bfff);
 	}
 
 	function stick(pad:Gamepad, axisX:PadAxis, axisY:PadAxis, click:PadButton, x:Float, y:Float):Void {
-		batch.circleLines(x, y, 28, 1, pad.isDown(click) ? 0xffffcb00 : 0xff8a93a6);
-		batch.circle(x + pad.getAxis(axisX) * 24, y + pad.getAxis(axisY) * 24, 6, 0xff66bfff);
+		drawing.circleLines(x, y, 28, 1, pad.isDown(click) ? 0xffffcb00 : 0xff8a93a6);
+		drawing.circle(x + pad.getAxis(axisX) * 24, y + pad.getAxis(axisY) * 24, 6, 0xff66bfff);
 	}
 
 	function face(pad:Gamepad, button:PadButton, x:Float, y:Float):Void {
-		batch.circle(x, y, 9, color(pad, button));
-		batch.circleLines(x, y, 9, 1, 0xff8a93a6);
+		drawing.circle(x, y, 9, color(pad, button));
+		drawing.circleLines(x, y, 9, 1, 0xff8a93a6);
 	}
 
 	function button(pad:Gamepad, button:PadButton, x:Float, y:Float, w:Float, h:Float):Void {
-		batch.rect(x, y, w, h, color(pad, button));
-		batch.frame(x, y, w, h, 1, 0xff8a93a6);
+		drawing.rect(x, y, w, h, color(pad, button));
+		drawing.frame(x, y, w, h, 1, 0xff8a93a6);
 	}
 
 	/** White the frame it's pressed, lit while held, dark otherwise. */

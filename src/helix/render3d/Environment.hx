@@ -3,7 +3,7 @@ package helix.render3d;
 import haxe.ds.Vector;
 import helix.graphics.IGraphics;
 
-/** An environment map, ready to light a stage and stand behind it (Stage3D.setEnvironment, setBackground): its irradiance (the light it casts
+/** An environment map, ready to light a stage and stand behind it (Renderer3D.setEnvironment, setBackground): its irradiance (the light it casts
 	on rough surfaces, 9 spherical-harmonic coefficients), its prefiltered cube (what smooth to rough surfaces reflect) and its background cube
 	(the image at its own resolution, blurred mips below), both half floats on the GPU. From Environments.load, which prepares it
 	(EnvironmentBake) and replaces its cubes in place when its file changes during development. */

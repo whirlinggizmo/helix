@@ -1,35 +1,30 @@
 package helix.scene;
 
-import helix.graphics.Graphics;
 import helix.host.Screen;
-import helix.host.Window;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.input.Input;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.scene.Transition.Fade;
 import helix.ui.Theme;
 
-/** The built-in splash: a logo (or none) centered on the theme's panel color for at least its seconds, then the next scene, once the user
-	has pressed a key, a button or a finger (IInput.activated: a browser lets audio start and fullscreen be asked for only after that; the
-	same rule everywhere), or after maxWait's seconds without one: "press any key" shows until then, or, where a press came already,
-	nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. Pushed with a Fade, it fades in from
-	the color. Extend it for another look; theme for its colors and font, prompt for the line. */
-class Splash extends Scene {
+/** The built-in splash (docs/DISPLAY_MODEL.md): a logo (or none) centered on the theme's panel color, shown on the stage (show) for at least
+	its seconds, then taken off through its transition (a half-second fade unless given), then called at the transition's middle: put the
+	next screen on the stage there. It leaves once the user has pressed a key, a button or a finger (IInput.activated: a browser lets audio
+	start and fullscreen be asked for only after that; the same rule everywhere), or after maxWait's seconds without one: "press any key"
+	shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line
+	stays for a tap. It runs itself; quick (the run option quick=1) skips its wait. theme for its colors and font, prompt for the line. */
+class Splash {
 	var logo:Null<Texture2D>;
 	var seconds:Float;
-	var next:Scene;
-	var transition:Null<Transition>;
-	var batch:Null<Batch2D>;
-	var camera = new Camera2D();
+	var transition:Transition;
+	var drawing = new Drawing2D();
 	var left = false;
 
-	/** A splash of logo (null: the theme's colors alone), shown at least seconds, then next, by transition (a half-second fade unless given). */
-	public function new(logo:Null<Texture2D>, seconds:Float, next:Scene, ?transition:Transition) {
-		super();
+	/** A splash of logo (null: the theme's colors alone), shown at least seconds, leaving by transition (a half-second fade unless given). */
+	public function new(logo:Null<Texture2D>, seconds:Float, ?transition:Transition) {
 		this.logo = logo;
 		this.seconds = seconds;
-		this.next = next;
-		this.transition = transition == null ? new Fade() : transition;
+		this.transition = transition == null ? new Transition.Fade() : transition;
 	}
 
 	/** The theme it draws with. */
@@ -39,7 +34,7 @@ class Splash extends Scene {
 	public var prompt:String = "press any key";
 
 	/** Seconds shown so far. */
-	public var shown(default, null):Float = 0.;
+	public var elapsed(default, null):Float = 0.;
 
 	/** The most seconds it waits for a press before going on without one (a game that needs no audio unlock, or one that unlocks later);
 		0, the default, waits for one as long as it takes. 0 or more (under 0, or NaN, is 0). */
@@ -51,39 +46,42 @@ class Splash extends Scene {
 		return seconds;
 	}
 
-	override public function exit():Void {
-		if (batch != null)
-			batch.destroy();
-		batch = null;
+	/** Puts it on the stage, over what's there, until it leaves, calling next at its transition's middle as it's taken off. False, doing
+		nothing, once shown. */
+	public function show(next:Void->Void):Bool {
+		if (left || elapsed > 0 || drawing.parent != null)
+			return false;
+		Stage.addChild(drawing);
+		Flow.run(dt -> {
+			elapsed += Math.max(0, dt);
+			var pressed = Input.activated || (maxWait > 0 && elapsed >= maxWait);
+			if (!left && (Flow.quick || (elapsed >= seconds && pressed))) {
+				left = true;
+				transition.run(() -> {
+					Stage.removeChild(drawing);
+					next();
+				});
+			}
+			draw();
+			return drawing.parent != null;
+		});
+		return true;
 	}
 
-	override public function update(dt:Float):Void {
-		shown += Math.max(0, dt);
-		var pressed = scenes.input.activated || (maxWait > 0 && shown >= maxWait);
-		if (!left && (scenes.quick || (shown >= seconds && pressed && !scenes.transitioning))) {
-			left = true;
-			scenes.replace(next, transition);
-		}
-	}
-
-	override public function draw():Void {
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		if (batch == null)
-			batch = new Batch2D();
-		Screen.apply(camera);
+	// The screen as it is now, drawn again.
+	function draw():Void {
 		var p = Screen.instance;
 		var vx = p.visibleX,
 			vy = p.visibleY,
 			vw = p.visibleWidth,
 			vh = p.visibleHeight;
-		Graphics.beginFrame(width, height, theme.panelColor);
-		batch.begin(camera);
+		drawing.clear();
+		drawing.rect(vx, vy, vw, vh, theme.panelColor);
 		if (logo != null) {
 			var side = Math.min(vw, vh) * .4;
-			batch.sprite(logo, vx + (vw - side) / 2, vy + (vh - side) / 2 - 20, side, side);
+			drawing.image(logo, vx + (vw - side) / 2, vy + (vh - side) / 2 - 20, side, side);
 		}
-		if (!scenes.input.activated)
-			batch.drawText(prompt, vx + vw / 2, vy + vh * .8, theme.textSize, theme.disabledTextColor, Center, theme.font);
-		batch.end();
+		if (!Input.activated)
+			drawing.drawText(prompt, vx + vw / 2, vy + vh * .8, theme.textSize, theme.disabledTextColor, Center, theme.font);
 	}
 }

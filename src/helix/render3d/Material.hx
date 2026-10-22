@@ -15,7 +15,7 @@ class Material {
 	@:hot static var nextId = 1;
 
 	// Which one it is, for sorting alike draws together.
-	@:allow(helix.render3d.Stage3D) var id = nextId++;
+	@:allow(helix.render3d.Renderer3D) var id = nextId++;
 
 	var blendAlways = false;
 	var parameters:Null<ShaderParameters>;
@@ -105,16 +105,16 @@ class Material {
 	// The hit flash (helix.shaders.HitFlash) and rim light (helix.shaders.Rim) any material shows, drawn by the stage's lit program and every
 	// surface shader alike: off until one is attached. The flash: its color (0xAARRGGBB, sRGB, its alpha how strong), how much of it (0..1),
 	// and when fading, over how many seconds of the stage's time (0: held), from when a stage first drew it (NaN until then).
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashColor = 0xffffffff;
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashAmount = 0.;
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashSeconds = 0.;
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var flashStart = Math.NaN;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashColor = 0xffffffff;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashAmount = 0.;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashSeconds = 0.;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashStart = Math.NaN;
 	// The rim: its color (0xAARRGGBB, sRGB, its alpha how strong; black for none) and power (how tight to the silhouette, above 0).
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimColor = 0xff000000;
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) var rimPower = 3.;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var rimColor = 0xff000000;
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var rimPower = 3.;
 
 	// How much of the flash shows at the stage's time: held, or fading from all of it to none over its seconds since a stage first drew it.
-	@:allow(helix.shaders) @:allow(helix.render3d.Stage3D) function flashAt(time:Float):Float {
+	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) function flashAt(time:Float):Float {
 		if (flashSeconds <= 0)
 			return flashAmount;
 		if (Math.isNaN(flashStart))

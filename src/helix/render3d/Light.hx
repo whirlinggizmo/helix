@@ -4,7 +4,7 @@ package helix.render3d;
 	never holds a bare Light). Its color is 0xAARRGGBB (sRGB, its alpha ignored), its intensity a multiplier: the earlier frameworks' sun is
 	about 3. Under a model, a lamp's bulb, it moves with it; it has children as any node.
 
-	A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Stage3D.drawShadows): from the models that cast
+	A directional light or a spot may cast shadows (shadowCasting; a stage draws them with Renderer3D.drawShadows): from the models that cast
 	them onto those that receive them (Model.shadowCasting, shadowReceiving; both by default). A directional light's map covers what the
 	camera sees out to its shadow distance; a spot's, its cone out to its range (or the shadow distance, the nearer). */
 abstract class Light extends Node3D {

@@ -1,14 +1,13 @@
 import helix.audio.Audio;
 import helix.audio.AudioStream;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Textures;
 import helix.time.Time;
 import helix.host.ScreenShape;
@@ -18,15 +17,15 @@ import helix.host.ScreenShape;
 	In a browser quitting stops the frame loop and runs the shutdown, and the canvas keeps the last frame. Q quits now, everywhere; Escape where
 	quitting closes a window (in a browser Escape is the browser's: it leaves fullscreen). */
 class App extends helix.App {
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	var text = new Drawing2D();
 	var quitAt = 0.;
 	var quitting = false;
 
 	override public function init():Void {
 		Window.title = "HeliX quit";
 		Window.requestSize(640, 200);
-		batch = new Batch2D();
+		Stage.color = 0xff1e2430;
+		Stage.addChild(text);
 		quitAt = Time.time + 1;
 		Audio.loadStream("audio/music/a_hero_is_born.mp3", stream -> play(stream));
 	}
@@ -53,28 +52,22 @@ class App extends helix.App {
 			while (Time.time < busyUntil) {}
 			Host.quit();
 		}
-		// The text in the design for the window's shape, wrapped to what's visible of it.
+		// The text in the design for the window's shape, wrapped to what's visible of it, drawn again each update.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		presentation.apply(camera);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth;
-		Graphics.beginFrame(camera.framebufferWidth, camera.framebufferHeight, 0xff1e2430);
-		batch.begin(camera);
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth;
+		text.clear();
 		var y = vy + 12;
-		y += batch.drawTextWrapped("HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xfff5f5f5) + 8;
-		batch.drawTextWrapped(quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
+		y += text.drawTextWrapped("HeliX quit   Q: quit now", vx + 12, y, 16, vw - 24, 0xfff5f5f5) + 8;
+		text.drawTextWrapped(quitting ? "quit requested: shutdown runs after this frame" : 'loading, stalling and quitting in ${Math.round(Math.max(0, quitAt - Time.time) * 10) / 10} s',
 			vx
 			+ 12, y, 16, vw
 			- 24, 0xffc8c8c8);
-		batch.end();
-		Graphics.endFrame();
 	}
 
 	override public function cleanup():Void {
 		trace("quit: shutdown");
 		TestHarness.publish({shutdown: true});
-		batch.destroy();
 	}
 }

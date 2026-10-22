@@ -3,7 +3,7 @@ package helix.shaders;
 import helix.render3d.Material;
 
 /** A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time
-	(Stage3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn
+	(Renderer3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn
 	by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too), mixed in
 	after the exposure, so the tone mapping applies to it as to the light. A HitFlash is a view of its material's: two on one material share
 	it. */

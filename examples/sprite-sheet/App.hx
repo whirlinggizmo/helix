@@ -1,5 +1,4 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.ScreenShape;
@@ -7,32 +6,40 @@ import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.AnimationDirection;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.SpriteAnimator;
 import helix.render2d.SpriteSheet;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
+import helix.render2d.View2D;
 import helix.time.Time;
 
 /** A sprite sheet (the shared sheets/gizmos.json and .png, TexturePacker's JSON Hash, made by tools/gen_sprite_sheet.py: trimmed frames, five of them
 	packed turned a quarter) and its animations, found from the frames' numbered names ("walk_01.png": "walk"):
 	- a blob walking in low hops, a Sprite2D a SpriteAnimator shows its frames on, walking to and fro: facing its way by a negative x scale,
 	  its feet on the ground by its frames' pivot
-	- gears drawn by Batch2D.sheetFrame with no node, one animated, one bigger and turned as a whole
-	- the sheet's texture beside them, the blob's frame boxed in it (a turned frame's box is tall where the frame is wide)
+	- gears, Sprite2Ds shown a frame by setFrame with no animator of their own, following one SpriteAnimator: one bigger and turned as a whole
+	- the sheet's texture beside them, an image in a Drawing2D, the blob's frame boxed in it (a turned frame's box is tall where the frame is
+	  wide)
+	The world is in framebuffer pixels, shown by a View2D; the text is on the stage.
 	Space pauses, the up and down arrows change the speed, P plays the walk back and forth (an animation added by frame, PingPong). Escape quits
 	where quitting means anything. */
 class App extends helix.App {
 	static inline var SCALE = 4.;
 
-	var stage = new Stage2D();
-	var batch:Batch2D;
+	// The world, in framebuffer pixels: the ground, the blob, the gears and the sheet, in that order.
+	var world = new Node2D();
 	var camera = new Camera2D();
-	var hud = new Camera2D();
+	var groundLine = new Drawing2D();
+	var sheetImage = new Drawing2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sheet:Null<SpriteSheet>;
 	var blob = new Sprite2D(null);
+	var gear = new Sprite2D(null);
+	var bigGear = new Sprite2D(null);
 	var blobs:Null<SpriteAnimator>;
 	var gears:Null<SpriteAnimator>;
 	var walk = 0.;
@@ -44,9 +51,20 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX sprite-sheet";
 		Window.requestSize(960, 600);
-		batch = new Batch2D();
+		Stage.color = 0xff1d2230;
 		blob.setScale(SCALE, SCALE);
-		stage.add(blob);
+		gear.setScale(SCALE, SCALE);
+		bigGear.setScale(SCALE * 1.5, SCALE * 1.5);
+		// Hidden until the sheet is in: a sprite with no texture would draw as a plain square.
+		gear.visible = bigGear.visible = false;
+		world.addChild(groundLine);
+		world.addChild(blob);
+		world.addChild(gear);
+		world.addChild(bigGear);
+		world.addChild(sheetImage);
+		Stage.addChild(new View2D(world, camera));
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 		SpriteSheet.load("sheets/gizmos.json", loaded -> {
 			sheet = loaded;
 			var frames = loaded.findAnimation("walk").frames;
@@ -64,11 +82,11 @@ class App extends helix.App {
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
-		camera.pixels(1);
+		// A world unit a framebuffer pixel, from the window's top-left.
+		camera.zoom = 1;
+		camera.setPosition(width / 2, height / 2);
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 
 		var speed = blobs == null ? 1. : blobs.speed;
 		if (input.isFramePressed(Key.Space))
@@ -96,25 +114,26 @@ class App extends helix.App {
 		walk = Math.max(0, Math.min(right - left, walk));
 		blob.setPosition(left + walk, ground);
 		blob.scaleX = heading * SCALE;
-
-		Graphics.beginFrame(width, height, 0xff1d2230);
-		batch.begin(camera);
-		batch.rect(0, ground, width, 2, 0xff4a5468);
-		stage.draw(batch, camera);
+		groundLine.clear();
+		groundLine.rect(0, ground, width, 2, 0xff4a5468);
+		sheetImage.clear();
 		if (sheet != null) {
-			// Gears with no node: one animated, one bigger and turned as a whole.
-			batch.sheetFrame(sheet, gears.frame, width * .2, height * .25, SCALE, SCALE);
-			batch.sheetFrame(sheet, gears.frame, width * .4, height * .25, SCALE * 1.5, SCALE * 1.5, Time.time * .5);
+			// The gears: the animated frame on both, one bigger and turned as a whole.
+			gear.visible = bigGear.visible = true;
+			gear.setFrame(sheet, gears.frame);
+			gear.setPosition(width * .2, height * .25);
+			bigGear.setFrame(sheet, gears.frame);
+			bigGear.setPosition(width * .4, height * .25);
+			bigGear.rotation = Time.time * .5;
 			// The sheet itself, the blob's frame boxed where it's packed.
 			var t = sheet.texture, sx = width * .66, sy = height * .12, s = 2.;
-			batch.rect(sx, sy, t.width * s, t.height * s, 0xff2a3142);
-			batch.image(t, sx, sy, t.width * s, t.height * s);
+			sheetImage.rect(sx, sy, t.width * s, t.height * s, 0xff2a3142);
+			sheetImage.image(t, sx, sy, t.width * s, t.height * s);
 			var f = sheet.getFrame(blobs.frame);
 			var fw = f.rotated ? f.height : f.width,
 				fh = f.rotated ? f.width : f.height;
-			batch.frame(sx + f.x * s, sy + f.y * s, fw * s, fh * s, 1, 0xffffd040);
+			sheetImage.frame(sx + f.x * s, sy + f.y * s, fw * s, fh * s, 1, 0xffffd040);
 		}
-		batch.camera = hud;
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
@@ -122,20 +141,16 @@ class App extends helix.App {
 			var f = sheet.getFrame(blobs.frame);
 			'walk frame ${blobs.frameIndex + 1} of ${blobs.animation.frames.length}: ${f.name}, ${f.width} x ${f.height} of ${f.sourceWidth} x ${f.sourceHeight}${f.rotated ? ", packed turned" : ""}';
 		};
-		batch.drawText("HeliX sprite-sheet: TexturePacker's JSON, trimmed and turned frames, animations", vx + 20, vy + 20, 20, 0xffebeef5);
-		batch.drawText(status, vx + 20, vy + 46, 15, 0xff8c929e);
-		batch.drawText('speed ${speed}x${paused ? " (paused)" : ""}   ${pingPong ? "back and forth" : "forward"}   space pause, up/down speed, P back and forth',
-			vx
-			+ 20, vy
-			+ 66, 15, 0xff8c929e);
-		fps.draw(batch, vx + vw - 150, vy + 4);
-		batch.end();
-		Graphics.endFrame();
+		hud.clear();
+		hud.drawText("HeliX sprite-sheet: TexturePacker's JSON, trimmed and turned frames, animations", vx + 20, vy + 20, 20, 0xffebeef5);
+		hud.drawText(status, vx + 20, vy + 46, 15, 0xff8c929e);
+		hud.drawText('speed ${speed}x${paused ? " (paused)" : ""}   ${pingPong ? "back and forth" : "forward"}   space pause, up/down speed, P back and forth',
+			vx + 20, vy + 66, 15, 0xff8c929e);
+		fps.setPosition(vx + vw - 150, vy + 4);
 	}
 
 	override public function cleanup():Void {
 		if (sheet != null)
 			sheet.destroy();
-		batch.destroy();
 	}
 }

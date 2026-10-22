@@ -11,7 +11,7 @@ import haxe.io.Bytes;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
 	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform)
-	places what follows, so a shape or text can be drawn turned and scaled; a Stage2D draws its nodes so. What is drawn with an effect (effect: a
+	places what follows, so a shape or text can be drawn turned and scaled; a Renderer2D draws its nodes so. What is drawn with an effect (effect: a
 	sprite shader) goes through it in place of the framework's sprite program, its vertices in an upload of their own. */
 class Batch2D {
 	var vertices = 0;
@@ -118,6 +118,7 @@ class Batch2D {
 			particles.startFrame();
 		texture = font.texture;
 		sampling = texture.sampling;
+		samplingOverride = null;
 		resetTransform();
 	}
 
@@ -153,7 +154,7 @@ class Batch2D {
 		return value;
 	}
 
-	/** The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Stage2D's draw sets it
+	/** The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Renderer2D's draw sets it
 		to the stage's time. */
 	public var time:Float = 0.;
 
@@ -313,12 +314,18 @@ class Batch2D {
 	}
 
 	/** Later quads sample this texture, as its sampling is now (Texture2D.sampling). */
-	public function useTexture(value:Texture2D):Void
-		if (value != texture || value.sampling != sampling) {
+	public function useTexture(value:Texture2D):Void {
+		var wanted = samplingOverride != null ? samplingOverride : value.sampling;
+		if (value != texture || wanted != sampling) {
 			closeRun();
 			texture = value;
-			sampling = value.sampling;
+			sampling = wanted;
 		}
+	}
+
+	/** How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in
+		one frame (a Sprite2D's sampling, Drawing2D.image's). */
+	public var samplingOverride:Null<Sampling>;
 
 	function closeRun():Void {
 		var end = effect == null ? vertices : effectVertices;
@@ -469,7 +476,7 @@ class Batch2D {
 
 	// frame of texture filling the box x, y, width x height (its whole picture's, untrimmed): its texels where trimming left them, upright.
 
-	@:allow(helix.render2d.Stage2D)
+	@:allow(helix.render2d.Renderer2D)
 	function frameQuad(texture:Texture2D, frame:SpriteFrame, x:Float, y:Float, width:Float, height:Float, tint:Int):Void {
 		useTexture(texture);
 		var sx = width / frame.sourceWidth, sy = height / frame.sourceHeight;

@@ -48,7 +48,7 @@ class UiTests {
 	// dropdown's list and rows only while it's open; none for a hidden widget, an unknown one or an unknown part. An autopilot finding its points
 	// through it drags a slider along its track and clicks a dropdown's row.
 	static function points(font:Font2D):Void {
-		var stage = new helix.render2d.Stage2D(),
+		var stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(1600, 1200);
 		camera.pixels(2);
@@ -60,8 +60,8 @@ class UiTests {
 			null, name -> ui.press(name), null, (target, part, x, y, out) -> ui.computePoint(target, part, x, y, out));
 		var input = pilot.input;
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel(),
 			volume = ui.slider("Volume", 0, 100, 0, 0, "volume"),
 			tint = ui.colorPicker(0xffff0000, true, "tint"),
@@ -139,13 +139,13 @@ class UiTests {
 	// row (spanning its height); the theme's faceColor; a theme changed shows at the next frame; never focused or picked.
 	static function separators(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel(),
 			above = ui.button("Above"),
 			across = ui.separator(),
@@ -213,13 +213,13 @@ class UiTests {
 	// the order made; a tile is clicked or activated, marked selected, and its picture arrives later.
 	static function tiles(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var grid = Layout2D.column(), cells = [];
 		grid.gap = 8;
 		for (r in 0...2) {
@@ -289,13 +289,13 @@ class UiTests {
 	// once arranged again; a layout a game sized itself, and a label's own size and color, are kept; another theme assigned is followed alike.
 	static function theming(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(1000, 1600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel(),
 			title = ui.label("Title"),
 			plain = ui.label("Plain"),
@@ -691,13 +691,13 @@ class UiTests {
 	// slider by keys and by a drag, a list by keys, the wheel and clicks, a disabled button.
 	static function widgets(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel(),
 			play = ui.button("Play"),
 			sound = ui.toggle("Sound", true),
@@ -802,13 +802,13 @@ class UiTests {
 	// the keys the UI's meanwhile.
 	static function typing(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input),
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input),
 			name = ui.textField("", "your name", 8);
 		var layout = holding(sized(Fixed(300), Fit, Column), [name.layout]);
 		var batch = new helix.render2d.Batch2D(new CountingGraphics());
@@ -865,9 +865,9 @@ class UiTests {
 		check(C.fromHsv(-1, 2, 2, 300) == 0xffff0000 && C.fromHsv(0, 1, 1, -5) == 0x00ff0000, "Out of range clamped");
 		// Round trips: every 8-bit color of a sweep comes back from its HSV as it went in.
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
-		var ui = new helix.ui.Ui(stage, camera, new helix.scene.Pointer(input), input), picker = ui.colorPicker(0xff000000),
+		var ui = new helix.ui.Ui(null, stage.root, camera, new helix.scene.Pointer(input), input), picker = ui.colorPicker(0xff000000),
 			opaque = ui.colorPicker(0xff123456, false), wrong = 0;
 		var r = 0;
 		while (r < 256) {
@@ -933,13 +933,13 @@ class UiTests {
 	// showing the color once left; the format cycled by its button (clicked, pressed by name, activated) and decimal channels typed; disabled.
 	static function colors(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 900);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel(),
 			above = ui.button("Above"),
 			picker = ui.colorPicker(0xffff0000, true, "tint"),
@@ -1155,13 +1155,13 @@ class UiTests {
 	// needed or never, the content narrowing for it; theme changes at the next frame.
 	static function scrolling(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var top = ui.button("Top"),
 			area = ui.scrollArea(200, "area"),
 			buttons = [for (i in 0...10) ui.button('B$i')],
@@ -1388,13 +1388,13 @@ class UiTests {
 		check(WidgetState.dim(0xff2e3448) == 0x7f2e3448
 			&& WidgetState.dim(0x00112233) == 0x00112233, "Dimmed: the color at half its alpha");
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 1200);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var play = ui.button("Play"),
 			off = ui.button("Locked"),
 			sound = ui.toggle("Sound", true),
@@ -1578,13 +1578,13 @@ class UiTests {
 	// theme's at the next frame; none for null or "".
 	static function titled(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var panel = ui.panel("menu"), play = ui.button("Play");
 		panel.add(play);
 		panel.layout.setSizing(Fixed(300), Fit);
@@ -1644,13 +1644,13 @@ class UiTests {
 	// it closes it and does nothing else) and the keys, and is placed below its face, or above it at the bottom, kept on screen across.
 	static function dropdowns(font:Font2D):Void {
 		var input = new helix.input.InputState(),
-			stage = new helix.render2d.Stage2D(),
+			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(800, 600);
 		camera.pixels(1);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new helix.ui.Ui(stage, camera, pointer, input);
+		pointer.addRenderer2D(stage, camera);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
 		var sizes = ["Small", "Medium", "Large", "Huge", "Tiny"];
 		var area = ui.scrollArea(80, "area"),
 			size = ui.dropdown(sizes, 0, "size"),

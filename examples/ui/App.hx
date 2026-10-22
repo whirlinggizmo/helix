@@ -17,16 +17,13 @@ import helix.host.Window;
 import helix.input.Actions;
 import helix.input.Anchor;
 import helix.input.Binding;
-import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
 import helix.input.PadAxis;
 import helix.input.PadButton;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
-import helix.scene.Pointer;
 import helix.time.Time;
 import helix.ui.Layout2D;
 import helix.ui.Button;
@@ -43,7 +40,7 @@ import helix.ui.Toggle;
 import helix.ui.Ui;
 import helix.host.ScreenShape;
 
-/** A game's menus (helix.ui): a main menu, settings, controls and a scrolling list of levels, the main menu in a nine-slice panel, the others
+/** A game's menus (helix.ui), a Ui on the stage: a main menu, settings, controls and a scrolling list of levels, the main menu in a nine-slice panel, the others
 	in the theme's rounded ones, every widget's corners rounded too, the headings keeping more room under them (a margin, Layout2D.setMargin), laid out in a 1280 x 720 design fitted to the window, used alike by the
 	pointer, keys (arrows, Tab, Enter, Escape) and a pad (D-pad, South, East). Nothing is called back: each frame the example asks the widgets
 	what happened. Settings set the master, music and effects buses (Audio.master, music, effects) with music playing under them, a short
@@ -84,13 +81,10 @@ class App extends helix.App {
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
 
-	var stage = new Stage2D();
-	var batch:Batch2D;
-	var camera = new Camera2D();
-	var hud = new Camera2D();
-	var pointer:Pointer;
 	var ui:Null<Ui>;
 	var fps = new FpsOverlay();
+	// The status and the hint, drawn again each update over the widgets.
+	var text = new Drawing2D();
 	var layout:Layout2D;
 	var screen = "main";
 	var status = "";
@@ -144,7 +138,7 @@ class App extends helix.App {
 
 	override public function init():Void {
 		Window.title = "HeliX ui";
-		batch = new Batch2D();
+		Stage.color = BACKGROUND;
 		if (Host.getOption("audio", "1") != "0") {
 			Audio.instance.loadStream("audio/music/a_hero_is_born.mp3", stream -> playMusic(stream));
 			Audio.instance.loadClip("audio/sfx/click_004.ogg", clip -> click = clip);
@@ -152,7 +146,7 @@ class App extends helix.App {
 		var script = Host.getOption("autopilot", "");
 		if (script == "") {
 			Window.requestSize(1000, 600);
-			build(Input.instance);
+			build();
 		} else {
 			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
 			Assets.load(script, bytes -> {
@@ -163,7 +157,7 @@ class App extends helix.App {
 				busesKey = "autopilot-audio";
 				backgroundKey = "autopilot-background";
 				qualityKey = "autopilot-quality";
-				build(pilot.input);
+				build();
 			}, message -> throw 'Autopilot load failed: ' + message);
 		}
 	}
@@ -174,13 +168,13 @@ class App extends helix.App {
 		stream.release();
 	}
 
-	// The screens, read from input (the window's, or the autopilot's), and the controls and the buses' volumes loaded.
-	function build(input:IInput):Void {
-		pointer = new Pointer(input);
-		pointer.addStage2D(stage, camera);
-		var ui = new Ui(stage, camera, pointer, input);
+	// The screens, read from Input (the window's, or the autopilot's while it plays), and the controls and the buses' volumes loaded.
+	function build():Void {
+		var ui = new Ui();
 		this.ui = ui;
-		actions = new Actions(input);
+		Stage.addChild(text);
+		Stage.addChild(fps);
+		actions = new Actions(Input.instance);
 		actions.bind("jump", Keyboard(Key.Space));
 		actions.bind("jump", Pad(PadButton.South));
 		actions.bind("move", KeyboardPair(Key.Left, Key.Right));
@@ -430,13 +424,9 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		if (ui == null) {
-			// The autopilot's script still loading.
-			Graphics.beginFrame(width, height, 0xff14161c);
-			Graphics.endFrame();
+		// The autopilot's script still loading: the stage empty.
+		if (ui == null)
 			return;
-		}
 		// The autopilot's tick, none while a sample waits for its frame: the UI then isn't updated, as no input was played.
 		var waiting = false;
 		if (pilot != null && !pilot.done) {
@@ -446,16 +436,13 @@ class App extends helix.App {
 		// The design for the window's shape, grown to its edges: the layout arranged into all that's visible.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth,
 			vh = presentation.visibleHeight;
 		for (row in rows)
 			row.bindings.text = actions.capturing && rebinding == row.action ? "Press a key or button..." : describe(row.action);
-		Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
-		if (!waiting)
-			pointer.update();
+		Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
 		// While a rebind waits for its press, the screen waits too: the press is the binding's, not the menu's.
 		if (!actions.capturing && !waiting) {
 			ui.update();
@@ -535,19 +522,14 @@ class App extends helix.App {
 		bar.value = loading;
 		corner.text = 'focus: ${ui.focusedName == "" ? "none" : ui.focusedName}${ui.capturingKeys ? " (keys)" : ""}';
 		fps.update(dt, Time.frameCpu);
-
-		Graphics.beginFrame(width, height, background.color);
-		batch.begin(camera);
-		stage.draw(batch, camera);
-		batch.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xffc8d0e8, Center);
-		batch.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0xff7a8298, Center);
-		// The frame rate in the window's own pixels, in the same batch.
-		hud.setViewport(width, height);
-		hud.pixels(Window.pixelRatio);
-		batch.camera = hud;
-		fps.draw(batch, 12, 10);
-		batch.end();
-		Graphics.endFrame();
+		Stage.color = background.color;
+		text.clear();
+		text.drawTextWrapped(status, vx + vw / 2, vy + vh - 80, 18, vw - 32, 0xffc8d0e8, Center);
+		text.drawTextWrapped("pointer, arrows / Tab / Enter / Escape, or a pad", vx + vw / 2, vy + 40, 16, vw - 32, 0xff7a8298, Center);
+		// The frame rate in the window's own pixels: its place and size in the design's units, a logical pixel being pixelRatio / scaleX of them.
+		var pixel = Window.pixelRatio / presentation.scaleX;
+		fps.size = 16 * pixel;
+		fps.setPosition(vx + 12 * pixel, vy + 10 * pixel);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			var game:Dynamic = {};
@@ -568,7 +550,4 @@ class App extends helix.App {
 		}, () -> status = "Rebind cancelled"))
 			rebinding = row.action;
 	}
-
-	override public function cleanup():Void
-		batch.destroy();
 }

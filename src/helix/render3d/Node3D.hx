@@ -23,8 +23,20 @@ class Node3D extends Node {
 	var world = new Mat4();
 	var localDirty = true;
 	// At a tree's top, counted up by every addChild and removeChild below it: a stage keeps its lists of kinds until its root's count moves.
-	@:allow(helix.render3d.Stage3D)
+	@:allow(helix.render3d.Renderer3D)
 	var structure = 0;
+
+	// Whether it's a kind that draws itself (Drawing3D), drawn by drawOwn after the renderer's opaque models.
+	@:allow(helix.render3d.Renderer3D)
+	var drawsOwn(get, never):Bool;
+
+	function get_drawsOwn():Bool
+		return false;
+
+	// Draws itself through camera with renderer's GPU, first beginning the batch the kinds share (Renderer3D.ownBatch), last ending it.
+
+	@:allow(helix.render3d.Renderer3D)
+	function drawOwn(camera:Camera3D, renderer:Renderer3D, first:Bool, last:Bool):Void {}
 
 	/** The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its
 		level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one
@@ -464,14 +476,14 @@ class Node3D extends Node {
 		return true;
 	}
 
-	/** Its world matrix as the last update left it (Stage3D.draw updates it). */
+	/** Its world matrix as the last update left it (Renderer3D.draw updates it). */
 	public var worldMatrix(get, never):Mat4;
 
 	function get_worldMatrix():Mat4
 		return world;
 
 	/** Brings its world matrix up to date from parentWorld when it or its parent changed; whether it changed. A stage calls this as it walks. */
-	@:allow(helix.render3d.Stage3D)
+	@:allow(helix.render3d.Renderer3D)
 	function update(parentWorld:Null<Mat4>, parentChanged:Bool):Bool {
 		if (!localDirty && !parentChanged)
 			return false;

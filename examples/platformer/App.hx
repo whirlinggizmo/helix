@@ -2,31 +2,35 @@ import helix.assets.Saves;
 import helix.collision.Body2D;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.ScreenShape;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.CameraFollow2D;
+import helix.render2d.Node2D;
+import helix.render2d.Sprite2D;
 import helix.render2d.SpriteAnimator;
 import helix.render2d.SpriteSheet;
+import helix.render2d.Stage;
+import helix.render2d.Text2D;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
+import helix.render2d.View2D;
 import helix.time.Ticker;
 import helix.time.Time;
 
-/** A platformer's pieces together, in a level wider and taller than the view (a tile a world unit, # solid, G a gear):
+/** A platformer's pieces together, in a level wider and taller than the view (a tile a world unit, # solid, G a gear), its nodes shown
+	through a View2D on the stage, the text over it on the stage in pixels:
 	- the player an arcade body (helix.collision.Body2D) run in a 60 Hz Ticker: gravity, landing, walls, its head; a jump a moment after
 	  leaving a ledge (coyote time, by its air time) or pressed a moment before landing (buffered), cut short when let go
-	- drawn as the sheet's blob (sheets/gizmos.json) between its steps (Body2D.getDrawnX), facing its way: walking in low hops in step with its
-	  speed, stretched rising and rounder falling, breathing and blinking while it stands
-	- a CameraFollow2D following where it's drawn: a dead zone, catching up smoothly, kept inside the level; shaken by a hard landing, a
-	  bumped head and a gear collected, K for a big one
-	- gears spinning (Batch2D.sheetFrame), collected by touching them (Collide2D.rectCircle)
+	- drawn as the sheet's blob (sheets/gizmos.json), a Sprite2D placed between its steps (Body2D.getDrawnX), facing its way: walking in
+	  low hops in step with its speed, stretched rising and rounder falling, breathing and blinking while it stands
+	- a CameraFollow2D following where it's drawn, moving the view's camera: a dead zone, catching up smoothly, kept inside the level;
+	  shaken by a hard landing, a bumped head and a gear collected, K for a big one
+	- gears spinning (Sprite2D.setFrame), collected by touching them (Collide2D.rectCircle)
 	- a save (helix.assets.Saves, "platformer.json"): the gears collected and where the player stood, written at each gear and read at the
 	  start, so a visit goes on where the last left off; R starts again, removing it
 	The arrows or A and D move, Space, Up, W or Z jump. Escape quits where quitting means anything. */
@@ -54,9 +58,15 @@ class App extends helix.App {
 	// World units per texel of the sheet: its 24-texel pictures about a tile wide.
 	static inline var TEXEL = 1 / 20;
 
-	var batch:Batch2D;
+	var world = new Node2D();
+	// The world's layers: the tiles, the gears over them, the player over both.
+	var tileLayer = new Node2D();
+	var gearLayer = new Node2D();
 	var camera = new Camera2D();
-	var hud = new Camera2D();
+	var body = new Sprite2D(null);
+	var gearSprites:Array<Sprite2D> = [];
+	var title = new Text2D("HeliX platformer: an arcade body, a sprite sheet, a following camera", 20, 0xffebeef5);
+	var status = new Text2D("", 15, 0xff8c929e);
 	var fps = new FpsOverlay();
 	var ticker:Ticker;
 	var follow:CameraFollow2D;
@@ -76,7 +86,14 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX platformer";
 		Window.requestSize(960, 600);
-		batch = new Batch2D();
+		Stage.color = 0xff1d2230;
+		world.addChild(tileLayer);
+		world.addChild(gearLayer);
+		world.addChild(body);
+		Stage.addChild(new View2D(world, camera));
+		Stage.addChild(title);
+		Stage.addChild(status);
+		Stage.addChild(fps);
 		ticker = new Ticker(Input.instance);
 		player.gravity = 40;
 		player.maxFallSpeed = 18;
@@ -94,9 +111,33 @@ class App extends helix.App {
 			looks = new SpriteAnimator(loaded);
 			spin = new SpriteAnimator(loaded);
 			spin.play("gear");
+			for (_ in 0...total) {
+				var gear = new Sprite2D(null);
+				gear.setScale(TEXEL * .8, TEXEL * .8);
+				gearSprites.push(gear);
+				gearLayer.addChild(gear);
+			}
 		}, message -> failure = message);
-		Textures.load("textures/tiles.png", false, loaded -> tiles = loaded, message -> failure = message);
+		Textures.load("textures/tiles.png", false, loaded -> {
+			tiles = loaded;
+			lay(loaded);
+		}, message -> failure = message);
 		Saves.read("platformer.json", text -> restore(haxe.Json.parse(text)), () -> saved = "no save yet", message -> failure = message);
+	}
+
+	// The level's solid tiles as sprites a world unit square, under everything else: grass on top, stone under it.
+	function lay(texture:Texture2D):Void {
+		for (row in 0...LEVEL.length)
+			for (column in 0...LEVEL[row].length)
+				if (LEVEL[row].charAt(column) == "#") {
+					var under = row > 0 && LEVEL[row - 1].charAt(column) == "#";
+					var tile = new Sprite2D(texture);
+					tile.setRegion(under ? 62 : 2, 2, 16, 16);
+					tile.setSize(1, 1);
+					tile.setPivot(0, 0);
+					tile.setPosition(column, row);
+					tileLayer.addChild(tile);
+				}
 	}
 
 	// A save read back: the gears it collected gone, the player where it stood.
@@ -181,9 +222,8 @@ class App extends helix.App {
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		ticker.advance(Time.clock.elapsed, tick);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
-		camera.zoom = height / 9;
+		// A tile a ninth of the window's height; the view sets the camera's viewport as it draws.
+		camera.zoom = Window.framebufferHeight / 9;
 		// Drawn between its last two steps, and followed there.
 		var t = ticker.fraction;
 		var px = player.getDrawnX(t) + player.width / 2,
@@ -197,45 +237,29 @@ class App extends helix.App {
 			looks.update(dt);
 			spin.update(dt);
 		}
+		if (sheet != null) {
+			for (i in 0...gearSprites.length) {
+				var gear = gearSprites[i];
+				gear.visible = i < gears.length;
+				if (gear.visible) {
+					gear.setFrame(sheet, spin.frame);
+					gear.setPosition(gears[i].x, gears[i].y);
+				}
+			}
+			// In the air, stretched while rising, rounder falling.
+			body.setFrame(sheet, player.grounded ? looks.frame : sheet.findAnimation("jump").frames[player.velocityY < 0 ? 0 : 1]);
+			body.setScale(facing * TEXEL, TEXEL);
+			body.setPosition(px, py);
+		}
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
-
-		Graphics.beginFrame(width, height, 0xff1d2230);
-		batch.begin(camera);
-		// The tiles in view.
-		if (tiles != null) {
-			var left = Math.floor(camera.screenToWorldX(0)),
-				right = Math.ceil(camera.screenToWorldX(width));
-			var top = Math.floor(camera.screenToWorldY(0)),
-				bottom = Math.ceil(camera.screenToWorldY(height));
-			for (row in Std.int(Math.max(0, top))...Std.int(Math.min(LEVEL.length, bottom)))
-				for (column in Std.int(Math.max(0, left))...Std.int(Math.min(LEVEL[row].length, right)))
-					if (LEVEL[row].charAt(column) == "#") {
-						// Grass on top, stone under it.
-						var under = row > 0 && LEVEL[row - 1].charAt(column) == "#";
-						batch.image(tiles, column, row, 1, 1, 0xffffffff, under ? 62 : 2, 2, 16, 16);
-					}
-		}
-		if (sheet != null) {
-			for (gear in gears)
-				batch.sheetFrame(sheet, spin.frame, gear.x, gear.y, TEXEL * .8, TEXEL * .8);
-			// In the air, stretched while rising, rounder falling.
-			var frame = player.grounded ? looks.frame : sheet.findAnimation("jump").frames[player.velocityY < 0 ? 0 : 1];
-			batch.sheetFrame(sheet, frame, px, py, facing * TEXEL, TEXEL);
-		}
-		batch.camera = hud;
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		batch.drawText("HeliX platformer: an arcade body, a sprite sheet, a following camera", vx + 20, vy + 20, 20, 0xffebeef5);
-		batch.drawText(failure != null ? 'failed: $failure' : 'gears $collected of $total   $saved   arrows or A, D to move, Space, Up, W or Z to jump, K to shake, R to start again',
-			vx
-			+ 20, vy
-			+ 46, 15, 0xff8c929e);
-		fps.draw(batch, vx + vw - 150, vy + 4);
-		batch.end();
-		Graphics.endFrame();
+		title.setPosition(vx + 20, vy + 20);
+		status.text = failure != null ? 'failed: $failure' : 'gears $collected of $total   $saved   arrows or A, D to move, Space, Up, W or Z to jump, K to shake, R to start again';
+		status.setPosition(vx + 20, vy + 46);
+		fps.setPosition(vx + vw - 150, vy + 4);
 	}
 
 	override public function cleanup():Void {
@@ -243,6 +267,5 @@ class App extends helix.App {
 			sheet.destroy();
 		if (tiles != null)
 			Textures.release(tiles);
-		batch.destroy();
 	}
 }

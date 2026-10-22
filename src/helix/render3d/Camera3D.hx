@@ -3,7 +3,7 @@ package helix.render3d;
 /** A 3D view, perspective or orthographic (projection), as a node: it sees from its world position down its -z, its +y up (its scale
 	ignored), so one parented to what it should follow (a car's driver's seat) rides along, and setView places it to look from an eye at a
 	target. Right-handed with +y up, seen in a viewport that is the whole framebuffer or an area of it (setViewportArea), as Camera2D's.
-	Drawn through by Stage3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its
+	Drawn through by Renderer3D.draw and Batch3D.begin whether or not it is on a stage. Distances are world units; angles radians. Its
 	values are properties that clamp (fovY, near, far, orthographicHeight, minAspect, lensShiftX and lensShiftY), each held to its range as its doc comment says. */
 class Camera3D extends Node3D {
 	// The least a clip distance is from 0 (perspective near) or from its partner (near from far), and the least orthographic height:

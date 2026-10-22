@@ -21,9 +21,9 @@ typedef Glyph2D = {
 	pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for. */
 class Font2D {
 	var glyphs:Array<Null<Glyph2D>>;
-	// A TrueType font's own: the file, kept for kerning pairs as they're asked for, and the scale from its units to font pixels.
-	var trueType:Null<TrueType>;
-	var unitScale = 0.;
+	// A TrueType font's kerning, in font pixels, asked of its file as pairs come (a function, so a program that loads no TrueType font
+	// carries none of the reader), and the pairs known.
+	var kerningOf:Null<(Int, Int) -> Float>;
 	var kerning = new Map<Int, Float>();
 
 	function new(texture:Texture2D, glyphs:Array<Null<Glyph2D>>, size:Float, ascent:Float, descent:Float, distanceField:Bool) {
@@ -57,11 +57,11 @@ class Font2D {
 	/** How far the pen moves besides the advance between characters left and right, in font pixels: usually negative, closing a pair such as
 		"AV". 0 for a font without kerning. */
 	public function getKerning(left:Int, right:Int):Float {
-		if (trueType == null)
+		if (kerningOf == null)
 			return 0;
 		var key = left << 16 | right & 0xFFFF, known = kerning.get(key);
 		if (known == null) {
-			known = trueType.getKerning(trueType.getGlyphIndex(left), trueType.getGlyphIndex(right)) * unitScale;
+			known = kerningOf(left, right);
 			kerning.set(key, known);
 		}
 		return known;
@@ -168,8 +168,8 @@ class Font2D {
 		size = baked.ascent - baked.descent;
 		ascent = baked.ascent;
 		descent = baked.descent;
-		trueType = file;
-		unitScale = baked.scale;
+		var scale = baked.scale;
+		kerningOf = (left, right) -> file.getKerning(file.getGlyphIndex(left), file.getGlyphIndex(right)) * scale;
 		kerning = new Map();
 	}
 

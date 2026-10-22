@@ -1,13 +1,12 @@
 import helix.debug.FpsOverlay;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
 import helix.render3d.Material;
@@ -16,13 +15,14 @@ import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Environment3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a Stage3D does when models agree on everything
-	but where they stand and their tint. A field of 400 cubes shares one mesh and one material, so it is one draw; six cars share one file, so
+/** Many models that share a mesh and a material. Nothing here asks for instancing: it is what a View3D's drawing does when models agree on
+	everything but where they stand and their tint. A field of 400 cubes shares one mesh and one material, so it is one draw; six cars share one file, so
 	each of its parts is one draw for all six; a few cubes are see-through, and those keep their back-to-front order. SPACE gives every cube a
 	material of its own instead: the same picture, drawn a cube at a time. The readout counts the models drawn and the draws they took.
 
@@ -32,10 +32,10 @@ class App extends helix.App {
 	static inline var CARS = 6;
 	static inline var GLASS = 5;
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var readout = new Drawing2D();
 	var fps = new FpsOverlay();
 	var shared = new Material();
 	var cubes:Array<Model> = [];
@@ -68,22 +68,25 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX instancing";
 		Window.requestSize(1000, 600);
-		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xffa0b4dc, .35);
+		Stage.color = 0xff1c1e26;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffa0b4dc, .35);
+		view = new View3D(level, camera);
+		Stage.addChild(view);
+		Stage.addChild(readout);
+		Stage.addChild(fps);
 		// Framed for 16:9: the whole field across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
 		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 		var ground = new Material();
 		ground.baseColor = 0xffb4b8bf;
 		ground.roughness = .9;
 		var floor = new Model(Mesh.plane(60, 60), ground);
 		floor.setPosition(0, -.6, 0);
-		stage.add(floor);
+		level.addChild(floor);
 
 		// The field: one mesh, one material, a tint each.
 		var cube = Mesh.cube(.6, .6, .6);
@@ -92,7 +95,7 @@ class App extends helix.App {
 			var node = new Model(cube, shared);
 			node.tint = tint(i);
 			cubes.push(node);
-			stage.add(node);
+			level.addChild(node);
 		}
 		// See-through copies of the same cube: same mesh, same material, alpha in the tint.
 		for (i in 0...GLASS) {
@@ -100,7 +103,7 @@ class App extends helix.App {
 			glass.tint = 0x6effffff;
 			glass.setPosition(i * 2 - 4, 5.2, 5);
 			glass.setScale(2, 2, 2);
-			stage.add(glass);
+			level.addChild(glass);
 		}
 		// Six cars from one file: each of its parts one draw for all six.
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
@@ -113,7 +116,7 @@ class App extends helix.App {
 			car.setPosition(i * 2.4 - 6, -.6, -2);
 			car.setScale(1.5, 1.5, 1.5);
 			cars.push(car);
-			stage.add(car);
+			level.addChild(car);
 		}
 
 	override public function update(dt:Float):Void {
@@ -126,8 +129,6 @@ class App extends helix.App {
 		var time = Time.clock.time;
 		orbit.update(Time.clock.delta);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		for (i in 0...cubes.length) {
 			var x = (i % SIDE - SIDE / 2 + .5) * 1.5,
@@ -141,28 +142,21 @@ class App extends helix.App {
 		// The readout in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		Graphics.beginFrame(width, height, 0xff1c1e26);
-		stage.draw(camera);
-		batch.begin(hud);
+		readout.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
-		batch.drawTextWrapped('${stage.drawnNodeCount} models in ${stage.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
+		y += readout.drawTextWrapped("HeliX instancing: models that share a mesh and a material go up as one draw", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		readout.drawTextWrapped('${view.drawnNodeCount} models in ${view.drawCallCount} draws   [SPACE] ${ownMaterials ? "a material each" : "one shared material"}',
 			vx
-			+ 12,
-			y, 16, vw
+			+ 12, y,
+			16, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 12, vy + 10);
 	}
 
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
-	}
+	override public function cleanup():Void
+		view.destroy();
 }

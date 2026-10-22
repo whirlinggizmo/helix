@@ -8,7 +8,7 @@ import helix.graphics.Shader;
 import helix.graphics.TextureFormat;
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 import helix.shaders.Bloom;
 import helix.shaders.Blur;
 import helix.shaders.ChromaticAberration;
@@ -116,8 +116,7 @@ class PostProcessTests {
 		tonemap.computeHdrColor(0xffffffff, white);
 		check(white[0] == white[1] && white[0] > 2, "White under Neutral is the most light it answers");
 
-		var stage = new Stage3D(gpu);
-		var post = new PostProcess(gpu, stage);
+		var post = new PostProcess(gpu);
 		var bright = new ScreenEffect(gpu, shader);
 		bright.hdr = true;
 		post.add(bright);
@@ -126,7 +125,10 @@ class PostProcessTests {
 		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
 		check(gpu.targetClears[0][0] == dark[0] && gpu.targetClears[0][2] == dark[2], "An HDR scene is cleared to the light Neutral shows as its color");
-		stage.tonemap = Aces;
+		// A chain with a tone mapping of its own in another mode: its clear worked out for that mode.
+		var ownMode = new Tonemap();
+		ownMode.mode = Aces;
+		post.add(ownMode);
 		gpu.targetClears = [];
 		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
@@ -135,6 +137,7 @@ class PostProcessTests {
 		tonemap.computeHdrColor(0xff14161c, aces);
 		check(gpu.targetClears[0][0] == aces[0] && aces[0] != dark[0], "Its clear is worked out again for the mode");
 		bright.enabled = false;
+		post.remove(ownMode);
 		gpu.targetClears = [];
 		post.beginScene(800, 600, 0xff14161c);
 		post.endScene(1);
@@ -233,11 +236,9 @@ class PostProcessTests {
 		post.remove(steps);
 		check(gpu.destroyedTextures - destroyed == 3, "A removed effect's intermediates are freed");
 
-		// HDR: an effect wanting it opens the scene in half floats, its stage told so while the scene is drawn; the tone mapping follows the last
-		// effect wanting HDR (with the stage's mode), the ones before it drawing half floats, the ones after it RGBA8.
-		var stage = new Stage3D(gpu);
-		stage.tonemap = Aces;
-		var hdrPost = new PostProcess(gpu, stage);
+		// HDR: an effect wanting it opens the scene in half floats; the tone mapping follows the last effect wanting HDR (Neutral, unless the
+		// chain has its own), the ones before it drawing half floats, the ones after it RGBA8.
+		var hdrPost = new PostProcess(gpu);
 		var bright = new Steps(gpu, shader, [.5]);
 		bright.hdr = true;
 		var after = new ScreenEffect(gpu, shader);
@@ -245,16 +246,15 @@ class PostProcessTests {
 		hdrPost.add(after);
 		gpu.targetPasses = [];
 		hdrPost.beginScene(800, 600, 0xff000000);
-		check(hdrPost.hdr && stage.hdr, "An effect wanting HDR draws the scene HDR, its stage told so");
+		check(hdrPost.hdr, "An effect wanting HDR draws the scene HDR");
 		hdrPost.endScene(1);
-		check(!stage.hdr, "The stage is told only while the scene is drawn");
 		check(pass(0).format == Rgba16f && pass(0).depth, "An HDR scene is half floats with depth");
 		check(gpu.targetPasses.length == 4 && pass(1).format == Rgba16f && pass(1).width == 400 && !pass(1).depth,
 			"The scene, the HDR effect's intermediate in half floats, its pass, the tone mapping's");
 		check(pass(2).format == Rgba16f && !pass(2).depth && pass(3).format == Rgba8 && !pass(3).depth,
 			"Before the tone mapping the chain is half floats, from it on RGBA8");
 		var tonemap:Tonemap = @:privateAccess hdrPost.tonemap;
-		check(tonemap != null && tonemap.mode == Aces && @:privateAccess hdrPost.steps[1] == tonemap, "The tone mapping added takes the stage's mode");
+		check(tonemap != null && tonemap.mode == Neutral && @:privateAccess hdrPost.steps[1] == tonemap, "The tone mapping added is Neutral");
 
 		// Without half floats: 8 bits throughout, no tone mapping added, and a Tonemap of the chain's own skipped.
 		gpu.floatTargets = false;

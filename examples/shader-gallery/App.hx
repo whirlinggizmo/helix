@@ -15,24 +15,26 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
+import helix.render2d.View2D;
 import helix.render3d.AnimationClip;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
-import helix.scene.Pointer;
+import helix.render3d.View3D;
 import helix.shaders.Bloom;
 import helix.shaders.Blur;
 import helix.shaders.ChromaticAberration;
@@ -66,24 +68,25 @@ import helix.render3d.Orbit;
 
 /** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
 	its colors on color pickers (helix.ui's ColorPicker).
-	The scene is the Kenney sports car, a sphere and a skinned character (Quaternius's Ultimate Modular Women) behind a low wall, under a sun
+	The scene is a View3D's tree (its ambient light an Environment3D on its root), shown with the sprites in a View2D: the Kenney sports car, a sphere and a skinned character (Quaternius's Ultimate Modular Women) behind a low wall, under a sun
 	casting shadows, with two lamps glowing past white; a row of sprites (the logo twice, a creature of indexed pixels and a checkerboard in a clear ring, both drawn sharp) along the bottom.
 	The menu (helix.ui) lists the shaders by kind; choosing one turns it on alone:
 	- surface shaders, on the car's, the sphere's and her materials: Unlit, Toon, Rim, HitFlash (held; F flashes), Dissolve, Water
 	- passes, on the same models: Outline, and Silhouette (her, seen through the wall)
-	- screen effects, over the whole frame (PostProcess): Bloom, Tonemap (ACES over the stage's Neutral), Fxaa, Blur, Vignette, ColorLut (a
+	- screen effects, over the scene and the sprites (a PostProcess, the chain of the View2D showing them): Bloom, Tonemap (ACES over the chain's Neutral), Fxaa, Blur, Vignette, ColorLut (a
 	  teal and orange grade), Crt, ChromaticAberration, Pixelate; and a chain of two, Bloom then Vignette
 	- sprite effects: SpriteOutline, SpriteFlash (held; F flashes) and SpriteDissolve on the row but the creature, and PaletteSwap (the
 	  creature's indices in another row of its palette: it's drawn through its palette's first row the rest of the time, as a game draws an
 	  indexed sprite, since a sprite has one effect and without one its indices show as near-black reds)
 	The sliders under the list set the chosen one's parameters as its fields do; at the top right a color picker sets each of its colors (with
 	an alpha bar where the color's alpha means something), a dropdown above it choosing which when it has several (Water's three, Toon's
-	shadow and rim), its text field taking a color typed (as hex, or decimal channels once its button cycles the format). The menu is drawn after the effects, outside them.
+	shadow and rim), its text field taking a color typed (as hex, or decimal channels once its button cycles the format). The
+	menu is on the stage over that view, outside the effects.
 
 	Pointer, arrows, Enter and a pad use the menu; PageDown / PageUp: the next or previous shader; X: the chosen one off and on to compare;
 	R: PaletteSwap's next row while it's chosen;
 	F: a flash in the flash's color (HitFlash's and SpriteFlash's pickers); O: the camera circling; Escape quits where quitting means anything.
-	Options: autopilot (a script under assets/: the time, her pose and the camera are then held from the first frame, the window the
+	Options: autopilot (a script under assets/: the stage's time (Stage.heldTime), her pose and the camera are then held from the first frame, the window the
 	autopilot's page's size, so its samples of the frame compare across targets; the script's click names a shader, None or Chain, choosing
 	it, or else a widget of the menu: a picker is named for its shader and color, Unlit-color, its text field Unlit-color-text) and autoclose
 	(1: quit once the script is done). The probes: ready (everything loaded), chosen (the chosen shader's name, or None), color (the color
@@ -107,21 +110,25 @@ class App extends helix.App {
 		[0x00000000, 0xff141a30, 0xff5078f0, 0xfff5f5f5]
 	];
 
-	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
-	static inline var HELD_TIME = 2.;
+	// The autopilot's window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	// The time the autopilot holds the stage at (Stage.heldTime), so its samples compare across targets.
+	static inline var HELD_TIME = 2.;
+
+	// The scene's 3D tree and the view showing it; the 3D view and the sprite row under one node, shown by a view whose chain is the screen
+	// effects (the menu, the title and the frame rate on the stage outside it); the title and keys, drawn again each update.
+	var level = new Node3D();
+	var view3D:View3D;
+	var scene = new Node2D();
+	var sceneCamera = new Camera2D();
+	var sceneView:View2D;
 	var post:PostProcess;
 	var camera = new Camera3D();
 	var orbit = new Orbit(6.4, 2.4, .25, 0);
-	var view = new Camera2D();
-	var sprites = new Stage2D();
-	var menu = new Stage2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
-	var pointer:Null<Pointer>;
 	var ui:Null<Ui>;
 	var list:Null<ListView>;
 	var layout:Null<helix.ui.Layout2D>;
@@ -213,10 +220,20 @@ class App extends helix.App {
 		} else
 			Window.requestSize(1100, 640);
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		stage = new Stage3D(gpu);
-		post = new PostProcess(gpu, stage);
-		stage.setAmbient(0xffffffff, .2);
+		// Under the autopilot the stage is drawn at a held time from the start, so what moves with it (the water's waves) is drawn the same
+		// on every target.
+		if (piloted)
+			Stage.heldTime = HELD_TIME;
+		Stage.color = 0xff14161c;
+		post = new PostProcess(gpu);
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .2);
+		view3D = new View3D(level, camera);
+		scene.addChild(view3D);
+		sceneView = new View2D(scene, sceneCamera);
+		sceneView.color = 0xff14161c;
+		sceneView.postProcess = post;
+		Stage.addChild(sceneView);
 		orbit.running = false;
 		orbit.targetX = .5;
 		orbit.targetY = .7;
@@ -227,27 +244,27 @@ class App extends helix.App {
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
-		stage.add(sun);
+		level.addChild(sun);
 		var floor = new Material();
 		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
-		stage.add(new Model(Mesh.plane(12, 8), floor));
+		level.addChild(new Model(Mesh.plane(12, 8), floor));
 		// The sphere in the middle, finely divided for the water's waves.
 		var ball = new Material();
 		ball.baseColor = 0xff3b82f6;
 		ball.roughness = .35;
 		var sphere = new Model(Mesh.sphere(.55, 64, 128), ball);
 		sphere.setPosition(.5, FLOOR_Y + .55, -.2);
-		stage.add(sphere);
+		level.addChild(sphere);
 		addMaterial(ball);
 		models.push(sphere);
-		// The wall before her: the stage's own shading, her silhouette shows through it.
+		// The wall before her: the default shading, her silhouette shows through it.
 		var brick = new Material();
 		brick.baseColor = 0xff9a7b5c;
 		brick.roughness = .9;
 		var wall = new Model(Mesh.cube(1.1, .6, .1), brick);
 		wall.setPosition(2.15, FLOOR_Y + .3, 1.1);
-		stage.add(wall);
+		level.addChild(wall);
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
 			var glow = new Material();
@@ -256,7 +273,7 @@ class App extends helix.App {
 			var bulb = new Model(Mesh.sphere(.14), glow);
 			bulb.shadowCasting = false;
 			bulb.setPosition(i == 0 ? -.9 : 1.4, 1.9, i == 0 ? -.9 : -1.2);
-			stage.add(bulb);
+			level.addChild(bulb);
 		}
 		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
 		for (name in PARTS)
@@ -295,7 +312,7 @@ class App extends helix.App {
 			var sprite = new Sprite2D(i == 2 ? creature : i == 3 ? checker : null);
 			sprite.setSize(i == 3 ? 140 : 112, i == 3 ? 140 : 112);
 			rowSprites.push(sprite);
-			sprites.add(sprite);
+			scene.addChild(sprite);
 		}
 		Textures.load(LOGO, true, texture -> useLogo(0, texture));
 		Textures.load(WHITE_LOGO, true, texture -> useLogo(1, texture));
@@ -323,9 +340,12 @@ class App extends helix.App {
 		paletteSwap = new PaletteSwap(palette, 1);
 		creatureColors = new PaletteSwap(palette);
 		rowSprites[2].effect = creatureColors;
-		// The menu over all of it, read from the window's input (an autopilot's menu waits for its script).
+		Stage.addChild(hud);
+		Stage.addChild(fps);
+		// The menu over all of it, outside the effects, read from the program's input (an autopilot's menu waits for its script, whose input is
+		// the program's while it plays).
 		if (!piloted)
-			build(Input.instance);
+			build();
 	}
 
 	// A grade, as an artist would make one from the identity strip: shadows toward teal, highlights toward orange, a little more contrast.
@@ -347,13 +367,13 @@ class App extends helix.App {
 		return pixels;
 	}
 
-	// The autopilot's script in: the menu reads its input, its clicks choose shaders by name or use the menu's widgets by theirs, and its points
+	// The autopilot's script in: the menu reads its input (the program's while it plays), its clicks choose shaders by name or use the menu's widgets by theirs, and its points
 	// on the widgets are found by the UI.
 	function startPilot(bytes:Bytes):Void {
 		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name), name -> choose(name) || ui != null && ui.press(name),
 			(points, done, failed) -> Screenshots.sample(points, done, failed),
 			(target, part, x, y, out) -> ui != null && ui.computePoint(target, part, x, y, out));
-		build(pilot.input);
+		build();
 	}
 
 	function probe(name:String):Dynamic
@@ -382,7 +402,7 @@ class App extends helix.App {
 		var node = file.instantiate("car");
 		node.setPosition(-1.2, FLOOR_Y, -.3);
 		node.setRotation(0, .7, 0);
-		stage.add(node);
+		level.addChild(node);
 		for (material in file.materials)
 			addMaterial(material);
 		var skinnedModels = [], rigid = [];
@@ -399,7 +419,7 @@ class App extends helix.App {
 		node.setPosition(2.15, FLOOR_Y, .55);
 		node.setScale(.8, .8, .8);
 		node.setRotation(0, -.3, 0);
-		stage.add(node);
+		level.addChild(node);
 		character = node;
 		animator = new Animator(node);
 		var idle:Null<AnimationClip> = file.getClip("Idle");
@@ -453,13 +473,14 @@ class App extends helix.App {
 			entries[chosen].on();
 	}
 
-	// The menu, read from input (the window's, or the autopilot's): the shaders' list and, under it, the chosen one's sliders.
-	function build(input:IInput):Void {
-		pointer = new Pointer(input);
-		pointer.addStage2D(menu, view);
-		var ui = new Ui(menu, view, pointer, input);
+	// The menu, on the stage over the effects' view: the shaders' list and, under it, the chosen one's sliders.
+	function build():Void {
+		var ui = new Ui();
 		ui.theme.textSize = 15;
 		this.ui = ui;
+		// The title and the frame rate over the menu, as they were drawn after it.
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 		entries = [
 			entry("Unlit", "surface", () -> surface(m -> unlits.push(newUnlit(m))), [], [
 				color("color", unlitColor, false, c -> {
@@ -787,7 +808,7 @@ class App extends helix.App {
 		flash.amount = flashAmount;
 	}
 
-	// Everything off: the materials on the stage's own shading with no rim (none of them came with one) and no flash, no pass, effect or
+	// Everything off: the materials on the default shading with no rim (none of them came with one) and no flash, no pass, effect or
 	// sprite effect but the creature's own colors.
 	function allOff():Void {
 		for (m in materials) {
@@ -843,7 +864,6 @@ class App extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The window's input, or the autopilot's: a tick a frame, none while a sample waits for its frame.
 		var input:Null<IInput> = pilot != null ? null : Input.instance;
 		if (pilot != null && !pilot.done) {
@@ -853,15 +873,14 @@ class App extends helix.App {
 		}
 		// The design for the window's shape, the menu laid out in what's visible of it.
 		ScreenShape.update();
-		var presentation = Screen.instance;
-		presentation.apply(view);
-		var vx = presentation.visibleX,
-			vy = presentation.visibleY,
-			vw = presentation.visibleWidth,
-			vh = presentation.visibleHeight;
+		var vx = Screen.visibleX,
+			vy = Screen.visibleY,
+			vw = Screen.visibleWidth,
+			vh = Screen.visibleHeight;
+		// The effects' view sees the stage's design units, as the stage does.
+		Screen.instance.apply(sceneCamera);
 		if (ui != null && input != null) {
-			helix.ui.Layout2D.arrange(layout, vx, vy, vw, vh, batch.font);
-			pointer.update();
+			helix.ui.Layout2D.arrange(layout, vx, vy, vw, vh, ui.font);
 			ui.update();
 			if (list.changed)
 				show(list.selectedIndex);
@@ -912,15 +931,11 @@ class App extends helix.App {
 			if (Host.canQuit() && input.isFramePressed(Key.Escape) && !ui.capturingKeys)
 				Host.quit();
 		}
-		// The game's clock, her pose and the camera: held under the autopilot.
-		var time = piloted ? HELD_TIME : Time.clock.time;
-		stage.time = time;
-		sprites.time = time;
+		// Her pose and the camera: held under the autopilot, as the stage's time is.
 		if (animator != null)
 			animator.update(piloted ? 0 : dt);
 		orbit.update(piloted ? 0 : dt);
 		fps.update(dt, Time.frameCpu);
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 
 		// The sprite row along the bottom of what's visible, right of the menu.
@@ -928,28 +943,16 @@ class App extends helix.App {
 		for (i in 0...rowSprites.length)
 			rowSprites[i].setPosition(left + across * (i + .5) / rowSprites.length, vy + vh - 96);
 
-		// The scene and the sprites into the chain's texture, the effects, then the menu over it, outside them.
-		stage.drawShadows(camera);
-		post.beginScene(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(view);
-		sprites.draw(batch, view);
-		batch.end();
-		post.endScene(time);
-		Graphics.beginFrame(width, height, 0xff000000);
-		post.present();
-		batch.begin(view);
-		menu.draw(batch, view);
+		// The title and the keys over the menu.
+		hud.clear();
 		var title = chosen < 0 ? "nothing chosen" : entries[chosen].kind + " shader " + entries[chosen].name + (shown ? "" : " (off)");
-		batch.drawTextWrapped('HeliX shader gallery: $title', vx + 16, vy + 36, 18, vw - 32, 0xfff5f5f5);
-		batch.drawTextWrapped('PageDown / PageUp: next / previous  X: off and on  F: flash  O: camera${chosen >= 0 && entries[chosen].name == "PaletteSwap" ? "  R: next row" : ""}${status == "" ? "" : "   " + status}',
+		hud.drawTextWrapped('HeliX shader gallery: $title', vx + 16, vy + 36, 18, vw - 32, 0xfff5f5f5);
+		hud.drawTextWrapped('PageDown / PageUp: next / previous  X: off and on  F: flash  O: camera${chosen >= 0 && entries[chosen].name == "PaletteSwap" ? "  R: next row" : ""}${status == "" ? "" : "   " + status}',
 			vx
 			+ 16, vy
 			+ 60, 14, vw
 			- 32, 0xffc8c8c8);
-		fps.draw(batch, vx + 16, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 16, vy + 10);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({game: {chosen: probe("chosen"), hdr: post.hdr}, autopilot: pilot.snapshot});
@@ -959,11 +962,12 @@ class App extends helix.App {
 	}
 
 	override public function cleanup():Void {
+		sceneView.postProcess = null;
 		post.destroy();
 		for (t in [grade, creature, palette, checker])
 			t.destroy(Graphics.instance);
-		stage.destroy();
-		batch.destroy();
+		sceneView.destroy();
+		view3D.destroy();
 	}
 }
 

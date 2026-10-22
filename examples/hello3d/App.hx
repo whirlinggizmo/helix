@@ -1,25 +1,25 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
+import helix.host.ScreenShape;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
-import helix.render3d.Batch3D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
-import helix.time.Time;
-import helix.host.ScreenShape;
+import helix.render3d.Drawing3D;
+import helix.render3d.Node3D;
 import helix.render3d.Orbit;
+import helix.render3d.View3D;
+import helix.time.Time;
 
-/** 3D with a 2D overlay: a camera orbiting the origin over a grid and the axes, a solid cube in its wire frame and two spheres, depth-tested, then
-	text drawn over them. Escape quits where quitting means anything. */
+/** 3D with a 2D overlay: a View3D on the stage, its camera orbiting the origin over a grid and the axes, a solid cube in its wire frame and
+	two spheres (a Drawing3D in the tree it shows), depth-tested, then text drawn over them on the stage (a Drawing2D). Escape quits where quitting means
+	anything. */
 class App extends helix.App {
-	var batch3D:Batch3D;
-	var batch2D:Batch2D;
 	var camera3D = new Camera3D();
-	var camera2D = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	// The camera circles the origin, 16 units out and 9 up, at 0.4 radians a second, starting on the +x side.
 	var orbit = new Orbit(16, 9, .4, 1, Math.PI / 2);
@@ -27,51 +27,40 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX hello3d";
 		Window.requestSize(900, 700);
-		batch3D = new Batch3D();
-		batch2D = new Batch2D();
+		Stage.color = 0xff1c1c26;
 		// Framed for 16:9: the spheres either side stay in view on a phone held upright too.
 		camera3D.minAspect = 16 / 9;
+		var level = new Node3D(), drawing = new Drawing3D();
+		drawing.grid(20, 1, 0xff505050);
+		drawing.line(0, 0, 0, 5, 0, 0, 0xffe62937);
+		drawing.line(0, 0, 0, 0, 5, 0, 0xff00e430);
+		drawing.line(0, 0, 0, 0, 0, 5, 0xff0079f1);
+		drawing.cube(0, 1, 0, 2, 2, 2, 0xff66bfff);
+		drawing.cubeWires(0, 1, 0, 2.02, 2.02, 2.02, 0xff0052ac);
+		drawing.sphere(5, 1.5, 0, 1.5, 0xffffcb00);
+		drawing.sphere(-5, 1.5, 0, 1.5, 0xffbe2137);
+		level.addChild(drawing);
+		Stage.addChild(new View3D(level, camera3D));
+		Stage.addChild(text);
+		Stage.addChild(fps);
 	}
 
 	override public function update(dt:Float):Void {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		orbit.update(dt);
-		camera3D.setViewport(width, height);
 		orbit.apply(camera3D);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera2D);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff1c1c26);
-		batch3D.begin(camera3D);
-		batch3D.grid(20, 1, 0xff505050);
-		batch3D.line(0, 0, 0, 5, 0, 0, 0xffe62937);
-		batch3D.line(0, 0, 0, 0, 5, 0, 0xff00e430);
-		batch3D.line(0, 0, 0, 0, 0, 5, 0xff0079f1);
-		batch3D.cube(0, 1, 0, 2, 2, 2, 0xff66bfff);
-		batch3D.cubeWires(0, 1, 0, 2.02, 2.02, 2.02, 0xff0052ac);
-		batch3D.sphere(5, 1.5, 0, 1.5, 0xffffcb00);
-		batch3D.sphere(-5, 1.5, 0, 1.5, 0xffbe2137);
-		batch3D.end();
-
-		batch2D.begin(camera2D);
+		text.clear();
 		var y = vy + 36;
-		y += batch2D.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
-		batch2D.drawTextWrapped("orbiting Camera3D, depth-tested Batch3D", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
-		fps.draw(batch2D, vx + 12, vy + 10);
-		batch2D.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		batch3D.destroy();
-		batch2D.destroy();
+		y += text.drawTextWrapped("HeliX 3D", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
+		text.drawTextWrapped("orbiting Camera3D, depth-tested Drawing3D", vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+		fps.setPosition(vx + 12, vy + 10);
 	}
 }

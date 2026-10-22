@@ -11,7 +11,7 @@ import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 import helix.render2d.Polygon2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Renderer2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Model;
 import helix.render3d.Sprite3D;
@@ -303,7 +303,7 @@ class WhiteImages implements helix.graphics.IImageDecoder {
 	public function poll():Void {}
 }
 
-/** Polygon2D, Node2D's transforms and kinds, and Stage2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
+/** Polygon2D, Node2D's transforms and kinds, and Renderer2D's walk, culling and cameras, through a Batch2D on graphics that only counts. */
 @:access(helix.host.Screen)
 class Render2DTests {
 	static var checks = 0;
@@ -381,7 +381,7 @@ class Render2DTests {
 			&& Shape2D.polygon([0, 0, 1, 1, 2]) == null, "A polygon needs 3 points, x and y in pairs");
 
 		// Transforms: a child of a turned, scaled, placed parent; toLocal undoes toWorld.
-		var stage = new Stage2D(),
+		var stage = new Renderer2D(),
 			parent = new Node2D(),
 			child = Shape2D.circle(1);
 		parent.setPosition(100, 50);
@@ -457,7 +457,7 @@ class Render2DTests {
 		check(sprite.width == 2, "A size of 0 goes back to the region's");
 
 		// Culling: of three circles, the one far outside the view isn't drawn; hidden nodes and their children aren't either.
-		var culled = new Stage2D();
+		var culled = new Renderer2D();
 		for (x in [10., 390, 5000]) {
 			var c = Shape2D.circle(5);
 			c.setPosition(x, 150);
@@ -513,7 +513,7 @@ class Render2DTests {
 		var shaded = Shape2D.rectangle(10, 20, 0x00ff0000);
 		shaded.shading = Across;
 		shaded.endColor = 0xff0000ff;
-		var shadedStage = new Stage2D();
+		var shadedStage = new Renderer2D();
 		shadedStage.add(shaded);
 		gpu.beginFrame(400, 300, 0);
 		batch.begin(camera);
@@ -715,7 +715,7 @@ class Render2DTests {
 			refused = true;
 		check(refused, "A shader of another kind isn't a screen effect");
 		// A mirrored model (a negative scale) draws through another pipeline than an ordinary one: its front faces wind the other way.
-		var stage3D = new helix.render3d.Stage3D(gpu),
+		var stage3D = new helix.render3d.Renderer3D(gpu),
 			cube = helix.render3d.Mesh.cube(1, 1, 1),
 			material = new helix.render3d.Material();
 		var plain = new Model(cube, material),
@@ -786,7 +786,7 @@ class Render2DTests {
 	static function rounded():Void {
 		var gpu = new CountingGraphics(),
 			batch = new Batch2D(gpu),
-			stage = new Stage2D(),
+			stage = new Renderer2D(),
 			camera = new Camera2D();
 		camera.setViewport(400, 300);
 		camera.pixels(1);
@@ -825,11 +825,11 @@ class Render2DTests {
 		batch.destroy();
 	}
 
-	// Picking a Stage2D: the topmost node under a point, by each kind's own area, through the camera, honouring the flags.
+	// Picking a Renderer2D: the topmost node under a point, by each kind's own area, through the camera, honouring the flags.
 	static function pick2D():Void {
 		var gpu = new CountingGraphics(),
 			batch = new Batch2D(gpu),
-			stage = new Stage2D(),
+			stage = new Renderer2D(),
 			camera = new Camera2D();
 		camera.setViewport(400, 300);
 		// World units as screen pixels, from the top-left, as a HUD's.
@@ -887,7 +887,7 @@ class Render2DTests {
 		check(stage.pick(camera, 105, 105) == null, "A disabled node isn't hit");
 	}
 
-	// Clips: a batch's nested clips as scissors (bottom-left, within the outer one), and a Stage2D node clipping its children, drawn and picked.
+	// Clips: a batch's nested clips as scissors (bottom-left, within the outer one), and a Renderer2D node clipping its children, drawn and picked.
 	static function clipping():Void {
 		var gpu = new CountingGraphics(),
 			batch = new Batch2D(gpu),
@@ -910,7 +910,7 @@ class Render2DTests {
 			"Nested clips: the outer, then within it, as the GPU's bottom-left rectangles; reset after: " + s.map(x -> x == null ? "-" : x.join(","))
 			.join(" "));
 		// A list's window: a group clipping its rows; a row scrolled out of it is neither drawn there nor picked.
-		var stage = new Stage2D(), list = new Node2D();
+		var stage = new Renderer2D(), list = new Node2D();
 		list.setPosition(20, 20);
 		check(list.setClip(100, 50) && list.clipping && !list.setClip(-1, 5), "A clip, and a size below 0 refused");
 		var inside = Shape2D.rectangle(100, 20),
@@ -961,7 +961,7 @@ class Render2DTests {
 		batch.image(texture, 10, 10, 200, 100);
 		batch.end();
 		check(ninth == batch.vertexCount * 9, "Nine quads for a frame");
-		var stage = new Stage2D(), panel = new Sprite2D(texture);
+		var stage = new Renderer2D(), panel = new Sprite2D(texture);
 		check(panel.setNineSlice(4, 4, 4, 4) && panel.nineSlice && !panel.setNineSlice(-1, 1, 1, 1) && panel.nineSliceLeft == 4,
 			"Nine-slice insets of 0 or more");
 		panel.setSize(200, 100);

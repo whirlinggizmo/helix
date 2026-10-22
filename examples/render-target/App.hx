@@ -1,33 +1,42 @@
 import helix.debug.FpsOverlay;
 import helix.graphics.Graphics;
+import helix.graphics.PostProcess;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Font2D;
 import helix.render2d.Fonts;
-import helix.render2d.Texture2D;
+import helix.render2d.Node2D;
+import helix.render2d.Stage;
+import helix.render2d.View2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
+import helix.shaders.Pixelate;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** Drawing into textures (Texture2D.renderTarget, IGraphics.beginTargetPass):
-	- "pixel view": the stage drawn into a 160x100 texture and shown 4x larger with nearest sampling, a low-resolution pixel-art look
-	- "minimap": the same stage from an orthographic camera above it, in a 256x256 texture
-	- "label": text in two fonts drawn into a 256x128 texture, used as the base color texture of the spinning globe's material, and shown on its own
-	Each frame draws the label first, so the views that use it show this frame's label; the target passes all come before the screen's. The toy
-	car drives a circle. Escape quits where quitting means anything. */
+/** Views drawn into textures (View.postProcess; docs/DISPLAY_MODEL.md): a view with a chain draws what it shows into a texture before the
+	frame (cleared to its color), runs the chain and draws the result where the view is, in the 2D's order.
+	- "pixel view": a View3D of the level pixelated by its chain (helix.shaders.Pixelate, cells of 4 units: 160x100 of them), a
+	  low-resolution pixel-art look
+	- "minimap": a second View3D of the same level, from an orthographic camera above it, 256x256, on a darker background (an empty chain
+	  draws it into a texture cleared to its color)
+	- "label": text in two fonts, a Drawing2D in a 256x128 View2D whose empty chain draws it into a texture (View.texture), used as
+	  the base color texture of the spinning globe's material, and shown on its own
+	Every texture is drawn before the frame, the label's first (it's added to the stage first), so the 3D views show this frame's label. The
+	toy car drives a circle. Escape quits where quitting means anything. */
 class App extends helix.App {
 	static inline var PIXEL_W = 160;
 	static inline var PIXEL_H = 100;
@@ -37,35 +46,34 @@ class App extends helix.App {
 	static inline var LABEL_H = 128;
 	static inline var BACKGROUND = 0xff181a22;
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
 	var top = new Camera3D();
-	var screen = new Camera2D();
-	var targetCamera = new Camera2D();
+	var labelCamera = new Camera2D();
+	var labelText = new Drawing2D();
+	var labelView:View2D;
+	var pixelate:Pixelate;
+	var pixelView:View3D;
+	var minimap:View3D;
+	var panels = new Drawing2D();
 	var fps = new FpsOverlay();
-	var pixelView:Texture2D;
-	var minimap:Texture2D;
-	var label:Texture2D;
 	var font:Null<Font2D>;
 	var car:Null<Node3D>;
 	var globe:Model;
+	var wrap:Material;
 
 	override public function init():Void {
 		Window.title = "HeliX render targets";
 		Window.requestSize(1000, 560);
+		Stage.color = BACKGROUND;
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		pixelView = Texture2D.renderTarget(gpu, PIXEL_W, PIXEL_H, false);
-		minimap = Texture2D.renderTarget(gpu, MINIMAP, MINIMAP);
-		label = Texture2D.renderTarget(gpu, LABEL_W, LABEL_H);
 
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xffffffff, .25);
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .25);
 		var sun = new DirectionalLight();
 		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 		camera.setView(0, 6, 10, 0, .8, 0);
 		// Looking straight down, -z up the map.
 		top.setView(0, 12, 0, 0, 0, 0, 0, 0, -1);
@@ -80,33 +88,55 @@ class App extends helix.App {
 		var floor = new Model(Mesh.sphere(.5, 32, 64), ground);
 		floor.setPosition(0, -.05, 0);
 		floor.setScale(8, .1, 8);
-		stage.add(floor);
-		// The globe wears the label: drawn into each frame, used as any texture.
-		var wrap = new Material();
+		level.addChild(floor);
+		// The globe wears the label: its view's texture, drawn into each frame, used as any texture.
+		wrap = new Material();
 		wrap.lit = false;
-		wrap.texture = label;
 		globe = new Model(Mesh.sphere(.5, 32, 64), wrap);
 		globe.setPosition(-2.2, 1.2, 0);
 		globe.setScale(1.6, 1.6, 1.6);
-		stage.add(globe);
+		level.addChild(globe);
+
+		// The label: a drawing in its own 256 x 128 units, shown by a view whose chain draws it into a texture.
+		var label = new Node2D();
+		label.addChild(labelText);
+		labelView = new View2D(label, labelCamera, LABEL_W, LABEL_H);
+		labelView.postProcess = new PostProcess(gpu);
+		labelView.color = 0xff1e3c8c;
+		// The panels' frames and captions, under the views.
+		Stage.addChild(panels);
+		Stage.addChild(labelView);
+		pixelView = new View3D(level, camera, PIXEL_W * PIXEL_SCALE, PIXEL_H * PIXEL_SCALE);
+		pixelView.postProcess = new PostProcess(gpu);
+		pixelView.color = BACKGROUND;
+		pixelate = new Pixelate(PIXEL_SCALE);
+		pixelView.postProcess.add(pixelate);
+		Stage.addChild(pixelView);
+		minimap = new View3D(level, top, MINIMAP, MINIMAP);
+		minimap.postProcess = new PostProcess(gpu);
+		minimap.color = 0xff0c0e12;
+		Stage.addChild(minimap);
+		Stage.addChild(fps);
 
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		// The built-in font until it has loaded.
 		Fonts.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
 	}
 
-	// The car's file in: a copy of it on the stage the target draws.
+	// The car's file in: a copy of it in the level the views show.
 	function place(file:ModelFile):Void {
 		car = file.instantiate("car");
 		car.setScale(.9, .9, .9);
-		stage.add(car);
+		level.addChild(car);
 	}
 
-	// A texture with a 2 unit frame and a caption above it, in the presentation's units.
-	function panel(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, caption:String):Void {
-		batch.rect(x - 2, y - 2, w + 4, h + 4, 0xff5a606e);
-		batch.image(texture, x, y, w, h);
-		batch.drawText(caption, x, y - 22, 16, 0xffc8c8c8);
+	// A view placed at x, y, w x h, with a 2 unit frame and a caption above it, in the presentation's units.
+	function panel(view:helix.render2d.View, x:Float, y:Float, w:Float, h:Float, caption:String):Void {
+		panels.rect(x - 2, y - 2, w + 4, h + 4, 0xff5a606e);
+		panels.drawText(caption, x, y - 22, 16, 0xffc8c8c8);
+		view.setPosition(x, y);
+		view.width = w;
+		view.height = h;
 	}
 
 	override public function update(dt:Float):Void {
@@ -121,60 +151,44 @@ class App extends helix.App {
 			car.setRotation(0, -time * .6, 0);
 		}
 		globe.setRotation(0, time * .8, 0);
-		var gpu = Graphics.instance,
-			width = Window.framebufferWidth,
-			height = Window.framebufferHeight;
 
-		// 1. The label, first, so the views below use this frame's text.
-		gpu.beginTargetPass(label.handle, 0x1e / 255, 0x3c / 255, 0x8c / 255, 1);
-		targetCamera.setViewport(LABEL_W, LABEL_H);
-		targetCamera.pixels(1);
-		batch.begin(targetCamera);
-		batch.drawText("HeliX", 20, 14, 64, 0xfff5f5f5, Left, font);
-		batch.drawText('t = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffffcb00);
-		batch.end();
-		gpu.endTargetPass();
-
-		// 2. A low-resolution view of the stage.
-		gpu.beginTargetPass(pixelView.handle, 0x18 / 255, 0x1a / 255, 0x22 / 255, 1);
-		camera.setViewport(PIXEL_W, PIXEL_H);
-		stage.draw(camera);
-		gpu.endTargetPass();
-
-		// 3. The minimap, from above.
-		gpu.beginTargetPass(minimap.handle, 0x0c / 255, 0x0e / 255, 0x12 / 255, 1);
-		top.setViewport(MINIMAP, MINIMAP);
-		stage.draw(top);
-		gpu.endTargetPass();
+		// The label, in its own units, scaled as the stage's units are (framebuffer pixels per unit).
+		var scale = Stage.camera.zoom;
+		labelCamera.zoom = scale;
+		labelCamera.setPosition(LABEL_W / 2, LABEL_H / 2);
+		labelText.clear();
+		labelText.drawText("HeliX", 20, 14, 64, 0xfff5f5f5, Left, font);
+		labelText.drawText('t = ${Math.round(time * 10) / 10}', 24, 92, 16, 0xffffcb00);
+		// Its texture, once it has drawn (made again when the view's size changes).
+		wrap.texture = labelView.texture;
 
 		// The screen, in the design for the window's shape.
 		var shape = ScreenShape.update(), presentation = Screen.instance;
-		presentation.apply(screen);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-		gpu.beginFrame(width, height, BACKGROUND);
-		batch.begin(screen);
+		panels.clear();
 		var top = vy
 			+ 36
-			+ batch.drawTextWrapped("HeliX render targets: Texture2D.renderTarget + IGraphics.beginTargetPass", vx + 12, vy + 36, 16, vw - 24, 0xfff5f5f5)
+			+ panels.drawTextWrapped("HeliX render targets: views drawn into textures (View.postProcess)", vx + 12, vy + 36, 16, vw - 24, 0xfff5f5f5)
 			+ 36;
 		// The pixel view on the left and the other two in a column beside it; upright, all three in a column, the pixel view as wide as fits.
 		var x = vx + 24, pixelWidth = Math.min(PIXEL_W * PIXEL_SCALE, vw - 48), pixelHeight = pixelWidth * PIXEL_H / PIXEL_W;
 		panel(pixelView, x, top, pixelWidth, pixelHeight, "pixel view (160x100, nearest)");
+		// 160 cells across, however wide it's shown, in framebuffer pixels.
+		pixelate.cellSize = Std.int(Math.max(1, Math.round(pixelWidth * scale / PIXEL_W)));
 		var column = shape == "portrait" ? x : x + pixelWidth + 36,
 			below = shape == "portrait" ? top + pixelHeight + 48 : top;
 		panel(minimap, column, below, MINIMAP, MINIMAP, "minimap (orthographic, from above)");
-		panel(label, column, below + MINIMAP + 52, LABEL_W, LABEL_H, "label (text drawn into a texture)");
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		gpu.endFrame();
+		panel(labelView, column, below + MINIMAP + 52, LABEL_W, LABEL_H, "label (text drawn into a texture)");
+		fps.setPosition(vx + 12, vy + 10);
 	}
 
 	override public function cleanup():Void {
-		for (texture in [pixelView, minimap, label])
-			texture.destroy(Graphics.instance);
-		stage.destroy();
-		batch.destroy();
+		var views:Array<helix.render2d.View> = [pixelView, minimap, labelView];
+		for (view in views)
+			view.destroy();
+		for (view in views)
+			view.postProcess.destroy();
 	}
 }

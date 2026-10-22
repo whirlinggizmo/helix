@@ -15,10 +15,10 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
 import helix.shaders.PaletteSwap;
@@ -28,24 +28,23 @@ import helix.shaders.SpriteOutline;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** Sprites on a Stage2D, in the design for the window's shape and spread over what's visible of it:
+/** Sprites on the stage, in the design for the window's shape and spread over what's visible of it:
 	- "sheet": the 256x256 logo as a 2x2 sprite sheet, its region stepping through the quarters like animation frames
 	- "spin": turns about its center (the default pivot)
 	- "swing": turns about its top-left corner (pivot 0, 0)
 	- "flip": mirrored by a negative x scale
 	- "tint": a white copy of the logo cycling through colors (a tint multiplies the texels, so it can't show on the black logo)
 	- "palette": a little creature made here as indexed pixels (its red channel a color's index), drawn in a palette's colors
-	- a one-off Batch2D.sprite in the corner, no node
+	- the logo once more in the corner, drawn by a Drawing2D (Flash's graphics) with the text, no sprite
 	Sprite effects (helix.shaders, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
-	flip (SpriteFlash) and the title line over it (Batch2D.effect around its text: a distance-field glyph through an effect as the framework
-	draws it), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the example's own
-	sprite shader, shaders/wave.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its parameters set by
+	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the
+	example's own sprite shader, shaders/wave.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its parameters set by
 	name.
 	Hovering enlarges the sprite under the pointer, the topmost (the last drawn) first: the pointer taken into each sprite's own units
 	(Sprite2D.toLocalX), then inside its gear's disc, or the sheet's or creature's rectangle. Escape quits where quitting means anything.
-	Options: autopilot (a script under assets/: the time is then held, the window the autopilot's page's size, so its samples of the frame
-	compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos and the wave in), outline,
+	Options: autopilot (a script under assets/: the time is then held, the stage's with it (Stage.heldTime), the window the autopilot's
+	page's size, so its samples of the frame compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the logos and the wave in), outline,
 	dissolving, palette, row and waving. */
 class App extends helix.App {
 	static inline var LOGO = "sprites/logo/wg-logo-bw-alpha.png";
@@ -63,14 +62,14 @@ class App extends helix.App {
 		[0x00000000, 0xff2a1414, 0xffe05050, 0xffffe040],
 		[0x00000000, 0xff141a30, 0xff5078f0, 0xfff5f5f5]
 	];
-	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	// The time the autopilot holds the sprites at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var HELD_TIME = 2.;
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
 
-	var stage = new Stage2D();
-	var batch:Batch2D;
+	// The stage's units, fitted as the stage's camera is: what the pointer is taken into.
 	var camera = new Camera2D();
+	var drawing = new Drawing2D();
 	var fps = new FpsOverlay();
 	var sprites:Array<Sprite2D> = [];
 	var logo:Null<Texture2D>;
@@ -98,11 +97,13 @@ class App extends helix.App {
 		var script = Host.getOption("autopilot", "");
 		if (script != "") {
 			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
+			// The stage drawn at the held time too: its effects' clock.
+			Stage.heldTime = HELD_TIME;
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(900, 520);
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
+		Stage.color = 0xff1c1e26;
 		// Colors are values, so cycle a list of them.
 		for (i in 0...24) {
 			var a = i / 24 * Math.PI * 2;
@@ -115,7 +116,7 @@ class App extends helix.App {
 			sprite.name = NAMES[i];
 			sprite.setSize(128, 128);
 			sprites.push(sprite);
-			stage.add(sprite);
+			Stage.addChild(sprite);
 		}
 		// Placed each frame, in what's visible.
 		sprites[2].setPivot(0, 0);
@@ -152,6 +153,8 @@ class App extends helix.App {
 		Textures.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
 		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/wave.hxshader", shader -> useWave(shader));
+		Stage.addChild(drawing);
+		Stage.addChild(fps);
 	}
 
 	// The example's own shader in: the swing waves, its parameters set by name.
@@ -238,11 +241,9 @@ class App extends helix.App {
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot.
 		var time = pilot != null ? HELD_TIME : Time.clock.time;
-		stage.time = time;
 		// Half gone at the autopilot's held time, coming and going.
 		dissolve.amount = .5 + .45 * Math.sin((time - HELD_TIME) * .9);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
 		// The design for the window's shape: the sprites spread over what's visible of it under the text, three columns across, two upright.
 		var shape = ScreenShape.update();
 		var presentation = Screen.instance;
@@ -277,7 +278,7 @@ class App extends helix.App {
 		sprites[2].rotation = Math.sin(time * 1.5) * .8;
 		sprites[4].tint = tints[Std.int(time * 6) % tints.length];
 
-		// Hover: the topmost sprite under the pointer, the last drawn first.
+		// Hover: the topmost sprite under the pointer, the last drawn first, as the last frame placed them.
 		var pointer = Input.instance;
 		var x = camera.screenToWorldX(pointer.pointerX),
 			y = camera.screenToWorldY(pointer.pointerY);
@@ -294,29 +295,19 @@ class App extends helix.App {
 			sprites[i].setScale(i == 3 ? -grow : grow, grow);
 		}
 
-		Graphics.beginFrame(width, height, 0xff1c1e26);
-		batch.begin(camera);
-		stage.draw(batch, camera);
+		drawing.clear();
 		if (logo != null)
-			batch.sprite(logo, vx + vw - 42, vy + 42, 64, 64);
-		// Wrapped short of the corner sprite; the title flashes with the flip.
-		var line = vy + 36;
-		batch.effect = flash;
-		line += batch.drawTextWrapped("HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects", vx + 12, line, 16, vw - 96,
-			0xfff5f5f5)
-			+ 4;
-		batch.effect = null;
+			drawing.image(logo, vx + vw - 74, vy + 10, 64, 64);
+		// Wrapped short of the corner sprite.
 		var on = (value:Bool) -> value ? "on" : "off";
-		line += batch.drawTextWrapped('[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash',
-			vx
-			+ 12, line, 16, vw
-			- 96, 0xffc8c8c8)
-			+ 4;
-		batch.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame', vx + 12,
-			line, 16, vw - 96, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		var line = vy + 36,
+			title = "HeliX sprite2d: source region, pivot, rotation, flip, tint, hover; sprite effects",
+			keys = '[1] outline ${on(outlined)}  [2] dissolve ${on(dissolving)}  [3] palette swap ${on(swapped)}  [R] palette row ${swap.row}  [4] wave ${on(waving)}  [F] flash';
+		line += drawing.drawTextWrapped(title, vx + 12, line, 16, vw - 96, 0xfff5f5f5) + 4;
+		line += drawing.drawTextWrapped(keys, vx + 12, line, 16, vw - 96, 0xffc8c8c8) + 4;
+		drawing.drawTextWrapped('pointer (${Std.int(x)}, ${Std.int(y)})  hover: ${hovered < 0 ? "nothing" : NAMES[hovered]}  sheet frame $sheetFrame',
+			vx + 12, line, 16, vw - 96, 0xffc8c8c8);
+		fps.setPosition(vx + 12, vy + 10);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({
@@ -337,7 +328,6 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		creature.destroy(Graphics.instance);
 		palette.destroy(Graphics.instance);
-		batch.destroy();
 		if (wave != null)
 			shaders.release(wave.shader);
 	}

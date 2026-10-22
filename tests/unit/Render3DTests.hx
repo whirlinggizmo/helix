@@ -369,7 +369,7 @@ class Render3DTests {
 		sun.shadowDistance = 50;
 		sun.shadowMapSize = 1024;
 		var gpu = new Render2DTests.CountingGraphics(),
-			stage = new helix.render3d.Stage3D(gpu);
+			stage = new helix.render3d.Renderer3D(gpu);
 		sun.lookAt(-.3, -1, -.2);
 		stage.add(sun);
 		stage.add(new Model(Mesh.plane(20, 20), new Material()));
@@ -410,12 +410,12 @@ class Render3DTests {
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
 		var fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
-		check(fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 8) == 0
-			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 24) == -1,
+		check(fs.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_SPOT + 8) == 0
+			&& fs.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_SPOT + 24) == -1,
 			"The sun reads layer 0; light slots without a light read none");
-		check(fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS) == 1 / 1024
-			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 64) == 1
-			&& fs.getFloat(@:privateAccess helix.render3d.Stage3D.SHADOW_PARAMS + 76) == 0,
+		check(fs.getFloat(@:privateAccess helix.render3d.Renderer3D.SHADOW_PARAMS) == 1 / 1024
+			&& fs.getFloat(@:privateAccess helix.render3d.Renderer3D.SHADOW_PARAMS + 64) == 1
+			&& fs.getFloat(@:privateAccess helix.render3d.Renderer3D.SHADOW_PARAMS + 76) == 0,
 			"A texel in uv, full strength, an orthographic map");
 		sun.shadowCasting = false;
 		gpu.shadowPasses = [];
@@ -423,7 +423,7 @@ class Render3DTests {
 		gpu.beginFrame(800, 600, 0);
 		stage.draw(view);
 		fs = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
-		check(gpu.shadowPasses.length == 0 && fs.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_SPOT + 8) == -1,
+		check(gpu.shadowPasses.length == 0 && fs.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_SPOT + 8) == -1,
 			"With no casting light, no passes and no shadows");
 		// A spot: a perspective map whose cone holds what it points at.
 		var spot = new SpotLight();
@@ -444,7 +444,7 @@ class Render3DTests {
 	// The three flags: enabled takes the subtree, visible only the node's own output, pickable only picks.
 	static function flags():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
-			stage = new helix.render3d.Stage3D(gpu);
+			stage = new helix.render3d.Renderer3D(gpu);
 		var group = new Model(Mesh.cube(1, 1, 1), new Material()),
 			child = new Model(Mesh.cube(1, 1, 1), new Material());
 		child.setPosition(2, 0, 0);
@@ -489,7 +489,7 @@ class Render3DTests {
 	// Lights chosen per model: a table of the 16 that reach the drawn models most, each model lit by the 8 of those that reach it most.
 	static function lightChoice():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
-			stage = new helix.render3d.Stage3D(gpu);
+			stage = new helix.render3d.Renderer3D(gpu);
 		var left = new Model(Mesh.cube(1, 1, 1), new Material()),
 			right = new Model(Mesh.cube(1, 1, 1), new Material());
 		left.setPosition(-10, 0, 0);
@@ -526,7 +526,7 @@ class Render3DTests {
 			"The left model: 8 of its own lamps, the nearest (the last found) first");
 		check([for (l in lightsOf(right)) if (l.x != 10) l].length == 0, "The right model: only lamps that reach it");
 		// The old limit: the first four found lit everything, so a model by the fifth lamp went dark.
-		var stage2 = new helix.render3d.Stage3D(gpu),
+		var stage2 = new helix.render3d.Renderer3D(gpu),
 			far = new Model(Mesh.cube(1, 1, 1), new Material());
 		far.setPosition(50, 0, 0);
 		stage2.add(far);
@@ -545,15 +545,15 @@ class Render3DTests {
 		var lit = [for (t in (only[0].lights : Array<Int>)) if (t >= 0) t2[t]];
 		check(lit.length == 2 && lit[0].x == 50 && lit[1] == sun, "The fifth lamp lights the model beside it, the sun everything; lamps out of range don't");
 		var u = gpu.meshDraws[gpu.meshDraws.length - 1].uniforms[1];
-		check(u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION) == 50
-			|| u.getFloat(@:privateAccess helix.render3d.Stage3D.LIGHT_POSITION + 16) == 50,
+		check(u.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_POSITION) == 50
+			|| u.getFloat(@:privateAccess helix.render3d.Renderer3D.LIGHT_POSITION + 16) == 50,
 			"The table, as the shader reads it");
 	}
 
 	// The culling switch, and libwgf's shadow case: a caster above the view whose shadow falls into it is kept, one aside is dropped.
 	static function cullingAndCasters():Void {
 		var gpu = new Render2DTests.CountingGraphics(),
-			stage = new helix.render3d.Stage3D(gpu);
+			stage = new helix.render3d.Renderer3D(gpu);
 		var floor = new Model(Mesh.plane(10, 10), new Material()),
 			high = new Model(Mesh.cube(1, 1, 1), new Material()),
 			aside = new Model(Mesh.cube(1, 1, 1), new Material());

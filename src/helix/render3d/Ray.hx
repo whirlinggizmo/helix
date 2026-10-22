@@ -1,6 +1,6 @@
 package helix.render3d;
 
-/** A ray in the world: where it starts and the way it goes (a unit vector). Camera3D.computeRay makes one through a pixel; Stage3D.pick follows
+/** A ray in the world: where it starts and the way it goes (a unit vector). Camera3D.computeRay makes one through a pixel; Renderer3D.pick follows
 	one. */
 class Ray {
 	var ox = 0.;

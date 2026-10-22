@@ -152,7 +152,7 @@ var edgeThresholdMin(default, set):Float
 
 *class* in `src/helix/shaders/HitFlash.hx`
 
-A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time (Stage3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too), mixed in after the exposure, so the tone mapping applies to it as to the light. A HitFlash is a view of its material's: two on one material share it.
+A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time (Renderer3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too), mixed in after the exposure, so the tone mapping applies to it as to the light. A HitFlash is a view of its material's: two on one material share it.
 
 ```haxe
 function new(material:Material)
@@ -310,7 +310,7 @@ var noise(default, set):Texture2D
 
 *class* in `src/helix/shaders/SpriteFlash.hx`
 
-A sprite effect of the library: a color mixed over the sprite's (its alpha kept), all of it at a trigger and fading to none over some seconds of the batch's time (Batch2D.time; a Stage2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it (SpriteEffect): each sprite flashing on its own has a SpriteFlash of its own. Built on the program's GPU (Graphics) the first time one is made.
+A sprite effect of the library: a color mixed over the sprite's (its alpha kept), all of it at a trigger and fading to none over some seconds of the batch's time (Batch2D.time; a Renderer2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it (SpriteEffect): each sprite flashing on its own has a SpriteFlash of its own. Built on the program's GPU (Graphics) the first time one is made.
 
 ```haxe
 function new()
@@ -346,7 +346,7 @@ var width(default, set):Float
 
 *class* in `src/helix/shaders/Tonemap.hx`
 
-An HDR chain's tone mapping, a screen effect of the library: the frame's light (a stage's after its exposure, drawn into a half-float scene as sRGB values running past 1) brought into the screen's 0..1 by mode, as Stage3D does drawing straight to the screen, and written as the screen's sRGB. It wants HDR itself (ScreenEffect.hdr). PostProcess adds one after the last effect wanting HDR, with its stage's mode, to a chain that has none; one added by hand runs where it's added, with its own mode, and only in an HDR chain. Built on the program's GPU (Graphics) the first time one is made.
+An HDR chain's tone mapping, a screen effect of the library: the frame's light (a stage's after its exposure, drawn into a half-float scene as sRGB values running past 1) brought into the screen's 0..1 by mode, as Renderer3D does drawing straight to the screen, and written as the screen's sRGB. It wants HDR itself (ScreenEffect.hdr). PostProcess adds one after the last effect wanting HDR, with its stage's mode, to a chain that has none; one added by hand runs where it's added, with its own mode, and only in an HDR chain. Built on the program's GPU (Graphics) the first time one is made.
 
 ```haxe
 function new()
@@ -359,7 +359,7 @@ function computeHdrColor(color:Int, out:Array<Float>):Void
 - `new`: A tone mapping by Khronos PBR Neutral.
 - `MAX_LIGHT`: The most linear light computeHdrColor answers with, for a color the mode never reaches (Neutral never reaches 1): Neutral shows it as white written in 8 bits.
 - `map`: linear (red, green, blue light) tone mapped by mode as the shader does it, into 0..1, a new array.
-- `mode`: How the light comes into 0..1 (helix.render3d.Tonemap's modes, as Stage3D.tonemap): Khronos PBR Neutral to start.
+- `mode`: How the light comes into 0..1 (helix.render3d.Tonemap's modes, as Renderer3D.tonemap): Khronos PBR Neutral to start.
 - `computeHdrColor`: Fills out (its first four) with what an HDR frame holds where this tone mapping shows color (0xAARRGGBB): red, green and blue as sRGB values running past 1, alpha as given, 0 to 1. PostProcess clears an HDR scene to it, so a background of clear color alone looks the same with and without an HDR chain. Solved on the CPU (this tone mapping as the shader works it, one channel at a time by bisection, round after round, as the modes mix the channels a little), no channel past MAX_LIGHT. A color the mode can't show comes as near as it lets: Neutral desaturates what nears white, so a bright saturated color (0xffff2000) is shown paler.
 
 ## Toon

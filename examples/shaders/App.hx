@@ -12,12 +12,13 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.AnimationClip;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -25,18 +26,18 @@ import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight;
-import helix.render3d.Stage3D;
 import helix.shaders.Dissolve;
 import helix.shaders.HitFlash;
 import helix.shaders.Outline;
 import helix.shaders.Silhouette;
 import helix.shaders.Toon;
 import helix.shaders.Unlit;
+import helix.render3d.View3D;
 import helix.shaders.Water;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** Surface shaders in a lit scene: how to write one of one's own (the floor), beside HeliX's library (helix.shaders, packed into the program:
+/** Surface shaders in a lit scene, a View3D on the stage: how to write one of one's own (the floor), beside HeliX's library (helix.shaders, packed into the program:
 	nothing to load) where it meets the rest of the stage: shadows cast through a shader's discards and vertex hook, a silhouette through a
 	wall on a character of layered parts, a flash on a library shader and on the stage's own shading. Every library shader alone, with its
 	parameters, is the shader-gallery example's.
@@ -62,10 +63,9 @@ class App extends helix.App {
 	static inline var WOMEN = "models/modular-women/";
 	static var PARTS = ["Casual_Head", "Casual_Body", "Casual_Legs", "Casual_Feet"];
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var shaders:Shaders;
 	var sun:DirectionalLight;
@@ -115,9 +115,12 @@ class App extends helix.App {
 		} else
 			Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		stage = new Stage3D(gpu);
-		stage.setAmbient(0xffffffff, .15);
+		Stage.color = 0xff14161c;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .15);
+		Stage.addChild(new View3D(level, camera));
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 		aim();
 		// Framed for 16:9: everything on a phone held upright too.
 		camera.minAspect = 16 / 9;
@@ -127,24 +130,24 @@ class App extends helix.App {
 		sun.shadowCasting = true;
 		sun.shadowDistance = 12;
 		sun.lookAt(-.4, -.8, -.45);
-		stage.add(sun);
+		level.addChild(sun);
 		lamp = new PointLight();
 		lamp.color = 0xff78beff;
 		lamp.intensity = 9;
 		lamp.range = 8;
-		stage.add(lamp);
+		level.addChild(lamp);
 		var glow = new Material();
 		glow.lit = false;
 		glow.baseColor = 0xff87ceeb;
 		marker = new Model(Mesh.sphere(.05), glow);
 		marker.shadowCasting = false;
-		stage.add(marker);
+		level.addChild(marker);
 		// The floor: drawn by the example's own shader once it's loaded (its squares' colors times the material's), the stage's shading until then.
 		floor.baseColor = 0xff808084;
 		floor.roughness = .8;
 		var plane = new Model(Mesh.plane(8, 6), floor);
 		plane.setPosition(0, FLOOR_Y, 0);
-		stage.add(plane);
+		level.addChild(plane);
 		// Dissolving: both sides drawn, so the inside shows through the holes.
 		var dissolving = new Material();
 		dissolving.baseColor = 0xff8c9bb4;
@@ -154,12 +157,12 @@ class App extends helix.App {
 		dissolve.scale = .5;
 		var sphere = new Model(Mesh.sphere(.5, 32, 64), dissolving);
 		sphere.setPosition(0, .1, 0);
-		stage.add(sphere);
+		level.addChild(sphere);
 		// Water, finely divided so its waves are smooth.
 		new Water(sea);
 		var rippling = new Model(Mesh.sphere(.5, 96, 192), sea);
 		rippling.setPosition(1.9, .1, 0);
-		stage.add(rippling);
+		level.addChild(rippling);
 		// The library's Unlit: a flat color, no light, and nothing to load.
 		var flat = new Material();
 		unlit = new Unlit(flat);
@@ -167,13 +170,13 @@ class App extends helix.App {
 		var cube = new Model(Mesh.cube(.3, .3, .3), flat);
 		cube.setPosition(0, 1.05, 0);
 		cube.setRotation(.5, .7, 0);
-		stage.add(cube);
+		level.addChild(cube);
 		// A low wall before the character, the stage's own shading: her silhouette shows through it.
 		wallMaterial.baseColor = 0xff9a7b5c;
 		wallMaterial.roughness = .9;
 		var wall = new Model(Mesh.cube(.9, .45, .08), wallMaterial);
 		wall.setPosition(-.85, FLOOR_Y + .225, 1.65);
-		stage.add(wall);
+		level.addChild(wall);
 		flashes.push(new HitFlash(wallMaterial));
 
 		Models.load("models/car-kit/sedan-sports.glb", file -> placeCar(file));
@@ -210,7 +213,7 @@ class App extends helix.App {
 		node.setPosition(-1.9, FLOOR_Y, 0);
 		node.setRotation(0, .4, 0);
 		node.setScale(.75, .75, .75);
-		stage.add(node);
+		level.addChild(node);
 		for (material in file.materials)
 			new Toon(material);
 		var skinned = [], rigid = [];
@@ -225,7 +228,7 @@ class App extends helix.App {
 		node.setPosition(-.85, FLOOR_Y, 1.25);
 		node.setScale(.55, .55, .55);
 		node.setRotation(0, .5, 0);
-		stage.add(node);
+		level.addChild(node);
 		character = node;
 		animator = new Animator(node);
 		idle = file.getClip("Idle");
@@ -337,7 +340,8 @@ class App extends helix.App {
 		}
 		// The game's clock: paused, the motion stops; held under the autopilot, her pose with it.
 		var time = pilot != null ? heldTime : Time.clock.time;
-		stage.time = time;
+		// What the stage draws at: the shaders' waves and dissolve held with the rest.
+		Stage.heldTime = pilot != null ? heldTime : null;
 		if (animator != null)
 			animator.update(pilot != null ? 0 : dt);
 		// Half gone at the autopilot's held time.
@@ -349,26 +353,20 @@ class App extends helix.App {
 			lz = 1.6 + Math.sin(time * .7) * .4;
 		lamp.setPosition(lx, ly, lz);
 		marker.setPosition(lx, ly, lz);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(hud);
+		fps.setPosition(vx + 12, vy + 10);
+		hud.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX shaders: the library's surface shaders and passes, and the example's own (the floor)", vx + 12, y, 20, vw - 24,
+		y += hud.drawTextWrapped("HeliX shaders: the library's surface shaders and passes, and the example's own (the floor)", vx + 12, y, 20, vw - 24,
 			0xfff5f5f5)
 			+ 3;
 		var on = (value:Bool) -> value ? "on" : "off";
-		y += batch.drawTextWrapped('[1] sun ${on(sun.visible)}  [2] point light ${on(lamp.visible)}  [3] outlines ${on(outlines.length > 0 && outlines[0].enabled)}'
+		y += hud.drawTextWrapped('[1] sun ${on(sun.visible)}  [2] point light ${on(lamp.visible)}  [3] outlines ${on(outlines.length > 0 && outlines[0].enabled)}'
 			+
 			'  [4] silhouette ${on(silhouettes.length > 0 && silhouettes[0].enabled)}  [5] dissolve ${on(dissolving)}  [6] toon ${on(toonOn)}  [7] water ${on(waterOn)}  [C] close up  [F] flash',
 			vx
@@ -376,10 +374,7 @@ class App extends helix.App {
 			- 24, 0xffc8c8c8)
 			+ 4;
 		if (status != "")
-			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+			hud.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({
@@ -397,10 +392,5 @@ class App extends helix.App {
 			if (Host.getOption("autoclose", "0") == "1")
 				Host.quit();
 		}
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
 	}
 }

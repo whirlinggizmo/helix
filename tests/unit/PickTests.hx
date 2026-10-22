@@ -8,7 +8,7 @@ import helix.render3d.PickHit;
 import helix.render3d.Ray;
 import helix.render3d.Skin;
 import helix.render3d.Sprite3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 import helix.render3d.Text3D;
 
 /** Picking: the ray through a pixel (perspective, orthographic, a viewport area), the nearest model along it, its point, distance and
@@ -65,7 +65,7 @@ class PickTests {
 	}
 
 	static function models():Void {
-		var stage = new Stage3D(new CountingGraphics()), c = camera();
+		var stage = new Renderer3D(new CountingGraphics()), c = camera();
 		var front = new Model(Mesh.cube(2, 2, 2), new Material()),
 			back = new Model(Mesh.cube(2, 2, 2), new Material());
 		front.setPosition(0, 0, 2);
@@ -101,7 +101,7 @@ class PickTests {
 		// vector toward the camera.
 		var slab = new Model(Mesh.fromArrays([-1., -1, 1, 1, -1, -1, 0, 1, 0], null, null, null, null), new Material());
 		slab.setScale(4, 1, 1);
-		var side = new Stage3D(new CountingGraphics());
+		var side = new Renderer3D(new CountingGraphics());
 		side.add(slab);
 		var slanted = side.pick(c, 400, 300), length = Math.sqrt(1 / 16 + 1);
 		check(slanted != null
@@ -112,7 +112,7 @@ class PickTests {
 		var inside = new Camera3D();
 		inside.setViewport(800, 600);
 		inside.setView(0, 0, 0, 0, 0, -1);
-		var room = new Stage3D(new CountingGraphics());
+		var room = new Renderer3D(new CountingGraphics());
 		room.add(new Model(Mesh.cube(2, 2, 2), new Material()));
 		var fromInside = room.pick(inside, 400, 300);
 		check(fromInside != null && fromInside.getNormal(2) > 0, "From inside, the normal faces back along the ray");
@@ -137,7 +137,7 @@ class PickTests {
 		var model = new Model(mesh, new Material());
 		character.addChild(model);
 		model.bindSkeleton(character, skin);
-		var stage = new Stage3D(new CountingGraphics());
+		var stage = new Renderer3D(new CountingGraphics());
 		stage.add(character);
 		var c = new Camera3D();
 		c.setViewport(800, 600);
@@ -173,7 +173,7 @@ class PickTests {
 	}
 
 	static function sprites():Void {
-		var gpu = new CountingGraphics(), stage = new Stage3D(gpu), c = camera();
+		var gpu = new CountingGraphics(), stage = new Renderer3D(gpu), c = camera();
 		c.setView(0, 4, 10, 0, 0, 0);
 		var logo = new Sprite3D(helix.render2d.Texture2D.fromRgba(gpu, 2, 2, haxe.io.Bytes.alloc(16)));
 		logo.setSpriteSize(2, 2);
@@ -204,10 +204,10 @@ class PickTests {
 
 	// The pointer over a world and a HUD: hover, press, a click released over what was pressed, a drag released elsewhere, and capture.
 	static function pointer():Void {
-		var gpu = new CountingGraphics(), world = new Stage3D(gpu), c = camera(), input = new helix.input.InputState();
+		var gpu = new CountingGraphics(), world = new Renderer3D(gpu), c = camera(), input = new helix.input.InputState();
 		var cube = new Model(Mesh.cube(2, 2, 2), new Material());
 		world.add(cube);
-		var hud = new helix.render2d.Stage2D(),
+		var hud = new helix.render2d.Renderer2D(),
 			hudCamera = new helix.render2d.Camera2D();
 		hudCamera.setViewport(800, 600);
 		hudCamera.pixels(1);
@@ -215,8 +215,8 @@ class PickTests {
 		button.setPosition(10, 10);
 		hud.add(button);
 		var pointer = new helix.scene.Pointer(input);
-		pointer.addStage3D(world, c);
-		pointer.addStage2D(hud, hudCamera);
+		pointer.addRenderer3D(world, c);
+		pointer.addRenderer2D(hud, hudCamera);
 		function frame(x:Float, y:Float, down:Bool):Void {
 			input.endFrame();
 			input.pointerEvent(x, y, down);

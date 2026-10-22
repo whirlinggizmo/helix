@@ -1,9 +1,8 @@
-// The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one + a 2D batch drawing a rectangle.
+// The web size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one + the stage showing a rectangle.
 import helix.app.AppOptions;
-import helix.graphics.Graphics;
 import helix.host.Window;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Shape2D;
+import helix.render2d.Stage;
 
 /** The entry point: Game on the backend the build names. */
 class Main {
@@ -14,22 +13,13 @@ class Main {
 	}
 }
 
-/** This rung's game: + a 2D batch drawing a rectangle. */
+/** This rung's game: + the stage, cleared to a color, showing a rectangle. */
 class Game extends helix.App {
-	var batch:Batch2D;
-	var camera = new Camera2D();
-
 	override public function init():Void {
 		Window.title = "2-shapes";
-		batch = new Batch2D();
-	}
-
-	override public function update(dt:Float):Void {
-		camera.pixels(Window.pixelRatio);
-		Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff202840);
-		batch.begin(camera);
-		batch.rect(40, 40, 320, 160, 0xff66bfff);
-		batch.end();
-		Graphics.endFrame();
+		Stage.color = 0xff202840;
+		var box = Shape2D.rectangle(320, 160, 0xff66bfff);
+		box.setPosition(40, 40);
+		Stage.addChild(box);
 	}
 }

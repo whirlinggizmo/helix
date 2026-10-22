@@ -1,9 +1,9 @@
 import helix.assets.Assets;
 import helix.behavior.Behavior;
+import helix.behavior.BehaviorPass;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
@@ -11,31 +11,30 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.render3d.Camera3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Node3D;
 import helix.render3d.Tonemap;
-import helix.scene.Scene;
+import helix.render3d.View3D;
 import helix.scene.SceneFile;
 import helix.scene.SceneFiles;
 import helix.scene.SceneInstance;
-import helix.scene.Scenes;
 import helix.time.Ticker;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** A racer slice entirely from a scene file (helix.scene.SceneFile) and behaviors (helix.behavior): scenes/track.scene holds the stage's
-	sky, ambient light and tone mapping, the sun with its shadows, a closed loop of Kenney's Racing Kit pieces with barriers, a gantry and
-	scenery (laid by tools/gen_loop.py), eight checkpoints, the race, the car (a prefab, scenes/car.scene, the kit's sports car) and the chase
-	camera; nothing of the world is in code. The behaviors (Car, ChaseCamera, Checkpoint, Race) drive it, run by the Play scene's pass
-	(Scene.behaviors) at a fixed 60 Hz through a Ticker. UP / DOWN or W / S drive and brake, LEFT / RIGHT or A / D steer, a pad's left stick
-	and triggers too; R restarts the race (the instance destroyed and made again); Escape quits where quitting means anything. The HUD shows
-	the lap, its time and the best. Options: autopilot (a script under assets/), fast (1: up to 120 ticks a frame under autopilot) and
-	autoclose (1: quit once the script is done); the probes are loaded, state, lap, checkpoint, passed, lapTime, bestLap, carX, carZ and
-	speed. */
+/** A racer slice entirely from a scene file (helix.scene.SceneFile) and behaviors (helix.behavior): scenes/track.scene holds the place's
+	light (its environment: the sky and the ambient light), the sun with its shadows, a closed loop of Kenney's Racing Kit pieces with
+	barriers, a gantry and scenery (laid by tools/gen_loop.py), eight checkpoints, the race, the car (a prefab, scenes/car.scene, the kit's
+	sports car) and the chase camera; nothing of the world is in code. The file is instantiated under a Node3D shown by a View3D on the
+	stage, which holds the photography (ACES tone mapping, the exposure) and looks through the file's chase camera; the HUD is text on the
+	stage over it. The behaviors (Car, ChaseCamera, Checkpoint, Race) drive it, run by a BehaviorPass of the app's own at a fixed 60 Hz
+	through a Ticker. UP / DOWN or W / S drive and brake, LEFT / RIGHT or A / D steer, a pad's left stick and triggers too; R restarts the
+	race (the instance destroyed and made again); the window losing focus pauses the game's clock (the app's pauseOnBlur), and the race with
+	it; Escape quits where quitting means anything. The HUD shows the lap, its time and the best. Options: autopilot (a script under
+	assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done); the probes are loaded,
+	state, lap, checkpoint, passed, lapTime, bestLap, carX, carZ and speed. */
 class App extends helix.App {
 	/** The input the game is played with this tick: the window's, or the autopilot's while a script runs. The Car reads it. Kept across a
 		hot reload (@:hot): set every tick, but a reload between ticks would leave it null for a frame otherwise. */
@@ -45,7 +44,6 @@ class App extends helix.App {
 		program starts (a class nothing names is never compiled in). */
 	static var BEHAVIORS:Array<Class<Behavior>> = [Car, ChaseCamera, Checkpoint, Race];
 
-	var scenes:Scenes;
 	var play:Play;
 	var ticker:Ticker;
 	var pilot:Null<Autopilot>;
@@ -53,8 +51,6 @@ class App extends helix.App {
 	var published = false;
 
 	override public function init():Void {
-		scenes = new Scenes();
-		play = new Play();
 		Window.title = "HeliX scene-file";
 		Window.requestSize(1200, 675);
 		ticker = new Ticker(Input.instance);
@@ -64,23 +60,22 @@ class App extends helix.App {
 		if (script != "")
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		else
-			scenes.push(play);
+			play = new Play();
 	}
 
 	// The autopilot's script in: the pilot made, then the game started.
 	function startPilot(bytes:haxe.io.Bytes):Void {
 		pilot = new Autopilot(bytes.toString(), name -> Screenshots.take(name));
-		// The window of a headless run isn't focused: its ticks run regardless.
-		scenes.pauseOnBlur = false;
-		scenes.push(play);
+		play = new Play();
 	}
 
 	// A named value of the game for the autopilot, and the final game it publishes.
 	function probe(name:String):Dynamic {
-		var race = play.race, car = play.car;
+		var race = play == null ? null : play.race,
+			car = play == null ? null : play.car;
 		return switch name {
 			// The instance's ready, and its ready lambda run (the pass's update after the flag), so the race and the car are found.
-			case "loaded": play.instance != null && play.instance.ready && race != null;
+			case "loaded": play != null && play.instance != null && play.instance.ready && race != null;
 			case "state": race == null ? "" : race.state;
 			case "lap": race == null ? 0 : race.lap;
 			case "checkpoint": race == null ? 0 : race.checkpoint;
@@ -98,11 +93,11 @@ class App extends helix.App {
 	static function hundredths(value:Float):Float
 		return Math.round(value * 100) / 100;
 
-	// One tick of the game from source: the behaviors and the scene at a sixtieth of a second.
+	// One tick of the game from source: the level's keys and its behaviors at a sixtieth of a second.
 	function tick(source:IInput):Void {
 		input = source;
-		scenes.input = source;
-		scenes.update(1 / 60);
+		if (play != null)
+			play.tick(source, 1 / 60);
 	}
 
 	override public function update(dt:Float):Void {
@@ -117,12 +112,8 @@ class App extends helix.App {
 			}
 		} else
 			ticker.advance(Time.clock.elapsed, () -> tick(Input.instance));
-		play.fps.update(dt, Time.frameCpu);
-		if (scenes.top == null) {
-			Graphics.beginFrame(Window.framebufferWidth, Window.framebufferHeight, 0xff14161c);
-			Graphics.endFrame();
-		} else
-			scenes.draw();
+		if (play != null)
+			play.update(dt);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			var game:Dynamic = {};
@@ -146,13 +137,15 @@ class App extends helix.App {
 	}
 
 	override public function cleanup():Void {
-		scenes.destroy();
+		if (play != null)
+			play.destroy();
 	}
 }
 
-/** The level: the track's file loaded through SceneFiles and instantiated onto its stage with the scene's own pass; drawn with the camera
-	the file made (the Camera3D named chase), the sun's shadows first; a HUD line over it. R destroys the instance and makes it again. */
-class Play extends Scene {
+/** The level: the track's file loaded through SceneFiles and instantiated under a Node3D with its own pass, shown on the stage by a View3D
+	through the camera the file made (the Camera3D named chase); a HUD line over it, on the stage. R destroys the instance and makes it
+	again. */
+class Play {
 	/** The track's file. */
 	public static inline var TRACK = "scenes/track.scene";
 
@@ -165,33 +158,31 @@ class Play extends Scene {
 	/** The car's behavior, once the instance is ready; null before. */
 	public var car(default, null):Null<Car>;
 
-	/** The frame rate readout. */
-	public var fps(default, null) = new FpsOverlay();
-
-	var stage = new Stage3D();
+	var level = new Node3D();
+	var view:View3D;
+	var behaviors = new BehaviorPass();
 	var file:Null<SceneFile>;
-	var camera:Null<Camera3D>;
 	var fallback = new Camera3D();
-	var hud = new Stage2D();
-	var hudCamera = new Camera2D();
-	var line:Text2D;
-	var help:Text2D;
-	var batch:Batch2D;
+	var fps = new FpsOverlay();
+	var line = new Text2D("Loading the track", 22, 0xfff5f5f5);
+	var help = new Text2D("", 15, 0xffc8c8c8);
 
-	override public function enter():Void {
-		batch = new Batch2D();
-		line = new Text2D("Loading the track", 22, 0xfff5f5f5);
-		help = new Text2D("", 15, 0xffc8c8c8);
-		hud.add(line);
-		hud.add(help);
+	/** The level on the stage, its file loading. */
+	public function new() {
+		Stage.color = 0xff7896c8;
 		fallback.setView(0, 40, 60, 0, 0, 0);
-		// The photography: the camera's, not the place's (the file holds the place's light).
-		stage.tonemap = Aces;
-		stage.exposure = .2;
+		view = new View3D(level, fallback);
+		// The photography: the view's, not the place's (the file holds the place's light).
+		view.tonemap = Aces;
+		view.exposure = .2;
+		Stage.addChild(view);
+		Stage.addChild(line);
+		Stage.addChild(help);
+		Stage.addChild(fps);
 		SceneFiles.load(TRACK, loaded -> place(loaded), message -> line.text = message);
 	}
 
-	// The file in: instantiated under the stage's root, with this scene's pass.
+	// The file in: instantiated under the level's root, with the level's pass.
 	function place(loaded:SceneFile):Void {
 		file = loaded;
 		restart();
@@ -203,48 +194,43 @@ class Play extends Scene {
 			instance.destroy();
 		race = null;
 		car = null;
-		camera = null;
-		instance = file.instantiate(stage.root, behaviors, () -> ready());
+		view.camera = fallback;
+		instance = file.instantiate(level, behaviors, () -> ready());
 	}
 
-	// Everything has landed and the behaviors have started: the camera and the behaviors the HUD and the probes read.
+	// Everything has landed and the behaviors have started: the camera the view looks through, and the behaviors the HUD and the probes read.
 	function ready():Void {
-		camera = Std.downcast(instance.node("chase"), Camera3D);
+		var chase = Std.downcast(instance.node("chase"), Camera3D);
+		if (chase != null)
+			view.camera = chase;
 		race = behaviors.find(Race);
 		car = behaviors.find(Car);
 	}
 
-	override public function update(dt:Float):Void {
-		var input = scenes.input;
+	/** A tick of dt seconds with input: its keys, then its behaviors. */
+	public function tick(input:IInput, dt:Float):Void {
 		if (input.isFramePressed(Key.Escape) && Host.canQuit())
 			Host.quit();
 		if (input.isFramePressed(Key.R) && file != null)
 			restart();
+		behaviors.update(dt);
 	}
 
-	override public function draw():Void {
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		var view = camera != null ? camera : fallback;
-		view.setViewport(width, height);
+	/** The HUD for a frame of dt seconds, in the design for the window's shape. */
+	public function update(dt:Float):Void {
+		fps.update(dt, Time.frameCpu);
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hudCamera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 		line.setPosition(vx + 12, vy + 36);
 		help.setPosition(vx + 12, vy + 66);
+		fps.setPosition(vx + vw - 150, vy + 10);
 		if (race != null) {
 			line.text = race.racing ? 'Lap ${race.lap}   ${seconds(race.lapTime)}   best ${race.bestLap > 0 ? seconds(race.bestLap) : "--"}' : 'Ready: ${Math.ceil(race.remaining)}';
 			help.text = "UP / DOWN drive, LEFT / RIGHT steer, R restart" + (Host.canQuit() ? ", ESC quit" : "");
 		}
-		stage.drawShadows(view);
-		Graphics.beginFrame(width, height, 0xff7896c8);
-		stage.draw(view);
-		batch.begin(hudCamera);
-		hud.draw(batch, hudCamera);
-		fps.draw(batch, vx + vw - 150, vy + 10);
-		batch.end();
 	}
 
 	// Seconds as m:ss.hh.
@@ -255,11 +241,11 @@ class Play extends Scene {
 		return '$minutes:${rest < 10 ? "0" : ""}$rest.${hundredths < 10 ? "0" : ""}$hundredths';
 	}
 
-	override public function exit():Void {
+	/** Its instance and its view destroyed. */
+	public function destroy():Void {
 		if (instance != null)
 			instance.destroy();
 		instance = null;
-		stage.destroy();
-		batch.destroy();
+		view.destroy();
 	}
 }

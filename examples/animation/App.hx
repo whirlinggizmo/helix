@@ -1,39 +1,39 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Animator;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
 /** Skinned characters and skeletal animation, from Quaternius's Ultimate Modular Women: a skeleton and its clips from a file of animations
 	alone, and her parts from files of their own (a head, a body, legs and feet, each a skinned mesh), each bound to that skeleton by its joints'
-	names (Model.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's). 1 to 8 play a clip, crossfading from
+	names (Model.bindSkeleton; dressing her slot by slot, and hanging what she holds, is the dressing room's), in a level shown by a View3D,
+	her clip's name and the keys on the stage over it. 1 to 8 play a clip, crossfading from
 	the one before over a quarter second (F: cut instead); Space pauses. O stops the circling camera; Escape quits where quitting means anything. */
 class App extends helix.App {
 	static inline var DIR = "models/modular-women/";
 	static var CLIPS = ["Idle", "Walk", "Run", "Wave", "Sword_Slash", "Punch_Right", "Roll", "Death"];
 	static var PARTS = ["Casual_Head", "Casual_Body", "Casual_Legs", "Casual_Feet"];
 
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
-	var camera2D = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var character:Null<Node3D>;
 	// Her parts' files as they land, bound to her skeleton once both are in.
@@ -50,24 +50,27 @@ class App extends helix.App {
 		Window.title = "HeliX animation";
 		Window.requestSize(1000, 600);
 		camera.minAspect = 16 / 9;
-		stage = new Stage3D();
-		stage.setAmbient(0xffc8d2ff, .35);
+		Stage.color = 0xff1c1e26;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffc8d2ff, .35);
 		var sun = new DirectionalLight();
 		sun.intensity = 2.5;
 		sun.shadowCasting = true;
 		sun.shadowDistance = 8;
 		sun.lookAt(-.4, -1, -.6);
-		stage.add(sun);
+		level.addChild(sun);
 		var ground = new Material();
 		ground.baseColor = 0xff5a5f6a;
 		ground.roughness = .9;
-		stage.add(new Model(Mesh.plane(10, 10), ground));
+		level.addChild(new Model(Mesh.plane(10, 10), ground));
 		// Her parts, each a skinned mesh in a file of its own: bound to her skeleton once it and they are in, in whatever order.
 		for (name in PARTS)
 			Models.load(DIR + name + ".glb", file -> addPart(file), message -> status = '$name: $message');
 		// The skeleton: the animations file's, which has no meshes.
 		Models.load(DIR + "Animations.glb", file -> place(file), message -> status = 'Animations: $message');
-		batch = new Batch2D();
+		Stage.addChild(new View3D(level, camera));
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 	}
 
 	// A part's skinned models bound to her skeleton by joint name and moved under her, so they follow her clips.
@@ -77,11 +80,11 @@ class App extends helix.App {
 		wear(file);
 	}
 
-	// The skeleton's file in: her copy of it on the stage, animated, wearing the parts already in.
+	// The skeleton's file in: her copy of it in the level, animated, wearing the parts already in.
 	function place(file:ModelFile):Void {
 		animations = file;
 		character = file.instantiate("character");
-		stage.add(character);
+		level.addChild(character);
 		animator = new Animator(character);
 		for (file in parts)
 			wear(file);
@@ -131,37 +134,23 @@ class App extends helix.App {
 		}
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera2D);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		stage.drawShadows(camera);
-		Graphics.beginFrame(width, height, 0xff1c1e26);
-		stage.draw(camera);
-		batch.begin(camera2D);
-		var y = vy + 36;
-		y += batch.drawTextWrapped('HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}', vx + 12, y, 20, vw - 24, 0xfff5f5f5)
-			+ 3;
-		y += batch.drawTextWrapped([for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  "), vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 3;
-		batch.drawTextWrapped('F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
+		hud.clear();
+		var y = vy + 36, title = 'HeliX animation: $status${animator != null && animator.fading ? "  (fading)" : ""}',
+			clips = [for (i in 0...CLIPS.length) '${i + 1} ${CLIPS[i]}'].join("  ");
+		y += hud.drawTextWrapped(title, vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		y += hud.drawTextWrapped(clips, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 3;
+		hud.drawTextWrapped('F: ${fade ? "crossfade" : "cut"}   Space: ${paused ? "resume" : "pause"}   O: the camera'
 			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
 			+ 12, y,
 			16, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
+		fps.setPosition(vx + 12, vy + 10);
 	}
 }

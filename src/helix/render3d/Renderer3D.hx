@@ -8,7 +8,8 @@ import helix.graphics.IGraphics;
 import helix.graphics.Sampling;
 import helix.render2d.Texture2D;
 
-/** A retained 3D scene: nodes under a root, drawn by draw(camera) inside a frame. A draw walks the tree as it is now (each world matrix
+/** What draws and picks a tree of 3D nodes (docs/DISPLAY_MODEL.md): each View3D's, never a game's, which shows a tree with a View3D. A
+	draw (draw(camera), inside a frame) walks the tree as it is now (each world matrix
 	worked out only where something changed), gathers the lights it finds, places each model's part's box and culls it against the
 	camera's view, sorts the opaque models so alike ones (same mesh and material) are together and the see-through ones back to front after
 	them, writes each model's instance record (its matrix's rows, its normals' matrix's rows, its tint), and draws each run of alike models as
@@ -28,7 +29,7 @@ import helix.render2d.Texture2D;
 	Surface shaders: a material's (Material.setShader) draws its models, a skinned one through the shader's skinned variant, and casts their
 	shadows through its caster where it has one (a vertex hook or a discard), so the shadow moves and opens as the surface does. A model's
 	passes (ModelPass: outlines, silhouettes) are drawn from its records after the opaque models. */
-class Stage3D {
+class Renderer3D {
 	// Lights: the first 64 a walk finds are considered; the 16 that reach the drawn models most are the table the shaders read, and each model
 	// is lit by the 8 of those that reach it most; the first 4 that cast have shadows.
 	static inline var GATHERED_LIGHTS = 64;
@@ -75,6 +76,14 @@ class Stage3D {
 	var flatTexts:Array<Null<Text3D>> = [];
 	var emitters:Array<Particles3D> = [];
 	var emitterAt:Array<Int> = [];
+	// The kinds that draw themselves (Drawing3D: linked only into a program that makes one), after the opaque models; the batch they share,
+	// the first one's to make, and how to free it.
+	var owners:Array<Node3D> = [];
+	var ownerAt:Array<Int> = [];
+	@:allow(helix.render3d.Drawing3D)
+	var ownBatch:Null<Any>;
+	@:allow(helix.render3d.Drawing3D)
+	var ownBatchDestroy:Null<Void->Void>;
 	var pipelines:helix.graphics.Pipelines;
 	var white:Texture2D;
 	var flat:Texture2D;
@@ -958,6 +967,8 @@ class Stage3D {
 			drawRun(i, last - i + 1);
 			i = last + 1;
 		}
+		// The drawings after what's opaque, before what's seen through: lines on the ground under smoke and floating labels.
+		drawDrawings(camera);
 		drawPasses(false, viewProjection);
 		while (i < count) {
 			var last = i;
@@ -968,6 +979,17 @@ class Stage3D {
 			i = last + 1;
 		}
 		sprites.drawRest();
+	}
+
+	// The kinds that draw themselves (Drawing3D) reached and shown, each where its node is, depth-tested against the opaque models: the
+	// first begins the renderer's shared batch for them (ownBatch), the last ends it.
+	function drawDrawings(camera:Camera3D):Void {
+		var shown = [
+			for (k in 0...owners.length)
+				if (reached[ownerAt[k]] && owners[k].visible) owners[k]
+		];
+		for (k in 0...shown.length)
+			shown[k].drawOwn(camera, this, k == 0, k == shown.length - 1);
 	}
 
 	// The draw's passes (ModelPass): each enabled pass of each drawn item's model, sorted so alike ones (in kind, mesh, color and push) of items
@@ -1079,6 +1101,8 @@ class Stage3D {
 		flatTexts.resize(0);
 		emitters.resize(0);
 		emitterAt.resize(0);
+		owners.resize(0);
+		ownerAt.resize(0);
 		for (i in 0...root.childCount)
 			list(root.getChild(i), -1);
 		builtStructure = root.structure;
@@ -1104,6 +1128,9 @@ class Stage3D {
 		} else if (Std.isOfType(node, Particles3D)) {
 			emitters.push(cast node);
 			emitterAt.push(at);
+		} else if (node.drawsOwn) {
+			owners.push(node);
+			ownerAt.push(at);
 		}
 		for (i in 0...node.childCount)
 			list(node.getChild(i), at);
@@ -1722,6 +1749,10 @@ class Stage3D {
 		environments are their owners' to free, and the pipelines the GPU's (Pipelines). */
 	public function destroy():Void {
 		sprites.destroy();
+		if (ownBatchDestroy != null)
+			ownBatchDestroy();
+		ownBatch = null;
+		ownBatchDestroy = null;
 		gpu.destroyBuffer(instanceBuffer);
 		gpu.destroyBuffer(casterBuffer);
 		gpu.destroyBuffer(skinnedCasterBuffer);
@@ -1759,7 +1790,7 @@ private class Item {
 	/** Whether it's opaque and its model has a silhouette (ModelPass behind): drawn after the silhouettes, so its own parts never hide it. */
 	public var silhouetted = false;
 
-	/** Whether it follows joints (Stage3D.isSkinned). */
+	/** Whether it follows joints (Renderer3D.isSkinned). */
 	public var skinned = false;
 
 	/** Its first joint in the palette, when skinned. */

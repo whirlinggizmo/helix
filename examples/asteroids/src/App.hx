@@ -3,7 +3,6 @@ import helix.debug.Autopilot;
 import helix.assets.Assets;
 import helix.audio.Audio;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
@@ -11,29 +10,33 @@ import helix.host.Window;
 import helix.input.Input;
 import helix.time.Time;
 import helix.input.IInput;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Stage2D;
-import helix.scene.Pointer;
+import helix.render2d.Drawing2D;
+import helix.render2d.Node2D;
+import helix.render2d.Stage;
+import helix.render2d.View2D;
 import helix.ui.Layout2D;
 import helix.ui.Button;
 import helix.ui.Ui;
 import helix.host.ScreenShape;
 
-/** Asteroids: menus, flight, splitting rocks and waves at a fixed 60 Hz, letterboxed. Options: seed, audio (0 for silence), autopilot (a
+/** Asteroids: menus, flight, splitting rocks and waves at a fixed 60 Hz, letterboxed: the field a View2D on the stage, the HUD and the
+	menus over it on the stage, both drawn again each frame into Drawing2Ds (Renderer). Options: seed, audio (0 for silence), autopilot (a
 	script under assets/), fast (1: up to 120 ticks a frame under autopilot) and autoclose (1: quit once the script is done). */
 class App extends helix.App {
-	var batch:Batch2D;
+	// The field: a drawing in world units, shown letterboxed through camera.
+	var field = new Drawing2D();
 	var camera = new Camera2D();
-	// The score, the lives and the menus, in the presentation's units.
+	var view:View2D;
+	// The presentation's units (the stage's), to place the field's view in.
 	var hudCamera = new Camera2D();
+	// The score, the lives and the menu's panel, on the stage over the field.
+	var hud = new Drawing2D();
 	var renderer:Renderer;
 	var ticker:Ticker;
 	var game:Game;
 	var input = new Controls();
-	// The menus: helix.ui buttons over the field, asked each frame; a click is a request the next tick takes.
-	var hud = new Stage2D();
-	var pointer:Pointer;
+	// The menus: helix.ui buttons on the stage over the HUD, asked each frame; a click is a request the next tick takes.
 	var ui:Ui;
 	var layout:Layout2D;
 	var play:Button;
@@ -64,8 +67,13 @@ class App extends helix.App {
 		Window.title = "HeliX Asteroids";
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
-		batch = new Batch2D();
-		renderer = new Renderer(Graphics.instance, batch);
+		Stage.color = Renderer.BACKGROUND;
+		var world = new Node2D();
+		world.addChild(field);
+		view = new View2D(world, camera);
+		Stage.addChild(view);
+		Stage.addChild(hud);
+		renderer = new Renderer(field, hud);
 		menus();
 		ticker = new Ticker(Input.instance);
 		ticker.maxSteps = 6;
@@ -83,8 +91,6 @@ class App extends helix.App {
 
 	// The title's Play, and game over's Play again and Title, in the HUD's units, as the renderer's panel has them.
 	function menus():Void {
-		pointer = new Pointer(Input.instance);
-		pointer.addStage2D(hud, hudCamera);
 		var theme = new helix.ui.Theme();
 		theme.faceColor = 0xff1f293d;
 		theme.hoveredColor = 0xff303d57;
@@ -95,7 +101,7 @@ class App extends helix.App {
 		theme.widgetHeight = 52;
 		theme.gap = 12;
 		theme.cornerRadius = 12;
-		ui = new Ui(hud, hudCamera, pointer, Input.instance, theme);
+		ui = new Ui(theme);
 		play = ui.button("PLAY", "play");
 		again = ui.button("PLAY AGAIN", "again");
 		toTitle = ui.button("TITLE", "title");
@@ -123,8 +129,7 @@ class App extends helix.App {
 		}
 		play.text = ready ? "PLAY" : "LOADING";
 		play.enabled = ready;
-		Layout2D.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, batch.font);
-		pointer.update();
+		Layout2D.arrange(layout, Renderer.getHudX(Screen.instance), Renderer.getHudY(Screen.instance), Game.W, Game.H, ui.font);
 		ui.update();
 		if (play.clicked || again.clicked)
 			wantStart = true;
@@ -146,8 +151,8 @@ class App extends helix.App {
 			game: game.snapshot(),
 			menu: {focus: ui.focusedName},
 			autopilot: pilot == null ? null : pilot.snapshot,
-			vertices: batch.vertexCount,
-			draws: batch.drawCallCount,
+			vertices: Stage.vertexCount,
+			draws: Stage.drawCallCount,
 			width: Window.framebufferWidth,
 			height: Window.framebufferHeight,
 			focused: Window.focused
@@ -184,9 +189,15 @@ class App extends helix.App {
 	override public function update(dt:Float):Void {
 		if (stopped || Window.framebufferWidth <= 0 || Window.framebufferHeight <= 0)
 			return;
-		Field.view(camera, Window.framebufferWidth, Window.framebufferHeight);
 		ScreenShape.update();
 		Screen.apply(hudCamera);
+		// The field's letterbox in framebuffer pixels (Field), the view placed over it in the stage's units; the view sets the same viewport.
+		Field.view(camera, Window.framebufferWidth, Window.framebufferHeight);
+		var left = hudCamera.screenToWorldX(camera.viewportX),
+			top = hudCamera.screenToWorldY(camera.viewportY);
+		view.setPosition(left, top);
+		view.width = hudCamera.screenToWorldX(camera.viewportX + camera.viewportWidth) - left;
+		view.height = hudCamera.screenToWorldY(camera.viewportY + camera.viewportHeight) - top;
 		if (ready) {
 			if (pilot != null && fast) {
 				for (_ in 0...120)
@@ -198,7 +209,7 @@ class App extends helix.App {
 				sounds.play(game, false, false);
 		}
 		updateMenu();
-		renderer.render(game, camera, hudCamera, Screen.instance, hud);
+		renderer.render(game, Screen.instance);
 		if (pilot != null && pilot.done) {
 			TestHarness.publish(inspect());
 			pilot = null;
@@ -211,6 +222,5 @@ class App extends helix.App {
 
 	override public function cleanup():Void {
 		sounds.cleanup();
-		batch.destroy();
 	}
 }

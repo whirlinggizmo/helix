@@ -3,7 +3,9 @@ package helix.render3d;
 import helix.graphics.IGraphics;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Texture2D;
 import helix.render2d.View;
+import helix.render2d.ViewFrame;
 import helix.scene.Node;
 
 /** A 3D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in a 2D tree, showing content's
@@ -14,7 +16,7 @@ import helix.scene.Node;
 	for itself. */
 class View3D extends View {
 	var gpu:Null<IGraphics>;
-	var world:Null<Stage3D>;
+	var world:Null<Renderer3D>;
 	// Its rectangle in framebuffer pixels, as the walk gave it.
 	var areaX = 0;
 	var areaY = 0;
@@ -60,6 +62,24 @@ class View3D extends View {
 	function get_drawnNodeCount():Int
 		return world == null ? 0 : world.drawnNodeCount;
 
+	/** How many draws the last frame took for its tree. */
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
+		return world == null ? 0 : world.drawCallCount;
+
+	/** How many models cast into the shadow maps the last frame. */
+	public var shadowCasterCount(get, never):Int;
+
+	function get_shadowCasterCount():Int
+		return world == null ? 0 : world.shadowCasterCount;
+
+	/** How many draws the last frame's shadow maps took. */
+	public var shadowDrawCallCount(get, never):Int;
+
+	function get_shadowDrawCallCount():Int
+		return world == null ? 0 : world.shadowDrawCallCount;
+
 	override function getContent():Node
 		return content;
 
@@ -72,11 +92,12 @@ class View3D extends View {
 		framebufferWidth = outer.framebufferWidth;
 		framebufferHeight = outer.framebufferHeight;
 		this.time = time;
-		View.deferred.push(this);
+		ViewFrame.drawsUnder.push(() -> drawDeferred());
+		ViewFrame.shadows.push(() -> prepare());
 	}
 
 	override function pickShown(x:Float, y:Float):Null<helix.render2d.Node2D> {
-		View.picked3D.push(this);
+		ViewFrame.picks3D.push((x, y, hit) -> pick3D(x, y, hit));
 		return null;
 	}
 
@@ -94,7 +115,7 @@ class View3D extends View {
 
 	override function drawInto(gpu:IGraphics, w:Int, h:Int, hdr:Bool, time:Float):Void {
 		if (world == null) {
-			world = new Stage3D(this.gpu != null ? this.gpu : gpu, content);
+			world = new Renderer3D(this.gpu != null ? this.gpu : gpu, content);
 			world.viewed = true;
 		}
 		world.viewEnvironment = environment;
@@ -112,7 +133,7 @@ class View3D extends View {
 
 	override function drawDeferred():Void {
 		if (world == null) {
-			world = new Stage3D(gpu, content);
+			world = new Renderer3D(gpu, content);
 			world.viewed = true;
 		}
 		world.viewEnvironment = environment;
@@ -120,9 +141,30 @@ class View3D extends View {
 		camera.setViewportArea(areaX, areaY, areaWidth, areaHeight);
 		world.tonemap = tonemap;
 		world.exposure = exposure;
-		world.hdr = View.hdr;
+		world.hdr = ViewFrame.hdr;
 		world.time = time;
 		world.draw(camera);
+	}
+
+	/** Draws its tree through its camera into target (a Texture2D.renderTarget with depth), cleared to clearColor (0xAARRGGBB): a picture
+		taken when asked (a tile's portrait, an inventory icon), not each frame. Its shadows are drawn first. Outside a frame only: in init or
+		update, before the runner opens the frame. */
+	public function drawToTexture(target:Texture2D, clearColor = 0x00000000):Void {
+		var gpu = this.gpu != null ? this.gpu : helix.graphics.Graphics.instance;
+		if (world == null) {
+			world = new Renderer3D(gpu, content);
+			world.viewed = true;
+		}
+		world.viewEnvironment = environment;
+		camera.setViewport(target.width, target.height);
+		world.tonemap = tonemap;
+		world.exposure = exposure;
+		world.hdr = false;
+		world.drawShadows(camera);
+		gpu.beginTargetPass(target.handle, helix.graphics.Color.getRed(clearColor) / 255, helix.graphics.Color.getGreen(clearColor) / 255,
+			helix.graphics.Color.getBlue(clearColor) / 255, helix.graphics.Color.getAlpha(clearColor) / 255);
+		world.draw(camera);
+		gpu.endTargetPass();
 	}
 
 	override public function destroy():Void {

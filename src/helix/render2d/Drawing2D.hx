@@ -1,7 +1,7 @@
 package helix.render2d;
 
 /** Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle,
-	circleLines, line, polygon, polygonLines, drawText), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls
+	circleLines, line, polygon, polygonLines, image, drawText, drawTextWrapped), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls
 	are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away.
 	Calling clear and drawing again in update is immediate drawing, as Flash games did it. Not culled; picked by the box around what it holds. */
 class Drawing2D extends Node2D {
@@ -15,14 +15,16 @@ class Drawing2D extends Node2D {
 	var fonts:Array<Null<Font2D>> = [];
 	var triangles:Array<Null<Array<Int>>> = [];
 	var points:Array<Null<Array<Float>>> = [];
+	var images:Array<Null<Texture2D>> = [];
+	var samplings:Array<Null<helix.graphics.Sampling>> = [];
 	// The box around the shapes held, in its own units (text measured as it's drawn).
-	@:allow(helix.render2d.Stage2D)
+	@:allow(helix.render2d.Renderer2D)
 	var left = Math.POSITIVE_INFINITY;
-	@:allow(helix.render2d.Stage2D)
+	@:allow(helix.render2d.Renderer2D)
 	var top = Math.POSITIVE_INFINITY;
-	@:allow(helix.render2d.Stage2D)
+	@:allow(helix.render2d.Renderer2D)
 	var right = Math.NEGATIVE_INFINITY;
-	@:allow(helix.render2d.Stage2D)
+	@:allow(helix.render2d.Renderer2D)
 	var bottom = Math.NEGATIVE_INFINITY;
 
 	/** A drawing holding nothing yet. */
@@ -46,6 +48,8 @@ class Drawing2D extends Node2D {
 		fonts.resize(0);
 		triangles.resize(0);
 		points.resize(0);
+		images.resize(0);
+		samplings.resize(0);
 		left = top = Math.POSITIVE_INFINITY;
 		right = bottom = Math.NEGATIVE_INFINITY;
 	}
@@ -115,6 +119,30 @@ class Drawing2D extends Node2D {
 		return true;
 	}
 
+	/** texture drawn top-left at x, y, w x h, tinted (white by default): its region sourceX, sourceY, sourceWidth x sourceHeight in texels,
+		or all of it when sourceWidth or sourceHeight is 0 or less; sampled as sampling says, or as the texture's sampling is when drawn when
+		null. */
+	public function image(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
+			sourceHeight = 0., ?sampling:helix.graphics.Sampling):Void {
+		add(Image, [x, y, w, h, sourceX, sourceY, sourceWidth, sourceHeight], tint);
+		images[images.length - 1] = texture;
+		samplings[samplings.length - 1] = sampling;
+		include(x, y, x + w, y + h);
+	}
+
+	/** Text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font
+		(null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's
+		when no font is known: none given and no stage running). */
+	public function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25,
+			?font:Font2D):Float {
+		add(WrappedText, [x, y, size, width, lineHeight], color);
+		texts[texts.length - 1] = text;
+		aligns[aligns.length - 1] = align;
+		fonts[fonts.length - 1] = font;
+		var measuring = font != null ? font : Stage.instance != null ? Stage.instance.font : null;
+		return measuring != null ? measuring.measureWrapped(text, size, width, lineHeight) : size * lineHeight;
+	}
+
 	/** One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's). */
 	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
 		add(Text, [x, y, size], color);
@@ -135,6 +163,8 @@ class Drawing2D extends Node2D {
 		fonts.push(null);
 		triangles.push(null);
 		points.push(null);
+		images.push(null);
+		samplings.push(null);
 	}
 
 	function include(x0:Float, y0:Float, x1:Float, y1:Float):Void {
@@ -152,9 +182,23 @@ class Drawing2D extends Node2D {
 		}
 	}
 
-	// Draws every call into batch, its transform set to this node's by the walk.
+	// Its calls, where it is, when shown.
+	override function drawOwn(batch:Batch2D, camera:Camera2D, time:Float, dt:Float, frozen:Bool, shown:Bool):Bool {
+		if (shown) {
+			batch.setTransform(wa, wb, wc, wd, wx, wy);
+			replay(batch);
+		}
+		return true;
+	}
 
-	@:allow(helix.render2d.Stage2D)
+	override function get_picksOwn():Bool
+		return true;
+
+	// Itself, when pickable and its box (or a text it holds) has the point.
+	override function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font2D>):Null<Node2D>
+		return pickable && holds(lx, ly, font) ? this : null;
+
+	// Draws every call into batch, its transform set to this node's.
 	function replay(batch:Batch2D):Void {
 		for (i in 0...kinds.length) {
 			var at = starts[i], n = numbers, c = colors[i];
@@ -177,13 +221,17 @@ class Drawing2D extends Node2D {
 					batch.polygonLines(points[i], n[at], c);
 				case Text:
 					batch.drawText(texts[i], n[at], n[at + 1], n[at + 2], c, aligns[i], fonts[i]);
+				case WrappedText:
+					batch.drawTextWrapped(texts[i], n[at], n[at + 1], n[at + 2], n[at + 3], c, aligns[i], n[at + 4], fonts[i]);
+				case Image:
+					batch.samplingOverride = samplings[i];
+					batch.image(images[i], n[at], n[at + 1], n[at + 2], n[at + 3], c, n[at + 4], n[at + 5], n[at + 6], n[at + 7]);
+					batch.samplingOverride = null;
 			}
 		}
 	}
 
 	// Whether own point x, y is inside the box around what it holds, text measured in font (the batch's last, for text without its own).
-
-	@:allow(helix.render2d.Stage2D)
 	function holds(x:Float, y:Float, font:Null<Font2D>):Bool {
 		if (x >= left && x <= right && y >= top && y <= bottom)
 			return true;
@@ -215,4 +263,6 @@ private enum abstract DrawingKind(Int) {
 	var Polygon;
 	var PolygonLines;
 	var Text;
+	var WrappedText;
+	var Image;
 }

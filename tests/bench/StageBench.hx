@@ -10,9 +10,9 @@ import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.PointLight;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 
-/** A Stage3D's work on the CPU, frame after frame, against a GPU that does nothing (after libwgf's shadowbench): `StageBench <case> <models>
+/** A Renderer3D's work on the CPU, frame after frame, against a GPU that does nothing (after libwgf's shadowbench): `StageBench <case> <models>
 	<frames>`. tools/bench_stage.py runs each case under perf and takes its setup's run (0 frames) away. Cases:
 	look        models on a grid in view, sharing a mesh and a material; a sun and four lamps
 	away        the same, the camera turned away from them
@@ -27,7 +27,7 @@ class StageBench {
 			kind = args[0],
 			models = Std.parseInt(args[1]),
 			frames = Std.parseInt(args[2]);
-		var stage = new Stage3D(new NullGraphics()),
+		var stage = new Renderer3D(new NullGraphics()),
 			side = Math.ceil(Math.sqrt(models));
 		var shared = Mesh.cube(1, 1, 1), material = new Material();
 		for (i in 0...models) {

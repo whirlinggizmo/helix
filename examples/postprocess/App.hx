@@ -14,18 +14,20 @@ import helix.host.Window;
 import helix.input.IInput;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
 import helix.render3d.ModelFile;
 import helix.render3d.Models;
+import helix.render3d.Node3D;
 import helix.render3d.PointLight;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.shaders.Bloom;
 import helix.shaders.Blur;
 import helix.shaders.ChromaticAberration;
@@ -41,7 +43,8 @@ import helix.render3d.Orbit;
 
 /** Screen effects over the finished frame (PostProcess, ScreenEffect): a chain in the order a game would build one, and how to write an
 	effect of one's own; every library effect alone, with its parameters, is the shader-gallery example's. The frame is an ordinary lit
-	stage: the Kenney sports car on a floor, generated shapes, a circling point light and two glowing lamps. The effects are the shader
+	level shown by a View3D: the Kenney sports car on a floor, generated shapes, a circling point light and two glowing lamps. The chain is
+	the view's (View.postProcess), so the text on the stage over it stays sharp, outside the effects. The effects are the shader
 	library's (helix.shaders), each a class whose fields are its parameters, and one of the example's own:
 	- Bloom spreads the light past white around the lamps; it wants HDR, so with it on the scene is drawn in half floats (where the GPU draws
 	them) and tone mapped after it
@@ -53,19 +56,19 @@ import helix.render3d.Orbit;
 	They run in the order added to the chain (PostProcess.add), each on or off (ScreenEffect.enabled); Bloom, Fxaa and Vignette start on.
 
 	H puts the library's tone mapping (helix.shaders.Tonemap) first in the chain, so everything after it reads the tone-mapped frame: Bloom then
-	thresholds it as it does where the GPU draws no half floats. The background is the scene's clear color alone, and looks the same with the
-	scene HDR or not (PostProcess clears an HDR scene to what its tone mapping shows as that color).
+	thresholds it as it does where the GPU draws no half floats. The background is the view's color alone (View.color, what its chain's
+	scene is cleared to), and looks the same with the scene HDR or not (PostProcess clears an HDR scene to what its tone mapping shows as that
+	color).
 
 	1 Bloom, 2 Fxaa, 3 Blur, 4 Pixelate, 5 ColorLut, 6 Sepia, 7 ChromaticAberration, 8 Crt, 9 Vignette: each on and off; H: the tone mapping
 	first; Up / Down: the bloom's intensity; O: stop the camera; Escape: quit, where quitting means anything. Options: autopilot (a script
-	under assets/: the time and the camera are then held, the window the autopilot's page's size, so its samples of the frame compare across
-	targets) and autoclose (1: quit once the script is done); the probes are ready (the car and the example's shader in), hdr (PostProcess.hdr)
-	and on (the names of the effects on, in the chain's order, joined by spaces). */
+	under assets/: the time and the camera are then held, the stage's with it (Stage.heldTime), the window the autopilot's page's size, so its
+	samples of the frame compare across targets) and autoclose (1: quit once the script is done); the probes are ready (the car and the
+	example's shader in), hdr (PostProcess.hdr) and on (the names of the effects on, in the chain's order, joined by spaces). */
 class App extends helix.App {
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
 	var post:PostProcess;
 	var shaders:Shaders;
@@ -82,7 +85,7 @@ class App extends helix.App {
 	var pilot:Null<Autopilot>;
 	var published = false;
 
-	// The time the autopilot holds the stage at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
+	// The time the autopilot holds the level at, and its window's size (the autopilot's browser page's), so its samples compare across targets.
 	static inline var HELD_TIME = 2.;
 	static inline var PILOT_WIDTH = 800;
 	static inline var PILOT_HEIGHT = 600;
@@ -97,28 +100,29 @@ class App extends helix.App {
 		if (script != "") {
 			Window.requestSize(PILOT_WIDTH, PILOT_HEIGHT);
 			orbit.running = false;
+			// The stage drawn at the held time too: its effects' clock.
+			Stage.heldTime = HELD_TIME;
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
 		} else
 			Window.requestSize(1000, 600);
 		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		stage = new Stage3D(gpu);
-		post = new PostProcess(gpu, stage);
-		stage.setAmbient(0xffffffff, .2);
+		post = new PostProcess(gpu);
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .2);
 		// Framed for 16:9: the car and the shapes around it in view on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
 		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 		lamp = new PointLight();
 		lamp.color = 0xffff9a4a;
 		lamp.intensity = 12;
-		stage.add(lamp);
+		level.addChild(lamp);
 		var floor = new Material();
 		floor.baseColor = 0xff5c6066;
 		floor.roughness = .9;
-		stage.add(new Model(Mesh.plane(14, 14), floor));
+		level.addChild(new Model(Mesh.plane(14, 14), floor));
 		var shapes = [Mesh.sphere(.6), Mesh.cube(1, 1, 1), Mesh.torus(.5, .18), Mesh.cone(.5, 1.1)];
 		var colors = [0xff3b82f6, 0xffe5484d, 0xfff5b942, 0xff46a758];
 		for (i in 0...shapes.length) {
@@ -128,7 +132,7 @@ class App extends helix.App {
 			var model = new Model(shapes[i], material);
 			var a = i / shapes.length * Math.PI * 2 + .4;
 			model.setPosition(Math.cos(a) * 3.5, .6, Math.sin(a) * 3.5);
-			stage.add(model);
+			level.addChild(model);
 		}
 		// Two lamps glowing far past white, for the bloom.
 		for (i in 0...2) {
@@ -137,7 +141,7 @@ class App extends helix.App {
 			glow.setEmissive(i == 0 ? 0xffffd9a0 : 0xff9fd8ff, 10);
 			var bulb = new Model(Mesh.sphere(.25), glow);
 			bulb.setPosition(i == 0 ? -1.6 : 1.9, 1.7, i == 0 ? 1.4 : -.8);
-			stage.add(bulb);
+			level.addChild(bulb);
 		}
 		Models.load("models/car-kit/sedan-sports.glb", file -> place(file));
 
@@ -164,6 +168,16 @@ class App extends helix.App {
 
 		shaders = new Shaders(Assets.instance, gpu);
 		shaders.load("shaders/sepia.hxshader", shader -> makeSepia(shader), message -> status = message);
+
+		// The level through the chain, then the text over it, outside the effects.
+		Stage.color = 0xff14161c;
+		var view = new View3D(level, camera);
+		view.postProcess = post;
+		// Its chain's scene cleared to the stage's color: a background its effects work on.
+		view.color = Stage.color;
+		Stage.addChild(view);
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 	}
 
 	// A grade, as an artist would make one from the identity strip: shadows toward teal, highlights toward orange, a little more contrast.
@@ -202,7 +216,7 @@ class App extends helix.App {
 	function place(file:ModelFile):Void {
 		var car = file.instantiate("car");
 		car.setScale(1.5, 1.5, 1.5);
-		stage.add(car);
+		level.addChild(car);
 		placed = true;
 	}
 
@@ -257,43 +271,27 @@ class App extends helix.App {
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
 		lamp.setPosition(Math.cos(time) * 2.5, 1.2, Math.sin(time) * 2.5);
-		var gpu = Graphics.instance,
-			width = Window.framebufferWidth,
-			height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
 
-		// The scene into a texture, the effects but the last through more, then the screen; the HUD after, outside the effects.
-		post.beginScene(width, height, 0xff14161c);
-		stage.draw(camera);
-		post.endScene(time);
-		gpu.beginFrame(width, height, 0xff000000);
-		post.present();
-		batch.begin(hud);
-		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX postprocess: the shader library's screen effects over the finished frame", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		hud.clear();
+		var y = vy + 36, title = "HeliX postprocess: the shader library's screen effects over the finished frame";
+		y += hud.drawTextWrapped(title, vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = [
 			for (e in effects)
 				'[${(e.key : Int) - (Key.Digit0 : Int)}] ${e.name} ${e.effect.enabled ? "on" : "off"}'
 		].join("  ");
-		y += batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
-		y += batch.drawTextWrapped('[H] tone mapping first ${tonemap == null ? "off" : "on"}  HDR scene ${post.hdr ? "yes" : "no"}  [Up/Down] bloom ${Math.round(bloom.intensity * 100) / 100}  [O] camera',
-			vx
-			+ 12, y, 16, vw
-			- 24, 0xffc8c8c8)
-			+ 4;
+		y += hud.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
+		var state = '[H] tone mapping first ${tonemap == null ? "off" : "on"}  HDR scene ${post.hdr ? "yes" : "no"}  [Up/Down] bloom ${Math.round(bloom.intensity * 100) / 100}  [O] camera';
+		y += hud.drawTextWrapped(state, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
 		if (status != "")
-			batch.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		gpu.endFrame();
+			hud.drawTextWrapped(status, vx + 12, y, 16, vw - 24, 0xffff8080);
+		fps.setPosition(vx + 12, vy + 10);
 		if (pilot != null && pilot.done && !published) {
 			published = true;
 			TestHarness.publish({game: {hdr: post.hdr, on: probe("on")}, autopilot: pilot.snapshot});
@@ -324,7 +322,5 @@ class App extends helix.App {
 			shaders.release(sepia.shader);
 		post.destroy();
 		grade.destroy(Graphics.instance);
-		stage.destroy();
-		batch.destroy();
 	}
 }

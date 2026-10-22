@@ -24,16 +24,30 @@ var required(get, never):Bool
 
 *class* in `src/helix/scene/Transition.hx`
 
-A fade to a color and back: covered at the middle, where the scenes swap.
+A fade to a color and back: covered at the middle, where what's shown swaps.
 
 ```haxe
 function new(?seconds:Float = .5, ?color:Int = 0xff000000)
 var color(default, null):Int
-function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
+function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, progress:Float):Void
 ```
 
 - `new`: A fade over seconds (half a second unless given) through color (black unless given, 0xAARRGGBB, its alpha the cover at the middle).
 - `color`: Its color.
+
+## Flow
+
+*class* in `src/helix/scene/Flow.hx`
+
+What runs the screens that run themselves (a Transition, Loading, Splash) while they're on the stage: each a step called once a frame, after the app's update and before the frame is drawn, with the frames' seconds (not the game's clock: a paused game still transitions), until it says it's done. Installed by the first one (an optional part, helix.host.Part). A completion's lifetime: each step dies with its screen (decision 123).
+
+```haxe
+static var quick(get, never):Bool
+static function run(step:Float -> Bool):Void
+```
+
+- `quick`: Whether the built-in screens' waits and every transition are skipped: the run option quick=1 (a developer's), so the game jumps in as soon as it's loaded.
+- `run`: Calls step once a frame, with the frames' seconds, until it returns false. Outside the runner (a test) nothing calls the steps but tick.
 
 ## KindSchema
 
@@ -99,24 +113,24 @@ function model(models:ModelCache, path:String, loaded:ModelFile -> Void, ?failed
 
 *class* in `src/helix/scene/Loading.hx`
 
-The built-in loading scene: the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption ("Loading the caves", text; "Loading" unless given) over a bar of the loader's progress and the count, a tip along the bottom (tip), and what failed in the disabled text color. With holdForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening); else the scene runs as soon as its loads are in. The game drives it: one for the program (Scenes.loadingScene) set before each level, or one a level brings (Scene.loadingScene). Its theme is its own (theme).
+The built-in loading screen (docs/DISPLAY_MODEL.md): the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption ("Loading the caves", text; "Loading" unless given) over a bar of its loader's progress and the count, a tip along the bottom (tip), and what failed in the disabled text color. Shown on the stage (show) over what's there until its loader is done, then taken off and then called: put the level on the stage there. With holdForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening). It runs itself; quick (the run option quick=1) doesn't hold.
 
 ```haxe
-function new()
+function new(loader:Loader, ?theme:Theme)
+var loader(default, null):Loader
 var theme:Theme
 var image(default, null):Null<Texture2D>
 function setImage(value:Null<Texture2D>, ?cover:Bool = true):Void
 var text:String
 var tip:String
-var holdForPress(get, set):Bool
+var holdForPress:Bool
 var prompt:String
-function enter():Void
-function update(dt:Float):Void
-function exit():Void
-function draw():Void
+var shown(default, null):Bool
+function show(then:() -> Void):Bool
 ```
 
-- `new`: The built-in loading scene with the default theme.
+- `new`: A loading screen of loader's progress, in theme's look (a new Theme unless given).
+- `loader`: The loads it shows.
 - `theme`: The theme it draws with.
 - `image`: Its picture, or null.
 - `setImage`: A picture behind the rest: covering the screen (cropped to its shape) when cover, else centered whole; null for the panel color alone.
@@ -124,22 +138,8 @@ function draw():Void
 - `tip`: A line along the bottom (a hint, a credit), wrapped; "" for none.
 - `holdForPress`: Whether it stays once the loads are done, showing the prompt, until a key, a button or a finger is pressed.
 - `prompt`: The line shown once loaded, while holding for a press.
-
-## LoadingScene
-
-*class* in `src/helix/scene/LoadingScene.hx`
-
-A scene shown while another's loads are pending (Scenes.loadingScene): the stack hands it the loader before it enters, and it draws the loader's progress and failures. Loading is the built-in one; another extends this and draws its own.
-
-```haxe
-function new()
-var shownLoader:Null<Loader>
-var holding(get, never):Bool
-```
-
-- `new`: Not showing a loader yet.
-- `shownLoader`: The loader it shows, or null (its own loader stays empty: a loading scene loads nothing first): set by the stack as the wait begins.
-- `holding`: Whether to stay shown once the loads are done (a "loaded, press to go" screen): the stack keeps it until this is false. False unless overridden.
+- `shown`: Whether it's on the stage now.
+- `show`: Puts it on the stage, over what's there, until its loader is done (and a press, with holdForPress), then takes it off and calls then. False, doing nothing, while it's shown already.
 
 ## Node
 
@@ -243,9 +243,9 @@ The pointer over stages: which node it's over, and what it pressed and clicked, 
 
 ```haxe
 function new(input:IInput)
-function addStage2D(stage:Stage2D, camera:Camera2D):Void
-function addStage3D(stage:Stage3D, camera:Camera3D):Void
-function remove(stage:Any):Void
+function addRenderer2D(renderer:Renderer2D, camera:Camera2D):Void
+function addRenderer3D(renderer:Renderer3D, camera:Camera3D):Void
+function remove(renderer:Any):Void
 function update():Void
 var hovered(default, null):Null<Any>
 function isHovered(node:Any):Bool
@@ -258,9 +258,9 @@ var hit3D(get, never):Null<PickHit>
 ```
 
 - `new`: The pointer of input.
-- `addStage2D`: Looks at stage through camera, above the stages added before it.
-- `addStage3D`: Looks at stage through camera, above the stages added before it.
-- `remove`: Stops looking at stage (2D or 3D); what it held lets go.
+- `addRenderer2D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
+- `addRenderer3D`: Looks at renderer's tree through camera, above the trees added before it (a test's, a tree no view shows; a game's pointer looks at the stage).
+- `remove`: Stops looking at renderer (2D or 3D); what it held lets go.
 - `update`: Once a frame, after input is polled and before the stages' nodes are read: picks under the pointer, topmost stage first, and works out the frame's press and click.
 - `hovered`: The node under the pointer, topmost stage first, or null.
 - `isHovered`: Whether node is under the pointer.
@@ -301,40 +301,6 @@ What a kind's property holds in a .scene file: the shape the parser checks a val
 - `Numbers(count:Int)`: A list of count numbers.
 - `Color`: A color, "#RRGGBB" or "#RRGGBBAA" in the file, 0xAARRGGBB in memory.
 - `Reference`: A reference to a node of the file, "@name" or "@path/from/root" in the file.
-
-## Scene
-
-*class* in `src/helix/scene/Scene.hx`
-
-One screen of a game (a splash, a title, a level, a pause menu) on a Scenes stack, which calls it through the object (hooks are overrides, so a hot reload reaches them, DECISIONS 123): enter once it's pushed, update and draw each frame while it's on top, pause when another is pushed over it or the window loses focus, resume when that ends, exit when it's popped or replaced. A scene that loads first returns its Loader (loader) from enter on: the stack shows its loading scene until the loader is done, then runs this one. draw begins the frame (Graphics.beginFrame) and draws; the stack ends it, after any transition it draws over. Its behaviors (behaviors) are a pass of its own, which the stack updates just before update each frame this scene runs, and clears, stopping each, just before exit.
-
-```haxe
-function new()
-var behaviors(default, null):BehaviorPass
-var name(get, never):String
-var scenes(default, null):Null<Scenes>
-var loader(get, never):Null<Loader>
-var loadingScene(get, never):Null<LoadingScene>
-function enter():Void
-function exit():Void
-function pause():Void
-function resume():Void
-function update(dt:Float):Void
-function draw():Void
-```
-
-- `new`: A scene not on a stack yet, its behaviors pass empty.
-- `behaviors`: Its behaviors: the pass the stack updates before its update each frame it runs (not while it's under another scene, loading or the window is unfocused) and clears before its exit. What a scene file instantiated onto this scene attaches its behaviors to.
-- `name`: Its name: the class's, without its package, unless overridden; what an autopilot's probe reports.
-- `scenes`: The stack it's on, or null.
-- `loader`: The loads it waits for before it runs, or null for none: made in enter.
-- `loadingScene`: The loading scene shown while its loads are pending, or null for the stack's (Scenes.loadingScene): a level with its own picture and caption.
-- `enter`: Pushed onto the stack: make what it needs, start its loads.
-- `exit`: Popped or replaced: free what it made.
-- `pause`: Another scene pushed over it, or the window lost focus (Scenes.pauseOnBlur).
-- `resume`: On top again, or the window focused again.
-- `update`: A frame's logic, dt seconds since the last (the game's clock's delta, or an autopilot's tick).
-- `draw`: A frame's drawing: begins the frame and draws; the stack ends the frame.
 
 ## SceneBehavior
 
@@ -659,52 +625,6 @@ A value as a .scene file holds it: a kind's property, a behavior's prop, or one 
 - `Color(rgba:Int)`: A color, 0xAARRGGBB; "#RRGGBB" in the file is alpha ff.
 - `Reference(path:String)`: A reference to a node of the file: the name or path after the "@", resolved once every node is made.
 
-## Scenes
-
-*class* in `src/helix/scene/Scenes.hx`
-
-A game's scenes as a stack: the top one runs; push puts one over it (the one under pauses: a pause menu over play), pop takes it off (the one under resumes), replace swaps the top (a title for a level). A transition handed to any of them draws over the frames while the scenes swap at its middle. A scene with a loader (Scene.loader) is shown the loading scene until its loads are done: the built-in Loading unless loadingScene gives another, or none. The window losing focus pauses the game's clock and the top scene (pauseOnBlur, on unless turned off); focus resumes them. Scenes read input through input (Input.instance, or what an autopilot gives through input). frame runs update then draw; an autopilot runs several updates a frame and one draw. A frame's update runs the top scene's behaviors pass (Scene.behaviors) and then its update, under the same gates (a transition's swap first; nothing while it loads or the window is unfocused); a scene's behaviors are cleared, each stopped, just before it exits. Quick (quick; on with the run option quick=1, a developer's) skips the built-in screens' waits and every transition: the game jumps in as soon as it's loaded.
-
-```haxe
-function new()
-var quick:Bool
-var top(get, never):Null<Scene>
-var count(get, never):Int
-var all(get, never):Array<Scene>
-var input:IInput
-var loadingScene(get, set):Null<LoadingScene>
-var pauseOnBlur:Bool
-var transitioning(get, never):Bool
-var loading(get, never):Bool
-function push(scene:Scene, ?transition:Transition):Void
-function pop(?transition:Transition):Void
-function replace(scene:Scene, ?transition:Transition):Void
-function clear():Void
-function frame(dt:Float):Void
-function update(dt:Float):Void
-function draw():Void
-function destroy():Void
-```
-
-- `new`: An empty stack with the built-in loading scene and the program's input.
-- `quick`: Whether the built-in screens' waits and every transition are skipped (the run option quick=1 sets it).
-- `top`: The scene on top, or null.
-- `count`: How many scenes are stacked.
-- `all`: The scenes, bottom first.
-- `input`: What scenes read: Input.instance, or what was assigned instead (an autopilot's).
-- `loadingScene`: The scene shown while the top one's loads are pending, or null for none (the scene shows itself loading).
-- `pauseOnBlur`: Whether the window losing focus pauses the game's clock and the top scene.
-- `transitioning`: Whether a transition is under way (input is still the scenes').
-- `loading`: Whether the loading scene is showing: the top scene's loads are pending, or the loading scene holds after them (LoadingScene.holding).
-- `push`: Puts scene on top: the one under pauses, scene enters. With transition, the swap comes at its middle.
-- `pop`: Takes the top scene off: it exits, the one under resumes. Nothing with an empty stack.
-- `replace`: Swaps the top scene for scene: the top exits, scene enters; the one under stays paused.
-- `clear`: Takes every scene off, top first, each exiting.
-- `frame`: A frame: update then draw.
-- `update`: The frame's logic: the transition's time (the frames'), focus, then the top scene's behaviors and its update, or its loading scene's update while it loads.
-- `draw`: The frame's drawing: the top scene's (or its loading scene's), the transition over it, then the frame's end.
-- `destroy`: Frees what it made (the transition batch); the scenes are cleared first.
-
 ## ShapeSchema
 
 *class* in `src/helix/scene/SceneSchema.hx`
@@ -727,37 +647,42 @@ function argument(name:String):Null<ArgumentSchema>
 
 *class* in `src/helix/scene/Splash.hx`
 
-The built-in splash: a logo (or none) centered on the theme's panel color for at least its seconds, then the next scene, once the user has pressed a key, a button or a finger (IInput.activated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere), or after maxWait's seconds without one: "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. Pushed with a Fade, it fades in from the color. Extend it for another look; theme for its colors and font, prompt for the line.
+The built-in splash (docs/DISPLAY_MODEL.md): a logo (or none) centered on the theme's panel color, shown on the stage (show) for at least its seconds, then taken off through its transition (a half-second fade unless given), then called at the transition's middle: put the next screen on the stage there. It leaves once the user has pressed a key, a button or a finger (IInput.activated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere), or after maxWait's seconds without one: "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. It runs itself; quick (the run option quick=1) skips its wait. theme for its colors and font, prompt for the line.
 
 ```haxe
-function new(logo:Null<Texture2D>, seconds:Float, next:Scene, ?transition:Transition)
+function new(logo:Null<Texture2D>, seconds:Float, ?transition:Transition)
 var theme:Theme
 var prompt:String
-var shown(default, null):Float
+var elapsed(default, null):Float
 var maxWait(default, set):Float
-function exit():Void
-function update(dt:Float):Void
-function draw():Void
+function show(next:() -> Void):Bool
 ```
 
-- `new`: A splash of logo (null: the theme's colors alone), shown at least seconds, then next, by transition (a half-second fade unless given).
+- `new`: A splash of logo (null: the theme's colors alone), shown at least seconds, leaving by transition (a half-second fade unless given).
 - `theme`: The theme it draws with.
 - `prompt`: The line that asks for the press, shown until one comes ("press any key" to start).
-- `shown`: Seconds shown so far.
+- `elapsed`: Seconds shown so far.
 - `maxWait`: The most seconds it waits for a press before going on without one (a game that needs no audio unlock, or one that unlocks later); 0, the default, waits for one as long as it takes. 0 or more (under 0, or NaN, is 0).
+- `show`: Puts it on the stage, over what's there, until it leaves, calling next at its transition's middle as it's taken off. False, doing nothing, once shown.
 
 ## Transition
 
 *class* in `src/helix/scene/Transition.hx`
 
-How one scene gives way to the next on a Scenes stack: drawn over the frames for its seconds, the old scene under its first half and the new under its second (the swap is at the middle). A transition runs on the frames' time, not the game's clock, so a paused game still transitions to its menu. Fade is the one made; another draws anything over the frame by progress.
+How one screen gives way to the next on the stage (docs/DISPLAY_MODEL.md): a cover drawn over everything for its seconds, what's shown swapped at its middle. It runs itself (run, swap) on the frames' time, not the game's clock, so a paused game still transitions to its menu; quick (the run option quick=1) skips it, swapping at once. Fade is the one made; another draws anything into its cover by progress (draw).
 
 ```haxe
 function new(seconds:Float)
 var seconds(default, null):Float
-function draw(batch:Batch2D, width:Float, height:Float, progress:Float):Void
+var running(default, null):Bool
+function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, progress:Float):Void
+function run(atMiddle:() -> Void, ?done:() -> Void):Bool
+function swap(from:Null<Node2D>, to:Null<Node2D>, ?done:() -> Void):Bool
 ```
 
 - `new`: A transition taking seconds. Throws for 0 or less.
 - `seconds`: How long it takes.
-- `draw`: Draws it over the frame, width by height framebuffer pixels, at progress 0 to 1 (the swap at .5), into batch, begun on a camera of framebuffer pixels. Nothing by default.
+- `running`: Whether it's running now.
+- `draw`: Draws the cover at progress 0 to 1 (the swap at .5) into cover (cleared before each call, over everything on the stage, in the stage's units), the visible area x, y, width x height. Nothing by default.
+- `run`: Runs it over the stage: atMiddle at its middle (swap what's shown there), done (when given) at its end. False, running nothing, while it's running already.
+- `swap`: Runs it, taking from off the stage and putting to on it at its middle (either null for none), done (when given) at its end. False, running nothing, while it's running already.

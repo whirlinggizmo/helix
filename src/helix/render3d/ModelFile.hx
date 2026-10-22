@@ -8,7 +8,7 @@ import helix.render3d.AnimationClip.Track;
 import helix.render3d.AnimationClip.TrackInterpolation;
 import helix.render3d.AnimationClip.TrackPath;
 
-/** A model file read into what a Stage3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
+/** A model file read into what a Renderer3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
 	(ModelCache loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
 	together; each copy has lights and cameras of its own. Made by ModelCache; read, never changed after.
 

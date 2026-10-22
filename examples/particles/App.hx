@@ -1,44 +1,40 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
 import helix.particles.Emitter;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Particles2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Stage;
 import helix.render2d.Texture2D;
 import helix.render2d.Textures;
-import helix.render3d.Batch3D;
 import helix.render3d.Camera3D;
+import helix.render3d.Drawing3D;
 import helix.render3d.Node3D;
 import helix.render3d.Particles3D;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. On a 3D stage: a fountain
+/** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. In a 3D level shown by a View3D, over a grid (a Drawing3D): a fountain
 	(blended drops under gravity), sparks (added, from a point circling the fountain: they trail behind it, are thrown along by it, slowed by
 	drag, and stretched along their motion), and a campfire: flames (added puffs from a flipbook, colored by a curve) under smoke (blended,
 	with size and color curves: a dark puff that spreads, lightens and fades as it rises). The steady ones are prewarmed, so they're already
-	going. Click or tap for a burst of 2D confetti there, on a 2D stage over the 3D one: squares cut from the particle texture's middle (so their
-	spin shows), each tinted by a color it picked from the palette. The camera turns slowly around the stage.
+	going. Click or tap for a burst of 2D confetti there, on the stage over the 3D view: squares cut from the particle texture's middle (so their
+	spin shows), each tinted by a color it picked from the palette. The camera turns slowly around the level.
 
 	Click or tap: confetti; Space: pause the steady emitters (the particles alive finish their lives); O: the camera; Escape: quit, where
 	quitting means anything. */
 class App extends helix.App {
 	static inline var ORBIT = 14;
 
-	var stage:Stage3D;
-	var flat = new Stage2D();
-	var grid:Batch3D;
-	var batch:Batch2D;
+	var level = new Node3D();
+	var view:View3D;
 	var camera = new Camera3D();
-	var hud = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	var fountain:Emitter;
 	var sparks:Emitter;
@@ -54,17 +50,19 @@ class App extends helix.App {
 	function place(emitter:Emitter, x:Float, y:Float, z:Float):Node3D {
 		var node = new Particles3D(emitter);
 		node.setPosition(x, y, z);
-		stage.add(node);
+		level.addChild(node);
 		return node;
 	}
 
 	override public function init():Void {
 		Window.title = "HeliX particles";
 		Window.requestSize(1000, 600);
-		var gpu = Graphics.instance;
-		batch = new Batch2D(gpu);
-		grid = new Batch3D(gpu);
-		stage = new Stage3D(gpu);
+		Stage.color = 0xff0e1018;
+		var grid = new Drawing3D();
+		grid.grid(24, 1, 0xff50505a);
+		level.addChild(grid);
+		view = new View3D(level, camera);
+		Stage.addChild(view);
 		// Framed for 16:9: the fountain and the fire both in view on a phone held upright too.
 		camera.minAspect = 16 / 9;
 
@@ -133,7 +131,7 @@ class App extends helix.App {
 		place(flame, -5, .3, -2);
 		flame.prewarm(1);
 
-		// The confetti, flat: on the 2D stage, in the presentation's units.
+		// The confetti, flat: on the stage, in the presentation's units.
 		confetti = new Emitter(null, 4096, true);
 		confetti.setRegion(24, 24, 16, 16);
 		confetti.setLife(1.2, 2.2);
@@ -147,7 +145,9 @@ class App extends helix.App {
 			confetti.addPaletteColor(c);
 		confetti.setAlphaMode(Blend);
 		confettiNode = new Particles2D(confetti);
-		flat.add(confettiNode);
+		Stage.addChild(confettiNode);
+		Stage.addChild(text);
+		Stage.addChild(fps);
 
 		Textures.load("textures/particle.png", true, texture -> dot(texture));
 		Textures.load("textures/flame.png", true, texture -> flame.texture = texture);
@@ -187,38 +187,22 @@ class App extends helix.App {
 		// The game's clock: paused, the motion stops.
 		var time = Time.clock.time;
 		orbit.update(dt);
-		stage.time = time;
-		flat.time = time;
 		// The sparks' source circles the fountain; the sparks stay where they were born.
 		sparksNode.setPosition(3.5 * Math.cos(time * 1.3), 1.5 + .8 * Math.sin(time * 2.1), 3.5 * Math.sin(time * 1.3));
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
-		presentation.apply(hud);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff0e1018);
-		grid.begin(camera);
-		grid.grid(24, 1, 0xff50505a);
-		grid.end();
-		stage.draw(camera);
-		batch.begin(hud);
-		flat.draw(batch, hud);
+		var title = "HeliX particles";
+		text.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX particles", vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
-		batch.drawTextWrapped('click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${stage.drawCallCount} draws', vx + 12, y, 16,
+		y += text.drawTextWrapped(title, vx + 12, y, 24, vw - 24, 0xfff5f5f5) + 4;
+		text.drawTextWrapped('click / tap: confetti   space: ${paused ? "resume" : "pause"}   O: the camera   ${view.drawCallCount} draws', vx + 12, y, 16,
 			vw - 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 12, vy + 10);
 	}
 
-	override public function cleanup():Void {
-		stage.destroy();
-		grid.destroy();
-		batch.destroy();
-	}
+	override public function cleanup():Void
+		view.destroy();
 }

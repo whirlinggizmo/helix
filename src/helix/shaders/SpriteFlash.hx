@@ -5,7 +5,7 @@ import helix.graphics.Graphics;
 import helix.graphics.SpriteEffect;
 
 /** A sprite effect of the library: a color mixed over the sprite's (its alpha kept), all of it at a trigger and fading to none over some
-	seconds of the batch's time (Batch2D.time; a Stage2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it
+	seconds of the batch's time (Batch2D.time; a Renderer2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it
 	(SpriteEffect): each sprite flashing on its own has a SpriteFlash of its own. Built on the program's GPU (Graphics) the first time one is
 	made. */
 class SpriteFlash extends SpriteEffect {

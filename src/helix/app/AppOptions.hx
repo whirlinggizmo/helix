@@ -37,4 +37,8 @@ class AppOptions {
 		whether the services are still loading (Host.busy), and false once the program has quit, so a tool captures the page once it has
 		settled (tools/pages_shots.cjs); natively nothing. On in a debug build (-debug), off otherwise, unless set. */
 	public var pageState:Bool = #if debug true #else false #end;
+
+	/** Whether the game's clock (Time.clock) pauses while the window doesn't have the focus, and goes on when it's back: a game left in
+		another tab or behind another window waits. On unless set off; a clock the game paused itself stays paused either way. */
+	public var pauseOnBlur:Bool = true;
 }

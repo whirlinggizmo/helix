@@ -1,7 +1,6 @@
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
 import helix.graphics.Color;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -9,19 +8,18 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.math.Curve;
 import helix.math.Random;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.Stage;
 import helix.render2d.Text2D;
-import helix.render2d.Stage2D;
 import helix.time.Time;
 import helix.time.Timers;
 import helix.tween.Ease;
 import helix.tween.Tweens;
 import helix.host.ScreenShape;
 
-/** Motion from the game's clock (Time.clock): a column of squares each tweened across by one easing and back (yoyo, for ever); a ball
+/** Motion from the game's clock (Time.clock), moving nodes on the stage: a column of squares each tweened across by one easing and back (yoyo, for ever); a ball
 	following a closed curve through points at a steady speed (Curve, by distance); a timer dropping a spark every half second that falls and
 	fades by two tweens onto a floor (counted there by Collide2D); and the squares' colors dealt by a seeded Random. Space pauses the clock,
 	which stops all of it at once; - and = slow and quicken it; R deals the colors again from the seed. Escape quits where quitting means
@@ -50,9 +48,9 @@ class App extends helix.App {
 	static inline var FLOOR_WIDTH = 360;
 	static inline var FLOOR_Y = 200;
 
-	var stage = new Stage2D();
-	var batch:Batch2D;
-	var camera = new Camera2D();
+	// What moves, under the text.
+	var field = new Node2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	var tweens = new Tweens();
 	var timers = new Timers();
@@ -72,17 +70,18 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX motion";
 		Window.requestSize(1000, 600);
-		batch = new Batch2D();
+		Stage.color = 0xff0c0e16;
+		Stage.addChild(field);
 		// A square a row, each tweened from 0 to 300 across and back by its easing, for ever, a little apart in time.
 		for (i in 0...EASES.length) {
 			var square = Shape2D.rectangle(24, 24, COLORS[i]);
 			square.setPivot(.5, .5);
 			square.cornerRadius = 4;
-			stage.add(square);
+			field.addChild(square);
 			squares.push(square);
 			offsets.push(0);
 			var label = new Text2D(EASES[i].name, 13, 0xff8a92a8);
-			stage.add(label);
+			field.addChild(label);
 			labels.push(label);
 			var tween = tweens.to(0, 300, 1.6, EASES[i].f, x -> offsets[i] = x);
 			tween.setRepeat(-1, true);
@@ -98,23 +97,26 @@ class App extends helix.App {
 		path = Shape2D.polygon(samples);
 		path.outline = 1;
 		path.color = 0xff3a4150;
-		stage.add(path);
+		field.addChild(path);
 		ball = Shape2D.circle(12, 0xff66bfff);
-		stage.add(ball);
+		field.addChild(ball);
 		floor = Shape2D.rectangle(FLOOR_WIDTH, 6, 0xff3a4150);
-		stage.add(floor);
+		field.addChild(floor);
 		// Every half second, a spark: it falls by a tween (bounceOut onto the floor) and fades by another, gone when faded.
 		timers.every(.5, () -> {
 			var spark = new Spark(Shape2D.circle(5, random.pick(COLORS)), random.nextRange(10, FLOOR_WIDTH - 10));
-			stage.add(spark.node);
+			field.addChild(spark.node);
 			sparks.push(spark);
 			tweens.to(0, FLOOR_Y - 4, 1.2, Ease.bounceOut, y -> spark.y = y);
 			var fade = tweens.to(1, 0, 2.5, Ease.quadIn, a -> spark.alpha = a);
 			fade.setComplete(() -> {
-				stage.remove(spark.node);
+				field.removeChild(spark.node);
 				sparks.remove(spark);
 			});
 		});
+		// The text over what moves.
+		Stage.addChild(text);
+		Stage.addChild(fps);
 		deal();
 	}
 
@@ -151,7 +153,6 @@ class App extends helix.App {
 		// Laid out in the design for the window's shape: the squares down the left, the path and the floor on the right (below, upright).
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
@@ -178,23 +179,16 @@ class App extends helix.App {
 				caught++;
 		}
 
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		Graphics.beginFrame(width, height, 0xff0c0e16);
-		batch.begin(camera);
-		stage.draw(batch, camera);
+		var title = "HeliX motion: tweens, timers, a curve and the clock";
+		text.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX motion: tweens, timers, a curve and the clock", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
-		batch.drawTextWrapped('Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
+		y += text.drawTextWrapped(title, vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		text.drawTextWrapped('Space: ${clock.paused ? "resume" : "pause"}   - =: time x${clock.timeScale}   R: deal again   ${sparks.length} sparks, $caught on the floor   clock ${Math.round(clock.time * 10) / 10} s',
 			vx
 			+ 12, y, 15, vw
 			- 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
+		fps.setPosition(vx + 12, vy + 10);
 	}
-
-	override public function cleanup():Void
-		batch.destroy();
 }
 
 /** A falling spark: its node, where it is from the floor's left and top, and how faded. */

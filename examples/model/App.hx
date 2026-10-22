@@ -1,14 +1,14 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
@@ -16,23 +16,24 @@ import helix.render3d.ModelFile;
 import helix.render3d.Models;
 import helix.render3d.Node3D;
 import helix.render3d.SpotLight;
-import helix.render3d.Stage3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** A glTF model on a lit stage, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
+/** A glTF model in a lit level shown by a View3D, under a circling camera: a sports car from Kenney's Car Kit with two headlights added in Blender (spot lights
 	on its body, KHR_lights_punctual), a .gltf whose buffer and texture are files beside it, all loaded with it. Its wheels and headlights are
 	found by name once and kept: the wheels turn, H switches the headlights, D drives the car round a circle and parks it, and C rides along
 	through a second camera under the car (behind it and above, looking ahead), and back. Escape quits where quitting means anything. */
 class App extends helix.App {
 	static inline var MODEL = "models/car-kit/sedan-sports-headlights.gltf";
 
-	var stage:Stage3D;
-	var batch:Batch2D;
-	var hud = new Camera2D();
+	// The level: its light on its root, the ground and the car in it.
+	var level = new Node3D();
+	var view:View3D;
+	var hud = new Drawing2D();
 	var fps = new FpsOverlay();
-	// The camera going round the stage, and where it goes.
+	// The camera going round the level, and where it goes.
 	var orbitCamera = new Camera3D();
 	var orbit = new Orbit(7, 3, .25, .5);
 	// The camera riding along: under the car once it's in, so it goes where the car goes.
@@ -50,20 +51,24 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX model";
 		Window.requestSize(1000, 600);
-		stage = new Stage3D();
-		batch = new Batch2D();
-		stage.setAmbient(0xffffffff, .2);
+		Stage.color = 0xff14161c;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .2);
 		var sun = new DirectionalLight();
 		sun.intensity = 2;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 		var ground = new Material();
 		ground.baseColor = 0xff616164;
 		ground.roughness = .9;
-		stage.add(new Model(Mesh.plane(14, 14), ground));
+		level.addChild(new Model(Mesh.plane(14, 14), ground));
 		// Framed for 16:9: the whole circle across on a phone held upright too, riding along or not.
 		orbitCamera.minAspect = 16 / 9;
 		rideCamera.minAspect = 16 / 9;
+		view = new View3D(level, orbitCamera);
+		Stage.addChild(view);
+		Stage.addChild(hud);
+		Stage.addChild(fps);
 
 		Models.load(MODEL, file -> place(file), message -> caption = message);
 	}
@@ -78,7 +83,7 @@ class App extends helix.App {
 			wheels.push(car.find(name));
 		for (name in ["headlight-left", "headlight-right"])
 			headlights.push(cast(car.find(name), SpotLight));
-		stage.add(car);
+		level.addChild(car);
 		// Behind the car and above it, looking ahead, in its own units: a child, so the car carries it.
 		rideCamera.setView(0, 1.8, -4.5, 0, .4, 2);
 		car.addChild(rideCamera);
@@ -110,31 +115,18 @@ class App extends helix.App {
 		}
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		orbitCamera.setViewport(width, height);
 		orbit.apply(orbitCamera);
-		rideCamera.setViewport(width, height);
+		view.camera = riding ? rideCamera : orbitCamera;
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
-		Screen.apply(hud);
 		var vx = Screen.visibleX,
 			vy = Screen.visibleY,
 			vw = Screen.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(riding ? rideCamera : orbitCamera);
-		batch.begin(hud);
+		hud.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped('HeliX glTF model: $caption', vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		y += hud.drawTextWrapped('HeliX glTF model: $caption', vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = "D: drive   C: ride along   H: the headlights" + (Host.canQuit() ? "   ESC: quit" : "");
-		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
+		hud.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+		fps.setPosition(vx + 12, vy + 10);
 	}
 }

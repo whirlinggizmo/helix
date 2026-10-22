@@ -3,7 +3,7 @@ package helix.render2d;
 /** A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by
 	the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size,
 	pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn. */
-@:allow(helix.render2d.Stage2D)
+@:allow(helix.render2d.Renderer2D)
 class Shape2D extends Node2D {
 	var givenWidth = 0.;
 	var givenHeight = 0.;

@@ -1,7 +1,6 @@
 import helix.time.Ticker;
 import helix.assets.Assets;
 import helix.debug.TestHarness;
-import helix.graphics.Graphics;
 import helix.graphics.Screenshots;
 import helix.host.Host;
 import helix.host.Screen;
@@ -10,8 +9,10 @@ import helix.input.Input;
 import helix.time.Time;
 import helix.input.IInput;
 import helix.debug.Autopilot;
-import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.Node2D;
+import helix.render2d.Stage;
+import helix.render2d.View2D;
 import helix.host.ScreenShape;
 
 class App extends helix.App {
@@ -19,8 +20,7 @@ class App extends helix.App {
 	var controls = new Controls();
 	var layout = new Layout();
 	var camera = new Camera2D();
-	var batch:Batch2D;
-	var renderer:Renderer;
+	var renderer = new Renderer();
 	var pilot:Autopilot;
 	var ticker:Ticker;
 	var ticks = 0;
@@ -30,10 +30,13 @@ class App extends helix.App {
 		var seed = Std.parseInt(Host.getOption("seed", "12345"));
 		game = new Game(seed == null ? 12345 : seed);
 		Window.title = "HeliX Blocks";
-		batch = new Batch2D();
+		Stage.color = 0xff0a0e18;
+		// The well and its panels, in cells: the renderer's drawing in a world shown through the camera fitting the layout.
+		var world = new Node2D();
+		world.addChild(renderer.drawing);
+		Stage.addChild(new View2D(world, camera));
 		ticker = new Ticker(Input.instance);
 		ticker.maxSteps = 6;
-		renderer = new Renderer(Graphics.instance, batch);
 		var script = Host.getOption("autopilot", "");
 		if (script != "")
 			Assets.load(script, bytes -> startPilot(bytes), message -> throw 'Autopilot load failed: ' + message);
@@ -50,8 +53,8 @@ class App extends helix.App {
 			ready: true,
 			game: game.snapshot(),
 			ticks: ticks,
-			vertices: batch.vertexCount,
-			draws: batch.drawCallCount,
+			vertices: Stage.vertexCount,
+			draws: Stage.drawCallCount,
 			portrait: layout.portrait,
 			zoom: camera.zoom,
 			width: Window.framebufferWidth,
@@ -88,9 +91,5 @@ class App extends helix.App {
 		// The well's camera fits the layout; the presentation only sizes its text.
 		ScreenShape.update();
 		renderer.render(game, layout, camera, Screen.instance, ticks);
-	}
-
-	override public function cleanup():Void {
-		batch.destroy();
 	}
 }

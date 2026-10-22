@@ -1,29 +1,30 @@
 import helix.debug.FpsOverlay;
-import helix.graphics.Graphics;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.render2d.Batch2D;
-import helix.render2d.Camera2D;
+import helix.render2d.Drawing2D;
+import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight;
+import helix.render3d.Environment3D;
 import helix.render3d.Material;
 import helix.render3d.Mesh;
 import helix.render3d.Model;
-import helix.render3d.Stage3D;
+import helix.render3d.Node3D;
+import helix.render3d.View3D;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit;
 
-/** Shapes made in code on a Stage3D: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
-	sun and an ambient light, the camera turning around them. O stops and starts the camera; Escape quits where quitting means anything. */
+/** Shapes made in code in a View3D's tree: plane, cube, sphere, cylinder, cone, capsule and torus in a row on a floor, each its own color, lit by a
+	sun and an ambient light, the camera turning around them. O stops and starts the camera; Escape quits where quitting means anything. The text over them
+	is a Drawing2D on the stage, drawn again each update. */
 class App extends helix.App {
-	var stage:Stage3D;
-	var batch:Batch2D;
+	var level = new Node3D();
 	var camera = new Camera3D();
-	var camera2D = new Camera2D();
+	var text = new Drawing2D();
 	var fps = new FpsOverlay();
 	// The camera, circling.
 	var orbit = new Orbit(9, 3.5, .2, .4);
@@ -31,19 +32,20 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.title = "HeliX meshes";
 		Window.requestSize(1000, 600);
-		stage = new Stage3D();
-		stage.setAmbient(0xffffffff, .25);
+		Stage.color = 0xff14161c;
+		level.environment = new Environment3D();
+		level.environment.setAmbient(0xffffffff, .25);
 		// Framed for 16:9: the whole row across on a phone held upright too.
 		camera.minAspect = 16 / 9;
 		var sun = new DirectionalLight();
 		sun.intensity = 3;
 		sun.lookAt(-.5, -1, -.4);
-		stage.add(sun);
+		level.addChild(sun);
 
 		var ground = new Material();
 		ground.baseColor = 0xff474a4d;
 		ground.roughness = .9;
-		stage.add(new Model(Mesh.plane(12, 12), ground));
+		level.addChild(new Model(Mesh.plane(12, 12), ground));
 
 		// Each shape, how high its center sits (so it rests on the floor), and its color.
 		var shapes:Array<{mesh:Mesh, y:Float, color:Int}> = [
@@ -61,9 +63,11 @@ class App extends helix.App {
 			material.roughness = .45;
 			var node = new Model(shapes[i].mesh, material);
 			node.setPosition((i - (shapes.length - 1) / 2) * 1.4, shapes[i].y, 0);
-			stage.add(node);
+			level.addChild(node);
 		}
-		batch = new Batch2D();
+		Stage.addChild(new View3D(level, camera));
+		Stage.addChild(text);
+		Stage.addChild(fps);
 	}
 
 	override public function update(dt:Float):Void {
@@ -74,31 +78,18 @@ class App extends helix.App {
 			orbit.running = !orbit.running;
 		orbit.update(dt);
 		fps.update(dt, Time.frameCpu);
-		var width = Window.framebufferWidth, height = Window.framebufferHeight;
-		camera.setViewport(width, height);
 		orbit.apply(camera);
 		// The text in the design for the window's shape, wrapped to what's visible of it.
 		ScreenShape.update();
 		var presentation = Screen.instance;
-		presentation.apply(camera2D);
 		var vx = presentation.visibleX,
 			vy = presentation.visibleY,
 			vw = presentation.visibleWidth;
-
-		Graphics.beginFrame(width, height, 0xff14161c);
-		stage.draw(camera);
-		batch.begin(camera2D);
+		text.clear();
 		var y = vy + 36;
-		y += batch.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
+		y += text.drawTextWrapped("HeliX generated meshes: plane, cube, sphere, cylinder, cone, capsule, torus", vx + 12, y, 20, vw - 24, 0xfff5f5f5) + 3;
 		var keys = (orbit.running ? "O: stop the camera" : "O: turn the camera") + (Host.canQuit() ? "   ESC: quit" : "");
-		batch.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
-		fps.draw(batch, vx + 12, vy + 10);
-		batch.end();
-		Graphics.endFrame();
-	}
-
-	override public function cleanup():Void {
-		stage.destroy();
-		batch.destroy();
+		text.drawTextWrapped(keys, vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+		fps.setPosition(vx + 12, vy + 10);
 	}
 }

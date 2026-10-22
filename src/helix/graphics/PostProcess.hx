@@ -2,7 +2,6 @@ package helix.graphics;
 
 import haxe.io.Bytes;
 import helix.render2d.Texture2D;
-import helix.render3d.Stage3D;
 import helix.shaders.Tonemap;
 
 /** Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the
@@ -12,11 +11,11 @@ import helix.shaders.Tonemap;
 	(ScreenEffect.intermediates) are made at their fractions of it.
 
 	An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn
-	in RGBA16F, its stage (stage) writing its light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve
+	in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve
 	carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone
-	mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, with the stage's mode), after the last effect wanting HDR, unless the chain
+	mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain
 	has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half
-	floats every texture is RGBA8 as the screen is, the stage tone maps as it draws, and a Tonemap in the chain is skipped. An HDR scene is
+	floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is
 	cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same
 	with the chain HDR or not. */
 class PostProcess {
@@ -47,10 +46,9 @@ class PostProcess {
 	var clip = Bytes.alloc(16);
 	var quad = Bytes.alloc(6 * Sprite2DProgram.stride);
 
-	/** Effects drawn on gpu, over a scene drawn by stage (or null: a scene of 2D alone, or several stages). */
-	public function new(gpu:IGraphics, ?stage:Stage3D) {
+	/** Effects drawn on gpu, over a scene (the stage's, Stage.postProcess, or a view's, View.postProcess). */
+	public function new(gpu:IGraphics) {
 		this.gpu = gpu;
-		this.stage = stage;
 		copyBuffer = gpu.createBuffer(6 * Sprite2DProgram.stride);
 		var corners = [
 			[-1, 1, 0, 0],
@@ -70,10 +68,6 @@ class PostProcess {
 				quad.setFloat(at + Sprite2DProgram.colorOffset + k * 4, 1);
 		}
 	}
-
-	/** The stage the scene is drawn with, or null: in an HDR scene it is told so (Stage3D.hdr, from beginScene to endScene) and the tone mapping
-		added to the chain takes its mode (Stage3D.tonemap). */
-	public var stage:Null<Stage3D>;
 
 	/** Whether this frame's scene (the last beginScene's) is drawn in half floats: an enabled effect wants HDR and the GPU draws them. */
 	public var hdr(default, null):Bool = false;
@@ -117,8 +111,6 @@ class PostProcess {
 		}
 		if (scene == null)
 			scene = Texture2D.renderTarget(gpu, width, height, true, format);
-		if (stage != null)
-			stage.hdr = hdr;
 		if (hdr) {
 			var tonemap:Tonemap = cast steps[tonemapAt];
 			if (clearColor != hdrClearOf || (tonemap.mode : Int) != hdrClearMode) {
@@ -137,8 +129,6 @@ class PostProcess {
 		intermediates too, its last pass waiting for present. */
 	public function endScene(time:Float):Void {
 		gpu.endTargetPass();
-		if (stage != null)
-			stage.hdr = false;
 		result = scene;
 		last = null;
 		lastFrame = null;
@@ -181,7 +171,7 @@ class PostProcess {
 	}
 
 	// This frame's steps: the enabled effects; in an HDR chain the tone mapping after the last wanting HDR (unless the chain has its own),
-	// without one no tone mapping (the stage's does it).
+	// without one no tone mapping (the 3D views' does it).
 	function plan():Void {
 		var on = [for (e in effects) if (e.enabled) e];
 		var wanting = -1;
@@ -203,7 +193,7 @@ class PostProcess {
 		if (tonemapAt < 0) {
 			if (tonemap == null)
 				tonemap = new Tonemap();
-			tonemap.mode = stage != null ? stage.tonemap : helix.render3d.Tonemap.Neutral;
+			tonemap.mode = helix.render3d.Tonemap.Neutral;
 			tonemapAt = wanting + 1;
 			steps.insert(tonemapAt, tonemap);
 		}

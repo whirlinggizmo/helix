@@ -11,11 +11,12 @@ import helix.host.Presentation;
 class StageService {
 	var gpu:IGraphics;
 	var presentation:Presentation;
-	var tree = new Stage2D();
-	var camera = new Camera2D();
+	var tree = new Renderer2D();
 	var batch:Null<Batch2D>;
-	var drawn3D:Array<View> = [];
-	var textured:Array<View> = [];
+	// The last frame's: its 3D views' shadows and its views with a chain, drawn before the next frame opens.
+	var shadows:Array<Void->Void> = [];
+	var renders:Array<(IGraphics, Float) -> Void> = [];
+	var chain:Null<ViewFrame.ChainCalls>;
 
 	// The program's stage, made at its first use and drawn by the runner each frame (an optional part, helix.host.Part).
 
@@ -24,7 +25,7 @@ class StageService {
 		return helix.host.Host.installPart(runner -> {
 			var service = new StageService(helix.graphics.Graphics.instance, helix.host.Screen.instance);
 			runner.install({
-				draw: () -> service.draw(helix.time.Time.clock.time),
+				draw: () -> service.draw(service.heldTime != null ? service.heldTime : helix.time.Time.clock.time),
 				shutdown: () -> {
 					service.destroy();
 					Stage.bind(null);
@@ -43,11 +44,20 @@ class StageService {
 	/** What the frame is cleared to before the stage draws, 0xAARRGGBB (Flash's stage.color). Black to start. */
 	public var color:Int = 0xff000000;
 
+	/** The time the stage and its views draw at when set (emitters, sprite and screen effects, water), held there: an autopilot's samples,
+		the same on every target. Null, to start, for the game's clock (Time.clock). */
+	public var heldTime:Null<Float> = null;
+
 	/** Screen effects over everything the stage draws (helix.graphics.PostProcess: bloom, a vignette, a color grade), or null for none: the
 		stage is drawn into its scene, then the chain runs and is presented on the screen. In an HDR chain (an effect wanting HDR) the 3D
 		views draw their light untone-mapped into it and the chain's tone mapping (Neutral, unless the chain has its own) brings it to the
 		screen. */
-	public var postProcess:Null<helix.graphics.PostProcess>;
+	public var postProcess(default, set):Null<helix.graphics.PostProcess>;
+
+	function set_postProcess(value:Null<helix.graphics.PostProcess>):Null<helix.graphics.PostProcess> {
+		chain = ViewFrame.callsOf(value);
+		return postProcess = value;
+	}
 
 	/** Puts node on the stage over what's there (its last child), taking it from any parent it had; a child of the stage already moves to
 		the top, as Flash's addChild does (Node2D.addChild). */
@@ -58,13 +68,38 @@ class StageService {
 	public function removeChild(node:Node2D):Bool
 		return tree.remove(node);
 
+	/** The camera the stage is drawn through: the presentation's design units (Screen), refitted at each draw. */
+	public var camera(default, null):Camera2D = new Camera2D();
+
+	/** The font a text without its own is drawn in: the stage batch's (the built-in one), there from the stage's first use, so text can be
+		measured and laid out before the first frame. */
+	public var font(get, never):Font2D;
+
+	function get_font():Font2D {
+		if (batch == null)
+			batch = new Batch2D(gpu);
+		return batch.font;
+	}
+
 	/** How many children the stage has. */
 	public var childCount(get, never):Int;
 
 	function get_childCount():Int
 		return tree.root.childCount;
 
-	/** How many nodes the last frame drew, the ones outside the view skipped. */
+	/** How many vertices the last frame's 2D took (Batch2D.vertexCount). */
+	public var vertexCount(get, never):Int;
+
+	function get_vertexCount():Int
+		return batch == null ? 0 : batch.vertexCount;
+
+	/** How many draws the last frame's 2D took (Batch2D.drawCallCount). */
+	public var drawCallCount(get, never):Int;
+
+	function get_drawCallCount():Int
+		return batch == null ? 0 : batch.drawCallCount;
+
+	/** How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped. */
 	public var drawnNodeCount(get, never):Int;
 
 	function get_drawnNodeCount():Int
@@ -74,13 +109,13 @@ class StageService {
 		anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit, when given) filled with where. A
 		paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown. */
 	public function pick(x:Float, y:Float, ?hit:Any):Null<helix.scene.Node> {
-		View.picked3D.resize(0);
+		ViewFrame.picks3D.resize(0);
 		var found = tree.pick(camera, x, y);
 		if (found != null)
 			return found;
-		var i = View.picked3D.length;
+		var i = ViewFrame.picks3D.length;
 		while (i-- > 0) {
-			var node = View.picked3D[i].pick3D(x, y, hit);
+			var node = ViewFrame.picks3D[i](x, y, hit);
 			if (node != null)
 				return node;
 		}
@@ -98,32 +133,32 @@ class StageService {
 		presentation.apply(camera);
 		tree.time = time;
 		// The 3D views the last frame reached draw their shadows before this one opens, as any pass into a texture must.
-		for (view in drawn3D)
-			view.prepare();
+		for (draw in shadows)
+			draw();
 		// The views with a chain the last frame reached, drawn into their textures, as any pass into a texture must be, before the frame.
-		for (view in textured)
-			view.render(gpu, time);
+		ViewFrame.renders.resize(0);
+		for (render in renders)
+			render(gpu, time);
 		var width = presentation.framebufferWidth,
-			height = presentation.framebufferHeight,
-			chain = postProcess;
+			height = presentation.framebufferHeight;
 		if (chain != null) {
-			chain.beginScene(width, height, color);
-			View.hdr = chain.hdr;
+			chain.begin(width, height, color);
+			ViewFrame.hdr = chain.hdr();
 		} else
 			gpu.beginFrame(width, height, color);
 		batch.begin(camera);
-		View.deferred.resize(0);
-		View.textured.resize(0);
+		ViewFrame.drawsUnder.resize(0);
+		ViewFrame.shadows.resize(0);
 		tree.draw(batch, camera);
-		textured = View.textured.copy();
+		renders = ViewFrame.renders.copy();
+		shadows = ViewFrame.shadows.copy();
 		// The 3D views the walk reached, drawn now: under every 2D thing, which the batch sends as it ends.
-		drawn3D = View.deferred.copy();
-		for (view in drawn3D)
-			view.drawDeferred();
+		for (draw in ViewFrame.drawsUnder)
+			draw();
 		batch.end();
 		if (chain != null) {
-			chain.endScene(time);
-			View.hdr = false;
+			chain.end(time);
+			ViewFrame.hdr = false;
 			gpu.beginFrame(width, height, 0xff000000);
 			chain.present();
 		}

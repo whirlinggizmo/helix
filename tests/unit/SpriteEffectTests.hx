@@ -7,11 +7,11 @@ import helix.graphics.SpriteEffect;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Sprite2D;
-import helix.render2d.Stage2D;
+import helix.render2d.Renderer2D;
 import helix.render2d.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Sprite3D;
-import helix.render3d.Stage3D;
+import helix.render3d.Renderer3D;
 import helix.shaders.PaletteSwap;
 import helix.shaders.ShaderLibrary;
 import helix.shaders.SpriteDissolve;
@@ -22,7 +22,7 @@ import helix.shaders.SpriteOutline;
 	effect2d program's vertices; a batch splits where the effect changes, as it does where the texture does, one effect shared by sprites drawn
 	one after another staying one draw, and draws without one as it did; an effect's vertices carry their sprite's region (a nine-slice's whole
 	one); the framework's block holds the texture's size and the batch's time; and each library class's fields write their parameters where the
-	shader's reflection puts them, a flash fading over the batch's time; and a Stage3D's sprites draw through an effect's sprite3D variant, split
+	shader's reflection puts them, a flash fading over the batch's time; and a Renderer3D's sprites draw through an effect's sprite3D variant, split
 	by effect as by texture, at the stage's time. */
 class SpriteEffectTests {
 	static var checks = 0;
@@ -173,7 +173,7 @@ class SpriteEffectTests {
 	// A stage draws its sprites through their effects at its time: sprites sharing one in a row, one draw; the stage leaves none set.
 	static function stage(gpu:CountingGraphics):Void {
 		var batch = new Batch2D(gpu),
-			stage = new Stage2D(),
+			stage = new Renderer2D(),
 			texture = Texture2D.fromRgba(gpu, 8, 8, Bytes.alloc(256)),
 			outline = new SpriteOutline(0xffff0000, 2);
 		for (i in 0...3) {
@@ -267,10 +267,10 @@ class SpriteEffectTests {
 		check(effect.row == 0, "A row under 0 is 0");
 	}
 
-	// A Stage3D's sprites with an effect draw through its sprite3D variant: opaque ones grouped by effect within a texture, blended ones split
+	// A Renderer3D's sprites with an effect draw through its sprite3D variant: opaque ones grouped by effect within a texture, blended ones split
 	// where it changes in their order back to front; block 0 the sprites' uniforms, block 1 the texture's size and the stage's time.
 	static function stage3D(gpu:CountingGraphics):Void {
-		var stage = new Stage3D(gpu),
+		var stage = new Renderer3D(gpu),
 			camera = new Camera3D(),
 			texture = Texture2D.fromRgba(gpu, 8, 4, Bytes.alloc(128));
 		camera.setViewport(800, 600);

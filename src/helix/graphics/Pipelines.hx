@@ -183,7 +183,7 @@ class Pipelines {
 	public function sprite3D(blend:BlendMode):Int
 		return pipeline(program("sprite3d", () -> Sprite3DProgram.source()), blend, s -> quads(s, Sprite3DProgram.buffers(), blend));
 
-	/** A sprite effect's Stage3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DProgram), as sprite3D's. */
+	/** A sprite effect's Renderer3D variant (its handle: SpriteEffect.shader.sprite3D's) drawing 3D sprites (Sprite3DProgram), as sprite3D's. */
 	public function spriteEffect3D(shader:Int, blend:BlendMode):Int
 		return pipeline(shader, blend, s -> quads(s, Sprite3DProgram.buffers(), blend));
 

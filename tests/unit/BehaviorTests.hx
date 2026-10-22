@@ -4,14 +4,12 @@ import helix.behavior.BehaviorSchema;
 import helix.behavior.BehaviorPass;
 import helix.input.Input;
 import helix.render3d.Node3D;
-import helix.scene.Scene;
-import helix.scene.Scenes;
 
 /** BehaviorPass (helix.behavior): the schema the build macro generates from @:prop fields (names, types, defaults, a range, a superclass's
 	props, @:behavior's name), setting and reading props through the registry's entry (unknown names and wrong types refused, a class
 	that can't be made bare not registered); the pass (BehaviorPass): started on the first update after add, in order; updated only while
 	enabled and under enabled nodes; stopped and dropped when done; safe to remove, add and clear from inside; found by class and by
-	node; and a Scene's pass ticked by Scenes.update before the scene's update and cleared as the scene exits. */
+	node. */
 class BehaviorTests {
 	static var checks = 0;
 	public static var log:Array<String> = [];
@@ -172,27 +170,6 @@ class BehaviorTests {
 			&& pass.count == 0, "A clear inside an update stops everything, once");
 		d1.onUpdate = null;
 
-		// A scene's pass: ticked by the stack before the scene's update, cleared as the scene exits.
-		@:privateAccess Input.bind(new helix.input.InputState());
-		var scenes = new Scenes();
-		scenes.pauseOnBlur = false;
-		var scene = new LoggedScene();
-		var s1 = new Logged("s1");
-		scenes.push(scene);
-		check(scene.behaviors.add(s1, root) && took() == "scene.enter", "A scene has a pass of its own");
-		scenes.update(.1);
-		check(took() == "s1.start,s1.update,scene.update", "The stack runs the scene's behaviors before its update");
-		var under = new LoggedScene();
-		scenes.push(under);
-		took();
-		scenes.update(.1);
-		check(took() == "scene.update", "Under another scene, neither runs");
-		scenes.pop();
-		took();
-		scenes.update(.1);
-		check(took() == "s1.update,scene.update", "On top again, both do");
-		scenes.pop();
-		check(took() == "s1.stop,scene.exit" && scene.behaviors.count == 0, "Popped: its behaviors stop, then it exits");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
 }
@@ -267,15 +244,3 @@ private class Logged extends Behavior {
 
 /** Another class, to find apart. */
 private class Other extends Behavior {}
-
-/** A scene logging its hooks. */
-private class LoggedScene extends Scene {
-	override public function enter():Void
-		BehaviorTests.log.push("scene.enter");
-
-	override public function exit():Void
-		BehaviorTests.log.push("scene.exit");
-
-	override public function update(dt:Float):Void
-		BehaviorTests.log.push("scene.update");
-}

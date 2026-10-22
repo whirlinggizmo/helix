@@ -58,8 +58,33 @@ class App implements IApp {
 				case Failed(message): trace('Screenshot failed: $message');
 			});
 		update(dt);
+		if (options.pauseOnBlur)
+			followFocus();
 		if (options.pageState)
 			Host.instance.reportBusy(Host.busy);
+	}
+
+	// The game's clock paused while the window is out of focus, and only if this paused it, going on when the focus is back (pauseOnBlur).
+	var blurred = false;
+	var pausedClock = false;
+
+	function followFocus():Void {
+		var window = helix.host.Window.instance, clock = helix.time.Time.clock;
+		if (window == null || clock == null)
+			return;
+		var focused = helix.host.Window.focused;
+		if (!focused && !blurred) {
+			blurred = true;
+			if (!clock.paused) {
+				clock.pause();
+				pausedClock = true;
+			}
+		} else if (focused && blurred) {
+			blurred = false;
+			if (pausedClock && clock.paused)
+				clock.resume();
+			pausedClock = false;
+		}
 	}
 
 	// After a quit nothing loads (the shutdown cancelled it all), and no frame comes to say so.

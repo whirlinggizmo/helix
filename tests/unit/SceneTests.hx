@@ -1,17 +1,22 @@
+import helix.assets.Assets;
 import helix.assets.IAssets;
+import helix.host.Presentation;
+import helix.input.Input;
+import helix.input.InputState;
+import helix.render2d.Node2D;
+import helix.render2d.Stage;
+import helix.render2d.StageService;
 import helix.scene.Loader;
-import helix.scene.LoadingScene;
-import helix.scene.Scene;
-import helix.scene.Scenes;
+import helix.scene.Loading;
+import helix.scene.Splash;
 import helix.scene.Transition;
 import helix.scene.Transition.Fade;
-import helix.assets.Assets;
-import helix.input.Input;
 import helix.time.Time;
 
-/** A game's scenes (helix.scene.Scenes): push, pop and replace with their enter, exit, pause and resume; a scene with a loader shown the
-	loading scene until its loads end; transitions swapping at their middle; focus lost and back; and the Loader's counting, progress and
-	failures over held loads. The stack's drawing isn't run here (no GPU): update alone. */
+/** The screens that run themselves on the stage (docs/DISPLAY_MODEL.md): a transition swapping what's shown at its middle and taking its cover
+	off at its end; the loading screen shown until its loader is done, held for a press when asked; the splash leaving after its seconds and a
+	press, or after its most wait; and the Loader's counting, progress and failures over held loads. Their frames are ticked here by hand
+	(Flow.tick), the stage bound as the runner would; nothing is drawn but the stage's own walk. */
 class SceneTests {
 	static var checks = 0;
 	public static var log:Array<String> = [];
@@ -31,147 +36,85 @@ class SceneTests {
 	}
 
 	static function main():Void {
-		// What Scenes and the Loader read, bound as the runner would.
+		// What the screens and the Loader read, bound as the runner would.
 		@:privateAccess Assets.bind(new Held());
-		@:privateAccess Input.bind(new helix.input.InputState());
+		var input = new InputState();
+		@:privateAccess Input.bind(input);
 		@:privateAccess Time.bind(null, new helix.time.Clock());
-		var scenes = new Scenes();
-		scenes.pauseOnBlur = false;
-		check(scenes.top == null && scenes.count == 0 && !scenes.transitioning, "An empty stack");
-		check(scenes.loadingScene != null && scenes.loadingScene.name == "Loading", "with the built-in loading scene");
-		scenes.loadingScene = new Quiet();
+		var presentation = new Presentation();
+		@:privateAccess presentation.refit(800, 600, 1);
+		@:privateAccess helix.host.Screen.bind(presentation);
+		var stage = new StageService(new Render2DTests.CountingGraphics(), presentation);
+		@:privateAccess Stage.bind(stage);
+		function frame(dt:Float):Void {
+			@:privateAccess helix.scene.Flow.tick(dt);
+			input.endFrame();
+		}
 
-		// Push, pop, replace, in order.
-		var title = new Logged("title"),
-			play = new Logged("play"),
-			pause = new Logged("pause");
-		scenes.push(title);
-		check(took() == "title.enter" && scenes.top == title && title.scenes == scenes, "A pushed scene enters, on the stack");
-		scenes.update(1 / 60);
-		check(took() == "title.update", "The top updates");
-		scenes.replace(play);
-		check(took() == "title.exit,play.enter" && scenes.count == 1 && title.scenes == null, "replace: the top exits, the new enters");
-		scenes.push(pause);
-		check(took() == "play.pause,pause.enter" && scenes.count == 2, "push over one pauses it");
-		scenes.update(1 / 60);
-		check(took() == "pause.update", "Only the top updates");
-		scenes.pop();
-		check(took() == "pause.exit,play.resume" && scenes.top == play, "pop: it exits, the one under resumes");
-		scenes.pop();
-		scenes.pop();
-		check(took() == "play.exit" && scenes.count == 0, "An empty stack pops nothing");
+		// A transition swaps at its middle, its cover over what's shown, and leaves at its end.
+		var title = new Node2D(), level = new Node2D();
+		Stage.addChild(title);
+		var ended = false, fade = new Fade(1);
+		check(fade.swap(title, level, () -> ended = true)
+			&& fade.running
+			&& Stage.childCount == 2, "Running: its cover on the stage over the title");
+		check(!fade.swap(level, title), "Refused while it runs");
+		frame(.4);
+		check(title.parent != null && level.parent == null, "Before the middle, the title still shown");
+		frame(.2);
+		check(title.parent == null && level.parent != null && Stage.childCount == 2, "Past the middle: swapped, the cover still over the level");
+		frame(.5);
+		check(ended && !fade.running && Stage.childCount == 1 && level.parent != null, "Done: its cover off, done called");
+		check(new Transition(1).run(() -> {}) && throws(() -> new Transition(0)), "A transition of no time is refused");
+		frame(2);
 
-		// A loader gates its scene behind the loading scene.
-		var level = new Loading2("level");
-		scenes.push(level);
-		check(took() == "level.enter" && !level.loader.done && level.loader.progress == 0, "A scene with a loader enters and waits");
-		scenes.update(1 / 60);
-		check(took() == "loading.enter,loading.update" && scenes.top == level, "Its loading scene is shown meanwhile, entered once");
-		scenes.update(1 / 60);
-		check(took() == "loading.update", "and updated each frame");
+		// The loading screen: shown until its loader is done, then off, then called.
+		var loader = new Loader();
+		loader.asset("a.txt", _ -> {});
+		loader.asset("b.txt", _ -> {});
+		var loading = new Loading(loader), started = false;
+		check(loading.show(() -> started = true) && loading.shown && !loading.show(() -> {}), "Shown, once");
+		frame(1 / 60);
+		check(!started && Stage.childCount == 2, "Waiting, on the stage over the level");
 		held["a.txt"].loaded(haxe.io.Bytes.alloc(1));
-		check(level.loader.progress == .5 && !level.loader.done, "Half the loads in");
+		check(loader.progress == .5 && !loader.done, "Half the loads in");
 		held["b.txt"].failed("gone");
-		check(level.loader.done && level.loader.failures.join(",") == "b.txt: gone", "All ended, a failure named");
-		scenes.update(1 / 60);
-		check(took() == "loading.exit,level.update", "Done: the loading scene exits, the scene runs");
-		scenes.update(1 / 60);
-		check(took() == "level.update", "and runs on");
-		scenes.clear();
-		check(took() == "level.exit" && scenes.count == 0, "clear exits everything");
+		check(loader.done && loader.failures.join(",") == "b.txt: gone", "All ended, a failure named");
+		frame(1 / 60);
+		check(started && !loading.shown && Stage.childCount == 1, "Done: off the stage, then called");
 
-		// Without a loading scene, a loading scene runs at once.
-		scenes.loadingScene = null;
-		var early = new Loading2("early");
-		scenes.push(early);
-		scenes.update(1 / 60);
-		check(took() == "early.enter,early.update", "No loading scene: the scene runs while it loads");
-		scenes.clear();
-		took();
+		// Held for a press once loaded.
+		var holding = new Loading(new Loader()), went = false;
+		holding.holdForPress = true;
+		holding.show(() -> went = true);
+		frame(1 / 60);
+		frame(1 / 60);
+		check(!went && holding.shown, "Loaded, held for a press");
+		input.keyEvent(Space, true);
+		frame(1 / 60);
+		check(went && !holding.shown, "A press lets it go");
+		input.keyEvent(Space, false);
 
-		// A transition swaps at its middle.
-		var a = new Logged("a"), b = new Logged("b");
-		scenes.push(a);
-		took();
-		scenes.replace(b, new Fade(1));
-		check(took() == "" && scenes.transitioning && scenes.top == a, "A transition begins with the old scene still on top");
-		scenes.update(.3);
-		check(took() == "a.update" && scenes.top == a, "before its middle the old scene runs");
-		scenes.update(.3);
-		check(took() == "a.exit,b.enter,b.update" && scenes.top == b && scenes.transitioning, "at its middle the scenes swap");
-		scenes.update(.5);
-		check(took() == "b.update" && !scenes.transitioning, "and it ends after its seconds");
-		var threw = false;
-		try
-			new Fade(0)
-		catch (e:Dynamic)
-			threw = true;
-		check(threw, "A transition of no time is refused");
-		check(new Fade().seconds == .5 && new Fade(2, 0xffffffff).color == 0xffffffff, "A fade's defaults and its color");
-
-		// Focus lost and back.
-		scenes.pauseOnBlur = true;
-		@:privateAccess scenes.focus(false);
-		check(took() == "b.pause" && Time.clock.paused, "Focus lost pauses the top scene and the clock");
-		scenes.update(1 / 60);
-		check(took() == "", "and nothing updates meanwhile");
-		@:privateAccess scenes.focus(true);
-		check(took() == "b.resume" && !Time.clock.paused, "Focus back resumes both");
-		Time.clock.pause();
-		@:privateAccess scenes.focus(false);
-		@:privateAccess scenes.focus(true);
-		check(Time.clock.paused, "A clock the game paused itself stays paused");
-		Time.clock.resume();
-		scenes.pauseOnBlur = false;
-		@:privateAccess scenes.focus(false);
-		check(took() == "b.pause,b.resume" || took() == "", "Pause on blur off: focus does nothing");
-		scenes.clear();
-
-		// A loading scene that holds after the loads, until it says go; quick skips it and the transitions.
-		took();
-		scenes.loadingScene = new Holder();
-		var held2 = new Loading2("held");
-		scenes.push(held2);
-		scenes.update(1 / 60);
-		held["a.txt"].loaded(haxe.io.Bytes.alloc(1));
-		held["b.txt"].loaded(haxe.io.Bytes.alloc(1));
-		scenes.update(1 / 60);
-		check(took() == "held.enter,loading.enter,loading.update,loading.update" && scenes.loading, "Loaded, the loading scene holds on");
-		Holder.go = true;
-		scenes.update(1 / 60);
-		check(took() == "loading.exit,held.update" && !scenes.loading, "until it says go");
-		scenes.clear();
-		took();
-		scenes.quick = true;
-		var q = new Logged("q");
-		scenes.push(q, new Fade(1));
-		check(took() == "q.enter" && !scenes.transitioning, "Quick: a transition is skipped, the change at once");
-		scenes.quick = false;
-		scenes.clear();
-		took();
-		// A splash goes on after its most wait without a press, or at once when quick.
-		var after = new Logged("after");
-		var splash = new helix.scene.Splash(null, 1, after, new Fade(1));
-		splash.maxWait = -1;
-		check(splash.maxWait == 0, "The most wait is 0 or more");
-		splash.maxWait = 2;
-		scenes.push(splash);
-		took();
-		scenes.update(1.5);
-		check(scenes.top == splash && !scenes.transitioning && took() == "", "Shown its seconds, it waits for a press");
-		scenes.update(.6);
-		check(scenes.transitioning, "past its most wait it goes on without one");
-		scenes.update(.5);
-		check(scenes.top == after && took() == "after.enter,after.update", "to the next scene");
-		scenes.clear();
-		took();
-		scenes.quick = true;
-		scenes.push(new helix.scene.Splash(null, 5, new Logged("now")));
-		scenes.update(1 / 60);
-		check(scenes.top.name == "now", "Quick: the splash goes on at the first update");
-		scenes.quick = false;
-		scenes.clear();
-		took();
+		// The splash: at least its seconds, and a press (already come above); or its most wait without one.
+		var splash = new Splash(null, 1, new Fade(.5)), next = false;
+		check(splash.show(() -> next = true) && !splash.show(() -> {}), "Shown, once");
+		frame(.5);
+		check(!next && splash.elapsed == .5, "Before its seconds");
+		frame(.6);
+		frame(.3);
+		check(next, "After its seconds, the press come: its transition's middle calls next");
+		frame(1);
+		check(Stage.childCount == 1, "Gone from the stage, its cover too");
+		@:privateAccess Input.bind(new InputState());
+		var patient = new Splash(null, .1), onward = false;
+		patient.maxWait = 2;
+		patient.show(() -> onward = true);
+		frame(1);
+		check(!onward, "No press: it waits");
+		frame(1.1);
+		frame(1);
+		check(onward, "Past its most wait it goes on without one");
+		@:privateAccess Input.bind(input);
 
 		// The loader by itself.
 		var loader = new Loader();
@@ -181,71 +124,17 @@ class SceneTests {
 		check(!loader.done && loader.count == 1, "wrap counts a load");
 		complete(-1);
 		check(loader.done && got == "got -1" && loader.failures[0] == "thing: negative", "its completion runs and a failure is named");
+		@:privateAccess Stage.bind(null);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}
-}
 
-/** A scene logging its hooks. */
-private class Logged extends Scene {
-	var label:String;
-
-	public function new(name:String) {
-		super();
-		this.label = name;
+	static function throws(f:Void->Void):Bool {
+		try
+			f()
+		catch (e:Dynamic)
+			return true;
+		return false;
 	}
-
-	override function get_name():String
-		return label;
-
-	override public function enter():Void
-		SceneTests.log.push('$label.enter');
-
-	override public function exit():Void
-		SceneTests.log.push('$label.exit');
-
-	override public function pause():Void
-		SceneTests.log.push('$label.pause');
-
-	override public function resume():Void
-		SceneTests.log.push('$label.resume');
-
-	override public function update(dt:Float):Void
-		SceneTests.log.push('$label.update');
-}
-
-/** A logged scene loading two assets the test releases. */
-private class Loading2 extends Logged {
-	var loads:Null<Loader>;
-
-	override public function enter():Void {
-		super.enter();
-		loads = new Loader();
-		loads.asset("a.txt", _ -> {});
-		loads.asset("b.txt", _ -> {});
-	}
-
-	override function get_loader():Null<Loader>
-		return loads;
-}
-
-/** A loading scene holding after the loads until told to go. */
-private class Holder extends Quiet {
-	public static var go = false;
-
-	override function get_holding():Bool
-		return !go;
-}
-
-/** A loading scene logging its hooks. */
-private class Quiet extends LoadingScene {
-	override public function enter():Void
-		SceneTests.log.push("loading.enter");
-
-	override public function exit():Void
-		SceneTests.log.push("loading.exit");
-
-	override public function update(dt:Float):Void
-		SceneTests.log.push("loading.update");
 }
 
 /** Assets whose loads the test releases by path. */

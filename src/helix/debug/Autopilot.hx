@@ -1,6 +1,7 @@
 package helix.debug;
 
 import helix.input.IInput;
+import helix.input.Input;
 import helix.input.Key;
 import helix.input.InputState;
 
@@ -33,9 +34,16 @@ import helix.input.InputState;
 	keeps working when padding, gaps or a widget's size move the layout. Each is found where the widget was last drawn when the point is
 	used: a sample's as it asks for its frame; a drag's from as it presses, its to again every tick. One not found (no such widget shown, or
 	no such part now) is waited for, as a click waits, within the command's "seconds" (5 when not given), and fails the script after. A
-	`click` with `"at"` (and `"part"`) presses and lets go of the pointer there instead of using the widget by name. */
+	`click` with `"at"` (and `"part"`) presses and lets go of the pointer there instead of using the widget by name.
+
+	With a program's input bound (under the runner), while it plays, that input (Input) is the script's: a Ui, a pointer looking at the stage and the screens that
+	run themselves (Splash, Loading, a Transition) play it as they read Input, with nothing handed to them; the program's own input is back
+	once every command has finished. */
 class Autopilot {
 	var ticks = 0;
+
+	// The program's input while the script plays as it, put back once it's done.
+	var programInput:Null<IInput>;
 
 	/** Whether every command has finished. */
 	public var done(default, null):Bool = false;
@@ -199,6 +207,12 @@ class Autopilot {
 					throw "Unknown autopilot command";
 			}
 		}
+		// While it plays, the program's input is the script's (Input), so what reads it (a Ui, a pointer looking at the stage, a splash or a
+		// loading screen) plays it with nothing handed over; the program's own is back once every command has finished.
+		if (Input.instance != null) {
+			programInput = Input.instance;
+			@:privateAccess Input.bind(state);
+		}
 	}
 
 	static function fields(value:Dynamic, required:Array<String>, optional:Array<String> = null):Void {
@@ -292,6 +306,8 @@ class Autopilot {
 			if (index == commands.length) {
 				done = true;
 				setKeys([]);
+				if (programInput != null && Input.instance == state)
+					@:privateAccess Input.bind(programInput);
 				break;
 			}
 			var command = commands[index],
