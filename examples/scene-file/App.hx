@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorPass;
 import helix.debug.Autopilot;

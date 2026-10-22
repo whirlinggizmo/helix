@@ -1,8 +1,8 @@
 package helix.audio;
 
 import haxe.Json;
-import helix.assets.Failure;
-import helix.assets.Storage;
+import helix.asset.Failure;
+import helix.asset.Storage;
 
 /** Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it
 	(IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from

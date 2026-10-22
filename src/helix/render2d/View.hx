@@ -3,6 +3,8 @@ package helix.render2d;
 import helix.graphics.IGraphics;
 import helix.graphics.PostProcess;
 import helix.scene.Node;
+import helix.texture.Texture2D;
+import helix.font.Font;
 
 /** What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a tree of nodes through a camera, in a rectangle width x
 	height of its own units from its position, scaled with it and not turned (a view is drawn upright; its rotation is ignored), or, with a
@@ -104,7 +106,7 @@ class View extends Node2D {
 	override function get_picksOwn():Bool
 		return true;
 
-	override function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font2D>):Null<Node2D>
+	override function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font>):Null<Node2D>
 		return pickInside(x, y);
 
 	// Called by the 2D walk at this view, its world transform current and outer the camera the walk draws through: its rectangle in

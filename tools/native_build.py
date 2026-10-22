@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
-ADAPTERS=ROOT/'src/helix/adapters'
+ADAPTERS=ROOT/'src/helix/adapter'
 INCLUDES=[ROOT/'vendor',ROOT/'vendor/sokol_utils']+[ADAPTERS/d for d in ('graphics/sokol/internal','host/sokol/internal','shared','audiodecoder/libsndfile/internal')]
 TOOLS=ROOT/'build/native-tools'
 # hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.

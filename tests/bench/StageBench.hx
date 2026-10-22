@@ -1,9 +1,9 @@
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineDesc;
-import helix.graphics.Sampling;
+import helix.texture.Sampling;
 import helix.graphics.ShaderSource;
-import helix.graphics.TextureFormat;
+import helix.texture.TextureFormat;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Material3D;

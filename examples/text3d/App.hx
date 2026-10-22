@@ -5,7 +5,7 @@ import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
-import helix.render2d.Fonts2D;
+import helix.font.Fonts;
 import helix.render2d.Stage;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
@@ -84,7 +84,7 @@ class App extends helix.App {
 		signText.setPosition(0, 1.6, .05);
 		sign.addChild(signText);
 		level.addChild(sign);
-		Fonts2D.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
+		Fonts.load("fonts/Komika/KOMIKAH_.ttf", font -> signText.font = font);
 		// The ground's lines: a grid, circles under each model, and a spiral around them all.
 		var lines = new Drawing3D();
 		lines.grid(16, 1, 0xff34373f);

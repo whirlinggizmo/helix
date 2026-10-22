@@ -1,6 +1,7 @@
 package helix.render2d;
 
 import helix.render2d.Shape2D.ShapeShading2D;
+import helix.font.Font;
 
 /** What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts
 	nodes on the stage or in a view. A draw walks the tree under root as it is now, depth first, a parent before its children and children
@@ -36,7 +37,7 @@ class Renderer2D {
 	var drawnTime = Math.NaN;
 	var dt = 0.;
 	// The font a text without its own was last drawn in (the batch's), for picking it by its block.
-	var lastFont:Null<Font2D>;
+	var lastFont:Null<Font>;
 
 	/** An empty stage, or one drawing root's children (a View2D's tree). */
 	public function new(?root:Node2D) {
@@ -58,9 +59,9 @@ class Renderer2D {
 	public var time:Float = 0.;
 
 	/** The font a text without its own was last drawn in (the batch's), or null before a draw. */
-	public var font(get, never):Null<Font2D>;
+	public var font(get, never):Null<Font>;
 
-	function get_font():Null<Font2D>
+	function get_font():Null<Font>
 		return lastFont;
 
 	/** Nodes drawn by the last draw (in view). */

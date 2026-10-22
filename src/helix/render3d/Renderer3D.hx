@@ -5,8 +5,8 @@ import haxe.io.Bytes;
 import helix.graphics.BlendMode;
 import helix.graphics.Color;
 import helix.graphics.IGraphics;
-import helix.graphics.Sampling;
-import helix.render2d.Texture2D;
+import helix.texture.Sampling;
+import helix.texture.Texture2D;
 
 /** What draws and picks a tree of 3D nodes (docs/DISPLAY_MODEL.md): each View3D's, never a game's, which shows a tree with a View3D. A
 	draw (draw(camera), inside a frame) walks the tree as it is now (each world matrix
@@ -308,7 +308,7 @@ class Renderer3D {
 	public var tonemap:Tonemap = Tonemap.Neutral;
 
 	/** Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values
-		running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shaders.Tonemap), which
+		running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shader.Tonemap), which
 		its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to
 		endScene when its scene is HDR. */
 	public var hdr:Bool = false;

@@ -1,5 +1,5 @@
 /* What the flat programs share, included by flat3d.glsl (static models) and skinnedflat3d.glsl (skinned ones): a model's passes (render3d's
- * ModelPass, helix.shaders' Outline and Silhouette), the model drawn again in one flat color after the stage's opaque models.
+ * ModelPass, helix.shader' Outline and Silhouette), the model drawn again in one flat color after the stage's opaque models.
  *
  * Each vertex is placed as the lit models' are, from the instance records the stage wrote for the model, its position and normal from the
  * mesh's pass vertices (Mesh.passVertices: the normal averaged over every vertex at that position, so where the model's normals split at a

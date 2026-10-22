@@ -11,6 +11,6 @@ haxe hxml/serve.dist.hxml         # out/dist/ served at http://localhost:8095/, 
 haxe hxml/build.native.hxml       # the native build (hxcpp), out/native/Main; it reads assets/ beside itself: copy (or link) the directory to out/native/assets
 ```
 
-`common.hxml` holds what every build shares; the build steps are macros in `helix.tools` (`Build`, `Watchers`, `WebServer`). `favicon.svg` is the page's icon: put
+`common.hxml` holds what every build shares; the build steps are macros in `helix.tool` (`Build`, `Watchers`, `WebServer`). `favicon.svg` is the page's icon: put
 the game's own there. The shader compiler is fetched the first time a shader is packed; `haxelib run helix setup` fetches it ahead,
 before going offline say.

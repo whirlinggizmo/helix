@@ -1,12 +1,12 @@
 import haxe.io.Bytes;
-import helix.assets.AssetManifest;
-import helix.assets.AssetService;
-import helix.assets.FetchService;
-import helix.assets.GrowingSource;
-import helix.assets.IAssets;
-import helix.assets.IHttp;
-import helix.assets.IStore;
-import helix.assets.StorageService;
+import helix.asset.AssetManifest;
+import helix.asset.AssetService;
+import helix.asset.FetchService;
+import helix.asset.GrowingSource;
+import helix.asset.IAssets;
+import helix.asset.IHttp;
+import helix.asset.IStore;
+import helix.asset.StorageService;
 
 /** A host in memory: files by path, each with its headers, answering as a server does (304 to a matching If-None-Match), or not at all while
 	offline. It counts the requests for each path and keeps the headers each was sent with. */

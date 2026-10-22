@@ -1,8 +1,8 @@
-import helix.render2d.FontBaker2D;
-import helix.render2d.TrueType;
+import helix.font.FontBaker;
+import helix.font.TrueType;
 import sys.io.File;
 
-/** Bakes a TrueType font's printable ASCII into a signed distance field atlas with helix.render2d.FontBaker2D, for the built-in font; run under
+/** Bakes a TrueType font's printable ASCII into a signed distance field atlas with helix.font.FontBaker, for the built-in font; run under
 	the interpreter by tools/bake_fonts.py.
 
 	usage: haxe -cp src -cp tools/bake_fonts -main FontBake --run FontBake <font.ttf> <pixel height> <padding> <atlas width> <out.r8> <out.json>
@@ -17,7 +17,7 @@ class FontBake {
 			Sys.exit(2);
 		}
 		var font = new TrueType(File.getBytes(args[0]));
-		var baked = FontBaker2D.bake(font, [for (c in 32...127) c], Std.parseFloat(args[1]), Std.parseInt(args[2]), Std.parseInt(args[3]));
+		var baked = FontBaker.bake(font, [for (c in 32...127) c], Std.parseFloat(args[1]), Std.parseInt(args[2]), Std.parseInt(args[3]));
 		File.saveBytes(args[4], baked.field);
 		File.saveContent(args[5], haxe.Json.stringify({
 			pixelHeight: baked.pixelHeight,

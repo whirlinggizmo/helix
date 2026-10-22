@@ -1,7 +1,7 @@
 package helix.scene;
 
 import haxe.io.Bytes;
-import helix.assets.Failure;
+import helix.asset.Failure;
 import helix.behavior.BehaviorPass;
 import helix.behavior.Behaviors;
 import helix.render3d.Node3D;

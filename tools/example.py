@@ -79,7 +79,7 @@ def tool_modules():
 
 def tool_stamps():
     """The loaded tools' files' times, and the Haxe shader tool's (tools/shader_tool.py), to tell when one is edited."""
-    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}|{'src/helix/tools':shader_tool.stamp()}
+    return {m.__name__:Path(m.__file__).stat().st_mtime for m in tool_modules()}|{'src/helix/tool':shader_tool.stamp()}
 
 def reload_tools():
     """Loads the tools again (twice, so one taking another's names gets the new ones), then this module's names taken from them with
@@ -341,9 +341,9 @@ def main():
                     packed=repacked
                 except SystemExit as error:print('example: shader packing failed:',error,flush=True);packed=time.time()
                 # The shader library's sources, packed into generated Haxe again as they change (generated/shaders, which the dev server
-                # watches): it rebuilds, and the reload builds the changed ones again in place (helix.shaders.ShaderLibrary). The packer
+                # watches): it rebuilds, and the reload builds the changed ones again in place (helix.shader.ShaderLibrary). The packer
                 # runs when a source or the packer changed since it last ran; a failed source is retried once it changes again.
-                library=max([p.stat().st_mtime for p in (ROOT/'src/helix/shaders').glob('*.glsl')]+[shader_tool.stamp()])
+                library=max([p.stat().st_mtime for p in (ROOT/'src/helix/shader').glob('*.glsl')]+[shader_tool.stamp()])
                 if library!=library_seen:
                     library_seen=library
                     try:shader_tool.pack_library(gen_code.SHADERS_OUT)

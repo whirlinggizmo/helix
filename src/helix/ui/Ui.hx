@@ -31,7 +31,7 @@ import helix.scene.Pointer;
 class Ui {
 	// Whether it made its pointer (looking at the stage): then it updates it, at the start of its own update.
 	var ownsPointer = false;
-	var givenFont:Null<helix.render2d.Font2D>;
+	var givenFont:Null<helix.font.Font>;
 	// The pointer and the widgets, and whether the ring shows (keys or a pad moved focus): read by a scroll area too (what's under the
 	// pointer, which widgets are inside it, whether to scroll the focused one into view).
 	@:allow(helix.ui)
@@ -97,16 +97,16 @@ class Ui {
 	public var root(default, null):Node2D = new Node2D();
 
 	/** The font text is drawn in without the theme's: the one assigned, else the stage's (the built-in one, there from the first frame). */
-	public var font(get, set):Null<helix.render2d.Font2D>;
+	public var font(get, set):Null<helix.font.Font>;
 
-	function get_font():Null<helix.render2d.Font2D> {
+	function get_font():Null<helix.font.Font> {
 		if (givenFont != null)
 			return givenFont;
 		var stage = helix.render2d.Stage.instance;
 		return stage != null ? stage.font : null;
 	}
 
-	function set_font(value:Null<helix.render2d.Font2D>):Null<helix.render2d.Font2D>
+	function set_font(value:Null<helix.font.Font>):Null<helix.font.Font>
 		return givenFont = value;
 
 	/** The camera it's drawn through. */
@@ -148,7 +148,7 @@ class Ui {
 		return adopt(new TextField(this, name != null ? name : "text", value, hint, maxLength));
 
 	/** A picture with a caption (a texture still to come: null), in a frame whose picture is side units square. */
-	public function tile(texture:Null<helix.render2d.Texture2D>, caption:String, side:Float, ?name:String):Tile
+	public function tile(texture:Null<helix.texture.Texture2D>, caption:String, side:Float, ?name:String):Tile
 		return adopt(new Tile(this, name == null ? caption : name, texture, caption, side));
 
 	/** A list of items rows tall, scrolled by the wheel, a drag or its scrollbar, an item chosen by the pointer or Up and Down. */

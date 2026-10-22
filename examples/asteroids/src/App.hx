@@ -1,6 +1,6 @@
 import helix.time.Ticker;
 import helix.debug.Autopilot;
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.TestHarness;
 import helix.graphics.Screenshots;
 import helix.host.Host;

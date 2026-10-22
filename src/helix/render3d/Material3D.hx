@@ -3,7 +3,7 @@ package helix.render3d;
 import helix.graphics.Color;
 import helix.graphics.Shader;
 import helix.graphics.ShaderParameters;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** How a model's surface looks: glTF's metallic-roughness model. A base color (0xAARRGGBB, its color sRGB-encoded as the convention's colors
 	are; its alpha below 255 makes the surface see-through), an optional base color texture (sRGB) multiplying it, how metallic (0..1) and how
@@ -102,19 +102,19 @@ class Material3D {
 	function get_shaderParameters():Null<ShaderParameters>
 		return parameters;
 
-	// The hit flash (helix.shaders.HitFlash) and rim light (helix.shaders.Rim) any material shows, drawn by the stage's lit program and every
+	// The hit flash (helix.shader.HitFlash) and rim light (helix.shader.Rim) any material shows, drawn by the stage's lit program and every
 	// surface shader alike: off until one is attached. The flash: its color (0xAARRGGBB, sRGB, its alpha how strong), how much of it (0..1),
 	// and when fading, over how many seconds of the stage's time (0: held), from when a stage first drew it (NaN until then).
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashColor = 0xffffffff;
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashAmount = 0.;
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashSeconds = 0.;
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var flashStart = Math.NaN;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var flashColor = 0xffffffff;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var flashAmount = 0.;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var flashSeconds = 0.;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var flashStart = Math.NaN;
 	// The rim: its color (0xAARRGGBB, sRGB, its alpha how strong; black for none) and power (how tight to the silhouette, above 0).
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var rimColor = 0xff000000;
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) var rimPower = 3.;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var rimColor = 0xff000000;
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) var rimPower = 3.;
 
 	// How much of the flash shows at the stage's time: held, or fading from all of it to none over its seconds since a stage first drew it.
-	@:allow(helix.shaders) @:allow(helix.render3d.Renderer3D) function flashAt(time:Float):Float {
+	@:allow(helix.shader) @:allow(helix.render3d.Renderer3D) function flashAt(time:Float):Float {
 		if (flashSeconds <= 0)
 			return flashAmount;
 		if (Math.isNaN(flashStart))

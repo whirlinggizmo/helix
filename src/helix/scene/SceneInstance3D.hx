@@ -1,16 +1,16 @@
 package helix.scene;
 
 import haxe.ds.ObjectMap;
-import helix.assets.Failure;
-import helix.assets.IRequest;
+import helix.asset.Failure;
+import helix.asset.IRequest;
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorRegistry;
 import helix.behavior.BehaviorSchema;
 import helix.behavior.BehaviorPass;
-import helix.render2d.Font2D;
-import helix.render2d.Fonts2D;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.font.Font;
+import helix.font.Fonts;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render3d.EnvironmentMap3D;
 import helix.render3d.Environments3D;
 import helix.render3d.Model3D;
@@ -63,7 +63,7 @@ class SceneInstance3D {
 	// The loads under way, to cancel at destroy, and what landed through the caches, to release then.
 	var requests:Array<IRequest> = [];
 	var textures:Array<Texture2D> = [];
-	var fonts:Array<Font2D> = [];
+	var fonts:Array<Font> = [];
 	var environments:Array<EnvironmentMap3D> = [];
 
 	function new(file:SceneFile3D, path:String, parent:Node3D, behaviors:BehaviorPass, ?ready:Void->Void) {
@@ -145,10 +145,10 @@ class SceneInstance3D {
 			pass.remove(waiter);
 		root.parent = null;
 		for (texture in textures)
-			Textures2D.release(texture);
+			Textures.release(texture);
 		textures = [];
 		for (font in fonts)
-			Fonts2D.release(font);
+			Fonts.release(font);
 		fonts = [];
 		for (environment in environments)
 			Environments3D.release(environment);
@@ -166,19 +166,19 @@ class SceneInstance3D {
 	@:allow(helix.scene)
 	function holdTexture(texture:Texture2D):Bool {
 		if (destroyed) {
-			Textures2D.release(texture);
+			Textures.release(texture);
 			return false;
 		}
 		textures.push(texture);
 		return true;
 	}
 
-	// Keeps a font the file loaded through Fonts2D, to release at destroy; false, releasing it now, once destroyed.
+	// Keeps a font the file loaded through Fonts, to release at destroy; false, releasing it now, once destroyed.
 
 	@:allow(helix.scene)
-	function holdFont(font:Font2D):Bool {
+	function holdFont(font:Font):Bool {
 		if (destroyed) {
-			Fonts2D.release(font);
+			Fonts.release(font);
 			return false;
 		}
 		fonts.push(font);

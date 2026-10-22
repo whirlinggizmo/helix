@@ -1,5 +1,5 @@
-import helix.assets.Assets;
-import helix.assets.IAssets;
+import helix.asset.Assets;
+import helix.asset.IAssets;
 import helix.host.Presentation;
 import helix.input.Input;
 import helix.input.InputState;
@@ -141,13 +141,13 @@ class SceneTests {
 private class Held implements IAssets {
 	public function new() {}
 
-	public function load(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):helix.assets.IRequest
+	public function load(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):helix.asset.IRequest
 		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
-			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest {
-		@:privateAccess SceneTests.held[path] = {loaded: loaded, failed: message -> helix.assets.Failure.report(path, message, failed)};
-		return new helix.assets.Request(() -> {});
+	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
+			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest {
+		@:privateAccess SceneTests.held[path] = {loaded: loaded, failed: message -> helix.asset.Failure.report(path, message, failed)};
+		return new helix.asset.Request(() -> {});
 	}
 
 	public var host(get, never):Null<String>;
@@ -158,11 +158,11 @@ private class Held implements IAssets {
 	public function setHost(host:Null<String>):Bool
 		return false;
 
-	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
 
@@ -172,22 +172,21 @@ private class Held implements IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.assets.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
 
-	function get_cacheMode():helix.assets.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.assets.IAssets.AssetCacheMode):helix.assets.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
 		return mode;
 	}
 
-	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void,
-			download:Bool = false):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function streamSource(path:String, located:helix.asset.IAssets.AudioLocation->Void, ?failed:String->Void, download:Bool = false):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function subscribe(path:String, target:helix.asset.IReloadable):Void {}
 
-	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function unsubscribe(path:String, target:helix.asset.IReloadable):Void {}
 
 	public var busy(get, never):Bool;
 

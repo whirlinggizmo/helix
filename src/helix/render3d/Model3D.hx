@@ -59,7 +59,7 @@ class Model3D extends Node3D {
 		return value;
 	}
 
-	/** How many extra passes it's drawn in (ModelPass3D: helix.shaders.Outline and Silhouette add themselves). */
+	/** How many extra passes it's drawn in (ModelPass3D: helix.shader.Outline and Silhouette add themselves). */
 	public var passCount(get, never):Int;
 
 	function get_passCount():Int

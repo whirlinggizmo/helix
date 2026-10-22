@@ -26,11 +26,11 @@ Each rung's JavaScript by package, raw KB, from its source map; "haxe metadata" 
 | helix/render3d | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 108.5 |
 | helix/render2d | 1.2 | 55.3 | 55.3 | 62.5 | 62.5 | 67.0 |
 | generated/shaders | 0.0 | 2.1 | 2.1 | 2.1 | 2.1 | 52.6 |
-| helix/adapters | 20.6 | 32.5 | 32.5 | 37.4 | 40.8 | 48.1 |
+| helix/adapter | 20.6 | 32.5 | 32.5 | 37.4 | 40.8 | 48.1 |
 | haxe metadata | 20.1 | 28.3 | 28.3 | 34.7 | 36.0 | 43.6 |
 | generated/fonts | 0.0 | 43.0 | 43.0 | 43.0 | 43.0 | 43.0 |
 | std/haxe | 1.9 | 17.0 | 17.0 | 25.4 | 25.4 | 25.4 |
-| helix/assets | 2.4 | 2.4 | 2.4 | 21.8 | 21.8 | 21.8 |
+| helix/asset | 2.4 | 2.4 | 2.4 | 21.8 | 21.8 | 21.8 |
 | helix/graphics | 11.7 | 17.7 | 17.7 | 18.1 | 18.1 | 21.0 |
 | helix/input | 13.6 | 13.6 | 13.6 | 13.6 | 13.6 | 13.6 |
 | helix/audio | 6.7 | 6.7 | 6.7 | 6.7 | 13.5 | 13.5 |
@@ -40,9 +40,9 @@ Each rung's JavaScript by package, raw KB, from its source map; "haxe metadata" 
 | helix/core | 2.1 | 2.1 | 2.1 | 2.9 | 2.9 | 2.9 |
 | helix/macro | 1.5 | 1.8 | 1.8 | 2.0 | 2.0 | 2.0 |
 | helix | 1.7 | 1.7 | 1.7 | 1.7 | 1.7 | 1.7 |
-| helix/profiles | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 |
+| helix/profile | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 |
 | game | 0.2 | 0.4 | 0.5 | 0.7 | 0.8 | 1.2 |
 | helix/scene | 0.5 | 1.2 | 1.2 | 1.2 | 1.2 | 1.2 |
-| helix/shaders | 0.8 | 0.8 | 0.8 | 0.8 | 0.8 | 0.8 |
+| helix/shader | 0.8 | 0.8 | 0.8 | 0.8 | 0.8 | 0.8 |
 | helix/time | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |
 | helix/app | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |

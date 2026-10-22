@@ -1,6 +1,6 @@
 package helix.ui;
 
-import helix.render2d.Font2D;
+import helix.font.Font;
 
 /** How the UI's widgets look: their colors (0xAARRGGBB), font and sizes. Change any value at any time (a settings screen, a reloaded
 	stylesheet): every widget, and the focus ring, reads its look from its Ui's theme at each Ui.update, so the change shows on the next frame
@@ -27,7 +27,7 @@ class Theme {
 	public function new() {}
 
 	/** The font text is drawn in, or null for the stage's (the batch's built-in one). */
-	public var font:Null<Font2D> = null;
+	public var font:Null<Font> = null;
 
 	/** Text's height in units. (18 to start.) At least 1e-6 (0 or less, or NaN, is 1e-6). */
 	public var textSize(default, set):Float = 18.;

@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.TestHarness;
 import helix.debug.FpsOverlay;
@@ -14,7 +14,7 @@ import helix.math.Random;
 import helix.render2d.Drawing2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render3d.AnimationClip3D;
 import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;

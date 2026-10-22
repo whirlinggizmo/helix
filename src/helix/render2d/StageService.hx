@@ -2,6 +2,7 @@ package helix.render2d;
 
 import helix.graphics.IGraphics;
 import helix.host.Presentation;
+import helix.font.Font;
 
 /** The stage: the one thing the runner draws, after the app's update, every frame (docs/DISPLAY_MODEL.md). Its children are display objects
 	(Node2D and its kinds, and views: View2D, View3D), drawn in order, later over earlier, through a camera showing the app's design units
@@ -73,9 +74,9 @@ class StageService {
 
 	/** The font a text without its own is drawn in: the stage batch's (the built-in one), there from the stage's first use, so text can be
 		measured and laid out before the first frame. */
-	public var font(get, never):Font2D;
+	public var font(get, never):Font;
 
-	function get_font():Font2D {
+	function get_font():Font {
 		if (batch == null)
 			batch = new Batch2D(gpu);
 		return batch.font;

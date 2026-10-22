@@ -25,20 +25,20 @@ BROWSER_APIS={'dom','webgl2','webaudio','fetchapi','indexeddb','canvas','downloa
 def targets():
     """The packages each target's description leaves out: (the browser's, the native ones), read from the adapters' directories so a new adapter is placed by its API's name."""
     browser=[];native=[]
-    for contract in sorted((ROOT/'src/helix/adapters').iterdir()):
+    for contract in sorted((ROOT/'src/helix/adapter').iterdir()):
         if not contract.is_dir():continue
-        if contract.name=='shared':native.append('helix.adapters.shared');continue
+        if contract.name=='shared':native.append('helix.adapter.shared');continue
         for api in sorted(contract.iterdir()):
-            if api.is_dir():(browser if api.name in BROWSER_APIS else native).append(f'helix.adapters.{contract.name}.{api.name}')
-    for profile in sorted((ROOT/'src/helix/profiles').glob('*.hx')):
-        (browser if profile.stem.removesuffix('Profile').lower() in BROWSER_APIS else native).append(f'helix.profiles.{profile.stem}')
+            if api.is_dir():(browser if api.name in BROWSER_APIS else native).append(f'helix.adapter.{contract.name}.{api.name}')
+    for profile in sorted((ROOT/'src/helix/profile').glob('*.hx')):
+        (browser if profile.stem.removesuffix('Profile').lower() in BROWSER_APIS else native).append(f'helix.profile.{profile.stem}')
     return browser,native
 
 def describe(target,ignore):
     """Haxe's XML description of package helix for one target, leaving out the other target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
     # The tools' internals run in the compiler or Haxe's interpreter, not on a target: Build, Watchers and WebServer are their face.
-    ignore=[*ignore,'helix.tools.setup','helix.tools.shader','helix.tools.shared']
+    ignore=[*ignore,'helix.tool.setup','helix.tool.shader','helix.tool.shared']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
     args=['haxe','-cp','src','-cp','generated/shaders','-cp','generated/fonts','--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
@@ -51,7 +51,7 @@ def short(path):
 def package_file(path):
     """The Markdown file a package's types go in: adapters and profiles together, else the package's name after helix."""
     package=path.rsplit('.',1)[0]
-    if package.startswith('helix.adapters') or package=='helix.profiles':return 'adapters.md'
+    if package.startswith('helix.adapter') or package=='helix.profile':return 'adapters.md'
     return package[len('helix.'):].replace('.','-')+'.md' if package!='helix' else 'helix.md'
 
 def type_text(node,known):
@@ -114,7 +114,7 @@ def markdown(xmls):
     for file in xmls:
         for node in ET.parse(file).getroot():
             path=node.get('path')
-            # Public types alone: a module's private ones have a path through the module (helix.assets._AssetService.Attempt).
+            # Public types alone: a module's private ones have a path through the module (helix.asset._AssetService.Attempt).
             if path and path.startswith('helix.') and '._' not in path and node.get('private')!='1' and path not in types:types[path]=node
     known=set(types)
     files={};index={}
@@ -158,10 +158,10 @@ def markdown(xmls):
     out={}
     readme=['# HeliX API reference','','Generated from the code\'s doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members.','']
     for file in sorted(files):
-        package='helix.adapters and helix.profiles' if file=='adapters.md' else 'helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
+        package='helix.adapter and helix.profile' if file=='adapters.md' else 'helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
         names=', '.join(short(p) for p,_ in index[file]) if file!='adapters.md' else f'{len(index[file])} adapters and profiles, the platform code'
         readme.append(f'- [`{package}`]({file}): {names}')
-        title=f'# {package}' if file!='adapters.md' else '# helix.adapters and helix.profiles'
+        title=f'# {package}' if file!='adapters.md' else '# helix.adapter and helix.profile'
         lead='' if file!='adapters.md' else '\nThe platform code: one adapter an API behind each contract, and the profiles that choose them (ARCHITECTURE.md). A game writes against the contracts, never these.\n'
         out[file]='\n'.join([title,lead]+(['[Back to the index](README.md)','']) + files[file]).rstrip('\n')+'\n'
     out['README.md']='\n'.join(readme)+'\n'

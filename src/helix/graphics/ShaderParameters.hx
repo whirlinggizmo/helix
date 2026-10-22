@@ -1,7 +1,7 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** An app's shader's own parameters and textures, set by name and kept across the shader's reloads (a name the reloaded shader lacks is kept
 	and ignored), written into its uniform blocks at their std140 offsets when something draws with it. ScreenEffect and Material3D have one. */

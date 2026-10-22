@@ -1,7 +1,7 @@
 """The generated Haxe the library ships, in generated/ (committed; docs/DECISIONS.md 138): the framework's programs
 (generated/shaders/<Name>Program.hx, from src/helix/graphics/shaders by sokol-shdc and shader_metadata.py), the shader library packed
-(generated/shaders/<Name>Packed.hx and PackedShaders.hx, from src/helix/shaders by src/helix/tools/shader/ShaderPacker.hx), SDL_GPU's dialects of
-both (generated/shaders-sdlgpu, by src/helix/tools/shader/GpuShaders.hx; only sdl3-gpu builds carry them) and the built-in font (generated/fonts/GeneratedFont.hx, by
+(generated/shaders/<Name>Packed.hx and PackedShaders.hx, from src/helix/shader by src/helix/tool/shader/ShaderPacker.hx), SDL_GPU's dialects of
+both (generated/shaders-sdlgpu, by src/helix/tool/shader/GpuShaders.hx; only sdl3-gpu builds carry them) and the built-in font (generated/fonts/GeneratedFont.hx, by
 bake_fonts.py). A build on -lib helix finds them through src/helix/macro/Haxelib.hx; the repository's own builds list them.
 
   python3 tools/gen_code.py                 # what's missing or older than its source, SDL_GPU's dialects included

@@ -1,8 +1,8 @@
-"""Checks of the shader packer, src/helix/tools/shader/ShaderPacker.hx (run through tools/shader_tool.py, as the repository's tools run it), against
+"""Checks of the shader packer, src/helix/tool/shader/ShaderPacker.hx (run through tools/shader_tool.py, as the repository's tools run it), against
 real sokol-shdc output: an app's screen effect packed with its kind, its blocks and their members' std140 offsets, its textures, both
 dialects; the shaders it refuses; a surface shader's variants (skinned, and the casters of one with a vertex hook or a discard) and its own
 textures after the joints; a sprite shader over the effect2d program's vertices, and its variant over the 3D sprites'; the shader library
-(src/helix/shaders) packed for every backend, SDL_GPU's dialects too (glslang and SPIRV-Cross, fetched into the user's cache when
+(src/helix/shader) packed for every backend, SDL_GPU's dialects too (glslang and SPIRV-Cross, fetched into the user's cache when
 missing); and the library packed into generated Haxe, again only when changed, its classes named for its files, and gone with its source."""
 import argparse
 import json
@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import shader_tool
 
 argparse.ArgumentParser(description=__doc__).parse_args()
-LIBRARY = ROOT / 'src/helix/shaders'
+LIBRARY = ROOT / 'src/helix/shader'
 
 EFFECT = '''@fs fs
 @include_block helix_screen
@@ -242,7 +242,7 @@ class SpriteTests(unittest.TestCase):
         self.assertEqual([a['name'] for a in effect2d['attributes']], pack(SPRITE)['attributes'])
 
     def test_library_sprite_parameters(self):
-        # helix.shaders' sprite classes write these members: their blocks as the reflection lays them out, their textures at these slots.
+        # helix.shader' sprite classes write these members: their blocks as the reflection lays them out, their textures at these slots.
         expected = {'sprite_outline': ([('outline_color', 0), ('width', 16)], []),
                     'sprite_flash': ([('flash', 0)], []),
                     'sprite_dissolve': ([('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)], [(1, 'dissolve_noise')]),
@@ -271,11 +271,11 @@ class LibraryTests(unittest.TestCase):
     def test_unlit_parameters(self):
         shader = packed(LIBRARY / 'unlit.glsl')
         blocks = {b['slot']: b for b in shader['uniformBlocks']}
-        # helix.shaders.Unlit's color field writes this member: the block at binding 2, a vec4 at its start.
+        # helix.shader.Unlit's color field writes this member: the block at binding 2, a vec4 at its start.
         self.assertEqual([(m['name'], m['type'], m['offset'], m['count']) for m in blocks[2]['members']], [('color', 'vec4', 0, 1)])
 
     def test_library_parameters(self):
-        # helix.shaders' classes write these members: Toon's, Dissolve's and Water's blocks as the reflection lays them out.
+        # helix.shader' classes write these members: Toon's, Dissolve's and Water's blocks as the reflection lays them out.
         expected = {'toon': {2: [('shadow_color', 0), ('bands', 16)]},
                     'dissolve': {2: [('edge_color', 0), ('amount', 16), ('edge_width', 20), ('scale', 24)]},
                     'water': {2: [('deep_color', 0), ('shallow_color', 16), ('sky_color', 32), ('shininess', 48)],

@@ -1,6 +1,8 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
+import helix.texture.TextureFormat;
+import helix.texture.Sampling;
 
 /** Pixels read back from the GPU: width x height RGBA8, rows top first; or why they couldn't be. */
 enum ReadPixelsResult {

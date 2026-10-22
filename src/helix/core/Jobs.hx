@@ -1,6 +1,6 @@
 package helix.core;
 
-import helix.assets.IRequest;
+import helix.asset.IRequest;
 
 /** Asynchronous operations an adapter carries out on its platform, scheduled and settled here, the same on every platform: a queue, at most
 	maxActive running at once, each settling exactly once on the host thread (with its result, or as cancelled: by its request, or when the

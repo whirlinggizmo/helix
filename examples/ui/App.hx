@@ -1,6 +1,6 @@
 import haxe.io.Bytes;
-import helix.assets.Assets;
-import helix.assets.Storage;
+import helix.asset.Assets;
+import helix.asset.Storage;
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
@@ -21,7 +21,7 @@ import helix.input.PadAxis;
 import helix.input.PadButton;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.time.Time;
 import helix.ui.Layout2D;
 import helix.ui.Button;

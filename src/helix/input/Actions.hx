@@ -2,8 +2,8 @@ package helix.input;
 
 import haxe.Json;
 import haxe.io.Bytes;
-import helix.assets.Failure;
-import helix.assets.Storage;
+import helix.asset.Failure;
+import helix.asset.Storage;
 import helix.host.Presentation;
 import helix.host.Screen;
 

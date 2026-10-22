@@ -4,7 +4,7 @@ import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** A background holding a column of widgets (add): hidden, they're hidden with it. A plain rectangle in the theme's panel color, or a nine-slice
 	frame (setFrame); with a title, a band across its top holding it, the column under the band. Never focused; the pointer stops at it, so

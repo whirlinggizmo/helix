@@ -3,7 +3,7 @@ package helix.render3d;
 import helix.graphics.IGraphics;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render2d.View;
 import helix.render2d.ViewFrame;
 import helix.scene.Node;

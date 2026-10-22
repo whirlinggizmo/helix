@@ -4,7 +4,7 @@ import helix.host.Screen;
 import helix.input.Input;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.ui.Theme;
 
 /** The built-in loading screen (docs/DISPLAY_MODEL.md): the theme's panel color or a picture (setImage: a level's art, covering the screen or

@@ -7,7 +7,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Textures2D;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
@@ -101,7 +101,7 @@ class App extends helix.App {
 		emissive.setEmissive(color(1, .35, .05));
 		bottom.push(sphere(ball, -SPACING, 0, emissive));
 		var tiles = pbr(color(.6, .6, .62), 0, .45);
-		Textures2D.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
+		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		bottom.push(sphere(ball, 0, 0, tiles));
 		bottom.push(sphere(ball, SPACING, 0, pbr(color(.3, .9, .5, .35), 0, .1)));
 		Stage.addChild(new View3D(level, camera));

@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.audio.Audio;
 import helix.audio.AudioPlayback;
 import helix.audio.AudioStream;

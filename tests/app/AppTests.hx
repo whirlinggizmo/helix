@@ -74,10 +74,10 @@ class AppTests {
 
 		// The backend table.
 		check(AppBuild.BACKENDS.join(",") == "webgl2,sokol-gl,sdl3-gl,sdl3-gpu", "The four backends, the browser's first");
-		check(AppBuild.profileOf("webgl2") == "helix.profiles.WebGL2Profile"
-			&& AppBuild.profileOf("sokol-gl") == "helix.profiles.SokolGLProfile"
-			&& AppBuild.profileOf("sdl3-gl") == "helix.profiles.Sdl3GLProfile"
-			&& AppBuild.profileOf("sdl3-gpu") == "helix.profiles.Sdl3GpuProfile",
+		check(AppBuild.profileOf("webgl2") == "helix.profile.WebGL2Profile"
+			&& AppBuild.profileOf("sokol-gl") == "helix.profile.SokolGLProfile"
+			&& AppBuild.profileOf("sdl3-gl") == "helix.profile.Sdl3GLProfile"
+			&& AppBuild.profileOf("sdl3-gpu") == "helix.profile.Sdl3GpuProfile",
 			"Each backend's profile");
 		check(AppBuild.profileOf("gl") == null && AppBuild.profileOf("") == null, "A name not in the list has no profile");
 		check(AppBuild.isBrowser("webgl2") && !AppBuild.isBrowser("sokol-gl") && !AppBuild.isBrowser("sdl3-gpu"), "Only webgl2 is the browser's");

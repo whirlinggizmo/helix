@@ -2,7 +2,7 @@ package helix.render3d;
 
 /** An extra pass a model is drawn in after the stage's opaque models: the model again in one flat color, from the same records as its parts
 	(static or skinned, instanced like it), either pushed out along its normals into a shell whose far side shows past its edges (an outline:
-	helix.shaders.Outline), or drawn only where something nearer hides it (a silhouette: helix.shaders.Silhouette). Each kind's constructor
+	helix.shader.Outline), or drawn only where something nearer hides it (a silhouette: helix.shader.Silhouette). Each kind's constructor
 	adds it to its model. A stage draws its opaque models without silhouettes and its opaque sprites, then the silhouettes, then the opaque
 	models with them (so a model's own parts never hide it), then every outline, then what's see-through. */
 class ModelPass3D {

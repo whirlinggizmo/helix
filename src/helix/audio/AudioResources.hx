@@ -1,12 +1,12 @@
 package helix.audio;
 
-import helix.assets.Failure;
-import helix.assets.IRequest;
-import helix.assets.Request;
+import helix.asset.Failure;
+import helix.asset.IRequest;
+import helix.asset.Request;
 import helix.core.WorkQueue;
-import helix.assets.IAssets;
+import helix.asset.IAssets;
 import helix.audio.IAudio;
-import helix.assets.IReloadable;
+import helix.asset.IReloadable;
 
 /** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or
 	packaged copy (or a remote URL where the platform plays one, else a download played as it arrives), their lifetimes counted, and playbacks, which wait while audio hasn't

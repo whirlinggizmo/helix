@@ -1,8 +1,8 @@
 package helix.host;
 
-import helix.assets.IExport;
-import helix.assets.IHttp;
-import helix.assets.IStore;
+import helix.asset.IExport;
+import helix.asset.IHttp;
+import helix.asset.IStore;
 import helix.audio.IAudio;
 import helix.audio.IAudioDecoder;
 import helix.debug.ITestHarness;

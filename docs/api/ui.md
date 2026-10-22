@@ -170,7 +170,7 @@ static function row(?node:Node2D):Layout2D
 static function column(?node:Node2D):Layout2D
 static function stack(?node:Node2D):Layout2D
 static function of(node:Node2D):Layout2D
-static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void
+static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font):Void
 function add(child:Layout2D):Void
 function remove(child:Layout2D):Bool
 var children(get, never):Array<Layout2D>
@@ -477,7 +477,7 @@ How the UI's widgets look: their colors (0xAARRGGBB), font and sizes. Change any
 
 ```haxe
 function new()
-var font:Null<Font2D>
+var font:Null<Font>
 var textSize(default, set):Float
 var textColor(get, set):Int
 var disabledTextColor(get, set):Int
@@ -581,7 +581,7 @@ A screen's widgets on the stage, used by the pointer, keys and pads alike: made 
 function new(?theme:Theme, ?parent:Node2D, ?camera:Camera2D, ?pointer:Pointer, ?input:IInput)
 var theme(default, set):Theme
 var root(default, null):Node2D
-var font(get, set):Null<Font2D>
+var font(get, set):Null<Font>
 var camera(default, null):Camera2D
 var input(default, null):IInput
 function label(text:String, ?name:String):Label

@@ -74,7 +74,7 @@ class StageTests {
 		batch.destroy();
 		stage.removeChild(group);
 		// A paused node holds its emitters still, still drawn.
-		var sparks = new helix.particles.Emitter(null),
+		var sparks = new helix.particle.Emitter(null),
 			node = new helix.render2d.Particles2D(sparks);
 		sparks.rate = 100;
 		sparks.setLife(10, 10);

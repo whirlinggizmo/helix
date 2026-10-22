@@ -1,7 +1,7 @@
-import helix.assets.FetchService;
-import helix.assets.StorageService;
-import helix.assets.IAssets;
-import helix.assets.AssetService;
+import helix.asset.FetchService;
+import helix.asset.StorageService;
+import helix.asset.IAssets;
+import helix.asset.AssetService;
 import helix.audio.AudioResources;
 import helix.audio.AudioClip;
 import helix.audio.AudioStream;

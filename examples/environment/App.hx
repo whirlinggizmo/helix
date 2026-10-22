@@ -8,7 +8,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Textures2D;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.EnvironmentMap3D;
 import helix.render3d.Environment3D;
@@ -97,7 +97,7 @@ class App extends helix.App {
 			sphere(ball, x, 1.35, color(1, .77, .34), 1, roughness);
 		}
 		var tiles = sphere(ball, -SPACING, 0, color(.6, .6, .62), 0, .35);
-		Textures2D.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
+		Textures.load("textures/tiles_normal.png", true, texture -> tiles.normalTexture = texture);
 		sphere(ball, -2 * SPACING, 0, color(.95, .95, .95), 1, .1);
 		var pearl = sphere(ball, 0, 0, color(.9, .88, .85), 0, .2);
 		shaders = new Shaders();

@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
-import helix.assets.IStore;
-import helix.assets.Storage;
-import helix.assets.StorageService;
+import helix.asset.IStore;
+import helix.asset.Storage;
+import helix.asset.StorageService;
 import helix.host.Presentation;
 import helix.input.Actions;
 import helix.input.Anchor;

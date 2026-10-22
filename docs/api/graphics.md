@@ -65,14 +65,14 @@ Which fragments a pipeline's depth test passes, against the depth already there.
 The GPU: textures, buffers, shaders, pipelines, passes and draws. Shutting it down is the runner's, and so is the frame: the runner opens and closes it around the stage's drawing (docs/DISPLAY_MODEL.md), so beginFrame and endFrame aren't here; a pass into a texture (beginTargetPass) is drawn in init or update, before the frame opens. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IGraphics's public members with their doc comments.
 
 ```haxe
-static function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = helix.graphics.TextureFormat.Rgba8):Int
+static function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = helix.texture.TextureFormat.Rgba8):Int
 static function createCubeTexture(size:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat):Int
 static function createDataTexture(width:Int, height:Int):Int
 static function updateDataTexture(handle:Int, data:haxe.io.Bytes):Void
 static function canSample(format:TextureFormat):Bool
 static var msaaSamples(get, never):Int
 static var maxMsaaSamples(get, never):Int
-static function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = helix.graphics.TextureFormat.Rgba8, ?depth:Bool = true):Int
+static function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = helix.texture.TextureFormat.Rgba8, ?depth:Bool = true):Int
 static function canRender(format:TextureFormat):Bool
 static function createShadowMap(size:Int, layers:Int):Int
 static function destroyTexture(handle:Int):Void
@@ -247,18 +247,6 @@ function shutdown():Void
 - `poll`: Delivers finished decodes, starts queued ones and runs completions. Call once per frame.
 - `shutdown`: Cancels every pending decode (each completes Cancelled) and refuses later ones.
 
-## Mipmaps
-
-*class* in `src/helix/graphics/Mipmaps.hx`
-
-Mipmap chains for IGraphics.createTexture, built the same on every target so their images match.
-
-```haxe
-static function build(width:Int, height:Int, rgba:haxe.io.Bytes):Array<haxe.io.Bytes>
-```
-
-- `build`: rgba (width x height RGBA8) and each level below it, half the size of the last (at least 1), down to 1x1: each texel the rounded average of the 2x2 above it, an odd edge repeating its last row or column.
-
 ## PipelineDesc
 
 *typedef* in `src/helix/graphics/PipelineDesc.hx`
@@ -341,7 +329,7 @@ static function encode(width:Int, height:Int, rgba:haxe.io.Bytes):haxe.io.Bytes
 
 *class* in `src/helix/graphics/PostProcess.hx`
 
-Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same with the chain HDR or not.
+Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shader.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same with the chain HDR or not.
 
 ```haxe
 function new(?gpu:IGraphics)
@@ -380,12 +368,6 @@ Pixels read back from the GPU: width x height RGBA8, rows top first; or why they
 - `Read(width:Int, height:Int, rgba:haxe.io.Bytes)`
 - `Failed(message:String)`
 
-## Sampling
-
-*abstract* in `src/helix/graphics/Sampling.hx`
-
-How a draw samples a texture: its filter (linear, smooth and through its mipmaps when it has them; or nearest, sharp, for pixel art) and how it wraps along u and v. A small value, passed with each texture a draw uses; adapters keep one sampler for each that is used.
-
 ## ScreenEffect
 
 *class* in `src/helix/graphics/ScreenEffect.hx`
@@ -409,7 +391,7 @@ function drawPass(source:Texture2D, width:Int, height:Int, time:Float):Void
 - `shader`: Its shader.
 - `parameters`: Its shader's own parameters and textures, set by name.
 - `enabled`: Whether PostProcess draws it.
-- `hdr`: Whether it reads an HDR frame: in a chain with one, PostProcess draws the scene in half floats where the GPU can (IGraphics.canRender), its colors running past 1, and tone maps it after the last such effect (helix.shaders.Tonemap). False (the default) for an effect that reads the frame as the screen shows it, tone mapped, 0 to 1.
+- `hdr`: Whether it reads an HDR frame: in a chain with one, PostProcess draws the scene in half floats where the GPU can (IGraphics.canRender), its colors running past 1, and tone maps it after the last such effect (helix.shader.Tonemap). False (the default) for an effect that reads the frame as the screen shows it, tone mapped, 0 to 1.
 - `intermediates`: The textures it draws through before its last pass, each its size as a fraction of the frame's each way (.5: half; at least a pixel): PostProcess makes them in the frame's format, without depth, and hands them over in ScreenFrame.intermediates. Empty (the default) for an effect of one pass.
 - `drawIntermediates`: Draws its passes before the last into frame.intermediates, each a target pass (drawInto), before the screen's pass: nothing for an effect of one pass (the default).
 - `draw`: Draws its last pass over the open pass's viewport, frame.width x frame.height pixels: by default its shader once, reading frame.source.
@@ -485,7 +467,7 @@ static function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Voi
 
 *typedef* in `src/helix/graphics/ShaderSource.hx`
 
-A program in SDL_GPU's dialects (src/helix/tools/shader/GpuShaders.hx), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal (entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main).
+A program in SDL_GPU's dialects (src/helix/tool/shader/GpuShaders.hx), laid out as SDL_GPU binds: SPIR-V for Vulkan (each stage base64), MSL for Metal (entry points main0) and HLSL for Direct3D 12 (shader model 5.1, entry points main).
 
 - `spirv:ShaderStages`
 - `msl:ShaderStages`
@@ -495,7 +477,7 @@ A program in SDL_GPU's dialects (src/helix/tools/shader/GpuShaders.hx), laid out
 
 *class* in `src/helix/graphics/Shader.hx`
 
-An app's shader loaded from a .hxshader (src/helix/tools/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
+An app's shader loaded from a .hxshader (src/helix/tool/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
 
 ```haxe
 static var FORMAT(inline, null):Int
@@ -513,7 +495,7 @@ var textureSlots(get, never):Array<Int>
 function destroy():Void
 ```
 
-- `FORMAT`: The .hxshader format it reads (src/helix/src/helix/tools/shader/ShaderPacker.hx's FORMAT).
+- `FORMAT`: The .hxshader format it reads (src/helix/src/helix/tool/shader/ShaderPacker.hx's FORMAT).
 - `fromText`: Builds a shader, and its variants, from a .hxshader's text on gpu (the program's, Graphics, when not given). Throws, saying why, for a file it can't read or a program that doesn't build. The caller destroys it.
 - `handle`: The IGraphics shader handle.
 - `kind`: Its kind: "screen" (a screen effect), "surface" (a Renderer3D material's) or "sprite" (a 2D sprite's: a SpriteEffect).
@@ -582,7 +564,7 @@ var textureSlots(get, never):Map<Int, Texture2D>
 
 *typedef* in `src/helix/graphics/ShaderSource.hx`
 
-A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (src/helix/tools/shader/ShaderPacker.hx, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
+A compiled program: in every dialect HeliX's adapters use (GLSL 410 natively, GLSL ES 300 in the browser, and SDL_GPU's), its vertex attributes' names by slot, and the uniform blocks and textures it binds. The framework's are generated (each program class's source(); SDL_GPU's dialects only in SDL_GPU builds, which define helix_sdl3_gpu), an app's is a .hxshader (src/helix/tool/shader/ShaderPacker.hx, SDL_GPU's dialects only when packed for those builds); IGraphics.createShader builds either the same way.
 
 - `uniformBlocks:Array<ShaderBlock>`
 - `textures:Array<ShaderTexture>`
@@ -617,7 +599,7 @@ A texture a program samples: its binding slot (its sampler's too), its stage, th
 
 *class* in `src/helix/graphics/Shaders.hx`
 
-Apps' shaders (.hxshader files, packed from GLSL by src/helix/tools/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
+Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
 
 ```haxe
 function new(?assets:IAssets, ?gpu:IGraphics)
@@ -635,7 +617,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 *class* in `src/helix/graphics/SpriteEffect.hx`
 
-A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Sprite2D.effect, Batch2D.effect, and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shaders (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
+A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Sprite2D.effect, Batch2D.effect, and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shader (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
 
 ```haxe
 function new(shader:Shader)
@@ -648,12 +630,6 @@ function prepare(time:Float):Void
 - `shader`: Its shader.
 - `parameters`: Its shader's own parameters and textures, set by name. A texture of its own that isn't set is drawn as the sprite's.
 - `prepare`: Brings its parameters to time, seconds of the batch's clock (Batch2D.time), just before a batch draws with it (once for each draw): nothing by default; an effect changing over time (SpriteFlash's fade) overrides it.
-
-## TextureFormat
-
-*abstract* in `src/helix/graphics/TextureFormat.hx`
-
-What a texture's texels are: plain RGBA8, a GPU's compressed format (4x4 blocks of 16 bytes each), which only some GPUs sample (IGraphics.canSample), or half floats, linear light beyond 1 (an environment's cubes). The 8-bit and compressed ones' colors are sRGB values, as the shaders treat them.
 
 ## VertexAttribute
 
@@ -674,9 +650,3 @@ A vertex buffer a pipeline reads, by its index in a draw's buffers: its record's
 - `stride:Int`
 - `instanced:Bool`
 - `attributes:Array<VertexAttribute>`
-
-## Wrap
-
-*abstract* in `src/helix/graphics/Sampling.hx`
-
-How a texture's edges repeat past 0..1.

@@ -1,14 +1,14 @@
 package helix.scene;
 
 import haxe.io.Bytes;
-import helix.assets.Assets;
-import helix.assets.Failure;
-import helix.assets.IRequest;
+import helix.asset.Assets;
+import helix.asset.Failure;
+import helix.asset.IRequest;
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioStream;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render3d.EnvironmentMap3D;
 import helix.render3d.Environments3D;
 import helix.render3d.ModelCache3D;
@@ -91,10 +91,10 @@ class Loader {
 		return Assets.ensure(path, both.loaded, both.failed);
 	}
 
-	/** A texture through Textures2D (linear: not sRGB, for data such as normal maps). */
+	/** A texture through Textures (linear: not sRGB, for data such as normal maps). */
 	public function texture(path:String, linear:Bool, loaded:Texture2D->Void, ?failed:String->Void):IRequest {
 		var both = counted(path, loaded, failed);
-		return Textures2D.load(path, linear, both.loaded, both.failed);
+		return Textures.load(path, linear, both.loaded, both.failed);
 	}
 
 	/** A sound clip through Audio. */

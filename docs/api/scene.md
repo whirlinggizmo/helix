@@ -103,7 +103,7 @@ function model(models:ModelCache3D, path:String, loaded:ModelFile3D -> Void, ?fa
 - `failures`: What failed, each as its name and the reason.
 - `wrap`: Counts a load the game makes itself: wrap its completion, naming it; failed gives the reason for a result that failed, or null.
 - `asset`: An asset's bytes through Assets.
-- `texture`: A texture through Textures2D (linear: not sRGB, for data such as normal maps).
+- `texture`: A texture through Textures (linear: not sRGB, for data such as normal maps).
 - `clip`: A sound clip through Audio.
 - `stream`: A sound stream through Audio.
 - `environment`: An environment through Environments3D (loaded once it's prepared).
@@ -460,7 +460,7 @@ function destroy():Void
 
 *class* in `src/helix/scene/SceneKinds3D.hx`
 
-The live side of SceneSchema3D's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh made by Mesh3D's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures2D and Fonts2D, a color as 0xAARRGGBB.
+The live side of SceneSchema3D's tables, in one module so the two can't drift: a node of a kind made from its name, a kind's property applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh made by Mesh3D's generators and read back from the mesh's record. What the tables name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB.
 
 ```haxe
 static function make(kind:String):Null<Node3D>
@@ -481,12 +481,12 @@ static function alphaName(alpha:AlphaMode):String
 
 - `make`: A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table has.
 - `kindOf`: The kind node is, as the tables name it: its class's name (a Node3D of no other class is "Node3D"). Null for a class no table has.
-- `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures2D or Fonts2D and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
+- `apply`: Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named choice no enum has, or a value the class refuses.
 - `read`: Node's property name as it is now, as its own kind's table has it; a texture or a font as the path it was loaded from. Null for a property node's kind hasn't, or one that can't be read now: a sprite with no texture or a text with no font (none, or one not yet landed), or one that didn't come through the caches.
 - `makeMesh`: The mesh a file's mesh entry names, made by Mesh3D's generator of its shape with its arguments, an unsaid one the generator's default (SceneSchema3D.shapes), a count rounded toward zero. Null for a shape no generator makes or a required argument missing.
 - `readMesh`: Mesh as a file's mesh entry, from its record of what made it (Mesh3D.shape), every argument said (the writer leaves out those at the generator's default). Null for a mesh with no record (from arrays or a file) or a shape the tables don't have.
-- `applyMaterial`: Gives model a new material carrying material's values, the rest Material3D's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures2D by path and land when they do; instance, when given, keeps them to release at its destroy.
-- `readMaterial`: Model3D's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures2D. Null for a model of no parts.
+- `applyMaterial`: Gives model a new material carrying material's values, the rest Material3D's defaults, as its first part's (made when it has none): an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance, when given, keeps them to release at its destroy.
+- `readMaterial`: Model3D's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for none or one that didn't come through Textures. Null for a model of no parts.
 - `projectionOf`: The projection named name, "perspective" or "orthographic" (SceneSchema3D.projections); null for another name.
 - `projectionName`: A projection's name as the file writes it (SceneSchema3D.projections).
 - `facingOf`: The facing named name, "camera", "upright", "ground" or "free"; null for another name.

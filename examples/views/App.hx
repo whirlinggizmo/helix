@@ -17,8 +17,8 @@ import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
-import helix.shaders.Pixelate;
-import helix.shaders.Vignette;
+import helix.shader.Pixelate;
+import helix.shader.Vignette;
 import helix.time.Time;
 
 /** Views on the stage (helix.render2d.View2D, helix.render3d.View3D; docs/DISPLAY_MODEL.md), nothing drawn by hand:

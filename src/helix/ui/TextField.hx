@@ -1,7 +1,7 @@
 package helix.ui;
 
 import helix.input.Key;
-import helix.render2d.Font2D;
+import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -20,7 +20,7 @@ class TextField extends Widget {
 	var hinted:Layout2D;
 	// The caret's place after the text: what it was measured for (text, font, size), so it's measured again only when one changes.
 	var caretText = "";
-	var caretFont:Null<Font2D>;
+	var caretFont:Null<Font>;
 	var caretSize = -1.;
 	var caretX = 0.;
 

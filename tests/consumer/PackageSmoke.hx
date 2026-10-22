@@ -2,7 +2,7 @@ import helix.host.IHost;
 import helix.input.IInput;
 import helix.graphics.IGraphics;
 import helix.audio.IAudio;
-import helix.assets.IAssets;
+import helix.asset.IAssets;
 import helix.debug.ITestHarness;
 import helix.input.InputState;
 import helix.input.Key;

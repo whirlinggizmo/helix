@@ -1,6 +1,6 @@
-"""Checks of helix.tools, what a game on -lib helix builds with (src/helix/tools, run in the compiler and Haxe's interpreter):
+"""Checks of helix.tool, what a game on -lib helix builds with (src/helix/tool, run in the compiler and Haxe's interpreter):
 
-- `haxelib run helix` (Run.hx, helix.tools.setup.Commands): its arguments (no command, --help naming the commands, an unknown command or
+- `haxelib run helix` (Run.hx, helix.tool.setup.Commands): its arguments (no command, --help naming the commands, an unknown command or
   option); the caller's directory haxelib appends (HAXELIB_RUN=1); init's files and its refusal of a directory with anything in it; init --example copying an example as a game, refusing one it hasn't; setup making
   sokol-shdc ready and listing the tools, a program HELIX_SHDC names in place of the cache's and its refusal of one that isn't there.
 - The starter's hxml files built on `-lib helix` (a haxelib path holding only this checkout as helix): build.web with its page beside it
@@ -98,7 +98,7 @@ class Commands(unittest.TestCase):
         self.assertIn('command', result.stderr)
         result = run_hx('--help')
         self.assertEqual(result.returncode, 0, result.stderr)
-        for word in ('init', 'setup', 'haxelib run helix', 'helix.tools'):
+        for word in ('init', 'setup', 'haxelib run helix', 'helix.tool'):
             self.assertIn(word, result.stdout)
         for gone in ('site', 'shader', 'bogus'):
             result = run_hx(gone)
@@ -234,8 +234,8 @@ class Build(unittest.TestCase):
             # A script of another name, and a game without its own icon or config: the library's icon, no config.
             (game / 'config.json').unlink()
             (game / 'favicon.svg').unlink()
-            done(haxe(game, 'hxml/common.hxml', '-D', 'helix-backend=webgl2', '-js', 'out/other/game.js', '--macro', 'helix.tools.Build.cleanOutput()',
-                      '--macro', 'helix.tools.Build.generateWebPage()'))
+            done(haxe(game, 'hxml/common.hxml', '-D', 'helix-backend=webgl2', '-js', 'out/other/game.js', '--macro', 'helix.tool.Build.cleanOutput()',
+                      '--macro', 'helix.tool.Build.generateWebPage()'))
             page = (game / 'out/other/index.html').read_text(encoding='utf-8')
             self.assertIn('<script src="game.js">', page)
             self.assertNotIn('helix-config', page)
@@ -246,12 +246,12 @@ class Build(unittest.TestCase):
             game = starter(directory)
             # cleanOutput on a build written into the game's own directory, or a native build's; copyProgram on a browser build.
             web = ['hxml/common.hxml', '-D', 'helix-backend=webgl2']
-            self.assertIn('holds the game itself', refusal(haxe(game, *web, '-js', 'app.js', '--macro', 'helix.tools.Build.cleanOutput()')))
+            self.assertIn('holds the game itself', refusal(haxe(game, *web, '-js', 'app.js', '--macro', 'helix.tool.Build.cleanOutput()')))
             self.assertTrue((game / 'src/Main.hx').is_file())
-            self.assertIn('writes no program', refusal(haxe(game, *web, '-js', 'out/x/app.js', '--macro', 'helix.tools.Build.copyProgram("out/y")')))
+            self.assertIn('writes no program', refusal(haxe(game, *web, '-js', 'out/x/app.js', '--macro', 'helix.tool.Build.copyProgram("out/y")')))
             (game / 'out/native').mkdir(parents=True)
             native = ['hxml/common.hxml', '-D', 'helix-backend=sokol-gl', '-cpp', 'out/native', '--no-output']
-            self.assertIn('hxcpp', refusal(haxe(game, *native, '--macro', 'helix.tools.Build.cleanOutput()')))
+            self.assertIn('hxcpp', refusal(haxe(game, *native, '--macro', 'helix.tool.Build.cleanOutput()')))
 
     def test_pack_shaders(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -292,7 +292,7 @@ class Running(unittest.TestCase):
             game = starter(directory)
             (game / 'shaders').mkdir()
             (game / 'shaders/glow.glsl').write_text(EFFECT, encoding='utf-8')
-            watcher = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', 'helix.tools.Watchers.watchShaders()'], cwd=game, env=LIBRARY_ENV, stdout=subprocess.PIPE,
+            watcher = subprocess.Popen(['haxe', '-lib', 'helix', '--macro', 'helix.tool.Watchers.watchShaders()'], cwd=game, env=LIBRARY_ENV, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT, text=True)
             try:
                 packed = game / 'assets/shaders/glow.hxshader'
@@ -326,7 +326,7 @@ class Running(unittest.TestCase):
                     return None, None, b''
 
             def serve():
-                return subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tools.WebServer.serveDirectory("site", {port})'], cwd=directory,
+                return subprocess.Popen(['haxe', '-lib', 'helix', '--macro', f'helix.tool.WebServer.serveDirectory("site", {port})'], cwd=directory,
                                         env=LIBRARY_ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
             server = serve()

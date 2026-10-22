@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
@@ -13,8 +13,8 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
@@ -25,9 +25,9 @@ import helix.render3d.Model3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
-import helix.shaders.SpriteDissolve;
-import helix.shaders.SpriteFlash;
-import helix.shaders.SpriteOutline;
+import helix.shader.SpriteDissolve;
+import helix.shader.SpriteFlash;
+import helix.shader.SpriteOutline;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit3D;
@@ -38,7 +38,7 @@ import helix.render3d.Orbit3D;
 	- a flag on a sign post, as its node is turned (Free), and a coin flat on the ground (Ground)
 	- the coin's glow, added over everything (Add), and masked flames that cut out where their texels fade
 	Sprites are unlit and instanced: alike ones (a texture, an alpha mode, an effect) are one draw, and the readout counts them.
-	Sprite effects (helix.shaders, as on 2D sprites): the trees share one SpriteOutline (1), read only inside each tree's cell of the sheet; the
+	Sprite effects (helix.shader, as on 2D sprites): the trees share one SpriteOutline (1), read only inside each tree's cell of the sheet; the
 	sign dissolves (SpriteDissolve, 2), its cut-out still masked; the logo flashes (SpriteFlash) on F. The flames shimmer (3) through the
 	example's own sprite shader, shaders/heat.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its
 	parameters set by name.
@@ -145,9 +145,9 @@ class App extends helix.App {
 		coin.facing = Ground;
 		coin.setPosition(-2, .02, 1.5);
 		coin.setAlphaMode(Mask);
-		Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
-		Textures2D.load("textures/tiles.png", false, texture -> useTiles(texture));
-		Textures2D.load("textures/flame.png", true, texture -> light(texture));
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, texture -> useLogo(texture));
+		Textures.load("textures/tiles.png", false, texture -> useTiles(texture));
+		Textures.load("textures/flame.png", true, texture -> light(texture));
 		logo.effect = flash;
 		shaders = new Shaders();
 		shaders.load("shaders/heat.hxshader", shader -> useHeat(shader));

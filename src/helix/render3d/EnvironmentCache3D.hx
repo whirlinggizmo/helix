@@ -1,11 +1,11 @@
 package helix.render3d;
 
 import haxe.io.Bytes;
-import helix.assets.Failure;
-import helix.assets.IAssets;
-import helix.assets.IReloadable;
-import helix.assets.IRequest;
-import helix.assets.Request;
+import helix.asset.Failure;
+import helix.asset.IAssets;
+import helix.asset.IReloadable;
+import helix.asset.IRequest;
+import helix.asset.Request;
 import helix.graphics.IGraphics;
 import helix.graphics.ImageDecoding;
 

@@ -4,12 +4,12 @@ import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
-import helix.particles.Emitter;
+import helix.particle.Emitter;
 import helix.render2d.Drawing2D;
 import helix.render2d.Particles2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Node3D;
@@ -19,7 +19,7 @@ import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit3D;
 
-/** Particle emitters (helix.particles.Emitter), drawn by the GPU from each particle's birth record and age. In a 3D level shown by a View3D, over a grid (a Drawing3D): a fountain
+/** Particle emitters (helix.particle.Emitter), drawn by the GPU from each particle's birth record and age. In a 3D level shown by a View3D, over a grid (a Drawing3D): a fountain
 	(blended drops under gravity), sparks (added, from a point circling the fountain: they trail behind it, are thrown along by it, slowed by
 	drag, and stretched along their motion), and a campfire: flames (added puffs from a flipbook, colored by a curve) under smoke (blended,
 	with size and color curves: a dark puff that spreads, lightens and fades as it rises). The steady ones are prewarmed, so they're already
@@ -149,8 +149,8 @@ class App extends helix.App {
 		Stage.addChild(text);
 		Stage.addChild(fps);
 
-		Textures2D.load("textures/particle.png", true, texture -> dot(texture));
-		Textures2D.load("textures/flame.png", true, texture -> flame.texture = texture);
+		Textures.load("textures/particle.png", true, texture -> dot(texture));
+		Textures.load("textures/flame.png", true, texture -> flame.texture = texture);
 	}
 
 	// The particle texture in: every emitter but the flame draws it, and a first burst of confetti shows it.

@@ -1,11 +1,13 @@
 package helix.render2d;
 
 import haxe.io.Bytes;
-import helix.assets.Assets;
-import helix.assets.Failure;
-import helix.assets.IReloadable;
-import helix.assets.IRequest;
-import helix.assets.Request;
+import helix.asset.Assets;
+import helix.asset.Failure;
+import helix.asset.IReloadable;
+import helix.asset.IRequest;
+import helix.asset.Request;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 
 /** A texture holding many pictures (an atlas), with where each one is (its frames) and the runs of them that animate (its animations). Read from the
 	JSON TexturePacker and Aseprite write (their "JSON Hash" and "JSON Array" layouts: trimmed and rotated frames, pivots, Aseprite's tags and
@@ -56,7 +58,7 @@ class SpriteSheet2D implements IReloadable {
 	}
 
 	/** Loads a TexturePacker or Aseprite JSON file at path and the image it names (its meta.image, beside it), sampled smoothly when linear, else
-		sharp for pixel art (TextureCache2D.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it
+		sharp for pixel art (TextureCache.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it
 		changes during development, as the image does. One of loaded or failed runs once (failed, else the log, for a file that doesn't load or
 		read, or an image that doesn't), neither once the request is cancelled. destroy frees what it loaded. */
 	public static function load(path:String, loaded:SpriteSheet2D->Void, ?failed:String->Void, linear = false, secondsPerFrame = .1):IRequest {
@@ -73,16 +75,16 @@ class SpriteSheet2D implements IReloadable {
 					Failure.report(path, '$path: $e', failed);
 				return;
 			}
-			step = Textures2D.load(image, linear, texture -> {
+			step = Textures.load(image, linear, texture -> {
 				if (request.settled) {
-					Textures2D.release(texture);
+					Textures.release(texture);
 					return;
 				}
 				var sheet = new SpriteSheet2D(texture, secondsPerFrame);
 				try
 					sheet.read(text)
 				catch (e:Dynamic) {
-					Textures2D.release(texture);
+					Textures.release(texture);
 					if (request.finish())
 						Failure.report(path, '$path: $e', failed);
 					return;
@@ -104,7 +106,7 @@ class SpriteSheet2D implements IReloadable {
 		var image:Null<String> = file.meta == null ? null : file.meta.image;
 		if (image == null)
 			throw "it names no image (meta.image)";
-		var resolved = helix.assets.AssetPath.resolve(path, image);
+		var resolved = helix.asset.AssetPath.resolve(path, image);
 		if (resolved == null)
 			throw 'its image "$image" isn\'t a path beside it in the assets';
 		return resolved;
@@ -160,13 +162,13 @@ class SpriteSheet2D implements IReloadable {
 		return true;
 	}
 
-	/** Frees what load loaded (its texture through Textures2D) and stops reading its file again; a sheet made from a texture leaves the texture to
+	/** Frees what load loaded (its texture through Textures) and stops reading its file again; a sheet made from a texture leaves the texture to
 		its maker. */
 	public function destroy():Void {
 		if (path == null)
 			return;
 		Assets.unsubscribe(path, this);
-		Textures2D.release(texture);
+		Textures.release(texture);
 		path = null;
 	}
 

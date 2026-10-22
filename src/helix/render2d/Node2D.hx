@@ -1,6 +1,7 @@
 package helix.render2d;
 
 import helix.scene.Node;
+import helix.font.Font;
 
 /** What a Renderer2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for
 	its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a
@@ -55,7 +56,7 @@ class Node2D extends Node {
 	// node it shows, or null.
 
 	@:allow(helix.render2d.Renderer2D)
-	function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font2D>):Null<Node2D>
+	function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font>):Null<Node2D>
 		return null;
 
 	/** A group at the origin, unturned and unscaled, with no children. */

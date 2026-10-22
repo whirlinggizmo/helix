@@ -726,7 +726,7 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin3D):Bool
 - `addPart`: Adds a part, mesh drawn with material (a new white one when null), after the others.
 - `mesh`: Its first part's mesh, or null with no parts. Assigned to a model with no parts, it makes that part (white).
 - `material`: Its first part's material, or null with no parts. Assigned to a model with no parts, it makes that part (with no mesh).
-- `passCount`: How many extra passes it's drawn in (ModelPass3D: helix.shaders.Outline and Silhouette add themselves).
+- `passCount`: How many extra passes it's drawn in (ModelPass3D: helix.shader.Outline and Silhouette add themselves).
 - `getPass`: Its extra pass at index, in the order added; null past the end.
 - `tint`: Its tint, 0xAARRGGBB.
 - `shadowCasting`: Whether it casts shadows (from the lights that cast them; see-through models never do). True by default.
@@ -741,10 +741,10 @@ function bindSkeleton(skeleton:Node3D, ?skin:Skin3D):Bool
 
 *class* in `src/helix/render3d/ModelCache3D.hx`
 
-Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through a TextureCache2D. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models3D static forwards to.
+Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode through a TextureCache. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models3D static forwards to.
 
 ```haxe
-function new(assets:IAssets, textures:TextureCache2D)
+function new(assets:IAssets, textures:TextureCache)
 function load(path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void):IRequest
 function find(path:String):Null<ModelFile3D>
 function isLoaded(path:String):Bool
@@ -791,7 +791,7 @@ function instantiate(?name:String = ""):Node3D
 
 *class* in `src/helix/render3d/ModelPass3D.hx`
 
-An extra pass a model is drawn in after the stage's opaque models: the model again in one flat color, from the same records as its parts (static or skinned, instanced like it), either pushed out along its normals into a shell whose far side shows past its edges (an outline: helix.shaders.Outline), or drawn only where something nearer hides it (a silhouette: helix.shaders.Silhouette). Each kind's constructor adds it to its model. A stage draws its opaque models without silhouettes and its opaque sprites, then the silhouettes, then the opaque models with them (so a model's own parts never hide it), then every outline, then what's see-through.
+An extra pass a model is drawn in after the stage's opaque models: the model again in one flat color, from the same records as its parts (static or skinned, instanced like it), either pushed out along its normals into a shell whose far side shows past its edges (an outline: helix.shader.Outline), or drawn only where something nearer hides it (a silhouette: helix.shader.Silhouette). Each kind's constructor adds it to its model. A stage draws its opaque models without silhouettes and its opaque sprites, then the silhouettes, then the opaque models with them (so a model's own parts never hide it), then every outline, then what's see-through.
 
 ```haxe
 var model(default, null):Model3D
@@ -955,7 +955,7 @@ var material:Material3D
 
 *class* in `src/helix/render3d/Particles3D.hx`
 
-An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Renderer3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
+An emitter of particles (helix.particle.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and particles may inherit its velocity), and the stage advances it by its clock (Renderer3D.setTime) each draw. Particles stay where they were born, so they trail as the node moves.
 
 ```haxe
 function new(emitter:Emitter)
@@ -1087,7 +1087,7 @@ function destroy():Void
 - `backgroundBlur`: How blurred the background is: 0 sharp to 1 its blurriest.
 - `setBackground`: Draws environment (null: none) behind everything, before the models, at blur 0 (sharp, the image's own resolution) to 1 (blurred to a few texels), turned and as bright as setEnvironment says, tone mapped as the models are. False, changing nothing, for a blur outside 0..1.
 - `tonemap`: How lit color comes into the screen's 0..1 after the exposure. In an HDR scene (hdr) the chain's tone mapping applies it instead.
-- `hdr`: Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shaders.Tonemap), which its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to endScene when its scene is HDR.
+- `hdr`: Whether it draws into an HDR scene (half floats): its lit color and background after the exposure, not tone mapped, written as sRGB values running past 1 (the sRGB curve carried on), for a PostProcess chain's effects and then its tone mapping (helix.shader.Tonemap), which its sprites, text and particles (sRGB values as ever) go through too. False to start; PostProcess sets it on its stage from beginScene to endScene when its scene is HDR.
 - `exposure`: The exposure in stops (EV): each one doubles the light before the tone mapping; 0 to start. An exposure that isn't finite is taken as 0.
 - `time`: The seconds surface shaders see (helix_time): what the app last set.
 - `culling`: Whether draws leave out what's out of view (models, sprites and text, and shadow casters out of a light's): on to start. Culls, or draws everything (to measure what culling saves).
@@ -1172,7 +1172,7 @@ function setAlphaMode(mode:AlphaMode, ?cutoff:Float = .5):Bool
 - `new`: A sprite of texture (null for none yet: it draws nothing), tinted (0xAARRGGBB, white for none).
 - `texture`: Its texture, or null.
 - `tint`: Its tint, 0xAARRGGBB (sRGB).
-- `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect; its shader's sprite3D variant, its alpha mode applied as ever), or null (the default) for the framework's sprite program. Shared, as a 2D sprite's: the sprites given one draw with its values at the stage's time, and alike ones beside each other in the draw order (a texture, an alpha mode, an effect) are one draw.
+- `effect`: The effect it draws through (a sprite shader: helix.shader' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect; its shader's sprite3D variant, its alpha mode applied as ever), or null (the default) for the framework's sprite program. Shared, as a 2D sprite's: the sprites given one draw with its values at the stage's time, and alike ones beside each other in the draw order (a texture, an alpha mode, an effect) are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture.
 - `regionX`: Its region's left, in texels.
 - `regionY`: Its region's top, in texels.
@@ -1250,11 +1250,11 @@ function destroy():Void
 A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and sharp at any distance (a distance-field font). Pivoted and faced as a sprite. Not pickable until pickable is set: a label lets a pick through to what it's on.
 
 ```haxe
-function new(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font2D)
+function new(value:String, ?size:Float = .5, ?color:Int = 0xffffffff, ?font:Font)
 var text:String
 var textSize(get, set):Float
 var color:Int
-var font:Null<Font2D>
+var font:Null<Font>
 function setPivot(x:Float, y:Float):Void
 var pivotX(default, null):Float
 var pivotY(default, null):Float

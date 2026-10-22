@@ -1,6 +1,6 @@
 package helix.graphics;
 
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** What a screen effect draws from in a PostProcess chain, this frame: the frame it changes, its size, the time, and the intermediates it asked
 	for (ScreenEffect.intermediates), made by PostProcess at their sizes in the frame's format. */

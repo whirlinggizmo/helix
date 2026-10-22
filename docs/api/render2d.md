@@ -14,37 +14,6 @@ Which point of a line of text its x names: its left edge, center or right edge.
 
 Which way a SpriteAnimation2D plays through its frames (Aseprite's tag directions).
 
-## BakedFont2D
-
-*typedef* in `src/helix/render2d/FontBaker2D.hx`
-
-A font's characters baked into one distance-field atlas: a byte a texel, 128 on the outline, rising inward and falling outward by 128 / padding a pixel.
-
-- `width:Int`
-- `scale:Float`
-- `pixelHeight:Float`
-- `lineGap:Float`
-- `height:Int`
-- `glyphs:Array<BakedGlyph2D>`
-- `field:haxe.io.Bytes`
-- `descent:Float`
-- `ascent:Float`
-
-## BakedGlyph2D
-
-*typedef* in `src/helix/render2d/FontBaker2D.hx`
-
-A baked glyph: its place in the atlas, its box's offset from the pen on the baseline (y down) and its advance, in pixels at the baked height. A glyph with nothing to draw (a space) has no size.
-
-- `yOffset:Int`
-- `y:Int`
-- `xOffset:Int`
-- `x:Int`
-- `width:Int`
-- `height:Int`
-- `code:Int`
-- `advance:Float`
-
 ## Batch2D
 
 *class* in `src/helix/render2d/Batch2D.hx`
@@ -55,7 +24,7 @@ Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphic
 function new(?gpu:IGraphics, ?maxVertices:Int = 32768)
 var vertexCount(get, never):Int
 var drawCallCount(get, never):Int
-var font(default, null):Font2D
+var font(default, null):Font
 function begin(camera:Camera2D):Void
 var camera(default, set):Camera2D
 var alpha:Float
@@ -80,8 +49,8 @@ function sheetFrame(sheet:SpriteSheet2D, index:Int, x:Float, y:Float, ?scaleX:Fl
 function image(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function nineSlice(texture:Texture2D, x:Float, y:Float, width:Float, height:Float, left:Float, top:Float, right:Float, bottom:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0.):Void
 function emitter(emitter:Emitter):Void
-function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
-function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font2D):Float
+function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font):Void
+function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font):Float
 function rect(x:Float, y:Float, w:Float, h:Float, tint:Int):Void
 function triangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, tint:Int):Void
 function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, tint:Int):Void
@@ -104,7 +73,7 @@ function destroy():Void
 - `begin`: Starts collecting a batch seen through camera (an unsized one taking the framebuffer: Camera2D), with no transform; later calls only fill it until end.
 - `camera`: The camera what follows is seen through, in its viewport (an unsized one taking the framebuffer: Camera2D): a world and a HUD in one batch.
 - `alpha`: What every color drawn from now on has its alpha multiplied by, 0 to 1: a Node2D's alpha as a stage draws it (a whole group faded). 1 at begin. Particles aren't faded by it.
-- `effect`: The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
+- `effect`: The effect what follows is drawn through (a sprite shader: helix.shader' SpriteOutline and the others, or an app's), or null (the default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next stays one draw, as one texture does; its parameters are read as end draws.
 - `time`: The clock its effects see, seconds (helix_time() in a sprite shader, a SpriteFlash's fade): read as end draws. A Renderer2D's draw sets it to the stage's time.
 - `transformA`: The transform's a: x's share of a point's x.
 - `transformB`: The transform's b: x's share of a point's y.
@@ -119,14 +88,14 @@ function destroy():Void
 - `popClip`: Ends the clip pushClip began; what follows is clipped as before it. Nothing with no clip pushed.
 - `useTexture`: Later quads sample this texture, as its sampling is now (Texture2D.sampling).
 - `samplingOverride`: How what follows is sampled in place of each texture's own sampling, or null for the texture's: one texture drawn smooth and sharp in one frame (a Sprite2D's sampling, Drawing2D.image's).
-- `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
+- `quad`: A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does.
 - `sprite`: texture drawn centered on x, y, width x height in world units, turned rotation radians (clockwise on screen), sampling u0, v0 to u1, v1 of it (the whole texture by default), tinted (0xAARRGGBB, white by default). Throws when the frame's vertices pass capacity.
 - `sheetFrame`: sheet's frame at index (SpriteSheet2D.getFrame) drawn with its pivot at x, y (its file's, else its center), at its size in texels times scaleX, scaleY (below 0 mirrors it: -1, 1 faces it the other way), turned rotation radians (clockwise on screen), tinted (0xAARRGGBB, white by default). A trimmed frame is drawn where it was in its whole picture, a rotated one upright. An index the sheet hasn't draws nothing. Throws when the frame's vertices pass capacity.
 - `image`: texture drawn top-left at x, y, width x height in world units, tinted (white by default): the region sourceX, sourceY, sourceWidth x sourceHeight of it in texels, or the whole texture when sourceWidth or sourceHeight is 0 or less. Sampled as the texture's sampling is now.
 - `nineSlice`: Draws texture's region sourceX, sourceY, sourceWidth x sourceHeight (texels; the whole texture when not given) as a frame filling x, y, width x height in world units: its corners left, top, right and bottom texels in from its edges keep their size (a texel a unit; shrunk alike when the frame is smaller than they are), its edges stretch along them and its middle both ways. A panel or button of any size from one image.
 - `emitter`: Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An emitter with nothing to draw draws nothing.
 - `drawText`: Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped.
-- `drawTextWrapped`: Draws text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
+- `drawTextWrapped`: Draws text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen).
 - `rect`: A filled rectangle in world units, top-left at x, y.
 - `triangle`: A filled triangle through three world points.
 - `line`: A segment width world units wide, centered on its ends with square ends; nothing for a segment of length 0.
@@ -271,8 +240,8 @@ function line(x0:Float, y0:Float, x1:Float, y1:Float, width:Float, color:Int):Vo
 function polygon(points:Array<Float>, color:Int):Bool
 function polygonLines(points:Array<Float>, width:Float, color:Int):Bool
 function image(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, ?tint:Int = 0xffffffff, ?sourceX:Float = 0., ?sourceY:Float = 0., ?sourceWidth:Float = 0., ?sourceHeight:Float = 0., ?sampling:Sampling):Void
-function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font2D):Float
-function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font2D):Void
+function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, ?align:Align2D = Left, ?lineHeight:Float = 1.25, ?font:Font):Float
+function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:Align2D = Left, ?font:Font):Void
 ```
 
 - `new`: A drawing holding nothing yet.
@@ -287,140 +256,8 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 - `polygon`: A filled polygon through points (x and y in turn, copied; at least 3 points, convex or not, not crossing itself). False, holding nothing more, for fewer than 3 points or one that can't be filled.
 - `polygonLines`: A polygon's outline through points (copied), closed, width wide centered on its edges. False, holding nothing more, for fewer than 2 points.
 - `image`: texture drawn top-left at x, y, w x h, tinted (white by default): its region sourceX, sourceY, sourceWidth x sourceHeight in texels, or all of it when sourceWidth or sourceHeight is 0 or less; sampled as sampling says, or as the texture's sampling is when drawn when null.
-- `drawTextWrapped`: Text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font (null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's when no font is known: none given and no stage running).
+- `drawTextWrapped`: Text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font (null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's when no font is known: none given and no stage running).
 - `drawText`: One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's).
-
-## Font2D
-
-*class* in `src/helix/render2d/Font2D.hx`
-
-A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts2D loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
-
-```haxe
-static function fromTrueType(data:haxe.io.Bytes, ?pixelHeight:Float = 32., ?padding:Int = 6, ?gpu:IGraphics):Font2D
-static function builtIn(?gpu:IGraphics):Font2D
-static function pixel(?gpu:IGraphics):Font2D
-var texture(default, null):Texture2D
-var size(default, null):Float
-var ascent(default, null):Float
-var descent(default, null):Float
-var distanceField(default, null):Bool
-function getGlyph(code:Int):Null<Glyph2D>
-function getKerning(left:Int, right:Int):Float
-function measure(text:String, size:Float):Float
-function wrap(text:String, size:Float, width:Float):Array<String>
-function measureWrapped(text:String, size:Float, width:Float, ?lineHeight:Float = 1.25):Float
-function destroy(?gpu:IGraphics):Void
-```
-
-- `fromTrueType`: A font from a TrueType file's bytes: its printable ASCII and Latin-1 characters baked at pixelHeight (ascent to descent) into a distance field with padding pixels around each glyph (FontBaker2D), sharp from small text to about four times pixelHeight. Throws, saying why, for a file it can't read. On gpu, the program's (Graphics) when not given. The caller destroys it.
-- `builtIn`: The built-in font: JetBrains Mono's printable ASCII as a distance field, baked by tools/bake_fonts.py (SIL OFL 1.1, see THIRD_PARTY_NOTICES.md). On gpu, the program's (Graphics) when not given.
-- `pixel`: The 5x7 pixel font: crisp at whole multiples of 7, blocky between. Its texture also carries a white texel for shapes. On gpu, the program's (Graphics) when not given.
-- `texture`: The texture holding every glyph, with a white texel for untextured shapes.
-- `size`: The height the font was made at, ascent to descent, in font pixels: a text's size scales this.
-- `ascent`: How far the tallest glyphs reach above the baseline, in font pixels.
-- `descent`: How far glyphs reach below the baseline, in font pixels; 0 or negative.
-- `distanceField`: Whether the texture's alpha is a distance from each glyph's outline (Batch2D draws it so) rather than coverage.
-- `getGlyph`: A character's glyph, or null when it has none (space has an advance but nothing to draw: its glyph has no size).
-- `getKerning`: How far the pen moves besides the advance between characters left and right, in font pixels: usually negative, closing a pair such as "AV". 0 for a font without kerning.
-- `measure`: How far text moves the pen at size (world units, ascent to descent): its width, by its glyphs' advances and the kerning between them. Characters without a glyph count as nothing.
-- `wrap`: text broken into lines no wider than width in world units at size: at spaces, and a word wider than a line within it, between its letters; a line break ("\n") always breaks. Lines keep no trailing spaces.
-- `measureWrapped`: The height text takes wrapped to width at size (wrap), its lines lineHeight times size apart: what Batch2D.drawTextWrapped returns, known before drawing, for what's laid out under it (a button below a title that may wrap).
-- `destroy`: Frees the font's texture on gpu, the adapter that made it: the program's (Graphics) when not given.
-
-## FontBaker2D
-
-*class* in `src/helix/render2d/FontBaker2D.hx`
-
-Bakes a TrueType font's characters into a signed distance field atlas, in Haxe, the same on every target: each glyph's outline is flattened into segments finer than a twentieth of a pixel, and each texel holds its signed distance to them (inside by the nonzero rule), so text drawn from it stays sharp from small to about four times the baked height. Glyphs are packed in rows, left to right.
-
-```haxe
-static function bake(font:TrueType, codes:Array<Int>, pixelHeight:Float, padding:Int, atlasWidth:Int):BakedFont2D
-```
-
-- `bake`: Bakes codes (characters) of font at pixelHeight (ascent to descent) with padding pixels of field around each glyph, into an atlas atlasWidth wide and as tall as it needs (a power of two), with a free last row (its last texel is set fully inside: a white texel).
-
-## FontCache2D
-
-*class* in `src/helix/render2d/FontCache2D.hx`
-
-TrueType fonts loaded through the assets into Font2Ds: read and baked into a distance-field texture in Haxe (Font2D.fromTrueType), the same on every target, and baked again in place when a file changes during development. The runner's is what the Fonts2D static forwards to; the caller releases what it loads.
-
-```haxe
-function new(assets:IAssets, gpu:IGraphics)
-function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
-function getPath(font:Font2D):Null<String>
-function release(font:Font2D):Void
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets and uploads to gpu; shutdown shuts nothing down but this service.
-- `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
-- `getPath`: The file font was loaded from, or null for one this service didn't load.
-- `release`: Frees a font this service loaded, and stops reloading it.
-- `reloaded`: The file behind loaded fonts changed: they're baked again in place, keeping their Font2D objects. A file that no longer reads leaves them as they were.
-- `shutdown`: Frees every font still loaded and takes no more loads: a load that lands after calls nothing. The runner's, at the program's end.
-
-## Fonts2D
-
-*class* in `src/helix/render2d/Fonts2D.hx`
-
-TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache2D's public members with their doc comments.
-
-```haxe
-static function load(path:String, loaded:Font2D -> Void, ?failed:String -> Void):IRequest
-static function getPath(font:Font2D):Null<String>
-static function release(font:Font2D):Void
-```
-
-- `load`: Loads path (a .ttf) into a font. One of loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded once it is baked; failed (else the log, with the path) for a load failure or a file it can't read.
-- `getPath`: The file font was loaded from, or null for one this service didn't load.
-- `release`: Frees a font this service loaded, and stops reloading it.
-
-## Glyph2D
-
-*typedef* in `src/helix/render2d/Font2D.hx`
-
-Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels.
-
-- `y:Float`
-- `x:Float`
-- `width:Float`
-- `v1:Float`
-- `v0:Float`
-- `u1:Float`
-- `u0:Float`
-- `height:Float`
-- `advance:Float`
-
-## GlyphOutline
-
-*typedef* in `src/helix/render2d/TrueType.hx`
-
-A glyph's outline in font units (y up): closed contours, each a list of points, x and y in turn, with whether each is on the curve; two off-curve points in a row have an on-curve point between them, as TrueType draws quadratic curves.
-
-An alias of `Array<{points:Array<Float>, onCurve:Array<Bool>}>`.
-
-## Ktx
-
-*class* in `src/helix/render2d/Ktx.hx`
-
-A compressed texture as a KTX 1 file holds it: BC7, ASTC 4x4 or ETC2 RGBA8, 2D, with its mipmaps (https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html). Read in Haxe, the same on every target; Textures2D loads them.
-
-```haxe
-static function read(bytes:haxe.io.Bytes):Ktx
-final format:TextureFormat
-final width:Int
-final height:Int
-final levels:Array<haxe.io.Bytes>
-```
-
-- `read`: Reads a KTX 1 file. Throws, saying why, for anything but a little-endian, 2D, BC7, ASTC 4x4 or ETC2 RGBA8 one whose levels are all there.
-- `format`: The texels' format.
-- `width`: Width in texels.
-- `height`: Height in texels.
-- `levels`: The image, then its mipmaps, each format.levelBytes of its size.
 
 ## Node2D
 
@@ -484,7 +321,7 @@ function toLocalY(x:Float, y:Float):Float
 
 *class* in `src/helix/render2d/Particles2D.hx`
 
-An emitter of particles (helix.particles.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Renderer2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
+An emitter of particles (helix.particle.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Renderer2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
 
 ```haxe
 function new(emitter:Emitter)
@@ -520,7 +357,7 @@ var root(default, null):Node2D
 function add(node:Node2D):Bool
 function remove(node:Node2D):Bool
 var time:Float
-var font(get, never):Null<Font2D>
+var font(get, never):Null<Font>
 var drawnNodeCount(get, never):Int
 function draw(batch:Batch2D, camera:Camera2D):Void
 function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D>
@@ -633,7 +470,7 @@ var nineSlice(get, never):Bool
 - `texture`: Its texture, or null: it draws nothing.
 - `tint`: What its texels are multiplied by, 0xAARRGGBB: white leaves them as they are.
 - `sampling`: How its texture is sampled, in place of the texture's own (Texture2D.sampling), or null for the texture's: the same texture drawn sharp here and smooth elsewhere.
-- `effect`: The effect it draws through (a sprite shader: helix.shaders' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
+- `effect`: The effect it draws through (a sprite shader: helix.shader' SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program. An effect is shared: the sprites given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `setRegion`: Its region of its texture, in texels from its top-left; a width or height of 0 or less (the default) shows the whole texture. It shows no sheet's frame after (setFrame).
 - `setFrame`: Shows sheet's frame at index (a SpriteAnimator2D given the sprite shows its frames so): its texture becomes the sheet's, its size the frame's whole picture (unless sized), its pivot the frame's when its file gives one. A trimmed frame draws where it was in its picture, a rotated one upright; a frame draws whole, not as a nine-slice. False, changing nothing, for an index the sheet hasn't.
 - `frame`: The sheet's frame it shows (setFrame), or null: it shows its region.
@@ -770,7 +607,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 - `parse`: A sheet over texture from a TexturePacker or Aseprite JSON file's text; a frame without its own duration shows for secondsPerFrame. Throws, saying why, for text it can't read.
 - `grid`: A sheet over texture cut into cells of frameWidth x frameHeight texels, left to right then down, margin texels in from its edges and spacing texels apart: count of them (every whole cell for 0), named by number from "0", each shown for secondsPerFrame. It has no animations until given them (addAnimation).
-- `load`: Loads a TexturePacker or Aseprite JSON file at path and the image it names (its meta.image, beside it), sampled smoothly when linear, else sharp for pixel art (TextureCache2D.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it changes during development, as the image does. One of loaded or failed runs once (failed, else the log, for a file that doesn't load or read, or an image that doesn't), neither once the request is cancelled. destroy frees what it loaded.
+- `load`: Loads a TexturePacker or Aseprite JSON file at path and the image it names (its meta.image, beside it), sampled smoothly when linear, else sharp for pixel art (TextureCache.load); a frame without its own duration shows for secondsPerFrame. The file reads again in place when it changes during development, as the image does. One of loaded or failed runs once (failed, else the log, for a file that doesn't load or read, or an image that doesn't), neither once the request is cancelled. destroy frees what it loaded.
 - `texture`: Its texture.
 - `reloadCount`: How many times its file has been read again (a hot reload): an animator playing it finds its animation again by name.
 - `frameCount`: How many frames it has.
@@ -779,7 +616,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 - `animationNames`: Its animations' names, in the order its file gives them.
 - `findAnimation`: Its animation named name, or null.
 - `addAnimation`: Adds an animation named name over its frames by index, played in direction, in place of one of that name. False, changing nothing, for no frames or an index it hasn't.
-- `destroy`: Frees what load loaded (its texture through Textures2D) and stops reading its file again; a sheet made from a texture leaves the texture to its maker.
+- `destroy`: Frees what load loaded (its texture through Textures) and stops reading its file again; a sheet made from a texture leaves the texture to its maker.
 - `reloaded`: Its file changed: its frames and animations are read again (its image reloads on its own). A file that doesn't read leaves it as it was, and throws.
 
 ## Stage
@@ -795,7 +632,7 @@ static var postProcess(get, set):Null<PostProcess>
 static function addChild(node:Node2D):Void
 static function removeChild(node:Node2D):Bool
 static var camera(get, never):Camera2D
-static var font(get, never):Font2D
+static var font(get, never):Font
 static var childCount(get, never):Int
 static var vertexCount(get, never):Int
 static var drawCallCount(get, never):Int
@@ -830,7 +667,7 @@ var postProcess(default, set):Null<PostProcess>
 function addChild(node:Node2D):Void
 function removeChild(node:Node2D):Bool
 var camera(default, null):Camera2D
-var font(get, never):Font2D
+var font(get, never):Font
 var childCount(get, never):Int
 var vertexCount(get, never):Int
 var drawCallCount(get, never):Int
@@ -860,20 +697,20 @@ function destroy():Void
 
 *class* in `src/helix/render2d/Text2D.hx`
 
-A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font2D.measure measures it.
+A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font.measure measures it.
 
 ```haxe
-function new(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font2D)
+function new(value:String, ?size:Float = 16., ?color:Int = 0xffffffff, ?align:Align2D = Left, ?font:Font)
 var text:String
 var textSize(get, set):Float
 var color:Int
 var align:Align2D
-var font:Null<Font2D>
+var font:Null<Font>
 var wrapWidth(default, null):Float
 var lineHeight(default, null):Float
 function setWrapWidth(width:Float, ?lineHeight:Float = 1.25):Bool
-function measureWidth(font:Font2D):Float
-function measureHeight(font:Font2D):Float
+function measureWidth(font:Font):Float
+function measureHeight(font:Font):Float
 ```
 
 - `new`: value, size units tall (0 or less, or NaN, is 1e-6), in color, aligned on its position by align, in font (null: the batch's built-in one).
@@ -884,119 +721,9 @@ function measureHeight(font:Font2D):Float
 - `font`: Its font, or null for the drawing batch's built-in one.
 - `wrapWidth`: Its wrap width in its own units: 0 for one line.
 - `lineHeight`: Its wrapped lines apart, times its size.
-- `setWrapWidth`: Wraps it to width in its own units (Font2D.wrap), its lines lineHeight times its size apart; 0 for one line. False, changing nothing, for a width below 0 or a line height of 0 or less.
+- `setWrapWidth`: Wraps it to width in its own units (Font.wrap), its lines lineHeight times its size apart; 0 for one line. False, changing nothing, for a width below 0 or a line height of 0 or less.
 - `measureWidth`: Its width in its own units as drawn in font (its own, if it has one): its wrap width, or its one line's.
 - `measureHeight`: Its height in its own units as drawn in font (its own, if it has one): its size, or its wrapped lines'.
-
-## Texture2D
-
-*class* in `src/helix/render2d/Texture2D.hx`
-
-A GPU texture with its size, its format and how it is sampled (Sampling: linear or nearest, and its wrap), which a draw reads when it takes the texture, so one texture can be drawn smooth and then sharp. whiteU/whiteV name an opaque white texel, -1 when it has none, for untextured shapes.
-
-```haxe
-static function fromRgba(width:Int, height:Int, rgba:haxe.io.Bytes, ?linear:Bool = false, ?whiteX:Int = -1, ?whiteY:Int = -1, ?mipmaps:Bool = false, ?gpu:IGraphics):Texture2D
-static function fromLevels(width:Int, height:Int, levels:Array<haxe.io.Bytes>, format:TextureFormat, sampling:Sampling, ?gpu:IGraphics):Texture2D
-static function renderTarget(width:Int, height:Int, ?linear:Bool = true, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?gpu:IGraphics):Texture2D
-var handle(default, null):Int
-var width(default, null):Int
-var height(default, null):Int
-var format(default, null):TextureFormat
-var levelCount(get, never):Int
-var byteCount(get, never):Int
-var sampling:Sampling
-var whiteU(default, null):Float
-var whiteV(default, null):Float
-function destroy(?gpu:IGraphics):Void
-```
-
-- `fromRgba`: Uploads width x height RGBA8 pixels, rows top first, sampled linear (smooth) or nearest (sharp, for pixel art); whiteX, whiteY name an opaque white texel for untextured shapes, -1 for none. mipmaps adds a chain (Mipmaps.build), so it can be drawn smaller than itself without shimmering. On gpu, the program's (Graphics) when not given. The caller destroys it.
-- `fromLevels`: Uploads levels (the image and its mipmaps, each format.levelBytes of its size) of format, width x height, sampled as sampling says. Throws when the GPU can't sample format (IGraphics.canSample). On gpu, the program's (Graphics) when not given. The caller destroys it.
-- `renderTarget`: A render target width x height of format: a texture drawn into by target passes (IGraphics.beginTargetPass with its handle), sampled linear (smooth) or nearest (sharp: a low-resolution view shown larger); with depth a depth buffer and the screen's multisampling, without neither (IGraphics.createRenderTarget). Throws for a format the GPU can't draw into (IGraphics.canRender). On gpu, the program's (Graphics) when not given. The caller destroys it.
-- `handle`: The IGraphics handle, for draws.
-- `width`: Width in texels.
-- `height`: Height in texels.
-- `format`: Its texels' format: RGBA8, or a compressed one.
-- `levelCount`: How many levels it has: 1, or the image and its mipmaps.
-- `byteCount`: The GPU memory its levels take, in bytes.
-- `sampling`: How draws sample it, from the next draw that takes it on.
-- `whiteU`: U of the center of an opaque white texel, or -1 when it has none.
-- `whiteV`: V of the center of an opaque white texel, or -1 when it has none.
-- `destroy`: Frees the GPU texture on gpu, the adapter that made it: the program's (Graphics) when not given.
-
-## TextureCache2D
-
-*class* in `src/helix/render2d/TextureCache2D.hx`
-
-Textures from image files (PNG, JPEG, BMP, TGA, GIF) and compressed ones (KTX 1: BC7, ASTC 4x4, ETC2 RGBA8): loaded through the assets, decoded off the frame, uploaded, and replaced in place when a file changes during development. A path "name.ktx" picks the file this GPU can sample: name.bc7.ktx, name.astc.ktx or name.etc2.ktx, the first it can and that loads, else name.png (made beforehand, each with its mipmaps, by a texture compressor; keep the PNG). The runner's is what the Textures2D static forwards to; the caller releases what it loads.
-
-```haxe
-function new(assets:IAssets, images:ImageDecoding, gpu:IGraphics)
-function getCandidates(path:String):Array<String>
-function getPath(texture:Texture2D):Null<String>
-function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
-function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> Void, ?failed:String -> Void):IRequest
-function release(texture:Texture2D):Void
-function reloaded(path:String, bytes:haxe.io.Bytes):Void
-function shutdown():Void
-```
-
-- `new`: Loads through assets, decodes with images (shared, polled by its owner) and uploads to gpu; shutdown shuts nothing down but this service.
-- `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
-- `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.
-- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. One of decoded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log) for a closed service or bytes that don't decode.
-- `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
-- `reloaded`: The file behind loaded textures changed: they're read and uploaded again, keeping their Texture2D objects and sampling, so what draws them shows the new image. A file that no longer reads leaves them as they were.
-- `shutdown`: Refuses new loads; the textures already loaded stay until released.
-
-## Textures2D
-
-*class* in `src/helix/render2d/Textures2D.hx`
-
-Textures from image files, shared by path and reloading in place when a file changes during development (TextureCache2D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from TextureCache2D's public members with their doc comments.
-
-```haxe
-static function getCandidates(path:String):Array<String>
-static function getPath(texture:Texture2D):Null<String>
-static function load(path:String, linear:Bool, loaded:Texture2D -> Void, ?failed:String -> Void):IRequest
-static function decode(encoded:haxe.io.Bytes, linear:Bool, decoded:Texture2D -> Void, ?failed:String -> Void):IRequest
-static function release(texture:Texture2D):Void
-```
-
-- `getCandidates`: The files path loads from, in order, the first that loads winning: a "name.ktx" this GPU's compressed variants then name.png; any other path itself.
-- `getPath`: The file texture was loaded from (for a "name.ktx", the one chosen), or null for one this service didn't load.
-- `load`: Loads path into a texture: linear samples it smoothly, with mipmaps so it can be drawn smaller without shimmering; otherwise nearest, for pixel art (Texture2D.sampling changes it later). A "name.ktx" loads this GPU's variant or else name.png (getCandidates). Loads of the same path and filter share one texture (a load under way is joined, not started again), so its sampling is theirs together; each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, or when no candidate loads and decodes.
-- `decode`: Decodes encoded image bytes (a file's contents already in memory, such as a model's embedded image) into a texture, as load does but with nothing to reload: the caller owns the texture and destroys it. One of decoded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log) for a closed service or bytes that don't decode.
-- `release`: Lets go of a texture this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
-
-## TrueType
-
-*class* in `src/helix/render2d/TrueType.hx`
-
-A TrueType font file (glyf outlines) as read: its metrics, its characters' glyphs and their outlines, and the kerning between pairs (the GPOS table's pair adjustments, or the older kern table). Read in Haxe, the same on every target; Font2D bakes it into a texture. Throws, saying why, for a file it can't read: no glyf outlines (a CFF font), or a table missing or cut short.
-
-```haxe
-function new(data:haxe.io.Bytes)
-final unitsPerEm:Int
-final ascent:Int
-final descent:Int
-final lineGap:Int
-function getGlyphIndex(code:Int):Int
-function getAdvance(glyph:Int):Int
-function getOutline(glyph:Int):GlyphOutline
-function getKerning(left:Int, right:Int):Int
-```
-
-- `new`: Reads a TrueType file (the first font of a collection).
-- `unitsPerEm`: Font units in an em: what the metrics below are counted in.
-- `ascent`: How far the font reaches above the baseline, in font units.
-- `descent`: How far it reaches below the baseline, in font units: 0 or negative.
-- `lineGap`: The extra space between lines, in font units.
-- `getGlyphIndex`: The glyph of character code, or 0 (the missing glyph) when the font has none.
-- `getAdvance`: How far the pen moves after glyph, in font units.
-- `getOutline`: glyph's outline in font units, y up: empty for a glyph with none (a space). Composite glyphs are assembled from their parts.
-- `getKerning`: The horizontal kerning between glyphs left and right, in font units: added to left's advance (usually negative, closing the pair). From GPOS pair adjustments when the font has them, else its kern table; 0 for none.
 
 ## View
 

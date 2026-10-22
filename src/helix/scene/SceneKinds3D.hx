@@ -1,10 +1,10 @@
 package helix.scene;
 
-import helix.particles.Emitter;
-import helix.render2d.Font2D;
-import helix.render2d.Fonts2D;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.particle.Emitter;
+import helix.font.Font;
+import helix.font.Fonts;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Light3D;
@@ -27,7 +27,7 @@ import helix.scene.SceneValue;
 	applied to a live node from a file's value and read back from it, a Model3D's inline material applied and read, and its generated mesh
 	made by Mesh3D's generators and read back from the mesh's record. What the tables
 	name as text here becomes the classes' values: an enum's case from its lower-case name (a sprite's facing, its alpha mode, a camera's
-	projection, the stage's tonemap), a texture or a font from its path through Textures2D and Fonts2D, a color as 0xAARRGGBB. */
+	projection, the stage's tonemap), a texture or a font from its path through Textures and Fonts, a color as 0xAARRGGBB. */
 class SceneKinds3D {
 	/** A new node of kind, as SceneSchema3D's tables name the classes: a bare Node3D for "Node3D", a Model3D of no parts, a light, a camera, a
 		sprite of no texture, a text of no text, a Particles3D with an emitter of no texture holding 1024 particles. Null for a name no table
@@ -71,7 +71,7 @@ class SceneKinds3D {
 	/** Sets node's property name to value, as its own kind's table has it: a light's intensity, a camera's fovY, a spot's cones (each
 		through setCone, the other widened or narrowed to keep the pair in order) and a camera's near and far (the other moved just past it to
 		keep the pair in order, so a file giving both lands on both whichever comes first), a sprite's region and size, a text's size. A
-		texture's or a font's path loads through Textures2D or Fonts2D and lands when it does ("" for none); instance, when given, keeps what it
+		texture's or a font's path loads through Textures or Fonts and lands when it does ("" for none); instance, when given, keeps what it
 		loads to release at its destroy. False, changing nothing, for a property node's kind hasn't, a value of the wrong shape, a named
 		choice no enum has, or a value the class refuses. */
 	public static function apply(node:Node3D, name:String, value:SceneValue, ?instance:SceneInstance3D):Bool {
@@ -293,7 +293,7 @@ class SceneKinds3D {
 				case "textSize": Number(text.textSize);
 				case "color": Color(text.color);
 				case "font":
-					var path = text.font == null ? null : Fonts2D.getPath(text.font);
+					var path = text.font == null ? null : Fonts.getPath(text.font);
 					path == null ? null : Text(path);
 				case "pivotX": Number(text.pivotX);
 				case "pivotY": Number(text.pivotY);
@@ -346,7 +346,7 @@ class SceneKinds3D {
 	}
 
 	/** Gives model a new material carrying material's values, the rest Material3D's defaults, as its first part's (made when it has none):
-		an inline material replaces the mesh's or the file's. Its textures load through Textures2D by path and land when they do; instance,
+		an inline material replaces the mesh's or the file's. Its textures load through Textures by path and land when they do; instance,
 		when given, keeps them to release at its destroy. */
 	public static function applyMaterial(model:Model3D, material:SceneMaterial3D, ?instance:SceneInstance3D):Void {
 		var made = new Material3D();
@@ -371,7 +371,7 @@ class SceneKinds3D {
 	}
 
 	/** Model3D's first part's material as a file writes it, every value said; a texture as the path it was loaded from, or unsaid (null) for
-		none or one that didn't come through Textures2D. Null for a model of no parts. */
+		none or one that didn't come through Textures. Null for a model of no parts. */
 	public static function readMaterial(model:Model3D):Null<SceneMaterial3D> {
 		var material = model.material;
 		if (material == null)
@@ -380,8 +380,8 @@ class SceneKinds3D {
 		read.baseColor = material.baseColor;
 		read.metallic = material.metallic;
 		read.roughness = material.roughness;
-		read.texture = material.texture == null ? null : Textures2D.getPath(material.texture);
-		read.normalTexture = material.normalTexture == null ? null : Textures2D.getPath(material.normalTexture);
+		read.texture = material.texture == null ? null : Textures.getPath(material.texture);
+		read.normalTexture = material.normalTexture == null ? null : Textures.getPath(material.normalTexture);
 		read.normalScale = material.normalScale;
 		read.emissive = material.emissive;
 		read.emissiveStrength = material.emissiveStrength;
@@ -424,17 +424,17 @@ class SceneKinds3D {
 
 	// A sprite's texture as a value: its path, or null for none or one the cache didn't give.
 	static function texturePath(texture:Null<Texture2D>):Null<SceneValue> {
-		var path = texture == null ? null : Textures2D.getPath(texture);
+		var path = texture == null ? null : Textures.getPath(texture);
 		return path == null ? null : Text(path);
 	}
 
-	// path's texture through Textures2D ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
+	// path's texture through Textures ("" for none, set at once), smooth with mipmaps, into set when it lands; the instance keeps it.
 	static function loadTexture(path:String, instance:Null<SceneInstance3D>, set:Null<Texture2D>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
 		}
-		var request = Textures2D.load(path, true, texture -> {
+		var request = Textures.load(path, true, texture -> {
 			if (instance != null && !instance.holdTexture(texture))
 				return;
 			set(texture);
@@ -443,13 +443,13 @@ class SceneKinds3D {
 			instance.holdRequest(request);
 	}
 
-	// path's font through Fonts2D ("" for none, set at once), into set when it lands; the instance keeps it.
-	static function loadFont(path:String, instance:Null<SceneInstance3D>, set:Null<Font2D>->Void):Void {
+	// path's font through Fonts ("" for none, set at once), into set when it lands; the instance keeps it.
+	static function loadFont(path:String, instance:Null<SceneInstance3D>, set:Null<Font>->Void):Void {
 		if (path == "") {
 			set(null);
 			return;
 		}
-		var request = Fonts2D.load(path, font -> {
+		var request = Fonts.load(path, font -> {
 			if (instance != null && !instance.holdFont(font))
 				return;
 			set(font);

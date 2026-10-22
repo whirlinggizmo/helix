@@ -1,7 +1,7 @@
-import helix.adapters.http.fetchapi.FetchApiHttpAdapter;
-import helix.adapters.audio.webaudio.WebAudioAdapter;
-import helix.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;
-import helix.adapters.store.indexeddb.IndexedDbStoreAdapter;
+import helix.adapter.http.fetchapi.FetchApiHttpAdapter;
+import helix.adapter.audio.webaudio.WebAudioAdapter;
+import helix.adapter.audiodecoder.webaudio.WebAudioDecoderAdapter;
+import helix.adapter.store.indexeddb.IndexedDbStoreAdapter;
 
 class ServiceEnvironment {
 	public var fetcher = new FetchApiHttpAdapter();

@@ -15,7 +15,7 @@ import sys.io.Process;
 	  SDL_GPU build (SDL_GPU's dialects, which only its builds carry);
 	- `helix_sdl3_gpu`, the define the programs carry SDL_GPU's dialects under, when the build names the `sdl3-gpu` backend
 	  (`-D helix-backend=sdl3-gpu`), so a game's hxml writes the backend and nothing else of it;
-	- in the browser, the page beside the `-js` output (`helix.tools.Build.generateWebPage`: `index.html` from the library's template,
+	- in the browser, the page beside the `-js` output (`helix.tool.Build.generateWebPage`: `index.html` from the library's template,
 	  `favicon.svg`, the game's `config.json`), so the dev loop's server has a page to serve;
 	- natively, hxcpp's architecture define for this machine, `HXCPP_ARM64` on arm64 and `HXCPP_M64` elsewhere, when the build sets none
 	  (hxcpp picks 32-bit on Windows from a 64-bit process, which has no `PROCESSOR_ARCHITEW6432`).
@@ -35,7 +35,7 @@ class Haxelib {
 		if (Context.defined("helix_sdl3_gpu"))
 			Compiler.addClassPath(Path.join([root, "generated", "shaders-sdlgpu"]));
 		if (Context.defined("js"))
-			helix.tools.Build.generateWebPage();
+			helix.tool.Build.generateWebPage();
 		if (Context.defined("cpp")
 			&& !Context.defined("HXCPP_M64")
 			&& !Context.defined("HXCPP_M32")

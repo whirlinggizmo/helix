@@ -4,9 +4,9 @@ import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.graphics.Color;
 import helix.graphics.IGraphics;
-import helix.graphics.Sampling;
+import helix.texture.Sampling;
 import helix.graphics.SpriteEffect;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** A Renderer3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
 	drawn with the sprite3d program: each draw it collects the sprites in view (culled by the sphere their quad can
@@ -35,7 +35,7 @@ class Sprites3D {
 	var addStart = 0;
 	var nextBlend = 0;
 	var draws = 0;
-	var font:Null<helix.render2d.Font2D>;
+	var font:Null<helix.font.Font>;
 	// Emitters: the draw's particles in one upload, and those in view, sorted, each its first record and count.
 	var particleCapacity = 1024;
 	var particleBuffer:Int;
@@ -126,9 +126,9 @@ class Sprites3D {
 	}
 
 	// The font a text without its own draws in: the built-in one, made when first needed.
-	function builtIn():helix.render2d.Font2D {
+	function builtIn():helix.font.Font {
 		if (font == null)
-			font = helix.render2d.Font2D.builtIn(gpu);
+			font = helix.font.Font.builtIn(gpu);
 		return font;
 	}
 
@@ -674,7 +674,7 @@ private class SpriteItem {
 /** An emitter in view this draw. Pooled. */
 private class EmitterItem {
 	/** Its emitter. */
-	public var emitter:helix.particles.Emitter;
+	public var emitter:helix.particle.Emitter;
 
 	/** 0 opaque or masked, 1 blended, 2 added. */
 	public var phase = 0;

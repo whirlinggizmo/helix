@@ -1,13 +1,13 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.assets.Failure;
-import helix.assets.IAssets;
-import helix.assets.IReloadable;
-import helix.assets.IRequest;
-import helix.assets.Request;
+import helix.asset.Failure;
+import helix.asset.IAssets;
+import helix.asset.IReloadable;
+import helix.asset.IRequest;
+import helix.asset.Request;
 
-/** Apps' shaders (.hxshader files, packed from GLSL by src/helix/tools/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in
+/** Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx) loaded through the assets and built on the GPU, and built again in
 	place when a file changes during development. The caller releases what it loads. */
 class Shaders implements IReloadable {
 	// What it was given, or null for the program's, read when used.
@@ -17,7 +17,7 @@ class Shaders implements IReloadable {
 	var gpu(get, never):IGraphics;
 
 	function get_assets():IAssets
-		return givenAssets != null ? givenAssets : helix.assets.Assets.instance;
+		return givenAssets != null ? givenAssets : helix.asset.Assets.instance;
 
 	function get_gpu():IGraphics
 		return givenGpu != null ? givenGpu : Graphics.instance;

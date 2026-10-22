@@ -8,15 +8,15 @@ import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Renderer2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.Sprite3D;
 import helix.render3d.Renderer3D;
-import helix.shaders.PaletteSwap;
-import helix.shaders.ShaderLibrary;
-import helix.shaders.SpriteDissolve;
-import helix.shaders.SpriteFlash;
-import helix.shaders.SpriteOutline;
+import helix.shader.PaletteSwap;
+import helix.shader.ShaderLibrary;
+import helix.shader.SpriteDissolve;
+import helix.shader.SpriteFlash;
+import helix.shader.SpriteOutline;
 
 /** Sprite effects (the sprite kind of shader, helix.graphics.SpriteEffect): the library's sprite shaders read as the sprite kind, over the
 	effect2d program's vertices; a batch splits where the effect changes, as it does where the texture does, one effect shared by sprites drawn

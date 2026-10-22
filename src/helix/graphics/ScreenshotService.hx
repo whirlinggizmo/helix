@@ -1,7 +1,7 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.assets.IExport;
+import helix.asset.IExport;
 import helix.graphics.IGraphics;
 import helix.host.Presentation;
 

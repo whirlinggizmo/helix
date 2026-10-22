@@ -1,6 +1,6 @@
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
-import helix.graphics.Sampling;
+import helix.texture.Sampling;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -11,8 +11,8 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render2d.View2D;
 import helix.time.Time;
 import helix.host.ScreenShape;
@@ -90,7 +90,7 @@ class App extends helix.App {
 		Stage.addChild(view);
 		Stage.addChild(hud);
 		Stage.addChild(fps);
-		Textures2D.load("textures/tiles.png", false, loaded -> useTiles(loaded));
+		Textures.load("textures/tiles.png", false, loaded -> useTiles(loaded));
 	}
 
 	// The tile sheet in: every sprite draws its cell of it, crisp.

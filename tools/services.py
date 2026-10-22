@@ -128,8 +128,8 @@ def main():
    library=ctypes.CDLL(str(codec_runtime() or codec_library()));library.sf_version_string.restype=ctypes.c_char_p
    report['native']={'build':native.name,'decoder':library.sf_version_string().decode(),'peakConcurrentTransfers':peak,'passed':True,'runs':runs,'requests':dict(counts),'singleDownloadStoredAudio':True}
   report['sources']={str(file.relative_to(ROOT)):hashlib.sha256(file.read_bytes()).hexdigest() for group in ['src','tests'] for file in sorted((ROOT/group).rglob('*.hx'))}
-  for source in ('src/helix/adapters/shared/mixer.c','src/helix/adapters/audio/sokol/internal/output_sokol.c'):report['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()
-  report['sources']['src/helix/adapters/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapters/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()
+  for source in ('src/helix/adapter/shared/mixer.c','src/helix/adapter/audio/sokol/internal/output_sokol.c'):report['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()
+  report['sources']['src/helix/adapter/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapter/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()
   report['sources']['vendor/sndfile/sndfile.h']=hashlib.sha256((ROOT/'vendor/sndfile/sndfile.h').read_bytes()).hexdigest()
   report['audioFormats']=['PCM16 WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((fixtures/'encoder.json').read_text(encoding='utf-8'))
   OUT.mkdir(parents=True,exist_ok=True);(OUT/'service-checks.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8');print(json.dumps({target:report[target]['runs'] for target in ['browser','native'] if target in report}))

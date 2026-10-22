@@ -26,13 +26,13 @@ class AppBuild {
 		webgl2, and natively sokol-gl, sdl3-gl and sdl3-gpu. */
 	public static final BACKENDS = ["webgl2", "sokol-gl", "sdl3-gl", "sdl3-gpu"];
 
-	/** The profile class (helix.profiles) that runs backend, or null for a name not in BACKENDS. */
+	/** The profile class (helix.profile) that runs backend, or null for a name not in BACKENDS. */
 	public static function profileOf(backend:String):Null<String> {
 		return switch backend {
-			case "webgl2": "helix.profiles.WebGL2Profile";
-			case "sokol-gl": "helix.profiles.SokolGLProfile";
-			case "sdl3-gl": "helix.profiles.Sdl3GLProfile";
-			case "sdl3-gpu": "helix.profiles.Sdl3GpuProfile";
+			case "webgl2": "helix.profile.WebGL2Profile";
+			case "sokol-gl": "helix.profile.SokolGLProfile";
+			case "sdl3-gl": "helix.profile.Sdl3GLProfile";
+			case "sdl3-gpu": "helix.profile.Sdl3GpuProfile";
 			default: null;
 		}
 	}

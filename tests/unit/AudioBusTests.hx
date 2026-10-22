@@ -1,8 +1,8 @@
 import haxe.io.Bytes;
-import helix.assets.IAssets.AudioLocation;
-import helix.assets.IStore;
-import helix.assets.Storage;
-import helix.assets.StorageService;
+import helix.asset.IAssets.AudioLocation;
+import helix.asset.IStore;
+import helix.asset.Storage;
+import helix.asset.StorageService;
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioResources;
@@ -106,28 +106,28 @@ private class Memory implements IStore {
 
 	public function new() {}
 
-	public function read(key:String, maxBytes:Int, done:helix.assets.StorageService.StorageResult->Void):Void
+	public function read(key:String, maxBytes:Int, done:helix.asset.StorageService.StorageResult->Void):Void
 		pending.push(() -> done(files.exists(key) ? Stored(files[key]) : Missing));
 
-	public function write(key:String, bytes:Bytes, done:helix.assets.StorageService.StorageWriteResult->Void):Void
+	public function write(key:String, bytes:Bytes, done:helix.asset.StorageService.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files[key] = bytes;
 			done(Written);
 		});
 
-	public function remove(key:String, done:helix.assets.StorageService.StorageWriteResult->Void):Void
+	public function remove(key:String, done:helix.asset.StorageService.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files.remove(key);
 			done(Written);
 		});
 
-	public function clear(done:helix.assets.StorageService.StorageWriteResult->Void):Void
+	public function clear(done:helix.asset.StorageService.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files.clear();
 			done(Written);
 		});
 
-	public function lease(key:String, done:helix.assets.StorageService.StorageSourceResult->Void):Void
+	public function lease(key:String, done:helix.asset.StorageService.StorageSourceResult->Void):Void
 		pending.push(() -> done(Missing));
 
 	public function poll():Void {

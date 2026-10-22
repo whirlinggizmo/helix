@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
@@ -24,18 +24,18 @@ import helix.render3d.ModelFile3D;
 import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight3D;
-import helix.shaders.Dissolve;
-import helix.shaders.HitFlash;
-import helix.shaders.Outline;
-import helix.shaders.Silhouette;
-import helix.shaders.Toon;
-import helix.shaders.Unlit;
+import helix.shader.Dissolve;
+import helix.shader.HitFlash;
+import helix.shader.Outline;
+import helix.shader.Silhouette;
+import helix.shader.Toon;
+import helix.shader.Unlit;
 import helix.render3d.View3D;
-import helix.shaders.Water;
+import helix.shader.Water;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
-/** Surface shaders in a lit scene, a View3D on the stage: how to write one of one's own (the floor), beside HeliX's library (helix.shaders, packed into the program:
+/** Surface shaders in a lit scene, a View3D on the stage: how to write one of one's own (the floor), beside HeliX's library (helix.shader, packed into the program:
 	nothing to load) where it meets the rest of the stage: shadows cast through a shader's discards and vertex hook, a silhouette through a
 	wall on a character of layered parts, a flash on a library shader and on the stage's own shading. Every library shader alone, with its
 	parameters, is the shader-gallery example's.
@@ -48,7 +48,7 @@ import helix.host.ScreenShape;
 		(Silhouette); she and the wall flash on F (HitFlash, on a library shader and on the stage's own shading)
 	- the floor: the example's own shader, shaders/checker.glsl (packed into an .hxshader asset and loaded at run time), lit by the stage
 	A sun casting shadows and a point light circling in front light the stage; the shaders read them as the stage's own does. Edit a .glsl
-	while the dev server runs and its material reloads in place (a library shader's too, in src/helix/shaders).
+	while the dev server runs and its material reloads in place (a library shader's too, in src/helix/shader).
 
 	1 / 2: the sun / the point light on and off; 3: the outlines; 4: the silhouette; 5: the dissolve held whole or running; 6: her toon
 	shading or the stage's; 7: the water's own shading or the stage's (whose shadow is the sphere's, still); C: the camera close to her or on

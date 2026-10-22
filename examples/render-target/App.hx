@@ -7,8 +7,8 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
-import helix.render2d.Font2D;
-import helix.render2d.Fonts2D;
+import helix.font.Font;
+import helix.font.Fonts;
 import helix.render2d.Node2D;
 import helix.render2d.Stage;
 import helix.render2d.View2D;
@@ -22,13 +22,13 @@ import helix.render3d.ModelFile3D;
 import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
-import helix.shaders.Pixelate;
+import helix.shader.Pixelate;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
 /** Views drawn into textures (View.postProcess; docs/DISPLAY_MODEL.md): a view with a chain draws what it shows into a texture before the
 	frame (cleared to its color), runs the chain and draws the result where the view is, in the 2D's order.
-	- "pixel view": a View3D of the level pixelated by its chain (helix.shaders.Pixelate, cells of 4 units: 160x100 of them), a
+	- "pixel view": a View3D of the level pixelated by its chain (helix.shader.Pixelate, cells of 4 units: 160x100 of them), a
 	  low-resolution pixel-art look
 	- "minimap": a second View3D of the same level, from an orthographic camera above it, 256x256, on a darker background (an empty chain
 	  draws it into a texture cleared to its color)
@@ -56,7 +56,7 @@ class App extends helix.App {
 	var minimap:View3D;
 	var panels = new Drawing2D();
 	var fps = new FpsOverlay();
-	var font:Null<Font2D>;
+	var font:Null<Font>;
 	var car:Null<Node3D>;
 	var globe:Model3D;
 	var wrap:Material3D;
@@ -118,7 +118,7 @@ class App extends helix.App {
 
 		Models3D.load("models/car-kit/sedan-sports.glb", file -> place(file));
 		// The built-in font until it has loaded.
-		Fonts2D.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
+		Fonts.load("fonts/Komika/KOMIKAH_.ttf", loaded -> font = loaded);
 	}
 
 	// The car's file in: a copy of it in the level the views show.

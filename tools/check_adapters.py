@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """Checks the adapter rule (docs/ARCHITECTURE.md) where it can be checked mechanically:
 
-  1. An adapter (src/helix/adapters/) names no engine code: no rendering, no engine service (the shared Fetch, Storage, ImageDecoding,
+  1. An adapter (src/helix/adapter/) names no engine code: no rendering, no engine service (the shared Fetch, Storage, ImageDecoding,
      AudioDecoding, InputRouter and job pool among them; their result types are the contracts' and allowed), no generated program
      class, no shared decoder or policy. It implements a platform contract and nothing else.
-  2. Engine code (src/helix/ outside adapters/ and profiles/) uses no platform API (js.html, js.Browser, js.Syntax, js.lib, sys., cpp.)
+  2. Engine code (src/helix/ outside adapter/ and profile/) uses no platform API (js.html, js.Browser, js.Syntax, js.lib, sys., cpp.)
      and no target conditional (#if js, cpp, sys, hl). The build macros (src/helix/macro/) run in the compiler, not on a target, and may
-     ask the machine building (helix.macro.Haxelib reads its architecture for hxcpp); so do the build tools (src/helix/tools/: Build,
+     ask the machine building (helix.macro.Haxelib reads its architecture for hxcpp); so do the build tools (src/helix/tool/: Build,
      Watchers and WebServer's macros, the shader packer, haxelib run helix's commands), run in the compiler or Haxe's interpreter, never in a game.
   3. An adapter's C includes no generated shader header: programs reach adapters as data.
   4. Adapters of the same contract don't copy code: no run of DUPLICATE_LINES or more identical (normalized) lines in two adapters of
      one area. A call into an adapter's own extern bridge (its internal/*Bridge) is its own, as it reaches that adapter's C: two thin
-     adapters over shared code in adapters/shared/ (the native hosts over NativeHost) differ in what they call. The same logic written
+     adapters over shared code in adapter/shared/ (the native hosts over NativeHost) differ in what they call. The same logic written
      differently isn't caught here; review is for that.
-  5. Each adapter directory (adapters/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
+  5. Each adapter directory (adapter/<contract>/) is named for its contract: some class in it implements I<Contract>, the directory's
      name being the interface's without the I, lowercased.
-  6. Each API directory (adapters/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
+  6. Each API directory (adapter/<contract>/<api>/) holds the adapter <Api><Contract>Adapter implementing I<Contract>, words the API's
      name ends with and the contract's starts with written once (webaudio + Audio is WebAudioAdapter, haxehttp + Http HaxeHttpAdapter).
 
 Known violations, each with what removes it, would be listed in KNOWN (the audit's list, docs/ADAPTER_AUDIT.md, emptied as its steps
@@ -28,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / 'src/helix'
-ADAPTERS = SRC / 'adapters'
+ADAPTERS = SRC / 'adapter'
 DUPLICATE_LINES = 6
 
 # Engine code an adapter must not name.
@@ -110,7 +110,7 @@ def main():
             if GENERATED_HEADER.search(line):
                 violations.append(('header', path, number, line.strip()))
     for path in sorted(SRC.rglob('*.hx')):
-        if path.is_relative_to(ADAPTERS) or path.is_relative_to(SRC / 'profiles') or path.is_relative_to(SRC / 'macro') or path.is_relative_to(SRC / 'tools'):
+        if path.is_relative_to(ADAPTERS) or path.is_relative_to(SRC / 'profile') or path.is_relative_to(SRC / 'macro') or path.is_relative_to(SRC / 'tool'):
             continue
         for number, line in code_lines(path):
             if PLATFORM.search(line):

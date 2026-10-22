@@ -41,13 +41,13 @@ A snapshot: what a game jam would stall on, checked against what HeliX had in Oc
 
 | Item | Status | Notes |
 |---|---|---|
-| Surface: toon, dissolve, water | done (milestone 13) | `helix.shaders`' `Toon`, `Dissolve` (laid over the model in its own space, its shadow dissolving with it) and `Water` (its waves moving its shadow), and `Unlit`, made on a material in one line, static or skinned; the `shaders` example keeps one of its own to show how one is written |
+| Surface: toon, dissolve, water | done (milestone 13) | `helix.shader`' `Toon`, `Dissolve` (laid over the model in its own space, its shadow dissolving with it) and `Water` (its waves moving its shadow), and `Unlit`, made on a material in one line, static or skinned; the `shaders` example keeps one of its own to show how one is written |
 | Surface: outline, silhouette, rim light, flash or hit tint | done (milestone 13) | `Outline` (an inverted hull, a width in world units) and `Silhouette` (depth greater) as passes on a model; `Rim` and `HitFlash` as every material's terms, whatever its shader |
 | Screen: bloom and glow | done (milestone 13) | `Bloom` over an HDR scene (half floats where the GPU draws them), down six halving intermediates and back up, `PostProcess` growing intermediates at fractions of the frame |
 | Screen: FXAA, blur, vignette, color LUT, CRT, chromatic aberration, pixelate | done (milestone 13) | `Fxaa`, `Blur`, `Vignette`, `ColorLut`, `Crt`, `ChromaticAberration`, `Pixelate` and `Tonemap`, each a class whose fields are its parameters; the `shader-gallery` example shows every one |
-| 2D: sprite outline, flash, dissolve, palette swap | done (milestone 13) | `helix.shaders`' `SpriteOutline`, `SpriteFlash`, `SpriteDissolve` and `PaletteSwap`: sprite shaders (the `helix_sprite` kind, a `SpriteEffect`) that a `Sprite2D`, a `Batch2D` or a `Stage3D`'s `Sprite3D` draws through (`effect`), a batch splitting where the effect changes. Before them `Batch2D` had no custom shader path: it always drew the framework's sprite program, its tint only multiplying |
+| 2D: sprite outline, flash, dissolve, palette swap | done (milestone 13) | `helix.shader`' `SpriteOutline`, `SpriteFlash`, `SpriteDissolve` and `PaletteSwap`: sprite shaders (the `helix_sprite` kind, a `SpriteEffect`) that a `Sprite2D`, a `Batch2D` or a `Stage3D`'s `Sprite3D` draws through (`effect`), a batch splitting where the effect changes. Before them `Batch2D` had no custom shader path: it always drew the framework's sprite program, its tint only multiplying |
 
-Proposal: `helix.shaders`, a library of ready surface and screen shaders with parameters by name, each with a one-line way to attach it (a material's surface shader, a `ScreenEffect`), and `PostProcess` growing scaled intermediates for bloom.
+Proposal: `helix.shader`, a library of ready surface and screen shaders with parameters by name, each with a one-line way to attach it (a material's surface shader, a `ScreenEffect`), and `PostProcess` growing scaled intermediates for bloom.
 
 ## 3. Networking and multiplayer
 
@@ -76,7 +76,7 @@ Proposal: `helix.shaders`, a library of ready surface and screen shaders with pa
 ## 6. Found on the way (earlier sessions)
 
 - A public posed bounds for a skinned model (picking poses one on the CPU already; the dressing room framed by joint reach instead).
-- `Font2D.measureWrapped` (done), a wrapping box (not done).
+- `Font.measureWrapped` (done), a wrapping box (not done).
 - An orientation preference for phones.
 - The `tilemap` example's world camera upright shows 5 tiles across.
 

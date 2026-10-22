@@ -5,7 +5,7 @@ import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
-import helix.render2d.Textures2D;
+import helix.texture.Textures;
 
 /** The entry point: Game on the backend the build names. */
 class Main {
@@ -27,7 +27,7 @@ class Game extends helix.App {
 		var hello = new Text2D("Hello", 48, 0xff102030);
 		hello.setPosition(60, 90);
 		Stage.addChild(hello);
-		Textures2D.load("sprites/logo.png", true, texture -> {
+		Textures.load("sprites/logo.png", true, texture -> {
 			var logo = new Sprite2D(texture);
 			logo.setPosition(400, 300);
 			logo.setSize(64, 64);

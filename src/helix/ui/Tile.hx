@@ -4,7 +4,7 @@ import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** A picture with a caption under it, in a frame: an inventory's item, a character creator's choice, a level to pick. Clicked by the pointer,
 	or activated with focus by Enter, Space or a pad's South; marked selected by the game (one of a group, as the game decides: clicked,

@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
@@ -14,7 +14,7 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Environment3D;
@@ -26,15 +26,15 @@ import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.PointLight3D;
 import helix.render3d.View3D;
-import helix.shaders.Bloom;
-import helix.shaders.Blur;
-import helix.shaders.ChromaticAberration;
-import helix.shaders.ColorLut;
-import helix.shaders.Crt;
-import helix.shaders.Fxaa;
-import helix.shaders.Pixelate;
-import helix.shaders.Tonemap;
-import helix.shaders.Vignette;
+import helix.shader.Bloom;
+import helix.shader.Blur;
+import helix.shader.ChromaticAberration;
+import helix.shader.ColorLut;
+import helix.shader.Crt;
+import helix.shader.Fxaa;
+import helix.shader.Pixelate;
+import helix.shader.Tonemap;
+import helix.shader.Vignette;
 import helix.time.Time;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit3D;
@@ -43,7 +43,7 @@ import helix.render3d.Orbit3D;
 	effect of one's own; every library effect alone, with its parameters, is the shader-gallery example's. The frame is an ordinary lit
 	level shown by a View3D: the Kenney sports car on a floor, generated shapes, a circling point light and two glowing lamps. The chain is
 	the view's (View.postProcess), so the text on the stage over it stays sharp, outside the effects. The effects are the shader
-	library's (helix.shaders), each a class whose fields are its parameters, and one of the example's own:
+	library's (helix.shader), each a class whose fields are its parameters, and one of the example's own:
 	- Bloom spreads the light past white around the lamps; it wants HDR, so with it on the scene is drawn in half floats (where the GPU draws
 	them) and tone mapped after it
 	- Fxaa smooths the edges' stair steps
@@ -53,7 +53,7 @@ import helix.render3d.Orbit3D;
 	written: edit it while the dev server runs and it reloads in place
 	They run in the order added to the chain (PostProcess.add), each on or off (ScreenEffect.enabled); Bloom, Fxaa and Vignette start on.
 
-	H puts the library's tone mapping (helix.shaders.Tonemap) first in the chain, so everything after it reads the tone-mapped frame: Bloom then
+	H puts the library's tone mapping (helix.shader.Tonemap) first in the chain, so everything after it reads the tone-mapped frame: Bloom then
 	thresholds it as it does where the GPU draws no half floats. The background is the view's color alone (View.color, what its chain's
 	scene is cleared to), and looks the same with the scene HDR or not (PostProcess clears an HDR scene to what its tone mapping shows as that
 	color).

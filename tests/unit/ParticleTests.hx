@@ -1,5 +1,5 @@
 import haxe.io.Bytes;
-import helix.particles.Emitter;
+import helix.particle.Emitter;
 
 /** Emitter: spawning by rate and bursts, deaths, the ring's limit, prewarming, seeds, and flat emitters. */
 class ParticleTests {

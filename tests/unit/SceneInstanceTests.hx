@@ -1,17 +1,17 @@
 import Render2DTests.CountingGraphics;
 import haxe.io.Bytes;
-import helix.assets.Assets;
-import helix.assets.IAssets;
+import helix.asset.Assets;
+import helix.asset.IAssets;
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorPass;
 import helix.graphics.Graphics;
 import helix.graphics.IImageDecoder;
 import helix.graphics.ImageDecoding;
 import helix.graphics.ImageDecoding.ImageDecodeResult;
-import helix.render2d.FontCache2D;
-import helix.render2d.Fonts2D;
-import helix.render2d.TextureCache2D;
-import helix.render2d.Textures2D;
+import helix.font.FontCache;
+import helix.font.Fonts;
+import helix.texture.TextureCache;
+import helix.texture.Textures;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.EnvironmentCache3D;
@@ -121,12 +121,12 @@ class SceneInstanceTests {
 		gpu = new CountingGraphics();
 		var assets = new Held();
 		decoding = new ImageDecoding(new StubDecoder());
-		var textures = new TextureCache2D(assets, decoding, gpu);
+		var textures = new TextureCache(assets, decoding, gpu);
 		sceneFiles = new SceneFileCache3D(assets);
 		@:privateAccess Graphics.bind(gpu);
 		@:privateAccess Assets.bind(assets);
-		@:privateAccess Textures2D.bind(textures);
-		@:privateAccess Fonts2D.bind(new FontCache2D(assets, gpu));
+		@:privateAccess Textures.bind(textures);
+		@:privateAccess Fonts.bind(new FontCache(assets, gpu));
 		@:privateAccess Models3D.bind(new ModelCache3D(assets, textures));
 		@:privateAccess Environments3D.bind(new EnvironmentCache3D(assets, decoding, gpu));
 		@:privateAccess SceneFiles3D.bind(sceneFiles);
@@ -838,14 +838,14 @@ private class Gate extends Behavior {}
 private class Held implements IAssets {
 	public function new() {}
 
-	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.assets.IRequest
+	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.asset.IRequest
 		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
-			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest {
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
+			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest {
 		SceneInstanceTests.asked[path] = (SceneInstanceTests.asked.exists(path) ? SceneInstanceTests.asked[path] : 0) + 1;
-		SceneInstanceTests.held[path] = {loaded: loaded, failed: message -> helix.assets.Failure.report(path, message, failed)};
-		return new helix.assets.Request(() -> SceneInstanceTests.held.remove(path));
+		SceneInstanceTests.held[path] = {loaded: loaded, failed: message -> helix.asset.Failure.report(path, message, failed)};
+		return new helix.asset.Request(() -> SceneInstanceTests.held.remove(path));
 	}
 
 	public var host(get, never):Null<String>;
@@ -856,11 +856,11 @@ private class Held implements IAssets {
 	public function setHost(host:Null<String>):Bool
 		return false;
 
-	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
 
@@ -870,22 +870,21 @@ private class Held implements IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.assets.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
 
-	function get_cacheMode():helix.assets.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.assets.IAssets.AssetCacheMode):helix.assets.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
 		return mode;
 	}
 
-	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void,
-			download:Bool = false):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function streamSource(path:String, located:helix.asset.IAssets.AudioLocation->Void, ?failed:String->Void, download:Bool = false):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function subscribe(path:String, target:helix.asset.IReloadable):Void {}
 
-	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function unsubscribe(path:String, target:helix.asset.IReloadable):Void {}
 
 	public var busy(get, never):Bool;
 

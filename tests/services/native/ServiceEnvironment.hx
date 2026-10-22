@@ -1,12 +1,12 @@
-import helix.adapters.http.haxehttp.HaxeHttpAdapter;
-import helix.adapters.audiodecoder.libsndfile.LibsndfileAudioDecoderAdapter;
-import helix.adapters.audiodecoder.libsndfile.LibsndfilePcmFiles;
+import helix.adapter.http.haxehttp.HaxeHttpAdapter;
+import helix.adapter.audiodecoder.libsndfile.LibsndfileAudioDecoderAdapter;
+import helix.adapter.audiodecoder.libsndfile.LibsndfilePcmFiles;
 #if helix_sdl3
-import helix.adapters.audio.sdl3.Sdl3AudioAdapter as NativeAudioAdapter;
+import helix.adapter.audio.sdl3.Sdl3AudioAdapter as NativeAudioAdapter;
 #else
-import helix.adapters.audio.sokol.SokolAudioAdapter as NativeAudioAdapter;
+import helix.adapter.audio.sokol.SokolAudioAdapter as NativeAudioAdapter;
 #end
-import helix.adapters.store.filesystem.FileSystemStoreAdapter;
+import helix.adapter.store.filesystem.FileSystemStoreAdapter;
 
 /** The native services under test: the sokol profile's audio output, or with -D helix_sdl3 the SDL3 profile's (tools/services.py
 	--native release-sdl3-gl). */

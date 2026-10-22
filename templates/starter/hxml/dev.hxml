@@ -5,4 +5,4 @@
 -lib helix
 -D hotreload-port=8064
 --macro hotreload.DevServer.serve("hxml/build.web.hxml", {mounts: {"/assets": "assets"}, restart: true})
---macro helix.tools.Watchers.watchShaders()
+--macro helix.tool.Watchers.watchShaders()

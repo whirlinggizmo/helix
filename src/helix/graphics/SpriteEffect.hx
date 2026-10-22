@@ -1,11 +1,12 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
+import helix.texture.Sampling;
 
 /** A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Sprite2D.effect,
 	Batch2D.effect, and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the
-	shader's reloads. The library's are in helix.shaders (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a
+	shader's reloads. The library's are in helix.shader (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a
 	.hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with
 	its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A
 	sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own. */

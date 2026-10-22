@@ -1,5 +1,5 @@
 import haxe.io.Bytes;
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
@@ -17,8 +17,8 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render2d.View2D;
 import helix.render3d.AnimationClip3D;
 import helix.render3d.Animator3D;
@@ -32,27 +32,27 @@ import helix.render3d.ModelFile3D;
 import helix.render3d.Models3D;
 import helix.render3d.Node3D;
 import helix.render3d.View3D;
-import helix.shaders.Bloom;
-import helix.shaders.Blur;
-import helix.shaders.ChromaticAberration;
-import helix.shaders.ColorLut;
-import helix.shaders.Crt;
-import helix.shaders.Dissolve;
-import helix.shaders.Fxaa;
-import helix.shaders.HitFlash;
-import helix.shaders.Outline;
-import helix.shaders.PaletteSwap;
-import helix.shaders.Pixelate;
-import helix.shaders.Rim;
-import helix.shaders.Silhouette;
-import helix.shaders.SpriteDissolve;
-import helix.shaders.SpriteFlash;
-import helix.shaders.SpriteOutline;
-import helix.shaders.Tonemap;
-import helix.shaders.Toon;
-import helix.shaders.Unlit;
-import helix.shaders.Vignette;
-import helix.shaders.Water;
+import helix.shader.Bloom;
+import helix.shader.Blur;
+import helix.shader.ChromaticAberration;
+import helix.shader.ColorLut;
+import helix.shader.Crt;
+import helix.shader.Dissolve;
+import helix.shader.Fxaa;
+import helix.shader.HitFlash;
+import helix.shader.Outline;
+import helix.shader.PaletteSwap;
+import helix.shader.Pixelate;
+import helix.shader.Rim;
+import helix.shader.Silhouette;
+import helix.shader.SpriteDissolve;
+import helix.shader.SpriteFlash;
+import helix.shader.SpriteOutline;
+import helix.shader.Tonemap;
+import helix.shader.Toon;
+import helix.shader.Unlit;
+import helix.shader.Vignette;
+import helix.shader.Water;
 import helix.time.Time;
 import helix.ui.ColorPicker;
 import helix.ui.Dropdown;
@@ -63,7 +63,7 @@ import helix.ui.Ui;
 import helix.host.ScreenShape;
 import helix.render3d.Orbit3D;
 
-/** A tour of the shader library (helix.shaders): every library shader, one at a time, over one still scene, its parameters on sliders and
+/** A tour of the shader library (helix.shader): every library shader, one at a time, over one still scene, its parameters on sliders and
 	its colors on color pickers (helix.ui's ColorPicker).
 	The scene is a View3D's tree (its ambient light an Environment3D on its root), shown with the sprites in a View2D: the Kenney sports car, a sphere and a skinned character (Quaternius's Ultimate Modular Women) behind a low wall, under a sun
 	casting shadows, with two lamps glowing past white; a row of sprites (the logo twice, a creature of indexed pixels and a checkerboard in a clear ring, both drawn sharp) along the bottom.
@@ -310,8 +310,8 @@ class App extends helix.App {
 			rowSprites.push(sprite);
 			scene.addChild(sprite);
 		}
-		Textures2D.load(LOGO, true, texture -> useLogo(0, texture));
-		Textures2D.load(WHITE_LOGO, true, texture -> useLogo(1, texture));
+		Textures.load(LOGO, true, texture -> useLogo(0, texture));
+		Textures.load(WHITE_LOGO, true, texture -> useLogo(1, texture));
 
 		// The screen effects in the chain, each off until chosen; the sprite effects.
 		bloom = new Bloom();

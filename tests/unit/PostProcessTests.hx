@@ -5,20 +5,20 @@ import helix.graphics.PostProcess;
 import helix.graphics.ScreenEffect;
 import helix.graphics.ScreenFrame;
 import helix.graphics.Shader;
-import helix.graphics.TextureFormat;
+import helix.texture.TextureFormat;
 import haxe.io.Bytes;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render3d.Renderer3D;
-import helix.shaders.Bloom;
-import helix.shaders.Blur;
-import helix.shaders.ChromaticAberration;
-import helix.shaders.ColorLut;
-import helix.shaders.Crt;
-import helix.shaders.Fxaa;
-import helix.shaders.Pixelate;
-import helix.shaders.ShaderLibrary;
-import helix.shaders.Tonemap;
-import helix.shaders.Vignette;
+import helix.shader.Bloom;
+import helix.shader.Blur;
+import helix.shader.ChromaticAberration;
+import helix.shader.ColorLut;
+import helix.shader.Crt;
+import helix.shader.Fxaa;
+import helix.shader.Pixelate;
+import helix.shader.ShaderLibrary;
+import helix.shader.Tonemap;
+import helix.shader.Vignette;
 
 /** An effect of several passes: intermediates at the fractions given, each drawn into from the one before (the first from the frame). */
 class Steps extends ScreenEffect {

@@ -1,9 +1,9 @@
 package helix.scene;
 
-import helix.assets.Failure;
-import helix.assets.IAssets;
-import helix.assets.IRequest;
-import helix.assets.Request;
+import helix.asset.Failure;
+import helix.asset.IAssets;
+import helix.asset.IRequest;
+import helix.asset.Request;
 
 /** Scene files (.scene3d) loaded through the assets into SceneFiles3D, parsed once and shared by path, as ModelCache3D is for models: a path
 	asked for again is the file already parsed (or its refusal, remembered), and asking while it loads joins the load. A file's models,

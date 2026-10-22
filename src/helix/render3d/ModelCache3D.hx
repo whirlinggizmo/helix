@@ -1,27 +1,27 @@
 package helix.render3d;
 
-import helix.assets.Failure;
-import helix.assets.IAssets;
-import helix.assets.IRequest;
-import helix.assets.Request;
-import helix.render2d.TextureCache2D;
+import helix.asset.Failure;
+import helix.asset.IAssets;
+import helix.asset.IRequest;
+import helix.asset.Request;
+import helix.texture.TextureCache;
 import helix.render3d.ModelFile3D.ImageSource3D;
 
 /** Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images
 	decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode
-	through a TextureCache2D. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking
+	through a TextureCache. A file loads once and is shared: a path asked for again is the file already loaded (or its failure, remembered), and asking
 	while it loads joins the load. Each caller instantiates its own copy of the file's nodes, so copies share meshes, materials and textures. The runner's is what the Models3D static forwards to. */
 @:build(helix.macro.Facade.record())
 class ModelCache3D {
 	var assets:IAssets;
-	var textures:TextureCache2D;
+	var textures:TextureCache;
 	var files:Map<String, ModelFile3D> = [];
 	var failures:Map<String, String> = [];
 	var waiting:Map<String, Array<{request:Request, loaded:ModelFile3D->Void, failed:Null<String->Void>}>> = [];
 	var loads:Map<String, IRequest> = [];
 
 	/** Loads through assets, decoding images with textures. */
-	public function new(assets:IAssets, textures:TextureCache2D) {
+	public function new(assets:IAssets, textures:TextureCache) {
 		this.assets = assets;
 		this.textures = textures;
 	}
@@ -141,7 +141,7 @@ class ModelCache3D {
 			if (waiting == 0)
 				build(path, gltf, request, children, done);
 			for (buffer in missing) {
-				var file = helix.assets.AssetPath.resolve(path, buffer.uri);
+				var file = helix.asset.AssetPath.resolve(path, buffer.uri);
 				if (file == null) {
 					failed('buffer ${buffer.index}\'s uri ${buffer.uri} isn\'t a file beside the model');
 					return;
@@ -180,7 +180,7 @@ class ModelCache3D {
 				if (waiting == 0 && request.finish())
 					done(file, null);
 			}
-			function loaded(texture:helix.render2d.Texture2D):Void {
+			function loaded(texture:helix.texture.Texture2D):Void {
 				texture.sampling = image.sampling;
 				for (set in image.set)
 					set(texture);
@@ -197,7 +197,7 @@ class ModelCache3D {
 				case Inline(bytes):
 					children.push(textures.decode(bytes, linear, texture -> loaded(texture), message -> failed(message)));
 				case File(uri):
-					var resolved = helix.assets.AssetPath.resolve(path, uri);
+					var resolved = helix.asset.AssetPath.resolve(path, uri);
 					if (resolved == null)
 						failed('its uri $uri isn\'t a file beside the model');
 					else

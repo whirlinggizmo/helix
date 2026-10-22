@@ -1,5 +1,5 @@
 import haxe.io.Bytes;
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.FpsOverlay;
 import helix.debug.TestHarness;
@@ -17,12 +17,12 @@ import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
-import helix.shaders.PaletteSwap;
-import helix.shaders.SpriteDissolve;
-import helix.shaders.SpriteFlash;
-import helix.shaders.SpriteOutline;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
+import helix.shader.PaletteSwap;
+import helix.shader.SpriteDissolve;
+import helix.shader.SpriteFlash;
+import helix.shader.SpriteOutline;
 import helix.time.Time;
 import helix.host.ScreenShape;
 
@@ -34,7 +34,7 @@ import helix.host.ScreenShape;
 	- "tint": a white copy of the logo cycling through colors (a tint multiplies the texels, so it can't show on the black logo)
 	- "palette": a little creature made here as indexed pixels (its red channel a color's index), drawn in a palette's colors
 	- the logo once more in the corner, drawn by a Drawing2D (Flash's graphics) with the text, no sprite
-	Sprite effects (helix.shaders, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
+	Sprite effects (helix.shader, packed into the program): 1 outlines the sheet and the spin with one SpriteOutline they share (one draw,
 	read only inside each sprite's region: the sheet's neighboring quarters never show), 2 dissolves the tint (SpriteDissolve), F flashes the
 	flip (SpriteFlash), 3 turns the creature's PaletteSwap off and on, R steps its palette's row. 4 turns the swing's wave off and on: the
 	example's own sprite shader, shaders/wave.glsl (packed into an .hxshader asset and loaded at run time, new SpriteEffect(shader)), its parameters set by
@@ -146,8 +146,8 @@ class App extends helix.App {
 		sprites[4].effect = dissolve;
 		sprites[3].effect = flash;
 		sprites[5].effect = swap;
-		Textures2D.load(LOGO, true, texture -> useLogo(texture));
-		Textures2D.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
+		Textures.load(LOGO, true, texture -> useLogo(texture));
+		Textures.load(WHITE_LOGO, true, texture -> useWhiteLogo(texture));
 		shaders = new Shaders();
 		shaders.load("shaders/wave.hxshader", shader -> useWave(shader));
 		Stage.addChild(drawing);

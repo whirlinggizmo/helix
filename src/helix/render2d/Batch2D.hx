@@ -4,10 +4,12 @@ import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.BlendMode;
 import helix.graphics.Pipelines;
-import helix.graphics.Sampling;
+import helix.texture.Sampling;
 import helix.graphics.SpriteEffect;
 import helix.graphics.AlphaMode;
 import haxe.io.Bytes;
+import helix.font.Font;
+import helix.texture.Texture2D;
 
 /** Immediate 2D drawing in world units through a Camera2D, inside a frame (IGraphics.beginFrame to endFrame). A batch is one upload and one draw per
 	run of a texture, camera and effect, drawn over whatever the frame has so far, without depth. Colors are 0xAARRGGBB. A transform (setTransform)
@@ -30,7 +32,7 @@ class Batch2D {
 		return draws;
 
 	/** The built-in pixel font, whose texture also has the white texel shapes use. */
-	public var font(default, null):Font2D;
+	public var font(default, null):Font;
 
 	var gpu:IGraphics;
 	var capacity:Int;
@@ -91,7 +93,7 @@ class Batch2D {
 		data = Bytes.alloc(capacity * Sprite2DProgram.stride);
 		buffer = gpu.createBuffer(capacity * Sprite2DProgram.stride);
 		pipelines = Pipelines.of(gpu);
-		font = Font2D.builtIn(gpu);
+		font = Font.builtIn(gpu);
 		texture = font.texture;
 	}
 
@@ -139,7 +141,7 @@ class Batch2D {
 		return value;
 	}
 
-	/** The effect what follows is drawn through (a sprite shader: helix.shaders' SpriteOutline and the others, or an app's), or null (the
+	/** The effect what follows is drawn through (a sprite shader: helix.shader' SpriteOutline and the others, or an app's), or null (the
 		default, and again at begin) for the framework's sprite program. Sprites, text and shapes alike: each is drawn through it with its
 		region (a quad's texture coordinates; a nine-slice's whole region; a shape's white texel). One effect drawn from one sprite to the next
 		stays one draw, as one texture does; its parameters are read as end draws. */
@@ -413,7 +415,7 @@ class Batch2D {
 			useTexture(font.texture);
 
 	/** A textured rectangle in world units, top-left at x, y, sampling u0, v0 to u1, v1 of the current texture, tinted. With distanceField, the texture's alpha is
-		a distance from an outline (Font2D.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
+		a distance from an outline (Font.distanceField), drawn with a smooth edge at any scale. Throws when the frame's vertices pass capacity, as every shape does. */
 	public function quad(x:Float, y:Float, w:Float, h:Float, u0:Float, v0:Float, u1:Float, v1:Float, tint:Int, distanceField = false):Void {
 		color(tint);
 		region(u0, v0, u1, v1);
@@ -554,7 +556,7 @@ class Batch2D {
 	/** Draws emitter's particles here in the batch's order (over what came before, under what comes after), through its camera: their places
 		are world units (the batch's transform doesn't move them; they were born where their emitter was), the quads square to the screen. An
 		emitter with nothing to draw draws nothing. */
-	public function emitter(emitter:helix.particles.Emitter):Void {
+	public function emitter(emitter:helix.particle.Emitter):Void {
 		if (!emitter.drawable)
 			return;
 		closeRun();
@@ -575,7 +577,7 @@ class Batch2D {
 
 	/** Draws one line of text, its top at y and x its left edge, center or right edge by align, size world units tall (ascent to descent), tinted
 		color (0xAARRGGBB), in font or the batch's built-in one. Characters without a glyph are skipped. */
-	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
+	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font):Void {
 		if (font == null)
 			font = this.font;
 		var unit = size / font.size;
@@ -598,10 +600,10 @@ class Batch2D {
 		}
 	}
 
-	/** Draws text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as
+	/** Draws text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, as
 		drawText draws a line. Returns the height its lines take, so what follows can go under them (a HUD's lines on a narrow screen). */
 	public function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25,
-			?font:Font2D):Float {
+			?font:Font):Float {
 		var f = font == null ? this.font : font, row = 0;
 		for (line in f.wrap(text, size, width))
 			drawText(line, x, y + size * lineHeight * row++, size, color, align, font);
@@ -854,7 +856,7 @@ private interface BatchParticles {
 	function startFrame():Void;
 
 	/** emitter's particles added to the frame's, seen through camera: the index they're drawn by, and their first record and count. */
-	function add(emitter:helix.particles.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int};
+	function add(emitter:helix.particle.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int};
 
 	/** The frame's records uploaded, once all are added. */
 	function upload():Void;
@@ -905,7 +907,7 @@ private class Batch2DParticles implements BatchParticles {
 		drawn = [];
 	}
 
-	public function add(emitter:helix.particles.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int} {
+	public function add(emitter:helix.particle.Emitter, camera:Camera2D):{index:Int, first:Int, count:Int} {
 		var needed = (count + emitter.particleCount) * Particle3DProgram.instanceStride;
 		if (needed > records.length) {
 			var grown = Bytes.alloc(Std.int(Math.max(needed, records.length * 2)));

@@ -27,13 +27,13 @@ private typedef ShaderFile = {
 	final sprite3D:Null<Program>;
 }
 
-/** An app's shader loaded from a .hxshader (src/helix/tools/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program):
+/** An app's shader loaded from a .hxshader (src/helix/tool/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program):
 	its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures
 	by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and
 	caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their
 	pipelines (Pipelines) are made again over the new programs as they're next asked for. */
 class Shader {
-	/** The .hxshader format it reads (src/helix/src/helix/tools/shader/ShaderPacker.hx's FORMAT). */
+	/** The .hxshader format it reads (src/helix/src/helix/tool/shader/ShaderPacker.hx's FORMAT). */
 	public static inline var FORMAT = 2;
 
 	var gpu:IGraphics;
@@ -60,7 +60,7 @@ class Shader {
 	static function read(text:String):ShaderFile {
 		var file:Dynamic = haxe.Json.parse(text);
 		if (file.helixShader != FORMAT)
-			throw 'Not a HeliX shader file (format $FORMAT): pack it again (helix.tools.Build.packShaders, or Watchers.watchShaders)';
+			throw 'Not a HeliX shader file (format $FORMAT): pack it again (helix.tool.Build.packShaders, or Watchers.watchShaders)';
 		return {
 			kind: file.kind,
 			main: program(file),
@@ -229,7 +229,7 @@ class Shader {
 	/** The file changed: its programs are built again in place, its variants with them. A file that doesn't read or build leaves it as it was
 		(and throws, saying why). */
 	@:allow(helix.graphics.Shaders)
-	@:allow(helix.shaders.ShaderLibrary)
+	@:allow(helix.shader.ShaderLibrary)
 	function replace(text:String):Void {
 		var file = read(text);
 		if (file.kind != kind)

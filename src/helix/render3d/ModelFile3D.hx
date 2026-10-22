@@ -1,8 +1,8 @@
 package helix.render3d;
 
 import helix.graphics.Color;
-import helix.graphics.Sampling;
-import helix.render2d.Texture2D;
+import helix.texture.Sampling;
+import helix.texture.Texture2D;
 import helix.render3d.Gltf.field;
 import helix.render3d.AnimationClip3D.Track3D;
 import helix.render3d.AnimationClip3D.TrackInterpolation3D;

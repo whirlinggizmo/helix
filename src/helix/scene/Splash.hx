@@ -4,7 +4,7 @@ import helix.host.Screen;
 import helix.input.Input;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.ui.Theme;
 
 /** The built-in splash (docs/DISPLAY_MODEL.md): a logo (or none) centered on the theme's panel color, shown on the stage (show) for at least

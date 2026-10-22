@@ -1,7 +1,8 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
+import helix.texture.Sampling;
 
 /** A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set
 	by name (parameters), kept across the shader's reloads. PostProcess chains them (PostProcess.add); drawPass draws its shader once into the
@@ -34,7 +35,7 @@ class ScreenEffect {
 	public var enabled:Bool = true;
 
 	/** Whether it reads an HDR frame: in a chain with one, PostProcess draws the scene in half floats where the GPU can (IGraphics.canRender),
-		its colors running past 1, and tone maps it after the last such effect (helix.shaders.Tonemap). False (the default) for an effect that
+		its colors running past 1, and tone maps it after the last such effect (helix.shader.Tonemap). False (the default) for an effect that
 		reads the frame as the screen shows it, tone mapped, 0 to 1. */
 	public var hdr:Bool = false;
 

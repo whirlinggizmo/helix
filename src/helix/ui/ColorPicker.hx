@@ -1,7 +1,7 @@
 package helix.ui;
 
 import helix.graphics.Color;
-import helix.render2d.Font2D;
+import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -72,7 +72,7 @@ class ColorPicker extends Widget {
 	// The field's width and height as last sized, and what its widest text was measured for (font, size): measured again when one changes.
 	var fieldWidth = 0.;
 	var fieldHeight = Math.NaN;
-	var fieldFont:Null<Font2D>;
+	var fieldFont:Null<Font>;
 	var fieldSize = -1.;
 	var widest = 0.;
 	var alphaChecked = -1.;

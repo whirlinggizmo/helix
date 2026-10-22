@@ -1,7 +1,7 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.assets.IRequest;
+import helix.asset.IRequest;
 import helix.core.Jobs;
 
 /** How a decode ended: the image as 8-bit RGBA, rows top to bottom, not premultiplied; or why not; or cancellation. */

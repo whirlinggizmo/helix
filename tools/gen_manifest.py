@@ -1,7 +1,7 @@
-"""Asset manifests for a directory tree, as helix.assets.AssetManifest reads them: a manifest.json in the directory and in every directory under it,
+"""Asset manifests for a directory tree, as helix.asset.AssetManifest reads them: a manifest.json in the directory and in every directory under it,
 listing each file's SHA-256 and each subdirectory's manifest's, so a client knows an unchanged directory from its parent alone. Written deepest
 first, deterministically (sorted, compact), and only where one changed; manifest.json files themselves aren't listed, nor names an asset
-path can't hold (helix.assets.AssetPath: A-Z, a-z, 0-9, '_', '.', '-'), which no asset could load and a client would refuse the manifest for.
+path can't hold (helix.asset.AssetPath: A-Z, a-z, 0-9, '_', '.', '-'), which no asset could load and a client would refuse the manifest for.
 
   python3 tools/gen_manifest.py DIR"""
 import hashlib

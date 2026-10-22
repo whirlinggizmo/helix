@@ -1,4 +1,4 @@
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.debug.Autopilot;
 import helix.debug.TestHarness;
 import helix.graphics.Screenshots;
@@ -12,8 +12,8 @@ import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Stage;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.scene.Loader;
 import helix.scene.Loading;
 import helix.scene.Splash;
@@ -83,7 +83,7 @@ class App extends helix.App {
 			enter("Title", title);
 			return;
 		}
-		Textures2D.load("sprites/logo/wg-logo-white-alpha.png", true, logo -> showSplash(logo), _ -> showSplash(null));
+		Textures.load("sprites/logo/wg-logo-white-alpha.png", true, logo -> showSplash(logo), _ -> showSplash(null));
 	}
 
 	// The splash, faded in, showing logo (or nothing, when it didn't load), then the title at the middle of its fade out.

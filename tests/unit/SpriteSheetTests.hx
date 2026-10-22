@@ -6,7 +6,7 @@ import helix.render2d.Sprite2D;
 import helix.render2d.SpriteAnimator2D;
 import helix.render2d.SpriteSheet2D;
 import helix.render2d.Renderer2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 
 /** Sprite sheets (helix.render2d.SpriteSheet2D) and their animations (SpriteAnimator2D): TexturePacker's hash with trimmed, rotated and pivoted
 	frames in the file's order, animations from numbered names; Aseprite's array with tags, directions and durations; a hash's order on every

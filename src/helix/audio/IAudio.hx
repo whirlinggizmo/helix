@@ -1,7 +1,7 @@
 package helix.audio;
 
 import haxe.io.Bytes;
-import helix.assets.IAssets.AudioLocation;
+import helix.asset.IAssets.AudioLocation;
 
 /** How opening a stream ended: its id, or a failure message. */
 enum StreamOpenResult {

@@ -1,8 +1,10 @@
 package helix.graphics;
 
 import haxe.io.Bytes;
-import helix.render2d.Texture2D;
-import helix.shaders.Tonemap;
+import helix.texture.Texture2D;
+import helix.shader.Tonemap;
+import helix.texture.TextureFormat;
+import helix.texture.Sampling;
 
 /** Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the
 	enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and
@@ -13,7 +15,7 @@ import helix.shaders.Tonemap;
 	An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn
 	in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve
 	carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone
-	mapped with it). The tone mapping then runs as an effect (helix.shaders.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain
+	mapped with it). The tone mapping then runs as an effect (helix.shader.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain
 	has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half
 	floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is
 	cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same

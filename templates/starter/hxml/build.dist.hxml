@@ -5,7 +5,7 @@ hxml/common.hxml
 -dce full
 -D analyzer-optimize
 -js out/dist/app.js
---macro helix.tools.Build.cleanOutput()
---macro helix.tools.Build.generateWebPage()
---macro helix.tools.Build.copyAssets()
---macro helix.tools.Build.zipOutput("out/{name}-web.zip")
+--macro helix.tool.Build.cleanOutput()
+--macro helix.tool.Build.generateWebPage()
+--macro helix.tool.Build.copyAssets()
+--macro helix.tool.Build.zipOutput("out/{name}-web.zip")

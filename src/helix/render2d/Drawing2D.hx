@@ -1,5 +1,8 @@
 package helix.render2d;
 
+import helix.font.Font;
+import helix.texture.Texture2D;
+
 /** Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle,
 	circleLines, line, polygon, polygonLines, image, drawText, drawTextWrapped), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls
 	are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away.
@@ -12,11 +15,11 @@ class Drawing2D extends Node2D {
 	var colors:Array<Int> = [];
 	var texts:Array<String> = [];
 	var aligns:Array<Align2D> = [];
-	var fonts:Array<Null<Font2D>> = [];
+	var fonts:Array<Null<Font>> = [];
 	var triangles:Array<Null<Array<Int>>> = [];
 	var points:Array<Null<Array<Float>>> = [];
 	var images:Array<Null<Texture2D>> = [];
-	var samplings:Array<Null<helix.graphics.Sampling>> = [];
+	var samplings:Array<Null<helix.texture.Sampling>> = [];
 	// The box around the shapes held, in its own units (text measured as it's drawn).
 	@:allow(helix.render2d.Renderer2D)
 	var left = Math.POSITIVE_INFINITY;
@@ -123,18 +126,18 @@ class Drawing2D extends Node2D {
 		or all of it when sourceWidth or sourceHeight is 0 or less; sampled as sampling says, or as the texture's sampling is when drawn when
 		null. */
 	public function image(texture:Texture2D, x:Float, y:Float, w:Float, h:Float, tint = 0xffffffff, sourceX = 0., sourceY = 0., sourceWidth = 0.,
-			sourceHeight = 0., ?sampling:helix.graphics.Sampling):Void {
+			sourceHeight = 0., ?sampling:helix.texture.Sampling):Void {
 		add(Image, [x, y, w, h, sourceX, sourceY, sourceWidth, sourceHeight], tint);
 		images[images.length - 1] = texture;
 		samplings[samplings.length - 1] = sampling;
 		include(x, y, x + w, y + h);
 	}
 
-	/** Text wrapped to width (Font2D.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font
+	/** Text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font
 		(null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's
 		when no font is known: none given and no stage running). */
 	public function drawTextWrapped(text:String, x:Float, y:Float, size:Float, width:Float, color:Int, align:Align2D = Left, lineHeight = 1.25,
-			?font:Font2D):Float {
+			?font:Font):Float {
 		add(WrappedText, [x, y, size, width, lineHeight], color);
 		texts[texts.length - 1] = text;
 		aligns[aligns.length - 1] = align;
@@ -144,7 +147,7 @@ class Drawing2D extends Node2D {
 	}
 
 	/** One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's). */
-	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font2D):Void {
+	public function drawText(text:String, x:Float, y:Float, size:Float, color:Int, align:Align2D = Left, ?font:Font):Void {
 		add(Text, [x, y, size], color);
 		texts[texts.length - 1] = text;
 		aligns[aligns.length - 1] = align;
@@ -195,7 +198,7 @@ class Drawing2D extends Node2D {
 		return true;
 
 	// Itself, when pickable and its box (or a text it holds) has the point.
-	override function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font2D>):Null<Node2D>
+	override function pickOwn(x:Float, y:Float, lx:Float, ly:Float, font:Null<Font>):Null<Node2D>
 		return pickable && holds(lx, ly, font) ? this : null;
 
 	// Draws every call into batch, its transform set to this node's.
@@ -232,7 +235,7 @@ class Drawing2D extends Node2D {
 	}
 
 	// Whether own point x, y is inside the box around what it holds, text measured in font (the batch's last, for text without its own).
-	function holds(x:Float, y:Float, font:Null<Font2D>):Bool {
+	function holds(x:Float, y:Float, font:Null<Font>):Bool {
 		if (x >= left && x <= right && y >= top && y <= bottom)
 			return true;
 		for (i in 0...kinds.length)

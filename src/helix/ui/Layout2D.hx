@@ -1,6 +1,6 @@
 package helix.ui;
 
-import helix.render2d.Font2D;
+import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Sprite2D;
@@ -343,7 +343,7 @@ class Layout2D {
 	/** Lays root and everything in it out in the rectangle x, y, width x height (a screen's, a design resolution's; root's margins inside it)
 		and writes the nodes' places: its content measured (texts in their fonts, font for those without one), then each layout placed. Once a
 		frame, before drawing. */
-	public static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font2D):Void {
+	public static function arrange(root:Layout2D, x:Float, y:Float, width:Float, height:Float, font:Font):Void {
 		root.measure(font);
 		root.x = x + root.marginLeft;
 		root.y = y + root.marginTop;
@@ -361,7 +361,7 @@ class Layout2D {
 		}
 
 	// Its content's size, bottom up: its children's (their margins included) along and across its direction, or its node's.
-	function measure(font:Font2D):Void {
+	function measure(font:Font):Void {
 		for (c in childLayouts)
 			c.measure(font);
 		var cw = 0., ch = 0.;
@@ -411,7 +411,7 @@ class Layout2D {
 		}
 
 	// Places its node, then its children in its room, top down.
-	function place(font:Font2D):Void {
+	function place(font:Font):Void {
 		if (node != null) {
 			// Its position is its pivot's: a text's by its alignment, a circle's its center; a sprite or rectangle sized to it.
 			var text = Std.downcast(node, Text2D),

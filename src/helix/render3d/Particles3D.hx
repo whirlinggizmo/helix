@@ -1,8 +1,8 @@
 package helix.render3d;
 
-import helix.particles.Emitter;
+import helix.particle.Emitter;
 
-/** An emitter of particles (helix.particles.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and
+/** An emitter of particles (helix.particle.Emitter), placed here: it spawns where this node is (a move spreads its spawns along the way, and
 	particles may inherit its velocity), and the stage advances it by its clock (Renderer3D.setTime) each draw. Particles stay where they were
 	born, so they trail as the node moves. */
 class Particles3D extends Node3D {

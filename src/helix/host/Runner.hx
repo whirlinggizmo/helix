@@ -1,12 +1,12 @@
 package helix.host;
 
 import helix.app.IApp;
-import helix.assets.AssetService;
-import helix.assets.Assets;
-import helix.assets.Fetch;
-import helix.assets.FetchService;
-import helix.assets.Storage;
-import helix.assets.StorageService;
+import helix.asset.AssetService;
+import helix.asset.Assets;
+import helix.asset.Fetch;
+import helix.asset.FetchService;
+import helix.asset.Storage;
+import helix.asset.StorageService;
 import helix.audio.Audio;
 import helix.audio.AudioDecoding;
 import helix.audio.AudioResources;
@@ -17,10 +17,10 @@ import helix.graphics.ScreenshotService;
 import helix.graphics.Screenshots;
 import helix.input.Input;
 import helix.input.InputRouter;
-import helix.render2d.FontCache2D;
-import helix.render2d.Fonts2D;
-import helix.render2d.TextureCache2D;
-import helix.render2d.Textures2D;
+import helix.font.FontCache;
+import helix.font.Fonts;
+import helix.texture.TextureCache;
+import helix.texture.Textures;
 import helix.render3d.ModelCache3D;
 import helix.render3d.Models3D;
 import helix.scene.SceneFileCache3D;
@@ -49,8 +49,8 @@ class Runner {
 	var presentation:Presentation;
 	var gameClock:Clock;
 	var sounds:AudioResources;
-	var textures:TextureCache2D;
-	var fonts:FontCache2D;
+	var textures:TextureCache;
+	var fonts:FontCache;
 	var models:ModelCache3D;
 	var sceneFiles:SceneFileCache3D;
 	var screenshots:ScreenshotService;
@@ -140,8 +140,8 @@ class Runner {
 		presentation = new Presentation();
 		gameClock = new Clock();
 		sounds = new AudioResources(resources, a.audio, audioDecoding);
-		textures = new TextureCache2D(resources, decoding, a.graphics);
-		fonts = new FontCache2D(resources, a.graphics);
+		textures = new TextureCache(resources, decoding, a.graphics);
+		fonts = new FontCache(resources, a.graphics);
 		models = new ModelCache3D(resources, textures);
 		sceneFiles = new SceneFileCache3D(resources);
 		screenshots = new ScreenshotService(a.graphics, a.export, a.name, presentation);
@@ -154,8 +154,8 @@ class Runner {
 		Storage.bind(storage);
 		Assets.bind(resources);
 		Audio.bind(sounds);
-		Textures2D.bind(textures);
-		Fonts2D.bind(fonts);
+		Textures.bind(textures);
+		Fonts.bind(fonts);
 		Models3D.bind(models);
 		SceneFiles3D.bind(sceneFiles);
 		TestHarness.bind(a.harness);
@@ -244,7 +244,7 @@ class Runner {
 			app.cleanup();
 		adapters.audio.shutdown();
 		adapters.input.shutdown();
-		helix.shaders.ShaderLibrary.release(adapters.graphics);
+		helix.shader.ShaderLibrary.release(adapters.graphics);
 		helix.graphics.Pipelines.release(adapters.graphics);
 		adapters.graphics.shutdown();
 		// Nothing to work with after the program's end: a read then fails plainly, on null.
@@ -257,8 +257,8 @@ class Runner {
 		Storage.bind(null);
 		Assets.bind(null);
 		Audio.bind(null);
-		Textures2D.bind(null);
-		Fonts2D.bind(null);
+		Textures.bind(null);
+		Fonts.bind(null);
 		Models3D.bind(null);
 		SceneFiles3D.bind(null);
 		TestHarness.bind(null);

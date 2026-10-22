@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
-import helix.assets.IStore;
-import helix.assets.SaveService;
-import helix.assets.StorageService;
+import helix.asset.IStore;
+import helix.asset.SaveService;
+import helix.asset.StorageService;
 
 /** A store in memory that, given several operations at once, finishes the latest first, as threads writing files may. */
 private class Unruly implements IStore {
@@ -52,7 +52,7 @@ private class Unruly implements IStore {
 	public function shutdown():Void {}
 }
 
-/** Saves (helix.assets.SaveService): text written, read back, missing, removed; one operation at a time, so a later write of a save is the one
+/** Saves (helix.asset.SaveService): text written, read back, missing, removed; one operation at a time, so a later write of a save is the one
 	kept on a store that would finish them out of order; a name that isn't an asset path refused; busy while any is under way. */
 class SaveTests {
 	static var checks = 0;

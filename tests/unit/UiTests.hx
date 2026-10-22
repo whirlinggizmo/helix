@@ -1,6 +1,6 @@
 import Render2DTests.CountingGraphics;
 import helix.graphics.Color;
-import helix.render2d.Font2D;
+import helix.font.Font;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
 import helix.ui.Layout2D;
@@ -24,7 +24,7 @@ class UiTests {
 		return Math.abs(a - b) < 1e-6;
 
 	public static function main():Void {
-		var font = Font2D.builtIn(new CountingGraphics());
+		var font = Font.builtIn(new CountingGraphics());
 		layout(font);
 		margins(font);
 		widgets(font);
@@ -47,7 +47,7 @@ class UiTests {
 	// rectangle, a slider's track, a color picker's square, bars and swatch, a scroll area's and a list's scrollbar and a list's rows, a
 	// dropdown's list and rows only while it's open; none for a hidden widget, an unknown one or an unknown part. An autopilot finding its points
 	// through it drags a slider along its track and clicks a dropdown's row.
-	static function points(font:Font2D):Void {
+	static function points(font:Font):Void {
 		var stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
 		camera.setViewport(1600, 1200);
@@ -137,7 +137,7 @@ class UiTests {
 
 	// Separators: one across a panel's column (spanning it, as thick as the theme's focusWidth, half a gap of room above and below), one down a
 	// row (spanning its height); the theme's faceColor; a theme changed shows at the next frame; never focused or picked.
-	static function separators(font:Font2D):Void {
+	static function separators(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -211,7 +211,7 @@ class UiTests {
 
 	// Tiles in a grid (rows of a column), with a button under them: arrows and the D-pad move focus across and down the grid on screen, Tab in
 	// the order made; a tile is clicked or activated, marked selected, and its picture arrives later.
-	static function tiles(font:Font2D):Void {
+	static function tiles(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -280,14 +280,14 @@ class UiTests {
 		frame([Enter]);
 		check(cells[1].clicked, "Enter activates the focused tile");
 		check(cells[2].texture == null, "A tile without its picture yet");
-		var picture = helix.render2d.Texture2D.fromRgba(2, 2, haxe.io.Bytes.alloc(16), new CountingGraphics());
+		var picture = helix.texture.Texture2D.fromRgba(2, 2, haxe.io.Bytes.alloc(16), new CountingGraphics());
 		cells[2].texture = picture;
 		check(cells[2].texture == picture && cells[2].caption == "Part 2", "shows it once it comes");
 	}
 
 	// The theme changed after the widgets were made: each kind takes its colors, corners and sizes from it at the next update, and its layouts'
 	// once arranged again; a layout a game sized itself, and a label's own size and color, are kept; another theme assigned is followed alike.
-	static function theming(font:Font2D):Void {
+	static function theming(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -500,7 +500,7 @@ class UiTests {
 		return sum;
 	}
 
-	static function layout(font:Font2D):Void {
+	static function layout(font:Font):Void {
 		// A row: fixed children, a gap between, padding around; it fits them.
 		var a = fixed(50, 20), b = fixed(50, 30), c = fixed(50, 20);
 		var row = holding(Layout2D.row(), [a, b, c]);
@@ -586,7 +586,7 @@ class UiTests {
 	// Margins: room outside a layout, adding to the gaps in a row or column (never collapsing), counted in what its parent fits, taken before
 	// growing children share the room, kept clear of when stretching or aligning across, insetting it in a stack; the game's kept over the
 	// theme's; negative ones refused.
-	static function margins(font:Font2D):Void {
+	static function margins(font:Font):Void {
 		// A row: margins either side add to the gap; across, they keep it from the padding edge; the row fits them.
 		var a = fixed(50, 20), b = fixed(50, 30);
 		a.setMargin(5, 3, 7, 0);
@@ -689,7 +689,7 @@ class UiTests {
 
 	// The widgets used by keys, the pointer and a pad's absence: focus order, the ring, activation, the held-key guard, back, a toggle, a
 	// slider by keys and by a drag, a list by keys, the wheel and clicks, a disabled button.
-	static function widgets(font:Font2D):Void {
+	static function widgets(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -800,7 +800,7 @@ class UiTests {
 
 	// A text field: focused by a click, then typed in (spaces typed, not activating, and claimed from the game), Backspace, Enter, its limit;
 	// the keys the UI's meanwhile.
-	static function typing(font:Font2D):Void {
+	static function typing(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -931,7 +931,7 @@ class UiTests {
 	// dragged in its square, along its bars, past their ends and through black (the hue kept); its parts stepped through by Enter and nudged
 	// by the arrows, then let go so the arrows move focus again; hex typed in its field, refused text marked and changing nothing, the field
 	// showing the color once left; the format cycled by its button (clicked, pressed by name, activated) and decimal channels typed; disabled.
-	static function colors(font:Font2D):Void {
+	static function colors(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -1153,7 +1153,7 @@ class UiTests {
 	// A scroll area of buttons and a list: their scrollbars' thumbs sized and placed by the content, the wheel, drags on the content, the thumb
 	// and the track, keys and focus scrolling them, held to their ends; clipped widgets not taking the pointer; the bar shown always, when
 	// needed or never, the content narrowing for it; theme changes at the next frame.
-	static function scrolling(font:Font2D):Void {
+	static function scrolling(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -1366,7 +1366,7 @@ class UiTests {
 
 	// The states' priority (WidgetState: disabled, down, over, focused, normal), then every interactive widget's parts after a frame in each:
 	// the pointer away, over them, held on them, focus moved to them by keys, disabled.
-	static function states(font:Font2D):Void {
+	static function states(font:Font):Void {
 		// The table: every combination of enabled, down, over and focused, its state the first that holds in that order.
 		for (k in 0...16) {
 			var enabled = k & 1 != 0,
@@ -1576,7 +1576,7 @@ class UiTests {
 
 	// A panel's title: a band across its top as tall as a line of text and a padding, its widgets under it, its text the title; its look the
 	// theme's at the next frame; none for null or "".
-	static function titled(font:Font2D):Void {
+	static function titled(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();
@@ -1642,7 +1642,7 @@ class UiTests {
 	// The popup layer and a dropdown on it: a dropdown in a scroll area whose window clips it, a button under it and one beside, and a long
 	// dropdown at the bottom right. Its list is drawn and picked above everything and outside the area's clip, takes the pointer (a press off
 	// it closes it and does nothing else) and the keys, and is placed below its face, or above it at the bottom, kept on screen across.
-	static function dropdowns(font:Font2D):Void {
+	static function dropdowns(font:Font):Void {
 		var input = new helix.input.InputState(),
 			stage = new helix.render2d.Renderer2D(),
 			camera = new helix.render2d.Camera2D();

@@ -1,4 +1,4 @@
-import helix.assets.Saves;
+import helix.asset.Saves;
 import helix.collision.Body2D;
 import helix.collision.Collide2D;
 import helix.debug.FpsOverlay;
@@ -16,8 +16,8 @@ import helix.render2d.SpriteAnimator2D;
 import helix.render2d.SpriteSheet2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
-import helix.render2d.Texture2D;
-import helix.render2d.Textures2D;
+import helix.texture.Texture2D;
+import helix.texture.Textures;
 import helix.render2d.View2D;
 import helix.time.Ticker;
 import helix.time.Time;
@@ -31,7 +31,7 @@ import helix.time.Time;
 	- a CameraFollow2D following where it's drawn, moving the view's camera: a dead zone, catching up smoothly, kept inside the level;
 	  shaken by a hard landing, a bumped head and a gear collected, K for a big one
 	- gears spinning (Sprite2D.setFrame), collected by touching them (Collide2D.rectCircle)
-	- a save (helix.assets.Saves, "platformer.json"): the gears collected and where the player stood, written at each gear and read at the
+	- a save (helix.asset.Saves, "platformer.json"): the gears collected and where the player stood, written at each gear and read at the
 	  start, so a visit goes on where the last left off; R starts again, removing it
 	The arrows or A and D move, Space, Up, W or Z jump. Escape quits where quitting means anything. */
 class App extends helix.App {
@@ -118,7 +118,7 @@ class App extends helix.App {
 				gearLayer.addChild(gear);
 			}
 		}, message -> failure = message);
-		Textures2D.load("textures/tiles.png", false, loaded -> {
+		Textures.load("textures/tiles.png", false, loaded -> {
 			tiles = loaded;
 			lay(loaded);
 		}, message -> failure = message);
@@ -264,6 +264,6 @@ class App extends helix.App {
 		if (sheet != null)
 			sheet.destroy();
 		if (tiles != null)
-			Textures2D.release(tiles);
+			Textures.release(tiles);
 	}
 }

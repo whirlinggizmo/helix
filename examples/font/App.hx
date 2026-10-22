@@ -6,12 +6,12 @@ import helix.host.Window;
 import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
-import helix.render2d.Font2D;
-import helix.render2d.Fonts2D;
+import helix.font.Font;
+import helix.font.Fonts;
 import helix.render2d.Stage;
 import helix.time.Time;
 
-/** TrueType fonts loaded from files and baked into distance fields in Haxe (Fonts2D), drawn on the stage (a Drawing2D): a measured,
+/** TrueType fonts loaded from files and baked into distance fields in Haxe (Fonts), drawn on the stage (a Drawing2D): a measured,
 	centered title in Komika, JetBrains Mono at several sizes, kerning (Komika's pairs closing "AV", "AT" and "LT"), and the built-in font
 	drawing until they are ready. D switches the last line's font between the built-in one and Komika; Escape quits where quitting means
 	anything. */
@@ -20,8 +20,8 @@ class App extends helix.App {
 	static inline var KOMIKA = "fonts/Komika/KOMIKAH_.ttf";
 
 	var fps = new FpsOverlay();
-	var mono:Null<Font2D>;
-	var komika:Null<Font2D>;
+	var mono:Null<Font>;
+	var komika:Null<Font>;
 	var failed = false;
 	var useKomika = false;
 	var text = new Drawing2D();
@@ -32,8 +32,8 @@ class App extends helix.App {
 		Stage.color = 0xfff8f8fa;
 		Stage.addChild(text);
 		Stage.addChild(fps);
-		Fonts2D.load(MONO, font -> mono = font, message -> fail(message));
-		Fonts2D.load(KOMIKA, font -> komika = font, message -> fail(message));
+		Fonts.load(MONO, font -> mono = font, message -> fail(message));
+		Fonts.load(KOMIKA, font -> komika = font, message -> fail(message));
 	}
 
 	// A font failed to load: said on the screen, and why in the log.
@@ -76,6 +76,6 @@ class App extends helix.App {
 	override public function cleanup():Void {
 		for (font in [mono, komika])
 			if (font != null)
-				Fonts2D.release(font);
+				Fonts.release(font);
 	}
 }

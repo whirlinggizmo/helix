@@ -1,7 +1,7 @@
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioPlayback;
-import helix.assets.Assets;
+import helix.asset.Assets;
 import helix.audio.AudioStream;
 import helix.debug.FpsOverlay;
 import helix.host.Host;

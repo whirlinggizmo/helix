@@ -1,7 +1,7 @@
 package helix.audio;
 
 import haxe.io.Bytes;
-import helix.assets.IRequest;
+import helix.asset.IRequest;
 import helix.core.Jobs;
 
 /** How a decode ended: mono 32-bit float PCM at 44100 Hz, samples -1 to 1; a failure message; or cancellation. */

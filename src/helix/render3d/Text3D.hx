@@ -1,6 +1,6 @@
 package helix.render3d;
 
-import helix.render2d.Font2D;
+import helix.font.Font;
 
 /** A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's
 	pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and
@@ -10,7 +10,7 @@ class Text3D extends Node3D {
 	var size:Float;
 
 	/** value, size world units tall (a size of 0 or less is 0.5), in color, in font (null: the stage's built-in one). */
-	public function new(value:String, size = .5, color = 0xffffffff, ?font:Font2D) {
+	public function new(value:String, size = .5, color = 0xffffffff, ?font:Font) {
 		super();
 		text = value;
 		this.size = size > 0 ? size : .5;
@@ -38,7 +38,7 @@ class Text3D extends Node3D {
 	public var color:Int;
 
 	/** Its font, or null for the stage's built-in one. */
-	public var font:Null<Font2D>;
+	public var font:Null<Font>;
 
 	/** Sets the point of its block at its position, which it turns and scales about, as a fraction of its size: 0, 0 its top-left, 1, 1 its
 		bottom-right (0.5, 0.5, its center, by default). */

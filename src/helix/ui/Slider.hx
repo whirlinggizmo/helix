@@ -1,6 +1,6 @@
 package helix.ui;
 
-import helix.render2d.Font2D;
+import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.Text2D;
@@ -17,7 +17,7 @@ class Slider extends Widget {
 	var readoutLayout:Layout2D;
 	var readoutWidth = -1.;
 	// What the readout's width was measured for: its font and size, whether it's shown (measured again only when one changes).
-	var readoutFont:Null<Font2D>;
+	var readoutFont:Null<Font>;
 	var readoutSize = -1.;
 	var readoutShown = false;
 	var trackLayout:Layout2D;

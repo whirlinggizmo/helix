@@ -1,9 +1,9 @@
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineDesc;
-import helix.graphics.Sampling;
+import helix.texture.Sampling;
 import helix.graphics.ShaderSource;
-import helix.graphics.TextureFormat;
+import helix.texture.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
@@ -12,7 +12,7 @@ import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 import helix.render2d.Polygon2D;
 import helix.render2d.Renderer2D;
-import helix.render2d.Texture2D;
+import helix.texture.Texture2D;
 import helix.render3d.Model3D;
 import helix.render3d.Sprite3D;
 
@@ -219,16 +219,16 @@ class CountingGraphics implements IGraphics {
 }
 
 /** Assets whose loads complete when flush says, counting them. Only load and the subscriptions do anything. */
-class HeldAssets implements helix.assets.IAssets {
+class HeldAssets implements helix.asset.IAssets {
 	public var loads = 0;
 	public var held:Array<Void->Void> = [];
 
 	public function new() {}
 
-	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.assets.IRequest {
+	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.asset.IRequest {
 		loads++;
 		held.push(() -> loaded(Bytes.alloc(4)));
-		return new helix.assets.Request(() -> {});
+		return new helix.asset.Request(() -> {});
 	}
 
 	public function flush():Void {
@@ -238,9 +238,9 @@ class HeldAssets implements helix.assets.IAssets {
 			f();
 	}
 
-	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.assets.IAssets.AssetProgress->Void,
-			?options:helix.assets.IAssets.EnsureOptions):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
+			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
 	public var host(get, never):Null<String>;
 
@@ -250,11 +250,11 @@ class HeldAssets implements helix.assets.IAssets {
 	public function setHost(host:Null<String>):Bool
 		return false;
 
-	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.assets.StorageService.StorageWriteResult->Void):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
 
@@ -264,22 +264,21 @@ class HeldAssets implements helix.assets.IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.assets.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
 
-	function get_cacheMode():helix.assets.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.assets.IAssets.AssetCacheMode):helix.assets.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
 		return mode;
 	}
 
-	public function streamSource(path:String, located:helix.assets.IAssets.AudioLocation->Void, ?failed:String->Void,
-			download:Bool = false):helix.assets.IRequest
-		return new helix.assets.Request(() -> {});
+	public function streamSource(path:String, located:helix.asset.IAssets.AudioLocation->Void, ?failed:String->Void, download:Bool = false):helix.asset.IRequest
+		return new helix.asset.Request(() -> {});
 
-	public function subscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function subscribe(path:String, target:helix.asset.IReloadable):Void {}
 
-	public function unsubscribe(path:String, target:helix.assets.IReloadable):Void {}
+	public function unsubscribe(path:String, target:helix.asset.IReloadable):Void {}
 
 	public var busy(get, never):Bool;
 
@@ -571,12 +570,12 @@ class Render2DTests {
 			for (i in 0...size)
 				file.addByte(i);
 		}
-		var ktx = helix.render2d.Ktx.read(file.getBytes());
+		var ktx = helix.texture.Ktx.read(file.getBytes());
 		check(ktx.format == Astc4x4 && ktx.width == 5 && ktx.height == 3 && ktx.levels.length == 3 && ktx.levels[0].length == 32,
 			"A KTX file's format, size and levels are read");
 		var bad = false;
 		try
-			helix.render2d.Ktx.read(Bytes.alloc(64))
+			helix.texture.Ktx.read(Bytes.alloc(64))
 		catch (e:Dynamic)
 			bad = true;
 		check(bad, "A file that isn't KTX is refused");
@@ -584,12 +583,12 @@ class Render2DTests {
 			"Level sizes: blocks of 4x4, or 4 bytes a texel");
 
 		// "name.ktx" tries the variants this GPU samples (here ASTC only), then the PNG; a variant named outright is tried alone.
-		var textures = new helix.render2d.TextureCache2D(null, null, gpu);
+		var textures = new helix.texture.TextureCache(null, null, gpu);
 		check(textures.getCandidates("a/b.ktx").join(",") == "a/b.astc.ktx,a/b.png", "name.ktx: this GPU's variants, then name.png");
 		check(textures.getCandidates("a/b.bc7.ktx").join(",") == "a/b.bc7.ktx" && textures.getCandidates("a/b.png").join(",") == "a/b.png",
 			"Other paths are themselves");
 		// TrueType: the example fonts' characters, outlines and kerning; a baked atlas whose glyphs fit it, with its white texel.
-		var komika = new helix.render2d.TrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
+		var komika = new helix.font.TrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"));
 		var a = komika.getGlyphIndex("A".code),
 			v = komika.getGlyphIndex("V".code);
 		check(a > 0 && v > 0 && komika.getGlyphIndex(0x4E00) == 0, "Characters map to glyphs; one the font lacks to 0");
@@ -597,20 +596,20 @@ class Render2DTests {
 			&& komika.getOutline(komika.getGlyphIndex(" ".code)).length == 0, "A letter has an outline, a space none");
 		var h = komika.getGlyphIndex("H".code);
 		check(komika.getKerning(a, v) < 0 && komika.getKerning(h, h) == 0, "GPOS kerning closes AV and leaves HH");
-		var baked = helix.render2d.FontBaker2D.bake(komika, [for (c in 32...127) c], 32, 6, 512);
+		var baked = helix.font.FontBaker.bake(komika, [for (c in 32...127) c], 32, 6, 512);
 		var fits = true;
 		for (g in baked.glyphs)
 			fits = fits && g.x + g.width <= baked.width && g.y + g.height < baked.height;
 		check(fits
 			&& baked.field.get(baked.width * baked.height - 1) == 255, "Glyphs fit the atlas above its free row; the white texel is set");
 		check(Math.abs(baked.ascent - baked.descent - 32) < 1e-9, "The baked height is ascent to descent");
-		var font = helix.render2d.Font2D.fromTrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"), gpu);
+		var font = helix.font.Font.fromTrueType(sys.io.File.getBytes("examples/assets/fonts/Komika/KOMIKAH_.ttf"), gpu);
 		check(font.getGlyph(0xE9) != null && font.getGlyph(0x7F) == null && font.getKerning("A".code, "V".code) < 0,
 			"A loaded font has Latin-1 and kerning in font pixels");
 		check(font.measure("AV", 32) < font.measure("A", 32) + font.measure("V", 32), "Kerning narrows a measured pair");
 		var cff = false;
 		try
-			new helix.render2d.TrueType(Bytes.ofString("OTTO and twelve"))
+			new helix.font.TrueType(Bytes.ofString("OTTO and twelve"))
 		catch (e:Dynamic)
 			cff = true;
 		check(cff, "A file that isn't TrueType is refused");
@@ -747,12 +746,12 @@ class Render2DTests {
 		check(p.length == 5 && p[2] != p[3] && p[3] != p[4] && p[2] != p[4] && stage3D.drawnNodeCount == 7,
 			"Sprites draw opaque, then blended, then added, each phase a draw through its own pipeline");
 		stage3D.destroy();
-		// Textures2D: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
+		// Textures: loads of one file and filter share one texture (one fetch, one decode, even while under way); a load given up leaves the
 		// others theirs; another filter is another texture; the last release frees it.
 		var heldAssets = new HeldAssets(),
 			images = new WhiteImages(),
 			decoding = new helix.graphics.ImageDecoding(images),
-			shared = new helix.render2d.TextureCache2D(heldAssets, decoding, gpu);
+			shared = new helix.texture.TextureCache(heldAssets, decoding, gpu);
 		var got:Array<Texture2D> = [];
 		shared.load("a.png", true, texture -> got.push(texture));
 		var given = shared.load("a.png", true, texture -> got.push(texture));
