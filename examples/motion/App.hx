@@ -26,14 +26,14 @@ import helix.host.ScreenShape;
 	anything. */
 class App extends helix.App {
 	static var EASES:Array<{name:String, f:Float->Float}> = [
-		{name: "linear", f: Ease.linear},
-		{name: "quadInOut", f: Ease.quadInOut},
-		{name: "cubicOut", f: Ease.cubicOut},
-		{name: "sineInOut", f: Ease.sineInOut},
-		{name: "expoOut", f: Ease.expoOut},
-		{name: "backOut", f: Ease.backOut},
-		{name: "elasticOut", f: Ease.elasticOut},
-		{name: "bounceOut", f: Ease.bounceOut}
+		{name: "linear", f: t -> Ease.linear(t)},
+		{name: "quadInOut", f: t -> Ease.quadInOut(t)},
+		{name: "cubicOut", f: t -> Ease.cubicOut(t)},
+		{name: "sineInOut", f: t -> Ease.sineInOut(t)},
+		{name: "expoOut", f: t -> Ease.expoOut(t)},
+		{name: "backOut", f: t -> Ease.backOut(t)},
+		{name: "elasticOut", f: t -> Ease.elasticOut(t)},
+		{name: "bounceOut", f: t -> Ease.bounceOut(t)}
 	];
 	static var COLORS = [
 		0xffe62937,
@@ -107,8 +107,8 @@ class App extends helix.App {
 			var spark = new Spark(Shape2D.circle(5, random.pick(COLORS)), random.nextRange(10, FLOOR_WIDTH - 10));
 			field.addChild(spark.node);
 			sparks.push(spark);
-			tweens.to(0, FLOOR_Y - 4, 1.2, Ease.bounceOut, y -> spark.y = y);
-			var fade = tweens.to(1, 0, 2.5, Ease.quadIn, a -> spark.alpha = a);
+			tweens.to(0, FLOOR_Y - 4, 1.2, t -> Ease.bounceOut(t), y -> spark.y = y);
+			var fade = tweens.to(1, 0, 2.5, t -> Ease.quadIn(t), a -> spark.alpha = a);
 			fade.setComplete(() -> {
 				field.removeChild(spark.node);
 				sparks.remove(spark);

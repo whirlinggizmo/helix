@@ -19,7 +19,7 @@ class SaveService {
 		return helix.host.Host.installPart(runner -> {
 			var service = new SaveService(runner.platform.saves());
 			runner.install({
-				poll: service.poll,
+				poll: () -> service.poll(),
 				busy: () -> service.busy,
 				shutdown: () -> {
 					service.shutdown();

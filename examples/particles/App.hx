@@ -182,11 +182,11 @@ class App extends helix.App {
 		}
 		// The presets: a one-shot each key, off the level once it's spent; snow on and off.
 		var presets = [
-			Particles3D.explosion,
-			Particles3D.smokePuff,
-			Particles3D.sparks,
-			Particles3D.dust,
-			Particles3D.confetti
+			size -> Particles3D.explosion(size),
+			size -> Particles3D.smokePuff(size),
+			size -> Particles3D.sparks(size),
+			size -> Particles3D.dust(size),
+			size -> Particles3D.confetti(size)
 		];
 		for (i in 0...presets.length)
 			if (Input.isFramePressed([Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5][i])) {

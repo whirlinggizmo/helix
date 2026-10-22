@@ -197,7 +197,7 @@ class App extends helix.App {
 		if (!held && player.velocityY < 0)
 			player.velocityY *= .6;
 		var falling = player.velocityY;
-		player.step(dt, 1, solid);
+		player.step(dt, 1, (column, row) -> solid(column, row));
 		if (player.grounded && falling > 16)
 			follow.shake(.35);
 		if (player.blockedAbove)
@@ -220,7 +220,7 @@ class App extends helix.App {
 		if (Host.canQuit() && Input.isFramePressed(Key.Escape))
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
-		ticker.advance(Time.clock.elapsed, tick);
+		ticker.advance(Time.clock.elapsed, () -> tick());
 		// A tile a ninth of the window's height; the view sets the camera's viewport as it draws.
 		camera.zoom = Window.framebufferHeight / 9;
 		// Drawn between its last two steps, and followed there.

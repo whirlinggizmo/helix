@@ -36,7 +36,7 @@ class EnvironmentCache3D implements IReloadable {
 		return helix.host.Host.installPart(runner -> {
 			var cache = new EnvironmentCache3D(runner.assets, runner.images, runner.platform.graphics);
 			runner.install({
-				poll: cache.poll,
+				poll: () -> cache.poll(),
 				busy: () -> cache.busy,
 				shutdown: () -> {
 					cache.shutdown();

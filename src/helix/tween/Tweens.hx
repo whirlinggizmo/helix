@@ -17,7 +17,7 @@ class Tweens {
 	public function to(from:Float, to:Float, seconds:Float, ?ease:Float->Float, ?update:Float->Void):Tween {
 		if (!(seconds >= 0))
 			throw 'Tweens.to needs seconds of 0 or more, not $seconds';
-		var tween = new Tween(from, to, seconds, ease == null ? Ease.linear : ease, update);
+		var tween = new Tween(from, to, seconds, ease == null ? t->t : ease, update);
 		(updating ? pending : tweens).push(tween);
 		return tween;
 	}
