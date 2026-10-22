@@ -67,6 +67,9 @@ A screen effect runs once it is in a chain: `var post = new PostProcess(); post.
 A completion calls a method by name (`shader -> useWave(shader)`), never passes the method itself, so it survives a hot reload
 (CONVENTIONS.md). The load's failure lambda gets the reason: a file that isn't there, or a program the GPU didn't build.
 
+The classes and where they are: `Shaders`, `Shader`, `SpriteEffect`, `ScreenEffect`, `PostProcess` and `ShaderParameters` in
+`helix.graphics`; `Material3D` in `helix.render3d`; `Texture2D` in `helix.texture`.
+
 ## The format
 
 ```glsl
@@ -325,7 +328,32 @@ HeliX is. So:
 | surface | linear light | decode it: `helix_srgb_to_linear(c.rgb)` |
 
 A surface shader may take linear values from the game instead, set with `setValues` (`checker.glsl`'s colors are), and its comment says
-which. The library's surface classes decode in Haxe (`helix.shader.LibrarySurface`) or in GLSL (`unlit.glsl`).
+which.
+
+**Every frame is fine.** Setting a parameter is writing a few numbers the next draw reads (a sprite effect's as its batch ends, a surface's
+as its model draws), so a game sets them in `update` as often as it likes: a strength that fades, a color that pulses, a time of its own. The library's surface classes decode in Haxe (`helix.shader.LibrarySurface`) or in GLSL (`unlit.glsl`).
+
+**How bright a surface looks.** A surface is lit as glTF lights it: its diffuse is its color divided by π, times the light. A
+`DirectionalLight3D` of intensity 1 (its default) so lights a surface facing it to about a third of its color in light, which shows as
+roughly 60 to 70% of the color's value on screen; one of about 3 (π) shows the color as written, and the stage's ambient light (`Environment3D.setAmbient`) adds on top. The tone mapping (Neutral by default, on the
+`View3D`) then softens values near 1, so a fully saturated color lit straight on stops a little short of 255. To judge a surface shader's
+colors, light it with a sun of about 3 and a little ambient:
+
+```haxe
+var level = new Node3D(), camera = new Camera3D();      // helix.render3d
+level.environment = new Environment3D();
+level.environment.setAmbient(0xffffffff, .1);
+var sun = new DirectionalLight3D();
+sun.intensity = 3;
+sun.setRotation(-.8, .5, 0);
+level.addChild(sun);
+var material = new Material3D();
+material.setShader(stripes);                              // the loaded surface Shader
+var model = new Model3D(Mesh3D.cylinder(.6, 2), material);
+level.addChild(model);
+camera.setView(0, 1.5, 5, 0, 1, 0);
+Stage.addChild(new View3D(level, camera));               // drawn under the 2D
+```
 
 ## Time and size
 
