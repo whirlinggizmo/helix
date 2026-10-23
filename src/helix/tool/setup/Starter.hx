@@ -33,6 +33,8 @@ class Starter {
 			Files.writeText(Path.join([directory, relative]), text);
 			written.push(relative);
 		}
+		// The game's files go in assets/, empty to begin with (the README says so): nothing in it ships that isn't the game's.
+		Files.makeDirectory(Path.join([directory, "assets"]));
 		if (source != null) {
 			var own = Path.join([root, "examples", example]);
 			if (source == own) {

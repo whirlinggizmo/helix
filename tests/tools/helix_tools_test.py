@@ -182,8 +182,9 @@ class Starter(unittest.TestCase):
             game = starter(directory, 'my-jam-game')
             names = ('build.web', 'build.native', 'build.dist', 'dev', 'serve.dist')
             hxml = ['hxml/common.hxml'] + [f'hxml/{name}.hxml' for name in names]
-            for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'assets/README.md', 'favicon.svg', '.gitignore', 'README.md']:
+            for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'favicon.svg', '.gitignore', 'README.md']:
                 self.assertTrue((game / relative).is_file(), relative)
+            self.assertEqual(list((game / 'assets').iterdir()), [])
             self.assertIn('options.product = "my-jam-game"', (game / 'src/Main.hx').read_text(encoding='utf-8'))
             self.assertIn('Window.title = "My Jam Game"', (game / 'src/Game.hx').read_text(encoding='utf-8'))
             self.assertIn('out/my-jam-game-web.zip', (game / 'hxml/build.dist.hxml').read_text(encoding='utf-8'))
@@ -204,7 +205,7 @@ class Starter(unittest.TestCase):
             done(haxe(game, 'hxml/build.dist.hxml'))
             self.assertEqual(sorted(p.name for p in (game / 'out/dist').iterdir()), ['app.js', 'assets', 'favicon.svg', 'index.html'])
             names = zipfile.ZipFile(game / 'out/my-jam-game-web.zip').namelist()
-            self.assertEqual(sorted(names), ['app.js', 'assets/README.md', 'favicon.svg', 'index.html'])
+            self.assertEqual(sorted(names), ['app.js', 'favicon.svg', 'index.html'])
 
 
 class Build(unittest.TestCase):
@@ -230,7 +231,7 @@ class Build(unittest.TestCase):
             self.assertFalse((out / 'stale.txt').exists())
             self.assertFalse((out / 'old').exists())
             names = zipfile.ZipFile(game / 'out/pocket-game-web.zip').namelist()
-            self.assertEqual(sorted(names), ['app.js', 'assets/README.md', 'assets/sub/b.txt', 'config.json', 'favicon.svg', 'index.html'])
+            self.assertEqual(sorted(names), ['app.js', 'assets/sub/b.txt', 'config.json', 'favicon.svg', 'index.html'])
             # A script of another name, and a game without its own icon or config: the library's icon, no config.
             (game / 'config.json').unlink()
             (game / 'favicon.svg').unlink()
