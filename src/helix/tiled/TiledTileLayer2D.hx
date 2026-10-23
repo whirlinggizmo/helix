@@ -14,10 +14,22 @@ class TiledTileLayer2D extends Node2D {
 	function new(map:TiledMap2D, layer:TiledLayer2D) {
 		super();
 		this.map = map;
+		reset(layer);
+	}
+
+	/** Shows layer's tiles in place of what it showed: the map's file read again (TiledMap2D's reload), its changes at run time (setTile,
+		setTerrain) gone with the rest. */
+	@:allow(helix.tiled)
+	function reset(layer:TiledLayer2D):Void {
+		for (sprite in sprites)
+			if (sprite != null)
+				removeChild(sprite);
 		columns = layer.columns;
 		rows = layer.rows;
 		tiles = layer.tiles.copy();
 		sprites = [for (_ in 0...tiles.length) null];
+		animated.clear();
+		terrains.clear();
 		for (cell in 0...tiles.length)
 			show(cell);
 	}
@@ -31,8 +43,8 @@ class TiledTileLayer2D extends Node2D {
 	/** Its height in tiles. */
 	public var rows(default, null):Int;
 
-	var tiles:Array<Int>;
-	var sprites:Array<Null<Sprite2D>>;
+	var tiles:Array<Int> = [];
+	var sprites:Array<Null<Sprite2D>> = [];
 	// The cells showing an animated tile, and the animations' clock (TiledInstance2D advances it).
 	var animated:Map<Int, Bool> = new Map<Int, Bool>();
 	var clock = 0.;

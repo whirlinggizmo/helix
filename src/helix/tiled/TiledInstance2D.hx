@@ -8,7 +8,9 @@ import helix.texture.Sampling;
 	in drawing order (a tile layer a TiledTileLayer2D, an object layer a node holding its tile objects' sprites, an image layer a sprite,
 	a group a node of its layers), each named, shown, faded and offset as in Tiled, in the map's pixels from its top-left. It finds layers
 	and objects by name and class for the game, and steps the tile layers' animated tiles on the game's clock (paused with the game) until
-	it's destroyed. */
+	it's destroyed. When the map's files change during development (TiledMap2D.load's maps reload), it's built again under the same root:
+	a tile layer of the same name is the same TiledTileLayer2D, showing the file's tiles (what setTile and setTerrain changed is gone);
+	objects, other layers' nodes and terrain sets are new, to be looked up again (TiledMap2D.reloadCount says when). */
 class TiledInstance2D {
 	@:allow(helix.tiled)
 	function new(map:TiledMap2D, ?parent:Node2D) {
@@ -17,7 +19,8 @@ class TiledInstance2D {
 		var file = map.path.split("/").pop();
 		root.name = file.indexOf(".") > 0 ? file.substr(0, file.lastIndexOf(".")) : file;
 		for (layer in map.layers)
-			build(layer, root);
+			build(layer, root, []);
+		map.instances.push(this);
 		if (parent != null)
 			parent.addChild(root);
 		else {
@@ -89,17 +92,43 @@ class TiledInstance2D {
 	/** Takes the map off its parent and stops its animations. */
 	public function destroy():Void {
 		destroyed = true;
+		map.instances.remove(this);
 		if (onStage)
 			helix.render2d.Stage.removeChild(root);
 		else if (root.parent != null)
 			root.parent.removeChild(root);
 	}
 
-	// Layer's node made under parent, its own under it for a group.
-	function build(layer:TiledLayer2D, parent:Node2D):Void {
+	/** Built again from its map, which was read again (TiledMap2D's reload): its tile layers kept by name, showing the new tiles; the rest
+		made anew. */
+	@:allow(helix.tiled)
+	function rebuild():Void {
+		var kept = tileLayers.copy();
+		for (entry in layerNodes)
+			if (entry.node.parent != null)
+				entry.node.parent.removeChild(entry.node);
+		layerNodes = [];
+		tileLayers = [];
+		objectNodes = new Map<TiledObject2D, Sprite2D>();
+		for (layer in map.layers)
+			build(layer, root, kept);
+	}
+
+	// Layer's node made under parent, its own under it for a group; a tile layer one of kept when one has its name, shown again.
+	function build(layer:TiledLayer2D, parent:Node2D, kept:Array<TiledTileLayer2D>):Void {
 		var node:Node2D = switch layer.kind {
 			case Tiles:
-				var tiles = new TiledTileLayer2D(map, layer);
+				var tiles:Null<TiledTileLayer2D> = null;
+				for (old in kept)
+					if (old.name == layer.name) {
+						tiles = old;
+						break;
+					}
+				if (tiles != null) {
+					kept.remove(tiles);
+					tiles.reset(layer);
+				} else
+					tiles = new TiledTileLayer2D(map, layer);
 				tileLayers.push(tiles);
 				tiles;
 			case Objects:
@@ -116,7 +145,7 @@ class TiledInstance2D {
 			case Group:
 				var group = new Node2D();
 				for (inner in layer.layers)
-					build(inner, group);
+					build(inner, group, kept);
 				group;
 		}
 		node.name = layer.name;

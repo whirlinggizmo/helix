@@ -2,6 +2,7 @@ package helix.tiled;
 
 import helix.asset.Assets;
 import helix.asset.AssetPath;
+import helix.asset.IReloadable;
 import helix.asset.IRequest;
 import helix.render2d.Node2D;
 import helix.texture.Textures;
@@ -10,8 +11,10 @@ import helix.texture.Textures;
 	it): an orthogonal grid of tiles, finite, its layers (tiles, objects, images and groups of them), its tilesets (one image each, their
 	tiles' classes, properties, animations and terrain sets) and its custom properties. load reads it with its tilesets and images;
 	instantiate puts it under a node (TiledInstance2D), a tile a sprite, in the map's pixels from its top-left, y down. Isometric and
-	hexagonal maps, infinite ones, image-collection tilesets and zstd-compressed layers aren't read (each refused, saying so). */
-class TiledMap2D {
+	hexagonal maps, infinite ones, image-collection tilesets and zstd-compressed layers aren't read (each refused, saying so). A map load
+	read is read again when its file or a tileset file of its own changes during development (saved in Tiled, the dev loop running): the
+	same object takes the new contents once its images are in, and its instances are built again (TiledInstance2D). */
+class TiledMap2D implements IReloadable {
 	/** The bits of a global id that are the tile's: the rest are its flips (GID_FLIP_X, GID_FLIP_Y, GID_FLIP_DIAGONAL). */
 	public static inline var GID_MASK = 0x0fffffff;
 
@@ -54,6 +57,17 @@ class TiledMap2D {
 	/** Its custom properties. */
 	public var properties(default, null):TiledProperties2D = new TiledProperties2D();
 
+	/** How many times its files have been read again since load (0 until one changes): a game holding its objects or terrain sets looks
+		them up again when it rises. */
+	public var reloadCount(default, null) = 0;
+
+	// Its instances, built again when it's read again; the map's text and its tilesets' files (by asset path), kept to read it again.
+	@:allow(helix.tiled)
+	var instances:Array<TiledInstance2D> = [];
+	var text = "";
+	var files = new Map<String, String>();
+	var subscribed:Array<String> = [];
+
 	/** Loads the map at path (.tmj) with its tilesets (.tsj beside it, when not embedded) and their images and any image layers' (nearest
 		sampled, for pixel art): loaded once all are in, failed (else the log) saying what couldn't be read. */
 	public static function load(path:String, loaded:TiledMap2D->Void, ?failed:String->Void):IRequest {
@@ -77,7 +91,15 @@ class TiledMap2D {
 					fail(Std.string(e));
 					return;
 				}
-				loadImages(map, () -> if (!cancelled) loaded(map), fail);
+				loadImages(map, () -> if (!cancelled) {
+					// Its files, to read it again when one changes.
+					map.text = text;
+					map.files = files;
+					map.subscribed = [path].concat(sources);
+					for (file in map.subscribed)
+						Assets.subscribe(file, map);
+					loaded(map);
+				}, fail);
 			}
 			if (left == 0)
 				read();
@@ -127,6 +149,44 @@ class TiledMap2D {
 			for (l in (json.layers : Array<Dynamic>))
 				map.layers.push(TiledLayer2D.read(l, path));
 		return map;
+	}
+
+	/** One of its files changed (the map's or a tileset's of its own): the map is read again with it, and once its images are in, takes
+		the new contents and its instances are built again. A file that doesn't read leaves it as it was, and throws; an image that doesn't
+		load leaves it as it was, said in the log. */
+	public function reloaded(path:String, bytes:haxe.io.Bytes):Void {
+		var text = path == this.path ? bytes.toString() : this.text,
+			files = this.files.copy();
+		if (path != this.path)
+			files.set(path, bytes.toString());
+		var fresh = parse(text, this.path, files);
+		loadImages(fresh, () -> {
+			this.text = text;
+			this.files = files;
+			adopt(fresh);
+		}, message -> trace('Tiled map ${this.path} not read again: $message'));
+	}
+
+	// Takes fresh's contents, the map read again, and builds its instances again.
+	function adopt(fresh:TiledMap2D):Void {
+		columns = fresh.columns;
+		rows = fresh.rows;
+		tileWidth = fresh.tileWidth;
+		tileHeight = fresh.tileHeight;
+		backgroundColor = fresh.backgroundColor;
+		layers = fresh.layers;
+		tilesets = fresh.tilesets;
+		properties = fresh.properties;
+		reloadCount++;
+		for (instance in instances.copy())
+			instance.rebuild();
+	}
+
+	/** Stops reading its files again when they change (load's maps do during development); its instances stay as they are. */
+	public function destroy():Void {
+		for (file in subscribed)
+			Assets.unsubscribe(file, this);
+		subscribed = [];
 	}
 
 	/** The tileset global id gid (its flips ignored) is in, or null for 0 or an id none holds. */

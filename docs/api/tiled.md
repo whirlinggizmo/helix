@@ -20,7 +20,7 @@ var seconds(default, null):Float
 
 *class* in [`src/helix/tiled/TiledInstance2D.hx`](../../src/helix/tiled/TiledInstance2D.hx), `import helix.tiled.TiledInstance2D;`
 
-A Tiled map on the stage (TiledMap2D.instantiate): a node named for its file under the parent it was given (on the stage when none), its layers' nodes under it in drawing order (a tile layer a TiledTileLayer2D, an object layer a node holding its tile objects' sprites, an image layer a sprite, a group a node of its layers), each named, shown, faded and offset as in Tiled, in the map's pixels from its top-left. It finds layers and objects by name and class for the game, and steps the tile layers' animated tiles on the game's clock (paused with the game) until it's destroyed.
+A Tiled map on the stage (TiledMap2D.instantiate): a node named for its file under the parent it was given (on the stage when none), its layers' nodes under it in drawing order (a tile layer a TiledTileLayer2D, an object layer a node holding its tile objects' sprites, an image layer a sprite, a group a node of its layers), each named, shown, faded and offset as in Tiled, in the map's pixels from its top-left. It finds layers and objects by name and class for the game, and steps the tile layers' animated tiles on the game's clock (paused with the game) until it's destroyed. When the map's files change during development (TiledMap2D.load's maps reload), it's built again under the same root: a tile layer of the same name is the same TiledTileLayer2D, showing the file's tiles (what setTile and setTerrain changed is gone); objects, other layers' nodes and terrain sets are new, to be looked up again (TiledMap2D.reloadCount says when).
 
 ```haxe
 var map(default, null):TiledMap2D
@@ -99,7 +99,7 @@ What a Tiled layer holds.
 
 *class* in [`src/helix/tiled/TiledMap2D.hx`](../../src/helix/tiled/TiledMap2D.hx), `import helix.tiled.TiledMap2D;`
 
-A map made in Tiled (mapeditor.org), as its JSON (Tiled's File > Export As or Save As, .tmj; its tilesets embedded or .tsj files beside it): an orthogonal grid of tiles, finite, its layers (tiles, objects, images and groups of them), its tilesets (one image each, their tiles' classes, properties, animations and terrain sets) and its custom properties. load reads it with its tilesets and images; instantiate puts it under a node (TiledInstance2D), a tile a sprite, in the map's pixels from its top-left, y down. Isometric and hexagonal maps, infinite ones, image-collection tilesets and zstd-compressed layers aren't read (each refused, saying so).
+A map made in Tiled (mapeditor.org), as its JSON (Tiled's File > Export As or Save As, .tmj; its tilesets embedded or .tsj files beside it): an orthogonal grid of tiles, finite, its layers (tiles, objects, images and groups of them), its tilesets (one image each, their tiles' classes, properties, animations and terrain sets) and its custom properties. load reads it with its tilesets and images; instantiate puts it under a node (TiledInstance2D), a tile a sprite, in the map's pixels from its top-left, y down. Isometric and hexagonal maps, infinite ones, image-collection tilesets and zstd-compressed layers aren't read (each refused, saying so). A map load read is read again when its file or a tileset file of its own changes during development (saved in Tiled, the dev loop running): the same object takes the new contents once its images are in, and its instances are built again (TiledInstance2D).
 
 ```haxe
 static inline var GID_MASK:Int
@@ -118,6 +118,9 @@ var backgroundColor(default, null):Null<Int>
 var layers(default, null):Array<TiledLayer2D>
 var tilesets(default, null):Array<TiledTileset2D>
 var properties(default, null):TiledProperties2D
+var reloadCount(default, null):Int
+function reloaded(path:String, bytes:haxe.io.Bytes):Void
+function destroy():Void
 function findTileset(gid:Int):Null<TiledTileset2D>
 function findLayer(name:String):Null<TiledLayer2D>
 function findTerrainSet(name:String):Null<TiledTerrainSet2D>
@@ -140,6 +143,9 @@ function instantiate(?parent:Node2D):TiledInstance2D
 - `layers`: Its layers, in drawing order (the first under the rest).
 - `tilesets`: Its tilesets, by first global id.
 - `properties`: Its custom properties.
+- `reloadCount`: How many times its files have been read again since load (0 until one changes): a game holding its objects or terrain sets looks them up again when it rises.
+- `reloaded`: One of its files changed (the map's or a tileset's of its own): the map is read again with it, and once its images are in, takes the new contents and its instances are built again. A file that doesn't read leaves it as it was, and throws; an image that doesn't load leaves it as it was, said in the log.
+- `destroy`: Stops reading its files again when they change (load's maps do during development); its instances stay as they are.
 - `findTileset`: The tileset global id gid (its flips ignored) is in, or null for 0 or an id none holds.
 - `findLayer`: The layer named name, looked for through groups too, or null.
 - `findTerrainSet`: The terrain set named name in any of its tilesets, or null.

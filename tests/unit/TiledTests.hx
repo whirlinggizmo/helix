@@ -177,6 +177,30 @@ class TiledTests {
 			&& floorNode.setTile(0, 0, 0) && !floorNode.isFilled(0, 0),
 			"Tiles set and emptied; outside or unheld refused");
 
+		// Read again, its file changed in the dev loop (TiledMap2D.reloaded, past loading its images): the same tile layer shows the file's
+		// tiles, what setTile changed gone; a layer gone from the file goes; objects are the file's anew.
+		var changed = StringTools.replace(text, '"name":"floor","width":4,"height":3,"data":[1,2,0,0', '"name":"floor","width":4,"height":3,"data":[1,2,0,3');
+		changed = StringTools.replace(changed, '{"type":"tilelayer","name":"zlib"', '{"type":"tilelayer","name":"zlib2"');
+		var oldDoor = instance.findObject("door");
+		@:privateAccess map.adopt(TiledMap2D.parse(changed, "maps/level1.tmj", files));
+		check(map.reloadCount == 1
+			&& instance.getTileLayer("floor") == floorNode
+			&& instance.root.childCount == 7
+			&& parent.getChild(0) == instance.root,
+			"Read again: the same root and tile layer");
+		check(floorNode.isFilled(0, 0) && !floorNode.isFilled(2, 0) && floorNode.isFilled(3, 0) && floorNode.childCount == 7,
+			"Its tiles the file's, run-time changes gone");
+		check(instance.getTileLayer("zlib") == null
+			&& instance.getTileLayer("zlib2") != null
+			&& instance.findObject("door") != oldDoor
+			&& instance.findObject("door").className == "Exit",
+			"A renamed layer and the objects anew");
+		instance.destroy();
+		@:privateAccess map.adopt(TiledMap2D.parse(text, "maps/level1.tmj", files));
+		check(map.reloadCount == 2 && instance.getTileLayer("zlib2") != null, "A destroyed instance isn't built again");
+		instance = map.instantiate(parent);
+		floorNode = instance.getTileLayer("floor");
+
 		// Terrain, painted as Tiled's brush does: a cell of water in grass, its neighbors made to meet it.
 		var landText = '{"orientation":"orthogonal","width":3,"height":3,"tilewidth":16,"tileheight":16,"tilesets":[{"firstgid":1,"source":"ground.tsj"}],'
 			+ '"layers":[{"type":"tilelayer","name":"land","width":3,"height":3,"data":[1,1,1,1,1,1,1,1,1]}]}';
