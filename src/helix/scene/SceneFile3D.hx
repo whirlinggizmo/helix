@@ -217,12 +217,12 @@ private class SceneReader {
 					node.rotation = readFloats(item, 3, where, key);
 				case "scale":
 					node.scale = readFloats(item, 3, where, key);
-				case "enabled":
-					node.enabled = readBool(item, where, key);
 				case "visible":
 					node.visible = readBool(item, where, key);
 				case "pickable":
 					node.pickable = readBool(item, where, key);
+				case "paused":
+					node.paused = readBool(item, where, key);
 				case "material":
 					if (overriding || node.kind == "Model3D")
 						node.material = readMaterial(item, where);
@@ -641,9 +641,9 @@ private class SceneWriter {
 		// written whenever said, since its base is the file's.
 		var schema = node.kind != null ? SceneSchema3D.kind(node.kind) : null;
 		for (flag in [
-			{key: "enabled", value: node.enabled, kinds: schema == null || schema.enabled},
 			{key: "visible", value: node.visible, kinds: schema == null || schema.visible},
-			{key: "pickable", value: node.pickable, kinds: schema == null || schema.pickable}
+			{key: "pickable", value: node.pickable, kinds: schema == null || schema.pickable},
+			{key: "paused", value: node.paused, kinds: schema != null && schema.paused}
 		])
 			if (flag.value != null && (overriding || flag.value != flag.kinds))
 				entries.push(entry(flag.key, [flag.value ? "true" : "false"]));

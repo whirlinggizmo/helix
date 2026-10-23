@@ -82,8 +82,7 @@ class Dropdown extends Widget {
 	// A text measured for the face's width, never drawn or picked.
 	function measure(text:String):Text2D {
 		var node = new Text2D(text);
-		node.enabled = false;
-		node.pickable = false;
+		node.visible = false;
 		root.addChild(node);
 		return node;
 	}

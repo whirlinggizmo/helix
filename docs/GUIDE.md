@@ -5,7 +5,8 @@ them. For everything a type can do, its page in the [API reference](api/README.m
 lists it; the reference prints each type's `import` line.
 
 Start with `haxelib run helix init my-game` (README.md, "Try it"): `src/Game.hx` is the game, `haxe hxml/dev.hxml` runs it at
-http://localhost:8064/ and takes your changes as you save.
+http://localhost:8064/ and takes your changes as you save, keeping the running game: what's on the stage, the fields' values (a new
+field starts from its initializer). `init` ran when the page started, so a change to it shows after a refresh.
 
 ## The shape of a game
 
@@ -75,7 +76,7 @@ Textures.load("player.png", false, texture -> {      // false: sharp (pixel art)
 - Files load from `assets/` by their path in it (`assets/player.png` is `"player.png"`). Loads finish later: the callback runs when
   it's there, so keep a `Null<...>` field and check it before use.
 - **Draw order is add order:** a node added later is drawn over. `addChild` of one already there moves it to the top.
-- **Groups:** a `Node2D` holds others; move, scale, hide (`alpha = 0`) or remove the group and its children follow.
+- **Groups:** a `Node2D` holds others; move, scale, fade (`alpha`), hide (`visible = false`), freeze (`paused`), make unclickable (`pickable = false`) or remove the group and its children follow. Something that should differ from its parent goes beside it under a group instead. A clickable area that isn't drawn is a `Node2D` with a `hitArea` (`HitArea2D.rectangle(x, y, width, height)`).
 - **Layers:** make empty `Node2D` layers first (ground, things, HUD) and add into them, so what loads late doesn't land over everything.
 - `removeChild(node)` takes it off. `Sprite2D.tint` colors it.
 
@@ -304,5 +305,6 @@ viewport to your design size (800 x 600 here), and tick the fullscreen button if
 - **Something's missing on screen:** it's under something added later (layers), off the design area, or its load failed (the console
   says; pass a `failed` callback to see it: `Textures.load(path, false, loaded, message -> trace(message))`).
 - **"Type not found":** import it by the line its reference page gives.
-- **A change didn't take in the dev loop:** a function passed by name keeps its old code; pass a lambda. A field's initializer runs
-  once: set it again in code.
+- **A change didn't take in the dev loop:** a change to `init` shows after a refresh (it ran when the page started). A function passed
+  by name keeps its old code; pass a lambda. A field's initializer runs once, for a new field too: a changed one shows after a refresh,
+  or set it again in code.

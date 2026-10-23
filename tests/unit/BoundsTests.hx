@@ -84,16 +84,29 @@ class BoundsTests {
 		check(root.computeBounds(reused) == reused && near(reused.maxX, 14), "Into a given one, returned");
 		check(near(cube.computeBounds(parent).minZ, 2)
 			&& near(cube.computeBounds(parent).maxZ, 4), "Relative to its parent: its own placement only");
-		cube.enabled = false;
-		check(root.computeBounds() == null, "A disabled model is left out");
-		cube.enabled = true;
+		cube.visible = false;
+		check(root.computeBounds() == null, "A hidden model is left out");
+		cube.visible = true;
 		var sprite = new Sprite3D(helix.texture.Texture2D.fromRgba(1, 1, haxe.io.Bytes.alloc(4), false, -1, -1, false, new Render2DTests.CountingGraphics()));
 		sprite.setSpriteSize(2, 2);
 		sprite.setPosition(0, 5, 0);
 		root.addChild(sprite);
 		var withSprite = root.computeBounds();
 		check(near(withSprite.maxY, 5 + Math.sqrt(2))
-			&& near(withSprite.minX, -Math.sqrt(2)), "A sprite by the sphere its quad can turn in");
+			&& near(withSprite.minX, -Math.sqrt(2)), "A camera-facing sprite by the sphere its quad can turn in");
+		var only = new Bounds3D();
+		sprite.facing = Upright;
+		@:privateAccess sprite.measureOwnWorld(sprite.computeWorld(), only.clear());
+		check(near(only.maxY, 6) && near(only.minY, 4) && near(only.minX, -1) && near(only.maxZ, 1), "An upright one by the cylinder it turns in");
+		sprite.facing = Free;
+		sprite.setRotation(0, Math.PI / 2, 0);
+		@:privateAccess sprite.measureOwnWorld(sprite.computeWorld(), only.clear());
+		check(near(only.minX, 0) && near(only.maxX, 0) && near(only.minZ, -1) && near(only.maxZ, 1) && near(only.maxY, 6),
+			"A free one by its corners, as it's turned");
+		sprite.facing = Ground;
+		sprite.setRotation(0, 0, 0);
+		@:privateAccess sprite.measureOwnWorld(sprite.computeWorld(), only.clear());
+		check(near(only.minY, 5) && near(only.maxY, 5) && near(only.minZ, -1) && near(only.maxZ, 1), "One on the ground, flat");
 		var w = cube.computeWorld();
 		check(near(w.get(12), 13) && cube.computeWorld(new Mat4()) != w, "computeWorld: a new matrix when none is given");
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));

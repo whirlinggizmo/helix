@@ -3,7 +3,7 @@ package helix.behavior;
 import helix.render3d.Node3D;
 
 /** What a game's logic on a node extends: a behavior drives the node a BehaviorPass pass gave it (node), from start to stop, its update
-	run each frame by the pass while it and its node are enabled, until it sets done. It is never on the node: nodes draw, behaviors act,
+	run each frame by the pass while it's enabled and its node isn't paused, until it sets done. It is never on the node: nodes draw, behaviors act,
 	the pass runs them, and the game's state stays the truth (docs/DECISIONS.md, 61 and 130). Nothing else is on it: no signals, no
 	children, no lookups through the node; a behavior reaches the game as any code does, through statics, the scene, what it was given.
 
@@ -49,7 +49,7 @@ class Behavior {
 	/** Once, on the pass's first update after it's added, its node set: what it needs from the node and the game. */
 	public function start():Void {}
 
-	/** A frame, dt seconds since the last, while it and its node (with every node above it) are enabled. */
+	/** A frame, dt seconds since the last, while it's enabled and its node (with every node above it) isn't paused. */
 	public function update(dt:Float):Void {}
 
 	/** Once, when it ends (done), is removed or the pass is cleared, after start: undo what start did. Not called for one never

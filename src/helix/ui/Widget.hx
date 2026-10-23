@@ -26,8 +26,53 @@ class Widget {
 	@:allow(helix.ui)
 	var root(default, null):Node2D;
 
-	/** Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing. */
-	public var enabled:Bool = true;
+	/** Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing, and still stops the pointer, so a click on it
+		doesn't reach what's behind. Off for it and every widget in a panel set off; reading it says whether it's enabled now: it, and any
+		panel holding it. On to start. */
+	public var enabled(get, set):Bool;
+
+	var ownEnabled = true;
+
+	function get_enabled():Bool {
+		var at = root.parent;
+		while (at != null && at != ui.root) {
+			var holder = ui.owners.get(at);
+			if (holder != null && !holder.ownEnabled)
+				return false;
+			at = at.parent;
+		}
+		return ownEnabled;
+	}
+
+	function set_enabled(value:Bool):Bool {
+		ownEnabled = value;
+		return value;
+	}
+
+	/** Whether it takes input: off, it looks as it does but takes none of any kind (the pointer, focus, keys, pads), and the pointer passes
+		through it to what's behind, so Pointer.pick finds the world under it (a HUD during a cutscene, a tooltip). Off for it and every widget
+		in a panel set off; reading it says whether it's interactive now: it, and any panel holding it. On to start. */
+	public var interactive(get, set):Bool;
+
+	var ownInteractive = true;
+
+	function get_interactive():Bool {
+		var at = root.parent;
+		while (at != null && at != ui.root) {
+			var holder = ui.owners.get(at);
+			if (holder != null && !holder.ownInteractive)
+				return false;
+			at = at.parent;
+		}
+		return ownInteractive;
+	}
+
+	function set_interactive(value:Bool):Bool {
+		ownInteractive = value;
+		// Its nodes and everything under them aren't picked: the pointer finds what's behind.
+		root.pickable = value;
+		return value;
+	}
 
 	/** Whether it's shown: it, and any panel holding it. */
 	public var visible(get, set):Bool;
@@ -35,7 +80,7 @@ class Widget {
 	function get_visible():Bool {
 		var at = root;
 		while (at != null && at != ui.root) {
-			if (!at.enabled)
+			if (!at.visible)
 				return false;
 			at = at.parent;
 		}
@@ -43,7 +88,7 @@ class Widget {
 	}
 
 	function set_visible(value:Bool):Bool {
-		root.enabled = value;
+		root.visible = value;
 		return value;
 	}
 

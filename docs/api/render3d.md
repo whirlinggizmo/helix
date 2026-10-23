@@ -367,6 +367,20 @@ static function release(environment:EnvironmentMap3D):Void
 - `load`: Loads path into an environment. Loads of the same path share one (a load under way is joined); each load releases it once (release), and the last frees it. One of loaded or failed runs once on the host thread, and neither once the request is cancelled; failed (else the log, with the path) for a closed service, a file that won't load or isn't an image, or a GPU without filtered half floats.
 - `release`: Lets go of an environment this service loaded, once for each load that gave it: the last release frees it and stops reloading it.
 
+## HitArea3D
+
+*class* in [`src/helix/render3d/HitArea3D.hx`](../../src/helix/render3d/HitArea3D.hx), `import helix.render3d.HitArea3D;`
+
+The shape a node is picked by in place of what it draws (Node3D.hitArea), in the node's own units, moving, turning and scaling with it; never drawn. For something clicked but not seen (a bare Node3D with one), a thin model easier to hit (a door), or one tighter than its triangles.
+
+```haxe
+static function box(x:Float, y:Float, z:Float, width:Float, height:Float, depth:Float):HitArea3D
+static function sphere(x:Float, y:Float, z:Float, radius:Float):HitArea3D
+```
+
+- `box`: A box width x height x depth (below 0 is 0) centered on x, y, z.
+- `sphere`: A sphere of radius (below 0 is 0) centered on x, y, z.
+
 ## ImageSource3D
 
 *enum* in [`src/helix/render3d/ImageSource3D.hx`](../../src/helix/render3d/ImageSource3D.hx), `import helix.render3d.ImageSource3D;`
@@ -674,6 +688,7 @@ What a 3D stage holds: a transform in a tree, with children of its own kind (God
 ```haxe
 function new()
 var environment:Null<Environment3D>
+var hitArea:Null<HitArea3D>
 function addChild(child:Node3D):Bool
 function addChildInPlace(child:Node3D):Bool
 function removeChild(child:Node3D):Bool
@@ -709,6 +724,7 @@ var worldMatrix(get, never):Mat4
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
 - `environment`: The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one in its tree (the root's, depth first); others are logged once and not used yet (the nearest ancestor's, docs/ROADMAP.md).
+- `hitArea`: The shape it's picked by in place of what it draws, in its own units, never drawn; null (the default) for what it draws. A group with one is picked by it; its children are picked as ever, the nearest hit winning.
 - `addChild`: Makes child its last child, taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
 - `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or a zero scale on this or above it.
 - `removeChild`: Takes child from its children. False when it isn't one.

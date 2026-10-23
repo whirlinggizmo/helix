@@ -167,8 +167,14 @@ class ViewTests {
 		check(picks.pick(100, 100) == null && picks.pick(400, 300) == box, "Nothing, then a 3D view's model where no 2D is");
 		check(picks.pick(400, 400) == target, "2D before the 3D under it (the box is there too)");
 		shown.paused = true;
-		check(picks.pick(400, 400) == box, "A paused tree isn't picked: the 3D under it is");
+		check(picks.pick(400, 400) == target, "A paused tree is still picked");
 		shown.paused = false;
+		shown.pickable = false;
+		check(picks.pick(400, 400) == box, "An unpickable tree isn't: the 3D under it is");
+		shown.pickable = true;
+		shown.visible = false;
+		check(picks.pick(400, 400) == box, "Nor a hidden one");
+		shown.visible = true;
 		// The pointer, with no stages of its own, reads the stage.
 		var input = new helix.input.InputState(),
 			pointer = new helix.scene.Pointer(input);

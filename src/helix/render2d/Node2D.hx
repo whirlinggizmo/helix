@@ -38,6 +38,10 @@ class Node2D extends Node {
 		return alpha;
 	}
 
+	/** The shape it's picked by in place of what it draws, in its own units, never drawn; null (the default) for what it draws. A group with
+		one is picked by it; its children are picked as ever, over it. */
+	public var hitArea:Null<HitArea2D> = null;
+
 	// A kind that draws itself, not the walk (an emitter, a drawing, a view: each linked only into a program that makes one): into batch,
 	// through camera, at the walk's time with dt since its last draw, held still when frozen (under a paused node), shown only when shown (an
 	// emitter moves on hidden too). Whether it is one; a group isn't.
@@ -101,14 +105,6 @@ class Node2D extends Node {
 	/** The first node named name below it (depth first, in drawing order), or null: found once and kept, never a path. */
 	override public function find(name:String):Null<Node2D>
 		return cast super.find(name);
-
-	override function set_enabled(value:Bool):Bool {
-		// Off, it isn't brought up to date as its parent moves: on again, it is.
-		if (value && !enabled)
-			localDirty = true;
-		super.set_enabled(value);
-		return value;
-	}
 
 	/** Makes child its last child (drawn over the others), taking it from any parent it had, keeping child's local transform: it moves
 		with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False,
@@ -282,7 +278,7 @@ class Node2D extends Node {
 	}
 
 	static function walk(node:Node2D, a:Float, b:Float, c:Float, d:Float, x:Float, y:Float, out:Bounds2D, font:Null<Font>):Void {
-		if (!node.enabled || !node.visible)
+		if (!node.visible)
 			return;
 		var cos = Math.cos(node.angle), sin = Math.sin(node.angle);
 		var la = cos * node.sx,

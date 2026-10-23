@@ -193,6 +193,22 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 - `drawTextWrapped`: Text wrapped to width (Font.wrap), its lines lineHeight times size apart, the first's top at y, each placed by align at x, in font (null for the batch's, the stage's font). Returns the height its lines take, as Batch2D's does, for placing what follows (one line's when no font is known: none given and no stage running).
 - `drawText`: One line of text, its top at y and x its left edge, center or right edge by align, size tall, in font (null for the batch's).
 
+## HitArea2D
+
+*class* in [`src/helix/render2d/HitArea2D.hx`](../../src/helix/render2d/HitArea2D.hx), `import helix.render2d.HitArea2D;`
+
+The shape a node is picked by in place of what it draws (Node2D.hitArea), in the node's own units, moving, turning and scaling with it; never drawn. For something clicked but not seen (a hotspot over a painting: a bare Node2D with one), a target easier to tap than its image, or one tighter than it.
+
+```haxe
+static function rectangle(x:Float, y:Float, width:Float, height:Float):HitArea2D
+static function circle(x:Float, y:Float, radius:Float):HitArea2D
+function contains(x:Float, y:Float):Bool
+```
+
+- `rectangle`: A rectangle width x height, its top-left at x, y (below 0 is 0), as Shape2D.rectangle places one.
+- `circle`: A circle of radius (below 0 is 0) centered on x, y, as Shape2D.circle places one.
+- `contains`: Whether its node's own point x, y is inside it, edges included.
+
 ## Node2D
 
 *class* in [`src/helix/render2d/Node2D.hx`](../../src/helix/render2d/Node2D.hx), `import helix.render2d.Node2D;`
@@ -202,6 +218,7 @@ What a Renderer2D holds: a transform in a tree, with children of its own kind. A
 ```haxe
 function new()
 var alpha(default, set):Float
+var hitArea:Null<HitArea2D>
 var effect:Null<SpriteEffect>
 var parent(get, set):Null<Node2D>
 function getChild(index:Int):Null<Node2D>
@@ -230,6 +247,7 @@ function toLocalY(x:Float, y:Float):Float
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
 - `alpha`: How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it.
+- `hitArea`: The shape it's picked by in place of what it draws, in its own units, never drawn; null (the default) for what it draws. A group with one is picked by it; its children are picked as ever, over it.
 - `effect`: The effect its own drawing goes through (a sprite shader: helix.shader's SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program: a sprite's quad, a shape's, a text's glyphs (their distance field as the effect reads it), a drawing's every call. Its own, not its children's; an emitter and a view draw through their own programs. An effect is shared: the nodes given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
 - `getChild`: Its child at index, in drawing order; null past the end.

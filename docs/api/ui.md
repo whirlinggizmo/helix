@@ -672,14 +672,16 @@ A piece of UI: nodes it owns (on the Ui's stage) and the layout (Layout2D) placi
 ```haxe
 var name(default, null):String
 var layout(default, null):Layout2D
-var enabled:Bool
+var enabled(get, set):Bool
+var interactive(get, set):Bool
 var visible(get, set):Bool
 var focusable(get, never):Bool
 ```
 
 - `name`: Its name: what the focus is published as (Ui.focusedName), for checks.
 - `layout`: The layout placing it: put it in another (a row, a column, a panel's content).
-- `enabled`: Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing.
+- `enabled`: Whether it can be used: a disabled one is drawn dimmed, can't take focus and does nothing, and still stops the pointer, so a click on it doesn't reach what's behind. Off for it and every widget in a panel set off; reading it says whether it's enabled now: it, and any panel holding it. On to start.
+- `interactive`: Whether it takes input: off, it looks as it does but takes none of any kind (the pointer, focus, keys, pads), and the pointer passes through it to what's behind, so Pointer.pick finds the world under it (a HUD during a cutscene, a tooltip). Off for it and every widget in a panel set off; reading it says whether it's interactive now: it, and any panel holding it. On to start.
 - `visible`: Whether it's shown: it, and any panel holding it.
 - `focusable`: Whether focus can rest on it.
 

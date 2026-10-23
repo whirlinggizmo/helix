@@ -5,7 +5,7 @@ among siblings is an error. Nothing of the model's geometry, transforms, lights,
 and the glTF reader instantiates all of it.
 
 The custom properties the tool reads (any other extra is ignored):
-  helix_enabled, helix_visible, helix_pickable   the override's flags, always (a behavior's prop of one of those names is set by hand)
+  helix_visible, helix_pickable, helix_paused   the override's flags, always (a behavior's prop of one of those names is set by hand)
   helix_behavior = "Checkpoint"   a behavior of that kind attached to the node; every other helix_<prop> is then that behavior's prop:
                                   a number, a bool, a string, "@name" a reference, "#rrggbb" a color, a list of numbers a Numbers
   helix_<name>                    without helix_behavior, the kind's property <name>, written as given (the loader checks it)
@@ -23,7 +23,7 @@ import struct
 import sys
 
 PREFIX='helix_'
-FLAGS=('enabled','visible','pickable')
+FLAGS=('visible','pickable','paused')
 # An override's properties in the order SceneFile3D writes them: SceneSchema3D.kinds, each kind's table, a name once where it first appears.
 # The test checks the names against SceneSchema3D.hx and the order through the interpreter.
 PROPERTIES=['tint','shadowCasting','shadowReceiving','color','intensity','shadowDistance','shadowMapSize','shadowStrength','shadowColor',

@@ -31,12 +31,21 @@ and `cleanup()` (once, as the window closes). It draws nothing itself: after `up
 
 ### Flags every node has (`helix.scene.Node`)
 
+Each reaches the node and everything under it; a child's own is kept, so turning one back brings each child back as it was set.
+
 | Flag | Off (or on, for `paused`) |
 |---|---|
-| `enabled` | It and everything under it are skipped: not drawn, not picked, not updated. The only flag that reaches its children. |
-| `visible` | Its own output isn't drawn; its children are drawn as they are. To hide a group, set `enabled` off, or `alpha = 0` (2D, still picked). |
-| `paused` | It and everything under it hold still while still drawn: behaviors don't update, emitters don't move on. A level frozen under a pause menu. |
-| `pickable` | A pick passes through its own output; its children can still be hit. Hidden and pickable is a hit area. |
+| `visible` | Not drawn and not picked (a light doesn't shine); it still runs: behaviors update, emitters move on. |
+| `paused` | Frozen: behaviors don't update and what moves by itself holds still; still drawn and picked. |
+| `pickable` | A pick passes through to what's behind. |
+
+`alpha` (2D) fades it and everything under it, multiplied down the tree; a transparent node is still picked. A node is picked by what it
+draws, or by its `hitArea` (`HitArea2D`, `HitArea3D`) in place of that: a shape never drawn, so a bare group with one is a hotspot. A
+node that should differ from its parent (a trigger beside its door, a ship's body beside its flame) is a sibling under a group.
+
+UI widgets (`helix.ui`) aren't nodes and have their own: `visible`, `enabled` (off: drawn dimmed, does nothing, still takes the click so it
+doesn't reach what's behind) and `interactive` (off: looks the same, takes no input of any kind, the pointer passes through), each reaching
+the widgets in a panel.
 
 ### Views: a tree through a camera
 
@@ -75,7 +84,7 @@ inside another tree. Its behaviors start with it. 2D maps come from Tiled (`heli
 ### Screens
 
 A screen is what's on the stage: a game swaps screens by removing one node and adding another, and pauses by setting `paused` on its
-level and adding a menu over it. `helix.scene.transition` (`Fade`, `Slide`, `Iris`, `Diamond`, `Noise`) covers the swap; `Splash` and
+level and adding a menu over it (the level's `pickable` off too, or the menu covering it, so clicks don't reach it). `helix.scene.transition` (`Fade`, `Slide`, `Iris`, `Diamond`, `Noise`) covers the swap; `Splash` and
 `Loading` are ready-made screens.
 
 ### Input: asked, not delivered

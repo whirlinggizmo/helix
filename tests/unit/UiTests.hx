@@ -44,7 +44,90 @@ class UiTests {
 		dropdowns(font);
 		separators(font);
 		points(font);
+		flags(font);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
+	}
+
+	// A panel's enabled and interactive reach the widgets in it: disabled, none is focused or clicked; not interactive, none takes the pointer
+	// or focus and the pointer passes through to the world under it, a focused one losing focus; a disabled button still stops the pointer.
+	static function flags(font:Font):Void {
+		var input = new helix.input.InputState(),
+			stage = new helix.render2d.Renderer2D(),
+			camera = new helix.render2d.Camera2D();
+		camera.setViewport(800, 600);
+		camera.pixels(1);
+		var pointer = new helix.scene.Pointer(input);
+		pointer.addRenderer2D(stage, camera);
+		var world = helix.render2d.Shape2D.rectangle(800, 600, 0xff203040);
+		world.setPivot(0, 0);
+		stage.root.addChild(world);
+		var ui = new helix.ui.Ui(null, stage.root, camera, pointer, input);
+		var panel = ui.panel("panel"),
+			play = ui.button("Play"),
+			quit = ui.button("Quit"),
+			lone = ui.button("Lone");
+		panel.add(play);
+		panel.add(quit);
+		panel.layout.setSizing(Fixed(300), Fit);
+		var loneRow = Layout2D.row();
+		loneRow.add(lone.layout);
+		var layout = holding(sized(Grow(1), Grow(1), Column), [panel.layout, loneRow]);
+		var batch = new helix.render2d.Batch2D(new CountingGraphics());
+		function frame(?keys:Array<helix.input.Key>, ?x:Float, ?y:Float, ?down:Bool):Void {
+			input.endFrame();
+			if (keys != null)
+				for (k in keys) {
+					input.keyEvent(k, true);
+					input.keyEvent(k, false);
+				}
+			if (x != null)
+				input.pointerEvent(x, y, down == true);
+			Layout2D.arrange(layout, 0, 0, 800, 600, font);
+			batch.begin(camera);
+			stage.draw(batch, camera);
+			batch.end();
+			pointer.update();
+			ui.update();
+		}
+		function click(w:helix.ui.Widget):Void {
+			var x = w.layout.x + 10, y = w.layout.y + 10;
+			frame(x, y, true);
+			frame(x, y, false);
+		}
+		frame();
+		click(play);
+		check(play.clicked, "A button in a panel is clicked");
+		// Disabled: the panel's widgets with it, their own flags kept.
+		panel.enabled = false;
+		check(!play.enabled && !quit.enabled && !panel.enabled, "A disabled panel's widgets read disabled");
+		click(play);
+		check(!play.clicked && !pointer.isClicked(world), "Not clicked, and the click doesn't reach the world");
+		frame([Tab]);
+		check(ui.focused == lone, "Tab passes over a disabled panel's widgets");
+		panel.enabled = true;
+		check(play.enabled, "Enabled again, each as it was");
+		click(play);
+		check(play.clicked, "and used again");
+		// Not interactive: looks as it does, takes nothing, the pointer reaches the world.
+		ui.focused = play;
+		panel.interactive = false;
+		frame();
+		check(!play.interactive && play.enabled && play.visible && ui.focused == null, "Not interactive: still enabled and shown, focus lost");
+		click(play);
+		check(!play.clicked && pointer.isClicked(world), "Not clicked; the click passes through to the world under it");
+		frame([Tab]);
+		check(ui.focused == lone, "Tab passes over it");
+		check(!ui.press("Play"), "Nor pressed by name");
+		panel.interactive = true;
+		click(quit);
+		check(quit.clicked && !pointer.isClicked(world), "Interactive again: clicked, the world not");
+		// A disabled button on its own still stops the pointer.
+		lone.enabled = false;
+		click(lone);
+		check(!lone.clicked && !pointer.isClicked(world), "A disabled button isn't clicked and stops the pointer");
+		lone.interactive = false;
+		click(lone);
+		check(pointer.isClicked(world), "Not interactive too, the pointer passes through it");
 	}
 
 	// Points on widgets and their parts (Ui.computePoint), in framebuffer pixels through the camera (two to a unit here): a widget's laid-out

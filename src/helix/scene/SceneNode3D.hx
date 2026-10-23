@@ -30,15 +30,17 @@ class SceneNode3D {
 	/** Its scale, x, y, z; null for 1, 1, 1. */
 	public var scale:Null<Array<Float>>;
 
-	/** Whether it takes part at all (Node.enabled), as the file says it; null for unsaid: a node's default, true, when instantiated, and
-		unchanged for an override, which may say true to bring a prefab's disabled node back. */
-	public var enabled:Null<Bool>;
-
-	/** Whether its own output is drawn (Node.visible), as the file says it; null for unsaid: true for a node, unchanged for an override. */
+	/** Whether it and everything under it are shown (Node.visible), as the file says it; null for unsaid: true for a node, unchanged for an
+		override, which may say true to bring a prefab's hidden node back. */
 	public var visible:Null<Bool>;
 
-	/** Whether a pick can hit it (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for an override. */
+	/** Whether it and everything under it can be picked (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for
+		an override. */
 	public var pickable:Null<Bool>;
+
+	/** Whether it and everything under it are frozen (Node.paused), as the file says it; null for unsaid: false for a node, unchanged for an
+		override. */
+	public var paused:Null<Bool>;
 
 	/** Its kind's properties by name (intensity, fovY, tint), from its kind's table in SceneSchema3D; one absent is the class's default.
 		An override's name any kind's property. */

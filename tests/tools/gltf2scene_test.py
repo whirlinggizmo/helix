@@ -97,22 +97,22 @@ class Gltf2SceneTests(unittest.TestCase):
         self.assertEqual(set(names), set(gltf2scene.PROPERTIES))
         self.assertEqual(len(set(gltf2scene.PROPERTIES)), len(gltf2scene.PROPERTIES))
         extras = {f'helix_{name}': TYPED.get(name, 0.5) for name in reversed(gltf2scene.PROPERTIES)}
-        extras.update({'helix_enabled': 0, 'helix_visible': True, 'helix_pickable': 1})
+        extras.update({'helix_visible': 0, 'helix_pickable': 1, 'helix_paused': True})
         data = self.convert(gltf([{'name': 'all', 'extras': extras}]))
         self.assertEqual(self.round_trip(data), data)
         lines = data.decode('utf-8').splitlines()
         keys = [line.split('"')[1] for line in lines if line.startswith('          "')]
-        self.assertEqual(keys, ['enabled', 'visible', 'pickable'] + gltf2scene.PROPERTIES)
+        self.assertEqual(keys, ['visible', 'pickable', 'paused'] + gltf2scene.PROPERTIES)
         self.assertIn('          "tint": "#ff0000",', lines)
-        self.assertIn('          "enabled": false,', lines)
+        self.assertIn('          "visible": false,', lines)
 
     def test_values(self):
-        extras = {'helix_behavior': 'Car', 'helix_enabled': 0, 'helix_speed': 2.5, 'helix_third': 1 / 3, 'helix_sum': 0.1 + 0.2, 'helix_count': 7,
+        extras = {'helix_behavior': 'Car', 'helix_visible': 0, 'helix_speed': 2.5, 'helix_third': 1 / 3, 'helix_sum': 0.1 + 0.2, 'helix_count': 7,
             'helix_minus': -0.000_000_4, 'helix_on': True, 'helix_label': 'Start "here"\n', 'helix_target': '@car',
             'helix_tint': '#FF880080', 'helix_offset': [0, 1.5, -6], 'helix_none': [], 'helix_props_team': 2, 'helix_props_name': 'x'}
         data = self.convert(gltf([{'name': 'body', 'extras': extras}]))
         self.assertEqual(self.round_trip(data), data)
-        expected = ['        "body": {', '          "enabled": false,', '          "behaviors": [', '            {', '              "kind": "Car",', '              "props": {',
+        expected = ['        "body": {', '          "visible": false,', '          "behaviors": [', '            {', '              "kind": "Car",', '              "props": {',
             '                "count": 7,', '                "label": "Start \\"here\\"\\n",', '                "minus": 0,',
             '                "none": [],', '                "offset": [0, 1.5, -6],', '                "on": true,',
             '                "speed": 2.5,', '                "sum": 0.3,', '                "target": "@car",',

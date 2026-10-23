@@ -1,4 +1,6 @@
 import helix.debug.FpsOverlay;
+import helix.debug.PickOverlay2D;
+import helix.debug.PickOverlay3D;
 import helix.host.Host;
 import helix.host.Screen;
 import helix.host.Window;
@@ -13,6 +15,7 @@ import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;
 import helix.render3d.Drawing3D;
 import helix.render3d.Environment3D;
+import helix.render3d.HitArea3D;
 import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
@@ -43,6 +46,8 @@ class App extends helix.App {
 	var pointer:Pointer;
 	var camera = new Camera3D();
 	var fps = new FpsOverlay();
+	var overlay3D = new PickOverlay3D();
+	var overlay2D = new PickOverlay2D();
 	var picked:Null<PickHit3D>;
 	// Bullet holes, on whatever they're put on; and the cube, turning, carrying its own.
 	var holes:helix.render3d.Decals3D;
@@ -97,13 +102,26 @@ class App extends helix.App {
 			names = ["Animations", "Casual_Body", "Casual_Head", "Casual_Legs", "Casual_Feet"];
 		for (name in names)
 			Models3D.load('models/modular-women/$name.glb', file -> gather(files, name, file, names.length));
+		// A hotspot: picked by its sphere, never drawn.
+		var hotspot = new Node3D();
+		hotspot.name = "a hotspot";
+		hotspot.hitArea = HitArea3D.sphere(0, 0, 0, .5);
+		hotspot.setPosition(1, .5, 2.5);
+		// Its label, above it: text lets picks through to what it names.
+		var tag = new Text3D("Node3D + hitArea (nothing drawn)", .2, 0xffb4f0c0);
+		tag.setPosition(0, .75, 0);
+		hotspot.addChild(tag);
+		level.addChild(hotspot);
 		level.addChild(marks);
+		overlay3D.pickShapes = overlay3D.drawBounds = overlay2D.pickShapes = overlay2D.drawBounds = false;
+		level.addChild(overlay3D);
 		view = new View3D(level, camera);
 		Stage.addChild(view);
 		// The text lets the pointer through to the world under it.
 		text.pickable = false;
 		Stage.addChild(text);
 		Stage.addChild(fps);
+		Stage.addChild(overlay2D);
 		pointer = new Pointer();
 	}
 
@@ -168,6 +186,11 @@ class App extends helix.App {
 			Host.quit();
 		if (Input.isFramePressed(Key.O))
 			orbit.running = !orbit.running;
+		// What picks test (P) and each node's box (B), in the 3D and over the 2D: on, then off.
+		if (Input.isFramePressed(Key.P))
+			overlay3D.pickShapes = overlay2D.pickShapes = !overlay3D.pickShapes;
+		if (Input.isFramePressed(Key.B))
+			overlay3D.drawBounds = overlay2D.drawBounds = !overlay3D.drawBounds;
 		orbit.update(dt);
 		cube.setRotation(0, .6 + Time.clock.time * .4, 0);
 		if (animator != null)
@@ -202,7 +225,11 @@ class App extends helix.App {
 			+ [for (a in 0...3) Math.round(picked.getPoint(a) * 100) / 100].join(", ") + '   facing ' +
 				[for (a in 0...3) Math.round(picked.getNormal(a) * 100) / 100].join(", ");
 		y += text.drawTextWrapped(line, vx + 12, y, 16, vw - 24, 0xffc8c8c8) + 4;
-		text.drawTextWrapped("O: the camera   [LMB] add decal" + (Host.canQuit() ? "   ESC: quit" : ""), vx + 12, y, 16, vw - 24, 0xffc8c8c8);
+		text.drawTextWrapped("O: the camera   P: pick shapes   B: bounds   [LMB] add decal"
+			+ (Host.canQuit() ? "   ESC: quit" : ""), vx
+			+ 12, y, 16, vw
+			- 24,
+			0xffc8c8c8);
 	}
 
 	override public function cleanup():Void

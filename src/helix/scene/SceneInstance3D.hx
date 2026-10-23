@@ -298,14 +298,14 @@ class NodeSnapshot3D {
 	/** Its scale, x, y, z. */
 	public var scale:Array<Float>;
 
-	/** Node.enabled. */
-	public var enabled:Bool;
-
 	/** Node.visible. */
 	public var visible:Bool;
 
 	/** Node.pickable. */
 	public var pickable:Bool;
+
+	/** Node.paused. */
+	public var paused:Bool;
 
 	/** Its kind's properties by name, those readable. */
 	public var properties:Map<String, SceneValue> = new Map();
@@ -323,9 +323,9 @@ class NodeSnapshot3D {
 		position = [node.x, node.y, node.z];
 		rotation = [node.rotationX, node.rotationY, node.rotationZ];
 		scale = [node.scaleX, node.scaleY, node.scaleZ];
-		enabled = node.enabled;
 		visible = node.visible;
 		pickable = node.pickable;
+		paused = node.paused;
 		var kind = SceneKinds3D.kindOf(node);
 		var schema = kind == null ? null : SceneSchema3D.kind(kind);
 		if (schema != null)
@@ -528,18 +528,18 @@ private class SceneBuilder {
 	// code; a file or a prefab node a plain group's, all true); an override's unsaid flag changes nothing.
 	function applyFlags(node:Node3D, entry:SceneNode3D):Void {
 		if (entry.isOverride) {
-			if (entry.enabled != null)
-				node.enabled = entry.enabled;
 			if (entry.visible != null)
 				node.visible = entry.visible;
 			if (entry.pickable != null)
 				node.pickable = entry.pickable;
+			if (entry.paused != null)
+				node.paused = entry.paused;
 			return;
 		}
 		var kind = entry.kind == null ? null : SceneSchema3D.kind(entry.kind);
-		node.enabled = entry.enabled != null ? entry.enabled : kind == null || kind.enabled;
 		node.visible = entry.visible != null ? entry.visible : kind == null || kind.visible;
 		node.pickable = entry.pickable != null ? entry.pickable : kind == null || kind.pickable;
+		node.paused = entry.paused != null ? entry.paused : kind != null && kind.paused;
 	}
 
 	// The entry's properties on node, in its kind's table order (an override's in the table of the node's own kind); one refused is logged.
@@ -1014,9 +1014,9 @@ private class SceneCapture {
 		into.position = from.position;
 		into.rotation = from.rotation;
 		into.scale = from.scale;
-		into.enabled = from.enabled;
 		into.visible = from.visible;
 		into.pickable = from.pickable;
+		into.paused = from.paused;
 		for (name in from.properties.keys())
 			into.properties.set(name, from.properties.get(name));
 		into.material = from.material;
@@ -1051,16 +1051,16 @@ private class SceneCapture {
 			changes.scale = scale;
 			any = true;
 		}
-		if (node.enabled != snapshot.enabled) {
-			changes.enabled = node.enabled;
-			any = true;
-		}
 		if (node.visible != snapshot.visible) {
 			changes.visible = node.visible;
 			any = true;
 		}
 		if (node.pickable != snapshot.pickable) {
 			changes.pickable = node.pickable;
+			any = true;
+		}
+		if (node.paused != snapshot.paused) {
+			changes.paused = node.paused;
 			any = true;
 		}
 		var schema = record.kind == null ? null : SceneSchema3D.kind(record.kind);
@@ -1174,9 +1174,9 @@ private class SceneCapture {
 
 	// node's flags as they are, each said: the writer leaves out one at the kind's own default (a Text3D's pickable false).
 	static function writeFlags(entry:SceneNode3D, node:Node3D):Void {
-		entry.enabled = node.enabled;
 		entry.visible = node.visible;
 		entry.pickable = node.pickable;
+		entry.paused = node.paused;
 	}
 
 	// A prop's value as a file's; null for one the file can't say (a reference to no node, or to one outside the instance).

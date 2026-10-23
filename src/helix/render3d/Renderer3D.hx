@@ -64,9 +64,12 @@ class Renderer3D {
 	var builtStructure = -1;
 	var order:Array<Node3D> = [];
 	var parentOf:Array<Int> = [];
-	var reached:Array<Bool> = [];
+	// Whether each node is shown (it and every node above it visible), and whether it can be hit (shown, and it and every node above it
+	// pickable).
+	var shown:Array<Bool> = [];
+	var hittable:Array<Bool> = [];
 	var moved:Array<Bool> = [];
-	// Whether each node reached is paused, itself or by a node above it: its emitters held still.
+	// Whether each node is paused, itself or by a node above it: its emitters held still.
 	var frozen:Array<Bool> = [];
 	var models:Array<Model3D> = [];
 	var modelAt:Array<Int> = [];
@@ -142,6 +145,8 @@ class Renderer3D {
 	var pickBest = 0.;
 	var pickCamera:Null<Camera3D>;
 	var pickInverse = new Mat4();
+	// The normal where a ray enters a hit area, in its node's space.
+	var areaNormal = [0., 0., 0.];
 	var pickPalette:JointPalette3D;
 	var posedVertices = new Vector<Float>(0);
 	var skinned:Array<Model3D> = [];
@@ -712,9 +717,9 @@ class Renderer3D {
 		return skinned ? [mesh.getVertexBuffer(gpu), instances, mesh.getSkinBuffer(gpu)] : [mesh.getVertexBuffer(gpu), instances];
 
 	/** What's under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera: the nearest model, sprite or text it shows there, into
-		hit (a new one when not given), or null for nothing (or a point outside camera's viewport). Drawing doesn't matter, the flags do: a
-		disabled node and all under it are passed over, an unpickable one lets the ray through to what's behind (its children still hit), a
-		hidden one is hit. Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
+		hit (a new one when not given), or null for nothing (or a point outside camera's viewport). A hidden or
+		unpickable node and everything under it are passed over, the ray going on to what's behind; a paused one is hit. A node with a hitArea
+		is hit by it in place of what it draws (a group too). Models are hit by their triangles (a skinned one's as posed now), from either side; a see-through one (its material
 		blended or its tint) only where its alpha reaches a half. Sprites and text are hit by their quads as drawn (a text by its whole block), not yet by their texels. World matrices are brought up to date, as a draw does. */
 	function pick(camera:Camera3D, x:Float, y:Float, ?hit:PickHit3D):Null<PickHit3D>
 		return camera.computeRay(x, y, pickRay) != null ? pickAlong(pickRay, camera, hit) : null;
@@ -767,6 +772,88 @@ class Renderer3D {
 	}
 
 	// Tests a model's parts' triangles against the ray, each in the model's own space, keeping the nearest hit.
+	// Tests node's hit area against the ray, in its space, as the nearest yet or not.
+	function pickHitArea(node:Node3D):Void {
+		var inv = pickInverse;
+		if (!inv.makeInverse(node.worldMatrix))
+			return;
+		var ox = pickRay.originX, oy = pickRay.originY, oz = pickRay.originZ;
+		var dx = pickRay.directionX,
+			dy = pickRay.directionY,
+			dz = pickRay.directionZ;
+		var lox = inv.get(0) * ox + inv.get(4) * oy + inv.get(8) * oz + inv.get(12),
+			loy = inv.get(1) * ox + inv.get(5) * oy + inv.get(9) * oz + inv.get(13),
+			loz = inv.get(2) * ox + inv.get(6) * oy + inv.get(10) * oz + inv.get(14);
+		var ldx = inv.get(0) * dx + inv.get(4) * dy + inv.get(8) * dz,
+			ldy = inv.get(1) * dx + inv.get(5) * dy + inv.get(9) * dz,
+			ldz = inv.get(2) * dx + inv.get(6) * dy + inv.get(10) * dz;
+		var t = node.hitArea.enter(lox, loy, loz, ldx, ldy, ldz, areaNormal);
+		if (t >= pickBest)
+			return;
+		var hnx = areaNormal[0], hny = areaNormal[1], hnz = areaNormal[2];
+		var nx = inv.get(0) * hnx + inv.get(1) * hny + inv.get(2) * hnz,
+			ny = inv.get(4) * hnx + inv.get(5) * hny + inv.get(6) * hnz,
+			nz = inv.get(8) * hnx + inv.get(9) * hny + inv.get(10) * hnz;
+		var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+		if (length > 0) {
+			nx /= length;
+			ny /= length;
+			nz /= length;
+		}
+		if (nx * dx + ny * dy + nz * dz > 0) {
+			nx = -nx;
+			ny = -ny;
+			nz = -nz;
+		}
+		pickBest = t;
+		pickHit.record(node, t, ox + dx * t, oy + dy * t, oz + dz * t, lox + ldx * t, loy + ldy * t, loz + ldz * t, nx, ny, nz);
+	}
+
+	// Whether a pick passes over a part of node in material: one see-through (blended or tinted) under half its alpha.
+	function passesOver(node:Model3D, material:Material3D):Bool {
+		var alpha = Color.getAlpha(node.tint) / 255;
+		return (material.blended || alpha < 1) && alpha * Color.getAlpha(material.baseColor) / 255 < .5;
+	}
+
+	// A part's vertex positions in node's space as a pick tests them (a skinned one's posed as now), x, y, z each, into a vector reused.
+	function placePositions(node:Model3D, mesh:Mesh3D):Vector<Float> {
+		var count = mesh.vertexCount, vertices = mesh.vertices;
+		var positions = posedVertices;
+		if (positions.length < count * 3)
+			positions = posedVertices = new Vector<Float>(count * 3);
+		if (isSkinned(node, mesh))
+			pose(node, mesh, positions);
+		else
+			for (i in 0...count)
+				for (c in 0...3)
+					positions[i * 3 + c] = vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.positionOffset + c * 4);
+		return positions;
+	}
+
+	// The triangles a pick tests on node, each corner placed in the world (x, y, z each, three a triangle), into out: its parts a pick
+	// doesn't pass over, posed as now. What PickOverlay3D draws.
+
+	@:allow(helix.debug.PickOverlay3D)
+	function pickTriangles(node:Model3D, out:Array<Float>):Void {
+		out.resize(0);
+		var w = node.worldMatrix;
+		for (i in 0...node.partCount) {
+			var part = node.getPart(i), mesh = part.mesh;
+			if (mesh == null || passesOver(node, part.material))
+				continue;
+			var positions = placePositions(node, mesh), indices = mesh.indices;
+			for (k in 0...mesh.indexCount) {
+				var at = indices.getInt32(k * 4) * 3,
+					x = positions[at],
+					y = positions[at + 1],
+					z = positions[at + 2];
+				out.push(w.get(0) * x + w.get(4) * y + w.get(8) * z + w.get(12));
+				out.push(w.get(1) * x + w.get(5) * y + w.get(9) * z + w.get(13));
+				out.push(w.get(2) * x + w.get(6) * y + w.get(10) * z + w.get(14));
+			}
+		}
+	}
+
 	function pickModel(node:Model3D):Void
 		for (i in 0...node.partCount) {
 			var part = node.getPart(i);
@@ -776,8 +863,7 @@ class Renderer3D {
 
 	// Tests one part's triangles against the ray, after its box, which must be nearer than the best.
 	function pickPart(node:Model3D, mesh:Mesh3D, material:Material3D):Void {
-		var alpha = Color.getAlpha(node.tint) / 255;
-		if ((material.blended || alpha < 1) && alpha * Color.getAlpha(material.baseColor) / 255 < .5)
+		if (passesOver(node, material))
 			return;
 		placeBox(node, mesh);
 		if (rayBox() >= pickBest)
@@ -796,18 +882,7 @@ class Renderer3D {
 		var ldx = inv.get(0) * dx + inv.get(4) * dy + inv.get(8) * dz,
 			ldy = inv.get(1) * dx + inv.get(5) * dy + inv.get(9) * dz,
 			ldz = inv.get(2) * dx + inv.get(6) * dy + inv.get(10) * dz;
-		var count = mesh.vertexCount,
-			vertices = mesh.vertices,
-			indices = mesh.indices;
-		var positions = posedVertices;
-		if (positions.length < count * 3)
-			positions = posedVertices = new Vector<Float>(count * 3);
-		if (isSkinned(node, mesh))
-			pose(node, mesh, positions);
-		else
-			for (i in 0...count)
-				for (c in 0...3)
-					positions[i * 3 + c] = vertices.getFloat(i * Lit3DProgram.stride + Lit3DProgram.positionOffset + c * 4);
+		var indices = mesh.indices, positions = placePositions(node, mesh);
 		var found = false, hitT = 0., hnx = 0., hny = 0., hnz = 0., hitA = 0, hitB = 0, hitC = 0, hitU = 0., hitV = 0.;
 		var i = 0, n = mesh.indexCount;
 		while (i < n) {
@@ -1026,12 +1101,12 @@ class Renderer3D {
 			sprites.drawRest();
 	}
 
-	// The kinds that draw themselves (Drawing3D) reached and shown, each where its node is, depth-tested against the opaque models: the
+	// The kinds that draw themselves (Drawing3D) shown, each where its node is, depth-tested against the opaque models: the
 	// first begins the renderer's shared batch for them (ownBatch), the last ends it.
 	function drawDrawings(camera:Camera3D):Void {
 		var shown = [
 			for (k in 0...owners.length)
-				if (reached[ownerAt[k]] && owners[k].visible) owners[k]
+				if (shown[ownerAt[k]]) owners[k]
 		];
 		for (k in 0...shown.length)
 			shown[k].drawOwn(camera, this, k == 0, k == shown.length - 1);
@@ -1180,25 +1255,23 @@ class Renderer3D {
 			list(node.getChild(i), at);
 	}
 
-	// The tree in drawing order, each node reached (enabled, and every node above it) brought up to date from its parent; then the pass's kinds:
-	// picking the models, sprites and texts, gathering the casters and lights for shadows, or the models, lights, sprites, texts and emitters
-	// to draw. Hidden, a node's own output is skipped (an emitter still moves on); it stays placed, and its children are walked.
+	// The tree in drawing order, each node brought up to date from its parent; then the pass's kinds: picking the models, sprites, texts and
+	// hit areas, gathering the casters and lights for shadows, or the models, lights, sprites, texts and emitters to draw. Hidden, a node and
+	// everything under it draw nothing and aren't hit, but stay placed and still run (an emitter moves on).
 	function walk():Void {
 		if (builtStructure != root.structure)
 			rebuild();
 		var n = order.length;
-		reached.resize(n);
+		shown.resize(n);
+		hittable.resize(n);
 		moved.resize(n);
 		frozen.resize(n);
 		// The root's own transform places everything on the stage.
 		var rootChanged = root.update(null, false);
 		for (i in 0...n) {
 			var node = order[i], p = parentOf[i];
-			if (!(p < 0 || reached[p]) || !node.enabled) {
-				reached[i] = false;
-				continue;
-			}
-			reached[i] = true;
+			shown[i] = node.visible && (p < 0 ? root.visible : shown[p]);
+			hittable[i] = shown[i] && node.pickable && (p < 0 ? root.pickable : hittable[p]);
 			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
 			moved[i] = node.update(p < 0 ? root.worldMatrix : order[p].worldMatrix, p < 0 ? rootChanged : moved[p]);
 			if (node.environment != null) {
@@ -1211,7 +1284,7 @@ class Renderer3D {
 		if (picking) {
 			for (k in 0...models.length) {
 				var model = models[k];
-				if (reached[modelAt[k]] && !frozen[modelAt[k]] && model.pickable) {
+				if (hittable[modelAt[k]] && model.hitArea == null) {
 					if (model.jointCount > 0)
 						skinned.push(model);
 					else
@@ -1220,24 +1293,26 @@ class Renderer3D {
 			}
 			if (pickCamera != null)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && !frozen[flatAt[k]] && flats[k].pickable)
+					if (hittable[flatAt[k]] && flats[k].hitArea == null)
 						pickBest = flats[k].pickSprites(sprites.part, pickRay, pickBest, pickHit);
+			for (i in 0...n)
+				if (hittable[i] && order[i].hitArea != null)
+					pickHitArea(order[i]);
 		} else {
 			if (!gathering)
-				for (k in 0...emitters.length)
-					if (reached[emitterAt[k]]) {
-						var still = frozen[emitterAt[k]];
-						if (emitters[k].visible)
-							emitters[k].visitSprites(sprites.part, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, still);
-						else if (!still)
-							emitters[k].advanceSprites(sprites.part);
-					}
+				for (k in 0...emitters.length) {
+					var still = frozen[emitterAt[k]];
+					if (shown[emitterAt[k]])
+						emitters[k].visitSprites(sprites.part, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, still);
+					else if (!still)
+						emitters[k].advanceSprites(sprites.part);
+				}
 			for (k in 0...treeLights.length)
-				if (reached[treeLightAt[k]] && treeLights[k].visible && lights.length < GATHERED_LIGHTS)
+				if (shown[treeLightAt[k]] && lights.length < GATHERED_LIGHTS)
 					lights.push(treeLights[k]);
 			for (k in 0...models.length) {
 				var model = models[k];
-				if (!reached[modelAt[k]] || !model.visible)
+				if (!shown[modelAt[k]])
 					continue;
 				if (model.jointCount > 0)
 					skinned.push(model);
@@ -1248,7 +1323,7 @@ class Renderer3D {
 			}
 			if (!gathering)
 				for (k in 0...flats.length)
-					if (reached[flatAt[k]] && flats[k].visible)
+					if (shown[flatAt[k]])
 						flats[k].visitSprites(sprites.part, planes, eyeX, eyeY, eyeZ, forwardX, forwardY, forwardZ, false);
 		}
 		// Skinned models after the others, every joint where this frame has it: their boxes are their joints'.

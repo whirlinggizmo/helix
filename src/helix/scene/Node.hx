@@ -1,6 +1,6 @@
 package helix.scene;
 
-/** What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and
+/** What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (visible, paused, pickable), a parent and children, and
 	find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never
 	subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and
 	130). */
@@ -27,30 +27,16 @@ class Node {
 		return null;
 	}
 
-	/** Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't
-		moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as
-		set. On to start. */
-	@:isVar public var enabled(get, set):Bool = true;
-
-	function get_enabled():Bool
-		return enabled;
-
-	function set_enabled(value:Bool):Bool {
-		enabled = value;
-		return value;
-	}
-
-	/** Whether its own output is drawn: off, a model, sprite, shape, text or emitter isn't drawn (an emitter still moves on) and a light doesn't
-		shine or cast; it stays placed,
-		and its children are as they are. On to start. */
+	/** Whether it and everything under it are shown: off, none of it is drawn or picked (a light doesn't shine or cast), though it all still
+		runs (behaviors, emitters) and stays placed. A child's own visible is kept, so showing it again brings each back as set. On to start. */
 	public var visible:Bool = true;
 
-	/** Whether it and everything under it are held still while still drawn: on, their behaviors don't update and their emitters don't move
-		on (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start. */
+	/** Whether it and everything under it are frozen: on, still drawn and picked, but their behaviors don't update and what moves by itself
+		(emitters, decals fading, animated tiles) holds still (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start. */
 	public var paused:Bool = false;
 
-	/** Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to
-		it: hidden and pickable is a hit area. On to start, but for text. */
+	/** Whether it and everything under it can be picked: off, a pick passes through them all to what's behind. What a node is hit by is what
+		it draws, or its hitArea when it has one. On to start, but for text. */
 	public var pickable:Bool = true;
 
 	/** How many children it has. */

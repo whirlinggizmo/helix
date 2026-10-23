@@ -191,7 +191,7 @@ class SceneInstanceTests {
 			"background": {"file": "sky/sky.hdr", "blur": 0}
 		},
 		"nodes": [
-			{"kind": "Node3D", "name": "world", "enabled": false, "children": [
+			{"kind": "Node3D", "name": "world", "paused": true, "children": [
 				{"kind": "DirectionalLight3D", "name": "sun", "rotation": [-0.6, 0.7, 0], "color": "#fff4e0", "intensity": 3.5,
 					"shadowCasting": true, "shadowDistance": 35, "shadowMapSize": 1024, "shadowStrength": 0.8, "shadowColor": "#102040"},
 				{"kind": "PointLight3D", "name": "lamp", "position": [1, 2, 3], "range": 10, "intensity": 2},
@@ -236,7 +236,7 @@ class SceneInstanceTests {
 			"The environment section is the root's environment, its ambient light at once; the stage untouched");
 		check(held.exists("sky/sky.hdr") && asked["sky/sky.hdr"] == 1, "The environment and the background share one load");
 		var world = instance.node("world");
-		check(world != null && !world.enabled && world.visible && world.childCount == 10, "The root group, disabled, with its ten children");
+		check(world != null && world.paused && world.visible && world.childCount == 10, "The root group, paused, with its ten children");
 		var sun = Std.downcast(instance.node("world/sun"), DirectionalLight3D);
 		check(sun != null && near(sun.rotationX, -.6) && near(sun.rotationY, .7) && near(sun.rotationZ, 0) && sun.color == 0xfffff4e0
 			&& sun.intensity == 3.5 && sun.shadowCasting && sun.shadowDistance == 35 && sun.shadowMapSize == 1024 && sun.shadowStrength == .8
@@ -707,7 +707,7 @@ class SceneInstanceTests {
 		var quiet = instance.node("quiet"),
 			button = instance.node("button"),
 			ghost = instance.node("ghost");
-		check(quiet != null && !quiet.pickable && quiet.enabled && quiet.visible, "A Text3D with no flag said is unpickable, as made in code");
+		check(quiet != null && !quiet.pickable && !quiet.paused && quiet.visible, "A Text3D with no flag said is unpickable, as made in code");
 		check(button != null && button.pickable, "A Text3D said pickable is");
 		check(ghost != null && !ghost.pickable && ghost.visible, "A Model3D said unpickable is");
 		var eye = Std.downcast(instance.node("eye"), Camera3D),

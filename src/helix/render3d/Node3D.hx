@@ -71,10 +71,20 @@ class Node3D extends Node {
 	function pickSprites(sprites:Any, ray:Ray3D, best:Float, hit:PickHit3D):Float
 		return best;
 
+	// The quad a pick tests, as sprites shows it (after its preparePick), its four corners in the world into out; false for none.
+
+	@:allow(helix.debug.PickOverlay3D)
+	function hitQuad(sprites:Any, out:Array<Float>):Bool
+		return false;
+
 	/** The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its
 		level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one
 		in its tree (the root's, depth first); others are logged once and not used yet (the nearest ancestor's, docs/ROADMAP.md). */
 	public var environment:Null<Environment3D>;
+
+	/** The shape it's picked by in place of what it draws, in its own units, never drawn; null (the default) for what it draws. A group with
+		one is picked by it; its children are picked as ever, the nearest hit winning. */
+	public var hitArea:Null<HitArea3D> = null;
 
 	/** A group at the origin, unturned and unscaled, with no children. */
 	public function new()
@@ -160,14 +170,6 @@ class Node3D extends Node {
 		lamp), once, and keeping the node. Never a path. */
 	override public function find(name:String):Null<Node3D>
 		return cast super.find(name);
-
-	override function set_enabled(value:Bool):Bool {
-		// Off, it isn't brought up to date as its parent moves: on again, it is.
-		if (value && !enabled)
-			localDirty = true;
-		super.set_enabled(value);
-		return value;
-	}
 
 	/** The models at or under it, sorted: the skinned ones (bound to a skeleton by bindSkeleton) into skinned, the rigid ones into rigid, a
 		rigid model's own children going with it (a sword's gem). A part file's own copy of an armature (an exporter's) is passed over, as only
@@ -257,7 +259,7 @@ class Node3D extends Node {
 	}
 
 	static function gather(node:Node3D, world:Mat4, depth:Int, out:Bounds3D):Void {
-		if (!node.enabled || !node.visible)
+		if (!node.visible)
 			return;
 		node.measureOwnWorld(world, out);
 		for (i in 0...node.childCount) {

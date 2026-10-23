@@ -9,7 +9,7 @@ A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/G
 The builds are in `hxml/`, each run from this directory:
 
 ```console
-haxe hxml/dev.hxml                # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs, and shaders/<name>.glsl as they change
+haxe hxml/dev.hxml                # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs (a change to init after a refresh), and shaders/<name>.glsl as they change
 haxe hxml/build.web.hxml          # the browser build alone, out/web/, without assets/ (the dev loop serves them beside it)
 haxe hxml/build.dist.hxml         # the release build for hosting: out/dist/, zipped as out/{name}-web.zip (itch.io)
 haxe hxml/serve.dist.hxml         # out/dist/ served at http://localhost:8095/, to try before uploading

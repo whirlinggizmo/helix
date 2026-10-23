@@ -52,6 +52,48 @@ function update(dt:Float, cpu:Float):Void
 - `frameMs`: The frame's average cost in milliseconds over the last half second.
 - `update`: dt: the frame's interval; cpu: what the frame cost, in milliseconds (Time.frameCpu).
 
+## PickOverlay2D
+
+*class* in [`src/helix/debug/PickOverlay2D.hx`](../../src/helix/debug/PickOverlay2D.hx), `import helix.debug.PickOverlay2D;`
+
+What picks test and what drawing culls by, drawn over a 2D tree for finding why a click misses: add it to the tree to look at (on the stage, or in the tree a View2D shows) last, so it's over the rest, at its origin, unturned and unscaled. Each frame it draws every shown node's own box, square to the tree, as computeBounds measures it and drawing culls by it (boundsColor), and for each node a pick can hit, what the pick tests (hitColor): its hitArea, or its kind's own shape (a sprite's or text's rectangle, a circle's disc or ring, a line's or outline's stroke, a polygon's inside, a drawing's extent and texts). Nothing is drawn for what a pick doesn't test (a group without a hit area, an emitter; a view picks inside the tree it shows, which an overlay of its own shows). The flags hold as for a pick: a hidden node and everything under it are left out, an unpickable one's gets no pick shape. A clipping node's clip, which also limits a pick, isn't drawn. Never picked.
+
+```haxe
+function new(?hitColor:Int = 0xff33ff66, ?boundsColor:Int = 0xffffa020, ?lineWidth:Float = 1.)
+var pickShapes:Bool
+var drawBounds:Bool
+var hitColor:Int
+var boundsColor:Int
+var lineWidth:Float
+```
+
+- `new`: An overlay drawing hit shapes in hitColor (green unless given) and boxes in boundsColor (orange unless given), lineWidth wide (1 unless given), in the tree's units.
+- `pickShapes`: Whether it draws what a pick tests on each node it can hit. On to start.
+- `drawBounds`: Whether it draws each shown node's own box, square to the tree (an AABB: what drawing culls by). On to start.
+- `hitColor`: The color of what each node is hit by, 0xAARRGGBB.
+- `boundsColor`: The color of each node's box, 0xAARRGGBB.
+- `lineWidth`: How wide its lines are, in the tree's units.
+
+## PickOverlay3D
+
+*class* in [`src/helix/debug/PickOverlay3D.hx`](../../src/helix/debug/PickOverlay3D.hx), `import helix.debug.PickOverlay3D;`
+
+What picks test and what drawing culls by, drawn in a 3D tree for finding why a click misses: add it to the tree to look at (the one a View3D shows) at its origin, unturned and unscaled. Each frame it draws every shown node's box, square to the world, as computeBounds measures it and drawing culls by it (boundsColor), and for each node a pick can hit, what the pick tests (hitColor): its hitArea, a sprite's or text's quad as it faces the camera now, a model's triangles as posed (but for parts too see-through to hit). Nothing is drawn for what a pick doesn't test. The flags hold as for a pick: a hidden node and everything under it are left out, an unpickable one's gets no pick shape. Depth-tested as any drawing, so what's inside a model is hidden by it. Never picked.
+
+```haxe
+function new(?hitColor:Int = 0xff33ff66, ?boundsColor:Int = 0xffffa020)
+var pickShapes:Bool
+var drawBounds:Bool
+var hitColor:Int
+var boundsColor:Int
+```
+
+- `new`: An overlay drawing hit shapes in hitColor (green unless given) and boxes in boundsColor (orange unless given).
+- `pickShapes`: Whether it draws what a pick tests on each node it can hit. On to start.
+- `drawBounds`: Whether it draws each shown node's own box, square to the world (an AABB: Node3D.computeBounds's, what drawing culls by). On to start.
+- `hitColor`: The color of what each node is hit by, 0xAARRGGBB.
+- `boundsColor`: The color of each node's box, 0xAARRGGBB.
+
 ## TestHarness
 
 *class* in [`src/helix/debug/TestHarness.hx`](../../src/helix/debug/TestHarness.hx), `import helix.debug.TestHarness;`

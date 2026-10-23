@@ -132,7 +132,7 @@ class ColorPicker extends Widget {
 		for (n in [alphaBase, alphaChecks, alphaRamp])
 			alphaGroup.addChild(n);
 		alphaEnd = end(alphaGroup, true, 0);
-		alphaGroup.enabled = hasAlpha;
+		alphaGroup.visible = hasAlpha;
 		// The swatch: a disc of the color, with alpha over a checkerboard in its round shape (its size readTheme's).
 		swatchBase = round(swatchGroup, 1, LIGHT);
 		swatchGroup.addChild(swatchChecks);
@@ -140,7 +140,7 @@ class ColorPicker extends Widget {
 		// Its edge in the faces' color, so a color like the panel's still shows a disc.
 		swatchEdge = round(swatchGroup, 1, theme.faceColor);
 		swatchEdge.outline = 1.5;
-		swatchBase.visible = swatchChecks.enabled = hasAlpha;
+		swatchBase.visible = swatchChecks.visible = hasAlpha;
 		// The handles: the square's a ring, the bars' discs, white over a dark shadow so they show on any color.
 		squareShadow = mark(Shape2D.circle(6, 0x90000000), 4);
 		squareMark = mark(Shape2D.circle(6, 0xffffffff), 2);

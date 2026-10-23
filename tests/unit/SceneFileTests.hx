@@ -54,7 +54,7 @@ class SceneFileTests {
 				"background": {"file": "sky/sky.hdr", "blur": 0}
 			},
 			"nodes": [
-				{"kind": "Node3D", "name": "world", "enabled": false, "children": [
+				{"kind": "Node3D", "name": "world", "paused": true, "children": [
 					{"kind": "DirectionalLight3D", "name": "sun", "rotation": [-0.6, 0.7, 0], "color": "#fff4e0", "intensity": 3.5,
 						"shadowCasting": true, "shadowDistance": 35, "shadowMapSize": 1024, "shadowStrength": 0.8, "shadowColor": "#102040"},
 					{"kind": "PointLight3D", "name": "lamp", "position": [1, 2, 3], "range": 10, "intensity": 2},
@@ -96,7 +96,7 @@ class SceneFileTests {
 			&& environment.backgroundBlur == 0,
 			"The environment section, every value");
 		var world = file.nodes[0];
-		check(world.kind == "Node3D" && world.name == "world" && world.enabled == false && world.visible == null && world.children.length == 10,
+		check(world.kind == "Node3D" && world.name == "world" && world.paused == true && world.visible == null && world.children.length == 10,
 			"The root group: its flag, the unsaid one null, its ten children");
 		var sun = world.children[0];
 		check(sun.kind == "DirectionalLight3D"
@@ -135,7 +135,7 @@ class SceneFileTests {
 			&& same(road.properties.get("shadowCasting"), Flag(false))
 			&& road.visible == false
 			&& road.pickable == true
-			&& road.enabled == null,
+			&& road.paused == null,
 			"An override's property and flags, a true one kept");
 		check(line != null
 			&& line.material != null
@@ -181,7 +181,7 @@ class SceneFileTests {
 	static function canonical():Void {
 		var text = '{"nodes": [
 			{"name": "sun", "intensity": 3.141592653589793, "shadowCasting": true, "color": "#fff4e0ff", "rotation": [-0.6, 0.7, 0], "kind": "DirectionalLight3D",
-				"position": [0, 0, 0], "enabled": true},
+				"position": [0, 0, 0], "paused": false},
 			{"name": "group", "kind": "Node3D", "visible": false, "scale": [1, 1, 1], "children": [
 				{"kind": "Model3D", "name": "cone", "file": "props/cone.glb", "position": [1, 0.5, 0.3333333333], "rotation": [-2.25, 0, 0],
 					"tint": "#ffffff", "material": {"roughness": 0.3, "baseColor": "#ff880080"}, "props": {"team": 2, "name": "x"},
@@ -315,11 +315,11 @@ class SceneFileTests {
 			&& SceneSchema3D.kind("SpotLight3D").property("shadowMapSize") != null,
 			"A point light's table has no shadow properties; a directional light's and a spot's have them");
 		check(SceneSchema3D.kind("Text3D").pickable == false
-			&& SceneSchema3D.kind("Text3D").enabled
+			&& !SceneSchema3D.kind("Text3D").paused
 			&& SceneSchema3D.kind("Text3D").visible
 			&& SceneSchema3D.kind("Model3D").pickable
 			&& SceneSchema3D.kind("Node3D").pickable,
-			"Text3D starts unpickable; every other kind's flags start true");
+			"Text3D starts unpickable; every other kind's flags start as a node's");
 		for (kind in SceneSchema3D.kinds) {
 			var keys = [];
 			for (property in kind.properties)
@@ -359,7 +359,7 @@ class SceneFileTests {
 			{"kind": "Text3D", "name": "button", "pickable": true},
 			{"kind": "Text3D", "name": "plain", "pickable": false},
 			{"kind": "Model3D", "name": "ghost", "pickable": false},
-			{"kind": "Model3D", "name": "solid", "pickable": true, "visible": true, "enabled": true}
+			{"kind": "Model3D", "name": "solid", "pickable": true, "visible": true, "paused": false}
 		]}');
 		check(file != null && file.nodes[0].pickable == null && file.nodes[1].pickable == true && file.nodes[3].pickable == false,
 			"A flag parses as said, null when unsaid");

@@ -23,6 +23,8 @@ class Renderer2D {
 	var texts:Array<Null<Text2D>> = [];
 	// Whether each node in the order is paused, itself or by a node above it: its emitters held still.
 	var frozen:Array<Bool> = [];
+	// Whether each node in the order is shown: it and every node above it visible.
+	var shown:Array<Bool> = [];
 	// Each node's alpha times its parent's, from the batch's alpha as the draw began (a view's, nested).
 	var alphas:Array<Float> = [];
 	// The camera the walk draws through, which a view it reaches shows its tree inside.
@@ -100,20 +102,17 @@ class Renderer2D {
 				batch.popClip();
 			}
 			var node = order[i], p = parentOf[i];
-			if (!node.enabled) {
-				i = endOf[i];
-				continue;
-			}
 			moved[i] = node.updateWorld(p < 0 ? rootChanged : moved[p]);
 			frozen[i] = node.paused || (p >= 0 ? frozen[p] : root.paused);
+			shown[i] = node.visible && (p < 0 ? root.visible : shown[p]);
 			alphas[i] = node.alpha * (p >= 0 ? alphas[p] : base);
 			batch.alpha = alphas[i];
-			// Hidden, its own output is skipped (an emitter still moves on); it stays placed, and its children are drawn.
-			if (node.visible)
+			// Hidden, it and everything under it draw nothing, but still run (an emitter moves on) and stay placed.
+			if (shown[i])
 				drawNode(batch, i);
 			else
 				node.drawOwn(batch, walkCamera, time, dt, frozen[i], false);
-			if (node.clipWidth >= 0) {
+			if (shown[i] && node.clipWidth >= 0) {
 				batch.setTransform(node.wa, node.wb, node.wc, node.wd, node.wx, node.wy);
 				batch.pushClip(0, 0, node.clipWidth, node.clipHeight);
 				clipEnds.push(endOf[i]);
@@ -135,6 +134,7 @@ class Renderer2D {
 			rebuild();
 		moved.resize(order.length);
 		frozen.resize(order.length);
+		shown.resize(order.length);
 		alphas.resize(order.length);
 		clipEnds.resize(0);
 		return root.updateWorld(false);
@@ -255,12 +255,13 @@ class Renderer2D {
 	/** The topmost (last drawn) node under framebuffer pixel x, y (from the top-left, as the pointer is) seen through camera, or null for none
 		(or a point outside camera's viewport). Each kind is hit by its own area as drawn: a sprite or filled rectangle its rectangle, a filled
 		circle its disc, a filled polygon its inside (even-odd), an outlined shape or a line its stroke, a text its block (a text without a font of
-		its own once a draw has given one). Emitters and groups aren't hit. The flags hold as in a draw: a disabled node and all under it are
-		passed over, as is a paused one (Node.paused), an unpickable one is passed while its children are hit, a hidden one is hit; a
+		its own once a draw has given one), or a node with a hitArea by it in place of that. Emitters and groups without a hitArea aren't hit.
+		A hidden or unpickable node and everything under it are passed over, the pick going on to what's behind; a paused one is hit; a
 		View2D picks inside the tree it shows, where it was last drawn, and a View3D is noted for the stage to try after the 2D. World transforms are brought up to date; the
 		node's own point is node.toLocalX(camera.screenToWorldX(x), camera.screenToWorldY(y)). */
 	function pick(camera:Camera2D, x:Float, y:Float):Null<Node2D> {
-		if (root.paused
+		if (!root.visible
+			|| !root.pickable
 			|| !(x >= camera.viewportX
 				&& x < camera.viewportX + camera.viewportWidth
 				&& y >= camera.viewportY
@@ -278,23 +279,22 @@ class Renderer2D {
 				pickClips.pop();
 			}
 			var node = order[i], p = parentOf[i];
-			if (!node.enabled) {
+			if (!node.visible || !node.pickable) {
+				// Hidden or unpickable: nothing under it is picked; the pick passes on to what's behind.
 				i = endOf[i];
 				continue;
 			}
 			moved[i] = node.updateWorld(p < 0 ? rootChanged : moved[p]);
-			if (node.paused) {
-				// Paused: nothing under it is picked (a level frozen under a menu).
-				i = endOf[i];
-				continue;
-			}
-			if (node.picksOwn) {
+			if (node.hitArea != null) {
+				if (insideClips(wx, wy) && node.hitArea.contains(node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+					hit = node;
+			} else if (node.picksOwn) {
 				if (insideClips(wx, wy)) {
 					var inside = node.pickOwn(x, y, node.toLocalX(wx, wy), node.toLocalY(wx, wy), lastFont);
 					if (inside != null)
 						hit = inside;
 				}
-			} else if (node.pickable && insideClips(wx, wy) && hits(i, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
+			} else if (insideClips(wx, wy) && hits(i, node.toLocalX(wx, wy), node.toLocalY(wx, wy)))
 				hit = node;
 			if (node.clipWidth >= 0) {
 				pickClips.push(node);
@@ -380,6 +380,111 @@ class Renderer2D {
 				}
 				return inside;
 		}
+	}
+
+	// What a pick tests on node by its kind, as hits and a drawing's own test have it, as closed outlines in its own units (x, y pairs each)
+	// into out: a region's edge, a ring's or a frame's two edges, a stroke's outline about its line; font for a text without its own. Nothing
+	// for a kind not hit by its own drawing (a group, an emitter, a view, which picks inside the tree it shows). What PickOverlay2D draws.
+
+	@:access(helix.render2d.Drawing2D)
+	static function pickOutlines(node:Node2D, font:Null<Font>, out:Array<Array<Float>>):Void {
+		out.resize(0);
+		if (Std.isOfType(node, Sprite2D)) {
+			var sprite:Sprite2D = cast node;
+			if (sprite.texture != null)
+				out.push(rounded(-sprite.pivotX * sprite.width, -sprite.pivotY * sprite.height, sprite.width, sprite.height, 0));
+		} else if (Std.isOfType(node, Text2D)) {
+			var text:Text2D = cast node,
+				f = text.font != null ? text.font : font;
+			if (f != null) {
+				var w = text.measureWidth(f),
+					left = text.align == Center ? -w / 2 : text.align == Right ? -w : 0;
+				out.push(rounded(left, 0, w, text.measureHeight(f), 0));
+			}
+		} else if (Std.isOfType(node, Drawing2D)) {
+			var drawing:Drawing2D = cast node;
+			if (drawing.left <= drawing.right)
+				out.push(rounded(drawing.left, drawing.top, drawing.right - drawing.left, drawing.bottom - drawing.top, 0));
+			for (i in 0...drawing.kinds.length)
+				if (drawing.kinds[i] == Text) {
+					var f = drawing.fonts[i] != null ? drawing.fonts[i] : font;
+					if (f == null)
+						continue;
+					var at = drawing.starts[i],
+						size = drawing.numbers[at + 2],
+						w = f.measure(drawing.texts[i], size);
+					var x0 = drawing.numbers[at] - (drawing.aligns[i] == Center ? w / 2 : drawing.aligns[i] == Right ? w : 0);
+					out.push(rounded(x0, drawing.numbers[at + 1], w, size, 0));
+				}
+		} else if (Std.isOfType(node, Shape2D)) {
+			var shape:Shape2D = cast node, o = shape.outlineWidth, half = o / 2;
+			switch shape.form {
+				case Rectangle:
+					var w = shape.givenWidth,
+						h = shape.givenHeight,
+						left = -shape.pivotX * w,
+						top = -shape.pivotY * h,
+						r = Math.min(shape.corners, Math.min(w, h) / 2);
+					out.push(rounded(left - half, top - half, w + o, h + o, r > 0 ? r + half : 0));
+					if (o > 0)
+						out.push(rounded(left + half, top + half, w - o, h - o, Math.max(0, r - half)));
+				case Circle:
+					out.push(circle(0, 0, shape.circleRadius));
+					if (o > 0)
+						out.push(circle(0, 0, shape.circleRadius + o));
+				case Line:
+					var p = shape.pointList;
+					out.push(capsule(p[0], p[1], p[2], p[3], Math.max(half, .5)));
+				case Polygon:
+					var p = shape.pointList, n = p.length >> 1;
+					if (o > 0)
+						for (k in 0...n)
+							out.push(capsule(p[k * 2], p[k * 2 + 1], p[((k + 1) % n) * 2], p[((k + 1) % n) * 2 + 1], half));
+					else
+						out.push(p.copy());
+			}
+		}
+	}
+
+	// The outline of a rectangle left, top, w x h with corners of radius, as insideRounded tests it.
+	static function rounded(left:Float, top:Float, w:Float, h:Float, radius:Float):Array<Float> {
+		if (radius <= 0)
+			return [left, top, left + w, top, left + w, top + h, left, top + h];
+		var points = [];
+		for (corner in 0...4) {
+			var cx = corner == 0 || corner == 3 ? left + radius : left + w - radius,
+				cy = corner < 2 ? top + radius : top + h - radius,
+				start = Math.PI + corner * Math.PI / 2;
+			for (k in 0...9) {
+				var angle = start + k / 8 * Math.PI / 2;
+				points.push(cx + Math.cos(angle) * radius);
+				points.push(cy + Math.sin(angle) * radius);
+			}
+		}
+		return points;
+	}
+
+	// A circle's outline, of 32 sides.
+	static function circle(x:Float, y:Float, radius:Float):Array<Float>
+		return [
+			for (k in 0...64)
+				k % 2 == 0 ? x + Math.cos(k / 64 * Math.PI * 2) * radius : y + Math.sin((k - 1) / 64 * Math.PI * 2) * radius
+		];
+
+	// The outline of everything within radius of the segment a to b.
+	static function capsule(ax:Float, ay:Float, bx:Float, by:Float, radius:Float):Array<Float> {
+		var along = Math.atan2(by - ay, bx - ax), points = [];
+		for (end in 0...2) {
+			var cx = end == 0 ? bx : ax,
+				cy = end == 0 ? by : ay,
+				start = along - Math.PI / 2 + end * Math.PI;
+			for (k in 0...17) {
+				var angle = start + k / 16 * Math.PI;
+				points.push(cx + Math.cos(angle) * radius);
+				points.push(cy + Math.sin(angle) * radius);
+			}
+		}
+		return points;
 	}
 
 	// How far x, y is from the segment a to b.

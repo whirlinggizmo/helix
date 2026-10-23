@@ -40,6 +40,9 @@ class Ui {
 	var ring:Shape2D;
 	@:allow(helix.ui)
 	var widgets:Array<Widget> = [];
+	// Each widget by its root node: what a widget's enabled and interactive look up the panels holding it in.
+	@:allow(helix.ui)
+	var owners:Map<Node2D, Widget> = new Map();
 	var textEntry = false;
 	@:allow(helix.ui)
 	var showFocus = false;
@@ -75,7 +78,7 @@ class Ui {
 		layer = new Node2D();
 		scrim = Shape2D.rectangle(1, 1, 0);
 		scrim.setPivot(0, 0);
-		scrim.enabled = false;
+		scrim.visible = false;
 		layer.addChild(scrim);
 		root.addChild(layer);
 		if (parent != null)
@@ -182,6 +185,7 @@ class Ui {
 
 	function adopt<T:Widget>(widget:T):T {
 		widgets.push(widget);
+		owners.set(widget.root, widget);
 		root.removeChild(ring);
 		root.removeChild(layer);
 		root.addChild(widget.root);
@@ -197,6 +201,7 @@ class Ui {
 		if (popup != null && popup.owner == widget)
 			closePopup();
 		widgets.remove(widget);
+		owners.remove(widget.root);
 		root.removeChild(widget.root);
 		if (focused == widget)
 			@:bypassAccessor focused = null;
@@ -215,7 +220,7 @@ class Ui {
 		widget or it isn't usable now. */
 	public function press(name:String):Bool {
 		var w = find(name);
-		if (w == null || !w.enabled || !w.visible || !w.focusable)
+		if (w == null || !w.enabled || !w.interactive || !w.visible || !w.focusable)
 			return false;
 		pressing = w;
 		return true;
@@ -286,7 +291,7 @@ class Ui {
 		popup = p;
 		p.open = true;
 		layer.addChild(p.root);
-		scrim.enabled = true;
+		scrim.visible = true;
 		@:bypassAccessor focused = p.owner;
 		syncTextEntry();
 	}
@@ -328,7 +333,7 @@ class Ui {
 		// The popup closes when its owner can't hold it now, and on a press off it (on the scrim, which keeps the pointer till it's let go).
 		if (popup != null) {
 			var owner = popup.owner;
-			if (!owner.enabled || !owner.visible || focused != owner || widgets.indexOf(owner) < 0 || pointer.isPressed(scrim))
+			if (!owner.enabled || !owner.interactive || !owner.visible || focused != owner || widgets.indexOf(owner) < 0 || pointer.isPressed(scrim))
 				closePopup();
 		}
 		var shift = input.isDown(Key.Shift),
@@ -370,7 +375,7 @@ class Ui {
 			keys = true;
 			showFocus = true;
 		}
-		if (focused != null && (!focused.focusable || !focused.enabled || !focused.visible))
+		if (focused != null && (!focused.focusable || !focused.enabled || !focused.interactive || !focused.visible))
 			@:bypassAccessor focused = null;
 		// Focus stays on a popup's owner while it's open.
 		if (popup != null)
@@ -399,7 +404,7 @@ class Ui {
 		}
 		for (w in widgets) {
 			var target = w.target(),
-				usable = w.enabled && w.visible && !guarded;
+				usable = w.enabled && w.interactive && w.visible && !guarded;
 			var hovered = target != null && pointer.isHovered(target),
 				held = target != null && pointer.isDown(target),
 				clicked = usable && target != null && pointer.isClicked(target);
@@ -473,7 +478,7 @@ class Ui {
 			top = Math.min(ly0, ly1),
 			right = Math.max(lx0, lx1),
 			bottom = Math.max(ly0, ly1);
-		scrim.enabled = popup != null || pointer.isDown(scrim);
+		scrim.visible = popup != null || pointer.isDown(scrim);
 		scrim.setPosition(left, top);
 		scrim.setSize(right - left, bottom - top);
 		if (popup == null)
@@ -515,7 +520,7 @@ class Ui {
 
 	function first():Null<Widget> {
 		for (w in widgets)
-			if (w.focusable && w.enabled && w.visible)
+			if (w.focusable && w.enabled && w.interactive && w.visible)
 				return w;
 		return null;
 	}
@@ -527,7 +532,7 @@ class Ui {
 		var b = from.layout, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
 		var best:Null<Widget> = null, bestScore = Math.POSITIVE_INFINITY;
 		for (w in widgets) {
-			if (w == from || !w.focusable || !w.enabled || !w.visible)
+			if (w == from || !w.focusable || !w.enabled || !w.interactive || !w.visible)
 				continue;
 			var o = w.layout, ox = o.x + o.width / 2 - cx, oy = o.y + o.height / 2 - cy;
 			var along = dx != 0 ? ox * dx : oy * dy,
@@ -548,7 +553,7 @@ class Ui {
 		var n = widgets.length, at = widgets.indexOf(from);
 		for (k in 1...n + 1) {
 			var w = widgets[((at + direction * k) % n + n) % n];
-			if (w.focusable && w.enabled && w.visible)
+			if (w.focusable && w.enabled && w.interactive && w.visible)
 				return w;
 		}
 		return from;

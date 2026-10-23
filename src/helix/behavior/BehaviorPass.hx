@@ -3,8 +3,8 @@ package helix.behavior;
 import helix.render3d.Node3D;
 
 /** A pass that runs behaviors: add puts a behavior on a node, update each frame starts the ones added since the last update (in order, so
-	a scene file can attach many and they start together), then updates each enabled one whose node runs (enabled and not paused, with
-	every node above it: a disabled or paused group stops what's under it, Node.paused) phase by phase, Input, Simulate, Resolve, Late
+	a scene file can attach many and they start together), then updates each enabled one whose node runs (not paused, with every node
+	above it: a paused group stops what's under it, Node.paused; a hidden one runs) phase by phase, Input, Simulate, Resolve, Late
 	(Phase, the class's `@:phase`), each phase's in the order added, then stops and drops the ones done. The program's one is Behaviors,
 	run by the runner after the app's update and before the frame is drawn (docs/DISPLAY_MODEL.md); a test makes its own and updates it.
 	Adding, removing and clearing inside a behavior's start, update or stop are safe: the pass walks copies, and a change takes effect
@@ -130,7 +130,7 @@ class BehaviorPass {
 			drop(b);
 	}
 
-	/** A frame: starts the ones added since the last update, updates the enabled ones under enabled nodes by dt seconds (a clock's delta),
+	/** A frame: starts the ones added since the last update, updates the enabled ones under nodes not paused by dt seconds (a clock's delta),
 		every Input one, then every Simulate, Resolve and Late one, each phase's in the order added; then stops and drops the ones done.
 		Once a frame. */
 	public function update(dt:Float):Void {
@@ -192,11 +192,11 @@ class BehaviorPass {
 		return false;
 	}
 
-	// Whether node and every node above it run: enabled and not paused. A node doesn't know its ancestors' flags, so they're walked.
+	// Whether node and every node above it run: not paused (hidden ones run). A node doesn't know its ancestors' flags, so they're walked.
 	static function runs(node:Null<Node3D>):Bool {
 		var at = node;
 		while (at != null) {
-			if (!at.enabled || at.paused)
+			if (at.paused)
 				return false;
 			at = at.parent;
 		}

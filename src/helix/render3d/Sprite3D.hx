@@ -111,24 +111,12 @@ class Sprite3D extends Node3D {
 	override function pickSprites(sprites:Any, ray:Ray3D, best:Float, hit:PickHit3D):Float
 		return (sprites : Sprites3D).pickSprite(this, ray, best, hit);
 
-	// The sphere its quad can turn in about its pivot, whichever way it faces, placed by world: the farthest corner from the pivot, scaled by
-	// world's largest axis. Node3D.computeBounds.
+	override function hitQuad(sprites:Any, out:Array<Float>):Bool
+		return (sprites : Sprites3D).spriteQuad(this, out);
+
+	// The box its quad can reach, placed by world, as it faces (Sprites3D.measureQuad). Node3D.computeBounds.
 	override function measureOwnWorld(world:Mat4, out:Bounds3D):Void {
-		if (texture == null)
-			return;
-		var fx = Math.max(pivotX, 1 - pivotX) * spriteWidth,
-			fy = Math.max(pivotY, 1 - pivotY) * spriteHeight;
-		var scale = 0.;
-		for (col in 0...3) {
-			var cx = world.get(col * 4),
-				cy = world.get(col * 4 + 1),
-				cz = world.get(col * 4 + 2);
-			scale = Math.max(scale, Math.sqrt(cx * cx + cy * cy + cz * cz));
-		}
-		var r = Math.sqrt(fx * fx + fy * fy) * scale,
-			x = world.get(12),
-			y = world.get(13),
-			z = world.get(14);
-		out.expand(x - r, y - r, z - r).expand(x + r, y + r, z + r);
+		if (texture != null)
+			Sprites3D.measureQuad(world, facing, pivotX, pivotY, spriteWidth, spriteHeight, out);
 	}
 }

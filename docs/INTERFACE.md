@@ -46,7 +46,7 @@ A View3D's renderer considers the first 64 lights its walk finds (a hidden or di
 
 ## Node flags
 
-Every node, 3D and 2D, has three flags, each its own and on to start (but `pickable` for text, off until asked: a label lets picks through to what it's on): `enabled` (off: it and everything under it are skipped by drawing, picking and updates, an emitter under it not moved on; the only one reaching the children, whose own flags are kept), `visible` (off: its own output isn't drawn, a light doesn't shine or cast, an emitter still moves on; it stays placed and its children are as they are) and `pickable` (off: a pick's ray passes its own output; its children can still be hit). Drawing and picking don't depend on each other: hidden and pickable is a hit area.
+Every node, 3D and 2D, has three flags, each reaching it and everything under it (the children's own kept): `visible` (on to start; off: not drawn and not picked, a light doesn't shine or cast, but it still runs, behaviors updating and emitters moving on), `paused` (off to start; on: behaviors don't update and what moves by itself holds still, still drawn and picked) and `pickable` (on to start, but for text, off until asked: a label lets picks through to what it's on; off: a pick passes through to what's behind). A node is picked by what it draws, or by its `hitArea` (`HitArea2D`, `HitArea3D`: a rectangle or circle, a box or sphere, in its own units, never drawn) in place of that.
 
 ## Skinning and animation
 

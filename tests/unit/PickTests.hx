@@ -1,5 +1,6 @@
 import Render2DTests.CountingGraphics;
 import helix.render3d.Camera3D;
+import helix.render3d.HitArea3D;
 import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
@@ -99,19 +100,62 @@ class PickTests {
 		check(near(hit.getNormal(2), 1) && near(hit.getLocalPoint(2), 1), "The face's normal toward the camera; the point in the cube's space");
 		check(stage.pick(c, 10, 10) == null, "Nothing in a corner");
 		front.visible = false;
-		check(stage.pick(c, 400, 300).node == front, "A hidden model is still hit");
+		check(stage.pick(c, 400, 300).node == back, "A hidden model isn't hit: the ray goes on to what's behind");
+		front.visible = true;
 		front.pickable = false;
 		check(stage.pick(c, 400, 300).node == back, "An unpickable one lets the ray through");
 		front.pickable = true;
+		front.paused = true;
+		check(stage.pick(c, 400, 300).node == front, "A paused one is still hit");
+		front.paused = false;
 		var child = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		child.setPosition(0, 0, 3);
 		front.addChild(child);
+		check(stage.pick(c, 400, 300).node == child, "The child in front of its parent is hit");
 		front.pickable = false;
-		check(stage.pick(c, 400, 300).node == child, "An unpickable node's child is still hit");
-		front.enabled = false;
-		check(stage.pick(c, 400, 300).node == back, "A disabled node takes its children with it");
-		front.enabled = true;
+		check(stage.pick(c, 400, 300).node == back, "An unpickable node takes its children with it");
 		front.pickable = true;
+		front.visible = false;
+		check(stage.pick(c, 400, 300).node == back, "A hidden node takes its children with it");
+		front.visible = true;
+		// A hit area: a bare group picked by its box, never drawn; a model by its box in place of its triangles.
+		var spot = new Node3D();
+		spot.setPosition(0, 0, 7);
+		spot.hitArea = HitArea3D.box(0, 0, 0, 1, 1, 1);
+		stage.add(spot);
+		var spotHit = stage.pick(c, 400, 300);
+		check(spotHit.node == spot
+			&& Math.abs(spotHit.getNormal(2) - 1) < 1e-9, "A group with a hit area is hit by it, nearest, facing the ray");
+		spot.hitArea = HitArea3D.sphere(0, 0, 0, .5);
+		check(stage.pick(c, 400, 300).node == spot, "By a sphere too");
+		spot.hitArea = HitArea3D.box(30, 0, 0, 1, 1, 1);
+		check(stage.pick(c, 400, 300).node == child, "Its box moved aside, the ray misses it");
+		stage.remove(spot);
+		child.hitArea = HitArea3D.box(5, 0, 0, 1, 1, 1);
+		check(stage.pick(c, 400, 300).node == front, "A hit area in place of the model's own triangles: one aside, the ray misses it");
+		child.hitArea = null;
+		// The pick overlay, in the tree: each shown model's box and what a pick tests on a pickable one, its triangles (a cube's twelve, three
+		// edges each); a hit area's sphere in three circles.
+		var overlay = new helix.debug.PickOverlay3D();
+		@:privateAccess overlay.renderer = stage;
+		spot.hitArea = HitArea3D.sphere(0, 0, 0, 1);
+		stage.add(spot);
+		stage.add(overlay);
+		overlay.clear();
+		@:privateAccess overlay.visit(@:privateAccess stage.root, true);
+		check(overlay.callCount == 3 * (1 + 36) + 3 * 32, "Three models' boxes and triangles, a hit area's sphere in three circles");
+		overlay.drawBounds = false;
+		overlay.clear();
+		@:privateAccess overlay.visit(@:privateAccess stage.root, true);
+		check(overlay.callCount == 3 * 36 + 3 * 32, "Its boxes switched off: the pick shapes alone");
+		overlay.drawBounds = true;
+		front.pickable = false;
+		overlay.clear();
+		@:privateAccess overlay.visit(@:privateAccess stage.root, true);
+		check(overlay.callCount == 2 + 37 + 3 * 32, "An unpickable model and its child keep their boxes alone");
+		front.pickable = true;
+		stage.remove(spot);
+		stage.remove(overlay);
 		// See-through: hit only where its alpha reaches a half.
 		var glass = new Material3D();
 		glass.blended = true;
@@ -229,6 +273,13 @@ class PickTests {
 		label.pickable = true;
 		hit = stage.pick(c, at[0], at[1]);
 		check(hit != null && hit.node == label, "A text by its block");
+		var bounds = label.computeBounds();
+		check(bounds != null && bounds.minX < -4 && bounds.maxX > -2 && near(bounds.centerY, 0), "A text measures its block, once it has a font");
+		var corners = [];
+		check(@:privateAccess label.hitQuad(@:privateAccess stage.sprites.part, corners), "The quad a pick tests");
+		var tall = Math.sqrt(Lambda.fold([for (a in 0...3) (corners[a] - corners[9 + a]) * (corners[a] - corners[9 + a])], (v, sum) -> sum + v, 0.));
+		check(near((corners[0] + corners[3] + corners[6] + corners[9]) / 4, -3) && near(tall, 1) && corners[3] > corners[0],
+			"About its pivot, its size tall, left to right");
 		// In front of a model, the sprite wins; behind it, the model does.
 		var box = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D());
 		box.setPosition(3, 0, -2);

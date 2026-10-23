@@ -7,6 +7,7 @@ import helix.graphics.ShaderSource;
 import helix.texture.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
+import helix.render2d.HitArea2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
 import helix.render2d.ShapeShading2D;
@@ -482,19 +483,52 @@ class Render2DTests {
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.drawnNodeCount == 3, "Only nodes in view are drawn; a hidden group's child still is");
-		hidden.enabled = false;
-		batch.begin(camera);
-		culled.draw(batch, camera);
-		batch.end();
-		check(culled.drawnNodeCount == 2 && hidden.visible == false && !hidden.enabled, "A disabled group takes its children with it");
-		hidden.enabled = true;
+		check(culled.drawnNodeCount == 2 && hidden.getChild(0).visible, "Only nodes in view are drawn; a hidden group takes its children with it");
 		hidden.getChild(0).visible = false;
 		hidden.visible = true;
 		batch.begin(camera);
 		culled.draw(batch, camera);
 		batch.end();
-		check(culled.drawnNodeCount == 2 && hidden.getChild(0).pickable, "A hidden node isn't drawn, still pickable by default");
+		check(culled.drawnNodeCount == 2 && hidden.getChild(0).pickable, "A hidden node isn't drawn; its pickable is kept");
+
+		// The pick overlay: each shown node's box, and what each pickable one is hit by; hidden and unpickable subtrees as a pick has them.
+		var looked = new Renderer2D(),
+			solid = Shape2D.rectangle(10, 10),
+			ghostly = new Node2D(),
+			deaf = new Node2D(),
+			spot = new Node2D(),
+			overlay = new helix.debug.PickOverlay2D();
+		ghostly.addChild(Shape2D.rectangle(10, 10));
+		ghostly.visible = false;
+		deaf.addChild(Shape2D.rectangle(10, 10));
+		deaf.pickable = false;
+		spot.hitArea = HitArea2D.circle(0, 0, 5);
+		for (node in [solid, ghostly, deaf, spot, (overlay : Node2D)])
+			looked.add(node);
+		batch.begin(camera);
+		looked.draw(batch, camera);
+		batch.end();
+		check(overlay.callCount == 4, "Box and hit shape for a shape, nothing hidden, a box alone unpickable, a hit area alone");
+		function redraw():Int {
+			@:privateAccess overlay.refreshedAt = Math.NaN;
+			batch.begin(camera);
+			looked.draw(batch, camera);
+			batch.end();
+			return overlay.callCount;
+		}
+		overlay.drawBounds = false;
+		check(redraw() == 2, "Its boxes switched off: the hit shapes alone");
+		overlay.drawBounds = true;
+		overlay.pickShapes = false;
+		check(redraw() == 2, "Its hit shapes switched off: the boxes alone");
+		var outlines = [], ring = Shape2D.circle(10);
+		ring.outline = 2;
+		Renderer2D.pickOutlines(ring, null, outlines);
+		check(outlines.length == 2 && near(outlines[0][0], 10) && near(outlines[1][0], 12), "A ring's pick shape: its two edges, as a pick tests it");
+		Renderer2D.pickOutlines(Shape2D.line(0, 0, 10, 0), null, outlines);
+		check(outlines.length == 1 && outlines[0].length == 68, "A line's: the stroke about it");
+		Renderer2D.pickOutlines(new Node2D(), null, outlines);
+		check(outlines.length == 0, "A group's: nothing");
 
 		// Two cameras in one batch: a run each, each in its own viewport.
 		var left = new Camera2D(), right = new Camera2D();
@@ -902,7 +936,7 @@ class Render2DTests {
 		check(stage.pick(camera, 160, 160) == box, "Unpickable: the box under it");
 		disc.pickable = true;
 		disc.visible = false;
-		check(stage.pick(camera, 160, 160) == disc, "Hidden is still hit");
+		check(stage.pick(camera, 160, 160) == box, "Hidden isn't hit: the box under it");
 		disc.visible = true;
 		// A ring: its stroke, not its middle.
 		var ring = Shape2D.circle(40);
@@ -928,9 +962,37 @@ class Render2DTests {
 		camera.zoom = 2;
 		var at = [camera.worldToScreenX(150), camera.worldToScreenY(150)];
 		check(stage.pick(camera, at[0], at[1]) == disc, "Through a zoomed camera");
-		box.enabled = false;
 		camera.pixels(1);
-		check(stage.pick(camera, 105, 105) == null, "A disabled node isn't hit");
+		box.visible = false;
+		check(stage.pick(camera, 105, 105) == null, "A hidden node isn't hit");
+		box.visible = true;
+		box.pickable = false;
+		check(stage.pick(camera, 105, 105) == null, "An unpickable one isn't");
+		box.pickable = true;
+		box.paused = true;
+		check(stage.pick(camera, 105, 105) == box, "A paused one is");
+		box.paused = false;
+		box.alpha = 0;
+		check(stage.pick(camera, 105, 105) == box, "A transparent one is");
+		box.alpha = 1;
+		// A hit area: a bare group picked by it, never drawn; a node by it in place of its drawing; a group's flags reach its children.
+		var spot = new Node2D();
+		spot.setPosition(300, 250);
+		spot.hitArea = HitArea2D.rectangle(0, 0, 20, 10);
+		stage.add(spot);
+		check(stage.pick(camera, 310, 255) == spot && stage.pick(camera, 310, 265) == null, "A group by its rectangle");
+		spot.hitArea = HitArea2D.circle(0, 0, 5);
+		check(stage.pick(camera, 303, 253) == spot && stage.pick(camera, 305, 255) == null, "By a circle");
+		box.hitArea = HitArea2D.rectangle(0, 0, 2, 2);
+		check(stage.pick(camera, 105, 105) == null, "In place of what it draws");
+		box.hitArea = null;
+		var dot = Shape2D.circle(2);
+		dot.setPosition(10, 0);
+		spot.addChild(dot);
+		check(stage.pick(camera, 310, 250) == dot, "A child over its group's area");
+		spot.pickable = false;
+		check(stage.pick(camera, 310, 250) == null
+			&& stage.pick(camera, 303, 253) == null, "An unpickable group takes its children with it");
 	}
 
 	// Clips: a batch's nested clips as scissors (bottom-left, within the outer one), and a Renderer2D node clipping its children, drawn and picked.

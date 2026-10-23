@@ -105,7 +105,7 @@ class SceneSchema3D {
 			new PropertySchema("pivotX", PropertyType.Number(), SceneValue.Number(0.5)),
 			new PropertySchema("pivotY", PropertyType.Number(), SceneValue.Number(0.5)),
 			new PropertySchema("facing", PropertyType.Text, SceneValue.Text("camera"))
-		], true, true, false),
+		], true, false),
 		new KindSchema("Particles3D", [])
 	];
 

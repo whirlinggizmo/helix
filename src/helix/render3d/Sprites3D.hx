@@ -6,6 +6,7 @@ import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.texture.Sampling;
 import helix.graphics.SpriteEffect;
+import helix.math.Bounds3D;
 import helix.texture.Texture2D;
 
 /** A Renderer3D's sprites, texts (a text a sprite a glyph, in its plane) and emitters (an instanced draw each, with the particle3d program),
@@ -150,13 +151,13 @@ class Sprites3D {
 			return;
 		var font = node.font != null ? node.font : builtIn(),
 			size = node.textSize;
+		node.drawnFont = font;
 		var w = node.worldMatrix, x = w.get(12), y = w.get(13), z = w.get(14);
 		var width = font.measure(text, size), unit = size / font.size;
-		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
-		var radius = Math.sqrt(width * width + size * size) * scale;
-		for (p in 0...6)
-			if (planes[p * 4] * x + planes[p * 4 + 1] * y + planes[p * 4 + 2] * z + planes[p * 4 + 3] < -radius)
-				return;
+		// Culled by its bounds (measureQuad, Node3D.computeBounds's).
+		measureQuad(w, node.facing, node.pivotX, node.pivotY, width, size, culling.clear());
+		if (!inView(planes, culling))
+			return;
 		var depth = (x - eyeX) * forwardX + (y - eyeY) * forwardY + (z - eyeZ) * forwardZ;
 		// From the block's top-left (the pivot's share of its size away), the pen on the baseline.
 		var penX = -node.pivotX * width,
@@ -202,14 +203,10 @@ class Sprites3D {
 			return;
 		var w = node.worldMatrix;
 		var x = w.get(12), y = w.get(13), z = w.get(14);
-		// The sphere the quad can reach about its pivot, as scaled.
-		var scale = Math.max(length(w, 0), Math.max(length(w, 4), length(w, 8)));
-		var reachX = Math.max(node.pivotX, 1 - node.pivotX) * node.spriteWidth,
-			reachY = Math.max(node.pivotY, 1 - node.pivotY) * node.spriteHeight;
-		var radius = Math.sqrt(reachX * reachX + reachY * reachY) * scale;
-		for (p in 0...6)
-			if (planes[p * 4] * x + planes[p * 4 + 1] * y + planes[p * 4 + 2] * z + planes[p * 4 + 3] < -radius)
-				return;
+		// Culled by its bounds (measureQuad, Node3D.computeBounds's).
+		measureQuad(w, node.facing, node.pivotX, node.pivotY, node.spriteWidth, node.spriteHeight, culling.clear());
+		if (!inView(planes, culling))
+			return;
 		var it = item();
 		it.node = node;
 		it.sprite = node;
@@ -254,34 +251,84 @@ class Sprites3D {
 		if (node.text.length == 0 || Color.getAlpha(node.color) < 128)
 			return best;
 		var font = node.font != null ? node.font : builtIn();
+		node.drawnFont = font;
 		return pickQuad(node, node.facing, node.pivotX, node.pivotY, font.measure(node.text, node.textSize), node.textSize, ray, best, hit);
 	}
 
-	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.
-	function pickQuad(node:Node3D, facing:SpriteFacing3D, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray3D, best:Float, hit:PickHit3D):Float {
+	/** The four corners of a sprite's quad in the world, as the camera given to preparePick shows it and a pick tests it, into out (x, y, z each,
+		top-left, top-right, bottom-right, bottom-left); false, out unchanged, for one a pick doesn't hit (as pickSprite). */
+	function spriteQuad(node:Sprite3D, out:Array<Float>):Bool {
+		if (node.texture == null || (node.alphaMode == Blend || node.alphaMode == Add) && Color.getAlpha(node.tint) < 128)
+			return false;
+		quadCorners(node, node.facing, node.pivotX, node.pivotY, node.spriteWidth, node.spriteHeight, out);
+		return true;
+	}
+
+	/** A text's block as spriteQuad gives a sprite's quad; false for one a pick doesn't hit (as pickText). */
+	function textQuad(node:Text3D, out:Array<Float>):Bool {
+		if (node.text.length == 0 || Color.getAlpha(node.color) < 128)
+			return false;
+		var font = node.font != null ? node.font : builtIn();
+		quadCorners(node, node.facing, node.pivotX, node.pivotY, font.measure(node.text, node.textSize), node.textSize, out);
+		return true;
+	}
+
+	// The axes of a quad width x tall world units (before its scale), facing as given, into quadRight and quadUp; its size as scaled into
+	// quadWidth and quadTall, and the scales along them into quadScaleX and quadScaleUp.
+	var quadRight:Array<Float> = [1, 0, 0];
+	var quadUp:Array<Float> = [0, 1, 0];
+	var quadWidth = 0.;
+	var quadTall = 0.;
+	var quadScaleX = 0.;
+	var quadScaleUp = 0.;
+
+	function placeQuad(node:Node3D, facing:SpriteFacing3D, width:Float, tall:Float):Void {
 		var w = node.worldMatrix;
 		var sx = length(w, 0),
 			sy = length(w, 4),
 			sz = length(w, 8),
 			height = facing == Ground ? sz : sy;
-		width *= sx;
-		tall *= height;
-		// The quad's axes as its facing draws it.
-		var right:Array<Float>, up:Array<Float>;
+		quadScaleX = sx;
+		quadScaleUp = height;
+		quadWidth = width * sx;
+		quadTall = tall * height;
 		switch facing {
 			case Camera:
-				right = cameraRight;
-				up = cameraUp;
+				quadRight = cameraRight;
+				quadUp = cameraUp;
 			case Upright:
-				right = upright;
-				up = [0, 1, 0];
+				quadRight = upright;
+				quadUp = [0, 1, 0];
 			case Ground:
-				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
-				up = [-w.get(8) / sz, -w.get(9) / sz, -w.get(10) / sz];
+				quadRight = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				quadUp = [-w.get(8) / sz, -w.get(9) / sz, -w.get(10) / sz];
 			case _:
-				right = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
-				up = [w.get(4) / sy, w.get(5) / sy, w.get(6) / sy];
+				quadRight = [w.get(0) / sx, w.get(1) / sx, w.get(2) / sx];
+				quadUp = [w.get(4) / sy, w.get(5) / sy, w.get(6) / sy];
 		}
+	}
+
+	// A quad's corners about its pivot (placeQuad's), into out as spriteQuad gives them.
+	function quadCorners(node:Node3D, facing:SpriteFacing3D, pivotX:Float, pivotY:Float, width:Float, tall:Float, out:Array<Float>):Void {
+		placeQuad(node, facing, width, tall);
+		var w = node.worldMatrix, right = quadRight, up = quadUp;
+		var left = -pivotX * quadWidth,
+			rightEdge = (1 - pivotX) * quadWidth,
+			top = pivotY * quadTall,
+			bottom = (pivotY - 1) * quadTall;
+		var k = 0;
+		for (corner in [[left, top], [rightEdge, top], [rightEdge, bottom], [left, bottom]])
+			for (axis in 0...3)
+				out[k++] = w.get(12 + axis) + right[axis] * corner[0] + up[axis] * corner[1];
+	}
+
+	// A quad width x tall world units (before its scale) about its pivot, facing as given, against ray.
+	function pickQuad(node:Node3D, facing:SpriteFacing3D, pivotX:Float, pivotY:Float, width:Float, tall:Float, ray:Ray3D, best:Float, hit:PickHit3D):Float {
+		placeQuad(node, facing, width, tall);
+		var w = node.worldMatrix, right = quadRight, up = quadUp;
+		var sx = quadScaleX, height = quadScaleUp;
+		width = quadWidth;
+		tall = quadTall;
 		// Where the ray meets its plane, then whether that's inside its rectangle about the pivot.
 		var nx = right[1] * up[2] - right[2] * up[1],
 			ny = right[2] * up[0] - right[0] * up[2],
@@ -311,6 +358,61 @@ class Sprites3D {
 		hit.record(node, t, ox + dx * t, oy + dy * t, oz + dz * t, sx > 0 ? a / sx : 0, height > 0 ? b / height : 0, 0, sign * nx / nl, sign * ny / nl,
 			sign * nz / nl);
 		return t;
+	}
+
+	/** The box a quad width x tall (before its scale) about its pivot can reach, placed by world, into out: facing the camera, whichever
+		way that is (the box around the sphere it turns in); upright, turning about y (the box around the cylinder it turns in); on the ground or
+		free, exactly its corners' box, as it's turned. */
+	static function measureQuad(world:Mat4, facing:SpriteFacing3D, pivotX:Float, pivotY:Float, width:Float, tall:Float, out:Bounds3D):Void {
+		var x = world.get(12), y = world.get(13), z = world.get(14);
+		switch facing {
+			case Camera:
+				var scale = Math.max(length(world, 0), Math.max(length(world, 4), length(world, 8)));
+				var fx = Math.max(pivotX, 1 - pivotX) * width,
+					fy = Math.max(pivotY, 1 - pivotY) * tall;
+				var r = Math.sqrt(fx * fx + fy * fy) * scale;
+				out.expand(x - r, y - r, z - r).expand(x + r, y + r, z + r);
+			case Upright:
+				var r = Math.max(pivotX, 1 - pivotX) * width * length(world, 0),
+					up = tall * length(world, 4);
+				out.expand(x - r, y + (pivotY - 1) * up, z - r).expand(x + r, y + pivotY * up, z + r);
+			case _:
+				// Its corners in its node's space: free in the x-y plane, on the ground in x and -z.
+				for (corner in 0...4) {
+					var a = (corner & 1 == 0 ? -pivotX : 1 - pivotX) * width,
+						b = (corner < 2 ? pivotY : pivotY - 1) * tall;
+					var lx = a, ly = facing == Ground ? 0 : b, lz = facing == Ground ? -b : 0.;
+					out.expand(world.get(0) * lx
+						+ world.get(4) * ly
+						+ world.get(8) * lz
+						+ x, world.get(1) * lx
+						+ world.get(5) * ly
+						+ world.get(9) * lz
+						+ y,
+						world.get(2) * lx
+						+ world.get(6) * ly
+						+ world.get(10) * lz
+						+ z);
+				}
+		}
+	}
+
+	// The box a sprite or text in view is culled by, reused.
+	static var culling = new Bounds3D();
+
+	// Whether box reaches inside every one of the camera's six planes (a, b, c, d each): its corner farthest along each plane's normal.
+	static function inView(planes:Vector<Float>, box:Bounds3D):Bool {
+		for (p in 0...6) {
+			var a = planes[p * 4],
+				b = planes[p * 4 + 1],
+				c = planes[p * 4 + 2];
+			if (a * (a > 0 ? box.maxX : box.minX)
+				+ b * (b > 0 ? box.maxY : box.minY)
+				+ c * (c > 0 ? box.maxZ : box.minZ)
+				+ planes[p * 4 + 3] < 0)
+				return false;
+		}
+		return true;
 	}
 
 	static inline function length(w:Mat4, column:Int):Float

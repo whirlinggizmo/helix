@@ -567,12 +567,11 @@ class Render3DTests {
 		check(draw() == 2 && @:privateAccess stage.lights.length == 1, "Both models drawn, the lamp shining");
 		group.visible = false;
 		lamp.visible = false;
-		check(draw() == 1 && @:privateAccess stage.lights.length == 0, "A hidden model's child still drawn; a hidden light doesn't shine");
+		check(draw() == 0 && @:privateAccess stage.lights.length == 0 && child.visible,
+			"A hidden model takes its child with it, the child's own flag kept; a hidden light doesn't shine");
 		group.visible = true;
-		group.enabled = false;
-		check(draw() == 0 && child.enabled, "A disabled model takes its child with it; the child's own flag kept");
-		group.enabled = true;
-		check(draw() == 2 && group.pickable, "Enabled again, both drawn");
+		lamp.visible = true;
+		check(draw() == 2 && group.pickable, "Shown again, both drawn");
 		// The stage's lists of kinds follow the tree: a model of two parts added under a node already on it draws both; taken off, or under a
 		// node off the stage, nothing; moved back, both again.
 		var two = new Model3D(Mesh3D.cube(1, 1, 1), new Material3D()),

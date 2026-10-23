@@ -53,22 +53,22 @@ class KindSchema {
 	/** Its properties, in writing order: a parent class's first (a light's before a spot's range and cones). */
 	public final properties:Array<PropertySchema>;
 
-	/** What the class starts Node.enabled at: true for every kind. */
-	public final enabled:Bool;
-
 	/** What the class starts Node.visible at: true for every kind. */
 	public final visible:Bool;
 
 	/** What the class starts Node.pickable at: false for a Text3D (a label lets a pick through to what it names), true elsewhere. */
 	public final pickable:Bool;
 
-	/** A kind name with properties, its flags starting at enabled, visible and pickable (each true unless said). */
-	public function new(name:String, properties:Array<PropertySchema>, enabled = true, visible = true, pickable = true) {
+	/** What the class starts Node.paused at: false for every kind. */
+	public final paused:Bool;
+
+	/** A kind name with properties, its flags starting at visible and pickable (each true unless said) and paused (false unless said). */
+	public function new(name:String, properties:Array<PropertySchema>, visible = true, pickable = true, paused = false) {
 		this.name = name;
 		this.properties = properties;
-		this.enabled = enabled;
 		this.visible = visible;
 		this.pickable = pickable;
+		this.paused = paused;
 	}
 
 	/** Its property named name, or null for one it hasn't. */

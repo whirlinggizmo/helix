@@ -106,12 +106,11 @@ function show(then:() -> Void):Bool
 
 *class* in [`src/helix/scene/Node.hx`](../../src/helix/scene/Node.hx), `import helix.scene.Node;`
 
-What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130).
+What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (visible, paused, pickable), a parent and children, and find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130).
 
 ```haxe
 var name:String
 function find(name:String):Null<Node>
-var enabled(get, set):Bool
 var visible:Bool
 var paused:Bool
 var pickable:Bool
@@ -121,10 +120,9 @@ function getChild(index:Int):Null<Node>
 
 - `name`: Its name: a model file's node name, or what the game gave it; "" for none.
 - `find`: The first node named name below it (depth first, in drawing order), or null: for picking out a part of a loaded model (its wheels, a lamp), once, and keeping the node. Never a path.
-- `enabled`: Whether it takes part at all: off, it and everything under it are skipped by drawing, picking and updates (an emitter under it isn't moved on), as if it weren't in the tree. The only flag that reaches its children; theirs are kept, so enabling it brings each back as set. On to start.
-- `visible`: Whether its own output is drawn: off, a model, sprite, shape, text or emitter isn't drawn (an emitter still moves on) and a light doesn't shine or cast; it stays placed, and its children are as they are. On to start.
-- `paused`: Whether it and everything under it are held still while still drawn: on, their behaviors don't update and their emitters don't move on (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start.
-- `pickable`: Whether a pick can hit its own output: off, the ray passes through it, though its children can still be hit. Drawing doesn't matter to it: hidden and pickable is a hit area. On to start, but for text.
+- `visible`: Whether it and everything under it are shown: off, none of it is drawn or picked (a light doesn't shine or cast), though it all still runs (behaviors, emitters) and stays placed. A child's own visible is kept, so showing it again brings each back as set. On to start.
+- `paused`: Whether it and everything under it are frozen: on, still drawn and picked, but their behaviors don't update and what moves by itself (emitters, decals fading, animated tiles) holds still (a level frozen under a pause menu, docs/DISPLAY_MODEL.md). Off to start.
+- `pickable`: Whether it and everything under it can be picked: off, a pick passes through them all to what's behind. What a node is hit by is what it draws, or its hitArea when it has one. On to start, but for text.
 - `childCount`: How many children it has.
 - `getChild`: Its child at index, in drawing order; null past the end.
 
@@ -346,9 +344,9 @@ var mesh:Null<SceneMesh3D>
 var position:Null<Array<Float>>
 var rotation:Null<Array<Float>>
 var scale:Null<Array<Float>>
-var enabled:Null<Bool>
 var visible:Null<Bool>
 var pickable:Null<Bool>
+var paused:Null<Bool>
 var properties:Map<String, SceneValue>
 var material:Null<SceneMaterial3D>
 var overrides:Map<String, SceneNode3D>
@@ -367,9 +365,9 @@ var isOverride(get, never):Bool
 - `position`: Its position, x, y, z in its parent's units; null for the origin.
 - `rotation`: Its rotation, Euler x, y, z in radians as Node3D.setRotation takes them; null for none.
 - `scale`: Its scale, x, y, z; null for 1, 1, 1.
-- `enabled`: Whether it takes part at all (Node.enabled), as the file says it; null for unsaid: a node's default, true, when instantiated, and unchanged for an override, which may say true to bring a prefab's disabled node back.
-- `visible`: Whether its own output is drawn (Node.visible), as the file says it; null for unsaid: true for a node, unchanged for an override.
-- `pickable`: Whether a pick can hit it (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for an override.
+- `visible`: Whether it and everything under it are shown (Node.visible), as the file says it; null for unsaid: true for a node, unchanged for an override, which may say true to bring a prefab's hidden node back.
+- `pickable`: Whether it and everything under it can be picked (Node.pickable), as the file says it; null for unsaid: true for a node, unchanged for an override.
+- `paused`: Whether it and everything under it are frozen (Node.paused), as the file says it; null for unsaid: false for a node, unchanged for an override.
 - `properties`: Its kind's properties by name (intensity, fovY, tint), from its kind's table in SceneSchema3D; one absent is the class's default. An override's name any kind's property.
 - `material`: A Model3D's inline material, replacing the mesh's or the file's root material; null for none.
 - `overrides`: By path from this node ("road/line"), what changes on the nodes its file or prefab makes: each an override node.

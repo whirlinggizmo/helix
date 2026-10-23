@@ -1,6 +1,7 @@
 package helix.render3d;
 
 import helix.font.Font;
+import helix.math.Bounds3D;
 
 /** A line of text in the world: its value, size world units tall (ascent to descent), in a font (null: the stage's built-in one), its block's
 	pivot at its position (its center by default), facing the camera, in a color (0xAARRGGBB, sRGB). Unlit and blended, as sprites are, and
@@ -68,4 +69,19 @@ class Text3D extends Node3D {
 
 	override function pickSprites(sprites:Any, ray:Ray3D, best:Float, hit:PickHit3D):Float
 		return (sprites : Sprites3D).pickText(this, ray, best, hit);
+
+	override function hitQuad(sprites:Any, out:Array<Float>):Bool
+		return (sprites : Sprites3D).textQuad(this, out);
+
+	// The font it was last drawn in (its own, or the stage's built-in one), for measuring it; null before a draw when it has none of its own.
+	@:allow(helix.render3d.Sprites3D)
+	var drawnFont:Null<Font>;
+
+	// The box its block can reach, placed by world, as it faces (Sprites3D.measureQuad): measured in its font, or the one it was last drawn
+	// or picked in; nothing before then when it has none of its own. Node3D.computeBounds.
+	override function measureOwnWorld(world:Mat4, out:Bounds3D):Void {
+		var measuring = font != null ? font : drawnFont;
+		if (measuring != null && text.length > 0)
+			Sprites3D.measureQuad(world, facing, pivotX, pivotY, measuring.measure(text, size), size, out);
+	}
 }
