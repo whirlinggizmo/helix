@@ -1,149 +1,121 @@
 # The display model
 
-**Status:** designed with the user on 2026-10-22, the day before the ATL Gamedevs Jam, and built on the branch `display-model` (steps 1 to
-9 below, each committed with its checks), merged into `main` once the native autopilots and the Windows build pass. Decision 145 records
-it; this document is the design, and the place to pick the work up from. Where the build departed from the first plan it says so below.
-
-## Why
-
-Using HeliX for the jam, the user expected a stage that draws itself, as Flash's does (and Pixi's, and Heaps' `s2d`), and found a game
-had to open the frame, begin a batch, draw each stage through a camera, end the batch and close the frame, every frame. Looking closer,
-the names misled as much as the plumbing: HeliX's `Stage2D`/`Stage3D` were what Babylon and Away3D call scenes (there can be several),
-while its `Scene` was a screen with a lifecycle on a stack, and a `.scene` file a third thing again. GOALS.md asks for a clear, consistent
-API that people and agents guess right; a dev or an agent who knows Flash should guess HeliX's display model.
-
-## The idea in one line
-
-**Very much like Flash, with these differences:** Flash's stage and display list, Away3D's views, Löve's update loop, and no logic on
-what's drawn.
+How a HeliX program shows things: one stage, drawn every frame, holding trees of nodes; views showing trees through cameras; logic in
+the app's update, never on what's drawn. It reads much like Flash's display list. Every type named here has its page in the
+[API reference](api/README.md); [GUIDE.md](GUIDE.md) builds a game with it, piece by piece.
 
 ## The pieces
 
-### `App`: the program (Flash's movie)
+### `App`: the program
 
-- `init()`, `update(dt)`, `cleanup()`. `update` is today's `frame` without the drawing.
-- No drawing hook and no frame plumbing: after `update` the runner draws the stage.
+A game extends `helix.App` and overrides `init()` (once, with HeliX's services bound), `update(dt)` (once a frame, the game's logic)
+and `cleanup()` (once, as the window closes). It draws nothing itself: after `update`, the runner draws the stage.
 
-### `Stage`: the one thing drawn
+### `Stage`: what's drawn
 
-- A static service: the root `Node2D`, shown on the window in pixels, drawn by the runner every frame. Flash code reads the same:
-  `Stage.addChild(ball)`.
-- Its children draw in order, later over earlier. A HUD is nodes added after the views.
-- `Stage.color`: the clear color, as Flash's `stage.color`.
-- A post-processing chain on the stage applies to everything.
+- `Stage` is the root of everything shown: `Stage.addChild(node)`, `Stage.removeChild(node)`. Its children draw in the order added, a
+  later one over an earlier; `addChild` of one already there moves it to the top.
+- `Stage.color` is what the frame is cleared to. `Stage.camera` shows the design's units on the window as `Screen.set` fits them; the
+  stage refits it each frame, so a game doesn't move it (a scrolling world is a view, below).
+- `Stage.postProcess` runs screen effects (`helix.graphics.PostProcess`) over everything drawn.
 
-### Nodes: display objects
+### Nodes
 
-- `Node2D`: a container. `addChild`, `removeChild`, `x`, `y`, `rotation` (radians), `scaleX`, `scaleY`, `visible`, `name`, and new:
-  `alpha`, fading the node and everything under it, as Flash's did.
-- `Sprite2D`: an image (Flash's `Bitmap`). Flash's `Sprite`, a container you could draw on, is `Node2D`, with a `Drawing2D` in it.
-- `Shape2D`, `Text2D` (Flash's `TextField`), `Particles2D` as today.
-- `Drawing2D` (new): Flash's `graphics`, a node holding drawing calls, stateless: `fillRect(x, y, w, h, color)`, `fillCircle`, `line`,
-  `text`, `clear()`. Calling `clear()` and drawing again in `update` is immediate drawing, as Flash games did it, so no draw hook is
-  needed anywhere; `Batch2D` becomes the engine's, not the game's.
-- 3D nodes as today: `Node3D`, `Model3D`, lights, `Sprite3D`, `Text3D`, particles.
+- `Node2D` is a 2D display object and a container: `addChild`, `removeChild`, `x`, `y`, `rotation` (radians, clockwise), `scaleX`,
+  `scaleY`, `alpha` (fading it and everything under it), `name`. Its children move, turn and scale with it.
+- 2D kinds: `Sprite2D` (an image, or a frame of a sprite sheet), `Shape2D` (rectangles, circles, lines, polygons), `Text2D`,
+  `Drawing2D` (drawing calls: `rect`, `circle`, `line`, `polygon`, `image`, `drawText`, ...; `clear()` and drawing again each `update` is
+  drawing by hand), `Particles2D`, `Decals2D`.
+- `Node3D` is a 3D node and container, with the 3D kinds under it: `Model3D`, lights, `Sprite3D`, `Text3D`, `Particles3D`.
+- A node's own class is never subclassed for game logic: a node is what's drawn, and the game's state lives in the game.
 
-### `View2D` / `View3D`: content shown through a camera
+### Flags every node has (`helix.scene.Node`)
 
-- A view is a 2D display object showing a node tree through a camera: `new View2D(worldRoot, camera)`, `new View3D(levelRoot, camera)`.
-  Add it to the stage, or to any 2D tree.
-- One tree can be shown by several views (split screen, a minimap).
-- Views nest (a minimap in a HUD panel, a picture in picture), each clipped to its rectangle. **Cycles are refused**: a view never draws
-  a tree it is itself being drawn inside; it is skipped and logged once.
-- **3D draws under 2D**, as Flash's Stage3D content drew under its display list: the 2D batch sends its draws once, at the frame's end. A
-  nested `View3D` shows right only where no 2D lies under it, until views can draw into a texture (below).
-- A `View3D` holds the photography: its camera, `exposure`, `tonemap`, `hdr`, its post-processing chain, and optionally an `environment`
-  overriding the content's (a minimap's flat light, an editor's preview). A `View2D` has its camera and a post-processing chain.
-- A view with post-processing draws its tree into a texture, runs the chain, and draws the texture where the view is. That same path, a
-  view drawn into a texture, is what later puts 3D between 2D.
+| Flag | Off (or on, for `paused`) |
+|---|---|
+| `enabled` | It and everything under it are skipped: not drawn, not picked, not updated. The only flag that reaches its children. |
+| `visible` | Its own output isn't drawn; its children are drawn as they are. To hide a group, set `enabled` off, or `alpha = 0` (2D, still picked). |
+| `paused` | It and everything under it hold still while still drawn: behaviors don't update, emitters don't move on. A level frozen under a pause menu. |
+| `pickable` | A pick passes through its own output; its children can still be hit. Hidden and pickable is a hit area. |
 
-### Scenes: trees of nodes, saved or live
+### Views: a tree through a camera
 
-- A scene is a tree of nodes. Saved, it is a `.scene3d` file; live, it is the nodes loaded from one, under the node they were put in.
-- A level and a prefab are the same thing used two ways: a scene file loaded as the root of what a view shows, or put inside another
-  tree, as often as wanted. Neither word is a class. (Godot's meaning of "scene"; Flash's MovieClip symbol in the library.)
-- No `Scene2D`/`Scene3D` classes and no `Stage2D`/`Stage3D`: a view shows a node. What those classes held per tree (the clock, picking's
-  tables, the draw counts) moves to the view drawing it or to the subtree it describes.
-- `SceneFile3D` (a scene as read) and `SceneInstance3D` (a scene put into a tree), named by kind as the convention names 2D and 3D
-  apart (step 9). Scene files are 3D now; 2D ones (`.scene2d`) are roadmap.
+- `View2D(content, camera)` and `View3D(content, camera)` are 2D display objects showing a tree's children through a camera, in a
+  rectangle (`width` x `height`, or 0 for the whole area of what shows them). They're placed like any node: on the stage, or inside a 2D
+  tree another view shows (a minimap in a panel). A view is never drawn inside the tree it shows; one that would be is skipped and logged.
+- A scrolling 2D world is a `View2D` whose camera the game moves (`Camera2D.setPosition`, `zoom`; `CameraFollow2D` follows and shakes).
+  What's added to the stage after the view (a HUD) stays put over it.
+- One tree can be shown by several views (split screen, a minimap): each draws it for itself.
+- A `View3D` holds how its tree is photographed: its `camera`, `exposure` and `tonemap`. It lights the tree by its own `environment` if
+  set, else by the first `Node3D.environment` in its tree.
+- `View3D` content draws under all 2D in the frame. A view with a `postProcess` chain (`View.postProcess`) is drawn into a texture first,
+  its effects run over it, and the result drawn in the 2D order like any 2D thing, so a 3D view with a chain can sit between 2D things.
+- `View3D.computeRay(x, y)` and `project(x, y, z)` turn between the stage's units and the 3D world.
 
-### `Environment3D`: the place's light, on a node
+### `Environment3D`: a place's light
 
-- Plain data, not a node: the environment map that lights and reflects, the ambient light, the background sky, fog when it comes.
-- Set as a property of a 3D node, `level.environment = ...`, and saved with that node in its scene file. It applies to the node's
-  subtree: a model is lit by the nearest ancestor's environment. A level's sits on its root; a prefab's applies only inside it (no "first
-  one wins" rule); regional light (a cave) follows.
-- A `View3D`'s `environment`, when set, overrides. The background drawn behind is the view's override, else the environment of the node
-  the view shows.
-- In the branch: one environment per view (its override, else the first in its tree, the root's first, depth first, so a scene
-  file's group under the root lights it); others in the tree logged once. The nearest-ancestor meaning
-  stays the definition, so regional light comes later without changing the API.
-- The scene file's `stage` section goes: environment, ambient light and background move onto the root node's entry as its environment;
-  exposure and tone mapping, the camera's, go to the view.
+Data, not a node: the ambient light, the environment map that lights and reflects, and the background drawn behind. Set as a 3D node's
+`environment` (a level's root carries its level's; a scene file's `environment` section sets it), or as a `View3D`'s, which overrides
+what it shows.
 
-### Logic: never on nodes
+### Scene files: trees, saved
 
-- No `ENTER_FRAME`, no frame scripts, no listeners (decision 61; decision 123: a listener made before a hot reload keeps the old code).
-- Logic lives in `App.update`, or in behaviors, which scene files and code attach. A screen's logic is a behavior on its root (the
-  `scene-file` example's race director already is one).
-- Behaviors run from one pass over what's on the stage, before drawing. `paused = true` on a node stops its subtree: its behaviors, its
-  particles' clock and its picking, while it stays drawn. That is pausing a level under a menu.
+A `.scene3d` file is a saved tree of 3D nodes ([SCENE_FILE.md](SCENE_FILE.md)). `SceneFiles3D.load(path, loaded)` reads it;
+`instantiate(parent)` puts a copy under a node, as often as wanted: a level is one put under what a view shows, a prefab one put
+inside another tree. Its behaviors start with it. 2D maps come from Tiled (`helix.tiled`).
 
-### Screens and flow: what is on the stage
+### Logic: in the app and in behaviors
 
-- No `Scene` class with a lifecycle and no `Scenes` stack. A screen is what's on the stage: swap screens by removing one and adding
-  another; pause by pausing the level and adding a menu over it.
-- Transitions (a fade) and the loading screen become small helpers working on the stage.
+- Nodes have no update, no events and no listeners. Logic lives in `App.update`, or in behaviors (`helix.behavior.Behavior`) that scene
+  files and code attach to nodes; the runner runs the behaviors on the stage's trees each frame, skipping paused and disabled subtrees.
+- Some things advance on the game's clock by themselves once they're on the stage or started: particles, decals' fading, Tiled's animated
+  tiles, transitions, `Collect2D`, the `FullscreenButton2D`. Others the game moves in `update`: `SpriteAnimator2D.update`,
+  `Tweens.update`, `Timers.update`, `CameraFollow2D.update` and `apply`, `Ui.update` (GUIDE.md says which with each).
 
-### Input: asked, never delivered
+### Screens
 
-- `Input.isPressed(key)` and the like, polled where logic runs.
-- The pointer picks through views, topmost first, and a press captures it until release, so a HUD button takes a click before the world
-  under it, and a dragged slider doesn't aim the gun. The pointer reads the stage's order; no separate list of stages.
-- **Claiming:** `Input.claim(key)` takes a key for the frame; `isPressed` and `isDown` say false for a claimed key after that, `isClaimed`
-  says it was. The UI, reading first, claims what it uses, so typing a space in a text field doesn't make the player jump. Bubbling's use
-  (the topmost gets it first) without a tree of handlers.
+A screen is what's on the stage: a game swaps screens by removing one node and adding another, and pauses by setting `paused` on its
+level and adding a menu over it. `helix.scene.transition` (`Fade`, `Slide`, `Iris`, `Diamond`, `Noise`) covers the swap; `Splash` and
+`Loading` are ready-made screens.
+
+### Input: asked, not delivered
+
+- `Input` (keys, the pointer, pads, touches) and `Actions` (names bound to them) are read where logic runs.
+- `Pointer` picks what's under the pointer through the stage and the views on it, topmost first, so a HUD over the world takes a click
+  before the world does; a press on a 2D node captures the pointer until it's released.
+- `Input.claim(key)` takes a key for the rest of the frame: the UI, reading first, claims what it uses, so typing a space in a text field
+  doesn't make the player jump.
 
 ### Units
 
-Radians, seconds, colors `0xAARRGGBB` (decision 144), world units through a view's camera, pixels on the stage.
+Radians, seconds, colors `0xAARRGGBB`; on the stage, the design's units (`Screen.set`; logical pixels with none); in a view, its camera's
+world units.
 
-## A frame, done by the runner
+## A frame
 
-1. `App.update(dt)`; then the behaviors pass over the stage's trees (skipping paused subtrees).
-2. For each `View3D` that will draw: its shadow maps; for each view with post-processing (or, later, drawn into a texture): its texture.
-3. The frame opens, cleared to `Stage.color`.
-4. The stage draws: every `View3D` first, then all 2D in display order (nested views in place).
-5. The stage's post-processing, if any; the frame closes.
-
-## Very much like Flash, but
-
-| Flash | HeliX | Why |
-|---|---|---|
-| Scrolling by moving a container | `View2D` with a camera | Cameras (zoom about a point, viewport, pixel snapping, culling, follow, shake, the pointer in world units) are what every Flash game hand-rolled. |
-| Stage3D, a low-level API | `View3D` showing a 3D tree | Away3D's model, built in. |
-| `ENTER_FRAME`, frame scripts | `App.update`, behaviors | Game state apart from what's drawn: saves, replays, determinism (decision 61). |
-| `addEventListener`, bubbling | Polling, the pointer's picks, claiming | Hot reload keeps no stale handler (decision 123); the frame's order is plain. |
-| `graphics.beginFill`, `drawRect`, `endFill` | `Drawing2D.fillRect(..., color)` | Stateless: no forgotten `endFill`, and the same vocabulary as the batch. |
-| `rotation` in degrees | radians | One unit per kind (CONVENTIONS). |
-| `0xRRGGBB` plus `alpha` | `0xAARRGGBB` | The order Haxe's libraries and the editor's color picker use. |
-| `Sprite`: a container to draw on | `Node2D` (+ `Drawing2D`); `Sprite2D` is an image | A sprite is an image everywhere else in games. |
-| `MovieClip` timelines | `SpriteAnimator2D`, tweens; timelines later as data | Frame scripts are where Flash got tangled; see below. |
-| Scenes: sections of the timeline | Scene files: trees, levels and prefabs alike | Godot's and Unity's meaning, the one game developers hold now. |
+1. Input is polled; the game clock (`Time.clock`) moves on, unless paused.
+2. `App.update(dt)`; then the behaviors on the stage's trees.
+3. Each `View3D` about to draw draws its shadow maps; each view with a post-processing chain draws into its texture.
+4. The frame is cleared to `Stage.color`, and the stage draws: every `View3D` without a chain first, then all 2D in display order (views
+   with a chain in place).
+5. The stage's post-processing, if any; the frame is shown.
 
 ## Examples
 
 The smallest game:
 
 ```haxe
+import helix.render2d.Shape2D;
+import helix.render2d.Stage;
+
 class Game extends helix.App {
 	var ball = Shape2D.circle(20, 0xff66bfff);
 
-	override function init() {
+	override public function init():Void {
 		Stage.addChild(ball);
 	}
 
-	override function update(dt:Float) {
+	override public function update(dt:Float):Void {
 		ball.x += 100 * dt;
 	}
 }
@@ -152,89 +124,38 @@ class Game extends helix.App {
 A 3D level with a HUD and a pause menu:
 
 ```haxe
-class Game extends helix.App {
-	var level:Node3D;
-	var view:View3D;
-	var score = new Text2D("0", 24, 0xffffffff);
-	var menu:Null<Node2D>;
+import helix.input.Input;
+import helix.input.Key;
+import helix.render2d.Node2D;
+import helix.render2d.Stage;
+import helix.render2d.Text2D;
+import helix.render3d.Camera3D;
+import helix.render3d.Node3D;
+import helix.render3d.View3D;
+import helix.scene.SceneFiles3D;
 
-	override function init() {
+class Game extends helix.App {
+	var level = new Node3D();
+	var score = new Text2D("0", 24, 0xffffffff);
+	var menu = new Node2D();
+	var paused = false;
+
+	override public function init():Void {
 		Stage.color = 0xff14161c;
-		level = SceneFiles3D.load("levels/track.scene3d"); // its root carries its environment; its behaviors run the race
-		view = new View3D(level, new Camera3D());
-		Stage.addChild(view);
-		Stage.addChild(score);                            // over the 3D, in pixels
+		Stage.addChild(new View3D(level, new Camera3D()));
+		Stage.addChild(score);                                 // over the 3D, in the stage's units
+		SceneFiles3D.load("levels/track.scene3d", file -> file.instantiate(level));   // its root's environment lights it
 	}
 
-	override function update(dt:Float) {
-		if (Input.isPressed(Key.Escape)) {
-			level.paused = menu == null;                  // behaviors, particles and picking stop; still drawn
-			if (menu == null)
-				Stage.addChild(menu = makeMenu());
-			else {
+	override public function update(dt:Float):Void {
+		if (Input.isFramePressed(Key.Escape)) {
+			paused = !paused;
+			level.paused = paused;                             // behaviors and particles hold still; still drawn
+			if (paused)
+				Stage.addChild(menu);
+			else
 				Stage.removeChild(menu);
-				menu = null;
-			}
 		}
 	}
 }
 ```
-
-(The calls are the design's, sketched: exact signatures, a scene's loading being asynchronous, are settled as it's built.)
-
-## What changes from today
-
-- **Renamed or reshaped:** `App.frame` → `App.update`; `Stage2D`/`Stage3D` go, their per-tree state to views and subtrees; `Stage3D`'s
-  settings split, the place's into `Environment3D` on a node, the photography's onto `View3D`.
-- **Gone:** `Scene`, `Scenes` (the stack) and their lifecycle; `Graphics.beginFrame`, `batch.begin`, `batch.end` and `stage.draw` in game
-  code; `Pointer`'s list of stages; the scene file's `stage` section.
-- **New:** `Stage`, `View2D`, `View3D`, `Environment3D`, `Drawing2D`, `Node2D.alpha`, `paused` on nodes, `Input.claim`, post-processing on
-  the stage and on views.
-- **Reworked onto the stage:** `Splash`, `Loading`, `Transition`, the `Ui` (over a node on the stage rather than a `Stage2D` and its
-  camera), the starter template, every example, the tests, CONVENTIONS, INTERFACE, SCENE_FILE and the API docs.
-
-## The order of work on the branch
-
-1. The runner owns the frame: `App.update`, `Stage` drawn after it, `Stage.color`; the batch the engine's.
-2. `View2D` and `View3D` on a shared `View` (a `Node2D`, so a view is a display object; the 2D walk knows only `View`, so a 2D
-   program links no 3D); nesting and the cycle check. Built over `Stage2D`/`Stage3D` as renderers, so every example runs throughout the
-   branch; those classes go in step 8, with the examples.
-3. `Environment3D` on nodes, the view's photography and override; the scene file's root environment, its `stage` section gone.
-4. Behaviors as the program's pass (`Behaviors`, over `BehaviorPass`), run by the runner after `update`; `paused` on nodes (behaviors
-   wait, emitters hold still, still drawn). `Scenes`/`Scene` go, and transitions and loading become helpers on the stage, in step 8 with
-   the two examples that use the stack (`scenes`, `scene-file`).
-5. The pointer through views; `Input.claim`, the UI claiming.
-6. `Drawing2D`, `Node2D.alpha`.
-7. Post-processing on the stage and on views (views drawn into textures).
-8. Every example, the starter, the tests and the docs moved over; `Stage2D`/`Stage3D` as public classes gone (their drawing kept as
-   the views' renderers), and the runner's allowance for an app drawing its own frame removed (`Graphics.beginFrame` and `endFrame` the
-   runner's alone); a decision entry recording what was built and checked.
-9. Scene files named by kind, as the convention names 2D and 3D apart: `.scene` became `.scene3d` (its version key `helix-scene3d`), and
-   every class holding what only a `.scene3d` holds named by its file: `SceneFile3D`, `SceneFiles3D`, `SceneFileCache3D`,
-   `SceneInstance3D`, `SceneNode3D`, `SceneKinds3D`, `SceneEnvironment3D`, `SceneMaterial3D` and `SceneMesh3D` (a material or a mesh has no
-   2D counterpart yet, but the family is named by its file, and a 2D one may come); only what a 2D file will share (`SceneBehavior`,
-   `SceneValue`, `SceneSchema3D`'s property types) keeps a plain name. So 2D scene files arrive as `.scene2d` without renaming again. A 2D
-   scene shows a 3D one through a `View3D` referring to a `.scene3d` file, never by mixing kinds in one tree.
-
-## Later (ROADMAP)
-
-- **Timelines:** what Flash's artists understood best, kept as data so rule 61 holds: keyframed tracks per child node (`x`, `y`,
-  `rotation`, `alpha`, `visible`, the sheet frame; each child's track a Flash layer), labels naming spans, markers the game asks about
-  (`clip.entered("hit")`) in place of frame scripts, played by a player as `SpriteAnimator2D` and the 3D `Animator3D` are (glTF's clips are
-  the same shape), saved in the scene file with the nodes they move. Authoring wants the scene editor.
-- **2D under 3D:** views drawn into textures in display order (the same path as post-processing on views).
-- **Fonts:** the built-in one only where text is drawn; glyphs from the browser's rasterizer.
-- **2D scene files (`.scene2d`), and screens as scene files.** With behaviors attachable to any node (not only `Node3D`) and a helper
-  that loads a scene file and swaps it onto the stage through a transition, a splash or a loading screen is a `.scene2d` (a panel, a logo,
-  a prompt) with a behavior (wait, then go to the scene its `next` prop names): `Splash` and `Loading` shrink to default files and their
-  behaviors, restyled in a file or an editor rather than subclassed.
-- **Regional environments:** the nearest ancestor's, several per view.
-- **Skinning as an optional part of the 3D renderer:** the skinned program, the joint palette, the skinned shadow and pick paths linked only
-  into programs that draw a skinned model, as its sprites, text and particles are (`Node3D.spriteKind`, made by the first one listed): the
-  lit-3D rung of the size ladder links it today (125 KB gzipped).
-- **Presses for frame-driven screens:** in a fast autopilot (several ticks a frame) each tick ends its presses, so a screen that runs once a
-  frame (`Splash`, `Loading`, a `Transition`) misses one made in an earlier tick; the scenes example holds the press itself.
-- **A test harness publishing after the frame is drawn,** so a snapshot's draw counts are the frame's own, not the one before.
-- **Fixed steps built in:** an app option for the tick rate, a `tick()` override called at it, and the fraction between ticks readable in
-  `update`, so no game makes a `Ticker` (Flash's `frameRate`); today a game advances a `Ticker` in `update` and places its nodes at the
-  drawn position (`Body2D.getDrawnX(fraction)`).

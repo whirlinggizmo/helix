@@ -65,7 +65,6 @@ class App extends helix.App {
 			Host.quit();
 		fps.update(dt, Time.frameCpu);
 		ScreenShape.update();
-		fullscreen.update();
 		var x = Screen.visibleX,
 			y = Screen.visibleY,
 			w = Screen.visibleWidth,

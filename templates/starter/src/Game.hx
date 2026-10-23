@@ -25,6 +25,6 @@ class Game extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		fullscreen.update();
+		// Once a frame, before the stage is drawn: the game's logic, dt seconds since the last frame.
 	}
 }

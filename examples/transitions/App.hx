@@ -118,7 +118,6 @@ class App extends helix.App {
 			ease = (ease + 1) % EASES.length;
 		// The design for the window's shape first, then the icon in it: a click on the icon isn't the iris's point.
 		ScreenShape.update();
-		fullscreen.update();
 		if (Input.pointerFramePressed && !fullscreen.hovered) {
 			pointX = Stage.camera.screenToWorldX(Input.pointerX);
 			pointY = Stage.camera.screenToWorldY(Input.pointerY);

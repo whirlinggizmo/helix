@@ -708,7 +708,7 @@ var worldMatrix(get, never):Mat4
 ```
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
-- `environment`: The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one in its tree (the root's, depth first); others are logged once and not used yet (docs/DISPLAY_MODEL.md: the nearest ancestor's will be the rule).
+- `environment`: The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one in its tree (the root's, depth first); others are logged once and not used yet (the nearest ancestor's, docs/ROADMAP.md).
 - `addChild`: Makes child its last child, taking it from any parent it had, keeping child's local transform: it moves with this node as it sat under its old parent (a hat onto a head joint). addChildInPlace keeps its world transform instead. False, changing nothing, for itself or one of its own ancestors.
 - `addChildInPlace`: Puts child under this node without it moving: its world transform is kept and its local one recomputed from this node's (a dropped sword picked up by a hand). addChild keeps the child's local transform instead (a hat onto a head joint). A shear the two transforms make together is lost. False, changing nothing, for itself or one of its own ancestors, or a zero scale on this or above it.
 - `removeChild`: Takes child from its children. False when it isn't one.

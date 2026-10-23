@@ -4,13 +4,15 @@ import helix.graphics.Color;
 import helix.host.Screen;
 import helix.host.Window;
 import helix.input.Input;
+import helix.render2d.Batch2D;
+import helix.render2d.Camera2D;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
 
 /** An icon that toggles fullscreen: four corner brackets, pointing out while windowed and in while fullscreen, brighter under the pointer.
-	On the stage at the visible area's top right, margin in, whatever the window's shape; hidden where the window can't go fullscreen
+	On the stage at the visible area's top right, margin in, whatever the window's shape; drawn nothing where the window can't go fullscreen
 	(Window.canFullscreen: a page that may not). A click on it asks (Window.requestFullscreen), which the browser grants as it follows a
-	click. It needs no Ui: add it to the stage, over the game, and call update once a frame. */
+	click. It needs no Ui and runs itself: add it to the stage, over the game (added again after a screen that goes over it). */
 class FullscreenButton2D extends Drawing2D {
 	/** An icon size stage units across (18 unless given), in color (0xAARRGGBB, a light gray unless given). */
 	public function new(size = 18., color = 0xc0e8e8e8) {
@@ -28,25 +30,34 @@ class FullscreenButton2D extends Drawing2D {
 	/** How far in from the visible area's top-right corner it sits, the stage's units: 10 to start. */
 	public var margin:Float = 10;
 
-	/** Whether the pointer is over it, as of the last update: a game skips its own click there. */
+	/** Whether the pointer is over it, as of the last frame drawn: a game skips its own click there. */
 	public var hovered(default, null):Bool = false;
 
-	/** Places it, draws it for the window's state, and asks for fullscreen or a window when it's clicked: once a frame, after
-		ScreenShape.update when the game uses it. Whether it was clicked. */
-	public function update():Bool {
+	// The frame it was last placed and drawn at: once a frame, however many views show its tree.
+	var refreshedAt = Math.NaN;
+
+	// Each frame as it's drawn: placed, drawn for the window's state, and a click on it answered.
+	override function drawOwn(batch:Batch2D, camera:Camera2D, time:Float, dt:Float, frozen:Bool, shown:Bool):Bool {
+		if (refreshedAt != time) {
+			refreshedAt = time;
+			refresh();
+		}
+		return super.drawOwn(batch, camera, time, dt, frozen, shown);
+	}
+
+	// Places it, draws it for the window's state, and asks for fullscreen or a window when it's clicked.
+	function refresh():Void {
 		clear();
-		visible = Window.canFullscreen();
-		if (!visible) {
+		if (!Window.canFullscreen()) {
 			hovered = false;
-			return false;
+			return;
 		}
 		var x = Screen.visibleX + Screen.visibleWidth - margin - size,
 			y = Screen.visibleY + margin;
 		var px = Stage.camera.screenToWorldX(Input.pointerX),
 			py = Stage.camera.screenToWorldY(Input.pointerY);
 		hovered = Input.pointerX >= 0 && px >= x && px <= x + size && py >= y && py <= y + size;
-		var clicked = hovered && Input.pointerFramePressed;
-		if (clicked)
+		if (hovered && Input.pointerFramePressed)
 			Window.requestFullscreen(!Window.fullscreen);
 		// Four brackets, one a corner: out at the corners while windowed (to fill the screen), in at the middle while fullscreen.
 		var tint = hovered ? Color.withAlpha(color, 255) : color,
@@ -69,6 +80,5 @@ class FullscreenButton2D extends Drawing2D {
 			this.line(ex, ey, ex + ax, ey, thick, tint);
 			this.line(ex, ey, ex, ey + ay, thick, tint);
 		}
-		return clicked;
 	}
 }

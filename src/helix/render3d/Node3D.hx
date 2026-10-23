@@ -73,8 +73,7 @@ class Node3D extends Node {
 
 	/** The light of the place under it (Environment3D: ambient light, environment map, background), or null: a level's root carries its
 		level's (a scene file's "environment" section). A View3D lights its tree by its own environment if it has one, else by the first one
-		in its tree (the root's, depth first); others are logged once and not used yet (docs/DISPLAY_MODEL.md: the nearest ancestor's will be
-		the rule). */
+		in its tree (the root's, depth first); others are logged once and not used yet (the nearest ancestor's, docs/ROADMAP.md). */
 	public var environment:Null<Environment3D>;
 
 	/** A group at the origin, unturned and unscaled, with no children. */

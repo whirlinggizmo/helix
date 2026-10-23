@@ -27,6 +27,7 @@ python3 tools/example.py animation build release-sokol-gl         # out/linux-x6
 
 ## Documents
 
+- [docs/DISPLAY_MODEL.md](docs/DISPLAY_MODEL.md): how a program shows things: the stage, nodes and their flags, views through cameras, a place's light, scene files, where logic lives, and a frame in order.
 - [docs/GUIDE.md](docs/GUIDE.md): making a game, piece by piece: screens, sprites, input, sound, collisions, transitions, effects, Tiled maps, saving and shipping to itch.io, each a recipe with its imports.
 - [GOALS.md](GOALS.md): what HeliX is for, why Haxe, and why a framework at all.
 - [docs/benchmarks.md](docs/benchmarks.md): web sizes, measured: the feature cost ladder, and where the bytes are.
