@@ -46,7 +46,7 @@ def main():
     check_hxcpp()
     sdl3 = finder.find()
     build = ROOT / 'build/tests/streaming'
-    subprocess.run(['haxe', '-cp', 'src', '-cp', 'tests/streaming', '-main', 'StreamingTests', '-cpp', str(build), '-dce', 'full', '-D', 'analyzer-optimize',
+    subprocess.run(['haxe', '-cp', 'src', '-cp', 'generated/shaders', '-cp', 'generated/fonts', '-cp', 'tests/streaming', '-main', 'StreamingTests', '-cpp', str(build), '-dce', 'full', '-D', 'analyzer-optimize',
                     '-D', ARCH, '-D', 'HXCPP_COMPILE_THREADS=4'], cwd=ROOT, env={**native_env(sdl3), 'HAXELIB_PATH': str(ROOT / 'build/haxelib')}, check=True,
                    stdout=subprocess.DEVNULL)
     place_runtimes(build, sdl3)
