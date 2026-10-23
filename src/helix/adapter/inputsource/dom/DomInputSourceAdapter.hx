@@ -53,7 +53,10 @@ class DomInputSourceAdapter implements IInputSource {
 		canvas.addEventListener("pointerdown", e -> {
 			var event:js.html.PointerEvent = cast e;
 			canvas.setPointerCapture(event.pointerId);
+			// Prevented, the press doesn't move the keyboard's focus, so the canvas takes it: in a frame (itch.io's page) the keys go
+			// to the page the player clicked.
 			event.preventDefault();
+			canvas.focus();
 			pointer(event, true);
 		});
 		canvas.addEventListener("pointermove", e -> pointer(cast e, true));
