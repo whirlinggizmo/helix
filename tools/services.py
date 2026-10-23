@@ -49,7 +49,7 @@ def main():
   config=['-debug','-D','HXCPP_CHECK_POINTER'] if native.debug else ['-dce','full','-D','analyzer-optimize']
   run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,*config,'-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
   place_runtimes(build_dir,sdl3)
- counts=Counter();unchanged=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();token=uuid.uuid4().hex
+ counts=Counter();unchanged=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();stereo=(fixtures/'tone-stereo.wav').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):
   protocol_version='HTTP/1.1'
   def log_message(self,*args):pass
@@ -76,6 +76,7 @@ def main():
      with lock:unchanged[path]+=1
    elif path in ('/assets/fixture.ogg','/assets/uncached.ogg'):body=vorbis;cache=[('Cache-Control','max-age=3600')]
    elif path in ('/assets/fixture.opus','/assets/uncached.opus'):body=opus;cache=[('Cache-Control','max-age=3600')]
+   elif path in ('/assets/fixture.stereo.wav','/assets/uncached.stereo.wav'):body=stereo;cache=[('Cache-Control','max-age=3600')]
    elif path=='/assets/broken.ogg':body=b'OggS'+b'broken'*20
    else:status=404;body=b'missing'
    try:
@@ -101,7 +102,7 @@ def main():
   result=json.loads(subprocess.check_output(['node',str(ROOT/'tools/service_browser.cjs'),a.browser,base+'/?db=helix-services-'+token],cwd=ROOT,text=True, encoding='utf-8'))
   assert result['runs'][0]['persisted'] is False and result['runs'][1]['persisted'] is True
   assert counts['/assets/fixture.wav']==1,dict(counts)
-  assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
+  assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==counts['/assets/fixture.stereo.wav']==1,dict(counts)
   # Downloaded on the first visit, revalidated (304, the copy kept) on the second.
   assert counts['/assets/revalidated.wav']==2 and unchanged['/assets/revalidated.wav']==1,(dict(counts),dict(unchanged))
   assert peak<=2,peak
@@ -120,7 +121,7 @@ def main():
     value=json.loads(output.strip().splitlines()[-1]);assert value['passed'];runs.append(value)
    assert not runs[0]['persisted'] and runs[1]['persisted']
    assert counts['/assets/fixture.wav']==1,dict(counts)
-   assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==1,dict(counts)
+   assert counts['/assets/fixture.ogg']==counts['/assets/fixture.opus']==counts['/assets/fixture.stereo.wav']==1,dict(counts)
    assert counts['/assets/revalidated.wav']==2 and unchanged['/assets/revalidated.wav']==1,(dict(counts),dict(unchanged))
    assert peak<=2,peak
    from native_build import codec_library,codec_runtime
@@ -131,7 +132,7 @@ def main():
   for source in ('src/helix/adapter/shared/mixer.c','src/helix/adapter/audio/sokol/internal/output_sokol.c'):report['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()
   report['sources']['src/helix/adapter/audiodecoder/libsndfile/internal/codec.c']=hashlib.sha256((ROOT/'src/helix/adapter/audiodecoder/libsndfile/internal/codec.c').read_bytes()).hexdigest()
   report['sources']['vendor/sndfile/sndfile.h']=hashlib.sha256((ROOT/'vendor/sndfile/sndfile.h').read_bytes()).hexdigest()
-  report['audioFormats']=['PCM16 WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((fixtures/'encoder.json').read_text(encoding='utf-8'))
+  report['audioFormats']=['PCM16 mono WAV','PCM8 stereo 22.05 kHz WAV','Ogg/Vorbis','Ogg/Opus'];report['encoder']=json.loads((fixtures/'encoder.json').read_text(encoding='utf-8'))
   OUT.mkdir(parents=True,exist_ok=True);(OUT/'service-checks.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8');print(json.dumps({target:report[target]['runs'] for target in ['browser','native'] if target in report}))
  finally:server.shutdown();server.server_close();thread.join()
 if __name__=='__main__':main()

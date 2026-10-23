@@ -4,7 +4,8 @@ long enough (about 110 KiB) for the streaming test (tests/streaming) to play it 
 the same bytes and no build needs FFmpeg (DECISIONS 117); generate() makes them only when one is missing, and --regenerate makes them anew
 (both need FFmpeg).
 
-The WAV is 16-bit mono 44,100 Hz, 0.12 s; the Opus copy is stereo 48 kHz, to exercise channel and rate handling. FFmpeg encodes them, bit-exact."""
+The WAV is 16-bit mono 44,100 Hz, 0.12 s; the Opus copy is stereo 48 kHz, and tone-stereo.wav the same tone as 8-bit stereo 22,050 Hz, to
+exercise channel, rate and sample handling. FFmpeg encodes the Ogg files, bit-exact; Python writes the WAVs."""
 import array
 import json
 import math
@@ -23,6 +24,7 @@ def generate(regenerate=False):
     """Writes tone.wav, tone.ogg, tone.opus and encoder.json when any is missing (or regenerate), stream.ogg when it's missing (or
     regenerate), and returns their directory."""
     if regenerate or not (OUT/'stream.ogg').is_file():stream()
+    if regenerate or not (OUT/'tone-stereo.wav').is_file():stereo()
     if not regenerate and all((OUT/name).is_file() for name in ('tone.wav','tone.ogg','tone.opus','encoder.json')):return OUT
     encoder=shutil.which('ffmpeg')
     if not encoder:raise RuntimeError('Install FFmpeg with the libvorbis and libopus encoders to make the test fixtures')
@@ -40,6 +42,16 @@ def generate(regenerate=False):
     (OUT/'encoder.json').write_text(json.dumps({'version':version,'vorbisQuality':3,'opusFixtureBitrate':64000,
         'deterministicFlags':['-bitexact','-map_metadata -1','-fflags +bitexact']},indent=2)+'\n',encoding='utf-8')
     return OUT
+
+def stereo():
+    """Writes tone-stereo.wav: tone.wav's sweep as 8-bit stereo at 22,050 Hz, the right channel at half the left's level."""
+    OUT.mkdir(parents=True,exist_ok=True)
+    rate=22050;n=round(rate*.12);data=bytearray()
+    for i in range(n):
+        t=i/rate;v=math.sin(2*math.pi*(1000*t-2400*t*t))*(1-i/n)**2*.35
+        data+=bytes((128+round(v*127),128+round(v*.5*127)))
+    with wave.open(str(OUT/'tone-stereo.wav'),'wb') as wav:
+        wav.setnchannels(2);wav.setsampwidth(1);wav.setframerate(rate);wav.writeframes(bytes(data))
 
 def stream():
     """Writes stream.ogg: ten seconds of 440 Hz in seeded noise, 16-bit mono 44,100 Hz, as Vorbis at quality 5 (the noise keeps it near

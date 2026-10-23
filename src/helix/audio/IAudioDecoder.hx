@@ -3,8 +3,8 @@ package helix.audio;
 import haxe.io.Bytes;
 import helix.audio.AudioDecoding.AudioDecodeResult;
 
-/** Compressed audio decoding on a platform: a whole Ogg (Vorbis, Opus) or MP3 file, mono or stereo, into mono 32-bit float PCM at 44100 Hz,
-	samples -1 to 1 (mixed down and resampled as the platform can). Limits, the WAV path, queuing and cancellation are the shared
+/** Audio decoding on a platform: a whole WAV (PCM or float, any rate), Ogg (Vorbis, Opus) or MP3 file, mono or stereo, into mono 32-bit
+	float PCM at 44100 Hz, samples -1 to 1 (mixed down and resampled as the platform can). Limits, queuing and cancellation are the shared
 	AudioDecoding's. */
 @:noCompletion
 interface IAudioDecoder {

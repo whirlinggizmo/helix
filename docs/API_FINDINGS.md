@@ -46,4 +46,4 @@ Found while documenting every public member (2026-10-13), by reading each implem
 
 **Smaller**
 - One native host per program: `SokolHostAdapter` keeps sokol's callbacks in statics.
-- Limits worth stating where they bite: WAV clips 4 s (`Wav.decode`), decoded clips 2Mi frames, the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).
+- Limits worth stating where they bite: decoded clips 2Mi frames (about 47 s), the native mixer 16 voices and 32 clips (`playClip` and `playStream` return 0 when full).

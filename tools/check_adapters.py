@@ -35,7 +35,7 @@ DUPLICATE_LINES = 6
 
 # Engine code an adapter must not name.
 ENGINE = re.compile(r'\bhelix\.(render2d|render3d|particles|App\b|app\.Ticker|graphics\.(Pipelines|Shader\b|Shaders|ShaderParameters|ScreenEffect|'
-                    r'PostProcess|Mipmaps|ImageDecoding(?!\.))|audio\.(AudioResources|AudioPlayback|AudioClip|AudioStream|Wav|AudioDecoding(?!\.))|'
+                    r'PostProcess|Mipmaps|ImageDecoding(?!\.))|audio\.(AudioResources|AudioPlayback|AudioClip|AudioStream|AudioDecoding(?!\.))|'
                     r'assets\.(AssetService|Assets|FetchService(?!\.)|Fetch|StorageService(?!\.)|Storage)|input\.(InputRouter|InputState|Input)|core\.Jobs|'
                     r'host\.(Runner|Host|Window|Screen)|graphics\.(Graphics|Screenshots|ScreenshotService)|audio\.Audio|debug\.TestHarness|time\.Time)\b|\b[A-Z][A-Za-z0-9]*[0-9]DProgram\b|\bGeneratedShader\b')
 PLATFORM = re.compile(r'\bjs\.(html|Browser|Syntax|lib)\b|\bsys\.[a-z]|\bcpp\.[A-Za-z]|#if\s+!?(js|cpp|sys|hl)\b')

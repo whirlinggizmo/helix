@@ -43,7 +43,7 @@ static SF_VIRTUAL_IO memory_io={memory_length,memory_seek,memory_read,memory_wri
 
 static int register_decoder(decoder_t *d) {
     int subtype=d->info.format&SF_FORMAT_SUBMASK;
-    /* Ogg Vorbis or Opus, MP3 (libsndfile 1.1 and later, through mpg123), or WAV (a stored file streamed) */
+    /* Ogg Vorbis or Opus, MP3 (libsndfile 1.1 and later, through mpg123), or WAV */
     const int type=d->info.format&SF_FORMAT_TYPEMASK;
     const int ogg=type==SF_FORMAT_OGG&&(subtype==SF_FORMAT_VORBIS||subtype==SF_FORMAT_OPUS);
     const int mp3=type==SF_FORMAT_MPEG&&subtype==SF_FORMAT_MPEG_LAYER_III;
@@ -62,8 +62,8 @@ static int register_decoder(decoder_t *d) {
 }
 int helix_codec_memory(const void *data,int bytes) {
     const unsigned char *b=data;
-    /* Ogg's capture pattern, or an MP3: its ID3 tag or an MPEG frame's sync bits */
-    const int known=bytes>=4&&(!memcmp(b,"OggS",4)||!memcmp(b,"ID3",3)||(b[0]==0xFF&&(b[1]&0xE0)==0xE0));
+    /* A WAV's RIFF header, Ogg's capture pattern, or an MP3: its ID3 tag or an MPEG frame's sync bits */
+    const int known=bytes>=4&&(!memcmp(b,"RIFF",4)||!memcmp(b,"OggS",4)||!memcmp(b,"ID3",3)||(b[0]==0xFF&&(b[1]&0xE0)==0xE0));
     if(!data || bytes<4 || bytes>8*1024*1024 || !known)return 0;
     decoder_t *d=calloc(1,sizeof *d);if(!d)return 0;
     d->memory=malloc((size_t)bytes);if(!d->memory){free(d);return 0;}

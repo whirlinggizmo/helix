@@ -7,7 +7,7 @@ import helix.audio.AudioDecoding.AudioDecodeResult;
 import helix.audio.IAudioDecoder;
 import sys.thread.Thread;
 
-/** IAudioDecoder natively over libsndfile (Ogg Vorbis and Opus, MP3; mixed down and resampled to mono at 44100 Hz in its C), each decode on a
+/** IAudioDecoder natively over libsndfile (WAV, Ogg Vorbis and Opus, MP3; mixed down and resampled to mono at 44100 Hz in its C), each decode on a
 	worker thread. */
 @:noCompletion
 class LibsndfileAudioDecoderAdapter implements IAudioDecoder {
@@ -25,7 +25,7 @@ class LibsndfileAudioDecoderAdapter implements IAudioDecoder {
 	static function decodeNow(encoded:Bytes):AudioDecodeResult {
 		var codec = CodecBridge.codecMemory(cpp.Pointer.arrayElem(encoded.getData(), 0).raw, encoded.length);
 		if (codec == 0)
-			return Failed("Audio decode failed; expected mono or stereo Vorbis, Opus or MP3");
+			return Failed("Audio decode failed; expected mono or stereo WAV, Vorbis, Opus or MP3");
 		var result:AudioDecodeResult;
 		try {
 			var frames = Std.int(CodecBridge.codecFrames(codec));

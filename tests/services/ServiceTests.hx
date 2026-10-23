@@ -304,18 +304,20 @@ class ServiceTests {
 				});
 			}
 		];
-		for (format in ["ogg", "opus"]) {
+		// Each file the platform's decoder reads, as a clip, a stored stream and a remote one: Vorbis, Opus, and a WAV of another rate,
+		// width and channel count than the engine plays.
+		for (format in ["ogg", "opus", "stereo.wav"]) {
 			var extension = format, path = "fixture." + format;
 			var codecSteps:Array<Void->Void> = [
 				() -> assets.ensure(path, bytes -> decoding.decode(bytes, result -> {
 					switch result {
 						case Decoded(samples):
 							helix.audio.Pcm.validate(samples);
-							check(samples.length > 4000 * 4 && samples.length < 7000 * 4, "Ogg duration/rate normalization: " + extension);
+							check(samples.length > 4000 * 4 && samples.length < 7000 * 4, "Decoded duration/rate normalization: " + extension);
 							var peak = 0.;
 							for (i in 0...Std.int(samples.length / 4))
 								peak = Math.max(peak, Math.abs(samples.getFloat(i * 4)));
-							check(peak > .02, "Ogg decode contains signal: " + extension);
+							check(peak > .02, "Decoded audio contains signal: " + extension);
 							next();
 						case _: fail(result);
 					}
@@ -323,15 +325,15 @@ class ServiceTests {
 				() -> audio.loadClip(path, value -> {
 					clip = value;
 					playback = audio.play(clip, true, .4);
-					check(playback.id > 0, "Ogg clip plays: " + extension);
+					check(playback.id > 0, "Clip plays: " + extension);
 					clip.release();
 					playback.pause();
 					wait(.05, () -> {
-						check(!playback.finished && !clip.disposed, "Paused Ogg clip retains resource");
+						check(!playback.finished && !clip.disposed, "Paused clip retains resource: " + extension);
 						playback.resume();
 						wait(.05, () -> {
 							playback.stop();
-							check(clip.disposed, "Ogg clip final release");
+							check(clip.disposed, "Clip final release: " + extension);
 							next();
 						});
 					});
@@ -339,16 +341,16 @@ class ServiceTests {
 				() -> audio.loadStream(path, value -> {
 					stream = value;
 					playback = audio.play(stream, true, .3);
-					check(playback.id > 0, "Stored Ogg stream starts: " + extension);
+					check(playback.id > 0, "Stored stream starts: " + extension);
 					stream.release();
 					playback.pause();
 					wait(.05, () -> {
-						check(!stream.disposed, "Paused Ogg source lease");
+						check(!stream.disposed, "Paused source lease: " + extension);
 						playback.resume();
 						wait(.2, () -> {
-							check(!playback.finished, "Ogg stream loops beyond one duration");
+							check(!playback.finished, "Stream loops beyond one duration: " + extension);
 							playback.stop();
-							check(stream.disposed, "Stopped Ogg source lease released");
+							check(stream.disposed, "Stopped source lease released: " + extension);
 							next();
 						});
 					});
@@ -358,22 +360,22 @@ class ServiceTests {
 					playback = audio.play(stream);
 					stream.release();
 					wait(.6, () -> {
-						check(playback.finished && stream.disposed, "Natural Ogg EOF releases resource: " + extension);
+						check(playback.finished && stream.disposed, "Natural EOF releases resource: " + extension);
 						next();
 					});
 				}, message -> fail(message)),
 				() -> audio.loadStream("uncached." + extension, value -> {
 					var playing = audio.play(value);
 					value.release();
-					check(playing.id > 0, "Remote Ogg starts: " + extension);
+					check(playing.id > 0, "Remote stream starts: " + extension);
 					wait(.6, () -> {
-						check(playing.finished && value.disposed, "Remote Ogg EOF");
+						check(playing.finished && value.disposed, "Remote stream EOF: " + extension);
 						assets.streamSource("uncached." + extension, source -> {
 							switch source {
-								case Remote(_): check(env.remoteStreams, "Remote Ogg did not persist");
+								case Remote(_): check(env.remoteStreams, "Remote stream did not persist: " + extension);
 								case Stored(lease):
 									lease.release();
-									check(!env.remoteStreams, "Native remote Ogg kept its download");
+									check(!env.remoteStreams, "Native remote stream kept its download: " + extension);
 								case _: fail(source);
 							}
 							next();

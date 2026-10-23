@@ -33,8 +33,9 @@ class AudioResources implements IReloadable {
 		this.decoding = decoding;
 	}
 
-	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes. One of loaded or failed runs once on the host
-		thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path)
+	/** Loads path and decodes it whole into a clip, which reloads in place when the file changes: a WAV (PCM or float), Ogg (Vorbis or Opus)
+		or MP3, mono or stereo at any rate, played as mono at 44100 Hz; at most 8 MiB and about 47 seconds (loadStream for music). One of
+		loaded or failed runs once on the host thread, and neither once the request is cancelled: loaded with a clip the caller owns and releases; failed (else the log, with the path)
 		for a closed service, a load or decode failure, or a clip the backend refuses. A clip that arrives after cancellation is released. */
 	public function loadClip(path:String, loaded:AudioClip->Void, ?failed:String->Void):IRequest {
 		var child:IRequest = null, request:Request = null;
@@ -84,7 +85,7 @@ class AudioResources implements IReloadable {
 		return request;
 	}
 
-	/** Opens path for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL
+	/** Opens path (a WAV, Ogg or MP3, as loadClip takes) for progressive playback from a cached or packaged copy, or else from the host without loading it whole: its remote URL
 		where the backend plays one (a browser), else its download, played as it arrives and kept in the cache when it ends
 		(IAssets.streamSource's download). One of loaded or failed runs once on the host thread, and neither once the request is cancelled:
 		loaded with a stream the caller owns and releases (its stored copy's lease ends with it); failed (else the log, with the path) for a

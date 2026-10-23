@@ -12,9 +12,9 @@ enum AudioDecodeResult {
 	Cancelled;
 }
 
-/** Whole-file audio decoding, the same on every platform: a WAV (mono PCM16 at 44100 Hz, at most 4 seconds) decoded here, an Ogg (Vorbis,
-	Opus) or MP3 by the platform's IAudioDecoder; at most 8 MiB encoded and 2Mi frames decoded; at most two at once, each completing exactly
-	once on the host thread. */
+/** Whole-file audio decoding, the same on every platform: a WAV, Ogg (Vorbis, Opus) or MP3, mono or stereo at any rate, by the platform's
+	IAudioDecoder, known by its first bytes; at most 8 MiB encoded and 2Mi frames decoded (about 47 seconds); at most two at once, each
+	completing exactly once on the host thread. */
 @:noCompletion
 @:allow(helix)
 class AudioDecoding {
@@ -50,8 +50,6 @@ class AudioDecoding {
 				job.finish(Failed("Encoded audio exceeds byte limit"));
 			else if (kind == null)
 				job.finish(Failed("Unsupported encoded audio; expected WAV, Ogg or MP3"));
-			else if (kind == "wav")
-				job.finish(try Decoded(Wav.decode(encoded)) catch (error:Dynamic) Failed(Std.string(error)));
 			else
 				decoder.decode(encoded, result -> job.finish(switch result {
 					case Decoded(samples) if (samples.length > MAX_FRAMES * 4): Failed("Decoded PCM exceeds frame limit");
