@@ -4,37 +4,50 @@
 
 ## AlphaMode
 
-*abstract* in [`src/helix/graphics/AlphaMode.hx`](../../src/helix/graphics/AlphaMode.hx)
+*abstract* in [`src/helix/graphics/AlphaMode.hx`](../../src/helix/graphics/AlphaMode.hx), `import helix.graphics.AlphaMode;`
 
 How a sprite or a particle uses its texels' alpha, the same in 2D and 3D (Sprite3D.alphaMode, Emitter.alphaMode). In 3D it also says when it's drawn among the models: with the opaque ones, among the see-through ones back to front, or after everything.
 
+- `AlphaMode.Opaque`: Ignored: drawn solid (in 3D, with the opaque models).
+- `AlphaMode.Mask`: Texels below a cutoff are cut out, the rest solid: leaves, fences (in 3D, drawn with the opaque models).
+- `AlphaMode.Blend`: Blended by it (in 3D, among the see-through models back to front).
+- `AlphaMode.Add`: Added, times it: light, fire, glows (in 3D, after everything else).
+
 ## BlendMode
 
-*abstract* in [`src/helix/graphics/BlendMode.hx`](../../src/helix/graphics/BlendMode.hx)
+*abstract* in [`src/helix/graphics/BlendMode.hx`](../../src/helix/graphics/BlendMode.hx), `import helix.graphics.BlendMode;`
 
 How a pipeline's colors meet what the framebuffer has: replacing it, blended over it by their alpha (straight alpha), or added to it (times their alpha: light, fire, glows).
 
+- `BlendMode.Opaque`: Replaces what's there.
+- `BlendMode.Alpha`: Blended over what's there by its alpha.
+- `BlendMode.Additive`: Added to what's there, times its alpha.
+
 ## ClipFlip
 
-*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx)
+*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx), `import helix.graphics.PipelineDesc;`
 
 What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major, its first 64 bytes) whose y row it negates in such a pass.
 
+- `ClipFlip.None`: Block 0 isn't touched (or there is none).
+- `ClipFlip.ClipScale`: Block 0 is a vec4 clip scale the adapter writes.
+- `ClipFlip.ViewProjection`: Block 0 starts with a view-projection matrix whose y row the adapter negates.
+
 ## Color
 
-*class* in [`src/helix/graphics/Color.hx`](../../src/helix/graphics/Color.hx)
+*class* in [`src/helix/graphics/Color.hx`](../../src/helix/graphics/Color.hx), `import helix.graphics.Color;`
 
 Colors as HeliX holds them: 0xAARRGGBB integers, alpha in the top byte, as Haxe's libraries write them and as an editor's color picker reads a literal. Each channel is 0 to 255. Text names a color the CSS way, #RRGGBB or #RRGGBBAA (a scene file, a color picker's field), converted by fromRgba and toRgba.
 
 ```haxe
-static var fromChannels(inline, null):(red:Int, green:Int, blue:Int, ?alpha:Int) -> Int
-static var getRed(inline, null):(color:Int) -> Int
-static var getGreen(inline, null):(color:Int) -> Int
-static var getBlue(inline, null):(color:Int) -> Int
-static var getAlpha(inline, null):(color:Int) -> Int
-static var withAlpha(inline, null):(color:Int, alpha:Int) -> Int
-static var fromRgba(inline, null):(rgba:Int) -> Int
-static var toRgba(inline, null):(color:Int) -> Int
+static function fromChannels(red:Int, green:Int, blue:Int, ?alpha:Int = 255):Int
+static function getRed(color:Int):Int
+static function getGreen(color:Int):Int
+static function getBlue(color:Int):Int
+static function getAlpha(color:Int):Int
+static function withAlpha(color:Int, alpha:Int):Int
+static function fromRgba(rgba:Int):Int
+static function toRgba(color:Int):Int
 ```
 
 - `fromChannels`: The color of these channels, each 0 to 255 (only its low 8 bits are taken), alpha opaque unless given.
@@ -48,13 +61,17 @@ static var toRgba(inline, null):(color:Int) -> Int
 
 ## DepthTest
 
-*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx)
+*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx), `import helix.graphics.PipelineDesc;`
 
 Which fragments a pipeline's depth test passes, against the depth already there.
 
+- `DepthTest.Off`: No test: every fragment is drawn.
+- `DepthTest.LessEqual`: Nearer or as near: what's in front (the usual test).
+- `DepthTest.Greater`: Farther: only where something nearer was drawn before (what's hidden behind it).
+
 ## Graphics
 
-*class* in [`src/helix/graphics/Graphics.hx`](../../src/helix/graphics/Graphics.hx)
+*class* in [`src/helix/graphics/Graphics.hx`](../../src/helix/graphics/Graphics.hx), `import helix.graphics.Graphics;`
 
 The GPU: textures, buffers, shaders, pipelines, passes and draws. Shutting it down is the runner's, and so is the frame: the runner opens and closes it around the stage's drawing (docs/DISPLAY_MODEL.md), so beginFrame and endFrame aren't here; a pass into a texture (beginTargetPass) is drawn in init or update, before the frame opens. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IGraphics's public members with their doc comments.
 
@@ -72,7 +89,7 @@ static function canRender(format:TextureFormat):Bool
 
 ## PostProcess
 
-*class* in [`src/helix/graphics/PostProcess.hx`](../../src/helix/graphics/PostProcess.hx)
+*class* in [`src/helix/graphics/PostProcess.hx`](../../src/helix/graphics/PostProcess.hx), `import helix.graphics.PostProcess;`
 
 Screen effects over a finished frame: the scene is drawn into a texture the screen's size (beginScene to endScene, a target pass), the enabled effects but the last draw in turn from one texture into another (target passes without depth, still before the screen's), and present draws the last over the screen's pass, or the frame as it is when no effect is on. Effects run in the order added, so turning one off and on (ScreenEffect.enabled) keeps its place. Its textures follow the screen's size; an effect's intermediates (ScreenEffect.intermediates) are made at their fractions of it. An HDR chain: when an enabled effect wants HDR (ScreenEffect.hdr) and the GPU draws half floats (IGraphics.canRender), the scene is drawn in RGBA16F, the 3D views drawing into it (View3D: the stage tells them, View) writing their light after the exposure with no tone mapping, as sRGB values running past 1 (the sRGB curve carried on past 1, so sprites, particles and text, whose colors are sRGB values already, blend into it as into the screen, and are tone mapped with it). The tone mapping then runs as an effect (helix.shader.Tonemap, Neutral unless the chain has its own), after the last effect wanting HDR, unless the chain has one of its own; the effects before it read and write half floats, the ones after it the tone-mapped frame in RGBA8. Without half floats every texture is RGBA8 as the screen is, the 3D views tone map as they draw, and a Tonemap in the chain is skipped. An HDR scene is cleared to what its tone mapping shows as the clear color (Tonemap.computeHdrColor), so a background of clear color alone looks the same with the chain HDR or not.
 
@@ -100,7 +117,7 @@ function destroy():Void
 
 ## ScreenEffect
 
-*class* in [`src/helix/graphics/ScreenEffect.hx`](../../src/helix/graphics/ScreenEffect.hx)
+*class* in [`src/helix/graphics/ScreenEffect.hx`](../../src/helix/graphics/ScreenEffect.hx), `import helix.graphics.ScreenEffect;`
 
 A screen effect: a Shader of kind screen drawn over a whole frame (one triangle over the viewport), with its own parameters and textures set by name (parameters), kept across the shader's reloads. PostProcess chains them (PostProcess.add); drawPass draws its shader once into the open pass. An effect of several passes (a subclass: a blur, a bloom's downsample chain) asks for intermediates, draws into them before its last pass (drawIntermediates, each step a ScreenEffect of its own drawn with drawInto) and reads more than one of them through its own textures (parameters.setTexture).
 
@@ -130,7 +147,7 @@ function drawPass(source:Texture2D, width:Int, height:Int, time:Float):Void
 
 ## ScreenFrame
 
-*class* in [`src/helix/graphics/ScreenFrame.hx`](../../src/helix/graphics/ScreenFrame.hx)
+*class* in [`src/helix/graphics/ScreenFrame.hx`](../../src/helix/graphics/ScreenFrame.hx), `import helix.graphics.ScreenFrame;`
 
 What a screen effect draws from in a PostProcess chain, this frame: the frame it changes, its size, the time, and the intermediates it asked for (ScreenEffect.intermediates), made by PostProcess at their sizes in the frame's format.
 
@@ -152,7 +169,7 @@ final intermediates:Array<Texture2D>
 
 ## ScreenshotResult
 
-*enum* in [`src/helix/graphics/ScreenshotService.hx`](../../src/helix/graphics/ScreenshotService.hx)
+*enum* in [`src/helix/graphics/ScreenshotService.hx`](../../src/helix/graphics/ScreenshotService.hx), `import helix.graphics.ScreenshotService;`
 
 How a screenshot ended: where it was saved and its PNG file, or why it wasn't.
 
@@ -161,7 +178,7 @@ How a screenshot ended: where it was saved and its PNG file, or why it wasn't.
 
 ## Screenshots
 
-*class* in [`src/helix/graphics/Screenshots.hx`](../../src/helix/graphics/Screenshots.hx)
+*class* in [`src/helix/graphics/Screenshots.hx`](../../src/helix/graphics/Screenshots.hx), `import helix.graphics.Screenshots;`
 
 Screenshots of the frame, saved for the user (a download in a browser, a file natively; ScreenshotService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from ScreenshotService's public members with their doc comments.
 
@@ -175,12 +192,12 @@ static function sample(points:Array<Array<Float>>, done:Array<Array<Int>> -> Voi
 
 ## Shader
 
-*class* in [`src/helix/graphics/Shader.hx`](../../src/helix/graphics/Shader.hx)
+*class* in [`src/helix/graphics/Shader.hx`](../../src/helix/graphics/Shader.hx), `import helix.graphics.Shader;`
 
 An app's shader loaded from a .hxshader (src/helix/tool/shader/ShaderPacker.hx; Shaders loads them, the shader library packs its own into the program): its program built on the GPU, its kind ("screen", "surface" or "sprite"), its uniform blocks' sizes, its own parameters by name and its own textures by name. A surface shader comes with its variants, each a Shader of its own over the same parameters: skinned (drawing skinned models) and caster (drawing its shadow, when it has a vertex hook or a discard); a sprite shader with sprite3D (drawing a Renderer3D's sprites). A hot reload replaces the programs in place and bumps reloadCount; their pipelines (Pipelines) are made again over the new programs as they're next asked for.
 
 ```haxe
-static var FORMAT(inline, null):Int
+static inline var FORMAT:Int
 static function fromText(text:String, ?gpu:IGraphics):Shader
 var handle(default, null):Int
 var kind(default, null):String
@@ -211,7 +228,7 @@ function destroy():Void
 
 ## ShaderParameter
 
-*typedef* in [`src/helix/graphics/Shader.hx`](../../src/helix/graphics/Shader.hx)
+*typedef* in [`src/helix/graphics/Shader.hx`](../../src/helix/graphics/Shader.hx), `import helix.graphics.Shader;`
 
 One of a shader's own parameters: its uniform block's slot, its byte offset there, its type (float, vec2, vec3, vec4, mat4) and how many (1 unless an array).
 
@@ -222,7 +239,7 @@ One of a shader's own parameters: its uniform block's slot, its byte offset ther
 
 ## ShaderParameters
 
-*class* in [`src/helix/graphics/ShaderParameters.hx`](../../src/helix/graphics/ShaderParameters.hx)
+*class* in [`src/helix/graphics/ShaderParameters.hx`](../../src/helix/graphics/ShaderParameters.hx), `import helix.graphics.ShaderParameters;`
 
 An app's shader's own parameters and textures, set by name and kept across the shader's reloads (a name the reloaded shader lacks is kept and ignored), written into its uniform blocks at their std140 offsets when something draws with it. ScreenEffect and Material3D have one.
 
@@ -250,7 +267,7 @@ var textureSlots(get, never):Map<Int, Texture2D>
 
 ## Shaders
 
-*class* in [`src/helix/graphics/Shaders.hx`](../../src/helix/graphics/Shaders.hx)
+*class* in [`src/helix/graphics/Shaders.hx`](../../src/helix/graphics/Shaders.hx), `import helix.graphics.Shaders;`
 
 Apps' shaders (.hxshader files, packed from GLSL by src/helix/tool/shader/ShaderPacker.hx; how one is written: docs/SHADERS.md) loaded through the assets and built on the GPU, and built again in place when a file changes during development. The caller releases what it loads.
 
@@ -268,7 +285,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 ## SpriteEffect
 
-*class* in [`src/helix/graphics/SpriteEffect.hx`](../../src/helix/graphics/SpriteEffect.hx)
+*class* in [`src/helix/graphics/SpriteEffect.hx`](../../src/helix/graphics/SpriteEffect.hx), `import helix.graphics.SpriteEffect;`
 
 A sprite effect: a Shader of kind sprite (its fragment stage including helix_sprite) that sprites draw through (Node2D.effect: a sprite's, a shape's, a text's or a drawing's own drawing; Batch2D.effect; and a Renderer3D's Sprite3D.effect through its shader's sprite3D variant) in place of the framework's sprite programs, with its own parameters and textures set by name (parameters), kept across the shader's reloads. The library's are in helix.shader (SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap); an app's own is a .hxshader (Shaders.load) made into one with new. An effect is shared, not a sprite's own: every sprite drawn with it in a frame draws with its parameters as they are when the batch ends, and the sprites drawn with one effect one after another, of one texture, are one draw. A sprite wanting values of its own (its own flash) has an effect of its own, a draw of its own.
 

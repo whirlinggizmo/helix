@@ -4,7 +4,7 @@
 
 ## Font
 
-*class* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx)
+*class* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx), `import helix.font.Font;`
 
 A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning; pixel() a 5x7 bitmap font. Sizes are in font pixels: the size the font was made at, which text is scaled from to the size asked for.
 
@@ -42,7 +42,7 @@ function destroy(?gpu:IGraphics):Void
 
 ## Fonts
 
-*class* in [`src/helix/font/Fonts.hx`](../../src/helix/font/Fonts.hx)
+*class* in [`src/helix/font/Fonts.hx`](../../src/helix/font/Fonts.hx), `import helix.font.Fonts;`
 
 TrueType fonts from files, baked into distance fields and baked again when a file changes during development (FontCache). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FontCache's public members with their doc comments.
 
@@ -58,7 +58,7 @@ static function release(font:Font):Void
 
 ## Glyph
 
-*typedef* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx)
+*typedef* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx), `import helix.font.Font;`
 
 Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels.
 

@@ -4,7 +4,7 @@
 
 ## Clock
 
-*class* in [`src/helix/time/Clock.hx`](../../src/helix/time/Clock.hx)
+*class* in [`src/helix/time/Clock.hx`](../../src/helix/time/Clock.hx), `import helix.time.Clock;`
 
 A game's time, from the frames' (FrameClock): scaled and paused as a whole, so everything fed by it (a Ticker's steps, tweens, timers, animators, emitters) slows, stops and resumes together, with nothing else to flag. Time.clock is the program's, updated by the runner before each frame; a game keeps more where times differ: a menu's clock running while the world's is paused (Unity's unscaled time). Each frame has two measures, as FrameClock's: the delta, held at MAX_DELTA (a stall moves animation on by that much), and the elapsed time, unheld, for a Ticker, which bounds its own catch-up. Both are 0 while paused.
 
@@ -32,7 +32,7 @@ function resume():Void
 
 ## Ticker
 
-*class* in [`src/helix/time/Ticker.hx`](../../src/helix/time/Ticker.hx)
+*class* in [`src/helix/time/Ticker.hx`](../../src/helix/time/Ticker.hx), `import helix.time.Ticker;`
 
 A fixed-rate simulation inside the frame callback, fed a clock's elapsed time (Clock.elapsed: paused or scaled there, so the ticks are too). Each tick sees the input's tick edges, consumed after it, so a press is seen by exactly one tick. fraction is how far the frame is between the last tick and the next, for drawing between them.
 
@@ -54,7 +54,7 @@ function advance(elapsed:Float, tick:() -> Void):Int
 
 ## Time
 
-*class* in [`src/helix/time/Time.hx`](../../src/helix/time/Time.hx)
+*class* in [`src/helix/time/Time.hx`](../../src/helix/time/Time.hx), `import helix.time.Time;`
 
 The program's time: the host's clock, the frames' timings and the game's clock (clock), which tickers, tweens, timers, animators and emitters are fed. The program's one, a static class over the runner's frame clock, bound by the runner from its init to its cleanup.
 
@@ -74,7 +74,7 @@ static var frameInterval(get, never):Float
 
 ## Timer
 
-*class* in [`src/helix/time/Timers.hx`](../../src/helix/time/Timers.hx)
+*class* in [`src/helix/time/Timers.hx`](../../src/helix/time/Timers.hx), `import helix.time.Timers;`
 
 One timer of a Timers set: cancelled by the game, or done once it has fired (a repeating one never is until cancelled).
 
@@ -94,7 +94,7 @@ function cancel():Void
 
 ## Timers
 
-*class* in [`src/helix/time/Timers.hx`](../../src/helix/time/Timers.hx)
+*class* in [`src/helix/time/Timers.hx`](../../src/helix/time/Timers.hx), `import helix.time.Timers;`
 
 Timers on a clock: after(seconds, f) runs f once, every(seconds, f) runs it each interval, both measured in the clock's deltas (Clock.delta, so a stall fires each once, not a burst) when update runs each frame. Those due in one update fire in the order made; one made or cancelled inside a callback takes effect from the next update.
 

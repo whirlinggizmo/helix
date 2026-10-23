@@ -4,7 +4,7 @@
 
 ## TiledFrame2D
 
-*class* in [`src/helix/tiled/TiledFrame2D.hx`](../../src/helix/tiled/TiledFrame2D.hx)
+*class* in [`src/helix/tiled/TiledFrame2D.hx`](../../src/helix/tiled/TiledFrame2D.hx), `import helix.tiled.TiledFrame2D;`
 
 A frame of an animated tile: which tile of its tileset shows, for how long.
 
@@ -18,7 +18,7 @@ var seconds(default, null):Float
 
 ## TiledInstance2D
 
-*class* in [`src/helix/tiled/TiledInstance2D.hx`](../../src/helix/tiled/TiledInstance2D.hx)
+*class* in [`src/helix/tiled/TiledInstance2D.hx`](../../src/helix/tiled/TiledInstance2D.hx), `import helix.tiled.TiledInstance2D;`
 
 A Tiled map on the stage (TiledMap2D.instantiate): a node named for its file under the parent it was given (on the stage when none), its layers' nodes under it in drawing order (a tile layer a TiledTileLayer2D, an object layer a node holding its tile objects' sprites, an image layer a sprite, a group a node of its layers), each named, shown, faded and offset as in Tiled, in the map's pixels from its top-left. It finds layers and objects by name and class for the game, and steps the tile layers' animated tiles on the game's clock (paused with the game) until it's destroyed.
 
@@ -44,7 +44,7 @@ function destroy():Void
 
 ## TiledLayer2D
 
-*class* in [`src/helix/tiled/TiledLayer2D.hx`](../../src/helix/tiled/TiledLayer2D.hx)
+*class* in [`src/helix/tiled/TiledLayer2D.hx`](../../src/helix/tiled/TiledLayer2D.hx), `import helix.tiled.TiledLayer2D;`
 
 A layer of a Tiled map as read: its kind and what that holds, its name, whether it's shown, its opacity, its offset and its custom properties. A map's layers are drawn in their order, the first under the rest; a group's are under it, its offset and opacity applying to them (TiledMap2D.instantiate).
 
@@ -86,7 +86,7 @@ function getTile(column:Int, row:Int):Int
 
 ## TiledLayerKind2D
 
-*enum* in [`src/helix/tiled/TiledLayerKind2D.hx`](../../src/helix/tiled/TiledLayerKind2D.hx)
+*enum* in [`src/helix/tiled/TiledLayerKind2D.hx`](../../src/helix/tiled/TiledLayerKind2D.hx), `import helix.tiled.TiledLayerKind2D;`
 
 What a Tiled layer holds.
 
@@ -97,15 +97,15 @@ What a Tiled layer holds.
 
 ## TiledMap2D
 
-*class* in [`src/helix/tiled/TiledMap2D.hx`](../../src/helix/tiled/TiledMap2D.hx)
+*class* in [`src/helix/tiled/TiledMap2D.hx`](../../src/helix/tiled/TiledMap2D.hx), `import helix.tiled.TiledMap2D;`
 
 A map made in Tiled (mapeditor.org), as its JSON (Tiled's File > Export As or Save As, .tmj; its tilesets embedded or .tsj files beside it): an orthogonal grid of tiles, finite, its layers (tiles, objects, images and groups of them), its tilesets (one image each, their tiles' classes, properties, animations and terrain sets) and its custom properties. load reads it with its tilesets and images; instantiate puts it under a node (TiledInstance2D), a tile a sprite, in the map's pixels from its top-left, y down. Isometric and hexagonal maps, infinite ones, image-collection tilesets and zstd-compressed layers aren't read (each refused, saying so).
 
 ```haxe
-static var GID_MASK(inline, null):Int
-static var GID_FLIP_X(inline, null):Int
-static var GID_FLIP_Y(inline, null):Int
-static var GID_FLIP_DIAGONAL(inline, null):Int
+static inline var GID_MASK:Int
+static inline var GID_FLIP_X:Int
+static inline var GID_FLIP_Y:Int
+static inline var GID_FLIP_DIAGONAL:Int
 static function load(path:String, loaded:TiledMap2D -> Void, ?failed:String -> Void):IRequest
 static function parse(text:String, path:String, ?files:Map<String, String>):TiledMap2D
 static function parseColor(text:String):Null<Int>
@@ -147,7 +147,7 @@ function instantiate(?parent:Node2D):TiledInstance2D
 
 ## TiledObject2D
 
-*class* in [`src/helix/tiled/TiledObject2D.hx`](../../src/helix/tiled/TiledObject2D.hx)
+*class* in [`src/helix/tiled/TiledObject2D.hx`](../../src/helix/tiled/TiledObject2D.hx), `import helix.tiled.TiledObject2D;`
 
 An object of a Tiled object layer: a spawn point, a trigger area, a path, a placed tile. Its place is the map's pixels, from its top-left; what it means is the game's, from its name, class and custom properties (TiledInstance2D.findObject, getObjects).
 
@@ -183,7 +183,7 @@ var properties(default, null):TiledProperties2D
 
 ## TiledProperties2D
 
-*class* in [`src/helix/tiled/TiledProperties2D.hx`](../../src/helix/tiled/TiledProperties2D.hx)
+*class* in [`src/helix/tiled/TiledProperties2D.hx`](../../src/helix/tiled/TiledProperties2D.hx), `import helix.tiled.TiledProperties2D;`
 
 A Tiled map's, layer's, tile's or object's custom properties (Tiled's Custom Properties panel), read by name with what it is when missing. Colors come as 0xAARRGGBB; a file property is its path as Tiled wrote it (relative to the file it's in); a class property is its members as a JSON object (getRaw).
 
@@ -213,7 +213,7 @@ function getType(name:String):Null<String>
 
 ## TiledShape2D
 
-*enum* in [`src/helix/tiled/TiledShape2D.hx`](../../src/helix/tiled/TiledShape2D.hx)
+*enum* in [`src/helix/tiled/TiledShape2D.hx`](../../src/helix/tiled/TiledShape2D.hx), `import helix.tiled.TiledShape2D;`
 
 What a Tiled object is: its shape in Tiled's toolbar.
 
@@ -227,7 +227,7 @@ What a Tiled object is: its shape in Tiled's toolbar.
 
 ## TiledTerrainKind2D
 
-*enum* in [`src/helix/tiled/TiledTerrainKind2D.hx`](../../src/helix/tiled/TiledTerrainKind2D.hx)
+*enum* in [`src/helix/tiled/TiledTerrainKind2D.hx`](../../src/helix/tiled/TiledTerrainKind2D.hx), `import helix.tiled.TiledTerrainKind2D;`
 
 How a terrain set's tiles meet: at their corners, their edges, or both (Tiled's terrain set types).
 
@@ -237,7 +237,7 @@ How a terrain set's tiles meet: at their corners, their edges, or both (Tiled's 
 
 ## TiledTerrainSet2D
 
-*class* in [`src/helix/tiled/TiledTerrainSet2D.hx`](../../src/helix/tiled/TiledTerrainSet2D.hx)
+*class* in [`src/helix/tiled/TiledTerrainSet2D.hx`](../../src/helix/tiled/TiledTerrainSet2D.hx), `import helix.tiled.TiledTerrainSet2D;`
 
 A tileset's terrain set (Tiled's "Terrain Set", its file's "wangset"): the terrains it has, numbered from 1 (0 is none), and for each tile that takes part which terrain is at each corner or edge, so a layer can pick the tile that fits its neighbors (TiledTileLayer2D.setTerrain).
 
@@ -261,7 +261,7 @@ function holds(id:Int):Bool
 
 ## TiledTileLayer2D
 
-*class* in [`src/helix/tiled/TiledTileLayer2D.hx`](../../src/helix/tiled/TiledTileLayer2D.hx)
+*class* in [`src/helix/tiled/TiledTileLayer2D.hx`](../../src/helix/tiled/TiledTileLayer2D.hx), `import helix.tiled.TiledTileLayer2D;`
 
 A Tiled map's tile layer on the stage: a sprite a cell, drawn from its tileset (nearest sampled), flipped and turned as the map says, in the map's pixels from its top-left. The game reads it (getTile, isFilled, getTileProperties: a wall, water, a ladder), changes it (setTile), and paints terrain into it as Tiled's Terrain brush does (setTerrain: dig, build, flood), the neighbors made to fit. Animated tiles step on the game's clock (TiledInstance2D). Body2D.step takes isFilled as its solid tiles: (column, row) -> walls.isFilled(column, row), the body in the same pixels with a tile size of the map's.
 
@@ -293,12 +293,12 @@ function setTerrain(column:Int, row:Int, set:TiledTerrainSet2D, terrain:Int):Boo
 
 ## TiledTileset2D
 
-*class* in [`src/helix/tiled/TiledTileset2D.hx`](../../src/helix/tiled/TiledTileset2D.hx)
+*class* in [`src/helix/tiled/TiledTileset2D.hx`](../../src/helix/tiled/TiledTileset2D.hx), `import helix.tiled.TiledTileset2D;`
 
 A Tiled tileset as a map uses it: one image cut into a grid of tiles (an image-collection tileset, a file a tile, isn't read), the global ids from firstGid on its tiles in order, and what its tiles carry: a class, custom properties, an animation, and the terrain sets auto-tiling picks from (TiledTerrainSet2D, the "Terrain Sets" Tiled draws with). Its texture is in once the map has loaded.
 
 ```haxe
-static var INSET(inline, null):Float
+static inline var INSET:Float
 var name(default, null):String
 var firstGid(default, null):Int
 var tileWidth(default, null):Int

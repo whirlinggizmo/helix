@@ -115,16 +115,21 @@ def doc_text(node):
     d=node.find('haxe_doc')
     return ' '.join((d.text or '').split()) if d is not None else ''
 
-def member_lines(member,known):
-    """A public member as a Haxe signature and its doc, or None for a private one or the meta."""
+def member_lines(member,known,instance=()):
+    """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,
+    statics of its implementation whose accessors take the value."""
     if member.tag in ('haxe_doc','meta') or member.get('public')!='1' or hidden(member):return None
     name=member.tag;static='static ' if member.get('static')=='1' else ''
     kids=[c for c in member if c.tag not in ('haxe_doc','meta')]
     if not kids:return None
     t=kids[0]
-    if member.get('set')=='method' and t.tag=='f':
+    if name in instance:static=''
+    # An inline method is a variable of a function type: written as the method it is.
+    if (member.get('set')=='method' or member.get('get')=='inline') and t.tag=='f':
         names=t.get('a','').split(':') if t.get('a') else [];values=(t.get('v') or '').split(':') if t.get('v') else []
         parts=list(t);ret=type_text(parts[-1],known) if parts else 'Void'
+        # An abstract's method is a static of its implementation taking the value first, as this: written as the game calls it.
+        if names[:1]==['this']:names,parts,values,static=names[1:],parts[1:],values[1:],''
         args=[]
         for i,(n,k) in enumerate(zip(names,parts[:-1])):
             v=values[i] if i<len(values) else ''
@@ -141,6 +146,8 @@ def member_lines(member,known):
         if get=='get' and setter=='null':setter='never'
         access='' if (get,setter)==('default','default') else f'({get}, {setter})'
         final_='final ' if member.get('final')=='1' else 'var '
+        # A constant: inline, read-only.
+        if (get,setter)==('inline','null'):final_,access='inline var ',''
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
     return sig,doc_text(member)
 
@@ -155,14 +162,31 @@ def markdown(xml):
         kind={'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
         # Its source, relative to docs/api: a link on GitHub and in a checkout alike.
         source=node.get('file','')
-        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})','']
+        # The import that names it: its module's, which is the type's own path unless it's one of several types in a file.
+        module=node.get('module') or path
+        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {module};`','']
         doc=doc_text(node)
         if doc:lines+=[doc,'']
         file=package_file(path)
-        if node.tag=='class':
+        # An abstract's values and members are its implementation class's statics: an enum abstract's values (:enum) listed by name, the
+        # rest as a class's members.
+        impl=node.find('impl') if node.tag=='abstract' else None
+        body=impl[0] if impl is not None and len(impl) else node
+        if node.tag=='abstract':
+            values=[c for c in body if c.find('meta') is not None and any(m.get('n')==':enum' for m in c.find('meta'))]
+            if values:
+                documented=[c for c in values if doc_text(c)]
+                if documented:
+                    for c in values:lines.append(f'- `{name}.{c.tag}`'+(f': {doc_text(c)}' if doc_text(c) else ''))
+                else:lines.append('Values: '+', '.join(f'`{c.tag}`' for c in values)+'.')
+                lines.append('')
+        if node.tag=='class' or node.tag=='abstract' and body is not node:
             # A property's accessors (get_x, set_x; an interface's are public) are the property, listed once.
-            properties={c.tag for c in node if c.get('set')!='method' and c.get('get') is not None}
-            members=[m for m in (member_lines(c,known) for c in node if not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
+            properties={c.tag for c in body if c.get('set')!='method' and c.get('get') is not None}
+            enum={c.tag for c in body if c.find('meta') is not None and any(m.get('n')==':enum' for m in c.find('meta'))} if node.tag=='abstract' else set()
+            # An abstract's property is the value's when its accessor takes the value (this).
+            instance={c.tag for c in body if c.tag in properties and any((a.tag==f'get_{c.tag}' or a.tag==f'set_{c.tag}') and len(a) and (a[0].get('a') or '').split(':')[0]=='this' for a in body)} if node.tag=='abstract' else set()
+            members=[m for m in (member_lines(c,known,instance) for c in body if c.tag not in enum and not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
             if members:
                 lines.append('```haxe')

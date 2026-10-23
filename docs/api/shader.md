@@ -4,13 +4,13 @@
 
 ## Bloom
 
-*class* in [`src/helix/shader/Bloom.hx`](../../src/helix/shader/Bloom.hx)
+*class* in [`src/helix/shader/Bloom.hx`](../../src/helix/shader/Bloom.hx), `import helix.shader.Bloom;`
 
 Bloom, a screen effect of the library: light past a threshold spread around it, as a bright light glows in a lens or an eye. It wants HDR (ScreenEffect.hdr), so in a chain with it the scene is drawn in half floats where the GPU can, and the light running past 1 is what blooms; it decodes the frame to linear light first. The light past threshold (eased in over a soft knee) is drawn into half the frame's size through a 13-tap filter (each group of four weighted by its brightness, so a lone bright texel doesn't flicker), on down a chain of LEVELS halving sizes; each level is then added to the one above it drawn larger through a 3 x 3 tent filter, back to half the frame's size, and that is added to the frame times intensity. Where the GPU draws no half floats (or after a Tonemap of the chain's own), the frame reaching it is tone mapped, 8-bit, and toneMappedThreshold takes threshold's place. Its intermediates are the chain's levels: LEVELS going down, then LEVELS - 1 coming back up (ScreenEffect.intermediates).
 
 ```haxe
 function new()
-static var LEVELS(inline, null):Int
+static inline var LEVELS:Int
 var threshold(default, set):Float
 var knee(default, set):Float
 var toneMappedThreshold(default, set):Float
@@ -30,7 +30,7 @@ function draw(frame:ScreenFrame):Void
 
 ## Blur
 
-*class* in [`src/helix/shader/Blur.hx`](../../src/helix/shader/Blur.hx)
+*class* in [`src/helix/shader/Blur.hx`](../../src/helix/shader/Blur.hx), `import helix.shader.Blur;`
 
 Blur, a screen effect of the library: the frame blurred, a Gaussian over radius pixels either way, in two passes (across, into a texture at resolution of the frame's size, then down, from it drawn larger). Its one intermediate is that texture (ScreenEffect.intermediates).
 
@@ -50,7 +50,7 @@ function draw(frame:ScreenFrame):Void
 
 ## ChromaticAberration
 
-*class* in [`src/helix/shader/ChromaticAberration.hx`](../../src/helix/shader/ChromaticAberration.hx)
+*class* in [`src/helix/shader/ChromaticAberration.hx`](../../src/helix/shader/ChromaticAberration.hx), `import helix.shader.ChromaticAberration;`
 
 Chromatic aberration, a screen effect of the library: red and blue parted from green, red toward the middle and blue away from it, by amount at the frame's edges and less toward its middle, as a cheap lens splits colors.
 
@@ -64,13 +64,13 @@ var amount(default, set):Float
 
 ## ColorLut
 
-*class* in [`src/helix/shader/ColorLut.hx`](../../src/helix/shader/ColorLut.hx)
+*class* in [`src/helix/shader/ColorLut.hx`](../../src/helix/shader/ColorLut.hx), `import helix.shader.ColorLut;`
 
 A color grade, a screen effect of the library: the frame's colors looked up in a 32 x 32 x 32 color cube (a LUT) laid out as a strip of SIZE squares, 1024 x 32 texels: blue chooses a square left to right, red runs across it, green down it, and each texel holds what that color becomes (sRGB). A grade is made by grading identity()'s strip in an image editor with the game's look and loading the PNG (linear sampling; Textures.load). Put it after the tone mapping, as the colors it grades are the screen's.
 
 ```haxe
 function new(?lut:Texture2D)
-static var SIZE(inline, null):Int
+static inline var SIZE:Int
 static function identity():haxe.io.Bytes
 var lut(default, set):Null<Texture2D>
 var amount(default, set):Float
@@ -84,7 +84,7 @@ var amount(default, set):Float
 
 ## Crt
 
-*class* in [`src/helix/shader/Crt.hx`](../../src/helix/shader/Crt.hx)
+*class* in [`src/helix/shader/Crt.hx`](../../src/helix/shader/Crt.hx), `import helix.shader.Crt;`
 
 CRT, a screen effect of the library: the frame as an old monitor shows it, its glass curved (black beyond the bent frame), dark lines between its rows, an aperture grille (columns of red, green and blue), and a flicker over the effect's time.
 
@@ -108,7 +108,7 @@ var flicker(default, set):Float
 
 ## Dissolve
 
-*class* in [`src/helix/shader/Dissolve.hx`](../../src/helix/shader/Dissolve.hx)
+*class* in [`src/helix/shader/Dissolve.hx`](../../src/helix/shader/Dissolve.hx), `import helix.shader.Dissolve;`
 
 A library surface shader: the material shaded as the stage shades it, burnt away where a noise texture is below a threshold rising with amount, with a glowing edge along the cut; its shadow is cut away with it. The noise is laid over the model at rest in its own space (helix_model_position: a skinned model's bind pose), read along the three planes of that space and blended by the surface's facing (triplanar), so the holes stay where they are on the body as it moves and animates, whatever its texture coordinates, and every GPU reads the same noise. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Made on a material, it is that material's surface shader from then on (LibrarySurface); make the material doubleSided to see its inside through the holes.
 
@@ -132,7 +132,7 @@ var noise(default, set):Texture2D
 
 ## Fxaa
 
-*class* in [`src/helix/shader/Fxaa.hx`](../../src/helix/shader/Fxaa.hx)
+*class* in [`src/helix/shader/Fxaa.hx`](../../src/helix/shader/Fxaa.hx), `import helix.shader.Fxaa;`
 
 FXAA, a screen effect of the library: Timothy Lottes's FXAA 3.11 (its quality version, preset 12), smoothing the stair steps along edges in the finished frame by the contrast of its luma, which it works out itself. Put it after the tone mapping (in an HDR chain, after the last effect wanting HDR: PostProcess runs the tone mapping there) and before effects that add their own detail (grain, scanlines), so what it smooths is the frame as shown.
 
@@ -150,7 +150,7 @@ var edgeThresholdMin(default, set):Float
 
 ## HitFlash
 
-*class* in [`src/helix/shader/HitFlash.hx`](../../src/helix/shader/HitFlash.hx)
+*class* in [`src/helix/shader/HitFlash.hx`](../../src/helix/shader/HitFlash.hx), `import helix.shader.HitFlash;`
 
 A material's hit flash: a color mixed over its light, all of it at a trigger and fading to none over some seconds of the stage's time (Renderer3D.time, which the app advances, as its particles do), or an amount held. Every material has one, off until a HitFlash shows it, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too), mixed in after the exposure, so the tone mapping applies to it as to the light. A HitFlash is a view of its material's: two on one material share it.
 
@@ -170,13 +170,13 @@ function trigger(color:Int, seconds:Float):Bool
 
 ## LibraryScreenEffect
 
-*class* in [`src/helix/shader/LibraryScreenEffect.hx`](../../src/helix/shader/LibraryScreenEffect.hx)
+*class* in [`src/helix/shader/LibraryScreenEffect.hx`](../../src/helix/shader/LibraryScreenEffect.hx), `import helix.shader.LibraryScreenEffect;`
 
 What the shader library's screen effects share (Bloom, Fxaa, Blur, Vignette, ColorLut, Crt, ChromaticAberration, Pixelate, Tonemap): a ScreenEffect whose shader is the library's, built on the program's GPU (Graphics) the first time one is made and shared by every effect of its kind, and whose fields write its parameters, each held to its range. PostProcess chains them as any effect (PostProcess.add).
 
 ## LibrarySurface
 
-*class* in [`src/helix/shader/LibrarySurface.hx`](../../src/helix/shader/LibrarySurface.hx)
+*class* in [`src/helix/shader/LibrarySurface.hx`](../../src/helix/shader/LibrarySurface.hx), `import helix.shader.LibrarySurface;`
 
 What the shader library's surface shader classes share (Unlit, Toon, Dissolve, Water): made on a material, the class's shader is that material's surface shader from then on (Material3D.setShader), built on the program's GPU (Graphics) the first time a material asks for it, and its fields write their parameters into the material's (Material3D.shaderParameters) while the material keeps it: with another shader on the material since, a field changes nothing there. Every library surface shader shows the material's hit flash and rim light (HitFlash, Rim), as the stage's own shading does.
 
@@ -190,7 +190,7 @@ var attached(get, never):Bool
 
 ## Outline
 
-*class* in [`src/helix/shader/Outline.hx`](../../src/helix/shader/Outline.hx)
+*class* in [`src/helix/shader/Outline.hx`](../../src/helix/shader/Outline.hx), `import helix.shader.Outline;`
 
 An outline round a model: a pass (ModelPass3D) drawing the model again after the stage's opaque models, pushed out by a width in world units, its front faces culled, so the far side of that shell shows as a band past the model's edges, in a flat color; depth tested, so what's nearer covers it. Static or skinned, instanced like the model. Each vertex is pushed along its normal averaged over the vertices at its place (Mesh3D.passVertices), so where a low-poly model's normals split at its hard edges the shell stays closed; a flat face between hard edges moves out less than the width (a cube's by .58 of it, its corners along their diagonals). A model's separate meshes are pushed apart each on its own. Made on a model, it draws from then on; remove takes it off.
 
@@ -204,7 +204,7 @@ var width(get, set):Float
 
 ## PaletteSwap
 
-*class* in [`src/helix/shader/PaletteSwap.hx`](../../src/helix/shader/PaletteSwap.hx)
+*class* in [`src/helix/shader/PaletteSwap.hx`](../../src/helix/shader/PaletteSwap.hx), `import helix.shader.PaletteSwap;`
 
 A sprite effect of the library: the sprite drawn in a palette's colors. Its texels' red channel (0..255) is a column of the palette, a texture a row a variant (a game's PNG: the first row the colors as drawn, a row below for each swap), and row chooses which; the sprite's alpha is kept, times the palette's, and both are times the tint. The sprite and the palette are read texel by texel at exact texel centers, whatever either's sampling, so an index never blends with its neighbor; a red past the palette's width takes its last column. Shared by the sprites given it (SpriteEffect): a sprite of another variant has a PaletteSwap of its own. Built on the program's GPU (Graphics) the first time one is made.
 
@@ -220,7 +220,7 @@ var row(default, set):Int
 
 ## Pixelate
 
-*class* in [`src/helix/shader/Pixelate.hx`](../../src/helix/shader/Pixelate.hx)
+*class* in [`src/helix/shader/Pixelate.hx`](../../src/helix/shader/Pixelate.hx), `import helix.shader.Pixelate;`
 
 Pixelate, a screen effect of the library: the frame in square cells, each one color, the frame's at the cell's middle.
 
@@ -234,7 +234,7 @@ var cellSize(default, set):Int
 
 ## Rim
 
-*class* in [`src/helix/shader/Rim.hx`](../../src/helix/shader/Rim.hx)
+*class* in [`src/helix/shader/Rim.hx`](../../src/helix/shader/Rim.hx), `import helix.shader.Rim;`
 
 A material's rim light: a color brightest where its surface turns away from the viewer, round its edge, added to its light. Every material has one, off until a Rim turns it on, drawn by the stage's own shading and every library surface shader alike (an app's surface shader shows it through helix_output too). A Rim is a view of its material's: two on one material share it.
 
@@ -252,7 +252,7 @@ var power(get, set):Float
 
 ## Silhouette
 
-*class* in [`src/helix/shader/Silhouette.hx`](../../src/helix/shader/Silhouette.hx)
+*class* in [`src/helix/shader/Silhouette.hx`](../../src/helix/shader/Silhouette.hx), `import helix.shader.Silhouette;`
 
 A model seen through what hides it: a pass (ModelPass3D) drawing the model's shape where something nearer hides it (depth greater), in a flat color blended by its alpha, over the stage's other opaque models and sprites; the model itself is drawn after it, so its own parts never hide it (layered clothes, hair over a head). Static or skinned, instanced like the model. Made on a model, it draws from then on; remove takes it off.
 
@@ -264,7 +264,7 @@ function new(model:Model3D, ?color:Int = 0x993fa9ff)
 
 ## SpriteDissolve
 
-*class* in [`src/helix/shader/SpriteDissolve.hx`](../../src/helix/shader/SpriteDissolve.hx)
+*class* in [`src/helix/shader/SpriteDissolve.hx`](../../src/helix/shader/SpriteDissolve.hx), `import helix.shader.SpriteDissolve;`
 
 A sprite effect of the library: the sprite burnt away where a noise texture, laid across its region, is below a threshold rising with amount, with a glowing edge along the cut. The noise is the library's (ShaderLibrary.getNoise) unless the game gives its own. Shared by the sprites given it (SpriteEffect). Built on the program's GPU (Graphics) the first time one is made.
 
@@ -286,7 +286,7 @@ var noise(default, set):Texture2D
 
 ## SpriteFlash
 
-*class* in [`src/helix/shader/SpriteFlash.hx`](../../src/helix/shader/SpriteFlash.hx)
+*class* in [`src/helix/shader/SpriteFlash.hx`](../../src/helix/shader/SpriteFlash.hx), `import helix.shader.SpriteFlash;`
 
 A sprite effect of the library: a color mixed over the sprite's (its alpha kept), all of it at a trigger and fading to none over some seconds of the batch's time (Batch2D.time; a Renderer2D's time), as a hit flashes a sprite, or an amount held. Shared by the sprites given it (SpriteEffect): each sprite flashing on its own has a SpriteFlash of its own. Built on the program's GPU (Graphics) the first time one is made.
 
@@ -306,7 +306,7 @@ function prepare(time:Float):Void
 
 ## SpriteOutline
 
-*class* in [`src/helix/shader/SpriteOutline.hx`](../../src/helix/shader/SpriteOutline.hx)
+*class* in [`src/helix/shader/SpriteOutline.hx`](../../src/helix/shader/SpriteOutline.hx), `import helix.shader.SpriteOutline;`
 
 A sprite effect of the library: the sprite's shape outlined in a color, a width of texels out from its edge (eight reads around each pixel: the sides and the diagonals). The outline is drawn where the sprite's region is see-through, so a sprite needs that much transparent margin around its shape; what lies past its region in an atlas is never read. Shared by the sprites given it (SpriteEffect). Built on the program's GPU (Graphics) the first time one is made.
 
@@ -322,7 +322,7 @@ var width(default, set):Float
 
 ## SpriteRing
 
-*class* in [`src/helix/shader/SpriteRing.hx`](../../src/helix/shader/SpriteRing.hx)
+*class* in [`src/helix/shader/SpriteRing.hx`](../../src/helix/shader/SpriteRing.hx), `import helix.shader.SpriteRing;`
 
 A sprite effect of the library: a ring drawn across the sprite's quad, its color the sprite's tint: a selection under a unit, a target on the ground, a spell's reach, a range. Drawn, not sampled: the sprite's texture only gives the quad (a 1 x 1 white one does), and its size is the ring's. In 3D, a Sprite3D lying on the ground (facing Ground) gives a ring on flat ground. Its parts, each a property: the band between inner and outer, edges as soft as softness, a fill inside, dashes round it, spinning, and a pulse. Shared by the sprites given it (SpriteEffect): each ring of its own look has a SpriteRing of its own. Built on the program's GPU (Graphics) the first time one is made.
 
@@ -352,13 +352,13 @@ var pulseRate(default, set):Float
 
 ## Tonemap
 
-*class* in [`src/helix/shader/Tonemap.hx`](../../src/helix/shader/Tonemap.hx)
+*class* in [`src/helix/shader/Tonemap.hx`](../../src/helix/shader/Tonemap.hx), `import helix.shader.Tonemap;`
 
 An HDR chain's tone mapping, a screen effect of the library: the frame's light (a stage's after its exposure, drawn into a half-float scene as sRGB values running past 1) brought into the screen's 0..1 by mode, as Renderer3D does drawing straight to the screen, and written as the screen's sRGB. It wants HDR itself (ScreenEffect.hdr). PostProcess adds one after the last effect wanting HDR, with its stage's mode, to a chain that has none; one added by hand runs where it's added, with its own mode, and only in an HDR chain. Built on the program's GPU (Graphics) the first time one is made.
 
 ```haxe
 function new()
-static var MAX_LIGHT(inline, null):Float
+static inline var MAX_LIGHT:Float
 static function map(mode:Tonemap, linear:Array<Float>):Array<Float>
 var mode(default, set):Tonemap
 function computeHdrColor(color:Int, out:Array<Float>):Void
@@ -372,7 +372,7 @@ function computeHdrColor(color:Int, out:Array<Float>):Void
 
 ## Toon
 
-*class* in [`src/helix/shader/Toon.hx`](../../src/helix/shader/Toon.hx)
+*class* in [`src/helix/shader/Toon.hx`](../../src/helix/shader/Toon.hx), `import helix.shader.Toon;`
 
 A library surface shader: the stage's lights in a few flat bands over the material's base color and texture (their shadows banded with them), its unlit side no darker than a shadow color, and its emission; with a rim of light round its edge (the material's Rim, which it turns on). Made on a material, it is that material's surface shader from then on (LibrarySurface).
 
@@ -390,7 +390,7 @@ var rim(default, null):Rim
 
 ## Unlit
 
-*class* in [`src/helix/shader/Unlit.hx`](../../src/helix/shader/Unlit.hx)
+*class* in [`src/helix/shader/Unlit.hx`](../../src/helix/shader/Unlit.hx), `import helix.shader.Unlit;`
 
 A library surface shader: a material drawn without light, its base color and texture times color, and its emission, under the stage's exposure and tone mapping as a material that isn't lit is. Made on a material, it is that material's surface shader from then on (LibrarySurface).
 
@@ -404,7 +404,7 @@ var color(default, set):Int
 
 ## Vignette
 
-*class* in [`src/helix/shader/Vignette.hx`](../../src/helix/shader/Vignette.hx)
+*class* in [`src/helix/shader/Vignette.hx`](../../src/helix/shader/Vignette.hx), `import helix.shader.Vignette;`
 
 Vignette, a screen effect of the library: the frame shaded toward color from radius out to its corners.
 
@@ -424,7 +424,7 @@ var softness(default, set):Float
 
 ## Water
 
-*class* in [`src/helix/shader/Water.hx`](../../src/helix/shader/Water.hx)
+*class* in [`src/helix/shader/Water.hx`](../../src/helix/shader/Water.hx), `import helix.shader.Water;`
 
 A library surface shader: travelling waves moving the surface along its normals (a vertex hook: the model needs vertices enough to show them), colored deep where it's looked into and shallow toward grazing, lit by the stage's lights with their glints, reflecting the stage's environment (or a sky color without one) at grazing angles; its shadow moves with its waves. The material's base color's alpha is its alpha (a blended material is see-through). Made on a material, it is that material's surface shader from then on (LibrarySurface).
 

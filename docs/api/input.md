@@ -4,14 +4,14 @@
 
 ## Actions
 
-*class* in [`src/helix/input/Actions.hx`](../../src/helix/input/Actions.hx)
+*class* in [`src/helix/input/Actions.hx`](../../src/helix/input/Actions.hx), `import helix.input.Actions;`
 
 What the player means ("jump", "steer", "fire"), bound by name to keys, pad buttons and axes, mouse buttons and touch regions, and read as one: a game asks for "jump", never for Space or the south button, and a player can rebind it (capture) and keep it (save, load). Each binding gives a value from -1 to 1 (Binding), and the action is the binding pushed furthest, across every pad: axis its value, value how far (0 to 1), isDown while any binding is pushed to its limit (0.5, or a pad axis's non-zero threshold). Pressed and released come per tick (isPressed, isReleased) and per frame (isFramePressed, isFrameReleased), as IInput's do: an action is pressed when it is down and wasn't as the last tick (or frame) ended, or when a key, button or finger of it went down since (IInput's own edges, so a tap shorter than a tick is still a press, and two taps reach two ticks). The map keeps whether each action was down itself, told by the input as each tick and frame ends (IInput.watch), so a game makes no extra calls. A finger's edges are frame edges only (IInput has no tick edges for touches): a tap shorter than a frame reaches isFramePressed, not isPressed. An action never bound reads as up and 0, so a game's code may run before its bindings load. Built on IInput, so whatever drives the input drives the actions: the autopilot's input given to it (input) replays them.
 
 ```haxe
 function new(?input:IInput, ?presentation:Presentation)
-static var VERSION(inline, null):Int
-static var CAPTURE_THRESHOLD(inline, null):Float
+static inline var VERSION:Int
+static inline var CAPTURE_THRESHOLD:Float
 static function describe(binding:Binding):String
 var input(default, set):Null<IInput>
 var names(get, never):Array<String>
@@ -66,7 +66,7 @@ function frameEnded():Void
 
 ## Anchor
 
-*enum* in [`src/helix/input/Anchor.hx`](../../src/helix/input/Anchor.hx)
+*enum* in [`src/helix/input/Anchor.hx`](../../src/helix/input/Anchor.hx), `import helix.input.Anchor;`
 
 A point of the visible area (Screen's), which a touch region is placed from: a corner, an edge's middle or the center.
 
@@ -82,7 +82,7 @@ A point of the visible area (Screen's), which a touch region is placed from: a c
 
 ## Binding
 
-*enum* in [`src/helix/input/Binding.hx`](../../src/helix/input/Binding.hx)
+*enum* in [`src/helix/input/Binding.hx`](../../src/helix/input/Binding.hx), `import helix.input.Binding;`
 
 What drives an action (Actions), each giving a value from -1 to 1; the action is the binding pushed furthest.
 
@@ -96,7 +96,7 @@ What drives an action (Actions), each giving a value from -1 to 1; the action is
 
 ## Gamepad
 
-*class* in [`src/helix/input/Gamepad.hx`](../../src/helix/input/Gamepad.hx)
+*class* in [`src/helix/input/Gamepad.hx`](../../src/helix/input/Gamepad.hx), `import helix.input.Gamepad;`
 
 One gamepad slot. Edges work as the keyboard's: tick edges until consume(), frame edges until the frame ends. Sticks read past a radial dead zone, rescaled so they still reach 1; getRawAxis reads them as the pad reports.
 
@@ -138,7 +138,7 @@ function endFrame():Void
 
 ## IInput
 
-*class* in [`src/helix/input/IInput.hx`](../../src/helix/input/IInput.hx)
+*class* in [`src/helix/input/IInput.hx`](../../src/helix/input/IInput.hx), `import helix.input.IInput;`
 
 Keyboard, pointer, mouse buttons, wheel, typed text, touches and gamepads. Tick edges (isPressed, isReleased) are counted and survive polling and render frames; consume() after a simulation tick takes one of each, so every press is seen by exactly one tick, and two presses between ticks reach two ticks. Frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame. A key is claimed by what reads it first and uses it (claim: the UI's focused text field, a menu): for the rest of the frame it reads as up, unpressed and unreleased to everything after, so typing a space in a field doesn't make the player jump.
 
@@ -226,7 +226,7 @@ function consume():Void
 
 ## Input
 
-*class* in [`src/helix/input/Input.hx`](../../src/helix/input/Input.hx)
+*class* in [`src/helix/input/Input.hx`](../../src/helix/input/Input.hx), `import helix.input.Input;`
 
 Keyboard, mouse, touch and gamepads, as this frame and tick see them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IInput's public members with their doc comments, but watch and unwatch (plumbing for what is built on IInput, as Actions, not for a game).
 
@@ -314,7 +314,7 @@ static function consume():Void
 
 ## InputState
 
-*class* in [`src/helix/input/InputState.hx`](../../src/helix/input/InputState.hx)
+*class* in [`src/helix/input/InputState.hx`](../../src/helix/input/InputState.hx), `import helix.input.InputState;`
 
 The input an app reads, as edges and state: fed by the InputRouter from a platform's events, or directly by replay and tests. Tick edges (isPressed, isReleased) are counted, and consume() after a simulation tick takes one of each, so every press is seen by exactly one tick, and two presses between ticks reach two ticks; frame edges (isFramePressed, isFrameReleased), typed text, the wheel and lifted touches last one frame, until endFrame() (the InputRouter's, which the Runner calls).
 
@@ -385,31 +385,73 @@ function endFrame():Void
 
 ## Key
 
-*abstract* in [`src/helix/input/Key.hx`](../../src/helix/input/Key.hx)
+*abstract* in [`src/helix/input/Key.hx`](../../src/helix/input/Key.hx), `import helix.input.Key;`
 
 Physical keys by place on a US layout, numbered as GLFW numbers them; each input adapter maps its platform's codes to them. Left and right Shift, Control, Alt and Super are one key each.
 
+Values: `Space`, `Apostrophe`, `Comma`, `Minus`, `Period`, `Slash`, `Digit0`, `Digit1`, `Digit2`, `Digit3`, `Digit4`, `Digit5`, `Digit6`, `Digit7`, `Digit8`, `Digit9`, `Semicolon`, `Equal`, `A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`, `LeftBracket`, `Backslash`, `RightBracket`, `Grave`, `Escape`, `Enter`, `Tab`, `Backspace`, `Insert`, `Delete`, `Right`, `Left`, `Down`, `Up`, `PageUp`, `PageDown`, `Home`, `End`, `F1`, `F2`, `F3`, `F4`, `F5`, `F6`, `F7`, `F8`, `F9`, `F10`, `F11`, `F12`, `World1`, `World2`, `CapsLock`, `ScrollLock`, `NumLock`, `PrintScreen`, `Pause`, `F13`, `F14`, `F15`, `F16`, `F17`, `F18`, `F19`, `F20`, `F21`, `F22`, `F23`, `F24`, `F25`, `Keypad0`, `Keypad1`, `Keypad2`, `Keypad3`, `Keypad4`, `Keypad5`, `Keypad6`, `Keypad7`, `Keypad8`, `Keypad9`, `KeypadDecimal`, `KeypadDivide`, `KeypadMultiply`, `KeypadSubtract`, `KeypadAdd`, `KeypadEnter`, `KeypadEqual`, `Shift`, `Control`, `Alt`, `Super`, `Menu`.
+
+```haxe
+static inline var COUNT:Int
+static final all(default, null):Array<Key>
+static function named(name:String):Key
+static function getName(key:Key):String
+```
+
+- `COUNT`: One past the largest value, for arrays indexed by key.
+- `all`: Every key, in order of value.
+- `named`: The key a name spells, ignoring case ("A", "space", "KeypadEnter", "0"); throws for an unknown name.
+- `getName`: The key's name as named reads it: its own spelling ("Space", "PageUp", "KeypadEnter"), a digit's its digit ("0").
+
 ## MouseButton
 
-*abstract* in [`src/helix/input/MouseButton.hx`](../../src/helix/input/MouseButton.hx)
+*abstract* in [`src/helix/input/MouseButton.hx`](../../src/helix/input/MouseButton.hx), `import helix.input.MouseButton;`
 
 The mouse buttons HeliX reads, numbered as Sokol numbers them.
 
+Values: `Left`, `Right`, `Middle`.
+
+```haxe
+static final all(default, null):Array<MouseButton>
+```
+
+- `all`: Every button.
+
 ## PadAxis
 
-*abstract* in [`src/helix/input/PadAxis.hx`](../../src/helix/input/PadAxis.hx)
+*abstract* in [`src/helix/input/PadAxis.hx`](../../src/helix/input/PadAxis.hx), `import helix.input.PadAxis;`
 
 Sticks run from -1 to 1 (down and right positive), triggers from 0 to 1.
 
+Values: `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`.
+
+```haxe
+static inline var COUNT:Int
+static final all(default, null):Array<PadAxis>
+```
+
+- `COUNT`: One past the largest value, for arrays indexed by axis.
+- `all`: Every axis.
+
 ## PadButton
 
-*abstract* in [`src/helix/input/PadButton.hx`](../../src/helix/input/PadButton.hx)
+*abstract* in [`src/helix/input/PadButton.hx`](../../src/helix/input/PadButton.hx), `import helix.input.PadButton;`
 
 A gamepad's buttons, as on an Xbox-style pad, numbered as the W3C standard gamepad numbers them. The triggers are buttons too (pressed when pulled past half way, or by a digital trigger) as well as axes.
 
+Values: `South`, `East`, `West`, `North`, `LeftBumper`, `RightBumper`, `LeftTrigger`, `RightTrigger`, `Back`, `Start`, `LeftStick`, `RightStick`, `Up`, `Down`, `Left`, `Right`, `Guide`.
+
+```haxe
+static inline var COUNT:Int
+static final all(default, null):Array<PadButton>
+```
+
+- `COUNT`: One past the largest value, for arrays indexed by button.
+- `all`: Every button.
+
 ## PointerGestures
 
-*class* in [`src/helix/input/PointerGestures.hx`](../../src/helix/input/PointerGestures.hx)
+*class* in [`src/helix/input/PointerGestures.hx`](../../src/helix/input/PointerGestures.hx), `import helix.input.PointerGestures;`
 
 Taps, double taps, drags and flicks from IInput's pointer, in framebuffer pixels; touch and mouse alike (a double tap is a double click). Update once per tick, before the input is consumed, reading its tick edges; or once per frame, reading its frame edges, in a program without a fixed tick.
 
@@ -455,7 +497,7 @@ function update(now:Float, perTick:Bool, ?input:IInput):Void
 
 ## Touch
 
-*typedef* in [`src/helix/input/Touch.hx`](../../src/helix/input/Touch.hx)
+*typedef* in [`src/helix/input/Touch.hx`](../../src/helix/input/Touch.hx), `import helix.input.Touch;`
 
 A finger, in framebuffer pixels like the pointer. Its id stays the same while it is down.
 

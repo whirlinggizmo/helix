@@ -4,7 +4,7 @@
 
 ## Bounds2D
 
-*class* in [`src/helix/math/Bounds2D.hx`](../../src/helix/math/Bounds2D.hx)
+*class* in [`src/helix/math/Bounds2D.hx`](../../src/helix/math/Bounds2D.hx), `import helix.math.Bounds2D;`
 
 An axis-aligned box in 2D, its least and most on each axis: a 2D node's and the like (Node2D.computeBounds), a trigger's region, a camera's limits. Empty when made (its least past its most), so expanding it by a first point makes that point; x, y in whatever space its maker says. Its 2D is its dimensions, as a Texture2D's is, not the display kind (docs/CONVENTIONS.md).
 
@@ -48,7 +48,7 @@ function intersects(other:Bounds2D):Bool
 
 ## Bounds3D
 
-*class* in [`src/helix/math/Bounds3D.hx`](../../src/helix/math/Bounds3D.hx)
+*class* in [`src/helix/math/Bounds3D.hx`](../../src/helix/math/Bounds3D.hx), `import helix.math.Bounds3D;`
 
 An axis-aligned box in 3D, its least and most on each axis: a 3D node's and the like (Node3D.computeBounds), a trigger's region, a camera's limits. Empty when made (its least past its most), so expanding it by a first point makes that point; x, y, z in whatever space its maker says. Its 3D is its dimensions, as a Texture2D's is, not the display kind (docs/CONVENTIONS.md).
 
@@ -100,7 +100,7 @@ function intersects(other:Bounds3D):Bool
 
 ## Curve
 
-*class* in [`src/helix/math/Curve.hx`](../../src/helix/math/Curve.hx)
+*class* in [`src/helix/math/Curve.hx`](../../src/helix/math/Curve.hx), `import helix.math.Curve;`
 
 A curve through or near points in 2D or 3D (a camera rail, a patrol path, a projectile's arc), asked where it is at t from 0 to 1 along its whole length, which way it heads there, how long it is, and the t at a distance along it, so something moves along it at a steady speed. Kinds: through its points (Catmull-Rom, centripetal: no loops or kinks between unevenly spaced points), by control points (cubic Bézier, a curve from each four), or straight between points (a polyline); open, or closed back to the start. Points are flat (x, y or x, y, z, as the dimensions say), as HeliX passes positions; a curve's points are fixed once made.
 
@@ -140,7 +140,7 @@ function getParameterAtDistance(distance:Float):Float
 
 ## CurveKind
 
-*enum* in [`src/helix/math/Curve.hx`](../../src/helix/math/Curve.hx)
+*enum* in [`src/helix/math/Curve.hx`](../../src/helix/math/Curve.hx), `import helix.math.Curve;`
 
 How a curve passes its points.
 
@@ -150,12 +150,12 @@ How a curve passes its points.
 
 ## Interpolate
 
-*class* in [`src/helix/math/Interpolate.hx`](../../src/helix/math/Interpolate.hx)
+*class* in [`src/helix/math/Interpolate.hx`](../../src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
 Interpolation and the small math every game writes again: between two numbers, back to a fraction, clamped, smoothed, the short way round between angles, moved by at most a step, or eased toward a target at a rate that's the same at any frame rate. For drawing and feel: a replayed simulation keeps to integer math or Trig, as Math.exp differs by a bit between targets.
 
 ```haxe
-static var lerp(inline, null):(a:Float, b:Float, t:Float) -> Float
+static function lerp(a:Float, b:Float, t:Float):Float
 static function inverseLerp(a:Float, b:Float, value:Float):Float
 static function remap(value:Float, fromA:Float, fromB:Float, toA:Float, toB:Float):Float
 static function clamp(value:Float, min:Float, max:Float):Float
@@ -180,7 +180,7 @@ static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 
 ## Point2D
 
-*class* in [`src/helix/math/Point2D.hx`](../../src/helix/math/Point2D.hx)
+*class* in [`src/helix/math/Point2D.hx`](../../src/helix/math/Point2D.hx), `import helix.math.Point2D;`
 
 A point in 2D, x, y, in whatever space its maker says: what a computation of a point returns (Camera3D.project, Ray3D.pointAt), into one given for reuse. Its 2D is its dimensions, as Bounds2D's is, not the display kind (docs/CONVENTIONS.md).
 
@@ -200,7 +200,7 @@ function copyFrom(other:Point2D):Point2D
 
 ## Point3D
 
-*class* in [`src/helix/math/Point3D.hx`](../../src/helix/math/Point3D.hx)
+*class* in [`src/helix/math/Point3D.hx`](../../src/helix/math/Point3D.hx), `import helix.math.Point3D;`
 
 A point in 3D, x, y, z, in whatever space its maker says: what a computation of a point returns (Camera3D.project, Ray3D.pointAt), into one given for reuse. Its 3D is its dimensions, as Bounds3D's is, not the display kind (docs/CONVENTIONS.md).
 
@@ -222,7 +222,7 @@ function copyFrom(other:Point3D):Point3D
 
 ## Random
 
-*class* in [`src/helix/math/Random.hx`](../../src/helix/math/Random.hx)
+*class* in [`src/helix/math/Random.hx`](../../src/helix/math/Random.hx), `import helix.math.Random;`
 
 Random numbers from a seed, the same sequence on every target: xorshift32 in integer math alone, so the interpreter, JS and hxcpp agree bit for bit, as Trig does. A simulation that must replay (an autopilot's seed, a lockstep game) draws from one of these; what only looks random (a particle's spin) may too. A game keeps as many as it has streams: play's, and the title's dressing, so when play starts doesn't matter (Asteroids keeps the title's state).
 
@@ -254,7 +254,7 @@ function shuffle(items:Array<T>):Array<T>
 
 ## Trig
 
-*class* in [`src/helix/math/Trig.hx`](../../src/helix/math/Trig.hx)
+*class* in [`src/helix/math/Trig.hx`](../../src/helix/math/Trig.hx), `import helix.math.Trig;`
 
 Trigonometry that gives the same bits on every target, for simulations that must play alike in the browser and natively (an autopilot's replay, lockstep, physics). `Math`'s functions don't: V8's and the C library's differ in the last bit for a few percent of angles (`atan2` for about a fifth), and a simulation turns that into a different world. These are built from arithmetic alone (and `Math.sqrt` and `Math.floor`, exact everywhere), each step its own statement, and within a few ulp of `Math`'s. Drawing doesn't need them. Radians; NaN for an infinite or NaN angle, and for `asin` and `acos` past -1..1, as `Math`'s. Any finite angle is reduced exactly: a game's angle that keeps growing (an unwrapped spin, a time used as a phase) stays within a few ulp of `Math`'s however large it gets. Natively the generated C++ is compiled with `-ffp-contract=off` (GCC and clang): a compiler that fuses a multiply and an add (GCC does on arm64, clang by default) would round differently from a target that can't. MSVC's default, /fp:precise, doesn't fuse them.
 

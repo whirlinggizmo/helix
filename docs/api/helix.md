@@ -4,7 +4,7 @@
 
 ## App
 
-*class* in [`src/helix/App.hx`](../../src/helix/App.hx)
+*class* in [`src/helix/App.hx`](../../src/helix/App.hx), `import helix.App;`
 
 HeliX's entry point. A game is a class extending it, overriding init, update and cleanup, and its Main is `new Game()`: the constructor starts HeliX, picking the profile by the backend the build names (`-D helix-backend=webgl2`, `sokol-gl`, `sdl3-gl` or `sdl3-gpu`; a build naming none fails, naming the choices), so one Main serves every target: `class Game extends helix.App { override public function init():Void {...} override public function update(dt:Float):Void {...} }` (init once, the services bound: Window, Input, Graphics and the others; update once a display refresh, the game's logic), and `class Main { static function main() new Game(); }`. The drawing is the runner's: after update it draws the Stage (helix.render2d.Stage), what the game put on it (docs/DISPLAY_MODEL.md). The object exists before HeliX does: a field initializer runs before the services are bound, so what needs them (a Batch2D, a texture) is made in init. Natively the constructor returns only when the window closes. Options (AppOptions: the identity, where the assets are, a manifest, the window, the development extras) are given to the constructor, `super(options)` or `new Game(options)`. Hot reload: the Runner reaches the app only through `@:hot` static functions (hot statics) that helix.macro.AppBuild writes into the game's class (`hotApp`, the object; `hotInit`, `hotFrame`, `hotCleanup`), so a native reload re-points its calls and migrates the object (hotreload-hx: the main class is compiled once and never reloaded, and a call from code compiled before a reload reaches new code only through a `@:hot` static function); in the browser old classes forward, so it costs nothing. The game class is therefore not Main, which hotreload-hx never reloads and refuses `@:hot` in.
 
@@ -24,7 +24,7 @@ function cleanup():Void
 
 ## AppOptions
 
-*class* in [`src/helix/AppOptions.hx`](../../src/helix/AppOptions.hx)
+*class* in [`src/helix/AppOptions.hx`](../../src/helix/AppOptions.hx), `import helix.AppOptions;`
 
 What an App starts with, given to its constructor (`super(options)`, or `new Game(options)` from Main); the defaults when none is given. Read once, as the app starts: a change after is too late.
 

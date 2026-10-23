@@ -4,7 +4,7 @@
 
 ## Emitter
 
-*class* in [`src/helix/particle/Emitter.hx`](../../src/helix/particle/Emitter.hx)
+*class* in [`src/helix/particle/Emitter.hx`](../../src/helix/particle/Emitter.hx), `import helix.particle.Emitter;`
 
 A particle emitter: many particles from one texture, each decided when it's born (where, how fast, how long it lives, how big, how it spins, within the ranges set here) and never touched again: the GPU works out where it is from its age (gravity and drag move it; its size and color follow their curves over its life). Spawning is all the CPU does, so thousands cost about what spawning them does. A node places it on a stage (a Particles3D, or Node2D.emitter), which advances it by the stage's clock each draw; particles stay where they were born when it moves (trails), face the camera, and aren't sorted among themselves. Its random numbers are its own (seed): the same seed and settings give the same particles. Colors are 0xAARRGGBB, sRGB values, as sprites' are.
 
@@ -158,6 +158,22 @@ function writeUniforms(out:haxe.io.Bytes, viewProjection:Mat4, axisX:Array<Float
 
 ## ParticlePreset
 
-*abstract* in [`src/helix/particle/ParticlePreset.hx`](../../src/helix/particle/ParticlePreset.hx)
+*abstract* in [`src/helix/particle/ParticlePreset.hx`](../../src/helix/particle/ParticlePreset.hx), `import helix.particle.ParticlePreset;`
 
 The particle presets' recipes, which Particles2D's and Particles3D's factories (explosion, smokePuff, sparks, dust, fire, smoke, rain, snow, confetti) make their emitters from: each in units of size (about how big the effect is, in its space's units: pixels on a 2D stage, world units in 3D), down being the sign of its space's downward y (+1 on a 2D stage, where y grows downward; -1 in 3D, +y up), drawn with the built-in dot (Emitter.getDot). A one-shot (explosion, smoke puff, sparks, dust, confetti) bursts once, where its node first is; the others run steadily. Each is an ordinary Emitter: change what doesn't fit.
+
+- `ParticlePreset.Explosion`: A burst of light outward, fading from white-yellow to red: a hit, a pop, a small explosion. One-shot.
+- `ParticlePreset.SmokePuff`: A soft gray puff, spreading and rising a little as it fades: a landing, a vanish, a smoke grenade. One-shot.
+- `ParticlePreset.Sparks`: Hot sparks thrown up and out, streaked along their motion and falling: a hit on metal, a grinder. One-shot.
+- `ParticlePreset.Dust`: A low, wide kick of dust that settles: footsteps, a landing, a skid. One-shot.
+- `ParticlePreset.Fire`: A steady flame, rising and fading from yellow to red: a torch, a campfire.
+- `ParticlePreset.Smoke`: A steady column of gray smoke, rising and spreading: a chimney, a wreck.
+- `ParticlePreset.Rain`: Steady rain over a width of size, streaked along its fall, falling size units below the node.
+- `ParticlePreset.Snow`: Steady snow over a width of size, drifting down size units below the node.
+- `ParticlePreset.Confetti`: Paper of five colors thrown up, spinning and falling: a win, a level cleared. One-shot.
+
+```haxe
+function make(size:Float, down:Float, flat:Bool):Emitter
+```
+
+- `make`: An emitter of this preset, size big, for a space whose y goes down by the sign of down, flat for a 2D stage.

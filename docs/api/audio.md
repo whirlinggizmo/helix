@@ -4,7 +4,7 @@
 
 ## Audio
 
-*class* in [`src/helix/audio/Audio.hx`](../../src/helix/audio/Audio.hx)
+*class* in [`src/helix/audio/Audio.hx`](../../src/helix/audio/Audio.hx), `import helix.audio.Audio;`
 
 Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it (IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from AudioResources' public members with their doc comments, but for the buses and what plays through them, written here: the bus tree is plain engine data, there from the program's start, before the runner binds instance.
 
@@ -34,7 +34,7 @@ static function loadStream(path:String, loaded:AudioStream -> Void, ?failed:Stri
 
 ## AudioClip
 
-*class* in [`src/helix/audio/AudioClip.hx`](../../src/helix/audio/AudioClip.hx)
+*class* in [`src/helix/audio/AudioClip.hx`](../../src/helix/audio/AudioClip.hx), `import helix.audio.AudioClip;`
 
 Fully decoded, reusable audio resource.
 
@@ -46,7 +46,7 @@ var path(default, null):Null<String>
 
 ## AudioPlayback
 
-*class* in [`src/helix/audio/AudioPlayback.hx`](../../src/helix/audio/AudioPlayback.hx)
+*class* in [`src/helix/audio/AudioPlayback.hx`](../../src/helix/audio/AudioPlayback.hx), `import helix.audio.AudioPlayback;`
 
 One playback, playing or paused, through a bus; holds its resource until stopped or played to its end. While audio hasn't started (a browser before the page's first key or pointer press) it waits, its pause, volume, pitch and pan kept, and starts once audio runs. What the adapter hears is heardVolume, its own volume times its bus's heard volume, sent once a frame when either changed.
 
@@ -86,7 +86,7 @@ function poll():Void
 
 ## AudioResource
 
-*class* in [`src/helix/audio/AudioResource.hx`](../../src/helix/audio/AudioResource.hx)
+*class* in [`src/helix/audio/AudioResource.hx`](../../src/helix/audio/AudioResource.hx), `import helix.audio.AudioResource;`
 
 One owner plus active playback references. release() drops the owner's reference.
 
@@ -106,13 +106,13 @@ function release():Void
 
 ## AudioStream
 
-*class* in [`src/helix/audio/AudioStream.hx`](../../src/helix/audio/AudioStream.hx)
+*class* in [`src/helix/audio/AudioStream.hx`](../../src/helix/audio/AudioStream.hx), `import helix.audio.AudioStream;`
 
 Progressively decoded resource. Stored and remote sources are independent policy.
 
 ## Bus
 
-*class* in [`src/helix/audio/Bus.hx`](../../src/helix/audio/Bus.hx)
+*class* in [`src/helix/audio/Bus.hx`](../../src/helix/audio/Bus.hx), `import helix.audio.Bus;`
 
 A bus sounds are played through: a name, a parent, a volume, a mute and a fade, plain engine data. Audio.master is the root, Audio.music and Audio.effects are under it from the program's start, and Audio.addBus makes a game's own. A playback's heard volume is its own times its bus's heardVolume; the buses' fades advance and the heard volumes reach the voices once a frame (AudioResources.poll). A bus is held as a reference; its name is used only to save and load the volumes (Audio.saveBuses, Audio.loadBuses).
 
@@ -138,13 +138,13 @@ function all():Array<Bus>
 
 ## Fade
 
-*class* in [`src/helix/audio/Fade.hx`](../../src/helix/audio/Fade.hx)
+*class* in [`src/helix/audio/Fade.hx`](../../src/helix/audio/Fade.hx), `import helix.audio.Fade;`
 
 A volume (0 to 1) moving from one level to another over seconds along a curve (FadeCurve): linear in decibels so it sounds even, a silent end taken as FLOOR_DB, or linear in power for a crossfade; the last step lands on the end exactly. A bus's and a playback's fades each step one, once a frame.
 
 ```haxe
 function new(from:Float, to:Float, seconds:Float, ?done:() -> Void, ?curve:FadeCurve = FadeCurve.Decibels)
-static var FLOOR_DB(inline, null):Float
+static inline var FLOOR_DB:Float
 static function at(from:Float, to:Float, fraction:Float, ?curve:FadeCurve = FadeCurve.Decibels):Float
 final done:Null<() -> Void>
 var finished(get, never):Bool
@@ -160,19 +160,23 @@ function step(delta:Float):Float
 
 ## FadeCurve
 
-*abstract* in [`src/helix/audio/FadeCurve.hx`](../../src/helix/audio/FadeCurve.hx)
+*abstract* in [`src/helix/audio/FadeCurve.hx`](../../src/helix/audio/FadeCurve.hx), `import helix.audio.FadeCurve;`
 
 How a Fade moves between its levels: Decibels, linear in decibels, even to the ear for a fade to or from silence (a bus's and a playback's fades); Power, linear in power (the volume's square), so two sounds crossfaded this way, one out and one in, keep their sum's loudness through the middle (Audio.crossfade).
 
+Values: `Decibels`, `Power`.
+
 ## PlayState
 
-*abstract* in [`src/helix/audio/PlayState.hx`](../../src/helix/audio/PlayState.hx)
+*abstract* in [`src/helix/audio/PlayState.hx`](../../src/helix/audio/PlayState.hx), `import helix.audio.PlayState;`
 
 Where a playback is: playing, paused, stopped (by stop(), or it never started), or complete (it played to its end).
 
+Values: `Stopped`, `Playing`, `Paused`, `Complete`.
+
 ## StreamOpenResult
 
-*enum* in [`src/helix/audio/IAudio.hx`](../../src/helix/audio/IAudio.hx)
+*enum* in [`src/helix/audio/IAudio.hx`](../../src/helix/audio/IAudio.hx), `import helix.audio.IAudio;`
 
 How opening a stream ended: its id, or a failure message.
 

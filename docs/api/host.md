@@ -4,7 +4,7 @@
 
 ## Config
 
-*class* in [`src/helix/host/Config.hx`](../../src/helix/host/Config.hx)
+*class* in [`src/helix/host/Config.hx`](../../src/helix/host/Config.hx), `import helix.host.Config;`
 
 A game's settings from config.json beside the program (beside the page on the web; never among the assets or in their cache, DECISIONS 131), fetched as the program starts (so a deployed game changes them without a build): a "default" object, and named profiles over it ("development", "production", any the game names), each a partial that layers on the default; "profile" at the root names the one in force, and the run option config=<name> overrides that. Host.getOption reads the profile, by dotted names into nested objects ("renderer.background"), after the run options. The keys and their meanings are the game's: whether to show a splash, play music, where assets are.
 
@@ -30,7 +30,7 @@ function getString(name:String):Null<String>
 
 ## Host
 
-*class* in [`src/helix/host/Host.hx`](../../src/helix/host/Host.hx)
+*class* in [`src/helix/host/Host.hx`](../../src/helix/host/Host.hx), `import helix.host.Host;`
 
 The program on its platform: whether it runs, whether anything is still loading, its run options and settings, and quitting. The program's one, a static class: canQuit and quit forward to instance, written by helix.macro.Facade from IHost's with their doc comments; the loop, the window (Window) and the clock (Time) are reached elsewhere, and reportBusy is the App's to call.
 
@@ -60,7 +60,7 @@ static function loadConfig(done:Null<haxe.io.Bytes> -> Void):Void
 
 ## Identity
 
-*class* in [`src/helix/host/Identity.hx`](../../src/helix/host/Identity.hx)
+*class* in [`src/helix/host/Identity.hx`](../../src/helix/host/Identity.hx), `import helix.host.Identity;`
 
 Who the program is, for what HeliX keeps for it: a company and a product, each one safe file name. Natively it names the cache directory (<user cache>/<company>/<product>); in the browser, the page's cache database.
 
@@ -78,7 +78,7 @@ var product(default, null):String
 
 ## PresentationMode
 
-*enum* in [`src/helix/host/Presentation.hx`](../../src/helix/host/Presentation.hx)
+*enum* in [`src/helix/host/Presentation.hx`](../../src/helix/host/Presentation.hx), `import helix.host.Presentation;`
 
 How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
@@ -91,7 +91,7 @@ How a game's design is fitted to the window (Godot's stretch modes and aspects).
 
 ## Screen
 
-*class* in [`src/helix/host/Screen.hx`](../../src/helix/host/Screen.hx)
+*class* in [`src/helix/host/Screen.hx`](../../src/helix/host/Screen.hx), `import helix.host.Screen;`
 
 The app's design fitted to the window (Presentation): its units, what's visible of them, and a 2D camera to show them (None, logical pixels, until the app sets a mode). The runner refits it to the window before every frame. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from Presentation's public members with their doc comments.
 
@@ -145,7 +145,7 @@ static function apply(camera:Camera2D):Void
 
 ## ScreenShape
 
-*class* in [`src/helix/host/ScreenShape.hx`](../../src/helix/host/ScreenShape.hx)
+*class* in [`src/helix/host/ScreenShape.hx`](../../src/helix/host/ScreenShape.hx), `import helix.host.ScreenShape;`
 
 A design per window shape, as a page's breakpoints (Defold's display profiles): 1280 x 720 for a desktop window, 1000 x 560 for a short one (a phone on its side), 560 x 960 upright (a phone held so), each grown to the window's edges (Presentation's Expand), so text at one size stays readable on a phone in each. The examples' choice, called at the top of their frame; a game with designs of its own sets Screen itself.
 
@@ -157,7 +157,7 @@ static function update():String
 
 ## Window
 
-*class* in [`src/helix/host/Window.hx`](../../src/helix/host/Window.hx)
+*class* in [`src/helix/host/Window.hx`](../../src/helix/host/Window.hx), `import helix.host.Window;`
 
 The window the app draws in (the page, on the web): its drawing surface's size, pixel ratio and focus too, and what may be asked of it (a size, a position, fullscreen). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IWindow's public members with their doc comments.
 
@@ -217,7 +217,7 @@ static function getMonitorHeight(index:Int):Int
 
 ## WindowOptions
 
-*class* in [`src/helix/host/WindowOptions.hx`](../../src/helix/host/WindowOptions.hx)
+*class* in [`src/helix/host/WindowOptions.hx`](../../src/helix/host/WindowOptions.hx), `import helix.host.WindowOptions;`
 
 What's fixed when the window opens, given to a profile's run before it does: an app starts after, too late to change them.
 

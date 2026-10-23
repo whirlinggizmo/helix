@@ -4,7 +4,7 @@
 
 ## AssetCacheMode
 
-*enum* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
+*enum* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
 
 How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and ensure's forceFetch downloads past the cache in every mode. - Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other is asked about first: 304, the copy is used (and fresh again); 200, the new file replaces it; 4xx, the copy is deleted and the load fails; no answer (offline, a timeout) or a 5xx, the copy is used. no-cache and no-store make a copy never fresh, but it's kept, for the next check and for starting offline. - Trust: a copy is used without asking, however old: offline-first play, files that never change, or a game that evicts by itself. - Off: nothing is kept between runs, and what earlier runs kept is neither used nor deleted (development); this run's downloads are held in memory, so a file loads once a run.
 
@@ -14,7 +14,7 @@ How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a 
 
 ## AssetPath
 
-*class* in [`src/helix/asset/AssetPath.hx`](../../src/helix/asset/AssetPath.hx)
+*class* in [`src/helix/asset/AssetPath.hx`](../../src/helix/asset/AssetPath.hx), `import helix.asset.AssetPath;`
 
 Validates asset and storage keys, for the asset service, the shared StorageService and model files, and resolves a path one file names relative to itself.
 
@@ -28,7 +28,7 @@ static function resolve(path:String, uri:String):Null<String>
 
 ## AssetProgress
 
-*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
+*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
 
 Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown.
 
@@ -38,7 +38,7 @@ Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes re
 
 ## Assets
 
-*class* in [`src/helix/asset/Assets.hx`](../../src/helix/asset/Assets.hx)
+*class* in [`src/helix/asset/Assets.hx`](../../src/helix/asset/Assets.hx), `import helix.asset.Assets;`
 
 Assets: the packaged files or downloads, cached. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from IAssets's public members with their doc comments.
 
@@ -62,7 +62,7 @@ static var busy(get, never):Bool
 
 ## EnsureOptions
 
-*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx)
+*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
 
 How ensure finds a file. source: where its bytes come from instead of its own path, a path read against the host as a browser reads a URL against a directory, or a whole URL; they're kept under the path asked for, remembering where they came from: a later plain load of the path asks about the copy there, and it streams from there when it's stale, as the host has nothing at the path. forceFetch: go past the cache to the host (or the packaged files), replacing what the cache holds.
 
@@ -71,7 +71,7 @@ How ensure finds a file. source: where its bytes come from instead of its own pa
 
 ## ExportResult
 
-*enum* in [`src/helix/asset/IExport.hx`](../../src/helix/asset/IExport.hx)
+*enum* in [`src/helix/asset/IExport.hx`](../../src/helix/asset/IExport.hx), `import helix.asset.IExport;`
 
 Where an exported file went: a path natively, the downloaded file's name in a browser; or why it couldn't be.
 
@@ -80,7 +80,7 @@ Where an exported file went: a path natively, the downloaded file's name in a br
 
 ## Failure
 
-*class* in [`src/helix/asset/Failure.hx`](../../src/helix/asset/Failure.hx)
+*class* in [`src/helix/asset/Failure.hx`](../../src/helix/asset/Failure.hx), `import helix.asset.Failure;`
 
 Where a load's failure goes: to the caller's failed lambda, or, when it gave none, to the log with the path, so nothing fails silently. Every load taking (loaded, ?failed) reports through it.
 
@@ -94,7 +94,7 @@ static function named(path:String, message:String):String
 
 ## Fetch
 
-*class* in [`src/helix/asset/Fetch.hx`](../../src/helix/asset/Fetch.hx)
+*class* in [`src/helix/asset/Fetch.hx`](../../src/helix/asset/Fetch.hx), `import helix.asset.Fetch;`
 
 Downloads: bounded whole-response GETs (FetchService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from FetchService's public members with their doc comments.
 
@@ -106,7 +106,7 @@ static function fetch(request:FetchRequest, complete:FetchResult -> Void, ?progr
 
 ## FetchPart
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
 
 A part of a response's body as it arrives: the response's HTTP status and headers (lower-case names), the total from Content-Length or null when unknown (or the body is compressed), and the part's bytes.
 
@@ -117,7 +117,7 @@ A part of a response's body as it arrives: the response's HTTP status and header
 
 ## FetchProgress
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
 
 Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed).
 
@@ -126,7 +126,7 @@ Body bytes received so far, and the total from Content-Length, or null when unkn
 
 ## FetchRequest
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
 
 A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches (default false), headers are sent with it (none by default).
 
@@ -138,7 +138,7 @@ A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds th
 
 ## FetchResponse
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
+*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
 
 A complete response: HTTP status, headers with lower-case names, and the whole body.
 
@@ -148,7 +148,7 @@ A complete response: HTTP status, headers with lower-case names, and the whole b
 
 ## FetchResult
 
-*enum* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx)
+*enum* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
 
 How a fetch ended: a response of any HTTP status, a transport failure message, or cancellation.
 
@@ -158,7 +158,7 @@ How a fetch ended: a response of any HTTP status, a transport failure message, o
 
 ## IReloadable
 
-*class* in [`src/helix/asset/IReloadable.hx`](../../src/helix/asset/IReloadable.hx)
+*class* in [`src/helix/asset/IReloadable.hx`](../../src/helix/asset/IReloadable.hx), `import helix.asset.IReloadable;`
 
 Told when a subscribed asset's file changed and was loaded again (IAssets.subscribe). Called through the object, so after a hot reload its new code runs.
 
@@ -170,7 +170,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 ## IRequest
 
-*class* in [`src/helix/asset/IRequest.hx`](../../src/helix/asset/IRequest.hx)
+*class* in [`src/helix/asset/IRequest.hx`](../../src/helix/asset/IRequest.hx), `import helix.asset.IRequest;`
 
 Host-thread cancellation. Completion is asynchronous and exactly once.
 
@@ -182,7 +182,7 @@ function cancel():Void
 
 ## Saves
 
-*class* in [`src/helix/asset/Saves.hx`](../../src/helix/asset/Saves.hx)
+*class* in [`src/helix/asset/Saves.hx`](../../src/helix/asset/Saves.hx), `import helix.asset.Saves;`
 
 The game's saves, apart from the asset cache (SaveService), installed by their first use, so a program that saves nothing opens no store for them. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SaveService's public members with their doc comments.
 
@@ -200,7 +200,7 @@ static function remove(name:String, ?removed:() -> Void, ?failed:String -> Void)
 
 ## Storage
 
-*class* in [`src/helix/asset/Storage.hx`](../../src/helix/asset/Storage.hx)
+*class* in [`src/helix/asset/Storage.hx`](../../src/helix/asset/Storage.hx), `import helix.asset.Storage;`
 
 The writable cache: files by key (StorageService). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StorageService's public members with their doc comments.
 
@@ -220,7 +220,7 @@ static function clear(complete:StorageWriteResult -> Void):IRequest
 
 ## StorageResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
 
 How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
@@ -231,7 +231,7 @@ How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
 ## StorageSourceResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
 
 How leasing a stored file ended: the lease, Missing, a failure message, or cancellation.
 
@@ -242,7 +242,7 @@ How leasing a stored file ended: the lease, Missing, a failure message, or cance
 
 ## StorageWriteResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx)
+*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
 
 How a write or remove ended: Written, a failure message, or cancellation.
 

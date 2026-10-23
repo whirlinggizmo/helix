@@ -4,7 +4,7 @@
 
 ## Closing
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 A hole in the cover closing on a point until all is covered at the middle, where what's shown swaps, then opening from it: the hole round (Iris) or a diamond (Diamond). The point is the stage's, read as it draws, so it can follow something moving; the middle of the visible area unless set.
 
@@ -23,7 +23,7 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 
 ## Collect2D
 
-*class* in [`src/helix/scene/Collect2D.hx`](../../src/helix/scene/Collect2D.hx)
+*class* in [`src/helix/scene/Collect2D.hx`](../../src/helix/scene/Collect2D.hx), `import helix.scene.Collect2D;`
 
 Things collected flying to where they count: a chest's coins to the score, gems to a counter, hearts to the health bar. Sprites of a texture burst out from a point on the stage, scatter for a moment, then each curves in to a target node, one after another, a callback as each arrives (a ding, a score tick) and another once all have. It runs itself (run), on the frames' time as a Transition does, and takes itself off the stage when done; from a 3D world, the point is a View3D's project of where the chest is. In the stage's units.
 
@@ -55,7 +55,7 @@ function run(x:Float, y:Float, target:Node2D, ?arrived:Int -> Void, ?done:() -> 
 
 ## Diamond
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 A diamond-shaped hole closing on a point and opening from it (Closing).
 
@@ -67,7 +67,7 @@ function new(?seconds:Float = .5, ?color:Int = 0xff000000)
 
 ## Fade
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 A fade to a color and back: covered at the middle, where what's shown swaps.
 
@@ -82,7 +82,7 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 
 ## Iris
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 A round hole closing on a point and opening from it (Closing).
 
@@ -94,7 +94,7 @@ function new(?seconds:Float = .5, ?color:Int = 0xff000000)
 
 ## Loader
 
-*class* in [`src/helix/scene/Loader.hx`](../../src/helix/scene/Loader.hx)
+*class* in [`src/helix/scene/Loader.hx`](../../src/helix/scene/Loader.hx), `import helix.scene.Loader;`
 
 A group of loads with one progress: a scene's files gathered so a loading screen shows how far they are (progress, from how many have ended) and the scene starts once they're done (done), with what failed by name (failures). Each load goes through the service it always did, its own lambdas kept (a failure with no failed lambda logged with its path, as the service would); the loader only counts. wrap counts any other load the game makes. Nothing here cancels: a scene that exits early cancels its own requests, and a cancelled load is never counted as ended.
 
@@ -130,7 +130,7 @@ function model(path:String, loaded:ModelFile3D -> Void, ?failed:String -> Void, 
 
 ## Loading
 
-*class* in [`src/helix/scene/Loading.hx`](../../src/helix/scene/Loading.hx)
+*class* in [`src/helix/scene/Loading.hx`](../../src/helix/scene/Loading.hx), `import helix.scene.Loading;`
 
 The built-in loading screen (docs/DISPLAY_MODEL.md): the theme's panel color or a picture (setImage: a level's art, covering the screen or centered), a caption ("Loading the caves", text; "Loading" unless given) over a bar of its loader's progress and the count, a tip along the bottom (tip), and what failed in the disabled text color. Shown on the stage (show) over what's there until its loader is done, then taken off and then called: put the level on the stage there. With holdForPress it stays once loaded, saying so, until a press (the "loaded, go" screen of a movie-like opening). It runs itself; quick (the run option quick=1) doesn't hold.
 
@@ -162,7 +162,7 @@ function show(then:() -> Void):Bool
 
 ## Node
 
-*class* in [`src/helix/scene/Node.hx`](../../src/helix/scene/Node.hx)
+*class* in [`src/helix/scene/Node.hx`](../../src/helix/scene/Node.hx), `import helix.scene.Node;`
 
 What every node shares, in a 3D tree (Node3D) or a 2D one: a name, the flags (enabled, visible, pickable), a parent and children, and find. It has no transform: Node3D and Node2D add their own, each taking children of its own kind only (its addChild and removeChild). Never made bare and never subclassed by a game: the framework's kinds are its classes, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130).
 
@@ -188,7 +188,7 @@ function getChild(index:Int):Null<Node>
 
 ## Noise
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 The screen covered square by square in a scattered order, then uncovered the same way in another: a dissolve in blocks.
 
@@ -205,7 +205,7 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 
 ## Pointer
 
-*class* in [`src/helix/scene/Pointer.hx`](../../src/helix/scene/Pointer.hx)
+*class* in [`src/helix/scene/Pointer.hx`](../../src/helix/scene/Pointer.hx), `import helix.scene.Pointer;`
 
 The pointer over stages: which node it's over, and what it pressed and clicked, asked of it, never told to the nodes (DECISIONS 61). The stages it looks at are added in draw order, each with the camera it's drawn through; update() picks them topmost (last added) first, once a frame after input is polled, so a HUD drawn over the world takes the pointer first. A press on a 2D node captures the pointer: until it's released, the stages under it see nothing (captured, for an app's own use of the pointer too). Edges (isPressed, isClicked) last the frame they happen in. Nodes are compared by identity: a 3D stage's are Node3Ds, a 2D stage's Node2Ds. With no stages added, it looks at the Stage (helix.render2d.Stage) and the views on it, in their drawing order (docs/DISPLAY_MODEL.md).
 
@@ -235,7 +235,7 @@ var hit3D(get, never):Null<PickHit3D>
 
 ## SceneBehavior
 
-*class* in [`src/helix/scene/SceneBehavior.hx`](../../src/helix/scene/SceneBehavior.hx)
+*class* in [`src/helix/scene/SceneBehavior.hx`](../../src/helix/scene/SceneBehavior.hx), `import helix.scene.SceneBehavior;`
 
 A behavior as a .scene3d file attaches it to a node: the behavior class's name and its props by name, as data. The file says which behaviors a node gets; at run time they live in the behaviors pass, never on the node.
 
@@ -251,7 +251,7 @@ var props:Map<String, SceneValue>
 
 ## SceneEnvironment3D
 
-*class* in [`src/helix/scene/SceneEnvironment3D.hx`](../../src/helix/scene/SceneEnvironment3D.hx)
+*class* in [`src/helix/scene/SceneEnvironment3D.hx`](../../src/helix/scene/SceneEnvironment3D.hx), `import helix.scene.SceneEnvironment3D;`
 
 A .scene3d file's environment section: the place's light (helix.render3d.Environment3D), set on the node the file is instantiated as (its root group, or a prefab's node), lighting what's under it. Each null means the default and is not written. How a camera photographs the place (exposure, tone mapping) is the view's (View3D), not the file's.
 
@@ -277,13 +277,13 @@ var backgroundBlur:Null<Float>
 
 ## SceneFile3D
 
-*class* in [`src/helix/scene/SceneFile3D.hx`](../../src/helix/scene/SceneFile3D.hx)
+*class* in [`src/helix/scene/SceneFile3D.hx`](../../src/helix/scene/SceneFile3D.hx), `import helix.scene.SceneFile3D;`
 
 A .scene3d file as parsed: HeliX's own JSON, one tree. Its version ("helix-scene3d"), its environment section and its nodes, each a SceneNode3D with its kind's properties as SceneSchema3D's tables say. Parsed from bytes, every problem logged through Failure and the whole refused, so a file either loads as written or says why; written back canonically (write), so load, write, load gives the same bytes and a hand edit stays where it was made; instantiated under a 3D node (instantiate) and captured back from a live instance (capture). A scene is a tree of nodes: a level and a prefab are the same thing used two ways, the root of what a View3D shows or a node inside another tree.
 
 ```haxe
 function new()
-static var VERSION(inline, null):Int
+static inline var VERSION:Int
 static function parse(bytes:haxe.io.Bytes, ?path:String):Null<SceneFile3D>
 static function capture(instance:SceneInstance3D):SceneFile3D
 var version:Int
@@ -307,7 +307,7 @@ function write():haxe.io.Bytes
 
 ## SceneFiles3D
 
-*class* in [`src/helix/scene/SceneFiles3D.hx`](../../src/helix/scene/SceneFiles3D.hx)
+*class* in [`src/helix/scene/SceneFiles3D.hx`](../../src/helix/scene/SceneFiles3D.hx), `import helix.scene.SceneFiles3D;`
 
 Scene files (.scene3d), parsed once and shared by path (SceneFileCache3D). The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from SceneFileCache3D's public members with their doc comments.
 
@@ -331,7 +331,7 @@ static function forget(path:String):Void
 
 ## SceneInstance3D
 
-*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx)
+*class* in [`src/helix/scene/SceneInstance3D.hx`](../../src/helix/scene/SceneInstance3D.hx), `import helix.scene.SceneInstance3D;`
 
 What instantiating a .scene3d file gives (SceneFile3D.instantiate): its root, a group named after the file under the node it was put in, holding every node the file made, the nodes by path, the behaviors it attached, the game's props by node, and whether every load has landed (ready). It remembers where each node came from (the file's own entry, a model file by path, a prefab by path) and the values the origin gave it, so SceneFile3D.capture writes back a file that instantiates to what the tree is now, a node from a file or a prefab as the reference plus what differs. destroy takes it all out again.
 
@@ -361,7 +361,7 @@ function destroy():Void
 
 ## SceneMaterial3D
 
-*class* in [`src/helix/scene/SceneMaterial3D.hx`](../../src/helix/scene/SceneMaterial3D.hx)
+*class* in [`src/helix/scene/SceneMaterial3D.hx`](../../src/helix/scene/SceneMaterial3D.hx), `import helix.scene.SceneMaterial3D;`
 
 A material as a .scene3d file writes it inline on a Model3D: Material3D's values, each null when the file doesn't say it, so an override changes one value and leaves the rest.
 
@@ -391,7 +391,7 @@ var doubleSided:Null<Bool>
 
 ## SceneMesh3D
 
-*class* in [`src/helix/scene/SceneMesh3D.hx`](../../src/helix/scene/SceneMesh3D.hx)
+*class* in [`src/helix/scene/SceneMesh3D.hx`](../../src/helix/scene/SceneMesh3D.hx), `import helix.scene.SceneMesh3D;`
 
 A generated mesh as a .scene3d file writes it on a Model3D ("mesh", in place of a file): the shape's name (plane, cube, sphere, cylinder, cone, capsule or torus: SceneSchema3D.shapes) and its numbers by the generator's own argument names (a plane's width, length and subdivisions; a sphere's radius, rings and segments), an optional one absent when the generator's default.
 
@@ -407,7 +407,7 @@ var arguments:Map<String, Float>
 
 ## SceneNode3D
 
-*class* in [`src/helix/scene/SceneNode3D.hx`](../../src/helix/scene/SceneNode3D.hx)
+*class* in [`src/helix/scene/SceneNode3D.hx`](../../src/helix/scene/SceneNode3D.hx), `import helix.scene.SceneNode3D;`
 
 A node as a .scene3d file has it, not a live one: its kind (or the prefab it instantiates), name, a Model3D's glTF or generated mesh, its transform and flags (each null when unsaid), its kind's properties by name, an inline material, overrides by path for the nodes its file or prefab makes, its children, the behaviors to attach and the game's own props. Each absent part means the default: a null transform is identity, a null flag true, a property its class's. An override is a SceneNode3D too, with no name, kind or scene: only what it changes, plus children and behaviors to add. Phase 3 of the file's plan makes live nodes from these and captures them back.
 
@@ -455,7 +455,7 @@ var isOverride(get, never):Bool
 
 ## SceneValue
 
-*enum* in [`src/helix/scene/SceneValue.hx`](../../src/helix/scene/SceneValue.hx)
+*enum* in [`src/helix/scene/SceneValue.hx`](../../src/helix/scene/SceneValue.hx), `import helix.scene.SceneValue;`
 
 A value as a .scene3d file holds it: a kind's property, a behavior's prop, or one of a node's own props. JSON's own shapes (a number, text, a bool, a list of numbers), and two shapes of string the file gives a meaning: a color, "#RRGGBB" or "#RRGGBBAA", and a reference to a node of the file, "@name" or "@path/from/root".
 
@@ -468,7 +468,7 @@ A value as a .scene3d file holds it: a kind's property, a behavior's prop, or on
 
 ## Slide
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 A cover sliding across: in from one side until it covers everything at the middle, where what's shown swaps, then on out across the far side, or back out the way it came (back). Its edge is square to the way it moves, so a diagonal one sweeps corner to corner.
 
@@ -487,7 +487,7 @@ function draw(cover:Drawing2D, x:Float, y:Float, width:Float, height:Float, prog
 
 ## SlideDirection
 
-*enum* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*enum* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 Which way a Slide's cover moves across the screen: it comes in from the opposite side (Left enters from the right).
 
@@ -502,7 +502,7 @@ Which way a Slide's cover moves across the screen: it comes in from the opposite
 
 ## Splash
 
-*class* in [`src/helix/scene/Splash.hx`](../../src/helix/scene/Splash.hx)
+*class* in [`src/helix/scene/Splash.hx`](../../src/helix/scene/Splash.hx), `import helix.scene.Splash;`
 
 The built-in splash (docs/DISPLAY_MODEL.md): a logo (or none) centered on the theme's panel color, shown on the stage (show) for at least its seconds, then taken off through its transition (a half-second fade unless given), then called at the transition's middle: put the next screen on the stage there. It leaves once the user has pressed a key, a button or a finger (IInput.activated: a browser lets audio start and fullscreen be asked for only after that; the same rule everywhere), or after maxWait's seconds without one: "press any key" shows until then, or, where a press came already, nothing. A pad's press doesn't count (a browser can't unlock with one), so the line stays for a tap. It runs itself; quick (the run option quick=1) skips its wait. theme for its colors and font, prompt for the line.
 
@@ -524,7 +524,7 @@ function show(next:() -> Void):Bool
 
 ## Transition
 
-*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx)
+*class* in [`src/helix/scene/Transition.hx`](../../src/helix/scene/Transition.hx), `import helix.scene.Transition;`
 
 How one screen gives way to the next on the stage (docs/DISPLAY_MODEL.md): a cover drawn over everything, covering for coverSeconds and uncovering for uncoverSeconds, what's shown swapped at the middle between; after a delay when given, held covered at the middle for hold seconds, each half along its own ease. It runs itself (run, swap) on the frames' time, not the game's clock, so a paused game still transitions to its menu; quick (the run option quick=1) skips it, swapping at once. Fade is the one made; another draws anything into its cover by progress (draw).
 

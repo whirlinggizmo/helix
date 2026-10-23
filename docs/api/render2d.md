@@ -4,19 +4,28 @@
 
 ## Align2D
 
-*abstract* in [`src/helix/render2d/Align2D.hx`](../../src/helix/render2d/Align2D.hx)
+*abstract* in [`src/helix/render2d/Align2D.hx`](../../src/helix/render2d/Align2D.hx), `import helix.render2d.Align2D;`
 
 Which point of a line of text its x names: its left edge, center or right edge.
 
+- `Align2D.Left`: x is the text's left edge.
+- `Align2D.Center`: x is the text's center.
+- `Align2D.Right`: x is the text's right edge.
+
 ## AnimationDirection2D
 
-*abstract* in [`src/helix/render2d/AnimationDirection2D.hx`](../../src/helix/render2d/AnimationDirection2D.hx)
+*abstract* in [`src/helix/render2d/AnimationDirection2D.hx`](../../src/helix/render2d/AnimationDirection2D.hx), `import helix.render2d.AnimationDirection2D;`
 
 Which way a SpriteAnimation2D plays through its frames (Aseprite's tag directions).
 
+- `AnimationDirection2D.Forward`: First to last.
+- `AnimationDirection2D.Reverse`: Last to first.
+- `AnimationDirection2D.PingPong`: First to last and back, the ends shown once a turn.
+- `AnimationDirection2D.PingPongReverse`: Last to first and back, the ends shown once a turn.
+
 ## Camera2D
 
-*class* in [`src/helix/render2d/Camera2D.hx`](../../src/helix/render2d/Camera2D.hx)
+*class* in [`src/helix/render2d/Camera2D.hx`](../../src/helix/render2d/Camera2D.hx), `import helix.render2d.Camera2D;`
 
 A 2D view: the world point at the viewport's center and how many pixels a world unit covers (across and down alike, but under a Presentation that stretches). Y grows downward. The viewport is the whole framebuffer, or an area of it (setViewportArea). A camera never sized (setViewport) is the whole framebuffer as it is at each use: a Batch2D beginning with it, fit and pixels size it to Screen's framebuffer then (the window's, refitted by the runner before each frame), so it follows a resize; one the app sized keeps its size.
 
@@ -42,8 +51,8 @@ function screenToWorldX(px:Float):Float
 function screenToWorldY(py:Float):Float
 function worldToScreenX(wx:Float):Float
 function worldToScreenY(wy:Float):Float
-var clipX(inline, null):(wx:Float) -> Float
-var clipY(inline, null):(wy:Float) -> Float
+function clipX(wx:Float):Float
+function clipY(wy:Float):Float
 ```
 
 - `new`: A camera at world 0, 0, zoom 1, unsized: the whole framebuffer once used under a runner, a 1 x 1 viewport until then.
@@ -72,7 +81,7 @@ var clipY(inline, null):(wy:Float) -> Float
 
 ## CameraFollow2D
 
-*class* in [`src/helix/render2d/CameraFollow2D.hx`](../../src/helix/render2d/CameraFollow2D.hx)
+*class* in [`src/helix/render2d/CameraFollow2D.hx`](../../src/helix/render2d/CameraFollow2D.hx), `import helix.render2d.CameraFollow2D;`
 
 A 2D camera following a target: the target moves freely inside a dead zone around the view's center, the view catching up smoothly (at the same speed at any frame rate) when it leaves, kept inside the world's bounds; and shaken (shake), a trauma that decays, the view thrown about by the square of it. update follows, apply places a camera there. Follow where the target is drawn (between simulation ticks, where it's interpolated), not where it's simulated, or the view jitters against it. The shake is the view's only, never the game's: its random numbers are its own.
 
@@ -116,7 +125,7 @@ function apply(camera:Camera2D):Void
 
 ## Decals2D
 
-*class* in [`src/helix/render2d/Decals2D.hx`](../../src/helix/render2d/Decals2D.hx)
+*class* in [`src/helix/render2d/Decals2D.hx`](../../src/helix/render2d/Decals2D.hx), `import helix.render2d.Decals2D;`
 
 Marks left on the ground of a game seen from above: skid marks, footsteps, scorch marks, a target ring. A fixed pool of a texture's sprites, drawn together (alike sprites beside each other in the draw order are one draw): each place puts one down, and once the pool is full the oldest is taken up and put down again, so a trail never grows past its capacity. Given a life (lifeSeconds), each mark fades out over fadeSeconds once it has lived it, on the game's clock (a paused game's marks stay as they are), and is taken up; without one it stays until the pool comes round to it. Either way the ones next to be taken up for reuse (fadeCount) fade by how soon, so a full pool's trail thins out where it ends instead of losing a mark at a time. In its own space: add it under what walks over the marks (before them, as a child drawn first). Decals are never picked: a click passes to what's under them.
 
@@ -148,7 +157,7 @@ function clear():Void
 
 ## Drawing2D
 
-*class* in [`src/helix/render2d/Drawing2D.hx`](../../src/helix/render2d/Drawing2D.hx)
+*class* in [`src/helix/render2d/Drawing2D.hx`](../../src/helix/render2d/Drawing2D.hx), `import helix.render2d.Drawing2D;`
 
 Drawing kept on a node (docs/DISPLAY_MODEL.md): Flash's graphics, as calls named as Batch2D's (rect, frame, roundedRect, circle, circleLines, line, polygon, polygonLines, image, drawText, drawTextWrapped), each taking its own color (0xAARRGGBB), so there is no fill to begin or end. The calls are kept in order, in the node's own units, and drawn each frame where the node is, turned, scaled and faded with it; clear takes them away. Calling clear and drawing again in update is immediate drawing, as Flash games did it. Not culled; picked by the box around what it holds.
 
@@ -186,7 +195,7 @@ function drawText(text:String, x:Float, y:Float, size:Float, color:Int, ?align:A
 
 ## Node2D
 
-*class* in [`src/helix/render2d/Node2D.hx`](../../src/helix/render2d/Node2D.hx)
+*class* in [`src/helix/render2d/Node2D.hx`](../../src/helix/render2d/Node2D.hx), `import helix.render2d.Node2D;`
 
 What a Renderer2D holds: a transform in a tree, with children of its own kind. A bare one is a group: it draws nothing, only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of things together, or a pivot to turn them about. The framework's kinds are its classes (Sprite2D, Shape2D, Text2D, Particles2D), each holding only its own data; a game never subclasses one, and game state lives elsewhere, the node its view (docs/DECISIONS.md, 61 and 130). Its transform is a position, a rotation in radians (clockwise on screen, y growing down) and a scale, relative to its parent; its world transform is worked out when a stage draws it, only after it or a node above it changed. Any node can clip its children (setClip).
 
@@ -248,7 +257,7 @@ function toLocalY(x:Float, y:Float):Float
 
 ## Particles2D
 
-*class* in [`src/helix/render2d/Particles2D.hx`](../../src/helix/render2d/Particles2D.hx)
+*class* in [`src/helix/render2d/Particles2D.hx`](../../src/helix/render2d/Particles2D.hx), `import helix.render2d.Particles2D;`
 
 An emitter of particles (helix.particle.Emitter, made flat for 2D), placed here: it spawns where this node is in the world, and the stage advances it by its clock (Renderer2D.time) each draw. Its particles draw at its place in the stage's order, through the GPU, and stay where they were born, so they trail as the node moves.
 
@@ -280,7 +289,7 @@ var emitter(default, null):Emitter
 
 ## Polygon2D
 
-*class* in [`src/helix/render2d/Polygon2D.hx`](../../src/helix/render2d/Polygon2D.hx)
+*class* in [`src/helix/render2d/Polygon2D.hx`](../../src/helix/render2d/Polygon2D.hx), `import helix.render2d.Polygon2D;`
 
 Simple polygons as points, x and y in turn: filled by triangulating them (convex or not), outlined by mitered strips.
 
@@ -294,7 +303,7 @@ static function triangulate(points:Array<Float>):Array<Int>
 
 ## Shape2D
 
-*class* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx)
+*class* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx), `import helix.render2d.Shape2D;`
 
 A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size, pivot and corner radius, a circle its radius, a line and a polygon their points; the others' are kept but not drawn.
 
@@ -342,19 +351,28 @@ function setPoints(value:Array<Float>):Bool
 
 ## ShapeForm2D
 
-*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx)
+*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx), `import helix.render2d.Shape2D;`
 
 Which shape a Shape2D is.
 
+- `ShapeForm2D.Rectangle`: A rectangle, filled or outlined, its corners square or rounded.
+- `ShapeForm2D.Circle`: A circle, filled or outlined.
+- `ShapeForm2D.Line`: A line segment.
+- `ShapeForm2D.Polygon`: A polygon, filled or outlined.
+
 ## ShapeShading2D
 
-*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx)
+*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx), `import helix.render2d.Shape2D;`
 
 How a filled rectangle is colored.
 
+- `ShapeShading2D.Flat`: In its color alone.
+- `ShapeShading2D.Across`: From its color at its left edge to its endColor at its right.
+- `ShapeShading2D.Down`: From its color at its top to its endColor at its bottom.
+
 ## Sprite2D
 
-*class* in [`src/helix/render2d/Sprite2D.hx`](../../src/helix/render2d/Sprite2D.hx)
+*class* in [`src/helix/render2d/Sprite2D.hx`](../../src/helix/render2d/Sprite2D.hx), `import helix.render2d.Sprite2D;`
 
 A sprite: a texture (or a region of it, or a SpriteSheet2D's frame) drawn as a rectangle, its region's size in texels unless sized, its pivot at its position (its center by default), tinted (0xAARRGGBB). Its scale scales it and its rotation turns it, about its pivot; a nine-slice frame keeps its corners' size as it's sized (setNineSlice). It may draw through an effect (effect).
 
@@ -410,7 +428,7 @@ var nineSlice(get, never):Bool
 
 ## SpriteAnimation2D
 
-*class* in [`src/helix/render2d/SpriteAnimation2D.hx`](../../src/helix/render2d/SpriteAnimation2D.hx)
+*class* in [`src/helix/render2d/SpriteAnimation2D.hx`](../../src/helix/render2d/SpriteAnimation2D.hx), `import helix.render2d.SpriteAnimation2D;`
 
 A named run of a SpriteSheet2D's frames, played by a SpriteAnimator2D: an Aseprite tag, or frames whose names differ only by a number. Each frame shows for its own duration.
 
@@ -428,7 +446,7 @@ final direction:AnimationDirection2D
 
 ## SpriteAnimator2D
 
-*class* in [`src/helix/render2d/SpriteAnimator2D.hx`](../../src/helix/render2d/SpriteAnimator2D.hx)
+*class* in [`src/helix/render2d/SpriteAnimator2D.hx`](../../src/helix/render2d/SpriteAnimator2D.hx), `import helix.render2d.SpriteAnimator2D;`
 
 Plays a SpriteSheet2D's animations: which frame shows, each for its own duration, in its animation's direction, looping or once. Call update once a frame; frame is the sheet's frame to draw (Batch2D.sheetFrame), and a sprite given to it shows that frame itself. entered says which of the animation's frames the last update reached, a footstep's sound on the frame its foot lands.
 
@@ -462,7 +480,7 @@ function update(seconds:Float):Void
 
 ## SpriteFrame2D
 
-*class* in [`src/helix/render2d/SpriteFrame2D.hx`](../../src/helix/render2d/SpriteFrame2D.hx)
+*class* in [`src/helix/render2d/SpriteFrame2D.hx`](../../src/helix/render2d/SpriteFrame2D.hx), `import helix.render2d.SpriteFrame2D;`
 
 One frame of a SpriteSheet2D: where it is in the sheet's texture and how it is drawn. A trimmed frame (its transparent edges cut off when packed) keeps its place in the whole picture: its texels are drawn offsetX, offsetY in from the top-left of a sourceWidth x sourceHeight box. A rotated frame was packed turned a quarter turn clockwise; it is drawn upright.
 
@@ -502,7 +520,7 @@ var hasPivot(get, never):Bool
 
 ## SpriteSheet2D
 
-*class* in [`src/helix/render2d/SpriteSheet2D.hx`](../../src/helix/render2d/SpriteSheet2D.hx)
+*class* in [`src/helix/render2d/SpriteSheet2D.hx`](../../src/helix/render2d/SpriteSheet2D.hx), `import helix.render2d.SpriteSheet2D;`
 
 A texture holding many pictures (an atlas), with where each one is (its frames) and the runs of them that animate (its animations). Read from the JSON TexturePacker and Aseprite write (their "JSON Hash" and "JSON Array" layouts: trimmed and rotated frames, pivots, Aseprite's tags and frame durations), or cut from a grid of equal cells. Without tags, frames whose names differ only by a number make an animation ("run_01.png", "run_02.png": "run"). A Sprite2D shows a frame (Sprite2D.setFrame), a Batch2D draws one (Batch2D.sheetFrame), a SpriteAnimator2D plays them.
 
@@ -538,7 +556,7 @@ function reloaded(path:String, bytes:haxe.io.Bytes):Void
 
 ## Stage
 
-*class* in [`src/helix/render2d/Stage.hx`](../../src/helix/render2d/Stage.hx)
+*class* in [`src/helix/render2d/Stage.hx`](../../src/helix/render2d/Stage.hx), `import helix.render2d.Stage;`
 
 The stage: what the program shows, drawn by the runner after every update (StageService; docs/DISPLAY_MODEL.md). Installed by its first use, so a program that never uses it carries none of it. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from StageService's public members with their doc comments.
 
@@ -572,7 +590,7 @@ static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 
 ## Text2D
 
-*class* in [`src/helix/render2d/Text2D.hx`](../../src/helix/render2d/Text2D.hx)
+*class* in [`src/helix/render2d/Text2D.hx`](../../src/helix/render2d/Text2D.hx), `import helix.render2d.Text2D;`
 
 A line of text in the 2D world: its value, size units tall (ascent to descent), in a color (0xAARRGGBB) and a font (null: the drawing batch's built-in one); its position is the top of the text and, by align, its left edge, center or right edge. Wrapped to a width, it is a block of lines (setWrapWidth). Not pickable until pickable is set: a label lets the pointer through to what it's on. Batch2D.drawText draws text without a node; Font.measure measures it.
 
@@ -604,7 +622,7 @@ function measureHeight(font:Font):Float
 
 ## View
 
-*class* in [`src/helix/render2d/View.hx`](../../src/helix/render2d/View.hx)
+*class* in [`src/helix/render2d/View.hx`](../../src/helix/render2d/View.hx), `import helix.render2d.View;`
 
 What View2D and View3D share (docs/DISPLAY_MODEL.md): a display object showing a tree of nodes through a camera, in a rectangle width x height of its own units from its position, scaled with it and not turned (a view is drawn upright; its rotation is ignored), or, with a width or height of 0, the whole area of whatever shows it (the stage's, or the view it's in). Placed like any node: on the stage, or in a tree another view shows (a minimap in a panel). A view is never drawn inside the tree it shows: one that would be (it shows a tree it's in, or one already being drawn above it) is skipped, and logged once.
 
@@ -626,7 +644,7 @@ function destroy():Void
 
 ## View2D
 
-*class* in [`src/helix/render2d/View2D.hx`](../../src/helix/render2d/View2D.hx)
+*class* in [`src/helix/render2d/View2D.hx`](../../src/helix/render2d/View2D.hx), `import helix.render2d.View2D;`
 
 A 2D tree shown through a camera (docs/DISPLAY_MODEL.md): a display object, placed on the stage or in another tree, showing content's children through camera in its rectangle (View), clipped to it. The camera's position and zoom are the app's (framebuffer pixels per world unit, as a Camera2D's always are: Window.pixelRatio for logical pixels); the view sizes its viewport to the rectangle as it draws, so after a first frame the camera's viewport is the view's (what CameraFollow2D reads for its bounds). Several views can show one tree (a minimap of the world); a world's emitters advance once a frame however many show them.
 
