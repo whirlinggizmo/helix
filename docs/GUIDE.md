@@ -23,7 +23,7 @@ class Game extends helix.App {
 	}
 
 	override public function update(dt:Float):Void {
-		// once a frame, dt seconds since the last
+		// once a frame, dt seconds since the last (the frames' time, which a pause doesn't stop: below)
 	}
 }
 ```
@@ -31,6 +31,10 @@ class Game extends helix.App {
 - **Make things in `init`, not in field initializers**, when they use HeliX: a field's `= new ...` runs before HeliX's services
   exist. Plain values and nodes are fine as fields; `Actions`, textures, sounds are made in `init` (an `Actions` made as a field
   never sees a key).
+- **Time:** `dt` is the frames' time and keeps running. `Time.clock.delta` (`import helix.time.Time;`) is the game's: 0 while paused,
+  which it is while the window is in the background (`AppOptions.pauseOnBlur`, on unless set off) or when the game says
+  (`Time.clock.pause()`, `resume()`; `Time.clock.timeScale = .5` for slow motion). Move the game, its timers and tweens by
+  `Time.clock.delta`, so they stop together; a pause menu's own animation by `dt`.
 - **Units:** positions in the design's units (`Screen.set`'s), from the top left, y down; angles in radians, clockwise; times in seconds.
 - **What's on the stage is drawn after each `update`.** Nothing is drawn by hand: add nodes (`Stage.addChild`) and change them.
 - `PresentationMode`: `Fit` (bars to keep the shape), `Expand` (shows more past the design on one axis), `Fill` (crops), `Stretch`,
@@ -114,6 +118,7 @@ actions.bind("moveX", KeyboardPair(Key.Left, Key.Right));   // -1 .. 1
 actions.bind("moveX", KeyboardPair(Key.A, Key.D));
 actions.bind("moveX", Axis(PadAxis.LeftX, 0, .2));          // the stick, its dead zone .2
 actions.bind("fire", Keyboard(Key.Space));
+actions.bind("fire", Mouse(MouseButton.Left));               // import helix.input.MouseButton;
 actions.bind("fire", Pad(PadButton.South));
 
 x += actions.axis("moveX") * 200 * dt;
@@ -161,7 +166,7 @@ import helix.time.Timers;
 import helix.tween.Ease;
 import helix.tween.Tweens;
 
-var timers = new Timers();       // fields; then timers.update(dt) and tweens.update(dt) in update
+var timers = new Timers();       // fields; then timers.update(Time.clock.delta) and tweens.update(Time.clock.delta) in update
 var tweens = new Tweens();
 var random = new Random(42);     // a seed: the same numbers each run
 
@@ -191,7 +196,9 @@ new Fade(.6).run(() -> {          // at the middle, covered: swap what's shown
 }, () -> started = true);         // at the end
 ```
 
-`new Fade(.6).swap(title, playing)` does the remove and add for you. Other transitions in `helix.scene.transition`: `Slide`
+`update` keeps running through a transition: what `atMiddle` sets is live from the next frame, before `done` runs, so start a round in
+one of them, not both. `new Fade(.6).swap(title, playing)` does the remove and add for you, but puts `playing` over what was on top
+(the fullscreen button); `run` with the re-add keeps it there. Other transitions in `helix.scene.transition`: `Slide`
 (`new Slide(.5, SlideDirection.Right)`), `Iris`, `Diamond`, `Noise`; each takes `delay`, `hold`, `coverSeconds`, `uncoverSeconds`, `coverEase` and
 `uncoverEase`.
 
@@ -203,10 +210,11 @@ import helix.render2d.Particles2D;
 
 var burst = Particles2D.explosion(24);      // also smokePuff, sparks, dust, confetti (once); fire, smoke, rain, snow (steady)
 burst.setPosition(x, y);
-things.addChild(burst);
-bursts.push(burst);
-// each frame: take finished one-shots off
-for (b in bursts.copy()) if (b.emitter.spent) { things.removeChild(b); bursts.remove(b); }
+things.addChild(burst);                     // a one-shot takes itself off once it's done (removeWhenSpent)
+
+var torch = Particles2D.fire(16);           // a steady one runs until you remove it
+torch.setPosition(100, 200);
+things.addChild(torch);
 
 var marks = new Decals2D(texture, 32);      // marks left behind (scorch, footprints): the oldest reused past 32
 ground.addChild(marks);
@@ -214,7 +222,8 @@ marks.place(x, y, angle, 16);
 marks.lifeSeconds = 5;  marks.fadeSeconds = 1;
 ```
 
-`helix.scene.Collect2D` flies sprites from a point to a node (coins to the score); `helix.render2d.CameraFollow2D.shake(.5)` shakes.
+`helix.scene.Collect2D` flies sprites from a point to a node (coins to the score); a `CameraFollow2D`'s `follow.shake(.5)` shakes the
+view it follows with (below).
 
 ## A scrolling world
 
@@ -232,11 +241,12 @@ var follow = new CameraFollow2D();
 Stage.addChild(new View2D(world, camera));   // in init; the HUD after it, on the stage, stays put
 
 // in update:
-camera.zoom = Screen.scaleX;                  // one world unit a design unit
-camera.zoomY = Screen.scaleY;
+camera.zoom = Screen.scaleX;                  // one world unit a design unit: a camera's zoom is framebuffer pixels a unit,
+camera.zoomY = Screen.scaleY;                 // and Screen's scale is how many the design's units take
 follow.update(heroX, heroY, dt, camera);      // follow.setBounds(0, 0, worldWidth, worldHeight) keeps the edges in
 follow.apply(camera);
-var worldX = camera.screenToWorldX(Input.pointerX);   // a click, in the world
+var worldX = camera.screenToWorldX(Input.pointerX);   // a click, in the world (bars and all), from the view's first frame
+// what's in view: follow.x - Screen.width / 2 .. follow.x + Screen.width / 2 (and y by height): spawn just past it
 ```
 
 ## Maps from Tiled

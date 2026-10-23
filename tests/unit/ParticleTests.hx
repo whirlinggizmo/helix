@@ -109,6 +109,33 @@ class ParticleTests {
 			}
 		}
 		check(Emitter.getDot() == Emitter.getDot() && Emitter.getDot().width == 32, "One dot, made once");
+		// A one-shot preset's node takes itself off its parent the frame after it's spent; a steady one, or one told not to, stays.
+		var parent2D = new helix.render2d.Node2D(),
+			burst = helix.render2d.Particles2D.explosion(10),
+			kept = helix.render2d.Particles2D.sparks(10),
+			flame = helix.render2d.Particles2D.fire(10);
+		kept.removeWhenSpent = false;
+		parent2D.addChild(burst);
+		parent2D.addChild(kept);
+		parent2D.addChild(flame);
+		check(burst.removeWhenSpent && !flame.removeWhenSpent, "One-shot presets go when spent; steady ones don't");
+		for (node in [burst, kept, flame])
+			for (_ in 0...300) {
+				node.emitter.advance(1 / 60, 0, 0, 0);
+				@:privateAccess node.removeIfSpent();
+			}
+		check(burst.emitter.spent && burst.parent == parent2D, "Spent: still there in the frame that found it");
+		@:privateAccess helix.scene.Flow.tick(1 / 60);
+		check(burst.parent == null && kept.parent == parent2D && flame.parent == parent2D, "Off its parent the frame after; the others stay");
+		var parent3D = new helix.render3d.Node3D(),
+			burst3D = helix.render3d.Particles3D.explosion(1);
+		parent3D.addChild(burst3D);
+		for (_ in 0...300) {
+			burst3D.emitter.advance(1 / 60, 0, 0, 0);
+			@:privateAccess burst3D.removeIfSpent();
+		}
+		@:privateAccess helix.scene.Flow.tick(1 / 60);
+		check(burst3D.parent == null, "In 3D too");
 		@:privateAccess helix.graphics.Graphics.bind(null);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

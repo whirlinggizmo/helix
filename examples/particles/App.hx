@@ -34,8 +34,7 @@ class App extends helix.App {
 	static inline var ORBIT = 14;
 
 	var level = new Node3D();
-	// The presets' one-shots alive, and the snow when it falls.
-	var shots:Array<Particles3D> = [];
+	// The snow when it falls (the presets' one-shots take themselves off once spent).
 	var snow:Null<Particles3D>;
 	var view:View3D;
 	var camera = new Camera3D();
@@ -193,12 +192,6 @@ class App extends helix.App {
 				var shot = presets[i](2);
 				shot.setPosition(3, .1, 3);
 				level.addChild(shot);
-				shots.push(shot);
-			}
-		for (shot in shots.copy())
-			if (shot.emitter.spent) {
-				level.removeChild(shot);
-				shots.remove(shot);
 			}
 		if (Input.isFramePressed(Key.Digit6)) {
 			if (snow == null) {
