@@ -5,7 +5,7 @@ import helix.render3d.Mat4;
 import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
-import helix.render3d.ModelFile3D.ImageSource3D;
+import helix.render3d.ImageSource3D;
 import helix.render3d.Node3D;
 import helix.render3d.PickHit3D;
 import helix.render3d.PointLight3D;

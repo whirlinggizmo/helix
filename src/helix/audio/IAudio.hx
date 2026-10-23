@@ -2,12 +2,7 @@ package helix.audio;
 
 import haxe.io.Bytes;
 import helix.asset.IAssets.AudioLocation;
-
-/** How opening a stream ended: its id, or a failure message. */
-enum StreamOpenResult {
-	Opened(id:Int);
-	Failed(message:String);
-}
+import helix.audio.StreamOpenResult;
 
 /** Sound output on a platform: clips (PCM held whole) and streams (played as they're read), each played as voices. Ids are the adapter's;
 	lifetimes, volume checks, buses and fades, waiting for audio to start and decoding are the shared AudioResources' and AudioDecoding's. A browser starts its

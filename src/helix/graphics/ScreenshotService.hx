@@ -2,14 +2,10 @@ package helix.graphics;
 
 import haxe.io.Bytes;
 import helix.asset.IExport;
+import helix.asset.ExportResult;
 import helix.graphics.IGraphics;
 import helix.host.Presentation;
-
-/** How a screenshot ended: where it was saved and its PNG file, or why it wasn't. */
-enum ScreenshotResult {
-	Saved(where:String, png:Bytes);
-	Failed(message:String);
-}
+import helix.graphics.ScreenshotResult;
 
 /** Screenshots, the same on every platform: the next frame the app ends is read back (IGraphics.readPixels), encoded as PNG (Png) and handed
 	to the user (IExport: a download in a browser, a file natively); or read at a few points, for a check comparing pixels (sample). The

@@ -1,5 +1,8 @@
 import haxe.io.Bytes;
 import helix.asset.IAssets;
+import helix.asset.AssetCacheMode;
+import helix.asset.AssetProgress;
+import helix.asset.EnsureOptions;
 import helix.render3d.Gltf;
 import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
@@ -7,6 +10,7 @@ import helix.render3d.Model3D;
 import helix.render3d.ModelCache3D;
 import helix.render3d.Models3D;
 import helix.render3d.ModelFile3D;
+import helix.render3d.ImageSource3D;
 import helix.render3d.Node3D;
 
 /** Characters dressed by slot (the dressing room example's Outfit, examples/dressing-room/src) from part files shared through a ModelCache3D, over the framework's queries
@@ -199,8 +203,8 @@ private class Held implements IAssets {
 	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.asset.IRequest
 		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
-			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest {
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.AssetProgress->Void,
+			?options:helix.asset.EnsureOptions):helix.asset.IRequest {
 		@:privateAccess OutfitTests.asked[path] = (OutfitTests.asked.exists(path) ? OutfitTests.asked[path] : 0) + 1;
 		@:privateAccess OutfitTests.held[path] = {loaded: loaded, failed: message -> helix.asset.Failure.report(path, message, failed)};
 		return new helix.asset.Request(() -> @:privateAccess OutfitTests.held.remove(path));
@@ -217,7 +221,7 @@ private class Held implements IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+	public function clearCache(complete:helix.asset.StorageWriteResult->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
@@ -228,12 +232,12 @@ private class Held implements IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.AssetCacheMode;
 
-	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.AssetCacheMode):helix.asset.AssetCacheMode {
 		return mode;
 	}
 

@@ -1,6 +1,8 @@
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorRegistry;
 import helix.behavior.BehaviorSchema;
+import helix.behavior.BehaviorProp;
+import helix.behavior.BehaviorPropType;
 import helix.behavior.BehaviorPass;
 import helix.input.Input;
 import helix.render3d.Node3D;

@@ -1,5 +1,6 @@
 import helix.time.Clock;
 import helix.time.Timers;
+import helix.time.Timer;
 
 /** A game's time (helix.time.Clock): scaled, paused, held; and timers on it (Timers): once, every, cancelled, made and cancelled inside
 	callbacks, a stall firing once. */

@@ -4,6 +4,7 @@ import helix.graphics.Color;
 import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.render2d.Text2D;
 
 /** A color, 0xAARRGGBB, chosen as hue, saturation and brightness (HSV's value). Top to bottom: a square of saturation (left to right) and

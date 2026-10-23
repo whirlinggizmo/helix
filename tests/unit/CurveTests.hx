@@ -1,4 +1,5 @@
 import helix.math.Curve;
+import helix.math.CurveKind;
 import helix.math.Interpolate;
 
 /** Interpolation (helix.math.Interpolate) and curves (Curve): lerps, angles the short way round, damping the same at any frame rate; a

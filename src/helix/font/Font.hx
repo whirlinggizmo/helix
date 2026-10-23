@@ -3,19 +3,7 @@ package helix.font;
 import helix.graphics.IGraphics;
 import haxe.io.Bytes;
 import helix.texture.Texture2D;
-
-/** Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels. */
-typedef Glyph = {
-	final u0:Float;
-	final v0:Float;
-	final u1:Float;
-	final v1:Float;
-	final x:Float;
-	final y:Float;
-	final width:Float;
-	final height:Float;
-	final advance:Float;
-}
+import helix.font.Glyph;
 
 /** A font for text (Batch2D.drawText, a Text2D node): its characters as glyphs in one texture. builtIn() is JetBrains Mono's printable ASCII as a distance field, sharp at any
 	size; fromTrueType() any TrueType font's printable ASCII and Latin-1, baked the same way (Fonts loads them from files), with its kerning;

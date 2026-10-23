@@ -74,7 +74,7 @@ static var frameInterval(get, never):Float
 
 ## Timer
 
-*class* in [`src/helix/time/Timers.hx`](../../src/helix/time/Timers.hx), `import helix.time.Timers;`
+*class* in [`src/helix/time/Timer.hx`](../../src/helix/time/Timer.hx), `import helix.time.Timer;`
 
 One timer of a Timers set: cancelled by the game, or done once it has fired (a repeating one never is until cancelled).
 

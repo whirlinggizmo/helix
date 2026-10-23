@@ -5,7 +5,7 @@ import helix.asset.IAssets;
 import helix.asset.IRequest;
 import helix.asset.Request;
 import helix.texture.TextureCache;
-import helix.render3d.ModelFile3D.ImageSource3D;
+import helix.render3d.ImageSource3D;
 
 /** Model files (glTF 2.0, GLB or .gltf) loaded through the assets into ModelFiles: the file read with the buffers it keeps beside it, its images
 	decoded or loaded into textures (base color sRGB, normal maps linear), then complete. All of it Haxe, the same on every target; images decode

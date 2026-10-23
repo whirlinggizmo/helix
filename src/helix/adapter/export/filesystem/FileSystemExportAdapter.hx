@@ -4,6 +4,7 @@ import helix.adapter.shared.ReplaceBridge;
 import haxe.io.Bytes;
 import haxe.io.Path;
 import helix.asset.IExport;
+import helix.asset.ExportResult;
 
 /** IExport natively: the file is written into a directory (made when first needed), through a temporary file renamed over it, so a file
 	there is never half written. */

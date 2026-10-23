@@ -1,6 +1,7 @@
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.render3d.EnvironmentBake3D;
+import helix.render3d.CubeMap3D;
 import helix.render3d.Hdr;
 
 /** Environment maps' CPU half: the direction mappings, the irradiance, the cubes and their prefiltering, half floats, the BRDF table, .hdr

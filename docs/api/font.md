@@ -58,7 +58,7 @@ static function release(font:Font):Void
 
 ## Glyph
 
-*typedef* in [`src/helix/font/Font.hx`](../../src/helix/font/Font.hx), `import helix.font.Font;`
+*typedef* in [`src/helix/font/Glyph.hx`](../../src/helix/font/Glyph.hx), `import helix.font.Glyph;`
 
 Where a glyph's texels are, and where it goes: x and y from the pen on the baseline (y grows down), its size, and how far the pen moves after it, in font pixels.
 

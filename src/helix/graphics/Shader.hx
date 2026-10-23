@@ -1,13 +1,6 @@
 package helix.graphics;
 
-/** One of a shader's own parameters: its uniform block's slot, its byte offset there, its type (float, vec2, vec3, vec4, mat4) and how many
-	(1 unless an array). */
-typedef ShaderParameter = {
-	final slot:Int;
-	final offset:Int;
-	final type:String;
-	final elementCount:Int;
-}
+import helix.graphics.ShaderParameter;
 
 /** One program of a .hxshader as read: its source, its own parameters and textures by name, and once built, its handle. */
 private typedef Program = {

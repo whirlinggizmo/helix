@@ -2,6 +2,7 @@ package helix.adapter.export.download;
 
 import haxe.io.Bytes;
 import helix.asset.IExport;
+import helix.asset.ExportResult;
 import js.Browser;
 
 /** IExport in a browser: the file is downloaded, as a link with the download attribute does it (the browser may ask where, or keep it in its

@@ -3,11 +3,15 @@ import helix.asset.IAssets.AudioLocation;
 import helix.asset.IStore;
 import helix.asset.Storage;
 import helix.asset.StorageService;
+import helix.asset.StorageResult;
+import helix.asset.StorageWriteResult;
+import helix.asset.StorageSourceResult;
 import helix.audio.Audio;
 import helix.audio.AudioClip;
 import helix.audio.AudioResources;
 import helix.audio.Fade;
 import helix.audio.IAudio;
+import helix.audio.StreamOpenResult;
 
 /** An IAudio that records what it's told: each voice's last volume, pitch and pan, and every call in order. running starts false, so a
 	playback waits until the test lets audio start. */
@@ -106,28 +110,28 @@ private class Memory implements IStore {
 
 	public function new() {}
 
-	public function read(key:String, maxBytes:Int, done:helix.asset.StorageService.StorageResult->Void):Void
+	public function read(key:String, maxBytes:Int, done:helix.asset.StorageResult->Void):Void
 		pending.push(() -> done(files.exists(key) ? Stored(files[key]) : Missing));
 
-	public function write(key:String, bytes:Bytes, done:helix.asset.StorageService.StorageWriteResult->Void):Void
+	public function write(key:String, bytes:Bytes, done:helix.asset.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files[key] = bytes;
 			done(Written);
 		});
 
-	public function remove(key:String, done:helix.asset.StorageService.StorageWriteResult->Void):Void
+	public function remove(key:String, done:helix.asset.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files.remove(key);
 			done(Written);
 		});
 
-	public function clear(done:helix.asset.StorageService.StorageWriteResult->Void):Void
+	public function clear(done:helix.asset.StorageWriteResult->Void):Void
 		pending.push(() -> {
 			files.clear();
 			done(Written);
 		});
 
-	public function lease(key:String, done:helix.asset.StorageService.StorageSourceResult->Void):Void
+	public function lease(key:String, done:helix.asset.StorageSourceResult->Void):Void
 		pending.push(() -> done(Missing));
 
 	public function poll():Void {

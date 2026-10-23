@@ -6,6 +6,8 @@ import helix.graphics.Color;
 import helix.graphics.IGraphics;
 import helix.graphics.IGraphics.ReadPixelsResult;
 import helix.graphics.PipelineDesc;
+import helix.graphics.DepthTest;
+import helix.graphics.ClipFlip;
 import helix.texture.Sampling;
 import helix.graphics.ShaderSource;
 import helix.texture.TextureFormat;

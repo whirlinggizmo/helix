@@ -351,7 +351,7 @@ function setPoints(value:Array<Float>):Bool
 
 ## ShapeForm2D
 
-*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx), `import helix.render2d.Shape2D;`
+*abstract* in [`src/helix/render2d/ShapeForm2D.hx`](../../src/helix/render2d/ShapeForm2D.hx), `import helix.render2d.ShapeForm2D;`
 
 Which shape a Shape2D is.
 
@@ -362,7 +362,7 @@ Which shape a Shape2D is.
 
 ## ShapeShading2D
 
-*abstract* in [`src/helix/render2d/Shape2D.hx`](../../src/helix/render2d/Shape2D.hx), `import helix.render2d.Shape2D;`
+*abstract* in [`src/helix/render2d/ShapeShading2D.hx`](../../src/helix/render2d/ShapeShading2D.hx), `import helix.render2d.ShapeShading2D;`
 
 How a filled rectangle is colored.
 

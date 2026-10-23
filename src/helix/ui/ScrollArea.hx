@@ -3,6 +3,7 @@ package helix.ui;
 import helix.input.Key;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 
 /** A window onto a column of widgets (add; content), clipping them, drawn and picked, to what's in view and scrolling them up and down: by the
 	wheel over it, a drag on its empty space, its scrollbar (Scrollbar: its thumb dragged, its track pressed above or below the thumb for a

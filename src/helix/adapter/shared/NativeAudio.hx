@@ -4,6 +4,7 @@ import haxe.io.Bytes;
 import helix.asset.GrowingSource;
 import helix.asset.IAssets.AudioLocation;
 import helix.audio.IAudio;
+import helix.audio.StreamOpenResult;
 import sys.thread.Thread;
 
 /** A stream voice's producer: its file's handle, its stream, whether it loops, and its download when it's still arriving (or null). */

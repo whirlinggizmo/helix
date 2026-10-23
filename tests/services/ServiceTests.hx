@@ -1,5 +1,9 @@
 import helix.asset.FetchService;
+import helix.asset.FetchResult;
 import helix.asset.StorageService;
+import helix.asset.StorageResult;
+import helix.asset.StorageWriteResult;
+import helix.asset.StorageSourceResult;
 import helix.asset.IAssets;
 import helix.asset.AssetService;
 import helix.audio.AudioResources;

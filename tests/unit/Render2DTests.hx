@@ -2,12 +2,14 @@ import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.graphics.PipelineDesc;
 import helix.texture.Sampling;
+import helix.texture.Wrap;
 import helix.graphics.ShaderSource;
 import helix.texture.TextureFormat;
 import helix.render2d.Batch2D;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
 import helix.render2d.Polygon2D;
@@ -246,8 +248,8 @@ class HeldAssets implements helix.asset.IAssets {
 			f();
 	}
 
-	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
-			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.AssetProgress->Void,
+			?options:helix.asset.EnsureOptions):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
 	public var host(get, never):Null<String>;
@@ -261,7 +263,7 @@ class HeldAssets implements helix.asset.IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+	public function clearCache(complete:helix.asset.StorageWriteResult->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
@@ -272,12 +274,12 @@ class HeldAssets implements helix.asset.IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.AssetCacheMode;
 
-	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.AssetCacheMode):helix.asset.AssetCacheMode {
 		return mode;
 	}
 

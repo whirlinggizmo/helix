@@ -2,6 +2,8 @@ package helix.render2d;
 
 import helix.font.Font;
 import helix.math.Bounds2D;
+import helix.render2d.ShapeShading2D;
+import helix.render2d.ShapeForm2D;
 
 /** A flat shape in a color (0xAARRGGBB), filled or outlined: a rectangle (its corners square or rounded), a circle, a line or a polygon, made by
 	the static constructors, as they differ only in their geometry (form says which). Each form reads the values it uses: a rectangle its size,
@@ -172,31 +174,4 @@ class Shape2D extends Node2D {
 		}
 		return true;
 	}
-}
-
-/** How a filled rectangle is colored. */
-enum abstract ShapeShading2D(Int) {
-	/** In its color alone. */
-	var Flat = 0;
-
-	/** From its color at its left edge to its endColor at its right. */
-	var Across = 1;
-
-	/** From its color at its top to its endColor at its bottom. */
-	var Down = 2;
-}
-
-/** Which shape a Shape2D is. */
-enum abstract ShapeForm2D(Int) {
-	/** A rectangle, filled or outlined, its corners square or rounded. */
-	var Rectangle = 0;
-
-	/** A circle, filled or outlined. */
-	var Circle = 1;
-
-	/** A line segment. */
-	var Line = 2;
-
-	/** A polygon, filled or outlined. */
-	var Polygon = 3;
 }

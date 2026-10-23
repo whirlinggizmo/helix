@@ -1,6 +1,6 @@
 package helix.render2d;
 
-import helix.render2d.Shape2D.ShapeShading2D;
+import helix.render2d.ShapeShading2D;
 import helix.font.Font;
 
 /** What draws and picks a tree of 2D nodes (docs/DISPLAY_MODEL.md): the stage's (StageService) and each View2D's, never a game's, which puts

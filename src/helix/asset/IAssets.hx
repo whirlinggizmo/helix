@@ -2,7 +2,10 @@ package helix.asset;
 
 import haxe.io.Bytes;
 import helix.asset.StorageService.Lease;
-import helix.asset.StorageService.StorageWriteResult;
+import helix.asset.StorageWriteResult;
+import helix.asset.AssetCacheMode;
+import helix.asset.AssetProgress;
+import helix.asset.EnsureOptions;
 
 /** Where a streamed audio asset is read from: a leased local copy, which its holder releases; a remote URL, which the platform plays itself (a
 	browser's media element); or a file still arriving from the host, read as it downloads (natively, where the output can't play a URL). */
@@ -11,34 +14,6 @@ enum AudioLocation {
 	Stored(value:Lease);
 	Remote(url:String);
 	Downloading(source:GrowingSource);
-}
-
-/** How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and
-	ensure's forceFetch downloads past the cache in every mode.
-
-	- Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other
-	  is asked about first: 304, the copy is used (and fresh again); 200, the new file replaces it; 4xx, the copy is deleted and the load
-	  fails; no answer (offline, a timeout) or a 5xx, the copy is used. no-cache and no-store make a copy never fresh, but it's kept, for the
-	  next check and for starting offline.
-	- Trust: a copy is used without asking, however old: offline-first play, files that never change, or a game that evicts by itself.
-	- Off: nothing is kept between runs, and what earlier runs kept is neither used nor deleted (development); this run's downloads are held
-	  in memory, so a file loads once a run. */
-enum AssetCacheMode {
-	Revalidate;
-	Trust;
-	Off;
-}
-
-/** Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown. */
-typedef AssetProgress = {final phase:String; final receivedBytes:Int; final totalBytes:Null<Int>;}
-
-/** How ensure finds a file. source: where its bytes come from instead of its own path, a path read against the host as a browser reads a URL
-	against a directory, or a whole URL; they're kept under the path asked for, remembering where they came from: a later plain load of the path
-	asks about the copy there, and it streams from there when it's stale, as the host has nothing at the path. forceFetch: go past the cache to the host (or the packaged files),
-	replacing what the cache holds. */
-typedef EnsureOptions = {
-	@:optional final source:String;
-	@:optional final forceFetch:Bool;
 }
 
 /** The asset service games load through (AssetService): assets by relative path through the cache, streamed audio locations, and hot reload subscriptions. Completions run on the host thread. */

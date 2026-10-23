@@ -2,6 +2,9 @@ import haxe.io.Bytes;
 import helix.asset.IStore;
 import helix.asset.SaveService;
 import helix.asset.StorageService;
+import helix.asset.StorageResult;
+import helix.asset.StorageWriteResult;
+import helix.asset.StorageSourceResult;
 
 /** A store in memory that, given several operations at once, finishes the latest first, as threads writing files may. */
 private class Unruly implements IStore {

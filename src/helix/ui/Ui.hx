@@ -6,6 +6,7 @@ import helix.input.PadButton;
 import helix.render2d.Camera2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.scene.Pointer;
 
 /** A screen's widgets on the stage, used by the pointer, keys and pads alike: made here,

@@ -2,6 +2,7 @@ package helix.render3d;
 
 import helix.math.Bounds3D;
 import helix.scene.Node;
+import helix.render3d.Attachment3D;
 
 /** What a 3D stage holds: a transform in a tree, with children of its own kind (Godot's Node3D). A bare one is a group: it draws nothing,
 	only a transform for its children (an empty in Blender, a dummy in 3ds Max, a null in Cinema 4D), a handle that moves or hides a set of
@@ -582,12 +583,6 @@ class Node3D extends Node {
 			world.makeProduct(parentWorld, local);
 		return true;
 	}
-}
-
-/** Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none. */
-typedef Attachment3D = {
-	final piece:Node3D;
-	final joint:Null<Node3D>;
 }
 
 /** Which of the kinds drawn through a renderer's sprites a node is (the engine's: Node3D.spriteKind). */

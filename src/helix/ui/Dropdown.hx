@@ -2,6 +2,7 @@ package helix.ui;
 
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.render2d.Text2D;
 
 /** A choice of one of its items, or none. Closed, a face showing the chosen item's text (its hint, in the theme's disabledTextColor, while

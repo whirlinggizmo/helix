@@ -1,5 +1,8 @@
 package helix.graphics;
 
+import helix.graphics.DepthTest;
+import helix.graphics.ClipFlip;
+
 /** A vertex attribute a pipeline reads from one of its buffers: its shader's input slot, its float count (1 to 4) and its byte offset in
 	each record. */
 @:noCompletion
@@ -28,18 +31,6 @@ enum abstract Primitive(Int) to Int {
 	var Lines = 1;
 }
 
-/** Which fragments a pipeline's depth test passes, against the depth already there. */
-enum abstract DepthTest(Int) to Int {
-	/** No test: every fragment is drawn. */
-	var Off = 0;
-
-	/** Nearer or as near: what's in front (the usual test). */
-	var LessEqual = 1;
-
-	/** Farther: only where something nearer was drawn before (what's hidden behind it). */
-	var Greater = 2;
-}
-
 /** Which faces of a pipeline's triangles aren't drawn. */
 @:noCompletion
 enum abstract CullFace(Int) to Int {
@@ -51,20 +42,6 @@ enum abstract CullFace(Int) to Int {
 
 	/** The front faces: only a surface's far side draws (an outline's shell). */
 	var Front = 2;
-}
-
-/** What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the
-	right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major,
-	its first 64 bytes) whose y row it negates in such a pass. */
-enum abstract ClipFlip(Int) to Int {
-	/** Block 0 isn't touched (or there is none). */
-	var None = 0;
-
-	/** Block 0 is a vec4 clip scale the adapter writes. */
-	var ClipScale = 1;
-
-	/** Block 0 starts with a view-projection matrix whose y row the adapter negates. */
-	var ViewProjection = 2;
 }
 
 /** A pipeline, everything a draw through it fixes: the program (an IGraphics.createShader handle), its vertex buffers' layout, what it

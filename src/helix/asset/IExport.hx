@@ -1,12 +1,7 @@
 package helix.asset;
 
 import haxe.io.Bytes;
-
-/** Where an exported file went: a path natively, the downloaded file's name in a browser; or why it couldn't be. */
-enum ExportResult {
-	Exported(where:String);
-	Failed(message:String);
-}
+import helix.asset.ExportResult;
 
 /** Hands a finished file to the user on a platform: a browser downloads it, natively it is written into the directory the profile chose (the
 	user's pictures, say). What is exported and what it is called are the caller's (Screenshots names its files). */

@@ -2,33 +2,10 @@ package helix.asset;
 
 import haxe.io.Bytes;
 import helix.core.Jobs;
-
-/** A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches
-	(default false), headers are sent with it (none by default). */
-typedef FetchRequest = {
-	final url:String;
-	@:optional final maxBytes:Int;
-	@:optional final timeoutSeconds:Float;
-	@:optional final noCache:Bool;
-	@:optional final headers:Map<String, String>;
-}
-
-/** Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed). */
-typedef FetchProgress = {final receivedBytes:Int; final totalBytes:Null<Int>;}
-
-/** A part of a response's body as it arrives: the response's HTTP status and headers (lower-case names), the total from Content-Length or null
-	when unknown (or the body is compressed), and the part's bytes. */
-typedef FetchPart = {final status:Int; final headers:Map<String, String>; final totalBytes:Null<Int>; final bytes:Bytes;}
-
-/** A complete response: HTTP status, headers with lower-case names, and the whole body. */
-typedef FetchResponse = {final status:Int; final headers:Map<String, String>; final bytes:Bytes;}
-
-/** How a fetch ended: a response of any HTTP status, a transport failure message, or cancellation. */
-enum FetchResult {
-	Response(value:FetchResponse);
-	Failed(message:String);
-	Cancelled;
-}
+import helix.asset.FetchRequest;
+import helix.asset.FetchProgress;
+import helix.asset.FetchPart;
+import helix.asset.FetchResult;
 
 /** Bounded whole-response GETs over a platform's IHttp, the same on every platform: at most two at once, each body limited and the whole transfer
 	timed, progress coalesced to once a frame, the body's parts handed on as they come where asked (a download played as it arrives), completions on the host thread. The runner's is what the Fetch static forwards to. */

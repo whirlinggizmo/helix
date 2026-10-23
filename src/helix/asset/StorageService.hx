@@ -2,33 +2,13 @@ package helix.asset;
 
 import haxe.io.Bytes;
 import helix.core.Jobs;
-
-/** How a read ended: the stored bytes, Missing, a failure message, or cancellation. */
-enum StorageResult {
-	Stored(bytes:Bytes);
-	Missing;
-	Failed(message:String);
-	Cancelled;
-}
-
-/** How a write or remove ended: Written, a failure message, or cancellation. */
-enum StorageWriteResult {
-	Written;
-	Failed(message:String);
-	Cancelled;
-}
+import helix.asset.StorageResult;
+import helix.asset.StorageWriteResult;
+import helix.asset.StorageSourceResult;
 
 /** A lease on a stored file for streaming: location is a file path or URL the audio adapter opens, and release, called once, ends the lease. */
 @:noCompletion
 typedef Lease = {final location:String; final release:Void->Void;}
-
-/** How leasing a stored file ended: the lease, Missing, a failure message, or cancellation. */
-enum StorageSourceResult {
-	Local(value:Lease);
-	Missing;
-	Failed(message:String);
-	Cancelled;
-}
 
 /** Files by key (an asset path) over a platform's IStore, the same on every platform: keys checked, files at most 8 MiB, a read-only store
 	refusing writes, at most two operations at once (or as many as it's made with), each completing exactly once on the host thread. The app's cache, and the packaged assets

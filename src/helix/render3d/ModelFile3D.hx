@@ -2,11 +2,13 @@ package helix.render3d;
 
 import helix.graphics.Color;
 import helix.texture.Sampling;
+import helix.texture.Wrap;
 import helix.texture.Texture2D;
 import helix.render3d.Gltf.field;
-import helix.render3d.AnimationClip3D.Track3D;
-import helix.render3d.AnimationClip3D.TrackInterpolation3D;
-import helix.render3d.AnimationClip3D.TrackPath3D;
+import helix.render3d.Track3D;
+import helix.render3d.TrackInterpolation3D;
+import helix.render3d.TrackPath3D;
+import helix.render3d.ImageSource3D;
 
 /** A model file read into what a Renderer3D draws: its meshes (a part a glTF primitive), its materials and its node tree, from a glTF 2.0 file
 	(ModelCache3D loads them). instantiate() makes a fresh node tree each call, sharing the file's meshes and materials, so any number of copies draw
@@ -436,16 +438,4 @@ class ModelFile3D {
 				node.addChild(this.node(c, skinned));
 		return node;
 	}
-}
-
-/** Where a model's image file is. */
-enum ImageSource3D {
-	/** In a buffer view. */
-	InView(view:Int);
-
-	/** Inline: a data: URI's bytes. */
-	Inline(bytes:haxe.io.Bytes);
-
-	/** A file of its own: a uri relative to the model. */
-	File(uri:String);
 }

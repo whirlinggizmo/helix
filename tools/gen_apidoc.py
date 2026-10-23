@@ -162,9 +162,8 @@ def markdown(xml):
         kind={'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
         # Its source, relative to docs/api: a link on GitHub and in a checkout alike.
         source=node.get('file','')
-        # The import that names it: its module's, which is the type's own path unless it's one of several types in a file.
-        module=node.get('module') or path
-        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {module};`','']
+        # The import that names it: its own path, as each shown type is its own file (checked above).
+        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {path};`','']
         doc=doc_text(node)
         if doc:lines+=[doc,'']
         file=package_file(path)
@@ -233,6 +232,10 @@ def generate(check=False):
     if OUT.exists() and not check:shutil.rmtree(OUT)
     describe('js');describe('cpp')
     same_on_both(OUT/'xml/js.xml',OUT/'xml/cpp.xml')
+    # A shown type is its own file, so it's imported by its own path (import helix.scene.transition.Fade): one in another type's module is
+    # imported through that module's (helix.scene.Transition.Fade), which no one guesses.
+    lodgers=sorted(f'{p} (in {n.get("file")})' for p,n in public_types(OUT/'xml/js.xml').items() if n.get('module') and n.get('module')!=p)
+    if lodgers:sys.exit('gen_apidoc: shown types in another type\'s file; give each its own file, or hide it:\n  '+'\n  '.join(lodgers))
     leaked=leaks(OUT/'xml/js.xml')
     if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
     pages=markdown(OUT/'xml/js.xml')

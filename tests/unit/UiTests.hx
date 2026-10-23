@@ -2,10 +2,13 @@ import Render2DTests.CountingGraphics;
 import helix.graphics.Color;
 import helix.font.Font;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
+import helix.render2d.ShapeForm2D;
 import helix.render2d.Text2D;
 import helix.ui.Layout2D;
-import helix.ui.Layout2D.LayoutDirection2D;
-import helix.ui.Layout2D.Sizing2D;
+import helix.ui.Alignment2D;
+import helix.ui.LayoutDirection2D;
+import helix.ui.Sizing2D;
 import helix.ui.WidgetState;
 
 /** The UI's layout: rows, columns and stacks, sizes fixed, fitted, growing and shared, padding, gaps, margins, alignment and anchors, and the nodes

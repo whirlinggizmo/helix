@@ -1,6 +1,9 @@
 import Render2DTests.CountingGraphics;
 import haxe.ds.Vector;
 import helix.render3d.AnimationClip3D;
+import helix.render3d.TrackPath3D;
+import helix.render3d.TrackInterpolation3D;
+import helix.render3d.Track3D;
 import helix.render3d.Animator3D;
 import helix.render3d.Camera3D;
 import helix.render3d.Gltf;
@@ -9,6 +12,7 @@ import helix.render3d.Material3D;
 import helix.render3d.Mesh3D;
 import helix.render3d.Model3D;
 import helix.render3d.ModelFile3D;
+import helix.render3d.ImageSource3D;
 import helix.render3d.Node3D;
 import helix.render3d.Skin3D;
 import helix.render3d.Renderer3D;

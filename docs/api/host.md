@@ -78,7 +78,7 @@ var product(default, null):String
 
 ## PresentationMode
 
-*enum* in [`src/helix/host/Presentation.hx`](../../src/helix/host/Presentation.hx), `import helix.host.Presentation;`
+*enum* in [`src/helix/host/PresentationMode.hx`](../../src/helix/host/PresentationMode.hx), `import helix.host.PresentationMode;`
 
 How a game's design is fitted to the window (Godot's stretch modes and aspects).
 

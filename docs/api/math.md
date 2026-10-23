@@ -140,7 +140,7 @@ function getParameterAtDistance(distance:Float):Float
 
 ## CurveKind
 
-*enum* in [`src/helix/math/Curve.hx`](../../src/helix/math/Curve.hx), `import helix.math.Curve;`
+*enum* in [`src/helix/math/CurveKind.hx`](../../src/helix/math/CurveKind.hx), `import helix.math.CurveKind;`
 
 How a curve passes its points.
 

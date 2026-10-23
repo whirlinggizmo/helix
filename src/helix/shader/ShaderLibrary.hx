@@ -3,6 +3,7 @@ package helix.shader;
 import haxe.io.Bytes;
 import helix.graphics.IGraphics;
 import helix.texture.Sampling;
+import helix.texture.Wrap;
 import helix.graphics.Shader;
 import helix.texture.Texture2D;
 

@@ -2,6 +2,8 @@ import Render2DTests.CountingGraphics;
 import haxe.io.Bytes;
 import helix.graphics.Graphics;
 import helix.graphics.PipelineDesc;
+import helix.graphics.DepthTest;
+import helix.graphics.ClipFlip;
 import helix.graphics.Shader;
 import helix.render3d.Camera3D;
 import helix.render3d.DirectionalLight3D;

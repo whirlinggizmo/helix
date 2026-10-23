@@ -2,6 +2,7 @@ package helix.ui;
 
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.render2d.Text2D;
 
 /** A list of items in a window rows tall: scrolled by the wheel over it, a drag or its scrollbar (Scrollbar, at its right edge as

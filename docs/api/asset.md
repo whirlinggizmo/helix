@@ -4,7 +4,7 @@
 
 ## AssetCacheMode
 
-*enum* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
+*enum* in [`src/helix/asset/AssetCacheMode.hx`](../../src/helix/asset/AssetCacheMode.hx), `import helix.asset.AssetCacheMode;`
 
 How the cache treats a downloaded copy no manifest lists (IAssets.cacheMode); a listed one follows its manifest in every mode, and ensure's forceFetch downloads past the cache in every mode. - Revalidate, the default: a copy fresh by the host's Cache-Control (max-age not passed, or immutable) is used with no request; any other is asked about first: 304, the copy is used (and fresh again); 200, the new file replaces it; 4xx, the copy is deleted and the load fails; no answer (offline, a timeout) or a 5xx, the copy is used. no-cache and no-store make a copy never fresh, but it's kept, for the next check and for starting offline. - Trust: a copy is used without asking, however old: offline-first play, files that never change, or a game that evicts by itself. - Off: nothing is kept between runs, and what earlier runs kept is neither used nor deleted (development); this run's downloads are held in memory, so a file loads once a run.
 
@@ -28,7 +28,7 @@ static function resolve(path:String, uri:String):Null<String>
 
 ## AssetProgress
 
-*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
+*typedef* in [`src/helix/asset/AssetProgress.hx`](../../src/helix/asset/AssetProgress.hx), `import helix.asset.AssetProgress;`
 
 Load progress: phase ("locating", "downloading", "storing" or "ready"), bytes received, and total bytes, or null when unknown.
 
@@ -62,7 +62,7 @@ static var busy(get, never):Bool
 
 ## EnsureOptions
 
-*typedef* in [`src/helix/asset/IAssets.hx`](../../src/helix/asset/IAssets.hx), `import helix.asset.IAssets;`
+*typedef* in [`src/helix/asset/EnsureOptions.hx`](../../src/helix/asset/EnsureOptions.hx), `import helix.asset.EnsureOptions;`
 
 How ensure finds a file. source: where its bytes come from instead of its own path, a path read against the host as a browser reads a URL against a directory, or a whole URL; they're kept under the path asked for, remembering where they came from: a later plain load of the path asks about the copy there, and it streams from there when it's stale, as the host has nothing at the path. forceFetch: go past the cache to the host (or the packaged files), replacing what the cache holds.
 
@@ -71,7 +71,7 @@ How ensure finds a file. source: where its bytes come from instead of its own pa
 
 ## ExportResult
 
-*enum* in [`src/helix/asset/IExport.hx`](../../src/helix/asset/IExport.hx), `import helix.asset.IExport;`
+*enum* in [`src/helix/asset/ExportResult.hx`](../../src/helix/asset/ExportResult.hx), `import helix.asset.ExportResult;`
 
 Where an exported file went: a path natively, the downloaded file's name in a browser; or why it couldn't be.
 
@@ -106,7 +106,7 @@ static function fetch(request:FetchRequest, complete:FetchResult -> Void, ?progr
 
 ## FetchPart
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
+*typedef* in [`src/helix/asset/FetchPart.hx`](../../src/helix/asset/FetchPart.hx), `import helix.asset.FetchPart;`
 
 A part of a response's body as it arrives: the response's HTTP status and headers (lower-case names), the total from Content-Length or null when unknown (or the body is compressed), and the part's bytes.
 
@@ -117,7 +117,7 @@ A part of a response's body as it arrives: the response's HTTP status and header
 
 ## FetchProgress
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
+*typedef* in [`src/helix/asset/FetchProgress.hx`](../../src/helix/asset/FetchProgress.hx), `import helix.asset.FetchProgress;`
 
 Body bytes received so far, and the total from Content-Length, or null when unknown (or the body is compressed).
 
@@ -126,7 +126,7 @@ Body bytes received so far, and the total from Content-Length, or null when unkn
 
 ## FetchRequest
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
+*typedef* in [`src/helix/asset/FetchRequest.hx`](../../src/helix/asset/FetchRequest.hx), `import helix.asset.FetchRequest;`
 
 A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds the whole transfer (default 15), noCache bypasses HTTP caches (default false), headers are sent with it (none by default).
 
@@ -138,7 +138,7 @@ A GET of url: maxBytes limits the body (default 8 MiB), timeoutSeconds bounds th
 
 ## FetchResponse
 
-*typedef* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
+*typedef* in [`src/helix/asset/FetchResponse.hx`](../../src/helix/asset/FetchResponse.hx), `import helix.asset.FetchResponse;`
 
 A complete response: HTTP status, headers with lower-case names, and the whole body.
 
@@ -148,7 +148,7 @@ A complete response: HTTP status, headers with lower-case names, and the whole b
 
 ## FetchResult
 
-*enum* in [`src/helix/asset/FetchService.hx`](../../src/helix/asset/FetchService.hx), `import helix.asset.FetchService;`
+*enum* in [`src/helix/asset/FetchResult.hx`](../../src/helix/asset/FetchResult.hx), `import helix.asset.FetchResult;`
 
 How a fetch ended: a response of any HTTP status, a transport failure message, or cancellation.
 
@@ -220,7 +220,7 @@ static function clear(complete:StorageWriteResult -> Void):IRequest
 
 ## StorageResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
+*enum* in [`src/helix/asset/StorageResult.hx`](../../src/helix/asset/StorageResult.hx), `import helix.asset.StorageResult;`
 
 How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
@@ -231,7 +231,7 @@ How a read ended: the stored bytes, Missing, a failure message, or cancellation.
 
 ## StorageSourceResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
+*enum* in [`src/helix/asset/StorageSourceResult.hx`](../../src/helix/asset/StorageSourceResult.hx), `import helix.asset.StorageSourceResult;`
 
 How leasing a stored file ended: the lease, Missing, a failure message, or cancellation.
 
@@ -242,7 +242,7 @@ How leasing a stored file ended: the lease, Missing, a failure message, or cance
 
 ## StorageWriteResult
 
-*enum* in [`src/helix/asset/StorageService.hx`](../../src/helix/asset/StorageService.hx), `import helix.asset.StorageService;`
+*enum* in [`src/helix/asset/StorageWriteResult.hx`](../../src/helix/asset/StorageWriteResult.hx), `import helix.asset.StorageWriteResult;`
 
 How a write or remove ended: Written, a failure message, or cancellation.
 

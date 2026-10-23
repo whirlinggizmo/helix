@@ -176,7 +176,7 @@ Values: `Stopped`, `Playing`, `Paused`, `Complete`.
 
 ## StreamOpenResult
 
-*enum* in [`src/helix/audio/IAudio.hx`](../../src/helix/audio/IAudio.hx), `import helix.audio.IAudio;`
+*enum* in [`src/helix/audio/StreamOpenResult.hx`](../../src/helix/audio/StreamOpenResult.hx), `import helix.audio.StreamOpenResult;`
 
 How opening a stream ended: its id, or a failure message.
 

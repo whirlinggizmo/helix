@@ -2,6 +2,9 @@ import Render2DTests.CountingGraphics;
 import haxe.io.Bytes;
 import helix.asset.Assets;
 import helix.asset.IAssets;
+import helix.asset.AssetCacheMode;
+import helix.asset.AssetProgress;
+import helix.asset.EnsureOptions;
 import helix.behavior.Behavior;
 import helix.behavior.BehaviorPass;
 import helix.graphics.Graphics;
@@ -847,8 +850,8 @@ private class Held implements IAssets {
 	public function load(path:String, loaded:Bytes->Void, ?failed:String->Void):helix.asset.IRequest
 		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
-			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest {
+	public function ensure(path:String, loaded:Bytes->Void, ?failed:String->Void, ?progress:helix.asset.AssetProgress->Void,
+			?options:helix.asset.EnsureOptions):helix.asset.IRequest {
 		SceneInstanceTests.asked[path] = (SceneInstanceTests.asked.exists(path) ? SceneInstanceTests.asked[path] : 0) + 1;
 		SceneInstanceTests.held[path] = {loaded: loaded, failed: message -> helix.asset.Failure.report(path, message, failed)};
 		return new helix.asset.Request(() -> SceneInstanceTests.held.remove(path));
@@ -865,7 +868,7 @@ private class Held implements IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+	public function clearCache(complete:helix.asset.StorageWriteResult->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
@@ -876,12 +879,12 @@ private class Held implements IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.AssetCacheMode;
 
-	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.AssetCacheMode):helix.asset.AssetCacheMode {
 		return mode;
 	}
 

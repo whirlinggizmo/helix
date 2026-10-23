@@ -4,6 +4,8 @@ import helix.host.Screen;
 import helix.input.Input;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
+import helix.scene.transition.Fade;
+import helix.scene.transition.Transition;
 import helix.texture.Texture2D;
 import helix.ui.Theme;
 
@@ -24,7 +26,7 @@ class Splash {
 	public function new(logo:Null<Texture2D>, seconds:Float, ?transition:Transition) {
 		this.logo = logo;
 		this.seconds = seconds;
-		this.transition = transition == null ? new Transition.Fade() : transition;
+		this.transition = transition == null ? new Fade() : transition;
 	}
 
 	/** The theme it draws with. */

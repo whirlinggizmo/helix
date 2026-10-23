@@ -1,5 +1,6 @@
 import helix.tween.Ease;
 import helix.tween.Tweens;
+import helix.tween.Tween;
 
 /** Easings (helix.tween.Ease): each from 0 to 1, in and out mirrored, inOut through the middle; tweens (Tweens): values along the way, the
 	end exact, delays, repeats and yoyo, completion, cancelling, ones made inside callbacks. */

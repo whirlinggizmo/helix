@@ -70,7 +70,7 @@ static function bounceInOut(t:Float):Float
 
 ## Tween
 
-*class* in [`src/helix/tween/Tweens.hx`](../../src/helix/tween/Tweens.hx), `import helix.tween.Tweens;`
+*class* in [`src/helix/tween/Tween.hx`](../../src/helix/tween/Tween.hx), `import helix.tween.Tween;`
 
 One tween of a Tweens set, made by Tweens.to: set its delay and repeats before its first update; read its value any time.
 

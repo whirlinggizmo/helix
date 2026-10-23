@@ -24,6 +24,8 @@ import helix.render2d.Stage;
 import helix.texture.Texture2D;
 import helix.time.Time;
 import helix.ui.Layout2D;
+import helix.ui.Sizing2D;
+import helix.ui.Alignment2D;
 import helix.ui.Button;
 import helix.ui.ColorPicker;
 import helix.ui.Dropdown;

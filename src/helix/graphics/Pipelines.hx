@@ -1,6 +1,8 @@
 package helix.graphics;
 
 import helix.graphics.PipelineDesc;
+import helix.graphics.DepthTest;
+import helix.graphics.ClipFlip;
 
 /** The framework's programs and pipelines on one GPU, shared by everything drawing on it: each framework program built once from its
 	generated source (the program classes' source()), and each pipeline described here (its program, buffers' layout and state: PipelineDesc) and made

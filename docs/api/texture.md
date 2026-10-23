@@ -104,7 +104,7 @@ static function release(texture:Texture2D):Void
 
 ## Wrap
 
-*abstract* in [`src/helix/texture/Sampling.hx`](../../src/helix/texture/Sampling.hx), `import helix.texture.Sampling;`
+*abstract* in [`src/helix/texture/Wrap.hx`](../../src/helix/texture/Wrap.hx), `import helix.texture.Wrap;`
 
 How a texture's edges repeat past 0..1.
 

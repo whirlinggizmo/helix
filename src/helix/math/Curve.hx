@@ -1,5 +1,7 @@
 package helix.math;
 
+import helix.math.CurveKind;
+
 /** A curve through or near points in 2D or 3D (a camera rail, a patrol path, a projectile's arc), asked where it is at t from 0 to 1 along its
 	whole length, which way it heads there, how long it is, and the t at a distance along it, so something moves along it at a steady speed.
 	Kinds: through its points (Catmull-Rom, centripetal: no loops or kinks between unevenly spaced points), by control points (cubic Bézier,
@@ -229,16 +231,4 @@ class Curve {
 			current = swap;
 		}
 	}
-}
-
-/** How a curve passes its points. */
-enum CurveKind {
-	/** Through each, smoothly (Catmull-Rom). */
-	Through;
-
-	/** By cubic Bézier control points. */
-	Bezier;
-
-	/** Straight between them. */
-	Polyline;
 }

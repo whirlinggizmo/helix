@@ -4,7 +4,7 @@
 
 ## Alignment2D
 
-*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx), `import helix.ui.Layout2D;`
+*enum* in [`src/helix/ui/Alignment2D.hx`](../../src/helix/ui/Alignment2D.hx), `import helix.ui.Alignment2D;`
 
 Where layouts go in the room they have, along an axis.
 
@@ -264,7 +264,7 @@ var height(get, never):Float
 
 ## LayoutDirection2D
 
-*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx), `import helix.ui.Layout2D;`
+*enum* in [`src/helix/ui/LayoutDirection2D.hx`](../../src/helix/ui/LayoutDirection2D.hx), `import helix.ui.LayoutDirection2D;`
 
 How a layout lays its children out.
 
@@ -442,7 +442,7 @@ var vertical(default, null):Bool
 
 ## Sizing2D
 
-*enum* in [`src/helix/ui/Layout2D.hx`](../../src/helix/ui/Layout2D.hx), `import helix.ui.Layout2D;`
+*enum* in [`src/helix/ui/Sizing2D.hx`](../../src/helix/ui/Sizing2D.hx), `import helix.ui.Sizing2D;`
 
 How a layout's width or height is decided.
 

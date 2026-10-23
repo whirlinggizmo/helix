@@ -25,7 +25,7 @@ How a pipeline's colors meet what the framebuffer has: replacing it, blended ove
 
 ## ClipFlip
 
-*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx), `import helix.graphics.PipelineDesc;`
+*abstract* in [`src/helix/graphics/ClipFlip.hx`](../../src/helix/graphics/ClipFlip.hx), `import helix.graphics.ClipFlip;`
 
 What uniform block 0 holds, so an adapter whose render targets are stored upside down (GL's bottom-left origin) can draw a target the right way up: nothing it touches, a clip scale it writes (x 1, y -1 in such a pass, else 1), or a view-projection matrix (column-major, its first 64 bytes) whose y row it negates in such a pass.
 
@@ -61,7 +61,7 @@ static function toRgba(color:Int):Int
 
 ## DepthTest
 
-*abstract* in [`src/helix/graphics/PipelineDesc.hx`](../../src/helix/graphics/PipelineDesc.hx), `import helix.graphics.PipelineDesc;`
+*abstract* in [`src/helix/graphics/DepthTest.hx`](../../src/helix/graphics/DepthTest.hx), `import helix.graphics.DepthTest;`
 
 Which fragments a pipeline's depth test passes, against the depth already there.
 
@@ -169,7 +169,7 @@ final intermediates:Array<Texture2D>
 
 ## ScreenshotResult
 
-*enum* in [`src/helix/graphics/ScreenshotService.hx`](../../src/helix/graphics/ScreenshotService.hx), `import helix.graphics.ScreenshotService;`
+*enum* in [`src/helix/graphics/ScreenshotResult.hx`](../../src/helix/graphics/ScreenshotResult.hx), `import helix.graphics.ScreenshotResult;`
 
 How a screenshot ended: where it was saved and its PNG file, or why it wasn't.
 
@@ -228,7 +228,7 @@ function destroy():Void
 
 ## ShaderParameter
 
-*typedef* in [`src/helix/graphics/Shader.hx`](../../src/helix/graphics/Shader.hx), `import helix.graphics.Shader;`
+*typedef* in [`src/helix/graphics/ShaderParameter.hx`](../../src/helix/graphics/ShaderParameter.hx), `import helix.graphics.ShaderParameter;`
 
 One of a shader's own parameters: its uniform block's slot, its byte offset there, its type (float, vec2, vec3, vec4, mat4) and how many (1 unless an array).
 

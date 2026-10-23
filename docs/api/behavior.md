@@ -32,7 +32,7 @@ function stop():Void
 
 ## BehaviorEntry
 
-*class* in [`src/helix/behavior/BehaviorRegistry.hx`](../../src/helix/behavior/BehaviorRegistry.hx), `import helix.behavior.BehaviorRegistry;`
+*class* in [`src/helix/behavior/BehaviorEntry.hx`](../../src/helix/behavior/BehaviorEntry.hx), `import helix.behavior.BehaviorEntry;`
 
 One registered behavior class: its schema, a new instance by make, and its props set and read by name through the setters and getters the build macro generated for the class, typed, with no reflection.
 
@@ -84,7 +84,7 @@ function update(dt:Float):Void
 
 ## BehaviorProp
 
-*typedef* in [`src/helix/behavior/BehaviorSchema.hx`](../../src/helix/behavior/BehaviorSchema.hx), `import helix.behavior.BehaviorSchema;`
+*typedef* in [`src/helix/behavior/BehaviorProp.hx`](../../src/helix/behavior/BehaviorProp.hx), `import helix.behavior.BehaviorProp;`
 
 One `@:prop` of a behavior class: the field's name, what it holds, the value it starts with (the field's initializer, read by the macro) and, from `@:range(min, max)`, the least and most an inspector offers; null for no range. The range is for an inspector's slider: setting a prop through the registry doesn't clamp to it.
 
@@ -96,7 +96,7 @@ One `@:prop` of a behavior class: the field's name, what it holds, the value it 
 
 ## BehaviorPropType
 
-*enum* in [`src/helix/behavior/BehaviorSchema.hx`](../../src/helix/behavior/BehaviorSchema.hx), `import helix.behavior.BehaviorSchema;`
+*enum* in [`src/helix/behavior/BehaviorPropType.hx`](../../src/helix/behavior/BehaviorPropType.hx), `import helix.behavior.BehaviorPropType;`
 
 The types a `@:prop` field can have, as a scene file writes them: a number, a string, a bool, a list of numbers, a color or a node reference. A field of any other type is a compile error naming it.
 

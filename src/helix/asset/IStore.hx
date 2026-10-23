@@ -1,9 +1,9 @@
 package helix.asset;
 
 import haxe.io.Bytes;
-import helix.asset.StorageService.StorageResult;
-import helix.asset.StorageService.StorageSourceResult;
-import helix.asset.StorageService.StorageWriteResult;
+import helix.asset.StorageResult;
+import helix.asset.StorageSourceResult;
+import helix.asset.StorageWriteResult;
 
 /** Files kept by key on a platform (a directory, IndexedDB). Keys are valid asset paths (the shared StorageService checks them); limits, read-only
 	refusal, queuing and cancellation are the shared StorageService's. Each answer arrives on the host thread, never during the call that asked, and

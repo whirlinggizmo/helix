@@ -6,6 +6,7 @@ import helix.asset.Request;
 import helix.core.WorkQueue;
 import helix.asset.IAssets;
 import helix.audio.IAudio;
+import helix.audio.StreamOpenResult;
 import helix.asset.IReloadable;
 
 /** Sounds, the same on every platform: clips loaded through the assets and decoded whole (AudioDecoding), streams opened from a cached or

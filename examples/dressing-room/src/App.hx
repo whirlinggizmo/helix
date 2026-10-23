@@ -31,6 +31,8 @@ import helix.render3d.Node3D;
 import helix.render3d.View3D;
 import helix.time.Time;
 import helix.ui.Layout2D;
+import helix.ui.Sizing2D;
+import helix.ui.Alignment2D;
 import helix.ui.Button;
 import helix.ui.Dropdown;
 import helix.ui.Label;

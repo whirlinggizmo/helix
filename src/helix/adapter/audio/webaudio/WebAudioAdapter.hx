@@ -3,6 +3,7 @@ package helix.adapter.audio.webaudio;
 import haxe.io.Bytes;
 import helix.asset.IAssets.AudioLocation;
 import helix.audio.IAudio;
+import helix.audio.StreamOpenResult;
 
 /** IAudio in a browser over Web Audio: clips become AudioBuffers, streams are media elements routed through the audio graph, each voice a
 	source through a gain and a stereo panner, its volume and pan changes ramped by setTargetAtTime (RAMP) and its pitch the source's playback

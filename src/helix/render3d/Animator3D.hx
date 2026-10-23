@@ -2,8 +2,8 @@ package helix.render3d;
 
 import haxe.ds.ObjectMap;
 import haxe.ds.Vector;
-import helix.render3d.AnimationClip3D.Track3D;
-import helix.render3d.AnimationClip3D.TrackPath3D;
+import helix.render3d.Track3D;
+import helix.render3d.TrackPath3D;
 
 /** Plays AnimationClips on the nodes under a root (a character's skeleton): each track moves the node of its name at or under the root, so a
 	clip from one file plays on a skeleton from another with the same names, and a clip naming a node the root hasn't is refused. play()

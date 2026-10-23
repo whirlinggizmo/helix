@@ -7,18 +7,18 @@ import helix.input.Input;
 import helix.input.Key;
 import helix.render2d.Drawing2D;
 import helix.render2d.Stage;
-import helix.scene.Transition;
-import helix.scene.Transition.Diamond;
-import helix.scene.Transition.Fade;
-import helix.scene.Transition.Iris;
-import helix.scene.Transition.Noise;
-import helix.scene.Transition.Slide;
-import helix.scene.Transition.SlideDirection;
+import helix.scene.transition.Transition;
+import helix.scene.transition.Diamond;
+import helix.scene.transition.Fade;
+import helix.scene.transition.Iris;
+import helix.scene.transition.Noise;
+import helix.scene.transition.Slide;
+import helix.scene.transition.SlideDirection;
 import helix.time.Time;
 import helix.tween.Ease;
 import helix.ui.FullscreenButton2D;
 
-/** The transitions between two screens on the stage (helix.scene.Transition): each key swaps the screen shown through one, at its middle.
+/** The transitions between two screens on the stage (helix.scene.transition.Transition): each key swaps the screen shown through one, at its middle.
 	1 fades (Fade); 2 slides a cover across (Slide), D stepping through its eight directions and B choosing whether it leaves back the way it
 	came; 3 closes a round hole on a point and opens it again (Iris), 4 a diamond (Diamond), the point where the pointer last clicked (the
 	middle until then); 5 covers and uncovers square by square (Noise), C stepping its squares' size (8, 16, 32, 64 units). Any of them can wait before it starts (L, a delay of half a second),

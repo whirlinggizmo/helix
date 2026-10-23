@@ -1,16 +1,6 @@
 package helix.texture;
 
-/** How a texture's edges repeat past 0..1. */
-enum abstract Wrap(Int) to Int {
-	/** The edge texel carries on. */
-	var Clamp = 0;
-
-	/** The texture tiles. */
-	var Repeat = 1;
-
-	/** The texture tiles, every other copy mirrored. */
-	var Mirror = 2;
-}
+import helix.texture.Wrap;
 
 /** How a draw samples a texture: its filter (linear, smooth and through its mipmaps when it has them; or nearest, sharp, for pixel art) and how
 	it wraps along u and v. A small value, passed with each texture a draw uses; adapters keep one sampler for each that is used. */

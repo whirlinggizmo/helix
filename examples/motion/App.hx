@@ -11,6 +11,7 @@ import helix.math.Random;
 import helix.render2d.Drawing2D;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
 import helix.render2d.Stage;
 import helix.render2d.Text2D;
 import helix.time.Time;

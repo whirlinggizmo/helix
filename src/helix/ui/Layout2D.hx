@@ -3,52 +3,13 @@ package helix.ui;
 import helix.font.Font;
 import helix.render2d.Node2D;
 import helix.render2d.Shape2D;
+import helix.render2d.ShapeShading2D;
+import helix.render2d.ShapeForm2D;
 import helix.render2d.Sprite2D;
 import helix.render2d.Text2D;
-
-/** How a layout's width or height is decided. */
-enum Sizing2D {
-	/** This many units. */
-	Fixed(units:Float);
-
-	/** Its content's: its children's (and gaps and padding), or its node's own (a text's measured width, a sprite's or rectangle's size). */
-	Fit;
-
-	/** A share of the room its row or column has left, by weight against its siblings' (across, the whole room). */
-	Grow(weight:Float);
-
-	/** This fraction of its parent's room inside the padding, less its own margins that way (0 to 1). */
-	Percent(fraction:Float);
-}
-
-/** Where layouts go in the room they have, along an axis. */
-enum Alignment2D {
-	/** At its start: the left, or the top. */
-	Start;
-
-	/** In its middle. */
-	Center;
-
-	/** At its end: the right, or the bottom. */
-	End;
-
-	/** Across a row or column only: filling it, for the children that grow that way or whose size that way nobody set (widthSizing,
-		heightSizing; the theme's included); the others keep their size there, at their anchor that way or at its start. In a stack, as an
-		anchor: filling it that way. */
-	Stretch;
-}
-
-/** How a layout lays its children out. */
-enum LayoutDirection2D {
-	/** Left to right. */
-	Row;
-
-	/** Top to bottom. */
-	Column;
-
-	/** Over one another, each placed by its own alignment in the layout (anchored to an edge, a corner or the middle). */
-	Stack;
-}
+import helix.ui.Sizing2D;
+import helix.ui.Alignment2D;
+import helix.ui.LayoutDirection2D;
 
 /** A rectangle of a 2D layout: rows, columns and stacks of them, each sized fixed, fitted to its content, growing into the room left or as a
 	share of its parent, with padding, gaps, margins and alignment (Clay's model, in Haxe, with CSS's margins). Padding is room inside a layout,

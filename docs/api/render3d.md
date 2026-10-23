@@ -58,7 +58,7 @@ function update(seconds:Float):Void
 
 ## Attachment3D
 
-*typedef* in [`src/helix/render3d/Node3D.hx`](../../src/helix/render3d/Node3D.hx), `import helix.render3d.Node3D;`
+*typedef* in [`src/helix/render3d/Attachment3D.hx`](../../src/helix/render3d/Attachment3D.hx), `import helix.render3d.Attachment3D;`
 
 Where a rigid piece attaches to a skeleton (Node3D.findAttachment): the piece, and the joint it hangs from, null for none.
 
@@ -141,7 +141,7 @@ function project(x:Float, y:Float, z:Float, ?out:Point2D):Null<Point2D>
 
 ## CubeMap3D
 
-*class* in [`src/helix/render3d/EnvironmentBake3D.hx`](../../src/helix/render3d/EnvironmentBake3D.hx), `import helix.render3d.EnvironmentBake3D;`
+*class* in [`src/helix/render3d/CubeMap3D.hx`](../../src/helix/render3d/CubeMap3D.hx), `import helix.render3d.CubeMap3D;`
 
 A cubemap of linear RGB floats with its mips: mips[m] holds the six faces of (size >> m) squared texels each, three floats a texel.
 
@@ -369,7 +369,7 @@ static function release(environment:EnvironmentMap3D):Void
 
 ## ImageSource3D
 
-*enum* in [`src/helix/render3d/ModelFile3D.hx`](../../src/helix/render3d/ModelFile3D.hx), `import helix.render3d.ModelFile3D;`
+*enum* in [`src/helix/render3d/ImageSource3D.hx`](../../src/helix/render3d/ImageSource3D.hx), `import helix.render3d.ImageSource3D;`
 
 Where a model's image file is.
 
@@ -1041,7 +1041,7 @@ How a stage brings lit color, which can run past 1 (bright lights, an HDR enviro
 
 ## Track3D
 
-*class* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx), `import helix.render3d.AnimationClip3D;`
+*class* in [`src/helix/render3d/Track3D.hx`](../../src/helix/render3d/Track3D.hx), `import helix.render3d.Track3D;`
 
 One node's motion along one path in a clip: the node by name, its keys' times (seconds, rising) and values.
 
@@ -1067,7 +1067,7 @@ function sample(seconds:Float, out:haxe.ds.Vector<Float>):Void
 
 ## TrackInterpolation3D
 
-*abstract* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx), `import helix.render3d.AnimationClip3D;`
+*abstract* in [`src/helix/render3d/TrackInterpolation3D.hx`](../../src/helix/render3d/TrackInterpolation3D.hx), `import helix.render3d.TrackInterpolation3D;`
 
 How a track's keys run between them, glTF's three.
 
@@ -1077,7 +1077,7 @@ How a track's keys run between them, glTF's three.
 
 ## TrackPath3D
 
-*abstract* in [`src/helix/render3d/AnimationClip3D.hx`](../../src/helix/render3d/AnimationClip3D.hx), `import helix.render3d.AnimationClip3D;`
+*abstract* in [`src/helix/render3d/TrackPath3D.hx`](../../src/helix/render3d/TrackPath3D.hx), `import helix.render3d.TrackPath3D;`
 
 What a track moves: its node's position, rotation (a quaternion) or scale.
 

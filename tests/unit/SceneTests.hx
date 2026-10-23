@@ -1,5 +1,8 @@
 import helix.asset.Assets;
 import helix.asset.IAssets;
+import helix.asset.AssetCacheMode;
+import helix.asset.AssetProgress;
+import helix.asset.EnsureOptions;
 import helix.host.Presentation;
 import helix.input.Input;
 import helix.input.InputState;
@@ -9,8 +12,8 @@ import helix.render2d.StageService;
 import helix.scene.Loader;
 import helix.scene.Loading;
 import helix.scene.Splash;
-import helix.scene.Transition;
-import helix.scene.Transition.Fade;
+import helix.scene.transition.Transition;
+import helix.scene.transition.Fade;
 import helix.time.Time;
 
 /** The screens that run themselves on the stage (docs/DISPLAY_MODEL.md): a transition swapping what's shown at its middle and taking its cover
@@ -209,21 +212,21 @@ class SceneTests {
 		inline function spans(b:Null<helix.math.Bounds2D>, minX:Float, maxX:Float, minY:Float, maxY:Float):Bool
 			return b != null && Math.abs(b.minX - minX) < 1e-6 && Math.abs(b.maxX - maxX) < 1e-6 && Math.abs(b.minY - minY) < 1e-6
 				&& Math.abs(b.maxY - maxY) < 1e-6;
-		var left = new helix.scene.Transition.Slide(1, Left);
+		var left = new helix.scene.transition.Slide(1, Left);
 		check(spans(covered(left, .25), 50, 100, 0, 50), "A slide left comes in from the right");
 		check(spans(covered(left, .75), 0, 50, 0, 50), "And goes on out to the left");
-		check(spans(covered(new helix.scene.Transition.Slide(1, Left, true), .75), 50, 100, 0, 50), "Or back out the way it came");
-		check(spans(covered(new helix.scene.Transition.Slide(1, Down), .25), 0, 100, 0, 25), "A slide down comes in from the top");
-		var corner = covered(new helix.scene.Transition.Slide(1, DownRight), .1);
+		check(spans(covered(new helix.scene.transition.Slide(1, Left, true), .75), 50, 100, 0, 50), "Or back out the way it came");
+		check(spans(covered(new helix.scene.transition.Slide(1, Down), .25), 0, 100, 0, 25), "A slide down comes in from the top");
+		var corner = covered(new helix.scene.transition.Slide(1, DownRight), .1);
 		check(corner != null && corner.minX == 0 && corner.minY == 0 && corner.maxX < 50 && corner.maxY < 50, "A diagonal one comes in from its corner");
-		check(spans(covered(new helix.scene.Transition.Iris(1), .5), 0, 0 + 100, 0, 50)
-			&& spans(covered(new helix.scene.Transition.Diamond(1), .5), 0, 100, 0, 50),
+		check(spans(covered(new helix.scene.transition.Iris(1), .5), 0, 0 + 100, 0, 50)
+			&& spans(covered(new helix.scene.transition.Diamond(1), .5), 0, 100, 0, 50),
 			"An iris and a diamond cover all at the middle");
-		var iris = new helix.scene.Transition.Iris(1);
+		var iris = new helix.scene.transition.Iris(1);
 		iris.setPoint(90, 10);
 		var open = covered(iris, .4);
 		check(open != null && open.maxX > 100 && open.minY < 0, "On a point near a corner, its cover reaches past it to close there");
-		var noise = new helix.scene.Transition.Noise(1, 10);
+		var noise = new helix.scene.transition.Noise(1, 10);
 		check(covered(noise, 0) == null && spans(covered(noise, .4999), 0, 100, 0, 50) && covered(noise, 1) == null,
 			"Noise: nothing at the start, all just before the middle, nothing at the end");
 		var part = covered(noise, .2);
@@ -258,8 +261,8 @@ private class Held implements IAssets {
 	public function load(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):helix.asset.IRequest
 		return ensure(path, loaded, failed);
 
-	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:helix.asset.IAssets.AssetProgress->Void,
-			?options:helix.asset.IAssets.EnsureOptions):helix.asset.IRequest {
+	public function ensure(path:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void, ?progress:helix.asset.AssetProgress->Void,
+			?options:helix.asset.EnsureOptions):helix.asset.IRequest {
 		@:privateAccess SceneTests.held[path] = {loaded: loaded, failed: message -> helix.asset.Failure.report(path, message, failed)};
 		return new helix.asset.Request(() -> {});
 	}
@@ -275,7 +278,7 @@ private class Held implements IAssets {
 	public function pingHost(host:String, probePath:String, timeoutSeconds:Float, complete:Bool->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
-	public function clearCache(complete:helix.asset.StorageService.StorageWriteResult->Void):helix.asset.IRequest
+	public function clearCache(complete:helix.asset.StorageWriteResult->Void):helix.asset.IRequest
 		return new helix.asset.Request(() -> {});
 
 	public var manifest(get, never):Null<String>;
@@ -286,12 +289,12 @@ private class Held implements IAssets {
 	public function setManifest(path:Null<String>):Bool
 		return true;
 
-	public var cacheMode(get, set):helix.asset.IAssets.AssetCacheMode;
+	public var cacheMode(get, set):helix.asset.AssetCacheMode;
 
-	function get_cacheMode():helix.asset.IAssets.AssetCacheMode
+	function get_cacheMode():helix.asset.AssetCacheMode
 		return Revalidate;
 
-	function set_cacheMode(mode:helix.asset.IAssets.AssetCacheMode):helix.asset.IAssets.AssetCacheMode {
+	function set_cacheMode(mode:helix.asset.AssetCacheMode):helix.asset.AssetCacheMode {
 		return mode;
 	}
 
