@@ -1,0 +1,3 @@
+{
+    "haxe.configurations": [["hxml/build.web.hxml"]]
+}

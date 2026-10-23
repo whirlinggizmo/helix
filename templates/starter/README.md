@@ -5,6 +5,8 @@ A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/G
 - How to make one, piece by piece: [the guide](https://github.com/whirlinggizmo/helix/blob/main/docs/GUIDE.md) (`docs/GUIDE.md` in HeliX;
   with the game's own libraries, `.haxelib/helix/git/docs/GUIDE.md`).
 - Every type: [the API reference](https://whirlinggizmo.github.io/helix/api/) (`docs/api/` beside the guide).
+- In VS Code with the Haxe extension, completion and errors come from the browser build (`.vscode/settings.json` names
+  `hxml/build.web.hxml`), with the game's own libraries.
 
 The builds are in `hxml/`, each run from this directory:
 

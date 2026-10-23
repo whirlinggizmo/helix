@@ -182,8 +182,9 @@ class Starter(unittest.TestCase):
             game = starter(directory, 'my-jam-game')
             names = ('build.web', 'build.native', 'build.dist', 'dev', 'serve.dist')
             hxml = ['hxml/common.hxml'] + [f'hxml/{name}.hxml' for name in names]
-            for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'favicon.svg', '.gitignore', 'README.md']:
+            for relative in ['src/Main.hx', 'src/Game.hx', *hxml, 'favicon.svg', '.gitignore', '.vscode/settings.json', 'README.md']:
                 self.assertTrue((game / relative).is_file(), relative)
+            self.assertEqual(json.loads((game / '.vscode/settings.json').read_text(encoding='utf-8')), {'haxe.configurations': [['hxml/build.web.hxml']]})
             self.assertEqual(list((game / 'assets').iterdir()), [])
             self.assertIn('options.product = "my-jam-game"', (game / 'src/Main.hx').read_text(encoding='utf-8'))
             self.assertIn('Window.title = "My Jam Game"', (game / 'src/Game.hx').read_text(encoding='utf-8'))

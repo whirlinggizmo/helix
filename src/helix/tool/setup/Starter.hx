@@ -6,7 +6,8 @@ import haxe.io.Path;
 import sys.FileSystem;
 import sys.io.File;
 
-/** `init`: the starter game (templates/starter: src/Main.hx and src/Game.hx, its builds in hxml/, assets/, .gitignore and a README with the
+/** `init`: the starter game (templates/starter: src/Main.hx and src/Game.hx, its builds in hxml/, assets/, .gitignore, VS Code's settings for
+	the Haxe extension (.vscode/settings.json, its completion from the browser build) and a README with the
 	commands) written into a new or empty directory, each file's {name} the game's (its directory's name) and {title} its title; or one of the
 	library's examples as a game, the starter around it. */
 class Starter {
