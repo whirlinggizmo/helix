@@ -27,6 +27,7 @@ python3 tools/example.py animation build release-sokol-gl         # out/linux-x6
 
 ## Documents
 
+- [docs/GUIDE.md](docs/GUIDE.md): making a game, piece by piece: screens, sprites, input, sound, collisions, transitions, effects, Tiled maps, saving and shipping to itch.io, each a recipe with its imports.
 - [GOALS.md](GOALS.md): what HeliX is for, why Haxe, and why a framework at all.
 - [docs/benchmarks.md](docs/benchmarks.md): web sizes, measured: the feature cost ladder, and where the bytes are.
 - [BUILDING.md](BUILDING.md): prerequisites and pins, building, the dev loop, the checks, the repository's layout.

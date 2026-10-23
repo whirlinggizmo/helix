@@ -209,7 +209,7 @@ def markdown(xml):
                 lines.append('')
         index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append('\n'.join(lines))
     out={}
-    readme=['# HeliX API reference','','Generated from the code\'s doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members. '+TARGETS,'']
+    readme=['# HeliX API reference','','New to HeliX? [The guide](../GUIDE.md) makes a game piece by piece; this is every type it uses, and the rest.','','Generated from the code\'s doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it\'s stale. A file a package, each type with its public members. '+TARGETS,'']
     for file in sorted(files):
         package='helix'+('' if file=='helix.md' else '.'+file[:-3].replace('-','.'))
         readme.append(f'- [`{package}`]({file}): '+', '.join(short(p) for p,_ in index[file]))

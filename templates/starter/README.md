@@ -1,7 +1,12 @@
 # {title}
 
-A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/Game.hx` is the game, `src/Main.hx` starts it. The builds
-are in `hxml/`, each run from this directory:
+A game on [HeliX](https://github.com/whirlinggizmo/helix) (`-lib helix`). `src/Game.hx` is the game, `src/Main.hx` starts it.
+
+- How to make one, piece by piece: [the guide](https://github.com/whirlinggizmo/helix/blob/main/docs/GUIDE.md) (`docs/GUIDE.md` in HeliX;
+  with the game's own libraries, `.haxelib/helix/git/docs/GUIDE.md`).
+- Every type: [the API reference](https://whirlinggizmo.github.io/helix/api/) (`docs/api/` beside the guide).
+
+The builds are in `hxml/`, each run from this directory:
 
 ```console
 haxe hxml/dev.hxml                # the dev loop: open http://localhost:8064/, edit, save; the page takes the new code as it runs, and shaders/<name>.glsl as they change

@@ -1,5 +1,7 @@
 # HeliX API reference
 
+New to HeliX? [The guide](../GUIDE.md) makes a game piece by piece; this is every type it uses, and the rest.
+
 Generated from the code's doc comments by `tools/gen_apidoc.py` (the same source as the HTML at https://whirlinggizmo.github.io/helix/api/); `python3 tools/gen_apidoc.py --check` fails when it's stale. A file a package, each type with its public members. Every type here is on both of HeliX's Haxe targets, js (the browser) and cpp (native); the engine's own types beneath them (@:noCompletion: the adapters, profiles and services behind the static classes), which a game never names, are left out.
 
 - [`helix.asset`](asset.md): AssetCacheMode, AssetPath, AssetProgress, Assets, EnsureOptions, ExportResult, Failure, Fetch, FetchPart, FetchProgress, FetchRequest, FetchResponse, FetchResult, IReloadable, IRequest, Saves, Storage, StorageResult, StorageSourceResult, StorageWriteResult
