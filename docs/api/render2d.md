@@ -246,7 +246,7 @@ function toLocalY(x:Float, y:Float):Float
 ```
 
 - `new`: A group at the origin, unturned and unscaled, with no children.
-- `alpha`: How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it.
+- `alpha`: How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it. Picking doesn't follow it: a node faded to 0 is still picked (pickable = false or visible = false for one that isn't).
 - `hitArea`: The shape it's picked by in place of what it draws, in its own units, never drawn; null (the default) for what it draws. A group with one is picked by it; its children are picked as ever, over it.
 - `effect`: The effect its own drawing goes through (a sprite shader: helix.shader's SpriteOutline, SpriteFlash, SpriteDissolve, PaletteSwap, or an app's SpriteEffect), or null (the default) for the framework's sprite program: a sprite's quad, a shape's, a text's glyphs (their distance field as the effect reads it), a drawing's every call. Its own, not its children's; an emitter and a view draw through their own programs. An effect is shared: the nodes given one draw with its values, and those drawn one after another with one effect and texture are one draw.
 - `parent`: Its parent, or null at a tree's top. Assigning a node makes this its last child as that node's addChild does, keeping this one's local transform (addChildInPlace keeps the world one); assigning null takes it from its parent as the parent's removeChild does. A node under itself or one of its own descendants is refused, leaving the tree as it was.
@@ -606,7 +606,7 @@ static function pick(x:Float, y:Float, ?hit:Any):Null<Node>
 - `vertexCount`: How many vertices the last frame's 2D took (Batch2D.vertexCount).
 - `drawCallCount`: How many draws the last frame's 2D took (Batch2D.drawCallCount).
 - `drawnNodeCount`: How many nodes the last frame drew on the stage itself (a view's own count says what it drew), the ones outside the view skipped.
-- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit3D, when given) filled with where. A paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown.
+- `pick`: The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit3D, when given) filled with where. A hidden (visible false) or unpickable (pickable false) node and what's under it aren't picked, the pick going on to what's behind; a paused one is picked, and one faded to alpha 0. Null for none. As last drawn: views pick where they were shown.
 
 ## Text2D
 

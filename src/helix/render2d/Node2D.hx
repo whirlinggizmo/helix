@@ -30,7 +30,8 @@ class Node2D extends Node {
 	var wy = 0.;
 
 	/** How opaque it and everything under it are drawn, 0 (not seen) to 1, multiplied down the tree: fading a group fades its children, as a
-		Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it. */
+		Flash display object's alpha did. Clamped to 0..1; 1 to start. Particles aren't faded by it. Picking doesn't follow it: a node faded
+		to 0 is still picked (pickable = false or visible = false for one that isn't). */
 	public var alpha(default, set):Float = 1.;
 
 	function set_alpha(value:Float):Float {

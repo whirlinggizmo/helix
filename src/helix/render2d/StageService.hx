@@ -109,7 +109,8 @@ class StageService {
 
 	/** The topmost node under framebuffer pixel x, y (from the top-left, as the pointer is): a 2D node, or one a View2D shows, before
 		anything 3D (3D draws under the 2D); else a 3D view's node under it, hit (a helix.render3d.PickHit3D, when given) filled with where. A
-		paused node and what's under it aren't picked. Null for none. As last drawn: views pick where they were shown. */
+		hidden (visible false) or unpickable (pickable false) node and what's under it aren't picked, the pick going on to what's behind; a
+		paused one is picked, and one faded to alpha 0. Null for none. As last drawn: views pick where they were shown. */
 	public function pick(x:Float, y:Float, ?hit:Any):Null<helix.scene.Node> {
 		ViewFrame.picks3D.resize(0);
 		var found = tree.pick(camera, x, y);
