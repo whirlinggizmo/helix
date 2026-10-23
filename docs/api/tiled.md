@@ -282,6 +282,8 @@ function getTileClass(column:Int, row:Int):String
 function columnAt(x:Float):Int
 function rowAt(y:Float):Int
 function setTile(column:Int, row:Int, gid:Int):Bool
+function getTiles():Array<Int>
+function setTiles(tiles:Array<Int>):Bool
 function setTerrain(column:Int, row:Int, set:TiledTerrainSet2D, terrain:Int):Bool
 ```
 
@@ -295,6 +297,8 @@ function setTerrain(column:Int, row:Int, set:TiledTerrainSet2D, terrain:Int):Boo
 - `columnAt`: The column at x, in its own pixels (outside it too: below 0, or columns and past).
 - `rowAt`: The row at y, in its own pixels, down.
 - `setTile`: Puts global id gid at column, row (flip bits and all; 0 empties it). False, changing nothing, outside the layer or for an id none of the map's tilesets holds.
+- `getTiles`: Its cells' global ids, flip bits and all, row by row from the top-left (columns x rows of them; 0 an empty cell): a copy, to save what the game changed (Saves, as JSON) and put back with setTiles.
+- `setTiles`: Puts tiles, as getTiles gives them, in its cells, all at once. False, changing nothing, for a count other than columns x rows or an id none of the map's tilesets holds.
 - `setTerrain`: Paints terrain (set's, numbered from 1, TiledTerrainSet2D.findTerrain; 0 none) into column, row as Tiled's Terrain brush does: a corner set's cell takes it at its four corners, an edge set's at its four edges, and the cell and its neighbors sharing them take the tile of the set that fits what's around them. Where none of the set's tiles fits, a cell is left as it was; where nothing of the set is left, it's emptied. False, painting nothing, outside the layer, for a terrain the set hasn't, or for a mixed set (not painted at run time); true once painted, whether every cell found its tile or not (each fits when the set has a tile for every arrangement).
 
 ## TiledTileset2D

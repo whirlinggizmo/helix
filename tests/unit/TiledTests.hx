@@ -177,6 +177,21 @@ class TiledTests {
 			&& floorNode.setTile(0, 0, 0) && !floorNode.isFilled(0, 0),
 			"Tiles set and emptied; outside or unheld refused");
 
+		// Its tiles out and back, as a game saves what it changed: a copy, put back at once; a wrong count or an unheld id refused.
+		var saved = floorNode.getTiles();
+		saved[0] = 99;
+		check(floorNode.getTile(0, 0) == 0 && floorNode.getTiles().length == 12, "getTiles: a copy, every cell");
+		saved = floorNode.getTiles();
+		floorNode.setTile(1, 1, 0);
+		floorNode.setTile(3, 2, 2);
+		check(!floorNode.setTiles([1, 2]) && !floorNode.setTiles([for (_ in 0...12) 999]) && floorNode.getTile(3, 2) == 2,
+			"setTiles refuses a wrong count or an unheld id, changing nothing");
+		check(floorNode.setTiles(saved)
+			&& floorNode.getTile(1, 1) == saved[5]
+			&& floorNode.getTile(3, 2) == saved[11]
+			&& floorNode.childCount == [for (g in saved) if (g != 0) g].length,
+			"setTiles puts them back, a sprite a filled cell");
+
 		// Read again, its file changed in the dev loop (TiledMap2D.reloaded, past loading its images): the same tile layer shows the file's
 		// tiles, what setTile changed gone; a layer gone from the file goes; objects are the file's anew.
 		var changed = StringTools.replace(text, '"name":"floor","width":4,"height":3,"data":[1,2,0,0', '"name":"floor","width":4,"height":3,"data":[1,2,0,3');

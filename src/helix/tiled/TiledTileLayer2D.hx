@@ -91,6 +91,26 @@ class TiledTileLayer2D extends Node2D {
 		return true;
 	}
 
+	/** Its cells' global ids, flip bits and all, row by row from the top-left (columns x rows of them; 0 an empty cell): a copy, to save what
+		the game changed (Saves, as JSON) and put back with setTiles. */
+	public function getTiles():Array<Int>
+		return tiles.copy();
+
+	/** Puts tiles, as getTiles gives them, in its cells, all at once. False, changing nothing, for a count other than columns x rows or an
+		id none of the map's tilesets holds. */
+	public function setTiles(tiles:Array<Int>):Bool {
+		if (tiles == null || tiles.length != columns * rows)
+			return false;
+		for (gid in tiles)
+			if (gid & TiledMap2D.GID_MASK != 0 && map.findTileset(gid) == null)
+				return false;
+		for (cell in 0...tiles.length)
+			if (this.tiles[cell] != tiles[cell])
+				put(cell, tiles[cell]);
+		terrains.clear();
+		return true;
+	}
+
 	/** Paints terrain (set's, numbered from 1, TiledTerrainSet2D.findTerrain; 0 none) into column, row as Tiled's Terrain brush does: a corner
 		set's cell takes it at its four corners, an edge set's at its four edges, and the cell and its neighbors sharing them take the tile of
 		the set that fits what's around them. Where none of the set's tiles fits, a cell is left as it was; where nothing of the set is left,

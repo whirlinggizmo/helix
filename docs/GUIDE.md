@@ -266,6 +266,12 @@ Saves.read("best", text -> best = Std.parseInt(text) ?? 0, () -> best = 0);   //
 ```
 
 Text under a name, kept across runs (a browser keeps it for the page's site). For more than a number, `haxe.Json.stringify` and `parse`.
+A Tiled layer the game changed (`setTile`, `setTerrain`) is saved and put back whole:
+
+```haxe
+Saves.write("level1-land", haxe.Json.stringify(land.getTiles()));
+Saves.read("level1-land", text -> land.setTiles(haxe.Json.parse(text)));   // after instantiate
+```
 
 ## Building and shipping
 
