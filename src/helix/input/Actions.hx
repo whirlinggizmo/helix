@@ -1,9 +1,8 @@
 package helix.input;
 
 import haxe.Json;
-import haxe.io.Bytes;
 import helix.asset.Failure;
-import helix.asset.Storage;
+import helix.asset.Saves;
 import helix.host.Presentation;
 import helix.host.PresentationMode;
 import helix.host.Screen;
@@ -286,44 +285,21 @@ class Actions implements IInputWatcher {
 			case TouchRegion(_, _, _, _, _): "Touch";
 		}
 
-	/** Writes every action's bindings under key in Storage, as JSON: {"version":1,"actions":{"jump":[{"key":"Space"},{"padButton":"South"}]}},
+	/** Writes every action's bindings as the save named key (Saves, kept apart from the asset cache, so clearing it keeps them), as JSON: {"version":1,"actions":{"jump":[{"key":"Space"},{"padButton":"South"}]}},
 		each binding by its kind ({"keys":["Left","Right"]}, {"padButtons":["Left","Right"]}, {"padAxis":"LeftX","side":0,"threshold":0.15},
 		{"mouseButton":"Left"}, {"touch":"BottomRight","x":-120,"y":-120,"width":96,"height":96}), keys by Key.getName. Then done; a failure
-		(no Storage, a write refused) goes to failed, or to the log when failed is null. */
-	public function save(key = "actions", ?done:Void->Void, ?failed:String->Void):Void {
-		if (Storage.instance == null) {
-			saveFailed(key, "No storage", failed);
-			return;
-		}
-		Storage.write(key, Bytes.ofString(encode()), result -> switch result {
-			case Written:
-				if (done != null) done();
-			case Failed(message):
-				saveFailed(key, message, failed);
-			case Cancelled:
-		});
-	}
+		(a write refused) goes to failed, or to the log when failed is null. */
+	public function save(key = "actions", ?done:Void->Void, ?failed:String->Void):Void
+		Saves.write(key, encode(), () -> if (done != null) done(), message -> saveFailed(key, message, failed));
 
-	/** Reads the bindings saved under key in Storage, and replaces the bindings of each action the game has bound with the saved ones; an
+	/** Reads the bindings saved as the save named key (Saves), and replaces the bindings of each action the game has bound with the saved ones; an
 		action the save names but the game doesn't bind is dropped, an action the save doesn't name keeps its bindings, and an entry the map
 		can't read (an unknown kind or name, a refused binding) is skipped and logged (Failure). Then done, also when nothing was saved; a
-		failure (no Storage, a read failing, a file that isn't a version 1 save) goes to failed, or to the log when failed is null, the bindings
-		unchanged. The defaults reset restores are kept first. */
+		failure (a read failing, a file that isn't a version 1 save) goes to failed, or to the log when failed is null, the bindings unchanged.
+		The defaults reset restores are kept first. */
 	public function load(key = "actions", ?done:Void->Void, ?failed:String->Void):Void {
-		if (Storage.instance == null) {
-			Failure.report(key, "No storage", failed);
-			return;
-		}
 		keepDefaults();
-		Storage.read(key, result -> switch result {
-			case Stored(bytes):
-				apply(key, bytes.toString(), done, failed);
-			case Missing:
-				if (done != null) done();
-			case Failed(message):
-				Failure.report(key, message, failed);
-			case Cancelled:
-		});
+		Saves.read(key, text -> apply(key, text, done, failed), () -> if (done != null) done(), message -> Failure.report(key, message, failed));
 	}
 
 	/** Restores each action's defaults: its bindings as the game bound them in code, kept at the first load or capture after the action was

@@ -1,6 +1,8 @@
 import haxe.io.Bytes;
 import helix.asset.IAssets.AudioLocation;
 import helix.asset.IStore;
+import helix.asset.SaveService;
+import helix.asset.Saves;
 import helix.asset.Storage;
 import helix.asset.StorageService;
 import helix.asset.StorageResult;
@@ -269,13 +271,19 @@ class AudioBusTests {
 		check(audio.pitches[waiting.id] == 2 && audio.pans[waiting.id] == .5, "A waiting playback's pitch and pan reach its voice as it starts");
 		waiting.stop();
 
-		// Saving and loading the buses through Storage; a saved name with no bus is skipped.
-		var store = new Memory(), storage = new StorageService(store);
-		@:privateAccess Storage.bind(storage);
+		// Saving and loading the buses as a save, apart from the asset cache; a saved name with no bus is skipped.
+		var store = new Memory(),
+			saves = new SaveService(store),
+			cacheStore = new Memory(),
+			cache = new StorageService(cacheStore);
+		@:privateAccess Saves.bind(saves);
+		@:privateAccess Storage.bind(cache);
 		function settle()
-			for (_ in 0...4) {
+			for (_ in 0...8) {
 				store.poll();
-				storage.poll();
+				saves.poll();
+				cacheStore.poll();
+				cache.poll();
 			}
 		Audio.master.volume = .7;
 		Audio.music.muted = true;
@@ -294,6 +302,9 @@ class AudioBusTests {
 		Audio.loadBuses("audio", () -> loaded = true);
 		settle();
 		check(loaded && near(Audio.master.volume, .7) && Audio.music.muted && near(ambience.volume, .3), "Loaded back by name");
+		Storage.clear(_ -> {});
+		settle();
+		check(store.files.exists("audio"), "Clearing the asset cache keeps the saved buses");
 		var missing = false;
 		Audio.loadBuses("nothing", () -> missing = true);
 		settle();
@@ -306,6 +317,7 @@ class AudioBusTests {
 
 		sounds.shutdown();
 		@:privateAccess Audio.bind(null);
+		@:privateAccess Saves.bind(null);
 		@:privateAccess Storage.bind(null);
 		Sys.println(haxe.Json.stringify({passed: true, checks: checks}));
 	}

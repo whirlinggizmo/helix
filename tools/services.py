@@ -35,7 +35,7 @@ def main():
  build_dir=None
  from gen_fixtures import generate as fixtures_generate
  fixtures=fixtures_generate()
- build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
+ build=ROOT/'build';run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/web','-cp','generated/shaders','-cp','generated/fonts','-main','ServiceTests','-js',build/'service-tests.js','-dce','full'])
  if native:
   from pins import check_hxcpp
   from native_build import ARCH,env as native_env,place_runtimes
@@ -47,7 +47,7 @@ def main():
   check_hxcpp();gen_code.generate(sdl_gpu=False);env=native_env(sdl3)
   build_dir=native.scratch/'services'
   config=['-debug','-D','HXCPP_CHECK_POINTER'] if native.debug else ['-dce','full','-D','analyzer-optimize']
-  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-main','ServiceTests','-cpp',build_dir,*config,'-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
+  run(['haxe','-cp','src','-cp','tests/services','-cp','tests/services/native','-cp','generated/shaders','-cp','generated/fonts','-main','ServiceTests','-cpp',build_dir,*config,'-D',ARCH,'-D','HXCPP_COMPILE_THREADS=4',*defines],env)
   place_runtimes(build_dir,sdl3)
  counts=Counter();unchanged=Counter();lock=threading.Lock();active=0;peak=0;wav=(fixtures/'tone.wav').read_bytes();vorbis=(fixtures/'tone.ogg').read_bytes();opus=(fixtures/'tone.opus').read_bytes();stereo=(fixtures/'tone-stereo.wav').read_bytes();token=uuid.uuid4().hex
  class Handler(http.server.BaseHTTPRequestHandler):

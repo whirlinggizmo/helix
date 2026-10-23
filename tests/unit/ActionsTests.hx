@@ -1,5 +1,7 @@
 import haxe.io.Bytes;
 import helix.asset.IStore;
+import helix.asset.SaveService;
+import helix.asset.Saves;
 import helix.asset.Storage;
 import helix.asset.StorageService;
 import helix.asset.StorageResult;
@@ -380,14 +382,17 @@ class ActionsTests {
 		actions.bind("click", Mouse(Left));
 	}
 
-	static function settle(storage:StorageService):Void
-		for (_ in 0...4)
-			storage.poll();
+	static function settle(saves:SaveService):Void
+		for (_ in 0...8)
+			saves.poll();
 
 	static function saving():Void {
-		var memory = new Memory();
-		var storage = new StorageService(memory);
-		@:privateAccess Storage.bind(storage);
+		// The saves apart from the asset cache, which a game may clear.
+		var memory = new Memory(), cacheStore = new Memory();
+		var saves = new SaveService(memory),
+			cache = new StorageService(cacheStore);
+		@:privateAccess Saves.bind(saves);
+		@:privateAccess Storage.bind(cache);
 		var input = new InputState();
 		var first = new Actions(input);
 		defaults(first);
@@ -399,7 +404,7 @@ class ActionsTests {
 		step(input);
 		var saved = false;
 		first.save(() -> saved = true);
-		settle(storage);
+		settle(saves);
 		check(saved && memory.files.exists("actions"), "Saved under actions");
 		var text = memory.files["actions"].toString();
 		check(StringTools.startsWith(text, '{"version":1,"actions":{"jump":[{"padButton":"South"},{"key":"J"}],')
@@ -412,7 +417,7 @@ class ActionsTests {
 		defaults(second);
 		var loaded = false;
 		second.load(() -> loaded = true);
-		settle(storage);
+		settle(saves);
 		check(loaded, "Loaded");
 		for (name in first.names)
 			check(Lambda.foreach([for (i in 0...first.bindings(name).length) i], i -> Type.enumEq(first.bindings(name)[i], second.bindings(name)[i]))
@@ -432,7 +437,7 @@ class ActionsTests {
 		var log = haxe.Log.trace;
 		haxe.Log.trace = (v, ?infos) -> logged.push(Std.string(v));
 		third.load("broken", () -> loaded = true);
-		settle(storage);
+		settle(saves);
 		haxe.Log.trace = log;
 		check(logged.length == 3 && logged[0].indexOf("broken: jump: unknown key Nope") >= 0, 'Each skipped entry logged: $logged');
 		check(third.bindings("jump").length == 1 && Type.enumEq(third.bindings("jump")[0], Pad(North)), "Unknown entries skipped");
@@ -441,15 +446,25 @@ class ActionsTests {
 		memory.files["bad"] = Bytes.ofString('{"version":2}');
 		var failure = "";
 		third.load("bad", () -> {}, message -> failure = message);
-		settle(storage);
+		settle(saves);
 		check(failure.indexOf("version 1") >= 0 && third.bindings("jump").length == 1, "A wrong version fails");
 		loaded = false;
 		third.load("never", () -> loaded = true, message -> failure = "missing");
-		settle(storage);
+		settle(saves);
 		check(loaded && third.bindings("jump").length == 1, "Nothing saved: done, unchanged");
+		// Clearing the asset cache keeps them: they're saves, not cached files.
+		var cleared = false;
+		Storage.clear(_ -> cleared = true);
+		for (_ in 0...8)
+			cache.poll();
+		var fourth = new Actions(new InputState());
+		defaults(fourth);
+		loaded = false;
+		fourth.load(() -> loaded = true);
+		settle(saves);
+		check(cleared && loaded && memory.files.exists("actions") && fourth.bindings("jump").length == first.bindings("jump").length,
+			"Clearing the asset cache keeps the saved bindings");
+		@:privateAccess Saves.bind(null);
 		@:privateAccess Storage.bind(null);
-		failure = "";
-		third.save(() -> {}, message -> failure = message);
-		check(failure == "No storage", "No storage fails");
 	}
 }

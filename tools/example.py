@@ -38,6 +38,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 import shader_tool
@@ -262,8 +263,11 @@ def autopilot(name,browser,native):
                 browser_env={k:v for k,v in os.environ.items() if k not in ('VK_DRIVER_FILES','VK_ICD_FILENAMES')}
                 web=json.loads(subprocess.check_output(['node',ROOT/'tools/autopilot.cjs',browser,f'http://127.0.0.1:{server.server_address[1]}/{name}/?{query}'],cwd=ROOT,env=browser_env,text=True, encoding='utf-8'))
                 result=out/f'{label}-{script}';result.unlink(missing_ok=True)
-                child=dict(env,HELIX_RESULT=str(result),**{'HELIX_'+k.upper():v for k,v in options.items()})
-                process=subprocess.run([str(executable)],cwd=page(name,native),env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
+                # Its saves in a directory of its own, empty, as the browser's run starts with none: a script that saves (settings) doesn't
+                # reach the next, nor the user's own saves.
+                with tempfile.TemporaryDirectory() as saves:
+                    child=dict(env,HELIX_RESULT=str(result),HELIX_SAVES=saves,**{'HELIX_'+k.upper():v for k,v in options.items()})
+                    process=subprocess.run([str(executable)],cwd=page(name,native),env=child,capture_output=True,text=True, encoding='utf-8',timeout=300)
                 if process.returncode or not result.is_file():failed.append(script);print(f'{script}: native run failed\n{process.stdout}{process.stderr}',flush=True);continue
                 # What the native graphics said it runs on (SDL_GPU's backend), as SDL chooses it.
                 for line in process.stderr.splitlines():

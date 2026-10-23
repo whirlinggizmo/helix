@@ -2,7 +2,7 @@ package helix.audio;
 
 import haxe.Json;
 import helix.asset.Failure;
-import helix.asset.Storage;
+import helix.asset.Saves;
 
 /** Sounds: clips and streams loaded through the assets, decoded and played (AudioResources), through buses. The audio output under it
 	(IAudio) is the adapter's. The program's one, a static class: each member forwards to instance, written by helix.macro.Facade from
@@ -50,54 +50,40 @@ class Audio {
 		to.fadeAlong(toVolume, seconds, null, false, Power);
 	}
 
-	/** Saves every bus's volume and mute by name as JSON under key through Storage; done runs once it's written, failed (else the log, with
-		the key) for a failed write or no Storage. */
+	/** Saves every bus's volume and mute by name as JSON, the save named key (Saves, kept apart from the asset cache, so clearing it keeps
+		them); done runs once it's written, failed (else the log, with the key) for a failed write. */
 	public static function saveBuses(key = "audio", ?done:Void->Void, ?failed:String->Void):Void {
 		var saved:haxe.DynamicAccess<{volume:Float, muted:Bool}> = {};
 		for (bus in master.all())
 			saved[bus.name] = {volume: bus.volume, muted: bus.muted};
-		if (Storage.instance == null) {
-			Failure.report(key, "No storage", failed);
-			return;
-		}
-		Storage.write(key, haxe.io.Bytes.ofString(Json.stringify(saved)), result -> switch result {
-			case Written: if (done != null) done();
-			case Failed(message): Failure.report(key, message, failed);
-			case Cancelled:
-		});
+		Saves.write(key, Json.stringify(saved), () -> if (done != null) done(), message -> Failure.report(key, message, failed));
 	}
 
 	/** Loads the volumes and mutes saveBuses saved under key into the buses of their names, a name with no bus skipped; a volume is clamped,
 		and assigning it ends a bus's fade. done runs once they're set, or nothing was saved; failed (else the log, with the key) for a failed
-		read, a file that isn't the saved JSON, or no Storage. */
+		read or a file that isn't the saved JSON. */
 	public static function loadBuses(key = "audio", ?done:Void->Void, ?failed:String->Void):Void {
-		if (Storage.instance == null) {
-			Failure.report(key, "No storage", failed);
-			return;
-		}
-		Storage.read(key, result -> switch result {
-			case Stored(bytes):
-				var saved:Dynamic = try Json.parse(bytes.toString()) catch (_:Dynamic) null;
-				if (saved == null || Type.typeof(saved) != TObject) {
-					Failure.report(key, "Invalid saved buses", failed);
-					return;
-				}
-				for (name in Reflect.fields(saved)) {
-					var bus = findBus(name),
-						entry:Dynamic = Reflect.field(saved, name);
-					if (bus == null || entry == null || Type.typeof(entry) != TObject)
-						continue;
-					var volume:Dynamic = Reflect.field(entry, "volume"),
-						muted:Dynamic = Reflect.field(entry, "muted");
-					if (Std.isOfType(volume, Float))
-						bus.volume = volume;
-					if (Std.isOfType(muted, Bool))
-						bus.muted = muted;
-				}
-				if (done != null) done();
-			case Missing: if (done != null) done();
-			case Failed(message): Failure.report(key, message, failed);
-			case Cancelled:
-		});
+		Saves.read(key, text -> {
+			var saved:Dynamic = try Json.parse(text) catch (_:Dynamic) null;
+			if (saved == null || Type.typeof(saved) != TObject) {
+				Failure.report(key, "Invalid saved buses", failed);
+				return;
+			}
+			for (name in Reflect.fields(saved)) {
+				var bus = findBus(name),
+					entry:Dynamic = Reflect.field(saved, name);
+				if (bus == null || entry == null || Type.typeof(entry) != TObject)
+					continue;
+				var volume:Dynamic = Reflect.field(entry, "volume"),
+					muted:Dynamic = Reflect.field(entry, "muted");
+				if (Std.isOfType(volume, Float))
+					bus.volume = volume;
+				if (Std.isOfType(muted, Bool))
+					bus.muted = muted;
+			}
+			if (done != null)
+				done();
+		}, () -> if (done != null) done(),
+			message -> Failure.report(key, message, failed));
 	}
 }
