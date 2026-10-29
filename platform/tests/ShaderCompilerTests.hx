@@ -83,15 +83,14 @@ void main() {
 			"So does GLSL ES");
 		check(source.sdlGpu.msl.vertex.indexOf("helix_main") >= 0, "SDL_GPU's vertex stage moves GL's clip depth after the program's main");
 		// SDL_GPU's bindings: fragment textures in set 2 and blocks in set 3, numbered from 0 by slot.
-		var spv = haxe.io.Path.join([
-			Sys.getEnv("TMPDIR") == null ? "/tmp" : Sys.getEnv("TMPDIR"),
-			"helix-shader-test.spv"
-		]);
+		var scratch = helix.platform.tools.Scratch.make("helix-shader-test-");
+		var spv = haxe.io.Path.join([scratch, "fragment.spv"]);
 		sys.io.File.saveBytes(spv, haxe.crypto.Base64.decode(source.sdlGpu.spirv.fragment));
 		var process = new sys.io.Process(ShaderTools.spirvCross(), [spv, "--reflect"]);
 		var reflected:Dynamic = haxe.Json.parse(process.stdout.readAll().toString());
 		process.close();
 		sys.FileSystem.deleteFile(spv);
+		sys.FileSystem.deleteDirectory(scratch);
 		var ubos:Array<Dynamic> = reflected.ubos,
 			textures:Array<Dynamic> = reflected.textures;
 		check(ubos[0].set == 3 && ubos[0].binding == 0, "SDL_GPU: the fragment block in set 3 at 0");

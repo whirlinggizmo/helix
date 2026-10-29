@@ -44,9 +44,10 @@ def pin():
 
 
 def tree_digest(directory):
-    """One SHA-256 over each file's path and SHA-256 under directory, in path order."""
+    """One SHA-256 over each file's path and SHA-256 under directory, in path order: the parts compared as strings, case and all, as Windows'
+    paths would otherwise sort without case and give another digest."""
     digest = hashlib.sha256()
-    for file in sorted(p for p in directory.rglob('*') if p.is_file()):
+    for file in sorted((p for p in directory.rglob('*') if p.is_file()), key=lambda p: p.relative_to(directory).parts):
         digest.update(file.relative_to(directory).as_posix().encode() + b'\0' + hashlib.sha256(file.read_bytes()).hexdigest().encode() + b'\n')
     return digest.hexdigest()
 
