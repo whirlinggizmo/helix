@@ -1,0 +1,20 @@
+{
+  "what": "Green once the music group has faded in and master has faded out.",
+  "printed": [
+    "the music group faded in",
+    "master faded out"
+  ],
+  "nativeFrames": 10000,
+  "points": [
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        42,
+        157,
+        74
+      ],
+      "tolerance": 3
+    }
+  ]
+}

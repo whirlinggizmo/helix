@@ -33,6 +33,8 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 - `saves`: one value loaded, set and written.
 - `assets`: one file loaded.
 - `audio`: one sound loaded and played.
+- `fades`: a group fading its voices in, then `master` fading everything out.
+- `stream`: one long sound played as it's read, as music is.
 
 Its tests are in `tests/`.
 

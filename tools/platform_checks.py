@@ -82,10 +82,10 @@ def build(directory, hxml, env):
     subprocess.run(['haxe', hxml], cwd=directory, env=env, check=True)
 
 
-def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES):
+def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
-    lasts, which a private display doesn't pace. The problems found."""
+    lasts, which a private display doesn't pace; native_extra what a native run's environment adds. The problems found."""
     import pins
     from native_build import env as native_env
     env = pins.use_haxelib()
@@ -101,7 +101,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
                 continue
             build(directory, hxml, env)
             with private_display() as display:
-                ran = subprocess.run([str(directory / output / main)], cwd=directory, env=dict(display, HELIX_FRAMES=str(native_frames), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=120)
+                ran = subprocess.run([str(directory / output / main)], cwd=directory, env=dict(display, **(native_extra or {}), HELIX_FRAMES=str(native_frames), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=120)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
         print(f'{name}: native runs skipped here (a private display needs Linux)', flush=True)

@@ -3,7 +3,8 @@
 natively on a private display (Linux, SDL3's dummy audio driver) and in a headless Chromium, as tools/platform_checks.py runs the
 platform's. Each says in its check.json what its native run prints and what its page shows (points and the colors expected there, each
 within a tolerance per channel), and, where it waits on time, how many frames a native run lasts (nativeFrames, 60 by default), as the
-private display doesn't pace them: a frame there takes about a quarter of a millisecond. Exits 1 on any failure.
+private display doesn't pace them: a frame there takes about a quarter of a millisecond. A native run's data and cache directories are
+under build/results/services/<name>/, never the user's own (XDG_DATA_HOME, XDG_CACHE_HOME). Exits 1 on any failure.
 
     python3 tools/services_checks.py --browser BROWSER [NAME ...]
 
@@ -40,7 +41,10 @@ def example(name, browser):
             print(f'{name}: the page ran {FRAMES} frames, {len(expected["points"])} points checked', flush=True)
         return found
 
-    return run(name, directory, 'Main', browser, native_run, page_run, frames)
+    home = ROOT / 'build/results/services' / name
+    home.mkdir(parents=True, exist_ok=True)
+    dirs = {'XDG_DATA_HOME': str(home / 'data'), 'XDG_CACHE_HOME': str(home / 'cache')}
+    return run(name, directory, 'Main', browser, native_run, page_run, frames, dirs)
 
 
 def main():
