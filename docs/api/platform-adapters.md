@@ -132,8 +132,13 @@ function dispose():Void
 
 Represents what `DomEventsAdapter` listens to.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(canvas:js.html.CanvasElement)
+{canvas:js.html.CanvasElement}
+```
+
+```haxe
 final canvas:js.html.CanvasElement
 ```
 
@@ -199,8 +204,13 @@ function export(name:String, mimeType:String, bytes:haxe.io.Bytes, exported:(whe
 
 Represents where `FileSystemExportAdapter` writes.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(directory:String)
+{directory:String}
+```
+
+```haxe
 final directory:String
 ```
 
@@ -237,8 +247,13 @@ function dispose():Void
 
 Represents the database `BrowserFileSystemAdapter` holds.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(name:String)
+{name:String}
+```
+
+```haxe
 final name:String
 ```
 
@@ -275,10 +290,15 @@ function dispose():Void
 
 Represents the directory `NativeFileSystemAdapter` holds and how.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(directory:String, ?readOnly:Bool)
+{directory:String, ?readOnly:Bool}
+```
+
+```haxe
 final directory:String
-final readOnly:Bool
+final readOnly:Bool = false
 ```
 
 - `directory`: Gets the directory, made when first written.
@@ -372,11 +392,16 @@ function dispose():Void
 
 Represents how `WebGl2GraphicsAdapter` makes its context.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(canvas:js.html.CanvasElement, ?msaaSamples:Int, ?preserveDrawingBuffer:Bool)
+{canvas:js.html.CanvasElement, ?msaaSamples:Int, ?preserveDrawingBuffer:Bool}
+```
+
+```haxe
 final canvas:js.html.CanvasElement
-final msaaSamples:Int
-final preserveDrawingBuffer:Bool
+final msaaSamples:Int = 1
+final preserveDrawingBuffer:Bool = false
 ```
 
 - `canvas`: Gets the canvas whose WebGL2 context is drawn with.
@@ -545,8 +570,13 @@ var onClose:Null<() -> Void>
 
 Represents what `DomWindowAdapter` is made over.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(canvas:js.html.CanvasElement)
+{canvas:js.html.CanvasElement}
+```
+
+```haxe
 final canvas:js.html.CanvasElement
 ```
 
@@ -603,10 +633,15 @@ var onClose:Null<() -> Void>
 
 Represents how `Sdl3WindowAdapter` opens its window.
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(graphics:Sdl3WindowGraphics, ?msaaSamples:Int)
+{graphics:Sdl3WindowGraphics, ?msaaSamples:Int}
+```
+
+```haxe
 final graphics:Sdl3WindowGraphics
-final msaaSamples:Int
+final msaaSamples:Int = 1
 ```
 
 - `graphics`: Gets the graphics adapter that draws in the window.

@@ -9,7 +9,7 @@ public members, and the tool fails when they differ. The adapters are each one t
 browser's name js. in their code), and the reference shows both, each marked with its target. The HTML is made from one description,
 js's with cpp's adapters added, so dox has nothing to mark as one target's. Of the tools (helix.platform.tools), which run in the compiler,
 it shows ShaderCompiler, whose compile a program calls: a macro, its signature read from its source, as Haxe describes a macro's types as
-Dynamic. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
+Dynamic. A @:structInit class is shown as the object a program writes, each field with its default. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
 import re
@@ -283,6 +283,13 @@ def markdown(xml,native=frozenset()):
             text=(ROOT/source).read_text(encoding='utf-8') if (ROOT/source).is_file() else ''
             members=[(macro_signature(text,sig) if 'macro' in text else sig,d,n) for sig,d,n in members]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
+            # A @:structInit class is written as an object where one is expected, not constructed: shown as that object, each field with
+            # its default.
+            if node.find('meta') is not None and any(m.get('n')==':structInit' for m in node.find('meta')) and node.find('new') is not None:
+                f=node.find('new').find('f');names=f.get('a','').split(':') if f.get('a') else []
+                fields=[n+':'+type_text(k[0] if n.startswith('?') and k.get('path')=='Null' and len(k) else k,known) for n,k in zip(names,list(f)[:-1])]
+                lines+=['Written as an object where one is expected; a field marked `?` may be left out, for its default:','','```haxe','{'+', '.join(fields)+'}','```','']
+                members=[(sig+''.join(f' = {v[0].text}' for meta in n.findall('meta') for v in meta if v.get('n')==':value' and len(v)),d,n) for sig,d,n in members if not sig.split('(')[0].endswith(' new')]
             if members:
                 lines.append('```haxe')
                 for sig,_,_ in members:lines.append(sig)
