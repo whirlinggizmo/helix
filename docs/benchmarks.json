@@ -1,5 +1,5 @@
 {
- "commit": "7aef88a 2026-10-29",
+ "commit": "32c1b42 2026-10-29",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -116,6 +116,169 @@
      "platform/window": 523,
      "std/haxe": 326,
      "platform": 307
+    }
+   }
+  },
+  "services": {
+   "1-clear": {
+    "adds": "a window cleared each frame: the platform's window, its events and the GPU, no service",
+    "raw": 25846,
+    "gzip": 5850,
+    "brotli": 5098,
+    "packages": {
+     "platform/events": 10958,
+     "haxe metadata": 7951,
+     "std/js": 2992,
+     "platform/graphics": 1855,
+     "program": 796,
+     "platform/window": 523,
+     "platform/shared": 392,
+     "std/haxe": 289,
+     "platform": 91
+    }
+   },
+   "2-time": {
+    "adds": "the game's time and a timer",
+    "raw": 28627,
+    "gzip": 6531,
+    "brotli": 5686,
+    "packages": {
+     "platform/events": 10958,
+     "haxe metadata": 8370,
+     "std/js": 2992,
+     "services/time": 2053,
+     "platform/graphics": 1855,
+     "program": 1031,
+     "platform/window": 523,
+     "platform/shared": 392,
+     "std/haxe": 289,
+     "platform": 91,
+     "platform/system": 74
+    }
+   },
+   "3-config": {
+    "adds": "an option read",
+    "raw": 30846,
+    "gzip": 7147,
+    "brotli": 6287,
+    "packages": {
+     "platform/events": 10958,
+     "haxe metadata": 8818,
+     "std/js": 3488,
+     "services/time": 2119,
+     "platform/graphics": 1855,
+     "program": 1120,
+     "std/core": 546,
+     "platform/window": 523,
+     "services/config": 462,
+     "platform/shared": 392,
+     "std/haxe": 289,
+     "platform/system": 186,
+     "platform": 91
+    }
+   },
+   "4-input": {
+    "adds": "an action bound to a key and a pad button, read each frame",
+    "raw": 43019,
+    "gzip": 9494,
+    "brotli": 8336,
+    "packages": {
+     "platform/events": 11323,
+     "haxe metadata": 11285,
+     "services/input": 8238,
+     "std/js": 4245,
+     "services/time": 2119,
+     "platform/graphics": 1855,
+     "program": 1451,
+     "std/core": 546,
+     "platform/window": 523,
+     "services/config": 462,
+     "platform/shared": 392,
+     "std/haxe": 289,
+     "platform/system": 186,
+     "platform": 106
+    }
+   },
+   "5-saves": {
+    "adds": "a value loaded, set and written",
+    "raw": 61040,
+    "gzip": 13412,
+    "brotli": 11725,
+    "packages": {
+     "haxe metadata": 16612,
+     "platform/events": 11323,
+     "services/input": 8238,
+     "std/js": 8115,
+     "services/saves": 3897,
+     "platform/filesystem": 2877,
+     "services/time": 2119,
+     "platform/graphics": 1855,
+     "program": 1835,
+     "log": 1107,
+     "platform/shared": 914,
+     "std/core": 546,
+     "platform/window": 523,
+     "services/config": 462,
+     "std/haxe": 326,
+     "platform/system": 186,
+     "platform": 106
+    }
+   },
+   "6-assets": {
+    "adds": "a file loaded from beside the page, kept in a cache",
+    "raw": 96787,
+    "gzip": 21441,
+    "brotli": 18365,
+    "packages": {
+     "haxe metadata": 23003,
+     "services/assets": 18267,
+     "platform/events": 11323,
+     "std/js": 10355,
+     "services/input": 8238,
+     "std/haxe": 5269,
+     "services/saves": 3897,
+     "platform/filesystem": 3038,
+     "program": 2425,
+     "platform/http": 2119,
+     "services/time": 2119,
+     "platform/graphics": 1855,
+     "log": 1107,
+     "std/core": 1029,
+     "platform/shared": 914,
+     "platform": 659,
+     "platform/window": 523,
+     "services/config": 462,
+     "platform/system": 186
+    }
+   },
+   "7-audio": {
+    "adds": "a sound loaded through the assets and played",
+    "raw": 113326,
+    "gzip": 25182,
+    "brotli": 21442,
+    "packages": {
+     "haxe metadata": 24943,
+     "services/assets": 18267,
+     "platform/events": 11323,
+     "std/js": 10768,
+     "services/input": 8238,
+     "platform/audio": 7403,
+     "std/haxe": 5269,
+     "services/audio": 4988,
+     "services/saves": 3897,
+     "platform/filesystem": 3038,
+     "program": 2833,
+     "platform/http": 2119,
+     "services/time": 2119,
+     "platform/graphics": 1855,
+     "platform/audiodecoder": 1387,
+     "log": 1107,
+     "std/core": 1029,
+     "platform/shared": 914,
+     "platform": 659,
+     "platform/window": 523,
+     "services/config": 462,
+     "platform/system": 186
     }
    }
   }

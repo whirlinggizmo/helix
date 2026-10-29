@@ -32,8 +32,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # Each library's ladder: its programs' directory and how a rung is built.
 LADDERS = {
     'platform': (ROOT / 'platform/tests/sizes', ['-lib', 'helix-platform']),
+    'services': (ROOT / 'services/tests/sizes', ['-lib', 'helix-services']),
 }
-LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math'}
+LIBRARIES = {'helix-platform': ROOT / 'platform', 'helix-log': ROOT / 'log', 'helix-math': ROOT / 'math', 'helix-services': ROOT / 'services'}
 BASELINE = ROOT / 'docs/benchmarks.json'
 TABLE = ROOT / 'docs/benchmarks.md'
 OUT = ROOT / 'build/sizes'
@@ -81,9 +82,11 @@ def vlq(text):
 
 
 def package(source):
-    """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), another
-    library's by its name, Haxe's standard library, the program's."""
+    """The package a source file's bytes are counted under: the platform's by contract (its adapters under their contract), the services'
+    by service, another library's by its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
+    if '/services/src/helix/services/' in path:
+        return 'services/' + path.split('/services/src/helix/services/', 1)[1].split('/')[0]
     if '/platform/src/helix/platform/' in path:
         parts = path.split('/platform/src/helix/platform/', 1)[1].split('/')
         return f'platform/{parts[1]}' if parts[0] == 'adapters' and len(parts) > 2 else 'platform'
@@ -170,6 +173,10 @@ INTRODUCTIONS = {
                  'Programs on helix-platform alone (`platform/tests/sizes/`), each constructing only the adapters it uses and adding one to '
                  'the one before: what a feature costs is its row\'s increment, gzip; brotli in brackets. The adapters\' bytes are counted '
                  'under their contract.'),
+    'services': ('helix-services',
+                 'Programs on helix-services and what it sits on (`services/tests/sizes/`), each adding one service, with the platform\'s '
+                 'adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row\'s increment, gzip; '
+                 'brotli in brackets. Each service\'s bytes are counted under its package; the adapters\' under their contract.'),
 }
 
 

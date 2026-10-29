@@ -2,7 +2,6 @@ package helix.services.assets;
 
 import haxe.DynamicAccess;
 import haxe.Json;
-import haxe.crypto.Md5;
 import haxe.crypto.Sha256;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
@@ -300,7 +299,7 @@ private class ServerSource {
 		this.manifestPath = manifestPath;
 		this.http = http;
 		this.cache = cache;
-		directory = "server-" + Md5.encode(this.url).substr(0, 16);
+		directory = "server-" + nameOf(this.url);
 	}
 
 	/** Forgets what it holds in memory, as the cache is emptied. */
@@ -612,6 +611,18 @@ private class ServerSource {
 			}
 		}
 		return seconds > 0 ? seconds : immutable ? YEAR : 0;
+	}
+
+	/** Returns 16 hex digits for a URL, its cache directory's name: two 32-bit string hashes (FNV-1a and djb2), the same on every target,
+		and far smaller than a cryptographic hash for a name only this cache reads. */
+	public static function nameOf(url:String):String {
+		var fnv = 0x811c9dc5, djb = 5381;
+		for (i in 0...url.length) {
+			var c = StringTools.fastCodeAt(url, i);
+			fnv = ((fnv ^ c) << 24) + (fnv ^ c) * 403 | 0;
+			djb = (djb << 5) + djb + c | 0;
+		}
+		return StringTools.hex(fnv, 8) + StringTools.hex(djb, 8);
 	}
 
 	/** Returns bytes' hash as manifests write it: "sha256:" and 64 hex digits. */

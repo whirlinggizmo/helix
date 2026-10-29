@@ -247,6 +247,17 @@ class AssetsTests {
 			case _: null;
 		}
 
+	// The cache directory's name for a URL, as Assets makes it: FNV-1a and djb2, 32 bits each.
+	static function nameOf(url:String):String {
+		var fnv = 0x811c9dc5, djb = 5381;
+		for (i in 0...url.length) {
+			var c = StringTools.fastCodeAt(url, i);
+			fnv = ((fnv ^ c) << 24) + (fnv ^ c) * 403 | 0;
+			djb = (djb << 5) + djb + c | 0;
+		}
+		return StringTools.hex(fnv, 8) + StringTools.hex(djb, 8);
+	}
+
 	static function dir(url:String):String
-		return "server-" + haxe.crypto.Md5.encode(url).substr(0, 16);
+		return "server-" + nameOf(url);
 }

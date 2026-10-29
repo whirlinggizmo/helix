@@ -26,8 +26,9 @@ def targets(web=False):
         found.append((f'{name} js',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))
         if not web:found.append((f'{name} cpp',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-cpp','build/check_types-cpp']))
     # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).
-    for rung in sorted((ROOT/'platform/tests/sizes').glob('*/Main.hx')):
-        found.append((f'platform size {rung.parent.name}',['-lib','helix-platform','-cp',str(rung.parent.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
+    for library in ('platform','services'):
+        for rung in sorted((ROOT/library/'tests/sizes').glob('*/Main.hx')):
+            found.append((f'{library} size {rung.parent.name}',['-lib',f'helix-{library}','-cp',str(rung.parent.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
     return found
 
 def main():
