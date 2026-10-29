@@ -99,7 +99,7 @@ function dispose():Void
   - throws `String`: Before `load` has finished.
 - `pending`: Gets a value indicating whether a change isn't kept yet: set since the last write, or being written.
 - `flush`: Starts writing what's set now, without waiting for the next `poll`; never blocks.
-  - `written`: Optional. Called once it's kept; at once, at the next `IFileSystem.poll`, when nothing was pending.
+  - `written`: Optional. Called once it's kept; at the next `poll` when nothing was pending.
   - `failed`: Optional. Receives why it can't be written; left out, it's logged.
 
   Before `load` nothing is pending. A write started still finishes when the saves or their file system are disposed straight after, as in a page's `IWindow.onClose`, but then nothing is called.
