@@ -23,24 +23,24 @@ import helix.platform.StreamSource;
 	the program polls each frame; Assets has no `poll` of its own.
 
 	```haxe
-	#if js
-	var httpClient:IHttp = new FetchApiHttpAdapter();
-	var downloads:IFileSystem = new BrowserFileSystemAdapter({name: "cache"});
-	var assets = new Assets({sources: [HttpServer("")], httpClient: httpClient, cacheFileSystem: downloads});
-	#else
 	var httpClient:IHttp = new HaxeHttpAdapter();
 	var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 	var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
-	var assets = new Assets({
-		sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)],
-		httpClient: httpClient,
-		cacheFileSystem: downloads,
-	});
-	#end
+
+	// The shipped files alone, never checked:
+	var assets = new Assets({sources: [FileSystem(shipped)]});
+	// The shipped files first, a server for what they don't have:
+	var assets = new Assets({sources: [FileSystem(shipped), HttpServer("https://example.com/game/")], httpClient: httpClient, cacheFileSystem: downloads});
+	// A server first, patching what shipped by its manifests:
+	var assets = new Assets({sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)], httpClient: httpClient, cacheFileSystem: downloads});
+	// In a page, the files beside the page:
+	var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: "cache"})});
+
 	assets.load("levels/1.json", bytes -> start(bytes));
 	// each frame, with the platform's other polls:
 	httpClient.poll();
 	downloads.poll();
+	shipped.poll();
 	``` */
 class Assets {
 	/** The largest file read whole from a file system. */

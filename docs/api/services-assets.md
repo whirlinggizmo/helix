@@ -31,24 +31,24 @@ Provides files by path, from the places its sources name: a file system on this 
 It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game whose files never change lists its file system alone; one patched from a server lists the server first, in `Manifest` mode, and its shipped files after, so a shipped file the server's manifest lists at the same hash is read in place and only what changed is downloaded; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
 
 ```haxe
-#if js
-var httpClient:IHttp = new FetchApiHttpAdapter();
-var downloads:IFileSystem = new BrowserFileSystemAdapter({name: "cache"});
-var assets = new Assets({sources: [HttpServer("")], httpClient: httpClient, cacheFileSystem: downloads});
-#else
 var httpClient:IHttp = new HaxeHttpAdapter();
 var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
-var assets = new Assets({
-sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)],
-httpClient: httpClient,
-cacheFileSystem: downloads,
-});
-#end
+
+// The shipped files alone, never checked:
+var assets = new Assets({sources: [FileSystem(shipped)]});
+// The shipped files first, a server for what they don't have:
+var assets = new Assets({sources: [FileSystem(shipped), HttpServer("https://example.com/game/")], httpClient: httpClient, cacheFileSystem: downloads});
+// A server first, patching what shipped by its manifests:
+var assets = new Assets({sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)], httpClient: httpClient, cacheFileSystem: downloads});
+// In a page, the files beside the page:
+var assets = new Assets({sources: [HttpServer("")], httpClient: new FetchApiHttpAdapter(), cacheFileSystem: new BrowserFileSystemAdapter({name: "cache"})});
+
 assets.load("levels/1.json", bytes -> start(bytes));
 // each frame, with the platform's other polls:
 httpClient.poll();
 downloads.poll();
+shipped.poll();
 ```
 
 ```haxe

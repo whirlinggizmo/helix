@@ -89,7 +89,7 @@ class Main {
 		audio = new Audio(output, decoder, assets, system);
 		polled.push(audio);
 		audio.stream("tune.wav", sound -> {
-			audio.play(sound, true);
+			audio.play(sound, audio.master, true);
 			color = DONE;
 			trace("streaming tune.wav");
 		});
