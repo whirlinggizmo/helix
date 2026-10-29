@@ -48,6 +48,7 @@ function dispose():Void
   - `seconds`: The game's seconds between calls, more than 0.
   - `f`: The function.
   - returns: The timer, to cancel it.
+  - throws `String`: For seconds of 0 or less.
 
   A frame longer than the interval calls it once for each interval it holds.
 - `poll`: Measures this frame from the platform's time, and calls the timers that are due, in the order they fall due; call once a frame.

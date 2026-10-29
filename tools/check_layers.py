@@ -28,7 +28,8 @@ LAYERS = [
     ('helix-services', 'services/src', ['helix.services'], ['helix-platform', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
-TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-platform': ['platform/tests', 'platform/examples']}
+TESTS = {'helix-math': ['math/tests'], 'helix-log': ['log/tests'], 'helix-platform': ['platform/tests', 'platform/examples'],
+         'helix-services': ['services/tests']}
 # The interfaces in helix.platform that contracts extend (rule 3): IPollable, the poll a program calls each frame.
 BASES = {'IPollable'}
 
