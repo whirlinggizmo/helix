@@ -57,7 +57,7 @@ class ManifestTests {
 			shipped.files.set(path, bytes);
 			http.routes.set(base + path, {status: 200, body: bytes});
 		}
-		var assets = new Assets({sources: [HttpServer(base), FileSystem(shipped)], httpClient: http, cacheFileSystem: cache});
+		var assets = new Assets({sources: [HttpServer(base, Manifest), FileSystem(shipped)], httpClient: http, cacheFileSystem: cache});
 		var got = [];
 		for (path in ["title.png", "levels/1.json", "music/song.ogg"])
 			assets.load(path, bytes -> got.push(bytes.toString()));

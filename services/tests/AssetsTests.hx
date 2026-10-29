@@ -116,9 +116,9 @@ class AssetsTests {
 		http.routes.set(site + "manifest.json", {status: 200, headers: ["etag" => '"r1"'], body: root});
 		http.routes.set(site + "levels/manifest.json", {status: 200, body: levels});
 		http.routes.set(site + "levels/1.json", {status: 200, body: level});
-		var listed = new Assets({sources: [HttpServer(site)], httpClient: http, cacheFileSystem: cache});
+		var listed = new Assets({sources: [HttpServer(site, Manifest)], httpClient: http, cacheFileSystem: cache});
 		check(load(listed, "levels/1.json").bytes == "level one", "a file the manifests list: downloaded");
-		var nextRun = new Assets({sources: [HttpServer(site)], httpClient: http, cacheFileSystem: cache});
+		var nextRun = new Assets({sources: [HttpServer(site, Manifest)], httpClient: http, cacheFileSystem: cache});
 		before = http.requests.length;
 		check(load(nextRun, "levels/1.json").bytes == "level one", "the next run: the copy");
 		var asked = [for (r in http.requests.slice(before)) r.url];
@@ -127,7 +127,7 @@ class AssetsTests {
 
 		http.routes.set(site + "levels/2.json", {status: 200, headers: ["cache-control" => "max-age=3600"], body: text("two")});
 		load(nextRun, "levels/2.json");
-		var third = new Assets({sources: [HttpServer(site)], httpClient: http, cacheFileSystem: cache});
+		var third = new Assets({sources: [HttpServer(site, Manifest)], httpClient: http, cacheFileSystem: cache});
 		before = http.requests.length;
 		load(third, "levels/2.json");
 		check([for (r in http.requests.slice(before)) r.url].indexOf(site + "levels/2.json") >= 0,
@@ -135,7 +135,7 @@ class AssetsTests {
 
 		http.routes.set(site + "levels/1.json", {status: 200, body: text("tampered")});
 		cache.files.remove('${dir(site)}/files/levels/1.json');
-		var fourth = new Assets({sources: [HttpServer(site)], httpClient: http, cacheFileSystem: cache});
+		var fourth = new Assets({sources: [HttpServer(site, Manifest)], httpClient: http, cacheFileSystem: cache});
 		var bad = load(fourth, "levels/1.json");
 		check(bad.bytes == null && bad.failure != null, "a download that doesn't match its manifest fails");
 
@@ -144,9 +144,14 @@ class AssetsTests {
 		var unlisted = new Assets({sources: [HttpServer(plain)], httpClient: http, cacheFileSystem: cache});
 		before = http.requests.length;
 		check(load(unlisted, "a.txt").bytes == "a"
-			&& load(unlisted, "a.txt").bytes == "a", "a server with no manifests: its files by the cache mode");
-		check([for (r in http.requests.slice(before)) r.url].join(",") == plain + "manifest.json," + plain + "a.txt",
-			"looked for once a run, then the file once");
+			&& load(unlisted, "a.txt").bytes == "a"
+			&& [for (r in http.requests.slice(before)) r.url].join(",") == plain + "a.txt",
+			"Revalidate looks for no manifest");
+		var warned = [];
+		helix.log.Log.listen((_, message) -> warned.push(message));
+		var expecting = new Assets({sources: [HttpServer(plain, Manifest)], httpClient: http, cacheFileSystem: cache});
+		check(load(expecting, "a.txt").bytes == "a" && warned.join("").indexOf("no manifest") >= 0,
+			"Manifest on a server without one: warned, and its files as Revalidate treats them");
 
 		// Shipped files under the server's manifests: the same file read in place, a patched one downloaded.
 		var cdn = "https://cdn.example/";
@@ -162,7 +167,7 @@ class AssetsTests {
 		http.routes.set(cdn + "pack/manifest.json", {status: 200, body: cdnPack});
 		http.routes.set(cdn + "pack/a.png", {status: 200, body: same});
 		http.routes.set(cdn + "pack/b.png", {status: 200, body: newB});
-		var patched = new Assets({sources: [HttpServer(cdn), FileSystem(ship)], httpClient: http, cacheFileSystem: cache});
+		var patched = new Assets({sources: [HttpServer(cdn, Manifest), FileSystem(ship)], httpClient: http, cacheFileSystem: cache});
 		before = http.requests.length;
 		var aRead = {bytes: null, failure: null};
 		patched.load("pack/a.png", bytes -> aRead.bytes = bytes.toString(), m -> aRead.failure = m);
@@ -183,7 +188,7 @@ class AssetsTests {
 		check(bRead.bytes == "new b", "a shipped file the server has patched: downloaded");
 		http.offline = true;
 		ship.files.set("pack/c.png", text("only shipped"));
-		var offline = new Assets({sources: [HttpServer("https://unreached.example/"), FileSystem(ship)], httpClient: http, cacheFileSystem: cache});
+		var offline = new Assets({sources: [HttpServer("https://unreached.example/", Manifest), FileSystem(ship)], httpClient: http, cacheFileSystem: cache});
 		var cRead = {bytes: null, failure: null};
 		offline.load("pack/c.png", bytes -> cRead.bytes = bytes.toString(), m -> cRead.failure = m);
 		for (_ in 0...30) {

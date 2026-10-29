@@ -6,11 +6,12 @@
 
 *enum* in [`services/src/helix/services/assets/AssetCacheMode.hx`](../../services/src/helix/services/assets/AssetCacheMode.hx), `import helix.services.assets.AssetCacheMode;`
 
-Specifies when `Assets` uses its kept copy of an `HttpServer` file that no manifest lists, and when it asks the server.
+Specifies how an `HttpServer` source knows its kept copy of a file is current: by asking the server, by trusting it, by keeping none, or by the server's manifests.
 
 - `Revalidate`: Uses a copy the server said is still fresh (its Cache-Control) and asks about any other. Unchanged, the copy is used; changed, the new file replaces it; gone, the copy is removed and the load fails. When the server doesn't answer (offline, an error) the copy is used. The default.
 - `Trust`: Uses a copy without asking, however old: for files that never change, or a game that plays offline.
 - `Off`: Keeps nothing between runs and uses nothing earlier runs kept; each file is downloaded once a run and held in memory. For development.
+- `Manifest`: Uses the server's manifests (`AssetsOptions.manifestName`, which `AssetManifests` writes): a copy with the hash its manifest lists is used without asking, and otherwise a file system source after this one with that hash is read in place, or the file is downloaded and must have it. A file its directory's manifest leaves out is asked about, however fresh. A server with no manifest is warned about once a run, and its files are treated as Revalidate treats them.
 
 ## AssetSource
 
@@ -27,7 +28,7 @@ Specifies a place `Assets` finds files: a file system on this machine, or an HTT
 
 Provides files by path, from the places its sources name: a file system on this machine, or an HTTP server whose files it keeps copies of.
 
-It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game whose files never change lists its file system alone; one patched from a server lists the server first and its shipped files after, and a shipped file the server's manifest lists at the same hash is read in place, so only what changed is downloaded (`AssetManifests` writes the manifests); a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
+It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game whose files never change lists its file system alone; one patched from a server lists the server first, in `Manifest` mode, and its shipped files after, so a shipped file the server's manifest lists at the same hash is read in place and only what changed is downloaded; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which the program polls each frame; Assets has no `poll` of its own.
 
 ```haxe
 #if js
@@ -39,7 +40,7 @@ var httpClient:IHttp = new HaxeHttpAdapter();
 var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
 var assets = new Assets({
-sources: [HttpServer("https://example.com/game/"), FileSystem(shipped)],
+sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)],
 httpClient: httpClient,
 cacheFileSystem: downloads,
 });
@@ -100,4 +101,4 @@ final manifestName:String = "manifest.json"
 - `sources`: Gets where files are found, asked in this order: a file missing from one is looked for in the next.
 - `httpClient`: Gets the HTTP client `HttpServer` sources download with; null by default, and needed when there is one.
 - `cacheFileSystem`: Gets the file system `HttpServer` sources' files are kept in; null by default, and needed when there is one. A file system of its own, as `clearCache` empties it: natively a `NativeFileSystemAdapter` over `ISystem.getCacheDirectory`, in a page a `BrowserFileSystemAdapter` with its own name.
-- `manifestName`: Gets the name of each directory's manifest, as `AssetManifests` writes them: the hash of each file in it and of each subdirectory's manifest. "manifest.json" by default; "" looks for none.
+- `manifestName`: Gets the name of each directory's manifest, as `AssetManifests` writes them, which a `Manifest` source reads; "manifest.json" by default.

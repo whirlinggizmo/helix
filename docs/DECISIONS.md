@@ -34,10 +34,12 @@ Why things are the way they are, numbered, in order.
     fix, and the services stay the pieces a game reads. What can be designed out of them is: `Input` reads the last `IEvents.poll`, so
     their order is free.
 11. **A server's manifests make shipped files patchable.** A game that patches lists its server first and its shipped files after
-    (`[HttpServer(url), FileSystem(shipped)]`): online the server's version wins, offline or for a file the server doesn't have the
+    (`[HttpServer(url, Manifest), FileSystem(shipped)]`): online the server's version wins, offline or for a file the server doesn't have the
     shipped one answers. A shipped file its manifests list at the server's hash is read in place, so a first run downloads only what
     changed. The shipped tree carries the same manifests (`AssetManifests` writes both at once, as the same tree), since a file system
-    has no size or time to keep a run-time hash honest, and hashing a file to stream it would read it whole. Manifests are looked for by
-    default (`AssetsOptions.manifestName`): a server without them costs one request a run and falls back to the cache mode, and the
-    tree is HeliX's, wgrender-c's and libwgt's, where an unchanged directory is known from its parent alone. None of them seeded from
+    has no size or time to keep a run-time hash honest, and hashing a file to stream it would read it whole. A server's manifests are a
+    cache mode of its own (`Manifest`), not looked for by default: in a page every request for a manifest a server doesn't have is a
+    404 in the console, which reads as an error, and a flag or bit field beside the mode would allow combinations that mean nothing
+    (manifests with Off). A `Manifest` server without one is warned about and treated as Revalidate. The tree is HeliX's, wgrender-c's
+    and libwgt's, where an unchanged directory is known from its parent alone. None of them seeded from
     shipped files; each read local files in place and never checked them.

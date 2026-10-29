@@ -17,7 +17,7 @@ class AssetsOptions {
 		`BrowserFileSystemAdapter` with its own name. */
 	public final cacheFileSystem:IFileSystem = null;
 
-	/** Gets the name of each directory's manifest, as `AssetManifests` writes them: the hash of each file in it and of each subdirectory's
-		manifest. "manifest.json" by default; "" looks for none. */
+	/** Gets the name of each directory's manifest, as `AssetManifests` writes them, which a `Manifest` source reads; "manifest.json" by
+		default. */
 	public final manifestName:String = "manifest.json";
 }

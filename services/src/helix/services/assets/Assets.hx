@@ -16,9 +16,9 @@ import helix.platform.StreamSource;
 	copies of.
 
 	It asks its sources in order, and the first that has the path answers: a file missing from one is looked for in the next. A game
-	whose files never change lists its file system alone; one patched from a server lists the server first and its shipped files after,
-	and a shipped file the server's manifest lists at the same hash is read in place, so only what changed is downloaded
-	(`AssetManifests` writes the manifests); a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main
+	whose files never change lists its file system alone; one patched from a server lists the server first, in `Manifest` mode, and its
+	shipped files after, so a shipped file the server's manifest lists at the same hash is read in place and only what changed is
+	downloaded; a page, whose files are on the server that served it, lists `HttpServer("")`. A path is plain names joined by `/`, as `IFileSystem`'s. Each call answers once, on the main
 	thread, in the platform's `poll` that finished it, never during the call; the failure's lambda may be left out, and the failure is
 	then logged with the path. Its downloads and copies finish in the polls of the HTTP client and file systems it was given, which
 	the program polls each frame; Assets has no `poll` of its own.
@@ -33,7 +33,7 @@ import helix.platform.StreamSource;
 	var shipped:IFileSystem = new NativeFileSystemAdapter({directory: system.getProgramDirectory(), readOnly: true});
 	var downloads:IFileSystem = new NativeFileSystemAdapter({directory: system.getCacheDirectory("Company", "Game")});
 	var assets = new Assets({
-		sources: [HttpServer("https://example.com/game/"), FileSystem(shipped)],
+		sources: [HttpServer("https://example.com/game/", Manifest), FileSystem(shipped)],
 		httpClient: httpClient,
 		cacheFileSystem: downloads,
 	});
@@ -57,23 +57,26 @@ class Assets {
 		@throws String  When a source is an `HttpServer` and `httpClient` or `cacheFileSystem` is null. */
 	public function new(options:AssetsOptions) {
 		cacheFileSystem = options.cacheFileSystem;
-		var name = options.manifestName == "" ? null : options.manifestName;
 		for (i in 0...options.sources.length)
 			sources.push(switch options.sources[i] {
 				case FileSystem(fileSystem): Files(fileSystem);
-				case HttpServer(url, cacheMode):
-					if (options.httpClient == null || options.cacheFileSystem == null)
-						throw 'an HttpServer source needs httpClient and cacheFileSystem';
-					// The file systems after it, whose manifests may show a file is already here.
-					var shipped = [];
-					if (name != null)
-						for (later in options.sources.slice(i + 1))
-							switch later {
-								case FileSystem(fileSystem): shipped.push(new ShippedTree(fileSystem, name));
-								case _:
-							}
-					Server(new ServerSource(url, cacheMode == null ? Revalidate : cacheMode, name, shipped, options.httpClient, options.cacheFileSystem));
+				case HttpServer(url, cacheMode): Server(server(options, i, url, cacheMode == null ? Revalidate : cacheMode));
 			});
+	}
+
+	// A server source; in Manifest mode with the file systems after it, whose manifests may show a file is already here.
+	static function server(options:AssetsOptions, i:Int, url:String, mode:AssetCacheMode):ServerSource {
+		if (options.httpClient == null || options.cacheFileSystem == null)
+			throw 'an HttpServer source needs httpClient and cacheFileSystem';
+		var shipped:Array<ShippedTree> = [];
+		if (mode == Manifest)
+			for (later in options.sources.slice(i + 1))
+				switch later {
+					case FileSystem(fileSystem):
+						shipped.push(new ShippedTree(fileSystem, options.manifestName));
+					case _:
+				}
+		return new ServerSource(url, mode, mode == Manifest ? options.manifestName : null, shipped, options.httpClient, options.cacheFileSystem);
 	}
 
 	/** Loads a whole file.
@@ -455,7 +458,11 @@ private class ServerSource {
 			if (hash != null && record != null && record.hash == hash)
 				readCopy(path, own, record, hash, bytes -> finish(bytes), () -> finish(null), _ -> finish(null));
 			else
-				download(path, own, hash == null ? record : null, hash, false, (bytes, _) -> finish(bytes), () -> finish(null), _ -> finish(null));
+				download(path, own, hash == null ? record : null, hash, false, (bytes, _) -> finish(bytes), () -> {
+					if (hash == null)
+						Log.warn('no manifest at $url$path: its files are treated as Revalidate treats them', "assets");
+					finish(null);
+				}, _ -> finish(null));
 		});
 	}
 
