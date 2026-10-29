@@ -31,9 +31,10 @@ class DomEventsAdapter implements IEvents {
 
 	/** Starts listening to the page and the canvas the program draws in.
 
-		@param options  The canvas. */
+		@param options  The canvas's id.
+		@throws String  No canvas has that id. */
 	public function new(options:DomEventsAdapterOptions) {
-		canvas = options.canvas;
+		canvas = DomPage.canvas(options.canvasId);
 		var window = Browser.window, document = Browser.document;
 		hidden = document.hidden;
 		DomPage.focused = document.hasFocus() && !hidden;

@@ -1,12 +1,10 @@
 package helix.platform.adapters.graphics.webgl2;
 
-import js.html.CanvasElement;
-
 /** Represents how `WebGl2GraphicsAdapter` makes its context. */
 @:structInit
 class WebGl2GraphicsAdapterOptions {
-	/** Gets the canvas whose WebGL2 context is drawn with. */
-	public final canvas:CanvasElement;
+	/** Gets the id of the canvas whose WebGL2 context is drawn with. */
+	public final canvasId:String;
 
 	/** Gets the multisampling samples a pixel asks for; 1 for none, the default. Over 1 makes the context antialiased, and the browser
 		chooses the number, nearly always 4. */

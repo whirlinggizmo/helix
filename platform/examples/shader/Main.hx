@@ -31,10 +31,9 @@ class Main {
 
 	static function main():Void {
 		#if js
-		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvas: canvas});
-		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvas: canvas});
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvas: canvas});
+		window = new helix.platform.adapters.window.dom.DomWindowAdapter({canvasId: "canvas"});
+		events = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas"});
 		system = new helix.platform.adapters.system.dom.DomSystemAdapter();
 		setup();
 		var frame:Float->Void = null;

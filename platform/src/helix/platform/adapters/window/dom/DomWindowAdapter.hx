@@ -16,9 +16,10 @@ class DomWindowAdapter implements IWindow {
 
 	/** Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
 
-		@param options  The canvas. */
+		@param options  The canvas's id.
+		@throws String  No canvas has that id. */
 	public function new(options:DomWindowAdapterOptions) {
-		canvas = options.canvas;
+		canvas = DomPage.canvas(options.canvasId);
 		DomPage.fit(canvas);
 		Browser.window.addEventListener("pagehide", _ -> {
 			if (closed)

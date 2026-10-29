@@ -11,10 +11,9 @@ class Main {
 	static var graphics:WebGl2GraphicsAdapter;
 
 	static function main():Void {
-		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new DomWindowAdapter({canvas: canvas});
-		events = new DomEventsAdapter({canvas: canvas});
-		graphics = new WebGl2GraphicsAdapter({canvas: canvas});
+		window = new DomWindowAdapter({canvasId: "canvas"});
+		events = new DomEventsAdapter({canvasId: "canvas"});
+		graphics = new WebGl2GraphicsAdapter({canvasId: "canvas"});
 		var frame:Float->Void = null;
 		frame = _ -> {
 			events.poll();

@@ -10,6 +10,18 @@ class DomPage {
 	/** Gets or sets whether the page has the keyboard and is in front; the events adapter sets it from the page's listeners. */
 	public static var focused = true;
 
+	/** Finds the canvas the program draws in.
+
+		@param id  The canvas element's id.
+		@return  The canvas.
+		@throws String  No canvas has that id. */
+	public static function canvas(id:String):CanvasElement {
+		var element = Browser.document.getElementById(id);
+		if (!Std.isOfType(element, CanvasElement))
+			throw 'no canvas has the id "$id"';
+		return cast element;
+	}
+
 	/** Sizes the canvas's drawing buffer to the viewport, in framebuffer pixels.
 
 		@param canvas  The canvas the program draws in. */

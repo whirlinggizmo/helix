@@ -120,7 +120,8 @@ function dispose():Void
 ```
 
 - `new`: Starts listening to the page and the canvas the program draws in.
-  - `options`: The canvas.
+  - `options`: The canvas's id.
+  - `String`: No canvas has that id.
 - `setTextInput`: Does nothing: the window's keys type on a computer either way, and a phone's keyboard needs a focused input element.
 - `setTiltWanted`: Listens to the device's orientation while on.
   Where the browser asks for leave (iOS), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (TiltState 6). No reading within a second and a half of the page having its focus is reported unavailable (TiltState 5), though it goes on listening: a phone's sensor may start late.
@@ -135,14 +136,14 @@ Represents what `DomEventsAdapter` listens to.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvas:js.html.CanvasElement}
+{canvasId:String}
 ```
 
 ```haxe
-final canvas:js.html.CanvasElement
+final canvasId:String
 ```
 
-- `canvas`: Gets the canvas the program draws in: where the pointer is read and what the WebGL context belongs to.
+- `canvasId`: Gets the id of the canvas the program draws in: where the pointer is read and what the WebGL context belongs to.
 
 ## Sdl3EventsAdapter
 
@@ -381,7 +382,8 @@ function dispose():Void
 ```
 
 - `new`: Creates the adapter on a canvas's WebGL2 context.
-  - `options`: The canvas, its samples and whether its drawing buffer is kept.
+  - `options`: The canvas's id, its samples and whether its drawing buffer is kept.
+  - `String`: No canvas has that id.
   - `GraphicsUnavailableException`: The browser has no WebGL2.
 
   The context has a depth buffer and no alpha or stencil. When antialiased, the browser chooses the number of samples, nearly always 4.
@@ -395,16 +397,16 @@ Represents how `WebGl2GraphicsAdapter` makes its context.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvas:js.html.CanvasElement, ?msaaSamples:Int, ?preserveDrawingBuffer:Bool}
+{canvasId:String, ?msaaSamples:Int, ?preserveDrawingBuffer:Bool}
 ```
 
 ```haxe
-final canvas:js.html.CanvasElement
+final canvasId:String
 final msaaSamples:Int = 1
 final preserveDrawingBuffer:Bool = false
 ```
 
-- `canvas`: Gets the canvas whose WebGL2 context is drawn with.
+- `canvasId`: Gets the id of the canvas whose WebGL2 context is drawn with.
 - `msaaSamples`: Gets the multisampling samples a pixel asks for; 1 for none, the default. Over 1 makes the context antialiased, and the browser chooses the number, nearly always 4.
 - `preserveDrawingBuffer`: Gets a value indicating whether the drawing buffer is kept after a frame is shown, so it can be read back later; false by default.
 
@@ -562,7 +564,8 @@ var onClose:Null<() -> Void>
 ```
 
 - `new`: Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
-  - `options`: The canvas.
+  - `options`: The canvas's id.
+  - `String`: No canvas has that id.
 
 ## DomWindowAdapterOptions
 
@@ -573,14 +576,14 @@ Represents what `DomWindowAdapter` is made over.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvas:js.html.CanvasElement}
+{canvasId:String}
 ```
 
 ```haxe
-final canvas:js.html.CanvasElement
+final canvasId:String
 ```
 
-- `canvas`: Gets the canvas the program draws in: what goes fullscreen or hides, and the drawing surface.
+- `canvasId`: Gets the id of the canvas the program draws in: what goes fullscreen or hides, and the drawing surface.
 
 ## Sdl3WindowAdapter
 

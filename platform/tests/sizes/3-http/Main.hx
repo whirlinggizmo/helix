@@ -17,10 +17,9 @@ class Main {
 	static var http:FetchApiHttpAdapter;
 
 	static function main():Void {
-		var canvas:js.html.CanvasElement = cast js.Browser.document.getElementById("canvas");
-		window = new DomWindowAdapter({canvas: canvas});
-		events = new DomEventsAdapter({canvas: canvas});
-		graphics = new WebGl2GraphicsAdapter({canvas: canvas});
+		window = new DomWindowAdapter({canvasId: "canvas"});
+		events = new DomEventsAdapter({canvasId: "canvas"});
+		graphics = new WebGl2GraphicsAdapter({canvasId: "canvas"});
 		var vertices = Bytes.alloc(60),
 			values = [0., .6, 1, 0, 0, -.6, -.6, 0, 1, 0, .6, -.6, 0, 0, 1];
 		for (i in 0...values.length)

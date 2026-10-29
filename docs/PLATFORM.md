@@ -24,8 +24,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 - **Fails before doing anything.** A call that can't be done throws, saying why; one that may be refused returns false or null and its
   doc says when.
 - **One contract per thing, one adapter per API.** An adapter's public members are its constructor and its contract's, nothing else; the
-  constructor takes nothing, or one `<Adapter>Options` holding the platform's own arguments (a canvas, a directory), named at the call:
-  `new DomWindowAdapter({canvas: canvas})`. `check_adapters` holds both.
+  constructor takes nothing, or one `<Adapter>Options` holding the platform's own arguments (a canvas's id, a directory), named at the call:
+  `new DomWindowAdapter({canvasId: "canvas"})`. `check_adapters` holds both.
 - **One directory per contract, even when one library provides several.** SDL3 provides the window, the events and the system, and a
   page does the same: each still gets its own adapter in `adapters/<contract>/<api>/` (`adapters/window/sdl3/Sdl3WindowAdapter`,
   `adapters/events/sdl3/Sdl3EventsAdapter`), so a program chooses each contract's adapter on its own. What two adapters of one library
