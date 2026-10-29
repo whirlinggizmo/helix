@@ -2,7 +2,7 @@ package helix.platform;
 
 import helix.platform.Wrap;
 
-/** Represents how a draw samples a texture: its filter, and how it wraps along u and v.
+/** Represents how a draw samples a texture, by its filter and how it wraps along u and v.
 
 	It is a small value passed with each texture a draw uses. Adapters keep one sampler for each value used.
 
@@ -11,10 +11,10 @@ import helix.platform.Wrap;
 	```
  */
 abstract Sampling(Int) to Int {
-	/** Nearest filtering, clamped: for pixel art. */
+	/** Nearest filtering, clamped, for pixel art. */
 	public static final NEAREST = new Sampling(Nearest);
 
-	/** Linear filtering, clamped: smooth. */
+	/** Linear filtering, clamped, for a smooth look. */
 	public static final LINEAR = new Sampling(Linear);
 
 	/** Creates a sampling.
@@ -25,7 +25,7 @@ abstract Sampling(Int) to Int {
 	public inline function new(filter:Filter, wrapU:Wrap = Clamp, wrapV:Wrap = Clamp)
 		this = (filter : Int) | (wrapU : Int) << 1 | (wrapV : Int) << 3;
 
-	/** Gets how the texture is filtered: Linear or Nearest. */
+	/** Gets how the texture is filtered, Linear or Nearest. */
 	public var filter(get, never):Filter;
 
 	inline function get_filter():Filter
@@ -58,6 +58,6 @@ abstract Sampling(Int) to Int {
 	public inline function withWrap(wrapU:Wrap, wrapV:Wrap):Sampling
 		return new Sampling(get_filter(), wrapU, wrapV);
 
-	/** The number of distinct values, 0 to COUNT - 1: the size of an adapter's table of samplers. */
+	/** The number of distinct values, which run 0 to COUNT - 1. It is the size of an adapter's table of samplers. */
 	public static inline var COUNT = 32;
 }

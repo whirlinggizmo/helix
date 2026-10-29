@@ -4,10 +4,11 @@ import haxe.io.Bytes;
 
 /** Represents a file arriving from a download, readable while it arrives.
 
-	The downloader appends each part as it comes; a native audio output reads what has arrived. The whole file's room is taken at the start,
-	since its length is known, so the bytes never move and what has arrived is the first `received` of them. Use it on the main thread only. */
+	The downloader appends each part as it comes, and a native audio output reads what has arrived. The file's length is known, so room
+	for the whole file is allocated at the start. The bytes therefore never move, and what has arrived is the first `received` of them.
+	It must be used on the main thread only. */
 class GrowingSource {
-	/** Gets the file's bytes, `total` long: the first `received` of them have arrived, the rest are zero. */
+	/** Gets the file's bytes, `total` long. The first `received` of them have arrived, and the rest are zero. */
 	public var bytes(default, null):Bytes;
 
 	/** Gets how many bytes have arrived, 0 to `total`. */
@@ -19,7 +20,7 @@ class GrowingSource {
 	/** Gets a value indicating whether the whole file has arrived. */
 	public var done(default, null) = false;
 
-	/** Gets why the download failed, or null while it hasn't; once set, no more arrives. */
+	/** Gets why the download failed, or null while it hasn't. Once it is set, nothing more arrives. */
 	public var failure(default, null):Null<String> = null;
 
 	/** Creates a source with none of its bytes arrived yet.
@@ -43,10 +44,11 @@ class GrowingSource {
 		return source;
 	}
 
-	/** Adds a part after what has arrived; the source is done once the file is whole.
+	/** Adds a part after what has arrived.
 
+		The source is done once the file is whole.
 		@param part  The next bytes of the file.
-		@return  False, adding nothing, past the file's length or once the download ended. */
+		@return  False, adding nothing, when the part goes past the file's length or the download has ended. */
 	public function append(part:Bytes):Bool {
 		if (done || failure != null || part.length > total - received)
 			return false;
@@ -56,9 +58,10 @@ class GrowingSource {
 		return true;
 	}
 
-	/** Ends the download short; does nothing once the file is whole or already failed.
+	/** Ends the download short.
 
-		@param message  Why it failed. */
+		It does nothing once the file is whole or the download has already failed.
+		@param message  Why the download failed. */
 	public function fail(message:String):Void
 		if (!done && failure == null)
 			failure = message;

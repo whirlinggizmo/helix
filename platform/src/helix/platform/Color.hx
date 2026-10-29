@@ -1,9 +1,9 @@
 package helix.platform;
 
-/** Provides functions for colors held as 0xAARRGGBB integers, alpha in the top byte.
+/** Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte.
 
-	Each channel is 0 to 255. Text writes a color in CSS order, #RRGGBB or #RRGGBBAA; `fromRgba` and `toRgba` convert between that order
-	and this one.
+	Each channel is 0 to 255. Text writes a color in CSS order, as #RRGGBB or #RRGGBBAA. `fromRgba` and `toRgba` convert between that
+	order and this one.
 
 	```haxe
 	var orange = Color.fromChannels(255, 128, 0);
@@ -11,7 +11,7 @@ package helix.platform;
 	```
  */
 class Color {
-	/** Returns the color with the given channels.
+	/** Returns the color with the provided channels.
 
 		Only the low 8 bits of each channel are used.
 		@param red  The red channel, 0 to 255.

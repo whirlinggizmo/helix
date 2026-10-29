@@ -7,7 +7,7 @@ typedef VertexBuffer = {
 	/** The size of one record, in bytes. */
 	final stride:Int;
 
-	/** Whether a record is an instance's, stepped once an instance, rather than a vertex's. */
+	/** Whether each record belongs to an instance rather than a vertex, so the buffer steps once per instance. */
 	final instanced:Bool;
 
 	/** The attributes read from each record. */

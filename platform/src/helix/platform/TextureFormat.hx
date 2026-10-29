@@ -9,17 +9,18 @@ enum abstract TextureFormat(Int) to Int {
 	/** Four bytes a texel, rows top first. */
 	var Rgba8 = 0;
 
-	/** BC7 (BPTC), compressed: desktop GPUs. */
+	/** BC7 (BPTC), compressed, for desktop GPUs. */
 	var Bc7 = 1;
 
-	/** ASTC 4x4, compressed: phone GPUs. */
+	/** ASTC 4x4, compressed, for phone GPUs. */
 	var Astc4x4 = 2;
 
-	/** ETC2 RGBA8 with EAC alpha, compressed: older phone GPUs. */
+	/** ETC2 RGBA8 with EAC alpha, compressed, for older phone GPUs. */
 	var Etc2Rgba8 = 3;
 
-	/** RGBA half floats (IEEE binary16, little-endian), 8 bytes a texel, rows top first: linear light that can exceed 1. Filtered linearly
-		where `IGraphics.canSample` is true for it. */
+	/** RGBA half floats (IEEE binary16, little-endian), 8 bytes a texel, rows top first.
+
+		It holds linear light that can exceed 1. It is filtered linearly where `IGraphics.canSample` is true for it. */
 	var Rgba16f = 4;
 
 	/** Returns the byte size of one level of a texture in this format.

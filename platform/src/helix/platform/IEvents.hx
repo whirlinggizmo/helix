@@ -1,12 +1,15 @@
 package helix.platform;
 
-/** Defines the input and the window's events, pulled once a frame, and the gamepads' state.
+/** Defines the input and window events, polled once a frame, and the gamepads' state.
 
-	What happens (keys, text, the mouse, touches, a pad connecting, a pad's buttons, the window resized, focused or closed) arrives as
-	`Event` records from `poll`, in the order the OS gave them; natively a button pressed and let go between two polls arrives as both,
-	while a page reads its pads only at each poll, so it sees one only if it is down then. What is held (a stick, a trigger, a pad's
-	buttons) can also be read directly after it. Nothing is delivered between polls, and nothing calls the program: the owner walks
-	`events`.
+	Each `poll` delivers what happened as `Event` records, in the order the OS reported them. That covers keys, text, the mouse, touches,
+	a pad connecting, a pad's buttons, and the window being resized, focused or closed. Nothing is delivered between polls, and nothing
+	calls the program. The program walks `events` itself.
+
+	What is held, such as a stick, a trigger or a pad's buttons, can also be read directly after a poll.
+
+	Natively, a button pressed and released between two polls arrives as both events. A page reads its pads only at each poll, so it sees
+	a press only if the button is down then.
 
 	```haxe
 	events.poll();
@@ -20,32 +23,37 @@ package helix.platform;
 	```
  */
 interface IEvents extends IPollable {
-	/** Drains the OS's queue into `events`: this frame's events, in order. Last frame's are cleared. */
+	/** Drains the OS's queue into `events`.
+
+		`events` then holds this frame's events, in order. Last frame's events are cleared. */
 	function poll():Void;
 
 	/** Gets the events the last `poll` delivered. The array is reused by the next poll. */
 	var events(get, never):Array<Event>;
 
-	/** Sleeps in the OS until an event arrives or the timeout passes, using no CPU; does nothing in a page.
+	/** Sleeps in the OS until an event arrives or the timeout passes, using no CPU.
 
-		A native loop calls it while the window can't be seen (after `Hidden`), so it doesn't spin, waking at the timeout to service what
-		must not starve. Events that arrive stay for the next `poll`.
+		It does nothing in a page. A native loop calls it while the window can't be seen (after `Hidden`), so the loop doesn't spin. The
+		loop wakes at the timeout to service what must not starve. Events that arrive stay for the next `poll`.
 		@param timeout  The longest wait, in seconds. */
 	function wait(timeout:Float):Void;
 
-	/** Starts or stops typed text: `Text` events arrive only while it is on, and a phone shows its keyboard then.
+	/** Starts or stops typed text input.
+
+		`Text` events arrive only while it is on, and a phone shows its keyboard then.
 
 		@param on  True to start. */
 	function setTextInput(on:Bool):Void;
 
 	/** Starts or stops reading the device's orientation as `Tilt` events.
 
-		A page may need the player's permission, asked at their next tap; `TiltState` events report how it went.
+		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report how it went.
 		@param on  True to start. */
 	function setTiltWanted(on:Bool):Void;
 
-	/** Gets a value indicating whether the player has pressed a key, a button or a finger yet: a browser allows audio and fullscreen only
-		after that. Always true natively. */
+	/** Gets a value indicating whether the player has pressed a key, a button or a finger yet.
+
+		A browser allows audio and fullscreen only after that. It is always true natively. */
 	var activated(get, never):Bool;
 
 	/** Returns whether a gamepad is in a slot, as of the last `poll`.
@@ -54,7 +62,7 @@ interface IEvents extends IPollable {
 		@return  True when one is connected there. */
 	function isPadConnected(slot:Int):Bool;
 
-	/** Returns a slot's gamepad's name.
+	/** Returns the name of the gamepad in a slot.
 
 		@param slot  The slot, 0 to 3.
 		@return  The name, or "" when the slot is empty. */
@@ -71,9 +79,10 @@ interface IEvents extends IPollable {
 
 		@param slot  The slot, 0 to 3.
 		@param axis  The axis.
-		@return  A stick from -1 to 1, down and right positive; a trigger from 0 to 1; 0 for an empty slot. */
+		@return  The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives
+			0. */
 	function getPadAxis(slot:Int, axis:PadAxis):Float;
 
-	/** Releases the events' resources: listeners, the gamepads. */
+	/** Releases the events' resources, which are its listeners and the gamepads. */
 	function dispose():Void;
 }

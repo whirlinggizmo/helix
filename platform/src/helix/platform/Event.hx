@@ -1,17 +1,17 @@
 package helix.platform;
 
-/** Represents one thing that happened, as `IEvents.poll` delivers it.
+/** Represents one input or window event, as `IEvents.poll` delivers it.
 
-	Positions are framebuffer pixels from the window's top-left. A key is its physical position on a US layout (`Key`), right-hand
-	modifiers reported as the left-hand ones. */
+	Positions are in framebuffer pixels from the window's top-left corner. A key is its physical position on a US layout (`Key`).
+	Right-hand modifiers are reported as the left-hand ones. */
 enum Event {
-	/** A key went down; repeat is true when the OS repeats a held key. */
+	/** A key went down. repeat is true when the OS repeats a held key. */
 	KeyDown(key:Key, repeat:Bool);
 
 	/** A key went up. */
 	KeyUp(key:Key);
 
-	/** Characters were typed, while `IEvents.setTextInput` is on. */
+	/** Characters were typed. It arrives only while `IEvents.setTextInput` is on. */
 	Text(text:String);
 
 	/** The mouse moved over the window. */
@@ -26,10 +26,10 @@ enum Event {
 	/** The mouse left the window. */
 	MouseLeave;
 
-	/** The wheel turned, in notches: right and away from the player positive. */
+	/** The wheel turned, in notches. Right and away from the player are positive. */
 	Wheel(dx:Float, dy:Float);
 
-	/** A finger touched the screen; id is the same for that finger until it lifts. */
+	/** A finger touched the screen. id stays the same for that finger until it lifts. */
 	TouchDown(id:Int, x:Float, y:Float);
 
 	/** A finger moved. */
@@ -38,23 +38,26 @@ enum Event {
 	/** A finger lifted, or the OS took the touch away. */
 	TouchUp(id:Int, x:Float, y:Float);
 
-	/** The device's orientation, while `IEvents.setTiltWanted` is on: beta and gamma in degrees, and the screen's angle. */
+	/** Reports the device's orientation while `IEvents.setTiltWanted` is on. beta and gamma are in degrees, and screenAngle is the screen's
+		angle. */
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);
 
-	/** The tilt's state changed: 0 off, 1 waiting for the player's permission, 2 calibrating, 3 on, 4 refused, 5 unavailable, 6 unavailable
-		because the page isn't secure (HTTPS). */
+	/** The tilt's state changed.
+
+		The state is 0 for off, 1 for waiting for the player's permission, 2 for calibrating, 3 for on, 4 for refused, 5 for unavailable,
+		and 6 for unavailable because the page isn't secure (not HTTPS). */
 	TiltState(state:Int);
 
 	/** A gamepad was connected in a slot, 0 to 3. */
 	PadConnected(slot:Int);
 
-	/** The gamepad in a slot was disconnected; its buttons count as up. */
+	/** The gamepad in a slot was disconnected. Its buttons count as up. */
 	PadDisconnected(slot:Int);
 
-	/** A gamepad's button went down. A trigger is a button too, down past half way. */
+	/** A gamepad's button went down. A trigger is also a button, down when pulled past half way. */
 	PadButtonDown(slot:Int, button:PadButton);
 
-	/** A gamepad's button went up. Natively the Guide button's release arrives no sooner than a quarter second after its press. */
+	/** A gamepad's button went up. Natively, the Guide button's release arrives no sooner than a quarter second after its press. */
 	PadButtonUp(slot:Int, button:PadButton);
 
 	/** The drawable area changed size, in framebuffer pixels. */
@@ -63,20 +66,21 @@ enum Event {
 	/** The window got the keyboard. */
 	FocusGained;
 
-	/** The window lost the keyboard; each key still down came up just before, a `KeyUp` each. */
+	/** The window lost the keyboard. Just before it, each key still down arrives as a `KeyUp`. */
 	FocusLost;
 
-	/** The player can see the window again: restored, or the page in front again. */
+	/** The player can see the window again, because it was restored or its page came to the front. */
 	Shown;
 
-	/** The player can't see the window: minimized or hidden, or the page in the background. */
+	/** The player can't see the window, because it is minimized or hidden, or its page is in the background. */
 	Hidden;
 
-	/** The player or the OS asked to close the window, natively; the owner decides.
+	/** The player or the OS asked to close the window. The program decides whether to close it.
 
-		A page never gets it: a tab closing gives no frame to decide in, and its end is `IWindow.onClose`. */
+		It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is
+		`IWindow.onClose`. */
 	CloseRequested;
 
-	/** The GPU's context is gone: in a page, the WebGL context lost to a GPU reset or an evicted tab. */
+	/** The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. */
 	GraphicsLost;
 }

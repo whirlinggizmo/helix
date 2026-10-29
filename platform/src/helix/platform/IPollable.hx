@@ -1,11 +1,13 @@
 package helix.platform;
 
-/** Defines a contract that answers later: what it was asked for is delivered in its `poll`, on the main thread, and at no other time.
+/** Defines a contract that answers later, delivering what it was asked for in its `poll` on the main thread and at no other time.
 
-	The program calls `poll` once a frame on each one it made; one it forgets never answers. Nothing polls one it was given: a service
-	built over an `IFileSystem` or an `IAudio` leaves their polls to the program. `IEvents`, `IHttp`, `IFileSystem`, `IAudio`,
-	`IAudioDecoder` and `IImageDecoder` are pollable; a layer above that answers later is too, polled the same way. */
+	The program calls `poll` once a frame on each pollable it made. One it forgets to poll never answers. A service never polls the
+	pollables it was provided, so one built over an `IFileSystem` or an `IAudio` leaves their polls to the program.
+
+	`IEvents`, `IHttp`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable. A layer above them that answers later
+	is pollable too, and is polled the same way. */
 interface IPollable {
-	/** Delivers what finished since the last poll; call once a frame. */
+	/** Delivers what finished since the last poll. The program calls it once a frame. */
 	function poll():Void;
 }

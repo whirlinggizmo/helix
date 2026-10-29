@@ -26,7 +26,9 @@ class Sdl3SystemAdapter implements ISystem {
 			case "Linux": "linux";
 			case _: "";
 		};
-		return new Device(false, os, false, true);
+		// The architecture the program was built for, which is the one it runs as.
+		var architecture = #if HXCPP_ARM64 "arm64" #elseif HXCPP_M64 "x86_64" #elseif HXCPP_M32 "x86" #else "" #end;
+		return new Device(false, os, architecture, false, true);
 	}
 
 	public function getOption(name:String):Null<String> {

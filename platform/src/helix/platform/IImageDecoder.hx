@@ -2,7 +2,10 @@ package helix.platform;
 
 import haxe.io.Bytes;
 
-/** Defines image decoding: a PNG, JPEG, BMP, TGA or GIF file (its first frame) into 8-bit RGBA, rows top to bottom, not premultiplied. */
+/** Defines image decoding from a file into 8-bit RGBA pixels.
+
+	It reads PNG, JPEG, BMP, TGA and GIF files, and a GIF's first frame only. The pixels are not premultiplied, and rows run top to
+	bottom. */
 interface IImageDecoder extends IPollable {
 	/** Decodes a file, off the main thread where the platform can.
 
@@ -12,9 +15,9 @@ interface IImageDecoder extends IPollable {
 		@param failed  Receives why the file can't be read. */
 	function decode(encoded:Bytes, decoded:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;
 
-	/** Delivers what finished on the platform's threads since the last poll; call once a frame. */
+	/** Delivers what finished on the platform's threads since the last poll. The program calls it once a frame. */
 	function poll():Void;
 
-	/** Closes the decoder; a decode still running finishes without answering. */
+	/** Closes the decoder. A decode still running finishes without calling back. */
 	function dispose():Void;
 }

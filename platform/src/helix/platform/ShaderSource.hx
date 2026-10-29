@@ -1,9 +1,9 @@
 package helix.platform;
 
-/** Represents a compiled program: its stages in each dialect the adapters compile, its vertex attributes, and what it binds.
+/** Represents a compiled program, with its stages in each dialect the adapters compile, its vertex attributes, and what it binds.
 
-	`IGraphics.createShader` builds it. An adapter reads only its own dialect: GLSL ES 300 in the browser, GLSL 410 for GL natively, and
-	SDL_GPU's stages for SDL_GPU. */
+	`IGraphics.createShader` builds a program from it. An adapter reads only its own dialect. That is GLSL ES 300 in the browser, GLSL 410
+	for GL natively, and SDL_GPU's stages for SDL_GPU. */
 typedef ShaderSource = {
 	/** The vertex attributes' names, by slot. */
 	final attributes:Array<String>;

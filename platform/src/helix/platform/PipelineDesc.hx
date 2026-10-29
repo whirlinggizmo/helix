@@ -5,15 +5,16 @@ import helix.platform.ClipFlip;
 
 /** Represents everything a pipeline fixes for the draws through it.
 
-	`IGraphics.createPipeline` makes it. An adapter makes what the description says and knows nothing else about the program. */
+	`IGraphics.createPipeline` makes a pipeline from it. An adapter makes what the description specifies and knows nothing else about the
+	program. */
 typedef PipelineDesc = {
-	/** The program: an `IGraphics.createShader` handle. */
+	/** The program, as an `IGraphics.createShader` handle. */
 	final shader:Int;
 
 	/** The vertex buffers' layouts, by their index in a draw's buffers. */
 	final buffers:Array<VertexBuffer>;
 
-	/** What the draws make. */
+	/** The primitive the draws make. */
 	final primitive:Primitive;
 
 	/** Whether the draws are indexed, by uint32 indices. */

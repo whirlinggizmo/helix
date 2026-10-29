@@ -18,7 +18,19 @@ class DomSystemAdapter implements ISystem {
 	function get_device():Device {
 		var touches:Int = js.Syntax.code("navigator.maxTouchPoints || 0");
 		var fine:Bool = js.Syntax.code("window.matchMedia ? window.matchMedia('(any-pointer: fine)').matches : true");
-		return new Device(true, systemOf(Browser.navigator.userAgent, touches), touches > 0, fine);
+		var agent = Browser.navigator.userAgent;
+		return new Device(true, systemOf(agent, touches), architectureOf(agent), touches > 0, fine);
+	}
+
+	// The architecture a browser's user agent names ("" for none): ARM's names, then x86-64's, then 32-bit x86's.
+	static function architectureOf(agent:String):String {
+		if (~/aarch64|arm64|ARM64/.match(agent))
+			return "arm64";
+		if (~/x86_64|x64|Win64|WOW64|amd64|Intel Mac/.match(agent))
+			return "x86_64";
+		if (~/i[3-6]86|x86/.match(agent))
+			return "x86";
+		return "";
 	}
 
 	// The operating system a browser's user agent names, as Device names it ("" for none it knows); an iPad saying it's a Mac is told by

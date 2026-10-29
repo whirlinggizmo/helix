@@ -13,13 +13,15 @@ typedef ShaderTexture = {
 	/** The GLSL name of the texture and sampler pair. */
 	final glslName:String;
 
-	/** Whether it is a shadow map: a depth array read through a comparison sampler. */
+	/** Whether it is a shadow map, which is a depth array read through a comparison sampler. */
 	final shadow:Bool;
 
 	/** Whether it is a cubemap. */
 	final cube:Bool;
 
-	/** Whether the program never filters it: it only reads it texel by texel (`texelFetch`), so it is sampled nearest whatever the draw's
-		sampling, as a data texture (`IGraphics.createDataTexture`) always is. */
+	/** Whether the program never filters it.
+
+		The program only reads it texel by texel (`texelFetch`). It is therefore sampled nearest, whatever the draw's sampling, as a data
+		texture (`IGraphics.createDataTexture`) always is. */
 	final data:Bool;
 }

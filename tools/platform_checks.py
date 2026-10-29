@@ -6,9 +6,11 @@ the page's screenshot is checked against what it says it draws (its check.json: 
 tolerance per channel); the graphics tests check their own pixels, read back on each backend, and say how it went. Exits 1 on any
 failure.
 
-    python3 tools/platform_checks.py --browser BROWSER [NAME ...]
+    python3 tools/platform_checks.py --browser BROWSER [--desktop] [NAME ...]
 
-BROWSER is a Chromium to run, or "" for Playwright's own. The names are examples' and "graphics"; they default to all of them."""
+BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples' and "graphics"; they default to all
+of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
+(Windows over tools/remote_windows.py --desktop): never on a desktop someone is using."""
 import json
 import os
 import struct
@@ -22,6 +24,10 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / 'platform/examples'
 GRAPHICS = ROOT / 'platform/tests/graphics'
 FRAMES = 60
+# Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
+# over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
+DESKTOP = False
+PACED_FRAMES = 600
 sys.path.insert(0, str(ROOT / 'tools'))
 
 
@@ -91,20 +97,26 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     env = pins.use_haxelib()
     build(directory, 'build-web.hxml', env)
     problems = []
-    if sys.platform.startswith('linux'):
+    if sys.platform.startswith('linux') or DESKTOP:
         import sdl3 as finder
+        from native_build import place_runtimes
         from private_display import private_display
-        native = native_env(finder.find())
+        pins.check_hxcpp()
+        found = finder.find()
+        native = native_env(found)
         env.update({k: native[k] for k in ('HELIX_PLATFORM', 'HXCPP_CONFIG', 'HELIX_SDL3_LIBRARY')})
+        frames = min(native_frames, PACED_FRAMES) if DESKTOP else native_frames
         for hxml, output, label in (('build-native.hxml', 'native', 'GL'), ('build-native-gpu.hxml', 'native-gpu', 'SDL_GPU')):
             if not (directory / hxml).is_file():
                 continue
             build(directory, hxml, env)
-            with private_display() as display:
-                ran = subprocess.run([str(directory / output / main)], cwd=directory, env=dict(display, **(native_extra or {}), HELIX_FRAMES=str(native_frames), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=120)
+            place_runtimes(directory / output, found)
+            program = directory / output / (main + '.exe' if sys.platform == 'win32' else main)
+            with (nullcontext(dict(os.environ)) if DESKTOP else private_display()) as display:
+                ran = subprocess.run([str(program)], cwd=directory, env=dict(display, **(native_extra or {}), HELIX_FRAMES=str(frames), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
-        print(f'{name}: native runs skipped here (a private display needs Linux)', flush=True)
+        print(f'{name}: native runs skipped here (a private display needs Linux; --desktop runs them on this machine\'s own)', flush=True)
     out = ROOT / 'build/results/platform' / name
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
@@ -166,8 +178,11 @@ def main():
     import cli
     parser = cli.parser(__doc__)
     parser.add_argument('--browser', required=True)
+    parser.add_argument('--desktop', action='store_true', help="run natively on this machine's own desktop, not a private display")
     parser.add_argument('names', nargs='*')
     a = parser.parse_args()
+    global DESKTOP
+    DESKTOP = a.desktop
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics']
     failed = False
     for name in names:

@@ -2,26 +2,28 @@ package helix.platform;
 
 import haxe.io.Bytes;
 
-/** Defines HTTP GET: a response whose body arrives in parts, and its abort. */
+/** Defines HTTP GET requests, whose response body arrives in parts and which can be aborted. */
 interface IHttp extends IPollable {
-	/** Starts a GET.
+	/** Starts a GET request.
 
-		On the main thread, never during this call: `head` once, `body` for each part of the body as it arrives, then one of `done` or
-		`failed`. An HTTP error status is a response, not a failure. After an abort nothing more is called.
+		The callbacks are called on the main thread, never during this call. `head` is called once, then `body` for each part of the body
+		as it arrives, then one of `done` or `failed`. An HTTP error status is a response, not a failure. After an abort, nothing more is
+		called.
 
-		A conditional request (`If-None-Match`, `If-Modified-Since`) may be answered 200 with the whole body, as HTTP allows any server to.
-		@param url  The URL: relative to the page in a page; natively http or https only.
+		A conditional request (`If-None-Match`, `If-Modified-Since`) may be answered 200 with the whole body, as HTTP allows any server to
+		do.
+		@param url  The URL. In a page, a relative URL is relative to the page. Natively, only http and https URLs are allowed.
 		@param noCache  Whether to bypass HTTP caches, where the platform has one.
 		@param headers  The request's headers, names in any case.
 		@param head  Receives the response's status and its headers, names in lower case.
 		@param body  Receives each part of the body.
 		@param done  Called when the body is all here.
 		@param failed  Receives why the transfer failed.
-		@return The abort: it stops the transfer where the platform can. */
+		@return  The abort, which stops the transfer where the platform can. */
 	function get(url:String, noCache:Bool, headers:Map<String, String>, head:(status:Int, headers:Map<String, String>) -> Void, body:Bytes->Void,
 		done:Void->Void, failed:String->Void):Void->Void;
 
-	/** Delivers what arrived on the platform's threads since the last poll; call once a frame. */
+	/** Delivers what arrived on the platform's threads since the last poll. The program calls it once a frame. */
 	function poll():Void;
 
 	/** Aborts every transfer. */

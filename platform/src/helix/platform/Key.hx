@@ -245,7 +245,7 @@ enum abstract Key(Int) to Int {
 		Menu
 	];
 
-	/** Each key's name, in the order of all: its own spelling, a digit's its digit. */
+	/** Each key's name, in the order of `all`. A name is the key's own spelling, or a digit key's digit. */
 	static final names:Array<String> = [
 		"Space",
 		"Apostrophe",
@@ -365,7 +365,12 @@ enum abstract Key(Int) to Int {
 		"Menu"
 	];
 
-	/** The key a name spells, ignoring case ("A", "space", "KeypadEnter", "0"); throws for an unknown name. */
+	/** Returns the key a name spells, ignoring case.
+
+		The name is a key's own spelling or a digit, such as "A", "space", "KeypadEnter" or "0".
+		@param name  The key's name.
+		@return  The key.
+		@throws String  When no key has the name. */
 	public static function named(name:String):Key {
 		var upper = name.toUpperCase();
 		for (i in 0...names.length)
@@ -374,7 +379,11 @@ enum abstract Key(Int) to Int {
 		throw 'Unknown key ' + name;
 	}
 
-	/** The key's name as named reads it: its own spelling ("Space", "PageUp", "KeypadEnter"), a digit's its digit ("0"). */
+	/** Returns a key's name, as `named` reads it.
+
+		The name is the key's own spelling, such as "Space", "PageUp" or "KeypadEnter", or a digit key's digit, such as "0".
+		@param key  The key.
+		@return  The key's name. */
 	public static function getName(key:Key):String
 		return names[all.indexOf(key)];
 }

@@ -296,7 +296,7 @@ goes to are the caller's.
 
 ```haxe
 interface ISystem {
-	var device(get, never):Device;                  // what it runs on: browser, OS, touch screen, fine pointer
+	var device(get, never):Device;                  // what it runs on: browser, OS, architecture, touch screen, fine pointer
 	function getOption(name:String):Null<String>;   // natively the environment variable HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
 	function getProgramDirectory():String;    // the files shipped with the program; "./" in a page, a URL
