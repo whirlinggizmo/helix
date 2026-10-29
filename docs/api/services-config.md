@@ -12,7 +12,7 @@ Natively an option is the environment variable HELIX_ and its name in capitals, 
 
 ```haxe
 var sound = config.getBool("audio", true);
-clock.scale = config.getFloat("speed", 1);
+time.scale = config.getFloat("speed", 1);
 ```
 
 ```haxe

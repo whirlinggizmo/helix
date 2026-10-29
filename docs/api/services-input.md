@@ -20,8 +20,8 @@ var move = new Point2D();
 // each frame:
 if (actions.isPressed("jump")) jump();
 actions.computeVector("left", "right", "up", "down", move);
-x += speed * move.x * clock.delta;
-y += speed * move.y * clock.delta;
+x += speed * move.x * time.delta;
+y += speed * move.y * time.delta;
 ```
 
 ```haxe

@@ -4,7 +4,7 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 
 | Package | What |
 |---|---|
-| `helix.services.time` | `Clock`: the game's time, scaled and paused, its timers, and real time beside it |
+| `helix.services.time` | `Time`: the game's time, scaled and paused, its timers, and real time beside it |
 | `helix.services.input` | `Input`: keys, mouse and gamepads held or pressed this frame; `Actions`: names bound to several of them |
 | `helix.services.assets` | `Assets`: files by path, from a file system or downloaded from an HTTP server and kept |
 | `helix.services.audio` | `Audio`: sounds loaded whole or streamed, played in groups, with fades |

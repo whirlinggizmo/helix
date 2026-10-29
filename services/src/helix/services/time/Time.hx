@@ -7,19 +7,19 @@ import helix.platform.ISystem;
 /** Provides a frame's time: the game's seconds, which can be scaled and paused and have timers on them, and the real seconds beside them.
 
 	The program constructs one and calls `poll` once a frame; game code then moves by `delta`. Something that must keep time while the
-	game is paused, such as a menu's animation, moves by `realDelta`, or by a second clock of its own.
+	game is paused, such as a menu's animation, moves by `realDelta`, or by a second `Time` of its own.
 
 	```haxe
-	var clock = new Clock(system);
-	clock.every(1, () -> trace('at $x, $y'));
+	var time = new Time(system);
+	time.every(1, () -> trace('at $x, $y'));
 	// each frame:
-	clock.poll();
-	x += speed * clock.delta;
+	time.poll();
+	x += speed * time.delta;
 	``` */
-class Clock implements IPollable {
-	/** Creates a clock at game time 0.
+class Time implements IPollable {
+	/** Creates the game's time at 0.
 
-		@param system  The platform's facts: the clock reads its monotonic time (`getTime`). */
+		@param system  The platform's facts: it reads their monotonic time (`getTime`). */
 	public function new(system:ISystem) {
 		throw new NotImplementedException();
 	}
@@ -30,7 +30,7 @@ class Clock implements IPollable {
 	/** Gets the real seconds this frame: not scaled, running while paused, at most `maxDelta`. */
 	public var realDelta(default, null):Float = 0;
 
-	/** Gets the game's seconds since the clock was made: the sum of every `delta`. */
+	/** Gets the game's seconds since this was made: the sum of every `delta`. */
 	public var elapsed(default, null):Float = 0;
 
 	/** Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, 1 by default. */

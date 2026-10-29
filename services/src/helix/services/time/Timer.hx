@@ -2,7 +2,7 @@ package helix.services.time;
 
 import haxe.exceptions.NotImplementedException;
 
-/** Represents a function called after some of a clock's game time, once or repeatedly (`Clock.after`, `Clock.every`). */
+/** Represents a function called after some of the game's time, once or repeatedly (`Time.after`, `Time.every`). */
 class Timer {
 	@:allow(helix.services.time)
 	function new() {}

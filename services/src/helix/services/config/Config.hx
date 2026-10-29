@@ -10,7 +10,7 @@ import helix.platform.ISystem;
 
 	```haxe
 	var sound = config.getBool("audio", true);
-	clock.scale = config.getFloat("speed", 1);
+	time.scale = config.getFloat("speed", 1);
 	``` */
 class Config {
 	/** Creates the options over the platform's facts.

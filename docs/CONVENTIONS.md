@@ -11,7 +11,7 @@ compatibility flags or shims.
 
 ## A program constructs what it uses
 
-A library offers classes a program makes: adapters, services, caches, clocks. Nothing in a library is a static that builds a service
+A library offers classes a program makes: adapters, services, caches, timers. Nothing in a library is a static that builds a service
 when first touched, installs itself into a loop, or is bundled with everything else, so a program carries only what it constructs,
 and `-dce full` drops the rest. A thing a program makes for itself is an ordinary class with instances; what
 several of them share is passed in, not reached for.
@@ -24,9 +24,9 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 
 | Kind | Form | Example |
 | --- | --- | --- |
-| A value | a property, read and assigned | `window.title = "Asteroids"`, `clock.scale = 2`, `voice.volume = 0.5` |
+| A value | a property, read and assigned | `window.title = "Asteroids"`, `time.scale = 2`, `voice.volume = 0.5` |
 | Several values set at once | `setX(...)` | `node.setPosition(x, y, z)` |
-| A state now (a bool) | an adjective property | `clock.paused`, `audio.running`, `files.canWrite` |
+| A state now (a bool) | an adjective property | `time.paused`, `audio.running`, `files.canWrite` |
 | A state asked with an argument | `isX(...)` | `events.isPadButtonDown(0, South)`, `input.isDown(Key.A)` |
 | Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `window.canClose()` |
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
