@@ -12,8 +12,9 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 - **HeliX is prior art, not a source.** [HeliX](https://github.com/whirlinggizmo/helix), and the earlier C frameworks (`../wgrender-c`,
   `../libwgf`), are read for how they did a thing and the platform quirks they found. Then write this library's own code. Don't name
   libwgf in code or docs.
-- **The spec is the authority.** docs/PLATFORM.md for the platform; each library above gets its own before it's written. A library
-  changes when it doesn't do what its spec says, or when the spec changes first.
+- **The spec is the authority.** docs/PLATFORM.md for the platform. A library above starts as its API: its types and members with
+  their doc comments and no implementation, agreed with the user and tried by fresh agents before any of it is written; those doc
+  comments are its spec. A library changes when it doesn't do what its spec says, or when the spec changes first.
 - **No backward compatibility.** When an API changes, every caller changes in the same commit.
 - **Follow docs/CONVENTIONS.md** and docs/ARCHITECTURE.md (the adapter rule). Every public type and member has a doc comment. Run the
   formatter rather than laying code out by hand.

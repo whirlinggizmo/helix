@@ -32,6 +32,7 @@ services. If it's how one program runs (its loop, its order), it's that program'
 
 ## The method
 
-1. **The spec,** agreed with the user before code (services: docs/SERVICES.md, written from the build trial's rerun).
+1. **The API,** its types and members with their doc comments and no implementation, agreed with the user; its doc comments are the
+   spec, and a trial on its reference comes before any code.
 2. **The library,** with its README, tests, examples and ladder from the first commit.
 3. **A trial:** a fresh agent on the libraries alone writes a small program; what it guessed wrong is what changes.
