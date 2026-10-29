@@ -11,8 +11,6 @@ What a game program needs over [helix-platform](../platform/README.md) that isn'
 | `helix.services.saves` | `Saves`: small values kept between runs |
 | `helix.services.config` | `Config`: the options the program was started with |
 
-> **Its API alone, so far.** Every member is declared and documented; none is implemented yet.
-
 ## Using it
 
 ```

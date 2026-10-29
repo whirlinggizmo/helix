@@ -9,7 +9,7 @@ A Haxe game framework built as layered libraries: one Haxe program runs in the b
 | [helix-platform](platform/README.md) | The hardware and the OS as contracts (window, events, GPU, audio, decoders, HTTP, files, export, system), one adapter per API: the browser's, SDL3, WebGL2, sokol_gfx, SDL_GPU, SDL3_mixer | nothing |
 | [helix-math](math/README.md) | Points, bounds, curves, interpolation, deterministic trigonometry and random numbers | nothing |
 | [helix-log](log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
-| [helix-services](services/README.md) | Time, input, assets, audio, saves and config over the platform; its API alone so far | helix-platform, helix-math, helix-log |
+| [helix-services](services/README.md) | Time, input, assets, audio, saves and config over the platform | helix-platform, helix-math, helix-log |
 
 Until they're published:
 
