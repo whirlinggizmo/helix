@@ -6,7 +6,7 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
 ## Principles
 
 - **Pumped, never driving.** Nothing in the platform runs the program or calls into it on its own; the one exception is
-  `IWindow.onClosing`, because a browser gives no frame in which to poll it. Everything that must be serviced once a frame is its own
+  `IWindow.onClose`, because a browser gives no frame in which to poll it. Everything that must be serviced once a frame is its own
   small `poll`, named for what it services and doing nothing else: input, http, the file system, each decoder, audio. The platform
   never bundles them; whoever owns the program does, in its own order (raylib hides the same pumps inside `EndDrawing`).
 - **Granular, for whoever builds on it.** The platform keeps the pieces separate (end the frame, read it back, present, poll) and
@@ -46,7 +46,8 @@ The interfaces in `platform/src/helix/platform/` are the authority; this is thei
   `requestFullscreen(enabled, ?done, ?failed)`; `requestOrientation(orientation, ?done, ?failed)`.
 - The monitors: `monitorCount`, `monitorIndex`, `requestMonitorIndex`, `getMonitorName`, `getMonitorX`, `getMonitorY`,
   `getMonitorWidth`, `getMonitorHeight`.
-- `onClosing(callback)`: once, the last call before the window is gone (natively on destroy, in a page at pagehide); the place to save.
+- `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide); the place
+  to save.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`
   removes the window: true natively, false in a page, so a menu asks it before offering Quit.
 
@@ -56,7 +57,7 @@ actually swaps; the window only provides the surface.
 - Natively, a close asked for by the user or the OS (the close button, the OS quitting the program) is an event, `CloseRequested`,
   delivered by `IEvents.poll` like a key press: it happens once, and the owner decides, closing with `close()` or not (asking "quit
   without saving?" first).
-- A page never gets `CloseRequested`: a tab closing or navigating away gives no frame to decide in. Its end is `onClosing`, at
+- A page never gets `CloseRequested`: a tab closing or navigating away gives no frame to decide in. Its end is `onClose`, at
   pagehide, the one call the platform makes upward; nothing of the program runs after it, so work started there must not need a later
   frame, and an asynchronous write started there may not finish.
 - Quitting is the owner's loop ending, the same on both targets: natively the owner closes the window and ends its loop; in a page a
@@ -111,7 +112,7 @@ enum Event {
 	FocusLost;                           // each key still down came up just before, a KeyUp each
 	Shown;
 	Hidden;
-	CloseRequested;                      // natively; a page's end is IWindow.onClosing
+	CloseRequested;                      // natively; a page's end is IWindow.onClose
 	GraphicsLost;                        // the GPU's context is gone (a page's WebGL context lost: a GPU reset, an evicted tab)
 }
 ```

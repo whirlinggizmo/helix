@@ -34,6 +34,7 @@ The API uses what Haxe gives: properties for values, classes for kinds, methods 
 | A count or a limit | a property naming what it counts; the limit first | `events.padCount`, `graphics.msaaSamples`, `graphics.maxMsaaSamples` |
 | Fill what it's given | a verb, not a property | `camera.computeRay(x, y, ray)`, `node.computeWorld(out)` |
 | A command for what follows in a pass | `applyX(...)` (sokol's word) | `graphics.applyViewport(...)`, `graphics.applyScissor(...)` |
+| A call made on its own, answering no request | an `onX` property, null for none; never a method | `window.onClose = save` |
 
 - **A value is a property.** One that must act when assigned has a `set_` accessor; one read back from somewhere else has a `get_`;
   one nothing may assign is `(default, null)`. A record made whole and never changed after (`Touch`, a parsed header, a progress

@@ -74,7 +74,7 @@ enum Event {
 
 	/** The player or the OS asked to close the window, natively; the owner decides.
 
-		A page never gets it: a tab closing gives no frame to decide in, and its end is `IWindow.onClosing`. */
+		A page never gets it: a tab closing gives no frame to decide in, and its end is `IWindow.onClose`. */
 	CloseRequested;
 
 	/** The GPU's context is gone: in a page, the WebGL context lost to a GPU reset or an evicted tab. */

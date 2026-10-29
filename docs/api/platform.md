@@ -835,7 +835,7 @@ function getMonitorWidth(index:Int):Int
 function getMonitorHeight(index:Int):Int
 function canClose():Bool
 function close():Void
-function onClosing(callback:() -> Void):Void
+var onClose:Null<() -> Void>
 ```
 
 - `framebufferWidth`: Gets the drawable area's width, in framebuffer pixels.
@@ -912,11 +912,9 @@ function onClosing(callback:() -> Void):Void
 
   A menu asks before offering Quit.
 - `close`: Closes the window, natively; does nothing in a page.
-  The program's owner ends its loop after it. `onClosing`'s callback runs first.
-- `onClosing`: Sets the call made once, as the window goes for good: natively when it is disposed, in a page at pagehide.
-  - `callback`: The call.
-
-  Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write started in it may not finish. A page gets no `CloseRequested`, so this is its only end. A later call replaces an earlier callback.
+  The program's owner ends its loop after it. `onClose` runs first.
+- `onClose`: Gets or sets the call made once, as the window goes for good: natively in `close`, in a page at pagehide; null, the default, for none.
+  Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write started in it may not finish. A page gets no `CloseRequested`, so this is its only end.
 
 ## Key
 

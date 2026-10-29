@@ -10,8 +10,6 @@ import helix.platform.adapters.window.sdl3.internal.WindowBridge;
 	The window opens with the adapter, before the graphics adapter that draws in it. Moves are refused where the compositor places windows
 	(Wayland, XWayland); orientation is a page's alone. */
 class Sdl3WindowAdapter implements IWindow {
-	var closing:Null<Void->Void>;
-
 	/** Opens the program's window.
 
 		@param options  The graphics adapter it is for, and its samples.
@@ -159,13 +157,10 @@ class Sdl3WindowAdapter implements IWindow {
 	public function close():Void {
 		if (Sdl3Bridge.isOpen() == 0)
 			return;
-		var callback = closing;
-		closing = null;
-		if (callback != null)
-			callback();
+		if (onClose != null)
+			onClose();
 		Sdl3Bridge.close();
 	}
 
-	public function onClosing(callback:Void->Void):Void
-		closing = callback;
+	public var onClose:Null<Void->Void>;
 }

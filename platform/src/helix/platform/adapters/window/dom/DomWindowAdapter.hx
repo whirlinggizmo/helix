@@ -12,7 +12,7 @@ import js.html.CanvasElement;
 	viewport and the pixel ratio. A page can't move or size its window, choose a monitor, or close; it sees one screen. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
-	var closing:Null<Void->Void>;
+	var closed = false;
 
 	/** Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the viewport.
 
@@ -21,10 +21,11 @@ class DomWindowAdapter implements IWindow {
 		canvas = options.canvas;
 		DomPage.fit(canvas);
 		Browser.window.addEventListener("pagehide", _ -> {
-			var callback = closing;
-			closing = null;
-			if (callback != null)
-				callback();
+			if (closed)
+				return;
+			closed = true;
+			if (onClose != null)
+				onClose();
 		});
 	}
 
@@ -225,6 +226,5 @@ class DomWindowAdapter implements IWindow {
 
 	public function close():Void {}
 
-	public function onClosing(callback:Void->Void):Void
-		closing = callback;
+	public var onClose:Null<Void->Void>;
 }

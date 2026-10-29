@@ -148,13 +148,12 @@ interface IWindow {
 
 	/** Closes the window, natively; does nothing in a page.
 
-		The program's owner ends its loop after it. `onClosing`'s callback runs first. */
+		The program's owner ends its loop after it. `onClose` runs first. */
 	function close():Void;
 
-	/** Sets the call made once, as the window goes for good: natively when it is disposed, in a page at pagehide.
+	/** Gets or sets the call made once, as the window goes for good: natively in `close`, in a page at pagehide; null, the default, for none.
 
 		Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write
-		started in it may not finish. A page gets no `CloseRequested`, so this is its only end. A later call replaces an earlier callback.
-		@param callback  The call. */
-	function onClosing(callback:Void->Void):Void;
+		started in it may not finish. A page gets no `CloseRequested`, so this is its only end. */
+	var onClose:Null<Void->Void>;
 }
