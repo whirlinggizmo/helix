@@ -27,8 +27,8 @@ y += speed * move.y * clock.delta;
 ```haxe
 function new(input:Input)
 function bind(name:String, ...bindings:Binding):Bool
-function unbind(name:String, binding:Binding):Bool
-function clear(name:String):Void
+function unbind(name:String, ...bindings:Binding):Bool
+function clearBindings():Void
 function getBindings(name:String):Array<Binding>
 function isDown(name:String):Bool
 function isPressed(name:String):Bool
@@ -46,12 +46,13 @@ function computeVector(left:String, right:String, up:String, down:String, ?out:P
   - returns: False when it was already bound to every one of them; any it wasn't are bound either way.
 
   An array already made is passed as `...bindings`.
-- `unbind`: Takes one binding off a name.
+- `unbind`: Takes bindings off a name.
   - `name`: The action's name.
-  - `binding`: What no longer works it.
-  - returns: False, changing nothing, when it wasn't bound to that.
-- `clear`: Takes every binding off a name.
-  - `name`: The action's name.
+  - `bindings`: What no longer works it, one or more.
+  - returns: False when it was bound to none of them; any it was are taken off either way.
+
+  Every binding of one name comes off as `unbind(name, ...getBindings(name))`.
+- `clearBindings`: Takes every binding off every name, as before anything was bound.
 - `getBindings`: Returns what a name is bound to.
   - `name`: The action's name.
   - returns: A copy of its bindings, in the order they were bound; empty for a name nothing is bound to.

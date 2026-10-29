@@ -39,19 +39,18 @@ class Actions {
 		throw new NotImplementedException();
 	}
 
-	/** Takes one binding off a name.
+	/** Takes bindings off a name.
 
+		Every binding of one name comes off as `unbind(name, ...getBindings(name))`.
 		@param name  The action's name.
-		@param binding  What no longer works it.
-		@return  False, changing nothing, when it wasn't bound to that. */
-	public function unbind(name:String, binding:Binding):Bool {
+		@param bindings  What no longer works it, one or more.
+		@return  False when it was bound to none of them; any it was are taken off either way. */
+	public function unbind(name:String, ...bindings:Binding):Bool {
 		throw new NotImplementedException();
 	}
 
-	/** Takes every binding off a name.
-
-		@param name  The action's name. */
-	public function clear(name:String):Void {
+	/** Takes every binding off every name, as before anything was bound. */
+	public function clearBindings():Void {
 		throw new NotImplementedException();
 	}
 
