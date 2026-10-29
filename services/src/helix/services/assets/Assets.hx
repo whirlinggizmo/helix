@@ -156,7 +156,7 @@ class Assets {
 				cleared();
 			return;
 		}
-		cacheFileSystem.clearFiles(() -> if (cleared != null) cleared(), message -> {
+		cacheFileSystem.deleteFiles(() -> if (cleared != null) cleared(), message -> {
 			if (failed != null)
 				failed(message);
 			else
@@ -565,8 +565,8 @@ private class ServerSource {
 			message -> Log.warn('$path\'s record can\'t be kept: $message', "assets"));
 
 	function forgetCopy(path:String):Void {
-		cache.remove('$directory/records/$path', () -> {}, _ -> {});
-		cache.remove('$directory/files/$path', () -> {}, _ -> {});
+		cache.deleteFile('$directory/records/$path', () -> {}, _ -> {});
+		cache.deleteFile('$directory/files/$path', () -> {}, _ -> {});
 	}
 
 	// Answers at the cache's next poll, never during the call: a read of a path no file has.

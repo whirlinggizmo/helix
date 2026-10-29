@@ -457,8 +457,8 @@ var root(get, never):String
 var canWrite(get, never):Bool
 function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:() -> Void, failed:String -> Void):() -> Void
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
-function remove(path:String, removed:() -> Void, failed:String -> Void):Void
-function clearFiles(cleared:() -> Void, failed:String -> Void):Void
+function deleteFile(path:String, deleted:() -> Void, failed:String -> Void):Void
+function deleteFiles(deleted:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -478,13 +478,13 @@ function dispose():Void
   - `bytes`: The file's contents.
   - `written`: Called once it is kept.
   - `failed`: Receives why it can't be written: a root that can't be (`canWrite`), no room, or the platform's reason.
-- `remove`: Removes a file; removing one that isn't there succeeds.
+- `deleteFile`: Deletes a file; deleting one that isn't there succeeds.
   - `path`: The file's path under the root.
-  - `removed`: Called once it is gone.
-  - `failed`: Receives why it can't be removed.
-- `clearFiles`: Removes every file under the root, for a cache.
-  - `cleared`: Called once they are gone.
-  - `failed`: Receives why they can't be removed.
+  - `deleted`: Called once it is gone.
+  - `failed`: Receives why it can't be deleted.
+- `deleteFiles`: Deletes every file under the root, for a cache.
+  - `deleted`: Called once they are gone.
+  - `failed`: Receives why they can't be deleted.
 - `locate`: Finds where a file is, for playing it as it is read, without loading it whole.
   - `path`: The file's path under the root.
   - `located`: Receives the location and the function that releases it, called once when it is no longer read.

@@ -74,7 +74,7 @@ class Actions {
 	}
 
 	/** Takes every binding off every name, as before anything was bound. */
-	public function clearBindings():Void {
+	public function unbindAll():Void {
 		bindings.clear();
 	}
 

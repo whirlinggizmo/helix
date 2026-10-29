@@ -88,7 +88,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 		});
 	}
 
-	public function remove(path:String, removed:Void->Void, failed:String->Void):Void {
+	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void {
 		if (!writable || !FilePath.isValid(path)) {
 			refuse(failed, writable ? FilePath.INVALID : READ_ONLY);
 			return;
@@ -97,14 +97,14 @@ class NativeFileSystemAdapter implements IFileSystem {
 		run(() -> try {
 			if (sys.FileSystem.exists(file))
 				sys.FileSystem.deleteFile(file);
-			removed;
+			deleted;
 		} catch (error:Dynamic) {
 			var message = Std.string(error);
 			() -> failed(message);
 		});
 	}
 
-	public function clearFiles(cleared:Void->Void, failed:String->Void):Void {
+	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void {
 		if (!writable) {
 			refuse(failed, READ_ONLY);
 			return;
@@ -112,7 +112,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 		run(() -> try {
 			if (sys.FileSystem.exists(directory))
 				removeContents(directory);
-			cleared;
+			deleted;
 		} catch (error:Dynamic) {
 			var message = Std.string(error);
 			() -> failed(message);

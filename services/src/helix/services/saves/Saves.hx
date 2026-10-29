@@ -184,21 +184,21 @@ class Saves implements IPollable {
 		write(key, value);
 	}
 
-	/** Removes a key's value, kept at the next `poll`; does nothing for a key with none.
+	/** Deletes a key and its value, kept at the next `poll`; does nothing for a key with none.
 
 		@param key  The key.
 		@throws String  Before `load` has finished. */
-	public function remove(key:String):Void {
+	public function deleteKey(key:String):Void {
 		ready();
 		if (values.remove(key))
 			change();
 	}
 
-	/** Removes every value, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there
+	/** Deletes every key, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there
 		changes.
 
 		@throws String  Before `load` has finished. */
-	public function clearValues():Void {
+	public function deleteKeys():Void {
 		ready();
 		values = {};
 		change();

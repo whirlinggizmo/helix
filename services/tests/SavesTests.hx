@@ -70,7 +70,7 @@ class SavesTests {
 
 		var failures = [];
 		files.failWrites = true;
-		again.remove("name");
+		again.deleteKey("name");
 		again.flush(() -> {}, message -> failures.push(message));
 		files.poll();
 		check(failures.length == 1 && again.pending, "a failed write: failed called, still pending");
@@ -83,13 +83,13 @@ class SavesTests {
 		files.poll();
 		check(!again.pending && files.writes == before + 1, "retried after a change");
 
-		again.clearValues();
+		again.deleteKeys();
 		again.poll();
 		files.poll();
 		var cleared = new Saves(files);
 		cleared.load(() -> {});
 		files.poll();
-		check(!cleared.has("level") && !cleared.has("sound"), "clearValues: none kept");
+		check(!cleared.has("level") && !cleared.has("sound"), "deleteKeys: none kept");
 
 		files.files.set("bad.json", Bytes.ofString("not json"));
 		var bad = new Saves(files, "bad.json");

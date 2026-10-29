@@ -119,11 +119,11 @@ class BrowserFileSystemAdapter implements IFileSystem {
 		transact(path, "readwrite", files -> files.put(blob, path), _ -> written(), failed);
 	}
 
-	public function remove(path:String, removed:Void->Void, failed:String->Void):Void
-		transact(path, "readwrite", files -> files.delete(path), _ -> removed(), failed);
+	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
+		transact(path, "readwrite", files -> files.delete(path), _ -> deleted(), failed);
 
-	public function clearFiles(cleared:Void->Void, failed:String->Void):Void
-		transact(null, "readwrite", files -> files.clear(), _ -> cleared(), failed);
+	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
+		transact(null, "readwrite", files -> files.clear(), _ -> deleted(), failed);
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		transact(path, "readonly", files -> files.get(path), value -> {

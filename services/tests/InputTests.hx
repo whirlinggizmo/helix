@@ -106,8 +106,8 @@ class InputTests {
 
 		check(actions.unbind("left", ...actions.getBindings("left")) && actions.getBindings("left").length == 0, "unbind every one");
 		check(!actions.unbind("left", Keyboard(Left)), "unbind what isn't bound: false");
-		actions.clearBindings();
-		check(actions.getBindings("jump").length == 0, "clearBindings: none left");
+		actions.unbindAll();
+		check(actions.getBindings("jump").length == 0, "unbindAll: none left");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

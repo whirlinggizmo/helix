@@ -28,7 +28,7 @@ y += speed * move.y * time.delta;
 function new(input:Input)
 function bind(name:String, ...bindings:Binding):Bool
 function unbind(name:String, ...bindings:Binding):Bool
-function clearBindings():Void
+function unbindAll():Void
 function getBindings(name:String):Array<Binding>
 function isDown(name:String):Bool
 function isPressed(name:String):Bool
@@ -52,7 +52,7 @@ function computeVector(left:String, right:String, up:String, down:String, ?out:P
   - returns: False when it was bound to none of them; any it was are taken off either way.
 
   Every binding of one name comes off as `unbind(name, ...getBindings(name))`.
-- `clearBindings`: Takes every binding off every name, as before anything was bound.
+- `unbindAll`: Takes every binding off every name, as before anything was bound.
 - `getBindings`: Returns what a name is bound to.
   - `name`: The action's name.
   - returns: A copy of its bindings, in the order they were bound; empty for a name nothing is bound to.

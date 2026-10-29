@@ -62,16 +62,16 @@ class FakeFileSystem implements IFileSystem {
 		});
 	}
 
-	public function remove(path:String, removed:Void->Void, failed:String->Void):Void
+	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void
 		later(() -> {
 			files.remove(path);
-			removed();
+			deleted();
 		});
 
-	public function clearFiles(cleared:Void->Void, failed:String->Void):Void
+	public function deleteFiles(deleted:Void->Void, failed:String->Void):Void
 		later(() -> {
 			files.clear();
-			cleared();
+			deleted();
 		});
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void

@@ -9,7 +9,7 @@ one kind's (1 to 3), that a call made on its own is a property (4), and that emp
   3. 2D code names no 3D type: a 2d package's code (its comments aside) uses nothing ending in 3D, so a type both kinds use is a neutral
      one, living outside the kinds, and a 2D program never reaches 3D through a name.
   4. No method is named onX: a call made on its own is an `onX` property (`window.onClose = save`), assigned, not passed to a method.
-  5. No method is named clear: emptying is `clearX()`, naming what it empties (`saves.clearValues()`, `assets.clearCache()`).
+  5. No method is named clear: removing one or all names what goes (`files.deleteFile`, `deleteFiles`; `assets.clearCache()`).
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re

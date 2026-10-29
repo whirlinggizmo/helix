@@ -41,18 +41,18 @@ interface IFileSystem extends IPollable {
 		@param failed  Receives why it can't be written: a root that can't be (`canWrite`), no room, or the platform's reason. */
 	function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void;
 
-	/** Removes a file; removing one that isn't there succeeds.
+	/** Deletes a file; deleting one that isn't there succeeds.
 
 		@param path  The file's path under the root.
-		@param removed  Called once it is gone.
-		@param failed  Receives why it can't be removed. */
-	function remove(path:String, removed:Void->Void, failed:String->Void):Void;
+		@param deleted  Called once it is gone.
+		@param failed  Receives why it can't be deleted. */
+	function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void;
 
-	/** Removes every file under the root, for a cache.
+	/** Deletes every file under the root, for a cache.
 
-		@param cleared  Called once they are gone.
-		@param failed  Receives why they can't be removed. */
-	function clearFiles(cleared:Void->Void, failed:String->Void):Void;
+		@param deleted  Called once they are gone.
+		@param failed  Receives why they can't be deleted. */
+	function deleteFiles(deleted:Void->Void, failed:String->Void):Void;
 
 	/** Finds where a file is, for playing it as it is read, without loading it whole.
 
