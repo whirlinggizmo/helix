@@ -1,12 +1,13 @@
 """Generate the libraries' API reference from their doc comments: as HTML with dox (pinned in dependencies.json) into build/api, and as
 Markdown in docs/api, committed, so the repository carries a readable reference (README.md, the index of packages, then a file a
-package with each type's public members).
+package with each type's public members, and the platform's adapters together in platform-adapters.md).
 
 The reference is what a program writes against: a type or member marked @:noCompletion is a library's own (an adapter's internals,
 checked by tools/check_adapters.py), hidden from the language server and left out here as dox leaves it out. Haxe describes the code
 once per target (XML), js and cpp; a library's code has no target conditional, so both must describe the same types with the same
-public members, and the tool fails when they differ. The HTML is then made from one of them, so dox has nothing to mark as one
-target's. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
+public members, and the tool fails when they differ. The adapters are each one target's: each description holds its own target's (the
+browser's name js. in their code), and the reference shows both, each marked with its target. The HTML is made from one description,
+js's with cpp's adapters added, so dox has nothing to mark as one target's. --check regenerates the Markdown in memory and fails when docs/api differs, so a change to a doc comment is committed with
 its reference (helix.py test runs it)."""
 import json
 import re
@@ -23,18 +24,29 @@ import pins  # noqa: E402
 pins.use_haxelib()
 OUT=ROOT/'build/api'
 DOCS=ROOT/'docs/api'
-# The adapters: each target's compile on it alone, so neither description includes them; a program constructs one by its own name.
-ADAPTERS=('helix.platform.adapters',)
+# The adapters: each compiles on its own target alone, so each target's description holds its own, and the reference shows both.
+ADAPTERS='helix.platform.adapters'
 # What the reference says of its targets, once.
-TARGETS='Every type here is on both Haxe targets, js (the browser) and cpp (native); the adapters, which a program constructs by name for its target, and a library\'s own types beneath (@:noCompletion) are left out.'
+TARGETS='Every type here is on both Haxe targets, js (the browser) and cpp (native), but the adapters, each for one target, which a program constructs by name; a library\'s own types beneath (@:noCompletion) are left out.'
+
+def adapter_packages(target):
+    """The adapters' packages for one target: the browser's (js) name js. in their code, the native ones (cpp) don't. Compiling
+    each target's description checks it."""
+    found=[]
+    for d in sorted((ROOT/'platform/src/helix/platform/adapters').glob('*/*/')):
+        if d.parent.name=='shared':continue
+        browser=any(re.search(r'\bjs\.[A-Za-z]',p.read_text(encoding='utf-8')) for p in d.rglob('*.hx'))
+        if browser==(target=='js'):found.append(f'{ADAPTERS}.{d.parent.name}.{d.name}')
+    return found
 
 def describe(target):
-    """Haxe's XML description of package helix for one target, the adapters left out."""
+    """Haxe's XML description of package helix for one target, with that target's adapters."""
     output=OUT/'xml'/f'{target}.xml';output.parent.mkdir(parents=True,exist_ok=True)
     # The shader compiler's internals run in the compiler or Haxe's interpreter, not on a target.
-    ignore=[p+'*' for p in ADAPTERS]+['helix.platform.tools']
+    ignore=[ADAPTERS+'*','helix.platform.tools']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
     args=['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
+    for package in adapter_packages(target):args+=['--macro',f"include('{package}')"]
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
     subprocess.run(args,cwd=ROOT,check=True)
 
@@ -74,9 +86,13 @@ def leaks(file):
             for name in sorted({n for part in signature(member) for n in named(part)}):found.append(f'{path}.{member.tag}: {name}')
     return found
 
+def adapter(path):
+    """Whether a type is an adapter's, described on its own target alone."""
+    return path.startswith(ADAPTERS+'.')
+
 def same_on_both(js,cpp):
-    """Fails unless both targets describe the same documented types, each with the same public members as written."""
-    a=public_types(js);b=public_types(cpp)
+    """Fails unless both targets describe the same documented types, each with the same public members as written; the adapters aside."""
+    a={p:n for p,n in public_types(js).items() if not adapter(p)};b={p:n for p,n in public_types(cpp).items() if not adapter(p)}
     differ=[f'{p}: only on {"js" if p in a else "cpp"}' for p in sorted(set(a)^set(b))]
     for path in sorted(set(a)&set(b)):
         known=set(a)
@@ -90,8 +106,8 @@ def short(path):
     return path.rsplit('.',1)[-1]
 
 def package_file(path):
-    """The Markdown file a package's types go in: the package's name after helix."""
-    package=path.rsplit('.',1)[0]
+    """The Markdown file a package's types go in: the package's name after helix; the adapters' all in one, platform-adapters.md."""
+    package=ADAPTERS if adapter(path) else path.rsplit('.',1)[0]
     return package[len('helix.'):].replace('.','-')+'.md' if package!='helix' else 'helix.md'
 
 def type_text(node,known):
@@ -199,8 +215,17 @@ def member_lines(member,known,instance=()):
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
     return sig,doc_text(member),member
 
-def markdown(xml):
-    """The Markdown files from a target's XML description: {relative path: text}."""
+def merged(js,cpp,output):
+    """One description from both targets': js's, and cpp's adapters; writes it to output, the description the reference is made from.
+    Merged as Haxe wrote them, as text: ElementTree would rewrite what dox reads (an empty haxe_doc, CDATA)."""
+    blocks=[m.group(0) for m in re.finditer(r'^\t<(class|enum|typedef|abstract) path="'+re.escape(ADAPTERS)+r'\..*?^\t</\1>\n',cpp.read_text(encoding='utf-8'),re.M|re.S)]
+    expected=sum(1 for n in ET.parse(cpp).getroot() if adapter(n.get('path') or ''))
+    if len(blocks)!=expected:sys.exit(f'gen_apidoc: found {len(blocks)} of the {expected} native adapter types in {cpp.name}')
+    text=js.read_text(encoding='utf-8')
+    output.write_text(text[:text.rindex('</haxe>')]+''.join(blocks)+'</haxe>\n',encoding='utf-8')
+
+def markdown(xml,native=frozenset()):
+    """The Markdown files from an XML description: {relative path: text}. native holds the native adapters' paths, the rest the browser's."""
     types=public_types(xml)
     known=set(types)
     files={};index={}
@@ -216,7 +241,8 @@ def markdown(xml):
         # A library reached through a haxelib dev link is reported by its absolute path: made relative to the checkout.
         if Path(source).is_absolute() and Path(source).resolve().is_relative_to(ROOT.resolve()):source=Path(source).resolve().relative_to(ROOT.resolve()).as_posix()
         # The import that names it: its own path, as each shown type is its own file (checked above).
-        lines=[f'## {header}','',f'*{kind}* in [`{source}`](../../{source})'+f', `import {path};`'+parents,'']
+        target=(', native (cpp)' if path in native else ', for the browser (js)') if adapter(path) else ''
+        lines=[f'## {header}','',f'*{kind}*{target} in [`{source}`](../../{source})'+f', `import {path};`'+parents,'']
         doc=doc_text(node)
         if doc:
             lines+=[doc,'']
@@ -290,13 +316,15 @@ def generate(check=False):
     if OUT.exists() and not check:shutil.rmtree(OUT)
     describe('js');describe('cpp')
     same_on_both(OUT/'xml/js.xml',OUT/'xml/cpp.xml')
+    merged(OUT/'xml/js.xml',OUT/'xml/cpp.xml',OUT/'xml/api.xml')
+    native={p for p in public_types(OUT/'xml/cpp.xml') if adapter(p)}
     # A shown type is its own file, so it's imported by its own path (import helix.scene.transitions.Fade): one in another type's module is
     # imported through that module's (helix.scene.Transition.Fade), which no one guesses.
-    lodgers=sorted(f'{p} (in {n.get("file")})' for p,n in public_types(OUT/'xml/js.xml').items() if n.get('module') and n.get('module')!=p)
+    lodgers=sorted(f'{p} (in {n.get("file")})' for p,n in public_types(OUT/'xml/api.xml').items() if n.get('module') and n.get('module')!=p)
     if lodgers:sys.exit('gen_apidoc: shown types in another type\'s file; give each its own file, or hide it:\n  '+'\n  '.join(lodgers))
-    leaked=leaks(OUT/'xml/js.xml')
+    leaked=leaks(OUT/'xml/api.xml')
     if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
-    pages=markdown(OUT/'xml/js.xml')
+    pages=markdown(OUT/'xml/api.xml',native)
     if check:
         stale=[name for name,text in pages.items() if not (DOCS/name).is_file() or (DOCS/name).read_text(encoding='utf-8')!=text]
         extra=[p.name for p in DOCS.glob('*.md') if p.name not in pages] if DOCS.is_dir() else []
@@ -313,12 +341,12 @@ def generate(check=False):
     for p in DOCS.glob('*.md'):
         if p.name not in pages:p.unlink()
     for name,text in pages.items():(DOCS/name).write_text(text,encoding='utf-8')
-    # One target's description, both being the same (same_on_both): dox marks nothing as one target's and offers no filter by one. It
-    # leaves out what's @:noCompletion itself.
+    # One description, both targets' merged (the same but for the adapters): dox marks nothing as one target's and offers no filter by
+    # one. It leaves out what's @:noCompletion itself.
     # Each type's View Source on GitHub, at the commit described, so the code linked is the code documented.
     described=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
     commit=described.stdout.strip() if described.returncode==0 else 'main'
-    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/js.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix-2.0/blob/{commit}/',
+    subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/api.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix-2.0/blob/{commit}/',
         '--title','API reference','-D','description',TARGETS],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html','and',DOCS)
 
