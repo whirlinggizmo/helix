@@ -1,7 +1,6 @@
 # helix-2.0
 
 A Haxe game framework built as layered libraries: one Haxe program runs in the browser (Haxe → JS) and natively (Haxe → hxcpp/C++).
-A program takes the libraries it uses and constructs what it needs from them; nothing else is in its build.
 
 > **Work in progress.** No API is stable yet, and any name may change in any commit. There are no releases to pin.
 
@@ -12,16 +11,14 @@ A program takes the libraries it uses and constructs what it needs from them; no
 | [helix-log](log/README.md) | Levels and tags, to the browser's console or the process's output | nothing |
 | [helix-services](services/README.md) | Time, input, assets, audio, saves and config over the platform; its API alone so far | helix-platform, helix-math, helix-log |
 
-Until they are published, a program takes a library from a checkout:
+Until they're published:
 
 ```console
 haxelib dev helix-platform <checkout>/platform
 haxelib dev helix-math <checkout>/math
 haxelib dev helix-log <checkout>/log
+haxelib dev helix-services <checkout>/services
 ```
-
-and builds with `-lib helix-platform` (and the others it uses). The platform's examples (`platform/examples/`) build from the hxml files
-beside them.
 
 ## Documents
 
