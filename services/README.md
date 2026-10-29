@@ -35,6 +35,8 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
 - `audio`: one sound loaded and played.
 - `fades`: a group fading its voices in, then `master` fading everything out.
 - `stream`: one long sound played as it's read, as music is.
+- `patch`: shipped files patched from a server, by its manifests: with nothing kept, with the same manifests, and after the server
+  is updated; only what changed is downloaded.
 
 Its tests are in `tests/`.
 

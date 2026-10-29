@@ -5,6 +5,9 @@ platform/examples/*/native/
 platform/examples/*/native-gpu/
 services/examples/*/web/app.js
 services/examples/*/native/
+services/examples/patch/**/manifest.json
+services/examples/patch/**/.*.manifests
+services/examples/patch/.*.manifests
 platform/tests/graphics/web/app.js
 platform/tests/graphics/native/
 platform/tests/graphics/native-gpu/

@@ -1,0 +1,9 @@
+# The patch example in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it (?frames=60 stops after
+# 60 frames). The server's manifests are written as it builds.
+-lib helix-services
+-cp .
+-main Main
+-dce full
+--macro helix.services.tools.AssetManifests.write("web/cdn")
+--macro helix.services.tools.AssetManifests.write("web/cdn-updated")
+-js web/app.js

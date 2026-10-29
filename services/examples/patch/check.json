@@ -1,0 +1,21 @@
+{
+  "what": "Green once the three runs are done: nothing kept, the same manifests, the server updated.",
+  "printed": [
+    "nothing kept: a.txt \"the same\", b.txt \"patched\", downloaded: b.txt\n",
+    "same manifests: a.txt \"the same\", b.txt \"patched\", downloaded: nothing\n",
+    "server updated: a.txt \"the same\", b.txt \"patched again\", downloaded: b.txt\n"
+  ],
+  "nativeFrames": 40000,
+  "points": [
+    {
+      "x": 400,
+      "y": 300,
+      "color": [
+        42,
+        157,
+        74
+      ],
+      "tolerance": 3
+    }
+  ]
+}
