@@ -142,7 +142,7 @@ class Saves implements IPollable {
 		changes.
 
 		@throws String  Before `load` has finished. */
-	public function clear():Void {
+	public function clearValues():Void {
 		throw new NotImplementedException();
 	}
 

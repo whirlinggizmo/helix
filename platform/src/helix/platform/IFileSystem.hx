@@ -52,7 +52,7 @@ interface IFileSystem extends IPollable {
 
 		@param cleared  Called once they are gone.
 		@param failed  Receives why they can't be removed. */
-	function clear(cleared:Void->Void, failed:String->Void):Void;
+	function clearFiles(cleared:Void->Void, failed:String->Void):Void;
 
 	/** Finds where a file is, for playing it as it is read, without loading it whole.
 

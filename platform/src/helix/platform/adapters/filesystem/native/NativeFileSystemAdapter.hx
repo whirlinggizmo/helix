@@ -104,7 +104,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 		});
 	}
 
-	public function clear(cleared:Void->Void, failed:String->Void):Void {
+	public function clearFiles(cleared:Void->Void, failed:String->Void):Void {
 		if (!writable) {
 			refuse(failed, READ_ONLY);
 			return;

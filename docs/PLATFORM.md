@@ -273,7 +273,7 @@ at most 256 characters, none empty, `.` or `..`; every adapter checks it. There 
 - `read(path, maxBytes, loaded(bytes), missing(), failed(message))`, a file over `maxBytes` failing, returning an abort;
 - `write(path, bytes, written(), failed(message))`, replacing what is there, never leaving half a file;
 - `remove(path, removed(), failed(message))`, removed also when there was none;
-- `clear(cleared(), failed(message))`;
+- `clearFiles(cleared(), failed(message))`;
 - `locate(path, located(location, release), missing(), failed(message))`: the file for reading as a stream without reading it whole
   (a path natively, a Blob's URL in a page), held until `release` is called, once;
 - `poll`, delivering what finished on the platform's threads; `dispose`.

@@ -458,7 +458,7 @@ var canWrite(get, never):Bool
 function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:() -> Void, failed:String -> Void):() -> Void
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function remove(path:String, removed:() -> Void, failed:String -> Void):Void
-function clear(cleared:() -> Void, failed:String -> Void):Void
+function clearFiles(cleared:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -482,7 +482,7 @@ function dispose():Void
   - `path`: The file's path under the root.
   - `removed`: Called once it is gone.
   - `failed`: Receives why it can't be removed.
-- `clear`: Removes every file under the root, for a cache.
+- `clearFiles`: Removes every file under the root, for a cache.
   - `cleared`: Called once they are gone.
   - `failed`: Receives why they can't be removed.
 - `locate`: Finds where a file is, for playing it as it is read, without loading it whole.

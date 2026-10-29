@@ -232,7 +232,7 @@ var canWrite(get, never):Bool
 function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:() -> Void, failed:String -> Void):() -> Void
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function remove(path:String, removed:() -> Void, failed:String -> Void):Void
-function clear(cleared:() -> Void, failed:String -> Void):Void
+function clearFiles(cleared:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void
@@ -275,7 +275,7 @@ var canWrite(get, never):Bool
 function read(path:String, maxBytes:Int, loaded:haxe.io.Bytes -> Void, missing:() -> Void, failed:String -> Void):() -> Void
 function write(path:String, bytes:haxe.io.Bytes, written:() -> Void, failed:String -> Void):Void
 function remove(path:String, removed:() -> Void, failed:String -> Void):Void
-function clear(cleared:() -> Void, failed:String -> Void):Void
+function clearFiles(cleared:() -> Void, failed:String -> Void):Void
 function locate(path:String, located:(location:String, release:() -> Void) -> Void, missing:() -> Void, failed:String -> Void):Void
 function poll():Void
 function dispose():Void

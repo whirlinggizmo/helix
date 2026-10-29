@@ -39,7 +39,7 @@ function setInt(key:String, value:Int):Void
 function setFloat(key:String, value:Float):Void
 function setBool(key:String, value:Bool):Void
 function remove(key:String):Void
-function clear():Void
+function clearValues():Void
 var pending(get, never):Bool
 function flush(?written:() -> Void, ?failed:String -> Void):Void
 function poll():Void
@@ -95,7 +95,7 @@ function dispose():Void
 - `remove`: Removes a key's value, kept at the next `poll`; does nothing for a key with none.
   - `key`: The key.
   - throws `String`: Before `load` has finished.
-- `clear`: Removes every value, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there changes.
+- `clearValues`: Removes every value, kept at the next `poll`: a reset. The file system holds nothing else of the saves', so nothing else there changes.
   - throws `String`: Before `load` has finished.
 - `pending`: Gets a value indicating whether a change isn't kept yet: set since the last write, or being written.
 - `flush`: Starts writing what's set now, without waiting for the next `poll`; never blocks.
