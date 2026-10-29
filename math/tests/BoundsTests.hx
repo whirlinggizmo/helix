@@ -27,7 +27,7 @@ class BoundsTests {
 		check(b.union(other) == b && b.maxX == 9 && b.union(new Bounds2D()).maxX == 9, "2D: a union grows to hold both; an empty one changes nothing");
 		var copy = new Bounds2D().copyFrom(b);
 		check(copy.minX == -1 && copy.maxX == 9 && copy.minY == 3 && copy.maxY == 9, "2D: copied");
-		check(copy.clear() == copy && copy.isEmpty && !b.isEmpty, "2D: cleared, the original unchanged");
+		check(copy.makeEmpty() == copy && copy.isEmpty && !b.isEmpty, "2D: made empty, the original unchanged");
 
 		var c = new Bounds3D();
 		check(c.isEmpty && c.depth == 0 && Math.isNaN(c.centerZ), "3D made empty: no size, no center");
@@ -42,7 +42,7 @@ class BoundsTests {
 		check(c.union(far) == c && c.maxZ == 9 && c.minX == -1 && c.union(new Bounds3D()).maxZ == 9,
 			"3D: a union grows to hold both; an empty one changes nothing");
 		var copy3 = new Bounds3D().copyFrom(c);
-		check(copy3.minZ == 3 && copy3.maxZ == 9 && copy3.clear().isEmpty && !c.isEmpty, "3D: copied, cleared, the original unchanged");
+		check(copy3.minZ == 3 && copy3.maxZ == 9 && copy3.makeEmpty().isEmpty && !c.isEmpty, "3D: copied, made empty, the original unchanged");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

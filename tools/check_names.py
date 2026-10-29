@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks the naming rules a tool can (docs/CONVENTIONS.md): that 2D and 3D are named apart, so no one has to guess whether a type is
-one kind's (1 to 3), and that a call made on its own is a property (4):
+one kind's (1 to 3), that a call made on its own is a property (4), and that emptying names what it empties (5):
 
   1. Every public type in a package of one kind (a package whose name ends in 2d or 3d: helix.render2d, helix.render3d) ends in that
      kind, a counterpart of the other kind or not, but for those holding both kinds or neither (NEUTRAL, each with its reason).
@@ -9,6 +9,7 @@ one kind's (1 to 3), and that a call made on its own is a property (4):
   3. 2D code names no 3D type: a 2d package's code (its comments aside) uses nothing ending in 3D, so a type both kinds use is a neutral
      one, living outside the kinds, and a 2D program never reaches 3D through a name.
   4. No method is named onX: a call made on its own is an `onX` property (`window.onClose = save`), assigned, not passed to a method.
+  5. No method is named clear: emptying is `clearX()`, naming what it empties (`saves.clearValues()`, `assets.clearCache()`).
 
 Run by helix.py test. Exits 1, listing each type, when one breaks a rule. Standard library only."""
 import re
@@ -37,6 +38,8 @@ COMMENT = re.compile(r'//[^\n]*|/\*.*?\*/', re.S)
 THREE_D = re.compile(r'\b[A-Z]\w*3D\b')
 # A method named onX, declared in code.
 ON_METHOD = re.compile(r'\bfunction\s+(on[A-Z]\w*)')
+# A method named clear alone, declared in code.
+CLEAR_METHOD = re.compile(r'\bfunction\s+clear\s*\(')
 
 
 def problems():
@@ -47,8 +50,11 @@ def problems():
             found.append(f'{path.relative_to(ROOT).as_posix()}: names {name}, a 3D type, in 2D code: use or make a neutral type')
     for path in sorted(p for source in SOURCES for p in source.rglob('*.hx')):
         relative = path.relative_to(ROOT).as_posix()
-        for name in ON_METHOD.findall(COMMENT.sub('', path.read_text(encoding='utf-8'))):
+        code = COMMENT.sub('', path.read_text(encoding='utf-8'))
+        for name in ON_METHOD.findall(code):
             found.append(f'{relative}: {name} is a method: a call made on its own is a property, var {name}:Null<...->Void>')
+        if CLEAR_METHOD.search(code):
+            found.append(f'{relative}: a method is named clear: name what it empties, clearX()')
         package = path.parent.name
         module = path.stem
         for name in declared(path):

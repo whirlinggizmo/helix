@@ -45,10 +45,10 @@ class Bounds3D {
 		return this;
 	}
 
-	/** Empties the box.
+	/** Makes the box empty, holding nothing.
 
 		@return  This box. */
-	public function clear():Bounds3D {
+	public function makeEmpty():Bounds3D {
 		minX = Math.POSITIVE_INFINITY;
 		maxX = Math.NEGATIVE_INFINITY;
 		minY = Math.POSITIVE_INFINITY;
@@ -72,7 +72,7 @@ class Bounds3D {
 		return this;
 	}
 
-	/** Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or cleared. */
+	/** Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or made empty (`makeEmpty`). */
 	public var isEmpty(get, never):Bool;
 
 	function get_isEmpty():Bool

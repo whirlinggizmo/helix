@@ -17,7 +17,7 @@ var maxX:Float
 var minY:Float
 var maxY:Float
 function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Bounds2D
-function clear():Bounds2D
+function makeEmpty():Bounds2D
 function copyFrom(other:Bounds2D):Bounds2D
 var isEmpty(get, never):Bool
 var width(get, never):Float
@@ -41,12 +41,12 @@ function intersects(other:Bounds2D):Bool
   - `maxX`: The greatest x coordinate.
   - `maxY`: The greatest y coordinate.
   - returns: This box.
-- `clear`: Empties the box.
+- `makeEmpty`: Makes the box empty, holding nothing.
   - returns: This box.
 - `copyFrom`: Sets the box's coordinates to another box's.
   - `other`: The box to copy.
   - returns: This box.
-- `isEmpty`: Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or cleared.
+- `isEmpty`: Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or made empty (`makeEmpty`).
 - `width`: Gets the width, maxX - minX; 0 while empty.
 - `height`: Gets the height, maxY - minY; 0 while empty.
 - `centerX`: Gets the center's x coordinate; NaN while empty.
@@ -85,7 +85,7 @@ var maxY:Float
 var minZ:Float
 var maxZ:Float
 function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Bounds3D
-function clear():Bounds3D
+function makeEmpty():Bounds3D
 function copyFrom(other:Bounds3D):Bounds3D
 var isEmpty(get, never):Bool
 var width(get, never):Float
@@ -115,12 +115,12 @@ function intersects(other:Bounds3D):Bool
   - `maxY`: The greatest y coordinate.
   - `maxZ`: The greatest z coordinate.
   - returns: This box.
-- `clear`: Empties the box.
+- `makeEmpty`: Makes the box empty, holding nothing.
   - returns: This box.
 - `copyFrom`: Sets the box's coordinates to another box's.
   - `other`: The box to copy.
   - returns: This box.
-- `isEmpty`: Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or cleared.
+- `isEmpty`: Gets a value indicating whether the box holds nothing: its least coordinate is past its greatest on an axis, as when made or made empty (`makeEmpty`).
 - `width`: Gets the width, maxX - minX; 0 while empty.
 - `height`: Gets the height, maxY - minY; 0 while empty.
 - `depth`: Gets the depth, maxZ - minZ; 0 while empty.
