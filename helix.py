@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parent
 sys.path.insert(0,str(ROOT/'tools'))
 import pins  # noqa: E402
 pins.use_haxelib()
-# Each library's tests, run with that library alone on the interpreter and Node.
+# Each library's tests, run with that library alone on the interpreter and Node, and with --native in hxcpp.
 TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','BoundsTests')))
 
 def run(args,env=None):subprocess.run(list(map(str,args)),cwd=ROOT,env=env,check=True)
@@ -26,7 +26,7 @@ def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
     API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/measure_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets; and with native the platform's C tests (SDL3's dummy audio driver) and Trig's bits in hxcpp."""
+    targets; and with native each library's tests and Trig's bits in hxcpp, and the platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/check_layers.py'])
     run([sys.executable,'tools/check_names.py'])
@@ -35,12 +35,19 @@ def test(native,audio_device):
     run([sys.executable,'tools/measure_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
+    if native:
+        from pins import check_hxcpp
+        from native_build import ARCH
+        check_hxcpp()
     for library,main in TESTS:
         args=['haxe','-lib',library,'-cp',pins.LIBRARIES[library]/'tests','-main',main]
         value=result(args+['--interp'])
         run(args+['-js',f'build/tests/{main}.js','-dce','full'])
         result(['node',f'build/tests/{main}.js'])
-        print(f'{main}: {value["checks"]} checks (interpreter and Node)',flush=True)
+        if native:
+            run(args+['-cpp',f'build/tests/{main}-cpp','-dce','full','-D','analyzer-optimize','-D',ARCH])
+            result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])
+        print(f'{main}: {value["checks"]} checks (interpreter, Node{" and hxcpp" if native else ""})',flush=True)
     # The shader compiler runs on the interpreter alone (it runs glslang and SPIRV-Cross, fetched or built into the cache the first time).
     value=result(['haxe','-lib','helix-platform','-cp',pins.LIBRARIES['helix-platform']/'tests','-main','ShaderCompilerTests','--interp'])
     print(f'ShaderCompilerTests: {value["checks"]} checks (interpreter)',flush=True)
@@ -76,7 +83,7 @@ def trig(native):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True,metavar='command')
-    tests=sub.add_parser('test',help="Run the tools' checks and the libraries' tests; --native adds the platform's C tests and hxcpp");tests.add_argument('--native',action='store_true');tests.add_argument('--audio-device',action='store_true',help='with --native, probe the audio device too (makes no sound)')
+    tests=sub.add_parser('test',help="Run the tools' checks and the libraries' tests; --native adds the libraries' tests in hxcpp and the platform's C tests");tests.add_argument('--native',action='store_true');tests.add_argument('--audio-device',action='store_true',help='with --native, probe the audio device too (makes no sound)')
     a=p.parse_args()
     if a.audio_device and not a.native:p.error('--audio-device requires --native')
     test(a.native,a.audio_device)
