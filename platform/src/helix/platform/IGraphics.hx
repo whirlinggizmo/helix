@@ -269,6 +269,6 @@ interface IGraphics {
 		@throws String  A call inside a pass, or a handle that is not an RGBA8 render target. */
 	public function readPixels(target:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;
 
-	/** Releases the adapter, after every handle it made is disposed. */
+	/** Releases the adapter, after every handle it made is disposed and before its window is closed. */
 	public function dispose():Void;
 }

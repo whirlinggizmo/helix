@@ -62,7 +62,7 @@ function dispose():Void
 - `unload`: Lets go of a sound: its voices stop, and what holds it is freed.
   - `sound`: The sound.
 - `poll`: Steps the fades to now and lets go of the voices that ended; call once a frame.
-- `dispose`: Stops every voice and lets go of every sound.
+- `dispose`: Stops every voice and lets go of every sound; before the output, decoder and `Assets` it was given are disposed.
 
 ## Group
 

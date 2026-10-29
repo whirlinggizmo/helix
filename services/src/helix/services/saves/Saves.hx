@@ -168,7 +168,7 @@ class Saves implements IPollable {
 		throw new NotImplementedException();
 	}
 
-	/** Lets go of the values; a write in flight still finishes. */
+	/** Lets go of the values, before the file system it was given is disposed; a write in flight still finishes. */
 	public function dispose():Void {
 		throw new NotImplementedException();
 	}

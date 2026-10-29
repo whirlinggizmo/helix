@@ -73,7 +73,7 @@ class Assets {
 		throw new NotImplementedException();
 	}
 
-	/** Aborts every load and locate in flight. */
+	/** Aborts every load and locate in flight; before the HTTP client and file systems it was given are disposed. */
 	public function dispose():Void {
 		throw new NotImplementedException();
 	}

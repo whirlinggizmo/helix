@@ -31,27 +31,6 @@ haxelib dev helix-platform <checkout>/platform
 A program constructs one adapter for each contract it uses, for its target, and after that uses the contract alone. Native builds link
 SDL3: `HELIX_SDL3_LIBRARY` names the library.
 
-## Each frame
-
-Nothing here runs a loop. Each frame the program polls what it made that answers later (each an `IPollable`), then draws and presents:
-
-```haxe
-events.poll();
-http.poll();
-files.poll();
-audio.poll();
-for (event in events.events)
-	switch event {
-		case CloseRequested: running = false;
-		case _:
-	}
-graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff000000);
-graphics.endFrame();
-graphics.present();
-```
-
-At the end it disposes each, the window last.
-
 ## Shaders
 
 A shader is standard GLSL 450, a `.vert` and a `.frag` file. `ShaderCompiler.compile("x.vert", "x.frag")`, in `helix.platform.tools`,

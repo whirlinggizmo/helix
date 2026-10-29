@@ -104,4 +104,4 @@ function dispose():Void
 
   Before `load` nothing is pending. A write started still finishes when the saves or their file system are disposed straight after, as in a page's `IWindow.onClose`, but then nothing is called.
 - `poll`: Starts writing what was set since the last write, unless a write is still going; call once a frame.
-- `dispose`: Lets go of the values; a write in flight still finishes.
+- `dispose`: Lets go of the values, before the file system it was given is disposed; a write in flight still finishes.

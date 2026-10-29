@@ -705,7 +705,7 @@ function dispose():Void
   - throws `String`: A call inside a pass, or a handle that is not an RGBA8 render target.
 
   It waits for the GPU, so it suits screenshots and checks, not every frame. The frame `endFrame` ended must be read before `present`, and in a page before the frame's callback returns. One of `read` or `failed` is called once, on the main thread, during the call or later on a GPU that reads back asynchronously.
-- `dispose`: Releases the adapter, after every handle it made is disposed.
+- `dispose`: Releases the adapter, after every handle it made is disposed and before its window is closed.
 
 ## IHttp
 
@@ -762,7 +762,7 @@ function dispose():Void
 
 Defines a contract that answers later: what it was asked for is delivered in its `poll`, on the main thread, and at no other time.
 
-The program calls `poll` once a frame on each one it made; one it forgets never answers. `IEvents`, `IHttp`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable; a layer above that answers later is too, polled the same way.
+The program calls `poll` once a frame on each one it made; one it forgets never answers. Nothing polls one it was given: a service built over an `IFileSystem` or an `IAudio` leaves their polls to the program. `IEvents`, `IHttp`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable; a layer above that answers later is too, polled the same way.
 
 ```haxe
 function poll():Void
@@ -926,7 +926,7 @@ var onClose:Null<() -> Void>
 
   A menu asks before offering Quit.
 - `close`: Closes the window, natively; does nothing in a page.
-  The program's owner ends its loop after it. `onClose` runs first.
+  The program's owner ends its loop after it, and disposes the graphics drawing in it first. `onClose` runs first.
 - `onClose`: Gets or sets the call made once, as the window goes for good: natively in `close`, in a page at pagehide; null, the default, for none.
   Nothing of the program runs after it, so it is the last place to save; in a page, no frame follows, and an asynchronous write started in it may not finish. A page gets no `CloseRequested`, so this is its only end.
 

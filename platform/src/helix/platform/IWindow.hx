@@ -148,7 +148,7 @@ interface IWindow {
 
 	/** Closes the window, natively; does nothing in a page.
 
-		The program's owner ends its loop after it. `onClose` runs first. */
+		The program's owner ends its loop after it, and disposes the graphics drawing in it first. `onClose` runs first. */
 	function close():Void;
 
 	/** Gets or sets the call made once, as the window goes for good: natively in `close`, in a page at pagehide; null, the default, for none.

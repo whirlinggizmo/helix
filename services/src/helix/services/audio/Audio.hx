@@ -91,7 +91,7 @@ class Audio implements IPollable {
 		throw new NotImplementedException();
 	}
 
-	/** Stops every voice and lets go of every sound. */
+	/** Stops every voice and lets go of every sound; before the output, decoder and `Assets` it was given are disposed. */
 	public function dispose():Void {
 		throw new NotImplementedException();
 	}

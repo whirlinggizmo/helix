@@ -76,7 +76,7 @@ function dispose():Void
 - `clearCache`: Empties `cacheFileSystem`, so each server's file is downloaded again.
   - `cleared`: Optional. Called once it's empty.
   - `failed`: Optional. Receives why it can't be emptied.
-- `dispose`: Aborts every load and locate in flight.
+- `dispose`: Aborts every load and locate in flight; before the HTTP client and file systems it was given are disposed.
 
 ## AssetsOptions
 

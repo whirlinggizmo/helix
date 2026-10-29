@@ -25,9 +25,4 @@ Until it is published, link it, and the libraries it's built on (helix-platform,
 haxelib dev helix-services <checkout>/services
 ```
 
-## Each frame
-
-Each frame the program polls what it made that has a `poll` (an `IPollable`), then updates its game. At the end it disposes each,
-the platform's last.
-
 The API reference is [docs/api/](https://github.com/whirlinggizmo/helix-2.0/blob/main/docs/api/README.md), one page per package.
