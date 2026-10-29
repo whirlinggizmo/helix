@@ -1,5 +1,5 @@
-"""Native builds without CMake: hxcpp compiles the adapters' C with each program (the build XML on each adapter's extern bridge), and
-the platform's C-only test tools (platform/tests/native) are one compiler call each."""
+"""Native builds: hxcpp compiles the adapters' C with each program (the build XML on each adapter's extern bridge), and the platform's
+C-only tests (platform/tests/native) are built by CMake from their CMakeLists.txt, with GCC or Clang, or MSVC on Windows."""
 import os
 from pathlib import Path
 import platform
@@ -8,11 +8,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 PLATFORM_ADAPTERS=ROOT/'platform/src/helix/platform/adapters'
-INCLUDES=[ROOT/'platform/vendor']+[PLATFORM_ADAPTERS/d for d in ('graphics/sokol/internal','shared')]
-# SDL3_mixer's sources and the decoders the platform builds it with (Sdl3MixerBridge's build XML says the same).
-MIXER=ROOT/'platform/vendor/sdl3_mixer'
-MIXER_DECODERS=['-DDECODER_WAV','-DDECODER_OGGVORBIS_STB','-DDECODER_MP3_DRMP3','-DDECODER_FLAC_DRFLAC']
-TOOLS=ROOT/'build/native-tools'
+TESTS=ROOT/'build/native-tests'
 # hxcpp's define for this machine's 64-bit architecture: ARM64 on Apple silicon (else macOS builds x86_64, run under Rosetta) and arm64 Linux.
 ARCH='HXCPP_ARM64' if platform.machine().lower() in ('arm64','aarch64') else 'HXCPP_M64'
 
@@ -34,27 +30,15 @@ def env(sdl3=None):
     return dict(os.environ,HELIX_PLATFORM=(ROOT/'platform').as_posix(),HXCPP_CONFIG=str(config),**extra)
 
 def tool(name):
-    """Build one C-only test tool into build/native-tools and return its path."""
-    TOOLS.mkdir(parents=True,exist_ok=True)
-    flags=['cc','-std=c11','-O3','-D_POSIX_C_SOURCE=200809L']+[f'-I{d}' for d in INCLUDES]
-    if name in ('native-sdl3-events-test','native-sdl3mixer-audio-test','native-sdl3mixer-device-probe'):
-        import sdl3
-        found=sdl3.find()
-        sdl=[f'-I{ROOT/"platform/vendor/sdl3"}',found.library,'-lm','-lpthread','-ldl']
-        if name=='native-sdl3-events-test':
-            command=flags+['-UNDEBUG',f'-I{PLATFORM_ADAPTERS/"shared/sdl3"}',f'-I{PLATFORM_ADAPTERS/"events/sdl3/internal"}',
-                           ROOT/'platform/tests/native/native_sdl3_events.c',PLATFORM_ADAPTERS/'events/sdl3/internal/events_sdl3.c',
-                           PLATFORM_ADAPTERS/'shared/sdl3/sdl3.c']+sdl
-        else:
-            audio=PLATFORM_ADAPTERS/'audio/sdl3mixer/internal'
-            test='native_sdl3mixer_audio.c' if name=='native-sdl3mixer-audio-test' else 'native_sdl3mixer_device.c'
-            command=flags+['-UNDEBUG',*MIXER_DECODERS,f'-I{MIXER/"include"}',f'-I{MIXER/"src"}',f'-I{audio}',ROOT/'platform/tests/native'/test,
-                           audio/'audio_sdl3mixer.c',*sorted((MIXER/'src').glob('*.c'))]+sdl
-    else:raise ValueError(name)
-    output=TOOLS/name
-    subprocess.run(list(map(str,command))+['-o',str(output)],cwd=ROOT,check=True)
-    return output
-
+    """Build one of the platform's C-only tests with CMake (configured once into build/native-tests, against the SDL3 tools/sdl3.py finds)
+    and return its path."""
+    import sdl3
+    found=sdl3.find()
+    subprocess.run(['cmake','-S',str(ROOT/'platform/tests/native'),'-B',str(TESTS),f'-DHELIX_ROOT={ROOT.as_posix()}',
+                    f'-DSDL3_LIBRARY={Path(found.library).as_posix()}','-DSDL3_RUNTIME='+';'.join(Path(r).as_posix() for r in found.runtime)],
+                   cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
+    subprocess.run(['cmake','--build',str(TESTS),'--config','Release','--target',name],cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
+    return TESTS/'bin'/(name+'.exe' if sys.platform=='win32' else name)
 
 if __name__ == '__main__':
     import cli

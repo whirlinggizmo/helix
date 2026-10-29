@@ -14,6 +14,8 @@ To develop them, also:
 
 - **Python 3** for the checks and tools in `tools/`, standard library only.
 - **Node** with Playwright (Chromium) for the browser checks (`tools/platform_checks.py`); installed into `build/tools`.
+- **CMake** for the platform's native C tests (`platform/tests/native/CMakeLists.txt`, built by `helix.py test --native` with the
+  compiler hxcpp uses), and on Linux to build SDL3 when the system has none.
 
 The repository keeps its own haxelib in `build/haxelib`: a dev link to each library, the pinned hxcpp and the formatter, made by the
 tools as they run (`tools/pins.py`).
@@ -50,7 +52,7 @@ keeps them silent; the browser checks run Chromium with `--mute-audio`.
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: `docs/api` (committed) and `build/api` (`--check`) |
 | `tools/measure_sizes.py` | Each library's web size ladder (`<library>/tests/sizes`) against `docs/benchmarks.json` (`--write`, `--check`) |
-| `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only test tools (a module) |
+| `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
 | `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |

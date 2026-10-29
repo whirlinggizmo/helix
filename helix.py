@@ -55,9 +55,7 @@ def test(native,audio_device):
     value=result(['haxe','-lib','helix-services','-cp',pins.LIBRARIES['helix-services']/'tests','-main','ManifestTests','--interp'])
     print(f'ManifestTests: {value["checks"]} checks (interpreter)',flush=True)
     trig(native)
-    if native and not sys.platform.startswith('linux'):
-        print('Native C tests: skipped here (they build with cc and SDL3 as Linux has them)',flush=True)
-    elif native:
+    if native:
         from native_build import tool
         print(subprocess.check_output([str(tool('native-sdl3mixer-audio-test'))],text=True,encoding='utf-8',env=dict(os.environ,SDL_AUDIO_DRIVER='dummy')),end='')
         print(subprocess.check_output([str(tool('native-sdl3-events-test'))],text=True,encoding='utf-8'),end='')

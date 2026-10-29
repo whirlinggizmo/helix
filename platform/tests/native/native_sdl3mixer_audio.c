@@ -4,7 +4,6 @@
 #include "audio_sdl3mixer.h"
 #include <SDL3/SDL.h>
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +40,7 @@ static int heard(int voice, int frames) {
 }
 
 static volatile int racing = 1;
-static void *render_thread(void *unused) {
+static int SDLCALL render_thread(void *unused) {
     (void)unused;
     float out[256];
     while (racing) {
@@ -49,7 +48,7 @@ static void *render_thread(void *unused) {
         for (int i = 0; i < 256; i++) if (!isfinite(out[i]) || out[i] < -2 || out[i] > 2) abort();
         SDL_DelayNS(100000); /* As a device's thread waits between blocks; without it the thread starves the main one of the mixer's lock. */
     }
-    return NULL;
+    return 0;
 }
 
 int main(void) {
@@ -98,9 +97,9 @@ int main(void) {
 
     /* A stream from a file plays the whole of it once. */
     int length; unsigned char *file = wav(22050, .5f, &length);
-    const char *path = "build/native-tools/native_sdl3mixer_audio.wav";
+    const char *path = "build/native-tests/native_sdl3mixer_audio.wav";
     SDL_IOStream *io = SDL_IOFromFile(path, "wb"); CHECK(io && SDL_WriteIO(io, file, (size_t)length) == (size_t)length); SDL_CloseIO(io);
-    CHECK(helix_audio_check_file(path) && !helix_audio_check_file("build/native-tools/missing.wav"));
+    CHECK(helix_audio_check_file(path) && !helix_audio_check_file("build/native-tests/missing.wav"));
     voice = helix_audio_play_file(path, 0, 1); CHECK(voice > 0);
     int count = heard(voice, 44100 * 2); CHECK(abs(count - 22050) < 64 && !helix_audio_is_playing(voice));
     /* Looping: still playing after twice its length. */
@@ -135,14 +134,14 @@ int main(void) {
     SDL_RemovePath(path);
 
     /* The device's thread mixes while the main one plays, changes and stops voices. */
-    pthread_t thread; CHECK(pthread_create(&thread, NULL, render_thread, NULL) == 0);
+    SDL_Thread *thread = SDL_CreateThread(render_thread, "render", NULL); CHECK(thread != NULL);
     for (int i = 0; i < 2000; i++) {
         const int id = helix_audio_play_clip(clip, 1, .5f);
         helix_audio_set_volume(id, (float)(i % 10) / 10); helix_audio_set_pan(id, (float)(i % 3) - 1);
         if (i % 2) helix_audio_stop(id);
         helix_audio_feed();
     }
-    racing = 0; CHECK(pthread_join(thread, NULL) == 0);
+    racing = 0; SDL_WaitThread(thread, NULL);
     CHECK(helix_audio_dispose_clip(clip) == 1 && helix_audio_play_clip(clip, 0, .5f) == -1);
     helix_audio_close(); CHECK(!helix_audio_is_open() && helix_audio_play_clip(tenth, 0, 1) == -1);
     printf("{\"passed\":true,\"checks\":%d,\"audio\":\"The SDL3_mixer output rendered with no device: clips, voices, pan, pitch, ramps, streams from a file and a download, looping, a racing render thread; no audible-output claim\"}\n", checks);
