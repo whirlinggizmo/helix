@@ -33,7 +33,8 @@ class Time implements IPollable {
 	/** Gets the game's seconds since this was made: the sum of every `delta`. */
 	public var elapsed(default, null):Float = 0;
 
-	/** Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, 1 by default. */
+	/** Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, a negative one
+		being 0; 1 by default. */
 	public var scale(default, set):Float = 1;
 
 	function set_scale(value:Float):Float {

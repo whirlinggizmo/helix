@@ -40,7 +40,7 @@ function dispose():Void
 - `createGroup`: Creates a group, such as music or effects, with its own volume.
   - `parent`: Optional. The group it's under; `master` by default.
   - returns: The group, at volume 1.
-- `load`: Loads a sound whole: read, decoded and held as samples, so it plays at once each time.
+- `load`: Loads a sound whole: read through `Assets.load`, decoded and held as samples, so it plays at once each time.
   - `path`: The file's path, as `Assets` finds it: WAV, Ogg Vorbis, MP3 or FLAC.
   - `loaded`: Receives the sound.
   - `failed`: Optional. Receives why it can't be had or decoded; left out, it's logged with the path.
@@ -50,12 +50,15 @@ function dispose():Void
   - `opened`: Receives the sound, once enough of it is there to start.
   - `failed`: Optional. Receives why it can't be had or opened; left out, it's logged with the path.
   - returns: The abort: nothing is called after it.
+
+  It's found through `Assets.locate`: a file system's file is read where it is; a server's file is read from its kept copy, or played as it downloads while the copy is kept.
 - `play`: Starts a sound playing.
-  - `sound`: The sound.
+  - `sound`: The sound, as `load` or `stream` gave it.
   - `group`: Optional. The group it plays in; `master` by default.
   - `loop`: Optional. True to play it again from the start each time it ends; false by default.
   - `volume`: Optional. Its own volume, 0 to 1, before its groups'; 1 by default.
   - returns: The voice, to change or stop it.
+  - throws `String`: For a null sound, or one unloaded.
 - `unload`: Lets go of a sound: its voices stop, and what holds it is freed.
   - `sound`: The sound.
 - `poll`: Steps the fades to now and lets go of the voices that ended; call once a frame.

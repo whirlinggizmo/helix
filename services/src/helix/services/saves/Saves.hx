@@ -155,6 +155,8 @@ class Saves implements IPollable {
 
 	/** Starts writing what's set now, without waiting for the next `poll`; never blocks.
 
+		Before `load` nothing is pending. A write started still finishes when the saves or their file system are disposed straight
+		after, as in a page's `IWindow.onClose`, but then nothing is called.
 		@param written  Optional. Called once it's kept; at once, at the next `IFileSystem.poll`, when nothing was pending.
 		@param failed  Optional. Receives why it can't be written; left out, it's logged. */
 	public function flush(?written:Void->Void, ?failed:String->Void):Void {

@@ -44,7 +44,7 @@ class Audio implements IPollable {
 		throw new NotImplementedException();
 	}
 
-	/** Loads a sound whole: read, decoded and held as samples, so it plays at once each time.
+	/** Loads a sound whole: read through `Assets.load`, decoded and held as samples, so it plays at once each time.
 
 		@param path  The file's path, as `Assets` finds it: WAV, Ogg Vorbis, MP3 or FLAC.
 		@param loaded  Receives the sound.
@@ -56,6 +56,9 @@ class Audio implements IPollable {
 
 	/** Opens a sound to be played as it's read, never held whole.
 
+		It's found through `Assets.locate`: a file system's file is read where it is; a server's file is read from its kept copy, or
+		played as it downloads while the copy is kept.
+
 		@param path  The file's path, as `Assets` finds it.
 		@param opened  Receives the sound, once enough of it is there to start.
 		@param failed  Optional. Receives why it can't be had or opened; left out, it's logged with the path.
@@ -66,11 +69,12 @@ class Audio implements IPollable {
 
 	/** Starts a sound playing.
 
-		@param sound  The sound.
+		@param sound  The sound, as `load` or `stream` gave it.
 		@param group  Optional. The group it plays in; `master` by default.
 		@param loop  Optional. True to play it again from the start each time it ends; false by default.
 		@param volume  Optional. Its own volume, 0 to 1, before its groups'; 1 by default.
-		@return  The voice, to change or stop it. */
+		@return  The voice, to change or stop it.
+		@throws String  For a null sound, or one unloaded. */
 	public function play(sound:Sound, ?group:Group, loop = false, volume = 1.):Voice {
 		throw new NotImplementedException();
 	}

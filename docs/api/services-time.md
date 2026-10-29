@@ -37,7 +37,7 @@ function dispose():Void
 - `delta`: Gets the game's seconds this frame: the real seconds times `scale`, and 0 while paused.
 - `realDelta`: Gets the real seconds this frame: not scaled, running while paused, at most `maxDelta`.
 - `elapsed`: Gets the game's seconds since this was made: the sum of every `delta`.
-- `scale`: Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, 1 by default.
+- `scale`: Gets or sets how fast the game's time runs: 1 as real time, 2 twice as fast, 0 stopped; 0 or more, a negative one being 0; 1 by default.
 - `paused`: Gets or sets a value indicating whether the game's time stands still: `delta` is 0 and the timers wait; false by default.
 - `maxDelta`: Gets or sets the most real seconds one frame counts, so a frame after a stall (a page in the background, a debugger) doesn't jump; more than 0, 0.25 by default.
 - `after`: Calls a function once, after some of the game's time.
